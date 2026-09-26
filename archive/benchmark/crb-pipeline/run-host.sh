@@ -18,7 +18,7 @@
 #
 # DEFAULT ARM = E8. The evidence-discipline work (execution-mode fact-check +
 # endorsement claims; 87% recall / 0 FPs on the canon,
-# docs/working/e8-results-2026-08-18.md) was MERGED into main at d9234c9, and
+# archive/docs/2026-08-19-e8-results-2026-08-18.md) was MERGED into main at d9234c9, and
 # `git diff main feat/critic-evidence-discipline -- skills workflows CLAUDE.md`
 # is empty as of 2026-08-18 — so main IS the E8 payload and is the default here.
 # Pin PAYLOAD_REF=<sha> if the two ever diverge again; run-meta.json records the

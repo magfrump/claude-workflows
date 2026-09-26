@@ -42,7 +42,7 @@ These are specific to this repo's self-improvement loop and should **not** be co
 - **`scripts/`** — Hypothesis tracking (`hypothesis-review.sh`, `hypothesis-calibration.sh`, `evaluate-hypotheses.sh`, `hypothesis-screen.sh`), health checks (`health-check.sh`), self-improvement automation (`self-improvement.sh`, `flag-removal-candidates.sh`), and round management scripts.
 - **`docs/working/hypothesis-log.md`** and **`docs/working/hypothesis-backlog.md`** — Hypothesis tracking infrastructure for this repo's iterative development process.
 - **`guides/validation-gates.md`** and **`guides/subtraction-checklist.md`** — Tied to this repo's merge-gate and self-improvement loop, not general-purpose.
-- **`docs/working/ideas-backlog.md`** and round-tracking files — Internal roadmap artifacts.
+- **`archive/docs/2026-04-08-ideas-backlog.md`** and round-tracking files — Internal roadmap artifacts.
 
 ## Verification
 

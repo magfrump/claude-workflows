@@ -13,7 +13,7 @@ script — must stub it in `setup()` or carry `# @network: allowed — <reason>`
 
 The request was to make it "applicable across all projects… applicable to tests other than BATS." Two
 probes and three ecosystem research passes reframed that request substantially. Full analysis:
-`docs/working/dd-polyglot-test-hermeticity.md`.
+`archive/docs/2026-08-06-dd-polyglot-test-hermeticity.md`.
 
 ### The ask hid two orthogonal gaps
 

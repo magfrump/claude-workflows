@@ -18,7 +18,7 @@ expanded; stretch goal: test fixtures with provably limited scope so suites
 can run without being able to hide arbitrary code execution.
 
 Full DD analysis (15 candidates, constraint matrix, stress tests):
-`docs/working/dd-secure-tool-guidance.md`.
+`archive/docs/2026-08-06-dd-secure-tool-guidance.md`.
 
 ## Options considered
 

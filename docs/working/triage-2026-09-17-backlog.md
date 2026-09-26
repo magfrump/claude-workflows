@@ -1,6 +1,6 @@
 # Triage run — the existing backlog, 2026-09-17
 
-**Purpose.** This is §7 item 4 of `handoff-self-improvement-loop.md`, run *first*
+**Purpose.** This is §7 item 4 of `archive/docs/2026-09-18-handoff-self-improvement-loop.md`, run *first*
 and deliberately: the handoff says a triage mechanism that cannot triage this
 backlog is not yet working. Doing the exercise by hand before designing the
 mechanism is what keeps §7 item 1 from being speculation. §3 below is the design

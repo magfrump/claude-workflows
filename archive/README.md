@@ -24,6 +24,13 @@ and why it was archived and what replaced it. Single documents live under
   its next writer to copy this file back to `docs/working/incident-journal.md`
   rather than starting over, which is the whole reason it was archived instead
   of deleted.
+- `docs/2026-0[3-9]-*` (33 documents, rescued 2026-09-26) — handoffs, DD
+  records and experiment results that `archive-working-docs.sh` had swept
+  into the gitignored `docs/working/archive/` while tracked files still cited
+  them as evidence: decisions 014–033, `skills/code-review/SKILL.md`, the
+  Gate 1h comments, the triage doc's parent handoff, and the SWRBench fork
+  handoff. Each keeps its sweep-date prefix. Citations from `docs/reviews/`
+  and `runs/` were left as written, because those are records of their day.
 - `failure-analysis/` — `scripts/failure-analysis.sh` and its test, archived
   2026-09-21 (Q-046): no callers, and its re-attempt pass rate disagreed with
   the documented definition. Its README records the fix if it is ever revived.

@@ -282,7 +282,7 @@ the category — or omit it; do not soften the wording while keeping the categor
 This is the rubric-side pair of the fact-check `Scope:` field, and the one-hop-short
 promotions it blocks (a write-signature read certifying cache contents; a narrow Verified
 stamp certifying behavior it never tested) are the measured source of false ✅ rows
-(`docs/working/pipeline-persona-attribution-2026-08-17.md` §2). Cite the backing verdict
+(`archive/docs/2026-08-19-pipeline-persona-attribution-2026-08-17.md` §2). Cite the backing verdict
 in the row's `Evidence` cell alongside the `path:line` quote (e.g., `FC claim 7
 (executed)` or `FC submitted claim 2 (static; scope covers row)`) so provenance is
 auditable.
@@ -351,7 +351,7 @@ that matters: tier assignment is the **least** stable part of the output — ide
 prompts on an identical diff produced Medium/Low/Low for the same issue — while the
 critic-native High band is the **most** stable, with every finding any run rated High
 appearing in all runs of that diff
-(`docs/working/experiment-results-code-review-2026-07-29.md`, Result 1). Flattening to a
+(`archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md`, Result 1). Flattening to a
 tier throws away the reliable quantity and keeps the unreliable one. Recording both costs
 one column and lets a later gate key on whichever proves sound.
 
@@ -370,7 +370,7 @@ for omission. This binds synthesis, contextual critics' findings included: a mec
 critic detected and then deferred on remit grounds still lands as a 🟢 row. Measured
 driver: on the attribution corpus, detected mechanisms died in severity triage/synthesis —
 found by a critic, reasoned correctly, then dropped or deferred out of the rubric entirely
-(`docs/working/pipeline-persona-attribution-2026-08-17.md` §2–3). The critic-side severity
+(`archive/docs/2026-08-19-pipeline-persona-attribution-2026-08-17.md` §2–3). The critic-side severity
 floors (e.g., security-reviewer's Floor rule) govern the level a critic may assign; this
 rule governs what synthesis may discard — both must hold. Evidence-grounding failures are
 unaffected: an ungrounded finding still routes to `## ⚠️ Unverified Findings` — that is an
@@ -398,7 +398,7 @@ applied. Without it, the finding keeps its own tier and carries the convergence 
 the strongest signal that an issue is real." In this repo the critics are **not
 independent** — they are the same model on the same diff, differing only by role prompt,
 so their errors are correlated by construction. Measurements
-(`docs/working/experiment-results-code-review-2026-07-29.md`, Results 2 and 5) found:
+(`archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md`, Results 2 and 5) found:
 cross-role convergence is *rare* (0–1 borderline case across 3 diffs), so the rule almost
 never fires; of the four historical convergence-escalations, the one with the **most**
 convergence (3 critics) is the one the human waived; and the escalation was applied
@@ -476,7 +476,7 @@ prospective one, and such mechanisms get no blocking authority. 🟡 is also the
 ground-truth band: the human panel filed the measured case 🟡, and 🟡 means "the author
 must fix this or say on the record why it stands" — exactly what a contested soundness
 question needs. **Validation status (2026-07-30,
-`docs/working/validation-soundness-channel-2026-07-30.md`):** the decision-028 replay
+`archive/docs/2026-08-06-validation-soundness-channel-2026-07-30.md`):** the decision-028 replay
 passed with recalibration — recall 1/1 on the ND2 reconstruction; ~1.3% clear-false-lift
 rate before the condition-3 behavioural-only tightening above, 0 after it; md1
 `proxy.ts:14` held non-vacuously (the negative control with real probing power — ND3's

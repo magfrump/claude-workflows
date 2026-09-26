@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Materialize Code Review Bench (offline) PRs as local review clones.
 
-Direction (1) of docs/working/crb-arm-plan.md: run OUR processes on THEIR
+Direction (1) of archive/docs/2026-08-19-crb-arm-plan.md: run OUR processes on THEIR
 dataset. The benchmark's 50 PRs live as forks under github.com/code-review-
 benchmark/<upstream>__<repo>__<tool>__PR<n>__<date>, each with the reviewed
 change as PR #1. Every tool's fork of the same original PR carries the same

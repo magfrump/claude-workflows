@@ -19,7 +19,7 @@
 ### Task A.1: Inventory `bug-diagnosis` references
 
 **Files:**
-- Create: `docs/working/bug-diagnosis-cleanup-inventory.md`
+- Create: `archive/docs/2026-08-06-bug-diagnosis-cleanup-inventory.md`
 
 - [ ] **Step 1: Generate the full reference list**
 
@@ -43,7 +43,7 @@ The inventory must call out every reference to `docs/thoughts/failure-patterns.m
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/working/bug-diagnosis-cleanup-inventory.md
+git add archive/docs/2026-08-06-bug-diagnosis-cleanup-inventory.md
 git commit -m "docs(working): inventory bug-diagnosis references for minimal cleanup"
 ```
 

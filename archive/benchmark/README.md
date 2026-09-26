@@ -6,7 +6,7 @@ active use when the project refocused on the production review-fix loop (see
 
 Why archived rather than deleted: the decision records and measurement docs
 cite this code, and the SWRBench fork (a separate standalone project — see
-`docs/working/handoff-swrbench-fork.md`) is the living home for benchmark
+`archive/docs/2026-08-03-handoff-swrbench-fork.md`) is the living home for benchmark
 work. If any of this is needed again, migrate it there rather than reviving
 it here.
 

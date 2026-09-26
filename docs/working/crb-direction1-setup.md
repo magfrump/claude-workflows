@@ -1,7 +1,7 @@
 # CRB direction (1) — our pipeline on the WithMartian benchmark: run setup
 
 **Date**: 2026-08-18 · **Status**: harness built and dry-run green; **no paid
-run yet, $0 spent** · **Parent**: `docs/working/crb-arm-plan.md` (direction (1),
+run yet, $0 spent** · **Parent**: `archive/docs/2026-08-19-crb-arm-plan.md` (direction (1),
 "Next steps") · **Benchmark**: `external/code-review-benchmark` (withmartian,
 MIT; offline half)
 

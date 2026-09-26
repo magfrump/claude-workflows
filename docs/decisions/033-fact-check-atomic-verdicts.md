@@ -2,9 +2,9 @@
 
 **Date**: 2026-08-15 · **Status**: adopted, validation PASSED (addendum below) ·
 **Method**: divergent-design (Path C — autonomous) ·
-**Working doc**: `docs/working/dd-fact-check-verdict-granularity.md` ·
+**Working doc**: `archive/docs/2026-08-19-dd-fact-check-verdict-granularity.md` ·
 **Follows**: [031](031-review-loop-tier-and-factcheck-policy.md) (tier scoping, k=1),
-the 2026-08-15 fact-check model pin (`docs/working/fc-model-sweep-results-2026-08-15.md`) ·
+the 2026-08-15 fact-check model pin (`archive/docs/2026-08-19-fc-model-sweep-results-2026-08-15.md`) ·
 **Grounded in**: fc-model-sweep, 12 replicates × 3 models on canon ground truth.
 
 ## Context

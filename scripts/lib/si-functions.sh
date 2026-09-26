@@ -675,7 +675,7 @@ parse_code_review_red() {
 
 # count_rubric_red — count 🔴 / Must-Fix rows in an archived code-review rubric.
 #
-# ADVISORY CROSS-CHECK (dd-review-gate-signal.md, candidate 13). The gate's
+# ADVISORY CROSS-CHECK (archive/docs/2026-08-06-dd-review-gate-signal.md, candidate 13). The gate's
 # verdict comes from a sentinel the reviewer prints; the rubric is the richer
 # artifact it also writes. They should agree. Counting both and logging the
 # comparison costs nothing and detects a failure class neither catches alone —

@@ -5,7 +5,7 @@
 > cross-model result. It is the shortest path to "what do we actually know."
 
 Last verified: 2026-07-30
-Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · scripts/dd-cross-model-sweep.py · runs/dd-cross-model-2026-07-30/ · docs/working/experiment-results-code-review-2026-07-29.md · docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md · docs/working/experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · docs/working/research-cross-model-review-hypotheses.md
+Relevant paths: skills/code-review/SKILL.md · skills/code-fact-check/SKILL.md · scripts/self-improvement.sh · scripts/cross-model-review.py · scripts/dd-cross-model-sweep.py · runs/dd-cross-model-2026-07-30/ · archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md · archive/docs/2026-08-06-experiment-results-full-pipeline-tiers-2026-07-30.md · archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md · docs/decisions/021-reviewer-context-management.md · archive/docs/2026-08-06-research-cross-model-review-hypotheses.md
 
 Two distinct arms carry the "2026-07-30" date and must not be conflated: the
 **full-pipeline tiers** arm (`experiment-results-full-pipeline-tiers-…`, agentic, source of
@@ -106,7 +106,7 @@ untouched.
 
 **Status 2026-07-30: decided and implemented — decision 028** (log row 28,
 `docs/decisions/028-escalation-second-channel.md`, DD at
-`docs/working/dd-escalation-second-channel.md`). The escalation gate gained a
+`archive/docs/2026-08-06-dd-escalation-second-channel.md`). The escalation gate gained a
 **Soundness-Contradiction Channel**: a Stage-3 cross-check that lifts a finding to 🟡
 `Contested-Soundness` when its critic report quotes a stated intent verbatim (file:line),
 quotes/reconstructs the actual mechanism (file:line), and states the inversion — applying
@@ -115,7 +115,7 @@ contextual-critic 🟢 cap, so both structural causes above are addressed. Termi
 (the human panel's band for ND2) and excluded from escalation corroboration, because the
 mechanism is unvalidated and unvalidated mechanisms get no blocking authority.
 **Validated 2026-07-30, pass-with-recalibration-needed**
-(`docs/working/validation-soundness-channel-2026-07-30.md`): the falsifier passed 3/3 as
+(`archive/docs/2026-08-06-validation-soundness-channel-2026-07-30.md`): the falsifier passed 3/3 as
 written — ND2's C1 lifts 🟢→🟡, md1 `proxy.ts:14` holds non-vacuously, ND3 `sim.ts:625-628`
 holds but vacuously (no ND3 report text touches it) — while the full-corpus sweep (315
 findings, 11 cells) measured recall 1/1 on cells that filed the defect and 4 clear false
@@ -123,7 +123,7 @@ lifts (~1.3%, dominant shape: convention-contradiction findings quoting module-h
 principles), so trigger condition 3 needs tightening to *behavioral* inversion, "verbatim"
 must admit bracketed alterations, and an already-≥🟡 no-op clause is needed. The 🟡 cap
 stands (the cap-raise precondition also requires a ≥10-correct-lift corpus).
-The adjacent DD on intent claims (`docs/working/dd-code-intent-claims.md`, intent-coherence
+The adjacent DD on intent claims (`archive/docs/2026-08-06-dd-code-intent-claims.md`, intent-coherence
 move inside `architecture-review`) remains its own track with its own falsifier.
 
 ### 1.3 Stop treating `✅ Confirmed Good` as an output; treat it as a claim requiring evidence
@@ -214,10 +214,10 @@ today.
 
 | # | Question | Why it matters | Status |
 |---|---|---|---|
-| 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Closed with a split verdict** (`docs/working/experiment-md1-r1-replication-2026-07-30.md`, 5 fresh opus cells): the **original config recovers R1 reliably** — oc 3/3 incl. Result 11 (🔴, both call sites, `toBlob`) — so Result 11 was *not* variance and "config, not model" stands. But the **current k=3 config went 1/3** (two affirmative clears; the one recovery came at 🟡 via architecture-review + the 028/Confirmed-Good cross-checks, not fact-check): 0/9 cc fact-check replicates reached `exportGraph.ts` vs 3/3 oc runs (p≈0.0045). Cause: orchestrators read the k=3 uniformity clause as license for lean generic replicate briefs — k=3 of a weak brief < k=1 of a strong one. **Fixed in SKILL.md Stage 1 step 3b** (rich shared brief, identical across replicates) and **validated n=1** (`md1-opus-fix-r1`, doc §Validation): brief written (7,834 chars ×3, identical except the permitted output path, claims list + exercising-code directive), fact-check reached `exportGraph.ts` **3/3 replicates** (vs 0/9 pre-fix), R1 recovered at 🔴 via the restored fact-check-led path incl. `toBlob` — plus a new finding beyond ground truth (`exportAll.ts:61-69` swallows the blocked PNG, ZIP silently omits it). Caveat: SKILL quotes this defect class as a worked example, so binary outcomes are hint-advantaged; the mechanism evidence (brief richness → replicate detection) is the generalizable part. |
+| 1 | Does MD1 R1's recovery replicate? | It is the sole evidence that the pipeline clears the cross-file ceiling, and the basis for "config, not model." **n=1.** | **Closed with a split verdict** (`archive/docs/2026-08-06-experiment-md1-r1-replication-2026-07-30.md`, 5 fresh opus cells): the **original config recovers R1 reliably** — oc 3/3 incl. Result 11 (🔴, both call sites, `toBlob`) — so Result 11 was *not* variance and "config, not model" stands. But the **current k=3 config went 1/3** (two affirmative clears; the one recovery came at 🟡 via architecture-review + the 028/Confirmed-Good cross-checks, not fact-check): 0/9 cc fact-check replicates reached `exportGraph.ts` vs 3/3 oc runs (p≈0.0045). Cause: orchestrators read the k=3 uniformity clause as license for lean generic replicate briefs — k=3 of a weak brief < k=1 of a strong one. **Fixed in SKILL.md Stage 1 step 3b** (rich shared brief, identical across replicates) and **validated n=1** (`md1-opus-fix-r1`, doc §Validation): brief written (7,834 chars ×3, identical except the permitted output path, claims list + exercising-code directive), fact-check reached `exportGraph.ts` **3/3 replicates** (vs 0/9 pre-fix), R1 recovered at 🔴 via the restored fact-check-led path incl. `toBlob` — plus a new finding beyond ground truth (`exportAll.ts:61-69` swallows the blocked PNG, ZIP silently omits it). Caveat: SKILL quotes this defect class as a worked example, so binary outcomes are hint-advantaged; the mechanism evidence (brief richness → replicate detection) is the generalizable part. |
 | 2 | How often do fact-check verdicts disagree across replicates? | Sets k in §1.1 and quantifies the blocking channel's noise floor. | **Instrumented** (log row 27): every k=3 run now reports its cluster agreement rate in the merged report's `## Verdict stability` section. Two samples now exist, pointing in opposite directions: this repo's own reviews measured 21/23 ≈ 0.91 (2026-07-30) and 20/26 ≈ 0.77 (2026-07-31, disagreements all on the Verified↔Mostly-Accurate boundary), while the MD1 cc cells ran ~47% — neither side of the §1.1 falsifier (≥90% on a ≥20-claim *cumulative* sample → k=2) is settled; keep accumulating. |
 | 3 | Is the MD1 nonce-delivery issue really 🔴? | Three independent configs say 🔴, history says 🟡. Settled empirically by one prod build. | Unresolved since Result 8b |
-| 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Closed** (full retrospective, `docs/working/retrospective-confirmed-good-2026-07-30.md`): 90 ✅ rows / 11 cells — rule 4 catches 2/2 observation-backed misses (fable MD1 ×2, one newly found beyond decision 25's sample) with 0 wrong kills; the 1 observation-free miss (sonnet MD1) is unreachable by any cross-check widening (all 8 run artifacts silent) — only rule 3's rewording touches it, so closing it stays with §1.1 k≥3. Decision-25's "82 rows" corrected to 90. Rule 4's exact "is the ✅ claim still true?" phrasing is load-bearing: 4 near-miss rows are correctly spared by it. |
+| 4 | Does a Confirmed-Good-vs-fact-check cross-check actually catch the misses? | Cheap to test retrospectively against the 9 existing cells. | **Closed** (full retrospective, `archive/docs/2026-08-06-retrospective-confirmed-good-2026-07-30.md`): 90 ✅ rows / 11 cells — rule 4 catches 2/2 observation-backed misses (fable MD1 ×2, one newly found beyond decision 25's sample) with 0 wrong kills; the 1 observation-free miss (sonnet MD1) is unreachable by any cross-check widening (all 8 run artifacts silent) — only rule 3's rewording touches it, so closing it stays with §1.1 k≥3. Decision-25's "82 rows" corrected to 90. Rule 4's exact "is the ✅ claim still true?" phrasing is load-bearing: 4 near-miss rows are correctly spared by it. |
 | 5 | Is the intent-coherence move in `architecture-review` load-bearing, or prose-nudging? | Decides the DD recommendation in `dd-code-intent-claims.md`; its own author names this the strongest objection. | Falsifier specified: re-run `architecture-review` on ND2 ×3 *without* the move; unaided recovery ≥2/3 means it is decoration. |
 | 6 | Does removing the owner cap change ND2's outcome? | The second structural cause in §1.2, and untested — opus's finding was 🟢-capped by critic ownership, not only by the escalation rule. | Partially instrumented by decision 028: the Soundness-Contradiction Channel is a narrow, evidence-gated cap exception whose every lift is an auditable row, so the replay falsifier in 028 answers this directly for the quote-pair subclass. Full cap removal remains untested. |
 
@@ -245,7 +245,7 @@ Do not cite a result without its config — the arms are not interchangeable.
 Four vendors (Kimi K3, GPT-5.6 Sol, Gemini 3.1 Pro, and the incumbent Sonnet 5), **diff-inline
 / no-tools / single-pass** — the Result-10-comparable config of §5.1 — over four ground-truth
 diffs from the arithmetic-eval review-fix chain, where the *next* commit's message is the
-answer key. Full write-up: `docs/working/experiment-cross-model-review-2026-07-30.md`. Findings
+answer key. Full write-up: `archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`. Findings
 are named, not numbered, here — that doc's "Result N" namespace collides with this one's.
 
 What it established:
@@ -278,10 +278,10 @@ What it established:
 - **Context management is now decided — 021; Stage 1 built and validated 2026-07-31.**
   `scripts/cross-model-review.py --context-base <ref>` now assembles the Stage-1 prompt
   (labelled sibling-branch diff + whole enclosing files; `--dry-run` for no-spend cost
-  projection). Offline measurement (`docs/working/stage1-context-cost-2026-07-31.md`):
+  projection). Offline measurement (`archive/docs/2026-08-06-stage1-context-cost-2026-07-31.md`):
   prompts grow 2–6× to ~2k–41k tokens (18k–41k on the non-trivial cells); worst call $0.248, full 4-model×2 sweep $4.37 —
   both 021 guardrails hold. **FP-kill validation ran 2026-07-31**
-  (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, D3/D4, same 4 families × 2
+  (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, D3/D4, same 4 families × 2
   replicates): Results 3c and 5 reproduced **0/8 each**; Sonnet r2 even cited the
   labelled sibling context correctly ("gate 1h, already committed") — the failure mode
   inverted into correct use. Side signals: the D3 Sonnet/Gemini/Sol Jaccard pairs rose
@@ -395,12 +395,12 @@ of **H7/Trap-4** from the generation side):
    to fixing the code — and the next run's fact-check then rates that new comment
    `Verified`. A review that closes a finding by documenting the behaviour has converted a
    defect into a permanent blind spot. Cut this remedy regardless of which candidate in
-   `docs/working/dd-code-intent-claims.md` lands.
+   `archive/docs/2026-08-06-dd-code-intent-claims.md` lands.
 
 ### 5.5 Reusable harness
 
 Full-pipeline runner and worktree recipe: §Reproduction of
-`docs/working/experiment-results-full-pipeline-tiers-2026-07-30.md`. Headless invocations
+`archive/docs/2026-08-06-experiment-results-full-pipeline-tiers-2026-07-30.md`. Headless invocations
 need `--permission-mode acceptEdits` and `--add-dir` (§1.5) or they silently degrade.
 Ground-truth diffs with reconstructable pre-fix state and surviving rubrics: ND2
 `2d0ee3c`, ND3 `319f229` (nature_photographer), MD1 `d86d2dc..d90d6bb`

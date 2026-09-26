@@ -21,7 +21,7 @@ volume, but deliberately stopped short of wiring the hooks:
 
 The opt-in never happened, and structurally it could not have: wiring meant hand-editing
 `settings.json` inside *every* per-project Docker volume, a file that no repo artifact
-tracks and that a fresh volume recreates empty. `docs/working/wire-batch-feedback-reminder.md`
+tracks and that a fresh volume recreates empty. `archive/docs/2026-08-06-wire-batch-feedback-reminder.md`
 has carried the manual procedure since 2026-06-23 and records it as applied on one host —
 a host that predates the volume model. The observed state on a rebuilt image (2026-07-30)
 was eight hooks present at `~/.claude/hooks/` and zero of them wired.
@@ -99,7 +99,7 @@ working hook. Both are fixed here, and both were invisible while nothing was wir
 - **Editing `wiring.json` strands the old entry.** Idempotency is by exact match on the
   matcher-group object, so changing a command leaves the previous version in any
   already-merged `settings.json`. Bump and prune in the same pass.
-- **`docs/working/wire-batch-feedback-reminder.md` is superseded** for cc-isolated. It
+- **`archive/docs/2026-08-06-wire-batch-feedback-reminder.md` is superseded** for cc-isolated. It
   remains the procedure for a bare host install with no devcontainer.
   *(2026-09-18: the wire docs were archived; the bare-host procedure now lives in
   `guides/bare-host-hook-wiring.md`, built on `hooks/wiring.json`.)*
@@ -144,7 +144,7 @@ It deliberately defers, because a hook returning `ask` silently overrides `permi
 docstring says so: *"These are also covered by your Edit/Write DENY rules."*
 
 They were not. The merged `settings.json` had no `permissions` key at all. 023 carried over
-only the first of the three layers `docs/working/wire-security-hooks.md` describes (hook,
+only the first of the three layers `archive/docs/2026-08-06-wire-security-hooks.md` describes (hook,
 `permissions.deny`, sandbox `denyWrite`), and the second was recorded there as *"guarded and
 not repo-tracked; apply manually"* — the same never-happens manual step 023 exists to
 eliminate. Net effect: the guard's HARD tier was live for Bash and a no-op for the file
@@ -168,7 +168,7 @@ Notable consequences:
 - **Layer three is still absent.** Sandbox `denyRead`/`denyWrite` is not wired here, and
   `~/.claude/hooks/**` in cc-isolated is protected by root ownership rather than by the deny
   rule — the rule is belt-and-braces that makes the failure legible (denied, not `EACCES`).
-- **`docs/working/wire-security-hooks.md`'s "Related settings hardening" section is
+- **`archive/docs/2026-08-06-wire-security-hooks.md`'s "Related settings hardening" section is
   superseded for cc-isolated**, the same way this decision superseded the batch-reminder
   wiring doc. It remains the procedure for a bare host. *(2026-09-18: now
   `guides/bare-host-hook-wiring.md` §3.)*

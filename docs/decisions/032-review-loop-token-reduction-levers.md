@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-06 · **Status**: adopted (bundle high-confidence; #2 queued as experiment)
 · **Method**: divergent-design (Path C — autonomous, no live consult) ·
-**Working doc**: `docs/working/dd-review-token-reduction.md` ·
+**Working doc**: `archive/docs/2026-08-19-dd-review-token-reduction.md` ·
 **Follows**: [031](031-review-loop-tier-and-factcheck-policy.md) (T + k=1 + 2-clean) ·
 **Grounded in**: E1 (`e1-results-2026-08-06.md`), E3 (`e3-loops-0R0A-results-2026-08-06.md`),
 arm-ideas (`review-arm-ideas-2026-08-06.md`).

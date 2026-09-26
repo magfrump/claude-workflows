@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Inject our pipeline's reviews into Code Review Bench as a new tool.
 
-Direction (1) of docs/working/crb-arm-plan.md, stage 3: take the per-instance
+Direction (1) of archive/docs/2026-08-19-crb-arm-plan.md, stage 3: take the per-instance
 output of runs/review-arms/crb-pipeline/run-host.sh and write a benchmark work
 dir the vendored offline pipeline (steps 2 / 2.5 / 3) can score, alongside the
 49 tools whose results ship with the benchmark.

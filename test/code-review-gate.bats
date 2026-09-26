@@ -125,7 +125,7 @@ setup() {
 
 # ---------------------------------------------------------------
 # count_rubric_red — advisory rubric/sentinel cross-check
-# (dd-review-gate-signal.md candidate 13; advisory, never blocking)
+# (archive/docs/2026-08-06-dd-review-gate-signal.md candidate 13; advisory, never blocking)
 # ---------------------------------------------------------------
 
 @test "count_rubric_red counts Must Fix rows only" {

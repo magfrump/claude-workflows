@@ -91,7 +91,7 @@ Wiring the two non-blocking `UserPromptSubmit` reminders is a reasonable follow-
 - **Duplication:** when the target repo *is* claude-workflows, `CLAUDE.md` is loaded twice
   (project + user scope). Harmless, mildly redundant.
 - **Invalidates prior measurements' framing.** Every experiment in
-  `docs/working/experiment-results-code-review-2026-07-29.md` ran with repo skills
+  `archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md` ran with repo skills
   unregistered — sub-agents worked only because prompts pasted skill file contents
   explicitly. The findings about prompt-vs-model effects stand (the prompts were pasted
   verbatim either way), but any claim about "what a default session does" was measuring

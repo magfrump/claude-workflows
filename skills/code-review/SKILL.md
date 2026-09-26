@@ -109,7 +109,7 @@ Accept user overrides:
 
 Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once as the shared cacheable prefix of every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
 
-**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`docs/working/experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
+**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
 #### Large diff triage (~1000+ lines)
 
@@ -389,7 +389,7 @@ output path each is told to write.
 fact-check Agent dispatch (k=3 and k=1 loop-pass alike).** Fact-check verdicts are
 load-bearing (the Incorrect channel blocks; verdicts feed Stage-1.5 gating), so the
 stage must not silently degrade with whatever model the session happens to run.
-Measured basis (`docs/working/fc-model-sweep-results-2026-08-15.md`; 3 models × 2
+Measured basis (`archive/docs/2026-08-19-fc-model-sweep-results-2026-08-15.md`; 3 models × 2
 canon cells × 2 replicates, identical prompts): sonnet — *even with this skill text
 as its role prompt* — produced 3 false "Verified" attestations on known-bad claims
 in 4 replicates (once after finding the refuting code), so the Stage-2 rule
@@ -440,7 +440,7 @@ For each of the three replicate agents:
    that actually exercises it (callers, fetch/consume sites, config that gates it),
    not only the file the claim sits in**. Uniformity constrains *variation between
    replicates*, never brief quality: the MD1-R1 replication
-   (`docs/working/experiment-md1-r1-replication-2026-07-30.md`) measured what happens
+   (`archive/docs/2026-08-06-experiment-md1-r1-replication-2026-07-30.md`) measured what happens
    when orchestrators read the uniformity clause as license for lean generic prompts —
    0/9 replicates reached the cross-file evidence that three separate single-agent
    (k=1) runs had each found, 3 runs out of 3 (their briefs independently authored;
@@ -870,7 +870,7 @@ For each critic agent, you MUST:
 ### Critic model selection
 
 Set `model` explicitly on every critic dispatch. Measured on this repo's and two other
-repos' history (`docs/working/experiment-results-code-review-2026-07-29.md`, Results 7–9):
+repos' history (`archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md`, Results 7–9):
 
 | Tier | Validated blocking defects recovered | Precision of its own findings |
 |---|---|---|

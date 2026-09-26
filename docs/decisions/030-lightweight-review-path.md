@@ -18,7 +18,7 @@ purpose (the cross-model sweep): `scripts/cross-model-review.py --context-base` 
 chat-completions call over the labelled full-branch diff plus whole enclosing files, no
 tools, byte-identical prompts, validated 2026-07-31 (median $0.226/call, sweep $3.53, 0/8
 reproduction of the two known FP classes). This DD (working doc
-`docs/working/dd-lightweight-review-path.md`) decided whether that harness, or some other
+`archive/docs/2026-08-06-dd-lightweight-review-path.md`) decided whether that harness, or some other
 mechanism, becomes *the* lightweight path, and which cheap variants are worth testing.
 
 ## Options considered

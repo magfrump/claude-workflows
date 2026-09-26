@@ -186,7 +186,7 @@ if [[ "$primitive" == "bwrap" ]]; then
   # run dir fails with EROFS and the suite dies before its first test. TMPDIR is
   # pinned to that tmpfs so an inherited TMPDIR cannot point the same mktemp back
   # at the read-only tree. (This is the profile the spike demoed:
-  # docs/working/spike-nested-bwrap-fixture-confinement.md, "Known invariants".)
+  # archive/docs/2026-08-06-spike-nested-bwrap-fixture-confinement.md, "Known invariants".)
   #
   # Env is INHERITED, not cleared — a deliberate divergence from the spike's
   # --clearenv invariant. That invariant was scoped to a bats-only profile with a

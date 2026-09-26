@@ -8,7 +8,7 @@ summary table. This is the standalone `review_once()` entry point the
 measurement-harness design calls for: explicit SHAs in, findings out, no
 orchestrating agent required.
 
-Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
+Design notes (see archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md):
 - Diff is pasted inline; the model gets NO tools. This deliberately matches the
   session experiments' headless arm (opus 5 vs 4.8), not the agentic arm, so
   cross-provider numbers are comparable: agentic context-fetch would confound
@@ -20,7 +20,7 @@ Design notes (see docs/working/experiment-results-code-review-2026-07-29.md):
   diff touches. This kills the sibling-commit / flattened-boundary
   misattribution FP class (Results 3c & 5) while staying git-only, no-tools,
   and byte-identical across models. VALIDATED 2026-07-31
-  (docs/working/experiment-stage1-fp-kill-2026-07-31.md): the D3/D4 re-run
+  (archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md): the D3/D4 re-run
   reproduced neither FP in 0/8 replicates each, and cross-family agreement on
   real issues rose among the Sonnet/Gemini/Sol pairs on D3 (a redistribution:
   the two largest Kimi pairs fell; D4's comparable pairs fell). --context-base is

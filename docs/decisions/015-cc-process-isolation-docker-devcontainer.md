@@ -12,7 +12,7 @@ is harness-enforced (deny rules in settings.json), not OS-enforced; (2) ~/.claud
 settings, hooks, CLAUDE.md — is writable by the agent, so a misbehaving session can weaken
 the enforcement governing future sessions. Enumerating deny rules loses to this
 structurally (default-allow + enumerated denies vs. default-deny). A Double Diamond DD was
-run (working doc: `docs/working/dd-cc-process-isolation.md`); Diamond 1 chose the
+run (working doc: `archive/docs/2026-08-06-dd-cc-process-isolation.md`); Diamond 1 chose the
 **enforcement-placement framing**: move the whole agent process to the untrusted side of
 an OS default-deny boundary, with host secrets and the boundary's own configuration
 outside it.

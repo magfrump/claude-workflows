@@ -214,7 +214,7 @@ later, right here, in the fix pass. The write had no owner at the moment it beca
 possible. Result: 1 row against ~32 override-shaped verdicts since the log was created,
 with the verdicts landing in commit-message `Notes:` fields, PR "Areas of uncertainty"
 sections, and rubric `Author note` cells instead — three sinks closer to hand than the
-log. Diagnosis: `docs/working/handoff-diagnosis-override-log-not-written.md`.
+log. Diagnosis: `archive/docs/2026-08-06-handoff-diagnosis-override-log-not-written.md`.
 
 Two practical notes:
 

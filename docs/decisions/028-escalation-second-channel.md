@@ -27,8 +27,8 @@ internal severity, and the Escalation Rule bars them from escalation entirely; N
 correct reconstruction was filed by `tech-debt-triage`, while the two ND3 cells that got
 the same defect right filed it under 🔴-capable `architecture-review` and landed 🟡.
 
-Full diverge/diagnose/match prose: `docs/working/dd-escalation-second-channel.md`.
-Adjacent DD (constraining input): `docs/working/dd-code-intent-claims.md`, which fixed the
+Full diverge/diagnose/match prose: `archive/docs/2026-08-06-dd-escalation-second-channel.md`.
+Adjacent DD (constraining input): `archive/docs/2026-08-06-dd-code-intent-claims.md`, which fixed the
 *reasoning* half (intent-coherence move on architecture-review) and deliberately left the
 channel and owner cap to this decision.
 
@@ -173,4 +173,4 @@ changes to see whether earlier decisions still apply.
 
 ## Addendum
 
-**2026-07-30 — validation replay run** (`docs/working/validation-soundness-channel-2026-07-30.md`): falsifier **passes 3/3 as written** (ND2 C1 lifts 🟢→🟡 with both verbatim quotes; md1 `proxy.ts:14` 0 lifts across 7 probes, precision guard held; ND3 `sim.ts:625-628` 0 lifts but **vacuous** — no ND3 report text touches it), yet the full-corpus sweep (315 findings) finds 4 clear false lifts (~1.3%, 3 distinct issues; dominant shape: convention-contradiction findings that quote a module-header principle) plus 2 debatable — adjacent to the "≥3 adjudicated wrong" revisit trigger — so the verdict is **pass-with-recalibration-needed**: tighten trigger condition 3 to *behavioral* defeat/inversion (excluding convention/hygiene contradictions and fact-check-`Incorrect`-class doc falsehoods), add an already-≥🟡 no-op clause, and define "verbatim" to admit bracketed alterations (the positive case needs the `[is]` bracket to count). The 🟡 cap stands; do not loosen the trigger's file:line bar.
+**2026-07-30 — validation replay run** (`archive/docs/2026-08-06-validation-soundness-channel-2026-07-30.md`): falsifier **passes 3/3 as written** (ND2 C1 lifts 🟢→🟡 with both verbatim quotes; md1 `proxy.ts:14` 0 lifts across 7 probes, precision guard held; ND3 `sim.ts:625-628` 0 lifts but **vacuous** — no ND3 report text touches it), yet the full-corpus sweep (315 findings) finds 4 clear false lifts (~1.3%, 3 distinct issues; dominant shape: convention-contradiction findings that quote a module-header principle) plus 2 debatable — adjacent to the "≥3 adjudicated wrong" revisit trigger — so the verdict is **pass-with-recalibration-needed**: tighten trigger condition 3 to *behavioral* defeat/inversion (excluding convention/hygiene contradictions and fact-check-`Incorrect`-class doc falsehoods), add an already-≥🟡 no-op clause, and define "verbatim" to admit bracketed alterations (the positive case needs the `[is]` bracket to count). The 🟡 cap stands; do not loosen the trigger's file:line bar.

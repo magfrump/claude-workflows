@@ -274,7 +274,7 @@ print_round_summary() {
 #      BLOCKED on each read and silently falls back to briefing the critics
 #      from its own paraphrase of the role — a materially weaker reviewer than
 #      the one the prompt believes it is invoking (see
-#      docs/working/experiment-results-code-review-2026-07-29.md Result 8a:
+#      archive/docs/2026-08-06-experiment-results-code-review-2026-07-29.md Result 8a:
 #      the role skill, not the model tier, is the load-bearing element).
 #      `--add-dir` per out-of-cwd root is what makes those reads resolve.
 #
@@ -1543,7 +1543,7 @@ The bracketed token is a per-run identifier — reproduce it exactly. Count only
                     echo "[$TASK_ID] WARNING: code-review unparseable for $BRANCH" >> "$WORKING_DIR/validation-round-$ROUND.log"
                     record_gate "$TASK_ID" "code_review" "fail"
                 else
-                    # ADVISORY cross-check (dd-review-gate-signal.md, candidate 13):
+                    # ADVISORY cross-check (archive/docs/2026-08-06-dd-review-gate-signal.md, candidate 13):
                     # does the rubric the reviewer wrote agree with the number it
                     # reported? Recorded, never blocking — the disagreement rate is
                     # unmeasured, and this repo's standing lesson is not to give an

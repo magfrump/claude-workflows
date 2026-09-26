@@ -231,12 +231,12 @@ Five categories (not four — the fifth was missed in the original draft and is 
 - **Historical reference** (working docs, completed-tasks, hypothesis-log, decision records, self-eval reports): leave as-is — these are dated artifacts and rewriting them rewrites history.
 - **Skill description in `guides/skill-creation.md` or `guides/README.md`**: redirect to `superpowers:systematic-debugging`.
 
-Write the classification to `docs/working/bug-diagnosis-cleanup-inventory.md` so the next steps have a checklist. The inventory should also flag any reference to the **failure-pattern library** (`docs/thoughts/failure-patterns.md`) — that loop is addressed by new Task 2.4.
+Write the classification to `archive/docs/2026-08-06-bug-diagnosis-cleanup-inventory.md` so the next steps have a checklist. The inventory should also flag any reference to the **failure-pattern library** (`docs/thoughts/failure-patterns.md`) — that loop is addressed by new Task 2.4.
 
 - [ ] **Step 3: Commit the inventory**
 
 ```bash
-git add docs/working/bug-diagnosis-cleanup-inventory.md
+git add archive/docs/2026-08-06-bug-diagnosis-cleanup-inventory.md
 git commit -m "docs(working): inventory bug-diagnosis references for cleanup"
 ```
 

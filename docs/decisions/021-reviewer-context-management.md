@@ -10,9 +10,9 @@ blocked. Synthesized into the unified state doc
 **Task status**: complete (decision drafted, staged recommendation). Stage 1 **built
 2026-07-31** (`scripts/cross-model-review.py --context-base`, opt-in; diff-only default
 byte-identical to pre-021) — offline cost measurement in
-`docs/working/stage1-context-cost-2026-07-31.md` (worst call $0.248, sweep $4.37: both
+`archive/docs/2026-08-06-stage1-context-cost-2026-07-31.md` (worst call $0.248, sweep $4.37: both
 guardrails hold). **Validated 2026-07-31**: the D3/D4 FP-kill re-run
-(`docs/working/experiment-stage1-fp-kill-2026-07-31.md`, 4 families × 2 replicates/cell)
+(`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, 4 families × 2 replicates/cell)
 reproduced **neither** Result 3c nor Result 5 (0/8 each); actual spend $3.53, median
 call $0.226 — cost triggers did not fire under the pinned definitions (see Revisit
 triggers: the ~$0.33 band is a **median** trigger; the actual worst call, $0.388,
@@ -26,7 +26,7 @@ the $3.53 actual the 2-cell D3/D4 re-run — not directly comparable).
 `scripts/cross-model-review.py` is **diff-only by construction**: its `PROMPT_TEMPLATE`
 pastes one commit's unified diff and tells the model "*You cannot run commands or read
 files; judge only from the diff below.*" The 2026-07-30 cross-model experiment
-(`docs/working/experiment-cross-model-review-2026-07-30.md`) showed this arm is a strong
+(`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`) showed this arm is a strong
 *recall probe* — cheap second families (Sol ~$0.03/60-90 s) found real High bugs the
 incumbent Claude critic missed 0/6 (Result 4) — but also that it manufactures the run's
 worst false positives:
@@ -61,7 +61,7 @@ the first real treatment.**
 ## Options considered
 
 Eleven candidates spanning the spectrum (full analysis in
-`docs/working/dd-reviewer-context-management.md`): diff-only (status quo), +N context lines,
+`archive/docs/2026-08-06-dd-reviewer-context-management.md`): diff-only (status quo), +N context lines,
 function-body enrichment, enclosing-file/module enrichment, sibling-commit/full-branch-diff
 enrichment, repo-map/symbol index, on-demand constrained file read, full agentic access,
 ideal-if-free (agentic + multi-sample union), reframe (diff-only as a recall probe
