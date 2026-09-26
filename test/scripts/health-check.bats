@@ -260,8 +260,8 @@ _run_check_bats() {
 # control.
 #
 # Not covered here: gate 9 (fixture coverage — an informational count with no
-# pass/fail branch) and gate 11 (doc freshness — needs a fixture git history;
-# soft warning only).
+# pass/fail branch). Gate 11 (doc freshness) has one fixture-git test below, for
+# the field spellings docs/thoughts/ uses.
 
 # Minimal repo: the three instruction files each reference workflows/rpi.md.
 _fixture_repo() {
@@ -453,4 +453,31 @@ STUB
   [[ "$output" == *"FAIL=0"* ]]
   [[ "$output" == *"⚠ 47 report-dependent BATS suite(s) NOT RUN"* ]]
   [[ "$output" == *"Fast BATS suites passed (excluding 47 report-dependent suite(s) not run)"* ]]
+}
+
+@test "gate 11: thoughts docs are checked in all three field spellings; field-less notes are not" {
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/docs/thoughts" "$root/src"
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  git -C "$root" init -q
+  git -C "$root" config user.email t@example.com
+  git -C "$root" config user.name t
+  echo a > "$root/src/a.sh"; echo b > "$root/src/b.sh"
+  git -C "$root" add -A
+  GIT_COMMITTER_DATE=2020-01-01T00:00:00 git -C "$root" commit -qm init --date=2020-01-01T00:00:00
+  printf 'Last verified: 2021-01-01 (with a note)\nRelevant paths: src/a.sh · src/b.sh (the helper)\n' > "$root/docs/thoughts/plain.md"
+  printf '`Last verified`: 2021-01-01\n`Relevant paths`: `src/b.sh`\n' > "$root/docs/thoughts/ticked.md"
+  printf '**Last verified:** 2021-01-01\n**Relevant paths:** src/a.sh\n' > "$root/docs/thoughts/bold.md"
+  printf '# a note with no freshness fields\n' > "$root/docs/thoughts/untracked.md"
+  echo a2 >> "$root/src/a.sh"
+  git -C "$root" add -A
+  GIT_COMMITTER_DATE=2022-01-01T00:00:00 git -C "$root" commit -qm touch-a --date=2022-01-01T00:00:00
+  _run_gate "$root" check_doc_freshness
+  [[ "$output" == *"FAIL=0"* ]]
+  [[ "$output" == *"docs/thoughts/plain.md: STALE — 1 commit(s)"* ]]
+  [[ "$output" == *"docs/thoughts/bold.md: STALE — 1 commit(s)"* ]]
+  # Positive control: b.sh has not changed since 2021.
+  [[ "$output" == *"docs/thoughts/ticked.md: fresh"* ]]
+  [[ "$output" != *"untracked.md"* ]]
+  [[ "$output" == *"Freshness: 3 checked, 1 fresh, 2 stale, 0 missing fields"* ]]
 }

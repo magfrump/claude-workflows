@@ -37,7 +37,7 @@
 #      settings.json with their targets present (decision 023)
 #   9. Skill test-fixture coverage report (soft warning, not a gate)
 #  10. Feature integration: si-functions.sh orphan detection (soft warning)
-#  11. Document freshness: flag stale spikes and onboarding docs (soft warning)
+#  11. Document freshness: flag stale spikes, onboarding and thoughts docs (soft warning)
 #  12. Persona freshness: flag persona critique skills last sampled >~6 months ago
 #  13. MD file semantic divergence: diff CLAUDE.md/AGENTS.md/GEMINI.md (soft warning)
 #  14. Running-questions doc: entry grammar, unique ids, index freshness (gate)
@@ -647,7 +647,12 @@ check_skill_fixture_coverage() {
         # docs/working/triage-2026-09-17-backlog.md §1.1). The summary below
         # carries the same facts in two lines.
         local fixture_dir="$REPO_ROOT/test/skills/$skill_name/fixtures"
-        if [[ -d "$fixture_dir" ]] && ls "$fixture_dir"/* &>/dev/null 2>&1; then
+        # code-review has no fixture generator by design: its suites grade a
+        # real rubric via REPORT_PATH or a golden (test/skills/code-review-
+        # format.bats header). Listing it made this warning un-clearable.
+        if [[ "$skill_name" == "code-review" ]]; then
+            covered=$((covered + 1))
+        elif [[ -d "$fixture_dir" ]] && ls "$fixture_dir"/* &>/dev/null 2>&1; then
             covered=$((covered + 1))
         else
             uncovered_skills+=("$skill_name")
@@ -745,10 +750,29 @@ check_feature_integration() {
     fi
 }
 
-# ── 11. Document freshness (spikes + onboarding docs) ────────────────────
+# ── 11. Document freshness (spikes + onboarding + thoughts docs) ─────────
+
+# _freshness_field <name> <file>: the value of a "Last verified" / "Relevant
+# paths" field outside code fences. Accepts the three spellings the docs use:
+# **Name:** value · Name: value · `Name`: value.
+_freshness_field() {
+    awk -v name="$1" '
+        /^```/ { in_code = !in_code; next }
+        in_code { next }
+        {
+            line = $0
+            gsub(/[*`]/, "", line)
+            if (index(line, name ":") == 1) {
+                sub("^" name ":[[:space:]]*", "", line)
+                print line
+                exit
+            }
+        }
+    ' "$2"
+}
 
 check_doc_freshness() {
-    section "Document freshness (spikes + onboarding)"
+    section "Document freshness (spikes + onboarding + thoughts)"
 
     local checked=0
     local stale=0
@@ -763,6 +787,13 @@ check_doc_freshness() {
     for f in "$REPO_ROOT"/docs/working/onboarding-*.md; do
         [[ -f "$f" ]] && docs+=("$f")
     done
+    # docs/thoughts/ opts in: the global instructions list shared thoughts as
+    # freshness-tracked, but only the ones that carry the fields are checked,
+    # so a note without them is not a warning.
+    for f in "$REPO_ROOT"/docs/thoughts/*.md; do
+        [[ -f "$f" ]] || continue
+        [[ -n "$(_freshness_field "Last verified" "$f")" ]] && docs+=("$f")
+    done
 
     if [[ ${#docs[@]} -eq 0 ]]; then
         pass "No spike or onboarding docs found — nothing to check"
@@ -772,28 +803,17 @@ check_doc_freshness() {
     for doc in "${docs[@]}"; do
         local relpath="${doc#"$REPO_ROOT"/}"
 
-        # Extract Last verified date — match bold inline field outside code blocks.
-        # Skip lines inside fenced code blocks (``` ... ```).
-        local last_verified
-        last_verified="$(awk '
-            /^```/ { in_code = !in_code; next }
-            !in_code && /^\*\*Last verified:\*\*/ {
-                sub(/^\*\*Last verified:\*\*[[:space:]]*/, "")
-                print
-                exit
-            }
-        ' "$doc")"
+        # First YYYY-MM-DD in the field; anything after it is commentary.
+        local last_verified raw_verified
+        raw_verified="$(_freshness_field "Last verified" "$doc")"
+        last_verified="$(grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' <<< "$raw_verified" | head -1)"
+        [[ -n "$raw_verified" && -z "$last_verified" ]] && last_verified="$raw_verified"
 
-        # Extract Relevant paths — same approach, handle multi-word comma/space-separated
+        # Path-like tokens only (contain / or a file extension); separators and
+        # parenthetical commentary vary between docs.
         local relevant_paths
-        relevant_paths="$(awk '
-            /^```/ { in_code = !in_code; next }
-            !in_code && /^\*\*Relevant paths:\*\*/ {
-                sub(/^\*\*Relevant paths:\*\*[[:space:]]*/, "")
-                print
-                exit
-            }
-        ' "$doc")"
+        relevant_paths="$(_freshness_field "Relevant paths" "$doc" \
+            | grep -oE '[A-Za-z0-9_.-]*[/.][A-Za-z0-9_./-]*[A-Za-z0-9_/]' | tr '\n' ' ')"
 
         if [[ -z "$last_verified" || -z "$relevant_paths" ]]; then
             missing_fields=$((missing_fields + 1))
@@ -989,9 +1009,12 @@ check_md_semantic_divergence() {
     # divergence is intentional — every name here is a thing we promised
     # not to sync. "Workflow & Skill Activation" maps to AGENTS/GEMINI's
     # split "Cross-project Workflows" + "Skills" pair.
+    # Tool Preferences describes the Claude Code sandbox and allowlist, which the
+    # AGENTS.md/GEMINI.md tools do not run under (triage 2026-09-17 §2.1, HC2).
     local expected_claude_only="Operating Modes
 Review Artifacts
 Session Hygiene
+Tool Preferences (sandbox-aware)
 Workflow & Skill Activation"
     local expected_sibling_only="Cross-project Workflows
 Skills"
