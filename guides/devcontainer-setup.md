@@ -266,8 +266,10 @@ staged `claude-home/`.
 
 1. **Unit layer, in the editing session.** `bats test/init-firewall-rules.bats
    test/cc-isolated-functions.bats test/hooks/live-verify-gate.bats`, `shellcheck
-   -S warning` on every touched script, `python3 -m unittest test/test_cc_sni_proxy.py`
-   if the proxy changed. Green here means the *sequence* is right. Nothing more.
+   -S warning` on every touched script, `python3 test/test_cc_sni_proxy.py`
+   if the proxy changed (`-m unittest` fails: the stdlib `test` package shadows the
+   directory; `test/cc-sni-proxy-unittest.bats` runs it in the full suite). Green
+   here means the *sequence* is right. Nothing more.
 2. **Pre-implementation probe for steering or bind changes.** If the change touches
    a nat rule, a bind address, a guard chain, or an accept that steered traffic
    depends on, run the relevant §6 probe on a live container *before* writing the

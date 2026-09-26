@@ -150,11 +150,15 @@ EOF
 @test "every command in wiring.json points at a hook that exists" {
   # Guards the failure mode decision 023 was written about: a wiring entry whose
   # target is missing is inert, and nothing else in the suite would notice.
-  local missing=0 script
+  local missing=0 n=0 script
   while IFS= read -r script; do
+    n=$((n + 1))
     [ -e "$REPO_ROOT/hooks/$script" ] || { echo "missing hook: $script"; missing=1; }
   done < <(jq -r '[.hooks[][].hooks[].command] | .[]' "$WIRING" \
             | sed -E 's#.*/hooks/##')
+  # A jq failure inside the process substitution is invisible; zero iterations
+  # would pass vacuously.
+  [ "$n" -gt 0 ]
   [ "$missing" -eq 0 ]
 }
 
@@ -165,12 +169,14 @@ EOF
   # of A7 a hermetic suite can hold — whether the RUNNING container has the hook
   # depends on the image it was built from, which no bats test can reach.
   bash "$LINKER"
-  local missing=0 cmd
+  local missing=0 n=0 cmd
   while IFS= read -r cmd; do
+    n=$((n + 1))
     [ "$(jq --arg c "$cmd" '[.hooks[][]?.hooks[]? | select(.command == $c)] | length' \
          "$DEST/settings.json")" -eq 1 ] || { echo "not installed: $cmd"; missing=1; }
   done < <(jq -r --arg dir "$DEST" \
             '[.hooks[][].hooks[].command] | .[] | gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)' "$WIRING")
+  [ "$n" -gt 0 ]                       # zero iterations would pass vacuously
   [ "$missing" -eq 0 ]
 }
 

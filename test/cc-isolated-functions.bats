@@ -535,7 +535,10 @@ firewall() {
 }
 
 @test "the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)" {
-  run grep -E '^\s*export .*CC_CONFIG_DIR|CC_CONFIG_DIR="\$\(config_dir\)"' "$CONFIG_SRC/cc-isolated.sh"
+  # Must match an `export` statement naming the variable, not the bare assignment
+  # (an alternation on the assignment kept this green with the export removed).
+  # The behavioral check is in "a launch on a matching, verified container".
+  run grep -E '^\s*export( [A-Z_]+)* CC_CONFIG_DIR( |$)' "$CONFIG_SRC/cc-isolated.sh"
   [ "$status" -eq 0 ]
 }
 
@@ -766,47 +769,51 @@ fake_payload_and_dest() {
   dst="$BATS_TEST_TMPDIR/d3"; mkdir -p "$dst"
   CC_WORKFLOWS_DIR="$BATS_TEST_TMPDIR/nope" CLAUDE_CONFIG_DIR="$dst" run bash "$CONFIG_SRC/link-claude-home.sh"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"no payload at $BATS_TEST_TMPDIR/nope"*"skipping"* ]]
+  # Nothing linked or created: a missing guard would plant dangling links here.
+  [ -z "$(ls -A "$dst")" ]
 }
 
 @test "Gate 1h loads the review skill from the baked payload, not the branch" {
-  run grep -E 'CR_SKILL="/opt/claude-workflows/skills/code-review/SKILL.md"' scripts/self-improvement.sh
+  run grep -E 'CR_SKILL="/opt/claude-workflows/skills/code-review/SKILL.md"' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "Gate 1h pins an explicit reviewer model" {
-  run grep -E 'SI_CODE_REVIEW_MODEL="\$\{SI_CODE_REVIEW_MODEL:-opus\}"' scripts/self-improvement.sh
+  run grep -E 'SI_CODE_REVIEW_MODEL="\$\{SI_CODE_REVIEW_MODEL:-opus\}"' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
   # Tolerate anything between `claude -p` and the model pin: 96166d5 inserted the
   # headless flags array there. The invariant under test is the model pin, not the
   # argument order.
-  run grep -E 'claude -p .*--model "\$SI_CODE_REVIEW_MODEL"' scripts/self-improvement.sh
+  run grep -E 'claude -p .*--model "\$SI_CODE_REVIEW_MODEL"' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "Gate 1h archives review artifacts before the worktree is torn down" {
-  run grep -E 'cp -f "\$WT_DIR"/docs/reviews/\*\.md "\$CR_ARCHIVE/"' scripts/self-improvement.sh
+  run grep -E 'cp -f "\$WT_DIR"/docs/reviews/\*\.md "\$CR_ARCHIVE/"' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
   # Must be outside the worktree, or `git worktree remove --force` eats it.
-  run grep -E 'CR_ARCHIVE="\$WORKING_DIR/reviews/' scripts/self-improvement.sh
+  run grep -E 'CR_ARCHIVE="\$WORKING_DIR/reviews/' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "Gate 1h fails closed on reviewer error and on an unparseable verdict" {
-  run grep -E 'REJECT_REASON="code-review: reviewer exited' scripts/self-improvement.sh
+  run grep -E 'REJECT_REASON="code-review: reviewer exited' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
-  run grep -E 'REJECT_REASON="code-review: no parseable verdict' scripts/self-improvement.sh
+  run grep -E 'REJECT_REASON="code-review: no parseable verdict' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
   # The old fail-open swallow must be gone from the reviewer invocation.
-  run grep -E 'Do not count amber or green rows\." 2>&1\) \|\| true' scripts/self-improvement.sh
-  [ "$status" -ne 0 ]
+  run grep -E 'Do not count amber or green rows\." 2>&1\) \|\| true' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
+  # 1 = no match; 2 (file unreadable) must not pass as "absent".
+  [ "$status" -eq 1 ]
 }
 
 @test "Gate 1h passes a per-run nonce the branch cannot know" {
-  run grep -E 'CR_NONCE=\$\(od -An -tx1 -N8 /dev/urandom' scripts/self-improvement.sh
+  run grep -E 'CR_NONCE=\$\(od -An -tx1 -N8 /dev/urandom' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
-  run grep -E 'CODE_REVIEW_RED\[\$CR_NONCE\]:' scripts/self-improvement.sh
+  run grep -E 'CODE_REVIEW_RED\[\$CR_NONCE\]:' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
-  run grep -E 'parse_code_review_red "\$CR_NONCE"' scripts/self-improvement.sh
+  run grep -E 'parse_code_review_red "\$CR_NONCE"' "$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
   [ "$status" -eq 0 ]
 }
 
@@ -903,6 +910,8 @@ smart_devcontainer_stub() {
   cat > "$TEST_TMPDIR/bin/devcontainer" <<'STUB'
 #!/usr/bin/env bash
 echo "devcontainer $*" >> "$DC_LOG"
+# Record the environment `up` sees: devcontainer.json's ${localEnv:...} reads it.
+if [ "$1" = up ]; then env > "$DC_LOG.up-env"; fi
 case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
@@ -1034,7 +1043,9 @@ h6_probe() {
   a=$(grep -n '^ARG CC_EGRESS_PROFILE' "$CONFIG_SRC/Dockerfile" | cut -d: -f1)
   b=$(grep -n '^ARG CC_CONFIG_HASH' "$CONFIG_SRC/Dockerfile" | cut -d: -f1)
   [ "$a" -lt "$b" ]
-  grep -Eq '^\s*export .*CC_CONFIG_HASH|CC_CONFIG_HASH="\$\(blessed_hash\)"' "$CONFIG_SRC/cc-isolated.sh"
+  # An `export` statement naming it, not the bare assignment (see the
+  # CC_CONFIG_DIR test); the launch test below checks the value devcontainer sees.
+  grep -Eq '^\s*export( [A-Z_]+)* CC_CONFIG_HASH( |$)' "$CONFIG_SRC/cc-isolated.sh"
 }
 
 @test "probe_boundary passes and writes the receipt when the container carries the blessed hash" {
@@ -1104,6 +1115,9 @@ h6_probe() {
   STUB_IMAGE_HASH="$(blessed_hash)"
   STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
   export STUB_IMAGE_HASH STUB_FP
+  # Inherited values (e.g. running inside a cc-isolated container) would stay
+  # exported through a bare assignment and mask a dropped `export`.
+  unset CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_CONFIG_HASH
   run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
   [ "$status" -eq 0 ]
   # `run !`, not a bare `!`: a leading `!` on a non-final command does not fail a
@@ -1111,6 +1125,12 @@ h6_probe() {
   run ! grep -q -- '--remove-existing-container' "$DC_LOG"
   grep -q '^devcontainer exec .* claude$' "$DC_LOG"
   [ "$(cat "$(verified_path)")" = "$(blessed_hash)" ]
+  # devcontainer.json's ${localEnv:...} build paths and args need these EXPORTED.
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  grep -qxF "CC_CONFIG_DIR=$CLAUDE_DEVC_CONFIG_DIR" "$DC_LOG.up-env"
+  grep -qxF "CC_CONFIG_HASH=$(blessed_hash)" "$DC_LOG.up-env"
+  grep -qxF "CC_PROJECT_ID=$(project_id "$ws")" "$DC_LOG.up-env"
+  grep -qxF "CC_PROJECT_NAME=proj" "$DC_LOG.up-env"
 }
 
 @test "--probe-only always rebuilds before probing" {

@@ -152,6 +152,17 @@ STUB
 echo "curl $*" >> "$CMD_LOG"
 url=""
 for a in "$@"; do case "$a" in https://*) url="$a";; esac; done
+# Lock probe: is the firewall lock still held while this network call runs? A
+# fresh open file description conflicts with the script's fd-9 lock, so exit 75
+# (-E) means held; 0 means someone released it early.
+if [ -n "${CC_FIREWALL_LOCK:-}" ] && [ -e "$CC_FIREWALL_LOCK" ]; then
+  flock -n -E 75 "$CC_FIREWALL_LOCK" true 2>/dev/null
+  case $? in
+    0)  echo "LOCK_FREE $url" >> "$CMD_LOG" ;;
+    75) echo "LOCK_HELD $url" >> "$CMD_LOG" ;;
+    *)  echo "LOCK_UNKNOWN $url" >> "$CMD_LOG" ;;
+  esac
+fi
 case "$url" in
   *api.github.com/meta*)
     if [ -n "${FAIL_META:-}" ]; then exit 7; fi
@@ -1120,6 +1131,16 @@ STUB
 @test "the lock is held through the verification probes" {
   run grep -c '^flock -u 9' "$FW"
   [ "$output" -eq 0 ]
+  # Behavioral: the curl stub tries the lock during every network call. An early
+  # `exec 9>&-` or `flock -u` anywhere before a probe shows up as LOCK_FREE.
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -qx 'LOCK_HELD https://example.com' "$CMD_LOG"
+  grep -qx 'LOCK_HELD https://api.github.com/zen' "$CMD_LOG"
+  grep -qx 'LOCK_HELD https://api.anthropic.com/' "$CMD_LOG"
+  grep -qx 'LOCK_HELD https://not-allowlisted.invalid/' "$CMD_LOG"
+  run grep -E '^LOCK_(FREE|UNKNOWN)' "$CMD_LOG"
+  [ "$status" -eq 1 ]
 }
 
 @test "a missing filter-table guard rule fails verification" {

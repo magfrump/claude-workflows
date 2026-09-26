@@ -3,7 +3,10 @@ allowlist semantics, and one end-to-end splice against a loopback upstream.
 
 No network: the ClientHello bytes are built here, and the splice test runs the
 proxy as a subprocess with its --upstream-port test seam pointed at a fake
-upstream on 127.0.0.1. Run: python3 -m unittest test/test_cc_sni_proxy.py
+upstream on 127.0.0.1. Run: python3 test/test_cc_sni_proxy.py
+(`python3 -m unittest test/test_cc_sni_proxy.py` does not work: the stdlib `test`
+package shadows this directory). test/cc-sni-proxy-unittest.bats runs it in the
+bats suite.
 """
 import importlib.util
 import os
@@ -15,6 +18,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 PROXY = HERE.parent / "devcontainer-config" / "cc-sni-proxy.py"
@@ -152,10 +156,13 @@ class Splice(unittest.TestCase):
         al = os.path.join(cls.tmp, "allowlist")
         with open(al, "w") as f:
             f.write("localhost\n")
+        # The decision log goes to a file so a test can read it while the proxy runs.
+        cls.log_path = os.path.join(cls.tmp, "proxy.log")
+        cls.log_f = open(cls.log_path, "w")
         cls.proc = subprocess.Popen(
             [sys.executable, str(PROXY), "--listen", f"127.0.0.1:{cls.px_port}",
              "--allowlist", al, "--upstream-port", str(cls.up_port)],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            stdout=cls.log_f, stderr=subprocess.STDOUT, text=True)
         deadline = time.time() + 5
         while time.time() < deadline:
             try:
@@ -165,14 +172,20 @@ class Splice(unittest.TestCase):
                 time.sleep(0.05)
         else:
             cls.proc.kill()
-            raise RuntimeError("proxy did not start: " + cls.proc.stdout.read())
+            cls.log_f.close()
+            raise RuntimeError("proxy did not start: " + open(cls.log_path).read())
 
     @classmethod
     def tearDownClass(cls):
         cls.stop.set()
         cls.proc.terminate()
         cls.proc.wait(5)
+        cls.log_f.close()
         cls.upstream.close()
+
+    def _log(self):
+        with open(self.log_path) as f:
+            return f.read()
 
     def _send(self, record):
         with socket.create_connection(("127.0.0.1", self.px_port), timeout=5) as c:
@@ -193,18 +206,44 @@ class Splice(unittest.TestCase):
         self.assertEqual(self._send(record), record)
 
     def test_non_allowlisted_sni_is_refused_with_no_bytes(self):
-        record, _ = client_hello("not-allowlisted.invalid")
+        # The SNI must RESOLVE and reach the echo upstream if admitted, or a
+        # missing allowlist check would still yield no bytes (the FAIL path).
+        # 127.0.0.1 is a syntactically valid hostname that resolves to the fake
+        # upstream (--upstream-port) and is not in the allowlist ("localhost").
+        record, _ = client_hello("127.0.0.1")
         self.assertEqual(self._send(record), b"")
+        self.assertIn("REJECT sni=127.0.0.1 ", self._log())
+        self.assertIn("not in allowlist", self._log())
+        self.assertNotIn("ALLOW sni=127.0.0.1", self._log())
 
     def test_non_tls_is_refused(self):
         self.assertEqual(self._send(b"GET / HTTP/1.0\r\n\r\n"), b"")
 
-    def test_refuses_to_daemonise_as_root_without_user(self):
-        # Contract check only; not running as root here, so assert the flag pairing.
+    def test_daemon_requires_pidfile(self):
         r = subprocess.run([sys.executable, str(PROXY), "--daemon", "--allowlist", "/dev/null"],
                            capture_output=True, text=True)
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("--pidfile", r.stderr)
+
+
+class RootRefusal(unittest.TestCase):
+    """In-process: pretend to be root and make fork() fatal, so the only way to
+    get the expected SystemExit is daemonize()'s root-without---user refusal."""
+
+    def test_refuses_to_daemonise_as_root_without_user(self):
+        tmp = tempfile.mkdtemp()
+
+        def no_fork():
+            raise AssertionError("daemonize() reached fork() as root without --user")
+
+        with mock.patch.object(proxy.os, "geteuid", return_value=0), \
+                mock.patch.object(proxy.os, "fork", side_effect=no_fork):
+            with self.assertRaises(SystemExit) as cm:
+                proxy.main(["--daemon", "--pidfile", os.path.join(tmp, "pid"),
+                            "--log", os.path.join(tmp, "log"), "--allowlist", "/dev/null"])
+        self.assertIn("refusing to run as root", str(cm.exception.code))
+        self.assertFalse(os.path.exists(os.path.join(tmp, "log")),
+                         "the refusal must come before any side effect")
 
 
 if __name__ == "__main__":

@@ -162,10 +162,13 @@ run_pty_feed() {
 # Feed snippet: answer n to the devcontainer target, wait (max ~20 s) for the
 # review's view of the destination (made after the copies are hashed, right
 # before the review; it sits in $dest/.cw-stage.*), give the review time to
-# finish, run $TAMPER, then answer y.
+# finish, run $TAMPER, then answer y. A $TAMPER that succeeds leaves
+# $S/tamper.landed (via $HOME/..), so a test asserting the tampered content is
+# ABSENT can first prove the tamper actually wrote; each such TAMPER fails when
+# its target does not already exist.
 FEED_TAMPER='printf "n\n"
   for _i in $(seq 200); do compgen -G "$CLAUDE_HOME_DIR/.cw-stage.*/installed" >/dev/null && break; sleep 0.1; done
-  sleep 2; eval "$TAMPER"; printf "y\n"'
+  sleep 2; if eval "$TAMPER"; then : > "$HOME/../tamper.landed"; fi; printf "y\n"'
 
 no_host_stage_left() {
   ! compgen -G "$TMPDIR/cw-host-stage.*" >/dev/null &&
@@ -506,9 +509,10 @@ no_host_stage_left() {
 
 @test "T28 a stage edited while the prompt waits is not installed: the reviewed copies are (review R2, Q-061)" {
   need_script; fake_repo; symlink_install
-  export TAMPER='for f in "$CLAUDE_HOME_DIR"/.cw-stage.*/payload/hooks/h.sh; do printf "echo TAMPERED\n" >> "$f"; done'
+  export TAMPER='n=0; for f in "$CLAUDE_HOME_DIR"/.cw-stage.*/payload/hooks/h.sh; do [ -f "$f" ] && printf "echo TAMPERED\n" >> "$f" && n=$((n+1)); done; [ "$n" -gt 0 ]'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
+  [ -f "$S/tamper.landed" ]                     # the tamper really wrote the stage
   [ "$status" -eq 1 ]                           # the devcontainer target was declined
   [[ "$output" == *'Installed into'* ]]
   [ -z "$(grep -rls TAMPERED "$CLAUDE_HOME_DIR")" ]
@@ -622,9 +626,10 @@ tmpdir_writer() {
 @test "T68 a reviewed copy under the destination edited while the prompt waits is refused (review R2)" {
   need_script; fake_repo; symlink_install
   before=$(snap "$CLAUDE_HOME_DIR")
-  export TAMPER='printf "echo TAMPERED\n" >> "$CLAUDE_HOME_DIR/.cw-new.hooks/h.sh"'
+  export TAMPER='[ -f "$CLAUDE_HOME_DIR/.cw-new.hooks/h.sh" ] && printf "echo TAMPERED\n" >> "$CLAUDE_HOME_DIR/.cw-new.hooks/h.sh"'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
+  [ -f "$S/tamper.landed" ]                     # the tamper really wrote the reviewed copy
   [ "$status" -eq 1 ]
   [[ "$output" == *'changed after review'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
@@ -823,9 +828,10 @@ installed_then_changed() {
   before=$(snap "$CLAUDE_HOME_DIR")
   # The reviewed copy of the manifest (review R2: the stage is no longer
   # installed, so the copy under the destination is what could be forged).
-  export TAMPER='printf "commit=FORGED\n" > "$CLAUDE_HOME_DIR/.cw-new.manifest"'
+  export TAMPER='[ -f "$CLAUDE_HOME_DIR/.cw-new.manifest" ] && printf "commit=FORGED\n" > "$CLAUDE_HOME_DIR/.cw-new.manifest"'
   run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
   echo "$output"
+  [ -f "$S/tamper.landed" ]                     # the tamper really wrote the reviewed manifest
   [ "$status" -eq 1 ]
   [[ "$output" == *'changed after review'* ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
@@ -1115,6 +1121,18 @@ installed_then_changed() {
 }
 
 @test "T63 decision 037 records the Q-058 trust model and its accepted residuals; the plan's Risks cite it" {
+  # User-facing text (install.sh --help, README, hook-wiring guide) says the
+  # checks are samples and sends the reader to decision 037 for what they miss;
+  # the residuals themselves appear only in the decision. So the first block
+  # pins that production pointer, and the rest is a DOCS-CONSISTENCY check that
+  # the pointer's target still carries them (it constrains no install.sh
+  # behavior).
+  fake_repo
+  run bash "$INSTALL" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'The checks are samples, not a lock;'*'decision 037, "Trust model", lists what they miss'* ]]
+  grep -q 'not a lock: decision 037 lists what they miss' "$BATS_TEST_DIRNAME/../README.md"
+  grep -q 'decision 037, "Trust model"' "$BATS_TEST_DIRNAME/../guides/bare-host-hook-wiring.md"
   d="$BATS_TEST_DIRNAME/../docs/decisions/037-bare-host-copy-install.md"
   plan="$BATS_TEST_DIRNAME/../docs/working/plan-copy-install-bare-host.md"
   grep -q '^## Trust model (Q-058)' "$d"
