@@ -2,7 +2,7 @@
 
 - **Goal**: decide how `devcontainer-config/install.sh` — host-executed, agent-writable, and the file that decides which diff the human reviews before blessing — comes under a gate.
 - **Project state**: `main`, standalone · closes finding R1 of the 2026-09-12 code review, the last open item in `docs/working/questions.md` · not blocked; sequenced behind finding A7 (the gate must actually be installed).
-- **Task status**: in-progress (decided 2026-09-12; implementation lands with the A7 fix)
+- **Task status**: complete (decided 2026-09-12; A7 closed as installed 2026-09-17; the regex landed 2026-09-26 with a test in `test/hooks/live-verify-gate.bats`. The [2] header rewrite had landed first, so until 2026-09-26 that header claimed coverage the regex did not give, and 49 `install.sh` commits went through ungated)
 
 ## Context
 

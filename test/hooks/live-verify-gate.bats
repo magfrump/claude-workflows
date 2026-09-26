@@ -135,6 +135,20 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   done
 }
 
+@test "install.sh is gated although it is not manifest-hashed (decision 035)" {
+  echo 'echo hi' > devcontainer-config/install.sh
+  git add devcontainer-config/install.sh
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(install): x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"devcontainer-config/install.sh"* ]]
+  # The anchor is exact: a sibling whose name merely starts with install.sh is not.
+  git reset -q devcontainer-config/install.sh
+  echo x > devcontainer-config/install.sh.bak
+  git add devcontainer-config/install.sh.bak
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 0 ]
+}
+
 @test "ignores non-commit git commands and non-git commands" {
   stage_enforcement
   run bash "$HOOK" <<< "$(payload 'git status')"

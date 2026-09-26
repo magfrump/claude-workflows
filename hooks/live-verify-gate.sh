@@ -11,7 +11,8 @@
 # verified-live receipt (cc-isolated.sh, `--probe-only`).
 #
 # WHAT IT ENFORCES. If the files about to be committed include any enforcement
-# file under devcontainer-config/ (the ones the trust manifest hashes), the commit
+# file under devcontainer-config/ (the ones the trust manifest hashes, plus
+# install.sh per decision 035), the commit
 # message must carry a `Live-verified:` trailer. The value is free text on
 # purpose — `Live-verified: 3f2a9c0e1b7d4a6f` (the blessed hash `cc-isolated --list`
 # shows after a passing probe) or `Live-verified: no — <why, and what will run it>`.
@@ -67,8 +68,9 @@ if printf '%s' "$cmd" | grep -Eq -- '(^|[[:space:]])(-a|--all|-[a-zA-Z]*a[a-zA-Z
 fi
 
 # The enforcement set: what cc-isolated.sh's enforcement_files() hashes, as repo
-# paths. Keep in step with that function.
-enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
+# paths. Keep in step with that function. Plus install.sh, which is not hashed but
+# runs on the host and chooses the diff the human reviews (decision 035).
+enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
 touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 [ -n "$touched" ] || exit 0
 
