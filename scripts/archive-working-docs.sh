@@ -10,7 +10,7 @@
 # completed-tasks.md, problem-history.json, round-history.json, questions.md,
 # questions-archive.md, and the "graduated" docs listed in PERMANENT) are left
 # in place — they accumulate across runs or are cited by live files. Any other
-# file still cited by a tracked file gets a warning before it is moved.
+# file still cited by a tracked file is kept in place, with a message.
 # completed-tasks.md, problem-history.json and round-history.json are
 # cross-run memory for scripts/self-improvement.sh: it reads completed-tasks.md when generating
 # ideas (so archiving it makes the next run re-propose finished work),
@@ -97,11 +97,17 @@ PERMANENT=(
   review-canon.md                         # decision log
 )
 
-# Tracked files outside docs/working/ and archive/ that cite docs/working/$1,
-# comma-joined (first three). Empty outside a git checkout.
+# Tracked files that cite $1, by bare file name (so `handoff-x.md` counts as
+# well as `docs/working/handoff-x.md`). Other tracked working docs count too:
+# the 2026-09-18 sweep lost the triage doc's parent handoff because the only
+# citer was another working doc. Excluded: the file itself, and records of
+# their day (docs/reviews/, runs/) and the retired archive/ tree. Prints at most
+# three citers, comma-separated. Over-matching only keeps a file, which is the
+# safe direction.
 cited_by() {
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
-  git grep -l -F "docs/working/$1" -- . ':!docs/working/**' ':!archive/**' 2>/dev/null \
+  git grep -l -F "$1" -- . ":!docs/working/$1" ':!docs/working/archive/**' \
+      ':!docs/reviews/**' ':!runs/**' ':!archive/**' 2>/dev/null \
     | head -3 | paste -sd, - || true
 }
 
@@ -133,7 +139,12 @@ for f in "$WORKING_DIR"/*; do
   dest="$ARCHIVE_DIR/${PREFIX}-${name}"
   cites="$(cited_by "$name")"
   if [ -n "$cites" ]; then
-    echo "  warn  $name is still cited by: $cites — add it to PERMANENT if it has graduated" >&2
+    # Keep, don't move: archive/ is gitignored, so moving a cited file dangles
+    # the citation in every fresh clone. A warning alone did not stop that
+    # (1c9d1af); 33 such files were rescued into the tracked archive/docs/ on
+    # 2026-09-26.
+    echo "  keep  $name — still cited by: $cites. Add it to PERMANENT, or git mv it to archive/docs/ and update the citation" >&2
+    continue
   fi
   if [ -e "$dest" ]; then
     # Two archives under one prefix (a date-only fallback run twice in a day)

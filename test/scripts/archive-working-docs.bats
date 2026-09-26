@@ -89,8 +89,8 @@ teardown() {
   [ -f docs/working/triage-2026-09-17-backlog.md ]
 }
 
-@test "warns before archiving a file a tracked doc still cites" {
-  # 1c9d1af archived docs that guides and CLAUDE.md still cited; archive/ is
+@test "keeps a file a tracked doc still cites instead of archiving it" {
+  # 1c9d1af and 9b0f583 archived docs that live files still cited; archive/ is
   # gitignored, so those references dangled in every fresh clone.
   cd "$TEST_DIR"
   export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
@@ -98,11 +98,33 @@ teardown() {
   echo "see docs/working/plan-foo.md" > README.md
   git add README.md
 
-  run bash "$SCRIPT" --dry-run "pfx"
+  run bash "$SCRIPT" "pfx"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"warn  plan-foo.md is still cited by: README.md"* ]]
-  # An uncited file gets no warning.
-  [[ "$output" != *"warn  summary-bar.md"* ]]
+  [[ "$output" == *"keep  plan-foo.md — still cited by: README.md"* ]]
+  [ -f docs/working/plan-foo.md ]
+  # An uncited file is still archived.
+  [ -f docs/working/archive/pfx-summary-bar.md ]
+}
+
+@test "a bare-name citation from another tracked working doc also keeps the file" {
+  # The triage doc cited its parent handoff by bare name, from inside
+  # docs/working/, and the sweep took the handoff anyway (2026-09-18).
+  cd "$TEST_DIR"
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  git init -q
+  echo "follows from plan-foo.md §7" > docs/working/triage.md
+  git add docs/working/triage.md docs/working/plan-foo.md
+
+  run bash "$SCRIPT" "pfx"
+  [ "$status" -eq 0 ]
+  [ -f docs/working/plan-foo.md ]
+  # A file citing itself does not keep itself, and citations in records of
+  # their day (docs/reviews/) do not count.
+  mkdir -p docs/reviews && echo "summary-bar.md" > docs/reviews/r.md
+  echo "summary-bar.md" >> docs/working/summary-bar.md
+  git add docs/reviews/r.md docs/working/summary-bar.md
+  run bash "$SCRIPT" "pfx2"
+  [ -f docs/working/archive/pfx2-summary-bar.md ]
 }
 
 @test "dry-run shows planned moves but does not move files" {
