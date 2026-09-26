@@ -10,7 +10,7 @@ setup() {
   TEST_TMPDIR=$(mktemp -d)
   mkdir -p "$TEST_TMPDIR/test/skills" "$TEST_TMPDIR/bin"
   cp "$REPO_ROOT/test/skills/generate-reports.bash" "$REPO_ROOT/test/skills/runner-contract.bash" \
-    "$TEST_TMPDIR/test/skills/"
+    "$REPO_ROOT/test/skills/transcript.jq" "$TEST_TMPDIR/test/skills/"
   GEN="$TEST_TMPDIR/test/skills/generate-reports.bash"
   # The caller's environment must not reach the argv under test, and the stub
   # lists its working directory, which must not be the repo root (395k files
@@ -31,7 +31,7 @@ n=\$(ls "$CALLS" | wc -l)
 if [[ " \$* " == *" --output-format stream-json "* ]]; then
   # The shape of a real stream-json run: init, one tool call, the result.
   echo '{"type":"system","subtype":"init"}'
-  echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"x"}}]}}'
+  echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"r1","name":"Read","input":{"file_path":"x"}}]}}'
   echo '{"type":"result","subtype":"success","result":"# Report\\n\\n**Severity:** High"}'
 else
   printf '# Report\n\n**Severity:** High\n'
@@ -535,7 +535,7 @@ EOF2
   stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]' '[]'
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash canary: the init event does not list Bash (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash init canary: the init event does not list Bash (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record tripwire: a Bash call missing from permission_denials voids the run" {
@@ -564,13 +564,15 @@ EOF2
   chmod +x "$TEST_TMPDIR/bin/claude"
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "the result event is an error; Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+  grep -q "^the result event is an error; " "$out/tc-1-thing.txt.failed"
+  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
 }
 
 
-@test "deny-record parser canary: a Bash denial naming a tool_use the parser never saw voids the run" {
-  # A CLI event-shape change would hide tool_use blocks from every check; the
-  # denial list still names them, so the mismatch is detectable (review A16).
+@test "deny-record: a tool_use moved to a field the reader does not know voids the run as malformed" {
+  # A CLI event-shape change could hide tool_use blocks from every check. The
+  # strict reader (transcript.jq) rejects the unknown shape outright (review
+  # iteration 4, R2/A21; formerly caught only by the parser canary, A16).
   make_deny_skill
   local out="$TEST_TMPDIR/test/skills/demo/output"
   cat > "$TEST_TMPDIR/bin/claude" <<'EOF2'
@@ -583,7 +585,7 @@ EOF2
   chmod +x "$TEST_TMPDIR/bin/claude"
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash parser canary: 1 Bash denial(s) name a tool_use the parser did not see (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
+  grep -q "transcript: 1 malformed event(s), first: assistant event: message.content is not an array (CLI 9.9.9)" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record: a run with no init event is reported as not started, not blamed on the deny rule" {
@@ -598,7 +600,7 @@ EOF2
   ! grep -q "did the deny rule remove the tool" "$out/tc-1-thing.txt.failed"
 }
 
-@test "deny-record tripwire: a Bash tool_use with no id counts as undenied" {
+@test "deny-record: a Bash tool_use with no id is malformed, and voids the run" {
   make_deny_skill
   local out="$TEST_TMPDIR/test/skills/demo/output"
   cat > "$TEST_TMPDIR/bin/claude" <<'EOF2'
@@ -611,5 +613,85 @@ EOF2
   chmod +x "$TEST_TMPDIR/bin/claude"
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+  grep -q "a tool_use has no string id and name" "$out/tc-1-thing.txt.failed"
+}
+
+# --- Iteration-4 structural fix: one strict reader, fail-closed marker ---
+
+# stub_transcript <file>: a claude stub that prints <file> as its stream.
+stub_transcript() {
+  printf '#!/usr/bin/env bash\ncat >/dev/null\ncat %q\n' "$1" > "$TEST_TMPDIR/bin/claude"
+  chmod +x "$TEST_TMPDIR/bin/claude"
+}
+
+@test "deny-record: every malformed transcript shape voids the run, even beside a good denied call" {
+  source "$REPO_ROOT/test/skills/malformed-transcripts.bash"
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" shape
+  write_malformed_transcripts "$TEST_TMPDIR/bad" "echo good"
+  # Control: without the bad line the run passes.
+  grep -v '^123$' "$TEST_TMPDIR/bad/number_line.jsonl" > "$TEST_TMPDIR/good.jsonl"
+  stub_transcript "$TEST_TMPDIR/good.jsonl"
+  run bash "$GEN" demo
+  [ ! -e "$out/tc-1-thing.txt.failed" ] || { echo "control voided: $(cat "$out/tc-1-thing.txt.failed")"; return 1; }
+  for shape in "${MALFORMED_SHAPES[@]}"; do
+    stub_transcript "$TEST_TMPDIR/bad/$shape.jsonl"
+    run bash "$GEN" demo
+    [ -e "$out/tc-1-thing.txt.failed" ] || { echo "not voided: $shape"; return 1; }
+    grep -q "malformed event" "$out/tc-1-thing.txt.failed" || { echo "$shape: $(cat "$out/tc-1-thing.txt.failed")"; return 1; }
+  done
+}
+
+@test "deny-record parser canaries: an orphan tool_result, or a denial of another tool, voids the run" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" t="$TEST_TMPDIR/t.jsonl"
+  local init='{"type":"system","subtype":"init","tools":["Bash"]}'
+  # A tool_result answering a call the reader never saw: a call that ran unseen (A22).
+  printf '%s\n' "$init" \
+    '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"ghost","content":"/tmp"}]}}' \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q "Bash parser canary: 1 tool_result(s) answer a tool_use the reader did not see" "$out/tc-1-thing.txt.failed"
+  printf '%s\n' "$init" \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Read","tool_use_id":"r9"}]}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q "Bash tripwire: 1 denial(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
+}
+
+@test "the .failed marker exists while a run is in progress and is removed only after every check passes" {
+  # Fail-closed (review iteration 4, A23): a generator interrupted between
+  # writing the report and checking the transcript must leave a marker.
+  make_skill demo inline "Agent"
+  echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  cat > "$TEST_TMPDIR/bin/claude" <<EOF2
+#!/usr/bin/env bash
+cat >/dev/null
+cat "$out/tc-1-thing.txt.failed" > "$TEST_TMPDIR/marker-during-run" 2>/dev/null || echo ABSENT > "$TEST_TMPDIR/marker-during-run"
+echo '{"type":"system","subtype":"init","tools":["Agent"]}'
+echo '{"type":"result","subtype":"success","result":"# Report"}'
+EOF2
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "generation did not finish" "$TEST_TMPDIR/marker-during-run"
+  [ ! -e "$out/tc-1-thing.txt.failed" ]
+  [ -s "$out/tc-1-thing.txt.report.md" ]
+}
+
+@test "any transcript run (not only deny-record) is voided by a malformed event or a missing init" {
+  make_skill demo inline "Agent"
+  echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  local out="$TEST_TMPDIR/test/skills/demo/output" t="$TEST_TMPDIR/t.jsonl"
+  printf '%s\n' '{"type":"result","subtype":"success","result":"# Report"}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q "no init event in the stream" "$out/tc-1-thing.txt.failed"
+  printf '%s\n' '{"type":"system","subtype":"init","tools":["Agent"]}' '[1]' \
+    '{"type":"result","subtype":"success","result":"# Report"}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q "malformed event" "$out/tc-1-thing.txt.failed"
 }

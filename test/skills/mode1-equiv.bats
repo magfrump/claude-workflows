@@ -75,7 +75,7 @@ transcript() {
   transcript "$(with_expr '4750 / 0.0025 * 10000')"
   run assert_mode1_equiv arithmetic-eval '1900000000'
   [ "$status" -ne 0 ]
-  [[ "$output" == *"No Mode 1 call computed"* ]]
+  [[ "$output" == *"No Mode 1 command computed"* ]]
 }
 
 @test "any listed value passes, and a tolerance widens one" {
@@ -188,7 +188,7 @@ transcript() {
   run assert_no_tool_called Bash
   chmod 644 "$T"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Could not read tool calls"* ]]
+  [[ "$output" == *"Could not read"* ]]
 }
 
 @test "a tool name the run's init event does not list fails the check (a misspelling cannot pass)" {
@@ -238,7 +238,7 @@ transcript() {
 # eval_fixture itself, against a throwaway tree shaped like test/skills, so the
 # dispatcher's parsing of tool_called:/no_tool_called:/mode1_equiv: is tested,
 # not only the assert functions (review C18).
-@test "eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill" {
+@test "eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv reaches the checker" {
   local root="$TEST_TMPDIR/tree"
   mkdir -p "$root/test/skills/arithmetic-eval/output" "$root/skills"
   ln -s "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$root/test/skills/arithmetic-eval/mode1-equiv.py"
@@ -268,7 +268,7 @@ transcript() {
 }
 
 @test "no_tool_called fails on a transcript with no init event (junk or truncated), not reading it as no calls" {
-  printf 'not json\n{"type":"result","subtype":"success","result":"x"}\n' > "$T"
+  printf 'a stray warning line\n{"type":"result","subtype":"success","result":"x"}\n' > "$T"
   run assert_no_tool_called Bash
   [ "$status" -ne 0 ]
   [[ "$output" == *"No init event"* ]]
@@ -294,3 +294,66 @@ transcript() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"OTHER-SKILL-CHECKER"*"skills/$sk/SKILL.md"* ]]
 }
+
+# --- Iteration-4 structural fix: one strict reader (R2, A21) ---
+
+@test "every malformed shape fails mode1_equiv and no_tool_called, even beside a good denied Mode 1 call" {
+  source "$BATS_TEST_DIRNAME/malformed-transcripts.bash"
+  local good shape
+  good="$(with_expr '1 + 1')"
+  write_malformed_transcripts "$TEST_TMPDIR/bad" "$good"
+  # The same transcript without the bad line passes, so each failure below is
+  # the bad shape's doing.
+  grep -v '^123$' "$TEST_TMPDIR/bad/number_line.jsonl" > "$T"
+  run assert_mode1_equiv arithmetic-eval '2'
+  [ "$status" -eq 0 ] || { echo "control failed: $output"; return 1; }
+  for shape in "${MALFORMED_SHAPES[@]}"; do
+    cp "$TEST_TMPDIR/bad/$shape.jsonl" "$T"
+    run assert_mode1_equiv arithmetic-eval '2'
+    [ "$status" -ne 0 ] || { echo "mode1_equiv passed on $shape"; return 1; }
+    [[ "$output" == *"Malformed transcript"* ]] || { echo "$shape: $output"; return 1; }
+    run assert_no_tool_called Bash=rm
+    [ "$status" -ne 0 ] || { echo "no_tool_called passed on $shape"; return 1; }
+  done
+}
+
+@test "a plain-text line (a stray warning) is ignored, not read as a malformed event" {
+  transcript "$(with_expr '1 + 1')"
+  sed -i '2i Warning: something printed to stdout' "$T"
+  run assert_mode1_equiv arithmetic-eval '2'
+  [ "$status" -eq 0 ]
+}
+
+@test "mode1-equiv.py takes a JSON array of commands; anything else, or any unexpected error, exits 2" {
+  local py="$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" c="$TEST_TMPDIR/cmds.json"
+  jq -cn --arg a "$(with_expr '6 * 7')" '[$a]' > "$c"
+  run python3 "$py" "$SKILL_MD" "$c" '42'
+  [ "$status" -eq 0 ]
+  for bad in '{"a":1}' '[1,2]' 'not json'; do
+    printf '%s' "$bad" > "$c"
+    run python3 "$py" "$SKILL_MD" "$c" '42'
+    [ "$status" -eq 2 ] || { echo "$bad -> $status"; return 1; }
+    [[ "$output" != *Traceback* ]]
+  done
+  # Nesting too deep for json.loads raises RecursionError, which the script
+  # does not anticipate: the catch-all turns it into exit 2, not a traceback.
+  python3 -c 'print("[" * 200000 + "]" * 200000)' > "$c"
+  run python3 "$py" "$SKILL_MD" "$c" '42'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"checker error"* ]] || [[ "$output" == *"is not JSON"* ]]
+  [[ "$output" != *Traceback* ]]
+}
+
+@test "an empty tool name fails the check; a bare tool_called failure says 'No Bash call.', not /./" {
+  transcript "echo hi"
+  run assert_no_tool_called ''
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Empty tool name"* ]]
+  { echo '{"type":"system","subtype":"init","tools":["Bash"]}'
+    jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}'; } > "$T"
+  run assert_tool_called Bash
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No Bash call."* ]]
+  [[ "$output" != *"/./"* ]]
+}
+

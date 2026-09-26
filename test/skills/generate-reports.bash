@@ -28,13 +28,15 @@
 #                     to the report, so eval checks can see tool calls and
 #                     sub-agent dispatches (tool_called:, subagents_min:). The
 #                     report is still plain text: the final result event's text.
+#                     Every kept transcript is read strictly through
+#                     transcript.jq: a malformed event or a missing init event
+#                     voids the run (see "Transcript checks" in generate_one).
 #   FIXTURE_BASH (optional) — "deny-record" lets FIXTURE_TOOLS be exactly Bash
 #                     and pins DENY_RECORD_FLAGS (defined below, with why), so
 #                     every Bash call is denied and only recorded (Q-063 [1]).
-#                     Needs FIXTURE_TRANSCRIPT=1; refuses CLAUDE_FLAGS. A run is
-#                     recorded as failed when any Bash call is missing from the
-#                     result's permission_denials (it may have executed), or
-#                     when the init event does not list Bash (canary).
+#                     Needs FIXTURE_TRANSCRIPT=1; refuses CLAUDE_FLAGS. The
+#                     conditions that void such a run are listed once, in the
+#                     "Transcript checks" comment in generate_one.
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
@@ -143,13 +145,18 @@ generate_one() {
   local report_path="$OUTPUT_DIR/${fixture_name}.report.md"
   local transcript_path="$OUTPUT_DIR/${fixture_name}.transcript.jsonl"
   # <fixture>.failed records that the run itself failed (claude exited non-zero,
-  # or the stream's result event is an error or missing). eval_fixture fails any
-  # fixture that has one, because a failed run's report can still hold text (an
-  # auth error, whitespace) that the absence-only checks would pass.
+  # the stream's result event is an error or missing, or a transcript check
+  # below voided it). eval_fixture fails any fixture that has one, because a
+  # failed run's report can still hold text (an auth error, whitespace) that
+  # the absence-only checks would pass.
   local failed_path="$OUTPUT_DIR/${fixture_name}.failed"
   # Nothing from a previous run may survive to be scored as this run's,
   # whichever step below fails.
   rm -f "$report_path" "$transcript_path" "$failed_path"
+  # Fail-closed: the marker exists from here until every check has passed, so
+  # a run interrupted or aborted at any step (set -e, a signal) is never graded
+  # (review iteration 4, A23).
+  printf '%s\n' "generation did not finish" > "$failed_path"
 
   echo "--- Generating: $fixture_name ---"
 
@@ -254,51 +261,61 @@ generate_one() {
         *) failure="no result event in the stream" ;;
       esac
     fi
-    # Deny-record checks, in one pass over the stream (review iteration 3):
-    #  - tripwire: every Bash tool_use must be listed as denied; one that is not
-    #    may have run, so the whole run is void. A tool_use with no id counts as
-    #    undenied. It runs even when the run already failed, so an executed call
-    #    is never hidden behind "claude exited N" (review C10).
-    #  - parser canary: every Bash denial must name a tool_use the parser saw.
-    #    If the CLI's event shape changed, the tripwire and every transcript
-    #    check would see no calls and pass; this makes that fail loudly (A16).
-    #  - init canary: the stream must start with an init event (a run that dies
-    #    before it is reported as that, not blamed on the deny rule; A17), and
-    #    that event must list Bash. If a CLI change made 'Bash(**)' remove the
-    #    tool, as 'Bash(*)' does, there would be no Bash calls and every fixture
-    #    would read as "the model did not route" (C17). The init event also
-    #    carries claude_code_version, so each kept transcript records its CLI.
-    # It catches accidental breaches, not concealed ones: a command that did run
-    # could rewrite the transcript before this reads it (C29).
-    if [ "$FIXTURE_BASH" = "deny-record" ]; then
-      local verdict
-      verdict=$(jq -rRn '[inputs | fromjson? | objects] as $ev
-        | ([$ev[] | select(.type == "system" and .subtype == "init")] | first) as $init
-        | ([$ev[] | select(.type == "result") | .permission_denials[]?
-            | select(type == "object" and .tool_name == "Bash") | .tool_use_id]) as $denied
-        | ($denied | map(select(. != null) | {(tostring): true}) | add // {}) as $dset
-        | [$ev[] | select(.type == "assistant") | .message.content[]? | objects
-           | select(.type == "tool_use" and .name == "Bash") | .id] as $calls
-        | ($calls | map(select(. != null) | {(tostring): true}) | add // {}) as $cset
-        | [ ($calls | map(select(. == null or ($dset[tostring] | not))) | length),
-            ($denied | map(select(. == null or ($cset[tostring] | not))) | length),
-            (if $init == null then "none" elif (($init.tools // []) | index("Bash")) then "bash" else "nobash" end),
-            ($init.claude_code_version // "unknown") ] | @tsv' \
-        "$transcript_path" 2>/dev/null) || verdict="unreadable"
-      local undenied unseen init_state cli_version
-      if [ "$verdict" = unreadable ] || [ -z "$verdict" ]; then
-        failure="${failure:+$failure; }Bash tripwire: the transcript could not be read, so denials are unverified"
-      else
-        IFS=$'\t' read -r undenied unseen init_state cli_version <<< "$verdict"
-        [ "$undenied" = 0 ] \
-          || failure="${failure:+$failure; }Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
-        [ "$unseen" = 0 ] \
-          || failure="${failure:+$failure; }Bash parser canary: $unseen Bash denial(s) name a tool_use the parser did not see (CLI $cli_version; did the event shape change?)"
-        case "$init_state" in
-          bash) ;;
-          none) failure="${failure:+$failure; }no init event in the stream (the run did not start?)" ;;
-          *) failure="${failure:+$failure; }Bash canary: the init event does not list Bash (CLI $cli_version; did the deny rule remove the tool?)" ;;
-        esac
+    # Transcript checks, through the one strict reader, transcript.jq (review
+    # iteration 4, R2/A21): the same definitions eval-helpers.bash grades with.
+    #  - well-formed: any line or event of a shape the reader does not expect
+    #    voids the run, instead of being skipped. Skipping was how a Bash call
+    #    could ride past every check inside an unexpected shape.
+    #  - init: the stream must contain an init event. A run that died before
+    #    one is reported as that, not blamed on a check below (A17).
+    # Under deny-record also (definitions in transcript.jq's deny_record_counts):
+    #  - tripwire: every Bash tool_use must be named by a Bash denial; one that
+    #    is not may have run. Also when the run already failed, so an executed
+    #    call is never hidden behind "claude exited N" (C10).
+    #  - parser canaries: every Bash denial and every tool_result must answer a
+    #    tool_use the reader saw, so a call moved to a place the reader does not
+    #    look still voids the run, whether it was denied or ran (A16, A22).
+    #  - only Bash may be denied, since only Bash is granted.
+    #  - init canary: the init event must list Bash. If a CLI change made
+    #    'Bash(**)' remove the tool, as 'Bash(*)' does, every fixture would read
+    #    as "the model did not route" (C17). The init event also carries
+    #    claude_code_version, so each kept transcript records its CLI.
+    # These catch accidental breaches, not concealed ones: a command that did
+    # run could rewrite the transcript before this reads it (C29).
+    local verdict problems n_problems init_state cli_version counts
+    verdict=$(jq -rR -n -L "$SCRIPT_DIR" 'import "transcript" as t;
+      t::events | [ (t::problems | length), (t::problems | first // ""),
+        (t::init | if . == null then "none" elif ((.tools // []) | type == "array" and index(["Bash"]) != null) then "bash" else "nobash" end),
+        (t::init | .claude_code_version // "unknown"),
+        (if (t::problems | length) == 0 then (t::deny_record_counts | "\(.undenied) \(.unseen) \(.orphans) \(.foreign)") else "" end)
+      ] | join("\u001f")' "$transcript_path" 2>/dev/null) || verdict=""
+    if [ -z "$verdict" ]; then
+      failure="${failure:+$failure; }transcript: could not be read, so no check could run"
+    else
+      # \x1f, not a tab: read collapses runs of whitespace separators, so an
+      # empty field (no problem text, no counts) would shift the rest.
+      IFS=$'\x1f' read -r n_problems problems init_state cli_version counts <<< "$verdict"
+      if [ "$n_problems" != 0 ]; then
+        failure="${failure:+$failure; }transcript: $n_problems malformed event(s), first: $problems (CLI $cli_version)"
+      fi
+      if [ "$init_state" = none ]; then
+        failure="${failure:+$failure; }no init event in the stream (the run did not start?)"
+      fi
+      if [ "$FIXTURE_BASH" = "deny-record" ]; then
+        [ "$init_state" != nobash ] \
+          || failure="${failure:+$failure; }Bash init canary: the init event does not list Bash (CLI $cli_version; did the deny rule remove the tool?)"
+        if [ -n "$counts" ]; then
+          local undenied unseen orphans foreign
+          read -r undenied unseen orphans foreign <<< "$counts"
+          [ "$undenied" = 0 ] \
+            || failure="${failure:+$failure; }Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
+          [ "$unseen" = 0 ] \
+            || failure="${failure:+$failure; }Bash parser canary: $unseen Bash denial(s) name a tool_use the reader did not see (CLI $cli_version; did the event shape change?)"
+          [ "$orphans" = 0 ] \
+            || failure="${failure:+$failure; }Bash parser canary: $orphans tool_result(s) answer a tool_use the reader did not see (CLI $cli_version; a call may have run unseen)"
+          [ "$foreign" = 0 ] \
+            || failure="${failure:+$failure; }Bash tripwire: $foreign denial(s) of a tool other than Bash, the only tool granted"
+        fi
       fi
     fi
   fi
@@ -306,7 +323,11 @@ generate_one() {
   if [ -n "$failure" ]; then
     printf '%s\n' "$failure" > "$failed_path"
     echo "  FAILED: $failure (recorded in $(basename "$failed_path"); eval_fixture will fail it)"
-  elif [ -s "$report_path" ]; then
+    return 0
+  fi
+  # Every check passed: only now is the fail-closed marker removed.
+  rm -f "$failed_path"
+  if [ -s "$report_path" ]; then
     echo "  Done: $(grep -c '' "$report_path") lines in report"
   else
     echo "  WARNING: claude succeeded but printed an empty report"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034  # a saved review probe: dynamic source path; kept verbatim as run
 # Claim 27(a) probe: procs_in_checkout (install.sh:1119-1173, sourced verbatim) with a
 # `readlink` shell function that fails for every /proc entry except a chosen one.
 set -euo pipefail

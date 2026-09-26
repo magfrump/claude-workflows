@@ -363,36 +363,69 @@ eval_transcript_path() {
   printf '%s\n' "$t"
 }
 
+# Directory of this file, for transcript.jq: BATS_TEST_DIRNAME can be pointed
+# elsewhere (the dispatcher tests do), so the module is found relative to here.
+EVAL_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# transcript_jq <transcript> <filter> [jq args...]: run <filter> over the
+# transcript's events as read by transcript.jq, the one strict reader shared
+# with generate-reports.bash (review iteration 4, R2/A21). The filter's input is
+# the events array; the module is imported as t.
+transcript_jq() {
+  local t="$1" filter="$2"
+  shift 2
+  jq -rR -n -L "$EVAL_HELPERS_DIR" "$@" "import \"transcript\" as t; t::events | ($filter)" "$t"
+}
+
 # Inputs (as compact JSON, one per line) of every tool_use block for the named
-# tool, at any depth (sub-agents' calls included).
+# tool, at any depth (sub-agents' calls included), as transcript.jq reads them.
 # Args: $1 = transcript path, $2 = tool name
 transcript_tool_inputs() {
-  # -R + fromjson?: skip non-JSON lines instead of aborting on the first one.
-  jq -rR --arg n "$2" \
-    'fromjson? | select(.type == "assistant") | .message.content[]?
-     | select(.type == "tool_use" and .name == $n) | .input | tostring' "$1"
+  transcript_jq "$1" 't::tool_uses[] | select(.name == $n) | .input | tostring' --arg n "$2"
+}
+
+# transcript_checked <transcript>: fail with a message unless the transcript
+# is readable, well formed by transcript.jq's rules and holds an init event. A
+# junk, truncated or unexpectedly shaped transcript would otherwise read as
+# "no calls" and let a negative check pass, or hide a call inside a shape a
+# looser reader skips.
+transcript_checked() {
+  local t="$1" verdict
+  # Fields joined by \u001f, not a tab: read collapses runs of whitespace
+  # separators, so an empty middle field would shift the rest.
+  if ! verdict="$(transcript_jq "$t" '"\(t::problems | length)\u001f\(t::problems | first // "")\u001f\(if t::init == null then "none" else "init" end)"' 2>/dev/null)" \
+      || [ -z "$verdict" ]; then
+    echo "Could not read $t"
+    return 1
+  fi
+  local n first init
+  IFS=$'\x1f' read -r n first init <<< "$verdict"
+  if [ "$n" != 0 ]; then
+    echo "Malformed transcript $t: $n event(s) of an unexpected shape, first: $first"
+    return 1
+  fi
+  if [ "$init" != init ]; then
+    echo "No init event in $t: not a complete stream-json transcript"
+    return 1
+  fi
 }
 
 # tool_inputs_checked <transcript> <tool>: print the tool's inputs (as
-# transcript_tool_inputs does), or fail with a message when the file cannot be
-# read, when it holds no init event (a junk or truncated transcript, which
-# would otherwise read as "no calls" and let a negative check pass), or when
-# the init event lists the run's tools and <tool> is not one of them (a
-# misspelled name such as "bash"). It does not detect a changed event shape
-# that hides tool_use blocks: generate-reports.bash's parser canary does, for
-# deny-record runs, and eval_fixture fails any run with a .failed marker.
+# transcript_tool_inputs does), after transcript_checked, or fail with a
+# message; also fail when <tool> is empty, or when the init event lists the
+# run's tools and <tool> is not one of them (a misspelled name such as "bash").
 tool_inputs_checked() {
   local t="$1" tool="$2" inputs known
+  if [ -z "$tool" ]; then
+    echo "Empty tool name in the check"
+    return 1
+  fi
+  transcript_checked "$t" || return 1
   if ! inputs="$(transcript_tool_inputs "$t" "$tool")"; then
     echo "Could not read tool calls from $t"
     return 1
   fi
-  # grep, not jq -e: jq's exit status reflects only the last input line.
-  if ! jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | "init"' "$t" 2>/dev/null | grep -q .; then
-    echo "No init event in $t: not a complete stream-json transcript"
-    return 1
-  fi
-  known="$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .tools[]?' "$t" 2>/dev/null || true)"
+  known="$(transcript_jq "$t" 't::init | .tools // [] | if type == "array" then .[] | strings else empty end' 2>/dev/null || true)"
   if [ -n "$known" ] && ! printf '%s\n' "$known" | grep -qxF -e "$tool"; then
     echo "$tool is not a tool of this run (its tools: $(printf '%s\n' "$known" | tr '\n' ' '))"
     return 1
@@ -426,7 +459,7 @@ assert_tool_called() {
     [ "$rc" -ne 2 ] || { echo "$hits"; return 1; }
   fi
   if [ -z "$inputs" ] || [ -z "$hits" ]; then
-    echo "No $tool call with input matching /$pattern/."
+    if [ -n "${2:-}" ]; then echo "No $tool call with input matching /$pattern/."; else echo "No $tool call."; fi
     echo "$tool calls seen: $(printf '%s\n' "$inputs" | grep -c . || true)"
     printf '%s\n' "$inputs" | head -5 | cut -c1-200
     return 1
@@ -473,24 +506,35 @@ assert_no_tool_called() {
 # skill's Mode 1 evaluator (wrapper exact, heredoc closed at its first EXPREOF
 # line with nothing but comments after it, program AST-equal to SKILL.md's) and
 # that its expression, run through the evaluator extracted from SKILL.md, gives
-# one of the expected values. Also fails if any Bash call is missing from
-# permission_denials. The checker is skill-owned: test/skills/<skill>/
-# mode1-equiv.py, reading skills/<skill>/SKILL.md (today only arithmetic-eval).
+# one of the expected values. The transcript is read here, through
+# transcript.jq: it must be well formed with an init event, and every Bash call
+# must be denied (the same deny_record_counts the generator voids runs with).
+# The skill-owned checker, test/skills/<skill>/mode1-equiv.py reading
+# skills/<skill>/SKILL.md, only ever sees the list of attempted commands.
 # Check syntax: mode1_equiv:1900000000|1900000   (or 42.16~0.002 for a tolerance)
 # Args: $1 = skill, $2 = expected values
 assert_mode1_equiv() {
-  local skill="$1" spec="$2" t checker
+  local skill="$1" spec="$2" t checker counts cmds rc=0
   checker="${BATS_TEST_DIRNAME}/${skill}/mode1-equiv.py"
   if [ ! -f "$checker" ]; then
     echo "mode1_equiv: needs a skill-owned checker at $checker"
     return 1
   fi
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  local rc=0
-  python3 "$checker" "${BATS_TEST_DIRNAME}/../../skills/${skill}/SKILL.md" "$t" "$spec" 2>&1 || rc=$?
+  transcript_checked "$t" || return 1
+  counts="$(transcript_jq "$t" 't::deny_record_counts | "\(.undenied) \(.unseen) \(.orphans) \(.foreign)"')" \
+    || { echo "Could not read $t"; return 1; }
+  if [ "$counts" != "0 0 0 0" ]; then
+    echo "Bash tripwire/parser canary: undenied, unseen, orphan, foreign = $counts (every Bash call must be denied and seen)"
+    return 1
+  fi
+  cmds="$(mktemp "${BATS_TEST_TMPDIR:-${TMPDIR:-/tmp}}/mode1-cmds.XXXXXX")"
+  transcript_jq "$t" '[t::tool_uses[] | select(.name == "Bash") | .input.command]' > "$cmds" \
+    || { rm -f "$cmds"; echo "Could not read $t"; return 1; }
+  python3 "$checker" "${BATS_TEST_DIRNAME}/../../skills/${skill}/SKILL.md" "$cmds" "$spec" 2>&1 || rc=$?
+  rm -f "$cmds"
   if [ "$rc" -eq 2 ]; then
     echo "mode1_equiv: FIXTURE/CHECKER SETUP ERROR (exit 2), not a model result — fix the spec '$spec' or the checker's inputs"
   fi
   [ "$rc" -eq 0 ]
 }
-
