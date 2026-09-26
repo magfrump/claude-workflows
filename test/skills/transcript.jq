@@ -1,54 +1,88 @@
 # transcript.jq: the one strict reading of a `claude -p --output-format
 # stream-json --verbose` transcript, shared by generate-reports.bash (which
-# voids runs) and eval-helpers.bash (which grades them). Review iteration 4
-# (R2, A21): each consumer used to parse the stream its own way and skip
-# whatever it could not read, so an event of an unexpected shape could carry a
-# Bash call past every check. Here an unexpected shape is a problem, never
-# skipped, and "a Bash call", "denied" and "seen" are defined once.
+# voids runs) and eval-helpers.bash (which grades them).
+#
+# Why it is built this way (review iterations 4-5, R2/R3/R4): earlier readers
+# checked some places in a transcript and counted calls from others, so a call
+# in a place nobody looked passed every check. Here the list of calls is a
+# CENSUS: every object whose "type" is "tool_use", at any depth of any event,
+# found by recursion (`..`), not by position. The same census is what gets
+# validated, what gets counted, and what the eval checks read, so a call
+# cannot be counted without being checked or checked without being counted.
+# Wherever a call sits, it is found; if it sits anywhere but an assistant
+# event's message.content, the transcript is malformed. tool_results get the
+# same census. The verdict is a list of failure strings decided here, in one
+# place, and ends with a sentinel so a caller can tell a complete verdict from
+# a truncated one.
 #
 # Use:  jq -rR -n -L <dir-of-this-file> 'import "transcript" as t; ...'
-# with the transcript as input, one JSON event per line (blank lines ignored).
+# with the transcript as input, one JSON event per line.
 #
-# Shapes accepted, matching 13 real runs of CLI 2.1.283 (2026-09-25): every
-# line a JSON object; assistant and user events carry an object `message`
-# whose `content` is an array of objects, each with a string `type`; a
-# tool_use has string `id` and `name`, and a Bash tool_use an object `input`
-# with a string `command`; a tool_result has a string `tool_use_id`; a result
-# event's `permission_denials`, when present, is an array of objects with
-# string `tool_name` and `tool_use_id`. Other event types (system, rate-limit
-# and the like) need only be objects.
+# Accepted shapes, from 13 real runs on CLI 2.1.282/283 (2026-09-25), where
+# the census found exactly the positional calls (21 tool_use, 21 tool_result):
+#   - every line that contains "{" or "[" is one JSON object; a line with
+#     neither (a warning a CLI printed to stdout) is ignored, since no reader
+#     can find a call in it;
+#   - event types: system (any subtype), assistant, user, result,
+#     rate_limit_event;
+#   - assistant/user events: an object `message` whose `content` is an array
+#     of objects; assistant blocks are text, thinking, redacted_thinking or
+#     tool_use; user blocks are tool_result or text;
+#   - every tool_use: string `id` (unique in the transcript) and `name`; a
+#     Bash tool_use has an object `input` with a string `command`;
+#   - every tool_result: a string `tool_use_id`;
+#   - a result event's `permission_denials`, when present and not null: an
+#     array of objects with string `tool_name` and `tool_use_id`.
+# Anything else is a problem, so a CLI change voids runs loudly rather than
+# passing them. What this cannot catch: a command that ran and rewrote the
+# transcript before it is read (accidental breaches, not concealed ones).
 
 # The events, in order. A line that fails to parse becomes {"__unparsed": ...}
-# (a problem) when it starts like JSON, "{" or "[": that is how a model-chosen
-# input jq cannot read (a lone surrogate escape, deep nesting) would otherwise
-# vanish with the call it carries. A plain-text line (a warning a CLI printed
-# to stdout) cannot carry a tool call for any reader, so it becomes
-# {"__text": ...} and is ignored.
-# Note: inside `catch`, jq's input is the error message, so the line is bound
-# first (an earlier version tested the message and let a JSON-like line through).
+# when it contains "{" or "[" (it could have carried an event: a prefix such
+# as an ANSI escape or a BOM, a lone surrogate, deep nesting), else
+# {"__text": ...}, which is ignored. Inside `catch`, jq's input is the error
+# message, so the line is bound first.
 def events: [inputs | select(test("\\S")) | . as $line | (try fromjson catch
-  (if ($line | test("^\\s*[\\[{]")) then {"__unparsed": $line} else {"__text": $line} end))];
+  (if ($line | test("[\\[{]")) then {"__unparsed": $line} else {"__text": $line} end))];
 
 def _is_str: type == "string";
+# Control characters (newlines included) become spaces, so every verdict line
+# is exactly one line. A codepoint map, not a regex: Oniguruma misreads
+# \\u ranges in a character class.
+def _one_line: explode | map(if . < 32 or . == 127 then 32 else . end) | implode;
 
-# A description of what is wrong with one event, or empty when it is well formed.
+# The census: every tool_use object at any depth of any event, and every
+# tool_result object likewise.
+def tool_uses: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_use")];
+def tool_results: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_result")];
+
+# How many of each sit where they belong: assistant (tool_use) or user
+# (tool_result) message.content arrays. When these differ from the census
+# counts, a call or result sits somewhere else.
+def _placed_tool_uses: [.[] | objects | select(.type == "assistant") | .message | objects | .content | arrays | .[]
+  | objects | select(.type == "tool_use")] | length;
+def _placed_tool_results: [.[] | objects | select(.type == "user") | .message | objects | .content | arrays | .[]
+  | objects | select(.type == "tool_result")] | length;
+
 def _event_problems:
   if type != "object" then "a line is not a JSON object"
-  elif has("__unparsed") then "a line starting like JSON does not parse"
+  elif has("__unparsed") then "a line containing JSON-like text does not parse"
+  elif has("__text") then empty
+  elif (.type | _is_str | not) then "an event has no string type"
+  elif ([.type] | inside(["system", "assistant", "user", "result", "rate_limit_event"]) | not) then
+    "an event of unknown type \(.type | _one_line)"
   elif (.type == "assistant" or .type == "user") then
-    if (.message | type) != "object" then "\(.type) event: message is not an object"
-    elif (.message.content | type) != "array" then "\(.type) event: message.content is not an array"
-    else
-      .message.content[] |
-      if type != "object" or ((.type // null) | _is_str | not) then "a content block is not an object with a string type"
-      elif .type == "tool_use" then
-        if ((.id | _is_str) and (.name | _is_str)) | not then "a tool_use has no string id and name"
-        elif .name == "Bash" and ((.input | type) != "object" or ((.input.command // null) | _is_str | not)) then
-          "a Bash tool_use has no string input.command"
+    (.type) as $et
+    | if (.message | type) != "object" then "\($et) event: message is not an object"
+      elif (.message.content | type) != "array" then "\($et) event: message.content is not an array"
+      else
+        .message.content[] |
+        if type != "object" or (.type | _is_str | not) then "a content block is not an object with a string type"
+        elif ($et == "assistant" and ([.type] | inside(["text", "thinking", "redacted_thinking", "tool_use"]) | not))
+          or ($et == "user" and ([.type] | inside(["tool_result", "text"]) | not)) then
+          "\($et) event: unknown content block type \(.type | _one_line)"
         else empty end
-      elif .type == "tool_result" and ((.tool_use_id // null) | _is_str | not) then "a tool_result has no string tool_use_id"
-      else empty end
-    end
+      end
   elif .type == "result" and has("permission_denials") and .permission_denials != null then
     if (.permission_denials | type) != "array" then "result event: permission_denials is not an array"
     else
@@ -59,43 +93,73 @@ def _event_problems:
     end
   else empty end;
 
-# Every problem in the stream, as strings. Non-empty means: do not trust it.
-def problems: [.[] | _event_problems];
+def _census_problems:
+  tool_uses as $u | tool_results as $r
+  | ($u[] | if ((.id | _is_str) and (.name | _is_str)) | not then "a tool_use has no string id and name"
+            elif .name == "Bash" and ((.input | type) != "object" or (.input.command | _is_str | not)) then
+              "a Bash tool_use has no string input.command"
+            else empty end),
+    ($r[] | if (.tool_use_id | _is_str) | not then "a tool_result has no string tool_use_id" else empty end),
+    (if ($u | length) != _placed_tool_uses then "a tool_use outside an assistant event's message.content" else empty end),
+    (if ($r | length) != _placed_tool_results then "a tool_result outside a user event's message.content" else empty end),
+    (if ([$u[] | .id] | length) != ([$u[] | .id] | unique | length) then "two tool_uses share an id" else empty end);
+
+# Every problem in the stream, as one-line strings. Non-empty means: do not trust it.
+def problems: [(.[] | _event_problems), _census_problems] | map(_one_line);
 
 # The first init event, or null.
 def init: [.[] | objects | select(.type == "system" and .subtype == "init")] | first;
 
-# Tool calls: {id, name, input} for every tool_use, at any depth (sub-agents'
-# events are assistant events too).
-def tool_uses:
-  [.[] | objects | select(.type == "assistant") | .message.content[]? | objects | select(.type == "tool_use")
-   | {id, name, input}];
+# Denials, from top-level result events only.
+def denials: [.[] | objects | select(.type == "result") | .permission_denials | arrays | .[] | objects
+  | {tool_name, tool_use_id}];
 
-# Every denial as {tool_name, tool_use_id}.
-def denials: [.[] | objects | select(.type == "result") | .permission_denials[]? | objects | {tool_name, tool_use_id}];
+# A set (object) of string ids, for O(1) membership: $set[$id].
+def _set: map(select(_is_str) | {(.): true}) | add // {};
 
-# tool_use ids that have a tool_result (a call that got an answer, denied or run).
-def tool_result_ids: [.[] | objects | select(.type == "user") | .message.content[]? | objects
-  | select(.type == "tool_result") | .tool_use_id];
+# The verdict for any transcript run: a list of one-line failure strings
+# (empty: it passed). Callers print it with print_verdict and must see the
+# sentinel as the last line, or treat the verdict as failed.
+def verdict_end: "__VERDICT_COMPLETE__";
+def transcript_failures:
+  problems as $p
+  | $p + (if init == null then ["no init event in the stream (the run did not start?)"] else [] end);
 
-# A set (object) of the given string ids, for O(1) membership: $set[$id].
-def _set: map({(.): true}) | add // {};
+# The verdict for a FIXTURE_BASH=deny-record run: transcript_failures, plus
+# (whenever the stream is well formed, so every id below is a string, even
+# with no init event, so a run that already failed still reports an executed
+# call):
+#   - the init event must list exactly ["Bash"], the only tool granted;
+#   - every tool_use must be Bash;
+#   - tripwire: every tool_use must be named by a Bash denial (else it may
+#     have run);
+#   - parser canaries: every Bash denial and every tool_result must answer a
+#     tool_use in the census;
+#   - only Bash may be denied.
+def deny_record_failures:
+  transcript_failures as $base
+  | if (problems | length) > 0 then $base
+    else $base +
+      (init | (.claude_code_version // "unknown") | tostring | _one_line) as $cli
+      | tool_uses as $u
+      | ([$u[] | .id] | _set) as $all
+      | denials as $d
+      | ([$d[] | select(.tool_name == "Bash") | .tool_use_id]) as $denied
+      | ($denied | _set) as $dset
+      | [ (init | .tools) as $tools
+          | if init != null and $tools != ["Bash"] then "Bash init canary: the init event's tools are \($tools | tojson | _one_line), not exactly [\"Bash\"] (CLI \($cli))" else empty end,
+          ([$u[] | select(.name != "Bash")] | length) as $n
+          | if $n > 0 then "Bash tripwire: \($n) call(s) of a tool other than Bash, the only tool granted" else empty end,
+          ([$u[] | select($dset[.id] | not)] | length) as $n
+          | if $n > 0 then "Bash tripwire: \($n) call(s) not in permission_denials (may have executed)" else empty end,
+          ([$denied[] | select($all[.] | not)] | length) as $n
+          | if $n > 0 then "Bash parser canary: \($n) Bash denial(s) name a tool_use not in the census (CLI \($cli))" else empty end,
+          ([tool_results[] | select($all[.tool_use_id] | not)] | length) as $n
+          | if $n > 0 then "Bash parser canary: \($n) tool_result(s) answer a tool_use not in the census (CLI \($cli); a call may have run unseen)" else empty end,
+          ([$d[] | select(.tool_name != "Bash")] | length) as $n
+          | if $n > 0 then "Bash tripwire: \($n) denial(s) of a tool other than Bash" else empty end
+        ]
+    end;
 
-# Deny-record verdict counts (see generate-reports.bash's generate_one). Only
-# meaningful when `problems` is empty, which guarantees every id is a string.
-#   undenied   Bash tool_uses whose id no Bash denial names (may have run)
-#   unseen     Bash denials naming a tool_use the parser did not see
-#   orphans    tool_results answering a tool_use the parser did not see
-#   foreign    denials of a tool other than Bash (only Bash is granted)
-def deny_record_counts:
-  (tool_uses) as $uses
-  | ([$uses[] | select(.name == "Bash") | .id]) as $bash
-  | ($bash | _set) as $bash_set
-  | ([$uses[] | .id] | _set) as $all_set
-  | (denials) as $d
-  | ([$d[] | select(.tool_name == "Bash") | .tool_use_id]) as $denied
-  | ($denied | _set) as $denied_set
-  | { undenied: ([$bash[] | select($denied_set[.] | not)] | length),
-      unseen:   ([$denied[] | select($bash_set[.] | not)] | length),
-      orphans:  ([tool_result_ids[] | select($all_set[.] | not)] | length),
-      foreign:  ([$d[] | select(.tool_name != "Bash")] | length) };
+# Print a verdict (an array of failures) as lines, then the sentinel.
+def print_verdict: (.[] | _one_line), verdict_end;

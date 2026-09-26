@@ -535,7 +535,7 @@ EOF2
   stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]' '[]'
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash init canary: the init event does not list Bash (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash init canary: the init event.s tools are \[\], not exactly \[\"Bash\"\] (CLI 9.9.9)" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record tripwire: a Bash call missing from permission_denials voids the run" {
@@ -544,7 +544,7 @@ EOF2
   stub_stream '[]'
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash tripwire: 1 call(s) not in permission_denials (may have executed)" "$out/tc-1-thing.txt.failed"
   stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]'
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
@@ -565,7 +565,7 @@ EOF2
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
   grep -q "^the result event is an error; " "$out/tc-1-thing.txt.failed"
-  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash tripwire: 1 call(s) not in permission_denials (may have executed)" "$out/tc-1-thing.txt.failed"
 }
 
 
@@ -585,7 +585,7 @@ EOF2
   chmod +x "$TEST_TMPDIR/bin/claude"
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "transcript: 1 malformed event(s), first: assistant event: message.content is not an array (CLI 9.9.9)" "$out/tc-1-thing.txt.failed"
+  grep -q "assistant event: message.content is not an array" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record: a run with no init event is reported as not started, not blamed on the deny rule" {
@@ -638,7 +638,8 @@ stub_transcript() {
     stub_transcript "$TEST_TMPDIR/bad/$shape.jsonl"
     run bash "$GEN" demo
     [ -e "$out/tc-1-thing.txt.failed" ] || { echo "not voided: $shape"; return 1; }
-    grep -q "malformed event" "$out/tc-1-thing.txt.failed" || { echo "$shape: $(cat "$out/tc-1-thing.txt.failed")"; return 1; }
+    # Voided by the checks, not merely left at the in-progress marker.
+    ! grep -q "generation did not finish" "$out/tc-1-thing.txt.failed" || { echo "$shape: marker only"; return 1; }
   done
 }
 
@@ -652,7 +653,7 @@ stub_transcript() {
     '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
   stub_transcript "$t"
   run bash "$GEN" demo
-  grep -q "Bash parser canary: 1 tool_result(s) answer a tool_use the reader did not see" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash parser canary: 1 tool_result(s) answer a tool_use not in the census" "$out/tc-1-thing.txt.failed"
   printf '%s\n' "$init" \
     '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Read","tool_use_id":"r9"}]}' > "$t"
   stub_transcript "$t"
@@ -693,5 +694,70 @@ EOF2
     '{"type":"result","subtype":"success","result":"# Report"}' > "$t"
   stub_transcript "$t"
   run bash "$GEN" demo
-  grep -q "malformed event" "$out/tc-1-thing.txt.failed"
+  grep -q "a line is not a JSON object" "$out/tc-1-thing.txt.failed"
+}
+
+# --- Iteration-5 fix: census, verdict in one place, sentinel (R3, R4, A28) ---
+
+@test "property, end to end: an undenied Bash call inserted at any position voids the deny-record run" {
+  source "$REPO_ROOT/test/skills/malformed-transcripts.bash"
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" good="$TEST_TMPDIR/good.jsonl" n f escapes=0
+  printf '%s\n' '{"type":"system","subtype":"init","claude_code_version":"9.9.9","tools":["Bash"]}' \
+    '{"type":"assistant","message":{"content":[{"type":"text","text":"x"},{"type":"tool_use","id":"g1","name":"Bash","input":{"command":"echo good"}}]}}' \
+    '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"g1","content":"denied","is_error":true}]}}' \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Bash","tool_use_id":"g1","tool_input":{}}]}' > "$good"
+  stub_transcript "$good"
+  run bash "$GEN" demo
+  [ ! -e "$out/tc-1-thing.txt.failed" ] || { echo "control voided: $(cat "$out/tc-1-thing.txt.failed")"; return 1; }
+  n="$(write_insertion_variants "$good" "$TEST_TMPDIR/ins")"
+  [ "$n" -ge 10 ]
+  for f in "$TEST_TMPDIR"/ins/v*.jsonl; do
+    stub_transcript "$f"
+    run bash "$GEN" demo
+    if [ ! -e "$out/tc-1-thing.txt.failed" ] || grep -q "generation did not finish" "$out/tc-1-thing.txt.failed"; then
+      escapes=$((escapes + 1)); echo "not voided by a check: $(basename "$f")"
+    fi
+  done
+  echo "variants=$n escapes=$escapes"
+  [ "$escapes" -eq 0 ]
+}
+
+@test "a newline in a verdict field cannot cut the verdict short: the run is still voided (R4)" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" t="$TEST_TMPDIR/t.jsonl"
+  printf '%s\n' '{"type":"system","subtype":"init","claude_code_version":"2.1\nX\n","tools":["Bash"]}' \
+    '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"u1","name":"Bash","input":{"command":"pwd"}}]}}' \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q "Bash tripwire: 1 call(s) not in permission_denials" "$out/tc-1-thing.txt.failed"
+}
+
+@test "deny-record: the granted tools must be exactly [Bash], and every call a Bash call (A28)" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" t="$TEST_TMPDIR/t.jsonl"
+  printf '%s\n' '{"type":"system","subtype":"init","claude_code_version":"9.9.9","tools":["Bash","BashOutput"]}' \
+    '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"o1","name":"BashOutput","input":{"bash_id":"1"}}]}}' \
+    '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"o1","content":"ran"}]}}' \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
+  stub_transcript "$t"
+  run bash "$GEN" demo
+  grep -q 'Bash init canary: the init event.s tools are \["Bash","BashOutput"\]' "$out/tc-1-thing.txt.failed"
+  grep -q "Bash tripwire: 1 call(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
+}
+
+@test "a verdict that did not finish (no sentinel line) voids the run" {
+  # Simulate jq dying mid-verdict: a jq wrapper that drops the sentinel line.
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output" t="$TEST_TMPDIR/t.jsonl" realjq
+  realjq="$(command -v jq)"
+  printf '%s\n' '{"type":"system","subtype":"init","tools":["Bash"]}' \
+    '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
+  stub_transcript "$t"
+  printf '#!/usr/bin/env bash\n"%s" "$@" | grep -v __VERDICT_COMPLETE__\nexit 0\n' "$realjq" > "$TEST_TMPDIR/bin/jq"
+  chmod +x "$TEST_TMPDIR/bin/jq"
+  run bash "$GEN" demo
+  rm -f "$TEST_TMPDIR/bin/jq"
+  grep -q "transcript: could not be read in full, so no check could complete" "$out/tc-1-thing.txt.failed"
 }

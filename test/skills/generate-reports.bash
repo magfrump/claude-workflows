@@ -245,78 +245,55 @@ generate_one() {
   [ "$rc" -eq 0 ] || failure="claude exited $rc"
 
   if [ "$FIXTURE_TRANSCRIPT" = 1 ]; then
-    # The report is what the model finally said: the result event's text. A
-    # run that died before emitting one leaves an empty report (warned below).
-    # -R + fromjson? parses line by line and skips non-JSON lines (a stray
-    # warning on stdout), which would otherwise abort jq and lose the report.
-    jq -rR 'fromjson? | select(.type == "result") | .result // empty' "$transcript_path" \
+    # The report is what the model finally said: the last result event's text,
+    # read through transcript.jq like everything else (review iteration 5,
+    # C36). A run that died before emitting one leaves an empty report (warned
+    # below); a malformed transcript is voided by the checks that follow.
+    jq -rR -n -L "$SCRIPT_DIR" 'import "transcript" as t;
+      t::events | [.[] | objects | select(.type == "result")] | last | .result // empty
+      | if type == "string" then . else tojson end' "$transcript_path" \
       > "$report_path" 2>/dev/null || : > "$report_path"
     if [ -z "$failure" ]; then
       local result_state
-      result_state=$(jq -rR 'fromjson? | select(.type == "result") | if .is_error then "error" else "ok" end' \
-        "$transcript_path" 2>/dev/null | tail -n 1)
+      result_state=$(jq -rR -n -L "$SCRIPT_DIR" 'import "transcript" as t;
+        t::events | [.[] | objects | select(.type == "result")] | last
+        | if . == null then "none" elif .is_error == true then "error" else "ok" end' \
+        "$transcript_path" 2>/dev/null)
       case "$result_state" in
         ok) ;;
         error) failure="the result event is an error" ;;
         *) failure="no result event in the stream" ;;
       esac
     fi
-    # Transcript checks, through the one strict reader, transcript.jq (review
-    # iteration 4, R2/A21): the same definitions eval-helpers.bash grades with.
-    #  - well-formed: any line or event of a shape the reader does not expect
-    #    voids the run, instead of being skipped. Skipping was how a Bash call
-    #    could ride past every check inside an unexpected shape.
-    #  - init: the stream must contain an init event. A run that died before
-    #    one is reported as that, not blamed on a check below (A17).
-    # Under deny-record also (definitions in transcript.jq's deny_record_counts):
-    #  - tripwire: every Bash tool_use must be named by a Bash denial; one that
-    #    is not may have run. Also when the run already failed, so an executed
-    #    call is never hidden behind "claude exited N" (C10).
-    #  - parser canaries: every Bash denial and every tool_result must answer a
-    #    tool_use the reader saw, so a call moved to a place the reader does not
-    #    look still voids the run, whether it was denied or ran (A16, A22).
-    #  - only Bash may be denied, since only Bash is granted.
-    #  - init canary: the init event must list Bash. If a CLI change made
-    #    'Bash(**)' remove the tool, as 'Bash(*)' does, every fixture would read
-    #    as "the model did not route" (C17). The init event also carries
-    #    claude_code_version, so each kept transcript records its CLI.
-    # These catch accidental breaches, not concealed ones: a command that did
-    # run could rewrite the transcript before this reads it (C29).
-    local verdict problems n_problems init_state cli_version counts
-    verdict=$(jq -rR -n -L "$SCRIPT_DIR" 'import "transcript" as t;
-      t::events | [ (t::problems | length), (t::problems | first // ""),
-        (t::init | if . == null then "none" elif ((.tools // []) | type == "array" and index(["Bash"]) != null) then "bash" else "nobash" end),
-        (t::init | .claude_code_version // "unknown"),
-        (if (t::problems | length) == 0 then (t::deny_record_counts | "\(.undenied) \(.unseen) \(.orphans) \(.foreign)") else "" end)
-      ] | join("\u001f")' "$transcript_path" 2>/dev/null) || verdict=""
-    if [ -z "$verdict" ]; then
-      failure="${failure:+$failure; }transcript: could not be read, so no check could run"
+    # Transcript checks: transcript.jq decides the verdict, in one place, for
+    # the generator and the eval checks alike (review iterations 4-5, R2-R4).
+    # Every transcript run gets transcript_failures: the stream must be well
+    # formed by the module's rules and hold an init event. Its call census
+    # finds every tool_use object at any depth, so a call cannot sit anywhere
+    # it is not both checked and counted. A FIXTURE_BASH=deny-record run gets
+    # deny_record_failures instead, which adds (see the module for each rule):
+    # the init event's tools exactly ["Bash"]; every call a Bash call; every
+    # call denied (tripwire); every Bash denial and every tool_result answering
+    # a call in the census (parser canaries); no denial of another tool. These
+    # run also when the run already failed, so an executed call is never hidden
+    # behind "claude exited N". The verdict ends with a sentinel line: without
+    # it (jq failed, output cut short) the run is void, so a verdict that did
+    # not finish can never read as a pass. These checks catch accidental
+    # breaches, not concealed ones: a command that did run could rewrite the
+    # transcript before this reads it.
+    local verdict_def=transcript_failures verdict_lines=() v
+    [ "$FIXTURE_BASH" = "deny-record" ] && verdict_def=deny_record_failures
+    if [ -r "$transcript_path" ]; then
+      mapfile -t verdict_lines < <(jq -rR -n -L "$SCRIPT_DIR" \
+        "import \"transcript\" as t; t::events | t::$verdict_def | t::print_verdict" \
+        "$transcript_path" 2>/dev/null)
+    fi
+    if [ "${#verdict_lines[@]}" -eq 0 ] || [ "${verdict_lines[${#verdict_lines[@]}-1]}" != "__VERDICT_COMPLETE__" ]; then
+      failure="${failure:+$failure; }transcript: could not be read in full, so no check could complete"
     else
-      # \x1f, not a tab: read collapses runs of whitespace separators, so an
-      # empty field (no problem text, no counts) would shift the rest.
-      IFS=$'\x1f' read -r n_problems problems init_state cli_version counts <<< "$verdict"
-      if [ "$n_problems" != 0 ]; then
-        failure="${failure:+$failure; }transcript: $n_problems malformed event(s), first: $problems (CLI $cli_version)"
-      fi
-      if [ "$init_state" = none ]; then
-        failure="${failure:+$failure; }no init event in the stream (the run did not start?)"
-      fi
-      if [ "$FIXTURE_BASH" = "deny-record" ]; then
-        [ "$init_state" != nobash ] \
-          || failure="${failure:+$failure; }Bash init canary: the init event does not list Bash (CLI $cli_version; did the deny rule remove the tool?)"
-        if [ -n "$counts" ]; then
-          local undenied unseen orphans foreign
-          read -r undenied unseen orphans foreign <<< "$counts"
-          [ "$undenied" = 0 ] \
-            || failure="${failure:+$failure; }Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
-          [ "$unseen" = 0 ] \
-            || failure="${failure:+$failure; }Bash parser canary: $unseen Bash denial(s) name a tool_use the reader did not see (CLI $cli_version; did the event shape change?)"
-          [ "$orphans" = 0 ] \
-            || failure="${failure:+$failure; }Bash parser canary: $orphans tool_result(s) answer a tool_use the reader did not see (CLI $cli_version; a call may have run unseen)"
-          [ "$foreign" = 0 ] \
-            || failure="${failure:+$failure; }Bash tripwire: $foreign denial(s) of a tool other than Bash, the only tool granted"
-        fi
-      fi
+      for v in "${verdict_lines[@]:0:${#verdict_lines[@]}-1}"; do
+        failure="${failure:+$failure; }$v"
+      done
     fi
   fi
 

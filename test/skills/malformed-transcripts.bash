@@ -9,9 +9,11 @@
 # DENIED Bash call (id g1) running <good-bash-command>, one bad line, and a
 # result event denying g1 only. So a reader that skips the bad line sees a
 # fully passing run, and only rejecting the bad shape fails it. Where the bad
-# line itself carries a Bash call, that call (id x1) is never denied: a reader
-# that skipped it would let an undenied, possibly executed call through
-# (Stage 2.5 Claim 26b).
+# line itself carries a Bash call, that call is never denied (id x1, or a
+# missing or non-string id in object_id and no_id): a reader that skipped it
+# would let an undenied, possibly executed call through (Stage 2.5 Claim 26b).
+# The table is past findings; write_insertion_variants below is the property
+# (every position), which the census must pass by construction.
 MALFORMED_SHAPES=(array_wrapped string_content string_message nonobject_block
   denials_number list_tool_use_id object_id number_line surrogate deep
   numeric_command no_id tool_result_no_id)
@@ -44,4 +46,25 @@ write_malformed_transcripts() {
       printf '%s\n' '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Bash","tool_use_id":"g1","tool_input":{}}]}'
     } > "$dir/$shape.jsonl"
   done
+}
+
+# write_insertion_variants <good-transcript> <dir>: the property test's inputs
+# (review iteration 5, R3). For every event line and every object or array in
+# it (the event itself included), one variant with an undenied Bash tool_use
+# inserted there: appended to an array, or added under a new key of an
+# object. A reader that counts calls only from positions it knows would miss
+# most of them; the census must find every one. Prints the variant count.
+write_insertion_variants() {
+  local good="$1" dir="$2"
+  mkdir -p "$dir"
+  jq -rR -n '
+    [inputs] as $lines
+    | {"type":"tool_use","id":"inserted1","name":"Bash","input":{"command":"pwd"}} as $call
+    | range(0; $lines | length) as $i
+    | ($lines[$i] | fromjson) as $ev
+    | ([$ev | paths(type == "object" or type == "array")] + [[]])[] as $p
+    | ($ev | getpath($p)) as $v
+    | ($ev | setpath($p; if ($v | type) == "array" then $v + [$call] else $v + {"x_inserted": $call} end)) as $new
+    | [$lines[0:$i][], ($new | tojson), $lines[$i + 1:][]] | join("\u001e")' "$good" \
+  | awk -v dir="$dir" '{ n++; f = dir "/v" n ".jsonl"; gsub("\036", "\n"); print > f; close(f) } END { print n + 0 }'
 }

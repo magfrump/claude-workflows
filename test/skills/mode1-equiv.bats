@@ -107,7 +107,8 @@ transcript() {
 
 @test "a bad value spec or missing argument exits 2 with a message, not a traceback" {
   transcript "$(with_expr '1 + 1')"
-  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$SKILL_MD" "$T" 'abc'
+  echo '[]' > "$TEST_TMPDIR/cmds.json"
+  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$SKILL_MD" "$TEST_TMPDIR/cmds.json" 'abc'
   [ "$status" -eq 2 ]
   [[ "$output" == *"bad expected value"* ]]
   [[ "$output" != *"Traceback"* ]]
@@ -271,7 +272,7 @@ transcript() {
   printf 'a stray warning line\n{"type":"result","subtype":"success","result":"x"}\n' > "$T"
   run assert_no_tool_called Bash
   [ "$status" -ne 0 ]
-  [[ "$output" == *"No init event"* ]]
+  [[ "$output" == *"no init event"* ]]
 }
 
 
@@ -307,13 +308,20 @@ transcript() {
   grep -v '^123$' "$TEST_TMPDIR/bad/number_line.jsonl" > "$T"
   run assert_mode1_equiv arithmetic-eval '2'
   [ "$status" -eq 0 ] || { echo "control failed: $output"; return 1; }
+  # no_tool_called's control: the good transcript has no Bash call running
+  # `rm`, so it passes; only the bad shape may make it fail. (An earlier
+  # version passed "Bash=rm" as one tool name, which failed on the control
+  # too and so tested nothing; review iteration 5, api #2.)
+  run assert_no_tool_called Bash '"command":"pwd"'
+  [ "$status" -eq 0 ] || { echo "no_tool_called control failed: $output"; return 1; }
   for shape in "${MALFORMED_SHAPES[@]}"; do
     cp "$TEST_TMPDIR/bad/$shape.jsonl" "$T"
     run assert_mode1_equiv arithmetic-eval '2'
     [ "$status" -ne 0 ] || { echo "mode1_equiv passed on $shape"; return 1; }
-    [[ "$output" == *"Malformed transcript"* ]] || { echo "$shape: $output"; return 1; }
-    run assert_no_tool_called Bash=rm
+    [[ "$output" == *" fails: "* ]] || { echo "$shape: $output"; return 1; }
+    run assert_no_tool_called Bash '"command":"pwd"'
     [ "$status" -ne 0 ] || { echo "no_tool_called passed on $shape"; return 1; }
+    [[ "$output" == *" fails: "* ]] || { echo "$shape (no_tool_called): $output"; return 1; }
   done
 }
 
@@ -355,5 +363,45 @@ transcript() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"No Bash call."* ]]
   [[ "$output" != *"/./"* ]]
+}
+
+
+# --- Iteration-5 fix: the census (R3). A property, not a table of shapes. ---
+
+@test "property: an undenied Bash call inserted at ANY object or array position fails the deny-record verdict and the eval checks" {
+  source "$BATS_TEST_DIRNAME/malformed-transcripts.bash"
+  transcript "$(with_expr '1 + 1')"
+  # Control: the untouched transcript passes.
+  run assert_mode1_equiv arithmetic-eval '2'
+  [ "$status" -eq 0 ] || { echo "control failed: $output"; return 1; }
+  local good="$TEST_TMPDIR/good.jsonl" n f escapes=0
+  cp "$T" "$good"
+  n="$(write_insertion_variants "$good" "$TEST_TMPDIR/ins")"
+  [ "$n" -ge 10 ] || { echo "only $n variants"; return 1; }
+  for f in "$TEST_TMPDIR"/ins/v*.jsonl; do
+    if [ "$(transcript_jq "$f" 't::deny_record_failures | length')" = 0 ]; then
+      escapes=$((escapes + 1)); echo "verdict passed: $(basename "$f")"
+    fi
+    cp "$f" "$T"
+    run assert_mode1_equiv arithmetic-eval '2'
+    [ "$status" -ne 0 ] || { escapes=$((escapes + 1)); echo "mode1_equiv passed: $(basename "$f")"; }
+    run assert_no_tool_called Bash pwd
+    [ "$status" -ne 0 ] || { escapes=$((escapes + 1)); echo "no_tool_called passed: $(basename "$f")"; }
+  done
+  echo "variants=$n escapes=$escapes"
+  [ "$escapes" -eq 0 ]
+}
+
+@test "a SKILL.md whose evaluator changed its output format fails the self-test: exit 2, in --check-spec too" {
+  # Before the self-test (review iteration 5, A27) this SKILL.md passed
+  # --check-spec and every graded command scored None, exit 1: a model result.
+  local bad="$TEST_TMPDIR/SKILL.md"
+  sed 's/{src.strip()} -> {result}/{src.strip()} => {result}/' "$SKILL_MD" > "$bad"
+  grep -q '=> {result}' "$bad"
+  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" --check-spec "$bad" '42'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"failed its self-test"* ]]
+  run python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" --check-spec "$SKILL_MD" '42'
+  [ "$status" -eq 0 ]
 }
 

@@ -32,9 +32,12 @@ Usage: mode1-equiv.py <SKILL.md> <commands.json> <expected>
   --check-spec validates <expected> and SKILL.md's Mode 1 block without any
   commands, so a broken fixture spec is caught before any paid run.
 Exit 0 on a match (or a valid spec), 1 on no match (per-command diagnostics on
-stdout), 2 on anything else: a usage, spec, file or SKILL.md problem, or any
-unexpected error in this script (message on stderr). Exit 1 therefore always
-means "the model's commands did not compute the value", never a checker fault.
+stdout), 2 on anything else (message on stderr): a usage, spec or file
+problem; a SKILL.md whose Mode 1 block does not extract, or whose evaluator
+fails a self-test (6 * 7 must give 42), which --check-spec runs too; or any
+unexpected error in this script. So exit 1 means "the model's commands did not
+compute the value", unless the evaluator misbehaves only on some inputs, which
+the self-test cannot see.
 """
 import ast
 import json
@@ -83,9 +86,16 @@ def reference(skill_path):
     if not w:
         raise SetupError("SKILL.md's own Mode 1 block does not match the wrapper pattern")
     try:
-        return w[0], ast.dump(ast.parse(w[0]))
+        dump = ast.dump(ast.parse(w[0]))
     except SyntaxError as e:
         raise SetupError(f"SKILL.md's Mode 1 program does not parse: {e}")
+    # Self-test the evaluator's behavior, not only its text: if SKILL.md's
+    # evaluator stopped printing "-> <value>" as this script parses it, every
+    # command would score None and exit 1, reading as a model result (review
+    # iteration 5, A27). 6 * 7 must give 42.
+    if evaluate(w[0], "6 * 7") != 42:
+        raise SetupError("SKILL.md's Mode 1 evaluator failed its self-test (6 * 7 did not give 42)")
+    return w[0], dump
 
 
 def read_text(path):
