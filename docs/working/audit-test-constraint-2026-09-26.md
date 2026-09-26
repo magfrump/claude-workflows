@@ -25,13 +25,13 @@ Fixes are verified by mutation: break the production line, watch the test go red
 
 | Batch | Scope | Status |
 |---|---|---|
-| A | test/*.bats agents-gemini-sync … merge-safety (16) | audited; fixes in progress |
-| B | cc-isolated-functions, init-firewall-rules, test_cc_sni_proxy.py | audited; fixes in progress |
-| C | install-host, link-claude-home-wiring, hermeticity-lint | audited; fixes in progress |
-| D | test/*.bats lite-review-grammar … worktree-cleanup-functions (17) | audited; fixes in progress |
-| E | test/hooks/*, test/scripts/* (14) | audited; fixes in progress |
-| F | test/skills non-templated suites (~17) + arithmetic-eval/mode1-equiv.py | audited; fixes in progress |
-| G | test/skills *-eval.bats / *-format.bats pairs (~46) | pending |
+| A | test/*.bats agents-gemini-sync … merge-safety (16) | done |
+| B | cc-isolated-functions, init-firewall-rules, test_cc_sni_proxy.py | done |
+| C | install-host, link-claude-home-wiring, hermeticity-lint | done |
+| D | test/*.bats lite-review-grammar … worktree-cleanup-functions (17) | done |
+| E | test/hooks/*, test/scripts/* (14) | done |
+| F | test/skills non-templated suites (~17) + arithmetic-eval/mode1-equiv.py | done |
+| G | test/skills *-eval.bats / *-format.bats pairs (~46) | done |
 
 ## Findings
 
@@ -122,3 +122,33 @@ Four fix agents are editing disjoint files; the parent commits. Their groups:
   - An unreproduced one-off `✗ fact-check: missing 'when' field` during a concurrent-edit window; it was clean on 7 reruns.
   - `check_feature_integration` aborts silently under `set -e` if si-functions.sh held only one-line function definitions, because the `grep -v` finds nothing. The real file isn't like that.
 - G: harness fix (T1–T6) in progress. The per-skill assertion pass (expected-verdicts cites, *-format assertions vs SKILL.md) follows it.
+
+## Outcome (2026-09-26)
+
+All 118 test files audited, and every VACUOUS/WEAK finding fixed or routed to a question. Each fix was checked by mutation: the named production break stayed green before the fix and goes red after it.
+
+| Batch | Commits |
+|---|---|
+| A | 86c8e65 |
+| B/C | 4a4d0ef |
+| D | bd01eb5, b1780ac, 0b1ebf4 |
+| E | 920916b |
+| F | ab8f13f |
+| G | 48680e2 (harness T1–T6), 69b379f (per-skill verdicts/format; synthetic good/bad reports 129/129) |
+
+Final state: `run-tests.sh --fast` gives 1030 ok, and `--slow` gives 261 ok, both exit 0. 50 report-dependent suites are listed NOT RUN until reports are regenerated.
+
+**Open, needs you:**
+- Q-065: dead `prepend_si_input_rejected_history`
+- Q-066: host strict run of the sandbox drift check
+- Q-067: when to regenerate skill eval reports
+
+**Accepted residuals (not vacuity):**
+- `cross-model-review` dropping `pricing and` is an equivalent mutant, so no test can catch it.
+- `drop_fixture_echo` drops whole lines only.
+- The pre-mortem finding block is the whole section when narratives have no headings.
+- The fact-check runner records no transcript, so `web_search_used` stays a text check.
+- c5.1's expected verdict is arguable.
+- health-check gates 9 and 11 have no negative test.
+- The security, performance, api-consistency and architecture format suites require `##` sections, although SKILL.md never fixes the report's heading level. This is over-constraint (a false-red risk), not under-constraint. Past reports used `##`.
+- `check_feature_integration` has a latent `set -e` edge.
