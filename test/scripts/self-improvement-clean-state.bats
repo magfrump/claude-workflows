@@ -16,6 +16,7 @@
 #   A5  round-history.json from earlier runs broke the prior-round verdicts
 #   A9  conflict_unresolved tasks were logged as completed / hypothesised
 #   A11 convergence exit skipped the round report
+# A3 also pins the main loop's print_round_summary call (stdout + log line).
 # Unit-level tests for the helpers are in test/si-clean-state.bats.
 #
 # Usage: bats test/scripts/self-improvement-clean-state.bats
@@ -125,6 +126,11 @@ run_si() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"feat/r1-a"*"already exists"* ]]
   [ "$(git -C "$REPO" rev-parse feat/r1-a)" = "$sha" ]
+  # Main-loop wiring of print_round_summary (the smoke suite calls it by hand,
+  # so only a real run can see the call go missing): the skipped task a is not
+  # counted as launched, and the line lands on stdout AND in the round's log.
+  echo "$output" | grep -qx 'Round 1: 1 launched, 1 approved, 0 rejected'
+  [ "$(tail -n 1 "$WD/validation-round-1.log")" = "Round 1: 1 launched, 1 approved, 0 rejected" ]
 }
 
 @test "A4: stale ideas/tasks files from an earlier run do not start another round" {

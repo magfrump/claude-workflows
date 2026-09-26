@@ -110,14 +110,16 @@ agent_post_subagent() {
 
 # --- Resilience ---
 
-@test "hook exits 0 on malformed JSON" {
-  echo 'not json at all' | bash "$HOOK"
-  [ "$?" -eq 0 ]
+@test "hook exits 0 on malformed JSON and logs nothing" {
+  run bash "$HOOK" <<< 'not json at all'
+  [ "$status" -eq 0 ]
+  [ ! -s "$TEST_LOG" ]
 }
 
-@test "hook exits 0 on empty input" {
-  echo '' | bash "$HOOK"
-  [ "$?" -eq 0 ]
+@test "hook exits 0 on empty input and logs nothing" {
+  run bash "$HOOK" <<< ''
+  [ "$status" -eq 0 ]
+  [ ! -s "$TEST_LOG" ]
 }
 
 @test "hook produces no stdout" {
@@ -128,8 +130,10 @@ agent_post_subagent() {
 @test "each logged line is valid JSON" {
   skill_post "draft-review" "100" "200" | bash "$HOOK"
   agent_post_subagent "general-purpose" "50" | bash "$HOOK"
+  # Two completions, two lines — an empty log must not pass the loop below.
+  [ "$(wc -l < "$TEST_LOG")" -eq 2 ]
   while IFS= read -r line; do
-    echo "$line" | jq . >/dev/null
+    echo "$line" | jq -e . >/dev/null
   done < "$TEST_LOG"
 }
 

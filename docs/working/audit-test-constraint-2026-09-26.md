@@ -115,3 +115,10 @@ Four fix agents are editing disjoint files; the parent commits. Their groups:
   - `cowen`/`yglesias` require sections the skill says to omit
 - `expected-verdicts`: no empty or `.*` patterns; the fixture↔test mapping is complete.
 - Constraint: regenerating reports is model compute. Memory "run-a8-measurement-after-settling" says no big compute yet, so the harness fixes land first and regeneration is queued as a question.
+
+### Fix status (iteration 1)
+- A: 86c8e65. B/C: 4a4d0ef. D: bd01eb5, b1780ac, 0b1ebf4. F: ab8f13f. E: next commit.
+- Two things for later from fixE, both in scripts/health-check.sh and not changed:
+  - An unreproduced one-off `✗ fact-check: missing 'when' field` during a concurrent-edit window; it was clean on 7 reruns.
+  - `check_feature_integration` aborts silently under `set -e` if si-functions.sh held only one-line function definitions, because the `grep -v` finds nothing. The real file isn't like that.
+- G: harness fix (T1–T6) in progress. The per-skill assertion pass (expected-verdicts cites, *-format assertions vs SKILL.md) follows it.

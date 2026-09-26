@@ -6,13 +6,16 @@
 #
 # Smoke test for scripts/self-improvement.sh main execution flow.
 #
-# Exercises the sequence of exported functions that the main loop wires
-# together (init_round_log → update_round_log → validate_task_json →
-# record_gate → print_round_summary → finalize_round_log), using pre-built
-# fixture files instead of live git/Claude operations.
+# A function round-trip: calls the round-log helpers the main loop uses
+# (init_round_log → update_round_log → validate_task_json → record_gate →
+# print_round_summary → finalize_round_log) in a hand-written order, using
+# pre-built fixture files instead of live git/Claude operations. It checks
+# that the helpers compose — each one reads what the previous one wrote.
 #
-# Catches wiring bugs (wrong variable, missing call, wrong order) that
-# individual unit tests cannot detect.
+# It does NOT check the main loop's own wiring: the call sequence here is the
+# test's, not self-improvement.sh's, so a call deleted from the main loop stays
+# green. That wiring is pinned by test/scripts/self-improvement-clean-state.bats,
+# which runs the real main loop.
 #
 # Usage: bats test/scripts/self-improvement-smoke.bats
 
@@ -91,10 +94,10 @@ teardown() {
 }
 
 # ---------------------------------------------------------------
-# Main smoke test: drive the full round sequence with fixtures
+# Function round-trip: the round-log helpers in sequence, with fixtures
 # ---------------------------------------------------------------
 
-@test "smoke: full round sequence produces a valid round report" {
+@test "smoke: round-log helpers in sequence produce a valid round report" {
   local round=1
 
   # Step 1: Initialize round log

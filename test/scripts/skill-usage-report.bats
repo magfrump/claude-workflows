@@ -91,8 +91,8 @@ add_event() {
 
   output=$(bash "$SCRIPT")
 
-  echo "$output" | grep -q "spike"
-  echo "$output" | grep "spike" | grep -q "2"
+  # Anchor on the row's columns: a bare "2" would match the date itself.
+  echo "$output" | grep -qE '^spike +workflow +2 +2026-03-22T10:00:00Z '
 }
 
 @test "ranks by frequency descending" {

@@ -57,24 +57,44 @@ setup() {
   [ "$HC_STATUS" -eq 0 ]
 }
 
-@test "output contains Repo Health Check title" {
-  echo "$HC_OUTPUT" | grep -q "Repo Health Check"
+# Print one section of the cached output: from its "── <name>" header up to the
+# next header. The assertions below read a gate's own lines, so one gate's pass
+# line cannot satisfy another's test, and a ✗ is attributed to its gate.
+_section() {
+  printf '%s\n' "$HC_OUTPUT" | awk -v h="── $1" '
+    index($0, h) == 1 { on = 1; next }
+    /^── / { on = 0 }
+    on'
 }
 
-@test "output contains Skill YAML frontmatter section" {
-  echo "$HC_OUTPUT" | grep -q "Skill YAML frontmatter"
+# Each test pins a line the gate prints only on its passing branch — a section
+# header is printed whatever the outcome, so grepping for one proved nothing —
+# and, where the gate can fail, that it printed no ✗ of its own.
+
+@test "gate 1: skill frontmatter checks every skill and flags none" {
+  local sec; sec="$(_section "Skill YAML frontmatter")"
+  echo "$sec"
+  [[ "$sec" =~ ✓\ [0-9]+\ skill\(s\)\ checked ]]
+  [[ "$sec" != *"✗"* ]]
 }
 
-@test "output contains Workflow cross-references section" {
-  echo "$HC_OUTPUT" | grep -q "Workflow cross-references"
+@test "gate 2: every workflow reference in the three MD files resolves" {
+  local sec; sec="$(_section "Workflow cross-references")"
+  echo "$sec"
+  [[ "$sec" == *"✓ global-instructions/CLAUDE.md: all workflow references resolve"* ]]
+  [[ "$sec" == *"✓ AGENTS.md: all workflow references resolve"* ]]
+  [[ "$sec" == *"✓ GEMINI.md: all workflow references resolve"* ]]
 }
 
-@test "output contains MD file consistency section" {
-  echo "$HC_OUTPUT" | grep -q "MD file consistency"
+@test "gate 3: the three MD files reference the same workflows" {
+  _section "MD file consistency" | grep -qF "✓ All MD files reference the same workflows"
 }
 
-@test "output contains Fixture expected-verdicts section" {
-  echo "$HC_OUTPUT" | grep -q "expected-verdicts"
+@test "gate 4: fixture ↔ expected-verdicts coverage has no gaps" {
+  local sec; sec="$(_section "Fixture ↔ expected-verdicts")"
+  echo "$sec"
+  [[ "$sec" == *"✓ fact-check: all fixtures have verdicts and vice versa"* ]]
+  [[ "$sec" != *"✗"* ]]
 }
 
 @test "directory (tree-mode) fixture sets pass the fixture ↔ verdict check" {
@@ -84,20 +104,27 @@ setup() {
   echo "$HC_OUTPUT" | grep -q "divergent-design: all fixtures have verdicts and vice versa"
 }
 
-@test "output contains BATS tests section" {
-  echo "$HC_OUTPUT" | grep -q "BATS tests"
+@test "gate 5: the nested run skips the BATS gate (recursion guard) with a warning" {
+  _section "BATS tests" | grep -qF "⚠ HEALTH_CHECK_SKIP_BATS=1 — BATS gate skipped"
 }
 
-@test "output contains shellcheck section" {
-  echo "$HC_OUTPUT" | grep -q "shellcheck"
+@test "gate 6: shellcheck linted the repo's scripts and flagged none" {
+  local sec; sec="$(_section "shellcheck")"
+  [[ "$sec" == *"✓ scripts/health-check.sh"* ]]
+  [[ "$sec" == *"✓ test/scripts/health-check.bats"* ]]
+  [[ "$sec" != *"✗"* ]] || { echo "$sec" | grep '✗'; return 1; }
 }
 
-@test "output contains Workflow value-justification section" {
-  echo "$HC_OUTPUT" | grep -q "Workflow value-justification"
+@test "gate 7: workflow value-justification scanned the workflows" {
+  _section "Workflow value-justification" | grep -qE '[0-9]+ workflow\(s\) checked'
 }
 
-@test "output contains Hook script permissions section" {
-  echo "$HC_OUTPUT" | grep -q "Hook script permissions"
+@test "gate 8: every hook script is executable" {
+  local sec; sec="$(_section "Hook script permissions")"
+  echo "$sec"
+  [[ "$sec" == *"✓ log-usage.sh is executable"* ]]
+  [[ "$sec" =~ ✓\ [0-9]+\ hook\(s\)\ checked ]]
+  [[ "$sec" != *"✗"* ]]
 }
 
 @test "output ends with All checks passed" {
@@ -219,4 +246,195 @@ _run_check_bats() {
   [[ "$output" == *"BATS gate skipped"* ]]
   [[ "$output" != *"passed"* ]]
   [ ! -s "$STUB_LOG" ]
+}
+
+# ── Negative tests: one gate at a time against a broken fixture repo ────────
+#
+# Same seam as gate 5: source health-check.sh (main only runs when executed),
+# then repoint REPO_ROOT — a plain global every check_* reads at call time — at
+# a throwaway tree under $BATS_TEST_TMPDIR and call a single check. Nothing is
+# written under the real repo. Each test asserts the gate's own FAIL signal
+# (FAIL=1 for a hard gate; FAIL=0 plus the ⚠ for the soft, warn-only ones, so a
+# soft gate silently turning hard is caught too) and the message naming the
+# injected defect, with a passing sibling in the same fixture as the positive
+# control.
+#
+# Not covered here: gate 9 (fixture coverage — an informational count with no
+# pass/fail branch) and gate 11 (doc freshness — needs a fixture git history;
+# soft warning only).
+
+# Minimal repo: the three instruction files each reference workflows/rpi.md.
+_fixture_repo() {
+  local root="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$root/global-instructions" "$root/workflows"
+  printf -- '---\nvalue-justification: x\n---\n# rpi\n' > "$root/workflows/rpi.md"
+  printf 'Use `rpi.md`.\n' > "$root/global-instructions/CLAUDE.md"
+  printf 'Use **@./workflows/rpi.md**.\n' > "$root/AGENTS.md"
+  printf 'Use **rpi.md**.\n' > "$root/GEMINI.md"
+  printf '%s' "$root"
+}
+
+# _run_gate <fixture-root> <check_fn>: prints the gate's output, then FAIL=<n>.
+_run_gate() {
+  run bash -c 'source "$1"; REPO_ROOT="$2"; "$3"; echo "FAIL=$FAIL"' _ "$SCRIPT" "$1" "$2"
+  echo "$output"
+}
+
+@test "gate 2: a workflow reference with no file fails the gate" {
+  local root; root="$(_fixture_repo)"
+  printf 'Use `rpi.md` and `ghost.md`.\n' > "$root/global-instructions/CLAUDE.md"
+  _run_gate "$root" check_workflow_crossrefs
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ global-instructions/CLAUDE.md references ghost.md but workflows/ghost.md does not exist"* ]]
+  [[ "$output" == *"✓ GEMINI.md: all workflow references resolve"* ]]
+}
+
+@test "gate 3: MD files referencing different workflows fail the gate" {
+  local root; root="$(_fixture_repo)"
+  printf 'Use **@./workflows/rpi.md** and **@./workflows/spike.md**.\n' > "$root/AGENTS.md"
+  _run_gate "$root" check_md_consistency
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ In AGENTS.md but not global-instructions/CLAUDE.md: spike.md"* ]]
+  [[ "$output" != *"All MD files reference the same workflows"* ]]
+}
+
+@test "gate 3: a missing instruction file fails the gate instead of shrinking it" {
+  local root; root="$(_fixture_repo)"
+  rm "$root/GEMINI.md"
+  _run_gate "$root" check_md_consistency
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ GEMINI.md not found — MD consistency cannot be checked"* ]]
+}
+
+@test "gate 4: fixture/verdict mismatches and a missing verdicts file fail the gate" {
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/test/skills/foo/fixtures" "$root/test/skills/bar/fixtures" \
+           "$root/test/skills/ok/fixtures"
+  touch "$root/test/skills/foo/fixtures/unlisted.md" "$root/test/skills/bar/fixtures/x.md" \
+        "$root/test/skills/ok/fixtures/a.md"
+  printf 'EXPECTED_VERDICT["gone.md"]="pass"\n' > "$root/test/skills/foo/expected-verdicts.bash"
+  printf 'EXPECTED_VERDICT["a.md"]="pass"\n' > "$root/test/skills/ok/expected-verdicts.bash"
+  _run_gate "$root" check_fixture_verdicts
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ foo: fixture unlisted.md has no expected-verdicts entry"* ]]
+  [[ "$output" == *"✗ foo: expected-verdicts references gone.md but fixture does not exist"* ]]
+  [[ "$output" == *"✗ bar: has fixtures/ but no expected-verdicts.bash"* ]]
+  [[ "$output" == *"✓ ok: all fixtures have verdicts and vice versa"* ]]
+}
+
+@test "gate 6: a shellcheck warning fails the gate and names the file" {
+  command -v shellcheck >/dev/null 2>&1 || skip "shellcheck not installed"
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/scripts"
+  printf '#!/bin/bash\nunused=1\n' > "$root/scripts/bad.sh"          # SC2034
+  printf '#!/bin/bash\necho ok\n' > "$root/scripts/good.sh"
+  _run_gate "$root" check_shellcheck
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ scripts/bad.sh"* ]]
+  [[ "$output" == *"✓ scripts/good.sh"* ]]
+}
+
+@test "gate 6: finding no shell files at all fails rather than passing vacuously" {
+  command -v shellcheck >/dev/null 2>&1 || skip "shellcheck not installed"
+  local root; root="$(_fixture_repo)"
+  _run_gate "$root" check_shellcheck
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ No shell files found"* ]]
+}
+
+@test "gate 7: a workflow without value-justification warns (soft gate)" {
+  local root; root="$(_fixture_repo)"
+  printf '# no frontmatter\n' > "$root/workflows/bare.md"
+  _run_gate "$root" check_workflow_value_justification
+  [[ "$output" == *"FAIL=0"* ]]
+  [[ "$output" == *"⚠ bare.md: missing or empty value-justification in frontmatter"* ]]
+  [[ "$output" == *"✓ rpi.md: value-justification present"* ]]
+  [[ "$output" == *"⚠ 2 workflow(s) checked — 1 missing value-justification"* ]]
+}
+
+@test "gate 8: a non-executable hook fails the gate" {
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/hooks"
+  printf '#!/bin/bash\n' > "$root/hooks/inert.sh"; chmod 644 "$root/hooks/inert.sh"
+  printf '#!/bin/bash\n' > "$root/hooks/live.sh";  chmod 755 "$root/hooks/live.sh"
+  _run_gate "$root" check_hook_permissions
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ inert.sh is not executable"* ]]
+  [[ "$output" == *"✓ live.sh is executable"* ]]
+}
+
+@test "gate 8b: unwired and target-missing hooks, and an empty deny list, warn (soft gate)" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+  local root cfg; root="$(_fixture_repo)"; cfg="$BATS_TEST_TMPDIR/cfg"
+  mkdir -p "$root/hooks" "$cfg/hooks"
+  cat > "$root/hooks/wiring.json" <<'JSON'
+{"hooks":{"PreToolUse":[{"hooks":[
+  {"command":"bash {{CLAUDE_DIR}}/hooks/unwired.sh"},
+  {"command":"bash {{CLAUDE_DIR}}/hooks/absent.sh"}]}]},
+ "permissions":{"deny":["Edit(x)"]}}
+JSON
+  jq -n --arg c "bash $cfg/hooks/absent.sh" \
+    '{hooks:{PreToolUse:[{hooks:[{command:$c}]}]}}' > "$cfg/settings.json"
+  CLAUDE_CONFIG_DIR="$cfg" _run_gate "$root" check_hook_wiring
+  [[ "$output" == *"FAIL=0"* ]]
+  [[ "$output" == *"⚠ not wired: bash $cfg/hooks/unwired.sh"* ]]
+  [[ "$output" == *"⚠ wired but target missing: $cfg/hooks/absent.sh"* ]]
+  [[ "$output" == *"⚠ permissions.deny is empty"* ]]
+  [[ "$output" != *"all targets present"* ]]
+}
+
+@test "gate 10: an si-functions.sh function nothing calls is flagged as an orphan" {
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/scripts/lib"
+  # The comment line matters: the gate greps the library minus its definition
+  # lines, and a file of nothing but one-line definitions leaves that grep empty.
+  printf '# lib\nused_fn() { :; }\norphan_fn() { :; }\n' > "$root/scripts/lib/si-functions.sh"
+  printf '#!/bin/bash\nused_fn\n' > "$root/scripts/entry.sh"
+  _run_gate "$root" check_feature_integration
+  [[ "$output" == *"✓ used_fn: called from entry point"* ]]
+  [[ "$output" == *"⚠ orphan_fn: not called from any entry-point script (orphan)"* ]]
+  [[ "$output" == *"Feature integration: 1/2 functions"* ]]
+}
+
+@test "gate 12: a persona last sampled long ago is reported stale" {
+  local root; root="$(_fixture_repo)"
+  mkdir -p "$root/skills/old-persona" "$root/skills/new-persona"
+  printf -- '---\nname: old-persona\npersona-last-sampled: 2020-01-01\n---\n' \
+    > "$root/skills/old-persona/SKILL.md"
+  printf -- '---\nname: new-persona\npersona-last-sampled: %s\n---\n' "$(date +%F)" \
+    > "$root/skills/new-persona/SKILL.md"
+  HEALTH_CHECK_SKILLS_DIR="$root/skills" _run_gate "$root" check_persona_freshness
+  [[ "$output" == *"⚠ old-persona: STALE — persona last sampled"* ]]
+  [[ "$output" == *"✓ new-persona: fresh (0 days since"* ]]
+  [[ "$output" == *"Persona freshness: 2 checked, 1 fresh, 1 stale, 0 invalid"* ]]
+}
+
+@test "gate 13: AGENTS.md and GEMINI.md with different sections are flagged" {
+  local root; root="$(_fixture_repo)"
+  printf '## Skills\n## Only in agents\n' >> "$root/AGENTS.md"
+  printf '## Skills\n' >> "$root/GEMINI.md"
+  HEALTH_CHECK_SKILLS_DIR="$root/skills" _run_gate "$root" check_md_semantic_divergence
+  [[ "$output" == *"⚠ AGENTS.md and GEMINI.md have diverging section structure"* ]]
+  [[ "$output" != *"No semantic divergence detected"* ]]
+}
+
+@test "gate 14: a duplicated question id fails the gate" {
+  # The gate runs the real scripts/questions.sh; QUESTIONS_LIVE/_ARCHIVE (its
+  # own env overrides, honoured by check_questions_doc) point it at a fixture.
+  local d="$BATS_TEST_TMPDIR/q" qs
+  qs="$(dirname "$SCRIPT")/questions.sh"
+  mkdir -p "$d"
+  (cd "$d" && bash "$qs" init >/dev/null 2>&1)
+  local s
+  for s in one two; do
+    printf '\n### Q-001 · %s\n**Needs:** agent · **Opened:** 2026-09-26 · **Status:** OPEN\n\nq?\n' \
+      "$s" >> "$d/docs/working/questions.md"
+  done
+  run env QUESTIONS_LIVE="$d/docs/working/questions.md" \
+          QUESTIONS_ARCHIVE="$d/docs/working/questions-archive.md" \
+      bash -c 'source "$1"; check_questions_doc; echo "FAIL=$FAIL"' _ "$SCRIPT"
+  echo "$output"
+  [[ "$output" == *"FAIL=1"* ]]
+  [[ "$output" == *"✗ duplicate id: Q-001"* ]]
+  [[ "$output" == *"✗ questions doc: structure or index problems"* ]]
 }

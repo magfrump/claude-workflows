@@ -17,9 +17,16 @@ REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
 
 # --- skill-usage-report.sh ---
 
-@test "skill-usage-report.sh runs without error on the current repo" {
-  # Point at an empty log so the script doesn't depend on user-specific data
-  export USAGE_LOG_FILE="/tmp/nonexistent-smoke-test-$$.jsonl"
+@test "skill-usage-report.sh finds the repo's own skills and workflows by default" {
+  # skill-usage-report.bats drives the script against fixture SKILLS_DIR /
+  # WORKFLOWS_DIR; this one leaves both unset so the script's default
+  # resolution (<script>/../skills, ../workflows) is what gets exercised.
+  # A missing log keeps the result independent of user-specific data.
+  unset SKILLS_DIR WORKFLOWS_DIR
+  export USAGE_LOG_FILE="$BATS_TEST_TMPDIR/nonexistent-usage.jsonl"
   run bash "$REPO_ROOT/scripts/skill-usage-report.sh"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"No usage data found at $USAGE_LOG_FILE"* ]]
+  echo "$output" | grep -qE '^  fact-check \(skill\)$'
+  echo "$output" | grep -qE '^  research-plan-implement \(workflow\)$'
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# shellcheck disable=SC2154  # $stderr is assigned by bats' `run --separate-stderr`
 # Tests for the PostToolUse config-audit hook (hooks/claude-config-audit.sh)
 #
 # Central use cases:
@@ -18,6 +19,10 @@
 # integration tests at the bottom exercise the real one.
 
 load ../lib/hermetic-env
+
+# `run --separate-stderr` (the HIGH-finding test pins the stream the findings
+# go to — Claude Code feeds a PostToolUse hook's stderr back on exit 2).
+bats_require_minimum_version 1.5.0
 
 # Several tests below assert the hook is *silent* ([ -z "$output" ]). bats folds
 # stderr into $output, so an un-installed ambient locale would make every bash
@@ -80,10 +85,11 @@ stub_invoked_on() {
 @test "HIGH finding in settings.json → exit 2 with findings on stderr" {
   export STUB_MODE=high
   f=$(make_file "settings.json")
-  run bash "$HOOK" < <(edit_payload Edit "$f")
+  run --separate-stderr bash "$HOOK" < <(edit_payload Edit "$f")
   [ "$status" -eq 2 ]
-  [[ "$output" == *"SECURITY AUDIT: HIGH-severity finding"* ]]
-  [[ "$output" == *"stub finding line"* ]]
+  [ -z "$output" ]                                  # nothing on stdout
+  [[ "$stderr" == *"SECURITY AUDIT: HIGH-severity finding"* ]]
+  [[ "$stderr" == *"stub finding line"* ]]
 }
 
 @test "clean policy file → silent exit 0, auditor was invoked" {
@@ -236,6 +242,10 @@ stub_invoked_on() {
   printf '# clean\n' > "$TEST_DIR/root/CLAUDE.md"
   run python3 "$REAL_AUDIT" "$TEST_DIR/root"
   echo "$output"
+  # Positive control: the walk ran and found exactly the one non-backup file,
+  # so the negative assertions below can't pass on a walk that scans nothing.
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"scanned 1 files"* ]]
   [[ "$output" != *".claude-workflows-backup"* ]]
   [[ "$output" != *"bidi"* ]]
 }

@@ -108,9 +108,23 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
 }
 
 @test "every manifest-hashed file is in the enforcement set" {
-  # Keep the hook's regex in step with cc-isolated.sh's enforcement_files().
-  local f
-  for f in Dockerfile devcontainer.json init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-isolated.sh egress/python.txt; do
+  # Keep the hook's regex in step with cc-isolated.sh's enforcement_files():
+  # the list is read from the real function (sourced — cc-isolated.sh guards
+  # main), so a file added there without widening the hook's regex goes red.
+  # The fixture config dir holds one egress list and nothing else: projects/
+  # profiles are host-local and claude-home/ is an install-time (gitignored)
+  # payload, so neither is ever committed from this repo and the gate has no
+  # business matching them.
+  local cfg="$TEST_TMPDIR/cfg" list f
+  mkdir -p "$cfg/egress"
+  touch "$cfg/egress/python.txt"
+  list="$(CLAUDE_DEVC_CONFIG_DIR="$cfg" bash -euo pipefail -c \
+            'source "$1"; enforcement_files' _ \
+            "$BATS_TEST_DIRNAME/../../devcontainer-config/cc-isolated.sh")"
+  # Positive control: the sourced function produced its fixed names and the glob.
+  [[ "$list" == *Dockerfile* ]]
+  [[ "$list" == *egress/python.txt* ]]
+  for f in $list; do
     mkdir -p "$(dirname "devcontainer-config/$f")"
     echo x > "devcontainer-config/$f"
     git add "devcontainer-config/$f"

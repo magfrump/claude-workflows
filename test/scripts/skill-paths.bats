@@ -48,8 +48,9 @@ setup() {
 }
 
 @test "extract_skill_name: last /skills/ segment wins" {
-  # claude-workflows/skills/foo.md — there are TWO skill-like segments
-  [ "$(extract_skill_name "/home/u/claude-workflows/skills/fact-check.md")" = "fact-check" ]
+  # Two /skills/ segments: measuring from the first one would leave
+  # claude-workflows/skills/fact-check.md (depth 2) and return empty.
+  [ "$(extract_skill_name "/home/u/skills/claude-workflows/skills/fact-check.md")" = "fact-check" ]
 }
 
 # --- extract_workflow_name ---
@@ -103,10 +104,19 @@ setup() {
 }
 
 @test "classify_skill_path: skill wins over workflow when path contains both" {
-  # claude-workflows/skills/foo.md should classify as skill, not workflow,
-  # because /skills/ is the more specific (later) segment.
-  result=$(classify_skill_path "/home/u/claude-workflows/skills/foo.md")
-  [ "$result" = "skill:foo" ]
+  # The precedence is only observable on a path BOTH extractors accept:
+  # skills/workflows/SKILL.md is skill "workflows" (dir layout) and also
+  # workflow "SKILL" (direct .md under /workflows/). Checking skills first
+  # must pick the skill reading.
+  [ "$(extract_workflow_name "/repo/skills/workflows/SKILL.md")" = "SKILL" ]   # both match
+  result=$(classify_skill_path "/repo/skills/workflows/SKILL.md")
+  [ "$result" = "skill:workflows" ]
+}
+
+@test "classify_skill_path: claude-workflows/skills/x.md is a skill" {
+  # The repo's own checkout name contains "workflows" but not a /workflows/
+  # segment; the skill rule alone classifies it.
+  [ "$(classify_skill_path "/home/u/claude-workflows/skills/foo.md")" = "skill:foo" ]
 }
 
 @test "classify_skill_path: non-classifiable path returns empty" {
