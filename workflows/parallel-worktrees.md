@@ -36,12 +36,14 @@ Send the subagents in parallel — one Agent call per item (or per shared-state 
 - Read-only/triage items don't need a worktree.
 - Instruct each implementing subagent to **commit its work inside its worktree** before finishing (conventional prefixes; autonomous commit format in /away mode). Uncommitted worktree changes are what get lost.
 
-Manual fallback (no Agent-tool worktree isolation available, or human-driven sessions):
+Manual fallback. Use it for human-driven sessions, when Agent-tool isolation is not available, or when it **fails or misbehaves**. In the cc-isolated sandbox it has failed outright since 2026-09-18 ("Could not read the repository git config…"). Before that it branched from a stale base and left subagents stalled. The by-hand version has run 6 parallel agents cleanly:
 
 ```bash
-git worktree add ../proj-item-1 -b feat/item-1 main
-git worktree add ../proj-item-2 -b feat/item-2 main
+git worktree add .claude/wt-item-1 -b feat/item-1 main   # inside the project, so sandbox writes are allowed
+git worktree add .claude/wt-item-2 -b feat/item-2 main
 ```
+
+Dispatch each agent **without** `isolation`, and tell it to work and commit only under its absolute worktree path. Put the shared brief in one scratch file and give each agent only its item-specific notes. Then poll `git log main..<branch>` rather than waiting on the agents.
 
 ### 4. Merge and reconcile
 
@@ -59,6 +61,7 @@ Collect the subagent reports, then merge the branches back into one unit:
 - **Shared-tree collisions**: parallel subagents editing one working tree. Worktree isolation is not optional for implementing items.
 - **Per-item review fragmentation**: N tiny review passes instead of one combined pass. Review the merged diff once.
 - **Lost work**: subagents finishing without committing in their worktree.
+- **Stale base / stalled agents**: harness-created worktrees can branch from a commit behind `main`, which makes every merge a conflict, and an agent can hang on a tool call. Branch from `main` yourself. If an agent goes quiet for more than about 10 minutes with a dirty tree, check what is still running (a long test suite is not a hang) before stopping it. Then `git merge main` into its worktree and finish its remaining edits by hand.
 
 ## When to pivot
 

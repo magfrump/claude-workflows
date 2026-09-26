@@ -78,6 +78,12 @@ This yields the author/reviewer split pr-prep models: the agent self-reviews
   *this* gate: an LLM formatting hiccup shouldn't reject sound work, and `self_eval`
   set the skip-on-unparseable precedent. (The pure verdict *helper* still fails
   closed on a non-integer count — a garbage number is not the same as no number.)
+  **Amendment 2026-09-26:** the shipped Gate 1h does the opposite. It fails
+  closed on both a reviewer error and a missing or conflicting sentinel
+  (`scripts/self-improvement.sh`, Gate 1h; rationale in
+  `guides/validation-gates.md`, "Fail-closed stance"). This record kept the
+  original rejection unamended. Whether to reconcile the two waits on the
+  loop's future (`docs/working/questions.md`, the retire-or-resume entry).
 
 ## Consequences
 

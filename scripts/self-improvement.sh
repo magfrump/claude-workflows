@@ -19,8 +19,9 @@
 #                          with prior rounds that triggers early stop
 #                          (default: 80)
 #
-# Configuration (near top of main block; each is overridable via env var):
-#   MAX_ROUNDS=3           Maximum number of improvement rounds
+# Configuration (near top of main block):
+#   MAX_ROUNDS=3           Maximum number of improvement rounds (hardcoded)
+# The next two are overridable via env var:
 #   REPO_DIR               Repo to operate on. Defaults to the repo containing
 #                          this script (scripts/ sits at the repo root), so the
 #                          loop follows the checkout wherever it lives.
@@ -1441,7 +1442,8 @@ Count only the automated assessment scores (Testability investment, Trigger clar
         # already self-reviews (its RPI→review-fix prompt), so this is the
         # independent reviewer pass — the author/reviewer split pr-prep models.
         # Parsing follows the self-eval precedent: the skill is asked to emit a
-        # CODE_REVIEW_RED sentinel; unparseable output skips (never auto-rejects).
+        # CODE_REVIEW_RED sentinel; unlike self-eval, a reviewer error or an
+        # unparseable verdict FAILS CLOSED (see below and guides/validation-gates.md).
         # MODEL PINNING (measured 2026-07-29, docs/working/experiment-results-
         # code-review-2026-07-29.md Results 7-9). Model tier dominates blocking-
         # defect recall: on validated defects, haiku and sonnet generalists
