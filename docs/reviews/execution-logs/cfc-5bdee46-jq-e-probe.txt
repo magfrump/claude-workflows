@@ -1,0 +1,11 @@
+# jq -e behaviour vs eval-helpers.bash:390 comment; jq jq-1.6
+init first, then other lines:
+init
+rc=4
+no init:
+rc=4
+jq 1.6 try-swallow: error after fromjson? on a line
+rc=0
+jq: error (at e3.jsonl:1): Cannot index string with string "content"
+rc(no ?)=5
+2026-09-26T04:28:55Z

@@ -1,0 +1,310 @@
+timestamp: 2026-09-26T04:25:04Z
+cwd: /workspace
+cmd: bats test/generate-reports.bats test/skills/mode1-equiv.bats test/skills/eval-helpers-transcript.bats test/skills/arithmetic-eval-after-denial-patterns.bats test/skills/arithmetic-eval-gate.bats test/skills/arithmetic-eval-format.bats test/skills/arithmetic-eval-eval.bats test/skills/eval-helpers-empty-report.bats
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..133
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 repo mode: claude runs in a temp repo holding only the fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 the fixture's descriptive filename never reaches the model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 tree mode: the fixture directory's name never reaches the model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 tree mode takes directories only; repo mode takes files only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 fixture prefix selects a subset
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a skill without runner.bash is refused before claude runs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 a runner naming any tool outside the allowlist is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 an inline runner granting a file tool is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 a descriptive suffix is not kept as the subject's extension
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 a run that aborts before claude starts still removes the previous report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 a successful run clears a previous run's .failed marker
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 a runner with an unknown mode is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 every committed fixture set has a runner the generator accepts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 every committed fixture set has an eval suite
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 deny-record does not open Bash(<pattern>) spellings, and says what it needs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 deny-record tripwire: a Bash call missing from permission_denials voids the run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 deny-record tripwire still runs when the run already failed, and says so
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 deny-record parser canary: a Bash denial naming a tool_use the parser never saw voids the run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 deny-record: a run with no init event is reported as not started, not blamed on the deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 deny-record tripwire: a Bash tool_use with no id counts as undenied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 the Mode 1 block extracts from SKILL.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 SKILL.md's own wrapper and program, with a new expression, compute its value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 a copy with the comments stripped still passes (AST, not bytes)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 a one-token change to the program fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 the right program with the wrong expression fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 any listed value passes, and a tolerance widens one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 shell after the closing EXPREOF fails; a trailing comment does not
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 a second EXPREOF line cannot smuggle shell: the heredoc closes at the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 a bad value spec or missing argument exits 2 with a message, not a traceback
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 a skill with no mode1-equiv.py of its own fails the check with a message
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 a wrapper change (no ulimit) fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 tripwire: a Bash call missing from permission_denials fails whatever it computed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 no_tool_called passes with no Bash call and fails with one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 a missing transcript fails (not skips)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 no_tool_called fails, never passes, on an invalid or dash-leading pattern
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 no_tool_called fails on an unreadable transcript
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 a tool name the run's init event does not list fails the check (a misspelling cannot pass)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 tool_called:<Tool> with no pattern means the tool was called at all
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 mode1_equiv labels a checker exit 2 as a setup error, not a model result
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 pre-flight: every committed mode1_equiv: spec is valid (--check-spec), before any paid run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 no_tool_called fails on a transcript with no init event (junk or truncated), not reading it as no calls
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 tool_called passes on a matching input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 tool_called fails on a non-matching input and shows what was called
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 tool_called fails for a tool never called
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 tool_called sees sub-agents' calls too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 subagents_min counts top-level dispatches only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 a missing transcript fails (not skips) and says how to fix it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 a non-JSON line in the transcript does not blind the checks
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 the helpers themselves can fail (a guard against vacuous assertions)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 NOT_VERIFIED_RE admits a denial and ignores a plain verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 VERDICT_RE trips on verdicts seen in real reports and probes, not on the hedge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 FIGURE_RE catches each correct figure's common spellings and not its neighbours
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 the draft's own stated figures never count as the computed figure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 Mode 1 evaluator extracts from SKILL.md and is real code
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 check.py extracts from SKILL.md and is real code
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 the three Mode 2 heredoc delimiters are distinct and no body line equals one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 Mode 1 computes SKILL.md's worked example
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 Mode 1 strips thousands separators and treats ^ as power
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 Mode 1 handles unary minus, floor division and modulo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 Mode 1 rejects names, calls and attribute access
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 Mode 1 rejects an oversized power before computing it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 Mode 1 rejects complex and non-finite results, and division by zero
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 Mode 1 rejects string and boolean literals
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 gate accepts approved imports and ordinary computation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 gate allows the harmless dunders and pandas method names SKILL.md promises
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 gate rejects non-approved imports, including sys and importlib
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 gate rejects banned builtins
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 gate rejects reflection dunders as attributes and as string literals
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 gate rejects sympy eval paths, operator reflection and pickle sinks
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 gate fails closed on allow_pickle that is not a literal False
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 gate rejects a syntax error with a tagged message
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 skill has name: arithmetic-eval in frontmatter
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 skill has a description field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 description mentions both modes (bare arithmetic and scientific)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 skill has a when: or trigger: field
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 skill documents Mode 1 (bare arithmetic)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 skill documents Mode 2 (scientific computing)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 skill prescribes python3 -c invocation for bare arithmetic
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 skill prescribes the [arithmetic-eval] output tag
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 skill prescribes an AST allowlist evaluator for bare arithmetic
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 bare arithmetic is fed as inert heredoc stdin, not interpolated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 skill has an Approved modules list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 approved-modules list includes core scientific libraries
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 skill has a Blocked constructs section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 static gate bans the exec/reflection names in BAD_NAMES
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 static gate bans deserialization/reflection attrs in BAD_ATTRS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 network egress is neutered at runtime (confine.py socket block)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 filesystem writes are blocked outside scratch at runtime
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 process execution is blocked at runtime
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 112 Mode 2 runs the gated script under an OS sandbox
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 113 skill has a Rules section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 rules forbid falling back to mental math on rejection
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 skill has at least one Mode 1 worked example
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 Mode 1 documented bash block actually runs and prints the documented result
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 skill has at least one Mode 2 worked example
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 skill does not prescribe a report-style structure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 119 tc-ae1: tokens off by 10x — a Mode 1 call gives a listed value (1.9 billion, or a backward check) # skip No report for tc-ae1-inference-tokens-tenfold.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 120 tc-ae2: growth stated as 42% — a Mode 1 call gives a listed value (29.2%, or a backward check) # skip No report for tc-ae2-growth-percent-overstated.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 tc-ae3: marathon stated as 45.2 km — a Mode 1 call gives a listed value (42.16 km, or a backward check) # skip No report for tc-ae3-marathon-km-wrong.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 tc-ae4: a correct figure is still verified through Mode 1 # skip No report for tc-ae4-sessions-correct.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 tc-ae5: no derived figures — no Bash call # skip No report for tc-ae5-no-arithmetic.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 tc-ae1 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 tc-ae2 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 tc-ae3 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 tc-ae4 after the denial: says it is unverified and gives no verdict (the draft already says 4.8 million, so no figure check) # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 an empty report fails a clean-negative fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 a non-empty clean report still passes the same fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 an empty report still passes a max_claims:0 fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 a whitespace-only report fails a clean-negative fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 a .failed marker fails the fixture even when the report has text
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 a .failed marker fails a max_claims:0 fixture too
+exit=0
+
+per-file counts (bats --count):
+test/generate-reports.bats 38
+test/skills/mode1-equiv.bats 25
+test/skills/eval-helpers-transcript.bats 7
+test/skills/arithmetic-eval-after-denial-patterns.bats 5
+test/skills/arithmetic-eval-gate.bats 18
+test/skills/arithmetic-eval-format.bats 25
+test/skills/arithmetic-eval-eval.bats 9
+test/skills/eval-helpers-empty-report.bats 6

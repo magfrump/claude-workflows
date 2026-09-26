@@ -1,0 +1,29 @@
+date: 2026-09-26T04:52:36+00:00 python: 3.11.2
+B00 baseline: good denied Mode 1 call (2+3 -> 5)                           rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+B01 baseline: same call UNDENIED                                           rc=1  Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed): ['t1']
+S1 permission_denials = 5 (number) | alone (+init)                         rc=1  TypeError: 'int' object is not iterable
+S1 permission_denials = 5 (number) | + good denied call                    rc=1  TypeError: 'int' object is not iterable
+S1z permission_denials = 0 (falsy number) | alone (+init)                  rc=1  No Mode 1 call computed any of: 5
+S1z permission_denials = 0 (falsy number) | + good denied call             rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S2 denial tool_use_id is a list | alone (+init)                            rc=1  TypeError: unhashable type: 'list'
+S2 denial tool_use_id is a list | + good denied call                       rc=1  TypeError: unhashable type: 'list'
+S3 Bash tool_use id is an object | alone (+init)                           rc=1  TypeError: unhashable type: 'dict'
+S3 Bash tool_use id is an object | + good denied call                      rc=1  TypeError: unhashable type: 'dict'
+S4 non-object event (array) | alone (+init)                                rc=1  No Mode 1 call computed any of: 5
+S4 non-object event (array) | + good denied call                           rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S4s non-object event (string) | alone (+init)                              rc=1  No Mode 1 call computed any of: 5
+S4s non-object event (string) | + good denied call                         rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S4n non-object event (number) | alone (+init)                              rc=1  No Mode 1 call computed any of: 5
+S4n non-object event (number) | + good denied call                         rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S5 assistant message is a string | alone (+init)                           rc=1  No Mode 1 call computed any of: 5
+S5 assistant message is a string | + good denied call                      rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S6 assistant content is a string | alone (+init)                           rc=1  No Mode 1 call computed any of: 5
+S6 assistant content is a string | + good denied call                      rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+S7 1200-deep line | alone (+init)                                          rc=1  RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string
+S7 1200-deep line | + good denied call                                     rc=1  RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string
+C1 non-object event: [undenied call event] (array-wrapped) + good          rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+C2 string message holding JSON of an undenied call + good                  rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+C3 string content holding JSON of an undenied call + good                  rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+C4 undenied call, denial list in 2nd result has permission_denials=0       rc=1  Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed): ['t1']
+C5 good + second result with permission_denials=0                          rc=0    call 1: Mode 1, expression '2+3' -> 5.0
+exit=0

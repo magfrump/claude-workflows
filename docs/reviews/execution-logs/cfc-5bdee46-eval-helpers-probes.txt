@@ -1,0 +1,14 @@
+junk file, no init                           assert_no_tool_called Bash rc=1 No init event in /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/p/x.transcript.js
+empty file                                   assert_no_tool_called Bash rc=1 No init event in /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/p/x.transcript.js
+init at end only (truncated start)           assert_no_tool_called Bash rc=1 Expected no Bash calls, found 1:
+truncated: init only                         assert_no_tool_called Bash rc=0 
+truncated: init only, positive check         assert_tool_called Bash rc=1 No Bash call with input matching /./.
+misspelled tool                              assert_no_tool_called bash rc=1 bash is not a tool of this run (its tools: Bash Read )
+init with no tools list, misspelled          assert_no_tool_called bash rc=0 
+message is a string (jq error)               assert_no_tool_called Bash rc=0 
+shape change hides tool_use                  assert_no_tool_called Bash rc=0 
+negative with pattern, hit                   assert_no_tool_called Bash=rm -rf rc=1 Expected no Bash calls with input matching /rm/, found 1:
+positive with pattern                        assert_tool_called Bash=rm rc=0 
+invalid ERE                                  assert_tool_called Bash=( rc=1 grep: Unmatched ( or \(
+missing transcript rc=1 No transcript at /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/p/x.transcript.jsonl — regenerate with FIXTURE_TRANSCRIPT=1 in the runner
+2026-09-26T04:28:22Z

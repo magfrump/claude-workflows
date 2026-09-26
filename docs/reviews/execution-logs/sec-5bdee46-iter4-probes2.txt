@@ -1,0 +1,10 @@
+S1 lone surrogate in command, call denied:   gen=[0 1 bash unknown]
+S2 lone surrogate in command, call undenied: gen=[0 0 bash unknown]
+S2 transcript_tool_inputs: []
+S2 mode1-equiv rc=1 (python json parses lone surrogates)
+D124 tool input nested 124 objects deep, undenied: gen=[1 0 bash unknown]
+D125 tool input nested 125 objects deep, undenied: gen=[0 0 bash unknown]
+jq: error (at d.jsonl:2): Exceeds depth limit for parsing at line 1, column 736 (while par
+RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string
+R1 mode1-equiv on a 1200-deep line rc=1
+F1 command substitution under RLIMIT_NPROC exhaustion: bash exit=254 ; fork.sh: fork: Resource temporarily unavailable

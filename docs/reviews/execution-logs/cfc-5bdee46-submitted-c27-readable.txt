@@ -1,0 +1,5 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+every entry fails except the scan subshell's own: rc=0
+every entry fails, own included: rc=4
+no shim: rc=0
+exit=0 2026-09-26T04:57:04Z

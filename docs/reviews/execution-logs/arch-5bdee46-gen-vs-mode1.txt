@@ -1,0 +1,10 @@
+# arch review iter4: which Claim-13 shapes survive the generator's deny-record jq (cfc-5bdee46-gen.jq, verbatim from generate-reports.bash:275-286) and reach mode1-equiv.py via eval_fixture
+# cwd /workspace, 2026-09-26T04:40:37Z, jq jq-1.6
+# gen = undenied<TAB>unseen<TAB>init<TAB>cli ; generator voids unless '0 0 bash'. m1 = mode1-equiv.py exit code (spec '1')
+pd=5, no calls               gen=0	0	bash	unknown  m1=1 TypeError: 'int' object is not iterable
+pd=5, one call               gen=1	0	bash	unknown  m1=1 TypeError: 'int' object is not iterable
+list id both sides           gen=0	0	bash	unknown  m1=1 TypeError: unhashable type: 'list'
+list id denial only          gen=1	1	bash	unknown  m1=1 TypeError: unhashable type: 'list'
+obj id both sides            gen=0	0	bash	unknown  m1=1 TypeError: unhashable type: 'dict'
+denied under Read (9b)       gen=1	0	bash	unknown  m1=1 
+string message               gen=jq: error (at /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/t.jsonl:3): Cannot index string with string "content"  m1=1 

@@ -1,0 +1,32 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+date: 2026-09-26T04:57:13Z  jq: jq-1.6  bash: 5.2.15(1)-release  HEAD: 5bdee46
+A01 clean: init Bash, call b1, denial b1                   gen_rc=0 NOT VOIDED
+A02 call b1 undenied (denials [])                          gen_rc=0 VOIDED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+A03 call b1 denied only under tool_name Read               gen_rc=0 VOIDED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+A04 call with null id, denial b1                           gen_rc=0 VOIDED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed); Bash parser canary: 1 Bash denial(s) name a tool_use the parser did not see (CLI 9.9.9; did the event shape change?)
+A05 Bash denial b2 names unseen id (call b1 denied)        gen_rc=0 VOIDED: Bash parser canary: 1 Bash denial(s) name a tool_use the parser did not see (CLI 9.9.9; did the event shape change?)
+A06 Bash denial with null tool_use_id                      gen_rc=0 VOIDED: Bash parser canary: 1 Bash denial(s) name a tool_use the parser did not see (CLI 9.9.9; did the event shape change?)
+A07 no init event                                          gen_rc=0 VOIDED: no init event in the stream (the run did not start?)
+A08 init tools []                                          gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A09 init without tools key                                 gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A10 init tools ["Bash(**)"] (element not exactly Bash)     gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A11 init tools ["bash"] (lowercase)                        gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A12 init tools ["Read","Bash"]                             gen_rc=0 NOT VOIDED
+A13 two inits: first [] then [Bash]                        gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A14 init tools is STRING "NotBash" (not an array)          gen_rc=0 NOT VOIDED
+A15 init tools is an object                                gen_rc=0 VOIDED: Bash canary: the init event does not list Bash (CLI unknown; did the deny rule remove the tool?)
+A16 event with string message (jq error expected)          gen_rc=0 VOIDED: Bash tripwire: the transcript could not be read, so denials are unverified
+A17 empty stream                                           gen_rc=0 VOIDED: no result event in the stream; no init event in the stream (the run did not start?)
+A18 claude exits 3 + call undenied                         gen_rc=0 VOIDED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+A18b (same, stub rc 3)                                     gen_rc=0 VOIDED: claude exited 3; Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+A19 undenied Bash tool_use inside a type:user event        gen_rc=0 NOT VOIDED
+A20 undenied Bash tool_use in a sub-agent event            gen_rc=0 VOIDED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+A21 call id 1 (number) vs denial id "1" (string)           gen_rc=0 NOT VOIDED
+A22 init only at END of stream                             gen_rc=0 NOT VOIDED
+A23 undenied call line holds lone surrogate (F3)           gen_rc=0 NOT VOIDED
+A24 undenied call off-path (.message.blocks), no denial (F2) gen_rc=0 NOT VOIDED
+A25 permission_denials is an object of denials             gen_rc=0 NOT VOIDED
+G1 good + array-wrapped undenied call event (C1)           gen_rc=0 NOT VOIDED
+G2 good + string message holding undenied call (C2)        gen_rc=0 VOIDED: Bash tripwire: the transcript could not be read, so denials are unverified
+G3 good + string content holding undenied call (C3)        gen_rc=0 NOT VOIDED
+exit=0

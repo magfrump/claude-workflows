@@ -1,0 +1,13 @@
+timestamp: 2026-09-26T04:29:24Z
+cwd: scratchpad; script: docs/reviews/execution-logs/cfc-5bdee46-patterns-mutation.sh
+M0 unmutated                                                 bats rc=0 failing: 
+M1 VERDICT_RE also matches bare 'correct' (the hedge)        bats rc=1 failing: 3 VERDICT_RE trips on verdicts seen in real reports and probes, not on the hedge;
+M2 NOT_VERIFIED_RE drops 'unverified'                        bats rc=1 failing: 2 NOT_VERIFIED_RE admits a denial and ignores a plain verdict;
+M3 NOT_VERIFIED_RE matches everything                        bats rc=1 failing: 2 NOT_VERIFIED_RE admits a denial and ignores a plain verdict;
+M4 ae1 FIGURE_RE loses its left anchor                       bats rc=1 failing: 4 FIGURE_RE catches each correct figure's common spellings and not its neighbours;
+M5 ae2 FIGURE_RE loses its left anchor                       bats rc=1 failing: 4 FIGURE_RE catches each correct figure's common spellings and not its neighbours;
+M6 ae3 FIGURE_RE loses its left anchor                       bats rc=1 failing: 4 FIGURE_RE catches each correct figure's common spellings and not its neighbours;
+M7 VERDICT_RE drops the check mark                           bats rc=1 failing: 3 VERDICT_RE trips on verdicts seen in real reports and probes, not on the hedge;
+M8 assert_report_matches can never fail                      bats rc=1 failing: 1 the helpers themselves can fail (a guard against vacuous assertions);
+M9 assert_report_not_matches can never fail                  bats rc=1 failing: 1 the helpers themselves can fail (a guard against vacuous assertions);
+M10 ae3 FIGURE_RE key misspelled (empty pattern used)        bats rc=1 failing: 4 FIGURE_RE catches each correct figure's common spellings and not its neighbours;5 the draft's own stated figures never count as the computed figure;

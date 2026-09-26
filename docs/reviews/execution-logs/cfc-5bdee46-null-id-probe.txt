@@ -1,0 +1,7 @@
+# C28 null-id call + null-id denial; 2026-09-26T04:30:36Z
+generator jq:
+1	1	bash	unknown
+rc=0
+mode1-equiv:
+Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed): [None]
+rc=1

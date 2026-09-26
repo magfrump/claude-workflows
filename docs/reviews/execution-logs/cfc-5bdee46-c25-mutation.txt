@@ -1,0 +1,5 @@
+timestamp: 2026-09-26T04:29:59Z
+M0 unmutated                                                   rc=0 ok 1 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill;ok 2 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's;
+M1 checker path hard-coded (relative)                          rc=1 ok 1 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill;not ok 2 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's;
+M2 checker path hard-coded (absolute)                          rc=1 ok 1 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill;not ok 2 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's;
+M3 SKILL.md path hard-coded                                    rc=1 ok 1 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill;not ok 2 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's;

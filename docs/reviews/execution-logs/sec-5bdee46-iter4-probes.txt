@@ -1,0 +1,24 @@
+== baseline
+B0 normal denied Mode 1 call                               gen=[0 0 bash 9.9] no_tool_called_rc=1 mode1_rc=0
+== F1 parser divergence: non-object content block before the tool_use
+P1 ["stray", Bash t1], t1 denied                           gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P1b [7, Bash t1], t1 denied                                gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P1c [Bash t1, "stray"] (order reversed)                    gen=[0 0 bash 9.9] no_tool_called_rc=1 mode1_rc=1
+== F2 both shapes / deny failure plus one shape
+P2a tool_use moved + no permission_denials key             gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P2b tool_use moved + denial tool_name renamed              gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P2c tool_use moved + call NOT denied (executed)            gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P2d same as P2c + its tool_result in a user event          gen=[0 0 bash 9.9] no_tool_called_rc=0 mode1_rc=1
+P2e only permission_denials moved (tool_use visible)       gen=[1 0 bash 9.9] no_tool_called_rc=1 mode1_rc=1
+== mode1-equiv exit-0 attempts
+M1 Mode 1 t1 denied under tool_name Read                   gen=[1 0 bash 9.9] no_tool_called_rc=1 mode1_rc=0
+M2 Mode 1 t1 denied + hidden undenied t2 in .blocks        gen=[0 0 bash 9.9] no_tool_called_rc=1 mode1_rc=0
+M3 id true vs denial id 1 (hash-equal in Python)           gen=[1 1 bash 9.9] no_tool_called_rc=1 mode1_rc=0
+M4 id 1 vs denial id "1" (tostring-equal in jq)            gen=[0 0 bash 9.9] no_tool_called_rc=1 mode1_rc=1
+M5 permission_denials is an object, not a list             gen=[1 0 bash 9.9] no_tool_called_rc=1 mode1_rc=1
+M6 NaN ids on both sides (Python json accepts NaN)         gen=[0 0 bash 9.9] no_tool_called_rc=1 mode1_rc=0
+== init canary
+tools=["BashOutput"]               -> nobash
+tools="Bash,Read"                  -> bash
+tools="NotBashButContainsBash"     -> bash
+tools=["bash"]                     -> nobash

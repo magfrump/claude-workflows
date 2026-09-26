@@ -1,0 +1,86 @@
+=== 2026-09-26T04:54:38Z cmd: timeout 120 bash docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh none 1 (cwd /workspace)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+scenario: trigger=none nth=1 (bash 5.2.15(1)-release, uid 1000)
+procs_in_checkout rc=0
+  listed: 
+--- agent_gate (verbatim), same trigger:
+NOTE: docker not found: cc-isolated containers not checked, treated as none running.
+ERROR: an agent is running. install.sh installs only while no agent can run, because
+       one could change what you review before it is installed (Q-058).
+       Claude Code processes of uid 1000 (PID and command line):
+           1750 claude
+       Stop them: end each Claude Code session (/exit), or kill <PID>.
+       Then rerun install.sh. Nothing was installed. (probe)
+exit=1
+=== 2026-09-26T04:54:38Z cmd: timeout 120 bash docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh root 1 (cwd /workspace)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+scenario: trigger=root nth=1 (bash 5.2.15(1)-release, uid 1000)
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: Resource temporarily unavailable
+procs_in_checkout rc=254
+  listed: 
+--- agent_gate (verbatim), same trigger:
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.fRlT: fork: Resource temporarily unavailable
+ERROR: the check for processes inside the checkout failed (exit 254, Q-062). Nothing was installed. (probe)
+exit=1
+=== 2026-09-26T04:55:08Z cmd: timeout 120 bash docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh cwd 1 (cwd /workspace)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+scenario: trigger=cwd nth=1 (bash 5.2.15(1)-release, uid 1000)
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: Resource temporarily unavailable
+procs_in_checkout rc=254
+  listed: 
+--- agent_gate (verbatim), same trigger:
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.8TRI: fork: Resource temporarily unavailable
+ERROR: the check for processes inside the checkout failed (exit 254, Q-062). Nothing was installed. (probe)
+exit=1
+=== 2026-09-26T04:55:38Z cmd: timeout 120 bash docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh cwd 3 (cwd /workspace)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+scenario: trigger=cwd nth=3 (bash 5.2.15(1)-release, uid 1000)
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: Resource temporarily unavailable
+procs_in_checkout rc=254
+  listed: 
+--- agent_gate (verbatim), same trigger:
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.HLZS: fork: Resource temporarily unavailable
+ERROR: the check for processes inside the checkout failed (exit 254, Q-062). Nothing was installed. (probe)
+exit=1
+=== 2026-09-26T04:56:08Z cmd: timeout 120 bash docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh lineage 1 (cwd /workspace)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+scenario: trigger=lineage nth=1 (bash 5.2.15(1)-release, uid 1000)
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: Resource temporarily unavailable
+procs_in_checkout rc=254
+  listed: 
+--- agent_gate (verbatim), same trigger:
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: retry: Resource temporarily unavailable
+/tmp/c27lib.rZsW: fork: Resource temporarily unavailable
+ERROR: the check for processes inside the checkout failed (exit 254, Q-062). Nothing was installed. (probe)
+exit=1
