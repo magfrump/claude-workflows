@@ -359,6 +359,51 @@ EOF
   [ ! -e "$out/tc-1-thing.txt.failed" ]
 }
 
+# --- Provenance stamps (audit 2026-09-26 Batch G, T3) ---
+
+@test "a successful run writes a stamp that check_report_stamp accepts" {
+  make_skill demo repo "Read"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [ -s "$out/tc-1-thing.txt.stamp" ]
+  source "$TEST_TMPDIR/test/skills/runner-contract.bash"
+  [ "$(cat "$out/tc-1-thing.txt.stamp")" = "$(report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt)" ]
+  run check_report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt
+  [ "$status" -eq 0 ]
+  # Every stamp line is "<input> <sha256>", for the four inputs.
+  [ "$(cut -d' ' -f1 "$out/tc-1-thing.txt.stamp" | tr '\n' ' ')" = "skill runner contract fixture " ]
+  ! grep -vqE '^[a-z]+ [0-9a-f]{64}$' "$out/tc-1-thing.txt.stamp"
+}
+
+@test "a failed run writes no stamp and removes the previous one" {
+  make_skill demo repo "Read"
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  mkdir -p "$out"
+  echo "skill old" > "$out/tc-1-thing.txt.stamp"
+  printf '#!/usr/bin/env bash\necho "Not logged in"\nexit 1\n' > "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  [ -f "$out/tc-1-thing.txt.failed" ]
+  [ ! -e "$out/tc-1-thing.txt.stamp" ]
+}
+
+@test "the stamp is taken before the run: a SKILL.md edited during it leaves the report stale" {
+  make_skill demo repo "Read"
+  cat > "$TEST_TMPDIR/bin/claude" <<EOF2
+#!/usr/bin/env bash
+cat >/dev/null
+echo "# edited mid-run" >> "$TEST_TMPDIR/skills/demo/SKILL.md"
+printf '# Report\n'
+EOF2
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  source "$TEST_TMPDIR/test/skills/runner-contract.bash"
+  run check_report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: skill. "* ]]
+}
+
 @test "FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure" {
   make_skill demo inline "Agent"
   echo 'FIXTURE_TRANSCRIPT=1' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"

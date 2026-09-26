@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports pre-mortem
 # Evaluates pre-mortem output: each planted failure path narrated with a
 # fitting severity; the two sound proposals draw no Catastrophic narrative, the
 # low-stakes one says nothing must be addressed, and the dual-write rename draws

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports cowen-critique
 # Evaluates cowen-critique skill output: each planted-flaw draft must draw the
 # cognitive move that catches its flaw (checked by naming the specific fact the
 # flaw turns on), the stub must get only the pre-flight skip line, and the

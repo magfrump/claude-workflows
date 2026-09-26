@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports matrix-analysis
 # Validates the output format of matrix-analysis reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/matrix-analysis.md}"
+  resolve_skill_report matrix-analysis tc-ma1-agpl-library-in-closed-saas.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

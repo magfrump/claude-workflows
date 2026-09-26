@@ -123,3 +123,97 @@ check_runner_settings() {
       ;;
   esac
 }
+
+# --- Generated reports: which skills have them, and their provenance stamps ---
+#
+# Shared by generate-reports.bash (the writer), eval-helpers.bash and
+# helpers.bash (the checkers) and scripts/run-tests.sh (the per-skill gate), so
+# the three can never disagree about what "has reports" or "fresh" means.
+#
+# Every function takes <skills_test_dir>: the test/skills directory holding
+# <skill>/output/, <skill>/fixtures/, <skill>/runner.bash and this file. The
+# skill itself is read from <skills_test_dir>/../../skills/<skill>/.
+
+# skill_has_reports <skills_test_dir> <skill>: true when the skill's output
+# directory holds at least one generated <fixture>.report.md. This is the one
+# definition of "the skill has reports": run-tests.sh runs a skill's
+# report-dependent suites only then, and once it is true a missing report for
+# one of that skill's fixtures is a failure, never a skip.
+skill_has_reports() {
+  local f
+  for f in "$1/$2/output/"*.report.md; do
+    [ -f "$f" ] && return 0
+  done
+  return 1
+}
+
+# _stamp_sha256: sha256 of stdin as bare hex (sha256sum, or shasum on macOS).
+_stamp_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | cut -d' ' -f1
+  else
+    shasum -a 256 | cut -d' ' -f1
+  fi
+}
+
+# _stamp_hash_path <path>: a content hash of a file, or of a directory tree
+# (every regular file's relative path and content, in a locale-independent
+# order), or the word "absent". Python bytecode caches are left out: running a
+# skill's tests writes them, and they are not an input to generation.
+_stamp_hash_path() {
+  local p="$1" f
+  if [ -d "$p" ]; then
+    (
+      cd "$p" || exit 1
+      find . -type f ! -path '*/__pycache__/*' ! -name '*.pyc' -print0 \
+        | LC_ALL=C sort -z \
+        | while IFS= read -r -d '' f; do
+            printf '%s %s\n' "$(_stamp_sha256 < "$f")" "$f"
+          done
+    ) | _stamp_sha256
+  elif [ -f "$p" ]; then
+    _stamp_sha256 < "$p"
+  else
+    echo absent
+  fi
+}
+
+# report_stamp <skills_test_dir> <skill> <fixture>: the provenance stamp of a
+# report generated now for <fixture>, one "<input> <sha256>" line per input:
+#   skill    skills/<skill>/ (every file: SKILL.md, references/, scripts)
+#   runner   test/skills/<skill>/runner.bash
+#   contract test/skills/runner-contract.bash (this file)
+#   fixture  test/skills/<skill>/fixtures/<fixture> (a file, or a tree fixture)
+# generate-reports.bash writes it as <fixture>.stamp beside the report;
+# check_report_stamp recomputes it and compares. Not covered: live repo files a
+# tree-mode runner's fixture_base copies in (self-eval's rubric,
+# divergent-design's workflow).
+report_stamp() {
+  local sk="$1" skill="$2" fixture="$3"
+  printf 'skill %s\n' "$(_stamp_hash_path "$sk/../../skills/$skill")"
+  printf 'runner %s\n' "$(_stamp_hash_path "$sk/$skill/runner.bash")"
+  printf 'contract %s\n' "$(_stamp_hash_path "$sk/runner-contract.bash")"
+  printf 'fixture %s\n' "$(_stamp_hash_path "$sk/$skill/fixtures/$fixture")"
+}
+
+# check_report_stamp <skills_test_dir> <skill> <fixture>: fail, with a message
+# naming the changed inputs and the regeneration command, unless
+# <skill>/output/<fixture>.stamp exists and matches report_stamp for the
+# current tree. A report whose skill, runner, contract or fixture changed since
+# it was generated grades a program that no longer exists.
+check_report_stamp() {
+  local sk="$1" skill="$2" fixture="$3"
+  local stamp="$sk/$skill/output/$fixture.stamp" now changed=""
+  local regen="bash test/skills/generate-reports.bash $skill $fixture"
+  if [ ! -f "$stamp" ]; then
+    echo "No provenance stamp for $skill/$fixture ($stamp): the report cannot be tied to the current skill, runner and fixture. Regenerate: $regen"
+    return 1
+  fi
+  now="$(report_stamp "$sk" "$skill" "$fixture")"
+  if [ "$now" != "$(cat "$stamp")" ]; then
+    changed="$(diff <(printf '%s\n' "$now") "$stamp" | sed -nE 's/^< ([a-z]+) .*/\1/p' | tr '\n' ' ')"
+    changed="${changed% }"
+    echo "Stale report for $skill/$fixture: changed since generation: ${changed:-stamp format}. Regenerate: $regen"
+    return 1
+  fi
+}

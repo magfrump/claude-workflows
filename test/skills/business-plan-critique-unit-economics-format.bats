@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-unit-economics
 # Validates the output format of business-plan-critique-unit-economics reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -14,7 +15,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/business-plan-critique-unit-economics.md"
+  resolve_skill_report business-plan-critique-unit-economics tc-ue1-dental-scheduling-saas.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports divergent-design
 # Evaluates divergent-design (router) output: three tradeoff-bearing decisions
 # must route into workflows/divergent-design.md (read it, emit its console trail
 # and recommendation banner) and prune the option each planted hard constraint

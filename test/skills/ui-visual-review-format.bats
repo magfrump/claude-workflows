@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports ui-visual-review
 # Validates the output format of ui-visual-review reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/ui-visual-review.md"
+  resolve_skill_report ui-visual-review tc-uv1-unbounded-list.tsx
+  load_generic_report "$REPORT_PATH"
   count_findings
 }
 

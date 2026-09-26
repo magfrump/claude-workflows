@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-unit-economics
 # Evaluates business-plan-critique-unit-economics output: each planted-flaw
 # fixture must be named under the lens that owns it, the stub must get only the
 # skip line, and the short sound plan must get a full, well-formed critique

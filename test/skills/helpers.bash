@@ -1,11 +1,60 @@
 # Shared helpers for skill output BATS tests.
 # Load with: load helpers  (from the same directory)
 #
-# Most tests require a generated report to exist. Without one, tests skip
-# gracefully. To run a specific test suite, generate the report first via
-# the corresponding skill, then point REPORT_PATH at it:
-#   REPORT_PATH=path/to/report.md bats test/skills/<skill>-format.bats
-# To generate all reports, see test/skills/generate-reports.bash.
+# A format suite grades one report: REPORT_PATH when set (eval_fixture's
+# format_check passes the fixture's report this way, or point it at any report
+# by hand), else its skill's generated report for one full-format fixture,
+# resolved by resolve_skill_report below. There is no committed default: the
+# docs/reviews/ artifacts the suites used to fall back on are frozen, so a
+# format suite graded them whatever the skill said (audit T2). Generate
+# reports with test/skills/generate-reports.bash <skill>.
+
+# skill_has_reports, check_report_stamp (shared with generate-reports.bash).
+# shellcheck source=runner-contract.bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/runner-contract.bash"
+
+# Call first in a report suite's setup(): sets REPORT_PATH to the report to grade.
+#   - REPORT_PATH already set: use it; a missing file there fails (the caller
+#     named it). Its provenance is the caller's: eval_fixture checks the stamp
+#     before its format_check.
+#   - else, with no generated reports for <skill> (or no <fixture> given, for
+#     suites whose skill has no generator), skip, saying how to get one. This
+#     is the standalone case: scripts/run-tests.sh only runs the suite when the
+#     skill has reports.
+#   - else the skill has reports, so <fixture>'s must exist, be non-empty,
+#     carry no .failed marker, and have a stamp matching the current tree;
+#     anything else fails rather than skips (audit T3/T4).
+# The skills test dir is SKILL_TESTS_DIR, default BATS_TEST_DIRNAME (suites in
+# test/skills/<skill>/ set it to their parent).
+# Args: $1 = skill, $2 = fixture whose report to grade by default (optional)
+resolve_skill_report() {
+  local skill="$1" fixture="${2:-}" sk="${SKILL_TESTS_DIR:-$BATS_TEST_DIRNAME}"
+  if [ -n "${REPORT_PATH:-}" ]; then
+    if [ ! -f "$REPORT_PATH" ]; then
+      echo "REPORT_PATH=$REPORT_PATH does not exist"
+      return 1
+    fi
+    return 0
+  fi
+  if [ -z "$fixture" ] || ! skill_has_reports "$sk" "$skill"; then
+    skip "No report to grade: set REPORT_PATH, or generate ${skill}'s reports (bash test/skills/generate-reports.bash ${skill})"
+  fi
+  local report="$sk/$skill/output/$fixture.report.md"
+  if [ ! -f "$report" ]; then
+    echo "No report for $fixture, although $skill has generated reports. Regenerate: bash test/skills/generate-reports.bash $skill $fixture"
+    return 1
+  fi
+  if [ -f "${report%.report.md}.failed" ]; then
+    echo "Generation failed for $fixture: $(cat "${report%.report.md}.failed")"
+    return 1
+  fi
+  check_report_stamp "$sk" "$skill" "$fixture" || return 1
+  if ! grep -q '[^[:space:]]' "$report"; then
+    echo "Empty report for $fixture: nothing to grade"
+    return 1
+  fi
+  REPORT_PATH="$report"
+}
 
 # Call in setup() to load a claim-based report and precompute common values.
 # Args: $1 = default report path

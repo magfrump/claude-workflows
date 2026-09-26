@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports yglesias-critique
 # Validates the output format of yglesias-critique reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -13,7 +14,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/yglesias-critique.md"
+  resolve_skill_report yglesias-critique tc-ygl1-class-size-cap.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

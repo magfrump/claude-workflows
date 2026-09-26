@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports architecture-review
 # Evaluates architecture-review skill output against expected severities and the
 # structural concepts each fixture's planted defect calls for, plus two clean
 # negatives (a sound ports-and-adapters package, and an internal-only patch that

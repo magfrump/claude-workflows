@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports api-consistency-reviewer
 # Validates the output format of api-consistency-reviewer reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/api-consistency-review.md"
+  resolve_skill_report api-consistency-reviewer tc-api1-invoices-routes.ts
+  load_generic_report "$REPORT_PATH"
   count_findings
 }
 

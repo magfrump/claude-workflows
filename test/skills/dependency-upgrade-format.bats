@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports dependency-upgrade
 # Validates the output format of dependency-upgrade reports.
 #
 # Note: No example report exists yet — tests will skip via load_generic_report.
@@ -10,7 +11,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/working/dep-upgrade.md}"
+  resolve_skill_report dependency-upgrade tc-dep1-http-client.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

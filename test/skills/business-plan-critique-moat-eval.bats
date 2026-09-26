@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-moat
 # Evaluates business-plan-critique-moat output: each planted flaw graded Weak or
 # Absent and named in the lens it targets; the stub skipped with the exact skip
 # line; the short sound plan critiqued in full with no Absent lens.

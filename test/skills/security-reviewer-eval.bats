@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports security-reviewer
 # Evaluates security-reviewer skill output against expected severities, the
 # mechanism or fix each fixture's planted defect calls for, and the absence of
 # Critical/High findings on the clean negatives.

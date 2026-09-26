@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports architecture-review
 # Validates the output format of architecture-review reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/architecture-review.md"
+  resolve_skill_report architecture-review tc-arch1-domain-imports-infra.py
+  load_generic_report "$REPORT_PATH"
   count_findings
   # SKILL.md "Scope Check": an out-of-scope diff gets a brief skip note titled
   # "# Architecture Review — Skipped" in place of the full critique. Tests named

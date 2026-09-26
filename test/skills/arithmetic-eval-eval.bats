@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports arithmetic-eval
 # Evaluates arithmetic-eval's routing: given a draft with derived figures, does
 # the model reach for the Mode 1 evaluator with the right expression, instead of
 # doing the math in its head? Runs are FIXTURE_BASH=deny-record (Q-063 [1]):

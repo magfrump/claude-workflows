@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports yglesias-critique
 # Validates that a generated yglesias-critique report covers the expected semantic
-# dimensions. Report-dependent: scripts/run-tests.sh gates this suite with the
-# *-format/*-eval suites, so it only runs when generated reports exist. The
+# dimensions. Report-dependent: scripts/run-tests.sh runs this suite (tagged
+# @needs-reports) only when this skill has generated reports. The
 # offline half — each keyword is one the SKILL.md template prescribes — is
 # dimensions-skill.bats, which always runs.
 #
@@ -15,18 +16,13 @@ load ../helpers
 load ../critic-dimensions
 
 setup() {
-  # Anchored to this file, not the cwd: the old cwd-relative default read a
-  # stale committed docs/reviews/ artifact (or skipped when none existed), so
-  # no change to the skill could turn this suite red.
-  local default="$BATS_TEST_DIRNAME/output/tc-ygl7-library-fines.md.report.md"
-  local report="${REPORT_PATH:-$default}"
-  # generate-reports.bash leaves <fixture>.failed when the run failed; the
-  # report beside it is not a critique and must not be scored (or skipped).
-  if [ -f "${report%.report.md}.failed" ]; then
-    echo "Generation failed for $report: $(cat "${report%.report.md}.failed")" >&2
-    return 1
-  fi
-  load_generic_report "$report"
+  # The generated full-critique fixture report, never a committed docs/reviews/
+  # artifact; resolve_skill_report (helpers.bash) fails on a missing, failed,
+  # empty or stale (stamp-mismatched) report once yglesias-critique has reports.
+  # shellcheck disable=SC2034  # read by resolve_skill_report
+  SKILL_TESTS_DIR="$BATS_TEST_DIRNAME/.."
+  resolve_skill_report yglesias-critique tc-ygl7-library-fines.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Per-keyword dimension checks ---

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports what-if-analysis
 # Evaluates what-if-analysis output: each planted flaw found by the cognitive
 # move it targets (load-bearing assumption, second-order effect, hidden
 # coupling, reversibility cliff, cost of success); the genuinely reversible

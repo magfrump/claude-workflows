@@ -2,6 +2,14 @@
 # every skill with a fixture set under test/skills/<skill>/fixtures/).
 # Load with: load eval-helpers
 
+# Directory of this file, for transcript.jq and runner-contract.bash:
+# BATS_TEST_DIRNAME can be pointed elsewhere (the dispatcher tests do), so
+# these are found relative to here.
+EVAL_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# skill_has_reports, check_report_stamp (shared with generate-reports.bash).
+# shellcheck source=runner-contract.bash
+source "$EVAL_HELPERS_DIR/runner-contract.bash"
+
 # Load expected verdicts for a skill. Must be called before eval_fixture.
 # Declares global associative arrays.
 # Args: $1 = skill name (any skill with test/skills/<skill>/expected-verdicts.bash)
@@ -30,14 +38,36 @@ claim_heading_re() {
 
 # Load a generated report for a given fixture.
 # Sets: REPORT_CONTENT, CLAIM_COUNT, REPORT_PATH
-# Skips the test if the report hasn't been generated yet.
+#
+# Skips only when the skill has no generated reports at all (skill_has_reports
+# in runner-contract.bash): that is a suite run standalone, outside
+# scripts/run-tests.sh's per-skill gate, and the skip says to generate them.
+# Once the skill has any report, everything else fails (review T3/T4 of the
+# 2026-09-26 test-constraint audit):
+#   - a missing report: a skip would count as ok, so a fixture the generator
+#     never reached, or whose report was deleted, would pass;
+#   - a <fixture>.failed marker: the run failed, whatever the report holds;
+#   - a missing or mismatched <fixture>.stamp: the report was produced by a
+#     skill, runner or fixture that has since changed.
 load_eval_report() {
   local skill="$1" fixture="$2"
-  REPORT_PATH="${BATS_TEST_DIRNAME}/${skill}/output/${fixture}.report.md"
+  local sk="${BATS_TEST_DIRNAME}"
+  REPORT_PATH="${sk}/${skill}/output/${fixture}.report.md"
 
   if [ ! -f "$REPORT_PATH" ]; then
-    skip "No report for ${fixture} — run generate-reports.bash first"
+    if skill_has_reports "$sk" "$skill"; then
+      echo "No report for ${fixture}, although ${skill} has generated reports: every fixture must have one. Regenerate: bash test/skills/generate-reports.bash ${skill} ${fixture}"
+      return 1
+    fi
+    skip "No generated reports for ${skill} — run: bash test/skills/generate-reports.bash ${skill}"
   fi
+  local failed_marker="${REPORT_PATH%.report.md}.failed"
+  if [ -f "$failed_marker" ]; then
+    echo "Generation failed for $fixture: $(cat "$failed_marker")"
+    return 1
+  fi
+  check_report_stamp "$sk" "$skill" "$fixture" || return 1
+
   if [ ! -s "$REPORT_PATH" ]; then
     # Empty report = 0 claims. Don't skip — let assertions run so that
     # negative test fixtures (e.g., empty-file inputs) actually verify
@@ -51,14 +81,73 @@ load_eval_report() {
   CLAIM_COUNT=$(echo "$REPORT_CONTENT" | grep -cE "$(claim_heading_re "$skill")" || true)
 }
 
+# Fixtures whose KEY_CHECK holds only absence checks (no_*, max_claims,
+# no_critique, a verdict/severity check expecting Any), so a refusal or an
+# off-topic report passes them (audit T6). eval_fixture fails such a fixture
+# unless it is listed here, and fails a listed fixture that has since gained a
+# positive check, so this list only shrinks. It is the TODO for the pass that
+# adds a positive check to each (e.g. cites_pattern on the stated reason).
+NEGATIVE_ONLY_ALLOWLIST=(
+  arithmetic-eval/tc-ae5-no-arithmetic.md
+  code-fact-check/tc-c4-skip-targets.js
+  code-fact-check/tc-c8.1-empty.js
+  code-fact-check/tc-c8.2-no-comments.js
+  code-fact-check/tc-c8.3-binary-content.js
+  code-fact-check/tc-c8.4-extremely-short.js
+  divergent-design/tc-dd4-open-ended-hackathon-themes
+  fact-check/tc-3.1-opinions.md
+  fact-check/tc-3.2-predictions.md
+  fact-check/tc-6.1-accurate-weak-argument.md
+  fact-check/tc-7.1-empty.md
+  fact-check/tc-7.2-no-claims.md
+  fact-check/tc-7.3-binary-content.md
+  fact-check/tc-7.4-extremely-short.md
+  security-reviewer/tc-sec8-clean-exec.go
+)
+
+# key_check_has_positive <key_check> <expected_verdict>: true when at least one
+# check can only pass on a report that says something: a verdict, severity or
+# field value, a cited pattern, a claim floor, a tool call, a format suite.
+key_check_has_positive() {
+  local key_check="$1" expected="$2" check
+  local -a checks
+  IFS=';' read -ra checks <<< "$key_check"
+  for check in "${checks[@]}"; do
+    case "$check" in
+      verdict_match|severity_match)
+        case "$expected" in Any|skip|"") ;; *) return 0 ;; esac ;;
+      min_claims:*)
+        [ "${check#min_claims:}" -gt 0 ] 2>/dev/null && return 0 ;;
+      field_match:*|cites_pattern:*|finding_match:*|web_search_used|tool_called:*|subagents_min:*|mode1_equiv:*|format_check)
+        return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# assert_positive_check_or_allowlisted <skill> <fixture> <key_check> <expected>
+assert_positive_check_or_allowlisted() {
+  local id="$1/$2" listed="" entry
+  for entry in "${NEGATIVE_ONLY_ALLOWLIST[@]}"; do
+    [ "$entry" = "$id" ] && listed=1
+  done
+  if key_check_has_positive "$3" "$4"; then
+    if [ -n "$listed" ]; then
+      echo "$id has a positive check now: remove it from NEGATIVE_ONLY_ALLOWLIST in eval-helpers.bash"
+      return 1
+    fi
+  elif [ -z "$listed" ]; then
+    echo "$id has only absence checks (a refusal would pass it): add a positive check to its KEY_CHECK"
+    return 1
+  fi
+}
+
 # All-in-one: load report + run all checks for a fixture.
 # This avoids associative array subscript issues in BATS by doing all lookups
 # inside this function where the arrays are in scope.
 # Args: $1 = skill, $2 = fixture filename
 eval_fixture() {
   local skill="$1" fixture="$2"
-
-  load_eval_report "$skill" "$fixture"
 
   # Look up expected values — quoting keys to avoid arithmetic interpretation
   # shellcheck disable=SC2153  # EXPECTED_VERDICT and KEY_CHECK are sourced from expected-verdicts.bash
@@ -70,6 +159,7 @@ eval_fixture() {
     echo "No KEY_CHECK entry for fixture: $fixture"
     return 1
   fi
+  assert_positive_check_or_allowlisted "$skill" "$fixture" "$key_check" "$expected_verdict" || return 1
 
   # A failed generation must never score as a pass. The absence-only checks
   # (no_severity:, no_verdict:, no_field:, no_pattern:, no_tool_called:) and a skipped
@@ -79,11 +169,9 @@ eval_fixture() {
   # result event, or a transcript check that voided the run. The marker is
   # fail-closed: written before the run and removed only after every check
   # returned a complete, empty verdict, so an interrupted run also leaves one.
-  local failed_marker="${REPORT_PATH%.report.md}.failed"
-  if [ -f "$failed_marker" ]; then
-    echo "Generation failed for $fixture: $(cat "$failed_marker")"
-    return 1
-  fi
+  # load_eval_report fails on it, and on a missing report or a stale stamp.
+  load_eval_report "$skill" "$fixture" || return 1
+  local fixture_path="${BATS_TEST_DIRNAME}/${skill}/fixtures/${fixture}"
   # A blank report with no failure marker (claude succeeded and printed nothing,
   # or the marker predates this check). Only a fixture that expects no claims at
   # all (max_claims:0, e.g. an empty input file) may have one.
@@ -122,8 +210,14 @@ eval_fixture() {
         assert_no_field "${spec%%=*}" "${spec#*=}" || failed=1
         ;;
       cites_pattern:*)
+        # Lines the report copies verbatim from the fixture do not count: a
+        # quoted input line is not the model naming the defect.
         local pattern="${check#cites_pattern:}"
-        assert_report_matches "$pattern" || failed=1
+        assert_report_cites "$pattern" "$fixture_path" || failed=1
+        ;;
+      finding_match:*)
+        local spec="${check#finding_match:}"
+        assert_finding_match "${spec%%=*}" "${spec#*=}" "$fixture_path" || failed=1
         ;;
       no_pattern:*)
         assert_report_not_matches "${check#no_pattern:}" || failed=1
@@ -169,7 +263,7 @@ eval_fixture() {
         ;;
       format_check)
         # Delegate to the skill's format suite, test/skills/<skill>-format.bats
-        REPORT_PATH="$REPORT_PATH" bats "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
+        run_format_check "${BATS_TEST_DIRNAME}/${skill}-format.bats" || failed=1
         ;;
       *)
         echo "Unknown check type: $check"
@@ -178,6 +272,26 @@ eval_fixture() {
     esac
   done
   [ -z "$failed" ]
+}
+
+# run_format_check <suite>: run a format suite against REPORT_PATH and fail
+# unless it passed with at least one test that was not skipped. bats counts a
+# skip as ok, and every format suite skips when its report is empty or lacks
+# what a test reads, so an all-skipped run constrained nothing (audit T4).
+run_format_check() {
+  local suite="$1" out rc=0 ran
+  out="$(REPORT_PATH="$REPORT_PATH" bats --tap "$suite" 2>&1)" || rc=$?
+  ran=$(printf '%s\n' "$out" | grep -E '^(not )?ok [0-9]+' | grep -cvE '^ok [0-9]+ .*# skip' || true)
+  if [ "$rc" -ne 0 ]; then
+    printf '%s\n' "$out"
+    echo "format_check: $(basename "$suite") failed against $REPORT_PATH"
+    return 1
+  fi
+  if [ "$ran" -eq 0 ]; then
+    printf '%s\n' "$out"
+    echo "format_check: every test in $(basename "$suite") skipped against $REPORT_PATH, so it checked nothing"
+    return 1
+  fi
 }
 
 # --- Individual assertion functions ---
@@ -306,6 +420,109 @@ assert_report_matches() {
   fi
 }
 
+# drop_fixture_echo <fixture_path>: stdin minus every line that appears in the
+# fixture (a file, or every file of a tree fixture) verbatim, compared after
+# trimming whitespace and blockquote markers. A report that quotes the input's
+# vulnerable line, claim or heading has not thereby named anything. With no
+# fixture at that path, stdin passes through unchanged.
+drop_fixture_echo() {
+  local fixture="$1"
+  if [ -d "$fixture" ]; then
+    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>]+|[ \t]+$/, "", s); return s }
+         FILENAME == ARGV[1] { k = norm($0); if (k != "") seen[k] = 1; next }
+         !(norm($0) in seen)' <(find "$fixture" -type f -exec cat {} +) -
+  elif [ -f "$fixture" ]; then
+    awk 'function norm(s) { sub(/\r$/, "", s); gsub(/^[ \t>]+|[ \t]+$/, "", s); return s }
+         FILENAME == ARGV[1] { k = norm($0); if (k != "") seen[k] = 1; next }
+         !(norm($0) in seen)' "$fixture" -
+  else
+    cat
+  fi
+}
+
+# Assert the report matches a case-insensitive ERE on some line that is not a
+# verbatim copy of a fixture line (the cites_pattern check).
+# Args: $1 = ERE, $2 = fixture path
+assert_report_cites() {
+  local pattern="$1" fixture="$2"
+  if ! printf '%s\n' "$REPORT_CONTENT" | drop_fixture_echo "$fixture" | grep -qiE -e "$pattern"; then
+    echo "Report does not match pattern (outside lines copied from the fixture): $pattern"
+    return 1
+  fi
+}
+
+# finding_blocks <field>: split REPORT_CONTENT (on stdin) into the findings
+# that carry a **<field>:** value, one record per finding: a line holding
+# \036 and the value, then the finding's lines. Two report shapes, from the
+# skills' output templates:
+#   - a "**<field>:** value" line (optionally a list bullet): the finding is the
+#     nearest heading above it through the next heading of the same or a higher
+#     level, so its sub-headings stay in, and sibling findings and the enclosing
+#     "## Findings" section stay out (security/performance/api/architecture/ui:
+#     "#### [Finding title]"; pre-mortem's narratives; ai-personas' personas);
+#   - a table row, in a table whose header row has a "<field>" column: the row is
+#     the finding and that cell its value (the reviewers' summary tables).
+finding_blocks() {
+  awk -v field="$1" '
+    function hlevel(s) { if (match(s, /^#+[ \t]/)) return RLENGTH - 1; return 0 }
+    function trim(s) { gsub(/^[ \t*_`]+|[ \t*_`]+$/, "", s); return s }
+    { sub(/\r$/, ""); line[NR] = $0; lv[NR] = hlevel($0) }
+    END {
+      fre = "^[ \t]*([-*+][ \t]+)?[*][*]" field ":[*][*][ \t]*"
+      for (i = 1; i <= NR; i++) {
+        if (line[i] !~ fre) continue
+        v = line[i]; sub(fre, "", v)
+        h = 0
+        for (j = i - 1; j >= 1; j--) if (lv[j] > 0) { h = j; break }
+        hl = h ? lv[h] : 0
+        last = NR
+        for (k = i + 1; k <= NR; k++) if (lv[k] > 0 && (hl == 0 || lv[k] <= hl)) { last = k - 1; break }
+        print "\036" v
+        for (k = (h ? h : 1); k <= last; k++) print line[k]
+      }
+      intable = 0; col = 0
+      for (i = 1; i <= NR; i++) {
+        if (line[i] !~ /^[ \t]*[|]/) { intable = 0; continue }
+        n = split(line[i], cell, "|")
+        if (!intable) {
+          intable = 1; col = 0
+          for (x = 1; x <= n; x++) if (tolower(trim(cell[x])) == tolower(field)) col = x
+          continue
+        }
+        if (line[i] ~ /^[ \t]*[|][ \t:|-]*$/) continue
+        if (col) { print "\036" trim(cell[col]); print line[i] }
+      }
+    }'
+}
+
+# Assert one finding carries both a severity from the allowed set and a line
+# matching the ERE (outside lines copied from the fixture). severity_match and
+# cites_pattern each look at the whole report, so an unrelated High finding plus
+# the pattern anywhere else ("scop" in the "**Scope:**" header) passed a
+# fixture whose planted defect the report never named (audit T5).
+# Check syntax: finding_match:Critical|High=ownership|IDOR
+# Args: $1 = pipe-separated allowed severities, $2 = ERE, $3 = fixture path
+assert_finding_match() {
+  local allowed="$1" pattern="$2" fixture="${3:-}" l val="" block="" have="" seen=""
+  _finding_hit() {
+    [ -n "$have" ] || return 1
+    printf '%s\n' "$val" | grep -qiE "^(${allowed})([^[:alpha:]]|$)" || return 1
+    printf '%s' "$block" | drop_fixture_echo "$fixture" | grep -qiE -e "$pattern"
+  }
+  while IFS= read -r l; do
+    if [[ "$l" == $'\036'* ]]; then
+      _finding_hit && return 0
+      val="${l#$'\036'}" block="" have=1
+      seen="${seen:+$seen, }$val"
+    else
+      block+="$l"$'\n'
+    fi
+  done < <(printf '%s\n' "$REPORT_CONTENT" | finding_blocks Severity)
+  _finding_hit && return 0
+  echo "No single finding has a severity matching /${allowed}/ and a line matching /${pattern}/ (finding severities: ${seen:-none})"
+  return 1
+}
+
 # Assert the report body does not match a case-insensitive pattern — e.g. a
 # stub draft's report must not carry the full critique's section headings, and a
 # complete short draft's report must not carry the stub-skip line.
@@ -365,9 +582,6 @@ eval_transcript_path() {
   printf '%s\n' "$t"
 }
 
-# Directory of this file, for transcript.jq: BATS_TEST_DIRNAME can be pointed
-# elsewhere (the dispatcher tests do), so the module is found relative to here.
-EVAL_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # transcript_jq <transcript> <filter> [jq args...]: run <filter> over the
 # transcript's events as read by transcript.jq, the one strict reader shared

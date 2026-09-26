@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports test-strategy
 # Evaluates test-strategy skill output: each planted fixture's untested
 # high-risk path must appear as an enumerated **G<n>** gap with a high-priority
 # test recommended, and the negative must not list a covered branch as a gap

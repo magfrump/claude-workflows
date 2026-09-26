@@ -438,3 +438,19 @@ JSON
   [[ "$output" == *"✗ duplicate id: Q-001"* ]]
   [[ "$output" == *"✗ questions doc: structure or index problems"* ]]
 }
+
+@test "gate 5: report suites the runner gated out are warned about with their count, never passed" {
+  local stub="$BATS_TEST_TMPDIR/run-tests-nr.sh"
+  cat > "$stub" <<'STUB'
+#!/usr/bin/env bash
+[ "$1" = --fast ] && echo 47 > "$RUN_TESTS_NOT_RUN_FILE"
+exit 0
+STUB
+  chmod +x "$stub"
+  run env -u HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_RUN_TESTS="$stub" \
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+  echo "$output"
+  [[ "$output" == *"FAIL=0"* ]]
+  [[ "$output" == *"⚠ 47 report-dependent BATS suite(s) NOT RUN"* ]]
+  [[ "$output" == *"Fast BATS suites passed (excluding 47 report-dependent suite(s) not run)"* ]]
+}

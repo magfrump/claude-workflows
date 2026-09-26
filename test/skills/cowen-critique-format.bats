@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports cowen-critique
 # Validates the output format of cowen-critique reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -13,7 +14,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/cowen-critique.md"
+  resolve_skill_report cowen-critique tc-cow1-library-visits.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

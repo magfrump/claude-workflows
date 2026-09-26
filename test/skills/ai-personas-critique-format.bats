@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports ai-personas-critique
 # Validates the output format of ai-personas-critique reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -13,7 +14,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/ai-personas-critique.md"
+  resolve_skill_report ai-personas-critique tc-per1-red-light-cameras.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

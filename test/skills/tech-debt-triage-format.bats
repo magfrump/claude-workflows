@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports tech-debt-triage
 # Validates the output format of tech-debt-triage reports.
 #
 # Note: No example report exists yet — tests will skip via load_generic_report.
@@ -10,7 +11,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/working/tech-debt-triage.md}"
+  resolve_skill_report tech-debt-triage tc-td1-discount-rules.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

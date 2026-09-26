@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports design-space-situating
 # Evaluates design-space-situating output: each decision brief framed wrongly on
 # one dimension has that misframing surfaced against the brief's own facts; the
 # well-framed brief draws no misframing or re-frame hand-off.

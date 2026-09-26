@@ -239,6 +239,28 @@ transcript() {
 # eval_fixture itself, against a throwaway tree shaped like test/skills, so the
 # dispatcher's parsing of tool_called:/no_tool_called:/mode1_equiv: is tested,
 # not only the assert functions (review C18).
+# stamp_fixture <root> <skill>: give the dispatch tree's tc-1.md report the
+# fixture, runner and provenance stamp eval_fixture requires (audit T3).
+stamp_fixture() {
+  local sk="$1/test/skills"
+  mkdir -p "$sk/$2/fixtures"
+  echo "fixture" > "$sk/$2/fixtures/tc-1.md"
+  echo "FIXTURE_TOOLS=none" > "$sk/$2/runner.bash"
+  cp "$BATS_TEST_DIRNAME/runner-contract.bash" "$sk/"
+  report_stamp "$sk" "$2" tc-1.md > "$sk/$2/output/tc-1.md.stamp"
+}
+
+# allow_if_negative <skill> <check>: an absence-only check (no_tool_called:)
+# needs its fixture on NEGATIVE_ONLY_ALLOWLIST, and a positive one must not be.
+allow_if_negative() {
+  # shellcheck disable=SC2034  # read by eval_fixture
+  if key_check_has_positive "$2" any; then
+    NEGATIVE_ONLY_ALLOWLIST=()
+  else
+    NEGATIVE_ONLY_ALLOWLIST=("$1/tc-1.md")
+  fi
+}
+
 @test "eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv reaches the checker" {
   local root="$TEST_TMPDIR/tree"
   mkdir -p "$root/test/skills/arithmetic-eval/output" "$root/skills"
@@ -247,6 +269,7 @@ transcript() {
   transcript "$(with_expr '1 + 1')"
   cp "$T" "$root/test/skills/arithmetic-eval/output/tc-1.md.transcript.jsonl"
   echo "# Report" > "$root/test/skills/arithmetic-eval/output/tc-1.md.report.md"
+  stamp_fixture "$root" arithmetic-eval
   BATS_TEST_DIRNAME="$root/test/skills"
   # KEY_CHECK and EXPECTED_VERDICT are read by eval_fixture, not here.
   # shellcheck disable=SC2034
@@ -257,12 +280,14 @@ transcript() {
   for check in "tool_called:Bash" "tool_called:Bash=python3" "no_tool_called:Bash=rm -rf" "mode1_equiv:2"; do
     # shellcheck disable=SC2034  # read by eval_fixture
     KEY_CHECK["tc-1.md"]="$check"
+    allow_if_negative arithmetic-eval "$check"
     run eval_fixture arithmetic-eval tc-1.md
     [ "$status" -eq 0 ] || { echo "expected pass: $check"; echo "$output"; return 1; }
   done
   for check in "no_tool_called:Bash" "no_tool_called:Bash=python3" "tool_called:Bash=curl" "mode1_equiv:3"; do
     # shellcheck disable=SC2034  # read by eval_fixture
     KEY_CHECK["tc-1.md"]="$check"
+    allow_if_negative arithmetic-eval "$check"
     run eval_fixture arithmetic-eval tc-1.md
     [ "$status" -ne 0 ] || { echo "expected fail: $check"; echo "$output"; return 1; }
   done
@@ -286,6 +311,7 @@ transcript() {
   transcript "echo hi"
   cp "$T" "$root/test/skills/$sk/output/tc-1.md.transcript.jsonl"
   echo "# Report" > "$root/test/skills/$sk/output/tc-1.md.report.md"
+  stamp_fixture "$root" "$sk"
   BATS_TEST_DIRNAME="$root/test/skills"
   # shellcheck disable=SC2034  # read by eval_fixture
   declare -gA KEY_CHECK EXPECTED_VERDICT

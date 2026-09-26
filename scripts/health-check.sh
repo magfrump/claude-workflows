@@ -351,8 +351,10 @@ check_fixture_verdicts() {
 #
 # Before Q-023 this gate ran only test/skills/ and test/hooks/, so a green
 # health-check said nothing about the ~40 suites under test/ and test/scripts/
-# (link-claude-home-wiring.bats among them). Report gating (*-format/*-eval
-# need generated reports) is owned by run-tests.sh, so it is not repeated here.
+# (link-claude-home-wiring.bats among them). Report gating (suites tagged
+# "# @needs-reports <skill>" run only when that skill has generated reports) is
+# owned by run-tests.sh; this gate only surfaces how many it left out, as a
+# warning, via RUN_TESTS_NOT_RUN_FILE.
 #
 # Recursion guard: test/scripts/health-check.bats is a slow suite that runs
 # this script. Without a guard, gate 5 -> run-tests --slow -> health-check.bats
@@ -378,18 +380,49 @@ check_bats() {
     fi
 
     local runner="${HEALTH_CHECK_RUN_TESTS:-$REPO_ROOT/scripts/run-tests.sh}"
+    # The runner writes how many report-dependent suites it gated out (no
+    # generated reports for their skill) to RUN_TESTS_NOT_RUN_FILE. Those did
+    # not run, so they are reported as a warning with their count, and the
+    # pass lines say the passing set excludes them.
+    local nr_dir fast_nr slow_nr
+    nr_dir="$(mktemp -d)"
 
-    if ! HEALTH_CHECK_SKIP_BATS=1 "$runner" --fast; then
+    if ! HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/fast" "$runner" --fast; then
         fail "Fast BATS suites failed — slow suites not run (fix fast first)"
+        rm -rf "$nr_dir"
         return
     fi
-    pass "Fast BATS suites passed"
+    fast_nr="$(_not_run_count "$nr_dir/fast")"
+    pass "Fast BATS suites passed$(_not_run_note "$fast_nr")"
 
-    if HEALTH_CHECK_SKIP_BATS=1 "$runner" --slow; then
-        pass "Slow BATS suites passed"
+    if HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/slow" "$runner" --slow; then
+        slow_nr="$(_not_run_count "$nr_dir/slow")"
+        pass "Slow BATS suites passed$(_not_run_note "$slow_nr")"
     else
+        slow_nr="$(_not_run_count "$nr_dir/slow")"
         fail "Slow BATS suites failed"
     fi
+    rm -rf "$nr_dir"
+
+    if (( fast_nr + slow_nr > 0 )); then
+        warn "$((fast_nr + slow_nr)) report-dependent BATS suite(s) NOT RUN — no generated reports for their skill (listed in the runner output above; generate with test/skills/generate-reports.bash <skill>)"
+    fi
+}
+
+# _not_run_count <file>: the gated-out count run-tests.sh wrote, or 0 when it
+# wrote none (an older or stub runner) or wrote something that is not a number.
+_not_run_count() {
+    local n=""
+    [[ -f "$1" ]] && n="$(tr -d '[:space:]' < "$1")"
+    [[ "$n" =~ ^[0-9]+$ ]] || n=0
+    printf '%s' "$n"
+}
+
+# _not_run_note <count>: suffix for a pass line, so it never reads as if the
+# gated-out suites had run.
+_not_run_note() {
+    (( $1 > 0 )) && printf ' (excluding %s report-dependent suite(s) not run)' "$1"
+    return 0
 }
 
 # ── 6. shellcheck ───────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports performance-reviewer
 # Evaluates performance-reviewer skill output against expected severities and
 # the mechanism or fix each fixture's planted defect calls for, plus two clean
 # negatives that must not draw Critical/High findings.

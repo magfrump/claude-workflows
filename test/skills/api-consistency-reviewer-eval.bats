@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports api-consistency-reviewer
 # Evaluates api-consistency-reviewer skill output against expected severities and
 # the convention each fixture's planted inconsistency departs from.
 #

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports code-fact-check
 # Validates the output format of code-fact-check reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -10,7 +11,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_report "docs/reviews/code-fact-check-report.md"
+  resolve_skill_report code-fact-check tc-c6.1-multi-claim.js
+  load_report "$REPORT_PATH"
 }
 
 # Known-nonconformant committed report. docs/reviews/code-fact-check-report.md as

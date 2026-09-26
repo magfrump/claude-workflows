@@ -1,10 +1,10 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports pre-mortem
 # Validates the output format of pre-mortem reports.
 #
-# Default target: docs/reviews/pre-mortem.md (committed 2026-08-18, after the
-# spec's last output-format change on 2026-07-21). Tests skip via
-# load_generic_report if REPORT_PATH (or the default path) does not exist.
+# Default target: the generated report for tc-pm1-billing-ledger-migration.md
+# (resolve_skill_report in helpers.bash); REPORT_PATH overrides it.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/pre-mortem.md bats test/skills/pre-mortem-format.bats
@@ -17,7 +17,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/pre-mortem.md}"
+  resolve_skill_report pre-mortem tc-pm1-billing-ledger-migration.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header block ---

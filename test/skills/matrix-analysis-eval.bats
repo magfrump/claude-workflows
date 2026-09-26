@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports matrix-analysis
 # Evaluates matrix-analysis output: one sub-agent per criterion on every run; an
 # AGPL library in a closed network SaaS is rated weak on licence and not
 # recommended despite leading elsewhere; a dominant option is recommended; a

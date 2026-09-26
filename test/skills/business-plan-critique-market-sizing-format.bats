@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-market-sizing
 # Validates the output format of business-plan-critique-market-sizing reports.
 #
 # Note: No example report is committed — tests will skip via load_generic_report
@@ -17,7 +18,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/business-plan-critique-market-sizing.md"
+  resolve_skill_report business-plan-critique-market-sizing tc-mkt1-veterinary-inventory.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports performance-reviewer
 # Validates the output format of performance-reviewer reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/performance-review.md"
+  resolve_skill_report performance-reviewer tc-perf1-orm-n-plus-one.py
+  load_generic_report "$REPORT_PATH"
   count_findings
 }
 

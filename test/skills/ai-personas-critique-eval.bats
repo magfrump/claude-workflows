@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports ai-personas-critique
 # Evaluates ai-personas-critique output against the flaw each planted draft
 # carries (severity plus a pattern naming the flaw), and the stub pre-flight on
 # the two negatives: a stub prints only the skip line, a short complete draft

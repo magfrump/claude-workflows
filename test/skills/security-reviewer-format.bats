@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports security-reviewer
 # Validates the output format of security-reviewer reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/security-review.md"
+  resolve_skill_report security-reviewer tc-sec4-fail-open-auth.go
+  load_generic_report "$REPORT_PATH"
   count_findings
 }
 

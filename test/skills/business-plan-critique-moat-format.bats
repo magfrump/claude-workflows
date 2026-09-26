@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-moat
 # Validates the output format of business-plan-critique-moat reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -14,7 +15,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "docs/reviews/business-plan-critique-moat.md"
+  resolve_skill_report business-plan-critique-moat tc-moat1-veterinary-booking.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title ---

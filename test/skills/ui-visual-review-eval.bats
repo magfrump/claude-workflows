@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports ui-visual-review
 # Evaluates ui-visual-review skill output against expected severities and the
 # fix patterns each fixture's planted bug calls for.
 #

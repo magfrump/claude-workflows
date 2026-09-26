@@ -8,8 +8,16 @@
 # (create the binary under a test-local dir prepended to PATH), or opt out
 # with "# @network: allowed — <reason>" in its first 15 lines.
 #
+# Report-dependent suites carry "# @needs-reports <skill>" and run only when
+# that skill has generated reports; the rest are listed as NOT RUN (see
+# "Report gating" below).
+#
 # Usage:
 #   scripts/run-tests.sh [--fast|--slow|--all]
+#
+# Environment:
+#   RUN_TESTS_NOT_RUN_FILE  When set, the number of report-dependent suites
+#                           gated out is written to this file.
 #
 # Flags:
 #   --fast  Run only fast tests (pure function tests, <1s each)
@@ -77,45 +85,68 @@ if [[ -z "$matched" ]]; then
   exit 1
 fi
 
-# Report-gating (mirrors scripts/health-check.sh): the *-format.bats and
-# *-eval.bats suites validate skill report output, as do the *-edge-cases.bats
-# suites and the critic dimensions.bats suites (test/skills/<critic>/), which
-# read the same generated test/skills/<skill>/output/ reports. They only carry signal when
-# a freshly generated report exists under test/skills/<skill>/output/; without
-# one they would fall back to stale committed docs/reviews/ artifacts and report
-# spurious failures. So unless generated reports are present, drop that class
-# from the run — exactly as health-check does — rather than asserting against
-# out-of-date defaults. Generate reports via test/skills/generate-reports.bash
-# to exercise them.
-has_reports=false
-for output_dir in "$REPO_ROOT"/test/skills/*/output/; do
-  if [[ -d "$output_dir" ]] && ls "$output_dir"/*.md &>/dev/null 2>&1; then
-    has_reports=true
-    break
-  fi
-done
+# Report gating, per skill. A suite that grades generated skill reports carries
+# "# @needs-reports <skill>" in its first 15 lines; it runs only when that skill's
+# test/skills/<skill>/output/ holds a generated report (skill_has_reports in
+# test/skills/runner-contract.bash, the definition the suites themselves use).
+# Gating by tag, not filename: arithmetic-eval-format.bats lints SKILL.md and
+# needs no report, so it always runs; and per skill, not globally, so one
+# skill's reports never switch on another skill's suites to fail or skip.
+#
+# A gated-out suite is not a failure (reports are model runs, generated on
+# purpose), but it is not a pass either: every one is listed as NOT RUN on
+# stdout, and the count is written to $RUN_TESTS_NOT_RUN_FILE when that is set
+# (scripts/health-check.sh reads it to warn). Generate reports with
+# test/skills/generate-reports.bash <skill>.
+# shellcheck source=../test/skills/runner-contract.bash
+source "$TEST_DIR/skills/runner-contract.bash"
 
-if ! $has_reports; then
-  filtered=""
-  skipped=0
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    case "$(basename "$f")" in
-      *-format.bats|*-eval.bats|*-edge-cases.bats|dimensions.bats) skipped=$((skipped + 1)) ;;
-      *) filtered+="$f"$'\n' ;;
-    esac
-  done <<< "$matched"
-  matched="${filtered%$'\n'}"
-  if [[ "$skipped" -gt 0 ]]; then
-    echo "Note: skipping $skipped report-dependent suite(s) (*-format/*-eval/*-edge-cases/dimensions) —" \
-         "no generated reports under test/skills/*/output/." >&2
-    echo "      Run test/skills/generate-reports.bash to exercise them." >&2
-    echo "" >&2
+filtered=""
+not_run=()
+bad_tags=()
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  # Header only (first 15 lines, as for @network), so a suite whose body writes
+  # a tagged fake suite in a heredoc is not itself gated.
+  needs=$(head -15 "$f" | grep -m1 -E '^# @needs-reports( |$)' || true)
+  if [[ -z "$needs" ]]; then
+    filtered+="$f"$'\n'
+    continue
   fi
-  if [[ -z "$matched" ]]; then
-    echo "No runnable test files after report-gating for category: $category" >&2
-    exit 0
+  skill="${needs#\# @needs-reports}"
+  skill="${skill//[[:space:]]/}"
+  # A misspelled skill would keep the suite out of every run for good.
+  if [[ -z "$skill" || ! -f "$REPO_ROOT/skills/$skill/SKILL.md" ]]; then
+    bad_tags+=("$f")
+    continue
   fi
+  if skill_has_reports "$TEST_DIR/skills" "$skill"; then
+    filtered+="$f"$'\n'
+  else
+    not_run+=("${f#"$TEST_DIR"/} [$skill]")
+  fi
+done <<< "$matched"
+matched="${filtered%$'\n'}"
+
+if [[ ${#bad_tags[@]} -gt 0 ]]; then
+  printf 'ERROR: "# @needs-reports <skill>" must name a skill with skills/<skill>/SKILL.md in %s\n' "${bad_tags[@]}" >&2
+  exit 1
+fi
+
+if [[ -n "${RUN_TESTS_NOT_RUN_FILE:-}" ]]; then
+  echo "${#not_run[@]}" > "$RUN_TESTS_NOT_RUN_FILE"
+fi
+
+if [[ ${#not_run[@]} -gt 0 ]]; then
+  echo "=== NOT RUN: ${#not_run[@]} report-dependent suite(s) — no generated reports for their skill ==="
+  printf '  %s\n' "${not_run[@]}"
+  echo "  Generate with: bash test/skills/generate-reports.bash <skill>"
+  echo ""
+fi
+
+if [[ -z "$matched" ]]; then
+  echo "No runnable test files after report-gating for category: $category"
+  exit 0
 fi
 
 echo "=== Running $category tests ==="

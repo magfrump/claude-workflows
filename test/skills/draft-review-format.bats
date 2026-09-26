@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports draft-review
 # Validates the output format of draft-review verification rubrics.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -8,7 +9,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/verification-rubric.md}"
+  resolve_skill_report draft-review
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

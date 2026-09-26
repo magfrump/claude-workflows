@@ -1,12 +1,15 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports code-review
 # Validates the output format of code-review rubrics.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
 #   REPORT_PATH=docs/reviews/code-review-rubric-2026-07-29-my-branch.md \
 #     bats test/skills/code-review-format.bats
 #
-# With no REPORT_PATH, validates the newest date-stamped rubric in docs/reviews/.
+# With no REPORT_PATH the suite skips: code-review has no fixture generator, and
+# the committed docs/reviews/ rubrics are frozen, so grading them by default
+# said nothing about the current skill (audit T2).
 #
 # Scope: this suite checks a *real* rubric, so it can only assert the parts of the format
 # that the newest real artifact already satisfies — it answers "did the pipeline actually
@@ -19,7 +22,8 @@
 load helpers
 
 setup() {
-  load_generic_report "$(latest_rubric)"
+  resolve_skill_report code-review
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

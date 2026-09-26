@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports what-if-analysis
 # Validates the output format of what-if-analysis reports.
 #
 # Note: No example report is committed — tests will skip via load_generic_report
@@ -11,7 +12,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/what-if-analysis.md}"
+  resolve_skill_report what-if-analysis tc-wi1-order-events-queue.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # Print one section: from a "##"/"###" heading matching $1 (ERE) up to the next

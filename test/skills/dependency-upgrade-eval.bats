@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports dependency-upgrade
 # Evaluates dependency-upgrade output: each planted decisive fact (a breaking
 # change to a called API, a security advisory, an unmet runtime minimum, a
 # peer conflict, a required intermediate version) is named and drives the

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports self-eval
 # Evaluates self-eval output: each planted fixture scores its one weak dimension
 # Weak (test coverage, overlap, trigger clarity); a well-tested distinct skill is
 # not marked Weak on test coverage or overlap; and with no rubric in the repo

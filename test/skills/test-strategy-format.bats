@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports test-strategy
 # Validates the output format of test-strategy reports.
 #
 # Note: No example report ships in the repo — tests will skip via
@@ -11,7 +12,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/working/test-strategy.md}"
+  resolve_skill_report test-strategy tc-ts1-installment-split.py
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

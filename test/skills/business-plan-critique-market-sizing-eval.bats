@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports business-plan-critique-market-sizing
 # Evaluates business-plan-critique-market-sizing output: each flawed plan must
 # draw a failing lens verdict and name its planted flaw; the sound short plan
 # must be critiqued (not skipped) without an Inflated verdict; the stub must get

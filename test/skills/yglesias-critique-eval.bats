@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports yglesias-critique
 # Evaluates yglesias-critique output: each planted-flaw draft's critique must
 # name the specific way the mechanism fails, the stub must get only the
 # pre-flight skip line, and the short complete draft must get a full critique.

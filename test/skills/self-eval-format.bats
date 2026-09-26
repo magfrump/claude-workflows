@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports self-eval
 # Validates the output format of self-eval reports.
 #
 # Note: Skips gracefully via load_generic_report when no report exists.
@@ -10,7 +11,8 @@
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/reviews/self-eval-fact-check.md}"
+  resolve_skill_report self-eval tc-se1-no-tests-no-outputs
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Header section ---

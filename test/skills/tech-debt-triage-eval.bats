@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports tech-debt-triage
 # Evaluates tech-debt-triage output: each debt item gets the Recommendation its
 # drivers call for under SKILL.md's fix-or-carry rules, and the report names the
 # driver (incident count, EOL runway, memory runway, the planned work to ride

@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports fact-check
 # Edge-case / negative-fixture tests for the fact-check skill.
 # Verifies graceful handling of degenerate inputs: empty files, binary content,
 # no-claims input, and extremely short input.

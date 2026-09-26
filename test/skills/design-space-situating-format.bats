@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports design-space-situating
 # Validates the output format of design-space-situating records.
 #
 # Note: No example report exists yet — tests will skip via load_generic_report.
@@ -15,7 +16,8 @@ bats_require_minimum_version 1.5.0
 load helpers
 
 setup() {
-  load_generic_report "${REPORT_PATH:-docs/working/situating.md}"
+  resolve_skill_report design-space-situating tc-dss1-partner-webhook-payloads.md
+  load_generic_report "$REPORT_PATH"
 }
 
 # --- Title and header ---

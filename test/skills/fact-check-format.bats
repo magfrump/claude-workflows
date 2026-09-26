@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
+# @needs-reports fact-check
 # Validates the output format of fact-check reports.
 #
 # Usage: Set REPORT_PATH to a generated report, then run:
@@ -14,12 +15,12 @@ VERDICT_HEADING_RE='^## Verdict for C[0-9]+'
 setup() {
   # A report still using the pre-spec '## Claim N' headings would otherwise count
   # zero claims and skip every test; SKILL.md rejects any other heading scheme.
-  local report="${REPORT_PATH:-docs/reviews/fact-check-report.md}"
-  if [ -f "$report" ] && grep -qE '^## Claim [0-9]+' "$report"; then
-    echo "$report uses '## Claim N' headings; fact-check SKILL.md requires '## Verdict for C<N>:'"
+  resolve_skill_report fact-check tc-5.1-multi-claim.md
+  if grep -qE '^## Claim [0-9]+' "$REPORT_PATH"; then
+    echo "$REPORT_PATH uses '## Claim N' headings; fact-check SKILL.md requires '## Verdict for C<N>:'"
     return 1
   fi
-  load_report "docs/reviews/fact-check-report.md" "$VERDICT_HEADING_RE"
+  load_report "$REPORT_PATH" "$VERDICT_HEADING_RE"
 }
 
 # Claim IDs (numbers only) from the verdict headings, in document order.

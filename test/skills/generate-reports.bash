@@ -9,6 +9,10 @@
 #
 # Output:
 #   test/skills/<skill>/output/<fixture>.report.md   — the generated report
+#   test/skills/<skill>/output/<fixture>.stamp       — its provenance (hashes of
+#       the skill, runner, runner contract and fixture; see report_stamp in
+#       runner-contract.bash); written only for a run that succeeded
+#   test/skills/<skill>/output/<fixture>.failed      — present when the run failed
 #
 # Per-skill configuration lives in test/skills/<skill>/runner.bash, which sets:
 #   FIXTURE_TOOLS   — the --tools list for claude -p, comma-separated, from the
@@ -151,9 +155,17 @@ generate_one() {
   # failed run's report can still hold text (an auth error, whitespace) that
   # the absence-only checks would pass.
   local failed_path="$OUTPUT_DIR/${fixture_name}.failed"
+  # <fixture>.stamp ties the report to the inputs that produced it
+  # (runner-contract.bash report_stamp: skills/<skill>/, runner.bash, the
+  # contract, the fixture). It is computed now, before the run, so an input
+  # edited while claude runs leaves a stamp that no longer matches, and written
+  # only after every check passed. eval_fixture and the format suites fail a
+  # report whose stamp is missing or differs from the current tree.
+  local stamp_path="$OUTPUT_DIR/${fixture_name}.stamp" stamp
   # Nothing from a previous run may survive to be scored as this run's,
   # whichever step below fails.
-  rm -f "$report_path" "$transcript_path" "$failed_path"
+  rm -f "$report_path" "$transcript_path" "$failed_path" "$stamp_path"
+  stamp="$(report_stamp "$SCRIPT_DIR" "$SKILL" "$fixture_name")"
   # Fail-closed: the marker exists from here until every check has passed, so
   # a run interrupted or aborted at any step (set -e, a signal) is never graded
   # (review iteration 4, A23).
@@ -303,7 +315,9 @@ generate_one() {
     echo "  FAILED: $failure (recorded in $(basename "$failed_path"); eval_fixture will fail it)"
     return 0
   fi
-  # Every check passed: only now is the fail-closed marker removed.
+  # Every check passed: only now is the fail-closed marker removed and the
+  # provenance stamp written.
+  printf '%s\n' "$stamp" > "$stamp_path"
   rm -f "$failed_path"
   if [ -s "$report_path" ]; then
     echo "  Done: $(grep -c '' "$report_path") lines in report"
