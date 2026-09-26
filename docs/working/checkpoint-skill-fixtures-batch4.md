@@ -8,7 +8,8 @@ Plan: docs/working/plan-skill-fixtures-batch4.md
 - **Branch purpose**: add runnable fixture sets for the skills that had none (HC1)
 - **Position in larger initiative**: batch 4 of 4; batches 1-3 merged at `68ffae7`
 - **Merged**: to main 2026-09-25 (3a98f9e), together with answers-2026-09-20 and copy-install.
-- **Blocked on**: nothing for the approved scope, which is implemented (ef05331..fa3c5c0). Q-059 (arithmetic-eval Bash grant) and Q-060 (code-review/draft-review depth) hold steps 5 and 9 only.
+- **Merged again**: to main 2026-09-26 (f764e82), fast-forward. It brings Q-062 [2] (the in-checkout process gate), Q-063 [1] (step 5 built as deny-and-record fixtures, not the restricted Bash of Q-059 [2]; decisions log #56) and Q-064 [2] (unreadable cwds refused). The review-fix loop ran 6 passes (rubric `docs/reviews/code-review-rubric-2026-09-25-skill-fixtures-q062-q063.md`, 🟡 CONDITIONAL PASS). The last two fixes (bb804c7, f764e82) are verified by tests and health-check, not by a review pass, at the user's direction.
+- **Blocked on**: nothing. Step 5 was built per Q-063 [1] (Q-059 was re-asked as Q-063); step 9 is deferred per Q-060 [1]. Next: the A8 measurement, which should also commit one or two real deny-record transcripts as golden cases (rubric C38).
 
 ## Key findings
 - Headless `claude -p --tools "Agent,Read"` dispatches sub-agents fine. The JSON/stream output reports `subagent_stats`. Sub-agents inherit the `--tools` restriction. [observed]
