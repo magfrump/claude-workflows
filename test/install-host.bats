@@ -1548,15 +1548,37 @@ stub_cp_then() {
   [[ "$output" != *'BLESS-STUB'* ]]
 }
 
-@test "T91 a blind /proc scan (no cwd readable) prints a NOTE, treats none as found and goes ahead (review A15/C27)" {
+@test "T91 a blind /proc scan (no cwd readable) refuses, naming the processes it could not place (Q-064 [2])" {
   fake_repo
   # Point every cwd read at a link that does not exist, as an LSM hiding /proc would.
   sed -i 's|readlink "\$d/cwd"|readlink "\$d/cwd-hidden"|' "$INSTALL"
   grep -q 'cwd-hidden' "$INSTALL"
   commit_all blind
+  (exec sleep 300) >/dev/null 2>&1 3>&- &
+  local other=$!
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  kill "$other" 2>/dev/null || true
   echo "$output"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"NOTE: no process's working directory could be read under /proc"*'treated as none'* ]]
-  [[ "$output" == *'BLESS-STUB --bless'* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'working directory cannot be read'*'Q-064'* ]]
+  [[ "$output" == *"$other sleep 300"* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
+}
+
+@test "T92 a same-uid process that hides its cwd (non-dumpable) is refused and named, wherever it works (Q-064 [2])" {
+  fake_repo
+  python3 -c 'import ctypes' 2>/dev/null || skip "python3 ctypes unavailable"
+  # prctl(PR_SET_DUMPABLE=4, 0) makes /proc/<pid>/cwd unreadable to the same uid.
+  (cd "$S" && exec python3 -c 'import ctypes, time; ctypes.CDLL(None).prctl(4, 0, 0, 0, 0); time.sleep(300)') \
+    >/dev/null 2>&1 3>&- &
+  local hidden=$!
+  for _i in $(seq 50); do readlink "/proc/$hidden/cwd" >/dev/null 2>&1 || break; sleep 0.1; done
+  ! readlink "/proc/$hidden/cwd" >/dev/null 2>&1 || { kill "$hidden"; skip "prctl did not hide the cwd here"; }
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  kill "$hidden" 2>/dev/null || true
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$hidden python3 -c"* ]]
+  [[ "$output" == *'working directory cannot be read'* ]]
+  [[ "$output" != *'BLESS-STUB'* ]]
 }

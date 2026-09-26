@@ -53,17 +53,19 @@ before the host target stages, and after each y, and refuses while it finds:
   - a Claude Code process of your uid (pgrep on the command line),
   - any other process of your uid whose working directory is inside the
     checkout (/proc; Q-062), such as a helper or loop driver an agent left
-    running, or an editor or shell sitting in the repo, or
+    running, or an editor or shell sitting in the repo,
+  - any other process of your uid whose working directory cannot be read,
+    since it may be inside the checkout (Q-064): ssh-agent is one, so stop
+    it (ssh-agent -k) before installing, or
   - a running cc-isolated container (docker ps, label cc-project; docker's
     own DOCKER_HOST/DOCKER_CONTEXT choose which daemon is asked).
 It names each one and how to stop it. The checks are samples, not a lock;
 decision 037, "Trust model", lists what they miss (e.g. a leftover helper
-working outside the checkout, or one that hides its cwd: stop those yourself).
+working outside the checkout: stop those yourself).
 Without pgrep or a mounted /proc it refuses; without a reachable docker it prints a NOTE line
-at each check and treats no container as running. If it cannot read any
-process's working directory under /proc, it prints a NOTE and treats none as
-inside the checkout. Close every Claude Code session and stop every
-cc-isolated container first. Run it from a terminal on the host itself: from
+at each check and treats no container as running. Close every Claude Code
+session, stop every
+cc-isolated container and ssh-agent first. Run it from a terminal on the host itself: from
 inside a sandbox, container or other PID namespace, pgrep and /proc see only
 that namespace, so agents outside it are missed without any NOTE.
 Run from inside a Claude Code session, install.sh finds that session and exits 1 at startup,
@@ -1139,37 +1141,38 @@ in_lineage() {
   return 1
 }
 
-# procs_in_checkout: print "PID command line" for each other process of this
-# uid whose working directory is $REPO_ROOT or below it. Returns 2 when /proc
-# is not mounted, 3 when the checkout's own path cannot be resolved, 4 when no
-# process's cwd could be read at all, not even this script's own (an LSM
-# hiding /proc): the scan was then blind, not clean, and the gate says so.
-# It cannot detect running inside a PID namespace: there its own namespace's
-# processes are readable, and everything outside is simply not listed
-# (review iteration 3, A15; the usage text says to run from the host).
+# procs_in_checkout: for each other process of this uid, print
+#   in <PID> <command line>        its working directory is $REPO_ROOT or below
+#   unknown <PID> <command line>   its working directory cannot be read
+# Returns 2 when /proc is not mounted, 3 when the checkout's own path cannot be
+# resolved. install.sh itself, its ancestors and its descendants are exempt
+# either way; a process that exited mid-scan (no command line) is skipped.
 #
-# A process whose cwd link cannot be read is skipped, not refused: that
-# includes ssh-agent and any process that makes itself non-dumpable
-# (prctl PR_SET_DUMPABLE), so refusing would block every install while
-# ssh-agent runs. A leftover helper does not do that by accident; one that
-# does is deliberately evading, which decision 037 lists as not seen (review
-# A1; Q-064 asks whether to refuse instead).
+# An unreadable cwd is refused, not skipped (Q-064 [2], answered 2026-09-26):
+# a process can hide its cwd (prctl PR_SET_DUMPABLE), and a scan that cannot
+# read any cwd (an LSM hiding /proc) lists every other process this way, so a
+# blind scan refuses rather than passing. ssh-agent's cwd is unreadable too:
+# stop it before installing (the refusal names it). It cannot detect running
+# inside a PID namespace: there its own namespace's processes are readable,
+# and everything outside is simply not listed (the usage text says to run
+# from the host).
 procs_in_checkout() {
-  local root d pid cwd cmd readable=0
+  local root d pid cwd cmd kind
   [ -d /proc/self ] || return 2
   root="$(cd "$REPO_ROOT" && pwd -P)" || return 3
   for d in /proc/[0-9]*; do
     [ -O "$d" ] || continue                     # this uid's processes only
-    cwd="$(readlink "$d/cwd" 2>/dev/null)" || continue   # unreadable: see above
-    readable=$((readable + 1))
-    case "$cwd" in "$root"|"$root"/*) ;; *) continue ;; esac
+    if cwd="$(readlink "$d/cwd" 2>/dev/null)"; then
+      case "$cwd" in "$root"|"$root"/*) kind=in ;; *) continue ;; esac
+    else
+      kind=unknown
+    fi
     pid="${d#/proc/}"
     in_lineage "$pid" && continue
     cmd="$(tr '\0' ' ' 2>/dev/null < "$d/cmdline")"
     [ -n "$cmd" ] || continue                   # exited, or a kernel thread
-    printf '%s %s\n' "$pid" "${cmd% }"
+    printf '%s %s %s\n' "$kind" "$pid" "${cmd% }"
   done
-  [ "$readable" -gt 0 ] || return 4
 }
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
@@ -1190,7 +1193,8 @@ agent_gate() {
   procs="$(printf '%s\n' "$procs" | awk -v self="$$" 'NF && $1 != self')"
   rc=0
   local inrepo
-  inrepo="$(procs_in_checkout)" || rc=$?
+  local scanned unknown
+  scanned="$(procs_in_checkout)" || rc=$?
   case "$rc" in
     0) ;;
     2)
@@ -1201,20 +1205,20 @@ agent_gate() {
       echo "ERROR: could not resolve the checkout's path ($REPO_ROOT), so install.sh cannot" >&2
       echo "       check for processes working inside it (Q-062). $what" >&2
       exit 1 ;;
-    4)
-      echo "NOTE: no process's working directory could be read under /proc: processes inside"
-      echo "      the checkout not checked, treated as none (Q-062)."
-      inrepo="" ;;
     *)
       echo "ERROR: the check for processes inside the checkout failed (exit $rc, Q-062). $what" >&2
       exit 1 ;;
   esac
-  # A Claude Code process already listed above is not named twice. The list is
-  # passed through the environment, not awk -v, which would expand escapes
-  # such as a literal \n inside a command line (review C11).
-  inrepo="$(printf '%s\n' "$inrepo" | CW_SEEN="$procs" awk '
+  # Split the scan by tag; a Claude Code process already listed above is not
+  # named twice. The list is passed through the environment, not awk -v,
+  # which would expand escapes such as a literal \n inside a command line
+  # (review C11).
+  inrepo="$(printf '%s\n' "$scanned" | CW_SEEN="$procs" awk -v want=in '
     BEGIN { n = split(ENVIRON["CW_SEEN"], l, "\n"); for (i = 1; i <= n; i++) { split(l[i], f, " "); skip[f[1]] = 1 } }
-    NF && !($1 in skip)')"
+    $1 == want && !($2 in skip) { sub(/^[^ ]+ /, ""); print }')"
+  unknown="$(printf '%s\n' "$scanned" | CW_SEEN="$procs" awk -v want=unknown '
+    BEGIN { n = split(ENVIRON["CW_SEEN"], l, "\n"); for (i = 1; i <= n; i++) { split(l[i], f, " "); skip[f[1]] = 1 } }
+    $1 == want && !($2 in skip) { sub(/^[^ ]+ /, ""); print }')"
   # cc-isolated's containers carry the label cc-project=<id> (its --id-label).
   ctrs=""
   if ! command -v docker >/dev/null 2>&1; then
@@ -1235,7 +1239,7 @@ agent_gate() {
     rm -f "$errf"
     ctrs="$(printf '%s\n' "$ctrs" | awk 'NF')"
   fi
-  if [ -z "$procs" ] && [ -z "$inrepo" ] && [ -z "$ctrs" ]; then return 0; fi
+  if [ -z "$procs" ] && [ -z "$inrepo" ] && [ -z "$unknown" ] && [ -z "$ctrs" ]; then return 0; fi
   {
     if [ -n "$procs" ] || [ -n "$ctrs" ]; then
       echo "ERROR: an agent is running. install.sh installs only while no agent can run, because"
@@ -1254,6 +1258,12 @@ agent_gate() {
       printf '%s\n' "$inrepo" | sed 's/^/           /'
       echo "       Stop them: kill <PID>, or cd each one out of the checkout (an editor or"
       echo "       shell sitting in the repo counts)."
+    fi
+    if [ -n "$unknown" ]; then
+      echo "       Other processes of uid $(id -u) whose working directory cannot be read, so"
+      echo "       they may be inside the checkout (PID and command line; Q-064):"
+      printf '%s\n' "$unknown" | sed 's/^/           /'
+      echo "       Stop them: kill <PID> (for ssh-agent: ssh-agent -k, or kill <PID>)."
     fi
     if [ -n "$ctrs" ]; then
       echo "       Running cc-isolated containers (name and project id):"

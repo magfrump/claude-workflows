@@ -72,6 +72,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-061](#q-061--host-stage-review-copies) | The host target's stage can be swapped for the review and swapped back before y (the re-review's R2, 6/6 ru... | 2026-09-25 |
 | [Q-062](#q-062--leftover-helper-is-agent) | Under Q-058 [2], does a background process an agent session left running (a detached helper, a loop driver ... | 2026-09-25 |
 | [Q-063](#q-063--arith-eval-evaluator-check) | How should arithmetic-eval's LLM fixtures check that the model uses the evaluator? (Replaces Q-059, per you... | 2026-09-25 |
+| [Q-064](#q-064--unreadable-cwd-gate) | The Q-062 detector skips a same-uid process whose cwd it cannot read. Should it refuse instead? | 2026-09-25 |
 <!-- index:end -->
 
 ## Answered
@@ -1319,4 +1320,25 @@ How should arithmetic-eval's LLM fixtures check that the model uses the evaluato
 
 **Answered 2026-09-25: [1].** Built as `FIXTURE_BASH=deny-record` plus `mode1_equiv:` (decisions log #56). The first Haiku run routed all 4 arithmetic fixtures through Mode 1 (the no-arithmetic negative made no Bash call) but fell back to mental math 4 of 4 after the denial.
 
+
+### Q-064 · unreadable-cwd-gate
+**Needs:** you: judgment · **Opened:** 2026-09-25 · **Status:** ANSWERED
+
+The Q-062 detector skips a same-uid process whose cwd it cannot read. Should it refuse instead?
+
+- **Why it's yours:** it sets how far your Q-062 [2] answer reaches: leftover helpers only, or also a process that actively hides.
+- **Read:** `docs/reviews/security-review-2026-09-25-q062-q063.md` F1; rubric `code-review-rubric-2026-09-25-skill-fixtures-q062-q063.md` A1; decision 037 "What the gate does not see".
+- **Context:** the cwd is unreadable for a process that calls `prctl(PR_SET_DUMPABLE, 0)` (reproduced), and also for ssh-agent. A leftover helper does not do this by accident. A process that does can also evade by sitting in `/` with an open handle on the checkout, which no cwd check sees.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Skip and document** | Unreadable cwds are skipped; 037 lists "a process that hides its cwd" as not seen | None | A deliberately evading same-uid process writes during the install, unseen (it could evade anyway via an open handle) |
+| **[2] Refuse on unreadable cwd** | Any same-uid process whose cwd can't be read refuses the install, naming it | Kill ssh-agent (and any other non-dumpable process) before every install | Nuisance refusals every install while ssh-agent runs; spoofable if an allowlist is added to reduce them |
+| **[3] Skip but name** | Unreadable-cwd processes are not refused, but a NOTE lists each one (PID and command line, which stay readable) at every check | Glance at the NOTE; ssh-agent will be on it | You skim past an unexpected name; the process still runs during the install |
+
+- **Blocks:** nothing (A1's author note points here)
+- **Interim:** [1]. The skip is commented at `procs_in_checkout` and listed in 037.
+- **If the answer differs:** [2] or [3] need `procs_in_checkout` to report a second class of process (cwd unknown) and the gate to act on it: about five edit sites plus tests, not a one-line change (architecture review iteration 2, F4). Nothing already built is redone.
+
+**Answered 2026-09-26: [2].** `procs_in_checkout` now tags each other same-uid process `in` (cwd in the checkout) or `unknown` (cwd unreadable), and the gate refuses on either, naming each one; a blind scan therefore refuses too. ssh-agent must be stopped before an install. Tests T91 (blind scan) and T92 (a non-dumpable process). Decision 037 is updated.
 
