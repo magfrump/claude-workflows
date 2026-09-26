@@ -60,9 +60,13 @@ It names each one and how to stop it. The checks are samples, not a lock;
 decision 037, "Trust model", lists what they miss (e.g. a leftover helper
 working outside the checkout, or one that hides its cwd: stop those yourself).
 Without pgrep or a mounted /proc it refuses; without a reachable docker it prints a NOTE line
-at each check and treats no container as running. Close every Claude Code
-session and stop every cc-isolated container first. Run from inside a
-Claude Code session, install.sh finds that session and exits 1 at startup,
+at each check and treats no container as running. If it cannot read any
+process's working directory under /proc, it prints a NOTE and treats none as
+inside the checkout. Close every Claude Code session and stop every
+cc-isolated container first. Run it from a terminal on the host itself: from
+inside a sandbox, container or other PID namespace, pgrep and /proc see only
+that namespace, so agents outside it are missed without any NOTE.
+Run from inside a Claude Code session, install.sh finds that session and exits 1 at startup,
 before either target.
 
 Target 2 is SKIPPED, with a message and no effect on the exit status, when
@@ -1137,10 +1141,12 @@ in_lineage() {
 
 # procs_in_checkout: print "PID command line" for each other process of this
 # uid whose working directory is $REPO_ROOT or below it. Returns 2 when /proc
-# is not mounted, 3 when the checkout's own path cannot be resolved. When no
-# process's cwd can be read at all (an LSM hiding /proc, a PID-namespaced
-# sandbox), it says so on stderr: the scan is then blind, not clean (review
-# iteration 2, A14).
+# is not mounted, 3 when the checkout's own path cannot be resolved, 4 when no
+# process's cwd could be read at all, not even this script's own (an LSM
+# hiding /proc): the scan was then blind, not clean, and the gate says so.
+# It cannot detect running inside a PID namespace: there its own namespace's
+# processes are readable, and everything outside is simply not listed
+# (review iteration 3, A15; the usage text says to run from the host).
 #
 # A process whose cwd link cannot be read is skipped, not refused: that
 # includes ssh-agent and any process that makes itself non-dumpable
@@ -1163,10 +1169,7 @@ procs_in_checkout() {
     [ -n "$cmd" ] || continue                   # exited, or a kernel thread
     printf '%s %s\n' "$pid" "${cmd% }"
   done
-  if [ "$readable" -eq 0 ]; then
-    echo "NOTE: no process's working directory could be read under /proc, not even this" >&2
-    echo "      script's own: the check for processes inside the checkout saw nothing (Q-062)." >&2
-  fi
+  [ "$readable" -gt 0 ] || return 4
 }
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
@@ -1188,15 +1191,24 @@ agent_gate() {
   rc=0
   local inrepo
   inrepo="$(procs_in_checkout)" || rc=$?
-  if [ "$rc" -eq 3 ]; then
-    echo "ERROR: could not resolve the checkout's path ($REPO_ROOT), so install.sh cannot" >&2
-    echo "       check for processes working inside it (Q-062). $what" >&2
-    exit 1
-  elif [ "$rc" -ne 0 ]; then
-    echo "ERROR: /proc is not mounted, so install.sh cannot check for processes working" >&2
-    echo "       inside the checkout (Q-062). It needs Linux /proc. $what" >&2
-    exit 1
-  fi
+  case "$rc" in
+    0) ;;
+    2)
+      echo "ERROR: /proc is not mounted, so install.sh cannot check for processes working" >&2
+      echo "       inside the checkout (Q-062). It needs Linux /proc. $what" >&2
+      exit 1 ;;
+    3)
+      echo "ERROR: could not resolve the checkout's path ($REPO_ROOT), so install.sh cannot" >&2
+      echo "       check for processes working inside it (Q-062). $what" >&2
+      exit 1 ;;
+    4)
+      echo "NOTE: no process's working directory could be read under /proc: processes inside"
+      echo "      the checkout not checked, treated as none (Q-062)."
+      inrepo="" ;;
+    *)
+      echo "ERROR: the check for processes inside the checkout failed (exit $rc, Q-062). $what" >&2
+      exit 1 ;;
+  esac
   # A Claude Code process already listed above is not named twice. The list is
   # passed through the environment, not awk -v, which would expand escapes
   # such as a literal \n inside a command line (review C11).

@@ -487,12 +487,17 @@ EOF2
   [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
 }
 
-@test "deny-record does not open Bash(<pattern>) spellings" {
-  make_skill demo inline "Bash(python3:*)"
-  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
-  run bash "$GEN" demo
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"FIXTURE_TOOLS may only name"* ]]
+@test "deny-record does not open Bash(<pattern>) spellings, and says what it needs" {
+  local tools
+  for tools in "Bash(python3:*)" "Bash(**)"; do
+    rm -rf "$TEST_TMPDIR/test/skills/demo"
+    make_skill demo inline "$tools"
+    printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+    run bash "$GEN" demo
+    [ "$status" -ne 0 ] || { echo "accepted: $tools"; return 1; }
+    [[ "$output" == *"needs FIXTURE_TOOLS=Bash exactly"* ]] || { echo "$tools: $output"; return 1; }
+  done
+  [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
 }
 
 @test "deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine" {
@@ -562,3 +567,49 @@ EOF2
   grep -q "the result event is an error; Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
 }
 
+
+@test "deny-record parser canary: a Bash denial naming a tool_use the parser never saw voids the run" {
+  # A CLI event-shape change would hide tool_use blocks from every check; the
+  # denial list still names them, so the mismatch is detectable (review A16).
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  cat > "$TEST_TMPDIR/bin/claude" <<'EOF2'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '{"type":"system","subtype":"init","claude_code_version":"9.9.9","tools":["Bash"]}'
+echo '{"type":"assistant","message":{"blocks":[{"type":"tool_use","id":"tu1","name":"Bash","input":{"command":"pwd"}}]}}'
+echo '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Bash","tool_use_id":"tu1","tool_input":{}}]}'
+EOF2
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "Bash parser canary: 1 Bash denial(s) name a tool_use the parser did not see (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
+}
+
+@test "deny-record: a run with no init event is reported as not started, not blamed on the deny rule" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\necho %s\nexit 1\n' \
+    "'{\"type\":\"result\",\"is_error\":true,\"result\":\"Not logged in\"}'" > "$TEST_TMPDIR/bin/claude"
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "no init event in the stream (the run did not start?)" "$out/tc-1-thing.txt.failed"
+  ! grep -q "did the deny rule remove the tool" "$out/tc-1-thing.txt.failed"
+}
+
+@test "deny-record tripwire: a Bash tool_use with no id counts as undenied" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  cat > "$TEST_TMPDIR/bin/claude" <<'EOF2'
+#!/usr/bin/env bash
+cat >/dev/null
+echo '{"type":"system","subtype":"init","tools":["Bash"]}'
+echo '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"pwd"}}]}}'
+echo '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Bash","tool_input":{}}]}'
+EOF2
+  chmod +x "$TEST_TMPDIR/bin/claude"
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "Bash tripwire: 1 Bash call" "$out/tc-1-thing.txt.failed"
+}

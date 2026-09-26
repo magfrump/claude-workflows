@@ -36,7 +36,8 @@ with_expr() {
 transcript() {
   local denials='[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]'
   [ "${2:-yes}" = yes ] || denials='[]'
-  jq -nc --arg c "$1" '{type:"assistant",parent_tool_use_id:null,message:{content:[{type:"tool_use",id:"b1",name:"Bash",input:{command:$c}}]}}' > "$T"
+  echo '{"type":"system","subtype":"init","tools":["Bash"]}' > "$T"
+  jq -nc --arg c "$1" '{type:"assistant",parent_tool_use_id:null,message:{content:[{type:"tool_use",id:"b1",name:"Bash",input:{command:$c}}]}}' >> "$T"
   jq -nc --argjson d "$denials" '{type:"result",subtype:"success",result:"# Report",permission_denials:$d}' >> "$T"
 }
 
@@ -143,7 +144,8 @@ transcript() {
 }
 
 @test "no_tool_called passes with no Bash call and fails with one" {
-  jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}' > "$T"
+  { echo '{"type":"system","subtype":"init","tools":["Bash"]}'
+    jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}'; } > "$T"
   run assert_no_tool_called Bash
   [ "$status" -eq 0 ]
   transcript "echo hi"
@@ -191,7 +193,6 @@ transcript() {
 
 @test "a tool name the run's init event does not list fails the check (a misspelling cannot pass)" {
   transcript "echo hi"
-  sed -i '1i {"type":"system","subtype":"init","tools":["Bash"]}' "$T"
   run assert_no_tool_called bash
   [ "$status" -ne 0 ]
   [[ "$output" == *"bash is not a tool of this run"* ]]
@@ -204,7 +205,8 @@ transcript() {
   transcript "echo hi"
   run assert_tool_called Bash
   [ "$status" -eq 0 ]
-  jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}' > "$T"
+  { echo '{"type":"system","subtype":"init","tools":["Bash"]}'
+    jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}'; } > "$T"
   run assert_tool_called Bash
   [ "$status" -ne 0 ]
   [[ "$output" == *"Bash calls seen: 0"* ]]
@@ -245,17 +247,50 @@ transcript() {
   cp "$T" "$root/test/skills/arithmetic-eval/output/tc-1.md.transcript.jsonl"
   echo "# Report" > "$root/test/skills/arithmetic-eval/output/tc-1.md.report.md"
   BATS_TEST_DIRNAME="$root/test/skills"
+  # KEY_CHECK and EXPECTED_VERDICT are read by eval_fixture, not here.
+  # shellcheck disable=SC2034
   declare -gA KEY_CHECK EXPECTED_VERDICT
+  # shellcheck disable=SC2034
   EXPECTED_VERDICT["tc-1.md"]="any"
   local check
   for check in "tool_called:Bash" "tool_called:Bash=python3" "no_tool_called:Bash=rm -rf" "mode1_equiv:2"; do
+    # shellcheck disable=SC2034  # read by eval_fixture
     KEY_CHECK["tc-1.md"]="$check"
     run eval_fixture arithmetic-eval tc-1.md
     [ "$status" -eq 0 ] || { echo "expected pass: $check"; echo "$output"; return 1; }
   done
   for check in "no_tool_called:Bash" "no_tool_called:Bash=python3" "tool_called:Bash=curl" "mode1_equiv:3"; do
+    # shellcheck disable=SC2034  # read by eval_fixture
     KEY_CHECK["tc-1.md"]="$check"
     run eval_fixture arithmetic-eval tc-1.md
     [ "$status" -ne 0 ] || { echo "expected fail: $check"; echo "$output"; return 1; }
   done
+}
+
+@test "no_tool_called fails on a transcript with no init event (junk or truncated), not reading it as no calls" {
+  printf 'not json\n{"type":"result","subtype":"success","result":"x"}\n' > "$T"
+  run assert_no_tool_called Bash
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No init event"* ]]
+}
+
+
+@test "eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's" {
+  # With the checker path hard-coded to arithmetic-eval, this fails: the stub
+  # below is never run (review iteration 3, C25).
+  local root="$TEST_TMPDIR/tree2" sk=other-skill
+  mkdir -p "$root/test/skills/$sk/output" "$root/skills/$sk"
+  printf '#!/usr/bin/env python3\nimport sys\nprint("OTHER-SKILL-CHECKER", sys.argv[1:])\n' > "$root/test/skills/$sk/mode1-equiv.py"
+  echo "# other skill" > "$root/skills/$sk/SKILL.md"
+  transcript "echo hi"
+  cp "$T" "$root/test/skills/$sk/output/tc-1.md.transcript.jsonl"
+  echo "# Report" > "$root/test/skills/$sk/output/tc-1.md.report.md"
+  BATS_TEST_DIRNAME="$root/test/skills"
+  # shellcheck disable=SC2034  # read by eval_fixture
+  declare -gA KEY_CHECK EXPECTED_VERDICT
+  # shellcheck disable=SC2034  # read by eval_fixture
+  KEY_CHECK["tc-1.md"]="mode1_equiv:2"
+  run eval_fixture "$sk" tc-1.md
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"OTHER-SKILL-CHECKER"*"skills/$sk/SKILL.md"* ]]
 }

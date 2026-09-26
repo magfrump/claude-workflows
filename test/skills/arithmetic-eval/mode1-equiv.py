@@ -21,17 +21,19 @@ the result event's permission_denials, or the run fails whatever it computed.
 
 Usage: mode1-equiv.py <SKILL.md> <transcript.jsonl> <expected>
        mode1-equiv.py --check-spec <SKILL.md> <expected>
-  <expected> is one or more finite values separated by "|", each optionally
-  followed by "~<relative tolerance>", a finite number >= 0 (default 1e-6;
-  relative only, so an expected 0 needs an exact 0), e.g. "1900000000|1900000"
-  or "42.16~0.002".
+  <expected> is one or more values separated by "|", each a plain number
+  (digits, an optional "." part and exponent, an optional leading "-"),
+  optionally followed by "~<relative tolerance>", a plain number >= 0 (default
+  1e-6; relative only, so an expected 0 needs an exact 0), e.g.
+  "1900000000|1900000" or "42.16~0.002". No spaces, "_", "+", nan or inf.
   --check-spec validates <expected> and SKILL.md's Mode 1 block without a
   transcript, so a broken fixture spec is caught before any paid run.
 Exit 0 on a match (or a valid spec), 1 on no match (per-call diagnostics on
-stdout), 2 on any setup error: usage, value spec, an unreadable file, or a
-SKILL.md whose Mode 1 block does not extract (message on stderr). Every setup
-error goes through SetupError in main(), so none can escape as a traceback
-with exit 1, which would read as "the model did not compute the value".
+stdout), 2 on any setup error: usage, value spec, an unreadable file, a
+transcript event of the wrong shape, or a SKILL.md whose Mode 1 block does
+not extract (message on stderr). Every setup error goes through SetupError in
+main(), so none can escape as a traceback with exit 1, which would read as
+"the model did not compute the value".
 """
 import ast
 import json
@@ -46,6 +48,7 @@ HEAD_RE = re.compile(
     r"' \) <<'EXPREOF'\n",
 )
 TAIL_LINE_RE = re.compile(r"[ \t]*(#.*)?")
+NUMBER_RE = re.compile(r"-?[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?")
 
 
 class SetupError(Exception):
@@ -103,14 +106,23 @@ def events(transcript_path):
 
 
 def bash_calls(evs):
-    """[(tool_use id, command)] for every Bash call, at any depth."""
+    """[(tool_use id, command)] for every Bash call, at any depth. A Bash
+    tool_use whose fields have the wrong types is a SetupError, not a crash."""
     calls = []
     for ev in evs:
-        if ev.get("type") != "assistant":
+        if not isinstance(ev, dict) or ev.get("type") != "assistant":
             continue
-        for block in (ev.get("message") or {}).get("content") or []:
+        message = ev.get("message") or {}
+        content = message.get("content") if isinstance(message, dict) else None
+        for block in content if isinstance(content, list) else []:
+            if not isinstance(block, dict):
+                continue
             if block.get("type") == "tool_use" and block.get("name") == "Bash":
-                calls.append((block.get("id"), (block.get("input") or {}).get("command", "")))
+                inp = block.get("input")
+                cmd = inp.get("command") if isinstance(inp, dict) else None
+                if not isinstance(cmd, str):
+                    raise SetupError(f"Bash tool_use {block.get('id')!r} has no string input.command")
+                calls.append((block.get("id"), cmd))
     return calls
 
 
@@ -118,11 +130,10 @@ def parse_expected(spec):
     """[(value, rel_tol)]; every value finite, every tolerance finite and >= 0."""
     alts = []
     for part in spec.split("|"):
-        value, _, tol = part.partition("~")
-        try:
-            v, t = float(value), float(tol) if tol else 1e-6
-        except ValueError:
+        value, sep, tol = part.partition("~")
+        if not NUMBER_RE.fullmatch(value) or (sep and not NUMBER_RE.fullmatch(tol)):
             raise SetupError(f"bad expected value {part!r} in {spec!r}")
+        v, t = float(value), float(tol) if sep else 1e-6
         if not math.isfinite(v) or not math.isfinite(t) or t < 0:
             raise SetupError(f"expected value {part!r} in {spec!r}: value must be finite, tolerance finite and >= 0")
         alts.append((v, t))
@@ -147,7 +158,9 @@ def evaluate(program, expr):
 
 def main():
     try:
-        if len(sys.argv) == 4 and sys.argv[1] == "--check-spec":
+        if len(sys.argv) > 1 and sys.argv[1] == "--check-spec":
+            if len(sys.argv) != 4:
+                raise SetupError("--check-spec expects 2 arguments: <SKILL.md> <expected>\n" + __doc__)
             reference(sys.argv[2])
             parse_expected(sys.argv[3])
             return 0
@@ -157,14 +170,17 @@ def main():
         ref_program, ref_dump = reference(skill_path)
         expected = parse_expected(spec)
         evs = events(transcript_path)
+        calls = bash_calls(evs)
     except SetupError as e:
         print("mode1-equiv: " + str(e), file=sys.stderr)
         return 2
-    calls = bash_calls(evs)
 
-    denied = {d.get("tool_use_id") for ev in evs if ev.get("type") == "result"
-              for d in ev.get("permission_denials") or []}
-    undenied = [cid for cid, _ in calls if cid not in denied]
+    denied = {d.get("tool_use_id") for ev in evs
+              if isinstance(ev, dict) and ev.get("type") == "result"
+              for d in (ev.get("permission_denials") or []) if isinstance(d, dict)}
+    denied.discard(None)
+    # A call with no id counts as undenied (review iteration 3, C28).
+    undenied = [cid for cid, _ in calls if cid is None or cid not in denied]
     if undenied:
         print(f"Bash tripwire: {len(undenied)} Bash call(s) not in permission_denials (may have executed): {undenied}")
         return 1

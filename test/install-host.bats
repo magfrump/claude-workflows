@@ -1547,3 +1547,16 @@ stub_cp_then() {
   [[ "$output" == *'/proc is not mounted'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
 }
+
+@test "T91 a blind /proc scan (no cwd readable) prints a NOTE, treats none as found and goes ahead (review A15/C27)" {
+  fake_repo
+  # Point every cwd read at a link that does not exist, as an LSM hiding /proc would.
+  sed -i 's|readlink "\$d/cwd"|readlink "\$d/cwd-hidden"|' "$INSTALL"
+  grep -q 'cwd-hidden' "$INSTALL"
+  commit_all blind
+  run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"NOTE: no process's working directory could be read under /proc"*'treated as none'* ]]
+  [[ "$output" == *'BLESS-STUB --bless'* ]]
+}

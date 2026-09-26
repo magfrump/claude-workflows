@@ -75,7 +75,8 @@
 #
 # Environment:
 #   CLAUDE_MODEL   — model to use (default: inherits from claude config)
-#   CLAUDE_FLAGS   — additional flags to pass to claude -p
+#   CLAUDE_FLAGS   — additional flags to pass to claude -p (refused under
+#                    FIXTURE_BASH=deny-record; see DENY_RECORD_FLAGS)
 
 set -euo pipefail
 
@@ -253,37 +254,51 @@ generate_one() {
         *) failure="no result event in the stream" ;;
       esac
     fi
-    # Tripwire (deny-record): every Bash tool_use must be listed as denied. One
-    # that is not may have run, so the whole run is void. It runs even when the
-    # run already failed, so an executed call is never hidden behind "claude
-    # exited N" (review C10).
+    # Deny-record checks, in one pass over the stream (review iteration 3):
+    #  - tripwire: every Bash tool_use must be listed as denied; one that is not
+    #    may have run, so the whole run is void. A tool_use with no id counts as
+    #    undenied. It runs even when the run already failed, so an executed call
+    #    is never hidden behind "claude exited N" (review C10).
+    #  - parser canary: every Bash denial must name a tool_use the parser saw.
+    #    If the CLI's event shape changed, the tripwire and every transcript
+    #    check would see no calls and pass; this makes that fail loudly (A16).
+    #  - init canary: the stream must start with an init event (a run that dies
+    #    before it is reported as that, not blamed on the deny rule; A17), and
+    #    that event must list Bash. If a CLI change made 'Bash(**)' remove the
+    #    tool, as 'Bash(*)' does, there would be no Bash calls and every fixture
+    #    would read as "the model did not route" (C17). The init event also
+    #    carries claude_code_version, so each kept transcript records its CLI.
+    # It catches accidental breaches, not concealed ones: a command that did run
+    # could rewrite the transcript before this reads it (C29).
     if [ "$FIXTURE_BASH" = "deny-record" ]; then
-      local undenied
-      undenied=$(jq -rRn '[inputs | fromjson?] as $ev
-        | ([$ev[] | select(.type == "result") | .permission_denials[]?.tool_use_id]) as $denied
-        | [$ev[] | select(.type == "assistant") | .message.content[]?
-           | select(.type == "tool_use" and .name == "Bash") | .id]
-        | map(select(. as $id | $denied | index($id) | not)) | length' \
-        "$transcript_path" 2>/dev/null) || undenied="unreadable"
-      local trip=""
-      case "$undenied" in
-        0) ;;
-        unreadable) trip="Bash tripwire: the transcript could not be read, so denials are unverified" ;;
-        *) trip="Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)" ;;
-      esac
-      [ -z "$trip" ] || failure="${failure:+$failure; }$trip"
-      # Canary: the deny rule must leave Bash visible. If a CLI change made
-      # 'Bash(**)' remove the tool, as 'Bash(*)' does, there would be no Bash
-      # calls, the tripwire would pass, and every fixture would read as "the
-      # model did not route" (review iteration 2, C17). The init event also
-      # carries claude_code_version, so each kept transcript records its CLI.
-      local init_tools cli_version
-      init_tools=$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .tools[]?' \
-        "$transcript_path" 2>/dev/null || true)
-      cli_version=$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .claude_code_version // empty' \
-        "$transcript_path" 2>/dev/null | head -n 1 || true)
-      if ! printf '%s\n' "$init_tools" | grep -qx Bash; then
-        failure="${failure:+$failure; }Bash canary: the init event does not list Bash (CLI ${cli_version:-unknown}; did the deny rule remove the tool?)"
+      local verdict
+      verdict=$(jq -rRn '[inputs | fromjson? | objects] as $ev
+        | ([$ev[] | select(.type == "system" and .subtype == "init")] | first) as $init
+        | ([$ev[] | select(.type == "result") | .permission_denials[]?
+            | select(type == "object" and .tool_name == "Bash") | .tool_use_id]) as $denied
+        | ($denied | map(select(. != null) | {(tostring): true}) | add // {}) as $dset
+        | [$ev[] | select(.type == "assistant") | .message.content[]? | objects
+           | select(.type == "tool_use" and .name == "Bash") | .id] as $calls
+        | ($calls | map(select(. != null) | {(tostring): true}) | add // {}) as $cset
+        | [ ($calls | map(select(. == null or ($dset[tostring] | not))) | length),
+            ($denied | map(select(. == null or ($cset[tostring] | not))) | length),
+            (if $init == null then "none" elif (($init.tools // []) | index("Bash")) then "bash" else "nobash" end),
+            ($init.claude_code_version // "unknown") ] | @tsv' \
+        "$transcript_path" 2>/dev/null) || verdict="unreadable"
+      local undenied unseen init_state cli_version
+      if [ "$verdict" = unreadable ] || [ -z "$verdict" ]; then
+        failure="${failure:+$failure; }Bash tripwire: the transcript could not be read, so denials are unverified"
+      else
+        IFS=$'\t' read -r undenied unseen init_state cli_version <<< "$verdict"
+        [ "$undenied" = 0 ] \
+          || failure="${failure:+$failure; }Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)"
+        [ "$unseen" = 0 ] \
+          || failure="${failure:+$failure; }Bash parser canary: $unseen Bash denial(s) name a tool_use the parser did not see (CLI $cli_version; did the event shape change?)"
+        case "$init_state" in
+          bash) ;;
+          none) failure="${failure:+$failure; }no init event in the stream (the run did not start?)" ;;
+          *) failure="${failure:+$failure; }Bash canary: the init event does not list Bash (CLI $cli_version; did the deny rule remove the tool?)" ;;
+        esac
       fi
     fi
   fi

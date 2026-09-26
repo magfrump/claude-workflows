@@ -374,14 +374,22 @@ transcript_tool_inputs() {
 }
 
 # tool_inputs_checked <transcript> <tool>: print the tool's inputs (as
-# transcript_tool_inputs does), or fail with a message when the transcript
-# cannot be parsed, or when its init event lists the run's tools and <tool> is
-# not one of them (a misspelled name such as "bash" would otherwise match
-# nothing and let a negative check pass).
+# transcript_tool_inputs does), or fail with a message when the file cannot be
+# read, when it holds no init event (a junk or truncated transcript, which
+# would otherwise read as "no calls" and let a negative check pass), or when
+# the init event lists the run's tools and <tool> is not one of them (a
+# misspelled name such as "bash"). It does not detect a changed event shape
+# that hides tool_use blocks: generate-reports.bash's parser canary does, for
+# deny-record runs, and eval_fixture fails any run with a .failed marker.
 tool_inputs_checked() {
   local t="$1" tool="$2" inputs known
   if ! inputs="$(transcript_tool_inputs "$t" "$tool")"; then
     echo "Could not read tool calls from $t"
+    return 1
+  fi
+  # grep, not jq -e: jq's exit status reflects only the last input line.
+  if ! jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | "init"' "$t" 2>/dev/null | grep -q .; then
+    echo "No init event in $t: not a complete stream-json transcript"
     return 1
   fi
   known="$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .tools[]?' "$t" 2>/dev/null || true)"

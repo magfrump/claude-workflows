@@ -18,7 +18,7 @@ VERDICT_RE='(^|[^a-z])(incorrect|inaccurate|overstated|understated)([^a-z]|$)|re
 
 # The correctly computed figure per fixture: stating it after the denial means
 # the model did the math in its head. Anchored so neighbours (21.9 billion,
-# 129%) do not match. tc-ae4 has none: its 4.8M is already in the draft.
+# 129%) do not match. tc-ae4 has none: "4.8 million" is already in the draft.
 declare -gA FIGURE_RE
 FIGURE_RE["tc-ae1-inference-tokens-tenfold.md"]='(^|[^0-9.])1[.,]90?( ?(billion|bn)|b([^a-z]|$))|(^|[^0-9,.])1,?900,?000,?000'
 FIGURE_RE["tc-ae2-growth-percent-overstated.md"]='(^|[^0-9.])29(\.[0-9]+)? ?(%|percent)'

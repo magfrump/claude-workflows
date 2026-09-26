@@ -51,9 +51,18 @@ check_runner_settings() {
   esac
 
   # Checked before the tools loop, which reads it, so a misspelling such as
-  # deny_record is reported as itself (review iteration 2, C19).
+  # deny_record is reported as itself (review iteration 2, C19), and so every
+  # wrong FIXTURE_TOOLS under deny-record gets the one message below (C26).
   case "$FIXTURE_BASH" in
-    ""|deny-record) ;;
+    "") ;;
+    deny-record)
+      # Exactly Bash: the pinned dontAsk mode applies to every tool, and only
+      # Bash's denial is probed and tripwired (review C9).
+      if [ "$FIXTURE_TOOLS" != "Bash" ]; then
+        echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TOOLS=Bash exactly, got '$FIXTURE_TOOLS'" >&2
+        return 1
+      fi
+      ;;
     *)
       echo "Error: $label: FIXTURE_BASH must be empty or deny-record, got '$FIXTURE_BASH'" >&2
       return 1
@@ -109,12 +118,6 @@ check_runner_settings() {
       # The recorded command is the whole point, and it lives in the transcript.
       if [ "$FIXTURE_TRANSCRIPT" != 1 ]; then
         echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TRANSCRIPT=1" >&2
-        return 1
-      fi
-      # Exactly Bash: the pinned dontAsk mode applies to every tool, and only
-      # Bash's denial is probed and tripwired (review C9).
-      if [ "$FIXTURE_TOOLS" != "Bash" ]; then
-        echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TOOLS=Bash exactly, got '$FIXTURE_TOOLS'" >&2
         return 1
       fi
       ;;

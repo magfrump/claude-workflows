@@ -93,6 +93,6 @@ after_denial() {
   after_denial "tc-ae3-marathon-km-wrong.md"
 }
 
-@test "tc-ae4 after the denial: says it is unverified and gives no verdict (4.8M is in the draft, so no figure check)" {
+@test "tc-ae4 after the denial: says it is unverified and gives no verdict (the draft already says 4.8 million, so no figure check)" {
   after_denial "tc-ae4-sessions-correct.md"
 }
