@@ -1,0 +1,46 @@
+$ bats test/skills/arithmetic-eval-gate.bats  (cwd /workspace, 2026-09-25T23:50:15Z)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..18
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 Mode 1 evaluator extracts from SKILL.md and is real code
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 check.py extracts from SKILL.md and is real code
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 the three Mode 2 heredoc delimiters are distinct and no body line equals one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 Mode 1 computes SKILL.md's worked example
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 Mode 1 strips thousands separators and treats ^ as power
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 Mode 1 handles unary minus, floor division and modulo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 Mode 1 rejects names, calls and attribute access
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 Mode 1 rejects an oversized power before computing it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 Mode 1 rejects complex and non-finite results, and division by zero
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 Mode 1 rejects string and boolean literals
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 gate accepts approved imports and ordinary computation
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 gate allows the harmless dunders and pandas method names SKILL.md promises
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 gate rejects non-approved imports, including sys and importlib
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 gate rejects banned builtins
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 gate rejects reflection dunders as attributes and as string literals
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 gate rejects sympy eval paths, operator reflection and pickle sinks
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 gate fails closed on allow_pickle that is not a literal False
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 gate rejects a syntax error with a tagged message
+exit=0

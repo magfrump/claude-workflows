@@ -1,0 +1,42 @@
+$ bats test/skills/mode1-equiv.bats  (cwd /workspace, 2026-09-25T23:50:13Z)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..16
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 the Mode 1 block extracts from SKILL.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 SKILL.md's own wrapper and program, with a new expression, compute its value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 a copy with the comments stripped still passes (AST, not bytes)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 a one-token change to the program fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 the right program with the wrong expression fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 any listed value passes, and a tolerance widens one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 shell after the closing EXPREOF fails; a trailing comment does not
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 a second EXPREOF line cannot smuggle shell: the heredoc closes at the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 a bad value spec or missing argument exits 2 with a message, not a traceback
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a skill with no mode1-equiv.py of its own fails the check with a message
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 a wrapper change (no ulimit) fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 tripwire: a Bash call missing from permission_denials fails whatever it computed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 no_tool_called passes with no Bash call and fails with one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a missing transcript fails (not skips)
+exit=0

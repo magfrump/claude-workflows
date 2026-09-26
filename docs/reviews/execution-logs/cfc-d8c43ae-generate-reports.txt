@@ -1,0 +1,76 @@
+$ bats test/generate-reports.bats  (cwd /workspace, 2026-09-25T23:50:09Z)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..33
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 repo mode: claude runs in a temp repo holding only the fixture
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 the fixture's descriptive filename never reaches the model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 tree mode: the fixture directory's name never reaches the model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 tree mode takes directories only; repo mode takes files only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 fixture prefix selects a subset
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a skill without runner.bash is refused before claude runs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 a runner naming any tool outside the allowlist is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 an inline runner granting a file tool is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 a descriptive suffix is not kept as the subject's extension
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 a run that aborts before claude starts still removes the previous report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 a successful run clears a previous run's .failed marker
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 a runner with an unknown mode is refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 every committed fixture set has a runner the generator accepts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 every committed fixture set has an eval suite
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and Bash in FIXTURE_TOOLS; other values are refused
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 deny-record does not open Bash(<pattern>) spellings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 deny-record: CLAUDE_FLAGS that change permissions are refused before claude runs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 deny-record tripwire: a Bash call missing from permission_denials voids the run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 deny-record tripwire still runs when the run already failed, and says so
+exit=0

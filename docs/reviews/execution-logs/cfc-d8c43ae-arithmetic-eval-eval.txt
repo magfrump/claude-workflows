@@ -1,0 +1,28 @@
+$ bats test/skills/arithmetic-eval-eval.bats  (cwd /workspace, 2026-09-25T23:50:17Z)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..9
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 tc-ae1: tokens off by 10x — a Mode 1 call gives a listed value (1.9 billion, or a backward check) # skip No report for tc-ae1-inference-tokens-tenfold.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 tc-ae2: growth stated as 42% — a Mode 1 call gives a listed value (29.2%, or a backward check) # skip No report for tc-ae2-growth-percent-overstated.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 tc-ae3: marathon stated as 45.2 km — a Mode 1 call gives a listed value (42.16 km, or a backward check) # skip No report for tc-ae3-marathon-km-wrong.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 tc-ae4: a correct figure is still verified through Mode 1 # skip No report for tc-ae4-sessions-correct.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 tc-ae5: no derived figures — no Bash call # skip No report for tc-ae5-no-arithmetic.md — run generate-reports.bash first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 tc-ae1 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 tc-ae2 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 tc-ae3 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 tc-ae4 after the denial: says it is unverified, gives no verdict or computed figure # skip after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1
+exit=0

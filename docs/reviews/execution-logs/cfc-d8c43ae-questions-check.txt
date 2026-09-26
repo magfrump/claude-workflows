@@ -1,0 +1,4 @@
+$ ~/.claude/scripts/questions.sh check  (cwd /workspace, 2026-09-25T23:54:43Z)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ✓ questions: structure valid, indexes current
+exit=0

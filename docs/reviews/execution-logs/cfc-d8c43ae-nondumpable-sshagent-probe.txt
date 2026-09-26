@@ -1,0 +1,10 @@
+## 2026-09-25T23:52:01Z cwd=/tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/nd uid=1000
+## A: python prctl(PR_SET_DUMPABLE,0), cwd in /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/nd
+pid=3386313 owner=1000 dumpable-check: State:	S (sleeping) Uid:	1000	1000	1000	1000 
+-O true
+readlink cwd failed rc=1
+## B: real ssh-agent -D (foreground), started with cwd /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/nd
+pid=3386322 comm=ssh-agent owner=1000
+-O true
+readlink cwd failed rc=1
+exit 0

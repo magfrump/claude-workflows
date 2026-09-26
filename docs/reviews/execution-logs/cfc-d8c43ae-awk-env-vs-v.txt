@@ -1,0 +1,15 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 2026-09-25T23:54:04Z cwd=/workspace awk=/usr/bin/mawk
+CW_SEEN raw: $'123 claude --x a\\nb\n456 node /claude/versions/1'
+-- awk -v (escape-processed):
+n=3
+[123 claude --x a]
+[b]
+[456 node /claude/versions/1]
+-- ENVIRON (literal):
+n=2
+[123 claude --x a\nb]
+[456 node /claude/versions/1]
+-- install.sh dedupe filter on inrepo list:
+789 sleep 300
+exit=0

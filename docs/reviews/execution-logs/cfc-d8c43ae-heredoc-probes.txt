@@ -1,0 +1,11 @@
+$ python3 /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/hd/probe.py /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/hd   (cwd /workspace, 2026-09-25T23:52:19Z)
+reference() ok; program lines: 40
+SKILL block split_mode1 expr: '3600 / 0.003 * 1000'
+- trailing-space delimiter then shell then EXPREOF: split_mode1=accepted expr='1 + 1\nEXPREOF \ntouch pwned_a'; bash rc=1 shell-ran=False stdout='ithmetic-eval] REJECTED — invalid syntax (<unknown>, line 2)'
+- CRLF delimiter line then shell: split_mode1=None; bash rc=1 shell-ran=False stdout='ithmetic-eval] REJECTED — invalid syntax (<unknown>, line 2)'
+- delimiter + same-line comment then shell: split_mode1=None; bash rc=1 shell-ran=False stdout='ithmetic-eval] REJECTED — invalid syntax (<unknown>, line 2)'
+- delimiter then whitespace-only line: split_mode1=accepted expr='1 + 1'; bash rc=0 shell-ran=False stdout='[arithmetic-eval] 1 + 1 -> 2'
+- delimiter then indented comment: split_mode1=accepted expr='1 + 1'; bash rc=0 shell-ran=False stdout='[arithmetic-eval] 1 + 1 -> 2'
+- delimiter then comment ending in backslash, then shell: split_mode1=None; bash rc=0 shell-ran=True stdout='[arithmetic-eval] 1 + 1 -> 2'
+- leading-tab delimiter: split_mode1=None; bash rc=1 shell-ran=False stdout='metic-eval] REJECTED — unexpected indent (<unknown>, line 2)'
+exit=0
