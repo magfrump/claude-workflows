@@ -2,9 +2,10 @@
 # @category fast
 # Validates bidirectional consistency of '## When to pivot' sections across
 # workflows. If workflow A mentions pivoting to/from B and B has a pivot
-# section, then B should mention A. Asymmetries are flagged as warnings
-# (printed output) rather than hard failures, since some pivots are
-# inherently one-directional (e.g., codebase-onboarding → RPI).
+# section, then B should mention A. Pivots that are inherently
+# one-directional are listed in KNOWN_ONE_WAY; any other asymmetry fails.
+# (Before 2026-09-26 every asymmetry was only printed, so deleting a pivot
+# reference could never turn this suite red.)
 #
 # Only checks the workflows that currently have pivot sections.
 #
@@ -29,9 +30,15 @@ setup() {
   declare -gA WORKFLOW_PATTERNS
   WORKFLOW_PATTERNS=(
     [codebase-onboarding.md]="codebase-onboarding|Codebase Onboarding|[Oo]nboarding"
-    [divergent-design.md]="divergent-design|Divergent Design|DD"
+    [divergent-design.md]="divergent-design|Divergent Design|\\bDD\\b"
     [research-plan-implement.md]="research-plan-implement|Research.*Plan.*Implement|RPI"
     [spike.md]="spike\.md|[Ss]pike"
+  )
+
+  # "A>B": A's pivot section names B, and B is not expected to name A back.
+  # Onboarding feeds DD's diagnosis, but DD never hands off to onboarding.
+  KNOWN_ONE_WAY=(
+    "codebase-onboarding.md>divergent-design.md"
   )
 }
 
@@ -73,7 +80,7 @@ section_mentions() {
   fi
 }
 
-@test "pivot references are bidirectionally consistent (asymmetries are warnings)" {
+@test "pivot references are bidirectionally consistent (except known one-way pivots)" {
   local asymmetries=""
   local checked=0
 
@@ -97,7 +104,8 @@ section_mentions() {
 
       if section_mentions "$section_a" "$wf_b"; then
         checked=$((checked + 1))
-        if ! section_mentions "$section_b" "$wf_a"; then
+        if ! section_mentions "$section_b" "$wf_a" \
+            && [[ " ${KNOWN_ONE_WAY[*]} " != *" $wf_a>$wf_b "* ]]; then
           asymmetries+="  $wf_a mentions $wf_b, but $wf_b does not mention $wf_a\n"
         fi
       fi
@@ -110,11 +118,9 @@ section_mentions() {
     return 1
   }
 
-  # Report asymmetries as warnings but do not fail
   if [ -n "$asymmetries" ]; then
-    echo -e "WARNING: Asymmetric pivot references found ($checked references checked):\n$asymmetries"
-    echo "(These are warnings, not failures — some pivots are inherently one-directional.)"
-  else
-    echo "All $checked pivot cross-references are bidirectionally consistent."
+    echo -e "Asymmetric pivot references ($checked references checked):\n$asymmetries"
+    echo "Add the missing back-reference, or list the pair in KNOWN_ONE_WAY if the pivot is one-directional."
+    return 1
   fi
 }

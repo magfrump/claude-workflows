@@ -257,6 +257,8 @@ pq() {
 @test "status does not count the queue file itself as a dropped-in paper" {
     pq add requests
     pq status
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"open: 1"* ]]
     [[ "$output" != *"files present"* ]]
 }
 
