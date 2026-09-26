@@ -405,3 +405,56 @@ transcript() {
   [ "$status" -eq 0 ]
 }
 
+
+# --- Iteration-6 fix: no key opts a call out of the census (R5) ---
+
+@test "property: a call stays counted whatever marker-like keys sit on its path (the module's own has() keys and __text)" {
+  source "$BATS_TEST_DIRNAME/malformed-transcripts.bash"
+  transcript "$(with_expr '1 + 1')"
+  local good="$TEST_TMPDIR/good.jsonl" n f escapes=0 keys=()
+  cp "$T" "$good"
+  mapfile -t keys < <(marker_keys "$BATS_TEST_DIRNAME/transcript.jq")
+  [ "${#keys[@]}" -ge 2 ]
+  n="$(write_marker_variants "$good" "$TEST_TMPDIR/mk" "${keys[@]}")"
+  [ "$n" -ge 10 ]
+  for f in "$TEST_TMPDIR"/mk/m*.jsonl; do
+    if [ "$(transcript_jq "$f" 't::deny_record_failures | length')" = 0 ]; then
+      escapes=$((escapes + 1)); echo "verdict passed: $(basename "$f") $(head -c 200 "$f")"
+    fi
+  done
+  echo "keys=${keys[*]} variants=$n escapes=$escapes"
+  [ "$escapes" -eq 0 ]
+}
+
+@test "the type allowlists match exactly: substrings and near-misses of allowed names are problems" {
+  local t name bad=0
+  for t in sys syste "" systemX user_ assistan result2 rate_limit; do
+    printf '%s\n' '{"type":"system","subtype":"init","tools":["Bash"]}' "$(jq -cn --arg t "$t" '{type:$t}')" > "$T"
+    if [ "$(transcript_jq "$T" 't::problems | length')" = 0 ]; then bad=$((bad + 1)); echo "event type accepted: '$t'"; fi
+  done
+  for name in tool tool_ "" result text_ think tool_use_x; do
+    printf '%s\n' '{"type":"system","subtype":"init","tools":["Bash"]}' \
+      "$(jq -cn --arg b "$name" '{type:"assistant",message:{content:[{type:$b}]}}')" > "$T"
+    if [ "$(transcript_jq "$T" 't::problems | length')" = 0 ]; then bad=$((bad + 1)); echo "block type accepted: '$name'"; fi
+  done
+  [ "$bad" -eq 0 ]
+}
+
+@test "real transcripts committed in the repo pass the reader with no problems, census = placed count (golden cases)" {
+  local root="$BATS_TEST_DIRNAME/../.." f n=0 out
+  while IFS= read -r f; do
+    n=$((n + 1))
+    out="$(jq -rR -n -L "$BATS_TEST_DIRNAME" 'import "transcript" as t; t::events | t::transcript_failures | t::print_verdict' "$root/$f")"
+    [ "$out" = "__VERDICT_COMPLETE__" ] || { echo "$f: $out" | head -3; return 1; }
+  done < <(git -C "$root" ls-files 'runs/**/transcript.jsonl' 'runs/**/*.transcript.jsonl')
+  [ "$n" -gt 0 ] || skip "no committed transcripts"
+  echo "golden transcripts: $n"
+}
+
+@test "every init event is checked: a later init with other tools fails the deny-record verdict" {
+  transcript "$(with_expr '1 + 1')"
+  printf '%s\n' '{"type":"system","subtype":"init","tools":["Bash","Read"],"permissionMode":"bypassPermissions"}' >> "$T"
+  run assert_mode1_equiv arithmetic-eval '2'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Bash init canary: an init event's tools are"* ]]
+}

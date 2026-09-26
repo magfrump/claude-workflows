@@ -15,16 +15,25 @@
 # place, and ends with a sentinel so a caller can tell a complete verdict from
 # a truncated one.
 #
+# Rule for internal markers (review iteration 6, R5): a marker the reader
+# puts on data may only ADD a problem, never remove one, because data can
+# carry the same key. An earlier version marked plain-text lines with a
+# "__text" key and skipped marked objects, so an event carrying "__text"
+# itself opted out of the census. Plain-text lines are now dropped instead,
+# and nothing is skipped by key.
+#
 # Use:  jq -rR -n -L <dir-of-this-file> 'import "transcript" as t; ...'
 # with the transcript as input, one JSON event per line.
 #
 # Accepted shapes, from 13 real runs on CLI 2.1.282/283 (2026-09-25), where
 # the census found exactly the positional calls (21 tool_use, 21 tool_result):
 #   - every line that contains "{" or "[" is one JSON object; a line with
-#     neither (a warning a CLI printed to stdout) is ignored, since no reader
-#     can find a call in it;
-#   - event types: system (any subtype), assistant, user, result,
-#     rate_limit_event;
+#     neither (a warning a CLI printed to stdout) is dropped, since no reader
+#     can find a call in it (a bracket-less line that is valid JSON, such as
+#     42 or true, parses and is then "not a JSON object", a problem);
+#   - event types, matched exactly: system (any subtype), assistant, user,
+#     result, rate_limit_event; system/init may repeat (real sessions repeat
+#     it), and every init event is checked;
 #   - assistant/user events: an object `message` whose `content` is an array
 #     of objects; assistant blocks are text, thinking, redacted_thinking or
 #     tool_use; user blocks are tool_result or text;
@@ -39,11 +48,11 @@
 
 # The events, in order. A line that fails to parse becomes {"__unparsed": ...}
 # when it contains "{" or "[" (it could have carried an event: a prefix such
-# as an ANSI escape or a BOM, a lone surrogate, deep nesting), else
-# {"__text": ...}, which is ignored. Inside `catch`, jq's input is the error
-# message, so the line is bound first.
+# as an ANSI escape, a lone surrogate, deep nesting); that marker only adds a
+# problem. A line with neither is dropped. Inside `catch`, jq's input is the
+# error message, so the line is bound first.
 def events: [inputs | select(test("\\S")) | . as $line | (try fromjson catch
-  (if ($line | test("[\\[{]")) then {"__unparsed": $line} else {"__text": $line} end))];
+  (if ($line | test("[\\[{]")) then {"__unparsed": $line} else empty end))];
 
 def _is_str: type == "string";
 # Control characters (newlines included) become spaces, so every verdict line
@@ -53,8 +62,8 @@ def _one_line: explode | map(if . < 32 or . == 127 then 32 else . end) | implode
 
 # The census: every tool_use object at any depth of any event, and every
 # tool_result object likewise.
-def tool_uses: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_use")];
-def tool_results: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_result")];
+def tool_uses: [.[] | .. | objects | select(.type == "tool_use")];
+def tool_results: [.[] | .. | objects | select(.type == "tool_result")];
 
 # How many of each sit where they belong: assistant (tool_use) or user
 # (tool_result) message.content arrays. When these differ from the census
@@ -67,9 +76,8 @@ def _placed_tool_results: [.[] | objects | select(.type == "user") | .message | 
 def _event_problems:
   if type != "object" then "a line is not a JSON object"
   elif has("__unparsed") then "a line containing JSON-like text does not parse"
-  elif has("__text") then empty
   elif (.type | _is_str | not) then "an event has no string type"
-  elif ([.type] | inside(["system", "assistant", "user", "result", "rate_limit_event"]) | not) then
+  elif (.type | IN("system", "assistant", "user", "result", "rate_limit_event") | not) then
     "an event of unknown type \(.type | _one_line)"
   elif (.type == "assistant" or .type == "user") then
     (.type) as $et
@@ -78,8 +86,8 @@ def _event_problems:
       else
         .message.content[] |
         if type != "object" or (.type | _is_str | not) then "a content block is not an object with a string type"
-        elif ($et == "assistant" and ([.type] | inside(["text", "thinking", "redacted_thinking", "tool_use"]) | not))
-          or ($et == "user" and ([.type] | inside(["tool_result", "text"]) | not)) then
+        elif ($et == "assistant" and (.type | IN("text", "thinking", "redacted_thinking", "tool_use") | not))
+          or ($et == "user" and (.type | IN("tool_result", "text") | not)) then
           "\($et) event: unknown content block type \(.type | _one_line)"
         else empty end
       end
@@ -107,8 +115,9 @@ def _census_problems:
 # Every problem in the stream, as one-line strings. Non-empty means: do not trust it.
 def problems: [(.[] | _event_problems), _census_problems] | map(_one_line);
 
-# The first init event, or null.
-def init: [.[] | objects | select(.type == "system" and .subtype == "init")] | first;
+# Every init event (real sessions repeat it), and the first one or null.
+def inits: [.[] | objects | select(.type == "system" and .subtype == "init")];
+def init: inits | first;
 
 # Denials, from top-level result events only.
 def denials: [.[] | objects | select(.type == "result") | .permission_denials | arrays | .[] | objects
@@ -129,13 +138,13 @@ def transcript_failures:
 # (whenever the stream is well formed, so every id below is a string, even
 # with no init event, so a run that already failed still reports an executed
 # call):
-#   - the init event must list exactly ["Bash"], the only tool granted;
-#   - every tool_use must be Bash;
+#   - every init event must list exactly ["Bash"], the only tool granted;
+#   - every tool_use must be Bash ("Bash-only:");
 #   - tripwire: every tool_use must be named by a Bash denial (else it may
 #     have run);
 #   - parser canaries: every Bash denial and every tool_result must answer a
 #     tool_use in the census;
-#   - only Bash may be denied.
+#   - only Bash may be denied ("Bash-only:").
 def deny_record_failures:
   transcript_failures as $base
   | if (problems | length) > 0 then $base
@@ -146,10 +155,10 @@ def deny_record_failures:
       | denials as $d
       | ([$d[] | select(.tool_name == "Bash") | .tool_use_id]) as $denied
       | ($denied | _set) as $dset
-      | [ (init | .tools) as $tools
-          | if init != null and $tools != ["Bash"] then "Bash init canary: the init event's tools are \($tools | tojson | _one_line), not exactly [\"Bash\"] (CLI \($cli))" else empty end,
+      | [ (inits[] | .tools | select(. != ["Bash"])
+           | "Bash init canary: an init event's tools are \(tojson | _one_line), not exactly [\"Bash\"] (CLI \($cli))"),
           ([$u[] | select(.name != "Bash")] | length) as $n
-          | if $n > 0 then "Bash tripwire: \($n) call(s) of a tool other than Bash, the only tool granted" else empty end,
+          | if $n > 0 then "Bash-only: \($n) call(s) of a tool other than Bash, the only tool granted" else empty end,
           ([$u[] | select($dset[.id] | not)] | length) as $n
           | if $n > 0 then "Bash tripwire: \($n) call(s) not in permission_denials (may have executed)" else empty end,
           ([$denied[] | select($all[.] | not)] | length) as $n
@@ -157,7 +166,7 @@ def deny_record_failures:
           ([tool_results[] | select($all[.tool_use_id] | not)] | length) as $n
           | if $n > 0 then "Bash parser canary: \($n) tool_result(s) answer a tool_use not in the census (CLI \($cli); a call may have run unseen)" else empty end,
           ([$d[] | select(.tool_name != "Bash")] | length) as $n
-          | if $n > 0 then "Bash tripwire: \($n) denial(s) of a tool other than Bash" else empty end
+          | if $n > 0 then "Bash-only: \($n) denial(s) of a tool other than Bash" else empty end
         ]
     end;
 

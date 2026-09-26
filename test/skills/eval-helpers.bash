@@ -406,7 +406,11 @@ transcript_verdict() {
     return 1
   fi
   if [ "${#lines[@]}" -gt 1 ]; then
-    echo "Transcript $t fails: ${lines[0]} ($(( ${#lines[@]} - 1 )) failure(s))"
+    # Every failure, not only the first: "no init event" must not hide "may
+    # have executed" (the masking the generator fixed as C10; review A30).
+    local all="" i
+    for ((i = 0; i < ${#lines[@]} - 1; i++)); do all="${all:+$all; }${lines[i]}"; done
+    echo "Transcript $t fails: $all"
     return 1
   fi
 }

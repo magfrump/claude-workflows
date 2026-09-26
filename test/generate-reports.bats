@@ -535,7 +535,7 @@ EOF2
   stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]' '[]'
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
-  grep -q "Bash init canary: the init event.s tools are \[\], not exactly \[\"Bash\"\] (CLI 9.9.9)" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash init canary: an init event.s tools are \[\], not exactly \[\"Bash\"\] (CLI 9.9.9)" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record tripwire: a Bash call missing from permission_denials voids the run" {
@@ -597,7 +597,8 @@ EOF2
   run bash "$GEN" demo
   [ "$status" -eq 0 ]
   grep -q "no init event in the stream (the run did not start?)" "$out/tc-1-thing.txt.failed"
-  ! grep -q "did the deny rule remove the tool" "$out/tc-1-thing.txt.failed"
+  # No init event means no tools to check: the init canary must not also fire.
+  ! grep -q "Bash init canary" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record: a Bash tool_use with no id is malformed, and voids the run" {
@@ -658,7 +659,7 @@ stub_transcript() {
     '{"type":"result","subtype":"success","result":"# Report","permission_denials":[{"tool_name":"Read","tool_use_id":"r9"}]}' > "$t"
   stub_transcript "$t"
   run bash "$GEN" demo
-  grep -q "Bash tripwire: 1 denial(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
+  grep -q "Bash-only: 1 denial(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
 }
 
 @test "the .failed marker exists while a run is in progress and is removed only after every check passes" {
@@ -743,8 +744,8 @@ EOF2
     '{"type":"result","subtype":"success","result":"# Report","permission_denials":[]}' > "$t"
   stub_transcript "$t"
   run bash "$GEN" demo
-  grep -q 'Bash init canary: the init event.s tools are \["Bash","BashOutput"\]' "$out/tc-1-thing.txt.failed"
-  grep -q "Bash tripwire: 1 call(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
+  grep -q 'Bash init canary: an init event.s tools are \["Bash","BashOutput"\]' "$out/tc-1-thing.txt.failed"
+  grep -q "Bash-only: 1 call(s) of a tool other than Bash" "$out/tc-1-thing.txt.failed"
 }
 
 @test "a verdict that did not finish (no sentinel line) voids the run" {

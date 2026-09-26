@@ -35,8 +35,9 @@
 #                     and pins DENY_RECORD_FLAGS (defined below, with why), so
 #                     every Bash call is denied and only recorded (Q-063 [1]).
 #                     Needs FIXTURE_TRANSCRIPT=1; refuses CLAUDE_FLAGS. The
-#                     conditions that void such a run are listed once, in the
-#                     "Transcript checks" comment in generate_one.
+#                     conditions that void such a run are defined in
+#                     transcript.jq (deny_record_failures) and summarized in
+#                     the "Transcript checks" comment in generate_one.
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
@@ -272,7 +273,7 @@ generate_one() {
     # finds every tool_use object at any depth, so a call cannot sit anywhere
     # it is not both checked and counted. A FIXTURE_BASH=deny-record run gets
     # deny_record_failures instead, which adds (see the module for each rule):
-    # the init event's tools exactly ["Bash"]; every call a Bash call; every
+    # every init event's tools exactly ["Bash"]; every call a Bash call; every
     # call denied (tripwire); every Bash denial and every tool_result answering
     # a call in the census (parser canaries); no denial of another tool. These
     # run also when the run already failed, so an executed call is never hidden

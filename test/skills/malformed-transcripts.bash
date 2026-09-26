@@ -68,3 +68,33 @@ write_insertion_variants() {
     | [$lines[0:$i][], ($new | tojson), $lines[$i + 1:][]] | join("\u001e")' "$good" \
   | awk -v dir="$dir" '{ n++; f = dir "/v" n ".jsonl"; gsub("\036", "\n"); print > f; close(f) } END { print n + 0 }'
 }
+
+# marker_keys <transcript.jq>: every key the module tests with has("..."),
+# plus "__text" (the marker whose collision was R5). A marker added to the
+# module later is picked up automatically.
+marker_keys() {
+  { grep -o 'has("[^"]*")' "$1" | sed 's/^has("//; s/")$//'; echo "__text"; } | sort -u
+}
+
+# write_marker_variants <good-transcript> <dir> <key...>: like
+# write_insertion_variants, but the object that receives the undenied Bash
+# call also gets each <key> (set to true), and each event gets it at top
+# level too. Property (review iteration 6): no key on the path to a call can
+# hide it from the census. Prints the variant count.
+write_marker_variants() {
+  local good="$1" dir="$2"
+  shift 2
+  mkdir -p "$dir"
+  jq -rR -n --args '
+    [inputs] as $lines
+    | $ARGS.positional as $keys
+    | {"type":"tool_use","id":"inserted1","name":"Bash","input":{"command":"pwd"}} as $call
+    | range(0; $lines | length) as $i
+    | ($lines[$i] | fromjson) as $ev
+    | $keys[] as $k
+    | (([$ev | paths(type == "object")] + [[]])[]) as $p
+    | ($ev | getpath($p)) as $v
+    | ($ev | setpath($p; $v + {"x_inserted": $call, ($k): true}) | .[$k] = true) as $new
+    | [$lines[0:$i][], ($new | tojson), $lines[$i + 1:][]] | join("\u001e")' "$@" < "$good" \
+  | awk -v dir="$dir" '{ n++; f = dir "/m" n ".jsonl"; gsub("\036", "\n"); print > f; close(f) } END { print n + 0 }'
+}
