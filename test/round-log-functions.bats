@@ -193,6 +193,25 @@ teardown() {
   [ "$(jq '.[1].round' "$ROUND_HISTORY")" -eq 2 ]
 }
 
+# The history-entry contract that downstream readers rely on
+# (si-functions.sh gate stats read .validation; si-morning-summary.sh reads
+# .outcome). This replaces test/round-report-schema.bats, which checked the
+# untracked runtime file and so skipped in every runner.
+@test "finalize_round_log history entries carry the full round contract" {
+  init_round_log 3
+  update_round_log '.outcome' '"success"'
+  record_gate "task-1" "lint" "pass"
+  finalize_round_log 3
+  run jq -e '.[0]
+    | (.round | type) == "number"
+      and (.timestamp | type) == "string"
+      and (.validation | type) == "object"
+      and (.outcome | type) == "string"' "$ROUND_HISTORY"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.[0].outcome' "$ROUND_HISTORY")" = "success" ]
+  [ "$(jq -r '.[0].validation["task-1"].lint' "$ROUND_HISTORY")" = "pass" ]
+}
+
 @test "finalize_round_log removes the temp round log file" {
   init_round_log 1
   local log_path="$ROUND_LOG_FILE"
