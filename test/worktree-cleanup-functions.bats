@@ -37,7 +37,12 @@ setup() {
   [ "${RUN_BRANCHES[*]}" = "feat/a feat/c" ]
 }
 
-@test "untrack draining the last tracked pair leaves both arrays empty under set -u" {
+# The two set -u tests below cannot catch a missing ${arr[@]:-} guard: bash
+# >= 4.4 no longer aborts on an empty-array expansion under set -u, and
+# BASH_COMPAT does not bring the old behaviour back (mutation-checked
+# 2026-09-26: removing every :- guard kept this suite green). They pin the
+# drain and empty-array no-op behaviour, which is what they can constrain.
+@test "untrack draining the last tracked pair leaves both arrays empty" {
   set -u
   RUN_WORKTREES=("/wt/only")
   RUN_BRANCHES=("feat/only")
@@ -48,13 +53,11 @@ setup() {
   [ "${#RUN_BRANCHES[@]}" -eq 0 ]
 }
 
-@test "untrack is safe to call when the arrays are already empty (set -u guard)" {
+@test "untrack is a no-op when the arrays are already empty" {
   set -u
   RUN_WORKTREES=()
   RUN_BRANCHES=()
 
-  # Exercises the ${arr[@]:-} guard directly: an unguarded empty-array read
-  # here would abort under set -u rather than no-op.
   untrack_worktree_and_branch "/wt/none" "feat/none"
 
   [ "${#RUN_WORKTREES[@]}" -eq 0 ]

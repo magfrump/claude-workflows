@@ -64,6 +64,6 @@ _(filled per iteration)_
 - **FIXED** bd01eb5: `round-report-schema.bats`. Every test skipped because the untracked runtime file is absent. The contract moved to `round-log-functions` on the writer; mutation goes red.
 - **FIXED**: `pivot-consistency.bats:76`. Asymmetries used to be warnings only; they now fail unless listed in KNOWN_ONE_WAY. `\bDD\b` tightened; mutation goes red.
 - **FIXED**: `paper-queue.bats:257`. Added a status check and a positive assertion.
-- **FIXED (partly)**: `sandbox-tool-map-drift.bats`. The live checks skip in the sandbox by nature, because the allow list lives only on the host. Added REQUIRE_LIVE_SETTINGS=1 strict mode plus fixture tests showing each check can go red. The live check on the host is Q-queued.
-- OPEN, needs a decision: `si-input-rejected-history.bats`. 12 of its 14 tests exercise `prepend_si_input_rejected_history`, which has no caller (dead since 06903d6).
-- OPEN: `worktree-cleanup-functions.bats:40/:51` claims to guard `${arr[@]:-}` against `set -u`, which bash ≥4.4 cannot reproduce.
+- **FIXED (partly)**: `sandbox-tool-map-drift.bats`. The live checks skip in the sandbox by nature, because the allow list lives only on the host. Added REQUIRE_LIVE_SETTINGS=1 strict mode plus fixture tests showing each check can go red. The live check on the host is queued as Q-066 (you: terminal).
+- QUEUED Q-065 (you: judgment): `si-input-rejected-history.bats`. 12 of its 14 tests exercise `prepend_si_input_rejected_history`, which has no caller (dead since 06903d6).
+- **FIXED**: `worktree-cleanup-functions.bats:40/:51` claimed to guard `${arr[@]:-}` against `set -u`, which bash ≥4.4 cannot reproduce. Reworded to the drain/no-op behaviour the tests actually constrain.
