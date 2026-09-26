@@ -14,12 +14,24 @@
 
 load lib/hermetic-env
 
+# `run !` (Gate 1h fallback test) needs bats >= 1.5.
+bats_require_minimum_version 1.5.0
+
 # These tests capture command substitution output; pin the locale so bash's
 # setlocale warning can't leak into a captured value.
 pin_hermetic_locale
 
 setup() {
   source "$BATS_TEST_DIRNAME/../scripts/lib/si-functions.sh"
+
+  # Stub the claude CLI: the Gate 1h tests below run the gate's real source,
+  # which invokes `claude -p`. Individual tests overwrite this stub with a
+  # recording one; the default only guarantees the real binary is unreachable.
+  # Convention enforced by test/fixture-hermeticity.bats.
+  mkdir -p "$BATS_TEST_TMPDIR/stub-bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$BATS_TEST_TMPDIR/stub-bin/claude"
+  chmod +x "$BATS_TEST_TMPDIR/stub-bin/claude"
+  PATH="$BATS_TEST_TMPDIR/stub-bin:$PATH"
 }
 
 # ---------------------------------------------------------------
@@ -81,7 +93,9 @@ setup() {
 }
 
 @test "parse_code_review_red emits nothing when no sentinel is present" {
-  result=$(printf 'the model forgot the format line\n' | parse_code_review_red)
+  # Pass the real nonce: without one the parser bails on the empty-nonce guard
+  # (the test above), so the no-sentinel path would never be reached.
+  result=$(printf 'the model forgot the format line\n' | parse_code_review_red deadbeef)
   [ -z "$result" ]
 }
 
@@ -167,4 +181,98 @@ setup() {
   printf '## 🔴 Must Fix\n| R1 | a |\n## 🟡 x\n' > "$narrow"
   printf '## 🔴 Must Fix\n| R1 | a | Security | Critical | `f.ts:1` | for-author | — | 🔴 Unresolved |\n## 🟡 x\n' > "$wide"
   [ "$(count_rubric_red "$narrow")" = "$(count_rubric_red "$wide")" ]
+}
+
+# ---------------------------------------------------------------
+# Gate 1h itself — skill-source fallback and artifact archiving
+# ---------------------------------------------------------------
+# Gate 1h lives inline in self-improvement.sh's per-task validation loop, so
+# there is no function to call. These tests cut the gate's own source out of
+# the script (from its "# --- Gate 1h" header to the "# --- Verdict ---" header
+# that follows it) and eval it with the loop's variables set, against a
+# recording claude stub. The baked payload root is the literal
+# /opt/claude-workflows; the slice has it rewritten to a per-test directory so
+# both branches are reachable regardless of whether this host has the payload.
+# The rewrite count is asserted, so if the literal moves the tests fail loudly
+# instead of silently exercising the host's /opt.
+
+# run_gate_1h <baked-root> — eval Gate 1h against $WT (a fake worktree) and
+# $WD (WORKING_DIR). Prints the gate's stdout; the stub records its argv.
+run_gate_1h() {
+  local baked="$1"
+  local si="$BATS_TEST_DIRNAME/../scripts/self-improvement.sh"
+  local slice="$BATS_TEST_TMPDIR/gate1h.sh"
+  awk '/# --- Gate 1h:/{f=1} /# --- Verdict ---/{f=0} f' "$si" > "$slice"
+  grep -q 'CR_SKILL=' "$slice" || { echo "Gate 1h slice not found" >&2; return 99; }
+  [ "$(grep -c '/opt/claude-workflows' "$slice")" -ge 2 ] \
+    || { echo "baked-root literal moved; update run_gate_1h" >&2; return 98; }
+  sed -i "s|/opt/claude-workflows|$baked|g" "$slice"
+  # shellcheck disable=SC2016  # expanded by the inner bash, not here
+  bash -c '
+    source "$1"
+    # The round-log writers are exercised elsewhere; here they only record.
+    record_gate() { echo "GATE $*" >> "$WD/gates.log"; }
+    record_gate_detail() { :; }
+    REJECT_REASON="" WT_DIR="$WT" WORKING_DIR="$WD" ROUND=1 TASK_ID=t1 BRANCH=b1
+    eval "$(cat "$2")"
+    echo "REJECT_REASON=$REJECT_REASON"
+  ' _ "$si" "$slice"
+}
+
+# Recording stub: logs argv, writes a rubric into the worktree the way the real
+# skill does, and echoes the nonced sentinel back so the gate reaches a verdict.
+install_recording_claude() {
+  cat > "$BATS_TEST_TMPDIR/stub-bin/claude" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$STUB_ARGS"
+mkdir -p docs/reviews
+printf '## 🔴 Must Fix\n| — | — |\n' > docs/reviews/code-review-rubric.md
+nonce=$(printf '%s\n' "$@" | grep -o 'CODE_REVIEW_RED\[[0-9a-f]*\]' | head -1)
+echo "${nonce}: 0"
+STUB
+  chmod +x "$BATS_TEST_TMPDIR/stub-bin/claude"
+}
+
+gate_1h_fixture() {
+  export WT="$BATS_TEST_TMPDIR/wt" WD="$BATS_TEST_TMPDIR/working"
+  export STUB_ARGS="$BATS_TEST_TMPDIR/claude-args"
+  mkdir -p "$WT" "$WD"
+  install_recording_claude
+}
+
+@test "Gate 1h reads the baked review skill when it is readable" {
+  gate_1h_fixture
+  baked="$BATS_TEST_TMPDIR/baked"
+  mkdir -p "$baked/skills/code-review"
+  echo "baked skill" > "$baked/skills/code-review/SKILL.md"
+  run run_gate_1h "$baked"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [[ "$output" != *"falling back to the branch copy"* ]]
+  # The reviewer is pointed at the baked copy and allowed to read its root.
+  grep -qF "skill defined in $baked/skills/code-review/SKILL.md" "$STUB_ARGS"
+  grep -qxF -- "--add-dir" "$STUB_ARGS"
+  grep -qxF -- "$baked" "$STUB_ARGS"
+  [[ "$output" == *"REJECT_REASON="* ]]
+  grep -q "GATE t1 code_review pass" "$WD/gates.log"
+}
+
+@test "Gate 1h falls back to the branch copy, with no --add-dir, when the baked skill is absent" {
+  gate_1h_fixture
+  run run_gate_1h "$BATS_TEST_TMPDIR/no-such-payload"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [[ "$output" == *"falling back to the branch copy (untrusted)"* ]]
+  grep -qF "skill defined in skills/code-review/SKILL.md" "$STUB_ARGS"
+  # A --add-dir naming the missing root would make the CLI reject the call.
+  run ! grep -qxF -- "--add-dir" "$STUB_ARGS"
+}
+
+@test "Gate 1h archives the reviewer's rubric outside the worktree" {
+  # The archive directory does not exist beforehand: the gate must create it,
+  # since its cp is `|| true` and would otherwise lose the rubric silently.
+  gate_1h_fixture
+  [ ! -e "$WD/reviews" ]
+  run run_gate_1h "$BATS_TEST_TMPDIR/no-such-payload"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+  [ -f "$WD/reviews/round-1/t1/code-review-rubric.md" ]
+  [[ "$output" == *"review artifacts archived: $WD/reviews/round-1/t1"* ]]
 }

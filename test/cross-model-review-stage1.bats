@@ -5,7 +5,11 @@
 # (decision 021), added by the 2026-07-31 review (rubric C4): the binary-crash
 # class shipped precisely because this surface had zero tests.
 #
-# Uses a throwaway fixture repo per test run; keyless throughout (no network).
+# Uses a throwaway fixture repo per test run. Nothing here reaches the network:
+# every run that could (a key is set, or the no-network claim is under test)
+# goes through $HARNESS, which replaces urllib.request.urlopen with a recorder
+# that raises, so "pricing fetch failed" is simulated deterministically instead
+# of depending on whether the sandbox happens to have egress.
 
 setup_file() {
   # `run --separate-stderr` (stderr-only warning test) needs the 1.5.0 run flags
@@ -32,6 +36,34 @@ setup_file() {
   git -C "$FIX" add -A && git -C "$FIX" commit -qm reviewed
   RIGHT=$(git -C "$FIX" rev-parse --short HEAD)
   export RIGHT
+
+  # Offline harness: runs the script as __main__ with urlopen swapped for a
+  # recorder that logs each requested URL to $1 and then raises URLError, as
+  # an unreachable host would. The script looks urlopen up on the module at
+  # call time (urllib.request.urlopen(...)), so patching the attribute is
+  # enough. The log is written in `finally` so sys.exit paths still record.
+  # HARNESS_MODELS_JSON, if set, is served as the /models (pricing) response
+  # instead, for tests that need a reachable-but-partial price catalog.
+  export HARNESS="$BATS_FILE_TMPDIR/offline.py"
+  cat > "$HARNESS" <<'PY'
+import io, os, runpy, sys, urllib.error, urllib.request
+log, script = sys.argv[1], sys.argv[2]
+calls = []
+canned = os.environ.get("HARNESS_MODELS_JSON")
+def recording_urlopen(req, *a, **k):
+    url = getattr(req, "full_url", str(req))
+    calls.append(url)
+    if canned and url.endswith("/models"):
+        return io.BytesIO(canned.encode())
+    raise urllib.error.URLError("offline test harness: network disabled")
+urllib.request.urlopen = recording_urlopen
+sys.argv = [script] + sys.argv[3:]
+try:
+    runpy.run_path(script, run_name="__main__")
+finally:
+    with open(log, "w") as fh:
+        fh.write("".join(c + "\n" for c in calls))
+PY
 }
 
 run_dry() { # extra args...
@@ -74,9 +106,31 @@ run_dry() { # extra args...
 }
 
 @test "keyless dry-run makes no network calls and prints no bogus \$0.00 projection" {
-  run run_dry
-  [ "$status" -eq 0 ]
-  [[ "$output" != *'projected spend: $0.00'* ]]
+  # --models is what makes the projection branch reachable at all; without it
+  # the pricing/projection block is skipped and this test would assert nothing.
+  local urls="$BATS_TEST_TMPDIR/urlopen.log"
+  run env -u OPENROUTER_API_KEY python3 "$HARNESS" "$urls" "$SCRIPT" \
+    --repo "$FIX" --range "$LEFT..$RIGHT" --context-base main \
+    --models fake/model --out "$BATS_TEST_TMPDIR/out-nokey" --dry-run
+  [ "$status" -eq 0 ] || { echo "$output" >&2; false; }
+  [[ "$output" == *"no pricing available for: fake/model"* ]]
+  [[ "$output" != *"projected spend"* ]]
+  # The no-network half: with no key, fetch_pricing must not even be tried.
+  [ -f "$urls" ]
+  [ ! -s "$urls" ] || { echo "unexpected urlopen calls:"; cat "$urls"; false; }
+}
+
+@test "a priced catalog lacking the requested model still projects no \$0.00" {
+  # The other half of the \$0.00 guard: pricing fetched fine, but this model
+  # is not in it. Its (0, 0) default must mark it unpriced, not price it free.
+  run env OPENROUTER_API_KEY=sk-or-bogus-offline \
+    HARNESS_MODELS_JSON='{"data":[{"id":"other/model","pricing":{"prompt":"0.000001","completion":"0.000002"}}]}' \
+    python3 "$HARNESS" "$BATS_TEST_TMPDIR/urlopen.log" "$SCRIPT" \
+    --repo "$FIX" --range "$LEFT..$RIGHT" --context-base main \
+    --models fake/model --out "$BATS_TEST_TMPDIR/out-partial" --dry-run
+  [ "$status" -eq 0 ] || { echo "$output" >&2; false; }
+  [[ "$output" == *"no pricing available for: fake/model"* ]]
+  [[ "$output" != *"projected spend"* ]]
 }
 
 @test "diff-only dry-run prompt is unchanged by the stage-1 additions (prompt sha stable)" {
@@ -104,9 +158,11 @@ print('OK')
 }
 
 @test "live diff-only run warns on stderr only; stdout status lines stay clean" {
-  # Same keyless-safe live path as the cost-guard test below: bogus key ->
-  # unpriced -> guard exit, but the diff-only warning must fire first, on stderr.
-  run --separate-stderr env OPENROUTER_API_KEY=sk-or-bogus-offline "$SCRIPT" --repo "$FIX" \
+  # Same offline live path as the cost-guard test below: bogus key -> pricing
+  # fetch fails -> unpriced -> guard exit, but the diff-only warning must fire
+  # first, on stderr.
+  run --separate-stderr env OPENROUTER_API_KEY=sk-or-bogus-offline \
+    python3 "$HARNESS" "$BATS_TEST_TMPDIR/urlopen.log" "$SCRIPT" --repo "$FIX" \
     --range "$LEFT..$RIGHT" --models fake/model --replicates 1 \
     --out "$BATS_TEST_TMPDIR/out-warn"
   [[ "$stderr" == *"diff-only mode is a recall probe"* ]]
@@ -121,9 +177,15 @@ print('OK')
 }
 
 @test "live --context-base run prints no recall-probe warning" {
-  run env OPENROUTER_API_KEY=sk-or-bogus-offline "$SCRIPT" --repo "$FIX" \
+  run env OPENROUTER_API_KEY=sk-or-bogus-offline \
+    python3 "$HARNESS" "$BATS_TEST_TMPDIR/urlopen.log" "$SCRIPT" --repo "$FIX" \
     --range "$LEFT..$RIGHT" --context-base main --models fake/model --replicates 1 \
     --out "$BATS_TEST_TMPDIR/out-warn-cb"
+  # Positive control: the run must reach the cost guard, which sits after the
+  # point where the warning would print. Without this, a crash before that
+  # point would also "print no warning" and pass.
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cost guard cannot price"* ]]
   [[ "$output" != *"recall probe"* ]]
 }
 
@@ -136,12 +198,17 @@ print('OK')
 
 @test "unpriced models fail the cost guard closed (non-dry-run refuses to send)" {
   # No key => would exit earlier for other reasons; instead simulate via a key
-  # that cannot fetch pricing: use a bogus key and assert the refusal message
-  # appears before any completion call could be attempted. fetch_pricing
-  # swallows errors -> {} -> all models unpriced -> sys.exit with the guard text.
-  run env OPENROUTER_API_KEY=sk-or-bogus-offline "$SCRIPT" --repo "$FIX" \
+  # that cannot fetch pricing (the harness makes urlopen raise) and assert the
+  # refusal message appears before any completion call could be attempted.
+  # fetch_pricing swallows errors -> {} -> all models unpriced -> sys.exit.
+  local urls="$BATS_TEST_TMPDIR/urlopen.log"
+  run env OPENROUTER_API_KEY=sk-or-bogus-offline \
+    python3 "$HARNESS" "$urls" "$SCRIPT" --repo "$FIX" \
     --range "$LEFT..$RIGHT" --models fake/model --replicates 1 \
     --out "$BATS_TEST_TMPDIR/out-guard"
   [ "$status" -ne 0 ]
   [[ "$output" == *"cost guard cannot price"* ]]
+  # "Refuses to send": the pricing fetch is the only request ever attempted —
+  # no completion call reached urlopen.
+  [ "$(cat "$urls")" = "https://openrouter.ai/api/v1/models" ]
 }

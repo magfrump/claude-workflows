@@ -126,16 +126,32 @@ teardown() {
   # code-review's SKILL.md links ../../patterns/orchestrated-review.md and
   # requires reading each critic's skills/<name>/SKILL.md verbatim. Both live
   # under /opt/claude-workflows, so that single root must be the add-dir.
-  run grep -n 'CR_ADD_DIR="/opt/claude-workflows"' "$SI_SCRIPT"
+  # Scoped to the gate: the last CR_ADD_DIR assignment before the baked-skill
+  # guard must be the payload root (a match elsewhere in the file proves nothing
+  # about what the gate passes). Behavioural coverage of both branches lives in
+  # test/code-review-gate.bats ("Gate 1h reads the baked review skill ...").
+  run awk '
+    /CR_ADD_DIR=/ { last = $0 }
+    /if \[ ! -r "\$CR_SKILL" \]; then/ { print last; exit }
+  ' "$SI_SCRIPT"
   [ "$status" -eq 0 ]
+  [[ "$output" =~ ^[[:space:]]*CR_ADD_DIR=\"/opt/claude-workflows\"$ ]]
 }
 
 @test "the worktree-fallback review path clears CR_ADD_DIR" {
   # In the fallback the skill and patterns are inside $WT_DIR (the cwd), so an
   # --add-dir would be pointless; more importantly the baked root is absent on
   # that host, and naming a missing dir would fail the invocation outright.
-  run grep -n 'CR_ADD_DIR=""' "$SI_SCRIPT"
+  # Scoped to the fallback branch body (the `! -r "$CR_SKILL"` guard up to its
+  # `fi`), not anywhere in the file.
+  run awk '
+    /if \[ ! -r "\$CR_SKILL" \]; then/ { inside = 1; next }
+    inside && /^[[:space:]]*fi[[:space:]]*$/ { exit }
+    inside { print }
+  ' "$SI_SCRIPT"
   [ "$status" -eq 0 ]
+  [[ "$output" == *'CR_SKILL="skills/code-review/SKILL.md"'* ]]
+  [[ "$output" == *'CR_ADD_DIR=""'* ]]
 }
 
 @test "every file-writing claude -p invocation carries headless flags" {
@@ -153,6 +169,47 @@ teardown() {
     echo "$offenders"
     false
   }
+}
+
+@test "every flags array a claude -p expands is built by claude_headless_flags, once" {
+  # The test above only proves *some* *_FLAGS array is on the line. An array
+  # that is empty (IDEAS_FLAGS=()) or built some other way passes that check
+  # while dropping both headless flags. So for each array a `claude -p` line
+  # expands: exactly one builder `mapfile -t X < <(claude_headless_flags ...)`,
+  # placed before the first expansion, and no other mention of X that is not
+  # the "${X[@]}" expansion itself (no reassignment, append, or unset).
+  local vars v builder builder_line first_use others
+  vars=$(grep -n 'claude -p ' "$SI_SCRIPT" \
+    | grep -v '^[0-9]*:\s*#' \
+    | grep -oE '\$\{[A-Z_]+_FLAGS\[@\]\}' \
+    | grep -oE '[A-Z_]+_FLAGS' | sort -u)
+  # Seven arrays at the time of writing; a scan that finds none is a broken
+  # scan, not a pass.
+  [ "$(printf '%s\n' "$vars" | grep -c .)" -ge 7 ]
+  for v in $vars; do
+    # Anchored at both ends so nothing can ride along on the builder's line.
+    builder=$(grep -nE "^\s*mapfile -t ${v} < <\(claude_headless_flags( \"[^\"]*\")*\)\s*$" "$SI_SCRIPT" || true)
+    [ "$(printf '%s\n' "$builder" | grep -c .)" -eq 1 ] || {
+      echo "$v: expected exactly one claude_headless_flags builder, got: '$builder'"
+      false
+    }
+    builder_line=${builder%%:*}
+    first_use=$(grep -nF "\"\${${v}[@]}\"" "$SI_SCRIPT" | head -1 | cut -d: -f1)
+    [ "$builder_line" -lt "$first_use" ] || {
+      echo "$v: builder (line $builder_line) does not precede first use (line $first_use)"
+      false
+    }
+    others=$(grep -nw "$v" "$SI_SCRIPT" \
+      | grep -v '^[0-9]*:\s*#' \
+      | grep -v "^${builder_line}:" \
+      | sed "s/\"\${${v}\[@\]}\"//g" \
+      | grep -w "$v" || true)
+    [ -z "$others" ] || {
+      echo "$v: touched outside its claude_headless_flags builder:"
+      echo "$others"
+      false
+    }
+  done
 }
 
 @test "the stdout-only invocations are still flag-free, keeping the allowlist honest" {

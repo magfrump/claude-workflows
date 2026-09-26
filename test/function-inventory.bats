@@ -3,6 +3,10 @@
 # Regression guard: asserts all exported functions from self-improvement.sh
 # and its library files exist and are callable.
 #
+# Existence only — a gutted body passes here. Behaviour lives in each
+# function's own suite (e.g. generate_morning_summary:
+# test/morning-summary-generate.bats).
+#
 # Usage: bats test/function-inventory.bats
 
 setup() {
@@ -75,5 +79,4 @@ setup() {
     echo "Missing functions: ${missing[*]}" >&2
     return 1
   fi
-  [ ${#expected[@]} -eq 9 ]
 }
