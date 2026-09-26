@@ -190,7 +190,7 @@ The flat `.md` file format and non-standard frontmatter fields work today becaus
 
 | Priority | Status | Finding | Effort | Impact |
 |----------|--------|---------|--------|--------|
-| 1 | Open | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
+| 1 | Partly done 2026-09-26: `when` no longer required by health-check or `frontmatter-fields.bats`; the fields remain | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
 | 2 | Open | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
 | 3 | **Done (2026-05-14)** | F3: Migrate to directory-based skill structure | Medium | Enables progressive disclosure, supporting files |
 | 4 | Partial | F5: Extract ui-visual-review runtime sections (directory now in place; sub-file split pending) | Low | Gets below 500-line limit |

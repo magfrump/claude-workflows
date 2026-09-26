@@ -116,17 +116,16 @@ check_skill_frontmatter() {
 
         local file_ok=true
 
-        # Check required fields: name, description, when
+        # Check required fields: name, description. Not `when`: Claude Code's
+        # skill loader ignores it and triggers on `description` alone
+        # (guides/skill-format-audit.md F1), so requiring it enforced a field
+        # nobody reads.
         if ! echo "$yaml" | grep -qE '^name:'; then
             fail "$basename: missing 'name' field"
             file_ok=false
         fi
         if ! echo "$yaml" | grep -qE '^description:'; then
             fail "$basename: missing 'description' field"
-            file_ok=false
-        fi
-        if ! echo "$yaml" | grep -qE '^when:'; then
-            fail "$basename: missing 'when' field"
             file_ok=false
         fi
 

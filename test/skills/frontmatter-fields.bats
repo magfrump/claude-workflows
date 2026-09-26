@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # @category fast
 # Validates that every skills/*.md file contains the required YAML frontmatter
-# fields: 'name', 'description', and at least one of 'trigger' or 'when'.
+# fields: 'name' and 'description'. Not 'when'/'trigger': the skill loader
+# ignores them and triggers on 'description' (guides/skill-format-audit.md F1).
 #
 # Independent from health-check.sh, which checks frontmatter existence but
 # not field completeness.
@@ -60,10 +61,6 @@ extract_frontmatter() {
       missing+="  $basename: missing 'description' field"$'\n'
     fi
 
-    if ! echo "$frontmatter" | grep -q '^trigger:' &&
-       ! echo "$frontmatter" | grep -q '^when:'; then
-      missing+="  $basename: missing 'trigger' or 'when' field"$'\n'
-    fi
   done
 
   # Guard: ensure we actually found skills to check
