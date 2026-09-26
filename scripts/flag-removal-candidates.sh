@@ -158,6 +158,9 @@ done
 
 # --- Collect usage data if requested ---
 declare -a never_invoked=()
+# The usage log sees only Skill/Read/Agent tool calls, so a zero is a lower
+# bound, not evidence of non-use (Q-017; guides/subtraction-checklist.md §3).
+USAGE_CAVEAT="Lower bound only: Bash reads, @ imports and unwired sessions log nothing, so zero is not proof of non-use."
 if [ "$WITH_USAGE" -eq 1 ]; then
   usage_script="${REPO_ROOT}/scripts/skill-usage-report.sh"
   if [ -f "$usage_script" ]; then
@@ -222,6 +225,8 @@ if [ "$MARKDOWN" -eq 1 ]; then
   if [ ${#never_invoked[@]} -gt 0 ]; then
     echo "## Never-Invoked Items (from usage report)"
     echo ""
+    echo "_${USAGE_CAVEAT}_"
+    echo ""
     for item in "${never_invoked[@]}"; do
       echo "- ${item}"
     done
@@ -254,6 +259,7 @@ else
 
   if [ ${#never_invoked[@]} -gt 0 ]; then
     bold "Never-Invoked Items (from usage report):"
+    echo "  ${USAGE_CAVEAT}"
     echo ""
     for item in "${never_invoked[@]}"; do
       echo "  ${item}"

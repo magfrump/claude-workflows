@@ -3,6 +3,11 @@
 # sub-agent skill dispatches to JSONL.
 # Input: JSON on stdin with tool_name and tool_input
 # Output: nothing (passthrough — never blocks tool execution)
+#
+# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+# read through Bash (`cat`), an `@` import, or text inlined into a subagent
+# brief produces no event, and nothing fires in sessions without the wiring.
+# Counts from this log are lower bounds; see Q-017 (questions-archive.md).
 
 # Shared preamble + agent-name helper. Sets up trap, reads stdin into INPUT,
 # extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and

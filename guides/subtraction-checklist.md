@@ -57,6 +57,8 @@ bash scripts/skill-usage-report.sh
 
 Focus on the "Never invoked" section at the bottom. Cross-reference with the round number — a skill that has never been invoked after 3+ rounds of active use is a stronger candidate than one added last round.
 
+**The counts are a lower bound, not a measurement.** The log sees only `Skill`, `Read` and `Agent` tool calls (`hooks/log-usage.sh`). A workflow read with Bash `cat` or pulled in by an `@` import leaves no event. So do skills a subagent receives already inlined in its brief, and any session whose hooks are not wired. Under-counting has recurred even after fixes (Q-017 in `docs/working/questions-archive.md`), so a zero never counts as evidence by itself.
+
 **Judgment call:** Some skills are intentionally low-frequency (e.g., `codebase-onboarding` runs once per project). Zero invocations alone is not sufficient — check whether the skill's use case has plausibly arisen and been skipped.
 
 ---
