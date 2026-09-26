@@ -1,0 +1,15 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+date: 2026-09-26T05:56:53Z  jq: jq-1.6
+== A1: control transcript (no bad line); the table test's call form vs the function's (tool, ERE) form
+assert_no_tool_called Bash=rm   -> exit 1 : Bash=rm is not a tool of this run (its tools: Bash )
+assert_no_tool_called Bash rm   -> exit 0 : 
+assert_no_tool_called Bash good -> exit 1 : Expected no Bash calls with input matching /good/, found 1:
+{"command":"echo good"}
+== A2: init.tools not an array: generator-style vs helper-style reading
+assert_tool_called Bahs (misspelled, tools is a string) -> exit 1 : No Bahs call.
+Bahs calls seen: 0
+generator init_state expression -> nobash
+== A3: marker/message strings for the same conditions, generator vs eval-helpers
+transcript_checked (number_line) -> exit 1 : Malformed transcript /tmp/acr-probes.yZn6au/tc-1.md.transcript.jsonl: 1 event(s) of an unexpected shape, first: a line is not a JSON object
+transcript_checked (no init)     -> exit 1 : No init event in /tmp/acr-probes.yZn6au/tc-1.md.transcript.jsonl: not a complete stream-json transcript
+assert_mode1_equiv (foreign denial) -> exit 1 : Bash tripwire/parser canary: undenied, unseen, orphan, foreign = 0 0 0 1 (every Bash call must be denied and seen)

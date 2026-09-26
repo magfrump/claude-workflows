@@ -1,0 +1,30 @@
+# mutation: transcript.jq 'def problems: [];' in a git-archive copy of HEAD 9c73ae4 at /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/mut; cwd /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/mut; at 2026-09-26T05:28:31Z
+=== bats test/generate-reports.bats
+1..42
+not ok 36 deny-record: a tool_use moved to a field the reader does not know voids the run as malformed
+not ok 38 deny-record: a Bash tool_use with no id is malformed, and voids the run
+not ok 39 deny-record: every malformed transcript shape voids the run, even beside a good denied call
+not ok 42 any transcript run (not only deny-record) is voided by a malformed event or a missing init
+--- ok=38 notok=4 exit=1
+=== bats test/skills/mode1-equiv.bats
+1..29
+not ok 26 every malformed shape fails mode1_equiv and no_tool_called, even beside a good denied Mode 1 call
+--- ok=28 notok=1 exit=1
+=== bats test/skills/eval-helpers-transcript.bats
+1..7
+--- ok=7 notok=0 exit=0
+=== bats test/skills/eval-helpers-empty-report.bats
+1..6
+--- ok=6 notok=0 exit=0
+=== bats test/skills/arithmetic-eval-gate.bats
+1..18
+--- ok=18 notok=0 exit=0
+=== bats test/skills/arithmetic-eval-eval.bats
+1..9
+--- ok=9 notok=0 exit=0
+=== bats test/skills/arithmetic-eval-after-denial-patterns.bats
+1..5
+--- ok=5 notok=0 exit=0
+=== bats test/skills/arithmetic-eval-format.bats
+1..25
+--- ok=25 notok=0 exit=0

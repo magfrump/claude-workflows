@@ -1,0 +1,11 @@
+# cwd /workspace at 2026-09-26T05:44:34Z jq-1.6
+## generator's lenient result_state filter (generate-reports.bash:256) over init, 123, "str", result
+ok
+exit 0
+## @test counts in test/skills/mode1-equiv.bats
+f9feb2c 23
+37c5ea9 25
+7bd0974 25
+HEAD 29
+## kept transcripts: rg --files -uu -g '*.transcript.jsonl' /workspace
+0

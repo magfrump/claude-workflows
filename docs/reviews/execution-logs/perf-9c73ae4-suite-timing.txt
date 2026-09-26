@@ -1,0 +1,170 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..78
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed in 91ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's in 105ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list in 126ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 repo mode: claude runs in a temp repo holding only the fixture in 111ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 the fixture's descriptive filename never reaches the model in 130ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode in 294ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text in 270ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report in 252ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed in 92ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused in 51ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt in 156ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 tree mode: the fixture directory's name never reaches the model in 156ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed in 125ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 tree mode takes directories only; repo mode takes files only in 201ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 fixture prefix selects a subset in 84ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a skill without runner.bash is refused before claude runs in 48ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 a runner naming any tool outside the allowlist is refused in 352ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 an inline runner granting a file tool is refused in 103ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 a descriptive suffix is not kept as the subject's extension in 120ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject' in 104ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker in 104ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 a run that aborts before claude starts still removes the previous report in 70ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 a successful run clears a previous run's .failed marker in 97ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure in 467ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 a runner with an unknown mode is refused in 50ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 every committed fixture set has a runner the generator accepts in 520ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 every committed fixture set has an eval suite in 98ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied in 178ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused in 134ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 deny-record does not open Bash(<pattern>) spellings, and says what it needs in 68ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine in 256ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags in 314ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version in 152ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 deny-record tripwire: a Bash call missing from permission_denials voids the run in 282ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 deny-record tripwire still runs when the run already failed, and says so in 156ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 deny-record: a tool_use moved to a field the reader does not know voids the run as malformed in 143ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 deny-record: a run with no init event is reported as not started, not blamed on the deny rule in 116ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 deny-record: a Bash tool_use with no id is malformed, and voids the run in 136ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 deny-record: every malformed transcript shape voids the run, even beside a good denied call in 2185ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 deny-record parser canaries: an orphan tool_result, or a denial of another tool, voids the run in 310ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 the .failed marker exists while a run is in progress and is removed only after every check passes in 121ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 any transcript run (not only deny-record) is voided by a malformed event or a missing init in 283ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 the Mode 1 block extracts from SKILL.md in 21ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 SKILL.md's own wrapper and program, with a new expression, compute its value in 250ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 a copy with the comments stripped still passes (AST, not bytes) in 320ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 a one-token change to the program fails in 275ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 the right program with the wrong expression fails in 288ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 any listed value passes, and a tolerance widens one in 442ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 shell after the closing EXPREOF fails; a trailing comment does not in 500ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 a second EXPREOF line cannot smuggle shell: the heredoc closes at the first in 218ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 a bad value spec or missing argument exits 2 with a message, not a traceback in 185ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 a skill with no mode1-equiv.py of its own fails the check with a message in 91ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 a wrapper change (no ulimit) fails in 266ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value in 228ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 tripwire: a Bash call missing from permission_denials fails whatever it computed in 145ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 no_tool_called passes with no Bash call and fails with one in 316ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input in 313ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 a missing transcript fails (not skips) in 24ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 no_tool_called fails, never passes, on an invalid or dash-leading pattern in 250ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 no_tool_called fails on an unreadable transcript in 99ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 a tool name the run's init event does not list fails the check (a misspelling cannot pass) in 244ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 tool_called:<Tool> with no pattern means the tool was called at all in 375ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 mode1_equiv labels a checker exit 2 as a setup error, not a model result in 334ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 pre-flight: every committed mode1_equiv: spec is valid (--check-spec), before any paid run in 155ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv reaches the checker in 1190ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 no_tool_called fails on a transcript with no init event (junk or truncated), not reading it as no calls in 60ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's in 207ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 every malformed shape fails mode1_equiv and no_tool_called, even beside a good denied Mode 1 call in 2075ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 a plain-text line (a stray warning) is ignored, not read as a malformed event in 231ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 mode1-equiv.py takes a JSON array of commands; anything else, or any unexpected error, exits 2 in 275ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 an empty tool name fails the check; a bare tool_called failure says 'No Bash call.', not /./ in 192ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 tool_called passes on a matching input in 110ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 tool_called fails on a non-matching input and shows what was called in 134ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 tool_called fails for a tool never called in 132ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 tool_called sees sub-agents' calls too in 107ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 subagents_min counts top-level dispatches only in 93ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 a missing transcript fails (not skips) and says how to fix it in 27ms
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 a non-JSON line in the transcript does not blind the checks in 170ms

@@ -1,0 +1,33 @@
+# cmd: bash docs/reviews/execution-logs/cfc-9c73ae4-helper-probes.sh  cwd: /workspace  at: 2026-09-26T05:29:40Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== E1 tail-truncated transcript (init line only): assert_no_tool_called Bash
+exit: 0
+  
+=== E2 a Bash tool_use inside a user event: assert_no_tool_called Bash rm (check syntax no_tool_called:Bash=rm)
+exit: 0
+  
+=== E3 subagents_min on a transcript with no init and a malformed line
+exit: 0
+  
+  (transcript_checked on the same file:)
+exit: 1
+  Malformed transcript /tmp/tmp.9X8i6tr9Tr/tc.transcript.jsonl: 1 event(s) of an unexpected shape, first: a line is not a JSON object
+=== E4 assert_mode1_equiv, checker exit 1: temp file cleaned up?
+exit: 1
+  Bash commands seen: 1
+    command 1: not the Mode 1 wrapper: 'echo hi'
+  No Mode 1 command computed any of: 42
+  files left in BATS_TEST_TMPDIR: 0
+=== E5 mode1-equiv.py: SKILL.md evaluator whose output format changed (a SKILL.md problem)
+  modified lines: 1
+exit: 0
+  
+exit: 1
+  Bash commands seen: 1
+    command 1: Mode 1, expression '6 * 7' -> None
+  No Mode 1 command computed any of: 42
+  (same command against the real SKILL.md:)
+exit: 0
+  Bash commands seen: 1
+    command 1: Mode 1, expression '6 * 7' -> 42.0
+# script exit: 0

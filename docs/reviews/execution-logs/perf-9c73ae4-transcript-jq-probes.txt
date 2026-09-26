@@ -1,0 +1,69 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+jq: jq-1.6; nproc: 16; loadavg: 9.02 5.49 4.88
+== n=10 bash calls, 13673 bytes, 22 lines
+verdict(as committed): 0||bash|9.9.9|0 0 0 0
+verdict(bound once):   0||bash|9.9.9|0 0 0 0
+gen verdict as committed	35 ms	maxrss=10304 KB
+gen verdict bound once	32 ms	maxrss=10368 KB
+events only (try fromjson catch)	27 ms	maxrss=10372 KB
+old slurp ([inputs|fromjson?])	25 ms	maxrss=10312 KB
+problems once	27 ms	maxrss=10252 KB
+deny_record_counts once	26 ms	maxrss=10400 KB
+gen report extraction (:252)	22 ms	maxrss=10324 KB
+eval transcript_checked (:396)	28 ms	maxrss=10312 KB
+eval transcript_tool_inputs (:384)	24 ms	maxrss=10328 KB
+eval known tools (:428)	25 ms	maxrss=10372 KB
+== n=2000 bash calls, 2713763 bytes, 4002 lines
+verdict(as committed): 0||bash|9.9.9|0 0 0 0
+verdict(bound once):   0||bash|9.9.9|0 0 0 0
+gen verdict as committed	319 ms	maxrss=19984 KB
+gen verdict bound once	214 ms	maxrss=19980 KB
+events only (try fromjson catch)	95 ms	maxrss=15588 KB
+old slurp ([inputs|fromjson?])	68 ms	maxrss=15024 KB
+problems once	137 ms	maxrss=15504 KB
+deny_record_counts once	145 ms	maxrss=19924 KB
+gen report extraction (:252)	51 ms	maxrss=10376 KB
+eval transcript_checked (:396)	198 ms	maxrss=15492 KB
+eval transcript_tool_inputs (:384)	126 ms	maxrss=16104 KB
+eval known tools (:428)	108 ms	maxrss=15468 KB
+== n=10000 bash calls, 13585763 bytes, 20002 lines
+verdict(as committed): 0||bash|9.9.9|0 0 0 0
+verdict(bound once):   0||bash|9.9.9|0 0 0 0
+gen verdict as committed	1677 ms	maxrss=89636 KB
+gen verdict bound once	1224 ms	maxrss=89392 KB
+events only (try fromjson catch)	476 ms	maxrss=66160 KB
+old slurp ([inputs|fromjson?])	312 ms	maxrss=65732 KB
+problems once	641 ms	maxrss=66164 KB
+deny_record_counts once	777 ms	maxrss=89516 KB
+gen report extraction (:252)	265 ms	maxrss=10336 KB
+eval transcript_checked (:396)	1087 ms	maxrss=66236 KB
+eval transcript_tool_inputs (:384)	638 ms	maxrss=69708 KB
+eval known tools (:428)	473 ms	maxrss=66232 KB
+== n=40000 bash calls, 54475763 bytes, 80002 lines
+verdict(as committed): 0||bash|9.9.9|0 0 0 0
+verdict(bound once):   0||bash|9.9.9|0 0 0 0
+gen verdict as committed	6511 ms	maxrss=349688 KB
+gen verdict bound once	3926 ms	maxrss=349788 KB
+events only (try fromjson catch)	1211 ms	maxrss=256868 KB
+old slurp ([inputs|fromjson?])	1118 ms	maxrss=255728 KB
+problems once	2514 ms	maxrss=256920 KB
+deny_record_counts once	2931 ms	maxrss=349704 KB
+gen report extraction (:252)	889 ms	maxrss=27580 KB
+eval transcript_checked (:396)	4234 ms	maxrss=257004 KB
+eval transcript_tool_inputs (:384)	3240 ms	maxrss=271108 KB
+eval known tools (:428)	2384 ms	maxrss=256924 KB
+== fixed per-process cost
+jq -n 1 (no module)	27 ms	maxrss=10404 KB
+jq -n -L import transcript; 1	26 ms	maxrss=10328 KB
+== deep line (malformed-transcripts.bash:35)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+build 20000-deep line: 19 ms
+t2000.jsonl old tool_inputs_checked (main 3 streaming passes): 194 ms, maxrss 10372 KB
+t2000.jsonl new tool_inputs_checked (3 slurped passes): 420 ms, maxrss(cumulative max) 16148 KB
+t10000.jsonl old tool_inputs_checked (main 3 streaming passes): 843 ms, maxrss 10408 KB
+t10000.jsonl new tool_inputs_checked (3 slurped passes): 1926 ms, maxrss(cumulative max) 69796 KB
+t40000.jsonl old tool_inputs_checked (main 3 streaming passes): 3479 ms, maxrss 69796 KB
+t40000.jsonl new tool_inputs_checked (3 slurped passes): 7864 ms, maxrss(cumulative max) 271068 KB
+t10.jsonl assert_mode1_equiv jq part (3 slurped passes, before python): 127 ms, maxrss 10372 KB
+t2000.jsonl assert_mode1_equiv jq part (3 slurped passes, before python): 568 ms, maxrss 19948 KB
+t40000.jsonl assert_mode1_equiv jq part (3 slurped passes, before python): 10875 ms, maxrss 349644 KB

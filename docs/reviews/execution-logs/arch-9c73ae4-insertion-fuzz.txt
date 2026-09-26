@@ -1,0 +1,27 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# cmd: bash docs/reviews/execution-logs/arch-9c73ae4-insertion-fuzz.sh  cwd: /workspace  at: 2026-09-26T05:58:39Z  jq: jq-1.6
+control: ESCAPE (expected ESCAPE: the control has no x1, so 'passes' is right)
+HEAD=ESCAPE  CENSUS=voided  event 1  at path ["tools"]
+HEAD=ESCAPE  CENSUS=voided  event 1  at path []
+HEAD=ESCAPE  CENSUS=voided  event 2  at path ["message"]
+HEAD=voided  CENSUS=voided  event 2  at path ["message","content"]
+HEAD=ESCAPE  CENSUS=voided  event 2  at path ["message","content",0]
+HEAD=ESCAPE  CENSUS=voided  event 2  at path ["message","content",0,"input"]
+HEAD=ESCAPE  CENSUS=voided  event 2  at path []
+HEAD=ESCAPE  CENSUS=voided  event 3  at path ["message"]
+HEAD=ESCAPE  CENSUS=voided  event 3  at path ["message","content"]
+HEAD=ESCAPE  CENSUS=voided  event 3  at path ["message","content",0]
+HEAD=ESCAPE  CENSUS=voided  event 3  at path ["message","content",0,"content"]
+HEAD=ESCAPE  CENSUS=voided  event 3  at path ["message","content",0,"content",0]
+HEAD=ESCAPE  CENSUS=voided  event 3  at path []
+HEAD=problem  CENSUS=problem  event 4  at path ["permission_denials"]
+HEAD=ESCAPE  CENSUS=voided  event 4  at path ["permission_denials",0]
+HEAD=ESCAPE  CENSUS=voided  event 4  at path ["permission_denials",0,"tool_input"]
+HEAD=ESCAPE  CENSUS=voided  event 4  at path []
+HEAD=ESCAPE  CENSUS=problem  rename assistant event type to "assistant_message"
+HEAD=ESCAPE  CENSUS=problem  rename assistant event type to null
+HEAD=ESCAPE  CENSUS=problem  rename assistant event type to ["assistant"]
+HEAD=ESCAPE  CENSUS=problem  rename assistant event type to "user"
+HEAD=ESCAPE  CENSUS=problem  rename assistant event type to "system"
+control under CENSUS: ESCAPE
+variants: 22  HEAD escapes: 20  CENSUS escapes: 0

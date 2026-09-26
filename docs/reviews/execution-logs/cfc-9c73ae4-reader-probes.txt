@@ -1,0 +1,83 @@
+# cmd: bash docs/reviews/execution-logs/cfc-9c73ae4-reader-probes.sh  cwd: /workspace  at: 2026-09-26T05:26:37Z  jq: jq-1.6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== tool_use_in_user_event
+bad line: 0000000 { " t y p e " : " u s e r " , " 0000020 m e s s a g e " : { " c o n t e 0000040 n t " : [ { " t y p e " : " t o 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== tool_use_in_subagent_event
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " p a r e n t _ t o o l 0000040 _ u s e _ i d " : " a 1 " , " m 
+{"problems":[],"bash_ids":["g1","x1"],"counts":{"undenied":1,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== result_denials_null
+bad line: 0000000 { " t y p e " : " r e s u l t " 0000020 , " s u b t y p e " : " s u c c 0000040 e s s " , " r e s u l t " : " x 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== tool_result_for_denied_g1
+bad line: 0000000 { " t y p e " : " u s e r " , " 0000020 m e s s a g e " : { " c o n t e 0000040 n t " : [ { " t y p e " : " t o 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== crlf_line
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " m e s s a g e " : { " 0000040 c o n t e n t " : [ { " t y p e 
+{"problems":[],"bash_ids":["g1","x1"],"counts":{"undenied":1,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== leading_whitespace
+bad line: 0000000 { " t y p e " : " a s s i 0000020 s t a n t " , " m e s s a g e " 0000040 : { " c o n t e n t " : [ { " t 
+{"problems":[],"bash_ids":["g1","x1"],"counts":{"undenied":1,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== top_string
+bad line: 0000000 " a s t r i n g " \n 0000013 
+{"problems":["a line is not a JSON object"],"bash_ids":["g1"],"counts":null,"init_tools":["Bash"]}
+jq exit: 0
+=== top_true
+bad line: 0000000 t r u e \n 0000005 
+{"problems":["a line is not a JSON object"],"bash_ids":["g1"],"counts":null,"init_tools":["Bash"]}
+jq exit: 0
+=== top_null
+bad line: 0000000 n u l l \n 0000005 
+{"problems":["a line is not a JSON object"],"bash_ids":["g1"],"counts":null,"init_tools":["Bash"]}
+jq exit: 0
+=== duplicate_init
+bad line: 0000000 { " t y p e " : " s y s t e m " 0000020 , " s u b t y p e " : " i n i t 0000040 " , " t o o l s " : [ ] } \n 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== extra_top_fields
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " u u i d " : " u " , " 0000040 s e s s i o n _ i d " : " s " , 
+{"problems":[],"bash_ids":["g1","x1"],"counts":{"undenied":1,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== typeless_event_with_tool_use
+bad line: 0000000 { " m e s s a g e " : { " c o n 0000020 t e n t " : [ { " t y p e " : " 0000040 t o o l _ u s e " , " i d " : " 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== renamed_event_type
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t _ m e s s a g e " , " m e s 0000040 s a g e " : { " c o n t e n t " 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== array_type_field
+bad line: 0000000 { " t y p e " : [ " a s s i s t 0000020 a n t " ] , " m e s s a g e " : 0000040 { " c o n t e n t " : [ { " t y 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== tool_use_inside_tool_result
+bad line: 0000000 { " t y p e " : " u s e r " , " 0000020 m e s s a g e " : { " c o n t e 0000040 n t " : [ { " t y p e " : " t o 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== two_objects_one_line
+bad line: 0000000 { " t y p e " : " s y s t e m " 0000020 , " s u b t y p e " : " x " } { 0000040 " t y p e " : " a s s i s t a n 
+{"problems":["a line starting like JSON does not parse"],"bash_ids":["g1"],"counts":null,"init_tools":["Bash"]}
+jq exit: 0
+=== bom_prefixed_line
+bad line: 0000000 357 273 277 { " t y p e " : " a s s i 0000020 s t a n t " , " m e s s a g e " 0000040 : { " c o n t e n t " : [ { " t 
+{"problems":[],"bash_ids":["g1","x1"],"counts":{"undenied":1,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== duplicate_id_undenied_second_call
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " m e s s a g e " : { " 0000040 c o n t e n t " : [ { " t y p e 
+{"problems":[],"bash_ids":["g1","g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== bash_denial_naming_read_call
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " m e s s a g e " : { " 0000040 c o n t e n t " : [ { " t y p e 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+=== lowercase_bash_name
+bad line: 0000000 { " t y p e " : " a s s i s t a 0000020 n t " , " m e s s a g e " : { " 0000040 c o n t e n t " : [ { " t y p e 
+{"problems":[],"bash_ids":["g1"],"counts":{"undenied":0,"unseen":0,"orphans":0,"foreign":0},"init_tools":["Bash"]}
+jq exit: 0
+# script exit: 0

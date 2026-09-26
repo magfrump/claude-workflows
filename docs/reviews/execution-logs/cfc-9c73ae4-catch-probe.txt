@@ -1,0 +1,10 @@
+# cwd /workspace at 2026-09-26T05:38:29Z jq-1.6
+## what catch sees as input:
+"Invalid \\uXXXX\\uXXXX surrogate pair escape at line 1, column 117 (while parsing '{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"tool_use\",\"id\":\"x1\",\"name\":\"Bash\",\"input\":{\"command\":\"echo \\ud800\"}}]}}')"
+exit 0
+## pre-fix form (test on catch input):
+{"__text":true}
+exit 0
+## HEAD events:
+[["__unparsed"]]
+exit 0

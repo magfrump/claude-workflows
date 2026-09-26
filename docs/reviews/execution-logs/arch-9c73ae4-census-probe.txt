@@ -1,0 +1,84 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# cmd: bash docs/reviews/execution-logs/arch-9c73ae4-census-probe.sh  cwd: /workspace  at: 2026-09-26T05:57:01Z  jq: jq-1.6
+## control (init, denied g1, result): both must pass with 0 undenied
+=== control
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=0 orphans=0
+## escape shapes from the fact-check (HEAD passes each; census must not)
+=== tool_use_in_user_event
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== typeless_event_with_tool_use
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== renamed_event_type
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== array_type_field
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== tool_use_inside_tool_result
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== duplicate_id_undenied_second_call
+HEAD: counts 0 0 0 0
+CENSUS: problem: two tool_uses share an id
+=== tool_result_in_assistant_event
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=0 orphans=1
+## benign shapes (both should pass: sub-agent call is counted, a rate-limit event is ignored)
+=== tool_use_in_subagent_event
+HEAD: counts 1 0 0 0
+CENSUS: counts undenied=1 orphans=0
+=== tool_result_for_denied_g1
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=0 orphans=0
+=== rate_limit_event
+HEAD: counts 0 0 0 0
+CENSUS: counts undenied=0 orphans=0
+## the 13-shape table (both must reject every shape)
+=== table:array_wrapped
+HEAD: problem: a line is not a JSON object
+CENSUS: problem: a line is not a JSON object
+=== table:string_content
+HEAD: problem: assistant event: message.content is not an array
+CENSUS: problem: assistant event: message.content is not an array
+=== table:string_message
+HEAD: problem: assistant event: message is not an object
+CENSUS: problem: assistant event: message is not an object
+=== table:nonobject_block
+HEAD: problem: a content block is not an object with a string type
+CENSUS: problem: a content block is not an object with a string type
+=== table:denials_number
+HEAD: problem: result event: permission_denials is not an array
+CENSUS: problem: result event: permission_denials is not an array
+=== table:list_tool_use_id
+HEAD: problem: a permission denial has no string tool_name and tool_use_id
+CENSUS: problem: a permission denial has no string tool_name and tool_use_id
+=== table:object_id
+HEAD: problem: a tool_use has no string id and name
+CENSUS: problem: a tool_use has no string id and name
+=== table:number_line
+HEAD: problem: a line is not a JSON object
+CENSUS: problem: a line is not a JSON object
+=== table:surrogate
+HEAD: problem: a line starting like JSON does not parse
+CENSUS: problem: a line starting like JSON does not parse
+=== table:deep
+HEAD: problem: a line starting like JSON does not parse
+CENSUS: problem: a line starting like JSON does not parse
+=== table:numeric_command
+HEAD: problem: a Bash tool_use has no string input.command
+CENSUS: problem: a Bash tool_use has no string input.command
+=== table:no_id
+HEAD: problem: a tool_use has no string id and name
+CENSUS: problem: a tool_use has no string id and name
+=== table:tool_result_no_id
+HEAD: problem: a tool_result has no string tool_use_id
+CENSUS: problem: a tool_result has no string tool_use_id
+## cost: a 5000-event transcript, each event nesting 50 levels
+size: 690361 bytes
+HEAD: counts 0 0 0 0
+HEAD ms: 243
+CENSUS: counts undenied=0 orphans=0
+CENSUS ms: 2008

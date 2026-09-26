@@ -1,0 +1,51 @@
+# cmd: bash docs/reviews/execution-logs/cfc-9c73ae4-gen-probes.sh  cwd: /workspace  at: 2026-09-26T05:27:25Z  bash:  jq: jq-1.6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P1 deny-record, undenied Bash call, init claude_code_version contains a newline
+generator exit: 0
+  gen:   Done: 1 lines in report
+  gen: Done. Run eval tests with:
+  NO MARKER
+=== P2 deny-record, undenied Bash call, init claude_code_version contains \u001f
+generator exit: 0
+  gen:   FAILED: Bash tripwire: 91 Bash call(s) not in permission_denials (may have executed) (recorded in tc-1-thing.txt.failed; eval_fixture will fail it)
+  gen: Done. Run eval tests with:
+  marker: Bash tripwire: 91 Bash call(s) not in permission_denials (may have executed)
+=== P3 deny-record, undenied Bash call, claude_code_version is an object
+generator exit: 0
+  gen:   FAILED: transcript: could not be read, so no check could run (recorded in tc-1-thing.txt.failed; eval_fixture will fail it)
+  gen: Done. Run eval tests with:
+  marker: transcript: could not be read, so no check could run
+=== P4 control: undenied Bash call, normal version
+generator exit: 0
+  gen:   FAILED: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed) (recorded in tc-1-thing.txt.failed; eval_fixture will fail it)
+  gen: Done. Run eval tests with:
+  marker: Bash tripwire: 1 Bash call(s) not in permission_denials (may have executed)
+=== P5 deny-record: malformed line beside an undenied Bash call, claude exited 3 (is the tripwire reported?)
+generator exit: 0
+  gen:   FAILED: claude exited 3; transcript: 1 malformed event(s), first: a line is not a JSON object (CLI 9.9.9) (recorded in tc-1-thing.txt.failed; eval_fixture will fail it)
+  gen: Done. Run eval tests with:
+  marker: claude exited 3; transcript: 1 malformed event(s), first: a line is not a JSON object (CLI 9.9.9)
+=== P6 non-transcript run, claude succeeds: marker removed?
+generator exit: 0
+  gen:   Done: 1 lines in report
+  gen: Done. Run eval tests with:
+  NO MARKER
+=== P7 non-transcript run, claude exits 1
+generator exit: 0
+  gen:   FAILED: claude exited 1 (recorded in tc-1-thing.txt.failed; eval_fixture will fail it)
+  gen: Done. Run eval tests with:
+  marker: claude exited 1
+=== P8 transcript run, unreadable fixture (inline cat fails under set -e): marker left?
+generator exit: 1
+  marker: generation did not finish
+=== P9 transcript run (not deny-record), a Bash tool_use inside a user event, no_tool_called-style view
+generator exit: 0
+  gen:   Done: 1 lines in report
+  gen: Done. Run eval tests with:
+  NO MARKER
+=== P10 deny-record, the undenied Bash call sits in a user event (tool_use_in_user_event)
+generator exit: 0
+  gen:   Done: 1 lines in report
+  gen: Done. Run eval tests with:
+  NO MARKER
+# script exit: 0
