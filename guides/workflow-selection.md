@@ -21,6 +21,14 @@ Does the task involve a design choice with 3+ viable approaches?
   YES → divergent-design
   NO  ↓
 
+Is the goal to explain or generate hypotheses ("why does", "what's causing")?
+  YES → divergent-design, epistemic variant (for a bug: reproduce first, per the debugging defaults)
+  NO  ↓
+
+Is the task building a new skill, workflow, plugin, or slash command?
+  YES → tooling discovery pass first, then skill-creator if nothing fits
+  NO  ↓
+
 Is this a non-trivial feature or bug fix (touches >1 file, root cause unclear)?
   YES → research-plan-implement
   NO  ↓

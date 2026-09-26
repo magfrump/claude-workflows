@@ -20,7 +20,7 @@ when: User wants a thorough multi-perspective review of a written draft
 
 ## Dependencies
 
-Orchestrates sub-skills. Skills live at `skills/<name>/SKILL.md`. Ensure they exist before use.
+Orchestrates sub-skills. Skills live at `skills/<name>/SKILL.md` (a sibling of this skill's own directory: `~/.claude/skills/` when installed, the repo's `skills/` inside claude-workflows). Ensure they exist before use.
 
 **Required (always run):**
 - `fact-check` — verifies factual claims in the draft

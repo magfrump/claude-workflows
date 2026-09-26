@@ -155,6 +155,16 @@ repos it can push to or read privately*. Pick the narrowest tier that fits:
   `git push` fail. Commit inside the container, then push from the host with
   your own keys. This is the right default for solo work and for public repos:
   the agent gets the whole workflow except the one step that needs trust.
+  **Caveat:** the container can write the checkout's `.git` through the bind
+  mount. A plain host `git push` (or `git status`) runs any hooks,
+  `core.fsmonitor` or filter drivers planted there, as you and with your keys.
+  `install.sh` guards only its own git calls against this. Decision 034 set
+  "the host never reads a container-written `.git`" for the benchmark
+  harness, but not for this workflow. Until that is settled
+  (`docs/working/questions.md`), push with hooks and fsmonitor disabled
+  (`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push`), or push
+  from a separate host clone that fetches from this one. Neither covers
+  filter drivers.
 - **Read-only PAT — for private fetches.** When the repo, or a dependency, is
   private, export a fine-grained PAT with *Contents: read* on the named repos
   only: `GH_TOKEN=github_pat_… cc-isolated ~/code/api`. `devcontainer.json`

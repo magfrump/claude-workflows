@@ -137,8 +137,10 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
   matcher by name.
 - Taint does not pass between a parent session and its subagents.
 - The guard's Bash write detection is regex heuristics, not a shell parse, so an
-  obfuscated write can get past it. The backstops are sandbox `denyWrite ~/.claude` and
-  the PostToolUse config audit.
+  obfuscated write can get past it. The backstop is sandbox `denyWrite ~/.claude`, and
+  only where a sandbox is actually configured. The PostToolUse config audit is wired
+  for `Edit|Write|MultiEdit` only and exits early for Bash, so it does not cover this
+  path. It also reports to the model, not to you.
 - **False positive:** the guard scans prose inside a command as if it were shell. A
   heredoc commit message that names a hard policy path is denied, because the
   `Co-Authored-By: ... <noreply@anthropic.com>` trailer's closing `>` matches the

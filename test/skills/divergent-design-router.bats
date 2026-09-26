@@ -4,7 +4,7 @@
 #
 # Unlike the *-format.bats suites, this skill produces no report of its own:
 # divergent-design is a thin router that hands off to workflows/divergent-design.md
-# (per decision 004, anti-redundancy). A report-format test therefore does not
+# (so the router and the workflow cannot drift apart). A report-format test therefore does not
 # fit. Instead we validate the SKILL.md source directly — that it carries the
 # router frontmatter, points at the workflow, keeps the trigger-test contract,
 # and stays a stub rather than duplicating the workflow it routes to.
@@ -92,7 +92,7 @@ extract_frontmatter() {
 # --- Anti-redundancy: stays a stub, does not duplicate the workflow ---
 
 @test "skill is a thin stub, not a re-implementation of the workflow" {
-  # The router is intentionally short (decision 004). The full process lives in
+  # The router is intentionally short. The full process lives in
   # the workflow. A bloated SKILL.md signals the stub has started duplicating it.
   # The workflow itself is large (tens of KB); the router must stay far smaller.
   local skill_lines workflow_lines

@@ -19,7 +19,7 @@ when: User requests a full code review or PR review
 
 ## Dependencies
 
-Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at `skills/<name>/SKILL.md`; ensure they exist before use.
+Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at `skills/<name>/SKILL.md` (a sibling of this skill's own directory: `~/.claude/skills/` when installed, the repo's `skills/` inside claude-workflows); ensure they exist before use.
 
 **Required (always run):**
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,

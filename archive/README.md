@@ -31,6 +31,13 @@ and why it was archived and what replaced it. Single documents live under
   Gate 1h comments, the triage doc's parent handoff, and the SWRBench fork
   handoff. Each keeps its sweep-date prefix. Citations from `docs/reviews/`
   and `runs/` were left as written, because those are records of their day.
+- `docs/2026-09-26-workflow-selection.md` and
+  `docs/2026-09-26-workflow-dependency-graph.md`, formerly in `docs/`. These were a
+  third and fourth copy of the routing tree, with no live reader. The first
+  ordered rows differently from `global-instructions/CLAUDE.md` and lacked
+  rows 2, 4 and 5. The second said "18 skills" and claimed that most workflows
+  invoke no skills. The live tree is in the global instructions, expanded by
+  `guides/workflow-selection.md`.
 - `failure-analysis/` — `scripts/failure-analysis.sh` and its test, archived
   2026-09-21 (Q-046): no callers, and its re-attempt pass rate disagreed with
   the documented definition. Its README records the fix if it is ever revived.
