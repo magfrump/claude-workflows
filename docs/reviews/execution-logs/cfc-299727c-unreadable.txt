@@ -1,0 +1,5 @@
+# cmd: jq -rR -n -L test/skills 'import "transcript" as t; t::events | t::transcript_failures | t::print_verdict' $SCRATCH/nonexistent.jsonl  cwd: /workspace  at: 2026-09-26T09:03:12Z
+jq: error: Could not open file /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/nonexistent.jsonl: No such file or directory
+no init event in the stream (the run did not start?)
+__VERDICT_COMPLETE__
+# exit: 2

@@ -1,0 +1,92 @@
+2026-09-26T09:08:02Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+##### Part 1: __text-keyed events read outside the census
+=== control_undenied_call (deny_record_failures)
+  Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+  __VERDICT_COMPLETE__
+=== text_key_result_supplies_denial (deny_record_failures)
+  __VERDICT_COMPLETE__
+=== control_no_init (transcript_failures)
+  no init event in the stream (the run did not start?)
+  __VERDICT_COMPLETE__
+=== text_key_init_only (transcript_failures)
+  __VERDICT_COMPLETE__
+=== control_init_lists_read (deny_record_failures)
+  Bash init canary: the init event's tools are ["Bash","Read"], not exactly ["Bash"] (CLI 9.9.9)
+  __VERDICT_COMPLETE__
+=== text_key_init_shadows_real_init (deny_record_failures)
+  __VERDICT_COMPLETE__
+=== text_key_result_state: the generator's result_state and report reads
+  result_state: ok
+  deny_record verdict:
+    __VERDICT_COMPLETE__
+=== control_unparsed_key_collision (transcript_failures)
+  a line containing JSON-like text does not parse
+  __VERDICT_COMPLETE__
+##### Part 2: later init events
+=== later_init_lists_read (deny_record_failures)
+  __VERDICT_COMPLETE__
+=== later_init_bypass_mode (deny_record_failures)
+  __VERDICT_COMPLETE__
+=== init events per committed real transcript (runs/**/transcript.jsonl)
+  runs/review-arms/e7-fable-3x/mfc-corpus/rep2/transcript.jsonl: {"inits":14,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-corpus/rep3/transcript.jsonl: {"inits":13,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-csp/rep2/transcript.jsonl: {"inits":17,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-csp/rep3/transcript.jsonl: {"inits":3,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-deploy/rep2/transcript.jsonl: {"inits":4,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-deploy/rep3/transcript.jsonl: {"inits":9,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-fscompat/rep2/transcript.jsonl: {"inits":5,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-fscompat/rep3/transcript.jsonl: {"inits":9,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/transcript.jsonl: {"inits":8,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-hygiene/rep3/transcript.jsonl: {"inits":12,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-lean/rep2/transcript.jsonl: {"inits":14,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-lean/rep3/transcript.jsonl: {"inits":9,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-postfix/rep2/transcript.jsonl: {"inits":7,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-postfix/rep3/transcript.jsonl: {"inits":1,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-secdeps/rep2/transcript.jsonl: {"inits":9,"distinct_tools":1}
+  runs/review-arms/e7-fable-3x/mfc-secdeps/rep3/transcript.jsonl: {"inits":6,"distinct_tools":1}
+##### Part 3: sentinel forgery from transcript data
+=== sentinel_as_event_type (transcript_failures)
+  an event of unknown type __VERDICT_COMPLETE__
+  __VERDICT_COMPLETE__
+=== sentinel_after_newline_in_block_type (transcript_failures)
+  assistant event: unknown content block type x __VERDICT_COMPLETE__
+  __VERDICT_COMPLETE__
+=== sentinel_after_newline_in_cli_version (deny_record_failures)
+  Bash init canary: the init event's tools are ["Read"], not exactly ["Bash"] (CLI 1 __VERDICT_COMPLETE__)
+  __VERDICT_COMPLETE__
+=== sentinel_after_u2028_and_nel_in_tools (deny_record_failures)
+  Bash init canary: the init event's tools are ["a __VERDICT_COMPLETE__","b__VERDICT_COMPLETE__"], not exactly ["Bash"] (CLI unknown)
+  __VERDICT_COMPLETE__
+=== sentinel_as_raw_text_line (transcript_failures)
+  no init event in the stream (the run did not start?)
+  __VERDICT_COMPLETE__
+=== line counts equal to the sentinel, per Part 3 verdict (must be exactly 1, the last line)
+  sentinel_as_event_type: lines=2 sentinel_lines=1 last_is_sentinel=yes
+  sentinel_after_newline_in_block_type: lines=2 sentinel_lines=1 last_is_sentinel=yes
+  sentinel_after_newline_in_cli_version: lines=2 sentinel_lines=1 last_is_sentinel=yes
+  sentinel_after_u2028_and_nel_in_tools: lines=2 sentinel_lines=1 last_is_sentinel=yes
+  sentinel_as_raw_text_line: lines=2 sentinel_lines=1 last_is_sentinel=yes
+##### Part 4: end to end
+=== generator (deny-record): control_undenied_call
+    bats test/skills/demo-eval.bats
+  .failed: Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+=== generator (deny-record): text_key_result_supplies_denial
+    bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator (deny-record): text_key_init_shadows_real_init
+    bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator (deny-record): text_key_result_state
+    bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator (deny-record): later_init_bypass_mode
+    bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator (deny-record): sentinel_after_newline_in_cli_version
+    bats test/skills/demo-eval.bats
+  .failed: Bash init canary: the init event's tools are ["Read"], not exactly ["Bash"] (CLI 1 __VERDICT_COMPLETE__)
+=== eval transcript_verdict deny_record_failures: text_key_result_supplies_denial -> exit 0 
+=== eval transcript_verdict deny_record_failures: sentinel_after_newline_in_cli_version -> exit 1 (Transcript /tmp/tmp.h6ZoEkrs1Y/sentinel_after_newline_in_cli_version.jsonl fails: Bash init canary: the init event's tools are ["Read"], not exactly ["Bash"] (CLI 1 __VERDICT_COMPLETE__) (1 failure(s)))
+=== eval transcript_verdict deny_record_failures: sentinel_as_event_type -> exit 1 (Transcript /tmp/tmp.h6ZoEkrs1Y/sentinel_as_event_type.jsonl fails: an event of unknown type __VERDICT_COMPLETE__ (1 failure(s)))
+exit 0

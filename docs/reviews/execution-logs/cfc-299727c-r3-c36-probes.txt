@@ -1,0 +1,39 @@
+# cmd: bash docs/reviews/execution-logs/cfc-299727c-r3-c36-probes.sh  cwd: /workspace  start: 2026-09-26T08:47:22Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== R3 shape: tool_use_in_user_event
+user event: unknown content block type tool_use
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+=== R3 shape: missing_event_type
+an event has no string type
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+=== R3 shape: unknown_event_type
+an event of unknown type assistant_message
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+=== R3 shape: nonstring_event_type
+an event has no string type
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+=== R3 shape: nested_in_tool_result
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+=== R3 shape: server_tool_use_block
+assistant event: unknown content block type server_tool_use
+__VERDICT_COMPLETE__
+=== R3 shape: reused_denied_id
+two tool_uses share an id
+__VERDICT_COMPLETE__
+=== R3 shape: ansi_prefixed
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+=== R3 shape: bom_prefixed
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+=== C36: eval-helpers on an init-only transcript and on a string init tools
+init-only: transcript_checked -> exit 0 
+init-only: assert_no_tool_called Bash -> exit 0 
+string tools, misspelled 'bash': assert_no_tool_called -> exit 0 
+array tools, misspelled 'bash': assert_no_tool_called -> exit 1 (bash is not a tool of this run (its tools: Bash ))
+# script exit: 0  end: 2026-09-26T08:47:23Z

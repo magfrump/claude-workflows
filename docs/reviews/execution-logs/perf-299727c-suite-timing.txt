@@ -1,0 +1,88 @@
+# bats --timing test/generate-reports.bats test/skills/mode1-equiv.bats test/skills/eval-helpers-transcript.bats at 299727c, review sandbox 2026-09-26; loadavg at start:
+6.69 7.73 9.07 3/1401 832814
+1..84
+ok 1 inline mode: prompt then fixture content on stdin, runner's tools passed in 74ms
+ok 2 inline mode: claude runs in an empty temp directory, not the caller's in 69ms
+ok 3 FIXTURE_TOOLS=none passes an empty --tools list in 62ms
+ok 4 repo mode: claude runs in a temp repo holding only the fixture in 84ms
+ok 5 the fixture's descriptive filename never reaches the model in 85ms
+ok 6 every mode passes --strict-mcp-config --restricted --safe-mode in 184ms
+ok 7 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text in 186ms
+ok 8 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report in 200ms
+ok 9 transcript off: no stream-json flags, and a stale sidecar is removed in 69ms
+ok 10 a runner with a bad FIXTURE_TRANSCRIPT value is refused in 44ms
+ok 11 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt in 81ms
+ok 12 tree mode: the fixture directory's name never reaches the model in 90ms
+ok 13 tree mode: .fixture-* markers steer fixture_base and are removed in 72ms
+ok 14 tree mode takes directories only; repo mode takes files only in 125ms
+ok 15 fixture prefix selects a subset in 78ms
+ok 16 a skill without runner.bash is refused before claude runs in 43ms
+ok 17 a runner naming any tool outside the allowlist is refused in 264ms
+ok 18 an inline runner granting a file tool is refused in 65ms
+ok 19 a descriptive suffix is not kept as the subject's extension in 75ms
+ok 20 a dotted fixture name with no plain extension reaches the model as 'subject' in 73ms
+ok 21 a failed claude run leaves no stale report behind, and a .failed marker in 63ms
+ok 22 a run that aborts before claude starts still removes the previous report in 53ms
+ok 23 a successful run clears a previous run's .failed marker in 242ms
+ok 24 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure in 256ms
+ok 25 a runner with an unknown mode is refused in 41ms
+ok 26 every committed fixture set has a runner the generator accepts in 373ms
+ok 27 every committed fixture set has an eval suite in 94ms
+ok 28 deny-record: Bash is accepted and every call is pinned to be denied in 170ms
+ok 29 deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused in 143ms
+ok 30 deny-record does not open Bash(<pattern>) spellings, and says what it needs in 84ms
+ok 31 deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine in 350ms
+ok 32 CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags in 370ms
+ok 33 deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version in 220ms
+ok 34 deny-record tripwire: a Bash call missing from permission_denials voids the run in 393ms
+ok 35 deny-record tripwire still runs when the run already failed, and says so in 181ms
+ok 36 deny-record: a tool_use moved to a field the reader does not know voids the run as malformed in 167ms
+ok 37 deny-record: a run with no init event is reported as not started, not blamed on the deny rule in 151ms
+ok 38 deny-record: a Bash tool_use with no id is malformed, and voids the run in 166ms
+ok 39 deny-record: every malformed transcript shape voids the run, even beside a good denied call in 2321ms
+ok 40 deny-record parser canaries: an orphan tool_result, or a denial of another tool, voids the run in 271ms
+ok 41 the .failed marker exists while a run is in progress and is removed only after every check passes in 222ms
+ok 42 any transcript run (not only deny-record) is voided by a malformed event or a missing init in 323ms
+ok 43 property, end to end: an undenied Bash call inserted at any position voids the deny-record run in 2658ms
+ok 44 a newline in a verdict field cannot cut the verdict short: the run is still voided (R4) in 174ms
+ok 45 deny-record: the granted tools must be exactly [Bash], and every call a Bash call (A28) in 169ms
+ok 46 a verdict that did not finish (no sentinel line) voids the run in 169ms
+ok 47 the Mode 1 block extracts from SKILL.md in 17ms
+ok 48 SKILL.md's own wrapper and program, with a new expression, compute its value in 227ms
+ok 49 a copy with the comments stripped still passes (AST, not bytes) in 235ms
+ok 50 a one-token change to the program fails in 198ms
+ok 51 the right program with the wrong expression fails in 222ms
+ok 52 any listed value passes, and a tolerance widens one in 358ms
+ok 53 shell after the closing EXPREOF fails; a trailing comment does not in 391ms
+ok 54 a second EXPREOF line cannot smuggle shell: the heredoc closes at the first in 207ms
+ok 55 a bad value spec or missing argument exits 2 with a message, not a traceback in 138ms
+ok 56 a skill with no mode1-equiv.py of its own fails the check with a message in 82ms
+ok 57 a wrapper change (no ulimit) fails in 191ms
+ok 58 the expression is evaluated by SKILL.md's evaluator, so a non-numeric one gets no value in 225ms
+ok 59 tripwire: a Bash call missing from permission_denials fails whatever it computed in 131ms
+ok 60 no_tool_called passes with no Bash call and fails with one in 305ms
+ok 61 no_tool_called:<Tool>=<ERE> takes tool_called's shape: fails only on a matching input in 278ms
+ok 62 a missing transcript fails (not skips) in 19ms
+ok 63 no_tool_called fails, never passes, on an invalid or dash-leading pattern in 293ms
+ok 64 no_tool_called fails on an unreadable transcript in 74ms
+ok 65 a tool name the run's init event does not list fails the check (a misspelling cannot pass) in 336ms
+ok 66 tool_called:<Tool> with no pattern means the tool was called at all in 442ms
+ok 67 mode1_equiv labels a checker exit 2 as a setup error, not a model result in 385ms
+ok 68 pre-flight: every committed mode1_equiv: spec is valid (--check-spec), before any paid run in 259ms
+ok 69 eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv reaches the checker in 1055ms
+ok 70 no_tool_called fails on a transcript with no init event (junk or truncated), not reading it as no calls in 52ms
+ok 71 eval_fixture dispatch: mode1_equiv runs the fixture's own skill's checker, not arithmetic-eval's in 164ms
+ok 72 every malformed shape fails mode1_equiv and no_tool_called, even beside a good denied Mode 1 call in 1858ms
+ok 73 a plain-text line (a stray warning) is ignored, not read as a malformed event in 236ms
+ok 74 mode1-equiv.py takes a JSON array of commands; anything else, or any unexpected error, exits 2 in 417ms
+ok 75 an empty tool name fails the check; a bare tool_called failure says 'No Bash call.', not /./ in 193ms
+ok 76 property: an undenied Bash call inserted at ANY object or array position fails the deny-record verdict and the eval checks in 1846ms
+ok 77 a SKILL.md whose evaluator changed its output format fails the self-test: exit 2, in --check-spec too in 142ms
+ok 78 tool_called passes on a matching input in 109ms
+ok 79 tool_called fails on a non-matching input and shows what was called in 119ms
+ok 80 tool_called fails for a tool never called in 108ms
+ok 81 tool_called sees sub-agents' calls too in 118ms
+ok 82 subagents_min counts top-level dispatches only in 175ms
+ok 83 a missing transcript fails (not skips) and says how to fix it in 21ms
+ok 84 a non-JSON line in the transcript does not blind the checks in 161ms
+bats --timing test/generate-reports.bats test/skills/mode1-equiv.bats   18.64s user 4.17s system 87% cpu 26.158 total

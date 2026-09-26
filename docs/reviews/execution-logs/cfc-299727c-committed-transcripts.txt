@@ -1,0 +1,34 @@
+# The module over every committed transcript.jsonl (git ls-files); cwd /workspace; 2026-09-26T08:48:10Z; jq-1.6
+# per file: [init claude_code_version, census tool_uses, census tool_results, placed tool_uses, problems count, transcript_failures]
+runs/review-arms/e7-fable-3x/mfc-corpus/rep2/transcript.jsonl ["2.1.232",160,160,160,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-corpus/rep3/transcript.jsonl ["2.1.232",241,241,241,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-csp/rep2/transcript.jsonl ["2.1.232",184,184,184,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-csp/rep3/transcript.jsonl ["2.1.232",100,100,100,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-deploy/rep2/transcript.jsonl ["2.1.232",68,68,68,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-deploy/rep3/transcript.jsonl ["2.1.232",124,124,124,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-fscompat/rep2/transcript.jsonl ["2.1.232",81,81,81,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-fscompat/rep3/transcript.jsonl ["2.1.232",76,76,76,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-hygiene/rep2/transcript.jsonl ["2.1.232",126,126,126,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-hygiene/rep3/transcript.jsonl ["2.1.232",156,156,156,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-lean/rep2/transcript.jsonl ["2.1.232",165,165,165,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-lean/rep3/transcript.jsonl ["2.1.232",100,100,100,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-postfix/rep2/transcript.jsonl ["2.1.232",102,102,102,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-postfix/rep3/transcript.jsonl ["2.1.232",0,0,0,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-secdeps/rep2/transcript.jsonl ["2.1.232",75,75,75,0,[]]
+  jq exit 0
+runs/review-arms/e7-fable-3x/mfc-secdeps/rep3/transcript.jsonl ["2.1.232",91,91,91,0,[]]
+  jq exit 0

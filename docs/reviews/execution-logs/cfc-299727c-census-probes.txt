@@ -1,0 +1,212 @@
+# cmd: bash docs/reviews/execution-logs/cfc-299727c-census-probes.sh  cwd: /workspace  start: 2026-09-26T08:45:31Z  jq-1.6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## Control
+=== control
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## Type-string variants of tool_use (brief item 1)
+=== trailing_space_in_assistant_content
+assistant event: unknown content block type tool_use 
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== uppercase_in_assistant_content
+assistant event: unknown content block type TOOL_USE
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== cyrillic_o_in_assistant_content
+assistant event: unknown content block type tооl_use
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== escaped_underscore_is_still_tool_use
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+=== uppercase_nested_in_system_event
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== trailing_space_nested_in_tool_input
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","echo n"]
+## allowlists use jq inside/1, which is substring containment for strings
+=== substring_block_type_tool
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== substring_block_type_empty
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== substring_user_block_type_result
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== substring_event_type_sys
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== substring_event_type_empty
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== substring_event_type_with_real_call
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+## JSON-in-string and duplicate keys
+=== call_as_json_in_text_block
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== duplicate_type_key_last_wins_text
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== duplicate_type_key_last_wins_tool_use
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+=== duplicate_content_key
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## Top-level key __text (the reader's own marker for ignored lines)
+=== event_with___text_key_call_unplaced
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== event_with___text_key_call_placed
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== event_with___text_key_call_and_result
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## init events (brief item 1)
+=== init_tools_bash_twice
+Bash init canary: the init event's tools are ["Bash","Bash"], not exactly ["Bash"] (CLI 9.9.9)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== second_init_event_lists_more_tools
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== second_init_plus_read_call
+Bash tripwire: 1 call(s) of a tool other than Bash, the only tool granted
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== no_init_undenied_call
+no init event in the stream (the run did not start?)
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+=== init_without_tools
+Bash init canary: the init event's tools are null, not exactly ["Bash"] (CLI 9.9.9)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## Lines that are not events
+=== bare_number_line
+a line is not a JSON object
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== bare_word_line
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== quoted_string_line
+a line is not a JSON object
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== true_line
+a line is not a JSON object
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== two_objects_one_line
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== ansi_prefixed_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== type_is_array_on_event
+an event has no string type
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+=== type_is_array_on_block
+a content block is not an object with a string type
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## NUL bytes (written with printf, so the line holds a literal 0x00)
+=== nul_after_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== nul_before_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== nul_text_line
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## Separators other than LF
+=== cr_only_separators
+a line containing JSON-like text does not parse
+no init event in the stream (the run did not start?)
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: []
+## Nesting depth jq 1.6 will parse
+=== call_nested_200_arrays_deep_in_system_event
+a tool_use outside an assistant event's message.content
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good","pwd"]
+=== call_nested_256_arrays_deep_in_system_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== call_nested_257_arrays_deep_in_system_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+=== call_nested_300_arrays_deep_in_system_event
+a line containing JSON-like text does not parse
+__VERDICT_COMPLETE__
+  (jq exit 0)
+  census Bash commands: ["echo good"]
+## Scale: 20000 denied Bash calls plus one undenied (timed)
+=== big (bytes: 3366948)
+Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+__VERDICT_COMPLETE__
+  (jq exit 0; whole seconds: 5)
+# script exit: 0  end: 2026-09-26T08:45:39Z

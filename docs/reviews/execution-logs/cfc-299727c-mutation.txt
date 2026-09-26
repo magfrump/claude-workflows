@@ -1,0 +1,29 @@
+# Mutation: in a git-archive copy of HEAD 299727c at $SCRATCH/mut, tool_uses/tool_results in test/skills/transcript.jq replaced by the positional reading (assistant/user .message.content[] only; the census-vs-placed comparison becomes vacuous). start: 2026-09-26T08:46:29Z
+56,57c56,57
+< def tool_uses: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_use")];
+< def tool_results: [.[] | objects | select(has("__text") | not) | .. | objects | select(.type == "tool_result")];
+---
+> def tool_uses: [.[] | objects | select(.type == "assistant") | .message | objects | .content | arrays | .[] | objects | select(.type == "tool_use")];
+> def tool_results: [.[] | objects | select(.type == "user") | .message | objects | .content | arrays | .[] | objects | select(.type == "tool_result")];
+=== cwd: /tmp/claude-1000/-workspace/be3f0769-4e1a-4426-8e7a-ba12087d4d40/scratchpad/mut ; bats --tap -f 'property' test/generate-reports.bats
+1..1
+not ok 1 property, end to end: an undenied Bash call inserted at any position voids the deny-record run
+# not voided by a check: v11.jsonl
+# not voided by a check: v12.jsonl
+# not voided by a check: v14.jsonl
+# not voided by a check: v15.jsonl
+# not voided by a check: v16.jsonl
+# not voided by a check: v2.jsonl
+# not voided by a check: v3.jsonl
+# not voided by a check: v5.jsonl
+# not voided by a check: v6.jsonl
+# not voided by a check: v7.jsonl
+# not voided by a check: v8.jsonl
+# not voided by a check: v9.jsonl
+# variants=16 escapes=12
+exit: 
+=== bats --tap -f 'property' test/skills/mode1-equiv.bats
+1..1
+not ok 1 property: an undenied Bash call inserted at ANY object or array position fails the deny-record verdict and the eval checks
+# variants=11 escapes=24
+end: 2026-09-26T08:46:37Z

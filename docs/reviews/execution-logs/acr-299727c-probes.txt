@@ -1,0 +1,76 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-26T09:07:52Z
+jq-1.6
+=== P1 no init + undenied Bash call (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    no init event in the stream (the run did not start?)
+    Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=1: Transcript /tmp/acr-299727c.cmUdpA/p1.jsonl fails: no init event in the stream (the run did not start?) (2 failure(s))
+=== P2 three id-less tool_uses (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    a tool_use has no string id and name
+    a tool_use has no string id and name
+    a tool_use has no string id and name
+    two tool_uses share an id
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=1: Transcript /tmp/acr-299727c.cmUdpA/p2.jsonl fails: a tool_use has no string id and name (4 failure(s))
+=== P3 a Read call denied as Read (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    Bash tripwire: 1 call(s) of a tool other than Bash, the only tool granted
+    Bash tripwire: 1 call(s) not in permission_denials (may have executed)
+    Bash tripwire: 1 denial(s) of a tool other than Bash
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=1: Transcript /tmp/acr-299727c.cmUdpA/p3.jsonl fails: Bash tripwire: 1 call(s) of a tool other than Bash, the only tool granted (3 failure(s))
+=== P4 malformed event, CLI 9.9.9 in init (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    assistant event: message is not an object
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=1: Transcript /tmp/acr-299727c.cmUdpA/p4.jsonl fails: assistant event: message is not an object (1 failure(s))
+=== P5a missing file (transcript_failures)
+--- module lines (what the generator joins into .failed):
+    no init event in the stream (the run did not start?)
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=1: Could not read /tmp/acr-299727c.cmUdpA/nope.jsonl
+=== P5b a misspelled verdict def (caller bug, good transcript) (deny_record_failure)
+--- module lines (what the generator joins into .failed):
+--- eval side, transcript_verdict:
+    rc=1: Could not read /tmp/acr-299727c.cmUdpA/p5.jsonl: its verdict is incomplete
+=== P6 control, good transcript (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=0: 
+=== P7 init-only stream (no result event) (transcript_failures)
+--- module lines (what the generator joins into .failed):
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=0: 
+    generator result_state (generate-reports.bash:258-261): none
+=== P8 public defs vs consumer references
+    events: 4 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    tool_uses: 2 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    tool_results: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    problems: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    init: 1 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    denials: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    verdict_end: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    transcript_failures: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    deny_record_failures: 0 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    print_verdict: 2 literal reference(s) in generate-reports.bash + eval-helpers.bash
+    dynamic:       1 t::$def       1 t::$verdict_def 
+=== P8b literal sentinel occurrences outside the module
+    /workspace/test/skills/eval-helpers.bash:404:  if [ "$last" != "__VERDICT_COMPLETE__" ]; then
+    /workspace/test/skills/generate-reports.bash:291:    if [ "${#verdict_lines[@]}" -eq 0 ] || [ "${verdict_lines[${#verdict_lines[@]}-1]}" != "__VERDICT_COMPLETE__" ]; then
+=== P9 denial only in a __text-keyed result event (deny_record_failures)
+--- module lines (what the generator joins into .failed):
+    __VERDICT_COMPLETE__
+--- eval side, transcript_verdict:
+    rc=0: 
+    denials: [{"tool_name":"Bash","tool_use_id":"u1"}]
+    generator report text (generate-reports.bash:252-254): # from marker

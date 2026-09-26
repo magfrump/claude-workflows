@@ -1,0 +1,24 @@
+# cmd: bash docs/reviews/execution-logs/cfc-299727c-e2e-probes.sh  cwd: /workspace  start: 2026-09-26T08:46:18Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== generator: control
+Done. Run eval tests with:
+  bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator: text_key_event
+Done. Run eval tests with:
+  bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== generator: substring_block_type
+Done. Run eval tests with:
+  bats test/skills/demo-eval.bats
+  no .failed marker: the run PASSED the generator's checks
+=== eval checks: control
+  assert_no_tool_called Bash pwd -> exit 0 
+  assert_mode1_equiv arithmetic-eval 2 -> exit 0 (  command 1: Mode 1, expression '1 + 1' -> 2.0)
+=== eval checks: text_key_event
+  assert_no_tool_called Bash pwd -> exit 0 
+  assert_mode1_equiv arithmetic-eval 2 -> exit 0 (  command 1: Mode 1, expression '1 + 1' -> 2.0)
+=== eval checks: substring_block_type
+  assert_no_tool_called Bash pwd -> exit 0 
+  assert_mode1_equiv arithmetic-eval 2 -> exit 0 (  command 1: Mode 1, expression '1 + 1' -> 2.0)
+# script exit: 0  end: 2026-09-26T08:46:19Z

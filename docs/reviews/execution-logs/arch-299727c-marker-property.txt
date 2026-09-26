@@ -1,0 +1,47 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+started 2026-09-26T09:07:05Z jq=jq-1.6 repo=/workspace
+== controls (expect 0 failures everywhere)
+HEAD good=0 warning_line=0
+fixA good=0 warning_line=0
+fixB good=0 warning_line=0
+== the 13-shape table (expect every shape to fail in every module)
+HEAD table_shapes=13 passed_wrongly=0
+fixA table_shapes=13 passed_wrongly=0
+fixB table_shapes=13 passed_wrongly=0
+== vocabulary from has(): __text __unparsed permission_denials
+== property 1: insert an undenied Bash call at every container, with and without each vocabulary key added at the event root or at the insertion container
+  HEAD census not +1: __text|root|0|["tools"]
+  HEAD ESCAPE: __text|root|0|[]
+  HEAD census not +1: __text|root|0|[]
+  HEAD ESCAPE: __text|here|0|[]
+  HEAD census not +1: __text|here|0|[]
+  HEAD ESCAPE: __text|root|3|["permission_denials",0]
+  HEAD ESCAPE: __text|root|3|["permission_denials",0,"tool_input"]
+  HEAD ESCAPE: __text|root|3|[]
+  HEAD ESCAPE: __text|here|3|[]
+HEAD variants=100 (of 100) escapes=6 census_not_plus_one=23
+  fixA census not +1: permission_denials|root|3|["permission_denials"]
+  fixA census not +1: permission_denials|root|3|["permission_denials",0]
+  fixA census not +1: permission_denials|root|3|["permission_denials",0,"tool_input"]
+fixA variants=100 (of 100) escapes=0 census_not_plus_one=3
+  fixB census not +1: permission_denials|root|3|["permission_denials"]
+  fixB census not +1: permission_denials|root|3|["permission_denials",0]
+  fixB census not +1: permission_denials|root|3|["permission_denials",0,"tool_input"]
+fixB variants=100 (of 100) escapes=0 census_not_plus_one=3
+== property 2: every content-block or event type outside the allowlist is a problem
+allowlist literals: assistant rate_limit_event redacted_thinking result system text thinking tool_result tool_use user
+mutant types: 148
+HEAD type_mutants_tried=1036 accepted_without_problem=293 examples: "" "" "" "" "" "_event" "_event" "_limit_event" "_limit_event" "_result" "_thinking" "_thinking" "_use" "_use" "a" "a" "a"
+fixA type_mutants_tried=1036 accepted_without_problem=293 examples: "" "" "" "" "" "_event" "_event" "_limit_event" "_limit_event" "_result" "_thinking" "_thinking" "_use" "_use" "a" "a" "a"
+fixB type_mutants_tried=1036 accepted_without_problem=0 examples:
+== Claim 24's shape from the fact-check, under each module
+HEAD claim24_failures=0
+fixA claim24_failures=3
+    an event has no string type
+    a tool_use outside an assistant event's message.content
+    a tool_result outside a user event's message.content
+fixB claim24_failures=3
+    an event has no string type
+    a tool_use outside an assistant event's message.content
+    a tool_result outside a user event's message.content
+done 2026-09-26T09:09:40Z

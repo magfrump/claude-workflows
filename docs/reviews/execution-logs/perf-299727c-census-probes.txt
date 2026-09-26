@@ -1,0 +1,67 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+jq: jq-1.6; nproc: 16; loadavg: 5.27 5.14 6.86
+== n=10 bash calls, pad=0, 3665 bytes, 22 lines
+verdict committed: __VERDICT_COMPLETE__|
+verdict bound once: __VERDICT_COMPLETE__|
+events only	21 ms	maxrss=10336 KB
+tool_uses (one census walk)	19 ms	maxrss=10372 KB
+_placed_tool_uses (positional)	20 ms	maxrss=10264 KB
+problems once	28 ms	maxrss=10424 KB
+transcript_failures (committed)	27 ms	maxrss=10408 KB
+deny_record_failures (committed)	32 ms	maxrss=10384 KB
+deny_record_failures bound once	32 ms	maxrss=10372 KB
+iteration-4 generator verdict (b22a026^)	27 ms	maxrss=10388 KB
+gen report text (strict reader)	20 ms	maxrss=10280 KB
+gen result_state (strict reader)	20 ms	maxrss=10384 KB
+mode1 command extraction	22 ms	maxrss=10304 KB
+== n=2000 bash calls, pad=0, 713755 bytes, 4002 lines
+verdict committed: __VERDICT_COMPLETE__|
+verdict bound once: __VERDICT_COMPLETE__|
+events only	62 ms	maxrss=13456 KB
+tool_uses (one census walk)	120 ms	maxrss=13540 KB
+_placed_tool_uses (positional)	72 ms	maxrss=13548 KB
+problems once	247 ms	maxrss=14128 KB
+transcript_failures (committed)	258 ms	maxrss=14180 KB
+deny_record_failures (committed)	568 ms	maxrss=16240 KB
+deny_record_failures bound once	300 ms	maxrss=16284 KB
+iteration-4 generator verdict (b22a026^)	230 ms	maxrss=17896 KB
+gen report text (strict reader)	60 ms	maxrss=13548 KB
+gen result_state (strict reader)	64 ms	maxrss=13460 KB
+mode1 command extraction	109 ms	maxrss=13584 KB
+== n=20000 bash calls, pad=0, 7215755 bytes, 40002 lines
+verdict committed: __VERDICT_COMPLETE__|
+verdict bound once: __VERDICT_COMPLETE__|
+events only	347 ms	maxrss=109636 KB
+tool_uses (one census walk)	965 ms	maxrss=109788 KB
+_placed_tool_uses (positional)	510 ms	maxrss=109708 KB
+problems once	2427 ms	maxrss=116360 KB
+transcript_failures (committed)	2425 ms	maxrss=116500 KB
+deny_record_failures (committed)	5930 ms	maxrss=138688 KB
+deny_record_failures bound once	2740 ms	maxrss=138792 KB
+iteration-4 generator verdict (b22a026^)	2110 ms	maxrss=156212 KB
+gen report text (strict reader)	409 ms	maxrss=109696 KB
+gen result_state (strict reader)	431 ms	maxrss=109776 KB
+mode1 command extraction	929 ms	maxrss=110020 KB
+== n=40000 bash calls, pad=1000, 54475755 bytes, 80002 lines
+verdict committed: __VERDICT_COMPLETE__|
+verdict bound once: __VERDICT_COMPLETE__|
+events only	995 ms	maxrss=256764 KB
+tool_uses (one census walk)	2323 ms	maxrss=256848 KB
+_placed_tool_uses (positional)	1421 ms	maxrss=256856 KB
+problems once	5463 ms	maxrss=269536 KB
+transcript_failures (committed)	5820 ms	maxrss=269536 KB
+deny_record_failures (committed)	14257 ms	maxrss=314076 KB
+deny_record_failures bound once	6153 ms	maxrss=314812 KB
+iteration-4 generator verdict (b22a026^)	5019 ms	maxrss=349880 KB
+gen report text (strict reader)	1141 ms	maxrss=256980 KB
+gen result_state (strict reader)	1163 ms	maxrss=256880 KB
+mode1 command extraction	2211 ms	maxrss=256828 KB
+== equivalence of the bound-once verdict on failing inputs (insertion variants, the 13 shapes)
+insertion variants=114 shapes=13 identical=127 differ=0
+== fixed per-process cost
+jq -n 1 (no module)	22 ms	maxrss=10384 KB
+jq -n -L import transcript; 1	22 ms	maxrss=10472 KB
+python3 -c pass	9 ms	maxrss=10292 KB
+== mode1-equiv.py self-test (reference() runs evaluate(6 * 7) once per invocation)
+mode1-equiv.py --check-spec (committed, with self-test)	47 ms	maxrss=12072 KB
+evaluate(prog, '6 * 7') = 42.0: best 16.3 ms; reference() with self-test: best 19.5 ms
