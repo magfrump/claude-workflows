@@ -7,7 +7,9 @@
 # (Before 2026-09-26 every asymmetry was only printed, so deleting a pivot
 # reference could never turn this suite red.)
 #
-# Only checks the workflows that currently have pivot sections.
+# Covers every workflow with a '## When to pivot' section; a guard test fails
+# if one is added without a WORKFLOW_PATTERNS entry, so the list cannot go
+# silently stale (it once omitted parallel-worktrees and user-testing).
 #
 # Usage: bats test/pivot-consistency.bats
 
@@ -16,13 +18,12 @@ setup() {
   # workflow-required-sections.bats. Keeps the suite hermetic.
   WORKFLOW_DIR="${WORKFLOW_DIR:-$BATS_TEST_DIRNAME/../workflows}"
 
-  # The workflows that have '## When to pivot' sections.
-  PIVOT_WORKFLOWS=(
-    codebase-onboarding.md
-    divergent-design.md
-    research-plan-implement.md
-    spike.md
-  )
+  # Every workflow that has a '## When to pivot' section, discovered.
+  PIVOT_WORKFLOWS=()
+  local f
+  for f in "$WORKFLOW_DIR"/*.md; do
+    grep -q '^## When to pivot' "$f" && PIVOT_WORKFLOWS+=("$(basename "$f")")
+  done
 
   # Mapping from workflow filename to search patterns that indicate a
   # reference. Each workflow may be referenced by its filename, its short
@@ -33,12 +34,19 @@ setup() {
     [divergent-design.md]="divergent-design|Divergent Design|\\bDD\\b"
     [research-plan-implement.md]="research-plan-implement|Research.*Plan.*Implement|RPI"
     [spike.md]="spike\.md|[Ss]pike"
+    [parallel-worktrees.md]="parallel-worktrees|[Bb]atch fan-out"
+    [user-testing-workflow.md]="user-testing|[Uu]sability test"
   )
 
   # "A>B": A's pivot section names B, and B is not expected to name A back.
   # Onboarding feeds DD's diagnosis, but DD never hands off to onboarding.
   KNOWN_ONE_WAY=(
     "codebase-onboarding.md>divergent-design.md"
+    # Batch fan-out is a pre-pass: items route out to RPI/DD and never back.
+    "parallel-worktrees.md>divergent-design.md"
+    "parallel-worktrees.md>research-plan-implement.md"
+    # Usability findings can open a design fork; DD does not hand off to testing.
+    "user-testing-workflow.md>divergent-design.md"
   )
 }
 
@@ -57,6 +65,15 @@ section_mentions() {
   local workflow="$2"
   local pattern="${WORKFLOW_PATTERNS[$workflow]}"
   echo "$section" | grep -qE "$pattern"
+}
+
+@test "every workflow with a pivot section has a reference pattern" {
+  local wf missing=""
+  [ "${#PIVOT_WORKFLOWS[@]}" -ge 4 ] || { echo "discovery found too few pivot workflows"; return 1; }
+  for wf in "${PIVOT_WORKFLOWS[@]}"; do
+    [ -n "${WORKFLOW_PATTERNS[$wf]+x}" ] || missing+=" $wf"
+  done
+  [ -z "$missing" ] || { echo "Add WORKFLOW_PATTERNS entries for:$missing"; return 1; }
 }
 
 @test "all pivot workflows exist and have '## When to pivot' sections" {

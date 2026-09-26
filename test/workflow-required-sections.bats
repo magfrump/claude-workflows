@@ -14,7 +14,7 @@ setup() {
   # suite at a real deployment.
   WORKFLOW_DIR="${WORKFLOW_DIR:-$BATS_TEST_DIRNAME/../workflows}"
 
-  # These 6 workflows follow the standard convention of having
+  # These 7 workflows follow the standard convention of having
   # '## When to use' and numbered '### N.' process steps.
   #
   # Excluded workflows and why:
@@ -28,6 +28,7 @@ setup() {
     pr-prep.md
     codebase-onboarding.md
     task-decomposition.md
+    parallel-worktrees.md
   )
 }
 
@@ -94,4 +95,18 @@ setup() {
     echo -e "Workflows with too few process steps:\n$failures"
     return 1
   fi
+}
+
+@test "every workflow is either a convention workflow or a listed exclusion" {
+  # Without this, a new workflow is simply not checked (parallel-worktrees was
+  # neither listed nor excluded until 2026-09-26).
+  local excluded=" review-fix-loop.md branch-strategy.md user-testing-workflow.md "
+  local f wf unlisted=""
+  for f in "$WORKFLOW_DIR"/*.md; do
+    wf="$(basename "$f")"
+    [[ " ${CONVENTION_WORKFLOWS[*]} " == *" $wf "* ]] && continue
+    [[ "$excluded" == *" $wf "* ]] && continue
+    unlisted+=" $wf"
+  done
+  [ -z "$unlisted" ] || { echo "Neither checked nor excluded:$unlisted"; return 1; }
 }
