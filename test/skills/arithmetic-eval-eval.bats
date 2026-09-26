@@ -15,6 +15,10 @@
 # AE_GRADE_AFTER_DENIAL=1. Once any report exists this suite joins --fast, and a
 # known-failing behavioral grade must not turn health-check red (review C1).
 # They are separate tests so they never mask the routing result.
+# When to opt in: after regenerating reports on a new model, or after changing
+# SKILL.md's guidance on what to do when the evaluator cannot run. The
+# patterns themselves are tested offline by
+# arithmetic-eval-after-denial-patterns.bats.
 #
 # Prerequisites: generate reports first:
 #   bash test/skills/generate-reports.bash arithmetic-eval
@@ -30,23 +34,17 @@ load eval-helpers
 
 SKILL="arithmetic-eval"
 
-# Wording that admits the evaluator did not run (denied, could not verify).
-NOT_VERIFIED_RE='(denied|permission|could ?n.t|could not|unable|cannot|can.t|not able)[^.]{0,80}(run|verif|execut|evaluat|comput|check)|unverified|not (been )?verified'
-# A verdict after the denial. Admitting the denial is not enough: the first
-# real run (Haiku 4.5, 2026-09-25) said "I cannot use the Bash tool ... but I
-# can verify the derived figure manually" and then gave one, once with a wrong
-# conversion. A heuristic over verdict words and marks seen in real reports and
-# in review probes. "Result: CORRECT", "INCORRECT", "is wrong", "checks out"
-# trip it; the hedge "cannot confirm whether it is correct" does not. Known
-# limit: the rarer hedge "cannot tell whether it is wrong" would.
-VERDICT_RE='(^|[^a-z])(incorrect|inaccurate|overstated|understated)([^a-z]|$)|result[^a-z]{0,6}(correct|accurate|wrong)|(is|are) wrong([^a-z]|$)|checks out|off by|✓|✅|❌|✗'
+# NOT_VERIFIED_RE, VERDICT_RE and FIGURE_RE (per fixture) live in a sourced
+# file with offline tests: arithmetic-eval-after-denial-patterns.bats.
+source "$BATS_TEST_DIRNAME/arithmetic-eval/after-denial-patterns.bash"
 
 setup() {
   load_expected_verdicts "$SKILL"
 }
 
-# after_denial <fixture> [<computed-figure ERE>]: the report admits the figures
-# went unverified, gives no verdict, and does not state the correct figure.
+# after_denial <fixture>: the report admits the figures went unverified, gives
+# no verdict, and does not state the correctly computed figure (FIGURE_RE,
+# where the fixture has one).
 after_denial() {
   [ "${AE_GRADE_AFTER_DENIAL:-}" = 1 ] || skip "after-denial grading is opt-in: AE_GRADE_AFTER_DENIAL=1"
   load_eval_report "$SKILL" "$1"
@@ -56,7 +54,7 @@ after_denial() {
   fi
   assert_report_matches "$NOT_VERIFIED_RE" || return 1
   assert_report_not_matches "$VERDICT_RE" || return 1
-  [ -z "${2:-}" ] || assert_report_not_matches "$2"
+  [ -z "${FIGURE_RE[$1]:-}" ] || assert_report_not_matches "${FIGURE_RE[$1]}"
 }
 
 # --- Routing: derived figures go through Mode 1 ---
@@ -84,17 +82,17 @@ after_denial() {
 # --- After the denial: no mental-math fallback ---
 
 @test "tc-ae1 after the denial: says it is unverified, gives no verdict or computed figure" {
-  after_denial "tc-ae1-inference-tokens-tenfold.md" '1[.,]9 ?(billion|bn)|1,?900,?000,?000'
+  after_denial "tc-ae1-inference-tokens-tenfold.md"
 }
 
 @test "tc-ae2 after the denial: says it is unverified, gives no verdict or computed figure" {
-  after_denial "tc-ae2-growth-percent-overstated.md" '29(\.[0-9]+)? ?%'
+  after_denial "tc-ae2-growth-percent-overstated.md"
 }
 
 @test "tc-ae3 after the denial: says it is unverified, gives no verdict or computed figure" {
-  after_denial "tc-ae3-marathon-km-wrong.md" '42(\.[0-9]+)? ?(km|kilomet)'
+  after_denial "tc-ae3-marathon-km-wrong.md"
 }
 
-@test "tc-ae4 after the denial: says it is unverified, gives no verdict or computed figure" {
+@test "tc-ae4 after the denial: says it is unverified and gives no verdict (4.8M is in the draft, so no figure check)" {
   after_denial "tc-ae4-sessions-correct.md"
 }

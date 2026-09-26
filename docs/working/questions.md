@@ -46,7 +46,8 @@ The Q-062 detector skips a same-uid process whose cwd it cannot read. Should it 
 |---|---|---|---|
 | **[1] Skip and document** | Unreadable cwds are skipped; 037 lists "a process that hides its cwd" as not seen | None | A deliberately evading same-uid process writes during the install, unseen (it could evade anyway via an open handle) |
 | **[2] Refuse on unreadable cwd** | Any same-uid process whose cwd can't be read refuses the install, naming it | Kill ssh-agent (and any other non-dumpable process) before every install | Nuisance refusals every install while ssh-agent runs; spoofable if an allowlist is added to reduce them |
+| **[3] Skip but name** | Unreadable-cwd processes are not refused, but a NOTE lists each one (PID and command line, which stay readable) at every check | Glance at the NOTE; ssh-agent will be on it | You skim past an unexpected name; the process still runs during the install |
 
 - **Blocks:** nothing (A1's author note points here)
 - **Interim:** [1]. The skip is commented at `procs_in_checkout` and listed in 037.
-- **If the answer differs:** [2] replaces the `|| continue` with a refusal list plus a test; nothing is redone.
+- **If the answer differs:** [2] or [3] need `procs_in_checkout` to report a second class of process (cwd unknown) and the gate to act on it: about five edit sites plus tests, not a one-line change (architecture review iteration 2, F4). Nothing already built is redone.

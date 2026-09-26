@@ -145,7 +145,11 @@ eval_fixture() {
         ;;
       tool_called:*)
         local spec="${check#tool_called:}"
-        assert_tool_called "${spec%%=*}" "${spec#*=}" || failed=1
+        if [[ "$spec" == *=* ]]; then
+          assert_tool_called "${spec%%=*}" "${spec#*=}" || failed=1
+        else
+          assert_tool_called "$spec" || failed=1
+        fi
         ;;
       subagents_min:*)
         assert_subagents_min "${check#subagents_min:}" || failed=1
@@ -369,14 +373,51 @@ transcript_tool_inputs() {
      | select(.type == "tool_use" and .name == $n) | .input | tostring' "$1"
 }
 
-# Assert some call of <tool> had an input matching <ERE> (case-insensitive).
-# Check syntax: tool_called:Read=workflows/divergent-design\.md
-# Args: $1 = tool name, $2 = ERE
+# tool_inputs_checked <transcript> <tool>: print the tool's inputs (as
+# transcript_tool_inputs does), or fail with a message when the transcript
+# cannot be parsed, or when its init event lists the run's tools and <tool> is
+# not one of them (a misspelled name such as "bash" would otherwise match
+# nothing and let a negative check pass).
+tool_inputs_checked() {
+  local t="$1" tool="$2" inputs known
+  if ! inputs="$(transcript_tool_inputs "$t" "$tool")"; then
+    echo "Could not read tool calls from $t"
+    return 1
+  fi
+  known="$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .tools[]?' "$t" 2>/dev/null || true)"
+  if [ -n "$known" ] && ! printf '%s\n' "$known" | grep -qxF -e "$tool"; then
+    echo "$tool is not a tool of this run (its tools: $(printf '%s\n' "$known" | tr '\n' ' '))"
+    return 1
+  fi
+  printf '%s' "$inputs"
+}
+
+# match_inputs <inputs> <ERE>: the matching lines (case-insensitive). Exits 2,
+# with a message, on an invalid pattern, so a check can never pass because grep
+# failed. -e keeps a pattern such as "-rf" from being read as options.
+match_inputs() {
+  local rc=0 out
+  out="$(printf '%s\n' "$1" | grep -iE -e "$2")" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    echo "Invalid pattern /$2/ (grep exit $rc)"
+    return 2
+  fi
+  printf '%s' "$out"
+}
+
+# Assert some call of <tool> had an input matching <ERE> (case-insensitive);
+# with no <ERE>, that <tool> was called at all.
+# Check syntax: tool_called:Read=workflows/divergent-design\.md   or   tool_called:Bash
+# Args: $1 = tool name, $2 = ERE (optional)
 assert_tool_called() {
-  local tool="$1" pattern="$2" t inputs
+  local tool="$1" pattern="${2:-.}" t inputs hits rc=0
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  inputs="$(transcript_tool_inputs "$t" "$tool")"
-  if ! printf '%s\n' "$inputs" | grep -qiE "$pattern"; then
+  inputs="$(tool_inputs_checked "$t" "$tool")" || { echo "$inputs"; return 1; }
+  if [ -n "$inputs" ]; then
+    hits="$(match_inputs "$inputs" "$pattern")" || rc=$?
+    [ "$rc" -ne 2 ] || { echo "$hits"; return 1; }
+  fi
+  if [ -z "$inputs" ] || [ -z "$hits" ]; then
     echo "No $tool call with input matching /$pattern/."
     echo "$tool calls seen: $(printf '%s\n' "$inputs" | grep -c . || true)"
     printf '%s\n' "$inputs" | head -5 | cut -c1-200
@@ -406,9 +447,13 @@ assert_subagents_min() {
 # Check syntax: no_tool_called:Bash   or   no_tool_called:Bash=rm -rf
 # Args: $1 = tool name, $2 = ERE (optional)
 assert_no_tool_called() {
-  local tool="$1" pattern="${2:-.}" t hits
+  local tool="$1" pattern="${2:-.}" t inputs hits="" rc=0
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  hits="$(transcript_tool_inputs "$t" "$tool" | grep -iE "$pattern" || true)"
+  inputs="$(tool_inputs_checked "$t" "$tool")" || { echo "$inputs"; return 1; }
+  if [ -n "$inputs" ]; then
+    hits="$(match_inputs "$inputs" "$pattern")" || rc=$?
+    [ "$rc" -ne 2 ] || { echo "$hits"; return 1; }
+  fi
   if [ -n "$hits" ]; then
     echo "Expected no $tool calls${2:+ with input matching /$2/}, found $(printf '%s\n' "$hits" | grep -c .):"
     printf '%s\n' "$hits" | head -3 | cut -c1-200
@@ -433,6 +478,11 @@ assert_mode1_equiv() {
     return 1
   fi
   t="$(eval_transcript_path)" || { echo "$t"; return 1; }
-  python3 "$checker" "${BATS_TEST_DIRNAME}/../../skills/${skill}/SKILL.md" "$t" "$spec"
+  local rc=0
+  python3 "$checker" "${BATS_TEST_DIRNAME}/../../skills/${skill}/SKILL.md" "$t" "$spec" 2>&1 || rc=$?
+  if [ "$rc" -eq 2 ]; then
+    echo "mode1_equiv: FIXTURE/CHECKER SETUP ERROR (exit 2), not a model result — fix the spec '$spec' or the checker's inputs"
+  fi
+  [ "$rc" -eq 0 ]
 }
 

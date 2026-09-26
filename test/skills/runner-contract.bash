@@ -17,13 +17,9 @@ RUNNER_ALLOWED_TOOLS=(Read Grep Glob WebSearch WebFetch Agent)
 
 # Bash is the one exception, and only as FIXTURE_BASH=deny-record (Q-063 [1]):
 # the model is offered Bash, generate-reports.bash pins every call to be
-# denied (a 'Bash(**)' deny rule; dontAsk alone still ran read-only commands
-# such as pwd and ls, probed 2026-09-25), and the kept
-# transcript records the command it tried. Nothing runs; eval checks compare
-# the recorded command with a reference (arithmetic-eval's mode1_equiv:). A
-# denied call is recorded in the stream and in the result event's
-# permission_denials (probed 2026-09-25, dd-arith-eval-bash-grant.md). Any
-# other Bash grant, and any Bash(<pattern>) spelling, is still refused.
+# denied (its DENY_RECORD_FLAGS), and the kept transcript records the command
+# it tried, which eval checks compare with a reference. Any other Bash grant,
+# and any Bash(<pattern>) spelling, is still refused.
 
 # Clear the settings a runner is expected to set, so a runner that forgets a
 # required one fails check_runner_settings instead of inheriting a previous
@@ -50,6 +46,16 @@ check_runner_settings() {
     inline|repo|tree) ;;
     *)
       echo "Error: $label: FIXTURE_MODE must be inline, repo or tree, got '$FIXTURE_MODE'" >&2
+      return 1
+      ;;
+  esac
+
+  # Checked before the tools loop, which reads it, so a misspelling such as
+  # deny_record is reported as itself (review iteration 2, C19).
+  case "$FIXTURE_BASH" in
+    ""|deny-record) ;;
+    *)
+      echo "Error: $label: FIXTURE_BASH must be empty or deny-record, got '$FIXTURE_BASH'" >&2
       return 1
       ;;
   esac
@@ -111,10 +117,6 @@ check_runner_settings() {
         echo "Error: $label: FIXTURE_BASH=deny-record needs FIXTURE_TOOLS=Bash exactly, got '$FIXTURE_TOOLS'" >&2
         return 1
       fi
-      ;;
-    *)
-      echo "Error: $label: FIXTURE_BASH must be empty or deny-record, got '$FIXTURE_BASH'" >&2
-      return 1
       ;;
   esac
 }

@@ -59,7 +59,7 @@ before the host target stages, and after each y, and refuses while it finds:
 It names each one and how to stop it. The checks are samples, not a lock;
 decision 037, "Trust model", lists what they miss (e.g. a leftover helper
 working outside the checkout, or one that hides its cwd: stop those yourself).
-Without pgrep or /proc it refuses; without a reachable docker it prints a NOTE line
+Without pgrep or a mounted /proc it refuses; without a reachable docker it prints a NOTE line
 at each check and treats no container as running. Close every Claude Code
 session and stop every cc-isolated container first. Run from inside a
 Claude Code session, install.sh finds that session and exits 1 at startup,
@@ -71,7 +71,7 @@ Target 2 is SKIPPED, with a message and no effect on the exit status, when
 not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
 The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
-Needs git, perl (the review's control-byte filter), pgrep and a readable /proc (Linux);
+Needs git, perl (the review's control-byte filter), pgrep and a mounted /proc (Linux);
 refuses without them.
 
 Both targets are refused, before anything is staged, when the checkout's own
@@ -1136,8 +1136,11 @@ in_lineage() {
 }
 
 # procs_in_checkout: print "PID command line" for each other process of this
-# uid whose working directory is $REPO_ROOT or below it. Exit 2 without /proc,
-# 3 if the checkout's own path cannot be resolved.
+# uid whose working directory is $REPO_ROOT or below it. Returns 2 when /proc
+# is not mounted, 3 when the checkout's own path cannot be resolved. When no
+# process's cwd can be read at all (an LSM hiding /proc, a PID-namespaced
+# sandbox), it says so on stderr: the scan is then blind, not clean (review
+# iteration 2, A14).
 #
 # A process whose cwd link cannot be read is skipped, not refused: that
 # includes ssh-agent and any process that makes itself non-dumpable
@@ -1146,12 +1149,13 @@ in_lineage() {
 # does is deliberately evading, which decision 037 lists as not seen (review
 # A1; Q-064 asks whether to refuse instead).
 procs_in_checkout() {
-  local root d pid cwd cmd
+  local root d pid cwd cmd readable=0
   [ -d /proc/self ] || return 2
   root="$(cd "$REPO_ROOT" && pwd -P)" || return 3
   for d in /proc/[0-9]*; do
     [ -O "$d" ] || continue                     # this uid's processes only
     cwd="$(readlink "$d/cwd" 2>/dev/null)" || continue   # unreadable: see above
+    readable=$((readable + 1))
     case "$cwd" in "$root"|"$root"/*) ;; *) continue ;; esac
     pid="${d#/proc/}"
     in_lineage "$pid" && continue
@@ -1159,6 +1163,10 @@ procs_in_checkout() {
     [ -n "$cmd" ] || continue                   # exited, or a kernel thread
     printf '%s %s\n' "$pid" "${cmd% }"
   done
+  if [ "$readable" -eq 0 ]; then
+    echo "NOTE: no process's working directory could be read under /proc, not even this" >&2
+    echo "      script's own: the check for processes inside the checkout saw nothing (Q-062)." >&2
+  fi
 }
 
 # agent_gate <what is refused>: exit 1, naming each agent found and how to
@@ -1185,7 +1193,7 @@ agent_gate() {
     echo "       check for processes working inside it (Q-062). $what" >&2
     exit 1
   elif [ "$rc" -ne 0 ]; then
-    echo "ERROR: /proc is not readable, so install.sh cannot check for processes working" >&2
+    echo "ERROR: /proc is not mounted, so install.sh cannot check for processes working" >&2
     echo "       inside the checkout (Q-062). It needs Linux /proc. $what" >&2
     exit 1
   fi
@@ -1217,7 +1225,11 @@ agent_gate() {
   fi
   if [ -z "$procs" ] && [ -z "$inrepo" ] && [ -z "$ctrs" ]; then return 0; fi
   {
-    echo "ERROR: an agent is running. install.sh installs only while no agent can run, because"
+    if [ -n "$procs" ] || [ -n "$ctrs" ]; then
+      echo "ERROR: an agent is running. install.sh installs only while no agent can run, because"
+    else
+      echo "ERROR: a process may be acting for an agent. install.sh installs only while no agent can run, because"
+    fi
     echo "       one could change what you review before it is installed (Q-058)."
     if [ -n "$procs" ]; then
       echo "       Claude Code processes of uid $(id -u) (PID and command line):"
@@ -1225,8 +1237,8 @@ agent_gate() {
       echo "       Stop them: end each Claude Code session (/exit), or kill <PID>."
     fi
     if [ -n "$inrepo" ]; then
-      echo "       Other processes of uid $(id -u) working inside $REPO_ROOT (Q-062; an"
-      echo "       agent may have left them running), PID and command line:"
+      echo "       Other processes of uid $(id -u) working inside $REPO_ROOT (PID and command"
+      echo "       line; Q-062: an agent may have left them running):"
       printf '%s\n' "$inrepo" | sed 's/^/           /'
       echo "       Stop them: kill <PID>, or cd each one out of the checkout (an editor or"
       echo "       shell sitting in the repo counts)."

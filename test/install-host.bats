@@ -1512,6 +1512,9 @@ stub_cp_then() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"$helper sleep 300"* ]]
   [[ "$output" == *'working inside'*'Q-062'* ]]
+  # Only an in-checkout process was found, so the lead line does not claim an agent.
+  [[ "$output" == *'a process may be acting for an agent'* ]]
+  [[ "$output" != *'an agent is running'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
   [ ! -e "$ROOT/devcontainer-config/claude-home" ]
   # Once it has gone, the same run installs.
@@ -1531,7 +1534,7 @@ stub_cp_then() {
   [[ "$output" == *'BLESS-STUB --bless'* ]]
 }
 
-@test "T90 without a readable /proc the install is refused, not waved through (Q-062)" {
+@test "T90 without a mounted /proc the install is refused, not waved through (Q-062)" {
   fake_repo
   # Run the gate's /proc probe against a path that does not exist: the copy
   # under test is edited so /proc/self reads as absent.
@@ -1541,6 +1544,6 @@ stub_cp_then() {
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
   echo "$output"
   [ "$status" -eq 1 ]
-  [[ "$output" == *'/proc is not readable'* ]]
+  [[ "$output" == *'/proc is not mounted'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
 }

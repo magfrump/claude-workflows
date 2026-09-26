@@ -25,7 +25,7 @@ setup() {
   cat > "$TEST_TMPDIR/bin/claude" <<EOF
 #!/usr/bin/env bash
 n=\$(ls "$CALLS" | wc -l)
-{ printf 'ARGS: %s\n' "\$*"; printf 'CWD: %s\n' "\$PWD"; printf 'LS: %s\n' "\$(ls)"
+{ printf 'ARGS: %s\n' "\$*"; printf 'ARGC: %s\n' "\$#"; printf 'CWD: %s\n' "\$PWD"; printf 'LS: %s\n' "\$(ls)"
   printf 'FILES: %s\n' "\$(find . -path ./.git -prune -o -type f -print | sort | tr '\n' ' ')"
   echo 'STDIN:'; cat; } > "$CALLS/\$n"
 if [[ " \$* " == *" --output-format stream-json "* ]]; then
@@ -427,12 +427,14 @@ make_deny_skill() {
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny-record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
 }
 
-# stub_stream <denials JSON>: a claude stub whose stream holds one Bash call
-# (id b1) and a result event with the given permission_denials.
+# stub_stream <denials JSON> [<init tools JSON>]: a claude stub whose stream
+# holds an init event (tools default ["Bash"]), one Bash call (id b1) and a
+# result event with the given permission_denials.
 stub_stream() {
   cat > "$TEST_TMPDIR/bin/claude" <<EOF2
 #!/usr/bin/env bash
 cat >/dev/null
+echo '{"type":"system","subtype":"init","claude_code_version":"9.9.9","tools":${2:-[\"Bash\"]}}'
 echo '{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"b1","name":"Bash","input":{"command":"echo hi"}}]}}'
 echo '{"type":"result","subtype":"success","result":"# Report","permission_denials":$1}'
 EOF2
@@ -449,7 +451,7 @@ EOF2
   [[ "$(cat "$CALLS/0")" == *"--tools Bash --disallowedTools Bash(**) --permission-mode dontAsk --permission-prompts none"* ]]
 }
 
-@test "deny-record needs FIXTURE_TRANSCRIPT=1 and Bash in FIXTURE_TOOLS; other values are refused" {
+@test "deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused" {
   make_skill demo inline "Bash"
   echo 'FIXTURE_BASH=deny-record' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
   run bash "$GEN" demo
@@ -471,10 +473,11 @@ EOF2
   [[ "$output" == *"needs FIXTURE_TOOLS=Bash exactly"* ]]
   rm -rf "$TEST_TMPDIR/test/skills/demo"
   make_skill demo inline "Bash"
-  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
+  printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=deny_record\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
   run bash "$GEN" demo
   [ "$status" -ne 0 ]
-  [[ "$output" == *"FIXTURE_TOOLS may only name"* ]]   # Bash is refused outright
+  # A misspelled value is reported as itself, not as a FIXTURE_TOOLS error.
+  [[ "$output" == *"FIXTURE_BASH must be empty or deny-record, got 'deny_record'"* ]]
   rm -rf "$TEST_TMPDIR/test/skills/demo"
   make_skill demo inline "WebSearch"
   printf 'FIXTURE_TRANSCRIPT=1\nFIXTURE_BASH=allow\n' >> "$TEST_TMPDIR/test/skills/demo/runner.bash"
@@ -492,19 +495,42 @@ EOF2
   [[ "$output" == *"FIXTURE_TOOLS may only name"* ]]
 }
 
-@test "deny-record: CLAUDE_FLAGS that change permissions are refused before claude runs" {
+@test "deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine" {
+  # A denylist of flag names could not hold (--setting-sources, a repeated
+  # --tools, --mcp-config ... were accepted; review iteration 2, C16).
   make_deny_skill
   local f
-  for f in "--permission-mode bypassPermissions" "--allowedTools Bash" "--allowed-tools Bash" \
-      "--dangerously-skip-permissions" "--settings x.json" "--model m --permission-prompts ask" \
-      $'--model m\t--permission-mode bypassPermissions' "--permission-prompt-tool mcp__x__y"; do
+  for f in "--permission-mode bypassPermissions" "--allowedTools Bash" "--setting-sources user" \
+      "--tools Bash,Read" "--mcp-config x.json" "--add-dir /" "--model m" $'\t--verbose'; do
     CLAUDE_FLAGS="$f" run bash "$GEN" demo
     [ "$status" -ne 0 ] || { echo "accepted: $f"; return 1; }
-    [[ "$output" == *"may not change permissions"* ]]
+    [[ "$output" == *"refuses CLAUDE_FLAGS"* ]]
   done
   [ "$(ls "$CALLS" | wc -l)" -eq 0 ]
-  CLAUDE_FLAGS="--model m" run bash "$GEN" demo
+  CLAUDE_FLAGS=$' \t' run bash "$GEN" demo
   [ "$status" -eq 0 ]
+}
+
+@test "CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags" {
+  make_deny_skill
+  CLAUDE_MODEL="m" run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  local base
+  base=$(sed -n 's/^ARGC: //p' "$CALLS/0")
+  rm -rf "${CALLS:?}"/*
+  CLAUDE_MODEL="m --permission-mode bypassPermissions" run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  # Same argument count: the whole value is the --model argument.
+  [ "$(sed -n 's/^ARGC: //p' "$CALLS/0")" -eq "$base" ]
+}
+
+@test "deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version" {
+  make_deny_skill
+  local out="$TEST_TMPDIR/test/skills/demo/output"
+  stub_stream '[{"tool_name":"Bash","tool_use_id":"b1","tool_input":{}}]' '[]'
+  run bash "$GEN" demo
+  [ "$status" -eq 0 ]
+  grep -q "Bash canary: the init event does not list Bash (CLI 9.9.9" "$out/tc-1-thing.txt.failed"
 }
 
 @test "deny-record tripwire: a Bash call missing from permission_denials voids the run" {

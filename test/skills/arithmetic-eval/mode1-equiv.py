@@ -20,11 +20,18 @@ It also re-checks the generator's tripwire: every Bash tool_use id must be in
 the result event's permission_denials, or the run fails whatever it computed.
 
 Usage: mode1-equiv.py <SKILL.md> <transcript.jsonl> <expected>
-  <expected> is one or more values separated by "|", each optionally followed
-  by "~<relative tolerance>" (default 1e-6; relative only, so an expected 0
-  needs an exact 0), e.g. "1900000000|1900000" or "42.16~0.002".
-Exit 0 on a match, 1 on no match (per-call diagnostics on stdout), 2 on a
-usage, value-spec or SKILL.md extraction error (message on stderr).
+       mode1-equiv.py --check-spec <SKILL.md> <expected>
+  <expected> is one or more finite values separated by "|", each optionally
+  followed by "~<relative tolerance>", a finite number >= 0 (default 1e-6;
+  relative only, so an expected 0 needs an exact 0), e.g. "1900000000|1900000"
+  or "42.16~0.002".
+  --check-spec validates <expected> and SKILL.md's Mode 1 block without a
+  transcript, so a broken fixture spec is caught before any paid run.
+Exit 0 on a match (or a valid spec), 1 on no match (per-call diagnostics on
+stdout), 2 on any setup error: usage, value spec, an unreadable file, or a
+SKILL.md whose Mode 1 block does not extract (message on stderr). Every setup
+error goes through SetupError in main(), so none can escape as a traceback
+with exit 1, which would read as "the model did not compute the value".
 """
 import ast
 import json
@@ -41,9 +48,8 @@ HEAD_RE = re.compile(
 TAIL_LINE_RE = re.compile(r"[ \t]*(#.*)?")
 
 
-def usage_error(msg):
-    print("mode1-equiv: " + msg, file=sys.stderr)
-    sys.exit(2)
+class SetupError(Exception):
+    """A problem with the check's inputs, not with what the model did."""
 
 
 def split_mode1(cmd):
@@ -65,19 +71,30 @@ def split_mode1(cmd):
 
 def reference(skill_path):
     """(program, ast dump) of SKILL.md's Mode 1 block."""
-    text = open(skill_path, encoding="utf-8").read()
+    text = read_text(skill_path)
     m = re.search(r"^## Mode 1\b.*?^```bash\n(.*?)^```", text, re.S | re.M)
     if not m:
-        usage_error("no ```bash block under '## Mode 1' in " + skill_path)
+        raise SetupError("no ```bash block under '## Mode 1' in " + skill_path)
     w = split_mode1(m.group(1).strip("\n"))
     if not w:
-        usage_error("SKILL.md's own Mode 1 block does not match the wrapper pattern")
-    return w[0], ast.dump(ast.parse(w[0]))
+        raise SetupError("SKILL.md's own Mode 1 block does not match the wrapper pattern")
+    try:
+        return w[0], ast.dump(ast.parse(w[0]))
+    except SyntaxError as e:
+        raise SetupError(f"SKILL.md's Mode 1 program does not parse: {e}")
+
+
+def read_text(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except (OSError, UnicodeDecodeError) as e:
+        raise SetupError(f"cannot read {path}: {e}")
 
 
 def events(transcript_path):
     out = []
-    for line in open(transcript_path, encoding="utf-8"):
+    for line in read_text(transcript_path).split("\n"):
         try:
             out.append(json.loads(line))
         except ValueError:
@@ -98,13 +115,17 @@ def bash_calls(evs):
 
 
 def parse_expected(spec):
+    """[(value, rel_tol)]; every value finite, every tolerance finite and >= 0."""
     alts = []
     for part in spec.split("|"):
         value, _, tol = part.partition("~")
         try:
-            alts.append((float(value), float(tol) if tol else 1e-6))
+            v, t = float(value), float(tol) if tol else 1e-6
         except ValueError:
-            usage_error(f"bad expected value {part!r} in {spec!r}")
+            raise SetupError(f"bad expected value {part!r} in {spec!r}")
+        if not math.isfinite(v) or not math.isfinite(t) or t < 0:
+            raise SetupError(f"expected value {part!r} in {spec!r}: value must be finite, tolerance finite and >= 0")
+        alts.append((v, t))
     return alts
 
 
@@ -125,12 +146,20 @@ def evaluate(program, expr):
 
 
 def main():
-    if len(sys.argv) != 4:
-        usage_error("expected 3 arguments\n" + __doc__)
-    skill_path, transcript_path, spec = sys.argv[1:]
-    ref_program, ref_dump = reference(skill_path)
-    expected = parse_expected(spec)
-    evs = events(transcript_path)
+    try:
+        if len(sys.argv) == 4 and sys.argv[1] == "--check-spec":
+            reference(sys.argv[2])
+            parse_expected(sys.argv[3])
+            return 0
+        if len(sys.argv) != 4:
+            raise SetupError("expected 3 arguments\n" + __doc__)
+        skill_path, transcript_path, spec = sys.argv[1:]
+        ref_program, ref_dump = reference(skill_path)
+        expected = parse_expected(spec)
+        evs = events(transcript_path)
+    except SetupError as e:
+        print("mode1-equiv: " + str(e), file=sys.stderr)
+        return 2
     calls = bash_calls(evs)
 
     denied = {d.get("tool_use_id") for ev in evs if ev.get("type") == "result"

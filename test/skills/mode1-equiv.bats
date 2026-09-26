@@ -167,3 +167,95 @@ transcript() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"FIXTURE_TRANSCRIPT=1"* ]]
 }
+
+# --- Iteration-2 review fixes (A11, A12, A13, C18) ---
+
+@test "no_tool_called fails, never passes, on an invalid or dash-leading pattern" {
+  transcript "rm -rf / --force ("
+  run assert_no_tool_called Bash '('
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Invalid pattern"* ]]
+  run assert_no_tool_called Bash '-rf'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Expected no Bash calls with input matching /-rf/"* ]]
+}
+
+@test "no_tool_called fails on an unreadable transcript" {
+  transcript "echo hi"
+  chmod 000 "$T"
+  run assert_no_tool_called Bash
+  chmod 644 "$T"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Could not read tool calls"* ]]
+}
+
+@test "a tool name the run's init event does not list fails the check (a misspelling cannot pass)" {
+  transcript "echo hi"
+  sed -i '1i {"type":"system","subtype":"init","tools":["Bash"]}' "$T"
+  run assert_no_tool_called bash
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"bash is not a tool of this run"* ]]
+  run assert_no_tool_called Bash
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Expected no Bash calls"* ]]
+}
+
+@test "tool_called:<Tool> with no pattern means the tool was called at all" {
+  transcript "echo hi"
+  run assert_tool_called Bash
+  [ "$status" -eq 0 ]
+  jq -nc '{type:"result",subtype:"success",result:"# Report",permission_denials:[]}' > "$T"
+  run assert_tool_called Bash
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Bash calls seen: 0"* ]]
+  run assert_tool_called Bash ''
+  [ "$status" -ne 0 ]
+}
+
+@test "mode1_equiv labels a checker exit 2 as a setup error, not a model result" {
+  transcript "$(with_expr '1 + 1')"
+  run assert_mode1_equiv arithmetic-eval '1~-1'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"SETUP ERROR (exit 2), not a model result"* ]]
+  run assert_mode1_equiv arithmetic-eval 'nan'
+  [[ "$output" == *"SETUP ERROR"* ]]
+}
+
+@test "pre-flight: every committed mode1_equiv: spec is valid (--check-spec), before any paid run" {
+  local specs spec n=0
+  specs="$(grep '^KEY_CHECK' "$BATS_TEST_DIRNAME/arithmetic-eval/expected-verdicts.bash" | grep -o 'mode1_equiv:[^;"]*')"
+  [ -n "$specs" ]
+  while IFS= read -r spec; do
+    n=$((n + 1))
+    python3 "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" --check-spec "$SKILL_MD" "${spec#mode1_equiv:}" \
+      || { echo "invalid spec: $spec"; return 1; }
+  done <<< "$specs"
+  [ "$n" -ge 4 ]
+}
+
+# eval_fixture itself, against a throwaway tree shaped like test/skills, so the
+# dispatcher's parsing of tool_called:/no_tool_called:/mode1_equiv: is tested,
+# not only the assert functions (review C18).
+@test "eval_fixture dispatch: tool_called and no_tool_called parse <Tool>[=<ERE>]; mode1_equiv resolves by skill" {
+  local root="$TEST_TMPDIR/tree"
+  mkdir -p "$root/test/skills/arithmetic-eval/output" "$root/skills"
+  ln -s "$BATS_TEST_DIRNAME/arithmetic-eval/mode1-equiv.py" "$root/test/skills/arithmetic-eval/mode1-equiv.py"
+  ln -s "$(cd "$BATS_TEST_DIRNAME/../../skills/arithmetic-eval" && pwd)" "$root/skills/arithmetic-eval"
+  transcript "$(with_expr '1 + 1')"
+  cp "$T" "$root/test/skills/arithmetic-eval/output/tc-1.md.transcript.jsonl"
+  echo "# Report" > "$root/test/skills/arithmetic-eval/output/tc-1.md.report.md"
+  BATS_TEST_DIRNAME="$root/test/skills"
+  declare -gA KEY_CHECK EXPECTED_VERDICT
+  EXPECTED_VERDICT["tc-1.md"]="any"
+  local check
+  for check in "tool_called:Bash" "tool_called:Bash=python3" "no_tool_called:Bash=rm -rf" "mode1_equiv:2"; do
+    KEY_CHECK["tc-1.md"]="$check"
+    run eval_fixture arithmetic-eval tc-1.md
+    [ "$status" -eq 0 ] || { echo "expected pass: $check"; echo "$output"; return 1; }
+  done
+  for check in "no_tool_called:Bash" "no_tool_called:Bash=python3" "tool_called:Bash=curl" "mode1_equiv:3"; do
+    KEY_CHECK["tc-1.md"]="$check"
+    run eval_fixture arithmetic-eval tc-1.md
+    [ "$status" -ne 0 ] || { echo "expected fail: $check"; echo "$output"; return 1; }
+  done
+}

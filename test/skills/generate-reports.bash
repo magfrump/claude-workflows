@@ -28,18 +28,13 @@
 #                     to the report, so eval checks can see tool calls and
 #                     sub-agent dispatches (tool_called:, subagents_min:). The
 #                     report is still plain text: the final result event's text.
-#   FIXTURE_BASH (optional) — "deny-record" lets FIXTURE_TOOLS name Bash, and
-#                     pins --disallowedTools 'Bash(**)' --permission-mode dontAsk
-#                     --permission-prompts none so every Bash call is denied and
-#                     only recorded (Q-063 [1]). dontAsk alone is not enough: it
-#                     still auto-approves commands the CLI deems read-only (pwd,
-#                     ls and echo ran, probed 2026-09-25). 'Bash(**)' is a deny
-#                     rule matching every command, multi-line included, while
-#                     keeping Bash visible to the model; plain 'Bash(*)' removes
-#                     the tool instead.
-#                     Needs FIXTURE_TRANSCRIPT=1. A run in which any Bash call
-#                     is missing from the result's permission_denials, i.e. may
-#                     have executed, is recorded as failed.
+#   FIXTURE_BASH (optional) — "deny-record" lets FIXTURE_TOOLS be exactly Bash
+#                     and pins DENY_RECORD_FLAGS (defined below, with why), so
+#                     every Bash call is denied and only recorded (Q-063 [1]).
+#                     Needs FIXTURE_TRANSCRIPT=1; refuses CLAUDE_FLAGS. A run is
+#                     recorded as failed when any Bash call is missing from the
+#                     result's permission_denials (it may have executed), or
+#                     when the init event does not list Bash (canary).
 #
 # Fixture filenames describe the planted defect or the expected verdict
 # (tc-sec1-sql-injection.py, tc-c2.4-incorrect.js). The model must never see
@@ -117,20 +112,20 @@ if [ "$FIXTURE_TRANSCRIPT" = 1 ] && ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-# Under deny-record, the operator's CLAUDE_FLAGS must not loosen what the pinned
-# permission flags deny (a later --permission-mode would win). Any whitespace
-# separates words when CLAUDE_FLAGS is expanded, so tabs and newlines are
-# folded to spaces before matching.
-if [ "$FIXTURE_BASH" = "deny-record" ]; then
-  flags_words=" ${CLAUDE_FLAGS:-} "
-  flags_words="${flags_words//[[:space:]]/ }"
-  case "$flags_words" in
-    *" --permission-mode"*|*" --permission-prompt"*|*" --allowedTools"*|*" --allowed-tools"*|\
-    *" --dangerously-skip-permissions"*|*" --allow-dangerously-skip-permissions"*|*" --settings"*)
-      echo "Error: $RUNNER_FILE sets FIXTURE_BASH=deny-record; CLAUDE_FLAGS may not change permissions: ${CLAUDE_FLAGS}" >&2
-      exit 1
-      ;;
-  esac
+# The flags that make every Bash call denied and recorded under deny-record
+# (Q-063 [1]). The one definition: the prose elsewhere points here. Probed
+# 2026-09-25 on CLI 2.1.283 (dd-arith-eval-bash-grant.md, "As built"): dontAsk
+# alone still ran read-only commands; the 'Bash(**)' deny rule denies every
+# call, multi-line included, while keeping Bash visible ('Bash(*)' removes it).
+DENY_RECORD_FLAGS=(--disallowedTools 'Bash(**)' --permission-mode dontAsk --permission-prompts none)
+
+# Under deny-record, CLAUDE_FLAGS is refused outright. A denylist of flag names
+# cannot hold: --setting-sources, a repeated --tools, --mcp-config, --add-dir
+# or --agents could each change what runs (review iteration 2, C16). The model
+# still comes from CLAUDE_MODEL, which is passed as one argv element.
+if [ "$FIXTURE_BASH" = "deny-record" ] && [ -n "${CLAUDE_FLAGS:+${CLAUDE_FLAGS//[[:space:]]/}}" ]; then
+  echo "Error: $RUNNER_FILE sets FIXTURE_BASH=deny-record, which refuses CLAUDE_FLAGS (got: $(printf '%q' "$CLAUDE_FLAGS")); set the model with CLAUDE_MODEL" >&2
+  exit 1
 fi
 
 # "none" is explicit so a runner that forgets FIXTURE_TOOLS still errors above;
@@ -157,9 +152,11 @@ generate_one() {
 
   echo "--- Generating: $fixture_name ---"
 
-  local model_flag=""
+  # One argv element for the value, so CLAUDE_MODEL cannot smuggle flags
+  # (review iteration 2, C16).
+  local -a model_args=()
   if [ -n "${CLAUDE_MODEL:-}" ]; then
-    model_flag="--model $CLAUDE_MODEL"
+    model_args=(--model "$CLAUDE_MODEL")
   fi
 
   # Keep a known file-type extension (it tells the model the language); drop
@@ -189,7 +186,7 @@ generate_one() {
   # tools" and does not consume the flag after it.
   claude_args+=(--tools "$TOOLS_ARG")
   if [ "$FIXTURE_BASH" = "deny-record" ]; then
-    claude_args+=(--disallowedTools 'Bash(**)' --permission-mode dontAsk --permission-prompts none)
+    claude_args+=("${DENY_RECORD_FLAGS[@]}")
   fi
 
   # Every mode runs in a fresh temp directory: empty for inline, a minimal git
@@ -233,7 +230,7 @@ generate_one() {
   # shellcheck disable=SC2086
   (cd "$temp_dir" && printf '%s' "$stdin_text" \
     | claude "${claude_args[@]}" \
-      $model_flag \
+      "${model_args[@]}" \
       ${CLAUDE_FLAGS:-} \
   ) > "$out_path" 2>/dev/null || rc=$?
   local failure=""
@@ -275,6 +272,19 @@ generate_one() {
         *) trip="Bash tripwire: $undenied Bash call(s) not in permission_denials (may have executed)" ;;
       esac
       [ -z "$trip" ] || failure="${failure:+$failure; }$trip"
+      # Canary: the deny rule must leave Bash visible. If a CLI change made
+      # 'Bash(**)' remove the tool, as 'Bash(*)' does, there would be no Bash
+      # calls, the tripwire would pass, and every fixture would read as "the
+      # model did not route" (review iteration 2, C17). The init event also
+      # carries claude_code_version, so each kept transcript records its CLI.
+      local init_tools cli_version
+      init_tools=$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .tools[]?' \
+        "$transcript_path" 2>/dev/null || true)
+      cli_version=$(jq -rR 'fromjson? | select(.type == "system" and .subtype == "init") | .claude_code_version // empty' \
+        "$transcript_path" 2>/dev/null | head -n 1 || true)
+      if ! printf '%s\n' "$init_tools" | grep -qx Bash; then
+        failure="${failure:+$failure; }Bash canary: the init event does not list Bash (CLI ${cli_version:-unknown}; did the deny rule remove the tool?)"
+      fi
     fi
   fi
 
