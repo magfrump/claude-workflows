@@ -100,14 +100,48 @@ section() {
   section 'Consider' | grep -qE '^\|[^|]*#[^|]*\|.*\|[[:space:]]*Severity[[:space:]]*\|'
 }
 
+# --- Row-level cell shapes: asserted on the golden AND the rubric template ---
+#
+# The golden is hand-written, so a row-shape test that reads only the golden
+# constrains nothing the skill ships: rubric.md's example rows could say
+# `[anything]` for Evidence or `[status]` for Status and every golden-only test
+# stayed green (the header-sync tests below compare headers, not cells). Each
+# test here therefore runs against both sources via for_each_source.
+
+# Run the named check once per source, with CONTENT/SRC set; red if either fails.
+# The check runs under `||`, which suspends errexit inside it, so every check
+# function must `return 1` explicitly on failure rather than rely on fail().
+for_each_source() {
+  local check="$1" src
+  for src in golden template; do
+    if [ "$src" = golden ]; then
+      CONTENT="$FIXTURE_CONTENT"
+    else
+      [ -f "$RUBRIC_MD" ] || fail "rubric template missing at $RUBRIC_MD (run from repo root)"
+      CONTENT=$(skill_template | tr -d '\r')
+      [ -n "$CONTENT" ] || fail "could not extract the rubric template from $RUBRIC_MD"
+    fi
+    SRC="$src" "$check" || return 1
+  done
+}
+
+# Section extraction over whichever source for_each_source selected.
+src_section() {
+  echo "$CONTENT" | sed -n "/^## .*$1/,/^## /p" | sed '$d'
+}
+
+check_native_severity() {
+  local body
+  body=$(echo "$CONTENT" | grep -E '^\| (R|A|C)[0-9]+ \|')
+  [ -n "$body" ] || { fail "$SRC has no finding rows"; return 1; }
+  echo "$body" | grep -qiE '\|[[:space:]]*(Critical|High|Medium|Low|Informational|Breaking|Inconsistent|Structural|Coupling|Minor|Incorrect|Stale)[[:space:]]*\|' \
+    || { fail "$SRC: no row carries a recognizable critic-native severity"; return 1; }
+}
+
 @test "severity values are critic-native levels, not rubric tier emoji" {
   # The whole point of the column is that it survives the lossy tier mapping.
   # A row whose Severity cell is a tier emoji has flattened the signal away.
-  local body
-  body=$(echo "$FIXTURE_CONTENT" | grep -E '^\| (R|A|C)[0-9]+ \|')
-  [ -n "$body" ] || fail "fixture has no finding rows"
-  echo "$body" | grep -qiE '\|[[:space:]]*(Critical|High|Medium|Low|Informational|Breaking|Inconsistent|Structural|Coupling|Minor|Incorrect|Stale)[[:space:]]*\|' \
-    || fail "no row carries a recognizable critic-native severity"
+  for_each_source check_native_severity
 }
 
 # --- Confirmed Good carries evidence (thoughts doc §1.3) ---
@@ -121,7 +155,7 @@ section() {
   section 'Confirmed Good' | grep -qE '^\|[[:space:]]*Item[[:space:]]*\|.*\|[[:space:]]*Evidence[[:space:]]*\|'
 }
 
-@test "every Confirmed Good row cites evidence" {
+check_confirmed_good_evidence() {
   local row n=0
   while IFS= read -r row; do
     n=$((n + 1))
@@ -129,9 +163,22 @@ section() {
     # universally quantified claim. An instance-shaped citation for an "all/none"
     # claim is the exact move that produced the observed miss.
     echo "$row" | grep -qE '(`[^`]+:[0-9]+`|[Ee]numeration|rg -n)' \
-      || fail "Confirmed Good row lacks evidence: $row"
-  done < <(section 'Confirmed Good' | grep -E '^\|.*✅ Confirmed')
-  [ "$n" -gt 0 ] || fail "fixture has no Confirmed Good rows"
+      || { fail "$SRC: Confirmed Good row lacks evidence: $row"; return 1; }
+  done < <(src_section 'Confirmed Good' | grep -E '^\|.*✅ Confirmed')
+  [ "$n" -gt 0 ] || { fail "$SRC has no Confirmed Good rows"; return 1; }
+}
+
+@test "every Confirmed Good row cites evidence" {
+  for_each_source check_confirmed_good_evidence
+}
+
+@test "the rubric template requires Evidence on every Confirmed Good row" {
+  # The prose rule the example row illustrates; without it the Evidence cell is
+  # optional to a model filling in the template.
+  [ -f "$RUBRIC_MD" ] || fail "rubric template missing at $RUBRIC_MD"
+  CONTENT=$(skill_template)
+  src_section 'Confirmed Good' | tr '\n' ' ' | grep -qE 'Every row carries `Evidence`' \
+    || fail "rubric template no longer requires Evidence on every Confirmed Good row"
 }
 
 @test "a contested confirmation lands in Must Address, not Confirmed Good" {
@@ -145,27 +192,41 @@ section() {
 
 # --- Status columns (the calibration instrument added 5f17729) ---
 
-@test "every finding row carries a Status value" {
+check_status_values() {
   local row n=0
   while IFS= read -r row; do
     n=$((n + 1))
     echo "$row" | grep -qE '(🔴|🟡|🟢)[[:space:]]*(Unresolved|Open|Fixed|Won.t-Fix|Deferred)' \
-      || fail "finding row lacks a Status value: $row"
-  done < <(echo "$FIXTURE_CONTENT" | grep -E '^\| (R|A|C)[0-9]+ \|')
-  [ "$n" -gt 0 ] || fail "fixture has no finding rows"
+      || { fail "$SRC: finding row lacks a Status value: $row"; return 1; }
+  done < <(echo "$CONTENT" | grep -E '^\| (R|A|C)[0-9]+ \|')
+  [ "$n" -gt 0 ] || { fail "$SRC has no finding rows"; return 1; }
+}
+
+@test "every finding row carries a Status value" {
+  for_each_source check_status_values
+}
+
+check_consider_status() {
+  src_section 'Consider' | grep -E '^\| C[0-9]+ \|' \
+    | grep -qE '🟢[[:space:]]*(Open|Fixed|Won.t-Fix|Deferred)' \
+    || { fail "$SRC: no Consider row uses the green status vocabulary"; return 1; }
 }
 
 @test "Consider rows use the green status vocabulary" {
   # 🟢 is ~70% of pipeline output and was the tier with no disposition recorded,
   # which is why advisory-band precision could not be estimated after the fact.
-  section 'Consider' | grep -E '^\| C[0-9]+ \|' \
-    | grep -qE '🟢[[:space:]]*(Open|Fixed|Won.t-Fix|Deferred)'
+  for_each_source check_consider_status
 }
 
 # --- Location / evidence citation ---
 
+check_must_fix_location() {
+  src_section 'Must Fix' | grep -E '^\| R[0-9]+ \|' | grep -qE '`[^`]+:[0-9]+`' \
+    || { fail "$SRC: no Must Fix row cites a path:line location"; return 1; }
+}
+
 @test "Must Fix rows cite a location" {
-  section 'Must Fix' | grep -E '^\| R[0-9]+ \|' | grep -qE '`[^`]+:[0-9]+`'
+  for_each_source check_must_fix_location
 }
 
 # --- Golden ↔ SKILL.md template sync ---

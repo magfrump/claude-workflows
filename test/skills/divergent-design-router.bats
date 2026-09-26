@@ -17,6 +17,22 @@ setup() {
   WORKFLOW="$REPO_ROOT/workflows/divergent-design.md"
   [ -f "$SKILL" ] || skip "divergent-design SKILL.md not found at $SKILL"
   SKILL_CONTENT=$(tr -d '\r' < "$SKILL")
+  # The body is what an agent follows once the skill fires; the frontmatter
+  # description only decides whether it fires. The description restates the
+  # trigger test and the workflow path, so a body assertion made against the
+  # whole file is satisfied by the frontmatter alone (deleting the body from the
+  # trigger test to EOF left every such test green). Assert on the body.
+  SKILL_BODY=$(echo "$SKILL_CONTENT" | awk '/^---$/ && n < 2 { n++; next } n >= 2')
+  [ -n "$SKILL_BODY" ] || { echo "SKILL.md has no body after its frontmatter" >&2; return 1; }
+}
+
+# Extract one "## <heading>" section of the body, excluding the next ## heading.
+body_section() {
+  echo "$SKILL_BODY" | awk -v h="$1" '
+    index($0, "## " h) == 1 { on = 1; print; next }
+    on && /^## / { exit }
+    on { print }
+  '
 }
 
 # Extract YAML frontmatter (content between first pair of --- delimiters)
@@ -43,8 +59,11 @@ extract_frontmatter() {
 
 # --- Router contract: hands off to the workflow ---
 
-@test "skill points at the divergent-design workflow file" {
-  echo "$SKILL_CONTENT" | grep -qE 'workflows/divergent-design\.md'
+@test "skill body instructs the agent to read and follow the workflow file" {
+  local handoff
+  handoff=$(body_section "Hand off to the workflow" | tr '\n' ' ')
+  [ -n "$handoff" ] || { echo "no '## Hand off to the workflow' section in the body" >&2; return 1; }
+  echo "$handoff" | grep -qE 'Read and follow[^.]*workflows/divergent-design\.md'
 }
 
 @test "the workflow file it routes to actually exists" {
@@ -53,16 +72,21 @@ extract_frontmatter() {
 
 # --- Trigger-test contract ---
 
-@test "skill states the 3+ tradeoff-bearing options trigger test" {
-  echo "$SKILL_CONTENT" | grep -qiE '3\+ viable options'
-  echo "$SKILL_CONTENT" | grep -qiE 'tradeoff axis'
+@test "skill body states the 3+ tradeoff-bearing options trigger test" {
+  local trig
+  trig=$(body_section "Trigger test")
+  [ -n "$trig" ] || { echo "no '## Trigger test' section in the body" >&2; return 1; }
+  echo "$trig" | grep -qiE '3\+ viable options'
+  echo "$trig" | grep -qiE 'tradeoff axis'
 }
 
-@test "skill defines the brainstorming-supersession boundary" {
+@test "skill body defines the brainstorming-supersession boundary" {
   # The router exists to compete with open-ended brainstorming at selection time;
   # the contract must name both the supersede case and the fall-through-to-brainstorming case.
-  echo "$SKILL_CONTENT" | grep -qiE 'brainstorming'
-  echo "$SKILL_CONTENT" | grep -qiE 'supersede'
+  local trig
+  trig=$(body_section "Trigger test")
+  echo "$trig" | grep -qiE 'brainstorming does'
+  echo "$trig" | grep -qiE 'supersedes brainstorming'
 }
 
 # --- Anti-redundancy: stays a stub, does not duplicate the workflow ---

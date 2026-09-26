@@ -16,9 +16,19 @@ SKILL="code-fact-check"
 
 # Load a report for an edge-case fixture.
 # Sets REPORT_CONTENT, CLAIM_COUNT, REPORT_PATH.
-# Skips if the report hasn't been generated yet.
+# Skips if the report hasn't been generated yet (scripts/run-tests.sh drops this
+# suite, like *-format/*-eval, when no generated reports exist at all).
+# Fails when generate-reports.bash left <fixture>.failed: every assertion below
+# is absence-only (no claims, no verdicts, no critique), so a dead run's empty
+# or junk report would otherwise pass all of them — the same fail-closed rule
+# eval_fixture applies.
 load_edge_report() {
   load_eval_report "$SKILL" "$1"
+  local failed_marker="${REPORT_PATH%.report.md}.failed"
+  if [ -f "$failed_marker" ]; then
+    echo "Generation failed for $1: $(cat "$failed_marker")" >&2
+    return 1
+  fi
 }
 
 # Assert the report contains no ## Claim sections (no hallucinated claims).
@@ -56,11 +66,16 @@ assert_no_cross_skill_verdicts() {
   fi
 }
 
-# Assert the report indicates graceful handling — either an empty report
-# or text acknowledging there's nothing to check / input cannot be processed.
+# Assert the report indicates graceful handling: text acknowledging there's
+# nothing to check / input cannot be processed. A blank report does not count —
+# the generate-reports.bash runner prompt never permits a zero-byte report (the
+# SKILL.md allows one only "when the orchestrator allows it"), and a blank
+# report is also what a failed or truncated run leaves behind.
 assert_graceful_output() {
-  # Empty report content is a valid graceful response (skill produced nothing).
-  [ -z "$REPORT_CONTENT" ] && return 0
+  if [ -z "${REPORT_CONTENT//[[:space:]]/}" ]; then
+    echo "Report is blank: no acknowledgement that there was nothing to check."
+    return 1
+  fi
 
   # Non-empty report should contain a recognizable "nothing to check" indication.
   if echo "$REPORT_CONTENT" | grep -qiE \

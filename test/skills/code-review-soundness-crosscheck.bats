@@ -28,9 +28,14 @@ setup() {
 
 fail() { echo "$1" >&2; return 1; }
 
-# Emit the channel section (from its heading to the next ### heading).
+# Emit the channel section (from its heading to the next ### heading). The end
+# anchor is the heading that immediately follows it in references/rubric.md.
+# It used to be '### Rubric Status Line', which swallowed the whole
+# Executable-Defect Channel — a section that shares much of this one's
+# vocabulary ("lift only, never demote"), so dropping a clause from this
+# channel stayed green on the neighbour's copy.
 channel() {
-  echo "$SKILL_CONTENT" | sed -n '/^### Soundness-Contradiction Channel/,/^### Rubric Status Line/p'
+  echo "$SKILL_CONTENT" | sed -n '/^### Soundness-Contradiction Channel/,/^### Executable-Defect Channel/p'
 }
 
 # The section with hard wraps collapsed, for assertions that span source lines.
@@ -128,9 +133,14 @@ channel_flat() {
 }
 
 @test "the section-extraction end anchor exists (no silent extract-to-EOF)" {
-  # Tech-debt D1 (2026-07-31): channel() extracts up to '### Rubric Status Line';
+  # Tech-debt D1 (2026-07-31): channel() extracts up to '### Executable-Defect Channel';
   # if that heading is renamed, extraction runs to EOF and scoped assertions can
-  # false-green against unrelated text.
-  echo "$SKILL_CONTENT" | grep -qE '^### Rubric Status Line' \
-    || fail "channel() end anchor '### Rubric Status Line' missing - extraction unbounded"
+  # false-green against unrelated text. The anchor must also be the very next
+  # ### heading, or the extract spans a neighbouring section.
+  echo "$SKILL_CONTENT" | grep -qE '^### Executable-Defect Channel' \
+    || fail "channel() end anchor '### Executable-Defect Channel' missing - extraction unbounded"
+  local next
+  next=$(echo "$SKILL_CONTENT" | awk '/^### Soundness-Contradiction Channel/ { on = 1; next } on && /^### / { print; exit }')
+  [ "$next" = "### Executable-Defect Channel" ] \
+    || fail "the heading after the Soundness channel is '$next', not the channel() end anchor"
 }

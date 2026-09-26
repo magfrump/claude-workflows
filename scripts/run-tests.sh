@@ -78,7 +78,9 @@ if [[ -z "$matched" ]]; then
 fi
 
 # Report-gating (mirrors scripts/health-check.sh): the *-format.bats and
-# *-eval.bats suites validate skill report output. They only carry signal when
+# *-eval.bats suites validate skill report output, as do the *-edge-cases.bats
+# suites and the critic dimensions.bats suites (test/skills/<critic>/), which
+# read the same generated test/skills/<skill>/output/ reports. They only carry signal when
 # a freshly generated report exists under test/skills/<skill>/output/; without
 # one they would fall back to stale committed docs/reviews/ artifacts and report
 # spurious failures. So unless generated reports are present, drop that class
@@ -99,13 +101,13 @@ if ! $has_reports; then
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     case "$(basename "$f")" in
-      *-format.bats|*-eval.bats) skipped=$((skipped + 1)) ;;
+      *-format.bats|*-eval.bats|*-edge-cases.bats|dimensions.bats) skipped=$((skipped + 1)) ;;
       *) filtered+="$f"$'\n' ;;
     esac
   done <<< "$matched"
   matched="${filtered%$'\n'}"
   if [[ "$skipped" -gt 0 ]]; then
-    echo "Note: skipping $skipped report-dependent suite(s) (*-format/*-eval) —" \
+    echo "Note: skipping $skipped report-dependent suite(s) (*-format/*-eval/*-edge-cases/dimensions) —" \
          "no generated reports under test/skills/*/output/." >&2
     echo "      Run test/skills/generate-reports.bash to exercise them." >&2
     echo "" >&2

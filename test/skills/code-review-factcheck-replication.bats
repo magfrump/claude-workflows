@@ -118,8 +118,17 @@ stage1_flat() {
     || fail "the degraded-path vocabulary is not stated"
   local gate="$REPO_ROOT/scripts/self-improvement.sh"
   [ -f "$gate" ] || skip "self-improvement.sh not found"
-  grep -qE 'Replication:' "$gate" || fail "Gate 1h does not parse **Replication:**"
-  grep -qE 'Commit:' "$gate" || fail "Gate 1h does not parse the Commit line"
+  # Match the parse expressions themselves, on non-comment lines: a bare
+  # 'Replication:' / 'Commit:' grep is satisfied by the gate's explanatory
+  # comment, so renaming the field inside the sed parse stayed green.
+  local code
+  code=$(grep -vE '^[[:space:]]*#' "$gate")
+  local rep_parse='s/^\*\*Replication:\*\* *//p'
+  local commit_parse='s/^\*\*Commit:\*\* *//p'
+  echo "$code" | grep -F "$rep_parse" | grep -q 'CR_REPLICATION=$(sed' \
+    || fail "Gate 1h does not sed-parse the **Replication:** field into CR_REPLICATION"
+  echo "$code" | grep -F "$commit_parse" | grep -q 'CR_FC_COMMIT=$(sed' \
+    || fail "Gate 1h does not sed-parse the **Commit:** field into CR_FC_COMMIT"
 }
 
 @test "the section-extraction end anchors exist (no silent extract-to-EOF)" {
