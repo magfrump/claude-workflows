@@ -47,7 +47,12 @@ directory is a hard error (it refuses rather than guessing another repo).
    up` alone never rebuilds.
 6. Run the **boundary self-probe** (seven checks; see below). A full pass writes the
    hash to `verified-live.sha256` next to the manifest.
-7. `exec devcontainer exec … claude`.
+7. `devcontainer exec … claude`. Before step 4 the launcher snapshots the
+   checkout's exec-capable `.git` state; when claude exits it compares, and
+   exits **3** naming anything the session added or changed (see the caveat
+   under [No credentials](#working-with-collaborators-github-credentials)).
+   It exits 4 when the exit scan cannot read `.git`, and refuses to launch
+   when the baseline snapshot cannot be taken.
 
 Target repos get **zero** new files — nothing is committed into them.
 
@@ -158,13 +163,38 @@ repos it can push to or read privately*. Pick the narrowest tier that fits:
   **Caveat:** the container can write the checkout's `.git` through the bind
   mount. A plain host `git push` (or `git status`) runs any hooks,
   `core.fsmonitor` or filter drivers planted there, as you and with your keys.
-  `install.sh` guards only its own git calls against this. Decision 034 set
+  `install.sh` guards only its own git calls against this.
+  **The launcher's exit scan (Q-069 [3]).** `cc-isolated` snapshots the
+  checkout's `.git` before the session and compares when claude exits. It
+  names every new or changed hook (in `.git/hooks` or a configured
+  `core.hooksPath`), every `filter.*`, `core.fsmonitor`, `include*` and
+  `hook.*` key (install.sh's refusal list), a non-empty `info/attributes`,
+  a repointed `.git` file, and the keys that make `git push` or an everyday
+  command run a program (`core.hooksPath`, `core.sshCommand`, credential
+  helpers, pagers and editors, diff/merge drivers, `gpg.*`, aliases,
+  `submodule.*`, `protocol.*`), with how to remove each. Then it exits 3,
+  never 0. The scan runs nothing from the checkout: it finds the git dir
+  by reading files and reads config with `git config --file … --no-includes`
+  from `/`. Its limits:
+  - **Baseline, not audit.** Whatever is present at launch is accepted, so
+    an item an earlier session planted that you did not remove is silent
+    from then on. Clean up when warned.
+  - **After the scan.** The container keeps running when claude exits. A
+    process the session left behind can plant a key after the scan; only a
+    stopped container (`docker stop`) cannot.
+  - **No scan.** A launcher killed before claude exits (a closed terminal,
+    SIGTERM) scans nothing. Ctrl-C that ends the session still scans.
+  - **Outside `.git`.** Keys in the host's own `~/.gitconfig` and tracked
+    files such as `.gitattributes` are not scanned; a tracked attribute only
+    runs a driver that config defines, and that config is scanned.
+  So after a warning, or whenever you are unsure, push with hooks and
+  fsmonitor disabled (`git -c core.hooksPath=/dev/null -c
+  core.fsmonitor=false push`), or from a separate host clone that fetches
+  from this one. The first does not cover filter drivers, includes or
+  `core.sshCommand`; the separate clone runs none of this checkout's hooks,
+  filters or ssh settings when you push. Decision 034 set
   "the host never reads a container-written `.git`" for the benchmark
-  harness, but not for this workflow. Until that is settled
-  (`docs/working/questions.md`), push with hooks and fsmonitor disabled
-  (`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push`), or push
-  from a separate host clone that fetches from this one. Neither covers
-  filter drivers.
+  harness, not for this workflow.
 - **Read-only PAT — for private fetches.** When the repo, or a dependency, is
   private, export a fine-grained PAT with *Contents: read* on the named repos
   only: `GH_TOKEN=github_pat_… cc-isolated ~/code/api`. `devcontainer.json`

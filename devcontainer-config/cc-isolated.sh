@@ -533,6 +533,187 @@ probe_boundary() {
   echo "Recorded config $want_hash as verified live in $(verified_path)."
 }
 
+# --- Exit scan: .git changes the container made during the session -------------
+#
+# WHY (Q-069 [3], Q-076). The container writes the checkout's .git through the bind
+# mount, and the recommended workflow is "commit inside, push from the host with
+# your keys". A plain host `git push` or `git status` then runs whatever hooks,
+# core.fsmonitor, filter drivers or included config the session planted — as you,
+# with your ssh keys. So main() snapshots the exec-capable .git state before the
+# session and compares after claude exits; anything new or changed is named, with
+# how to remove it, and the launcher exits 3 instead of 0.
+#
+# THE SCAN RUNS NOTHING FROM THE REPO. The git dir is located by plain file reads
+# (a `.git` file's `gitdir:` line, a worktree's `commondir`), never `git rev-parse`
+# in the checkout. Config is read with `git config --file <f> --no-includes` from
+# cwd /, so no repo is discovered and include.path is not followed. Hooks and
+# info/attributes are hashed, not run. Nothing here refreshes an index, which is
+# what starts fsmonitor and clean filters.
+#
+# THE KEY LIST starts with install.sh's refusal list (GIT_EXEC_KEYS_RE there; a
+# bats test pins every alternative of it into this one), plus the keys that make
+# `git push` or an everyday host command run a program: core.hooksPath,
+# core.sshCommand, credential helpers, pagers/editors, diff/merge drivers, gpg,
+# aliases, submodule update commands and protocol.* (which can enable ext::).
+# install.sh does not need those: its own git calls never push, page or diff.
+#
+# LIMITS (also in guides/cc-isolated-usage.md). The container keeps running after
+# claude exits, so a process it left behind can plant after the scan. Whatever is
+# present at launch is the baseline, including anything an earlier session planted
+# that you did not remove. A launcher killed before the scan (closed terminal,
+# SIGTERM) scans nothing.
+GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|sequence\.editor|pager\.|credential|diff\.|merge\.|gpg\.|alias\.|submodule\.|protocol\.)'
+
+# scan_git_dirs <ws>: print the git dir, then the common dir, of <ws>, from plain
+# file reads. Returns 1 when either cannot be found.
+scan_git_dirs() {
+  local ws="$1" g line common
+  g="$ws/.git"
+  if [ -f "$g" ]; then
+    # A linked worktree or submodule: `.git` is a file holding `gitdir: <path>`.
+    line=""
+    IFS= read -r line < "$g" || true
+    case "$line" in
+      "gitdir: "*) g="${line#gitdir: }" ;;
+      *) return 1 ;;
+    esac
+    case "$g" in /*) ;; *) g="$ws/$g" ;; esac
+  fi
+  [ -d "$g" ] || return 1
+  common="$g"
+  if [ -f "$g/commondir" ]; then
+    line=""
+    IFS= read -r line < "$g/commondir" || true
+    case "$line" in /*) common="$line" ;; *) common="$g/$line" ;; esac
+  fi
+  # Normalise (a worktree's commondir is usually "../.."): a plain cd, no git.
+  g="$(cd "$g" 2>/dev/null && pwd -P)" || return 1
+  common="$(cd "$common" 2>/dev/null && pwd -P)" || return 1
+  printf '%s\n%s\n' "$g" "$common"
+}
+
+# git_exec_snapshot <ws>: the exec-capable .git state of <ws>, one record per line,
+# sorted (LC_ALL=C) so two snapshots compare with comm. Lines are raw (they may hold
+# control bytes the container chose); show them only through scan_vis. Returns 1,
+# with a reason on stderr, when the state cannot be read completely.
+git_exec_snapshot() {
+  local ws="$1" dirs gd common f out rc line key val d h snap=""
+  local -a hookdirs=()
+  if ! dirs="$(scan_git_dirs "$ws")"; then
+    echo "cannot locate the git directory of $ws from its .git entry" >&2
+    return 1
+  fi
+  gd="${dirs%%$'\n'*}"
+  common="${dirs#*$'\n'}"
+  # The resolved dirs are records too: repointing `.git` or `commondir` shows up.
+  snap+="gitdir $gd"$'\n'"commondir $common"$'\n'
+  hookdirs+=("$common/hooks")
+  if [ ! -f "$common/config" ]; then
+    echo "no git config at $common/config" >&2
+    return 1
+  fi
+  for f in "$common/config" "$gd/config.worktree"; do
+    [ -f "$f" ] || continue   # config.worktree is optional
+    rc=0
+    out="$(cd / && git --no-pager config --file "$f" --no-includes --get-regexp "$GIT_EXIT_SCAN_KEYS_RE")" || rc=$?
+    if [ "$rc" -gt 1 ]; then
+      echo "could not read $f (git config exit $rc)" >&2
+      return 1
+    fi
+    [ -n "$out" ] || continue
+    while IFS= read -r line; do
+      snap+="config $f: $line"$'\n'
+      key="${line%% *}"
+      if [ "$key" = core.hookspath ]; then
+        val="${line#* }"
+        # shellcheck disable=SC2088  # matching a literal "~/" in the config value
+        case "$val" in
+          "~/"*) val="$HOME/${val#"~/"}" ;;
+          /*) ;;
+          *) val="$ws/$val" ;;   # relative to the top of the working tree
+        esac
+        hookdirs+=("$val")
+      fi
+    done <<< "$out"
+  done
+  # Hooks: every file git could run from the default dir or a configured hooksPath.
+  # *.sample is never run; a non-executable file is recorded anyway, since a chmod
+  # is all it takes to arm it.
+  for d in "${hookdirs[@]}"; do
+    [ -d "$d" ] || continue
+    for f in "$d"/*; do
+      case "$f" in *.sample) continue ;; esac
+      if [ -f "$f" ]; then
+        if [ ! -r "$f" ]; then
+          echo "cannot read hook $f" >&2
+          return 1
+        fi
+        h="$(sha256sum < "$f" | cut -c1-16)"
+        if [ -x "$f" ]; then h+=" executable"; else h+=" not-executable"; fi
+        if [ -L "$f" ]; then h+=" -> $(readlink "$f")"; fi
+        snap+="hook $f $h"$'\n'
+      elif [ -L "$f" ]; then
+        snap+="hook $f dangling -> $(readlink "$f")"$'\n'
+      fi
+    done
+  done
+  # info/attributes can assign any filter or diff driver to any path (install.sh
+  # refuses it when non-empty for the same reason).
+  f="$common/info/attributes"
+  if [ -s "$f" ]; then
+    if [ ! -r "$f" ]; then
+      echo "cannot read $f" >&2
+      return 1
+    fi
+    snap+="attributes $f $(sha256sum < "$f" | cut -c1-16)"$'\n'
+  fi
+  printf '%s' "$snap" | LC_ALL=C sort -u
+}
+
+# scan_vis: make control bytes visible as '?' so a container-chosen hook name or
+# config value cannot rewrite the terminal around the warning.
+scan_vis() {
+  LC_ALL=C tr -c '[:print:]\n' '?'
+}
+
+# git_exit_scan <ws> <launch snapshot>: 0 when nothing exec-capable appeared or
+# changed; 1 (warning on stderr, naming each item) when something did; 2 when the
+# exit state could not be read.
+git_exit_scan() {
+  local ws="$1" before="$2" after new errf reason
+  errf="$(mktemp)"
+  if ! after="$(git_exec_snapshot "$ws" 2>"$errf")"; then
+    reason="$(cat "$errf")"
+    rm -f "$errf"
+    {
+      echo "WARNING: the exit scan could not read $ws/.git: $reason"
+      echo "  Treat the checkout as untrusted until you have looked at it; push from a"
+      echo "  separate host clone (see guides/cc-isolated-usage.md, \"No credentials\")."
+    } | scan_vis >&2
+    return 2
+  fi
+  rm -f "$errf"
+  new="$(LC_ALL=C comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") | sed '/^$/d')"
+  [ -n "$new" ] || return 0
+  {
+    echo
+    echo "WARNING: this session changed $ws/.git in ways that make HOST git run a"
+    echo "  program as you, with your keys. New or changed since launch:"
+    printf '%s\n' "$new" | sed 's/^/    /'
+    echo "  Do not run git in this checkout on the host (not even \`git status\`) until"
+    echo "  you have checked and removed each one:"
+    echo "    config ... <file>: <key> <value>  ->  git config --file <file> --unset-all <key>"
+    echo "    hook <path> ...                   ->  rm <path>"
+    echo "    attributes <path> ...             ->  empty or remove <path>"
+    echo "    gitdir/commondir <path>           ->  .git (or its commondir) was repointed; restore it"
+    echo "  Until then, push from a separate host clone that fetches from this one, or"
+    echo "  with \`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push\` (that"
+    echo "  covers hooks and fsmonitor only, not filters, includes or sshCommand)."
+    echo "  See guides/cc-isolated-usage.md, \"No credentials\"."
+  } | scan_vis >&2
+  return 1
+}
+
 usage() {
   # Line range: the header block above, down to the last line of the "WHY THE
   # WORKSPACE IS AN ARGUMENT" paragraph. Adding a line to that block means moving
@@ -622,6 +803,16 @@ main() {
             --override-config "$(config_dir)/devcontainer.json"
             --id-label "cc-project=$pid")
 
+  # Baseline for the exit scan, taken before the container is (re)started. A repo
+  # whose .git cannot be read here could not be scanned at exit either, so refuse.
+  local git_before=""
+  if [ "$action" = "launch" ] && ! git_before="$(git_exec_snapshot "$ws")"; then
+    echo "ERROR: could not snapshot $ws/.git for the session-exit scan (reason above)." >&2
+    echo "  cc-isolated checks at exit that the session planted no hooks, fsmonitor," >&2
+    echo "  filters or includes; without a baseline it cannot. Fix the checkout, then rerun." >&2
+    exit 1
+  fi
+
   if ! is_verified_live; then
     echo "NOTE: blessed config $CC_CONFIG_HASH has NOT been verified in a live container."
     echo "      This run is that verification: the container is rebuilt from it, and the"
@@ -671,7 +862,21 @@ main() {
     probe_boundary "$ws"
   fi
 
-  exec devcontainer exec "${dc[@]}" claude
+  # Not `exec`: the launcher has to outlive claude to run the exit scan. The INT
+  # trap keeps a Ctrl-C that ends the session from also killing the launcher
+  # before the scan (a trapped signal, unlike an ignored one, is reset to its
+  # default in the child, so claude still gets its own Ctrl-C).
+  local rc=0
+  trap ':' INT
+  devcontainer exec "${dc[@]}" claude || rc=$?
+  trap - INT
+  local scan=0
+  git_exit_scan "$ws" "$git_before" || scan=$?
+  case "$scan" in
+    0) exit "$rc" ;;
+    1) exit 3 ;;   # the session planted something: never a clean exit
+    *) exit 4 ;;   # the scan could not read .git
+  esac
 }
 
 # Main-execution guard: allow sourcing for tests without running the launcher.
