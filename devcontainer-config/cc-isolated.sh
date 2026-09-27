@@ -538,31 +538,60 @@ probe_boundary() {
 # WHY (Q-069 [3], Q-076). The container writes the checkout's .git through the bind
 # mount, and the recommended workflow is "commit inside, push from the host with
 # your keys". A plain host `git push` or `git status` then runs whatever hooks,
-# core.fsmonitor, filter drivers or included config the session planted — as you,
-# with your ssh keys. So main() snapshots the exec-capable .git state before the
-# session and compares after claude exits; anything new or changed is named, with
-# how to remove it, and the launcher exits 3 instead of 0.
+# core.fsmonitor, filter drivers, remote receive-pack commands or included config
+# the session planted — as you, with your keys. So main() snapshots every file
+# host git reads to decide what to run, before the session, and compares after
+# claude exits; anything added, removed or changed is named, and the launcher
+# exits 3 instead of 0.
+#
+# WHAT IS SNAPSHOTTED. Content hashes (and modes, and symlink targets), not a list
+# of dangerous keys: git grows exec-capable settings faster than any list, and a
+# 3-replicate fact-check of the first, key-list version found four bypasses
+# (remote.*.receivepack, a repointed pushurl, a submodule's config, a hooks dir
+# made unlistable). Recorded, for the checkout's git dir and common dir and,
+# recursively, every git dir inside them (.git/modules/**, .git/worktrees/*):
+#   every file named config, config.worktree or commondir; info/attributes; every
+#   hooks dir (mode) and every entry in it except *.sample; every symlink.
+# Plus: every nested `.git` in the working tree (host `git status` recurses into
+# an embedded repo's gitlink and runs ITS fsmonitor), every core.hooksPath dir,
+# every include.path / includeIf.*.path target and core.attributesFile named by
+# any of those configs, and any local-path remote (url/pushurl) inside the
+# checkout, walked as a git dir (a push to it runs its hooks). Also the hooks dir
+# and attributes file your own global/system config names: a relative
+# core.hooksPath there resolves inside the checkout.
+# Any change to one of these is a finding, even an inert one such as user.name:
+# no allowlist of "safe" keys holds up (branch.*.pushRemote can name a local path
+# whose hooks a push runs). The key list below only labels report lines.
+#
+# FAIL CLOSED. A directory that cannot be listed, a file that cannot be read or a
+# config git cannot parse makes the snapshot fail: at launch the launcher refuses
+# to start, at exit it returns 4. Git needs only search permission to run a hook,
+# so an unlistable hooks dir must never read as "empty".
 #
 # THE SCAN RUNS NOTHING FROM THE REPO. The git dir is located by plain file reads
 # (a `.git` file's `gitdir:` line, a worktree's `commondir`), never `git rev-parse`
 # in the checkout. Config is read with `git config --file <f> --no-includes` from
-# cwd /, so no repo is discovered and include.path is not followed. Hooks and
-# info/attributes are hashed, not run. Nothing here refreshes an index, which is
-# what starts fsmonitor and clean filters.
+# cwd /, so no repo is discovered and include.path is not followed by git (the scan
+# reads the target itself). Everything else is find, stat, readlink and sha256sum;
+# find never follows symlinks (-P), and a symlink's target is hashed only when it
+# is a regular file. Nothing refreshes an index, which is what starts fsmonitor
+# and clean filters.
 #
-# THE KEY LIST starts with install.sh's refusal list (GIT_EXEC_KEYS_RE there; a
-# bats test pins every alternative of it into this one), plus the keys that make
-# `git push` or an everyday host command run a program: core.hooksPath,
-# core.sshCommand, credential helpers, pagers/editors, diff/merge drivers, gpg,
-# aliases, submodule update commands and protocol.* (which can enable ext::).
-# install.sh does not need those: its own git calls never push, page or diff.
+# EVERY CONTAINER-CHOSEN STRING (names, values, error text) reaches the terminal
+# only through scan_vis, at launch and at exit.
 #
 # LIMITS (also in guides/cc-isolated-usage.md). The container keeps running after
 # claude exits, so a process it left behind can plant after the scan. Whatever is
 # present at launch is the baseline, including anything an earlier session planted
 # that you did not remove. A launcher killed before the scan (closed terminal,
-# SIGTERM) scans nothing.
-GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|sequence\.editor|pager\.|credential|diff\.|merge\.|gpg\.|alias\.|submodule\.|protocol\.)'
+# SIGTERM) scans nothing. A config value that names a program by path inside the
+# checkout (say core.pager = ./tools/pager.sh, present at launch) is recorded as a
+# value, not followed: the session can rewrite the program without a finding.
+#
+# SIZE. This block brings cc-isolated.sh to about 1160 lines. It stays inline because
+# install.sh ships a fixed PAYLOAD list and the trust manifest hashes each file;
+# a sourced helper would need both to change.
+GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|core\.attributesfile|core\.worktree|sequence\.editor|pager\.|credential|diff\.|difftool\.|merge\.|mergetool\.|interactive\.|gpg\.|alias\.|submodule\.|protocol\.|remote\.|branch\..*\.(remote|pushremote)$|url\.|uploadpack\.|receive\.|sendemail\.|ssh\.|http\.|gc\.|web\.|browser\.|man\.|instaweb\.)'
 
 # scan_git_dirs <ws>: print the git dir, then the common dir, of <ws>, from plain
 # file reads. Returns 1 when either cannot be found.
@@ -592,82 +621,294 @@ scan_git_dirs() {
   printf '%s\n%s\n' "$g" "$common"
 }
 
-# git_exec_snapshot <ws>: the exec-capable .git state of <ws>, one record per line,
-# sorted (LC_ALL=C) so two snapshots compare with comm. Lines are raw (they may hold
-# control bytes the container chose); show them only through scan_vis. Returns 1,
-# with a reason on stderr, when the state cannot be read completely.
+# The _snap_* helpers below run inside git_exec_snapshot and share its locals
+# (bash dynamic scoping): _snap (the records), _snap_seen (walked dirs), _snap_ws,
+# _snap_gd, _snap_common, _snap_tmp. Each returns 1 after printing a reason on
+# stderr when something cannot be read. Records are tab-separated:
+#   F <kind> <path %q> <attrs>     a file, dir or link host git reads
+#   C <config %q> <key> <value>    one config entry (labels the report only)
+
+# _snap_hash <file>: the first 16 hex of its sha256. Reads, never runs.
+_snap_hash() {
+  local h
+  if [ ! -r "$1" ] || ! h="$(sha256sum < "$1" 2>/dev/null)"; then
+    printf 'cannot read %s\n' "$1" >&2
+    return 1
+  fi
+  printf '%s' "${h:0:16}"
+}
+
+# _snap_file <kind> <path>: record <path> without following it. A symlink is
+# recorded with its target string, plus the target's hash when that is a regular
+# file; when it resolves to a directory, _snap_linkdir is set to it so the caller
+# can decide whether to walk it. A missing path is recorded as missing, so
+# creating it later is a change.
+_snap_file() {
+  local kind="$1" p="$2" attrs h t
+  _snap_linkdir=""
+  if [ -L "$p" ]; then
+    t="$(readlink -- "$p")" || { printf 'cannot read link %s\n' "$p" >&2; return 1; }
+    attrs="link -> $(printf '%q' "$t")"
+    if [ -f "$p" ]; then
+      h="$(_snap_hash "$p")" || return 1
+      attrs+=" file $h"
+    elif [ -d "$p" ]; then
+      _snap_linkdir="$(cd "$p" 2>/dev/null && pwd -P)" \
+        || { printf 'cannot enter %s\n' "$p" >&2; return 1; }
+      attrs+=" dir"
+    elif [ -e "$p" ]; then
+      attrs+=" other"
+    else
+      attrs+=" dangling"
+    fi
+  elif [ -f "$p" ]; then
+    h="$(_snap_hash "$p")" || return 1
+    attrs="file $(stat -c %a -- "$p") $h"
+  elif [ -d "$p" ]; then
+    attrs="dir $(stat -c %a -- "$p")"
+  elif [ -e "$p" ]; then
+    attrs="other $(stat -c '%F %a' -- "$p")"   # fifo, socket, device
+  else
+    attrs="missing"
+  fi
+  _snap+="F"$'\t'"$kind"$'\t'"$(printf '%q' "$p")"$'\t'"$attrs"$'\n'
+}
+
+# _snap_find <out> <find args...>: run find into <out> (NUL-separated). A find
+# that cannot list a directory fails the snapshot: unlistable is not empty.
+_snap_find() {
+  local out="$1"; shift
+  if ! find -P "$@" -print0 > "$out" 2> "$out.err"; then
+    printf 'cannot list everything under %s: %s\n' "$1" "$(tr '\n' ' ' < "$out.err")" >&2
+    return 1
+  fi
+}
+
+# _snap_path <value> <base>: a config path value as git resolves it.
+_snap_path() {
+  # shellcheck disable=SC2088  # matching a literal "~/" in the config value
+  case "$1" in
+    "~/"*) printf '%s' "$HOME/${1#"~/"}" ;;
+    /*)    printf '%s' "$1" ;;
+    *)     printf '%s' "$2/$1" ;;
+  esac
+}
+
+# _snap_inside_ws <path>: whether <path> (existing or not) resolves inside the
+# checkout — the only tree the container can write.
+_snap_inside_ws() {
+  local r
+  r="$(realpath -m -- "$1" 2>/dev/null)" || return 1
+  case "$r/" in "$_snap_ws"/*) return 0 ;; esac
+  return 1
+}
+
+# _snap_hooks <dir>: a hooks dir and every entry git could run from it.
+_snap_hooks() {
+  local d="$1" real list f
+  _snap_file hooksdir "$d" || return 1
+  [ -z "$_snap_linkdir" ] || d="$_snap_linkdir"
+  [ -d "$d" ] || return 0   # recorded as missing: creating it is a change
+  real="$(cd "$d" 2>/dev/null && pwd -P)" || { printf 'cannot enter %s\n' "$d" >&2; return 1; }
+  [ -z "${_snap_seen["h:$real"]:-}" ] || return 0
+  _snap_seen["h:$real"]=1
+  list="$_snap_tmp/h.${#_snap_seen[@]}"
+  _snap_find "$list" "$real" -mindepth 1 -maxdepth 1 ! -name '*.sample' || return 1
+  while IFS= read -r -d '' f; do
+    _snap_file hook "$f" || return 1
+  done < "$list"
+}
+
+# _snap_worktree_of <config file>: the working tree a relative core.hooksPath in
+# that config is resolved against.
+_snap_worktree_of() {
+  local gd v
+  gd="$(cd "$(dirname -- "$1")" 2>/dev/null && pwd -P)" || gd="$(dirname -- "$1")"
+  if [ "$gd" = "$_snap_gd" ] || [ "$gd" = "$_snap_common" ]; then
+    printf '%s' "$_snap_ws"
+  elif v="$(cd / && git --no-pager config --file "$1" --no-includes --get core.worktree 2>/dev/null)"; then
+    _snap_path "$v" "$gd"
+  elif [ "${gd##*/}" = .git ]; then
+    printf '%s' "${gd%/*}"
+  else
+    printf '%s' "$gd"
+  fi
+}
+
+# _snap_remote <url>: a local-path remote inside the checkout is a git dir whose
+# hooks and receive-pack a host push runs. URLs with a scheme or host:path are not
+# local; a local path outside the checkout is not writable by the container.
+_snap_remote() {
+  local p="$1"
+  case "$p" in
+    file://*) p="${p#file://}" ;;
+    /*|./*|../*) ;;
+    *:*|"") return 0 ;;
+  esac
+  case "$p" in /*) ;; *) p="$_snap_ws/$p" ;; esac
+  _snap_inside_ws "$p" || return 0
+  _snap_file remote "$p" || return 1
+  [ -z "$_snap_linkdir" ] || p="$_snap_linkdir"
+  if [ -e "$p/.git" ] || [ -L "$p/.git" ]; then
+    _snap_dotgit "$p/.git"
+  elif [ -d "$p" ]; then
+    _snap_gitdir "$p"
+  fi
+}
+
+# _snap_config <file>: every entry (as C records), and what the entries point at.
+_snap_config() {
+  local f="$1" real out rec key val t
+  real="$(realpath -m -- "$f" 2>/dev/null)" || real="$f"
+  [ -z "${_snap_seen["c:$real"]:-}" ] || return 0
+  _snap_seen["c:$real"]=1
+  out="$_snap_tmp/c.${#_snap_seen[@]}"
+  if ! (cd / && git --no-pager config --file "$f" --no-includes --null --list) > "$out" 2> "$out.err"; then
+    printf 'could not read config %s: %s\n' "$f" "$(tr '\n' ' ' < "$out.err")" >&2
+    return 1
+  fi
+  while IFS= read -r -d '' rec; do
+    key="${rec%%$'\n'*}"
+    val=""
+    [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
+    t="${val//$'\n'/?}"
+    _snap+="C"$'\t'"$(printf '%q' "$f")"$'\t'"$key ${t//$'\t'/?}"$'\n'
+    case "$key" in
+      core.hookspath)
+        [ -z "$val" ] || _snap_hooks "$(_snap_path "$val" "$(_snap_worktree_of "$f")")" || return 1 ;;
+      include.path|includeif.*.path)
+        [ -n "$val" ] || continue
+        t="$(_snap_path "$val" "$(dirname -- "$f")")"
+        _snap_file include "$t" || return 1
+        if [ -f "$t" ]; then _snap_config "$t" || return 1; fi ;;
+      core.attributesfile)
+        [ -z "$val" ] || _snap_file attributes "$(_snap_path "$val" "$_snap_ws")" || return 1 ;;
+      remote.*.url|remote.*.pushurl)
+        _snap_remote "$val" || return 1 ;;
+    esac
+  done < "$out"
+}
+
+# _snap_host_config: the host's own global and system config (read from /, so no
+# repo) can name a relative core.hooksPath or core.attributesFile, which git
+# resolves inside the checkout; walk those targets. Its entries are not recorded:
+# the container cannot write those files, and they are yours to change mid-session.
+_snap_host_config() {
+  local out="$_snap_tmp/host" rec key val
+  if ! (cd / && git --no-pager config --null --list) > "$out" 2> "$out.err"; then
+    printf 'could not read your global git config: %s\n' "$(tr '\n' ' ' < "$out.err")" >&2
+    return 1
+  fi
+  while IFS= read -r -d '' rec; do
+    key="${rec%%$'\n'*}"
+    val=""
+    [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
+    [ -n "$val" ] || continue
+    case "$key" in
+      core.hookspath)      _snap_hooks "$(_snap_path "$val" "$_snap_ws")" || return 1 ;;
+      core.attributesfile) _snap_file attributes "$(_snap_path "$val" "$_snap_ws")" || return 1 ;;
+    esac
+  done < "$out"
+}
+
+# _snap_gitdir <dir>: everything exec-relevant in a git dir and, recursively, in
+# the git dirs inside it (modules/**, worktrees/*): one find, no pruning (a prune
+# pattern is a name the container could choose to hide behind).
+_snap_gitdir() {
+  local real list f base parent
+  real="$(cd "$1" 2>/dev/null && pwd -P)" || { printf 'cannot enter %s\n' "$1" >&2; return 1; }
+  [ -z "${_snap_seen["g:$real"]:-}" ] || return 0
+  _snap_seen["g:$real"]=1
+  list="$_snap_tmp/g.${#_snap_seen[@]}"
+  _snap_find "$list" "$real" \( -type l -o -name config -o -name config.worktree \
+    -o -name commondir -o -path '*/info/attributes' -o -name hooks -o -path '*/hooks/*' \) \
+    ! -name '*.sample' || return 1
+  while IFS= read -r -d '' f; do
+    base="${f##*/}"
+    parent="${f%/*}"
+    if [ "${parent##*/}" = hooks ]; then
+      _snap_file hook "$f" || return 1
+    elif [ "$base" = hooks ]; then
+      # Its entries come from this same find; a symlinked one is walked there.
+      _snap_file hooksdir "$f" || return 1
+      if [ -n "$_snap_linkdir" ]; then _snap_hooks "$_snap_linkdir" || return 1; fi
+    elif [ "$base" = config ] || [ "$base" = config.worktree ]; then
+      _snap_file config "$f" || return 1
+      if [ -f "$f" ]; then _snap_config "$f" || return 1; fi
+    elif [ "$base" = commondir ]; then
+      _snap_file commondir-file "$f" || return 1
+    elif [ "$base" = attributes ]; then
+      _snap_file attributes "$f" || return 1
+    else
+      # A symlink (anything else the find matched is under a hooks dir). Git
+      # follows it, so a linked directory inside the checkout is walked too.
+      _snap_file link "$f" || return 1
+      if [ -n "$_snap_linkdir" ] && _snap_inside_ws "$_snap_linkdir"; then
+        _snap_gitdir "$_snap_linkdir" || return 1
+      fi
+    fi
+  done < "$list"
+}
+
+# _snap_dotgit <path>: a `.git` entry — a git dir, a `gitdir:` file, or a link.
+_snap_dotgit() {
+  local p="$1" line g
+  _snap_file dotgit "$p" || return 1
+  if [ -n "$_snap_linkdir" ]; then
+    _snap_gitdir "$_snap_linkdir"
+  elif [ -f "$p" ]; then
+    line=""
+    IFS= read -r line < "$p" || true
+    case "$line" in "gitdir: "*) g="${line#gitdir: }" ;; *) return 0 ;; esac
+    case "$g" in /*) ;; *) g="${p%/*}/$g" ;; esac
+    if [ -d "$g" ]; then _snap_gitdir "$g"; fi
+  elif [ -d "$p" ]; then
+    _snap_gitdir "$p"
+  fi
+}
+
+# git_exec_snapshot <ws>: the records above for <ws>, sorted (LC_ALL=C) so two
+# snapshots compare line by line. Lines are raw (values may hold control bytes the
+# container chose); show them only through scan_vis. Returns 1, with a reason on
+# stderr, when any part cannot be read.
 git_exec_snapshot() {
-  local ws="$1" dirs gd common f out rc line key val d h snap=""
-  local -a hookdirs=()
+  local ws="$1" dirs _snap="" _snap_gd _snap_common _snap_ws _snap_tmp _snap_linkdir="" rc=0 list f
+  local -A _snap_seen=()
   if ! dirs="$(scan_git_dirs "$ws")"; then
     echo "cannot locate the git directory of $ws from its .git entry" >&2
     return 1
   fi
-  gd="${dirs%%$'\n'*}"
-  common="${dirs#*$'\n'}"
-  # The resolved dirs are records too: repointing `.git` or `commondir` shows up.
-  snap+="gitdir $gd"$'\n'"commondir $common"$'\n'
-  hookdirs+=("$common/hooks")
-  if [ ! -f "$common/config" ]; then
-    echo "no git config at $common/config" >&2
+  _snap_gd="${dirs%%$'\n'*}"
+  _snap_common="${dirs#*$'\n'}"
+  _snap_ws="$(cd "$ws" && pwd -P)" || return 1
+  if [ ! -f "$_snap_common/config" ]; then
+    echo "no git config at $_snap_common/config" >&2
     return 1
   fi
-  for f in "$common/config" "$gd/config.worktree"; do
-    [ -f "$f" ] || continue   # config.worktree is optional
-    rc=0
-    out="$(cd / && git --no-pager config --file "$f" --no-includes --get-regexp "$GIT_EXIT_SCAN_KEYS_RE")" || rc=$?
-    if [ "$rc" -gt 1 ]; then
-      echo "could not read $f (git config exit $rc)" >&2
-      return 1
-    fi
-    [ -n "$out" ] || continue
-    while IFS= read -r line; do
-      snap+="config $f: $line"$'\n'
-      key="${line%% *}"
-      if [ "$key" = core.hookspath ]; then
-        val="${line#* }"
-        # shellcheck disable=SC2088  # matching a literal "~/" in the config value
-        case "$val" in
-          "~/"*) val="$HOME/${val#"~/"}" ;;
-          /*) ;;
-          *) val="$ws/$val" ;;   # relative to the top of the working tree
-        esac
-        hookdirs+=("$val")
-      fi
-    done <<< "$out"
-  done
-  # Hooks: every file git could run from the default dir or a configured hooksPath.
-  # *.sample is never run; a non-executable file is recorded anyway, since a chmod
-  # is all it takes to arm it.
-  for d in "${hookdirs[@]}"; do
-    [ -d "$d" ] || continue
-    for f in "$d"/*; do
-      case "$f" in *.sample) continue ;; esac
-      if [ -f "$f" ]; then
-        if [ ! -r "$f" ]; then
-          echo "cannot read hook $f" >&2
-          return 1
-        fi
-        h="$(sha256sum < "$f" | cut -c1-16)"
-        if [ -x "$f" ]; then h+=" executable"; else h+=" not-executable"; fi
-        if [ -L "$f" ]; then h+=" -> $(readlink "$f")"; fi
-        snap+="hook $f $h"$'\n'
-      elif [ -L "$f" ]; then
-        snap+="hook $f dangling -> $(readlink "$f")"$'\n'
-      fi
-    done
-  done
-  # info/attributes can assign any filter or diff driver to any path (install.sh
-  # refuses it when non-empty for the same reason).
-  f="$common/info/attributes"
-  if [ -s "$f" ]; then
-    if [ ! -r "$f" ]; then
-      echo "cannot read $f" >&2
-      return 1
-    fi
-    snap+="attributes $f $(sha256sum < "$f" | cut -c1-16)"$'\n'
+  # The resolved dirs are records too: repointing `.git` or `commondir` shows up.
+  _snap+="F"$'\t'"gitdir"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$(printf '%q' "$_snap_gd")"$'\n'
+  _snap+="F"$'\t'"commondir"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$(printf '%q' "$_snap_common")"$'\n'
+  _snap_tmp="$(mktemp -d)"
+  {
+    _snap_dotgit "$ws/.git" &&
+    _snap_gitdir "$_snap_gd" &&
+    _snap_gitdir "$_snap_common" &&
+    # Default hooks dir, even when absent (creating it is a change).
+    _snap_hooks "$_snap_common/hooks" &&
+    _snap_host_config &&
+    # Embedded repos anywhere in the working tree.
+    list="$_snap_tmp/worktree" &&
+    _snap_find "$list" "$_snap_ws" -mindepth 2 -name .git
+  } || rc=1
+  if [ "$rc" -eq 0 ]; then
+    while IFS= read -r -d '' f; do
+      [ "$f" != "$_snap_ws/.git" ] || continue
+      _snap_dotgit "$f" || { rc=1; break; }
+    done < "$list"
   fi
-  printf '%s' "$snap" | LC_ALL=C sort -u
+  rm -rf "$_snap_tmp"
+  [ "$rc" -eq 0 ] || return 1
+  printf '%s' "$_snap" | LC_ALL=C sort -u
 }
 
 # scan_vis: make control bytes visible as '?' so a container-chosen hook name or
@@ -676,39 +917,67 @@ scan_vis() {
   LC_ALL=C tr -c '[:print:]\n' '?'
 }
 
-# git_exit_scan <ws> <launch snapshot>: 0 when nothing exec-capable appeared or
-# changed; 1 (warning on stderr, naming each item) when something did; 2 when the
-# exit state could not be read.
+# scan_diff <before> <after>: the report lines for everything that differs. Files
+# first (+ new, - gone, ~ changed); under a changed config file, its added and
+# removed entries, with keys the label list knows marked "<- can run a program".
+scan_diff() {
+  SCAN_KEYS_RE="$GIT_EXIT_SCAN_KEYS_RE" LC_ALL=C awk -F'\t' '
+    function note(key) { return (tolower(key) ~ ENVIRON["SCAN_KEYS_RE"]) ? "   <- can run a program" : "" }
+    FNR == NR { if ($1 == "F") b[$2 FS $3] = $4; else if ($1 == "C") bc[$0] = 1; next }
+    { if ($1 == "F") a[$2 FS $3] = $4; else if ($1 == "C") ac[$0] = 1 }
+    END {
+      for (k in a) {
+        split(k, p, FS)
+        if (!(k in b))        { print p[2] "\t0\t    + " p[1] " " p[2] "  " a[k] }
+        else if (a[k] != b[k]) { print p[2] "\t0\t    ~ " p[1] " " p[2] "  " a[k] }
+      }
+      for (k in b) if (!(k in a)) { split(k, p, FS); print p[2] "\t0\t    - " p[1] " " p[2] "  " b[k] }
+      # Entries sort under the line of the config file they sit in (same path).
+      for (e in ac) if (!(e in bc)) { split(e, p, FS); print p[2] "\t1\t        + " p[3] note(substr(p[3], 1, index(p[3] " ", " ") - 1)) }
+      for (e in bc) if (!(e in ac)) { split(e, p, FS); print p[2] "\t2\t        - " p[3] }
+    }' <(printf '%s\n' "$1") <(printf '%s\n' "$2") \
+    | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n -k3 | cut -f3-
+}
+
+# git_exit_scan <ws> <launch snapshot>: 0 when nothing host git reads to decide
+# what to run changed; 1 (warning on stderr, naming each item) when something did;
+# 2 when the exit state could not be read.
 git_exit_scan() {
-  local ws="$1" before="$2" after new errf reason
+  local ws="$1" before="$2" after changes errf reason
   errf="$(mktemp)"
   if ! after="$(git_exec_snapshot "$ws" 2>"$errf")"; then
     reason="$(cat "$errf")"
     rm -f "$errf"
     {
-      echo "WARNING: the exit scan could not read $ws/.git: $reason"
-      echo "  Treat the checkout as untrusted until you have looked at it; push from a"
-      echo "  separate host clone (see guides/cc-isolated-usage.md, \"No credentials\")."
+      echo "WARNING: the exit scan could not read everything under $ws/.git: $reason"
+      echo "  Git may still be able to run what the scan could not list (a hook needs only"
+      echo "  search permission). Treat the checkout as untrusted: do not run git in it on"
+      echo "  the host; push from a separate host clone that fetches from this one (see"
+      echo "  guides/cc-isolated-usage.md, \"No credentials\")."
     } | scan_vis >&2
     return 2
   fi
   rm -f "$errf"
-  new="$(LC_ALL=C comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") | sed '/^$/d')"
-  [ -n "$new" ] || return 0
+  [ "$before" != "$after" ] || return 0
+  changes="$(scan_diff "$before" "$after")"
+  [ -n "$changes" ] || return 0
   {
     echo
-    echo "WARNING: this session changed $ws/.git in ways that make HOST git run a"
-    echo "  program as you, with your keys. New or changed since launch:"
-    printf '%s\n' "$new" | sed 's/^/    /'
+    echo "WARNING: this session changed what HOST git reads in $ws to decide which"
+    echo "  programs to run (hooks, config, attributes, submodule and nested git dirs,"
+    echo "  local remotes). Any of these can make git run a program as you, with your"
+    echo "  keys. Since launch (+ new, - removed, ~ changed):"
+    printf '%s\n' "$changes"
     echo "  Do not run git in this checkout on the host (not even \`git status\`) until"
-    echo "  you have checked and removed each one:"
-    echo "    config ... <file>: <key> <value>  ->  git config --file <file> --unset-all <key>"
-    echo "    hook <path> ...                   ->  rm <path>"
-    echo "    attributes <path> ...             ->  empty or remove <path>"
-    echo "    gitdir/commondir <path>           ->  .git (or its commondir) was repointed; restore it"
-    echo "  Until then, push from a separate host clone that fetches from this one, or"
-    echo "  with \`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push\` (that"
-    echo "  covers hooks and fsmonitor only, not filters, includes or sshCommand)."
+    echo "  you have checked each item and undone what you did not make:"
+    echo "    a config entry  ->  git config --file <file> --unset-all <key>"
+    echo "    a hook or file  ->  rm <path> (or restore it)"
+    echo "    gitdir/commondir -> .git (or its commondir) was repointed; restore it"
+    echo "  Safest: push from a separate host clone that fetches from this one; a fetch"
+    echo "  runs none of this checkout's hooks, fsmonitor, filters or remote settings."
+    echo "  \`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push\` covers hooks"
+    echo "  and fsmonitor ONLY: not remote.*.receivepack, a repointed remote, filters,"
+    echo "  includes, credential helpers or core.sshCommand."
     echo "  See guides/cc-isolated-usage.md, \"No credentials\"."
   } | scan_vis >&2
   return 1
@@ -805,12 +1074,21 @@ main() {
 
   # Baseline for the exit scan, taken before the container is (re)started. A repo
   # whose .git cannot be read here could not be scanned at exit either, so refuse.
-  local git_before=""
-  if [ "$action" = "launch" ] && ! git_before="$(git_exec_snapshot "$ws")"; then
-    echo "ERROR: could not snapshot $ws/.git for the session-exit scan (reason above)." >&2
-    echo "  cc-isolated checks at exit that the session planted no hooks, fsmonitor," >&2
-    echo "  filters or includes; without a baseline it cannot. Fix the checkout, then rerun." >&2
-    exit 1
+  # The reason can name files an earlier session chose, so it goes through scan_vis.
+  local git_before="" snap_err
+  if [ "$action" = "launch" ]; then
+    snap_err="$(mktemp)"
+    if ! git_before="$(git_exec_snapshot "$ws" 2>"$snap_err")"; then
+      {
+        echo "ERROR: could not snapshot $ws/.git for the session-exit scan: $(cat "$snap_err")"
+        echo "  cc-isolated checks at exit that the session changed nothing host git reads to"
+        echo "  decide what to run; without a complete baseline it cannot. Fix the checkout"
+        echo "  (an unreadable or unlistable path above), then rerun."
+      } | scan_vis >&2
+      rm -f "$snap_err"
+      exit 1
+    fi
+    rm -f "$snap_err"
   fi
 
   if ! is_verified_live; then
