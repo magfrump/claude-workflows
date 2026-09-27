@@ -14,7 +14,8 @@
 #       runner-contract.bash); written only for a run that succeeded
 #   test/skills/<skill>/output/<fixture>.failed      — present when the run failed
 #   (and <fixture>.transcript.jsonl under FIXTURE_TRANSCRIPT=1, below)
-# All of these are committed (Q-071 [1]; see .gitignore): the suites read every
+# All of these are meant to be committed once generated (Q-071 [1]; .gitignore
+# admits them): the suites read every
 # one, so a fresh clone grades the same reports, and a report is regenerated
 # only when its skill, runner or fixture changes.
 #
