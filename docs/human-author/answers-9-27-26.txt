@@ -1,0 +1,15 @@
+Q-068:
+[3] has been my intent; I have been phasing toward re-running it but I want to trust the script not to break my setup, which has taken time.
+
+Q-069: [3]
+
+Q-070: [1]
+
+Q-071: [1]
+
+Q-072:
+I think something between [1] and [2] is appropriate.
+I don't want every new review to create a new entry in the canon--the purpose of the canon is to be compact so that it can be evaluated more often than a larger, more reliable benchmark, but to have reasonably broad coverage of issue types.
+My first thought is that a script is appropriate for converting a commit or commit sequence to a canon instance, but that proposals of canon instances need some higher level heuristic filtering rather than a simple trigger.
+
+Q-073: [1]
