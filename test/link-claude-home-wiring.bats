@@ -263,6 +263,17 @@ EOF
   done
 }
 
+@test "the merged settings carry the Bash deny rule for the credentials file (Q-077)" {
+  # cc-isolated has no sandbox, so Read(.credentials.json) is the only other
+  # rule on that file and it does not cover Bash. The auto-approve hook reads
+  # this rule and never approves a match (test/auto-approve-allowed-commands.bats).
+  bash "$LINKER"
+  [ "$(jq '[.permissions.deny[] | select(. == "Bash(*.credentials.json*)")] | length' "$DEST/settings.json")" -eq 1 ]
+  # Idempotent like every other rule.
+  bash "$LINKER"
+  [ "$(jq '[.permissions.deny[] | select(. == "Bash(*.credentials.json*)")] | length' "$DEST/settings.json")" -eq 1 ]
+}
+
 @test "legacy single-slash deny rules are pruned; the user's own rules survive" {
   # Settings merged before the Q-049 fix hold Edit(/abs) rules that match
   # nothing. The merge must drop them, not leave them beside the // form.
