@@ -6,7 +6,7 @@
 #   T3  provenance stamps: a report whose skill, runner or fixture changed
 #       since generation fails; so does one with no stamp. The shared
 #       runner-contract.bash is not stamped (Q-071 [1]), and the reports and
-#       their sidecars are tracked by git.
+#       their sidecars are not ignored by git, so they can be committed.
 #   T4  once a skill has reports, a missing one fails rather than skips, and
 #       format_check fails when its nested suite skipped every test.
 #   T5  finding_match: tier and pattern in the same finding; cites_pattern and

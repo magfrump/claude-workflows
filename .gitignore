@@ -1,7 +1,8 @@
 # Other repos for evaluating/validating tooling changes
 external/
 
-# Generated eval reports are committed (Q-071 [1]): the report and every
+# Generated eval reports are to be committed once generated (Q-071 [1]; none
+# yet): the report and every
 # sidecar the suites read to grade it (.stamp freshness, .failed marker,
 # .transcript.jsonl for tool-call checks). Anything else a run might leave in
 # output/ stays ignored.

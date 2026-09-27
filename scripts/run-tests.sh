@@ -98,7 +98,7 @@ fi
 # stdout, and the count is written to $RUN_TESTS_NOT_RUN_FILE when that is set
 # (scripts/health-check.sh reads it to warn). Generate reports with
 # test/skills/generate-reports.bash <skill> and commit what it writes to output/
-# (reports are tracked; Q-071 [1]).
+# (reports are trackable once generated; Q-071 [1]).
 # shellcheck source=../test/skills/runner-contract.bash
 source "$TEST_DIR/skills/runner-contract.bash"
 
