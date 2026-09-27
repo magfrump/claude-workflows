@@ -103,7 +103,8 @@ fake_repo() {
     printf 'stub %s\n' "$f" > "$cfg/$f"
   done
   printf '#!/usr/bin/env bash\necho "BLESS-STUB $*"\n' > "$cfg/cc-isolated.sh"
-  chmod +x "$cfg/cc-isolated.sh"
+  printf '#!/usr/bin/env bash\necho "CC-PUSH-STUB $*"\n' > "$cfg/cc-push.sh"
+  chmod +x "$cfg/cc-isolated.sh" "$cfg/cc-push.sh"
   printf 'api.anthropic.com\n' > "$cfg/egress/base.txt"
   printf 'devcontainer-config/claude-home/\n' > "$ROOT/.gitignore"
   git -C "$ROOT" init -q
@@ -203,7 +204,14 @@ no_host_stage_left() {
   [ "$status" -eq 0 ]
   [[ "$output" == *'BLESS-STUB --bless'* ]]
   [ -L "$CLAUDE_DEVC_BIN_DIR/cc-isolated" ]
+  # cc-push ships with the launcher, executable, and is on PATH (Q-076).
+  [ -L "$CLAUDE_DEVC_BIN_DIR/cc-push" ]
+  [ "$(readlink "$CLAUDE_DEVC_BIN_DIR/cc-push")" = "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh" ]
+  [ -x "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh" ]
+  [[ "$output" == *"Linked $CLAUDE_DEVC_BIN_DIR/cc-push"* ]]
   [[ "$output" == *'Skipped host target'*'--yes'* ]]
+  run "$CLAUDE_DEVC_BIN_DIR/cc-push" --x
+  [[ "$output" == 'CC-PUSH-STUB --x' ]]
   [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
 }
 
