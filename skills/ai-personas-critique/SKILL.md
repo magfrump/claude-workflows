@@ -3,18 +3,11 @@ name: ai-personas-critique
 lens: ensemble-multi-perspective
 persona-last-sampled: 2026-05-03
 description: >
-  Critically review a proposal, design, or argument using dynamically selected AI criticism
-  personas. Unlike cowen-critique and yglesias-critique (which apply a fixed voice), this skill
-  selects 3-4 maximally orthogonal personas from a catalog of 17 based on the proposal's domain,
-  runs each persona's objection, and synthesizes findings. This surfaces concerns that no single
-  fixed-perspective critic would raise. Use this skill when the user wants diverse critical
-  perspectives on a proposal, when cowen/yglesias perspectives feel too narrow for the subject
-  matter, or when the user says things like "what am I missing", "stress-test this from multiple
-  angles", "give me diverse critiques", "who would object to this and why", or "poke holes in
-  this proposal". Also trigger when reviewing proposals that span multiple domains (e.g.,
-  technical + policy + organizational) where a single critic lens would miss important angles.
-  NOTE: This skill is designed to complement cowen-critique and yglesias-critique, not replace
-  them. Those skills provide deep, consistent voices. This skill provides breadth and surprise.
+  Multi-perspective critique of a proposal, design or argument: picks 3-4 orthogonal personas
+  from a catalog of 17, runs each objection, synthesizes. Complements the single-voice
+  cowen-critique and yglesias-critique with breadth. Triggers: "what am I missing", "stress-test
+  this from multiple angles", "give me diverse critiques", "poke holes in this proposal", or
+  proposals spanning several domains.
 when: User wants diverse multi-perspective critique of a proposal or design
 requires:
   - name: fact-check
@@ -47,6 +40,13 @@ requires:
 Review a proposal using dynamically selected critical personas. Surface objections a single
 fixed-perspective critic would miss, by applying 3-4 maximally orthogonal lenses chosen for this
 proposal's domain and content.
+
+## When to use
+
+- The user wants diverse critical perspectives on a proposal, or the cowen/yglesias perspectives feel too narrow for the subject matter.
+- Trigger phrases: "what am I missing", "stress-test this from multiple angles", "give me diverse critiques", "who would object to this and why", "poke holes in this proposal".
+- Proposals that span multiple domains (e.g., technical + policy + organizational), where a single critic lens would miss important angles.
+- Complements `cowen-critique` and `yglesias-critique` rather than replacing them: those provide deep, consistent voices; this skill surfaces concerns no single fixed-perspective critic would raise.
 
 ## Pre-flight: Skip Obvious Stubs
 

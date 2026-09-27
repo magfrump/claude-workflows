@@ -3,30 +3,11 @@ name: yglesias-critique
 lens: revealed-preferences
 persona-last-sampled: 2026-05-03
 description: >
-  Critique a draft that *proposes a mechanism* — any intervention where the author wants
-  something to happen — using the cognitive methods and reasoning patterns of Matt Yglesias.
-  This is the right critic for proposals of any kind: a software design, a research tool, a
-  community norm, a curriculum change, an organizational shift, a fundraising plan, or a
-  government policy. Yglesias's distinctive moves operate on proposed mechanisms generally:
-  agree-with-the-goal-demolish-the-mechanism, find the one boring lever nobody's pulling,
-  follow the money/effort through the system, check whether the proposal survives an
-  adoption cycle, run the "10 million people" scale test, swap in the implementation org
-  chart, identify the cost-disease trap, and find the popular version. Government policy
-  is a special case, not the full scope. This is the DEFAULT critic whenever a draft pairs
-  a goal with a proposed mechanism and the user wants pragmatic pushback on whether the
-  mechanism actually achieves the goal. Trigger phrases: "would this actually work", "give
-  me the pragmatic critique", "what's the boring lever", "is the mechanism the right one",
-  "am I being realistic here", "poke holes in this proposal", "would this policy actually
-  work", "what's the supply-side take", "follow the money on this", "what's the 10-million
-  -people test", "what's the popular version", "would this survive an election cycle",
-  "is this proposal implementable". Produces a structured Markdown critique. Distinct from
-  cowen-critique (which stress-tests argument rigor — is the reasoning sound) and
-  ai-personas-critique (which dispatches multiple orthogonal lenses): this skill applies a
-  single, consistent mechanism-feasibility lens — does the proposed intervention actually
-  achieve the stated goal at the scale and through the institutions the author has in mind.
-  NOTE: This skill is typically invoked by the draft-review orchestrator, which provides a
-  pre-built fact-check report. If a fact-check report is provided, use it as your factual
-  foundation and do not redo basic fact verification.
+  Matt Yglesias-style critique of any draft that proposes a mechanism (policy, software design,
+  org change): agree with the goal, test the mechanism. The DEFAULT critic when a draft pairs a
+  goal with a mechanism; argument rigor → cowen-critique, many lenses → ai-personas-critique.
+  Triggers: "would this actually work", "poke holes in this proposal", "is the mechanism the
+  right one", "am I being realistic here", "what's the boring lever".
 when: User wants pragmatic mechanism-vs-goal critique of any proposal
 requires:
   - name: fact-check
@@ -43,6 +24,15 @@ requires:
 Review a draft using Matt Yglesias's reasoning methods. Do not aim for conclusions Yglesias would agree with; do not impersonate him. Apply the specific cognitive moves he makes on a policy argument — how he dismantles reasoning, not what he thinks about.
 
 Below describes those moves. Use them. Not all apply to every draft — use judgment.
+
+## When to use
+
+- The right critic for proposals of any kind: a software design, a research tool, a community norm, a curriculum change, an organizational shift, a fundraising plan, or a government policy. Government policy is a special case, not the full scope.
+- Moves: agree-with-the-goal-demolish-the-mechanism, find the one boring lever nobody's pulling, follow the money/effort through the system, check whether the proposal survives an adoption cycle, run the "10 million people" scale test, swap in the implementation org chart, identify the cost-disease trap, find the popular version.
+- This is the DEFAULT critic whenever a draft pairs a goal with a proposed mechanism and the user wants pragmatic pushback on whether the mechanism achieves the goal.
+- Trigger phrases: "would this actually work", "give me the pragmatic critique", "what's the boring lever", "is the mechanism the right one", "am I being realistic here", "poke holes in this proposal", "would this policy actually work", "what's the supply-side take", "follow the money on this", "what's the 10-million-people test", "what's the popular version", "would this survive an election cycle", "is this proposal implementable".
+- Distinct from `cowen-critique` (stress-tests argument rigor: is the reasoning sound) and `ai-personas-critique` (dispatches multiple orthogonal lenses). This skill applies one consistent mechanism-feasibility lens: does the proposed intervention achieve the stated goal at the scale and through the institutions the author has in mind.
+- Typically invoked by `draft-review`, which provides a pre-built fact-check report. If one is provided, use it as the factual foundation and do not redo basic fact verification.
 
 ## Pre-flight: Skip Obvious Stubs
 
