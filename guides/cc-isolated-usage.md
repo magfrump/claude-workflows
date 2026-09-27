@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-17
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Last verified: 2026-09-27
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -25,6 +25,8 @@ cc-isolated --bless               # re-bless the installed config after YOU revi
 cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
                                   # self-probe, record the config verified live on a pass
 cc-isolated --help                # usage header
+cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone
+                                  # (first time; later just `cc-push [REPO]`)
 ```
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
@@ -47,14 +49,14 @@ directory is a hard error (it refuses rather than guessing another repo).
    up` alone never rebuilds.
 6. Run the **boundary self-probe** (seven checks; see below). A full pass writes the
    hash to `verified-live.sha256` next to the manifest.
-7. `devcontainer exec … claude`. Before step 4 the launcher snapshots every
-   file host git reads to decide what to run (hooks, configs, attributes,
-   submodule and embedded git dirs, local remotes); when claude exits it
-   compares, and exits **3** naming anything the session added, removed or
-   changed (see the caveat under
-   [No credentials](#working-with-collaborators-github-credentials)).
-   It exits 4 when the exit scan cannot list or read any of it, and refuses
-   to launch when the baseline snapshot cannot be taken.
+7. `devcontainer exec … claude`. Before step 4 the launcher snapshots what
+   host git reads to decide what to run (hooks, configs, attributes, submodule
+   and embedded git dirs, local remotes, rebase todo lists); when claude exits
+   it compares, and exits **3** naming anything the session added, removed or
+   changed. It exits 4 when the exit scan cannot list or read any of it, and
+   refuses to launch when the baseline snapshot cannot be taken. The scan is a
+   tripwire, not a guarantee: push with `cc-push` either way (see
+   [Pushing: cc-push](#pushing-cc-push)).
 
 Target repos get **zero** new files — nothing is committed into them.
 
@@ -149,6 +151,114 @@ a compromised session in one project cannot read another's credentials.
 Git push auth: the container gets no host SSH keys by design, and no GitHub
 token unless you export one — see
 [Working with collaborators](#working-with-collaborators-github-credentials).
+Commit inside the container; push from the host with `cc-push` (next section).
+
+## Pushing: cc-push
+
+**Why not `git push` in the checkout.** The container writes the checkout,
+`.git` included, through the bind mount. Host git run *in* the checkout — a
+plain `git push`, even `git status` — runs whatever the session left there, as
+you and with your keys: hooks, `core.fsmonitor`, filter drivers,
+`remote.*.receivepack`, a remote repointed at a repo with its own hooks, an
+`exec` line in an interrupted rebase's todo list. And some routes need no
+`.git` change at all: a hook that was already there when you launched and runs
+a tracked file (husky's `core.hooksPath=.husky/_`, the pre-commit framework,
+`exec ./scripts/check.sh`) runs whatever the session wrote into that file.
+`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push` is **not** a
+safe alternative: it still runs a planted `remote.*.receivepack`, pushes to a
+repointed `remote.*.url`/`pushurl` (whose hooks then run), and uses planted
+filters, includes, credential helpers and `core.sshCommand`.
+
+**What `cc-push` does.** It keeps a separate, bare clone that only the host
+writes (default `~/.local/share/cc-isolated/clones/<repo>-<id>`; override with
+`--clone` or `CC_PUSH_CLONES_DIR`), and never runs git in the checkout:
+
+```bash
+cc-push --remote git@github.com:me/app.git ~/code/app   # first time: names the real remote
+cc-push ~/code/app                                      # afterwards (or from inside it: cc-push)
+cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
+```
+
+1. `git fetch <checkout>` into the clone (`refs/cc/heads/*`). Git runs
+   upload-pack in the checkout, which reads its refs, objects and config but
+   runs no hook, fsmonitor or filter; nothing is checked out, no submodule is
+   fetched.
+2. `git fetch origin` — the real remote, as configured **in the clone** by
+   `--remote`. Remotes are never read from the checkout.
+3. Prints the commits and diff stat the push adds (control bytes as `?`, no
+   external diff or textconv, no signature check), and asks `[y/N]` unless
+   `--yes`.
+4. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+   It never forces; a rewritten branch is refused by the remote as usual.
+
+Every git call it makes passes `core.hooksPath=/dev/null` and
+`core.fsmonitor=false`. `test/cc-push.bats` plants hooks (every name),
+fsmonitor, clean/smudge/process filters, receive-pack and upload-pack commands,
+`uploadpack.packObjectsHook`, `core.alternateRefsCommand`, `core.sshCommand`,
+`core.gitProxy`, a credential helper, includes, a legacy remotes file and a
+repointed `origin` in the checkout, and asserts that a `cc-push` fires none of
+them and pushes the fetched commit (git 2.39).
+
+**Keep the clone hook-free.** It holds content the container wrote. It is bare,
+so nothing is checked out and no `npm install` installs husky into it. If you
+ever check out a working tree from it and run husky, pre-commit or lefthook
+there, the fetched files run on your next commit. Do your own host-side work in
+a normal clone of the real remote after the push, like any collaborator's
+commits — and read what you pull before you run it.
+
+### The exit scan is a tripwire (Q-069 [3], Q-076)
+
+`cc-isolated` also snapshots, before the session, what host git reads to decide
+what to run, compares when claude exits, and exits **3** naming anything added,
+removed or changed (4 when it cannot read something; it refuses to launch when
+it cannot take the baseline). It hashes files (content, mode, symlink target)
+rather than checking a list of keys, so any change is a finding, even
+`user.name`. It records, for every git dir it reaches — the checkout's git and
+common dir, git dirs nested at `modules/**` and `worktrees/*`, every embedded
+`.git` in the working tree, every common dir a `commondir` file names, every
+local-path remote — `config`, `config.worktree`, `commondir`,
+`info/attributes`, the hooks dir and each hook (except `*.sample`), legacy
+`remotes/*` and `branches/*` files, in-progress `rebase-merge/`,
+`rebase-apply/` and `sequencer/` state, and every symlink. It follows what those
+configs name: `core.hooksPath` dirs, include and `includeIf` targets,
+`core.attributesFile`, and local-path remotes inside the checkout
+(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
+`url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`).
+Your own global and system config is read with its includes evaluated for each
+git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched; `onbranch:` and
+`hasconfig:` taken as matching), so a relative `core.hooksPath` there is walked
+in the top-level working tree and in every embedded repo. It runs nothing from
+the checkout (plain file reads, `git config --file … --no-includes` from `/`,
+`find` without following symlinks, `stat`, `readlink`, `sha256sum`), and every
+name, value and error it prints is reduced to printable ASCII, line breaks
+included.
+
+It catches the common plants. It **cannot** be complete, so a clean exit is not
+permission to run git in the checkout. Known routes it does not see:
+
+- **A hook that runs a tracked file.** A hook present at launch that runs a
+  file from the working tree (husky, the pre-commit framework, lefthook,
+  `exec ./scripts/check.sh`): the session edits the tracked file and nothing
+  in `.git` changes.
+- **Anything present at launch.** The launch-time state is the baseline: an
+  earlier session's plant you did not remove, a rebase left in progress, or a
+  config value that names a program by path inside the checkout
+  (`core.pager = ./tools/pager.sh`: the session can rewrite `tools/pager.sh`).
+- **After the scan.** The container keeps running when claude exits; a process
+  the session left behind can plant after the scan. Only a stopped container
+  (`docker stop`) cannot.
+- **No scan.** A launcher killed before claude exits (closed terminal,
+  SIGTERM) scans nothing. Ctrl-C that ends the session still scans.
+- **Tracked `.gitattributes` and `.gitmodules`.** Not scanned. An attribute
+  selects a driver that config defines (config is scanned); `.gitmodules`
+  URLs and `update` settings act on `git submodule update`.
+- **Host programs pointed at the checkout.** Anything on the host that reads a
+  path inside the checkout (an editor plugin, a language server, `direnv`, a
+  build tool) is outside what the scan looks at.
+
+`install.sh` guards only its own git calls against a planted `.git`. Decision
+034 set "the host never reads a container-written `.git`" for the benchmark
+harness; `cc-push` applies the same rule to pushing.
 
 ## Working with collaborators: GitHub credentials
 
@@ -162,63 +272,8 @@ repos it can push to or read privately*. Pick the narrowest tier that fits:
   `git push` fail. Commit inside the container, then push from the host with
   your own keys. This is the right default for solo work and for public repos:
   the agent gets the whole workflow except the one step that needs trust.
-  **Caveat:** the container can write the checkout's `.git` through the bind
-  mount. A plain host `git push` (or `git status`) runs any hooks,
-  `core.fsmonitor`, filter drivers, `remote.*.receivepack` command or
-  repointed remote planted there, as you and with your keys.
-  `install.sh` guards only its own git calls against this.
-  **The launcher's exit scan (Q-069 [3], Q-076).** `cc-isolated` snapshots,
-  before the session, every file host git reads to decide what to run, and
-  compares when claude exits. It hashes files (content, mode and symlink
-  target) rather than checking a list of dangerous keys, so any change is a
-  finding, including an inert one such as `user.name`. What it covers:
-  every `config`, `config.worktree` and `commondir` file, `info/attributes`,
-  every hooks dir and hook (except `*.sample`) and every symlink in the git
-  dir and common dir, recursively through `.git/modules/**` and
-  `.git/worktrees/*`; every embedded repo's `.git` in the working tree
-  (host `git status` recurses into it); the `core.hooksPath` dirs,
-  `include.path`/`includeIf` targets and `core.attributesFile` those configs
-  name, and the ones your own global config names; and any local-path
-  remote inside the checkout, walked as a git dir. The report lists each
-  changed file (+ new, - removed, ~ changed) and, under a changed config,
-  its added and removed entries, marking the keys known to run a program.
-  Then it exits 3, never 0. It fails closed: a directory it cannot list or
-  a file it cannot read gives exit 4 at the end of a session and a refusal
-  to launch at the start (git needs only search permission to run a hook,
-  so "cannot list" never reads as "empty"). The scan runs nothing from the
-  checkout: it finds the git dir by reading files, reads config with
-  `git config --file … --no-includes` from `/`, and otherwise only uses
-  `find` (never following symlinks), `stat`, `readlink` and `sha256sum`.
-  Every name, value and error it prints goes through a filter that shows
-  control bytes as `?`. Its limits:
-  - **Baseline, not audit.** Whatever is present at launch is accepted, so
-    an item an earlier session planted that you did not remove is silent
-    from then on. Clean up when warned.
-  - **After the scan.** The container keeps running when claude exits. A
-    process the session left behind can plant a key after the scan; only a
-    stopped container (`docker stop`) cannot.
-  - **No scan.** A launcher killed before claude exits (a closed terminal,
-    SIGTERM) scans nothing. Ctrl-C that ends the session still scans.
-  - **Outside `.git`.** Tracked files such as `.gitattributes` are not
-    scanned; a tracked attribute only runs a driver that config defines, and
-    that config is scanned.
-  - **Programs named by path.** A config value present at launch that names
-    a program inside the checkout (say `core.pager = ./tools/pager.sh`) is
-    recorded as a value; the session can rewrite `tools/pager.sh` without a
-    finding. Hooks, hooks dirs, includes and attribute files are the
-    exception: their contents are hashed.
-  So after a warning, or whenever you are unsure, push from a separate host
-  clone that fetches from this one: a fetch runs none of this checkout's
-  hooks, fsmonitor, filters or remote settings (checked on git 2.39). `git -c
-  core.hooksPath=/dev/null -c core.fsmonitor=false push` covers hooks and
-  fsmonitor **only**: it still runs a planted `remote.*.receivepack`, pushes
-  to a repointed `remote.*.url`/`pushurl` (whose hooks then run), and uses
-  planted filters, includes, credential helpers and `core.sshCommand`.
-  Adding `-c protocol.file.allow=never` refuses a push to a local-path
-  remote, which stops the receive-pack and repointed-bare-repo cases, but
-  not the rest. Decision 034 set
-  "the host never reads a container-written `.git`" for the benchmark
-  harness, not for this workflow.
+  Push with **`cc-push`**, never with host git in the checkout: see
+  [Pushing: cc-push](#pushing-cc-push).
 - **Read-only PAT — for private fetches.** When the repo, or a dependency, is
   private, export a fine-grained PAT with *Contents: read* on the named repos
   only: `GH_TOKEN=github_pat_… cc-isolated ~/code/api`. `devcontainer.json`

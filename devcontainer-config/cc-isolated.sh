@@ -602,7 +602,7 @@ probe_boundary() {
 #     and URLs that config defines, but git also acts on .gitmodules itself on
 #     `submodule update`).
 #
-# SIZE. This block brings cc-isolated.sh to about 1400 lines. It stays inline because
+# SIZE. This block brings cc-isolated.sh to about 1360 lines. It stays inline because
 # install.sh ships a fixed PAYLOAD list and the trust manifest hashes each file;
 # a sourced helper would need both to change.
 GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|core\.attributesfile|core\.worktree|sequence\.editor|pager\.|credential|diff\.|difftool\.|merge\.|mergetool\.|interactive\.|gpg\.|alias\.|submodule\.|protocol\.|remote\.|branch\..*\.(remote|pushremote)$|url\.|uploadpack\.|receive\.|sendemail\.|ssh\.|http\.|gc\.|web\.|browser\.|man\.|instaweb\.)'
