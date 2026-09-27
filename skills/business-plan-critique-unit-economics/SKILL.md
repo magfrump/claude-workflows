@@ -38,7 +38,7 @@ Review a business-plan-shaped draft for one question: **do the per-customer econ
 Covers **unit economics only**. Two adjacent dimensions are out of scope, handled by sibling skills:
 
 - **Moat-and-distribution critique** (moat type, distribution channel, switching cost, network effect, competitive response) — `business-plan-critique-moat`.
-- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer count) — future `business-plan-critique-market-sizing`.
+- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer count) — `business-plan-critique-market-sizing`.
 
 If the draft's biggest weakness is in one of those, name it briefly under "Out of scope" in your Goal-Alignment Note and let the orchestrator route it. Do not attempt those critiques here — keeping this skill narrow lands sharp findings without blurring into a generic business review.
 

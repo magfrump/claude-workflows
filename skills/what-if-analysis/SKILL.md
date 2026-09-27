@@ -1,11 +1,11 @@
 ---
 name: what-if-analysis
 description: >
-  Prospective consequence analysis of a proposed change: wrong assumptions, second-order
-  effects, hidden couplings, reversibility. Failure already happened ("pre-mortem this", "tell
-  me why this failed") → pre-mortem; is the argument good → cowen-critique or yglesias-critique.
-  Triggers: "what could go wrong with this", "stress-test this plan", "what are the risks",
-  "what assumptions is this making", "what am I not seeing".
+  Prospective consequence analysis of a proposed change: wrong assumptions, second-order effects,
+  hidden couplings, reversibility. Failure already happened ("pre-mortem this") → pre-mortem; is
+  the argument good → cowen-critique or yglesias-critique. Triggers: "what could go wrong with
+  this", "stress-test this plan", "what are the risks", "what assumptions is this making", "what
+  am I not seeing".
 when: User wants to explore consequences, failure modes, and second-order effects of a proposed change — prospectively, from the plan forward
 requires:
   - name: cowen-critique
@@ -45,7 +45,7 @@ Split is not which skill is "better" — it's which cognitive move the user want
 
 The two compose. For high-stakes changes, run this skill first to surface load-bearing assumptions and consequence chains, then run `pre-mortem` to turn the most worrying parts into concrete failure narratives. What-if maps the territory; pre-mortem walks the specific paths through it that end in failure.
 
-In scope: a plan, design, migration, refactor, policy, or any artifact that proposes doing something different from the status quo. Unlike the critique skills (`cowen-critique`, `yglesias-critique`), which ask whether an argument is *good*, this skill asks what happens if the argument is *wrong*, and what the consequences are even if it's right. More trigger phrases: "what am I not seeing", "what are the second-order effects", "what breaks if we're wrong", "what if this assumption doesn't hold". Also trigger when the user is about to make a significant, hard-to-reverse change and wants to understand the consequence space before committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top candidates before a decision is finalized. Upstream reports (fact-check, critique) are optional; see "Using Upstream Reports" below.
+In scope: a plan, design, migration, refactor, policy, or any artifact that proposes doing something different from the status quo. It systematically explores "what if this assumption is wrong?" and "what would need to be true for this to fail?" Unlike the critique skills (`cowen-critique`, `yglesias-critique`), which ask whether an argument is *good*, this skill asks what happens if the argument is *wrong*, and what the consequences are even if it's right. More trigger phrases: "what am I not seeing", "what are the second-order effects", "what breaks if we're wrong", "what if this assumption doesn't hold". Also trigger when the user is about to make a significant, hard-to-reverse change and wants to understand the consequence space before committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top candidates before a decision is finalized. Upstream reports (fact-check, critique) are optional; see "Using Upstream Reports" below.
 
 ## Using Upstream Reports
 

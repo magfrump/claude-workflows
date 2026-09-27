@@ -2,10 +2,10 @@
 name: dependency-upgrade
 description: >
   Evaluate a dependency upgrade: changelog, breaking changes, migration effort, go/no-go with a
-  migration plan; also upgrade-vs-switch comparisons. Inside a full PR review, code-review runs
-  it. Triggers: "should we upgrade X", "is this upgrade safe", "review this dep bump", "what
-  changed in X v2", a Dependabot/Renovate PR, a CVE or end-of-life notice, or any dependency
-  manifest change.
+  migration plan; also upgrade-vs-switch comparisons. code-review auto-selects it when a diff
+  changes a manifest. Triggers: "should we upgrade X", "is this upgrade safe", "review this dep
+  bump", "what changed in X v2", a Dependabot/Renovate PR, a CVE or end-of-life notice, or any
+  dependency manifest change.
 when: User asks whether to upgrade a dependency or reviews a dep bump
 ---
 

@@ -1,11 +1,11 @@
 ---
 name: design-space-situating
 description: >
-  Frame a design decision before choosing: place it on eight design-technique dimensions and
-  name what kind of decision it is; a frame, not a decision. Choosing among options →
-  divergent-design; contradictory DD constraints go to DD's Double Diamond first, escalating
-  here only if it fails. Triggers: "what kind of decision is this", "situate this decision",
-  "frame this before we choose", "are we even framing this right".
+  Frame a design decision before choosing: place it on eight design-technique dimensions and name
+  what kind of decision it is. Choosing among options → divergent-design; misframing inside DD →
+  its Double Diamond first, here only if that fails. Triggers: "what kind of decision is this",
+  "situate this decision", "frame this before we choose", "are we even framing this right"; a
+  frame, not a decision.
 when: User wants to frame a design decision before choosing, DD's Double Diamond variant failed to produce a coherent framing, or RPI surfaces an unnamed design-space default
 ---
 
@@ -25,7 +25,7 @@ Dimensions come from a cross-disciplinary survey of design techniques (visual, s
 
 - **Explicit request.** "Situate this decision", "what kind of decision is this", "where does this fit in the design space", "frame this before we diverge".
 - **Misframing that DD's Double Diamond could not resolve.** When divergent-design's constraints contradict each other or its compatibility matrix (step 3) has no coherent survivor, suggest DD's [Double Diamond (Purpose-First) variant](../../workflows/divergent-design.md#variant-double-diamond-purpose-first) first; it owns misframing inside DD. Run this skill only if the Double Diamond also fails to produce a coherent framing: every candidate framing leaves out a hard concern, or the chosen framing reproduces the same contradiction (e.g., "needs formal verification" + "must support rapid iteration"). Placing the decision on the dimensions can then reveal which axis every framing assumed a position on without choosing it.
-- **Implicit defaults in RPI.** When RPI research surfaces a decision touching social structure, temporal commitment, or legibility in ways the user hasn't named, situate before planning so the plan reflects what the decision actually is.
+- **Implicit defaults in RPI.** When RPI research surfaces a decision touching authority, temporal commitment, reversibility, formality, social structure, or legibility in ways the user hasn't named, situate before planning so the plan reflects what the decision actually is.
 - **More trigger phrases.** "where does this sit in the design space", "frame this before we choose", "frame this before we diverge", "what kind of problem is this", "are we even framing this right".
 - **Output.** The situating record becomes input to DD's diagnosis step (problem statement), a re-run of the Double Diamond's framing step, or RPI's plan step (decision framing). It is a frame, not a decision.
 

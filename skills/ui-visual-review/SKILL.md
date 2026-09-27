@@ -2,10 +2,10 @@
 name: ui-visual-review
 description: >
   Review and fix visual/layout issues in any rendered UI (web, Unity C# UI, SwiftUI, mobile, 3D
-  viewports): cut-off, overlap, overflow, sizing, focus order, per WCAG 2.2. Within a full PR
-  review, code-review invokes it. Triggers: "fix the layout", "make this responsive", "review
-  the UI", "does this work on mobile", "audit the CSS", or any diff touching UI rendering code
-  (TSX/JSX, CSS, Tailwind).
+  viewports): cut-off, overlap, overflow, sizing, focus order, per WCAG 2.2. code-review
+  auto-selects it when a diff touches UI code. Triggers: "fix the layout", "make this responsive",
+  "review the UI", "does this work on mobile", "audit the CSS", or any diff touching UI rendering
+  code (TSX/JSX, CSS, Tailwind).
 when: User asks to review, audit, or fix visual/layout issues in UI code, or diff touches any UI rendering code (TSX/JSX, CSS, Tailwind, Unity C# UI, SwiftUI, 3D rendering)
 requires:
   - name: code-fact-check

@@ -3,11 +3,11 @@ name: yglesias-critique
 lens: revealed-preferences
 persona-last-sampled: 2026-05-03
 description: >
-  Matt Yglesias-style critique of any draft that proposes a mechanism (policy, software design,
-  org change): agree with the goal, test the mechanism. The DEFAULT critic when a draft pairs a
-  goal with a mechanism; argument rigor → cowen-critique, many lenses → ai-personas-critique.
-  Triggers: "would this actually work", "poke holes in this proposal", "is the mechanism the
-  right one", "am I being realistic here", "what's the boring lever".
+  Matt Yglesias-style critique of a draft proposing a mechanism (policy, software, org change):
+  agree with the goal, test the mechanism. DEFAULT when a goal comes with a mechanism; argument
+  rigor → cowen-critique, many lenses → ai-personas-critique. Triggers: "would this actually
+  work", "poke holes in this proposal", "is the mechanism the right one", "am I being realistic
+  here", "what's the boring lever".
 when: User wants pragmatic mechanism-vs-goal critique of any proposal
 requires:
   - name: fact-check

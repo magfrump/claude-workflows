@@ -54,7 +54,7 @@ when rooted in specific assumptions and coupling failures what-if-analysis alrea
 When invoked alone (no upstream what-if), do the failure-story work directly from the proposal
 — without the structural map, but still producing narrative output.
 
-More trigger phrases: "it's six months later and this didn't work — what happened", "give me the failure stories", "what does the incident report say if this goes wrong". Also trigger when a team has converged too quickly on a plan and needs to confront concrete ways it could go wrong, or when a high-stakes, hard-to-reverse change is about to be committed and the user wants the failure narratives before the decision is locked.
+More trigger phrases: "it's six months later and this didn't work — what happened", "what does the incident report say if this goes wrong". Also trigger when a team has converged too quickly on a plan and needs to confront concrete ways it could go wrong, or when a high-stakes, hard-to-reverse change is about to be committed and the user wants the failure narratives before the decision is locked.
 
 ## Using an Upstream What-If Analysis
 

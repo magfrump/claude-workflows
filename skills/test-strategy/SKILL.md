@@ -1,11 +1,11 @@
 ---
 name: test-strategy
 description: >
-  Recommend which tests to write for a feature, module or change, as named gaps (G1, G2...)
-  mapped to concrete test cases in specific files. Inside a full PR review, code-review runs it.
-  Triggers: "what tests should I write", "how should I test this", "what's missing from our test
-  coverage", "what's the test plan", "where are the coverage gaps"; also at the end of RPI
-  planning and on PRs lacking tests.
+  Recommend which tests to write for a feature, module or change, as named gaps (G1, G2...) mapped
+  to concrete test cases in specific files. code-review auto-selects it when source changes lack
+  test changes. Triggers: "what tests should I write", "how should I test this", "what's missing
+  from our test coverage", "what's the test plan", "where are the coverage gaps"; also at the end
+  of RPI planning and on PRs lacking tests.
 when: User asks what tests to write or needs a testing plan for code
 ---
 

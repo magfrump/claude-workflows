@@ -2,8 +2,8 @@
 name: business-plan-critique-moat
 lens: moat-and-distribution
 description: >
-  Critique durable advantage in a business plan, pitch, deck or GTM doc: moat type,
-  distribution, switching cost, network effect, competitive response. CAC/LTV/margin math →
+  Critique durable advantage in a business plan, pitch, deck or GTM doc: moat type, distribution,
+  switching cost, network effect, competitive response. CAC/LTV →
   business-plan-critique-unit-economics; market size → business-plan-critique-market-sizing.
   Triggers: "review my business plan", "critique this pitch", "is this defensible", "what's the
   moat", "GTM critique", "would this survive competition".
@@ -43,7 +43,7 @@ sibling skills:
 - **Unit-economics critique** (CAC/LTV math, gross margin, payback period, contribution margin
   trajectories) — `business-plan-critique-unit-economics` skill.
 - **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer
-  count) — future `business-plan-critique-market-sizing` skill.
+  count) — `business-plan-critique-market-sizing` skill.
 
 If the draft's biggest weakness is in one of those areas, name it briefly under "Out of scope"
 in your Goal-Alignment Note and let the orchestrator route it. Do not attempt those critiques

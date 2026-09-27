@@ -2,10 +2,10 @@
 name: arithmetic-eval
 description: >
   Evaluate or verify any calculation with python3 instead of mental math; default on, including
-  math inside fact-checks, cost estimates and code review. Two modes: bare arithmetic via a safe
-  AST evaluator, and scientific computing (numpy, scipy, pandas, sympy, statistics) behind an
-  allowlist checker. Triggers: "compute", "calculate", "what's X% of Y", "check the math",
-  "verify this number", any non-trivial expression.
+  inside fact-checks, cost estimates and code review. Triggers: "compute", "calculate",
+  "what's X% of Y", "check the math", "verify this number", any non-trivial expression. Two
+  modes: bare arithmetic via a safe AST evaluator; scientific computing (numpy, scipy, pandas,
+  sympy, statistics) allowlist-gated, then run in an OS sandbox.
 when: Any arithmetic or scientific computation is needed (default on, not opt-in)
 ---
 

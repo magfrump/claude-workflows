@@ -27,6 +27,7 @@ Moves described below. Use them. Not all apply to every draft — exercise judgm
 
 ## When to use
 
+- Drafts in scope: blog post, essay, article, op-ed, research note, or similar written piece.
 - Encodes how Cowen breaks down arguments, not just his conclusions: boring-explanation-first, invert-the-thesis, revealed preferences, market signals, cross-domain analogy, sub-claim decomposition, contingent assumptions, calibrated uncertainty.
 - This is the DEFAULT critic for substantive intellectual feedback on a written argument. Reach for it whenever a draft makes a claim that could be wrong and the user wants more than proofreading.
 - Trigger phrases: "review this draft", "critique this", "pressure-test this", "poke holes in this", "what am I missing", "is this argument solid", "challenge my thinking", "play devil's advocate", "stress-test the argument", "give me a Cowen-style review", "what would an economist say about this", "is the reasoning sound", "where is this weak".

@@ -46,6 +46,7 @@ or whether the author missed something. Check only whether what they said is acc
 
 ## When to use
 
+- Drafts in scope: blog post, essay, article, policy piece, or any prose with checkable assertions.
 - Like a newspaper's fact-checking desk: a neutral verification pass, not a critique or review. The report can be read by humans or passed to downstream critic agents.
 - Trigger phrases: "fact-check this", "verify the numbers", "check the claims", "source-check", "is this true", "did this actually happen", "make sure the facts are right", "verify this draft", or any phrasing that asks for factual verification rather than judgment.
 - Also trigger when upstream orchestration (e.g., `draft-review`) requests a fact-check pass before running critic agents; the orchestrator supplies a goal preamble.
