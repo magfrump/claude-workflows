@@ -70,7 +70,7 @@ fi
 # The enforcement set: what cc-isolated.sh's enforcement_files() hashes, as repo
 # paths. Keep in step with that function. Plus install.sh, which is not hashed but
 # runs on the host and chooses the diff the human reviews (decision 035).
-enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|cc-push\.sh|install\.sh$|egress/)'
 touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 [ -n "$touched" ] || exit 0
 
