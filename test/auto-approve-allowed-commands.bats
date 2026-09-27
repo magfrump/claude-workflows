@@ -15,11 +15,21 @@ setup() {
   PROJECT="$TEST_TMPDIR/project"
   mkdir -p "$PROJECT/.claude"
   git -C "$PROJECT" init -q
+  # The hook only parses command strings, but several tests feed it `curl`
+  # commands; a recording stub guarantees none is ever actually run.
+  STUB_BIN="$TEST_TMPDIR/bin"
+  mkdir -p "$STUB_BIN"
+  printf '#!/bin/sh\necho "curl stub ran" >> "%s/curl.ran"\nexit 1\n' "$TEST_TMPDIR" > "$STUB_BIN/curl"
+  chmod +x "$STUB_BIN/curl"
+  export PATH="$STUB_BIN:$PATH"
   cd "$PROJECT" || return 1
 }
 
 teardown() {
+  local ran=0
+  [ -e "$TEST_TMPDIR/curl.ran" ] && ran=1
   rm -rf "$TEST_TMPDIR"
+  [ "$ran" -eq 0 ]
 }
 
 run_hook() {
