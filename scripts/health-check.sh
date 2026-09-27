@@ -404,7 +404,7 @@ check_bats() {
     rm -rf "$nr_dir"
 
     if (( fast_nr + slow_nr > 0 )); then
-        warn "$((fast_nr + slow_nr)) report-dependent BATS suite(s) NOT RUN — no generated reports for their skill (listed in the runner output above; generate with test/skills/generate-reports.bash <skill>)"
+        warn "$((fast_nr + slow_nr)) report-dependent BATS suite(s) NOT RUN — no generated reports for their skill (listed in the runner output above; generate with test/skills/generate-reports.bash <skill>, then commit output/)"
     fi
 }
 

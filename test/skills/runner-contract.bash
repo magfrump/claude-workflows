@@ -182,25 +182,32 @@ _stamp_hash_path() {
 # report generated now for <fixture>, one "<input> <sha256>" line per input:
 #   skill    skills/<skill>/ (every file: SKILL.md, references/, scripts)
 #   runner   test/skills/<skill>/runner.bash
-#   contract test/skills/runner-contract.bash (this file)
 #   fixture  test/skills/<skill>/fixtures/<fixture> (a file, or a tree fixture)
 # generate-reports.bash writes it as <fixture>.stamp beside the report;
-# check_report_stamp recomputes it and compares. Not covered: live repo files a
-# tree-mode runner's fixture_base copies in (self-eval's rubric,
-# divergent-design's workflow).
+# check_report_stamp recomputes it and compares.
+#
+# Only the skill's own inputs are stamped (Q-071 [1]): runner.bash is the one
+# file that sets this skill's prompt, tools and mode, so it counts as the
+# skill's own. Shared harness files are deliberately not stamped: this file,
+# generate-reports.bash, transcript.jq. Stamping this file made every edit to
+# it stale every skill's reports, which kept the committed reports red under
+# this repo's editing rate. The accepted cost: a harness change that alters
+# generated output goes unnoticed until the affected skill is regenerated.
+# Also not covered: live repo files a tree-mode runner's fixture_base copies in
+# (self-eval's rubric, divergent-design's workflow).
 report_stamp() {
   local sk="$1" skill="$2" fixture="$3"
   printf 'skill %s\n' "$(_stamp_hash_path "$sk/../../skills/$skill")"
   printf 'runner %s\n' "$(_stamp_hash_path "$sk/$skill/runner.bash")"
-  printf 'contract %s\n' "$(_stamp_hash_path "$sk/runner-contract.bash")"
   printf 'fixture %s\n' "$(_stamp_hash_path "$sk/$skill/fixtures/$fixture")"
 }
 
 # check_report_stamp <skills_test_dir> <skill> <fixture>: fail, with a message
 # naming the changed inputs and the regeneration command, unless
 # <skill>/output/<fixture>.stamp exists and matches report_stamp for the
-# current tree. A report whose skill, runner, contract or fixture changed since
-# it was generated grades a program that no longer exists.
+# current tree. A report whose skill, runner or fixture changed since it was
+# generated grades a program that no longer exists. A stamp in an older format
+# (one that also stamped the contract) reads as stale: "stamp format".
 check_report_stamp() {
   local sk="$1" skill="$2" fixture="$3"
   local stamp="$sk/$skill/output/$fixture.stamp" now changed=""
