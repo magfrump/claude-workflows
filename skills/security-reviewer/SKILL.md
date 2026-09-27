@@ -1,18 +1,11 @@
 ---
 name: security-reviewer
 description: >
-  Review code changes for security vulnerabilities using structured cognitive moves that go beyond
-  what static analysis tools catch. This is not a linter — it focuses on design-level security
-  flaws, trust boundary violations, implicit assumptions about input safety, and patterns that
-  create exploitable conditions. Produces a structured Markdown critique of code diffs. Use this
-  skill when the user asks to "review for security", "check for vulnerabilities", "security audit
-  this PR", "what could an attacker do with this", or "is this safe". Also trigger when code
-  touches authentication, authorization, input handling, cryptography, file I/O, network calls,
-  or serialization. Also trigger when the diff includes changes to dependency manifests
-  (package.json, requirements.txt, go.mod, Cargo.toml, pyproject.toml, Gemfile, pom.xml,
-  build.gradle, etc.) or their lockfiles. NOTE: This skill can be invoked standalone or by a code-review orchestrator.
-  If a code-fact-check report is provided, use it as your foundation for understanding what the
-  code actually does and do not re-verify documented behavior.
+  Review a diff for design-level security flaws a linter misses: trust boundaries, unsafe input
+  assumptions, exploitable patterns. For a full multi-concern review use code-review. Triggers:
+  "review for security", "check for vulnerabilities", "security audit this PR", "what could an
+  attacker do with this", "is this safe", or code touching auth, input handling, crypto, file
+  I/O, network, serialization, or dependency manifests.
 when: Code touches auth, input handling, crypto, trust boundaries, or dependency manifests
 non-goals:
   - Not a linter or SAST replacement — do not report findings static analysis reliably catches (unused vars, simple type mismatches).
@@ -61,6 +54,13 @@ isolation.
 
 What follows is a set of cognitive moves. Not all apply to every
 diff — exercise judgment based on what the code does.
+
+## When to use
+
+- Not a linter: focuses on design-level flaws, trust boundary violations, implicit assumptions about input safety, and patterns that create exploitable conditions.
+- Trigger phrases: "review for security", "check for vulnerabilities", "security audit this PR", "what could an attacker do with this", "is this safe".
+- Also trigger when code touches authentication, authorization, input handling, cryptography, file I/O, network calls, or serialization, and when the diff changes dependency manifests (package.json, requirements.txt, go.mod, Cargo.toml, pyproject.toml, Gemfile, pom.xml, build.gradle, etc.) or their lockfiles.
+- Can run standalone or under the `code-review` orchestrator. If a code-fact-check report is provided, use it as the foundation for what the code does and do not re-verify documented behavior.
 
 ## Scoping
 

@@ -1,25 +1,11 @@
 ---
 name: ui-visual-review
 description: >
-  Review and fix visual/layout issues in UI code — cross-resolution compatibility,
-  scrollability, overflow handling, sizing, affordance, focus order, and 3D viewport
-  rendering. Triggers on ANY visible UI element, not just CSS: TSX/JSX, Vue, Svelte,
-  Tailwind, CSS-in-JS, Unity/C# UI components (Button, Toggle, Selectable subclasses),
-  SwiftUI views, native mobile layouts, and 3D rendering surfaces (three.js,
-  react-three-fiber, Babylon, model-viewer, Unity WebGL, Unreal Pixel Streaming,
-  .glb/.gltf). Validates recommendations against accessibility standards (WCAG 2.2),
-  NNGroup usability research, and platform UI guidance. Use this skill when the user
-  reports visual elements that are cut off, overlapping, invisible at certain
-  resolutions, or otherwise broken across screen sizes. Also trigger on any of:
-  "fix the layout", "make this responsive", "review the UI", "check visual elements",
-  "audit the CSS", "review the layout", "check the UI", "fix the styling", "responsive
-  design review", "is this responsive", "does this work on mobile", "layout review", or
-  when a diff touches any file containing rendered UI — including TSX/JSX, CSS, SCSS,
-  Tailwind class strings, Unity C# UI scripts, or 3D scene setup. Produces concrete
-  code fixes plus a structured report of findings. NOTE: This skill can be invoked
-  standalone or by a code-review orchestrator. If a code-fact-check report is
-  provided, use it as your foundation for understanding what the code actually does
-  and do not re-verify documented behavior.
+  Review and fix visual/layout issues in any rendered UI (web, Unity C# UI, SwiftUI, mobile, 3D
+  viewports): cut-off, overlap, overflow, sizing, focus order, per WCAG 2.2. Within a full PR
+  review, code-review invokes it. Triggers: "fix the layout", "make this responsive", "review
+  the UI", "does this work on mobile", "audit the CSS", or any diff touching UI rendering code
+  (TSX/JSX, CSS, Tailwind).
 when: User asks to review, audit, or fix visual/layout issues in UI code, or diff touches any UI rendering code (TSX/JSX, CSS, Tailwind, Unity C# UI, SwiftUI, 3D rendering)
 requires:
   - name: code-fact-check
@@ -54,6 +40,15 @@ Core principles (overflow handling, control placement, sizing, affordance, focus
 Guiding principle: **users should never have to guess** whether they can scroll, click, or interact with an element. When minimalist aesthetics conflict with discoverability, prefer discoverability — especially in tool-like web applications where task completion matters more than first impressions.
 
 ---
+
+## When to use
+
+- Covers cross-resolution compatibility, scrollability, overflow handling, sizing, affordance, focus order, and 3D viewport rendering. Triggers on ANY visible UI element, not just CSS: TSX/JSX, Vue, Svelte, Tailwind, CSS-in-JS, Unity/C# UI components (Button, Toggle, Selectable subclasses), SwiftUI views, native mobile layouts, and 3D rendering surfaces (three.js, react-three-fiber, Babylon, model-viewer, Unity WebGL, Unreal Pixel Streaming, .glb/.gltf).
+- Recommendations are validated against accessibility standards (WCAG 2.2), NNGroup usability research, and platform UI guidance. Output is concrete code fixes plus a structured report of findings.
+- Use when the user reports visual elements that are cut off, overlapping, invisible at certain resolutions, or otherwise broken across screen sizes.
+- Trigger phrases: "fix the layout", "make this responsive", "review the UI", "check visual elements", "audit the CSS", "review the layout", "check the UI", "fix the styling", "responsive design review", "is this responsive", "does this work on mobile", "layout review".
+- Also trigger when a diff touches any file containing rendered UI, including TSX/JSX, CSS, SCSS, Tailwind class strings, Unity C# UI scripts, or 3D scene setup.
+- Can run standalone or under the `code-review` orchestrator. If a code-fact-check report is provided, use it as the foundation for what the code does and do not re-verify documented behavior.
 
 ## Execution rules
 
