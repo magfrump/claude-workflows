@@ -1,29 +1,11 @@
 ---
 name: what-if-analysis
 description: >
-  Perform a structured prospective consequence analysis of a proposed change — a plan, design,
-  migration, refactor, policy, or any artifact that proposes doing something different from the
-  status quo. This skill systematically explores "what if this assumption is wrong?" and "what
-  would need to be true for this to fail?" It traces second-order effects, maps hidden couplings,
-  and stress-tests the highest-confidence assumptions. Differentiated from critique skills
-  (cowen-critique, yglesias-critique) which evaluate whether an argument is *good* — this skill
-  evaluates what happens if the argument is *wrong*, and what the consequences are even if it's
-  right. Use this skill when the user asks things like "what could go wrong with this",
-  "stress-test this plan", "what am I not seeing", "what are the risks", "what are the
-  second-order effects", "what breaks if we're wrong", "what assumptions is this making", or
-  "what if this assumption doesn't hold". Also trigger when the user is about to make a
-  significant, hard-to-reverse change and wants to understand the consequence space before
-  committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top
-  candidates before a decision is finalized. Distinct from `pre-mortem`: that skill operates
-  retrospectively (assume failure has already happened → write the narrative of why), while
-  this skill operates prospectively (the plan is on the table → map the consequence space
-  around it). Trigger phrases that name a failure as *already having happened* — "pre-mortem
-  this", "imagine 6 months later and this failed", "write the failure story", "tell me why
-  this failed" — route to `pre-mortem`, not here. The two skills compose: run what-if first
-  to map the territory, then pre-mortem to walk the specific failure paths through it. NOTE:
-  This skill can optionally receive upstream reports (fact-check, critique) but does not
-  require them. If critique reports are provided, use them to identify which assumptions the
-  critics *didn't* examine — that's where this skill adds the most value.
+  Prospective consequence analysis of a proposed change: wrong assumptions, second-order
+  effects, hidden couplings, reversibility. Failure already happened ("pre-mortem this", "tell
+  me why this failed") → pre-mortem; is the argument good → cowen-critique or yglesias-critique.
+  Triggers: "what could go wrong with this", "stress-test this plan", "what are the risks",
+  "what assumptions is this making", "what am I not seeing".
 when: User wants to explore consequences, failure modes, and second-order effects of a proposed change — prospectively, from the plan forward
 requires:
   - name: cowen-critique
@@ -62,6 +44,8 @@ Mechanical test at trigger time:
 Split is not which skill is "better" — it's which cognitive move the user wants. What-if invokes the structural analyst: the plan is on the table, map the consequence space around it (load-bearing assumptions, second-order effects, hidden couplings, reversibility gradient, cost of success). Pre-mortem invokes the detective: failure has already happened, write the report as narrative. Asking for the wrong one wastes the asymmetry that makes each move work.
 
 The two compose. For high-stakes changes, run this skill first to surface load-bearing assumptions and consequence chains, then run `pre-mortem` to turn the most worrying parts into concrete failure narratives. What-if maps the territory; pre-mortem walks the specific paths through it that end in failure.
+
+In scope: a plan, design, migration, refactor, policy, or any artifact that proposes doing something different from the status quo. Unlike the critique skills (`cowen-critique`, `yglesias-critique`), which ask whether an argument is *good*, this skill asks what happens if the argument is *wrong*, and what the consequences are even if it's right. More trigger phrases: "what am I not seeing", "what are the second-order effects", "what breaks if we're wrong", "what if this assumption doesn't hold". Also trigger when the user is about to make a significant, hard-to-reverse change and wants to understand the consequence space before committing, or when invoked as a sub-procedure of `divergent-design` to stress-test top candidates before a decision is finalized. Upstream reports (fact-check, critique) are optional; see "Using Upstream Reports" below.
 
 ## Using Upstream Reports
 

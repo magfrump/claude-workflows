@@ -1,20 +1,10 @@
 ---
 name: self-eval
 description: >
-  Evaluate a single skill or workflow against the project's evaluation rubric
-  (docs/evaluation-rubric.md). Auto-scores five structural dimensions (testability investment,
-  trigger clarity, overlap and redundancy, test coverage, pipeline readiness) as
-  Strong/Adequate/Weak with justification. Flags the four judgment-dependent dimensions
-  (counterfactual gap, user-specific fit, failure mode gracefulness, condition for value) with
-  structured prompts so a human reviewer can finish the assessment efficiently. Produces a
-  structured Markdown report at docs/reviews/self-eval-{target}.md with a Key Questions list.
-  Use this skill whenever the user asks to "evaluate this skill", "assess this workflow",
-  "run the rubric on X", "self-eval", "score this skill", or "how does X hold up against the
-  rubric". Also trigger automatically before merging a new or substantially modified skill or
-  workflow (pre-merge gate), during periodic reassessment of existing tools when conditions
-  have changed (pipeline built/abandoned, usage shifted), and as part of the PR-prep review-fix
-  loop when the diff touches `skills/` or `workflows/`. When in doubt, run it — under-triggering
-  here means skills ship without rubric assessment.
+  Score one skill or workflow against docs/evaluation-rubric.md (five auto-rated dimensions,
+  four human prompts) into docs/reviews/self-eval-{target}.md. Triggers: "self-eval", "evaluate
+  this skill", "assess this workflow", "run the rubric on X", "score this skill"; also before
+  merging a new or changed skill/workflow and in the PR-prep loop. When in doubt, run it.
 when: User asks to evaluate or score a skill or workflow against the rubric, or a PR modifies a skill/workflow file
 ---
 
@@ -27,6 +17,13 @@ Evaluate a single skill or workflow against the project's evaluation rubric. Pro
 You are an evaluator, not a cheerleader. Be honest about weaknesses. A low score with clear justification is more useful than an inflated score.
 
 ---
+
+## When to use
+
+- Auto-scored dimensions (Strong/Adequate/Weak with justification): testability investment, trigger clarity, overlap and redundancy, test coverage, pipeline readiness. Flagged for a human with structured prompts: counterfactual gap, user-specific fit, failure mode gracefulness, condition for value. The report ends with a Key Questions list.
+- Trigger phrases: "evaluate this skill", "assess this workflow", "run the rubric on X", "self-eval", "score this skill", "how does X hold up against the rubric".
+- Also trigger automatically before merging a new or substantially modified skill or workflow (pre-merge gate), during periodic reassessment of existing tools when conditions have changed (pipeline built/abandoned, usage shifted), and in the PR-prep review-fix loop when the diff touches `skills/` or `workflows/`.
+- When in doubt, run it: under-triggering here means skills ship without rubric assessment.
 
 ## Step 1: Determine the Target
 

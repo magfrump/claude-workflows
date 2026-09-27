@@ -1,21 +1,11 @@
 ---
 name: dependency-upgrade
 description: >
-  Evaluate a dependency upgrade by reviewing the changelog, identifying breaking changes,
-  assessing migration effort, and producing a go/no-go recommendation with a concrete
-  migration plan. Use this skill when the user asks "should we upgrade X", "what changed in
-  X v2", "is this upgrade safe", "review this dependency bump", "review this dep bump PR",
-  "is bumping X v1 to v2 risky", or when Dependabot or Renovate opens a PR that needs human
-  judgment. Also trigger when a dependency has a known security advisory or CVE, is
-  approaching end-of-life, or when a transitive dep is forcing a version bump. Can evaluate
-  a single upgrade or compare alternatives (e.g., "should we upgrade X or switch to a
-  different library"). When in doubt and the work involves a dependency manifest change
-  (package.json, go.mod, requirements.txt, Cargo.toml, Gemfile, pyproject.toml, etc.),
-  prefer running this skill over skipping it. NOTE: This skill can be invoked standalone or
-  by a code-review orchestrator. If a code-fact-check report is provided, it is the sole
-  source of execution results: consume its verdicts and cite its claim ids for any
-  command-outcome statement (audit, install, test, grep) and do not run or re-assert
-  command outcomes yourself.
+  Evaluate a dependency upgrade: changelog, breaking changes, migration effort, go/no-go with a
+  migration plan; also upgrade-vs-switch comparisons. Inside a full PR review, code-review runs
+  it. Triggers: "should we upgrade X", "is this upgrade safe", "review this dep bump", "what
+  changed in X v2", a Dependabot/Renovate PR, a CVE or end-of-life notice, or any dependency
+  manifest change.
 when: User asks whether to upgrade a dependency or reviews a dep bump
 ---
 
@@ -24,6 +14,14 @@ when: User asks whether to upgrade a dependency or reviews a dep bump
 # Dependency Upgrade Evaluation
 
 Surface risks, breaking changes, and migration effort so the user can decide. Do not rubber-stamp or block reflexively.
+
+## When to use
+
+- Trigger phrases: "should we upgrade X", "what changed in X v2", "is this upgrade safe", "review this dependency bump", "review this dep bump PR", "is bumping X v1 to v2 risky", or a Dependabot or Renovate PR that needs human judgment.
+- Also trigger when a dependency has a known security advisory or CVE, is approaching end-of-life, or when a transitive dep is forcing a version bump.
+- Evaluates a single upgrade or compares alternatives (e.g., "should we upgrade X or switch to a different library").
+- When in doubt and the work involves a dependency manifest change (package.json, go.mod, requirements.txt, Cargo.toml, Gemfile, pyproject.toml, etc.), prefer running this skill over skipping it.
+- Can run standalone or under the `code-review` orchestrator. If a code-fact-check report is provided, it is the sole source of execution results: consume its verdicts and cite its claim ids for any command-outcome statement (audit, install, test, grep); do not run or re-assert command outcomes yourself.
 
 ## Scoping
 

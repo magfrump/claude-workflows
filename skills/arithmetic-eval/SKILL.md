@@ -1,20 +1,11 @@
 ---
 name: arithmetic-eval
 description: >
-  Validate and evaluate math using python3 to prevent hallucinated calculations.
-  Two modes: (1) bare arithmetic (numbers + operators only) via a safe AST
-  evaluator — no shell interpolation, no eval; (2) scientific computing (imports,
-  scripts, dataframes) gated by a machine-enforced static checker over an
-  approved-modules allowlist for scipy, numpy, pandas, sympy, statistics, etc.,
-  then run under OS confinement. Use whenever performing, verifying, or
-  double-checking ANY calculation, including: intermediate math inside a
-  fact-check ("does 2.3M / 41 ≈ 56k?"), cost estimates ("$0.003 × 1.2M tokens"),
-  unit conversions, percentage changes, t-tests, p-values, confidence intervals,
-  CSV/JSON aggregations, regression coefficients, and sanity checks in code review.
-  Default to using this skill — mental math is the exception, not the rule.
-  Trigger phrases: "compute", "calculate", "what's X% of Y", "how many",
-  "verify this number", "check the math", "is this right", or any expression with
-  operators (+, -, *, /, %, **) on non-trivial operands.
+  Evaluate or verify any calculation with python3 instead of mental math; default on, including
+  math inside fact-checks, cost estimates and code review. Two modes: bare arithmetic via a safe
+  AST evaluator, and scientific computing (numpy, scipy, pandas, sympy, statistics) behind an
+  allowlist checker. Triggers: "compute", "calculate", "what's X% of Y", "check the math",
+  "verify this number", any non-trivial expression.
 when: Any arithmetic or scientific computation is needed (default on, not opt-in)
 ---
 
@@ -23,6 +14,14 @@ when: Any arithmetic or scientific computation is needed (default on, not opt-in
 # Arithmetic Eval
 
 Exact-math tool available. **Use it instead of mental math.** Writing a number that is a calculation result — even "simple" like `12 * 365` or `15% of 240` — run it through this skill first. Mental arithmetic is the most common source of hallucinated facts in otherwise-careful work.
+
+## When to use
+
+Use whenever performing, verifying, or double-checking ANY calculation. Default to this skill; mental math is the exception, not the rule.
+
+- Examples: intermediate math inside a fact-check ("does 2.3M / 41 ≈ 56k?"), cost estimates ("$0.003 × 1.2M tokens"), unit conversions, percentage changes, t-tests, p-values, confidence intervals, CSV/JSON aggregations, regression coefficients, and sanity checks in code review.
+- Trigger phrases: "compute", "calculate", "what's X% of Y", "how many", "verify this number", "check the math", "is this right", or any expression with operators (+, -, *, /, %, **) on non-trivial operands.
+- Mode 1 (numbers + operators only) has no shell interpolation and no eval. Mode 2 (imports, scripts, dataframes) is gated by a machine-enforced static checker over the approved-modules allowlist, then run under OS confinement.
 
 ## Security model (read once)
 

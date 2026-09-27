@@ -15,6 +15,10 @@
 - **F5 (ui-visual-review exceeds 500 lines) — Partially addressed.** The directory wrapper is now in place at `skills/ui-visual-review/SKILL.md`, so the proposed sub-file split is now mechanically feasible. The actual extraction of `runtime-verification.md` and `affordance-principles.md` into the directory is still pending.
 - **F1, F2, F4, F6, F7 — Still open.** None of the frontmatter, description-length, or tool-name findings were touched by the registry-spike work.
 
+## Status update (2026-09-27)
+
+- **F4 (description length) — Resolved for all 25 skills (Q-073 option [1], Q-080).** Each description now leads with the purpose, then the "not this, use X" line, then the main trigger phrases, and runs 364–438 characters (was 951–2969). The purpose and the disambiguation fall inside the first ~250 characters in all but a few cases; the trigger list starts there and finishes by ~440. The displaced long-tail trigger phrases and caveats moved into a `## When to use` section in each SKILL.md body (appended to the existing section in design-space-situating, pre-mortem and what-if-analysis). No de-overlap: the cowen/yglesias "DEFAULT critic" claims and phrases shared by several skills were kept as they were.
+
 ---
 
 ## Summary of Findings
@@ -191,7 +195,7 @@ The flat `.md` file format and non-standard frontmatter fields work today becaus
 | Priority | Status | Finding | Effort | Impact |
 |----------|--------|---------|--------|--------|
 | 1 | Partly done 2026-09-26: `when` no longer required by health-check or `frontmatter-fields.bats`; the fields remain | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
-| 2 | Open | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
+| 2 | **Done (2026-09-27)** | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
 | 3 | **Done (2026-05-14)** | F3: Migrate to directory-based skill structure | Medium | Enables progressive disclosure, supporting files |
 | 4 | Partial | F5: Extract ui-visual-review runtime sections (directory now in place; sub-file split pending) | Low | Gets below 500-line limit |
 | 5 | Open | F2: Move `requires` to markdown body | Low | Removes inert frontmatter |
