@@ -1562,7 +1562,8 @@ not_root() {
   not_root
   scan_repo
   local before; before="$(git_exec_snapshot "$SCAN_WS")"
-  local bad="$SCAN_WS/.git/hooks/$(printf 'x\033[2Jy')"
+  local bad
+  bad="$SCAN_WS/.git/hooks/$(printf 'x\033[2Jy')"
   printf '#!/bin/sh\n' > "$bad"
   chmod 000 "$bad"
   run git_exit_scan "$SCAN_WS" "$before"
@@ -1578,7 +1579,8 @@ not_root() {
   smart_devcontainer_stub
   local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
   # What an earlier session could leave behind.
-  local bad="$ws/.git/hooks/$(printf 'pre-push\033[2J')"
+  local bad
+  bad="$ws/.git/hooks/$(printf 'pre-push\033[2J')"
   printf '#!/bin/sh\n' > "$bad"
   chmod 000 "$bad"
   run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
