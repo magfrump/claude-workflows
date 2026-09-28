@@ -125,7 +125,7 @@ Choose exactly one bracketed value. The choice is **mechanically derived from th
 
 #### Next-action derivation
 
-Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
+Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the unit's size as counted by `workflows/pr-prep.md` step 1a's command (changed lines outside `docs/`).
 
 1. **block on architectural review** — Either: (a) Step 5 auto-selected
    `architecture-review` but it was excluded (via `--exclude architecture-review`)
@@ -137,10 +137,12 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — Total diff is >500 changed lines (added + removed per
-   `git diff --stat`) AND ≥1 🔴 item exists (and rule 1 did not match). Large
-   diffs combined with red findings multiply review risk per iteration; split
-   before iterating on fixes.
+2. **split PR** — The unit is over the size gate in `workflows/pr-prep.md`
+   step 1a (>400 changed lines outside `docs/`, counted with that step's
+   command, so review artifacts don't count), the user has not waived the cap
+   for this unit, AND ≥1 🔴 item exists (and rule 1 did not match). A waived
+   unit with a 🔴 falls through to the rules below. Large diffs combined with red findings multiply review risk
+   per iteration; split before iterating on fixes.
 3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,
    security + performance + api-consistency), OR ≥3 🔴 items total. Systemic
    risk — invoke the `pre-mortem` skill before attempting line-level fixes,

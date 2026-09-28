@@ -79,4 +79,4 @@ Quick-reference yes/no checks for each workflow phase. Use these to confirm a ph
 ### PR Description
 - [ ] Does the description explain what changed, how it works, and how to test it?
 - [ ] Are areas of uncertainty flagged for the reviewer?
-- [ ] If the PR exceeds ~500 lines, have you considered splitting it or documented why not?
+- [ ] Is the unit within pr-prep step 1a's size gate (≤ 400 changed code lines outside `docs/`), or split into stacked units, or waived by the user with the `Q-NNN` entry cited?
