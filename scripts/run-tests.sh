@@ -23,20 +23,32 @@
 #   --fast    Run only fast tests (pure function tests, <1s each)
 #   --slow    Run only slow tests (integration tests, script execution / file I/O)
 #   --all     Run all tests (default)
-#   --failed  Re-run only the tests that failed in the last completed run
-#             (bats --filter-status failed). Combines with the category flags
-#             and FILE... to narrow further. Exits 1 when no run is recorded,
-#             0 with a message when the last run had no failures in scope.
+#   --failed  Re-run, in the files the last recorded run covered, only the
+#             tests that did not pass in it (bats --filter-status failed).
+#             Combines with the category flags and FILE... to narrow further.
+#             Exits 1 when no run is recorded or the last run did not
+#             complete; 0 with a message naming the last run's scope when it
+#             had no failures among the selected files.
 #   FILE...   Run only these .bats files (absolute, or relative to the repo
-#             root; each must be under test/). The category flags filter them;
-#             the tag check and report gating apply as in a full run.
+#             root, NOT the current directory; each must be under test/, after
+#             resolving symlinks). A file named twice runs once. The category
+#             flags filter them; the tag check and report gating apply as in a
+#             full run.
 #
 # Run logs: every run records per-test results in .bats/ at the repo root
 # (gitignored), which is what --failed reads. bats 1.8.2 puts its run-log
 # directory next to the FIRST file it is handed, and records nothing when that
 # directory is missing, so the runner always hands bats an empty anchor file,
 # .bats/run-log-anchor, first: the log then lands in .bats/.bats/run-logs/
-# whatever the selection. An interrupted (Ctrl-C) run is not recorded.
+# whatever the selection. When bats exits on its own (pass or fail), the
+# runner appends "# run-tests: complete files=<n>" to the log it wrote (bats
+# skips "#" lines); a log without that last line is from a run that was killed
+# or is still going, and --failed refuses it. bats deletes the log of a Ctrl-C
+# run itself. bats names logs by the UTC second: runs started in the same
+# second share one log, or (with --failed) get "<time>-1.log", which both bats
+# and the runner rank below "<time>.log", so sub-second reruns can read the
+# older log. When .bats/ cannot be written the runner warns and runs without
+# recording (--failed then exits 1).
 #
 # Locale: when the ambient locale (LC_ALL, else LANG) is not installed, every
 # bash subprocess prints a setlocale warning to stderr, and bats' `run` folds
@@ -46,10 +58,11 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 TEST_DIR="$REPO_ROOT/test"
 RUN_LOG_ANCHOR="$REPO_ROOT/.bats/run-log-anchor"
 RUN_LOG_DIR="$REPO_ROOT/.bats/.bats/run-logs"
+COMPLETE_MARK="# run-tests: complete files="
 
 usage() {
   echo "Usage: $0 [--fast|--slow|--all] [--failed] [FILE...]" >&2
@@ -94,24 +107,54 @@ fi
 # FILE... when given, else every .bats under test/.
 candidates=()
 if [[ ${#requested[@]} -gt 0 ]]; then
+  declare -A seen=()
   for arg in "${requested[@]}"; do
     path="$arg"
     [[ "$path" == /* ]] || path="$REPO_ROOT/$path"
-    if [[ ! -f "$path" || "$path" != *.bats ]]; then
+    if [[ ! -f "$path" ]]; then
       echo "ERROR: no such test file: $arg" >&2
       exit 1
     fi
-    path="$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"
+    if [[ "$path" != *.bats ]]; then
+      echo "ERROR: not a .bats file: $arg" >&2
+      exit 1
+    fi
+    # Physical path, so a symlink cannot lead out of test/ and an alias path
+    # to a real suite is accepted.
+    path="$(cd "$(dirname "$path")" && pwd -P)/$(basename "$path")"
     if [[ "$path" != "$TEST_DIR"/* ]]; then
       echo "ERROR: not under test/: $arg" >&2
       exit 1
     fi
+    [[ -n "${seen[$path]:-}" ]] && continue
+    seen[$path]=1
     candidates+=("$path")
   done
 else
   while IFS= read -r -d '' file; do
     candidates+=("$file")
   done < <(find "$TEST_DIR" -name '*.bats' -print0 | sort -z)
+fi
+
+# --failed needs a completed recorded run, whatever the selection and gating
+# below leave. bats picks the previous log as the first of `ls -1r` in the log
+# directory; the same pick here, so the file selection and bats' test filter
+# read one log.
+if [[ "$failed_only" == true ]]; then
+  last_log=""
+  if [[ -d "$RUN_LOG_DIR" ]]; then
+    last_log="$(find "$RUN_LOG_DIR" -maxdepth 1 -type f -name '*.log' -printf '%f\n' | sort -r | head -n1)"
+  fi
+  if [[ -z "$last_log" ]]; then
+    echo "--failed: no recorded run in ${RUN_LOG_DIR#"$REPO_ROOT"/}; run the tests without --failed first" >&2
+    exit 1
+  fi
+  last_line="$(tail -n1 "$RUN_LOG_DIR/$last_log")"
+  if [[ "$last_line" != "$COMPLETE_MARK"* ]]; then
+    echo "--failed: the last run ($last_log) did not complete (killed, or still running); run the full selection without --failed" >&2
+    exit 1
+  fi
+  last_scope="${last_line#"$COMPLETE_MARK"}"
 fi
 
 # Keep the candidates matching the requested category.
@@ -211,18 +254,12 @@ if [[ ${#not_run[@]} -gt 0 ]]; then
   echo ""
 fi
 
-# --failed: keep only the files with a failure in the last recorded run. bats
-# picks the previous log as the first of `ls -1r` in the log directory; the
-# same pick here, so the file selection and bats' test filter read one log.
+# --failed: keep the files with a failure in the last run. That run completed
+# (checked above), so each test of each file it covered has a line: passed,
+# failed, or status-filtered (skipped by an earlier --failed because it had
+# passed). So "has a failed line" is exactly bats' "did not pass". Files the
+# last run did not cover are out of its scope and left out.
 if [[ "$failed_only" == true && -n "$matched" ]]; then
-  last_log=""
-  if [[ -d "$RUN_LOG_DIR" ]]; then
-    last_log="$(find "$RUN_LOG_DIR" -maxdepth 1 -type f -name '*.log' -printf '%f\n' | sort -r | head -n1)"
-  fi
-  if [[ -z "$last_log" ]]; then
-    echo "--failed: no recorded run in ${RUN_LOG_DIR#"$REPO_ROOT"/}; run the tests without --failed first" >&2
-    exit 1
-  fi
   # Log lines are "failed <absolute file>\t<test id>".
   failed_files="$(grep '^failed ' "$RUN_LOG_DIR/$last_log" | cut -f1 | sed 's/^failed //' | sort -u || true)"
   kept=""
@@ -234,7 +271,7 @@ if [[ "$failed_only" == true && -n "$matched" ]]; then
   done <<< "$matched"
   matched="${kept%$'\n'}"
   if [[ -z "$matched" ]]; then
-    echo "--failed: no failed tests in the last recorded run ($last_log) among the selected files; nothing to re-run"
+    echo "--failed: no failed tests among the selected files in the last recorded run ($last_log, $last_scope file(s)); nothing to re-run"
     exit 0
   fi
 fi
@@ -254,12 +291,66 @@ echo "$matched" | while read -r f; do
 done
 echo ""
 
-mkdir -p "$RUN_LOG_DIR"
-: > "$RUN_LOG_ANCHOR"
+mapfile -t files <<< "$matched"
 bats_args=()
 [[ "$failed_only" == true ]] && bats_args+=(--filter-status failed)
-mapfile -t files <<< "$matched"
+
+# Set up recording: the log directory, the anchor, and a start stamp that
+# tells this run's log apart from older ones afterwards.
+start_stamp=""
+if mkdir -p "$RUN_LOG_DIR" 2>/dev/null && { : > "$RUN_LOG_ANCHOR"; } 2>/dev/null &&
+   start_stamp="$(mktemp "$REPO_ROOT/.bats/run-start.XXXXXX" 2>/dev/null)"; then
+  bats_args+=("$RUN_LOG_ANCHOR")
+else
+  if [[ "$failed_only" == true ]]; then
+    echo "ERROR: --failed: cannot write the run log under ${RUN_LOG_DIR#"$REPO_ROOT"/}" >&2
+    exit 1
+  fi
+  echo "WARNING: cannot write ${RUN_LOG_DIR#"$REPO_ROOT"/}; running without recording (--failed will not see this run)" >&2
+fi
 
 # Pass all matched files to bats in a single invocation for proper TAP output,
 # the (test-free) run-log anchor first — see "Run logs" in the header.
-exec bats "${bats_args[@]}" "$RUN_LOG_ANCHOR" "${files[@]}"
+#
+# bats runs as a child, not via exec, so the runner can mark the log complete
+# afterwards. A background child lets the traps below run at once (a trap
+# waits for a foreground child to finish): the runner forwards INT/TERM/HUP to
+# bats, so `timeout` or a kill of the runner still stops bats as it did under
+# exec. Without job control a background command ignores SIGINT, so env
+# restores the default before bats sets its own Ctrl-C handler; `<&0` keeps
+# the runner's stdin (a background command otherwise reads /dev/null).
+# Ctrl-C at a terminal reaches bats twice (directly and forwarded); its
+# handler only sets a flag, so that is harmless.
+signalled=""
+env --default-signal=INT,QUIT bats "${bats_args[@]}" "${files[@]}" <&0 &
+bats_pid=$!
+# shellcheck disable=SC2317  # invoked from the traps below
+forward() {
+  signalled="$1"
+  kill -s "$1" "$bats_pid" 2>/dev/null || true
+}
+trap 'forward INT' INT
+trap 'forward TERM' TERM
+trap 'forward HUP' HUP
+status=0
+while :; do
+  interrupted="$signalled"
+  status=0
+  wait "$bats_pid" || status=$?
+  # A trap cuts `wait` short while bats is still running; wait again.
+  [[ "$signalled" != "$interrupted" ]] || break
+done
+trap - INT TERM HUP
+
+if [[ -n "$start_stamp" ]]; then
+  # bats exited on its own (a status above 128 means a signal ended it):
+  # mark the log it wrote. No log newer than the stamp means bats recorded
+  # nothing (e.g. it deleted the log of a Ctrl-C run).
+  if [[ -z "$signalled" && "$status" -lt 128 ]]; then
+    log="$(find "$RUN_LOG_DIR" -maxdepth 1 -type f -name '*.log' -newer "$start_stamp" -printf '%T@ %p\n' |
+      sort -rn | head -n1 | cut -d' ' -f2-)"
+    [[ -z "$log" ]] || echo "$COMPLETE_MARK${#files[@]}" >> "$log"
+  fi
+  rm -f "$start_stamp"
+fi
+exit "$status"

@@ -40,9 +40,11 @@ pin_hermetic_locale() {
   unset LANGUAGE
 }
 
-# _locale_normalize <name>: glibc's codeset normalisation, so "en_US.UTF-8"
-# (what people set) and "en_US.utf8" (what `locale -a` lists) compare equal:
-# the codeset part is lowercased and stripped of non-alphanumerics.
+# _locale_normalize <name>: a simplified form of glibc's codeset
+# normalisation, so "en_US.UTF-8" (what people set) and "en_US.utf8" (what
+# `locale -a` lists) compare equal: the codeset part is lowercased and stripped
+# of non-alphanumerics. (glibc also prefixes "iso" to an all-digit codeset;
+# this does not, which only matters for names like "xx.8859-1".)
 _locale_normalize() {
   local name="$1" mod="" base codeset
   if [[ "$name" == *@* ]]; then
@@ -60,9 +62,11 @@ _locale_normalize() {
   fi
 }
 
-# locale_installed <name>: succeed when setting LC_ALL=<name> would not make
+# locale_installed <name>: succeed when setting LC_ALL=<name> should not make
 # bash warn. Empty (unset), C and POSIX always exist; anything else must be in
-# `locale -a`, compared after normalising the codeset.
+# `locale -a`, compared after normalising the codeset. It can report a usable
+# locale as not installed (e.g. an "@modifier" name glibc falls back from, or
+# no `locale` binary on PATH); that errs safe, costing only an unneeded pin.
 locale_installed() {
   local want have
   case "$1" in
