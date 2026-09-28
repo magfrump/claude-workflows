@@ -115,6 +115,7 @@ enforcement_files() {
   echo "link-claude-home.sh"
   echo "cc-isolated.sh"
   echo "cc-exit-scan.sh"
+  echo "cc-gitdir.sh"
   echo "cc-push.sh"
   # Sorted globs so the manifest is order-stable. An empty projects/ dir is normal
   # (no project has widened its egress yet), hence the -e guard on each match.

@@ -5,6 +5,11 @@
 # hooks/live-verify-gate.sh gates commits to it.
 # shellcheck shell=bash
 
+# gitdir_valid, gitdir_head_kind, looks_like_gitdir: plain file tests, next to this
+# file (readlink -f: cc-isolated on PATH is a symlink to the installed copy).
+# shellcheck source=cc-gitdir.sh
+source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-gitdir.sh"
+
 # logical_workspace <start> <ws>: the checkout <ws> (physical, as git reports it)
 # by the path you reached it on — <start> (or $PWD) with symlinks unresolved, up
 # to the toplevel — or nothing when that route is not recoverable. Host git
@@ -60,6 +65,10 @@ logical_workspace() {
 # core.attributesFile there resolves in each working tree, the top level and every
 # embedded repo. Only those three kinds of entry are followed in your own config;
 # its other entries are not recorded (the container cannot write it).
+# Also whether git would accept the git dir at all (gitdir_valid, and HEAD's kind)
+# and whether the checkout root looks like a git dir (looks_like_gitdir): when .git
+# is not valid, git's discovery falls back to the root (cc-gitdir.sh). An invalid
+# git dir at exit is a finding even if it was invalid at launch.
 # Any change to one of these is a finding, even an inert one such as user.name. The
 # key list below only labels report lines.
 #
@@ -117,9 +126,7 @@ scan_git_dirs() {
   g="$ws/.git"
   if [ -f "$g" ]; then
     # A linked worktree or submodule: `.git` is a file holding `gitdir: <path>`.
-    # Read errors are dropped: their text would name a container-chosen path raw.
-    line=""
-    { IFS= read -r line < "$g"; } 2>/dev/null || true
+    line="$(_snap_first_line "$g")" || return 1
     case "$line" in
       "gitdir: "*) g="${line#gitdir: }" ;;
       *) return 1 ;;
@@ -129,8 +136,7 @@ scan_git_dirs() {
   [ -d "$g" ] || return 1
   common="$g"
   if [ -f "$g/commondir" ]; then
-    line=""
-    { IFS= read -r line < "$g/commondir"; } 2>/dev/null || true
+    line="$(_snap_first_line "$g/commondir")" || return 1
     case "$line" in /*) common="$line" ;; *) common="$g/$line" ;; esac
   fi
   # Normalise (a worktree's commondir is usually "../.."): a plain cd, no git.
@@ -190,6 +196,23 @@ _snap_size_ok() {
       "$GIT_EXIT_SCAN_MAX_TOTAL_BYTES" "$1"
     return 1
   fi
+}
+
+# _snap_first_line <file>: its first line (a `.git` file's `gitdir:` line, a
+# commondir), after the per-file size cap: a line-less multi-GiB file would
+# otherwise be read whole into memory. Too large (or unstat-able) fails closed,
+# like _snap_size_ok; not counted toward the hashing total. Read errors are
+# dropped: their text would name a container-chosen path raw.
+_snap_first_line() {
+  local s line=""
+  s="$(stat -L -c %s -- "$1" 2>/dev/null)" || { _snap_fail 'cannot stat %s' "$1"; return 1; }
+  if [ "$s" -gt "$GIT_EXIT_SCAN_MAX_FILE_BYTES" ]; then
+    _snap_fail '%s is too large to read (%s bytes, over %s): treat the checkout as unsafe' \
+      "$1" "$s" "$GIT_EXIT_SCAN_MAX_FILE_BYTES"
+    return 1
+  fi
+  { IFS= read -r line < "$1"; } 2>/dev/null || true
+  printf '%s' "$line"
 }
 
 # _snap_file <kind> <path>: record <path> without following it. A symlink is
@@ -501,8 +524,7 @@ _snap_dotgit_target() {
   if [ -d "$p" ]; then
     g="$p"
   elif [ -f "$p" ]; then
-    line=""
-    { IFS= read -r line < "$p"; } 2>/dev/null || true
+    line="$(_snap_first_line "$p")" || return 1
     case "$line" in "gitdir: "*) g="${line#gitdir: }" ;; *) return 0 ;; esac
     case "$g" in /*) ;; *) g="${p%/*}/$g" ;; esac
   else
@@ -514,7 +536,8 @@ _snap_dotgit_target() {
 
 # _snap_nested <dir>: the git dirs under <dir> (a modules/ or worktrees/ dir, or a
 # linked dir in the checkout): each directory holding HEAD next to objects/ or a
-# commondir file, at any depth (submodule names contain slashes).
+# commondir file (looks_like_gitdir), at any depth (submodule names contain
+# slashes).
 _snap_nested() {
   local d="$1" real list f g
   [ -d "$d" ] && [ ! -L "$d" ] || return 0   # a link is walked by the link loop
@@ -525,7 +548,7 @@ _snap_nested() {
   _snap_find "$list" "$real" -mindepth 2 -name HEAD || return 1
   while IFS= read -r -d '' f; do
     g="${f%/*}"
-    if [ -d "$g/objects" ] || [ -f "$g/commondir" ]; then _snap_gitdir "$g" || return 1; fi
+    if looks_like_gitdir "$g"; then _snap_gitdir "$g" || return 1; fi
   done < "$list"
 }
 
@@ -548,8 +571,7 @@ _snap_gitdir() {
   if [ -f "$real/commondir" ]; then
     # A nested worktree's common dir can be a bare repo in the checkout not named
     # .git; walk it (the checkout's own common dir is walked by the caller).
-    line=""
-    { IFS= read -r line < "$real/commondir"; } 2>/dev/null || true
+    line="$(_snap_first_line "$real/commondir")" || return 1
     case "$line" in /*) c="$line" ;; *) c="$real/$line" ;; esac
     if [ -n "$line" ] && [ -d "$c" ] && _snap_inside_ws "$c"; then _snap_gitdir "$c" || return 1; fi
   fi
@@ -606,7 +628,7 @@ _snap_gitdir() {
 _snap_dotgit() {
   local p="$1" g
   _snap_file dotgit "$p" || return 1
-  g="$(_snap_dotgit_target "$p")"
+  g="$(_snap_dotgit_target "$p")" || return 1
   [ -z "$g" ] || _snap_gitdir "$g"
 }
 
@@ -637,6 +659,15 @@ git_exec_snapshot() {
   # The resolved dirs are records too: repointing `.git` or `commondir` shows up.
   _snap+="F"$'\t'"gitdir"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$(printf '%q' "$_snap_gd")"$'\n'
   _snap+="F"$'\t'"commondir"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$(printf '%q' "$_snap_common")"$'\n'
+  # Would git accept the git dir? If not, git's discovery goes on to the checkout
+  # root, which a session can make look like a bare repository (cc-gitdir.sh). The
+  # HEAD record is its KIND (symref, detached, symlink, invalid), never the ref it
+  # names: a branch switch is not a finding. git_exit_scan also reports an invalid
+  # git dir at exit when it was invalid at launch too.
+  if gitdir_valid "$_snap_gd"; then i=valid; else i=invalid; fi
+  _snap+="F"$'\t'"gitdir-valid"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$i HEAD=$(gitdir_head_kind "$_snap_gd")"$'\n'
+  if looks_like_gitdir "$_snap_ws"; then i="looks like a git dir"; else i="not a git dir"; fi
+  _snap+="F"$'\t'"root-repo"$'\t'"$(printf '%q' "$_snap_ws")"$'\t'"$i"$'\n'
   _snap_tmp="$(mktemp -d)"
   {
     _snap_dotgit "$ws/.git" &&
@@ -652,7 +683,7 @@ git_exec_snapshot() {
     while IFS= read -r -d '' f; do
       [ "$f" != "$_snap_ws/.git" ] || continue
       _snap_dotgit "$f" || { rc=1; break; }
-      g="$(_snap_dotgit_target "$f")"
+      g="$(_snap_dotgit_target "$f")" || { rc=1; break; }
       [ -z "$g" ] || _snap_host_config "$g" "$f" "${f%/*}" || { rc=1; break; }
     done < "$list"
   fi
@@ -723,8 +754,15 @@ git_exit_scan() {
     return 2
   fi
   rm -f "$errf"
-  [ "$before" != "$after" ] || return 0
+  # A git dir git would not accept is a finding even when it was so at launch:
+  # host git would go looking for a repository elsewhere (the checkout root).
+  local invalid=""
+  if printf '%s\n' "$after" | LC_ALL=C grep -q $'^F\tgitdir-valid\t[^\t]*\tinvalid'; then
+    invalid="    ! $(printf '%q' "$ws/.git") is not a valid git directory now: host git would look for a repository elsewhere (the checkout root)"
+  fi
+  [ "$before" != "$after" ] || [ -n "$invalid" ] || return 0
   changes="$(scan_diff "$before" "$after")"
+  if [ -n "$invalid" ]; then changes="${changes:+$changes$'\n'}$invalid"; fi
   [ -n "$changes" ] || return 0
   {
     echo
@@ -741,6 +779,8 @@ git_exit_scan() {
     echo "    a config entry  ->  git config --file <file> --unset-all <key>"
     echo "    a hook or file  ->  rm <path> (or restore it)"
     echo "    gitdir/commondir -> .git (or its commondir) was repointed; restore it"
+    echo "    gitdir-valid    -> .git's HEAD, objects/ or refs/ is missing or broken; restore it"
+    echo "    root-repo       -> a HEAD+objects/ or commondir at the checkout root; remove it"
     echo "  \`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push\` is NOT a safe"
     echo "  alternative: it still runs remote.*.receivepack, a repointed remote's hooks,"
     echo "  credential helpers and core.sshCommand, from included config files too."

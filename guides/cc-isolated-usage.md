@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
 Last verified: 2026-09-27
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -209,9 +209,16 @@ naming a FIFO, or a FIFO in `.git`, blocks it forever. So before fetching,
 `cc-push` checks the checkout with plain file tests (no git) and refuses, with
 the reason, a `.git` that is not a real directory, or that holds a
 `commondir`, alternates, a symlink outside `hooks/`, a FIFO, socket or device,
-or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. Run it
-on the main checkout the session was launched on. What remains is upload-pack
-reading the checkout's own refs, objects and (include-free) config.
+or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. It
+also refuses a `.git` that git itself would not accept as a git directory (a
+HEAD that is not `ref: refs/…`, a commit id or a link into `refs/`, or no
+searchable `objects/` and `refs/`), and a checkout root that looks like a
+repository (a `HEAD` next to `objects/`, or a `commondir` file): with `.git`
+invalid, git falls back to reading the root as a bare repository, which the
+session can plant (`cc-gitdir.sh`). It then fetches from `<checkout>/.git` by
+name with `git-upload-pack --strict`, which uses exactly that directory or
+fails. Run it on the main checkout the session was launched on. What remains is
+upload-pack reading the checkout's own refs, objects and (include-free) config.
 
 Every git command it runs passes `core.hooksPath=/dev/null` and
 `core.fsmonitor=false`. `test/cc-push.bats` plants every hook `githooks(5)`
@@ -254,14 +261,20 @@ path and against the path you launched on, symlinks kept, as git matches both;
 `onbranch:` and `hasconfig:` taken as matching), so a relative
 `core.hooksPath` or `core.attributesFile` there is walked in the top-level
 working tree and in every embedded repo. Those are the only entries of your own
-config it follows; the rest is not recorded. It runs nothing from the checkout
+config it follows; the rest is not recorded. It also records whether git would
+accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
+id or a link — not which branch, so switching branches is not a finding) and
+whether the checkout root looks like a repository; a change in either is a
+finding, and a git dir git would not accept at exit is a finding even if it was
+so at launch (git would fall back to reading the root). It runs nothing from the checkout
 (plain file reads, `git config --file … --no-includes` from `/`, and host tools:
 `find` without following symlinks, `stat`, `readlink`, `realpath`,
 `sha256sum`, `cat`, `tr`, `sort`, `awk`, `cut`, `mktemp`), and every name, value
 and error it prints is reduced to printable ASCII, line breaks included. A file
 it would hash that is over 64 MiB (a sparse file counts at its apparent size),
 or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
-unsafe) rather than stalling it.
+unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
+before its first line is read.
 
 It catches the common plants. It **cannot** be complete, so a clean exit is not
 permission to run git in the checkout. Known routes it does not see:

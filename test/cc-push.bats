@@ -385,3 +385,162 @@ not_pushed() {
   [[ "$output" == *"real remote, after the push, like any other collaborator's commits."* ]]
   [[ "$output" != *"set -euo pipefail"* ]]
 }
+
+# --- Git-directory validity (cc-gitdir.sh). When <checkout>/.git is not a git
+# directory git accepts, git's discovery falls back to the checkout root as a bare
+# repository: a session could empty .git/HEAD and plant a repository there.
+
+# gd <name>: a copy of the checkout's .git at $T/gd/<name>, to vary.
+gd() {
+  mkdir -p "$T/gd"
+  cp -r "$T/co/.git" "$T/gd/$1"
+  printf '%s' "$T/gd/$1"
+}
+
+# wtgd <name>: a copy of the linked worktree wt's git dir at $T/gd/<name>, its
+# commondir naming the checkout's .git by absolute path.
+wtgd() {
+  mkdir -p "$T/gd"
+  cp -r "$T/co/.git/worktrees/wt" "$T/gd/$1"
+  printf '%s\n' "$T/co/.git" > "$T/gd/$1/commondir"
+  printf '%s' "$T/gd/$1"
+}
+
+# git_accepts <dir>: git-upload-pack --strict's verdict (enter_repo -> git 2.39's
+# is_git_directory), through ls-remote as cc-push calls it.
+git_accepts() {
+  git -c protocol.file.allow=always ls-remote --upload-pack='git-upload-pack --strict' "$1" >/dev/null 2>&1
+}
+
+# plant_root_repo: the other_repo history as a bare repository at the checkout
+# root (HEAD, objects/, refs/, config: all working-tree files to the checkout).
+plant_root_repo() {
+  other_repo
+  cp -r "$T/other.git/." "$T/co/"
+}
+
+@test "gitdir_valid agrees with git on valid, broken-HEAD, missing-dir and commondir-linked git dirs" {
+  source "$BATS_TEST_DIRNAME/../devcontainer-config/cc-gitdir.sh"
+  local d sha; sha="$(git -C "$T/co" rev-parse HEAD)"
+  git -C "$T/co" worktree add -q "$T/wt" -b wt
+  declare -A want=()
+  d="$(gd plain)";       want[$d]=valid
+  d="$(gd detached)";    echo "$sha" > "$d/HEAD"; want[$d]=valid
+  d="$(gd sha256)";      printf '%s%s\n' "$sha" 0123456789abcdef0123456789ab > "$d/HEAD"; want[$d]=valid
+  d="$(gd linkhead)";    rm "$d/HEAD"; ln -s refs/heads/main "$d/HEAD"; want[$d]=valid
+  d="$(gd nospace)";     printf 'ref:refs/heads/main' > "$d/HEAD"; want[$d]=valid
+  d="$(gd tabs)";        printf 'ref: \t refs/heads/main\n' > "$d/HEAD"; want[$d]=valid
+  d="$(gd nohead)";      rm "$d/HEAD"; want[$d]=invalid
+  d="$(gd garbage)";     echo 'hello world' > "$d/HEAD"; want[$d]=invalid
+  d="$(gd notrefs)";     echo 'ref: heads/main' > "$d/HEAD"; want[$d]=invalid
+  d="$(gd shorthex)";    printf '%s\n' "${sha:0:39}" > "$d/HEAD"; want[$d]=invalid
+  d="$(gd nul)";         printf 'ref:\0 refs/heads/main\n' > "$d/HEAD"; want[$d]=invalid
+  d="$(gd headdir)";     rm "$d/HEAD"; mkdir "$d/HEAD"; want[$d]=invalid
+  d="$(gd linkabs)";     rm "$d/HEAD"; ln -s "$T/co/.git/HEAD" "$d/HEAD"; want[$d]=invalid
+  d="$(gd noobjects)";   rm -rf "$d/objects"; want[$d]=invalid
+  d="$(gd norefs)";      rm -rf "$d/refs"; want[$d]=invalid
+  d="$T/co/.git/worktrees/wt";                     want[$d]=valid
+  # A linked worktree's git dir, copied, its commondir made absolute: HEAD here,
+  # objects/ and refs/ only in the common dir it names.
+  d="$(wtgd wtlinked)";  want[$d]=valid
+  d="$(wtgd wtrel)";     echo ../../co/.git > "$d/commondir"; want[$d]=valid
+  d="$(wtgd wtnohead)";  rm "$d/HEAD"; want[$d]=invalid
+  d="$(wtgd wtnowhere)"; echo "$T/nowhere" > "$d/commondir"; want[$d]=invalid
+  d="$(wtgd wtempty)";   : > "$d/commondir"; want[$d]=invalid
+  d="$(wtgd wtnotgit)";  echo "$T/co" > "$d/commondir"; want[$d]=invalid
+  local got g bad=0
+  for d in "${!want[@]}"; do
+    if gitdir_valid "$d"; then got=valid; else got=invalid; fi
+    if git_accepts "$d"; then g=valid; else g=invalid; fi
+    if [ "$got" != "${want[$d]}" ] || [ "$g" != "${want[$d]}" ]; then
+      echo "$d: gitdir_valid=$got git=$g want=${want[$d]}"; bad=1
+    fi
+  done
+  [ "$bad" -eq 0 ]
+}
+
+@test "gitdir_valid and gitdir_head_kind: stricter than git only where git reads past 255 bytes; a FIFO HEAD does not block" {
+  source "$BATS_TEST_DIRNAME/../devcontainer-config/cc-gitdir.sh"
+  local d
+  d="$(gd big)"; { printf 'ref: refs/heads/main\n'; head -c 300 /dev/zero | tr '\0' x; } > "$d/HEAD"
+  run ! gitdir_valid "$d"
+  d="$(gd fifo)"; rm "$d/HEAD"; mkfifo "$d/HEAD"
+  run timeout 10 bash -c 'source "$1"; gitdir_head_kind "$2"' _ "$BATS_TEST_DIRNAME/../devcontainer-config/cc-gitdir.sh" "$d"
+  [ "$status" -eq 0 ]
+  [ "$output" = invalid ]
+  [ "$(gitdir_head_kind "$T/co/.git")" = symref ]
+  d="$(gd k1)"; git -C "$T/co" rev-parse HEAD > "$d/HEAD"
+  [ "$(gitdir_head_kind "$d")" = detached ]
+  d="$(gd k2)"; rm "$d/HEAD"; ln -s refs/heads/main "$d/HEAD"
+  [ "$(gitdir_head_kind "$d")" = symlink ]
+}
+
+@test "looks_like_gitdir: HEAD next to objects/, or a commondir file; not a normal checkout root" {
+  source "$BATS_TEST_DIRNAME/../devcontainer-config/cc-gitdir.sh"
+  run ! looks_like_gitdir "$T/co"
+  looks_like_gitdir "$T/co/.git"
+  mkdir -p "$T/r1/objects"; touch "$T/r1/HEAD"
+  looks_like_gitdir "$T/r1"
+  mkdir -p "$T/r2"; touch "$T/r2/HEAD"
+  run ! looks_like_gitdir "$T/r2"
+  mkdir -p "$T/r3/objects"
+  run ! looks_like_gitdir "$T/r3"
+  mkdir -p "$T/r4"; echo .. > "$T/r4/commondir"
+  looks_like_gitdir "$T/r4"
+}
+
+@test "cc-push refuses a .git without HEAD, and does not fall back to a repository planted at the root" {
+  plant_root_repo
+  rm "$T/co/.git/HEAD"
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *".git is not a valid git directory"* ]]
+  not_pushed "$OTHER_HEAD"
+  [ ! -e "$T/clones" ]
+}
+
+@test "cc-push refuses a .git whose HEAD is garbage" {
+  echo garbage > "$T/co/.git/HEAD"
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *".git is not a valid git directory"* ]]
+  not_pushed "$SESSION_HEAD"
+}
+
+@test "cc-push refuses a checkout root holding HEAD, objects/ and refs/ (a planted bare repository)" {
+  plant_root_repo
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"itself looks like a git directory"* ]]
+  not_pushed "$OTHER_HEAD"
+  not_pushed "$SESSION_HEAD"
+}
+
+@test "cc-push refuses a checkout root holding a commondir file" {
+  echo .git > "$T/co/commondir"
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"itself looks like a git directory"* ]]
+  not_pushed "$SESSION_HEAD"
+}
+
+@test "cc-push fetches from <checkout>/.git by name, with git-upload-pack --strict" {
+  local real_git co; real_git="$(command -v git)"
+  co="$(cd "$T/co" && pwd -P)"
+  mkdir -p "$T/bin"
+  cat > "$T/bin/git" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$T/git-argv"
+exec "$real_git" "\$@"
+EOF
+  chmod +x "$T/bin/git"
+  PATH="$T/bin:$PATH" run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"; cat "$T/git-argv"
+  [ "$status" -eq 0 ]
+  grep -qxF -- "-c core.hooksPath=/dev/null -c core.fsmonitor=false -C $CC_PUSH_CLONES_DIR/co-$(printf '%s' "$co" | sha256sum | cut -c1-12) -c protocol.file.allow=always fetch -q --no-tags --no-recurse-submodules --no-write-fetch-head --prune --upload-pack=git-upload-pack --strict $co/.git +refs/heads/*:refs/cc/heads/*" "$T/git-argv"
+  grep -qF -- "ls-remote --upload-pack=git-upload-pack --strict --symref $co/.git HEAD" "$T/git-argv"
+  # Nothing names the checkout root as a repository.
+  ! grep -E -- " $co( |\$)" "$T/git-argv"
+}

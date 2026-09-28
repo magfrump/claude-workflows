@@ -262,7 +262,8 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
 Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
 `Dockerfile`, `devcontainer.json`, `init-firewall.sh`, `cc-sni-proxy.py`,
 `link-claude-home.sh`, `cc-isolated.sh`, `cc-exit-scan.sh` (the session-exit scan
-it sources), `cc-push.sh`, everything under `egress/`, and the staged `claude-home/`.
+it sources), `cc-gitdir.sh` (the git-directory tests it and cc-push source),
+`cc-push.sh`, everything under `egress/`, and the staged `claude-home/`.
 
 1. **Unit layer, in the editing session.** `bats test/init-firewall-rules.bats
    test/cc-isolated-functions.bats test/hooks/live-verify-gate.bats`, `shellcheck

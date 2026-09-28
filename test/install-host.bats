@@ -99,7 +99,7 @@ fake_repo() {
   printf '#!/bin/bash\n' > "$ROOT/hooks/lib/x.sh"
   printf '{"hooks":{}}\n' > "$ROOT/hooks/wiring.json"
   printf '#!/bin/bash\n' > "$ROOT/scripts/s.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-exit-scan.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-exit-scan.sh cc-gitdir.sh; do
     printf 'stub %s\n' "$f" > "$cfg/$f"
   done
   printf '#!/usr/bin/env bash\necho "BLESS-STUB $*"\n' > "$cfg/cc-isolated.sh"

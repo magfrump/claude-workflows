@@ -34,6 +34,7 @@ setup() {
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
+  echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/link-claude-home.sh"
   echo 'api.anthropic.com'   > "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
@@ -604,7 +605,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-push.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -704,7 +705,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-push.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"
@@ -1313,6 +1314,87 @@ plant_hook() {
   run git_exit_scan "$wt" "$before"
   [ "$status" -eq 1 ]
   [[ "$output" == *"~ gitdir $wt/.git  $TEST_TMPDIR/other/.git"* ]]
+}
+
+# --- Git-directory validity (cc-gitdir.sh): with .git not a git dir git accepts,
+# git's discovery falls back to the checkout root as a bare repository.
+
+@test "exit scan gitdir: a .git made invalid (HEAD removed) during the session is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  rm "$SCAN_WS/.git/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ gitdir-valid $SCAN_WS/.git  invalid HEAD=invalid"* ]]
+  [[ "$output" == *"! $SCAN_WS/.git is not a valid git directory now"* ]]
+}
+
+@test "exit scan gitdir: a .git invalid at launch is still a finding at exit" {
+  scan_repo
+  echo garbage > "$SCAN_WS/.git/HEAD"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"! $SCAN_WS/.git is not a valid git directory now"* ]]
+}
+
+@test "exit scan gitdir: a repository planted at the checkout root (HEAD, objects/, refs/) is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  mkdir -p "$SCAN_WS/objects" "$SCAN_WS/refs/heads"
+  echo 'ref: refs/heads/main' > "$SCAN_WS/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ root-repo $SCAN_WS  looks like a git dir"* ]]
+}
+
+@test "exit scan gitdir: a commondir file planted at the checkout root is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo .git > "$SCAN_WS/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ root-repo $SCAN_WS  looks like a git dir"* ]]
+}
+
+@test "exit scan gitdir: switching and creating branches is not a finding (HEAD's kind, not its ref)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *$'gitdir-valid\t'*$'\tvalid HEAD=symref'* ]]
+  git -C "$SCAN_WS" checkout -q -b feature
+  echo more >> "$SCAN_WS/file.txt"
+  git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam "on a branch"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan gitdir: a session that makes .git invalid ends the launcher with exit 3" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" "rm '$ws/.git/HEAD'"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"gitdir-valid $ws/.git  invalid HEAD=invalid"* ]]
+}
+
+@test "exit scan size cap: a huge (sparse) .git file fails the scan fast as unsafe, unread" {
+  scan_repo
+  git -C "$SCAN_WS" worktree add -q "$TEST_TMPDIR/wt" -b wt
+  local wt; wt="$(git -C "$TEST_TMPDIR/wt" rev-parse --show-toplevel)"
+  local before; before="$(git_exec_snapshot "$wt")"
+  rm "$wt/.git"; truncate -s 100G "$wt/.git"
+  local t0=$SECONDS
+  run git_exit_scan "$wt" "$before"
+  [ $((SECONDS - t0)) -lt 20 ]
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"$wt/.git is too large to read (107374182400 bytes"*"treat the checkout as unsafe"* ]]
 }
 
 @test "exit scan: control bytes in a planted value are shown as '?', not sent to the terminal" {

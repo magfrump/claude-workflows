@@ -107,7 +107,7 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # install.sh itself is not installed — it runs from the repo.
 # Every item is staged from the HEAD commit, not the tree (see install_devcontainer);
 # `claude-home` is assembled below from the repo root before the diff is shown.
-PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-push.sh link-claude-home.sh egress claude-home)
+PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress claude-home)
 
 REPO_ROOT="$(cd "$SRC/.." && pwd)"
 

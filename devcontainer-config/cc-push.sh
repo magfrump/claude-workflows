@@ -29,8 +29,10 @@
 # pre-commit framework). cc-isolated's exit scan is a tripwire for some of that,
 # not a guarantee. cc-push runs no git command in the checkout: it keeps a BARE
 # clone that only the host writes, and in it:
-#   1. `git fetch <checkout>` — for a local path git starts upload-pack in the
-#      checkout's .git. upload-pack READS there: refs, objects and config (the
+#   1. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git` — for
+#      a local path git starts upload-pack in that directory, and --strict makes it
+#      use exactly that directory or fail (it never tries <dir>/.git or another
+#      repository instead). upload-pack READS there: refs, objects and config (the
 #      checkout's config, and your global config). It runs no hook, no fsmonitor,
 #      no filter, and ignores uploadpack.packObjectsHook from repo config. Nothing
 #      is checked out.
@@ -43,8 +45,15 @@
 # either.
 #
 # WHAT UPLOAD-PACK WOULD READ BEYOND THE CHECKOUT, AND SO IS REFUSED. Before the
-# fetch, with plain file tests (no git), cc-push refuses a checkout whose .git is
-# not a real directory (a `gitdir:` file or a symlink: a linked worktree or
+# fetch, with plain file tests (no git; cc-gitdir.sh, next to this file), cc-push
+# requires two things of the checkout:
+#   - <checkout>/.git is a directory git accepts as a git directory: a HEAD that
+#     is `ref: refs/...`, a detached commit id or a symlink into refs/, and
+#     searchable objects/ and refs/ directories (git 2.39's is_git_directory);
+#   - the checkout root itself does not look like a git directory (a HEAD next to
+#     objects/, or a commondir file). When .git is not valid, git's discovery falls
+#     back to treating the root as a bare repository, which the session can plant.
+# It also refuses a checkout whose .git is not a real directory (a `gitdir:` file or a symlink: a linked worktree or
 # submodule, or a redirect to any repository on this machine), or holds a
 # commondir, objects/info/alternates or objects/info/http-alternates file (each
 # names another object store), a symlink outside hooks/, a FIFO, socket or device
@@ -67,6 +76,11 @@ set -euo pipefail
 # Whatever the caller's environment points git at, cc-push chooses the repos.
 unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
       GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE GIT_CEILING_DIRECTORIES
+
+# gitdir_valid, looks_like_gitdir: plain file tests, next to this file (readlink
+# -f: cc-push on PATH is a symlink to the installed copy).
+# shellcheck source=cc-gitdir.sh
+source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-gitdir.sh"
 
 # usage: the comment block above, from line 2 to the first line that is not a
 # comment, so it cannot end mid-sentence when the block grows.
@@ -156,6 +170,14 @@ check_checkout() {
       die "$g/$f has an [include] or [includeIf] section: git would read whatever path it names (another repository's config, or a FIFO that never ends). Check what it points at, delete the section with a text editor (not git config), then rerun."
     fi
   done
+  # Git's own test (cc-gitdir.sh), after the checks above (they name the more
+  # specific problem). If .git fails it, git's discovery goes on to the root.
+  if ! gitdir_valid "$g"; then
+    die "$g is not a valid git directory (its HEAD, objects/ or refs/ is missing or broken): git would look for a repository elsewhere, such as the checkout root. Restore it (compare with a fresh clone), then rerun."
+  fi
+  if looks_like_gitdir "$co"; then
+    die "$co itself looks like a git directory (a HEAD next to objects/, or a commondir file): git can read the checkout root as a repository. Remove what the session planted there, then rerun."
+  fi
 }
 
 # run_vis <command...>: run it with stdout and stderr through vis; its status.
@@ -225,20 +247,22 @@ main() {
   fi
   remote="$(hgit "$clone" config --get remote.origin.url)" || die "no remote.origin.url in $clone; rerun with --remote <url>"
 
-  # 1. The session's branches, from the checkout. A local-path fetch: git runs
-  # upload-pack there and copies refs and objects; no submodules, no tags, no
-  # checkout. refs/cc/heads/* mirrors the checkout's branches (pruned).
+  # 1. The session's branches, from the checkout's .git (checked above), named
+  # directly: upload-pack --strict uses that directory or fails, and never goes
+  # looking for another repository. Git copies refs and objects; no submodules, no
+  # tags, no checkout. refs/cc/heads/* mirrors the checkout's branches (pruned).
   # protocol.file.allow=always: a global protocol.file.allow=never would refuse
   # this one fetch that has to be local.
   if ! run_vis hgit "$clone" -c protocol.file.allow=always fetch -q --no-tags --no-recurse-submodules \
-         --no-write-fetch-head --prune "$co" '+refs/heads/*:refs/cc/heads/*' >&2; then
+         --no-write-fetch-head --prune --upload-pack='git-upload-pack --strict' \
+         "$co/.git" '+refs/heads/*:refs/cc/heads/*' >&2; then
     die "could not fetch from $co"
   fi
 
   if [ -z "$branch" ]; then
     local sym
     # LC_ALL=C: a branch name need not be valid UTF-8, and `.` must match any byte.
-    sym="$(hgit "$clone" -c protocol.file.allow=always ls-remote --symref "$co" HEAD 2>/dev/null | LC_ALL=C sed -n 's/^ref: refs\/heads\/\(.*\)\tHEAD$/\1/p')" || true
+    sym="$(hgit "$clone" -c protocol.file.allow=always ls-remote --upload-pack='git-upload-pack --strict' --symref "$co/.git" HEAD 2>/dev/null | LC_ALL=C sed -n 's/^ref: refs\/heads\/\(.*\)\tHEAD$/\1/p')" || true
     [ -n "$sym" ] || die "the checkout's HEAD names no branch (detached?); pass --branch <name>"
     branch="$sym"
   fi
