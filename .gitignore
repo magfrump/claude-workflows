@@ -38,6 +38,10 @@ docs/working/scratch/
 # Worktree directory (managed by Claude Code, not for tracking)
 .claude/
 
+# bats run logs and the runner's log anchor (scripts/run-tests.sh "Run logs";
+# --failed reads them)
+.bats/
+
 # Personal notes
 ideas.txt
 
