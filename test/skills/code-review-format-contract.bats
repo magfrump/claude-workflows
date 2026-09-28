@@ -34,6 +34,11 @@ section() {
 
 # --- Sections the older suite already covers, re-asserted on the fixture ---
 
+@test "fixture's first line is the Commit: stamp the loop-pass default range reads" {
+  echo "$FIXTURE_CONTENT" | head -1 | grep -qE '^Commit: [0-9a-f]{7,40}$' \
+    || fail "fixture line 1 is not 'Commit: <sha>' (references/rubric.md)"
+}
+
 @test "fixture has all nine rubric sections" {
   local h
   for h in 'Must Fix' 'Must Address' 'Consider' 'Considered Overrides' \
