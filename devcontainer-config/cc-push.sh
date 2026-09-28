@@ -2,24 +2,34 @@
 # cc-push — push the commits a cc-isolated session made, without running anything
 # the session could have planted in the checkout (Q-076).
 #
-# Run from the HOST, never inside a session:
+# Run from the HOST, never inside a session, and after the session's container
+# has stopped (docker stop <name>; cc-push checks):
 #   cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
 #   cc-push ~/code/app                                      # later: same remote
 #   cc-push                                                 # the checkout containing $PWD
 #   cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
 #
 # Options:
-#   --remote URL   the real remote, stored in the host-only clone (never read from
-#                  the checkout). Needed the first time; given again, it replaces it.
-#   --branch NAME  the branch to push (default: the one the checkout's HEAD names).
-#   --clone DIR    the host-only clone (default: $CC_PUSH_CLONES_DIR/<name>-<id>,
-#                  CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
-#                  or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
-#   --yes          push without asking (the preview is still printed).
+#   --remote URL     the real remote, stored in the host-only clone (never read from
+#                    the checkout). Needed the first time. It is STICKY: given
+#                    again, it replaces the stored one, and every later cc-push of
+#                    this checkout uses the new one.
+#   --branch NAME    the branch to push (default: the one the checkout's HEAD names).
+#   --clone DIR      the host-only clone (default: $CC_PUSH_CLONES_DIR/<name>-<id>,
+#                    CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
+#                    or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
+#   --yes            push without asking (the preview is still printed).
+#   --allow-running  go on although a cc-isolated container for this checkout is
+#                    running, or docker cannot say (loud warning; see below).
+#   -h, --help       this text.
+# One checkout at a time: a second one, before or after `--`, is a usage error.
 #
-# Exit codes: 0 pushed (or nothing to push); 1 error: bad usage, a checkout cc-push
-# refuses (below), a failed fetch, or a push the remote rejected (git's own exit
-# status is never passed through); 2 declined at the prompt.
+# Exit codes (the host tools' convention, as install.sh; decision log #58):
+#   0 pushed, or nothing to push;
+#   1 an error — a checkout, git or container state cc-push refuses (below), a
+#     failed fetch, a push the remote rejected (git's own exit status is never
+#     passed through), an interruption — or declined at the prompt (n, or Ctrl-C);
+#   2 bad usage (an unknown flag, a flag without its value, two checkouts).
 #
 # WHY. The container writes the checkout's .git through the bind mount, so host git
 # run IN the checkout can run what the session planted: hooks, core.fsmonitor,
@@ -29,40 +39,64 @@
 # pre-commit framework). cc-isolated's exit scan is a tripwire for some of that,
 # not a guarantee. cc-push runs no git command in the checkout: it keeps a BARE
 # clone that only the host writes, and in it:
-#   1. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git` — for
-#      a local path git starts upload-pack in that directory, and --strict makes it
-#      use exactly that directory or fail (it never tries <dir>/.git or another
-#      repository instead). upload-pack READS there: refs, objects and config (the
+#   1. resolve the branch: --branch, or the one the checkout's HEAD names
+#      (`git ls-remote --symref`, which starts upload-pack like the fetch below);
+#   2. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git`
+#      refs/heads/<branch> only, into refs/cc/heads/<branch>: no other branch the
+#      session made is copied to host disk. For a local path git starts
+#      upload-pack in that directory, and --strict makes it use exactly that
+#      directory or fail (it never tries <dir>/.git or another repository
+#      instead). upload-pack READS there: refs, objects and config (the
 #      checkout's config, and your global config). It runs no hook, no fsmonitor,
 #      no filter, and ignores uploadpack.packObjectsHook from repo config. Nothing
 #      is checked out.
-#   2. `git fetch origin` — the real remote, as configured in the clone.
-#   3. a preview of what the push adds (log, and a diff stat when origin already
+#   3. `git fetch origin` — the real remote, as configured in the clone.
+#   4. a preview of what the push adds (log, and a diff stat when origin already
 #      has the branch), printed as plain text;
-#   4. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+#   5. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
 # Every git command cc-push runs passes core.hooksPath=/dev/null and
 # core.fsmonitor=false, so your own global config cannot point hooks at anything
-# either.
+# either. So no hook runs on push, git-lfs's pre-push included: cc-push does not
+# upload LFS objects (push them from a normal clone once you trust the content).
 #
-# WHAT UPLOAD-PACK WOULD READ BEYOND THE CHECKOUT, AND SO IS REFUSED. Before the
-# fetch, with plain file tests (no git; cc-gitdir.sh, next to this file), cc-push
-# requires two things of the checkout:
-#   - <checkout>/.git is a directory git accepts as a git directory: a HEAD that
+# WHAT IT REFUSES BEFORE THE FETCH.
+#   - A git older than the fixed releases of the May 2024 git security update:
+#     2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1, or any 2.46 and
+#     later. That update hardened what a local clone or fetch trusts in the
+#     repository it reads from; cc-push's promises rest on it. (This list is
+#     from git's release notes as recalled, not checked against them offline.)
+#   - A running cc-isolated container for this checkout (docker ps, label
+#     cc-project=<id>, the id cc-isolated.sh's project_id gives). While one
+#     runs it can change the checkout between cc-push's checks and its fetch.
+#     Without docker, or when docker does not answer, cc-push cannot tell, so it
+#     refuses as well. --allow-running overrides both, with a warning.
+#   - What upload-pack would read beyond the checkout. With plain file tests (no
+#     git; cc-gitdir.sh, next to this file), cc-push requires that
+#     <checkout>/.git is a directory git accepts as a git directory (a HEAD that
 #     is `ref: refs/...`, a detached commit id or a symlink into refs/, and
-#     searchable objects/ and refs/ directories (git 2.39's is_git_directory);
-#   - the checkout root itself does not look like a git directory (a HEAD next to
-#     objects/, or a commondir file). When .git is not valid, git's discovery falls
-#     back to treating the root as a bare repository, which the session can plant.
-# It also refuses a checkout whose .git is not a real directory (a `gitdir:` file or a symlink: a linked worktree or
-# submodule, or a redirect to any repository on this machine), or holds a
-# commondir, objects/info/alternates or objects/info/http-alternates file (each
-# names another object store), a symlink outside hooks/, a FIFO, socket or device
-# (a read of one never ends), or a config / config.worktree with an [include] or
-# [includeIf] section (git would read whatever path it names, a FIFO included).
-# Otherwise upload-pack could fetch history from another repository you can read
-# and cc-push would offer it for push. Run cc-push on the main checkout.
+#     searchable objects/ and refs/ directories: git 2.39's is_git_directory),
+#     and that the checkout root itself does not look like a git directory (a
+#     HEAD next to objects/, or a commondir file). When .git is not valid,
+#     git's discovery falls back to treating the root as a bare repository,
+#     which the session can plant. It also refuses a .git that is not a real
+#     directory (a `gitdir:` file or a symlink: a linked worktree or submodule,
+#     or a redirect to any repository on this machine), or that holds a
+#     commondir, objects/info/alternates or objects/info/http-alternates file
+#     (each names another object store), a symlink outside hooks/, a FIFO,
+#     socket or device (a read of one never ends), or a config /
+#     config.worktree with an [include] or [includeIf] section (git would read
+#     whatever path it names, a FIFO included). Otherwise upload-pack could
+#     fetch history from another repository you can read and cc-push would
+#     offer it for push. Run cc-push on the main checkout.
+#   - A partial clone (remote.*.promisor or extensions.partialClone in .git's
+#     config, read as text): upload-pack there cannot send the objects the clone
+#     never downloaded, so the fetch would fail after packing everything else.
+# What is left: upload-pack reading the checkout's own refs, objects and
+# (include-free) config. The complete list of what cc-isolated's tools do not
+# catch is in guides/cc-isolated-usage.md, "Known routes it does not see".
 #
-# EVERY STRING FROM THE CHECKOUT (branch names, commit text, git's messages) is
+# EVERY STRING FROM THE CHECKOUT (branch names, commit text, git's messages,
+# including the stderr of every git call that can name a checkout ref) is
 # printed through vis: anything but printable ASCII shows as '?'.
 #
 # KEEP THE CLONE HOOK-FREE. It holds container-authored content. It is bare, so
@@ -107,6 +141,13 @@ die() {
   exit 1
 }
 
+# usage_die <text...>: a usage error: the reason, then the help, on stderr; exit 2.
+usage_die() {
+  printf 'ERROR: %s\n' "$*" | vis >&2
+  usage >&2
+  exit 2
+}
+
 # ngit <args...>: git with hooks and fsmonitor off whatever any config says.
 ngit() {
   git -c core.hooksPath=/dev/null -c core.fsmonitor=false "$@"
@@ -116,6 +157,71 @@ ngit() {
 hgit() {
   local c="$1"; shift
   ngit -C "$c" "$@"
+}
+
+# project_id <checkout>: the id cc-isolated gives this checkout — its container
+# label is cc-project=<id>, and the clone's default name ends in it. The same
+# logic as cc-isolated.sh's project_id (test/cc-push.bats pins that they agree).
+project_id() {
+  printf '%s' "$1" | sha256sum | cut -c1-12
+}
+
+# git_version_ok <`git --version` output>: 0 when it names a release at or above
+# the May 2024 security fixes (see the header). Anything unparseable is refused.
+git_version_ok() {
+  local maj min pat need
+  [[ "$1" =~ ^git\ version\ ([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return 1
+  maj=$((10#${BASH_REMATCH[1]})); min=$((10#${BASH_REMATCH[2]})); pat=$((10#${BASH_REMATCH[3]}))
+  [ "$maj" -ge 2 ] || return 1
+  [ "$maj" -eq 2 ] || return 0
+  [ "$min" -lt 46 ] || return 0
+  case "$min" in
+    39) need=4 ;; 40) need=2 ;; 41) need=1 ;; 42) need=2 ;;
+    43) need=4 ;; 44) need=1 ;; 45) need=1 ;;
+    *)  return 1 ;;   # before 2.39: no fixed release in that series
+  esac
+  [ "$pat" -ge "$need" ]
+}
+
+# check_git_version: die unless the host git is a fixed release (header).
+check_git_version() {
+  local v
+  v="$(git --version 2>/dev/null)" || die "cannot run git --version"
+  git_version_ok "$v" || die "$v is older than the fixed releases of the May 2024 git security update (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1, or 2.46 and later). cc-push relies on those fixes when git reads the checkout; upgrade git, then rerun."
+}
+
+# check_no_container <checkout> <allow>: die when a cc-isolated container for the
+# checkout is running, or docker cannot say, unless <allow> is set (then warn).
+# Its processes can change the checkout between check_checkout and the fetch.
+check_no_container() {
+  local co="$1" allow="$2" pid ctrs="" err="" errf
+  pid="$(project_id "$co")"
+  if ! command -v docker >/dev/null 2>&1; then
+    err="docker is not installed, so cc-push cannot check"
+  else
+    errf="$(mktemp "${TMPDIR:-/tmp}/cc-push-docker.XXXXXX")"
+    # Only stdout is the list: stderr may carry warnings. A hung docker would
+    # otherwise block here with no word.
+    if ! ctrs="$(timeout 20 docker ps --filter "label=cc-project=$pid" --format '{{.Names}}' 2>"$errf")"; then
+      err="docker did not answer ($(head -n 1 "$errf" 2>/dev/null)), so cc-push cannot check"
+      ctrs=""
+    fi
+    rm -f "$errf"
+    ctrs="$(printf '%s\n' "$ctrs" | awk 'NF' | paste -sd ' ' -)"
+  fi
+  if [ -n "$ctrs" ]; then
+    if [ -z "$allow" ]; then
+      die "a cc-isolated container for $co is running ($ctrs). While it runs it can change the checkout between cc-push's checks and its fetch. Stop it first (docker stop $ctrs), then rerun; or pass --allow-running to go on anyway."
+    fi
+    say "WARNING: a cc-isolated container for $co is RUNNING ($ctrs), and --allow-running was given." >&2
+    say "  It can change the checkout between cc-push's checks and its fetch, so what is fetched" >&2
+    say "  may not be what was checked. Stop it (docker stop $ctrs) unless you know it is idle." >&2
+  elif [ -n "$err" ]; then
+    if [ -z "$allow" ]; then
+      die "$err whether a cc-isolated container for $co (label cc-project=$pid) is still running; one could change the checkout between cc-push's checks and its fetch. Make sure none is (docker stop), then rerun with --allow-running."
+    fi
+    say "WARNING: $err whether a cc-isolated container for $co is running; going on (--allow-running)." >&2
+  fi
 }
 
 # find_checkout <start>: the nearest directory at or above <start> holding a .git
@@ -169,6 +275,12 @@ check_checkout() {
     if LC_ALL=C grep -Eiq '\[[[:space:]]*include' "$g/$f"; then
       die "$g/$f has an [include] or [includeIf] section: git would read whatever path it names (another repository's config, or a FIFO that never ends). Check what it points at, delete the section with a text editor (not git config), then rerun."
     fi
+    # A partial clone: remote.<name>.promisor or extensions.partialClone, as a
+    # key at the start of a line or right after a section header (git reads
+    # `[remote "o"] promisor = true`). partialCloneFilter is not matched.
+    if LC_ALL=C grep -Eiq '(^|\])[[:space:]]*(promisor|partialclone)[[:space:]]*(=|$)' "$g/$f"; then
+      die "$g/$f marks a partial clone (remote.*.promisor or extensions.partialClone): upload-pack there cannot send the objects the clone never downloaded, and cc-push will not let it fetch them, so the fetch would fail. cc-push supports only full clones: launch sessions on a full clone (git clone without --filter)."
+    fi
   done
   # Git's own test (cc-gitdir.sh), after the checks above (they name the more
   # specific problem). If .git fails it, git's discovery goes on to the root.
@@ -187,30 +299,48 @@ run_vis() {
   return "$rc"
 }
 
+# err_vis <command...>: run it with only its stderr through vis (stdout untouched,
+# for a caller capturing it); its status. For git calls whose error text can name
+# a checkout ref.
+err_vis() {
+  local rc
+  { "$@" 2>&1 1>&3 3>&- | vis >&2; rc="${PIPESTATUS[0]}"; } 3>&1
+  return "$rc"
+}
+
 main() {
-  local remote="" branch="" clone="" yes="" start=""
+  local remote="" branch="" clone="" yes="" start="" allow_running=""
   while [ $# -gt 0 ]; do
     case "$1" in
-      --remote) [ $# -ge 2 ] || die "--remote needs a URL"; remote="$2"; shift 2 ;;
-      --branch) [ $# -ge 2 ] || die "--branch needs a name"; branch="$2"; shift 2 ;;
-      --clone)  [ $# -ge 2 ] || die "--clone needs a directory"; clone="$2"; shift 2 ;;
+      --remote) [ $# -ge 2 ] || usage_die "--remote needs a URL"; remote="$2"; shift 2 ;;
+      --branch) [ $# -ge 2 ] || usage_die "--branch needs a name"; branch="$2"; shift 2 ;;
+      --clone)  [ $# -ge 2 ] || usage_die "--clone needs a directory"; clone="$2"; shift 2 ;;
       --yes)    yes=1; shift ;;
+      --allow-running) allow_running=1; shift ;;
       --help|-h) usage; exit 0 ;;
       --) shift; break ;;
-      -*) usage >&2; die "unknown flag: $1" ;;
-      *)  [ -z "$start" ] || die "one checkout at a time"; start="$1"; shift ;;
+      -*) usage_die "unknown flag: $1" ;;
+      *)  [ -z "$start" ] || usage_die "one checkout at a time"; start="$1"; shift ;;
     esac
   done
-  [ $# -eq 0 ] || { [ -z "$start" ] && start="$1"; }
+  # After `--`: at most one word, and only when no checkout was named before it.
+  if [ $# -gt 0 ]; then
+    [ $# -eq 1 ] && [ -z "$start" ] || usage_die "one checkout at a time"
+    start="$1"
+  fi
+
+  check_git_version
 
   local co
   co="$(find_checkout "${start:-$PWD}")" \
     || die "no git checkout at or above ${start:-$PWD}. Name it: cc-push /path/to/checkout"
   case "$co" in *$'\n'*|*::*) die "refusing a checkout path holding a newline or '::'" ;; esac
+  # The container first: while it runs, every check below could be undone.
+  check_no_container "$co" "$allow_running"
   check_checkout "$co"
 
   local id name
-  id="$(printf '%s' "$co" | sha256sum | cut -c1-12)"
+  id="$(project_id "$co")"
   name="$(basename -- "$co")"
   if [ -z "$clone" ]; then
     clone="${CC_PUSH_CLONES_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/cc-isolated/clones}/$name-$id"
@@ -230,9 +360,9 @@ main() {
 (cc-push never reads remotes from the checkout: the session could have changed them.)"
     mkdir -p "$(dirname -- "$clone")" 2>/dev/null || die "cannot create the directory for the clone $clone"
     run_vis ngit init -q --bare "$clone" >&2 || die "could not create the host-only clone $clone"
-    { hgit "$clone" config core.hooksPath /dev/null &&
-      hgit "$clone" config remote.origin.url "$remote" &&
-      hgit "$clone" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' &&
+    { err_vis hgit "$clone" config core.hooksPath /dev/null &&
+      err_vis hgit "$clone" config remote.origin.url "$remote" &&
+      err_vis hgit "$clone" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' &&
       printf '%s\n' "$co" > "$clone/cc-push-checkout"; } \
       || die "could not set up the host-only clone $clone"
     say "Created the host-only clone $clone (bare, hooks off) for $co."
@@ -241,48 +371,57 @@ main() {
     [ "$(cat "$clone/cc-push-checkout")" = "$co" ] \
       || die "$clone serves $(cat "$clone/cc-push-checkout"), not $co; pick another --clone"
     if [ -n "$remote" ]; then
-      hgit "$clone" config remote.origin.url "$remote" || die "could not set the remote in $clone"
-      say "Remote for $co set to: $remote"
+      err_vis hgit "$clone" config remote.origin.url "$remote" || die "could not set the remote in $clone"
+      say "Remote for $co set to: $remote (kept for later runs)"
     fi
   fi
-  remote="$(hgit "$clone" config --get remote.origin.url)" || die "no remote.origin.url in $clone; rerun with --remote <url>"
+  remote="$(err_vis hgit "$clone" config --get remote.origin.url)" || die "no remote.origin.url in $clone; rerun with --remote <url>"
 
-  # 1. The session's branches, from the checkout's .git (checked above), named
-  # directly: upload-pack --strict uses that directory or fails, and never goes
-  # looking for another repository. Git copies refs and objects; no submodules, no
-  # tags, no checkout. refs/cc/heads/* mirrors the checkout's branches (pruned).
-  # protocol.file.allow=always: a global protocol.file.allow=never would refuse
-  # this one fetch that has to be local.
-  if ! run_vis hgit "$clone" -c protocol.file.allow=always fetch -q --no-tags --no-recurse-submodules \
-         --no-write-fetch-head --prune --upload-pack='git-upload-pack --strict' \
-         "$co/.git" '+refs/heads/*:refs/cc/heads/*' >&2; then
-    die "could not fetch from $co"
-  fi
-
+  # 1. The branch, before anything is fetched: only it is copied to host disk.
+  # Every ls-remote/fetch names the checkout's .git (checked above) directly:
+  # upload-pack --strict uses that directory or fails, and never goes looking for
+  # another repository. protocol.file.allow=always: a global
+  # protocol.file.allow=never would refuse these local reads.
+  local up=(-c protocol.file.allow=always) upl=(--upload-pack='git-upload-pack --strict')
   if [ -z "$branch" ]; then
     local sym
     # LC_ALL=C: a branch name need not be valid UTF-8, and `.` must match any byte.
-    sym="$(hgit "$clone" -c protocol.file.allow=always ls-remote --upload-pack='git-upload-pack --strict' --symref "$co/.git" HEAD 2>/dev/null | LC_ALL=C sed -n 's/^ref: refs\/heads\/\(.*\)\tHEAD$/\1/p')" || true
+    sym="$(hgit "$clone" "${up[@]}" ls-remote "${upl[@]}" --symref "$co/.git" HEAD 2>/dev/null | LC_ALL=C sed -n 's/^ref: refs\/heads\/\(.*\)\tHEAD$/\1/p')" || true
     [ -n "$sym" ] || die "the checkout's HEAD names no branch (detached?); pass --branch <name>"
     branch="$sym"
   fi
   ngit check-ref-format "refs/heads/$branch" || die "not a valid branch name: $branch"
-  local src="refs/cc/heads/$branch"
+  local src="refs/cc/heads/$branch" heads
+  # check-ref-format forbids tabs and line breaks, so an exact match on the
+  # tab-separated ref column is exact. The name goes through the environment,
+  # not awk -v (which would expand escapes in it).
+  heads="$(err_vis hgit "$clone" "${up[@]}" ls-remote "${upl[@]}" --heads "$co/.git")" \
+    || die "could not list the branches of $co"
+  printf '%s\n' "$heads" | CC_WANT="refs/heads/$branch" LC_ALL=C awk -F'\t' '$2 == ENVIRON["CC_WANT"] { f = 1 } END { exit !f }' \
+    || die "the checkout has no branch $branch"
+
+  # 2. That branch alone, into refs/cc/heads/<branch>. Git copies its refs and
+  # objects; no submodules, no tags, no checkout.
+  if ! run_vis hgit "$clone" "${up[@]}" fetch -q --no-tags --no-recurse-submodules \
+         --no-write-fetch-head "${upl[@]}" \
+         "$co/.git" "+refs/heads/$branch:$src" >&2; then
+    die "could not fetch $branch from $co"
+  fi
   hgit "$clone" rev-parse -q --verify "$src^{commit}" >/dev/null \
     || die "the checkout has no branch $branch"
 
-  # 2. The real remote's current state, so the preview is against what is there.
+  # 3. The real remote's current state, so the preview is against what is there.
   run_vis hgit "$clone" fetch -q --no-tags --no-recurse-submodules origin >&2 \
     || die "could not fetch from origin ($remote)"
 
-  # 3. Preview. --no-ext-diff/--no-textconv: no diff program runs on the session's
+  # 4. Preview. --no-ext-diff/--no-textconv: no diff program runs on the session's
   # files; --no-show-signature: no gpg on its signatures; output is plain text.
   local base="refs/remotes/origin/$branch" range commits
   say "Push $src ($co)"
   say "  to origin ($remote) as $branch."
   if hgit "$clone" rev-parse -q --verify "$base^{commit}" >/dev/null; then
     range="$base..$src"
-    commits="$(hgit "$clone" rev-list "$range")" || die "could not list the commits in $range"
+    commits="$(err_vis hgit "$clone" rev-list "$range")" || die "could not list the commits in $range"
     if [ -z "$commits" ]; then
       say "Nothing to push: origin/$branch already has every commit."
       exit 0
@@ -301,15 +440,18 @@ main() {
 
   if [ -z "$yes" ]; then
     local reply=""
+    # Ctrl-C at the prompt is a decline: exit 1 like `n`, never 130.
+    trap 'echo; echo "Not pushed."; exit 1' INT
     printf 'Push these? [y/N] '
     read -r reply || reply=""
+    trap - INT
     case "$reply" in
       [yY]|[yY][eE][sS]) ;;
-      *) echo "Not pushed."; exit 2 ;;
+      *) echo "Not pushed."; exit 1 ;;
     esac
   fi
 
-  # 4. From the clone, with your credentials; hooks off. A non-fast-forward is
+  # 5. From the clone, with your credentials; hooks off. A non-fast-forward is
   # refused by the remote as usual: cc-push never forces. git's report (and the
   # remote's messages) name the branch, so they go through vis too.
   run_vis hgit "$clone" push origin "$src:refs/heads/$branch" \
@@ -319,13 +461,17 @@ main() {
 
 # Main-execution guard: allow sourcing for tests. main runs in a subshell with
 # errexit on, so an unexpected failure still exits 1 rather than git's own status
-# (128 and so on): the exit codes stay 0, 1 and 2.
+# (128 and so on): the exit codes stay 0, 1 and 2. The INT trap keeps this shell
+# alive through a Ctrl-C so it can map the subshell's status; the subshell gets
+# default INT handling back (bash resets trapped signals in a subshell).
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set +e
+  trap ':' INT
   ( set -e; main "$@" )
   rc=$?
   case "$rc" in
     0|1|2) exit "$rc" ;;
+    130) echo "ERROR: cc-push was interrupted." >&2; exit 1 ;;
     *) echo "ERROR: cc-push stopped on an unexpected failure (status $rc)." >&2; exit 1 ;;
   esac
 fi

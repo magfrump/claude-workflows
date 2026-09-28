@@ -21,6 +21,12 @@ setup() {
   export GIT_CONFIG_GLOBAL="$T/home/.gitconfig"
   export GIT_CONFIG_NOSYSTEM=1
   export CC_PUSH_CLONES_DIR="$T/clones"
+  # cc-push refuses while it cannot rule out a running cc-isolated container:
+  # a docker stub that lists none (and logs its arguments) stands in for docker.
+  mkdir -p "$T/bin"
+  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> "%s/docker-argv"\nprintf "%%s" "${STUB_DOCKER_PS:-}"\nexit "${STUB_DOCKER_RC:-0}"\n' "$T" > "$T/bin/docker"
+  chmod +x "$T/bin/docker"
+  PATH="$T/bin:$PATH"
   git config --global user.name t
   git config --global user.email t@example.com
   git config --global commit.gpgsign false
@@ -138,9 +144,9 @@ markers() {
   [ ! -e "$T/clones" ]
 }
 
-@test "cc-push declined at the prompt pushes nothing" {
+@test "cc-push declined at the prompt pushes nothing and exits 1" {
   run bash "$CC_PUSH" --remote "$T/upstream.git" "$T/co" <<< n
-  [ "$status" -eq 2 ]
+  [ "$status" -eq 1 ]
   [[ "$output" == *"Not pushed."* ]]
   [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" != "$SESSION_HEAD" ]
 }
@@ -381,7 +387,8 @@ not_pushed() {
 @test "--help prints the whole header, exit codes included" {
   run bash "$CC_PUSH" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Exit codes: 0 pushed"*"2 declined at the prompt."* ]]
+  [[ "$output" == *"Exit codes"*"0 pushed, or nothing to push"*"or declined at the prompt (n, or Ctrl-C)"*"2 bad usage"* ]]
+  [[ "$output" == *"--allow-running"* ]]
   [[ "$output" == *"real remote, after the push, like any other collaborator's commits."* ]]
   [[ "$output" != *"set -euo pipefail"* ]]
 }
@@ -539,8 +546,186 @@ EOF
   PATH="$T/bin:$PATH" run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
   echo "$output"; cat "$T/git-argv"
   [ "$status" -eq 0 ]
-  grep -qxF -- "-c core.hooksPath=/dev/null -c core.fsmonitor=false -C $CC_PUSH_CLONES_DIR/co-$(printf '%s' "$co" | sha256sum | cut -c1-12) -c protocol.file.allow=always fetch -q --no-tags --no-recurse-submodules --no-write-fetch-head --prune --upload-pack=git-upload-pack --strict $co/.git +refs/heads/*:refs/cc/heads/*" "$T/git-argv"
+  grep -qxF -- "-c core.hooksPath=/dev/null -c core.fsmonitor=false -C $CC_PUSH_CLONES_DIR/co-$(printf '%s' "$co" | sha256sum | cut -c1-12) -c protocol.file.allow=always fetch -q --no-tags --no-recurse-submodules --no-write-fetch-head --upload-pack=git-upload-pack --strict $co/.git +refs/heads/main:refs/cc/heads/main" "$T/git-argv"
   grep -qF -- "ls-remote --upload-pack=git-upload-pack --strict --symref $co/.git HEAD" "$T/git-argv"
   # Nothing names the checkout root as a repository.
   ! grep -E -- " $co( |\$)" "$T/git-argv"
+}
+
+# --- Q-076 review round (security/performance/API reviews and fact-check r3 of
+# 2026-09-27): container check, one-branch fetch, git version floor, exit codes,
+# usage, partial clones.
+
+# cc_id <path>: cc-isolated's project id for <path>, from cc-isolated.sh itself.
+cc_id() {
+  bash -c 'source "$1"; project_id "$2"' _ "$BATS_TEST_DIRNAME/../devcontainer-config/cc-isolated.sh" "$1"
+}
+
+@test "cc-push's project_id is cc-isolated's (the container label it asks docker for)" {
+  local co; co="$(cd "$T/co" && pwd -P)"
+  [ "$(bash -c 'source "$1"; project_id "$2"' _ "$CC_PUSH" "$co")" = "$(cc_id "$co")" ]
+}
+
+@test "a running cc-isolated container for the checkout: refused (exit 1), nothing fetched" {
+  local co; co="$(cd "$T/co" && pwd -P)"
+  STUB_DOCKER_PS=$'cc-app-1\n' run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"a cc-isolated container for $co is running (cc-app-1)"*"docker stop cc-app-1"*"--allow-running"* ]]
+  grep -qxF -- "ps --filter label=cc-project=$(cc_id "$co") --format {{.Names}}" "$T/docker-argv"
+  [ ! -e "$T/clones" ]
+  not_pushed "$SESSION_HEAD"
+}
+
+@test "--allow-running goes on past a running container, with a warning" {
+  STUB_DOCKER_PS=$'cc-app-1\n' run bash "$CC_PUSH" --allow-running --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING: a cc-isolated container for "*"is RUNNING (cc-app-1)"* ]]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$SESSION_HEAD" ]
+}
+
+@test "docker that does not answer: refused unless --allow-running" {
+  STUB_DOCKER_RC=1 run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"docker did not answer"*"cannot check whether a cc-isolated container"*"--allow-running"* ]]
+  [ ! -e "$T/clones" ]
+  STUB_DOCKER_RC=1 run bash "$CC_PUSH" --allow-running --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING: docker did not answer"* ]]
+}
+
+@test "no docker at all: refused unless --allow-running" {
+  rm "$T/bin/docker"
+  ! command -v docker >/dev/null || skip "a real docker is on PATH"
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"docker is not installed, so cc-push cannot check"* ]]
+  run bash "$CC_PUSH" --allow-running --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING: docker is not installed"* ]]
+}
+
+@test "only the pushed branch is fetched: an unrelated branch never reaches the host clone" {
+  git -C "$T/co" checkout -q -b junk
+  echo junk > "$T/co/j"; git -C "$T/co" add j; git -C "$T/co" commit -qm junk
+  local junk; junk="$(git -C "$T/co" rev-parse HEAD)"
+  git -C "$T/co" checkout -q main
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  local clone; clone="$(echo "$T"/clones/co-*)"
+  run ! git -C "$clone" cat-file -e "$junk^{commit}"
+  [ -z "$(git -C "$clone" for-each-ref refs/cc/heads/junk)" ]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$SESSION_HEAD" ]
+}
+
+@test "git_version_ok: the May 2024 fixed releases and later pass, earlier ones do not" {
+  source "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh"
+  local v
+  for v in 2.39.4 2.39.5 2.40.2 2.41.1 2.42.2 2.43.4 2.44.1 2.45.1 2.45.2 2.46.0 2.47.1 3.0.0 \
+           2.39.4.windows.1 2.46.0-rc0; do
+    git_version_ok "git version $v" || { echo "refused $v"; return 1; }
+  done
+  for v in 2.39.3 2.40.1 2.41.0 2.42.1 2.43.3 2.44.0 2.45.0 2.38.9 2.30.0 1.9.9; do
+    ! git_version_ok "git version $v" || { echo "accepted $v"; return 1; }
+  done
+  run ! git_version_ok "git version x.y"
+  run ! git_version_ok ""
+}
+
+@test "cc-push refuses to run on a git below the fixed releases, before touching the checkout" {
+  local real_git; real_git="$(command -v git)"
+  mkdir -p "$T/oldgit"
+  cat > "$T/oldgit/git" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = --version ]; then echo "git version 2.39.3"; exit 0; fi
+exec "$real_git" "\$@"
+STUB
+  chmod +x "$T/oldgit/git"
+  PATH="$T/oldgit:$PATH" run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"git version 2.39.3 is older than the fixed releases"* ]]
+  [ ! -e "$T/clones" ]
+  [ ! -e "$T/docker-argv" ]
+}
+
+@test "usage errors exit 2: unknown flag, a flag without its value, two checkouts (with or without --)" {
+  run bash "$CC_PUSH" --nope
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"unknown flag: --nope"* ]]
+  run bash "$CC_PUSH" --remote
+  [ "$status" -eq 2 ]
+  run bash "$CC_PUSH" "$T/co" "$T/co"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"one checkout at a time"* ]]
+  run bash "$CC_PUSH" --clone "$T/x" "$T/co" -- "$T/other"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"one checkout at a time"* ]]
+  run bash "$CC_PUSH" -- "$T/co" "$T/other"
+  [ "$status" -eq 2 ]
+  [ ! -e "$T/x" ] && [ ! -e "$T/clones" ]
+  # One checkout after -- is fine.
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes -- "$T/co"
+  [ "$status" -eq 0 ]
+}
+
+@test "Ctrl-C at the prompt is a decline: exit 1, not 130, nothing pushed" {
+  mkfifo "$T/in"
+  # SIGINT default (a background job starts with it ignored, which a trap cannot
+  # undo) and its own process group, so the whole cc-push tree gets the signal.
+  perl -e '$SIG{INT} = "DEFAULT"; setpgrp(0, 0); exec @ARGV or die' \
+    bash "$CC_PUSH" --remote "$T/upstream.git" "$T/co" < "$T/in" > "$T/out" 2>&1 &
+  local pid=$! rc=0
+  exec 7> "$T/in"   # the writer end, so cc-push's read blocks (bats owns fd 3)
+  for _ in $(seq 1 300); do
+    grep -q 'Push these?' "$T/out" 2>/dev/null && break
+    sleep 0.1
+  done
+  grep -q 'Push these?' "$T/out"
+  kill -INT -- "-$pid"
+  wait "$pid" || rc=$?
+  exec 7>&-
+  cat "$T/out"
+  [ "$rc" -eq 1 ]
+  grep -q 'Not pushed.' "$T/out"
+  not_pushed "$SESSION_HEAD"
+}
+
+@test "a partial clone is refused up front, with the reason" {
+  local cfg="$T/co/.git/config" orig
+  orig="$(cat "$cfg")"
+  git config --file "$cfg" remote.origin.promisor true
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"marks a partial clone"* ]]
+  [ ! -e "$T/clones" ]
+  printf '%s\n' "$orig" > "$cfg"
+  git config --file "$cfg" extensions.partialClone origin
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"marks a partial clone"* ]]
+  printf '%s\n[remote "o"] PROMISOR = true\n' "$orig" > "$cfg"
+  [ "$(git config --file "$cfg" --get remote.o.promisor)" = true ]
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]
+  # partialCloneFilter alone does not make a partial clone, and is not refused.
+  printf '%s\n' "$orig" > "$cfg"
+  git config --file "$cfg" remote.origin.partialCloneFilter blob:none
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 0 ]
+}
+
+@test "err_vis: only stderr goes through vis, stdout is captured untouched, the status is kept" {
+  source "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh"
+  local out
+  out="$(err_vis bash -c 'printf "keep\n"; printf "bad\033[2J\n" >&2; exit 3' 2>"$T/err")" && return 1
+  [ "$out" = keep ]
+  [ "$(cat "$T/err")" = "bad?[2J" ]
+  run err_vis bash -c 'exit 3'
+  [ "$status" -eq 3 ]
 }
