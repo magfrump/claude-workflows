@@ -105,10 +105,28 @@ Accept user overrides:
 - **PR number:** `--pr 42` (use `gh pr diff 42`)
 - **Commit range:** `--range abc123..def456`
 - **Staged changes:** `--staged` (use `git diff --cached`)
+- **Full branch:** `--full` (the default above, stated explicitly — use it to override the
+  loop-pass default below)
+
+**Loop-pass default range.** On a `--loop-pass` run with none of the flags above, review only
+what changed since this loop's last review. The loop's rubric is the one file matching
+`docs/reviews/code-review-rubric-*-<branch-slug>.md` with the date as the only wildcard
+(naming per [references/rubric.md](references/rubric.md#deliverable-2-code-review-rubric)); its
+stamp is its first line, `Commit: <sha>`. If that file exists, its stamp is an ancestor of HEAD
+(`git merge-base --is-ancestor <sha> HEAD`) and differs from HEAD, the scope is `<sha>..HEAD`,
+and the partial-scope label below applies. If there is no such file, or its stamp is missing,
+is not an ancestor, or equals HEAD, use full-branch scope. If more than one file matches, or the
+branch has no name (detached HEAD), do not guess: name the candidates and require an explicit
+`--range` or `--full`. State the scope used and where it came from in the plan summary (Step 7).
+A run without `--loop-pass` (the confirming pass) keeps the full-branch default. Each pass
+rewrites the rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next
+pass's range correct. Why: in Q-076 every round re-checked the whole diff although
+[pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
+fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
 Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once as the shared cacheable prefix of every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
 
-**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
+**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, the loop-pass default range, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
 #### Large diff triage (~1000+ lines)
 
@@ -217,7 +235,8 @@ The user can include or exclude any critic:
   alongside the chain. Omit the flag to keep the parallel default.
 - `--loop-pass` — mark this run as a **non-final pass of a review-fix loop** (set by
   `pr-prep`'s loop for every pass except the terminal clean check). Enables the
-  [first-red short-circuit](#first-red-short-circuit-decision-032-4) and implies `--no-gate`
+  [first-red short-circuit](#first-red-short-circuit-decision-032-4) and the
+  [loop-pass default range](#step-1-determine-scope), and implies `--no-gate`
   (no interactive Fact-Check-Gate pause — the short-circuit decides automatically). Never pass
   it on the terminal pass: that pass must run the full panel so the amber inventory is complete.
 
@@ -266,6 +285,10 @@ stable):
    two lines short of the defect in the same function — the excerpt a finding needs is
    not the unit the reviewer must read
    (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 3).
+   The preamble MUST also carry the **probe-cleanup rule**: any process the agent starts
+   (a `sleep`, a FIFO reader, a background script) runs under `timeout` and is killed before
+   the agent reports. In Q-076, leftover reviewer probes tripped `install.sh`'s no-agent guard
+   and failed `install-host` tests in full runs.
 2. The partial-scope labelling block, if the scope is partial (Step 1).
 3. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
 4. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
@@ -428,7 +451,7 @@ For each of the three replicate agents:
    prompt; over budget → degrade per that section's ladder (inline the diff only, or fall back
    to the scope specification — e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`" — and let the replicate self-read). If the scope is
-   partial (`--range`, `--staged`,
+   partial (`--range`, the loop-pass default range, `--staged`,
    `--files`, or a partial `--pr`), also include the labelling block required by Step 1's
    partial-scope rule — the "already committed — context only, not under review" statement and
    the check-siblings-before-flagging-missing directive apply to fact-check replicates too.
@@ -677,9 +700,33 @@ Mechanics:
    behavioral red is never merged — it is caught by construction on the terminal full-panel
    pass — and the short-circuit only defers non-decisive work between fixes.
 
+**The bound: at most one short-circuit per loop, and never past security on an enforcement
+file.** The short-circuit defers critics; unbounded, it defers them indefinitely. In Q-076 every
+fact-check round found a red, so the security, architecture, performance and API critics first
+ran after four rounds, and security then found 2 High ("don't merge") issues that round 1 could
+have fixed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B3). #4's token rationale
+holds for one deferred pass, since the fix would churn the surface anyway. It does not hold for a
+string of them, because each deferral adds a round in which critic findings could have been fixed
+alongside the fact-check ones.
+
+6. **Once per loop.** Before skipping, read the loop's rubric (identified as in
+   [Step 1](#step-1-determine-scope)'s loop-pass default range). If it carries the marker line
+   `Loop-pass short-circuit: used at <sha>`, this loop has already skipped once. Run Stage 2 in
+   full despite the red, with no critic-stage trigger (mechanic 3) and with amber collected.
+   The run still implies `--no-gate` and k=1. If the loop's rubric cannot be identified
+   unambiguously, do not short-circuit.
+7. **Security on enforcement files.** If the reviewed diff touches an enforcement file (a path
+   matched by the `enforcement` pattern in `hooks/live-verify-gate.sh`, which owns the list),
+   run the security critic even on a pass that short-circuits, whatever Stage 1.5 would decide.
+   Its findings enter the rubric at their mapped tier, amber included. Only the other critics
+   are skipped.
+
 Emit a one-line note in the chat when short-circuiting (e.g.,
 `Loop-pass short-circuit: behavioral 🔴 confirmed at fact-check (<claim>) — skipping critics, returning to loop for fix.`),
-and write the rubric with only the confirmed red(s); mark the skipped critics in
+and write the rubric with only the confirmed red(s) (plus the security critic's findings under
+mechanic 7). Add the marker line `Loop-pass short-circuit: used at <reviewed HEAD sha>` directly
+under the rubric's `Commit:` line, and keep it there for the rest of the loop: later passes
+update the file in place and must not remove it. Mark the skipped critics in
 `## ⏭️ Skipped Core Critics` with the reason `loop-pass short-circuit (behavioral red confirmed)`.
 
 ### Stage 1.5: Critic gating
@@ -803,7 +850,8 @@ For each critic agent, you MUST:
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
    prompt; over budget → degrade per that section's ladder (inline the diff only, or fall
    back to the scope specification so the agent runs its own `git diff`). If
-   the scope is partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include
+   the scope is partial (`--range`, the loop-pass default range, `--staged`, `--files`, or a
+   partial `--pr`), also include
    the labelling block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to

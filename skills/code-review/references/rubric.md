@@ -17,6 +17,12 @@ created only when the date or the branch changes, i.e. when it is a genuinely di
 review. This preserves in-loop status tracking while stopping each loop from destroying the
 prior loop's findings.
 
+The file's first line is `Commit: <reviewed HEAD short SHA>`, above the template below, and
+each pass rewrites it to the HEAD that pass reviewed. The next loop pass computes its default
+range from it, and a loop-pass short-circuit adds a marker line directly under it. Both rules
+are owned by SKILL.md: Step 1's loop-pass default range and the first-red short-circuit's
+once-per-loop bound.
+
 Why date-stamped rather than overwritten: the rubric is the only durable record of what a
 review actually surfaced. Overwriting it means the pipeline's own output history — the
 substrate for calibrating critic precision, and for noticing that a finding was waived
