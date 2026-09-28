@@ -2,7 +2,7 @@ Commit: 182d143
 
 # Code Review Rubric
 
-**Scope:** iteration 3 (final confirming pass, no `--loop-pass`): full branch `main...182d143`, fact-check k=3 (decision log 63) + Stage 2.5; iteration 2: `27d483b..21d4eb8` (k=1); iteration 1: full branch at 27d483b (k=1) | **Reviewed:** 2026-09-28 | **Status: 🟡 CONDITIONAL PASS** — 4 amber item(s) awaiting resolution or justification
+**Scope:** iteration 3 (final confirming pass, no `--loop-pass`): full branch `main...182d143`, fact-check k=3 (decision log 63) + Stage 2.5; iteration 2: `27d483b..21d4eb8` (k=1); iteration 1: full branch at 27d483b (k=1) | **Reviewed:** 2026-09-28 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation
 
 Naming: this file is the item-prefixed equivalent of the canonical `docs/reviews/code-review-rubric-2026-09-28-review-q087.md` (per the batch brief, to avoid merge collisions); sibling artifacts are `q087-code-fact-check-report.md`, `q087-security-review-2026-09-28.md`, `q087-api-consistency-review-2026-09-28.md`. Delivery mode: self-read (diff + enclosing files ~211 KB over the 25k-token budget; skill texts delivered to agents by mandatory full Read of their absolute paths rather than transcription).
 
@@ -26,10 +26,10 @@ None.
 | B2 | Override-log A3 row cites the Interim line as `docs/working/questions.md:232`; it is at `:235` (`:232` is the [2] options row). `docs/reviews/override-log.md:80` | Docs | Incorrect (high), doc-only | Fact-check (iter 2) claim 11b | for-author | — | Fixed (182d143) | — |
 | B3 | The replication test comment credits "k=3 for any run without --loop-pass" to decision 031; that scope comes from log 63. `test/skills/code-review-factcheck-replication.bats:142-144` | Docs | Mostly accurate | Fact-check (iter 2) claim 13 | for-author | — | Fixed (182d143) | — |
 | B4 | Commit 21d4eb8's body says "the 11 suites … 292/292 ok"; 11 were selected but 10 ran (`code-fact-check-format.bats` NOT RUN: no generated reports). `/home/node/.claude/jobs/9f431b13/tmp/q087-tests-iter1.log:3-5` | Docs | Mostly accurate | Fact-check (iter 2) claim 16 | for-author | — | Won't-Fix | Override-log row; correct count stated in 182d143 body. |
-| D1 | "Code no fix touches is drawn/redrawn **only** on the loop's first and final passes" holds only by default: Step 1 sends a `--loop-pass` to full scope when the stamp is missing, not an ancestor, or equals HEAD (`skills/code-review/SKILL.md:117-118`), and pr-prep 3d falls back to a full re-review (`workflows/pr-prep.md:248`). Sites: `skills/code-review/SKILL.md:131`, `:454-455`, `docs/decisions/log.md:85`, commit 27d483b body. | Docs | Mostly accurate | Fact-check (final, k=3) claims 5, 14, 17, 23 (r2; r1+r3 Verified with the same caveat) | for-author | — | 🟡 Open | — |
-| D2 | Step 7 says "Total agent count (3 fact-check replicates + N critics …)" for every run; a `--loop-pass` runs 1. Pre-existing on main, but it is the one plan-summary line this rule governs. `skills/code-review/SKILL.md:259-260` | Docs | Mostly accurate | Fact-check (final) claim 20 (r2, single-replicate) | for-author | — | 🟡 Open | — |
-| D3 | Override-log rows A3 and C4 cite "fact-check claim 8" / "claim 15 note" without the iteration; `q087-code-fact-check-report.md` is overwritten per pass, so at HEAD those numbers point at other claims. `docs/reviews/override-log.md:82-83` | Docs | Mostly accurate | Fact-check (final) claims 10, 11 (r1) | for-author | — | 🟡 Open | — |
-| D4 | Commit 182d143's B1 bullet cites rows 43, 48, 53 as precedent for the `**Amended …:**` marker; only row 53 uses that form (43, 48 use bold Superseded markers; `docs/decisions/log.md:66`, `:71`, `:76`). | Docs | Mostly accurate | Fact-check (final) claim 26 (r1+r2+r3) | for-author | — | 🟡 Open | — |
+| D1 | "Code no fix touches is drawn/redrawn **only** on the loop's first and final passes" holds only by default: Step 1 sends a `--loop-pass` to full scope when the stamp is missing, not an ancestor, or equals HEAD (`skills/code-review/SKILL.md:117-118`), and pr-prep 3d falls back to a full re-review (`workflows/pr-prep.md:248`). Sites: `skills/code-review/SKILL.md:131`, `:454-455`, `docs/decisions/log.md:85`, commit 27d483b body. | Docs | Mostly accurate | Fact-check (final, k=3) claims 5, 14, 17, 23 (r2; r1+r3 Verified with the same caveat) | for-author | — | Fixed (post-pass) | SKILL.md :131 and :454-455 and log row 63 now say "by default"; the 27d483b commit-body site is Won't-Fix (override-log row). |
+| D2 | Step 7 says "Total agent count (3 fact-check replicates + N critics …)" for every run; a `--loop-pass` runs 1. Pre-existing on main, but it is the one plan-summary line this rule governs. `skills/code-review/SKILL.md:259-260` | Docs | Mostly accurate | Fact-check (final) claim 20 (r2, single-replicate) | for-author | — | Fixed (post-pass) | — |
+| D3 | Override-log rows A3 and C4 cite "fact-check claim 8" / "claim 15 note" without the iteration; `q087-code-fact-check-report.md` is overwritten per pass, so at HEAD those numbers point at other claims. `docs/reviews/override-log.md:82-83` | Docs | Mostly accurate | Fact-check (final) claims 10, 11 (r1) | for-author | — | Fixed (post-pass) | — |
+| D4 | Commit 182d143's B1 bullet cites rows 43, 48, 53 as precedent for the `**Amended …:**` marker; only row 53 uses that form (43, 48 use bold Superseded markers; `docs/decisions/log.md:66`, `:71`, `:76`). | Docs | Mostly accurate | Fact-check (final) claim 26 (r1+r2+r3) | for-author | — | Won't-Fix | Override-log row; commit-message wording only. |
 
 ---
 
@@ -84,6 +84,10 @@ All findings' evidence resolved.
 | 2 | `skills/code-review/SKILL.md:443-456` | FC 12b; api A3 | distinct defects: same finding restated, no hidden root |
 
 ---
+
+## Loop outcome
+
+Hard cap reached at iteration 3 with exit condition 1 met: no Must Fix, and every Must Address fixed or acknowledged (override-log rows). The final confirming pass itself was not clean (D1–D4), so no `Loop closed at` line is written. The post-pass fixes (D1–D3) were checked only by the fix-drift lite check and the affected test suites, not by another full pass.
 
 ## Re-flagged settled decisions
 
