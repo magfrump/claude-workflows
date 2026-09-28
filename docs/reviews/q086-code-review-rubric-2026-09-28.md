@@ -1,12 +1,14 @@
-Commit: 1ef3090
+Commit: 577bef7
 
 # Code Review Rubric
 
 <!-- Canonical name per SKILL.md would be code-review-rubric-2026-09-28-review-q086.md; prefixed with the item slug per the 2026-09-28 shared brief to avoid merge collisions. -->
 
-**Scope:** `review/q086` vs `main` (full branch, `git diff main...HEAD`, iteration 1, `--loop-pass`) | **Reviewed:** 2026-09-28 | **Status: 🟡 CONDITIONAL PASS** — 0 red; 2 amber items, both resolved in this iteration (A1 fixed, A2 acknowledged) — confirming pass pending
+**Scope:** iteration 2, `--loop-pass`, range `1ef3090..577bef7` (iteration 1: full branch at 1ef3090) | **Reviewed:** 2026-09-28 | **Status: 🟡 CONDITIONAL PASS** — 0 red; amber items A1-A2, B1-B3 all fixed or acknowledged — final confirming pass pending
 
-Pass notes: fact-check k=1 (loop pass, decision 031, model opus); critics on opus; delivery mode: inline-diff-only (diff + commit message inlined, Dockerfile self-read). Skill texts were handed to sub-agents by path (read in full from the worktree) rather than pasted.
+Pass notes (iteration 2): fact-check k=1 on the delta only (`q086-code-fact-check-report-iter2.md`, 16 claims, 0 Incorrect); all core critics gated off on the comment-only delta (see Skipped). Iteration 2 also found that the iteration-1 execution log `execution-logs/q086-bats-jobs-probe.log` prints `exit=0` after the `--jobs 2` abort while its summary says exit 1; the iteration-2 re-run (`q086-bats-jobs-probe-iter2.log`) shows exit 1 and supersedes it.
+
+Pass notes (iteration 1): fact-check k=1 (loop pass, decision 031, model opus); critics on opus; delivery mode: inline-diff-only (diff + commit message inlined, Dockerfile self-read). Skill texts were handed to sub-agents by path (read in full from the worktree) rather than pasted.
 
 ---
 
@@ -21,6 +23,9 @@ No items.
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
 | A1 | Dockerfile header "Local changes" list (`devcontainer-config/Dockerfile:1-6`) does not record the new `parallel` package; it is the only local addition with no rationale anywhere in the file. Convergence: fact-check (Stale) + security-reviewer (Informational) + dependency-upgrade D1 (advisory). | Docs / enforcement-file hygiene | Stale | Fact-check | for-author | — | Fixed | Header line added naming Q-086 and why (`bats --jobs N>1`; bats only Recommends parallel, image installs with --no-install-recommends). |
+| B1 | Commit 577bef7's Live-verified trailer says the build is "unchanged apart from the layer text"; a Dockerfile `#` comment enters no layer or cache key, so build steps are fully unchanged (only the file hash / re-bless changes). | Docs | Mostly Accurate | Fact-check (iter 2) | for-author | — | Acknowledged | Not rewriting the reviewed commit; override-log row added. |
+| B2 | Override-log row C3 cited `Dockerfile:19-46` (old start, new end); the base apt RUN is `:22-46` at 577bef7. | Docs | Mostly Accurate | Fact-check (iter 2) | for-author | — | Fixed | |
+| B3 | Override-log row C6 cited `Dockerfile:1-6`, the pre-fix header; after 577bef7 the header list is `:1-9`. | Docs | Stale | Fact-check (iter 2) | for-author | — | Fixed | |
 | A2 | Commit 1ef3090 message: "bats --jobs needs GNU parallel" is imprecise — `--jobs 1` and `--jobs N --no-parallelize-across-files` run without it; only `--jobs N>1` across files aborts (executed: `docs/reviews/execution-logs/q086-bats-jobs-probe.log`). | Docs | Mostly Accurate | Fact-check | for-author | — | Acknowledged | Not rewriting the reviewed commit (would change its sha under the parallel merge). The precise wording now lives in the Dockerfile header; override-log row added. |
 
 ---
@@ -63,7 +68,10 @@ All findings' evidence resolved.
 
 | Critic | Reason | Signal |
 |---|---|---|
-| api-consistency-reviewer | No public API surface touched | Diff is one apt package name in `devcontainer-config/Dockerfile`; no exported symbol, schema, route, CLI flag or config key; no fact-check claim in the domain |
+| api-consistency-reviewer | No public API surface touched (iterations 1 and 2) | Iteration 1: diff is one apt package name in `devcontainer-config/Dockerfile`; no exported symbol, schema, route, CLI flag or config key; no fact-check claim in the domain |
+| security-reviewer | Iteration 2 only: delta is copy-only (3 `#` comment lines in the Dockerfile header plus review artifacts), no string literal in a shell/auth/path context; no short-circuit, so mechanic 7 does not force it. Runs in the final confirming pass. | `git diff --stat 1ef3090..577bef7`: Dockerfile +3 (comments), docs/reviews only otherwise |
+| performance-reviewer | Iteration 2 only: copy-only delta, no dependency change | same |
+| dependency-upgrade (contextual) | Iteration 2 only: no manifest/package-list change in the delta | same |
 
 ---
 
