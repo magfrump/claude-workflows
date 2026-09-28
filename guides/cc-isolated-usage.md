@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-17
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Last verified: 2026-09-27
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -24,8 +24,20 @@ cc-isolated --register ~/code/api --profile python   # widen egress, then re-ble
 cc-isolated --bless               # re-bless the installed config after YOU reviewed it
 cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
                                   # self-probe, record the config verified live on a pass
-cc-isolated --help                # usage header
+cc-isolated --help                # usage header, exit status included
+cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone; first
+                                  # time. --remote is sticky: stored in the clone, reused
+cc-push [REPO]                    # later pushes (REPO defaults to the checkout holding $PWD)
+cc-push --branch NAME [REPO]      # a branch other than the one HEAD names
+cc-push --yes [REPO]              # no [y/N] prompt (the preview still prints)
+cc-push --clone DIR [REPO]        # a host-only clone other than the default
+cc-push --allow-running [REPO]    # go on although the session's container runs (warns)
+cc-push --help                    # usage header, exit codes included
 ```
+
+`cc-push` takes one checkout (`cc-push A B` and `cc-push A -- B` are usage
+errors). Both tools follow `install.sh`'s exit-status convention (decision log
+#58): 1 for an error, or for a prompt you declined; 2 for bad usage.
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
 directory is a hard error (it refuses rather than guessing another repo).
@@ -47,7 +59,25 @@ directory is a hard error (it refuses rather than guessing another repo).
    up` alone never rebuilds.
 6. Run the **boundary self-probe** (seven checks; see below). A full pass writes the
    hash to `verified-live.sha256` next to the manifest.
-7. `exec devcontainer exec … claude`.
+7. `devcontainer exec … claude`. Before step 4 the launcher snapshots what
+   host git reads to decide what to run (hooks, configs, attributes, submodule
+   and embedded git dirs, local remotes, rebase todo lists); when claude exits
+   it compares, and exits **3** naming anything the session added, removed or
+   changed. It exits 4 when the exit scan cannot list or read any of it, and
+   refuses to launch (exit 1) when the baseline snapshot cannot be taken — also
+   when `.git` is already not a git directory git accepts, or the checkout root
+   already looks like one, so a plant from an earlier session cannot become the
+   baseline. The scan is a tripwire, not a guarantee: push with `cc-push`
+   either way (see [Pushing: cc-push](#pushing-cc-push)).
+
+**Exit status.** 0 on success; 1 an error (a refused launch included); 2 bad
+usage; 3 the exit scan found a change; 4 the exit scan could not finish. Two
+things to know when a script reads it. After a clean scan the launcher passes
+**claude's own exit status** through, so a 1, 2, 3 or 4 can come from claude
+rather than the launcher; a 3 or 4 from the scan replaces claude's status. And a
+checkout whose `.git` cannot be read exits **1 at launch** (the baseline was
+never taken and no session ran) but **4 at exit** (the session ran; its result
+is unknown).
 
 Target repos get **zero** new files — nothing is committed into them.
 
@@ -142,6 +172,235 @@ a compromised session in one project cannot read another's credentials.
 Git push auth: the container gets no host SSH keys by design, and no GitHub
 token unless you export one — see
 [Working with collaborators](#working-with-collaborators-github-credentials).
+Commit inside the container; push from the host with `cc-push` (next section).
+
+## Pushing: cc-push
+
+**Why not `git push` in the checkout.** The container writes the checkout,
+`.git` included, through the bind mount. Host git run *in* the checkout — a
+plain `git push`, even `git status` — runs whatever the session left there, as
+you and with your keys: hooks, `core.fsmonitor`, filter drivers,
+`remote.*.receivepack`, a remote repointed at a repo with its own hooks, an
+`exec` line in an interrupted rebase's todo list. And some routes need no
+`.git` change at all: a hook that was already there when you launched and runs
+a tracked file (husky's `core.hooksPath=.husky/_`, the pre-commit framework,
+`exec ./scripts/check.sh`) runs whatever the session wrote into that file.
+`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push` is **not** a
+safe alternative: it still runs a planted `remote.*.receivepack`, pushes to a
+repointed `remote.*.url`/`pushurl` (whose hooks then run), and uses planted
+credential helpers and `core.sshCommand`, including ones in included config
+files. (It runs no clean/smudge filter: a push refreshes no index.)
+
+**What `cc-push` does.** It keeps a separate, bare clone that only the host
+writes (default `$XDG_DATA_HOME/cc-isolated/clones/<repo>-<id>`, which is
+`~/.local/share/cc-isolated/clones/<repo>-<id>` when `XDG_DATA_HOME` is unset;
+override with `--clone` or `CC_PUSH_CLONES_DIR`), and runs no git command in the
+checkout — its one contact with it is the fetch in step 1:
+
+```bash
+docker stop <container>                                 # first: the session's container
+cc-push --remote git@github.com:me/app.git ~/code/app   # first time: names the real remote
+cc-push ~/code/app                                      # afterwards (or from inside it: cc-push)
+cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
+```
+
+`--remote` is **sticky**: it is stored in the clone, every later `cc-push` of
+that checkout uses it, and giving it again replaces it for all later runs (the
+preview always prints the remote it will push to).
+
+1. Resolves the branch (`--branch`, or the one the checkout's `HEAD` names,
+   via `git ls-remote --symref`) and `git fetch`es **that branch only** from
+   the checkout into the clone (`refs/cc/heads/<branch>`): other branches the
+   session made are never copied to host disk. For a local path git starts
+   upload-pack in the checkout's `.git`, which **reads** there — its refs,
+   objects and config (and your global config) — but runs no hook, fsmonitor
+   or filter; nothing is checked out, no submodule is fetched.
+2. `git fetch origin` — the real remote, as configured **in the clone** by
+   `--remote`. Remotes are never read from the checkout.
+3. Prints the commits the push adds, and a diff stat when origin already has
+   the branch (no external diff or textconv, no signature check; every string
+   from the checkout — branch name, commit text, git's and the remote's
+   messages — with anything outside printable ASCII shown as `?`, so C1
+   controls and bidi overrides too), and asks `[y/N]` unless `--yes`.
+4. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+   It never forces; a rewritten branch is refused by the remote as usual.
+
+Exit codes: 0 pushed (or nothing to push); 1 an error (a refused checkout,
+container or git version, a failed fetch, a rejected push, an interruption —
+git's own status is never passed through) or declined at the prompt (`n`, or
+Ctrl-C); 2 bad usage.
+
+No hook runs on the push, so **git-lfs's `pre-push` upload does not run
+either**: `cc-push` does not upload LFS objects. Push those from a normal clone
+once you trust the content.
+
+**What it refuses first.** A **git older than the fixed releases** of the May
+2024 git security update (2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1,
+2.45.1, or 2.46 and later — this list is from git's release notes as recalled,
+not re-checked offline): that update hardened what a local clone or fetch
+trusts in the repository it reads. And a **running `cc-isolated` container for
+the checkout** (`docker ps`, label `cc-project=<id>`): while it runs, a process
+the session left behind can change `.git` between `cc-push`'s checks and its
+fetch. Stop it with `docker stop`. When `docker` is missing or does not answer,
+`cc-push` cannot tell, and refuses too. `--allow-running` goes on in both cases,
+with a warning; use it only when you know the container is idle.
+
+**What it refuses in the checkout.** upload-pack's reads are not confined to the checkout: a
+`.git` that is a `gitdir:` file or a symlink, a `commondir`, an
+`objects/info/alternates` (or `http-alternates`) file, or a symlink inside
+`.git` can point it at any repository on this machine that you can read, and
+`cc-push` would then offer that repository's history for push; an `[include]`
+naming a FIFO, or a FIFO in `.git`, blocks it forever. So before fetching,
+`cc-push` checks the checkout with plain file tests (no git) and refuses, with
+the reason, a `.git` that is not a real directory, or that holds a
+`commondir`, alternates, a symlink outside `hooks/`, a FIFO, socket or device,
+or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. It
+also refuses a `.git` that git itself would not accept as a git directory (a
+HEAD that is not `ref: refs/…`, a commit id or a link into `refs/`, or no
+searchable `objects/` and `refs/`), and a checkout root that looks like a
+repository (a `HEAD` next to `objects/`, or a `commondir` file): with `.git`
+invalid, git falls back to reading the root as a bare repository, which the
+session can plant (`cc-gitdir.sh`). It then fetches from `<checkout>/.git` by
+name with `git-upload-pack --strict`, which uses exactly that directory or
+fails. Run it on the main checkout the session was launched on. It also
+refuses a **partial clone** (`remote.*.promisor` or `extensions.partialClone`
+in `.git`'s config, read as text): upload-pack there cannot send the objects the
+clone never downloaded, and `cc-push` will not let it fetch them, so the fetch
+could only fail. Launch sessions on a full clone. What remains is upload-pack
+reading the checkout's own refs, objects and (include-free) config.
+
+Every git command it runs passes `core.hooksPath=/dev/null` and
+`core.fsmonitor=false`. `test/cc-push.bats` plants every hook `githooks(5)`
+lists, fsmonitor, clean/smudge/process filters, receive-pack and upload-pack
+commands, `uploadpack.packObjectsHook`, `core.alternateRefsCommand`,
+`core.sshCommand`, `core.gitProxy`, a credential helper, a legacy remotes file
+and a repointed `origin` in the checkout, and asserts that a `cc-push` fires
+none of them and pushes the fetched commit (git 2.39); it also covers each
+refusal above.
+
+**Keep the clone hook-free.** It holds content the container wrote. It is bare,
+so nothing is checked out and no `npm install` installs husky into it. If you
+ever check out a working tree from it and run husky, pre-commit or lefthook
+there, the fetched files run on your next commit. Do your own host-side work in
+a normal clone of the real remote after the push, like any collaborator's
+commits — and read what you pull before you run it.
+
+### The exit scan is a tripwire (Q-069 [3], Q-076)
+
+`cc-isolated` also snapshots, before the session, what host git reads to decide
+what to run, compares when claude exits, and exits **3** naming anything added,
+removed or changed (4 when it cannot read something; it refuses to launch, exit
+1, when it cannot take the baseline or `.git` is already invalid). A clean scan
+passes claude's own exit status through (see "Exit status" above). It hashes files (content, mode, symlink target)
+rather than checking a list of keys, so any change is a finding, even
+`user.name`. It records, for every git dir it reaches — the checkout's git and
+common dir, git dirs nested at `modules/**` and `worktrees/*`, every embedded
+`.git` in the working tree, every common dir a `commondir` file names, every
+local-path remote — `config`, `config.worktree`, `commondir`,
+`info/attributes`, the hooks dir and each hook (except `*.sample`), legacy
+`remotes/*` and `branches/*` files, in-progress `rebase-merge/`,
+`rebase-apply/` and `sequencer/` state, and every symlink. It follows what those
+configs name: `core.hooksPath` dirs, include and `includeIf` targets,
+`core.attributesFile`, and local-path remotes inside the checkout
+(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
+`url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
+resolved in the working tree of the repo whose config names them).
+Your own global and system config is read with its includes evaluated for each
+git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
+path and against the path you launched on, symlinks kept, as git matches both;
+`onbranch:` and `hasconfig:` taken as matching), so a relative
+`core.hooksPath` or `core.attributesFile` there is walked in the top-level
+working tree and in every embedded repo. Those are the only entries of your own
+config it follows; the rest is not recorded. It also records whether git would
+accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
+id or a link — not which branch, so switching branches is not a finding) and
+whether the checkout root looks like a repository; a change in either is a
+finding, and a git dir git would not accept at exit is a finding even if it was
+so at launch (git would fall back to reading the root). It runs nothing from the checkout
+(plain file reads, `git config --file … --no-includes` from `/`, and host tools:
+`find` without following symlinks, `stat`, `readlink`, `realpath`,
+`sha256sum`, `cat`, `tr`, `sort`, `awk`, `sed`, `cut`, `mktemp`, `dirname`,
+`rm`), and every name, value and error it prints is reduced to printable ASCII,
+line breaks included (`find`'s and `git config`'s own error text is kept, as
+one such line). A file
+it would hash that is over 64 MiB (a sparse file counts at its apparent size),
+or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
+unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
+before its first line is read.
+
+It catches the common plants. It **cannot** be complete, so a clean exit is not
+permission to run git in the checkout.
+
+#### Known routes it does not see
+
+This is the one list of what the scan and `cc-push` do not cover
+(`cc-exit-scan.sh` and `cc-push.sh` point here); update it here when a change
+opens or closes a route.
+
+- **A hook that runs a tracked file.** A hook present at launch that runs a
+  file from the working tree (husky, the pre-commit framework, lefthook,
+  `exec ./scripts/check.sh`): the session edits the tracked file and nothing
+  in `.git` changes.
+- **Anything present at launch.** The launch-time state is the baseline: an
+  earlier session's plant you did not remove, a rebase left in progress, or a
+  config value that names a program by path inside the checkout
+  (`core.pager = ./tools/pager.sh`: the session can rewrite `tools/pager.sh`).
+  (A `.git` git would not accept, or a root that looks like a repository, is
+  refused at launch rather than taken as the baseline.)
+- **After the scan.** The container keeps running when claude exits; a process
+  the session left behind can plant after the scan. Only a stopped container
+  (`docker stop`) cannot. `cc-push` refuses while the container runs.
+- **No scan.** A launcher killed before claude exits (closed terminal,
+  SIGTERM) scans nothing. Ctrl-C that ends the session still scans; a Ctrl-C
+  *during* the scan stops it and exits 4 ("the exit scan was interrupted").
+- **A slow scan.** The cost is forks per git dir, not I/O: about 2–4 s per
+  snapshot on a ~400k-file repository, and about 29 ms more for each embedded
+  repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
+  and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
+  session can still plant many files or embedded repos to make the exit scan
+  take a long time. If you stop it, treat the checkout as unscanned.
+- **One unlistable directory blocks the scan.** The embedded-repo search walks
+  the whole working tree and fails closed: a single directory you cannot list
+  (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
+  the launch (exit 1) or, at exit, reports exit 4. Move such data outside the
+  checkout.
+- **A repository in a working-tree directory not named `.git`.** Embedded
+  repositories are found by a `.git` entry. A bare-layout directory (`HEAD`,
+  `objects/`, `refs/`) under another name is not walked; host git run *inside*
+  that directory would use it and run its hooks. (Only the checkout root is
+  checked for that layout.)
+- **`~` forms.** Only a leading `~/` in a config path value
+  (`core.hooksPath`, `include.path`, `core.attributesFile`, an `includeIf`
+  pattern) is expanded to your home. `~user/…`, a bare `~`, and a `~` in a
+  local remote URL are taken as relative paths, not as git expands them.
+- **Tracked `.gitattributes` and `.gitmodules`.** Not scanned. An attribute
+  selects a driver that config defines; the repository configs are scanned,
+  but your own global config's entries are not recorded, so an attribute that
+  selects a driver defined there (`filter.lfs.*`) runs it on session-written
+  content with no finding. `.gitmodules` URLs and `update` settings act on
+  `git submodule update`.
+- **Another route to the checkout.** `includeIf "gitdir:"` is evaluated for
+  the physical path and the path you launched on; running git through a
+  different symlinked route can match a condition the scan did not evaluate.
+- **Another git version.** The scan and `cc-gitdir.sh` model git 2.39's rules
+  (repository discovery, `is_git_directory`, `includeIf` matching, what counts
+  as a local URL). A git that reads a file those rules do not, or discovers a
+  repository differently, can act on something the scan never recorded.
+- **Host programs pointed at the checkout.** Anything on the host that reads a
+  path inside the checkout (an editor plugin, a language server, `direnv`, a
+  build tool) is outside what the scan looks at.
+- **What `cc-push` still trusts.** It runs only when `.git` is a valid git
+  directory with none of the refused entries, the session's container is
+  stopped, and the host git is at or above the May 2024 fixed releases (see
+  [Pushing: cc-push](#pushing-cc-push)). Within that, upload-pack still
+  **reads** the checkout's refs, objects and include-free config (and your
+  global config): a bug in git's handling of a hostile repository it reads is
+  not something `cc-push` can rule out. Its push runs no hook, so git-lfs's
+  `pre-push` does not upload LFS objects.
+
+`install.sh` guards only its own git calls against a planted `.git`. Decision
+034 set "the host never reads a container-written `.git`" for the benchmark
+harness; `cc-push` applies the same rule to pushing.
 
 ## Working with collaborators: GitHub credentials
 
@@ -155,16 +414,8 @@ repos it can push to or read privately*. Pick the narrowest tier that fits:
   `git push` fail. Commit inside the container, then push from the host with
   your own keys. This is the right default for solo work and for public repos:
   the agent gets the whole workflow except the one step that needs trust.
-  **Caveat:** the container can write the checkout's `.git` through the bind
-  mount. A plain host `git push` (or `git status`) runs any hooks,
-  `core.fsmonitor` or filter drivers planted there, as you and with your keys.
-  `install.sh` guards only its own git calls against this. Decision 034 set
-  "the host never reads a container-written `.git`" for the benchmark
-  harness, but not for this workflow. Until that is settled
-  (`docs/working/questions.md`), push with hooks and fsmonitor disabled
-  (`git -c core.hooksPath=/dev/null -c core.fsmonitor=false push`), or push
-  from a separate host clone that fetches from this one. Neither covers
-  filter drivers.
+  Push with **`cc-push`**, never with host git in the checkout: see
+  [Pushing: cc-push](#pushing-cc-push).
 - **Read-only PAT — for private fetches.** When the repo, or a dependency, is
   private, export a fine-grained PAT with *Contents: read* on the named repos
   only: `GH_TOKEN=github_pat_… cc-isolated ~/code/api`. `devcontainer.json`
