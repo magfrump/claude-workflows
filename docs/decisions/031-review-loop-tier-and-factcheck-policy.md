@@ -25,6 +25,10 @@
   not the OpenRouter harness — see `docs/decisions/log.md` same date) wired into pr-prep
   Step 3 and `review-fix-loop.md` § Fix-commit drift check. K/C SKILL edits remain
   follow-up.
+- **Amended in part (noted 2026-09-28)**: C2's k=1 now applies only to `--loop-pass` passes.
+  A loop's final confirming pass runs the fact-check at k=3, because loop passes review only
+  the delta, so untouched code gets fewer draws than the N≥3 argument below assumes
+  (decision log #63, Q-087 [2]).
 
 ## Context
 

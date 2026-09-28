@@ -17,7 +17,7 @@ Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
   statically or by execution in the review sandbox (every verdict carries
   `**Verification mode:** static | executed` and a per-claim `Scope:` line).
-  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on review-fix loop passes, decision 031); the rationale lives in one
+  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on `--loop-pass` passes, decision 031; the loop's final confirming pass runs k=3, decision log 63); the rationale lives in one
   place — Stage 1's **Why three** — do not restate it elsewhere. Its `## Submitted claims`
   intake additionally verdicts critics' routed endorsement claims in
   [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
@@ -128,10 +128,9 @@ without `--loop-pass`, and it keeps the full-branch default; when it is clean, i
 `Loop closed at <reviewed HEAD sha>` under the rubric's `Commit:` line. Every earlier pass in the loop,
 including the first of 2-clean's two clean passes, takes the delta range. Each pass rewrites the
 rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next pass's range correct.
-Cost to recall: code no fix touches is redrawn only on each loop's first and final passes, which
+Cost to recall: by default, code no fix touches is redrawn only on each loop's first and final passes, which
 weakens decision 031's N≥3 resampling argument for k=1 on that code; the mitigation is that the
-final confirming pass reviews the full branch (at 031's k=1). Raising that pass to k=3 is open as
-Q-087 in `docs/working/questions.md`. Why: in Q-076 every round re-checked the whole diff although
+final confirming pass reviews the full branch at k=3 (decision log 63, Q-087 [2]). Why: in Q-076 every round re-checked the whole diff although
 [pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
 fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
@@ -257,7 +256,7 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Total agent count (3 fact-check replicates + N critics, plus one Stage-2.5
+- Total agent count (3 fact-check replicates, or 1 on a `--loop-pass`, + N critics, plus one Stage-2.5
   submitted-claims fact-check pass if critics route endorsement claims)
 
 Keep this brief — a short paragraph.
@@ -441,20 +440,20 @@ between 🔴 and 🟡 (`docs/thoughts/code-review-evaluation-state.md` §1.1, Re
 A single sample of that judgment is a coin flip carrying merge-blocking authority.
 Replication converts it into a measured distribution.
 
-**Replication is loop-aware (decision 031, configuration C2 — 031 overrules the earlier
-blanket k=3 mandate).** Every pass of a review-fix loop (which requires **2 consecutive clean
-passes** before merge) runs **k=1**: each `--loop-pass`, and also the final confirming pass,
-which runs without the flag per [Step 1](#step-1-determine-scope) and is recognized by the
-branch's canonical rubric existing without a `Loop closed at` line. Decision 031 prices both clean
-passes at k=1; raising the final one to k=3 is open as Q-087. Run a
+**Replication is loop-aware (decision 031, configuration C2, amended by decision log 63 —
+031 overrules the earlier blanket k=3 mandate).** Every `--loop-pass` of a review-fix loop
+(which requires **2 consecutive clean passes** before merge) runs **k=1**. Run a
 single fact-check agent with the same rich shared brief (step 3b below — brief quality, not k,
 governs systematic recall), saving its report directly as the canonical
 `docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
 in the header; skip the merge machinery and the Verdict-stability section. The across-pass
 resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pass (1−(1−p)ᴺ ≥
-1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** only
-(no `--loop-pass` and no open loop rubric for the branch) — no loop, no second draw, so the
-replication happens within the pass.
+1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to every run without `--loop-pass`**:
+standalone single-pass reviews and a loop's final confirming pass, which runs without the flag per
+[Step 1](#step-1-determine-scope). The flag alone sets k, so no rubric check is needed to tell the
+two apart. Loop passes review only the delta since the last stamp, so by default code no fix touched is
+drawn only on the loop's first and final passes (Step 1's full-scope fallbacks add draws); the final pass's k=3 restores the within-pass
+redundancy on that code (decision log 63, Q-087 [2]; decision 031 priced both clean passes at k=1).
 
 For each of the three replicate agents:
 
@@ -1277,8 +1276,9 @@ capture format, the append procedure, and why the log is not write-only are in
 ## Important Reminders
 
 - **Always run fact-checking first; replication is loop-aware (decision 031).** Even if the
-  user only asks for critic perspectives. k=1 per pass inside the review-fix loop (paired
-  with the 2-consecutive-clean rule); k=3 for standalone single-pass reviews — byte-identical
+  user only asks for critic perspectives. k=1 per `--loop-pass` inside the review-fix loop (paired
+  with the 2-consecutive-clean rule); k=3 for standalone single-pass reviews and the loop's
+  final confirming pass (decision log 63) — byte-identical
   prompts, merged most-severe-wins, per-claim replicate verdicts recorded, disagreement rate
   reported. Rationale and mechanics live in Stage 1's **Why three**, its loop-aware
   replication paragraph, and the merge steps — the single canonical statement.
