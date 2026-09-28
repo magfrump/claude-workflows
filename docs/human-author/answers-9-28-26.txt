@@ -1,0 +1,33 @@
+Q-065: [1]
+
+Q-081: [2]
+
+Q-066:
+$ REQUIRE_LIVE_SETTINGS=1 bats test/sandbox-tool-map-drift.bats
+sandbox-tool-map-drift.bats
+ ✓ guide exists and contains machine-readable drift markers
+ ✓ prefixes the guide claims allowed exist in live permissions.allow
+ ✓ prefixes the guide claims removed have no broad allow entry
+ ✓ fixture: a settings file matching the guide passes both checks
+ ✓ fixture: a missing entry the guide claims allowed fails the allow check
+ ✓ fixture: an allow entry for a prefix the guide calls removed fails the removed check
+ ✓ REQUIRE_LIVE_SETTINGS=1 turns a missing settings file into a failure
+
+7 tests, 0 failures
+
+Q-082:
+From claude, with hook:
+```
+When I ran the same two lines, the harness refused with "Permission to use Bash with command … has been denied." Your ! run of the identical lines succeeded, so the rules stop my commands but not yours.
+```
+I imagine running without the hook is not trivial, since that should involve changing the hook settings which changes the image which should require a re-bless?
+
+Q-083: [1]
+
+Q-085: [3]
+
+Q-086:
+$ parallel --version | head -1
+GNU parallel 20210822
+
+Q-087: [2]
