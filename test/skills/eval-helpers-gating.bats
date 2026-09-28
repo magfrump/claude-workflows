@@ -12,6 +12,8 @@ setup() {
     "$T/skills/alpha" "$T/skills/beta" "$T/bin"
   cp "$REPO_ROOT/scripts/run-tests.sh" "$T/scripts/"
   cp "$REPO_ROOT/test/skills/runner-contract.bash" "$T/test/skills/"
+  mkdir -p "$T/test/lib"
+  cp "$REPO_ROOT/test/lib/hermetic-env.bash" "$T/test/lib/"
   echo "# alpha" > "$T/skills/alpha/SKILL.md"
   echo "# beta" > "$T/skills/beta/SKILL.md"
   suite alpha-eval.bats alpha
