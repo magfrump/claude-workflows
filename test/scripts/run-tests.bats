@@ -7,6 +7,11 @@
 # its name, so every test also covers word-splitting of paths.
 
 REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+# shellcheck source=../lib/hermetic-env.bash
+source "$REPO_ROOT/test/lib/hermetic-env.bash"
+# A working locale for runner(): C.UTF-8 where it is installed, else C.
+WORKING_LOCALE=C
+locale_installed C.UTF-8 && WORKING_LOCALE=C.UTF-8
 
 setup() {
   T="$BATS_TEST_TMPDIR/my repo"
@@ -30,8 +35,8 @@ setup() {
 }
 
 teardown() {
-  # The killed-run test leaves a sleep behind (bats' test child outlives a
-  # TERM to bats, as it did when the runner exec'd bats).
+  # Tests that park a fixture in `sleep` record its pid; end it if a failed
+  # assertion left it running.
   if [[ -f "$T/sleep.pid" ]]; then
     kill "$(cat "$T/sleep.pid")" 2>/dev/null || true
   fi
@@ -64,7 +69,42 @@ in_runner() {
 
 # runner [args...]: in_runner under a working locale.
 runner() {
-  in_runner LC_ALL=C.UTF-8 -- "$@"
+  in_runner LC_ALL="$WORKING_LOCALE" -- "$@"
+}
+
+# runner_bg <outfile> [args...]: start the runner in the background under
+# `timeout`, its output in <outfile>; $! is timeout's pid afterwards. A TERM to
+# timeout reaches its whole process group, so bats' children end too and the
+# run lock is released.
+runner_bg() {
+  local out="$1"
+  shift
+  timeout -s TERM 60 env -i PATH="${PATH//"$BATS_LIBEXEC:"/}" HOME="$HOME" \
+    TMPDIR="$BATS_TEST_TMPDIR" LC_ALL="$WORKING_LOCALE" \
+    bash "$T/scripts/run-tests.sh" "$@" > "$out" 2>&1 3>&- &
+}
+
+# wait_unlocked: wait up to 10 s for the run lock to be free.
+wait_unlocked() {
+  local i
+  for i in $(seq 100); do flock -n "$T/.bats/lock" true && return 0; sleep 0.1; done
+  return 1
+}
+
+# wait_for <file>: wait up to 10 s for <file> to exist.
+wait_for() {
+  local i
+  for i in $(seq 100); do [[ -e "$1" ]] && return 0; sleep 0.1; done
+  return 1
+}
+
+# sleeper_fixture <path>: a fast suite whose second test parks in a sleep
+# (pid in $T/sleep.pid) and whose third fails.
+sleeper_fixture() {
+  fixture "$1" fast \
+    '@test "s1" { true; }' \
+    '@test "s2" { sleep 20 & echo $! > "$BATS_TEST_DIRNAME/../sleep.pid"; wait; }' \
+    '@test "s3" { false; }'
 }
 
 # age_logs: rename every unaged run log to an old, ordered timestamp. bats names
@@ -123,6 +163,10 @@ age_logs() {
   runner outside.bats
   [ "$status" -eq 1 ]
   [[ "$output" == *"not under test/: outside.bats"* ]]
+
+  runner test/../outside.bats
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not under test/: test/../outside.bats"* ]]
 }
 
 @test "FILE: an untagged named suite fails the tag check" {
@@ -140,7 +184,7 @@ age_logs() {
   [[ "$output" != *"alpha"* ]]
 }
 
-@test "FILE: a symlink out of test/ is rejected" {
+@test "FILE: a directory or file symlink out of test/ is rejected" {
   mkdir -p "$BATS_TEST_TMPDIR/elsewhere"
   printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '@test "outside" { true; }' \
     > "$BATS_TEST_TMPDIR/elsewhere/x.bats"
@@ -148,9 +192,15 @@ age_logs() {
   runner test/link/x.bats
   [ "$status" -eq 1 ]
   [[ "$output" == *"not under test/: test/link/x.bats"* ]]
+
+  ln -s "$BATS_TEST_TMPDIR/elsewhere/x.bats" "$T/test/flink.bats"
+  runner test/flink.bats
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not under test/: test/flink.bats"* ]]
+  [[ "$output" != *"outside"*"ok"* ]]
 }
 
-@test "FILE: a suite named twice (or via ..) runs once; -- ends the flags" {
+@test "FILE: a suite named twice (or via ..) runs once, also after --" {
   runner -- test/gamma.bats test/gamma.bats test/sub/../gamma.bats
   [ "$status" -eq 0 ]
   [[ "$output" == *"1..1"* ]]
@@ -170,14 +220,15 @@ age_logs() {
   [ -f "$T/.bats/run-log-anchor" ]
   [ "$(ls "$LOG_DIR" | wc -l)" -eq 1 ]
   grep -q "^passed $T/test/sub/beta.bats" "$LOG_DIR"/*.log
-  [ "$(tail -n1 "$LOG_DIR"/*.log)" = "# run-tests: complete files=1" ]
+  [ "$(sed -n 1p "$T/.bats/last-run")" = "expected=1" ]
+  [ "$(sed -n 3p "$T/.bats/last-run")" = "$T/test/sub/beta.bats" ]
 }
 
 @test "an unwritable .bats/ warns and runs without recording" {
   touch "$T/.bats"   # a file, so the log directory cannot be created
   runner test/gamma.bats
   [ "$status" -eq 0 ]
-  [[ "$output" == *"WARNING: cannot write .bats/.bats/run-logs; running without recording"* ]]
+  [[ "$output" == *"WARNING: cannot write .bats/.bats/run-logs (or flock is missing); running without recording"* ]]
   [[ "$output" == *"ok 1"* ]]
 }
 
@@ -228,27 +279,47 @@ age_logs() {
   [[ "$output" == *"--failed: no recorded run"* ]]
 }
 
-@test "--failed refuses the log of a run killed partway (and TERM stops bats)" {
-  fixture slow.bats fast \
-    '@test "s1" { true; }' \
-    '@test "s2" { sleep 20 & echo $! > "$BATS_TEST_DIRNAME/../sleep.pid"; wait; }' \
-    '@test "s3" { false; }'
-  env -i PATH="${PATH//"$BATS_LIBEXEC:"/}" HOME="$HOME" TMPDIR="$BATS_TEST_TMPDIR" LC_ALL=C.UTF-8 \
-    bash "$T/scripts/run-tests.sh" test/slow.bats > "$BATS_TEST_TMPDIR/killed.out" 2>&1 3>&- &
-  local pid=$! i
-  for i in $(seq 100); do [[ -f "$T/sleep.pid" ]] && break; sleep 0.1; done
-  [ -f "$T/sleep.pid" ]
+@test "--failed refuses the log of a run killed partway" {
+  sleeper_fixture slow.bats
+  runner_bg "$BATS_TEST_TMPDIR/killed.out" test/slow.bats
+  local pid=$! rc=0
+  wait_for "$T/sleep.pid"
   kill -TERM "$pid"
-  local rc=0
   wait "$pid" || rc=$?
-  [ "$rc" -ge 128 ]
-  # The log holds s1 only and no completion mark.
+  [ "$rc" -eq 143 ]
+  wait_unlocked
+  # The log holds s1 only.
   grep -q '^passed .*slow.bats.*s1' "$LOG_DIR"/*.log
-  # (`! grep` would not fail a bats test on a non-final line.)
-  [ -z "$(grep '^# run-tests: complete' "$LOG_DIR"/*.log || true)" ]
-  age_logs
 
   runner --failed test/slow.bats
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--failed: the last run ("*") did not complete"* ]]
+  [[ "$output" == *"--failed: the last run ("*") recorded 1 of 3 tests: it did not complete"* ]]
+}
+
+@test "--failed refuses the log of a run whose setup_file failed" {
+  fixture sf.bats fast 'setup_file() { false; }' '@test "sf1" { true; }'
+  runner test/sf.bats test/gamma.bats
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not ok"*"setup_file failed"* ]]
+  age_logs
+
+  runner --failed
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"recorded 1 of 2 tests"* ]]
+}
+
+@test "a run while another holds the lock exits 1 and runs nothing" {
+  sleeper_fixture slow.bats
+  runner_bg "$BATS_TEST_TMPDIR/first.out" test/slow.bats
+  local pid=$!
+  wait_for "$T/sleep.pid"
+
+  runner test/gamma.bats
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"another run-tests.sh run is in progress in this checkout"* ]]
+  [[ "$output" != *"gamma clean output"* ]]
+
+  kill -TERM "$pid"
+  wait "$pid" || true
+  wait_unlocked
 }
