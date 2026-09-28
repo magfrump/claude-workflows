@@ -17,7 +17,7 @@ Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
   statically or by execution in the review sandbox (every verdict carries
   `**Verification mode:** static | executed` and a per-claim `Scope:` line).
-  Runs as **k=3 parallel replicates** merged most-severe-wins; the rationale lives in one
+  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on review-fix loop passes, decision 031); the rationale lives in one
   place — Stage 1's **Why three** — do not restate it elsewhere. Its `## Submitted claims`
   intake additionally verdicts critics' routed endorsement claims in
   [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
@@ -120,8 +120,8 @@ differs from HEAD, the scope is `<sha>..HEAD`, and the partial-scope label below
 is no such file, or its stamp is missing, is not an ancestor (including a git error on the stamp),
 or equals HEAD, use full-branch scope. If that file carries a `Loop closed at <sha>` line under
 its `Commit:` line, the previous loop has ended and this pass starts a new one: use full-branch
-scope, treat the file as having no short-circuit marker, and copy neither marker line into what
-this pass writes. If the branch has no name (detached HEAD), do not guess:
+scope, treat the file as having no short-circuit marker, and remove both marker lines (if this
+pass updates the same dated file) or leave them out (if it starts a new one). If the branch has no name (detached HEAD), do not guess:
 require an explicit `--range` or `--full`. State the scope used and where it came from in the plan
 summary (Step 7). Only the final confirming pass (the one run to declare the branch clean) runs
 without `--loop-pass`, and it keeps the full-branch default; when it is clean, it adds
@@ -737,7 +737,7 @@ failure).
    [Step 1](#step-1-determine-scope)'s loop-pass default range). If it carries the marker line
    `Loop-pass short-circuit: used at <sha>`, this loop has already skipped once. Run Stage 2 in
    full despite the red, with no critic-stage trigger (mechanic 3) and with amber collected.
-   The run still implies `--no-gate` and k=1. If no canonical rubric exists yet (the first
+   The run still implies `--no-gate` and k=1. If no canonical rubric exists yet, or the newest one is closed (`Loop closed at`; the first
    pass of a loop), there is no marker, so the short-circuit is allowed. If rubrics for this
    branch exist but none has the canonical name, or HEAD is detached, the loop's history cannot
    be read, so do not short-circuit. When the loop's rubric is a new day's file, the pass that

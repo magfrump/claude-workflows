@@ -23,7 +23,7 @@ range from it, and a loop-pass short-circuit adds a marker line directly under i
 dated file copies any marker line from the previous one. Keep the canonical name (no `-iter2` or
 `-final` suffixes), or neither rule can find the file. When the final confirming pass is
 clean it adds `Loop closed at <sha>` under the `Commit:` line; a later loop pass that finds it
-starts a new loop with full-branch scope and copies neither marker forward. Both rules
+starts a new loop with full-branch scope and removes both marker lines (same dated file) or leaves them out (new file); this is the one case where a prior loop's rubric is updated in place. Both rules
 are owned by SKILL.md: Step 1's loop-pass default range and the first-red short-circuit's
 once-per-loop bound.
 
