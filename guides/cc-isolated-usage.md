@@ -397,6 +397,12 @@ opens or closes a route.
   global config): a bug in git's handling of a hostile repository it reads is
   not something `cc-push` can rule out. Its push runs no hook, so git-lfs's
   `pre-push` does not upload LFS objects.
+- **Your PATH, and `--yes` without `--branch`.** `cc-push` drops relative PATH
+  entries and entries inside the checkout, then works from `/`. The few tools
+  it runs before it has located the checkout (`readlink`, `dirname`,
+  `realpath`) are still looked up on your absolute PATH entries. With `--yes`
+  and no `--branch`, the checkout's HEAD, which the session controls, picks the
+  branch that is pushed; pass `--branch` when scripting it.
 
 `install.sh` guards only its own git calls against a planted `.git`. Decision
 034 set "the host never reads a container-written `.git`" for the benchmark
