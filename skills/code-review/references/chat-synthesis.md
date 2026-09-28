@@ -137,10 +137,11 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — Total diff is >500 changed lines (added + removed per
-   `git diff --stat`) AND ≥1 🔴 item exists (and rule 1 did not match). Large
-   diffs combined with red findings multiply review risk per iteration; split
-   before iterating on fixes.
+2. **split PR** — The unit is over the size gate in `workflows/pr-prep.md`
+   step 1a (>400 changed lines outside `docs/`, counted with that step's
+   command, so review artifacts don't count) AND ≥1 🔴 item exists (and rule 1
+   did not match). Large diffs combined with red findings multiply review risk
+   per iteration; split before iterating on fixes.
 3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,
    security + performance + api-consistency), OR ≥3 🔴 items total. Systemic
    risk — invoke the `pre-mortem` skill before attempting line-level fixes,
