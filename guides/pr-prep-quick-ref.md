@@ -8,7 +8,7 @@ Actionable checklist for [workflows/pr-prep.md](../workflows/pr-prep.md). Consul
 
 ### 1. Gate Checks (run concurrently)
 
-- [ ] **Size gate** — unit ≤ 400 changed code lines outside `docs/` (count with pr-prep step 1a's command)? If not, split into stacked units before the review-fix loop. Only the user can waive the cap (via an ANSWERED `questions.md` entry); note the waiver in the PR description and suggest a file review order
+- [ ] **Size gate** — unit ≤ 400 changed code lines outside `docs/` (count with pr-prep step 1a's command)? If not, split into stacked units before the review-fix loop. Only the user can waive the cap, through an answered `Q-NNN` entry; note the waiver in the PR description, citing that `Q-NNN`, and suggest a file review order
 - [ ] **Dependent PR check** — if this builds on unmerged PRs, verify they've landed or set the base correctly. Skip for standalone branches
 
 ### 2. Open Draft PR (optional)

@@ -87,8 +87,11 @@ Run these concurrently — both are fast, and either failing changes the plan:
 
 ```bash
 BASE=main   # for a stacked unit whose lower unit has not merged yet: that unit's branch
+# Run as one command. An empty or bad BASE (or BASE=HEAD) must fail loudly, not print 0.
 # ':(top)' anchors both pathspecs at the repository root, so the count is the same from any directory.
-git diff --numstat "$BASE"...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'
+b=$(git rev-parse --verify --quiet --end-of-options "${BASE:-main}^{commit}") && [ "$b" != "$(git rev-parse HEAD)" ] \
+  && git diff --numstat "$b"...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }' \
+  || echo "size gate: BASE '${BASE}' is not a commit other than HEAD; fix it and re-run" >&2
 ```
 
 Added and removed lines both count; binary files count 0. The gate fires above 400: the "~" marks a round number, not a tolerance band. Over it, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. In /away mode, split without asking and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line, as the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) does; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
@@ -96,7 +99,7 @@ Added and removed lines both count; binary files count 0. The gate fires above 4
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-If the user waives the cap, note the waiver in the PR description (step 6), citing the `docs/working/questions.md` entry (`Q-NNN`, ANSWERED) where the user granted it; a waiver with no such entry is not a waiver. The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
+If the user waives the cap, note the waiver in the PR description (step 6), citing by ID the answered `Q-NNN` entry where the user granted it (in `docs/working/questions.md`, or `questions-archive.md` once archived), with the user's answer quoted verbatim; a waiver with no such entry is not a waiver. The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note (a stacked unit runs step 1a's count with `BASE` set to the branch below it). Skip this check for standalone branches.
 

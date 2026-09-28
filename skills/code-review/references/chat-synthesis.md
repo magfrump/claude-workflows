@@ -125,7 +125,7 @@ Choose exactly one bracketed value. The choice is **mechanically derived from th
 
 #### Next-action derivation
 
-Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the diff size from `git diff --stat`.
+Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the unit's size as counted by `workflows/pr-prep.md` step 1a's command (changed lines outside `docs/`).
 
 1. **block on architectural review** — Either: (a) Step 5 auto-selected
    `architecture-review` but it was excluded (via `--exclude architecture-review`)
