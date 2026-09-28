@@ -20,7 +20,7 @@ None.
 
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
-| A1 | No surviving test asserts that `parse_si_input` discards text before the first `##` heading (and the body of an unknown heading). The deleted test "comment block does not pollute parsed sections" (`main:test/si-input-rejected-history.bats:178-188`) was the only such assertion, so the commit message's "Its 12 tests exercised only that function" is Mostly Accurate (11 of 12). Discard mechanism: `_save_si_section`'s `case` has no arm for an empty/unknown heading (`scripts/lib/si-input.sh:107-112`). | Tests / Documentation | Mostly Accurate + test-strategy Must Address + architecture Informational (one root) | Fact-check Claim 2 + test-strategy TS1 + architecture-review F1 | for-author | — | 🟡 Open | — |
+| A1 | No surviving test asserts that `parse_si_input` discards text before the first `##` heading (and the body of an unknown heading). The deleted test "comment block does not pollute parsed sections" (`main:test/si-input-rejected-history.bats:178-188`) was the only such assertion, so the commit message's "Its 12 tests exercised only that function" is Mostly Accurate (11 of 12). Discard mechanism: `_save_si_section`'s `case` has no arm for an empty/unknown heading (`scripts/lib/si-input.sh:107-112`). | Tests / Documentation | Mostly Accurate + test-strategy Must Address + architecture Informational (one root) | Fact-check Claim 2 + test-strategy TS1 + architecture-review F1 | for-author | — | Fixed | Fixed in the next commit: new test "parse_si_input drops text before the first heading and under unknown headings" in `test/si-input-parse-comments.bats` (kills two mutants: preamble routed to Context, unknown heading routed to Context). The commit message's 11-of-12 imprecision is corrected in that fix commit's body; 12f96cd is not rewritten. |
 
 ---
 
@@ -28,7 +28,7 @@ None.
 
 | # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|
-| C1 | Pre-existing gaps next to (not caused by) the change: the missing-file branch of `parse_si_input` (`scripts/lib/si-input.sh:35-38`) and case-insensitive heading matching (`:107`) have no test. | test-strategy | Low | for-author | — | 🟢 Open |
+| C1 | Pre-existing gaps next to (not caused by) the change: the missing-file branch of `parse_si_input` (`scripts/lib/si-input.sh:35-38`) and case-insensitive heading matching (`:107`) have no test. | test-strategy | Low | for-author | — | Won't-Fix (override-log row 2026-09-28 `review/q065` C1) |
 
 ---
 

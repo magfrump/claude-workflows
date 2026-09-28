@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 # @category fast
-# Unit tests for parse_si_input()'s handling of HTML comments in si-input.md
-# (lib/si-input.sh). Moved from si-input-rejected-history.bats when its
-# subject, prepend_si_input_rejected_history, was deleted (Q-065 [1]).
+# Unit tests for parse_si_input()'s handling of HTML comments and of text
+# outside the four known sections in si-input.md (lib/si-input.sh). The first
+# two moved from si-input-rejected-history.bats when its subject,
+# prepend_si_input_rejected_history, was deleted (Q-065 [1]).
 
 setup() {
   source "$BATS_TEST_DIRNAME/../scripts/lib/si-input.sh"
@@ -30,4 +31,16 @@ teardown() {
   [ "$SI_FEEDBACK" = "fb line" ]
   [ "$SI_OFF_LIMITS" = "skills/code-review" ]
   [ "$SI_PRIORITIES" = "- p1  now" ]
+}
+
+@test "parse_si_input drops text before the first heading and under unknown headings" {
+  # Replaces the deleted "comment block does not pollute parsed sections"
+  # test (Q-065 review A1): text before the first ## heading, comment or
+  # prose, and the body of an unknown heading reach no SI_* variable.
+  printf '<!-- Recent rejections (last 3 rounds):\n  Round 1: task-foo — something failed\n## Context\n-->\nstray preamble prose\n## Feedback\n\nthe real feedback\n\n## Notes\nunknown section body\n## Priorities\n\n- priority one\n' > "$INPUT_FILE"
+  parse_si_input "$INPUT_FILE" 2>/dev/null
+  [ "$SI_FEEDBACK" = "the real feedback" ]
+  [ "$SI_PRIORITIES" = "- priority one" ]
+  [ -z "$SI_CONTEXT" ]
+  [ -z "$SI_OFF_LIMITS" ]
 }

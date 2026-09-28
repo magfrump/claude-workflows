@@ -77,6 +77,7 @@ than the core trio (e.g., ui-visual-review), name the critic in the
 
 | Date | PR ref | Finding | Original verdict | Override verdict | Reason |
 |---|---|---|---|---|---|
+| 2026-09-28 | `review/q065` | C1: pre-existing untested paths next to the change: missing-file branch of `parse_si_input` (`scripts/lib/si-input.sh:35-38`) and case-insensitive heading match (`scripts/lib/si-input.sh:107`) — test-strategy | 🟢 Consider | Won't-Fix | Scope drift: both gaps predate Q-065 and the deletion does not touch them; revisit if either branch of `parse_si_input` is edited. |
 | 2026-09-28 | `feat/u1-run-tests` | C5: with no `locale` binary on PATH, `locale_installed` reports a working UTF-8 locale missing and the runner pins `C` (`test/lib/hermetic-env.bash:74`, `scripts/run-tests.sh` locale pin) — U1 critic | 🟢 Consider | Won't-Fix | `locale` is always in the devcontainer image, and the fallback is still a working locale; the comment now says it can over-report "not installed". |
 | 2026-09-28 | `feat/u1-run-tests` | C7: run logs under `.bats/.bats/run-logs/` are never pruned (`scripts/run-tests.sh` recording setup) — U1 critic | 🟢 Consider | Won't-Fix | Logs are a few lines per test and `.bats/` is gitignored; revisit if log count breaks or slows `--failed`. |
 | 2026-09-28 | `feat/u1-run-tests` | C9: GNU `find -printf` and bash ≥ 4.4 features on the runner's path (`scripts/run-tests.sh`, `test/lib/hermetic-env.bash`) — U1 critic | 🟢 Consider | Won't-Fix | macOS/BSD hosts are not supported; the runner runs in the GNU/bash 5 devcontainer. |
