@@ -141,19 +141,20 @@ stage1_flat() {
 @test "replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone and on the final pass" {
   # Decision 031 (config C2) overrules the blanket k=3 mandate: k=1 per pass inside
   # the review-fix loop, defensible only paired with the 2-consecutive-clean rule;
-  # k=3 remains the standalone single-pass protocol (no across-pass resampling).
+  # k=3 remains the protocol for any run without --loop-pass.
   stage1_flat | grep -qiE 'loop-aware \(decision 031' \
     || fail "Stage 1 does not declare loop-aware replication per decision 031"
   stage1_flat | grep -qE 'k=1 \(loop pass, decision 031\)' \
     || fail "the k=1 loop-pass Replication header vocabulary is not stated"
   stage1_flat | grep -qiE '2 consecutive clean passes|2-consecutive-clean' \
     || fail "k=1 is not tied to the 2-consecutive-clean pairing"
-  stage1_flat | grep -qiE 'k=3 protocol below applies to standalone' \
-    || fail "k=3 is not scoped to standalone single-pass reviews"
-  # Decision log 63 (Q-087 [2]): the final confirming pass, which runs without
-  # --loop-pass, takes the k=3 protocol too, since loop passes see only the delta.
-  stage1_flat | grep -qiE 'standalone single-pass reviews and to a loop.s final confirming pass' \
-    || fail "k=3 is not extended to the loop's final confirming pass (decision log 63)"
+  # Decision log 63 (Q-087 [2]): every run without --loop-pass takes k=3 -- the
+  # standalone review and also the loop's final confirming pass, since loop passes
+  # see only the delta.
+  stage1_flat | grep -qiE 'k=3 protocol below applies to every run without .--loop-pass.' \
+    || fail "k=3 is not scoped to every run without --loop-pass (decision log 63)"
+  stage1_flat | grep -qiE 'standalone single-pass reviews and a loop.s final confirming pass' \
+    || fail "k=3 does not name both standalone reviews and the loop's final confirming pass"
   echo "$SKILL_CONTENT" | sed -n '/^## Important Reminders/,$p' | tr '\n' ' ' | tr -s ' ' \
     | grep -qiE 'loop-aware \(decision 031\)' \
     || fail "Important Reminders does not carry the loop-aware replication rule"

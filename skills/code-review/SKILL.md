@@ -17,7 +17,7 @@ Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
   statically or by execution in the review sandbox (every verdict carries
   `**Verification mode:** static | executed` and a per-claim `Scope:` line).
-  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on `--loop-pass` passes, decision 031; the final confirming pass stays k=3, decision log 63); the rationale lives in one
+  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on `--loop-pass` passes, decision 031; the loop's final confirming pass runs k=3, decision log 63); the rationale lives in one
   place — Stage 1's **Why three** — do not restate it elsewhere. Its `## Submitted claims`
   intake additionally verdicts critics' routed endorsement claims in
   [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
@@ -448,12 +448,12 @@ governs systematic recall), saving its report directly as the canonical
 `docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
 in the header; skip the merge machinery and the Verdict-stability section. The across-pass
 resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pass (1−(1−p)ᴺ ≥
-1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews and
-to a loop's final confirming pass** — the pass that runs without `--loop-pass` per
-[Step 1](#step-1-determine-scope), recognized by the branch's canonical rubric existing without a
-`Loop closed at` line. Loop passes review only the delta since the last stamp, so code no fix
-touched is drawn only on the loop's first and final passes; the final pass's k=3 restores the
-within-pass redundancy on that code (Q-087 [2]; decision 031 priced both clean passes at k=1).
+1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to every run without `--loop-pass`**:
+standalone single-pass reviews and a loop's final confirming pass, which runs without the flag per
+[Step 1](#step-1-determine-scope). The flag alone sets k, so no rubric check is needed to tell the
+two apart. Loop passes review only the delta since the last stamp, so code no fix touched is drawn
+only on the loop's first and final passes; the final pass's k=3 restores the within-pass
+redundancy on that code (decision log 63, Q-087 [2]; decision 031 priced both clean passes at k=1).
 
 For each of the three replicate agents:
 
