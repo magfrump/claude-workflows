@@ -43,4 +43,13 @@ teardown() {
   [ "$SI_PRIORITIES" = "- priority one" ]
   [ -z "$SI_CONTEXT" ]
   [ -z "$SI_OFF_LIMITS" ]
+
+  # With no known section after them, a leak into any variable would not be
+  # overwritten by a later real section, so every SI_* must stay empty.
+  printf 'stray preamble prose\n## Notes\nunknown section body\n' > "$INPUT_FILE"
+  parse_si_input "$INPUT_FILE" 2>/dev/null
+  [ -z "$SI_FEEDBACK" ]
+  [ -z "$SI_PRIORITIES" ]
+  [ -z "$SI_OFF_LIMITS" ]
+  [ -z "$SI_CONTEXT" ]
 }
