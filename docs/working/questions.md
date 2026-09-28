@@ -26,7 +26,9 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-065](#q-065--si-input-rejected-history-dead-code) | you: judgment | `prepend_si_input_rejected_history` (`scripts/lib/si-input.sh:214`) has had no caller since it landed in 06... | 2026-09-26 |
+| [Q-081](#q-081--cc-isolated-sandbox-half) | you: judgment | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
 | [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
+| [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | agent | Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during ... | 2026-09-27 |
 | [Q-077](#q-077--cc-isolated-auto-approve-backstops) | agent | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
@@ -145,3 +147,35 @@ Design, per Q-072, (a) a script that turns a commit or commit range into a canon
 Implement Q-073 [1] across the ~25 skills. The first ~250 characters of each description carry the trigger phrases and the "not this, use X" line, and the rest moves to the SKILL.md body. No de-overlap. The user skims the diffs.
 
 - **Interim:** 7 skills still show no description in the listing.
+
+### Q-081 · cc-isolated-sandbox-half
+**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
+
+Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-077): the image has no `bwrap`/`socat`, and Docker's default seccomp blocks user namespaces (`unshare -Ur` → EPERM). Build the sandbox, or accept the container plus `permissions.deny` as the boundary?
+
+- **Why it's yours:** it trades kernel attack surface and image changes against how much a prompt-injected agent can do without asking. The deny rule alone does not stop a determined injection: a glob `.cred*`, a variable set earlier, and brace/ANSI-C spellings are pinned as accepted in `test/auto-approve-allowed-commands.bats`.
+- **Read:** the `hooks/auto-approve-allowed-commands.sh` header (GUARANTEES / RESIDUALS) · decision log 53 · `docs/reviews/security-review-2026-09-27.md` F5.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Build the sandbox** | Add `bubblewrap` and `socat` to the Dockerfile, a seccomp/runArgs change allowing user namespaces, and a `sandbox` settings block (`autoAllowBashIfSandboxed` decided explicitly; `allowedDomains` matched to the egress allowlist) | Review an enforcement-file change and one live container check | Wider kernel surface; mismatched domains make `gh`/`git push` prompt |
+| **[2] Spike `enableWeakerNestedSandbox` first** | Test whether the weaker nested mode avoids the user-namespace change, then do [1] or [3] | One spike | May cost a spike for nothing |
+| **[3] Accept deny + container** | Record that in cc-isolated the boundary is the container plus `permissions.deny` | None | The OAuth credential stays reachable by a determined injection |
+
+- **Interim:** [3] in practice. Nothing sandboxes Bash in cc-isolated.
+- **If the answer differs:** [1]/[2] are new enforcement-file work with a live-verified commit.
+
+### Q-082 · auto-approve-host-checks
+**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
+
+Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant, and the sandbox can't check them (no network, no live Claude Code). In a host Claude Code session **after re-running `install.sh`**, so the merged settings carry `Bash(*.credentials.json*)`, with auto-approve wired and `Bash(echo:*)` allowed, ask Claude to run each line and note whether it runs, prompts, or is denied:
+
+```
+echo $((1 + $(cat ~/.claude/.credentials.json | wc -c)))
+echo "$(cat ~/.claude/.credentials.json | wc -c)"
+```
+
+Then repeat with the auto-approve hook removed from settings for that session.
+
+- **Interim:** the hook header calls its deny check load-bearing in cc-isolated until this is known.
+- **If the answer differs:** denied in both runs ⇒ Claude Code's `permissions.deny` wins over a hook allow, and the hook's deny reader can be deleted (architecture-review 1). Runs or prompts only with the hook wired ⇒ keep it and reclassify the hook as an enforcement component. Also record whether the leading `*` in `Bash(*.credentials.json*)` matched at all.

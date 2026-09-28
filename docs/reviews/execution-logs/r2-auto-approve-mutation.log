@@ -1,0 +1,15 @@
+cmd: bats test/auto-approve-allowed-commands.bats (matches_deny forced to return 1); cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/mut; 2026-09-27T21:38:43Z
+ok 1 project allow entries are honored when the global settings.json has only a deny list
+ok 2 project allow entries are honored when the global settings.json has no permissions key at all
+ok 3 a command outside every allow list still falls through to the normal prompt
+ok 4 a pipeline is allowed only when every component is allow-listed
+ok 5 a command the parser cannot read falls through instead of being allowed
+ok 6 an unparseable bash -c inner script falls through instead of being allowed
+ok 7 a parseable allow-listed command is still allowed after the fail-closed change
+ok 8 reproduction: with no Bash deny rule the $(( )) exfiltration is still approved (accepted gap, log 53)
+not ok 9 reproduction: the wired credentials deny rule makes the hook fall through
+not ok 10 deny rules from the project settings are honored as well as the global ones
+not ok 11 a legacy prefix deny rule blocks an extracted command inside a pipeline
+ok 12 a deny rule does not stop unrelated allow-listed commands
+not ok 13 the credentials deny rule in hooks/wiring.json is one the hook honors
+ok 14 string-match limit: a spelling without the literal name is still approved (documented, not fixed)

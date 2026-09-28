@@ -1,0 +1,54 @@
+cmd: python3 desclen.py main; python3 desclen.py HEAD (folded-scalar parse: lines joined by one space); cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; 2026-09-27T21:40:41Z
+main skills: 25 min: 951 max: 2969
+    951 fact-check
+    976 test-strategy
+   1042 arithmetic-eval
+   1090 tech-debt-triage
+   1103 security-reviewer
+   1111 ai-personas-critique
+   1154 code-review
+   1189 code-fact-check
+   1207 self-eval
+   1212 draft-review
+   1230 performance-reviewer
+   1235 dependency-upgrade
+   1354 matrix-analysis
+   1355 design-space-situating
+   1383 divergent-design
+   1507 ui-visual-review
+   1576 architecture-review
+   1663 cowen-critique
+   1866 pre-mortem
+   1874 business-plan-critique-moat
+   1933 api-consistency-reviewer
+   1958 business-plan-critique-unit-economics
+   2057 what-if-analysis
+   2069 yglesias-critique
+   2969 business-plan-critique-market-sizing
+HEAD skills: 25 min: 364 max: 438
+    364 self-eval
+    382 fact-check
+    382 matrix-analysis
+    386 dependency-upgrade
+    386 tech-debt-triage
+    388 business-plan-critique-market-sizing
+    388 code-fact-check
+    389 divergent-design
+    396 ui-visual-review
+    397 api-consistency-reviewer
+    397 business-plan-critique-unit-economics
+    398 ai-personas-critique
+    403 test-strategy
+    404 draft-review
+    408 architecture-review
+    413 business-plan-critique-moat
+    414 code-review
+    418 performance-reviewer
+    419 arithmetic-eval
+    419 pre-mortem
+    421 design-space-situating
+    423 what-if-analysis
+    425 cowen-critique
+    426 security-reviewer
+    438 yglesias-critique
+exit 0

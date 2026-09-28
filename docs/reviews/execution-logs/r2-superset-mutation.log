@@ -1,0 +1,13 @@
+cmd: bash supersetmut.sh; cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; 2026-09-27T21:43:15Z
+install.sh alternatives: filter\.|core\.fsmonitor|include|hook\.
+real list: rc=0
+  missing: filter\.
+mutant without filter\.: rc=1
+  missing: core\.fsmonitor
+mutant without core\.fsmonitor: rc=1
+  missing: include
+mutant without include: rc=1
+  missing: hook\.
+mutant without hook\.: rc=1
+  missing: filter\.
+superset with filter\. placed last: rc=1 (1 = false failure)

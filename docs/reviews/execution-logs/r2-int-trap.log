@@ -1,0 +1,4 @@
+cmd: python3 intdriver.py inttrap.sh (SIGINT default at entry, own pgrp, killpg SIGINT after 1s); cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; 2026-09-27T21:41:53Z
+child rc=130; launcher survived and reached the scan
+launcher exit=7 elapsed=1.0s
+driver exit=0

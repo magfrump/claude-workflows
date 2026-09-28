@@ -1,0 +1,84 @@
+cmd: bats test/skills/eval-helpers-freshness.bats test/generate-reports.bats; cwd=/workspace; 2026-09-27T21:40:01Z
+1..81
+ok 1 stamp: a report generated from the current tree passes
+ok 2 stamp: a missing stamp fails and says to regenerate
+ok 3 stamp: editing any input after generation fails, naming the input
+ok 4 stamp: editing the shared runner-contract.bash does not stale a report (Q-071 [1])
+ok 5 stamp: an old-format stamp that also hashed the contract reads as stale
+ok 6 stamp: reports and every sidecar the suites read are tracked, not gitignored
+ok 7 stamp: another fixture's edit does not stale this report
+ok 8 stamp: eval_fixture fails a stale report before grading it
+ok 9 missing report: skips when the skill has no reports at all
+ok 10 missing report: fails when the skill has another fixture's report
+ok 11 format_check: a nested suite that skipped every test fails
+ok 12 format_check: one test that ran is enough; a failing one fails
+ok 13 finding_match: tier and pattern in different findings fail (the tc-sec2 hole)
+ok 14 finding_match: tier and pattern in the same finding pass
+ok 15 finding_match: a finding's own sub-headings belong to it; its parent section does not
+ok 16 finding_match: a summary-table row is a finding; only the Severity column counts
+ok 17 finding_match: eval_fixture dispatches it and ignores a quoted fixture line
+ok 18 finding_match: && needs every pattern in the same finding
+ok 19 claim_match: the verdict and the mechanism in the same claim section
+ok 20 cites_count: counts matching lines outside the fixture echo
+ok 21 web_search_used: needs a Sources line naming a source, not the word Sources
+ok 22 cites_pattern: a line copied verbatim from the fixture does not count
+ok 23 cites_pattern: tree fixtures (directories) are echo-filtered too
+ok 24 positive-check guard: an absence-only fixture fails unless allowlisted
+ok 25 positive-check guard: an allowlisted fixture that gained a positive check fails
+ok 26 positive-check guard: which checks count as positive
+ok 27 positive-check guard: the allowlist is exactly the real absence-only fixtures
+ok 28 resolve_skill_report: no committed default; skips when the skill has no reports
+ok 29 resolve_skill_report: the default fixture's report, fresh, once the skill has reports
+ok 30 resolve_skill_report: fails on a missing, stale, failed or empty default report
+ok 31 resolve_skill_report: REPORT_PATH wins, and a missing REPORT_PATH fails
+ok 32 no format suite falls back to a committed report
+ok 33 inline mode: prompt then fixture content on stdin, runner's tools passed
+ok 34 inline mode: claude runs in an empty temp directory, not the caller's
+ok 35 FIXTURE_TOOLS=none passes an empty --tools list
+ok 36 repo mode: claude runs in a temp repo holding only the fixture
+ok 37 the fixture's descriptive filename never reaches the model
+ok 38 every mode passes --strict-mcp-config --restricted --safe-mode
+ok 39 FIXTURE_TRANSCRIPT=1: stream-json kept as a sidecar, report is the result text
+ok 40 FIXTURE_TRANSCRIPT=1: a non-JSON line in the stream does not lose the report
+ok 41 transcript off: no stream-json flags, and a stale sidecar is removed
+ok 42 a runner with a bad FIXTURE_TRANSCRIPT value is refused
+ok 43 tree mode: base + fixture tree in a temp repo, REQUEST.md goes to the prompt
+ok 44 tree mode: the fixture directory's name never reaches the model
+ok 45 tree mode: .fixture-* markers steer fixture_base and are removed
+ok 46 tree mode takes directories only; repo mode takes files only
+ok 47 fixture prefix selects a subset
+ok 48 a skill without runner.bash is refused before claude runs
+ok 49 a runner naming any tool outside the allowlist is refused
+ok 50 an inline runner granting a file tool is refused
+ok 51 a descriptive suffix is not kept as the subject's extension
+ok 52 a dotted fixture name with no plain extension reaches the model as 'subject'
+ok 53 a failed claude run leaves no stale report behind, and a .failed marker
+ok 54 a run that aborts before claude starts still removes the previous report
+ok 55 a successful run clears a previous run's .failed marker
+ok 56 a successful run writes a stamp that check_report_stamp accepts
+ok 57 a failed run writes no stamp and removes the previous one
+ok 58 the stamp is taken before the run: a SKILL.md edited during it leaves the report stale
+ok 59 FIXTURE_TRANSCRIPT=1: an error or missing result event is recorded as a failure
+ok 60 a runner with an unknown mode is refused
+ok 61 every committed fixture set has a runner the generator accepts
+ok 62 every committed fixture set has an eval suite
+ok 63 deny-record: Bash is accepted and every call is pinned to be denied
+ok 64 deny-record needs FIXTURE_TRANSCRIPT=1 and FIXTURE_TOOLS=Bash exactly; other values are refused
+ok 65 deny-record does not open Bash(<pattern>) spellings, and says what it needs
+ok 66 deny-record refuses any CLAUDE_FLAGS before claude runs; blank is fine
+ok 67 CLAUDE_MODEL reaches claude as one argument, so it cannot smuggle flags
+ok 68 deny-record canary: a run whose init event does not list Bash is voided, naming the CLI version
+ok 69 deny-record tripwire: a Bash call missing from permission_denials voids the run
+ok 70 deny-record tripwire still runs when the run already failed, and says so
+ok 71 deny-record: a tool_use moved to a field the reader does not know voids the run as malformed
+ok 72 deny-record: a run with no init event is reported as not started, not blamed on the deny rule
+ok 73 deny-record: a Bash tool_use with no id is malformed, and voids the run
+ok 74 deny-record: every malformed transcript shape voids the run, even beside a good denied call
+ok 75 deny-record parser canaries: an orphan tool_result, or a denial of another tool, voids the run
+ok 76 the .failed marker exists while a run is in progress and is removed only after every check passes
+ok 77 any transcript run (not only deny-record) is voided by a malformed event or a missing init
+ok 78 property, end to end: an undenied Bash call inserted at any position voids the deny-record run
+ok 79 a newline in a verdict field cannot cut the verdict short: the run is still voided (R4)
+ok 80 deny-record: the granted tools must be exactly [Bash], and every call a Bash call (A28)
+ok 81 a verdict that did not finish (no sentinel line) voids the run
+exit 0

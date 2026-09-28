@@ -1,0 +1,33 @@
+cmd: bats test/auto-approve-allowed-commands.bats test/link-claude-home-wiring.bats; cwd=/workspace; 2026-09-27T21:38:32Z
+1..30
+ok 1 project allow entries are honored when the global settings.json has only a deny list
+ok 2 project allow entries are honored when the global settings.json has no permissions key at all
+ok 3 a command outside every allow list still falls through to the normal prompt
+ok 4 a pipeline is allowed only when every component is allow-listed
+ok 5 a command the parser cannot read falls through instead of being allowed
+ok 6 an unparseable bash -c inner script falls through instead of being allowed
+ok 7 a parseable allow-listed command is still allowed after the fail-closed change
+ok 8 reproduction: with no Bash deny rule the $(( )) exfiltration is still approved (accepted gap, log 53)
+ok 9 reproduction: the wired credentials deny rule makes the hook fall through
+ok 10 deny rules from the project settings are honored as well as the global ones
+ok 11 a legacy prefix deny rule blocks an extracted command inside a pipeline
+ok 12 a deny rule does not stop unrelated allow-listed commands
+ok 13 the credentials deny rule in hooks/wiring.json is one the hook honors
+ok 14 string-match limit: a spelling without the literal name is still approved (documented, not fixed)
+ok 15 fresh volume with no settings.json gets every wired hook and deny rule
+ok 16 merge is idempotent across repeated container starts
+ok 17 unrelated settings keys, foreign hooks, and user permissions survive the merge
+ok 18 {{CLAUDE_DIR}} is substituted and _comment is stripped
+ok 19 an unparseable settings.json is refused, not overwritten
+ok 20 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+ok 21 every command in wiring.json points at a hook that exists
+ok 22 every declared hook command arrives in settings.json by name
+ok 23 a stale version of one of our groups is replaced, not duplicated
+ok 24 a foreign group is kept even when it shares an event with ours
+ok 25 wiring.json declares only known hook event names
+ok 26 wiring.json declares only known permission modes
+ok 27 the deny rules the guard hook's HARD tier depends on are wired
+ok 28 the merged settings carry the Bash deny rule for the credentials file (Q-077)
+ok 29 legacy single-slash deny rules are pruned; the user's own rules survive
+ok 30 installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install
+exit 0

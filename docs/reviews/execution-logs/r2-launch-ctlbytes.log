@@ -1,0 +1,9 @@
+cmd: bash ctlbytes.sh; cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; 2026-09-27T21:42:29Z
+snapshot rc=1
+stderr bytes (od -c):
+0000000   c   a   n   n   o   t       r   e   a   d       h   o   o   k
+0000020       /   t   m   p   /   t   m   p   .   l   w   K   m   I   v
+0000040   n   K   z   7   /   w   s   /   .   g   i   t   /   h   o   o
+0000060   k   s   /   p   r   e   -   p   u   s   h 033   [   2   J  \n
+0000100
+RESULT: raw ESC present in launch-time reason

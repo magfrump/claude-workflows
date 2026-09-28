@@ -1,0 +1,5 @@
+cmd: bash unreadable-hookdir.sh; cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; uid=1000; 2026-09-27T21:42:43Z
+scan status=0 (0 = clean)
+host push rc=0
+HOOK-RAN
+RESULT: planted hook ran on host push after a clean scan

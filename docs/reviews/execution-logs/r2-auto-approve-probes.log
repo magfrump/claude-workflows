@@ -1,0 +1,11 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad 2026-09-27T21:39:03Z
+rc=0 out=[allow] cmd=[cat ~/.claude/.c*] deny=["Bash(*.credentials.json*)"]
+rc=0 out=[] cmd=[cat ~/.claude/.credentials.json] deny=["Bash(*.credentials.json*)"]
+rc=0 out=[] cmd=[rmdir x] deny=["Bash(rm:*)"]
+rc=0 out=[allow] cmd=[rm] deny=["Bash(rm *)"]
+rc=0 out=[] cmd=[echo hi
+cat /h/.claude/.credentials.json] deny=["Bash(*.credentials.json*)"]
+rc=0 out=[allow] cmd=[cat x] deny=[]
+rc=0 out=[] cmd=[cat x] deny=["Bash(cat [x])"]
+exit 0

