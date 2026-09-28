@@ -319,7 +319,7 @@ finding, and a git dir git would not accept at exit is a finding even if it was
 so at launch (git would fall back to reading the root). It runs nothing from the checkout
 (plain file reads, `git config --file … --no-includes` from `/`, and host tools:
 `find` without following symlinks, `stat`, `readlink`, `realpath`,
-`sha256sum`, `cat`, `tr`, `sort`, `awk`, `sed`, `cut`, `mktemp`, `dirname`,
+`sha256sum`, `cat`, `tr`, `sort`, `awk`, `sed`, `grep`, `cut`, `mktemp`, `dirname`,
 `rm`), and every name, value and error it prints is reduced to printable ASCII,
 line breaks included (`find`'s and `git config`'s own error text is kept, as
 one such line). A file
