@@ -4,7 +4,7 @@ value-justification: "Replaces open-ended review-comment-fix cycles with a struc
 
 # Review → Fix → Revalidate Loop
 
-This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the fix-drift check, and the two re-fire filters (divergence detection and re-flagged settled decisions). [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written. The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md)), the override-log format and verdicts ([override-log reference](../skills/code-review/references/override-log.md)), and `--loop-pass`. Each rule is stated in one place; the others link to it.
+This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the early split trigger, the fix-drift check, and the two re-fire filters (divergence detection and re-flagged settled decisions). [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written. The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md)), the override-log format and verdicts ([override-log reference](../skills/code-review/references/override-log.md)), and `--loop-pass`. Each rule is stated in one place; the others link to it.
 
 ## Loop dynamics
 
@@ -45,6 +45,12 @@ Exit the loop at the end of any iteration where:
 
 If neither condition holds at the end of iteration 3, you have hit the cap. Do not begin iteration 4 implicitly — proceed to the gate below.
 
+### Early split trigger (after any iteration)
+
+Do not wait for the cap to split. After triaging any iteration, count its Must Fix findings and fact-check Incorrect verdicts. If there are at least 3 and one item or one file group holds about 75% or more of them, and the unit has other parts that can merge without it, split that part off now. It moves to its own branch and loop with a fresh counter, and the rest continues toward exit on this loop's counter. Batches are already reviewed per item ([decision log 59](../docs/decisions/log.md)); this trigger covers one item that turns out to contain a hard part.
+
+In /active mode, propose the split and wait. In /away mode and autonomous loops, split without asking. Record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line. A split is cheap to reverse; a blocking question is not. In the Q-076 batch, every Incorrect in three iterations was in Q-076. Reviewers had isolated it and offered a split by 21:50, but it was put as a blocking question only at the cap (00:09) and answered at 01:10, and the other items waited on it.
+
 ### Iteration 4: cap-exceeded decision gate
 
 When iteration 3 ends without an exit condition met, the loop is paused at the cap. **No further fix work, re-review, or test run may proceed** until a written decision is recorded selecting one of:
@@ -60,7 +66,7 @@ When iteration 3 ends without an exit condition met, the loop is paused at the c
   ```
 
   The human reviewer may authorize additional iterations; only their explicit authorization permits iteration 4 to begin, and a new `Iteration 4 of N` header must reflect the revised bound they granted.
-- **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch.
+- **`split`** — Break the change into smaller pieces that can each converge inside their own 3-iteration budget. Close this loop, open per-piece branches, and start a new loop (with a fresh counter) on each piece. The current PR is either closed or repurposed as the integration branch. In /away mode and autonomous loops, `split` is the default when the unit has separable parts, recorded the way the [early split trigger](#early-split-trigger-after-any-iteration) records it; when it has none, the default is `escalate`.
 - **`abandon`** — Revert or shelve the change. The chosen approach is not converging, and continuing to patch will compound debt. Record what was learned so a future attempt does not repeat the same path.
 
 The decision must be recorded in writing in one of: the latest review artifact (`docs/reviews/*.md`), a commit message on the branch, or the PR description's "Areas of uncertainty" section. The decision line must name the option (`escalate`, `split`, or `abandon`) explicitly so an audit can grep for it. A bare "let's keep going" is not a valid decision — it must select one of the three options.
