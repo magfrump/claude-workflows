@@ -3,7 +3,7 @@ name: architecture-review
 description: >
   Review a diff for SOLID, dependency direction, module boundaries and coupling, ONLY if it
   changes module structure, public APIs, data models or cross-cutting concerns; SKIP
-  implementation-only diffs. Security, performance, API naming → own critics. Triggers: "review
+  implementation-only diffs. Security/perf/API naming → code-review. Triggers: "review
   the architecture", "SOLID review", "check dependencies", "coupling analysis", "review module
   boundaries".
 when: >
