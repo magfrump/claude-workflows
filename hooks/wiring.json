@@ -33,7 +33,15 @@
     "HARD tier for the file tools rather than returning 'ask', because a hook 'ask' would",
     "silently override permissions.deny (Claude Code issue #39344). The deny rules below",
     "are what actually does the blocking on that path. Wiring the hook without them left",
-    "the HARD tier a no-op for Edit/Write — decision 023 amendment B."
+    "the HARD tier a no-op for Edit/Write — decision 023 amendment B.",
+    "",
+    "Bash(*.credentials.json*) is the Bash backstop for the credentials file (Q-070/Q-077).",
+    "Read() rules do not cover Bash, and cc-isolated has no sandbox to deny the read, so",
+    "without it `curl -d @$HOME/.claude/.credentials.json` nested where the auto-approve hook",
+    "does not look (e.g. inside $(( ))) ran with no prompt. auto-approve-allowed-commands.sh",
+    "reads Bash deny rules and never approves a match. It is a string match: any spelling",
+    "that does not contain the literal name (quotes split in it, a glob, a variable whose",
+    "value is not spelled out in the same command) gets past."
   ],
 
   "hooks": {
@@ -120,6 +128,7 @@
   "permissions": {
     "deny": [
       "Read(/{{CLAUDE_DIR}}/.credentials.json)",
+      "Bash(*.credentials.json*)",
       "Read(~/.config/gcloud/**)",
       "Read(~/.npmrc)",
 

@@ -148,3 +148,9 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
 - `auto-approve-allowed-commands.sh` has filter-coverage gaps: arithmetic expansion,
   heredoc bodies, `VAR=` prefixes and redirect targets. They are accepted as risk in
   decision log row 53. Commands it cannot parse fall through to the normal prompt.
+  It never approves a command that matches a `Bash(...)` deny rule, so the wired
+  `Bash(*.credentials.json*)` backstops the credentials file where no sandbox runs
+  (cc-isolated has none). That rule is a string match and misses obfuscated spellings:
+  quotes split inside the name, a glob, or a variable whose value is not spelled out in
+  the same command. In a deny rule only `*` is a wildcard, and a bare `Bash` rule
+  denies every command.
