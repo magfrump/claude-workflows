@@ -94,7 +94,7 @@ If it genuinely can't be split, note this in the PR description (step 6). The **
 
 When 2+ PRs are open or stacked together and you need to test them as a unit before review, don't improvise an ad-hoc dev merge — the standardized way to pull the whole in-flight set into one testable branch and resolve conflicts reviewably is the [Integration branch refresh](branch-strategy.md#integration-branch-refresh) in `branch-strategy.md`. It enumerates every open PR (not your local branch list), rebuilds a fresh `dev-refresh-<date>` off main, merges each PR head with conflict rationale recorded, and promotes only through the approval gate.
 
-**c. Pre-mortem fallback check.** This step is a **fallback** for the plan-time pre-mortem wiring in `research-plan-implement.md` step 4 (the high-stakes escalation under "Failure modes considered") and `spike.md`. The primary path is plan-time — context is fullest then, and that's when `/pre-mortem` should run. This step exists only to catch the cases where the primary path did not run: RPI was skipped, the spike workflow was not used, or scope grew past the high-stakes threshold during implementation. The default action here is **skip**; the trigger fires only when both conditions below hold.
+**c. Pre-mortem fallback check.** This step is a **fallback** for the plan-time pre-mortem wiring in `research-plan-implement.md` step 3 (the high-stakes escalation under "Failure modes considered") and `spike.md`. The primary path is plan-time — context is fullest then, and that's when `/pre-mortem` should run. This step exists only to catch the cases where the primary path did not run: RPI was skipped, the spike workflow was not used, or scope grew past the high-stakes threshold during implementation. The default action here is **skip**; the trigger fires only when both conditions below hold.
 
 <!--
 pr-prep-pre-mortem-fallback-r2 (separability note for future self-eval):
@@ -229,7 +229,7 @@ Two practical notes:
 count of new rows in `docs/reviews/override-log.md` (not counting `[auto: code-review]` rows). If those numbers differ, you have
 either fixed something silently or waived something silently.
 
-**c. Run tests.** After fixing findings, re-run the test suite. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits.
+**c. Run tests.** After fixing findings, re-run the tests the fixes affect. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits. Inside the loop, run the affected suites and re-check earlier failures, not the full gate. In claude-workflows that is `scripts/run-tests.sh <files>` and `scripts/run-tests.sh --failed`. The full gate belongs to [step 5a](#5-verify-and-annotate-parallelizable), which owns how to run it and how to triage a red result.
 
 **Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
 
@@ -241,7 +241,7 @@ either fixed something silently or waived something silently.
 
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
-1. **Diff only the fixes.** Use `git diff <last-review-commit>..HEAD` to isolate code changed since the last review iteration. Run review skills against this narrower diff — unchanged code has already been reviewed.
+1. **Diff only the fixes.** Run `/code-review --loop-pass --range <sha>..HEAD`, where `<sha>` is the `Commit:` stamp at the top of this unit's previous rubric (`docs/reviews/code-review-rubric-*.md`). Unchanged code has already been reviewed. Brief any other review skill (and any hand-written fact-check brief) on the same range, not on "every claim in the diff". `--loop-pass` also sets the fact-check replicate count and the short-circuit; code-review's SKILL.md owns both (decisions 031, 032 #4).
 2. **Verify prior Must Fix findings.** Walk the prior review's Must Fix and Must Address items and confirm each is resolved in the new diff. Mark each as resolved or still-open. This is a targeted check, not a full re-read of surrounding code.
 3. **Spot-check for regressions.** Scan fix commits for unintended side effects (broken imports, changed signatures, shifted scoping). The narrower diff makes these easier to catch.
 
@@ -249,8 +249,8 @@ If a fix touched code broadly enough that the narrower diff covers most of the P
 
 **First-red short-circuit on intermediate passes (decision 032 #4).** Pass `--loop-pass` to
 `/code-review` on any pass you expect to be followed by a fix — i.e., every pass except the one
-you run to *confirm* the branch is clean — and run that final confirmation pass **without** it,
-so the full panel runs and the amber inventory is complete. The mechanics, the measured savings
+you run to *confirm* the branch is clean — and run that final confirmation pass **without** it
+and without `--range`, so the full panel runs over the whole diff and the amber inventory is complete. The mechanics, the measured savings
 and why recall is not at risk are owned by code-review's SKILL.md ("First-red short-circuit").
 
 **Scope drift.** If a re-review finding would expand the PR beyond the scope set in step 1 (size, files touched, stated intent), the default is to file a follow-up issue and decline the change in this PR. Comply only when the finding is a hard blocker for merge (correctness bug or unsafe state). When triggered, log a `follow-up issue filed: <id/title>` line in the review artifact so the deferral is visible to the reviewer.
@@ -259,7 +259,7 @@ and why recall is not at risk are owned by code-review's SKILL.md ("First-red sh
 
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
 
-**e. Exit or repeat (hard cap: 3 iterations).** Exit when no Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger. Otherwise repeat; each loop should be strictly smaller than the last. The exit conditions, the per-iteration header, the iteration-4 `escalate | split | abandon` gate and the escalation template are owned by [review-fix-loop.md § Hard cap](review-fix-loop.md#hard-cap-3-iterations). Do not begin a fourth iteration without that gate's written decision.
+**e. Exit or repeat (hard cap: 3 iterations).** Exit when no Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger. Otherwise repeat; each loop should be strictly smaller than the last. The exit conditions, the per-iteration header, the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) (checked after every iteration), the iteration-4 `escalate | split | abandon` gate and the escalation template are owned by [review-fix-loop.md § Hard cap](review-fix-loop.md#hard-cap-3-iterations). Do not begin a fourth iteration without that gate's written decision.
 
 **Tracking:** Record the loop's outcome in the PR description (the merge commit message on the local-merge path):
 
@@ -318,15 +318,21 @@ These two steps have no dependency on each other and can run concurrently.
 
 If you opened a draft PR in step 2, push the rebased branch to trigger CI remotely.
 
+In claude-workflows the gate is `scripts/health-check.sh`, which runs the fast suite and then the slow one. Do not run a standalone fast suite just before it.
+
+**Quiesce before the gate.** Wait until no subagent is still running. Then reap leftover probe processes under your uid: check `pgrep -u "$(id -u)" -a` for `sleep`, `cat` on a FIFO, or probe scripts that review agents started. Do not edit tracked files (such as `docs/working/questions.md`) while the gate runs. Stray processes are a real hazard here, because install.sh's no-agent guard (Q-058/Q-062) reads the real process table. In the Q-076 run, leftover probes made install-host T33, T83 and T6 fail in full runs while each passed alone.
+
+**Write the gate's full output to a file** and read failures from that file. Never pipe the output through `grep`: Q-076 lost a real failure that way.
+
 **Triage failures by class** — not every red check is a regression caused by this branch. Resist the reflex to "fix anything broken" without first identifying which class the failure belongs to:
 
 | Class | Cause | Action |
 |-------|-------|--------|
 | Caused by this branch | Failure traces to code changed on this branch (new test failure, lint error in changed files, build break, type error in modified module) | Fix before merging |
 | Pre-existing on main | Same failure reproduces on `main` at the merge base, or on an untouched file | File a separate issue or follow-up PR; do **not** block this PR. Note in PR description's "Areas of uncertainty" so the reviewer isn't surprised by the red check. |
-| Flaky / infra | Network timeout, runner OOM, intermittent third-party dependency, known race condition | Re-run the job once. If it fails again on re-run, treat as recurrent — file a flake issue and do not block this PR on it. If it passes on re-run, note in PR description. |
+| Flaky / infra / environmental | Network timeout, runner OOM, intermittent third-party dependency, known race condition; locally, stray processes or a missing locale | Re-run the job once. If it fails again on re-run, treat as recurrent — file a flake issue and do not block this PR on it. If it passes on re-run, note in PR description. |
 
-**To decide between caused-by-branch and pre-existing**, run the failing check on `main` (or a fresh checkout of the merge base) before assuming the failure is yours. If the same failure appears on untouched code, it's pre-existing.
+**Re-run only the failures before any full re-run** (in claude-workflows, `scripts/run-tests.sh --failed`). A test that passes alone and failed in the full run is environmental: look for stray processes or locale before touching code. A test that also fails alone is real. **To decide between caused-by-branch and pre-existing**, run the failing check on `main` (or a fresh checkout of the merge base) before assuming the failure is yours. If the same failure appears on untouched code, it's pre-existing.
 
 **b. Annotate the diff.** If the PR includes code in languages or libraries the reviewer may not know well, add **PR comments on your own PR** explaining non-obvious sections. This is cheaper than back-and-forth across timezones.
 
