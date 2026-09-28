@@ -254,13 +254,16 @@ age_logs() {
   [[ "$output" != *"1..1"* ]]
 }
 
-@test "--failed narrowed by category leaves out failures outside it" {
+@test "--failed with a category flag or FILE is a usage error" {
   runner
   [ "$status" -ne 0 ]
   age_logs
   runner --failed --slow
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"no failed tests among the selected files in the last recorded run"*"3 file(s))"* ]]
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"takes no --fast/--slow/--all or FILE"* ]]
+  runner --failed test/alpha.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"takes no --fast/--slow/--all or FILE"* ]]
 }
 
 @test "--failed with no recorded run is an error" {
@@ -272,9 +275,10 @@ age_logs() {
 @test "--failed with no recorded run is an error even when every selected suite is gated" {
   mkdir -p "$T/skills/foo"
   touch "$T/skills/foo/SKILL.md"
+  rm -f "$T"/test/*.bats
   printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '# @needs-reports foo' \
     '@test "gated" { true; }' > "$T/test/gated.bats"
-  runner --failed test/gated.bats
+  runner --failed
   [ "$status" -eq 1 ]
   [[ "$output" == *"--failed: no recorded run"* ]]
 }
@@ -291,7 +295,7 @@ age_logs() {
   # The log holds s1 only.
   grep -q '^passed .*slow.bats.*s1' "$LOG_DIR"/*.log
 
-  runner --failed test/slow.bats
+  runner --failed
   [ "$status" -eq 1 ]
   [[ "$output" == *"--failed: the last run ("*") recorded 1 of 3 tests: it did not complete"* ]]
 }

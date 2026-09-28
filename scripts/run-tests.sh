@@ -25,7 +25,10 @@
 #   --all     Run all tests (default)
 #   --failed  Re-run, in the files the last recorded run covered, only the
 #             tests that did not pass in it (bats --filter-status failed).
-#             Combines with the category flags and FILE... to narrow further.
+#             It takes no category flag and no FILE: a narrowed re-run would
+#             record only its own files, and the next --failed would then
+#             miss failures outside them. Combining them is a usage error
+#             (exit 2).
 #             Exits 1 when no run is recorded or the last run's log does not
 #             hold a result for every test it selected (see "Run logs"); 0
 #             with a message naming the last run's scope when it had no
@@ -46,7 +49,7 @@
 # signal handling are the runner's own.
 #
 # Just before the exec it writes .bats/last-run: the selected files, their
-# test count (`bats --count`, which adds about 10 s to a full run) and the
+# test count (`bats --count`, which adds about 15 s to a full run) and the
 # name of the newest log before the run. bats writes a log line per test as
 # the test ends, so --failed accepts the newest log (the one bats' own
 # --filter-status reads) only when it is not that previous log and holds a
@@ -88,14 +91,15 @@ usage() {
 }
 
 category="all"
+category_set=false
 failed_only=false
 requested=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --fast)   category="fast"; shift ;;
-    --slow)   category="slow"; shift ;;
-    --all)    category="all";  shift ;;
+    --fast)   category="fast"; category_set=true; shift ;;
+    --slow)   category="slow"; category_set=true; shift ;;
+    --all)    category="all";  category_set=true; shift ;;
     --failed) failed_only=true; shift ;;
     -h|--help)
       sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
@@ -110,6 +114,12 @@ while [[ $# -gt 0 ]]; do
     *) requested+=("$1"); shift ;;
   esac
 done
+
+if [[ "$failed_only" == true ]] && { [[ "$category_set" == true ]] || [[ ${#requested[@]} -gt 0 ]]; }; then
+  echo "--failed re-runs every failure of the last run and takes no --fast/--slow/--all or FILE" >&2
+  usage
+  exit 2
+fi
 
 # --- Locale pin -------------------------------------------------------------
 # shellcheck source=../test/lib/hermetic-env.bash
