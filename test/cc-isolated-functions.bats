@@ -33,6 +33,7 @@ setup() {
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/link-claude-home.sh"
   echo 'api.anthropic.com'   > "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
@@ -603,7 +604,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-push.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-push.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -703,7 +704,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-push.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-push.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"

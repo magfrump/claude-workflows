@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
 Last verified: 2026-09-27
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
