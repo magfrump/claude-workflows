@@ -32,7 +32,6 @@ The index below is generated — edit entries, not the table.
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
-| [Q-076](#q-076--cc-isolated-git-exit-scan) | agent | Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during ... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
@@ -109,14 +108,6 @@ Q-068 was answered "resume", but only once the user trusts `scripts/self-improve
 - **Read:** `archive/docs/2026-09-18-handoff-self-improvement-loop.md` §4–§5 · memory [[prove-old-code-fails-hermetically]]
 - **Interim:** the loop stays dormant.
 - **If the answer differs:** n/a. The output is a report the user reads before the first real run.
-
-### Q-076 · cc-isolated-git-exit-scan
-**Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during the session: new hooks, `core.fsmonitor`, filter drivers, `include`/`includeIf`. It reuses install.sh's refusal list.
-
-- **Interim:** the guide's documented caveat only.
-- **Blocks:** nothing. This is an enforcement file, so it needs a live-verified commit.
 
 ### Q-079 · canon-instance-proposal-filter
 **Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN

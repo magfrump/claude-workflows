@@ -79,6 +79,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-071](#q-071--skill-eval-suite-design) | The 50 `@needs-reports` suites can't stay green under this repo's editing rate. Their freshness stamp hashe... | 2026-09-26 |
 | [Q-072](#q-072--living-ledger-not-fed) | The review-eval goal is "recall against the living issue ledger", but `docs/working/canon-issue-ledger.md` ... | 2026-09-26 |
 | [Q-073](#q-073--skill-descriptions-truncated) | Skill descriptions run 957–2973 characters, and the live skill listing truncates them. In this session 7 ... | 2026-09-26 |
+| [Q-076](#q-076--cc-isolated-git-exit-scan) | - **Interim:** the guide's documented caveat only. | 2026-09-27 |
 | [Q-077](#q-077--cc-isolated-auto-approve-backstops) | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
 | [Q-078](#q-078--narrow-skill-report-stamp) | - **Interim:** the suites print NOT RUN. | 2026-09-27 |
 | [Q-080](#q-080--front-load-skill-descriptions) | - **Interim:** 7 skills still show no description in the listing. | 2026-09-27 |
@@ -1488,5 +1489,14 @@ Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for th
 **Done 2026-09-27, merged to main in b7fbb2a.** All 25 descriptions are 364–426 characters, and every "not this" line ends by character 250. Four skills (arithmetic-eval, matrix-analysis, self-eval, tech-debt-triage) have no such line, and never had one. Displaced phrases are kept in each body. No de-overlap was done. Whether the 7 previously blank skills now show a description in the live listing can only be seen in a fresh session. Original entry: Implement Q-073 [1] across the ~25 skills. The first ~250 characters of each description carry the trigger phrases and the "not this, use X" line, and the rest moves to the SKILL.md body. No de-overlap. The user skims the diffs.
 
 - **Interim:** 7 skills still show no description in the listing.
+
+
+### Q-076 · cc-isolated-git-exit-scan
+**Needs:** agent · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+**Done 2026-09-27, merged to main in 7387d8f; not yet live-verified (Q-084).** Review showed that a `.git` scan can't be a guarantee, so on the user's decision it ships as a tripwire, `cc-exit-scan.sh`, alongside `cc-push`, which is now the safe way to push. Both use `cc-gitdir.sh` for git-dir validity. The guide's "Known routes it does not see" is the single list of what they miss. Rubric: `docs/reviews/code-review-rubric-2026-09-27-q076.md`. Follow-ups: Q-083 (host-tools trust category) and Q-084 (live checks). Original entry: Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during the session: new hooks, `core.fsmonitor`, filter drivers, `include`/`includeIf`. It reuses install.sh's refusal list.
+
+- **Interim:** the guide's documented caveat only.
+- **Blocks:** nothing. This is an enforcement file, so it needs a live-verified commit.
 
 
