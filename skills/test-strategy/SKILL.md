@@ -1,17 +1,11 @@
 ---
 name: test-strategy
 description: >
-  Given a feature, module, or change, recommend what kinds of tests to write, where to put them,
-  and what to prioritize. Analyzes the code's risk profile, existing test patterns, and
-  architecture to produce a concrete testing plan — not generic advice, but specific test cases
-  mapped to specific files, with each recommendation traceable to a named gap in the code. Use
-  this skill when the user asks "what tests should I write", "how should I test this", "what's
-  missing from our test coverage", "what's the test plan", "scope the verification", or
-  "where are the coverage gaps". Also trigger at the end of an RPI planning phase to populate
-  the plan's test specification section, when a feature is implemented but has no tests, when
-  reviewing a PR that lacks tests, or when the user is unsure whether unit, integration, or
-  end-to-end tests are appropriate. Output is a structured Markdown plan with named gaps
-  (G1, G2, ...) and recommended tests that cite which gaps they close.
+  Recommend which tests to write for a feature, module or change, as named gaps (G1, G2...) mapped
+  to concrete test cases in specific files. code-review auto-selects it when source changes lack
+  test changes. Triggers: "what tests should I write", "how should I test this", "what's missing
+  from our test coverage", "what's the test plan", "where are the coverage gaps"; also at the end
+  of RPI planning and on PRs lacking tests.
 when: User asks what tests to write or needs a testing plan for code
 ---
 
@@ -22,6 +16,12 @@ when: User asks what tests to write or needs a testing plan for code
 Produce a concrete testing plan for specific code. Don't recommend "more tests" generically —
 identify which tests provide the most value for this code, given its risk profile and the
 project's existing testing patterns.
+
+## When to use
+
+- Analyzes the code's risk profile, existing test patterns, and architecture to produce a concrete testing plan: not generic advice, but specific test cases mapped to specific files, each traceable to a named gap.
+- Trigger phrases: "what tests should I write", "how should I test this", "what's missing from our test coverage", "what's the test plan", "scope the verification", "where are the coverage gaps".
+- Also trigger at the end of an RPI planning phase to populate the plan's test specification section, when a feature is implemented but has no tests, when reviewing a PR that lacks tests, or when the user is unsure whether unit, integration, or end-to-end tests are appropriate.
 
 ## Scoping
 

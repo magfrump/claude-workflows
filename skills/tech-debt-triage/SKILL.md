@@ -1,19 +1,11 @@
 ---
 name: tech-debt-triage
 description: >
-  Evaluate a piece of tech debt and produce a structured assessment: what it costs to carry,
-  what it costs to fix, when it becomes urgent, and where it ranks relative to other work.
-  Use this skill when the user asks "should we fix this", "is this worth refactoring",
-  "how bad is this tech debt", "prioritize these cleanup tasks", "what's the highest-ROI
-  cleanup", or when scoping a cleanup sprint, refactor week, or backlog grooming pass.
-  Also trigger when code review surfaces something that works but is fragile, overly
-  complex, or blocking future work; when a developer complains that a module is "painful"
-  or "we should rewrite this"; when planning capacity and deciding whether to spend it on
-  debt versus features; or when a postmortem identifies underlying debt as a contributor.
-  Can evaluate a single item or compare multiple debt items using the matrix-analysis
-  pattern. Prefer running this skill over giving an ad-hoc opinion whenever the question
-  is "is fixing this worth it" — the structured carry/fix/urgency framing changes the
-  answer often enough to be worth the small overhead.
+  Assess tech debt: cost to carry, cost to fix, when it turns urgent, where it ranks. Prefer it
+  over an ad-hoc opinion on "is fixing this worth it"; compares many items via the
+  matrix-analysis pattern. Triggers: "should we fix this", "is this worth refactoring", "how bad
+  is this tech debt", "prioritize these cleanup tasks", "what's the highest-ROI cleanup", or
+  scoping a cleanup sprint.
 when: User asks whether tech debt is worth fixing or how to prioritize it
 ---
 
@@ -24,6 +16,13 @@ when: User asks whether tech debt is worth fixing or how to prioritize it
 Evaluate tech debt to help the user decide whether and when to address it. Don't advocate
 for or against fixing — make costs and tradeoffs explicit so the decision is informed, not
 gut feeling or guilt.
+
+## When to use
+
+- Trigger phrases: "should we fix this", "is this worth refactoring", "how bad is this tech debt", "prioritize these cleanup tasks", "what's the highest-ROI cleanup", or scoping a cleanup sprint, refactor week, or backlog grooming pass.
+- Also trigger when code review surfaces something that works but is fragile, overly complex, or blocking future work; when a developer complains that a module is "painful" or "we should rewrite this"; when planning capacity and deciding whether to spend it on debt versus features; or when a postmortem identifies underlying debt as a contributor.
+- Evaluates a single item or compares multiple debt items using the `matrix-analysis` pattern.
+- Prefer it over an ad-hoc opinion whenever the question is "is fixing this worth it": the structured carry/fix/urgency framing changes the answer often enough to be worth the small overhead.
 
 ## Scoping
 

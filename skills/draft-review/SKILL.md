@@ -1,20 +1,11 @@
 ---
 name: draft-review
 description: >
-  Orchestrate a comprehensive review of a written draft (blog post, essay, op-ed, policy memo,
-  investor deck, fundraising memo, founder pitch, go-to-market doc, or any prose argument) by
-  coordinating fact-checking and critic agents. Runs a 3-stage pipeline: fact-check → critic
-  agents in parallel → synthesis into a freeform chat summary plus a structured verification
-  rubric with red/amber/green status tracking. Auto-selects from available critics
-  (`cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`,
-  `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing`) based on
-  draft topic. Supports ensemble mode for
-  higher confidence through convergence analysis. Use this skill whenever the user wants a
-  thorough review of a draft that combines fact-checking with substantive critique. Trigger
-  phrases: "review this draft", "give me feedback on this", "fact-check and critique this",
-  "review my essay/post/memo/pitch/deck", "what am I missing", "multiple perspectives on this
-  piece", "stress-test this argument". For reviewing a single concern (just fact-check, just
-  one critic lens), use the standalone skill instead. For code review, use `code-review`.
+  Orchestrate a full review of a written draft (essay, memo, pitch, deck): fact-check, then
+  auto-selected critics in parallel, then a red/amber/green rubric. For one concern use the
+  standalone skill; for code use code-review. Triggers: "review this draft", "give me feedback
+  on this", "fact-check and critique this", "review my essay/post/memo/pitch/deck", "what am I
+  missing", "stress-test this argument".
 when: User wants a thorough multi-perspective review of a written draft
 ---
 
@@ -47,6 +38,13 @@ You are an orchestrator. Coordinate a multi-stage review of a written draft: dis
 Produce two deliverables: a freeform chat summary and a structured verification rubric document.
 
 ---
+
+## When to use
+
+- Drafts in scope: blog post, essay, op-ed, policy memo, investor deck, fundraising memo, founder pitch, go-to-market doc, or any prose argument.
+- Pipeline: fact-check → critic agents in parallel → synthesis into a freeform chat summary plus a structured verification rubric with red/amber/green status tracking. Critics are auto-selected by draft topic from `cowen-critique`, `yglesias-critique`, `ai-personas-critique`, `business-plan-critique-moat`, `business-plan-critique-unit-economics`, `business-plan-critique-market-sizing`. Supports ensemble mode for higher confidence through convergence analysis.
+- Use whenever the user wants a thorough review that combines fact-checking with substantive critique. Trigger phrases: "review this draft", "give me feedback on this", "fact-check and critique this", "review my essay/post/memo/pitch/deck", "what am I missing", "multiple perspectives on this piece", "stress-test this argument".
+- For a single concern (just fact-check, just one critic lens), use the standalone skill. For code, use `code-review`.
 
 ## Execution rules
 

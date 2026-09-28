@@ -369,11 +369,15 @@ EOF
   [ -s "$out/tc-1-thing.txt.stamp" ]
   source "$TEST_TMPDIR/test/skills/runner-contract.bash"
   [ "$(cat "$out/tc-1-thing.txt.stamp")" = "$(report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt)" ]
-  run check_report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt
+  # fd 3 closed so a harness warning, if any, lands in $output.
+  run check_report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt 3>&-
   [ "$status" -eq 0 ]
-  # Every stamp line is "<input> <sha256>", for the four inputs.
-  [ "$(cut -d' ' -f1 "$out/tc-1-thing.txt.stamp" | tr '\n' ' ')" = "skill runner contract fixture " ]
-  ! grep -vqE '^[a-z]+ [0-9a-f]{64}$' "$out/tc-1-thing.txt.stamp"
+  [[ "$output" != *WARNING* ]]
+  # The format line, then one "<input> <sha256>" line for each of the skill's
+  # three own inputs and the informational harness hash (Q-071 [1]).
+  [ "$(head -1 "$out/tc-1-thing.txt.stamp")" = "format 2" ]
+  [ "$(tail -n +2 "$out/tc-1-thing.txt.stamp" | cut -d' ' -f1 | tr '\n' ' ')" = "skill runner fixture harness " ]
+  ! tail -n +2 "$out/tc-1-thing.txt.stamp" | grep -vqE '^[a-z]+ [0-9a-f]{64}$'
 }
 
 @test "a failed run writes no stamp and removes the previous one" {

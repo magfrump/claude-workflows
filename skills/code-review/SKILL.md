@@ -1,19 +1,11 @@
 ---
 name: code-review
 description: >
-  Orchestrate a comprehensive code review by coordinating code-fact-check and code critic agents
-  (security-reviewer, performance-reviewer, api-consistency-reviewer) in parallel, with optional
-  contextual critics (architecture-review, test-strategy, tech-debt-triage, dependency-upgrade,
-  ui-visual-review) auto-selected based on the diff. Follows a 3-stage pipeline: code fact-check →
-  critic agents → synthesis. Produces a freeform chat summary plus a structured code review rubric
-  with red/amber/green status tracking. Use this skill when the user asks to "review this code",
-  "review this PR", "review my changes", "review this diff", "full code review", "run all critics",
-  "code review this branch", or wants a multi-perspective review of code changes. Default to this
-  orchestrator whenever a PR is being prepared, opened, or evaluated — it composes security,
-  performance, API consistency, and (when triggered) architecture into a single pass. Also use
-  when the user asks for two or more of those concerns together. For a deliberately narrow review
-  on a single concern (just security, just performance), invoke the standalone critic skill
-  directly instead.
+  Orchestrate a full code review: code-fact-check, then security, performance, API-consistency
+  and diff-selected critics in parallel, then a red/amber/green rubric. For one concern (just
+  security, just performance) use that critic directly. Triggers: "review this code", "review
+  this PR", "review my changes", "review this diff", "full code review", "run all critics";
+  default whenever a PR is prepared or evaluated.
 when: User requests a full code review or PR review
 ---
 
@@ -55,6 +47,13 @@ Follows the [orchestrated review pattern](../../patterns/orchestrated-review.md)
 Produce two deliverables: a freeform chat summary and a structured code review rubric document.
 
 ---
+
+## When to use
+
+- Pipeline: Stage 1 `code-fact-check` → Stage 2 core critics (`security-reviewer`, `performance-reviewer`, `api-consistency-reviewer`) in parallel, with contextual critics (`architecture-review`, `test-strategy`, `tech-debt-triage`, `dependency-upgrade`, `ui-visual-review`) auto-selected from the diff → Stage 3 synthesis into a freeform chat summary plus a structured rubric with red/amber/green status tracking.
+- Trigger phrases: "review this code", "review this PR", "review my changes", "review this diff", "full code review", "run all critics", "code review this branch", or any request for a multi-perspective review of code changes.
+- Default to this orchestrator whenever a PR is being prepared, opened, or evaluated: it composes security, performance, API consistency, and (when triggered) architecture into a single pass. Also use when the user asks for two or more of those concerns together.
+- For a deliberately narrow review on a single concern, invoke the standalone critic skill instead.
 
 ## Execution rules
 

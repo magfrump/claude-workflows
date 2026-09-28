@@ -1,0 +1,42 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..17
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 exit scan: a clean session is silent and returns 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 exit scan: a hook planted in .git/hooks is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 exit scan: a *.sample hook is ignored (git never runs one)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 exit scan: a planted core.hooksPath and a hook in it are both named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 exit scan: a planted core.fsmonitor is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 exit scan: a planted filter driver is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 exit scan: planted include and includeIf keys are named, and not followed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 exit scan: a planted core.sshCommand (what host git push runs) is named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 exit scan: items present at launch are baseline, not findings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 exit scan: a pre-existing hook or key that CHANGED is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 exit scan: a linked worktree is scanned through its commondir, config.worktree included
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 exit scan: a repointed .git file is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 exit scan: control bytes in a planted value are shown as '?', not sent to the terminal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 exit scan: an unreadable .git is reported (status 2), not passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 exit scan keys include every alternative of install.sh's refusal list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 a launch whose session plants a hook exits 3 and names it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 a launch refuses to start when .git cannot be snapshotted

@@ -1,23 +1,11 @@
 ---
 name: architecture-review
 description: >
-  Review code changes for structural integrity — SOLID principle violations, dependency direction
-  problems, module boundary breaches, and coupling issues. This is not a code review for
-  implementation quality (security, performance, API consistency) — it focuses on whether a change
-  maintains or improves the system's architectural health. Produces a structured Markdown critique
-  of code diffs. Invoke this skill ONLY when the diff changes one or more of: (1) module
-  structure (new modules, renames, moves, package/directory layout), (2) public APIs (new or
-  changed exported types, functions, or interfaces; abstract classes/protocols), (3) data models
-  (schemas, DTOs, persisted contracts, message formats consumers depend on), or (4) cross-cutting
-  concerns (dependency injection wiring, middleware, auth/authz pipelines, logging/tracing setup,
-  caching layers, error-handling pipelines). SKIP this skill when the diff only modifies
-  implementation inside an existing module without touching its public surface — internal
-  refactors, bug fixes, perf tweaks, test additions, doc updates, and dependency-version bumps
-  alone are out of scope. Use this skill when the user asks to "review the architecture", "check
-  dependencies", "is this well-structured", "review module boundaries", "SOLID review", "coupling
-  analysis", or "dependency direction check". NOTE: This skill can be invoked standalone or by a
-  code-review orchestrator. If a code-fact-check report is provided, use it as your foundation
-  for understanding what the code actually does and do not re-verify documented behavior.
+  Review a diff for SOLID, dependency direction, module boundaries and coupling, ONLY if it
+  changes module structure, public APIs, data models or cross-cutting concerns; SKIP
+  implementation-only diffs. Security/perf/API naming → code-review. Triggers: "review
+  the architecture", "SOLID review", "check dependencies", "coupling analysis", "review module
+  boundaries".
 when: >
   Diff changes module structure, public APIs, data models, or cross-cutting concerns. Skip when
   the diff only modifies implementation inside an existing module.
@@ -63,6 +51,21 @@ implementation details.
 
 What follows is a set of cognitive moves for architectural analysis. Not all apply to every
 diff — exercise judgment. These are reasoning lenses, not a compliance checklist.
+
+## When to use
+
+Invoke only when the diff changes one or more of:
+
+1. **Module structure**: new modules, renames, moves, package/directory layout.
+2. **Public APIs**: new or changed exported types, functions, or interfaces; abstract classes/protocols.
+3. **Data models**: schemas, DTOs, persisted contracts, message formats consumers depend on.
+4. **Cross-cutting concerns**: dependency injection wiring, middleware, auth/authz pipelines, logging/tracing setup, caching layers, error-handling pipelines.
+
+Skip when the diff only modifies implementation inside an existing module without touching its public surface: internal refactors, bug fixes, perf tweaks, test additions, doc updates, and dependency-version bumps alone are out of scope.
+
+- Trigger phrases: "review the architecture", "check dependencies", "is this well-structured", "review module boundaries", "SOLID review", "coupling analysis", "dependency direction check".
+- This is not a review of implementation quality (security, performance, API consistency); it asks whether the change maintains or improves the system's architectural health.
+- Can run standalone or under the `code-review` orchestrator. If a code-fact-check report is provided, use it as the foundation for what the code does and do not re-verify documented behavior.
 
 ## Scoping
 

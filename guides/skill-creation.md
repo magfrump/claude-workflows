@@ -60,7 +60,7 @@ Create `test/skills/{skill-name}/` with:
 Two automated layers exist under `test/skills/`:
 
 - **Format contracts** — `{skill-name}-format.bats` suites validate the structure of a generated report (set `REPORT_PATH` and run `bats test/skills/{skill-name}-format.bats`). Add one for any skill with a fixed output format.
-- **Report generation** — `test/skills/generate-reports.bash <skill> [fixture-prefix]` runs `claude -p` against each fixture and writes `test/skills/<skill>/output/*.report.md`; the `*-eval.bats` suites then score those reports against `expected-verdicts.bash` (today wired for `fact-check` and `code-fact-check`).
+- **Report generation** — `test/skills/generate-reports.bash <skill> [fixture-prefix]` runs `claude -p` against each fixture and writes `test/skills/<skill>/output/*.report.md` with a provenance `.stamp` (hashes of the skill directory, its `runner.bash` and the fixture, not the shared harness); reports and their sidecars are meant to be committed once generated (none are yet; `.gitignore` admits them), and a report whose stamp no longer matches fails its suite until regenerated. The `*-eval.bats` suites then score those reports against `expected-verdicts.bash` (today wired for `fact-check` and `code-fact-check`).
 
 Judging output against `eval-criteria.md` beyond what those suites assert is still manual.
 

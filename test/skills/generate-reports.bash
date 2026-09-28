@@ -9,10 +9,16 @@
 #
 # Output:
 #   test/skills/<skill>/output/<fixture>.report.md   — the generated report
-#   test/skills/<skill>/output/<fixture>.stamp       — its provenance (hashes of
-#       the skill, runner, runner contract and fixture; see report_stamp in
+#   test/skills/<skill>/output/<fixture>.stamp       — its provenance (a format
+#       line, hashes of the skill, its runner and the fixture, and an
+#       informational hash of the shared harness; see report_stamp in
 #       runner-contract.bash); written only for a run that succeeded
 #   test/skills/<skill>/output/<fixture>.failed      — present when the run failed
+#   (and <fixture>.transcript.jsonl under FIXTURE_TRANSCRIPT=1, below)
+# All of these are meant to be committed once generated (Q-071 [1]; .gitignore
+# admits them): the suites read every
+# one, so a fresh clone grades the same reports, and a report is regenerated
+# only when its skill, runner or fixture changes.
 #
 # Per-skill configuration lives in test/skills/<skill>/runner.bash, which sets:
 #   FIXTURE_TOOLS   — the --tools list for claude -p, comma-separated, from the
@@ -157,7 +163,7 @@ generate_one() {
   local failed_path="$OUTPUT_DIR/${fixture_name}.failed"
   # <fixture>.stamp ties the report to the inputs that produced it
   # (runner-contract.bash report_stamp: skills/<skill>/, runner.bash, the
-  # contract, the fixture). It is computed now, before the run, so an input
+  # fixture; the shared harness only warns). It is computed now, before the run, so an input
   # edited while claude runs leaves a stamp that no longer matches, and written
   # only after every check passed. eval_fixture and the format suites fail a
   # report whose stamp is missing or differs from the current tree.

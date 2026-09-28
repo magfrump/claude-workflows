@@ -1,0 +1,15 @@
+cmd: bash oldstamp.sh; cwd=/tmp/claude-1000/-workspace/dbfd30e0-d8d5-40c1-8bac-572239fc44fd/scratchpad; 2026-09-27T21:40:01Z
+--- new stamp:
+skill 198b97e94e958168c74614df3e3b6e656f80a14f992c6b2da5d8f9ac69e8b7be
+runner 835b52e36888804c2383c732a86c291d879c695c65bd9e4430ed4f146da8d569
+fixture 092fcfbbcfca3b5be7ae1b5e58538e92c35ab273ae13664fed0d67484c8e78a6
+--- old-order stamp written:
+skill 198b97e94e958168c74614df3e3b6e656f80a14f992c6b2da5d8f9ac69e8b7be
+runner 835b52e36888804c2383c732a86c291d879c695c65bd9e4430ed4f146da8d569
+contract f5b3616691d0984e4492370c700bc8bfa44186e2b0423df4d2c7ad28e73fdc42
+fixture 092fcfbbcfca3b5be7ae1b5e58538e92c35ab273ae13664fed0d67484c8e78a6
+Stale report for demo/tc-1.ts: changed since generation: stamp format. Regenerate: bash test/skills/generate-reports.bash demo tc-1.ts
+check rc=1
+--- old-order stamp + fixture edited:
+Stale report for demo/tc-1.ts: changed since generation: fixture. Regenerate: bash test/skills/generate-reports.bash demo tc-1.ts
+check rc=1

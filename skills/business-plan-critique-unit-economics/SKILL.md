@@ -2,28 +2,11 @@
 name: business-plan-critique-unit-economics
 lens: unit-economics
 description: >
-  Critically review a business-plan-shaped draft (founder pitch, investor deck narrative,
-  go-to-market strategy doc, fundraising memo, product strategy brief, financial model, or
-  similar) using a focused set of unit-economics lenses: CAC, LTV, contribution margin, payback
-  period, and gross-margin trajectory. This skill exists because many early-stage plans look
-  defensible on the moat and market story but quietly fail on the math — the per-customer
-  economics either never work or only work at a scale the business can't reach. Use this skill
-  whenever a draft proposes a business or product strategy and the author wants pressure on
-  whether the unit economics actually compound. Also trigger when the draft quotes CAC, LTV,
-  LTV/CAC ratio, churn, retention, gross margin, contribution margin, payback period, NRR/GRR,
-  or any per-customer profitability figure the author wants pressure-tested. Trigger phrases:
-  "do the unit economics work", "review my CAC/LTV", "critique the financial model",
-  "is this fundable on the numbers", "stress-test the margins", "payback period feedback",
-  "contribution margin critique", "unit economics review", "is the LTV real",
-  "are these margins defensible", "check the per-customer math", "review the CAC assumptions",
-  "what's wrong with my unit economics". Produces a structured Markdown critique with a known
-  section layout (CAC, LTV, Contribution Margin, Payback Period, Gross-Margin Trajectory,
-  Factual Foundation, Overall Assessment). Scope is intentionally narrow: moat/distribution
-  and market-sizing critiques are explicitly deferred to sibling skills
-  (`business-plan-critique-moat` and the future `business-plan-critique-market-sizing`) so this
-  skill stays focused on the per-customer math. NOTE: This skill is typically invoked by the
-  draft-review orchestrator, which provides a pre-built fact-check report. If a fact-check
-  report is provided, use it as your factual foundation and do not redo basic fact verification.
+  Critique the per-customer math in a business plan, pitch, deck or financial model: CAC, LTV,
+  contribution margin, payback, gross margin. Moat → business-plan-critique-moat; market size →
+  business-plan-critique-market-sizing. Triggers: "do the unit economics work", "review my
+  CAC/LTV", "critique the financial model", "stress-test the margins", or any quoted CAC, LTV,
+  churn, NRR or margin figure.
 when: User wants a unit-economics critique of a business plan, pitch, or strategy doc
 requires:
   - name: fact-check
@@ -41,12 +24,21 @@ requires:
 
 Review a business-plan-shaped draft for one question: **do the per-customer economics compound, and at what scale?** Plans that survive moat and market scrutiny still fail on the unit math — CAC rising faster than assumed, LTV propped by optimistic churn, contribution margins eaten by costs treated as fixed but aren't, payback periods consuming more working capital than the company can raise, gross-margin trajectories that never reach steady state. Apply five lenses scoped to that question.
 
+## When to use
+
+- Drafts in scope: founder pitch, investor deck narrative, go-to-market strategy doc, fundraising memo, product strategy brief, financial model, or similar.
+- Why it exists: many early-stage plans look defensible on the moat and market story but quietly fail on the math. The per-customer economics either never work or only work at a scale the business can't reach.
+- Use whenever a draft proposes a business or product strategy and the author wants pressure on whether the unit economics compound. Also trigger when the draft quotes CAC, LTV, LTV/CAC ratio, churn, retention, gross margin, contribution margin, payback period, NRR/GRR, or any per-customer profitability figure.
+- Trigger phrases: "do the unit economics work", "review my CAC/LTV", "critique the financial model", "is this fundable on the numbers", "stress-test the margins", "payback period feedback", "contribution margin critique", "unit economics review", "is the LTV real", "are these margins defensible", "check the per-customer math", "review the CAC assumptions", "what's wrong with my unit economics".
+- Scope is intentionally narrow: moat/distribution and market sizing are deferred to `business-plan-critique-moat` and `business-plan-critique-market-sizing`.
+- Typically invoked by `draft-review`, which provides a pre-built fact-check report. If one is provided, use it as the factual foundation and do not redo basic fact verification.
+
 ## Scope (and what's deferred)
 
 Covers **unit economics only**. Two adjacent dimensions are out of scope, handled by sibling skills:
 
 - **Moat-and-distribution critique** (moat type, distribution channel, switching cost, network effect, competitive response) — `business-plan-critique-moat`.
-- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer count) — future `business-plan-critique-market-sizing`.
+- **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer count) — `business-plan-critique-market-sizing`.
 
 If the draft's biggest weakness is in one of those, name it briefly under "Out of scope" in your Goal-Alignment Note and let the orchestrator route it. Do not attempt those critiques here — keeping this skill narrow lands sharp findings without blurring into a generic business review.
 

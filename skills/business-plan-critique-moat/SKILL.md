@@ -2,27 +2,11 @@
 name: business-plan-critique-moat
 lens: moat-and-distribution
 description: >
-  Critically review a business-plan-shaped draft (founder pitch, investor deck narrative,
-  go-to-market strategy doc, fundraising memo, product strategy brief, or similar) using a
-  focused set of moat-and-distribution lenses: moat type, distribution channel, switching cost,
-  network effect, and competitive response. This skill exists because the most common reason
-  early-stage plans fail is not market timing or product quality — it's that the named moat
-  isn't structurally durable, the distribution channel can't scale, or the competitive response
-  defeats the thesis once it works. Use this skill whenever a draft proposes a business or
-  product strategy and the author wants pressure on whether the durable advantage is real, OR
-  whenever a draft names a moat, network effect, switching cost, distribution channel, or
-  competitive positioning claim. Trigger phrases: "review my business plan", "critique this
-  pitch", "is this defensible", "is this durable", "what's the moat", "moat review",
-  "moat-and-distribution critique", "stress-test the strategy", "would this survive competition",
-  "competitive response analysis", "fundraising deck review", "GTM critique", "go-to-market
-  feedback", "review the distribution strategy", "pressure-test the network effect". Produces
-  a structured Markdown critique. Scope is intentionally narrow: market-sizing and unit-economics
-  critiques are explicitly deferred to sibling skills (`business-plan-critique-unit-economics`
-  and a future market-sizing critic) so this skill stays focused on durable advantage. If the
-  draft is primarily about CAC/LTV/payback/margin math, route to the unit-economics sibling
-  instead. NOTE: This skill is typically invoked by the draft-review orchestrator, which
-  provides a pre-built fact-check report. If a fact-check report is provided, use it as your
-  factual foundation and do not redo basic fact verification.
+  Critique durable advantage in a business plan, pitch, deck or GTM doc: moat type, distribution,
+  switching cost, network effect, competitive response. CAC/LTV →
+  business-plan-critique-unit-economics; market size → business-plan-critique-market-sizing.
+  Triggers: "review my business plan", "critique this pitch", "is this defensible", "what's the
+  moat", "GTM critique", "would this survive competition".
 when: User wants a moat/distribution critique of a business plan, pitch, or strategy doc
 requires:
   - name: fact-check
@@ -42,6 +26,15 @@ failing plans fail not on headline market opportunity but on whether the moat co
 distribution scales to the claimed market, and whether the strategy survives competitive
 response. Apply five lenses scoped to that question.
 
+## When to use
+
+- Drafts in scope: founder pitch, investor deck narrative, go-to-market strategy doc, fundraising memo, product strategy brief, or similar.
+- Why it exists: the most common reason early-stage plans fail is not market timing or product quality. It is that the named moat isn't structurally durable, the distribution channel can't scale, or the competitive response defeats the thesis once it works.
+- Use whenever a draft proposes a business or product strategy and the author wants pressure on whether the durable advantage is real, or whenever a draft names a moat, network effect, switching cost, distribution channel, or competitive positioning claim.
+- Trigger phrases: "review my business plan", "critique this pitch", "is this defensible", "is this durable", "what's the moat", "moat review", "moat-and-distribution critique", "stress-test the strategy", "would this survive competition", "competitive response analysis", "fundraising deck review", "GTM critique", "go-to-market feedback", "review the distribution strategy", "pressure-test the network effect".
+- Scope is intentionally narrow: market sizing and unit economics are deferred to the sibling skills. If the draft is primarily about CAC/LTV/payback/margin math, route to `business-plan-critique-unit-economics`.
+- Typically invoked by `draft-review`, which provides a pre-built fact-check report. If one is provided, use it as the factual foundation and do not redo basic fact verification.
+
 ## Scope (and what's deferred)
 
 Covers **moat and distribution only**. Two adjacent dimensions are out of scope, handled by
@@ -50,7 +43,7 @@ sibling skills:
 - **Unit-economics critique** (CAC/LTV math, gross margin, payback period, contribution margin
   trajectories) — `business-plan-critique-unit-economics` skill.
 - **Market-sizing critique** (TAM/SAM/SOM realism, segment definition, addressable customer
-  count) — future `business-plan-critique-market-sizing` skill.
+  count) — `business-plan-critique-market-sizing` skill.
 
 If the draft's biggest weakness is in one of those areas, name it briefly under "Out of scope"
 in your Goal-Alignment Note and let the orchestrator route it. Do not attempt those critiques

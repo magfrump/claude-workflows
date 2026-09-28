@@ -178,42 +178,98 @@ _stamp_hash_path() {
   fi
 }
 
+# _stamp_harness_hash <skills_test_dir>: one hash of the shared harness code
+# that shapes a generated report: generate-reports.bash and transcript.jq with
+# comment and blank lines dropped, plus this file's runner-settings part as
+# bash prints it back (declare -f drops comments). Not the stamp functions
+# themselves, so editing the freshness check does not flag every report.
+_stamp_harness_hash() {
+  local f
+  {
+    for f in "$1/generate-reports.bash" "$1/transcript.jq"; do
+      printf '== %s\n' "${f##*/}"
+      if [ -f "$f" ]; then grep -vE '^[[:space:]]*(#|$)' "$f" || true; else echo absent; fi
+    done
+    declare -p RUNNER_ALLOWED_TOOLS 2>/dev/null || true
+    declare -f reset_runner_settings check_runner_settings 2>/dev/null || true
+  } | _stamp_sha256
+}
+
+# The stamp's first line. Bump it whenever the set or meaning of the lines
+# changes, so every older stamp reads as stale ("stamp format") rather than as
+# a changed input.
+REPORT_STAMP_FORMAT="format 2"
+
 # report_stamp <skills_test_dir> <skill> <fixture>: the provenance stamp of a
-# report generated now for <fixture>, one "<input> <sha256>" line per input:
+# report generated now for <fixture>: the format line, then one
+# "<input> <sha256>" line per input:
 #   skill    skills/<skill>/ (every file: SKILL.md, references/, scripts)
 #   runner   test/skills/<skill>/runner.bash
-#   contract test/skills/runner-contract.bash (this file)
 #   fixture  test/skills/<skill>/fixtures/<fixture> (a file, or a tree fixture)
+#   harness  the shared harness code (_stamp_harness_hash); informational only
 # generate-reports.bash writes it as <fixture>.stamp beside the report;
-# check_report_stamp recomputes it and compares. Not covered: live repo files a
+# check_report_stamp recomputes it and compares.
+#
+# Only the skill's own inputs gate freshness (Q-071 [1]): runner.bash is the
+# one file that sets this skill's prompt, tools and mode, so it counts as the
+# skill's own. The shared harness (this file, generate-reports.bash,
+# transcript.jq) is deliberately not a gating input: gating on this file made
+# every edit to it stale every skill's reports, which kept the committed
+# reports red under this repo's editing rate. Its harness line only produces a
+# warning when it differs, so a harness change that may alter generated output
+# is visible without failing anything. Not covered at all: live repo files a
 # tree-mode runner's fixture_base copies in (self-eval's rubric,
 # divergent-design's workflow).
 report_stamp() {
   local sk="$1" skill="$2" fixture="$3"
+  printf '%s\n' "$REPORT_STAMP_FORMAT"
   printf 'skill %s\n' "$(_stamp_hash_path "$sk/../../skills/$skill")"
   printf 'runner %s\n' "$(_stamp_hash_path "$sk/$skill/runner.bash")"
-  printf 'contract %s\n' "$(_stamp_hash_path "$sk/runner-contract.bash")"
   printf 'fixture %s\n' "$(_stamp_hash_path "$sk/$skill/fixtures/$fixture")"
+  printf 'harness %s\n' "$(_stamp_harness_hash "$sk")"
+}
+
+# _stamp_warn <message>: a non-failing note. Under bats it goes to fd 3, which
+# bats prints even for a passing test; elsewhere to stderr.
+_stamp_warn() {
+  if { true >&3; } 2>/dev/null; then
+    printf '# WARNING: %s\n' "$1" >&3
+  else
+    printf 'WARNING: %s\n' "$1" >&2
+  fi
 }
 
 # check_report_stamp <skills_test_dir> <skill> <fixture>: fail, with a message
 # naming the changed inputs and the regeneration command, unless
-# <skill>/output/<fixture>.stamp exists and matches report_stamp for the
-# current tree. A report whose skill, runner, contract or fixture changed since
-# it was generated grades a program that no longer exists.
+# <skill>/output/<fixture>.stamp exists, is in the current format, and its
+# skill, runner and fixture lines match report_stamp for the current tree. A
+# report whose skill, runner or fixture changed since it was generated grades a
+# program that no longer exists. A stamp whose first line is not
+# REPORT_STAMP_FORMAT reads as stale with the reason "stamp format". A changed
+# harness line only warns (see report_stamp).
 check_report_stamp() {
   local sk="$1" skill="$2" fixture="$3"
-  local stamp="$sk/$skill/output/$fixture.stamp" now changed=""
-  local regen="bash test/skills/generate-reports.bash $skill $fixture"
+  local stamp="$sk/$skill/output/$fixture.stamp" now old changed=""
+  local regen="bash test/skills/generate-reports.bash $skill $fixture, then commit test/skills/$skill/output/"
   if [ ! -f "$stamp" ]; then
     echo "No provenance stamp for $skill/$fixture ($stamp): the report cannot be tied to the current skill, runner and fixture. Regenerate: $regen"
     return 1
   fi
-  now="$(report_stamp "$sk" "$skill" "$fixture")"
-  if [ "$now" != "$(cat "$stamp")" ]; then
-    changed="$(diff <(printf '%s\n' "$now") "$stamp" | sed -nE 's/^< ([a-z]+) .*/\1/p' | tr '\n' ' ')"
-    changed="${changed% }"
-    echo "Stale report for $skill/$fixture: changed since generation: ${changed:-stamp format}. Regenerate: $regen"
+  old="$(cat "$stamp")"
+  if [ "${old%%$'\n'*}" != "$REPORT_STAMP_FORMAT" ]; then
+    echo "Stale report for $skill/$fixture: changed since generation: stamp format. Regenerate: $regen"
     return 1
+  fi
+  now="$(report_stamp "$sk" "$skill" "$fixture")"
+  changed="$(diff <(grep -E '^(skill|runner|fixture) ' <<< "$now") \
+    <(grep -E '^(skill|runner|fixture) ' <<< "$old") \
+    | sed -nE 's/^< ([a-z]+) .*/\1/p' | tr '\n' ' ')"
+  changed="${changed% }"
+  if [ -n "$changed" ]; then
+    echo "Stale report for $skill/$fixture: changed since generation: $changed. Regenerate: $regen"
+    return 1
+  fi
+  if [ "$(grep '^harness ' <<< "$now")" != "$(grep '^harness ' <<< "$old")" ]; then
+    _stamp_warn "$skill/$fixture: the shared harness (generate-reports.bash, transcript.jq, runner settings) changed since generation; not a failure. If the change alters generated output, regenerate: $regen"
   fi
 }

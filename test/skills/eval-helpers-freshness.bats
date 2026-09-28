@@ -3,8 +3,10 @@
 # Unit tests for the report-grading harness fixes of the 2026-09-26
 # test-constraint audit (Batch G), against a throwaway repo layout and
 # synthetic reports; nothing here runs a model or reads test/skills/*/output/.
-#   T3  provenance stamps: a report whose skill, runner, contract or fixture
-#       changed since generation fails; so does one with no stamp.
+#   T3  provenance stamps: a report whose skill, runner or fixture changed
+#       since generation fails; so does one with no stamp. The shared
+#       runner-contract.bash is not stamped (Q-071 [1]), and the reports and
+#       their sidecars are not ignored by git, so they can be committed.
 #   T4  once a skill has reports, a missing one fails rather than skips, and
 #       format_check fails when its nested suite skipped every test.
 #   T5  finding_match: tier and pattern in the same finding; cites_pattern and
@@ -63,13 +65,13 @@ report() {
   rm "$SK/demo/output/tc-1-idor.ts.stamp"
   run check_report_stamp "$SK" demo tc-1-idor.ts
   [ "$status" -ne 0 ]
-  [[ "$output" == *"No provenance stamp"*"generate-reports.bash demo tc-1-idor.ts"* ]]
+  [[ "$output" == *"No provenance stamp"*"generate-reports.bash demo tc-1-idor.ts, then commit test/skills/demo/output/" ]]
 }
 
 @test "stamp: editing any input after generation fails, naming the input" {
   local what file
   for what in skill:skills/demo/SKILL.md skill:skills/demo/references/out.md \
-      runner:test/skills/demo/runner.bash contract:test/skills/runner-contract.bash \
+      runner:test/skills/demo/runner.bash \
       fixture:test/skills/demo/fixtures/tc-1-idor.ts; do
     report tc-1-idor.ts "# R"
     file="$TEST_TMPDIR/${what#*:}"
@@ -78,7 +80,7 @@ report() {
     run check_report_stamp "$SK" demo tc-1-idor.ts
     mv "$file.orig" "$file"
     [ "$status" -ne 0 ] || { echo "edit to ${what#*:} was not caught"; return 1; }
-    [[ "$output" == *"Stale report for demo/tc-1-idor.ts: changed since generation: ${what%%:*}. "* ]] \
+    [[ "$output" == *"Stale report for demo/tc-1-idor.ts: changed since generation: ${what%%:*}. Regenerate: bash test/skills/generate-reports.bash demo tc-1-idor.ts, then commit test/skills/demo/output/" ]] \
       || { echo "wrong message for ${what#*:}: $output"; return 1; }
   done
   # A new file in the skill directory counts too.
@@ -86,6 +88,62 @@ report() {
   echo x > "$TEST_TMPDIR/skills/demo/references/new.md"
   run check_report_stamp "$SK" demo tc-1-idor.ts
   [ "$status" -ne 0 ]
+}
+
+@test "stamp: editing the shared runner-contract.bash does not stale a report (Q-071 [1])" {
+  report tc-1-idor.ts "# R"
+  echo "# edited" >> "$SK/runner-contract.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" != *WARNING* ]]
+  # The stamp is the format line, the skill's own inputs, and the
+  # informational harness line.
+  [ "$(cut -d' ' -f1 "$SK/demo/output/tc-1-idor.ts.stamp" | tr '\n' ' ')" = "format skill runner fixture harness " ]
+}
+
+@test "stamp: a changed harness warns but does not fail; a comment-only edit is silent" {
+  printf '#!/usr/bin/env bash\n# about the flags\nFLAGS=(--a)\n' > "$SK/generate-reports.bash"
+  report tc-1-idor.ts "# R"
+  printf '# another comment\n\n' >> "$SK/generate-reports.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" != *WARNING* ]] || { echo "comment edit warned: $output"; return 1; }
+  printf 'FLAGS=(--b)\n' >> "$SK/generate-reports.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" == "WARNING: demo/tc-1-idor.ts: the shared harness"*"not a failure"*"then commit test/skills/demo/output/" ]]
+  # A changed skill input still fails, and says so rather than warning.
+  echo "# edited" >> "$TEST_TMPDIR/skills/demo/SKILL.md"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: skill. "* ]]
+}
+
+@test "stamp: any stamp without the current format line reads as stale: stamp format" {
+  local body
+  report tc-1-idor.ts "# R"
+  body="$(tail -n +2 "$SK/demo/output/tc-1-idor.ts.stamp")"
+  # The format-1 shape: input lines only, plus the old contract line. Its
+  # hashes still match the tree, so only the format line can catch it.
+  printf '%s\ncontract %064d\n' "$body" 0 > "$SK/demo/output/tc-1-idor.ts.stamp"
+  run check_report_stamp "$SK" demo tc-1-idor.ts
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: stamp format. "* ]]
+  printf 'format 1\n%s\n' "$body" > "$SK/demo/output/tc-1-idor.ts.stamp"
+  run check_report_stamp "$SK" demo tc-1-idor.ts
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: stamp format. "* ]]
+}
+
+@test "stamp: reports and every sidecar the suites read are tracked, not gitignored" {
+  local root f
+  root="$(cd "$REAL_SK/../.." && pwd)"
+  for f in report.md stamp failed transcript.jsonl; do
+    run git -C "$root" check-ignore -q "test/skills/code-review/output/tc-x.$f"
+    [ "$status" -eq 1 ] || { echo "output/*.$f is gitignored"; return 1; }
+  done
+  # Anything else a run might leave in output/ stays ignored.
+  git -C "$root" check-ignore -q test/skills/code-review/output/scratch.tmp
 }
 
 @test "stamp: another fixture's edit does not stale this report" {

@@ -1,28 +1,11 @@
 ---
 name: pre-mortem
 description: >
-  Conduct a Klein-style pre-mortem on a proposed change by assuming the change has already
-  shipped and already failed, then writing concrete retrospective failure narratives that
-  explain *why*. The cognitive shift is from advocate mode ("how do we make this work?") to
-  detective mode ("the project failed — what does the post-incident review say?"). Produces
-  3–5 specific failure stories, each with a named root cause, an ordered chain of
-  consequences, and an observable outcome, calibrated for plausibility and severity. Use this
-  skill when the user says "imagine this has already failed", "pre-mortem the launch",
-  "pre-mortem this", "it's six months later and this didn't work — what happened",
-  "write the failure post-mortem before we ship", "give me the failure stories", "tell me
-  the story of why this failed", or "what does the incident report say if this goes wrong".
-  Also trigger when a team has converged too quickly on a plan and needs to confront concrete
-  ways it could go wrong, or when a high-stakes, hard-to-reverse change is about to be
-  committed and the user wants the failure narratives before the decision is locked. Distinct
-  from `what-if-analysis`: that skill operates prospectively (proposal → "what could go wrong
-  from here?" — load-bearing assumptions, second-order effects, coupling map, reversibility
-  gradient); this skill operates retrospectively (failure already happened → "tell the story
-  of why"). The trigger test at invocation time is mechanical: if the user's framing is
-  "this has failed — why?" use pre-mortem; if the framing is "this is the plan — what could
-  go wrong?" use what-if-analysis. The two skills compose for high-stakes changes — run
-  `what-if-analysis` first to map the consequence space, then this skill to convert the most
-  worrying parts of that map into concrete failure narratives the team can plan mitigations
-  against.
+  Klein-style pre-mortem: assume the change shipped and failed, then write 3–5 retrospective
+  failure narratives with root causes. Forward-looking "what could go wrong?" → what-if-analysis
+  (for high-stakes changes run it first, then this). Triggers: "pre-mortem this", "imagine this
+  has already failed", "tell me the story of why this failed", "write the failure post-mortem
+  before we ship", "give me the failure stories".
 when: User wants concrete retrospective failure narratives — "imagine this has already failed; tell the story of why"
 requires:
   - name: what-if-analysis
@@ -70,6 +53,8 @@ when rooted in specific assumptions and coupling failures what-if-analysis alrea
 
 When invoked alone (no upstream what-if), do the failure-story work directly from the proposal
 — without the structural map, but still producing narrative output.
+
+More trigger phrases: "it's six months later and this didn't work — what happened", "what does the incident report say if this goes wrong". Also trigger when a team has converged too quickly on a plan and needs to confront concrete ways it could go wrong, or when a high-stakes, hard-to-reverse change is about to be committed and the user wants the failure narratives before the decision is locked.
 
 ## Using an Upstream What-If Analysis
 

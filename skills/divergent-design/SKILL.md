@@ -1,23 +1,11 @@
 ---
 name: divergent-design
 description: >
-  Route a tradeoff-bearing design decision into the divergent-design workflow
-  (diverge → diagnose → match → decide) instead of open-ended brainstorming. Use this
-  skill the moment a creative task resolves to choosing among competing approaches that
-  carry tradeoffs — building a feature, structuring a module, or selecting a library where
-  more than one option is viable. Trigger phrasings (same surface brainstorming would
-  catch): "which approach", "compare options", "compare approaches", "evaluate
-  alternatives", "weigh alternatives", "X vs Y", "should we use X or Y", "pick between",
-  "choose between", "decide between", "what are the options", "multiple approaches",
-  "design choice", "design decision", "tradeoff", "trade-offs", "pros and cons",
-  "library selection", "tool selection", "architecture". This skill SUPERSEDES
-  open-ended brainstorming whenever the task is a decision among 3+ tradeoff-bearing
-  options: if you can name 3+ viable
-  options that differ on a tradeoff axis, route here for the structured candidate/matrix
-  presentation. Mechanical trigger test: can you name 3+ viable options that differ on a
-  tradeoff axis? Yes → this skill. (If the solution space is genuinely open-ended with no
-  competing options yet, brainstorming still applies.) This is a thin router — it hands off
-  to `workflows/divergent-design.md`, which holds the full process; it does not duplicate it.
+  Route a decision among 3+ tradeoff-bearing options into workflows/divergent-design.md;
+  supersedes open-ended brainstorming. Test: can you name 3+ viable options that differ on a
+  tradeoff axis? If not, brainstorming applies. Triggers: "which approach", "X vs Y", "should we
+  use X or Y", "compare options", "pros and cons", "tradeoff", "design decision", "library
+  selection", "architecture".
 when: A creative task has resolved to a choice among 3+ tradeoff-bearing options, and brainstorming would otherwise auto-win
 ---
 
@@ -28,6 +16,12 @@ when: A creative task has resolved to a choice among 3+ tradeoff-bearing options
 Exists so divergent design competes at the **skill-selection layer**, where open-ended
 brainstorming otherwise wins by default on any "creative work." Does not re-implement the
 workflow — routes into it.
+
+## When to use
+
+Use the moment a creative task resolves to choosing among competing approaches that carry tradeoffs: building a feature, structuring a module, or selecting a library where more than one option is viable.
+
+Trigger phrasings (the same surface brainstorming would catch): "which approach", "compare options", "compare approaches", "evaluate alternatives", "weigh alternatives", "X vs Y", "should we use X or Y", "pick between", "choose between", "decide between", "what are the options", "multiple approaches", "design choice", "design decision", "tradeoff", "trade-offs", "pros and cons", "library selection", "tool selection", "architecture".
 
 ## Trigger test (run this first)
 
