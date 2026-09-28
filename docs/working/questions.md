@@ -28,9 +28,12 @@ The index below is generated — edit entries, not the table.
 | [Q-065](#q-065--si-input-rejected-history-dead-code) | you: judgment | `prepend_si_input_rejected_history` (`scripts/lib/si-input.sh:214`) has had no caller since it landed in 06... | 2026-09-26 |
 | [Q-081](#q-081--cc-isolated-sandbox-half) | you: judgment | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
 | [Q-083](#q-083--host-tools-trust-category) | you: judgment | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
+| [Q-085](#q-085--review-unit-size-budget) | you: judgment | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
+| [Q-087](#q-087--final-confirming-pass-replicates) | you: judgment | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
 | [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
+| [Q-086](#q-086--install-gnu-parallel) | you: terminal | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
@@ -147,6 +150,7 @@ echo "$(cat ~/.claude/.credentials.json | wc -c)"
 Then repeat with the auto-approve hook removed from settings for that session.
 
 - **Interim:** the hook header calls its deny check load-bearing in cc-isolated until this is known.
+- **If the answer differs:** denied in both runs ⇒ Claude Code's `permissions.deny` wins over a hook allow, and the hook's deny reader can be deleted (architecture-review 1). Runs or prompts only with the hook wired ⇒ keep it and reclassify the hook as an enforcement component. Also record whether the leading `*` in `Bash(*.credentials.json*)` matched at all.
 
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
@@ -183,4 +187,50 @@ The trust manifest's rule "every shipped file is hashed" puts host-only tools (`
 
 - **Interim:** [2] in practice (user deferred this at the Q-076 fix batch, 2026-09-27).
 - **If the answer differs:** [1] is a small enforcement-file change with tests; [3] edits the manifest and the tests that pin it.
-- **If the answer differs:** denied in both runs ⇒ Claude Code's `permissions.deny` wins over a hook allow, and the hook's deny reader can be deleted (architecture-review 1). Runs or prompts only with the hook wired ⇒ keep it and reclassify the hook as an enforcement component. Also record whether the leading `*` in `Bash(*.credentials.json*)` matched at all.
+
+### Q-085 · review-unit-size-budget
+**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
+
+What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the unit must split into stacked units that merge in order, unless you waive it.
+
+- **Why it's yours:** it sets how often work gets split, a trade between review quality and stacking overhead. Only you know how much stacking you'll tolerate.
+- **Read:** `docs/working/proposal-2026-09-27-smaller-review-units.md` (A4) · decision log row 59 · Q-076 grew from +476 to +3,613 code lines under review.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] ~600 code lines, enforcement files only** | Cap applies when the diff touches a file the live-verify gate covers; reviews and docs excluded from the count | None; agents split | Non-security units can still balloon |
+| **[2] ~600 code lines, every unit** | Same cap everywhere | Occasional stacked series to merge | More splitting on routine work that would have reviewed fine |
+| **[3] ~400 code lines, every unit** | Closer to the usual human-review guidance | More stacks | Split overhead dominates on small features |
+| **[4] No hard cap** | Rely on the early split trigger in review-fix-loop only | None | Q-076-shaped growth repeats |
+
+- **Interim:** no cap; the early split trigger is the only size control.
+- **If the answer differs:** a short pr-prep step-1 gate edit and a decision-log row.
+
+### Q-086 · install-gnu-parallel
+**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
+
+`bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 16-core machine. Add `parallel` to the apt-get install list in `devcontainer-config/Dockerfile` and rebuild the image, then confirm:
+
+```
+parallel --version | head -1
+```
+
+- **Interim:** `run-tests.sh` has no `--jobs`; the suite stays serial.
+- **If the answer differs:** once `parallel` is present, an agent adds `--jobs` to `run-tests.sh` and measures the speedup (install-host.bats, the slowest suite, bounds it).
+
+### Q-087 · final-confirming-pass-replicates
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k=1, now that loop passes default to reviewing only the delta since the last rubric stamp?
+
+- **Why it's yours:** it trades about +300k tokens per loop against recall on code no fix touched, and reverses part of a recorded decision (031 C2).
+- **Read:** decision 031 (`docs/decisions/`, C2: k=1 on both clean passes) · `docs/reviews/u4-code-fact-check-report-iter2.md` claim 6 on feat/u4-code-review-skill · proposal B2 (`docs/working/proposal-2026-09-27-smaller-review-units.md`).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep k=1 (031 as is)** | Final confirming pass reviews the full branch with one fact-check agent | None | A defect in untouched code is drawn only twice (first and final pass) instead of on every pass |
+| **[2] k=3 on the final pass** | Final confirming pass runs three replicates, merged most-severe-wins; record the departure from 031 | ~+300k tokens per loop | Tokens spent on a pass that 031 found adds little |
+
+- **Blocks:** nothing.
+- **Interim:** [1]. U4 (feat/u4-code-review-skill) keeps 031's k=1 and cites this entry.
+- **If the answer differs:** one-line change in `skills/code-review/SKILL.md` Stage 1 replication paragraph plus a decision-log row.

@@ -1,3 +1,5 @@
+Commit: 1a2b3c4
+
 # Code Review Rubric
 
 **Scope:** feat/example-branch (12 commits, 340 lines) | **Reviewed:** 2026-07-30 | **Status: 🔴 DOES NOT PASS** — 1 red item(s) unresolved
