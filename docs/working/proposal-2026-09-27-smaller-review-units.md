@@ -101,7 +101,7 @@ bash's setlocale warning lands inside captured `$output`. All 5 pass under `LC_A
 ## Open questions for the user
 
 1. ~~A1: per-item default?~~ Answered 2026-09-27: yes, per-item is the default (decision log 59). The old rule had no recorded rationale (`ae08bff`, `1f3c1fc`). A2 now applies only inside a single item that has grown too large.
-2. A4's size budget: is ~600 changed code lines per unit the right number, and should the budget apply only to enforcement files?
+2. ~~A4's size budget: ~600 lines, enforcement files only?~~ Answered 2026-09-28 (Q-085 [3]): ~400 code lines, every unit (decision log 62, pr-prep step 1a).
 3. Where to start: order row 1 (test tooling) is self-contained and could be implemented now.
 
 ## Measurements

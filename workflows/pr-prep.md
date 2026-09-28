@@ -83,12 +83,18 @@ fi
 
 Run these concurrently — both are fast, and either failing changes the plan:
 
-**a. Size check.** Use the line count from Step 0's diff stat. If the PR exceeds ~500 lines changed, consider whether it can be split before doing any other prep work. Look for:
+**a. Size gate (hard cap: ~400 code lines per review unit).** Before the review-fix loop starts, count the unit's changed code lines, leaving out `docs/` (review artifacts, working docs, decision records, thoughts):
+
+```bash
+git diff --numstat main...HEAD -- . ':(exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'
+```
+
+Over ~400, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. In /away mode, split without asking and record the split as an interim in `docs/working/questions.md`; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
 - A preparatory refactor that can land independently
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
 
-If it genuinely can't be split, note this in the PR description (step 6). The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
+If the user waives the cap, note the waiver in the PR description (step 6). The **Reviewer's path — start here** section (step 6) is always required and already names the read-order entry point; for an oversized PR, expand that section from the default 1–3 files to walk the reviewer through the larger diff in dependency order, so a 1000-line change still has a named place to start rather than forcing the reviewer to reverse-engineer it.
 
 **b. Dependent PR check.** If this branch builds on other unmerged PRs, verify they've been merged or that this PR's base is set correctly. If dependencies haven't landed, decide whether to wait, rebase onto a dev integration branch, or open as a stacked PR with a clear note. Skip this check for standalone branches.
 
@@ -142,7 +148,7 @@ fi
 **This is a backstop, not the primary path.** If the trigger fires, treat that as a signal that the plan-time wiring failed for this branch and consider whether the workflow that produced this branch (RPI, spike, ad-hoc) needs to be adjusted — not just this single PR patched.
 
 **Completion criteria:**
-- [ ] PR is under 500 lines changed, OR PR description includes size justification and an expanded "Reviewer's path — start here" section (step 6) that walks the larger diff in read-order
+- [ ] The unit is at most ~400 changed code lines (outside `docs/`), OR it was split into stacked units, OR the user waived the cap and the PR description records the waiver and an expanded "Reviewer's path — start here" section (step 6) that walks the larger diff in read-order
 - [ ] No unmerged dependency PRs block this branch, OR base is set correctly for stacking
 - [ ] Fallback pre-mortem trigger was evaluated; if it fired, `docs/working/pre-mortem-<branch-slug>.md` exists and is cited in the PR description; if it did not fire, the reason is recorded
 
