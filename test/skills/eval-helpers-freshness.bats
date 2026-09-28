@@ -65,7 +65,7 @@ report() {
   rm "$SK/demo/output/tc-1-idor.ts.stamp"
   run check_report_stamp "$SK" demo tc-1-idor.ts
   [ "$status" -ne 0 ]
-  [[ "$output" == *"No provenance stamp"*"generate-reports.bash demo tc-1-idor.ts"* ]]
+  [[ "$output" == *"No provenance stamp"*"generate-reports.bash demo tc-1-idor.ts, then commit test/skills/demo/output/" ]]
 }
 
 @test "stamp: editing any input after generation fails, naming the input" {
@@ -80,7 +80,7 @@ report() {
     run check_report_stamp "$SK" demo tc-1-idor.ts
     mv "$file.orig" "$file"
     [ "$status" -ne 0 ] || { echo "edit to ${what#*:} was not caught"; return 1; }
-    [[ "$output" == *"Stale report for demo/tc-1-idor.ts: changed since generation: ${what%%:*}. "* ]] \
+    [[ "$output" == *"Stale report for demo/tc-1-idor.ts: changed since generation: ${what%%:*}. Regenerate: bash test/skills/generate-reports.bash demo tc-1-idor.ts, then commit test/skills/demo/output/" ]] \
       || { echo "wrong message for ${what#*:}: $output"; return 1; }
   done
   # A new file in the skill directory counts too.
@@ -93,15 +93,43 @@ report() {
 @test "stamp: editing the shared runner-contract.bash does not stale a report (Q-071 [1])" {
   report tc-1-idor.ts "# R"
   echo "# edited" >> "$SK/runner-contract.bash"
-  run check_report_stamp "$SK" demo tc-1-idor.ts
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
   [ "$status" -eq 0 ]
-  # The stamp names exactly the skill's own inputs.
-  [ "$(cut -d' ' -f1 "$SK/demo/output/tc-1-idor.ts.stamp" | tr '\n' ' ')" = "skill runner fixture " ]
+  [[ "$output" != *WARNING* ]]
+  # The stamp is the format line, the skill's own inputs, and the
+  # informational harness line.
+  [ "$(cut -d' ' -f1 "$SK/demo/output/tc-1-idor.ts.stamp" | tr '\n' ' ')" = "format skill runner fixture harness " ]
 }
 
-@test "stamp: an old-format stamp that also hashed the contract reads as stale" {
+@test "stamp: a changed harness warns but does not fail; a comment-only edit is silent" {
+  printf '#!/usr/bin/env bash\n# about the flags\nFLAGS=(--a)\n' > "$SK/generate-reports.bash"
   report tc-1-idor.ts "# R"
-  printf 'contract %064d\n' 0 >> "$SK/demo/output/tc-1-idor.ts.stamp"
+  printf '# another comment\n\n' >> "$SK/generate-reports.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" != *WARNING* ]] || { echo "comment edit warned: $output"; return 1; }
+  printf 'FLAGS=(--b)\n' >> "$SK/generate-reports.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" == "WARNING: demo/tc-1-idor.ts: the shared harness"*"not a failure"*"then commit test/skills/demo/output/" ]]
+  # A changed skill input still fails, and says so rather than warning.
+  echo "# edited" >> "$TEST_TMPDIR/skills/demo/SKILL.md"
+  run check_report_stamp "$SK" demo tc-1-idor.ts 3>&-
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: skill. "* ]]
+}
+
+@test "stamp: any stamp without the current format line reads as stale: stamp format" {
+  local body
+  report tc-1-idor.ts "# R"
+  body="$(tail -n +2 "$SK/demo/output/tc-1-idor.ts.stamp")"
+  # The format-1 shape: input lines only, plus the old contract line. Its
+  # hashes still match the tree, so only the format line can catch it.
+  printf '%s\ncontract %064d\n' "$body" 0 > "$SK/demo/output/tc-1-idor.ts.stamp"
+  run check_report_stamp "$SK" demo tc-1-idor.ts
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: stamp format. "* ]]
+  printf 'format 1\n%s\n' "$body" > "$SK/demo/output/tc-1-idor.ts.stamp"
   run check_report_stamp "$SK" demo tc-1-idor.ts
   [ "$status" -ne 0 ]
   [[ "$output" == *"changed since generation: stamp format. "* ]]
