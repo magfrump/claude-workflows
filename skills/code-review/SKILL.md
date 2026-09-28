@@ -17,7 +17,7 @@ Orchestrates the sub-skills below. Each entry `<name>.md` refers to the skill at
 - `code-fact-check.md` — verifies factual claims in code comments, docs, and commit messages,
   statically or by execution in the review sandbox (every verdict carries
   `**Verification mode:** static | executed` and a per-claim `Scope:` line).
-  Runs as **k=3 parallel replicates** merged most-severe-wins; the rationale lives in one
+  Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on review-fix loop passes, decision 031); the rationale lives in one
   place — Stage 1's **Why three** — do not restate it elsewhere. Its `## Submitted claims`
   intake additionally verdicts critics' routed endorsement claims in
   [Stage 2.5](#stage-25-endorsement-claim-verification-submitted-claims).
@@ -105,10 +105,39 @@ Accept user overrides:
 - **PR number:** `--pr 42` (use `gh pr diff 42`)
 - **Commit range:** `--range abc123..def456`
 - **Staged changes:** `--staged` (use `git diff --cached`)
+- **Full branch:** `--full` (the default above, stated explicitly — use it to override the
+  loop-pass default below)
+
+**Loop-pass default range.** On a `--loop-pass` run with none of the flags above, review only
+what changed since this loop's last review. The loop's rubric is the file with the latest date in
+its name among those whose name is exactly `code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md`
+in `docs/reviews/` (naming per [references/rubric.md](references/rubric.md#deliverable-2-code-review-rubric)).
+Several dated files for one slug are normal, since a new file starts on each new date. Ad-hoc
+suffixes (`-iter2`, `-final`) never count: rubrics must use the canonical name for this range and
+the short-circuit marker to work. The rubric's stamp is its first line, `Commit: <sha>`. If that
+file exists, its stamp is an ancestor of HEAD (`git merge-base --is-ancestor <sha> HEAD`) and
+differs from HEAD, the scope is `<sha>..HEAD`, and the partial-scope label below applies. If there
+is no such file, or its stamp is missing, is not an ancestor (including a git error on the stamp),
+or equals HEAD, use full-branch scope. If that file carries a `Loop closed at <sha>` line under
+its `Commit:` line, the previous loop has ended and this pass starts a new one: use full-branch
+scope, treat the file as having no short-circuit marker, and remove both marker lines (if this
+pass updates the same dated file) or leave them out (if it starts a new one). If the branch has no name (detached HEAD), do not guess:
+require an explicit `--range` or `--full`. State the scope used and where it came from in the plan
+summary (Step 7). Only the final confirming pass (the one run to declare the branch clean) runs
+without `--loop-pass`, and it keeps the full-branch default; when it is clean, it adds
+`Loop closed at <reviewed HEAD sha>` under the rubric's `Commit:` line. Every earlier pass in the loop,
+including the first of 2-clean's two clean passes, takes the delta range. Each pass rewrites the
+rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next pass's range correct.
+Cost to recall: code no fix touches is redrawn only on each loop's first and final passes, which
+weakens decision 031's N≥3 resampling argument for k=1 on that code; the mitigation is that the
+final confirming pass reviews the full branch (at 031's k=1). Raising that pass to k=3 is open as
+Q-087 in `docs/working/questions.md`. Why: in Q-076 every round re-checked the whole diff although
+[pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
+fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
 Diff delivery to agents is conditional (decision 032 #3, see [Inline shared-context prefix](#inline-shared-context-prefix-decision-032-3)): assemble the shared block (diff + enclosing-file context) and measure it against the **25k-token budget** defined in that section. Within budget → inline it once as the shared cacheable prefix of every agent prompt. Over budget → degrade per that section's ladder (diff-only inline, then full self-read via the scope specification, each agent running its own `git diff`). The delivery gate is the byte/token budget alone — the ~1000-line triage below governs *splitting the review into passes*, and the >40%-churn rule governs *per-file review framing*; neither gates delivery.
 
-**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
+**Partial-scope reviews must label out-of-scope sibling work.** When the scope is narrower than the full branch changeset (`--range`, the loop-pass default range, `--staged`, `--files`, or a `--pr` covering part of a larger branch), every critic prompt must state: (a) that commits/files on the branch outside the scope are *already committed — context only, not under review*, and (b) that before flagging work as "missing", the critic must check the rest of the branch (`git log main..HEAD`, `git diff main...HEAD -- <path>`) for it. The label marks provenance, not trustworthiness — sibling context stays under normal scrutiny (a control *deleted* in a sibling commit is still a finding); only "this work is missing" claims are gated on checking it. This rule is validated, not speculative: the 2026-07-30 diff-only baseline sweep (`archive/docs/2026-08-06-experiment-cross-model-review-2026-07-30.md`, Result 5) showed unlabelled single-commit scope made three of four model families flag work as missing that sat in sibling commits (6 of 11 replicates, all at High), and the 2026-07-31 re-run under the label + sibling context (`archive/docs/2026-08-06-experiment-stage1-fp-kill-2026-07-31.md`, decision 021) reduced that FP class to 0/8 — while cross-family agreement on real issues rose among the Sonnet/Gemini/Sol pairs on the other cell. The default full-branch scope (`git diff main...HEAD`) needs no label — the whole changeset is under review.
 
 #### Large diff triage (~1000+ lines)
 
@@ -217,7 +246,8 @@ The user can include or exclude any critic:
   alongside the chain. Omit the flag to keep the parallel default.
 - `--loop-pass` — mark this run as a **non-final pass of a review-fix loop** (set by
   `pr-prep`'s loop for every pass except the terminal clean check). Enables the
-  [first-red short-circuit](#first-red-short-circuit-decision-032-4) and implies `--no-gate`
+  [first-red short-circuit](#first-red-short-circuit-decision-032-4) and the
+  [loop-pass default range](#step-1-determine-scope), and implies `--no-gate`
   (no interactive Fact-Check-Gate pause — the short-circuit decides automatically). Never pass
   it on the terminal pass: that pass must run the full panel so the amber inventory is complete.
 
@@ -266,6 +296,10 @@ stable):
    two lines short of the defect in the same function — the excerpt a finding needs is
    not the unit the reviewer must read
    (`docs/working/fn-trace-skill-levers-2026-08-21.md`, lever 3).
+   The preamble MUST also carry the **probe-cleanup rule**: any process the agent starts
+   (a `sleep`, a FIFO reader, a background script) runs under `timeout` and is killed before
+   the agent reports. In Q-076, leftover reviewer probes tripped `install.sh`'s no-agent guard
+   and failed `install-host` tests in full runs.
 2. The partial-scope labelling block, if the scope is partial (Step 1).
 3. `## What this PR is trying to accomplish` — the `<pr-intent>` captured in Step 2.
 4. `## Prior review findings (advisory …)` — `<prior-findings>` from Step 3, if any.
@@ -408,15 +442,19 @@ A single sample of that judgment is a coin flip carrying merge-blocking authorit
 Replication converts it into a measured distribution.
 
 **Replication is loop-aware (decision 031, configuration C2 — 031 overrules the earlier
-blanket k=3 mandate).** On a `--loop-pass` (an intermediate or confirmation pass inside the
-review-fix loop, which requires **2 consecutive clean passes** before merge), run **k=1**: a
+blanket k=3 mandate).** Every pass of a review-fix loop (which requires **2 consecutive clean
+passes** before merge) runs **k=1**: each `--loop-pass`, and also the final confirming pass,
+which runs without the flag per [Step 1](#step-1-determine-scope) and is recognized by the
+branch's canonical rubric existing without a `Loop closed at` line. Decision 031 prices both clean
+passes at k=1; raising the final one to k=3 is open as Q-087. Run a
 single fact-check agent with the same rich shared brief (step 3b below — brief quality, not k,
 governs systematic recall), saving its report directly as the canonical
 `docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
 in the header; skip the merge machinery and the Verdict-stability section. The across-pass
 resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pass (1−(1−p)ᴺ ≥
-1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** —
-no loop, no second draw, so the replication happens within the pass.
+1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** only
+(no `--loop-pass` and no open loop rubric for the branch) — no loop, no second draw, so the
+replication happens within the pass.
 
 For each of the three replicate agents:
 
@@ -428,7 +466,7 @@ For each of the three replicate agents:
    prompt; over budget → degrade per that section's ladder (inline the diff only, or fall back
    to the scope specification — e.g., "Review files changed on the current branch relative
    to main using `git diff main...HEAD`" — and let the replicate self-read). If the scope is
-   partial (`--range`, `--staged`,
+   partial (`--range`, the loop-pass default range, `--staged`,
    `--files`, or a partial `--pr`), also include the labelling block required by Step 1's
    partial-scope rule — the "already committed — context only, not under review" statement and
    the check-siblings-before-flagging-missing directive apply to fact-check replicates too.
@@ -642,7 +680,8 @@ loop, so a fix and another full review pass are guaranteed to follow. Skip this 
 on a normal (terminal or standalone) run.
 
 The rule: **once a behavioral 🔴 is confirmed on a `--loop-pass` run, stop the pass and hand
-back to the loop for the fix — do not launch the remaining review work.** A branch carrying a
+back to the loop for the fix — do not launch the remaining review work** (subject to the bound below: at most once per loop,
+and never past the security critic on an enforcement file). A branch carrying a
 behavioral red is already non-mergeable this pass; the remaining critics' findings would be
 re-surfaced next pass over a churned surface, so paying for them now is waste (decision 032 #4;
 the token model is E1's finding that a pass is ~1M tokens regardless of how many findings it
@@ -655,7 +694,8 @@ Mechanics:
    T and does **not** trigger the short-circuit. An api-consistency `Breaking` or an
    architecture `Structural` finding is likewise a behavioral red.
 2. **Earliest trigger — the fact-check gate.** If Stage 1 already yields a behavioral 🔴, skip
-   the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving (the
+   the Stage-1.5/Stage-2 critic panel for this pass (all of it, except the security critic
+   when mechanic 7 applies). This is the largest saving (the
    whole critic block) — measured at **~73% of the pass** on the one case that fired it, a
    commit hunted from the external benchmark repo's history rather than one of the 8 canon
    cells (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
@@ -669,7 +709,8 @@ Mechanics:
    pair, or a large-diff subsequent file-group pass). Note this saves little in practice: the core
    panel is one parallel wave already in flight, so there is usually nothing left to skip (measured:
    a critic-surfaced red saved 0). Let in-flight critics finish and treat the pass as decided.
-4. **Amber is NOT collected on a short-circuited pass.** Ambers gate merge only on the final
+4. **Amber is NOT collected on a short-circuited pass,** except the security critic's under
+   mechanic 7. Ambers gate merge only on the final
    pass (0R+0A, decision 031); gathering them over a surface about to be re-fixed is wasted.
 5. **The terminal pass never short-circuits.** `pr-prep` runs the final, otherwise-clean pass
    **without** `--loop-pass`, so the full panel runs to completion and the amber inventory is
@@ -677,9 +718,45 @@ Mechanics:
    behavioral red is never merged — it is caught by construction on the terminal full-panel
    pass — and the short-circuit only defers non-decisive work between fixes.
 
+**The bound: at most one short-circuit per loop, and never past security on an enforcement
+file.** The short-circuit defers critics; unbounded, it defers them indefinitely. In Q-076 every
+fact-check round found a red, so the security, architecture, performance and API critics first
+ran after four rounds, and security then found 2 High ("don't merge") issues that round 1 could
+have fixed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B3). #4's token rationale
+holds for one deferred pass, since the fix would churn the surface anyway. It does not hold for a
+string of them, because each deferral adds a round in which critic findings could have been fixed
+alongside the fact-check ones. This narrows proposal B3, which asked for the critic panel in
+iteration 1, alongside fact-check, for any unit touching an enforcement file: the bound applies to
+every unit, and on enforcement diffs only security is forced, because B3's full panel in iteration
+1 costs a whole critic block on top of the fact-check pass, and security is the critic the Q-076
+evidence names
+(032's own falsifier, `docs/decisions/032-review-loop-token-reduction-levers.md:90-91`, named this
+failure).
+
+6. **Once per loop.** Before skipping, read the loop's rubric (identified as in
+   [Step 1](#step-1-determine-scope)'s loop-pass default range). If it carries the marker line
+   `Loop-pass short-circuit: used at <sha>`, this loop has already skipped once. Run Stage 2 in
+   full despite the red, with no critic-stage trigger (mechanic 3) and with amber collected.
+   The run still implies `--no-gate` and k=1. If no canonical rubric exists yet, or the newest one is closed (`Loop closed at`; the first
+   pass of a loop), there is no marker, so the short-circuit is allowed. If rubrics for this
+   branch exist but none has the canonical name, or HEAD is detached, the loop's history cannot
+   be read, so do not short-circuit. When the loop's rubric is a new day's file, the pass that
+   creates it copies any marker line from the previous dated file, so the marker carries forward,
+   unless that file is closed (`Loop closed at`), which starts a new loop per Step 1.
+7. **Security on enforcement files.** If the reviewed diff touches an enforcement file (a path
+   matched by the `enforcement` regex in `hooks/live-verify-gate.sh`, which mirrors
+   `devcontainer-config/cc-isolated.sh`'s `enforcement_files()`, the owner of the list, plus
+   `install.sh`),
+   run the security critic even on a pass that short-circuits, whatever Stage 1.5 would decide.
+   Its findings enter the rubric at their mapped tier, amber included. Only the other critics
+   are skipped.
+
 Emit a one-line note in the chat when short-circuiting (e.g.,
 `Loop-pass short-circuit: behavioral 🔴 confirmed at fact-check (<claim>) — skipping critics, returning to loop for fix.`),
-and write the rubric with only the confirmed red(s); mark the skipped critics in
+and write the rubric with only the confirmed red(s) (plus the security critic's findings under
+mechanic 7). Add the marker line `Loop-pass short-circuit: used at <reviewed HEAD sha>` directly
+under the rubric's `Commit:` line, and keep it there for the rest of the loop: later passes
+update the file in place and must not remove it. Mark the skipped critics in
 `## ⏭️ Skipped Core Critics` with the reason `loop-pass short-circuit (behavioral red confirmed)`.
 
 ### Stage 1.5: Critic gating
@@ -803,7 +880,8 @@ For each critic agent, you MUST:
    25k-token budget → the shared block (diff + enclosing-file context, inlined) opens the
    prompt; over budget → degrade per that section's ladder (inline the diff only, or fall
    back to the scope specification so the agent runs its own `git diff`). If
-   the scope is partial (`--range`, `--staged`, `--files`, or a partial `--pr`), also include
+   the scope is partial (`--range`, the loop-pass default range, `--staged`, `--files`, or a
+   partial `--pr`), also include
    the labelling block required by Step 1's partial-scope rule
 4. Include the PR intent captured in "Before You Begin" Step 2, prepended under a
    `## What this PR is trying to accomplish` heading so the critic can scope findings to
