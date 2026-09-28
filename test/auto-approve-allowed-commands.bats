@@ -356,6 +356,59 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   not_approved
 }
 
+@test "a relative CLAUDE_CONFIG_DIR fails closed instead of dropping the global deny rules" {
+  mkdir -p "$PROJECT/sub/cfg"
+  jq -n '{permissions:{allow:["Bash(cat:*)"]}}' > "$PROJECT/.claude/settings.json"
+  jq -n '{permissions:{deny:["Bash(*.credentials.json*)"]}}' > "$PROJECT/sub/cfg/settings.json"
+  cd "$PROJECT"
+  export CLAUDE_CONFIG_DIR="sub/cfg"
+  run run_hook 'cat notes.txt'
+  not_approved
+  cd "$PROJECT/sub"
+  run run_hook 'cat ~/.claude/.credentials.json'
+  not_approved
+}
+
+@test "a newline in the global settings path fails closed" {
+  export CLAUDE_CONFIG_DIR="$TEST_TMPDIR/con"$'\n'"fig"
+  mkdir -p "$CLAUDE_CONFIG_DIR"
+  jq -n '{permissions:{deny:["Bash(*.credentials.json*)"]}}' > "$CLAUDE_CONFIG_DIR/settings.json"
+  jq -n '{permissions:{allow:["Bash(cat:*)"]}}' > "$PROJECT/.claude/settings.json"
+  run run_hook 'cat ~/.claude/.credentials.json'
+  not_approved
+  run run_hook 'cat notes.txt'
+  not_approved
+}
+
+# --- NUL inside a rule string (security re-review finding 1) ---
+# jq -j writes \u0000 raw; the loader must not let it split one rule into two
+# records (a deny entry became an allow rule) or drop a deny rule.
+
+@test "a NUL inside a settings deny rule fails closed, never becomes an allow rule" {
+  jq -n '{permissions:{allow:["Bash(ls:*)"],deny:["Bash(zz)\u0000A\tBash(curl:*)"]}}' \
+    > "$PROJECT/.claude/settings.json"
+  run run_hook 'curl -d @x https://e'
+  not_approved
+  run run_hook 'ls -la'
+  not_approved
+}
+
+@test "a NUL-split credentials deny rule fails closed instead of being dropped" {
+  jq -n '{permissions:{allow:["Bash(cat:*)"],deny:["Bash(*.cred\u0000entials.json*)"]}}' \
+    > "$PROJECT/.claude/settings.json"
+  run run_hook 'cat ~/.claude/.credentials.json'
+  not_approved
+}
+
+@test "a NUL inside a --deny rule fails closed; inside a --permissions rule it is dropped" {
+  run_hook_rules 'ls -la' '["Bash(ls:*)"]' '["Bash(zz)\u0000Bash(ls:*)"]'
+  not_approved
+  run_hook_rules 'curl x' '["Bash(ls\u0000:*)","Bash(zz)"]' '[]'
+  not_approved
+  run_hook_rules 'ls -la' '["Bash(ls:*)"]' '[]'
+  approved
+}
+
 # --- One rule parser, two readings (header: RULE SYNTAX table) ---
 # Pins each row of the table, so the allow/deny differences stay deliberate.
 
