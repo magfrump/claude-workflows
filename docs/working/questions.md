@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-065](#q-065--si-input-rejected-history-dead-code) | you: judgment | `prepend_si_input_rejected_history` (`scripts/lib/si-input.sh:214`) has had no caller since it landed in 06... | 2026-09-26 |
 | [Q-081](#q-081--cc-isolated-sandbox-half) | you: judgment | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
+| [Q-083](#q-083--host-tools-trust-category) | you: judgment | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
 | [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
@@ -154,4 +155,22 @@ echo "$(cat ~/.claude/.credentials.json | wc -c)"
 Then repeat with the auto-approve hook removed from settings for that session.
 
 - **Interim:** the hook header calls its deny check load-bearing in cc-isolated until this is known.
+
+### Q-083 · host-tools-trust-category
+**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
+
+The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-exit-scan.sh` and `cc-gitdir.sh`) in the container-boundary enforcement category. Should host tools get their own category?
+
+- **Why it's yours:** it amends decision log row 45's scope and changes what the live-verify gate demands of every commit to these files.
+- **Read:** `docs/reviews/q076-architecture-review-2026-09-27.md` Finding 3 · decision log row 45 · `hooks/live-verify-gate.sh` · `enforcement_files` in `devcontainer-config/cc-isolated.sh`.
+- **The problem, concretely:** host tools can't be live-probed, so every commit to them carries `Live-verified: no`, which dilutes row 45's debt list. `check_manifest` runs only when cc-isolated launches, so a changed `cc-push.sh` blocks every launch until re-blessed, while `cc-push` itself runs unchecked.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Separate host-tools category** | Its own manifest section and commit trailer (e.g. `Host-tool-tested:`); `cc-push` verifies its own hash before running; row 45 amended | Review one enforcement change | More machinery for two or three files |
+| **[2] Keep as enforcement files** | Record in row 45 that host tools are deliberately in the enforcement set | None | Debt list stays diluted; a cc-push edit keeps blocking launches until re-bless |
+| **[3] Unhash host tools** | Drop them from the manifest; rely on git review only | None | A tampered cc-push on the host goes unnoticed |
+
+- **Interim:** [2] in practice (user deferred this at the Q-076 fix batch, 2026-09-27).
+- **If the answer differs:** [1] is a small enforcement-file change with tests; [3] edits the manifest and the tests that pin it.
 - **If the answer differs:** denied in both runs ⇒ Claude Code's `permissions.deny` wins over a hook allow, and the hook's deny reader can be deleted (architecture-review 1). Runs or prompts only with the hook wired ⇒ keep it and reclassify the hook as an enforcement component. Also record whether the leading `*` in `Bash(*.credentials.json*)` matched at all.
