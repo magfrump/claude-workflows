@@ -106,3 +106,15 @@ carry a qualifying author note (a discoverable TODO or a concrete revisit trigge
 
 - Q-085 is still OPEN in `docs/working/questions.md` on this branch; it is ANSWERED only on `answers-2026-09-28`. Row 62 and the proposal note depend on that branch merging. Not fixed here (another unit owns `questions.md`).
 - User judgment: whether deletions should count toward the cap (a pure dead-code deletion counts in full). Raised by api-consistency as a question; the rule is unchanged.
+
+## Post-cap resolution (user decision, 2026-09-28)
+
+The iteration-4 gate escalated R1 to the user. Answers: close R1 with the **plain one-liner** (no `BASE` validation; the text now says a wrong `BASE` can pass and must be checked), and **keep counting deletions**. Applied in the commit after `104db50`; no 4th review iteration was run.
+
+| ID | Status | How |
+|---|---|---|
+| R1 | 🟢 Closed by user decision | Guarded command replaced by the plain count; the loud-failure promise is gone, and the limitation is stated in step 1a |
+| A10 | 🟢 Moot | The comment it contradicted was removed with the guard |
+| A11 | 🟢 Moot | No error paths remain in the snippet |
+| A12 | 🟢 Acknowledged | `6ac9dcd`'s summary/Notes mismatch on empty `BASE` is superseded: the snippet no longer special-cases it. Not rewritten (history) |
+| A13 | 🟢 Fixed | chat-synthesis rule 2 now excludes a unit whose cap the user waived |

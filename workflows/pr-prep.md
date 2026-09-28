@@ -86,15 +86,14 @@ Run these concurrently — both are fast, and either failing changes the plan:
 **a. Size gate (hard cap: ~400 code lines per review unit).** Before the review-fix loop starts, count the unit's changed code lines, leaving out `docs/` (review artifacts, working docs, decision records, thoughts):
 
 ```bash
-BASE=main   # for a stacked unit whose lower unit has not merged yet: that unit's branch
-# Run as one command. An empty or bad BASE (or BASE=HEAD) must fail loudly, not print 0.
+BASE=main   # a stacked unit whose lower unit has not merged yet: that unit's branch, the one directly below
 # ':(top)' anchors both pathspecs at the repository root, so the count is the same from any directory.
-b=$(git rev-parse --verify --quiet --end-of-options "${BASE:-main}^{commit}") && [ "$b" != "$(git rev-parse HEAD)" ] \
-  && git diff --numstat "$b"...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }' \
-  || echo "size gate: BASE '${BASE}' is not a commit other than HEAD; fix it and re-run" >&2
+git diff --numstat "$BASE"...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'
 ```
 
-Added and removed lines both count; binary files count 0. The gate fires above 400: the "~" marks a round number, not a tolerance band. Over it, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. In /away mode, split without asking and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line, as the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) does; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
+The count checks nothing about `BASE`: set it to the branch directly below this unit (or `main`). A wrong `BASE`, such as one above this unit in the stack, can print a small or zero count and pass the gate, so check it before trusting a low number (Q-085 review R1; the user chose the plain command over a guarded one).
+
+Added and removed lines both count, deletions included (a pure dead-code deletion counts in full; user decision 2026-09-28, since deletions still need review); binary files count 0. The gate fires above 400: the "~" marks a round number, not a tolerance band. Over it, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. In /away mode, split without asking and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line, as the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) does; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
 - A preparatory refactor that can land independently
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
