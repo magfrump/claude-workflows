@@ -338,7 +338,7 @@ STUB
   # Regression (audit 2026-09-18): `shift 2` under set -e exited 1 with no output.
   make_repo "$TEST_TMPDIR/proj"
   run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 2 ]
   [[ "$output" == *"--profile needs a value"* ]]
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
@@ -351,12 +351,22 @@ STUB
   [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
 }
 
-@test "usage prints the whole header block, including its last line" {
+@test "usage prints the whole header block, exit status included, and nothing past it" {
   run usage
   [ "$status" -eq 0 ]
-  # Guards the hardcoded sed line range in usage() against header edits.
   [[ "$output" == *"REPLACES any"* ]]
   [[ "$output" == *"really is the repo you asked for"* ]]
+  [[ "$output" == *"EXIT STATUS"*"2  bad usage"*"3  the exit scan found a change"*"4  the exit scan could not read everything"* ]]
+  [[ "$output" == *"1 at launch, where the same"*"failure at exit is 4"* ]]
+  # The header's last line; and no code after it.
+  [[ "$output" == *'"Changing the boundary".'* ]]
+  [[ "$output" != *"set -euo pipefail"* ]]
+}
+
+@test "usage errors exit 2 (an unknown flag), with the help on stderr" {
+  run bash "$CONFIG_SRC/cc-isolated.sh" --nope
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"unknown flag: --nope"*"EXIT STATUS"* ]]
 }
 
 @test "suggest_profiles proposes python for a python repo but never applies it" {
@@ -1358,6 +1368,47 @@ plant_hook() {
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
   [[ "$output" == *"~ root-repo $SCAN_WS  looks like a git dir"* ]]
+}
+
+@test "launch_gitdir_ok: a normal checkout passes; a .git without HEAD, or a root that looks like a git dir, fails with the reason" {
+  scan_repo
+  launch_gitdir_ok "$SCAN_WS"
+  mv "$SCAN_WS/.git/HEAD" "$TEST_TMPDIR/HEAD.saved"
+  run launch_gitdir_ok "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$SCAN_WS/.git is not a valid git directory"* ]]
+  mv "$TEST_TMPDIR/HEAD.saved" "$SCAN_WS/.git/HEAD"
+  echo .git > "$SCAN_WS/commondir"
+  run launch_gitdir_ok "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$SCAN_WS itself looks like a git directory"* ]]
+}
+
+@test "launch: a repository already planted at the checkout root refuses the launch (exit 1), never becomes the baseline" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" ":"
+  # git itself still uses .git here (it is valid), so the launcher gets this far.
+  mkdir -p "$ws/objects" "$ws/refs/heads"
+  echo 'ref: refs/heads/main' > "$ws/HEAD"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"refusing to launch on $ws: $ws itself looks like a git directory"* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
+}
+
+@test "launch: a .git git accepts but the tools do not (HEAD over 255 bytes) refuses the launch (exit 1)" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" ":"
+  { printf 'ref: refs/heads/main\n'; head -c 300 /dev/zero | tr '\0' x; } > "$ws/.git/HEAD"
+  git -C "$ws" rev-parse --show-toplevel   # git still accepts it
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"refusing to launch on $ws: $ws/.git is not a valid git directory"* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
 }
 
 @test "exit scan gitdir: switching and creating branches is not a finding (HEAD's kind, not its ref)" {

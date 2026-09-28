@@ -13,6 +13,23 @@
 #   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
 #                                        # boundary self-probe, record it verified live
 #   cc-isolated --list                   # registered projects, blessed config, verified?
+#   cc-isolated --help                   # this text
+# Push a session's commits with cc-push, never with host git in the checkout.
+#
+# EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
+#   0  success; after a session: the exit scan found nothing, and claude's own
+#      exit status is passed through — so a 1-4 from claude itself reads like
+#      one of the codes below;
+#   1  an error, including a launch refused because the scan's baseline could
+#      not be taken (the checkout's .git unreadable, not a git dir git accepts,
+#      or the root already looking like one) — 1 at launch, where the same
+#      failure at exit is 4;
+#   2  bad usage;
+#   3  the exit scan found a change the session made to what host git reads
+#      (replaces claude's status);
+#   4  the exit scan could not read everything, or was interrupted (replaces it).
+# A clean scan is not permission to run git in the checkout:
+# guides/cc-isolated-usage.md, "Known routes it does not see".
 #
 # WHY THE CONFIG LIVES OUTSIDE THE REPO (decision 016, H2). Under decision 015 the
 # boundary config was committed inside each repo, which meant it was bind-mounted
@@ -542,12 +559,10 @@ probe_boundary() {
 # shellcheck source=cc-exit-scan.sh
 source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-exit-scan.sh"
 
+# usage: the header comment block, from line 2 to the first line that is not a
+# comment (cc-push's approach), so it cannot end mid-sentence when the block grows.
 usage() {
-  # Line range: the header block above, down to the last line of the "WHY THE
-  # WORKSPACE IS AN ARGUMENT" paragraph. Adding a line to that block means moving
-  # this bound with it — test/cc-isolated-functions.bats asserts the last line is
-  # still included, so a stale bound fails there rather than silently truncating.
-  sed -n '2,29p' "${BASH_SOURCE[0]}"
+  awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
 main() {
@@ -564,12 +579,12 @@ main() {
         if [ $# -lt 2 ]; then
           echo "ERROR: --profile needs a value, e.g. --profile python (comma-separate several)." >&2
           usage >&2
-          exit 1
+          exit 2
         fi
         profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
-      -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 1 ;;
+      -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 2 ;;
       *)            ws_arg="$1"; shift ;;
     esac
   done
@@ -638,6 +653,20 @@ main() {
   lws="$(logical_workspace "$ws_arg" "$ws")"
   if [ "$action" = "launch" ]; then
     snap_err="$(mktemp)"
+    # A .git git would not accept, or a root that looks like a git dir, is refused
+    # rather than recorded: as the baseline it would hide a plant already there
+    # (an earlier session's emptied HEAD, a repository at the root) from the scan.
+    if ! launch_gitdir_ok "$ws" 2>"$snap_err"; then
+      {
+        echo "ERROR: refusing to launch on $ws: $(cat "$snap_err")."
+        echo "  The session-exit scan compares against the checkout as it is at launch, so"
+        echo "  this state would become its baseline and go unreported. Restore .git"
+        echo "  (compare with a fresh clone) or remove what is at the checkout root, then"
+        echo "  rerun. Do not run host git in the checkout meanwhile."
+      } | scan_vis >&2
+      rm -f "$snap_err"
+      exit 1
+    fi
     if ! git_before="$(git_exec_snapshot "$ws" "$lws" 2>"$snap_err")"; then
       {
         echo "ERROR: could not snapshot $ws/.git for the session-exit scan: $(cat "$snap_err")"

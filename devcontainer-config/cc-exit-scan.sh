@@ -84,7 +84,7 @@ logical_workspace() {
 # checkout. Config is read with `git config --file <f> --no-includes` from cwd /,
 # so no repo is discovered and git follows no include (the scan reads each target
 # itself). The rest is host tools reading files: find, stat, readlink, realpath,
-# sha256sum, cat, tr, sort, awk, cut, mktemp, dirname and rm; find never follows
+# sha256sum, cat, tr, sort, awk, sed, cut, mktemp, dirname and rm; find never follows
 # symlinks (-P), and a symlink's target is hashed only when it is a regular file.
 # Nothing refreshes an index, which is what starts fsmonitor and clean filters.
 # (The launcher's own resolve_workspace runs `git rev-parse --show-toplevel` in the
@@ -93,30 +93,15 @@ logical_workspace() {
 # EVERY CONTAINER-CHOSEN STRING (names, values, error text) is reduced to printable
 # ASCII, newlines included, before it reaches the terminal: paths and values in
 # report lines are %q-quoted or have line breaks replaced, every error reason is
-# written by _snap_fail (tools' own error text is dropped: it would quote a path
-# raw), and whole messages go through scan_vis.
+# written by _snap_fail as one line of printable ASCII, and whole messages go
+# through scan_vis. The error text of read, readlink, stat and cd is dropped (the
+# reason names the path itself); find's and git config's own error text is kept
+# inside the reason, reduced to that one printable line.
 #
-# LIMITS (also in guides/cc-isolated-usage.md). No finding does not mean safe:
-#   - a hook present at launch that runs a tracked file (husky's
-#     core.hooksPath=.husky/_, the pre-commit framework, `exec ./scripts/check.sh`):
-#     the session edits the tracked file, nothing in .git changes;
-#   - anything present at launch is the baseline, including an earlier session's
-#     plant or rebase left in progress, and a config value naming a program by path
-#     in the checkout (core.pager = ./tools/pager.sh) is recorded as a value, not
-#     followed;
-#   - the container keeps running after claude exits, so a process it left behind
-#     can plant after the scan; a launcher killed before the scan (closed terminal,
-#     SIGTERM) scans nothing;
-#   - tracked .gitattributes and .gitmodules are not scanned (they select drivers
-#     and URLs that config defines, but git also acts on .gitmodules itself on
-#     `submodule update`); a driver your own global config defines (filter.lfs.*)
-#     runs on session-written content with no finding;
-#   - includeIf gitdir: is matched for the physical path and the path you launched
-#     on; running git through yet another symlinked route can match a condition
-#     the scan did not evaluate;
-#   - time: hashing is capped per file and in total, but a session can still plant
-#     many files (and many embedded repos) to make the scan slow. A scan you stop
-#     with Ctrl-C exits 4; one you kill some other way scans nothing.
+# LIMITS: what a clean scan does not rule out is listed once, in
+# guides/cc-isolated-usage.md, "Known routes it does not see" — update it there
+# when a change here opens or closes a route. The short form: no finding does not
+# mean safe, and never means host git may run in the checkout.
 GIT_EXIT_SCAN_KEYS_RE='^(filter\.|core\.fsmonitor|include|hook\.|core\.hookspath|core\.sshcommand|core\.askpass|core\.pager|core\.editor|core\.gitproxy|core\.attributesfile|core\.worktree|sequence\.editor|pager\.|credential|diff\.|difftool\.|merge\.|mergetool\.|interactive\.|gpg\.|alias\.|submodule\.|protocol\.|remote\.|branch\..*\.(remote|pushremote)$|url\.|uploadpack\.|receive\.|sendemail\.|ssh\.|http\.|gc\.|web\.|browser\.|man\.|instaweb\.)'
 
 # scan_git_dirs <ws>: print the git dir, then the common dir, of <ws>, from plain
@@ -699,6 +684,29 @@ git_exec_snapshot() {
   rm -rf "$_snap_tmp"
   [ "$rc" -eq 0 ] || return 1
   printf '%s' "$_snap" | LC_ALL=C sort -u
+}
+
+# launch_gitdir_ok <ws>: 0 when the checkout's git dir is one git accepts
+# (gitdir_valid) and the checkout root does not look like a git dir
+# (looks_like_gitdir). Otherwise one reason on stderr (_snap_fail) and 1: the
+# launcher refuses rather than take that state as the baseline, where a plant
+# already there (an earlier session's emptied HEAD, a repository at the root)
+# would never be reported.
+launch_gitdir_ok() {
+  local ws="$1" dirs g
+  if ! dirs="$(scan_git_dirs "$ws")"; then
+    _snap_fail 'cannot locate the git directory of %s from its .git entry' "$ws"
+    return 1
+  fi
+  g="${dirs%%$'\n'*}"
+  if ! gitdir_valid "$g"; then
+    _snap_fail '%s is not a valid git directory (its HEAD, objects/ or refs/ is missing or broken), so host git would look for a repository elsewhere, such as the checkout root' "$g"
+    return 1
+  fi
+  if looks_like_gitdir "$ws"; then
+    _snap_fail '%s itself looks like a git directory (a HEAD next to objects/, or a commondir file), which host git can read as a repository' "$ws"
+    return 1
+  fi
 }
 
 # scan_vis: make control bytes visible as '?' so a container-chosen hook name or
