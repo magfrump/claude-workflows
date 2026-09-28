@@ -771,7 +771,12 @@ git_exit_scan() {
   [ "$before" != "$after" ] || [ -n "$invalid" ] || return 0
   changes="$(scan_diff "$before" "$after")"
   if [ -n "$invalid" ]; then changes="${changes:+$changes$'\n'}$invalid"; fi
-  [ -n "$changes" ] || return 0
+  # The snapshots differ but nothing rendered (e.g. a file changed while the
+  # scan read it): that is not a clean result, so fail closed.
+  if [ -z "$changes" ]; then
+    echo "  the two snapshots differ but the difference could not be shown; treat the checkout as unsafe" >&2
+    return 2
+  fi
   {
     echo
     echo "WARNING: this session changed what HOST git reads in $ws to decide which"

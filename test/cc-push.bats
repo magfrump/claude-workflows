@@ -729,3 +729,16 @@ STUB
   run err_vis bash -c 'exit 3'
   [ "$status" -eq 3 ]
 }
+
+@test "PATH: a program the session wrote is never run by name, from a relative or checkout PATH entry" {
+  # Plant a `git` in the checkout and put it on PATH both ways: as a relative
+  # entry (run from inside the checkout) and as an absolute path into it.
+  mkdir -p "$T/co/bin"
+  printf '#!/bin/sh\ntouch "%s/planted-ran"\nexit 1\n' "$T" > "$T/co/bin/git"
+  chmod +x "$T/co/bin/git"
+  cd "$T/co"
+  PATH="bin:$T/co/bin:$PATH" run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 0 ]
+  [ ! -e "$T/planted-ran" ]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$SESSION_HEAD" ]
+}

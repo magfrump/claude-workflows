@@ -19,6 +19,8 @@
 #                    CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
 #                    or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
 #   --yes            push without asking (the preview is still printed).
+#                    Without --branch, the checkout's HEAD (which the session
+#                    controls) picks the branch: pass --branch when scripting.
 #   --allow-running  go on although a cc-isolated container for this checkout is
 #                    running, or docker cannot say (loud warning; see below).
 #   -h, --help       this text.
@@ -110,6 +112,25 @@ set -euo pipefail
 # Whatever the caller's environment points git at, cc-push chooses the repos.
 unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
       GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE GIT_CEILING_DIRECTORIES
+
+# safe_path [CHECKOUT]: keep only absolute PATH entries, and none inside
+# CHECKOUT, so no git/docker/coreutils the session wrote can be run by name.
+# Called once at start (relative entries) and again once the checkout is known.
+safe_path() {
+  local co="${1:-}" out="" p
+  local -a parts
+  IFS=: read -r -a parts <<< "$PATH"
+  for p in "${parts[@]}"; do
+    case "$p" in /*) ;; *) continue ;; esac
+    if [ -n "$co" ]; then
+      case "$(realpath -m -- "$p")/" in "$co"/*) continue ;; esac
+    fi
+    out="${out:+$out:}$p"
+  done
+  PATH="$out"
+  export PATH
+}
+safe_path
 
 # gitdir_valid, looks_like_gitdir: plain file tests, next to this file (readlink
 # -f: cc-push on PATH is a symlink to the installed copy).
@@ -329,12 +350,18 @@ main() {
     start="$1"
   fi
 
-  check_git_version
-
   local co
   co="$(find_checkout "${start:-$PWD}")" \
     || die "no git checkout at or above ${start:-$PWD}. Name it: cc-push /path/to/checkout"
   case "$co" in *$'\n'*|*::*) die "refusing a checkout path holding a newline or '::'" ;; esac
+  # Resolve a relative --clone before leaving the caller's directory, drop PATH
+  # entries inside the checkout, and run everything else from / so no relative
+  # path or cwd-dependent lookup lands in the checkout.
+  [ -z "$clone" ] || clone="$(realpath -m -- "$clone")" || die "cannot resolve the clone path"
+  safe_path "$co"
+  cd / || die "cannot change to /"
+
+  check_git_version
   # The container first: while it runs, every check below could be undone.
   check_no_container "$co" "$allow_running"
   check_checkout "$co"

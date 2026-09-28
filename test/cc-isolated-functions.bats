@@ -1188,6 +1188,18 @@ plant_hook() {
   [ -z "$output" ]
 }
 
+@test "exit scan: snapshots that differ with nothing to show fail closed (status 2), never 0" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/hooks" pre-push
+  # Stand-in for a file that changed while the scan read it: the snapshots
+  # differ, but the rendered difference comes out empty.
+  scan_diff() { :; }
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"could not be shown"* ]]
+}
+
 @test "exit scan: a hook planted in .git/hooks is named, and not run" {
   scan_repo
   local before; before="$(git_exec_snapshot "$SCAN_WS")"
