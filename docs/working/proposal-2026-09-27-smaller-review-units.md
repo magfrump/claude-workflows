@@ -21,7 +21,7 @@ Ranked by estimated time saved on a run like this one, against implementation co
 
 ### A. Make the review unit the item, not the batch
 
-**A1 · One review→fix→merge loop per independent item.** Replace parallel-worktrees step 4.4 ("one pass, not per-item") with: each item branch runs its own pr-prep loop and merges to `main` as soon as it is green. Only items that share files or state are reviewed together. Two things stay combined:
+**A1 · One review→fix→merge loop per independent item.** *Adopted 2026-09-27 (decision log 59).* Replace parallel-worktrees step 4.4 ("one pass, not per-item") with: each item branch runs its own pr-prep loop and merges to `main` as soon as it is green. Only items that share files or state are reviewed together. Two things stay combined:
 - the final test gate on `main` after each merge;
 - one short cross-item check (does item N break item M's assumptions?) when two items touch the same subsystem.
 
@@ -100,7 +100,7 @@ bash's setlocale warning lands inside captured `$output`. All 5 pass under `LC_A
 
 ## Open questions for the user
 
-1. A1 reverses a documented anti-pattern ("per-item review fragmentation"). Is per-item review→merge the new default, or only when one item dominates the findings (A2 alone)?
+1. ~~A1: per-item default?~~ Answered 2026-09-27: yes, per-item is the default (decision log 59). The old rule had no recorded rationale (`ae08bff`, `1f3c1fc`). A2 now applies only inside a single item that has grown too large.
 2. A4's size budget: is ~600 changed code lines per unit the right number, and should the budget apply only to enforcement files?
 3. Where to start: order row 1 (test tooling) is self-contained and could be implemented now.
 
