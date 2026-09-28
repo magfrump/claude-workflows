@@ -1,79 +1,51 @@
-Commit: 12f96cd
+Commit: 0304a2c
 
-# Architecture Review — review/q065 (Q-065 [1])
+# Architecture Review — review/q065 (Q-065 [1]), final confirming pass
 
-**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` (main 6405e43 → HEAD 12f96cd), full branch: `scripts/lib/si-input.sh`, `test/si-input-parse-comments.bats` (new), `test/si-input-rejected-history.bats` (deleted)
+**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` at HEAD 0304a2c (full branch): `scripts/lib/si-input.sh`, `test/si-input-parse-comments.bats` (new), `test/si-input-rejected-history.bats` (deleted), `docs/reviews/override-log.md`. The `docs/reviews/q065-*.md` artifacts are out of scope.
 **Date:** 2026-09-28
-**Based on:** `docs/reviews/q065-code-fact-check-report.md` (Commit: 12f96cd)
+**Based on:** `docs/reviews/q065-code-fact-check-report.md` (Commit: 0304a2c; 19 verified, 1 mostly accurate, 0 incorrect)
 
 ## Scope check
 
-- Module structure: no (no module added, moved or split; one test file replaced by a smaller one)
-- Public APIs: **yes**. `prepend_si_input_rejected_history` was a listed public function of `scripts/lib/si-input.sh` (main:scripts/lib/si-input.sh:12, :214); the diff removes it from the library's surface.
-- Data models: marginally. The deleted function was the only producer of a pre-heading `<!-- Recent rejections ... -->` block in `si-input.md`, and its comment was the only place that stated the file-format rule it relied on (see finding 1).
+- Module structure: no (no files moved or renamed; a test file is replaced by a new one)
+- Public APIs: **yes**. `prepend_si_input_rejected_history` is removed from the function surface of the sourced library `scripts/lib/si-input.sh`, and from the header's `Functions:` list.
+- Data models: no. The `<!-- Recent rejections ... -->` block format that the function wrote into `si-input.md` goes away with it. No reader of that format exists: `parse_si_input` treats it as a comment and discards it.
 - Cross-cutting concerns: no
 
-Proceeding with the review.
+Proceeding, limited to the removed export and how the surviving library and its tests fit around it.
 
 ## Dependency Map
 
-`scripts/lib/si-input.sh` is a leaf library: it depends only on bash, `awk`, `sed` and `jq`, and imports no other repo module. Its one production consumer is `scripts/self-improvement.sh`, which sources it (`scripts/self-improvement.sh:231`) and calls only `parse_si_input` (`scripts/self-improvement.sh:493`); `parse_si_priority_hypotheses` is consumed through the same sourcing. Tests source the library directly (`test/si-input-parse-comments.bats:8`, `test/function-inventory.bats`, `test/parse-si-priority-hypotheses.bats`). Dependencies flow one way, orchestrator → library; the diff adds no edge and removes a function that had no inbound edge (fact-check Claim 1: no caller on any ref since 06903d6). The deleted function had an outbound read-dependency on the round-report JSON schema (`.validation.<tid>.verdict`, `.verdict_detail.reject_reason`), which it no longer imposes on the library.
-
-Trust-boundary cross-reference: the most recent security review, `docs/reviews/security-review-2026-09-27.md` (Commit: 795ff71), covers `hooks/auto-approve-allowed-commands.sh` and other Q-077/078/080 files, not this library. This review produces no module-boundary finding on a labeled trust boundary, so the cross-reference is a no-op.
+- `scripts/self-improvement.sh:230-231` sources `scripts/lib/si-input.sh` and calls only `parse_si_input` (`:493`). `parse_si_priority_hypotheses` is exercised by `test/parse-si-priority-hypotheses.bats`.
+- `test/function-inventory.bats:52-69` pins `parse_si_input` as part of the expected function set. It never listed the deleted function, so the inventory contract does not change.
+- Across `scripts/`, `hooks/` and `test/`, nothing refers to `prepend_si_input_rejected_history` except the provenance comment at `test/si-input-parse-comments.bats:5-6`. Stage 1 also verified that no live caller exists (Claim group 5). What remains is in archive/, execution logs, dated ledgers (`docs/decisions/log.md:80`, `docs/working/audit-test-constraint-2026-09-26.md`) and the Q-065 questions entry, all excluded by the preamble.
+- Direction is unchanged. The library depends only on bash, `sed`, `awk` and `jq`, and the orchestrator depends on the library. The deleted function was the library's only writer to `si-input.md` and its only reader of `round-<N>-report.json`. With it gone, `si-input.sh` is again a pure input parser with no dependency on the round-report schema.
 
 ## Findings
 
-#### 1. The "pre-heading text is discarded" format rule lost its only statement and its only test
+No findings.
 
-**Severity:** Informational
-**Location:** `scripts/lib/si-input.sh:19-25` (surviving contract comment); deleted statement at `main:scripts/lib/si-input.sh:205-207`; deleted assertion at `main:test/si-input-rejected-history.bats:178-188`
-**Move:** 3 (module boundary: what the public surface promises)
-**Confidence:** High
-**Legibility-target:** for-author
-**Evidence:**
-
-```bash
-# main:scripts/lib/si-input.sh:205-207
-# The block lives BEFORE any "## " section heading, so parse_si_input's
-# state machine treats it as preamble and discards it — user-editable
-# sections (Feedback / Priorities / Off-limits / Context) are untouched.
-```
-
-```bash
-# scripts/lib/si-input.sh:19-25
-# --- Pre-run input parser ---
-# Reads a markdown file with ## Feedback, ## Priorities, ## Off-limits,
-# ## Context sections and exports their content as shell variables.
-#
-# Args: $1 = path to si-input.md
-# Exports: SI_FEEDBACK, SI_PRIORITIES, SI_OFF_LIMITS, SI_CONTEXT
-# Returns: 0 if file exists (even with empty sections), 1 if missing
-```
-
-`parse_si_input` still discards text before the first `##` heading: it accumulates such lines under an empty `current_section`, and `_save_si_section` (`scripts/lib/si-input.sh:103-113`) has no `case` arm for an empty heading, so they are dropped. That is part of the `si-input.md` format contract: it is what makes a pre-heading block a safe place for tool-written or explanatory text. Before this diff the rule was written down only in the deleted function's comment and asserted only by the deleted test "comment block does not pollute parsed sections" (fact-check Claim 2 confirms neither moved test places content before the first `##`). The behaviour is unchanged, so nothing breaks now. But a future edit to the state machine (for example, defaulting unheaded text to Feedback) would change the contract without a failing test or a contradicted comment. No producer of pre-heading content exists today, so the consequence is small.
-
-**Recommendation:** Either add one line to the `parse_si_input` header (e.g. "Text before the first `##` heading is discarded.") or add a parse-only test to `test/si-input-parse-comments.bats` that puts a comment block or plain text before `## Feedback` and asserts that no `SI_*` variable contains it. Either is enough; the test is the stronger guard.
+(Trust-boundary cross-reference: `docs/reviews/security-review-*.md` files exist, but none covers this branch, and this review produces no module-boundary findings under move #3, so the cross-reference is a no-op.)
 
 ## What Looks Good
 
-- The deletion narrows the library's public surface to what its one consumer uses: `parse_si_input` and `parse_si_priority_hypotheses`, plus two `_`-prefixed internals. The header's Functions list (`scripts/lib/si-input.sh:8-11`) now matches the file exactly (fact-check Claim 5).
-- It removes a latent coupling. The library no longer reads the round-report JSON schema, a structure owned by the round-reporting code, so a future change to `validation`/`verdict_detail` no longer has a second, unexercised reader to keep in step.
-- The library's responsibility becomes cleaner. It now only parses `si-input.md`. Before, it also rewrote that file from round reports, which is a second reason to change.
-- The surviving tests went into a file named for what they test (`si-input-parse-comments.bats`) instead of staying in a file named for a deleted function. The runner discovers it by glob and `@category` tag, with no manifest to update (fact-check Claim 6).
+- **Cohesion restored (move #2).** The removed function wrote to `si-input.md` and read round reports. Those two responsibilities were foreign to a module whose header describes it as a "Pre-run input parser". Removing it narrows the reasons `si-input.sh` has to change to one: the si-input.md format. It also drops the library's coupling to the `round-*-report.json` `validation`/`verdict_detail` schema, which `scripts/lib/si-morning-summary.sh` still owns for its own "Recent rejections" summary.
+- **Surface and documentation stay in step (move #3).** The header's `Functions:` list (`scripts/lib/si-input.sh:8-11`) is updated in the same change, so the documented public surface matches the exported one (Stage 1 verified).
+- **Tests follow the unit under test.** The two `parse_si_input` tests that lived in the deleted helper's test file now sit in a file named for `parse_si_input`'s behaviour. The replacement third test pins the "preamble and unknown headings are discarded" contract that the deleted function's design relied on, and that any future re-introduction of a pre-heading block would rely on too. The contract now has a home that does not depend on the dead producer.
+- **Clean removal.** No shim, stub or deprecated alias is left behind. The function had no caller, so a compatibility layer would only add surface.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | Pre-heading discard rule of `si-input.md` lost its only comment and only test | Informational | `scripts/lib/si-input.sh:19-25` | High |
+| — | No findings | — | — | High |
 
 ## Overall Assessment
 
-The change improves the library's structural integrity. It removes a dead public function, narrows the library's surface to what is consumed, and drops an unexercised dependency on the round-report schema. No dependency direction, layering or boundary problem is introduced. The one structural note is that a small format-contract rule (text before the first `##` heading is discarded) was documented and tested only through the deleted code. It is worth restating in the surviving parser's header or a one-test addition, but it does not block merge.
+The change improves the structural integrity of `scripts/lib/si-input.sh`. It removes an uncalled export whose responsibilities (writing the input file and reading round reports) did not belong in a parser module, without changing the surface that the one consumer (`self-improvement.sh`) or the inventory test depends on. No dependency-direction, layering or coupling problems are introduced. The most important structural point is a forward-looking note rather than a defect: if the loop ever wants rejected-history feedback in `si-input.md` again (decision log row 57 says the loop is to be resumed), that writer belongs in the orchestrator or next to the round-report producer, not back in the parser library.
 
 ## Goal-Alignment Note
-
-- **Success criterion (verbatim):** "a markdown report saved at the output path named in your role-specific tail, structured per your skill, ending with a Goal-Alignment Note."
-- **Answered:** Scope check (the public-API category applies); the dependency map of `scripts/lib/si-input.sh` and its consumers; all eight cognitive moves considered. Moves 1, 2, 3 and 7 applied; 4, 5, 6 and 8 have nothing to act on in a pure deletion. Trust-boundary cross-reference checked and found to be a no-op. One Informational finding.
-- **Out of scope:** Test adequacy beyond the contract point in finding 1 (test-strategy's domain); commit-message wording (fact-check Claim 2 already covers it); the questions.md/answer-record hash bookkeeping (fact-check Claim 8).
-- **Escalate:** None from this critic. Finding 1 overlaps the fact-check's escalation (b), the lost pre-heading assertion. Synthesis should merge the two into one rubric item, not count them twice.
+- **Answered:** Whether removing `prepend_si_input_rejected_history` from the `si-input.sh` public surface leaves any consumer, inventory contract, or dependency direction broken, and whether the relocated and new tests sit at the right module boundary. The full branch diff at 0304a2c was checked against `self-improvement.sh`, `function-inventory.bats`, `parse-si-priority-hypotheses.bats` and a repo-wide grep. Result: no findings.
+- **Out of scope:** Test-assertion strength and mutant coverage (Stage 1 and test-strategy), override-log wording (Stage 1 Claim group 4), commit-message accuracy (Stage 1 Claim 11), and the `docs/reviews/q065-*.md` artifacts.
+- **Escalate:** None.

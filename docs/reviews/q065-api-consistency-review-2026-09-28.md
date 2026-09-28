@@ -1,59 +1,58 @@
-Commit: 12f96cd
+Commit: 0304a2c
 
-# API Consistency Review — review/q065 (Q-065 [1])
+# API Consistency Review — review/q065 (Q-065 [1], final confirming pass)
 
-**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` (main 6405e43 → HEAD 12f96cd), full branch
+**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` at HEAD 0304a2c (full branch; `docs/reviews/q065-*.md` out of scope)
 **Date:** 2026-09-28
-**Based on:** `docs/reviews/q065-code-fact-check-report.md` (Stage 1, k=1)
+**Based on:** `docs/reviews/q065-code-fact-check-report.md` (k=1, 19 verified / 1 mostly accurate / 0 stale / 0 incorrect)
 
 ## Baseline Conventions
 
-- `scripts/lib/*.sh` are sourced shell libraries with a direct-execution guard and a header `Functions:` list naming each public function (`scripts/lib/si-input.sh:8-11`). Public functions are `snake_case` verb-noun (`parse_si_input`, `parse_si_priority_hypotheses`); internal helpers carry a leading underscore (`_save_si_section`, `_trim_blank_lines`).
-- The declared consumer of `si-input.sh` is `scripts/self-improvement.sh` (header line 6). It sources the library and calls only `parse_si_input` (`scripts/self-improvement.sh:231`, `:493`, per fact-check Claim 1).
-- The installed surface: `devcontainer-config/install.sh:135` and `devcontainer-config/link-claude-home.sh:50` stage/link the whole `scripts/` directory into `~/.claude/scripts`, so `si-input.sh` is reachable at `~/.claude/scripts/lib/si-input.sh` in every project. The documented reasons for installing `scripts/` name only three installed-path consumers: `lib/skill-paths.sh` (sourced by `hooks/log-usage.sh`), `lite-review.py` and `questions.sh` (`devcontainer-config/link-claude-home.sh:43-49`, `devcontainer-config/install.sh:125-130`). `si-input.sh` is not among them.
-- Function-existence contract tests live in `test/function-inventory.bats`; it lists `parse_si_input` (`:52-53`, `:69`) and never listed the deleted function.
-- Test files are named `<subject>.bats`, with an `si-` prefix for self-improvement units (`si-clean-state.bats`) and `parse-…` for parser units (`parse-si-priority-hypotheses.bats`).
+`scripts/lib/*.sh` files are sourced shell libraries. Their public surface is the set of non-underscore functions, listed in a `# Functions:` header block (`scripts/lib/si-input.sh:8-11`); internals carry a leading `_` and an `Internal:` comment (`_save_si_section`, `_trim_blank_lines`). Each library refuses direct execution (`si-input.sh:14-17`). Sibling tests source the library directly (`test/parse-si-priority-hypotheses.bats:7`, `test/si-input-parse-comments.bats:9`). Test files are named `<subject>-<aspect>.bats` with `# @category fast` on line 2 and a one-paragraph header comment naming the subject function. `test/function-inventory.bats` is the existence registry for functions reachable from `scripts/self-improvement.sh`.
 
 ## Name-Pattern Audit
 
-The diff introduces no new public function, type, flag or schema name. The one new name is a test file:
+The diff adds **no new public names**. It removes one exported function, `prepend_si_input_rejected_history`. The only new name is a test file, audited below for convention fit.
 
 | New name | Category | Closest existing | Precedent path | Verdict |
 |---|---|---|---|---|
-| `si-input-parse-comments.bats` | test file | `si-input-rejected-history.bats` (deleted), `si-clean-state.bats`, `parse-si-priority-hypotheses.bats` | `test/si-*.bats`, `test/parse-si-*.bats` | Consistent — keeps the `si-input-` prefix of the file it replaces |
+| `test/si-input-parse-comments.bats` | test file | `test/parse-si-priority-hypotheses.bats`, `test/si-input-rejected-history.bats` (deleted), `test/function-inventory.bats` | `test/*.bats` | Consistent: `si-input-` prefix matches the deleted sibling it replaces; `@category fast` header and setup/teardown shape match `parse-si-priority-hypotheses.bats` |
+| `@test "parse_si_input drops text before the first heading and under unknown headings"` | test name | the two moved `parse_si_input …` tests at `:18`, `:26` | `test/si-input-parse-comments.bats:18,26` | Consistent: `<function> <verb phrase>` form |
 
-Removed public name: `prepend_si_input_rejected_history` (function, `main:scripts/lib/si-input.sh:214`). Consumer-contract analysis below.
+## Consumer contract (move #3) — removal of `prepend_si_input_rejected_history`
+
+Removing an exported function from a sourced library is breaking only if a consumer calls it. Consumers traced:
+
+- **In-repo:** `git grep` (excluding `archive/`, `docs/reviews/`) finds no call site. The only remaining mentions are `docs/working/questions.md:28,52` (the Q-065 entry, which the answers branch closes) and `docs/working/audit-test-constraint-2026-09-26.md:68,142` (dated audit ledger). Both are historical records, not consumers. `test/si-input-parse-comments.bats:5-6` names it only as provenance.
+- **Installed payload:** `~/.claude/scripts` → `/opt/claude-workflows/scripts` (image-baked, read-only). `grep -rln prepend_si_input_rejected_history /opt/claude-workflows` returns only `scripts/lib/si-input.sh` itself: the definition, with no caller. The installed copy keeps the function until the next image build/link; that is harmless since nothing calls it.
+- **Other surfaces:** no hits in `skills/`, `hooks/`, `workflows/`, `guides/`, `README.md`. `test/function-inventory.bats` never registered it (only `parse_si_input`, `:52-53`), so no registry drift.
+- **Documentation drift:** the `# Functions:` header drops the entry in the same hunk (`@@ -9,9 +9,6 @@`); fact-check Claim 5 confirms the list now matches the defined non-underscore functions exactly.
+- **Surviving contract:** `parse_si_input` and `parse_si_priority_hypotheses` are untouched (both removed hunks lie outside them; fact-check Claim 3). Its export variables `SI_FEEDBACK`, `SI_PRIORITIES`, `SI_OFF_LIMITS`, `SI_CONTEXT` and return codes are unchanged.
+
+Moves 4-9 (errors, pagination, versioning, asymmetry, nullability, idempotency) have no surface here: no new or altered signatures, return values or side effects on a live path.
 
 ## Findings
 
 No findings.
 
-Consumer-contract trace for the removal (move #3 / #6), recorded so the "no findings" verdict is auditable:
-
-- **In-repo callers:** none at main or HEAD, and none ever (fact-check Claim 1: `git log --all -S` shows 06903d6 added only the definition and tests). A HEAD grep of `si-input` outside `archive/` and `docs/` returns only the library itself, `self-improvement.sh` (which calls `parse_si_input` only), `test/parse-si-priority-hypotheses.bats`, and an unrelated string in `si-morning-summary.sh:1676`.
-- **Installed consumers (`~/.claude/scripts/lib/si-input.sh`):** the file is reachable in every project through the wholesale `scripts` link, but no skill, workflow, guide, pattern, or `global-instructions` file references `lib/si-input` (grep returned nothing), and the installer's documented installed-path contract names only `skill-paths.sh`, `lite-review.py` and `questions.sh`. The function was never documented outside the library's own header and never wired into a caller, so there is no consumer whose code could break. Removing it is not a breaking change in practice; no version or migration note is warranted.
-- **Header contract:** the `Functions:` list (`scripts/lib/si-input.sh:8-11`) drops the entry together with the definition, so the header still matches the file's public functions exactly (fact-check Claim 5).
-- **Remaining public contract unchanged:** `parse_si_input` and `parse_si_priority_hypotheses` keep their signatures, exports and return codes; the diff touches only the deleted block and the header.
-
 ## What Looks Good
 
-- The deletion is complete: definition, header entry and dedicated tests go together, leaving no dangling public name and no stale entry in the header's function list.
-- The two `parse_si_input` tests that lived in the deleted file are kept byte-identical in a file named after the unit they test, with a provenance note in the header.
-- `test/function-inventory.bats` needed no change, because the deleted function was never part of the inventoried contract.
+- The removal is clean at the contract level: definition, header entry and dedicated tests go together, and nothing else referenced the name.
+- The replacement test file follows sibling naming and header conventions, and its header states provenance of the moved tests.
+- The self-improvement loop's used surface (`parse_si_input`, `parse_si_priority_hypotheses`) is byte-for-byte unchanged in behaviour.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| — | No findings | — | — | High |
+| — | No findings | — | — | — |
 
 ## Overall Assessment
 
-The change is consistent with the codebase's API conventions. It removes a public-by-naming shell function that had no caller in the repo and no documented consumer on the installed `~/.claude/scripts` surface, and it updates the library header in the same commit. Consumer impact is nil as far as the repo and its install contract can show. The one residual gap is test coverage, not API shape. `parse_si_input` still discards content above the first `##` heading, since `current_section` is empty and `_save_si_section` no-ops (`scripts/lib/si-input.sh:44`, `:76`, `:103-113`), but the only assertion of that behaviour went with the deleted file (fact-check Claim 2). That belongs to test-strategy/synthesis, not to this critic.
+The change is consistent with the library conventions and breaks no consumer: the deleted function had no caller in the repo, in the installed `/opt/claude-workflows` payload, or in any skill, hook or workflow, and the library's documented function list was updated in the same commit. The one new name (the test file) matches sibling conventions. Nothing to fix.
 
 ## Goal-Alignment Note
 
-- **Success criterion (verbatim):** "a markdown report saved at the output path named in your role-specific tail, structured per your skill, ending with a Goal-Alignment Note."
-- **Answered:** Whether any consumer, in-repo or installed via `devcontainer-config/install.sh` / `link-claude-home.sh` into `~/.claude/scripts`, could depend on `prepend_si_input_rejected_history`. None found. The header contract stays accurate, and the one new name (the test file) follows the existing naming.
-- **Out of scope:** Callers outside this repo (other projects or ad-hoc shells sourcing `~/.claude/scripts/lib/si-input.sh`). I can't observe these, but nothing documents such use. Test coverage of `parse_si_input`'s pre-heading preamble handling is also out of scope here.
-- **Escalate:** (for orchestrator synthesis) The coverage gap from fact-check Claim 2 still stands. `parse_si_input`'s discard of a pre-heading comment/preamble is now unasserted. I'd suggest a parse-only test in `test/si-input-parse-comments.bats`. I'm not filing it as an API finding because the contract itself is unchanged.
+- **Answered:** whether removing `prepend_si_input_rejected_history` from the sourced/installed library breaks any consumer or leaves documentation/registry drift (no), and whether the new test file follows naming conventions (yes). Final confirming pass over the full branch at 0304a2c.
+- **Out of scope:** test adequacy and mutant strength (test-strategy/fact-check own these); `docs/reviews/q065-*.md` artifacts; the override-log row's substance beyond fact-check's verdicts; the stale installed copy under `/opt` (updates on image rebuild; not a branch change).
+- **Escalate:** nothing.

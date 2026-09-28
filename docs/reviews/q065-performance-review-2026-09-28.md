@@ -1,30 +1,31 @@
-Commit: 12f96cd
+Commit: 0304a2c
 
-# Performance Review — review/q065 (Q-065 [1])
+# Performance Review — review/q065 (Q-065 [1], final confirming pass)
 
-**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` (full branch, 3 files, +33 / −328)
+**Scope:** `git -C /workspace/.claude/wt-q065 diff main...HEAD` at HEAD 0304a2c (full branch): `scripts/lib/si-input.sh`, `test/si-input-parse-comments.bats` (new), `test/si-input-rejected-history.bats` (deleted), `docs/reviews/override-log.md`. The `docs/reviews/q065-*.md` artifacts are out of scope.
 **Date:** 2026-09-28
-**Based on:** `docs/reviews/q065-code-fact-check-report.md` (Stage 1, 8 claims, 7 verified, 1 mostly accurate)
+**Based on:** `docs/reviews/q065-code-fact-check-report.md` (Commit 0304a2c; 19 verified, 1 mostly accurate)
 
 ## Data Flow and Hot Paths
 
-The diff removes code and adds none. It deletes `prepend_si_input_rejected_history` from `scripts/lib/si-input.sh`, deletes its 12-test suite, and moves 2 unchanged `parse_si_input` tests into a new file. The only thing that sources the library in production is `scripts/self-improvement.sh:231`, and it runs `parse_si_input` once per loop start (`scripts/self-improvement.sh:493`). That is a cold path: it runs once per self-improvement run, on a small, user-edited `si-input.md`. The fact-check (Claim 1) found that the deleted function was never called, so it never ran on any path, hot or cold. Surviving runtime code (`parse_si_input`, `_save_si_section`, `parse_si_priority_hypotheses`, `_trim_blank_lines`) is unchanged context in the diff (fact-check Claim 4).
+The library change removes code and adds none. The two hunks in `scripts/lib/si-input.sh` are `@@ -9,9 +9,6 @@`, which drops three header-comment lines, and `@@ -196,117 +193,6 @@`, which drops the body of `prepend_si_input_rejected_history`. The surviving functions `parse_si_input`, `_save_si_section`, `parse_si_priority_hypotheses` and `_trim_blank_lines` are byte-unchanged; per fact-check Claim 3 the hunks sit outside them. Production calls these functions once per self-improvement round (`parse_si_input "$WORKING_DIR/si-input.md" || true`, `scripts/self-improvement.sh:493`; `parse_si_priority_hypotheses`, `:499`). That is a cold path: one call per round over a small, user-edited markdown file.
 
-What this means for performance:
-- **Runtime:** no executed code path changes. The only effect is that bash parses about 110 fewer lines when it sources the library, once per run. That is a cold-path constant too small to matter.
-- **Test suite:** the fast suite has 12 fewer `@test` blocks. Each deleted test forked `jq` one to five times (`write_round_report`, `rejected_entry`, `merge_validations`, plus the function's own per-round `jq`, `sort`, `awk`, `mktemp` and `mv`). The moved tests do the same work as before and use a smaller `setup()`.
+The deleted function spawned `sort`, `tail`, one `jq` per recent round, `grep`, `mktemp`, `awk` or `cat`, and `mv`. Per fact-check Claim 10 it had no caller, so removing it changes no runtime cost in the loop.
 
-I applied the relevant moves (hidden multiplications, size of N, work moved to the wrong place, memory lifecycle, cache) to the deleted and moved code. None applies, because no code is added or relocated on any executed path.
+On the test side, 12 fast-category tests are deleted, and each of them ran `jq` several times per test through the `write_round_report`/`rejected_entry` helpers. One new test is added. It calls `parse_si_input` twice on fixtures under 15 lines, with no subprocesses beyond the `$(...)` subshells inside `_trim_blank_lines`. Net effect: the fast suite gets slightly shorter. The fact-check's run of the three affected files reported 23/23 ok.
 
 ## Findings
 
 No findings.
 
-## Endorsements (evidence-gated)
+No Critical/High/Medium/Low/Informational item survives the hot-path gate. The only changed executable code is (a) a deletion of an uncalled function and (b) a test on a cold, per-round parser with fixed tiny fixtures. No loop, query, cache, allocation lifecycle, serialization boundary or contention point is added or moved. No baseline is needed because nothing is asserted.
 
-- Deleting the function changes no runtime work in the self-improvement loop, because no in-repo path ever called it. [fact-check: claim 1 — Verified] [fact-check: claim 4 — Verified]
-- The two moved tests do the same work as before: they are byte-identical to the originals and pass under the project runner. [fact-check: claim 3 — Verified]
-- The fast suite should get slightly faster, by roughly the wall time of 12 jq-heavy tests. This has not been measured, and nothing in this report depends on it. [unverified — submitted as claim]
+## Endorsements
+
+- Deleting `prepend_si_input_rejected_history` removes no work from any executed path, because nothing in the committed tree called it; the self-improvement loop's per-round cost is unchanged. `[fact-check: claim 10 — Verified]`
+- The surviving parser functions are unchanged by the diff (both library hunks fall outside them), so `parse_si_input`'s per-line loop keeps its prior O(lines) cost. `[fact-check: claim 3 — Verified]`
+- The new third test adds a bounded, subprocess-light cost to the fast suite: two `parse_si_input` calls on fixtures of 14 and 3 lines, with no `jq`, network or filesystem work beyond one temp dir. `[read: test/si-input-parse-comments.bats:8-16,36-56; scripts/lib/si-input.sh:26-113,197-204]`
+- Removing the 12 helper tests reduces fast-suite wall time by the `jq` invocations they made. The size of the saving is not measured. `[unverified — submitted as claim]`
 
 ## Summary Table
 
@@ -34,11 +35,9 @@ No findings.
 
 ## Overall Assessment
 
-This is a dead-code deletion with no performance risk. It removes code that never ran and changes no code that does run. No profiling or benchmarking is needed. The one open item from the fact-check is that no test now covers `parse_si_input` discarding an HTML-comment block placed before the first heading (Claim 2). That is a coverage question, not a performance one, so it belongs to test-strategy / synthesis.
+This is a pure dead-code deletion with a test relocation and one small added test, all on a cold path (one parse per self-improvement round over a small markdown file). It adds no performance risk and needs no profiling. The only performance-relevant effect is a slightly faster fast suite, which is submitted as an unmeasured claim rather than asserted.
 
 ## Goal-Alignment Note
-
-- **Success criterion (verbatim):** "a markdown report saved at the output path named in your role-specific tail, structured per your skill, ending with a Goal-Alignment Note."
-- **Answered:** Performance review of the full branch diff at 12f96cd: runtime path impact (none), sourcing cost (lower, cold path), test-suite cost (lower). Endorsements are tied to fact-check verdicts, and one is left as an unverified claim.
-- **Out of scope:** I did not time the fast suite before and after the change. I did not re-verify the fact-check's claims about callers or byte-identity; I relied on its verdicts.
-- **Escalate:** None from the performance lens. For synthesis: the fact-check's Claim 2 coverage gap (pre-heading comment preamble) and its Claim 8 hash note (the answer record cites 11b79c6, but this branch lands the same change as 12f96cd) remain open and are outside this critic's scope.
+- **Answered:** Performance review of the full branch diff at 0304a2c: the library deletion, the new test file and the deleted test file, grounded in the Stage-1 fact-check (Claims 3 and 10). Result: no findings.
+- **Out of scope:** The `docs/reviews/q065-*.md` review artifacts; the override-log row (documentation, with no performance surface); test correctness and coverage, which belong to fact-check and test-strategy.
+- **Escalate:** None. One submitted claim: the fast-suite time saving is not measured.
