@@ -1,21 +1,11 @@
 ---
 name: matrix-analysis
 description: >
-  Orchestrate a structured evaluation of multiple items across multiple criteria by dispatching
-  parallel sub-agents — one per criterion — that each score all items along their assigned
-  dimension. Compiles results into a comparison matrix, surfaces tradeoffs, and synthesizes an
-  overall recommendation. Use this skill whenever the user is choosing among 2+ named
-  alternatives along 2+ named dimensions — comparing options, evaluating alternatives, ranking
-  candidates, or making a structured decision across multiple dimensions. Trigger phrases:
-  "compare these options", "evaluate X vs Y vs Z", "which of these is best", "pros and cons
-  matrix", "decision matrix", "trade-off analysis", "score these against criteria", "tabulate
-  the options", "side-by-side comparison". Works with any combination of items and criteria:
-  design alternatives, libraries, vendors, architectures, approaches, tools, or any other set
-  of comparable options. Also trigger as a sub-procedure of divergent-design when the candidate
-  set is wide enough that a scoring matrix would clarify the choice, or when an RPI plan needs
-  to choose among 3+ approaches. Prefer this skill over an ad-hoc pros/cons list whenever the
-  decision crosses 2+ items and 2+ criteria — the parallel sub-agent dispatch produces more
-  consistent calibration than a single agent reasoning about everything at once.
+  Score 2+ named options across 2+ named criteria, one sub-agent per criterion, into a
+  comparison matrix and recommendation. Prefer it over an ad-hoc pros/cons list; also a
+  sub-procedure of divergent-design and RPI plans. Triggers: "compare these options", "evaluate
+  X vs Y vs Z", "decision matrix", "which of these is best", "score these against criteria",
+  "side-by-side comparison".
 when: User wants to compare or rank options across multiple criteria
 ---
 
@@ -30,6 +20,14 @@ comparison matrix and recommendation.
 Produce two deliverables: a freeform chat synthesis and a structured matrix document.
 
 ---
+
+## When to use
+
+- Use whenever the user is choosing among 2+ named alternatives along 2+ named dimensions: comparing options, evaluating alternatives, ranking candidates, or making a structured decision across multiple dimensions.
+- Trigger phrases: "compare these options", "evaluate X vs Y vs Z", "which of these is best", "pros and cons matrix", "decision matrix", "trade-off analysis", "score these against criteria", "tabulate the options", "side-by-side comparison".
+- Works with any items and criteria: design alternatives, libraries, vendors, architectures, approaches, tools, or any other comparable options.
+- Also trigger as a sub-procedure of `divergent-design` when the candidate set is wide enough that a scoring matrix would clarify the choice, or when an RPI plan needs to choose among 3+ approaches.
+- Prefer this over an ad-hoc pros/cons list whenever the decision crosses 2+ items and 2+ criteria: per-criterion sub-agents calibrate more consistently than one agent reasoning about everything at once.
 
 ## Execution rules
 

@@ -1,19 +1,11 @@
 ---
 name: code-fact-check
 description: >
-  Verify checkable claims in code comments, docstrings, commit messages, and project documentation
-  against actual code behavior. This is the code analog of the prose `fact-check` skill: where
-  `fact-check` checks essay claims against the world via web search, `code-fact-check` checks code
-  claims against the codebase via direct file reading — and, when a claim's subject is executable
-  in the review sandbox, by actually running it. For every claim about what code does, how it
-  performs, or how it's structured, search the codebase for evidence and report findings with
-  calibrated confidence. Produces a structured Markdown report. Use this skill when the user asks
-  to "verify the comments", "check the docs against the code", "audit documentation accuracy",
-  "are the docstrings still accurate", "do the comments match the code", or when upstream
-  orchestration (e.g., the `code-review` skill) requests a code verification pass. Also trigger
-  when reviewing or onboarding to a codebase and the comments or docstrings look stale, drifted,
-  or contradict the surrounding implementation — running this skill before further work surfaces
-  documentation rot that would otherwise mislead later changes.
+  Verify claims in code comments, docstrings, commit messages and docs against what the code
+  does, by reading and, where possible, running it. For prose claims about the world use
+  fact-check. Triggers: "verify the comments", "check the docs against the code", "are the
+  docstrings still accurate", "do the comments match the code", a code-review verification pass,
+  or stale-looking comments.
 when: User asks to verify comments, docs, docstrings, or commit messages against code; or upstream orchestrator requests a code verification pass
 non-goals:
   - Not a code reviewer — do not assess code quality, suggest refactors, or judge architecture; sibling critics (security-reviewer, performance-reviewer, api-consistency-reviewer) own those concerns.
@@ -36,6 +28,12 @@ and documentation against actual code behavior.
 
 You are not a code reviewer. Do not evaluate code quality, suggest refactors, or assess whether
 the architecture is good. Check only whether documentation matches what the code does.
+
+## When to use
+
+- This is the code analog of the prose `fact-check` skill: `fact-check` checks essay claims against the world via web search; `code-fact-check` checks code claims against the codebase via direct file reading and, when possible, execution. Every claim about what code does, how it performs, or how it's structured gets a verdict with calibrated confidence.
+- Trigger phrases: "verify the comments", "check the docs against the code", "audit documentation accuracy", "are the docstrings still accurate", "do the comments match the code".
+- Also trigger when upstream orchestration (e.g., `code-review`) requests a code verification pass, and when reviewing or onboarding to a codebase whose comments or docstrings look stale, drifted, or contradicted by the implementation. Running it before further work surfaces documentation rot that would otherwise mislead later changes.
 
 ## Scoping
 

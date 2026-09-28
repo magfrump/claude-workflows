@@ -3,25 +3,11 @@ name: cowen-critique
 lens: contrarian-economist
 persona-last-sampled: 2026-05-03
 description: >
-  Critically review a draft (blog post, essay, article, op-ed, research note, or similar written
-  piece) using the cognitive methods and reasoning patterns of economist Tyler Cowen. This goes
-  beyond applying his known conclusions — it encodes how he actually breaks down arguments, the
-  specific intellectual moves he makes (boring-explanation-first, invert-the-thesis, revealed
-  preferences, market signals, cross-domain analogy, sub-claim decomposition, contingent
-  assumptions, calibrated uncertainty), and the habits of mind that distinguish his analysis.
-  Produces a structured Markdown critique. This is the DEFAULT critic for substantive
-  intellectual feedback on a written argument — reach for it whenever a draft makes a claim
-  that could be wrong and the user wants more than proofreading. Trigger phrases: "review this
-  draft", "critique this", "pressure-test this", "poke holes in this", "what am I missing",
-  "is this argument solid", "challenge my thinking", "play devil's advocate", "stress-test the
-  argument", "give me a Cowen-style review", "what would an economist say about this", "is the
-  reasoning sound", "where is this weak". Distinct from yglesias-critique (which targets
-  proposed mechanisms — does the intervention achieve the goal) and ai-personas-critique
-  (which dispatches multiple orthogonal lenses): this skill applies a single, consistent
-  economist's lens focused on argument rigor and revealed-vs-stated reasoning. NOTE: This
-  skill is typically invoked by the draft-review orchestrator, which provides a pre-built
-  fact-check report. If a fact-check report is provided, use it as your factual foundation and
-  do not redo basic fact verification.
+  Tyler Cowen-style critique of a written argument: boring explanation first, invert the thesis,
+  revealed preferences. The DEFAULT critic for a draft's reasoning; mechanism feasibility →
+  yglesias-critique, many lenses → ai-personas-critique. Triggers: "review this draft",
+  "critique this", "pressure-test this", "poke holes in this", "what am I missing", "is this
+  argument solid", "play devil's advocate", "where is this weak".
 when: User wants a substantive intellectual critique of a written draft
 requires:
   - name: fact-check
@@ -38,6 +24,15 @@ requires:
 Review a draft using Tyler Cowen's reasoning methods. Do not aim for conclusions Cowen would agree with. Do not impersonate him. Apply the specific cognitive moves he makes on an argument — how he stress-tests reasoning, not what he thinks about.
 
 Moves described below. Use them. Not all apply to every draft — exercise judgment.
+
+## When to use
+
+- Drafts in scope: blog post, essay, article, op-ed, research note, or similar written piece.
+- Encodes how Cowen breaks down arguments, not just his conclusions: boring-explanation-first, invert-the-thesis, revealed preferences, market signals, cross-domain analogy, sub-claim decomposition, contingent assumptions, calibrated uncertainty.
+- This is the DEFAULT critic for substantive intellectual feedback on a written argument. Reach for it whenever a draft makes a claim that could be wrong and the user wants more than proofreading.
+- Trigger phrases: "review this draft", "critique this", "pressure-test this", "poke holes in this", "what am I missing", "is this argument solid", "challenge my thinking", "play devil's advocate", "stress-test the argument", "give me a Cowen-style review", "what would an economist say about this", "is the reasoning sound", "where is this weak".
+- Distinct from `yglesias-critique` (targets proposed mechanisms: does the intervention achieve the goal) and `ai-personas-critique` (dispatches multiple orthogonal lenses). This skill applies one consistent economist's lens focused on argument rigor and revealed-vs-stated reasoning.
+- Typically invoked by `draft-review`, which provides a pre-built fact-check report. If one is provided, use it as the factual foundation and do not redo basic fact verification.
 
 ## Pre-flight: Skip Obvious Stubs
 

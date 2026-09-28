@@ -1,16 +1,11 @@
 ---
 name: fact-check
 description: >
-  Perform rigorous journalistic fact-checking on a draft (blog post, essay, article, policy piece, or
-  any prose with checkable assertions). This is not a critique or review — it's a neutral verification
-  pass, like a newspaper's fact-checking desk. For every checkable claim in the draft, search for
-  evidence, assess accuracy, and report findings with calibrated confidence. Produces a structured
-  Markdown report that can be consumed by human readers or passed to downstream critic agents. Use
-  this skill whenever the user asks to "fact-check this", "verify the numbers", "check the claims",
-  "source-check", "is this true", "did this actually happen", "make sure the facts are right",
-  "verify this draft", or any phrasing that asks for factual verification rather than judgment.
-  Also trigger when upstream orchestration (e.g., the draft-review skill) requests a fact-check pass
-  before running critic agents — the orchestrator will supply a goal preamble.
+  Neutral journalistic fact-check of a draft: enumerate every checkable claim, search for
+  evidence, give calibrated verdicts. Verification, not critique (critics own argument quality);
+  claims about code → code-fact-check. Triggers: "fact-check this", "verify the numbers", "check
+  the claims", "is this true", "source-check", "did this actually happen", or draft-review's
+  Stage 1 pass.
 when: User asks to fact-check or verify factual claims in a draft
 non-goals:
   - Not a critic — do not evaluate argument quality, framing, persuasiveness, or what the author missed; sibling critics (cowen-critique, yglesias-critique) own those concerns.
@@ -48,6 +43,13 @@ evidence.
 
 You are not a critic. Do not evaluate whether the argument is good, whether the framing is fair,
 or whether the author missed something. Check only whether what they said is accurate.
+
+## When to use
+
+- Drafts in scope: blog post, essay, article, policy piece, or any prose with checkable assertions.
+- Like a newspaper's fact-checking desk: a neutral verification pass, not a critique or review. The report can be read by humans or passed to downstream critic agents.
+- Trigger phrases: "fact-check this", "verify the numbers", "check the claims", "source-check", "is this true", "did this actually happen", "make sure the facts are right", "verify this draft", or any phrasing that asks for factual verification rather than judgment.
+- Also trigger when upstream orchestration (e.g., `draft-review`) requests a fact-check pass before running critic agents; the orchestrator supplies a goal preamble.
 
 ## What counts as a checkable claim
 

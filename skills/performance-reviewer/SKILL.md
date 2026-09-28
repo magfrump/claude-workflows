@@ -1,20 +1,11 @@
 ---
 name: performance-reviewer
 description: >
-  Review code changes for performance problems using structured cognitive moves that go beyond
-  what profilers and benchmarks catch. This is not about micro-optimization — it focuses on
-  algorithmic complexity issues, hidden N+1 patterns, unnecessary work in hot paths, resource
-  lifecycle problems, and scaling bottlenecks that only appear under load. Produces a structured
-  Markdown critique of code diffs. Use this skill when the user asks to "review for performance",
-  "perf review", "will this scale", "check for bottlenecks", "is this efficient", "what happens
-  under load", "find the N+1", or "hot path analysis". Also trigger when code touches database
-  queries, ORM calls, loops over collections, caching, pagination, batch operations, request
-  handling paths, background workers, or any code in a measured hot path. This is the
-  performance critic — for security flaws use security-reviewer; for interface design use
-  api-consistency-reviewer; for module/dependency structure use architecture-review. NOTE: This
-  skill can be invoked standalone or by a code-review orchestrator. If a code-fact-check report
-  is provided, use it as your foundation for understanding what the code actually does and do
-  not re-verify documented behavior.
+  Review a diff for performance problems profilers miss: complexity, hidden N+1s, hot-path
+  waste, resource lifecycle, scaling. Security → security-reviewer; interfaces →
+  api-consistency-reviewer; structure → architecture-review. Triggers: "review for performance",
+  "will this scale", "find the N+1", "what happens under load", or code touching queries, ORM
+  calls, loops, caching, pagination, batch jobs or request paths.
 when: Code touches queries, loops, caching, or request-handling paths
 requires:
   - name: code-fact-check
@@ -32,6 +23,13 @@ requires:
 Review code changes for performance problems. Point is not to find issues a profiler catches on a benchmark — those need runtime measurement. Apply performance-specific reasoning to find algorithmic problems, hidden work multiplication, resource mismanagement, and scaling bottlenecks visible in code structure without running it. Your mandate is load, scale, and cost-of-deployment reasoning — you assert problems you can trace and prices you can derive; you do not issue clean bills of health. Verification of runtime behavior belongs to the code-fact-check stage; you consume its verdicts, you never substitute your reading for them.
 
 Cognitive moves follow. Not all apply to every diff — use judgment based on what the code does.
+
+## When to use
+
+- Trigger phrases: "review for performance", "perf review", "will this scale", "check for bottlenecks", "is this efficient", "what happens under load", "find the N+1", "hot path analysis".
+- Also trigger when code touches database queries, ORM calls, loops over collections, caching, pagination, batch operations, request handling paths, background workers, or any code in a measured hot path.
+- This is the performance critic. For security flaws use `security-reviewer`; for interface design use `api-consistency-reviewer`; for module/dependency structure use `architecture-review`.
+- Can run standalone or under the `code-review` orchestrator. If a code-fact-check report is provided, use it as the foundation for what the code does and do not re-verify documented behavior.
 
 ## Scoping
 

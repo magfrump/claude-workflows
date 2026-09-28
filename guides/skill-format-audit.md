@@ -15,6 +15,10 @@
 - **F5 (ui-visual-review exceeds 500 lines) — Partially addressed.** The directory wrapper is now in place at `skills/ui-visual-review/SKILL.md`, so the proposed sub-file split is now mechanically feasible. The actual extraction of `runtime-verification.md` and `affordance-principles.md` into the directory is still pending.
 - **F1, F2, F4, F6, F7 — Still open.** None of the frontmatter, description-length, or tool-name findings were touched by the registry-spike work.
 
+## Status update (2026-09-27)
+
+- **F4 (description length) — Resolved for all 25 skills (Q-073 option [1], Q-080).** Each description now leads with the purpose, then (where the skill has a sibling to route to) the "not this, use X" line, then the main trigger phrases, and runs 364–426 characters (was 951–2969). arithmetic-eval, matrix-analysis, self-eval and tech-debt-triage have no "not this" line (none had one before, and adding routing was out of scope). In the other 21 the "not this" line ends by character 250 (latest: moat at 250); arithmetic-eval's trigger list starts at 146 and every other one by 251, finishing by ~430. Six "not this" pointers are new, taken from `guides/skill-trigger-guide.md` (the fact-check/code-fact-check prose at :57, the "just check security" line at :171, and the table's "Also consider" column, e.g. :33): fact-check → code-fact-check, security-reviewer → code-review, design-space-situating → divergent-design, and dependency-upgrade, test-strategy and ui-visual-review → "code-review auto-selects it when the diff triggers it" (its Step 5 table). The displaced long-tail trigger phrases and caveats moved into a `## When to use` section in each SKILL.md body (appended to the existing section in design-space-situating, pre-mortem and what-if-analysis), including the scope lists (cowen's and fact-check's draft types, design-space-situating's RPI dimensions, what-if's "what would need to be true for this to fail?"). No de-overlap: the cowen/yglesias "DEFAULT critic" claims and phrases shared by several skills were kept as they were.
+
 ---
 
 ## Summary of Findings
@@ -191,7 +195,7 @@ The flat `.md` file format and non-standard frontmatter fields work today becaus
 | Priority | Status | Finding | Effort | Impact |
 |----------|--------|---------|--------|--------|
 | 1 | Partly done 2026-09-26: `when` no longer required by health-check or `frontmatter-fields.bats`; the fields remain | F1: Remove `when`, merge into `description` | Low | Activates dead trigger content |
-| 2 | Open | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
+| 2 | **Done (2026-09-27): every "not this" line ends by char 250; four skills have none** | F4: Front-load descriptions within 250 chars | Medium | Prevents trigger-phrase truncation |
 | 3 | **Done (2026-05-14)** | F3: Migrate to directory-based skill structure | Medium | Enables progressive disclosure, supporting files |
 | 4 | Partial | F5: Extract ui-visual-review runtime sections (directory now in place; sub-file split pending) | Low | Gets below 500-line limit |
 | 5 | Open | F2: Move `requires` to markdown body | Low | Removes inert frontmatter |

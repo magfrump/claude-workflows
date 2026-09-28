@@ -2,40 +2,11 @@
 name: business-plan-critique-market-sizing
 lens: market-sizing
 description: >
-  Critically review a business-plan-shaped draft (founder pitch, investor deck narrative,
-  go-to-market strategy doc, fundraising memo, product strategy brief, market-entry analysis,
-  or similar) using a focused set of market-sizing lenses: TAM definition and derivation,
-  SAM (addressable-segment) realism, SOM (capturable-share) achievability, market timing,
-  and comparable-company benchmarks. This skill exists because many early-stage plans pass
-  moat and unit-economics scrutiny but quietly fail on the market story — TAM is computed
-  top-down from a category report that doesn't match the actual product, the addressable
-  segment is defined so loosely it includes customers who would never buy, the captured share
-  implied by the revenue plan exceeds what comparable companies have achieved at comparable
-  stage, the "why now" rests on a trend that's been true for a decade, or the comp-set
-  benchmarks have been cherry-picked to support the model. Use this skill whenever a draft
-  proposes a business or product strategy and the author wants pressure on whether the market
-  is large enough, addressable enough, capturable enough, and timed right. Also trigger when
-  the draft quotes a TAM, SAM, SOM, market-growth rate, addressable-customer count, capturable
-  share, "why now" thesis, or comparable-company revenue/share figure the author wants
-  pressure-tested. Trigger phrases: "is the market real", "review my TAM", "is the TAM
-  defensible", "TAM/SAM/SOM critique", "market-sizing review", "is the market big enough",
-  "stress-test the market story", "why-now critique", "market timing review", "is the
-  addressable segment realistic", "are the comparable benchmarks right", "is the captured
-  share achievable", "review the market opportunity", "critique the addressable market",
-  "did I size this market right". Produces a structured Markdown critique with a known
-  section layout (TAM Definition, SAM Realism, SOM Achievability, Market Timing, Comparable
-  Benchmarks, Factual Foundation, Overall Assessment). Scope is intentionally narrow:
-  moat/distribution and unit-economics critiques are explicitly deferred to sibling skills
-  (`business-plan-critique-moat` and `business-plan-critique-unit-economics`) so this skill
-  stays focused on the market story. This skill is also distinct from `cowen-critique`, which
-  applies general argument-rigor moves to any prose argument and may incidentally pressure a
-  market claim ("if this market is so large, why isn't there a $1B incumbent already?") but
-  does not systematically check TAM derivation, segment definition, capturable share, market
-  timing, or comp-set benchmarks. If the draft's biggest weakness is general argument structure
-  rather than market sizing specifically, route to `cowen-critique` instead. NOTE: This skill
-  is typically invoked by the draft-review orchestrator, which provides a pre-built fact-check
-  report. If a fact-check report is provided, use it as your factual foundation and do not redo
-  basic fact verification.
+  Critique the market story in a business plan, pitch, deck or GTM doc: TAM, SAM, SOM, timing,
+  comparable benchmarks. Moat → business-plan-critique-moat; CAC/LTV →
+  business-plan-critique-unit-economics; general argument → cowen-critique. Triggers: "review my
+  TAM", "is the market big enough", "TAM/SAM/SOM critique", "is the market real", "why-now
+  critique", "did I size this market right".
 when: User wants a market-sizing critique of a business plan, pitch, or strategy doc
 requires:
   - name: fact-check
@@ -59,6 +30,15 @@ report that doesn't match the product, an addressable segment defined so loosely
 customers who'd never buy, a capturable share exceeding what any comparable company reached at
 comparable stage, a "why now" true for ten years, or a comp set assembled to support the model
 rather than test it. Apply five lenses scoped to that question.
+
+## When to use
+
+- Drafts in scope: founder pitch, investor deck narrative, go-to-market strategy doc, fundraising memo, product strategy brief, market-entry analysis, or similar.
+- Why it exists: many early-stage plans pass moat and unit-economics scrutiny but quietly fail on the market story. TAM is computed top-down from a category report that doesn't match the product, the addressable segment includes customers who would never buy, the captured share implied by the revenue plan exceeds what comparable companies achieved at comparable stage, the "why now" rests on a trend that has been true for a decade, or the comp-set benchmarks were cherry-picked.
+- Use whenever a draft proposes a business or product strategy and the author wants pressure on whether the market is large enough, addressable enough, capturable enough, and timed right. Also trigger when the draft quotes a TAM, SAM, SOM, market-growth rate, addressable-customer count, capturable share, "why now" thesis, or comparable-company revenue/share figure.
+- Trigger phrases: "is the market real", "review my TAM", "is the TAM defensible", "TAM/SAM/SOM critique", "market-sizing review", "is the market big enough", "stress-test the market story", "why-now critique", "market timing review", "is the addressable segment realistic", "are the comparable benchmarks right", "is the captured share achievable", "review the market opportunity", "critique the addressable market", "did I size this market right".
+- Scope is intentionally narrow: moat/distribution and unit economics go to `business-plan-critique-moat` and `business-plan-critique-unit-economics`. Distinct from `cowen-critique`, which applies general argument-rigor moves and may incidentally pressure a market claim ("if this market is so large, why isn't there a $1B incumbent already?") but does not systematically check TAM derivation, segment definition, capturable share, timing, or comp-set benchmarks. If the draft's biggest weakness is general argument structure rather than market sizing, route to `cowen-critique`.
+- Typically invoked by `draft-review`, which provides a pre-built fact-check report. If one is provided, use it as the factual foundation and do not redo basic fact verification.
 
 ## Scope (and what's deferred)
 
