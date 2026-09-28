@@ -86,15 +86,13 @@ runner_bg() {
 
 # wait_unlocked: wait up to 10 s for the run lock to be free.
 wait_unlocked() {
-  local i
-  for i in $(seq 100); do flock -n "$T/.bats/lock" true && return 0; sleep 0.1; done
+  for _ in $(seq 100); do flock -n "$T/.bats/lock" true && return 0; sleep 0.1; done
   return 1
 }
 
 # wait_for <file>: wait up to 10 s for <file> to exist.
 wait_for() {
-  local i
-  for i in $(seq 100); do [[ -e "$1" ]] && return 0; sleep 0.1; done
+  for _ in $(seq 100); do [[ -e "$1" ]] && return 0; sleep 0.1; done
   return 1
 }
 
