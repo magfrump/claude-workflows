@@ -128,7 +128,7 @@ without `--loop-pass`, and it keeps the full-branch default; when it is clean, i
 `Loop closed at <reviewed HEAD sha>` under the rubric's `Commit:` line. Every earlier pass in the loop,
 including the first of 2-clean's two clean passes, takes the delta range. Each pass rewrites the
 rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next pass's range correct.
-Cost to recall: code no fix touches is redrawn only on each loop's first and final passes, which
+Cost to recall: by default, code no fix touches is redrawn only on each loop's first and final passes, which
 weakens decision 031's N≥3 resampling argument for k=1 on that code; the mitigation is that the
 final confirming pass reviews the full branch at k=3 (decision log 63, Q-087 [2]). Why: in Q-076 every round re-checked the whole diff although
 [pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
@@ -256,7 +256,7 @@ Before launching any agents, tell the user:
 - The scope being reviewed
 - Which core critics will run
 - Which contextual critics were auto-selected (and why)
-- Total agent count (3 fact-check replicates + N critics, plus one Stage-2.5
+- Total agent count (3 fact-check replicates, or 1 on a `--loop-pass`, + N critics, plus one Stage-2.5
   submitted-claims fact-check pass if critics route endorsement claims)
 
 Keep this brief — a short paragraph.
@@ -451,8 +451,8 @@ resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pas
 1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to every run without `--loop-pass`**:
 standalone single-pass reviews and a loop's final confirming pass, which runs without the flag per
 [Step 1](#step-1-determine-scope). The flag alone sets k, so no rubric check is needed to tell the
-two apart. Loop passes review only the delta since the last stamp, so code no fix touched is drawn
-only on the loop's first and final passes; the final pass's k=3 restores the within-pass
+two apart. Loop passes review only the delta since the last stamp, so by default code no fix touched is
+drawn only on the loop's first and final passes (Step 1's full-scope fallbacks add draws); the final pass's k=3 restores the within-pass
 redundancy on that code (decision log 63, Q-087 [2]; decision 031 priced both clean passes at k=1).
 
 For each of the three replicate agents:
