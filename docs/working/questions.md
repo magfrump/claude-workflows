@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-081](#q-081--cc-isolated-sandbox-half) | you: judgment | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
 | [Q-083](#q-083--host-tools-trust-category) | you: judgment | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
 | [Q-085](#q-085--review-unit-size-budget) | you: judgment | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
+| [Q-087](#q-087--final-confirming-pass-replicates) | you: judgment | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
 | [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
@@ -216,3 +217,20 @@ parallel --version | head -1
 
 - **Interim:** `run-tests.sh` has no `--jobs`; the suite stays serial.
 - **If the answer differs:** once `parallel` is present, an agent adds `--jobs` to `run-tests.sh` and measures the speedup (install-host.bats, the slowest suite, bounds it).
+
+### Q-087 · final-confirming-pass-replicates
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k=1, now that loop passes default to reviewing only the delta since the last rubric stamp?
+
+- **Why it's yours:** it trades about +300k tokens per loop against recall on code no fix touched, and reverses part of a recorded decision (031 C2).
+- **Read:** decision 031 (`docs/decisions/`, C2: k=1 on both clean passes) · `docs/reviews/u4-code-fact-check-report-iter2.md` claim 6 on feat/u4-code-review-skill · proposal B2 (`docs/working/proposal-2026-09-27-smaller-review-units.md`).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep k=1 (031 as is)** | Final confirming pass reviews the full branch with one fact-check agent | None | A defect in untouched code is drawn only twice (first and final pass) instead of on every pass |
+| **[2] k=3 on the final pass** | Final confirming pass runs three replicates, merged most-severe-wins; record the departure from 031 | ~+300k tokens per loop | Tokens spent on a pass that 031 found adds little |
+
+- **Blocks:** nothing.
+- **Interim:** [1]. U4 (feat/u4-code-review-skill) keeps 031's k=1 and cites this entry.
+- **If the answer differs:** one-line change in `skills/code-review/SKILL.md` Stage 1 replication paragraph plus a decision-log row.
