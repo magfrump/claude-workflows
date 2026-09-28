@@ -25,19 +25,15 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-065](#q-065--si-input-rejected-history-dead-code) | you: judgment | `prepend_si_input_rejected_history` (`scripts/lib/si-input.sh:214`) has had no caller since it landed in 06... | 2026-09-26 |
-| [Q-081](#q-081--cc-isolated-sandbox-half) | you: judgment | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
-| [Q-083](#q-083--host-tools-trust-category) | you: judgment | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
-| [Q-085](#q-085--review-unit-size-budget) | you: judgment | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
-| [Q-087](#q-087--final-confirming-pass-replicates) | you: judgment | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
-| [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
-| [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
+| [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-a... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
-| [Q-086](#q-086--install-gnu-parallel) | you: terminal | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
+| [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
+| [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
+| [Q-090](#q-090--run-tests-jobs) | trigger | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 <!-- index:end -->
 
 ## Open
@@ -45,37 +41,6 @@ The index below is generated — edit entries, not the table.
 
 
 
-
-### Q-065 · si-input-rejected-history-dead-code
-**Needs:** you: judgment · **Opened:** 2026-09-26 · **Status:** OPEN
-
-`prepend_si_input_rejected_history` (`scripts/lib/si-input.sh:214`) has had no caller since it landed in 06903d6 (2026-05-19). 12 of the 14 tests in `test/si-input-rejected-history.bats` exercise only this dead function. Should it be wired in or deleted?
-
-- **Why it's yours:** whether the self-improvement loop should show recent rejections in si-input.md is a product call. The code can't tell whether leaving it unwired was deliberate.
-- **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch D. The function's header comment describes it as the "new-cycle bootstrap".
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Delete** | Remove the function and its 12 tests. Keep the 2 `parse_si_input` tests. | None | The rejected-history preamble never appears. It never has so far. |
-| **[2] Wire it in** | Call it at run start in `self-improvement.sh` and add a wiring test. | Review one behaviour change to si-input.md | Rejection rows appear in a file you edit, and may be noise |
-| **[3] Leave as is** | The 12 tests keep constraining code that nothing runs | None | The suite overstates coverage |
-
-- **Interim:** [3], nothing changed. No production path reaches it, so nothing is at risk.
-- **Deferred 2026-09-26 behind Q-068:** if the loop is retired, this is moot; if it resumes, ask again.
-- **Un-deferred 2026-09-27:** Q-068 was answered "resume". [2] now matters, because the preamble would show up in real runs. It is not urgent, since the loop won't run until Q-075 is settled.
-- **If the answer differs:** [1] or [2] is a single small commit.
-
-### Q-066 · sandbox-tool-map-host-drift-run
-**Needs:** you: terminal · **Opened:** 2026-09-26 · **Status:** OPEN
-
-The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift.bats` always skip in the sandbox. Run them once on the host in strict mode, from the repo root:
-
-```
-REQUIRE_LIVE_SETTINGS=1 bats test/sandbox-tool-map-drift.bats
-```
-
-- **Interim:** the sandbox run proves only that the checks can fail (fixture tests), not that `guides/sandbox-tool-map.md` matches your live settings.
-- **If the answer differs:** a red result lists the drifted `Bash(X:*)` entries. Fix the guide's table and markers to match.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -120,37 +85,31 @@ Design, per Q-072, (a) a script that turns a commit or commit range into a canon
 - **Read:** `docs/working/canon-issue-ledger.md` · `review-canon.md` §1 · the 112 September `docs/reviews/` artifacts as the candidate pool
 - **Interim:** the ledger is unchanged.
 
-### Q-081 · cc-isolated-sandbox-half
-**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-077): the image has no `bwrap`/`socat`, and Docker's default seccomp blocks user namespaces (`unshare -Ur` → EPERM). Build the sandbox, or accept the container plus `permissions.deny` as the boundary?
-
-- **Why it's yours:** it trades kernel attack surface and image changes against how much a prompt-injected agent can do without asking. The deny rule alone does not stop a determined injection: a glob `.cred*`, a variable set earlier, and brace/ANSI-C spellings are pinned as accepted in `test/auto-approve-allowed-commands.bats`.
-- **Read:** the `hooks/auto-approve-allowed-commands.sh` header (GUARANTEES / RESIDUALS) · decision log 53 · `docs/reviews/security-review-2026-09-27.md` F5.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Build the sandbox** | Add `bubblewrap` and `socat` to the Dockerfile, a seccomp/runArgs change allowing user namespaces, and a `sandbox` settings block (`autoAllowBashIfSandboxed` decided explicitly; `allowedDomains` matched to the egress allowlist) | Review an enforcement-file change and one live container check | Wider kernel surface; mismatched domains make `gh`/`git push` prompt |
-| **[2] Spike `enableWeakerNestedSandbox` first** | Test whether the weaker nested mode avoids the user-namespace change, then do [1] or [3] | One spike | May cost a spike for nothing |
-| **[3] Accept deny + container** | Record that in cc-isolated the boundary is the container plus `permissions.deny` | None | The OAuth credential stays reachable by a determined injection |
-
-- **Interim:** [3] in practice. Nothing sandboxes Bash in cc-isolated.
-- **If the answer differs:** [1]/[2] are new enforcement-file work with a live-verified commit.
-
 ### Q-082 · auto-approve-host-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
 
-Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant, and the sandbox can't check them (no network, no live Claude Code). In a host Claude Code session **after re-running `install.sh`**, so the merged settings carry `Bash(*.credentials.json*)`, with auto-approve wired and `Bash(echo:*)` allowed, ask Claude to run each line and note whether it runs, prompts, or is denied:
+Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-approve hook's deny reader is load-bearing or redundant.
+
+**2026-09-28, first run (with the hook wired):** both credential lines were **denied** ("Permission to use Bash with command … has been denied"). That settles one thing: the leading `*` in `Bash(*.credentials.json*)` matches. It does not settle the question, because the hook's deny reader saw the match and fell through (header line 53), so no hook `allow` was ever in play. The deny came from Claude Code alone. The planned "no hook" rerun would test the same thing again. Your `!` run succeeding is expected: `!` commands skip permission checks entirely.
+
+**The test that decides it** needs a hook that always allows, next to a deny rule. It uses a throwaway directory outside the repo and a harmless canary file, so it touches neither the image, the manifest nor your user settings, and needs no re-bless:
 
 ```
-echo $((1 + $(cat ~/.claude/.credentials.json | wc -c)))
-echo "$(cat ~/.claude/.credentials.json | wc -c)"
+mkdir -p ~/q082/.claude && cd ~/q082 && echo canary > x.q082-canary
+cat > .claude/settings.local.json <<'EOF'
+{
+  "permissions": { "deny": ["Bash(*.q082-canary*)"] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command",
+    "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"q082\"}}'" } ] } ] }
+}
+EOF
+claude
 ```
 
-Then repeat with the auto-approve hook removed from settings for that session.
+In that session, check `/hooks` lists the test hook, then ask Claude to run `cat x.q082-canary` and note whether it **runs**, **prompts**, or is **denied**. The test hook allows *every* Bash call in that session, so run only this one command, exit, and `rm -rf ~/q082`.
 
-- **Interim:** the hook header calls its deny check load-bearing in cc-isolated until this is known.
-- **If the answer differs:** denied in both runs ⇒ Claude Code's `permissions.deny` wins over a hook allow, and the hook's deny reader can be deleted (architecture-review 1). Runs or prompts only with the hook wired ⇒ keep it and reclassify the hook as an enforcement component. Also record whether the leading `*` in `Bash(*.credentials.json*)` matched at all.
+- **Interim:** the hook header calls its deny check load-bearing in cc-isolated.
+- **If the answer differs:** denied ⇒ `permissions.deny` beats a hook allow; the hook's deny reader can be deleted (architecture-review 1) and decision log 53's amendment updated. Runs or prompts ⇒ the deny reader stays load-bearing; reclassify the hook as an enforcement component.
 
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
@@ -165,72 +124,37 @@ cc-isolated ~/path/to/a/scratch/repo
 cc-push --remote <your real remote URL> ~/path/to/a/scratch/repo
 # 3. stop the container (or exit cc-isolated), then push for real -> expect the preview, then the push
 cc-push ~/path/to/a/scratch/repo
+# 4. inside any cc-isolated session on the rebuilt image (Q-086, 9e5477a) -> expect a version line
+parallel --version | head -1
+apt-cache depends parallel                 # Q-086 review C3: note any hard dependency (e.g. sysstat)
+bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # expect no output (C2)
 ```
 
 - **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
 
-### Q-083 · host-tools-trust-category
-**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
+### Q-088 · spike-weaker-nested-sandbox
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
 
-The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-exit-scan.sh` and `cc-gitdir.sh`) in the container-boundary enforcement category. Should host tools get their own category?
+Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-isolated without allowing user namespaces (Docker's default seccomp gives `unshare -Ur` → EPERM)? Success: a sandboxed Bash call in a cc-isolated container that has `bubblewrap` and `socat` but unchanged seccomp/runArgs, with a read of `~/.claude/.credentials.json` refused. Failure: bwrap still needs user namespaces, or the weaker mode drops the filesystem restriction. Then come back with [1] (build the full sandbox) or [3] (accept deny + container) as a `you: judgment` entry.
 
-- **Why it's yours:** it amends decision log row 45's scope and changes what the live-verify gate demands of every commit to these files.
-- **Read:** `docs/reviews/q076-architecture-review-2026-09-27.md` Finding 3 · decision log row 45 · `hooks/live-verify-gate.sh` · `enforcement_files` in `devcontainer-config/cc-isolated.sh`.
-- **The problem, concretely:** host tools can't be live-probed, so every commit to them carries `Live-verified: no`, which dilutes row 45's debt list. `check_manifest` runs only when cc-isolated launches, so a changed `cc-push.sh` blocks every launch until re-blessed, while `cc-push` itself runs unchecked.
+- **Read:** Q-081 in the archive · the auto-approve hook header · decision log 53.
+- **Constraint:** the image has no bwrap/socat and this sandbox has no egress, so the live half needs a Dockerfile branch (an enforcement file) and one host run. Keep that branch unmerged until the spike's answer is in.
+- **Interim:** nothing sandboxes Bash in cc-isolated (Q-081's interim [3]).
 
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Separate host-tools category** | Its own manifest section and commit trailer (e.g. `Host-tool-tested:`); `cc-push` verifies its own hash before running; row 45 amended | Review one enforcement change | More machinery for two or three files |
-| **[2] Keep as enforcement files** | Record in row 45 that host tools are deliberately in the enforcement set | None | Debt list stays diluted; a cc-push edit keeps blocking launches until re-bless |
-| **[3] Unhash host tools** | Drop them from the manifest; rely on git review only | None | A tampered cc-push on the host goes unnoticed |
+### Q-089 · host-tools-trust-category
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
 
-- **Interim:** [2] in practice (user deferred this at the Q-076 fix batch, 2026-09-27).
-- **If the answer differs:** [1] is a small enforcement-file change with tests; [3] edits the manifest and the tests that pin it.
+Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-manifest section and commit trailer (e.g. `Host-tool-tested:`) instead of `Live-verified:`; `cc-push` verifies its own hash before running; `check_manifest` stops blocking cc-isolated launches when only a host tool changed; decision log row 45 is amended.
 
-### Q-085 · review-unit-size-budget
-**Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
+- **Read:** `docs/reviews/q076-architecture-review-2026-09-27.md` Finding 3 · decision log 45 · `hooks/live-verify-gate.sh` · `enforcement_files` in `devcontainer-config/cc-isolated.sh`.
+- **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
+- **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
-What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the unit must split into stacked units that merge in order, unless you waive it.
+### Q-090 · run-tests-jobs
+**Needs:** trigger · **Opened:** 2026-09-28 · **Status:** OPEN
 
-- **Why it's yours:** it sets how often work gets split, a trade between review quality and stacking overhead. Only you know how much stacking you'll tolerate.
-- **Read:** `docs/working/proposal-2026-09-27-smaller-review-units.md` (A4) · decision log row 59 · Q-076 grew from +476 to +3,613 code lines under review.
+When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tests.sh` (suite-level `bats --jobs`, serial when `parallel` is missing) and measure the full-suite wall time against the 742 s serial baseline. install-host.bats, the slowest suite, bounds the speedup.
 
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] ~600 code lines, enforcement files only** | Cap applies when the diff touches a file the live-verify gate covers; reviews and docs excluded from the count | None; agents split | Non-security units can still balloon |
-| **[2] ~600 code lines, every unit** | Same cap everywhere | Occasional stacked series to merge | More splitting on routine work that would have reviewed fine |
-| **[3] ~400 code lines, every unit** | Closer to the usual human-review guidance | More stacks | Split overhead dominates on small features |
-| **[4] No hard cap** | Rely on the early split trigger in review-fix-loop only | None | Q-076-shaped growth repeats |
-
-- **Interim:** no cap; the early split trigger is the only size control.
-- **If the answer differs:** a short pr-prep step-1 gate edit and a decision-log row.
-
-### Q-086 · install-gnu-parallel
-**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
-
-`bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 16-core machine. Add `parallel` to the apt-get install list in `devcontainer-config/Dockerfile` and rebuild the image, then confirm:
-
-```
-parallel --version | head -1
-```
-
-- **Interim:** `run-tests.sh` has no `--jobs`; the suite stays serial.
-- **If the answer differs:** once `parallel` is present, an agent adds `--jobs` to `run-tests.sh` and measures the speedup (install-host.bats, the slowest suite, bounds it).
-
-### Q-087 · final-confirming-pass-replicates
-**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
-
-Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k=1, now that loop passes default to reviewing only the delta since the last rubric stamp?
-
-- **Why it's yours:** it trades about +300k tokens per loop against recall on code no fix touched, and reverses part of a recorded decision (031 C2).
-- **Read:** decision 031 (`docs/decisions/`, C2: k=1 on both clean passes) · `docs/reviews/u4-code-fact-check-report-iter2.md` claim 6 on feat/u4-code-review-skill · proposal B2 (`docs/working/proposal-2026-09-27-smaller-review-units.md`).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep k=1 (031 as is)** | Final confirming pass reviews the full branch with one fact-check agent | None | A defect in untouched code is drawn only twice (first and final pass) instead of on every pass |
-| **[2] k=3 on the final pass** | Final confirming pass runs three replicates, merged most-severe-wins; record the departure from 031 | ~+300k tokens per loop | Tokens spent on a pass that 031 found adds little |
-
-- **Blocks:** nothing.
-- **Interim:** [1]. U4 (feat/u4-code-review-skill) keeps 031's k=1 and cites this entry.
-- **If the answer differs:** one-line change in `skills/code-review/SKILL.md` Stage 1 replication paragraph plus a decision-log row.
+- **Interim:** the suite stays serial.
+- **From the Q-086 review (C2, C5):** `bats --jobs N` with N>1 aborts without `parallel` even on one file, so the serial fallback must test `command -v parallel`, not the file count. bats runs `parallel` without `--will-cite`, so check its citation notice and Perl locale warnings stay out of test output. `--jobs` also parallelizes tests *within* a file, and install-host.bats may flake, since `install.sh`'s `procs_in_checkout` scans the real /proc; consider `--no-parallelize-within-files`.
