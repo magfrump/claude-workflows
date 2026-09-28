@@ -1,69 +1,61 @@
-Commit: 21d4eb8
+Commit: 182d143
 
-# Security Review — review/q087, iteration 2 (delta `27d483b..21d4eb8`)
+# Security Review — review/q087 (final confirming pass)
 
-**Scope:** PARTIAL — fix commit `21d4eb8` (`skills/code-review/SKILL.md`, `test/skills/code-review-factcheck-replication.bats`, `docs/decisions/log.md` rows 60/63, `docs/decisions/031-review-loop-tier-and-factcheck-policy.md`, `docs/reviews/override-log.md`). `27d483b` and the `09d62ad` review artifacts are already committed — context only, not under review.
+**Scope:** full branch, `git diff main...HEAD` in `/workspace/.claude/wt-q087` (HEAD 182d143), excluding `docs/reviews/q087-*` outputs
 **Date:** 2026-09-28
-**Based on:** `docs/reviews/q087-code-fact-check-report.md` (k=1 loop pass, iteration 2)
-
-There is no application trust boundary in this diff: every change is markdown or a bats grep. The security-relevant surface is the review pipeline's own assurance: (a) how many fact-check replicates stand behind the merge gate, and (b) which override-log rows suppress re-flagged findings in later runs.
+**Based on:** `docs/reviews/q087-code-fact-check-report.md` (k=3 merged, final pass), summarized in the shared block
 
 ## Trust Boundary Map
 
-```
-B1: orchestrator run flags (--loop-pass present/absent) → Stage 1 k-selection rule   → fact-check replicate count behind the merge gate
-B2: docs/reviews/override-log.md rows (author-written)  → Step 3.5 / review-fix-loop "Re-flagged settled decisions" filter → which findings reach triage
-B3: test/skills/code-review-factcheck-replication.bats  → grep over SKILL.md Stage 1 → regression guard on the k rule
-```
-
-B1 is `(moved)`: the rule no longer reads the rubric's `Loop closed at` line to pick k; the flag alone decides.
+The diff is prose and a bats test. It adds no code that executes. The only "boundaries" are the review pipeline's own assurance channels: which inputs decide how many fact-check draws guard the merge gate, and which log rows can suppress a later finding.
 
 ```
-S1: --loop-pass flag            — request-time (per run, set by the orchestrator) — trusted toward k-selection; the only input now
-S2: canonical rubric file state  — runtime-mutable (rewritten each pass)          — no longer an input to k-selection (removed by 21d4eb8); still an input to scope/short-circuit (unchanged)
-S3: override-log rows            — runtime-mutable (append-only, author-edited)   — trusted toward noise suppression only when verdict is Won't-Fix / Accepted-immutable
-S4: SKILL.md prose               — code-constant for this review                   — input to the bats greps
+B1: [orchestrator invocation flags (--loop-pass)] → [SKILL.md Stage 1 replication rule] → [fact-check k (1 or 3) guarding the merge gate]
+B2: [docs/reviews/override-log.md rows]            → [SKILL.md Step 3.5 match rules]     → [findings skipped as "Re-flagged settled decisions"]
+B3: [skills/code-review/SKILL.md prose]            → [test/skills/code-review-factcheck-replication.bats greps] → [CI green/red on the k rule]
+B4 (removed): [rubric file state (no `Loop closed at` line)] → [final-pass classification] → [fact-check k]
 ```
 
-The fix narrows B1's inputs from two (flag + rubric state) to one (flag). Removing S2 from k-selection removes the misclassification path the struck override row described (a standalone re-review of a branch with an unclosed rubric being treated as a loop pass). B2 gains three row changes, of which only one carries a verdict the filter acts on.
+Input-source classification:
+
+```
+S1: --loop-pass flag                 — request-time (set by the invoking agent per pr-prep 3d) — trusted toward k selection; caller-controlled, so it is a process input, not an integrity control
+S2: docs/reviews/code-review-rubric-* — runtime-mutable (rewritten every pass)  — no longer consulted for k (B4 removed); still consulted for scope and short-circuit marker (unchanged)
+S3: docs/reviews/override-log.md rows — runtime-mutable (appended by the fix pass) — trusted toward triage suppression only after the Step 3.5 match; untrusted as evidence
+S4: SKILL.md prose                    — deploy-time (committed)                  — trusted; pinned by S5
+S5: bats test regexes                 — code-constant                             — trusted
+```
+
+Summary: the change moves the k decision off rubric-file state (B4, removed) onto the invocation flag alone (B1), and adds four override-log rows (B2) plus one struck row. No input from outside the repository or its agents reaches any of these. The questions are assurance questions: can the final pass still run at k=1, and do the new rows suppress anything real?
 
 ## Findings
 
 No findings.
 
-Checks performed, by move:
+Notes (reviewed and cleared, not findings):
 
-- **Move 5 (invert the model), B1.** What does the flag-only rule fail to cover? A final confirming pass mistakenly run *with* `--loop-pass` would get k=1. That was equally true before 21d4eb8 (the old rule also required the run to be without `--loop-pass` before consulting the rubric), so no new path is introduced. The default when the flag is absent is k=3, so the fail-safe direction is preserved.
-  Evidence: `skills/code-review/SKILL.md:451-453` — "The **k=3 protocol below applies to every run without `--loop-pass`**: standalone single-pass reviews and a loop's final confirming pass, which runs without the flag per [Step 1](#step-1-determine-scope). The flag alone sets k, so no rubric check is needed to tell the two apart." (excerpt ends :453; paragraph continues to :456 — read.)
-- **Move 3 (error path), B1.** The short-circuit mechanic still reads the rubric (`skills/code-review/SKILL.md:735-744`), but only for the once-per-loop marker, and it states "The run still implies `--no-gate` and k=1" — i.e., only on `--loop-pass` runs. No remaining rubric-state dependency feeds k. Step 1 (`:126-128`) still ties the final pass to "the one run to declare the branch clean" run without `--loop-pass`, consistent with the new rule.
-- **Move 11 (bypasses), B2.** Candidate suppression inputs from the new/struck rows, each traced against `workflows/review-fix-loop.md:161-165` ("A row counts as a match only if its **Override verdict** is `Won't-Fix` or `Accepted-immutable` … Other override verdicts — `Defer` … — do not trigger this filter"):
-  1. A3 row (`docs/reviews/override-log.md:80`, verdict `Defer`) — tested: cannot suppress anything; a future Q-087-status finding reaches triage.
-  2. Struck u4 row (`docs/reviews/override-log.md:129`, verdict `Defer`) — tested: cannot suppress anything regardless of the strike; the strike follows the documented convention at `skills/code-review/SKILL.md:1260` ("mark them with a `~` strikethrough in the `Finding` cell … but keep the row").
-  3. C4 row (`docs/reviews/override-log.md:81`, verdict `Won't-Fix`, location `test/skills/code-review-factcheck-replication.bats:141-161`) — tested: this is the one row the filter acts on. Its match surface is the bats file ±5 lines and the claim "test does not pin absence of stale final-pass k=1 wording". A future prose-drift finding located in `skills/code-review/SKILL.md` (e.g., a reintroduced "final pass runs k=1") does not share its location and is a different claim (prose wrong vs. test coverage), so it would reach triage. What it does settle is the test-coverage gap itself; that is an author decision already recorded, not a new finding.
-- **Move 11 (bypasses), B3.** The new greps (`test/skills/code-review-factcheck-replication.bats:154-157`) are positive-only. Candidate bypasses: (i) reword the rule away — caught, grep fails; (ii) keep the sentence and add a contradicting k=1 sentence elsewhere in Stage 1 — not caught (this is the C4 gap, settled Won't-Fix); (iii) delete the "every run without" sentence but leave the "standalone single-pass reviews and a loop's final confirming pass" list — caught by the first of the two greps. Executed: `timeout 120 bats test/skills/code-review-factcheck-replication.bats` → all 17 ok, test 13 included. The `.` wildcards around `--loop-pass` in the pattern match the backticks; the pattern starts with `k=3`, so `--loop-pass` is not parsed as a grep option.
+- **B1, final pass run at k=1 by passing `--loop-pass`.** The flag alone sets k (`skills/code-review/SKILL.md:452-453`: "The flag alone sets k, so no rubric check is needed to tell the two apart."). A caller that passes `--loop-pass` on what it means as the final pass gets k=1. But such a run is by definition not the final confirming pass. Only a run without the flag writes `Loop closed at` (`:126-128`: "Only the final confirming pass (the one run to declare the branch clean) runs without `--loop-pass` … when it is clean, it adds `Loop closed at <reviewed HEAD sha>`"). pr-prep 3d already tells the author to run the confirming pass without the flag (`workflows/pr-prep.md:250`). The Gate 1h consumer in `scripts/self-improvement.sh:1605-1616` treats anything other than `k=3*` as advisory "degraded", so a k=1 final pass is visible there. Cleared.
+- **B4 removal is a net assurance gain.** The old text classified the final pass by "the branch's canonical rubric existing without a `Loop closed at` line". That was file state any pass rewrites (S2). The prior u4 override row recorded a real misclassification from it (standalone re-review drawn at k=1). The flag rule removes that dependency.
+- **B2, new override-log rows (`docs/reviews/override-log.md:80-83`).** B4 and A3 concern a commit-message count and a questions-doc status. C5 is pre-existing and deferred. C4 (Won't-Fix) covers a *missing absence-test*. Under Step 3.5 rule 3 (`SKILL.md:173`, "describes substantively the same claim"), it would not match a later finding that stale final-pass k=1 wording has *reappeared*: that is a different claim, a regression rather than a coverage gap. None of the rows suppresses a security-class finding. The struck u4 row (`:131`) keeps its `Defer` verdict with the strikethrough. Step 3.5 does not say how struck rows match; C5 already records that gap. The row describes a condition that the new rule makes unreachable, so it cannot suppress a live finding.
+- **B3, test regex changes (`test/skills/code-review-factcheck-replication.bats:153-157`).** `.--loop-pass.` and `loop.s` use `.` to match a backtick and an apostrophe. They are slightly permissive and pin the positive rule. The test does not pin the Dependencies bullet or the absence of stale wording (C4, Won't-Fix). A regression there would be doc drift, not a bypass of any runtime control. No repo test or script still greps the old phrase `applies to standalone`.
+
+Primitive sweep: no dangerous primitives in scope. The diff contains no exec, fetch, deserialization, SQL, HTML, path construction or eval. The bats changes are `grep -qiE` over extracted skill text.
 
 ## Endorsement Claims
 
-- **Claim:** After 21d4eb8, Stage 1's k-selection reads only the `--loop-pass` flag; the rubric's `Loop closed at` line is no longer an input to k.
-  **Location:** `skills/code-review/SKILL.md:451-456`
+- **Claim:** In the Stage 1 replication paragraph, the only condition that selects k=1 is the `--loop-pass` flag. No rubric-file check remains in that paragraph.
+  **Location:** `skills/code-review/SKILL.md:443-456`
   **Evidence:** read-static
-  **Verified:** the replaced paragraph in the diff, plus grep of `skills/code-review/`, `workflows/`, and `docs/decisions/log.md` for "recognized by" / "no `Loop closed at` line" — no remaining k-selection reference.
-  **Not verified:** the orchestrator's actual dispatch code path, if any exists outside the skill prose (the skill is prose-only; an agent's reading is the runtime).
+  **Verified:** Read the whole replication paragraph (`:443-456`) and the Dependencies bullet (`:20`); the diff deletes the "recognized by the branch's canonical rubric existing without a `Loop closed at` line" clause.
+  **Not verified:** the short-circuit section's mechanic 6 (`:739`) still says "The run still implies `--no-gate` and k=1". That is scoped to `--loop-pass` runs and was not traced for every other place k is mentioned (e.g. Step 7's plan count, fact-check claim 20).
   **route: code-fact-check**
-- **Claim:** None of the three override-log row changes in 21d4eb8 widens the Won't-Fix suppression beyond the C4 row's test-coverage claim at `test/skills/code-review-factcheck-replication.bats:141-161`.
-  **Location:** `docs/reviews/override-log.md:80-81`, `:129`
+- **Claim:** A rubric gets `Loop closed at` only from a run without `--loop-pass`, so every closed loop's final pass is one that the new rule assigns k=3.
+  **Location:** `skills/code-review/SKILL.md:126-128`, `:450-453`
   **Evidence:** read-static
-  **Verified:** each row's Override verdict against the filter's verdict condition at `workflows/review-fix-loop.md:161-165`.
-  **Not verified:** how the code-review skill's own Step 3.5 pre-render read (distinct from the loop filter) weighs `Defer` rows; not read in this pass.
-- **Claim:** The replication test's test 13 passes on the branch tip.
-  **Location:** `test/skills/code-review-factcheck-replication.bats:141-161`
-  **Evidence:** executed
-  **Verified:** `timeout 120 bats test/skills/code-review-factcheck-replication.bats` — 17/17 ok.
-  **Not verified:** that the greps fail against the pre-fix wording (no mutation run).
-
-## Primitive sweep
-
-Primitive sweep: no dangerous primitives in scope.
+  **Verified:** Step 1's loop-pass default range paragraph (`:112-134`, read in full) and the replication paragraph.
+  **Not verified:** whether the orchestrator's actual rubric-writing step (Stage 3 / references/rubric.md) writes the line only under that condition.
+  **route: code-fact-check**
 
 ## Summary Table
 
@@ -73,11 +65,10 @@ Primitive sweep: no dangerous primitives in scope.
 
 ## Overall Assessment
 
-No findings within the code paths read; endorsement claims pending execution verification. The fix commit narrows the fact-check k-selection to a single input (the flag) with k=3 as the absent-flag default, which removes the rubric-state misclassification path rather than adding one. The only override-log change the settled-decision filter acts on is the C4 `Won't-Fix`, whose match surface is limited to test coverage in the bats file and does not mask prose drift in `SKILL.md`. The two `Defer` rows (including the struck one) have no filtering effect. Residual gap, already settled by the author: the test does not catch a contradicting k=1 sentence added alongside the pinned rule.
+The change raises the fact-check draw count on the loop's final confirming pass. It also replaces a classification based on mutable rubric state with the invocation flag, which strengthens the merge gate's assurance. The new override-log rows do not suppress security-relevant findings. The test changes pin the positive rule with no runtime-bypass exposure. There are no findings within the code paths read, and the endorsement claims are pending execution verification.
 
 ## Goal-Alignment Note
 - Success criterion (restated verbatim): a markdown report saved at the output path your role section names, structured per your role skill, every finding/claim carrying verbatim Evidence with `path:line`, and a Goal-Alignment Note appended.
-- Answered: yes — no findings; the assurance effects of k-selection and override-log changes were traced and the test executed.
-- Out of scope: `27d483b` (original change) and the `09d62ad` review artifacts (context only per the partial-scope label); code-review Step 3.5's pre-render handling of `Defer` rows (not in the diff).
-- Escalate: nothing.
-- Decisions I made: did not re-raise the C4 absence-grep gap as a finding, since it is a recorded Won't-Fix in this loop; noted it in the Overall Assessment only.
+- Answered: yes
+- Out of scope: the merge conflict with current `main` (`docs/decisions/log.md` row 62/63, `override-log.md`) and the duplicate Q-087 archive on `answers-2026-09-28`. Both are orchestrator escalations from Stage 1 with no security bearing.
+- Escalate: nothing
