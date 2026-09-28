@@ -1,8 +1,16 @@
 # Other repos for evaluating/validating tooling changes
 external/
 
-# Generated eval reports (model-dependent, not committed)
-test/skills/*/output/
+# Generated eval reports are to be committed once generated (Q-071 [1]; none
+# yet): the report and every
+# sidecar the suites read to grade it (.stamp freshness, .failed marker,
+# .transcript.jsonl for tool-call checks). Anything else a run might leave in
+# output/ stays ignored.
+test/skills/*/output/*
+!test/skills/*/output/*.report.md
+!test/skills/*/output/*.stamp
+!test/skills/*/output/*.failed
+!test/skills/*/output/*.transcript.jsonl
 
 # Process artifacts from self-improvement rounds (kept locally for reference)
 docs/working/archive/

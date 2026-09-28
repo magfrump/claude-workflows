@@ -3,8 +3,10 @@
 # Unit tests for the report-grading harness fixes of the 2026-09-26
 # test-constraint audit (Batch G), against a throwaway repo layout and
 # synthetic reports; nothing here runs a model or reads test/skills/*/output/.
-#   T3  provenance stamps: a report whose skill, runner, contract or fixture
-#       changed since generation fails; so does one with no stamp.
+#   T3  provenance stamps: a report whose skill, runner or fixture changed
+#       since generation fails; so does one with no stamp. The shared
+#       runner-contract.bash is not stamped (Q-071 [1]), and the reports and
+#       their sidecars are not ignored by git, so they can be committed.
 #   T4  once a skill has reports, a missing one fails rather than skips, and
 #       format_check fails when its nested suite skipped every test.
 #   T5  finding_match: tier and pattern in the same finding; cites_pattern and
@@ -69,7 +71,7 @@ report() {
 @test "stamp: editing any input after generation fails, naming the input" {
   local what file
   for what in skill:skills/demo/SKILL.md skill:skills/demo/references/out.md \
-      runner:test/skills/demo/runner.bash contract:test/skills/runner-contract.bash \
+      runner:test/skills/demo/runner.bash \
       fixture:test/skills/demo/fixtures/tc-1-idor.ts; do
     report tc-1-idor.ts "# R"
     file="$TEST_TMPDIR/${what#*:}"
@@ -86,6 +88,34 @@ report() {
   echo x > "$TEST_TMPDIR/skills/demo/references/new.md"
   run check_report_stamp "$SK" demo tc-1-idor.ts
   [ "$status" -ne 0 ]
+}
+
+@test "stamp: editing the shared runner-contract.bash does not stale a report (Q-071 [1])" {
+  report tc-1-idor.ts "# R"
+  echo "# edited" >> "$SK/runner-contract.bash"
+  run check_report_stamp "$SK" demo tc-1-idor.ts
+  [ "$status" -eq 0 ]
+  # The stamp names exactly the skill's own inputs.
+  [ "$(cut -d' ' -f1 "$SK/demo/output/tc-1-idor.ts.stamp" | tr '\n' ' ')" = "skill runner fixture " ]
+}
+
+@test "stamp: an old-format stamp that also hashed the contract reads as stale" {
+  report tc-1-idor.ts "# R"
+  printf 'contract %064d\n' 0 >> "$SK/demo/output/tc-1-idor.ts.stamp"
+  run check_report_stamp "$SK" demo tc-1-idor.ts
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"changed since generation: stamp format. "* ]]
+}
+
+@test "stamp: reports and every sidecar the suites read are tracked, not gitignored" {
+  local root f
+  root="$(cd "$REAL_SK/../.." && pwd)"
+  for f in report.md stamp failed transcript.jsonl; do
+    run git -C "$root" check-ignore -q "test/skills/code-review/output/tc-x.$f"
+    [ "$status" -eq 1 ] || { echo "output/*.$f is gitignored"; return 1; }
+  done
+  # Anything else a run might leave in output/ stays ignored.
+  git -C "$root" check-ignore -q test/skills/code-review/output/scratch.tmp
 }
 
 @test "stamp: another fixture's edit does not stale this report" {

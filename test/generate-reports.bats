@@ -371,8 +371,9 @@ EOF
   [ "$(cat "$out/tc-1-thing.txt.stamp")" = "$(report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt)" ]
   run check_report_stamp "$TEST_TMPDIR/test/skills" demo tc-1-thing.txt
   [ "$status" -eq 0 ]
-  # Every stamp line is "<input> <sha256>", for the four inputs.
-  [ "$(cut -d' ' -f1 "$out/tc-1-thing.txt.stamp" | tr '\n' ' ')" = "skill runner contract fixture " ]
+  # Every stamp line is "<input> <sha256>", for the skill's three own inputs
+  # (not the shared runner-contract.bash: Q-071 [1]).
+  [ "$(cut -d' ' -f1 "$out/tc-1-thing.txt.stamp" | tr '\n' ' ')" = "skill runner fixture " ]
   ! grep -vqE '^[a-z]+ [0-9a-f]{64}$' "$out/tc-1-thing.txt.stamp"
 }
 
