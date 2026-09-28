@@ -357,7 +357,7 @@ STUB
   [[ "$output" == *"REPLACES any"* ]]
   [[ "$output" == *"really is the repo you asked for"* ]]
   [[ "$output" == *"EXIT STATUS"*"2  bad usage"*"3  the exit scan found a change"*"4  the exit scan could not read everything"* ]]
-  [[ "$output" == *"1 at launch, where the same"*"failure at exit is 4"* ]]
+  [[ "$output" == *"1 at launch; at exit an"*"unreadable .git is 4"*"is a finding, 3"* ]]
   # The header's last line; and no code after it.
   [[ "$output" == *'"Changing the boundary".'* ]]
   [[ "$output" != *"set -euo pipefail"* ]]

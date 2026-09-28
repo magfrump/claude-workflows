@@ -84,7 +84,7 @@ logical_workspace() {
 # checkout. Config is read with `git config --file <f> --no-includes` from cwd /,
 # so no repo is discovered and git follows no include (the scan reads each target
 # itself). The rest is host tools reading files: find, stat, readlink, realpath,
-# sha256sum, cat, tr, sort, awk, sed, cut, mktemp, dirname and rm; find never follows
+# sha256sum, cat, tr, sort, awk, sed, grep, cut, mktemp, dirname and rm; find never follows
 # symlinks (-P), and a symlink's target is hashed only when it is a regular file.
 # Nothing refreshes an index, which is what starts fsmonitor and clean filters.
 # (The launcher's own resolve_workspace runs `git rev-parse --show-toplevel` in the

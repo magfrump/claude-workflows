@@ -22,8 +22,9 @@
 #      one of the codes below;
 #   1  an error, including a launch refused because the scan's baseline could
 #      not be taken (the checkout's .git unreadable, not a git dir git accepts,
-#      or the root already looking like one) — 1 at launch, where the same
-#      failure at exit is 4;
+#      or the root already looking like one) — 1 at launch; at exit an
+#      unreadable .git is 4, and an invalid .git or a repository at the root
+#      is a finding, 3;
 #   2  bad usage;
 #   3  the exit scan found a change the session made to what host git reads
 #      (replaces claude's status);
