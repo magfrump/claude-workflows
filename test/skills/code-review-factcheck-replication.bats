@@ -140,8 +140,8 @@ stage1_flat() {
 
 @test "replication is loop-aware: k=1 on loop passes per decision 031, k=3 standalone and on the final pass" {
   # Decision 031 (config C2) overrules the blanket k=3 mandate: k=1 per pass inside
-  # the review-fix loop, defensible only paired with the 2-consecutive-clean rule;
-  # k=3 remains the protocol for any run without --loop-pass.
+  # the review-fix loop, defensible only paired with the 2-consecutive-clean rule.
+  # Decision log 63 narrows that k=1 to --loop-pass passes (asserted below).
   stage1_flat | grep -qiE 'loop-aware \(decision 031' \
     || fail "Stage 1 does not declare loop-aware replication per decision 031"
   stage1_flat | grep -qE 'k=1 \(loop pass, decision 031\)' \
