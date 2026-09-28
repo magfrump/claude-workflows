@@ -1,20 +1,24 @@
-Commit: b516af2
+Commit: 6ac9dcd
 
 # Code Review Rubric
 
-**Scope:** `review/q085` vs `main` (iteration 1 full branch; iteration 2 `--loop-pass --range 49a3dbb..b516af2`) | **Reviewed:** 2026-09-28 | **Status: 🟡 CONDITIONAL PASS** — 3 amber item(s) awaiting resolution or justification (iteration 2; fixed in the iteration-2 fix commit)
+**Scope:** `review/q085` vs `main` (iteration 1 full branch; iteration 2 `--loop-pass --range 49a3dbb..b516af2`; iteration 3 final confirming pass, full branch at 6ac9dcd) | **Reviewed:** 2026-09-28 | **Status: 🔴 DOES NOT PASS** — 1 red item(s) unresolved (iteration 3, loop cap reached; decision: `escalate`)
 
 Naming: this is the canonical rubric `code-review-rubric-2026-09-28-review-q085.md`, prefixed `q085-` per the batch brief (four items reviewed in parallel). Loop ranges are therefore passed explicitly with `--range`, not computed from the canonical name. Delivery mode: self-read (the enclosing files, `docs/decisions/log.md` at 97 KB, exceed the 25k-token budget). Skill texts were given to sub-agents by absolute path with an instruction to read them in full, not pasted inline.
 
 Iteration log:
 - Iteration 1 (full scope, 49a3dbb): fact-check k=1 (20 claims: 0 Incorrect, 4 Stale, 3 Mostly accurate, 13 Verified); security and api-consistency ran; performance gated off. No behavioral red, so no short-circuit.
 - Iteration 2 (incremental, 49a3dbb..b516af2): fact-check k=1 (17 claims: 0 Incorrect, 1 Stale, 2 Mostly accurate); security and api-consistency ran; performance gated off. Iteration-1 A1-A6 and C1-C4 verified resolved; no regressions except B-rows below. Fix-drift lite check on the iteration-1 fix: FINDINGS: NONE.
+- Iteration 3 (final confirming pass, full branch, 6ac9dcd; fact-check k=1 per this worktree's SKILL.md): 21 claims, 17 Verified, 1 Mostly accurate, 3 Incorrect (two on the gate's `pr-prep.md:90` comment, one on commit 6ac9dcd's message). Fix-drift lite check on the iteration-2 fix: FINDINGS: NONE. The Fact-Check Gate fired on a behavioral high-confidence Incorrect (R1); with no user present and the loop at its 3-iteration cap, no critics were dispatched and no fix was applied.
+- **Iteration-4 gate decision: `escalate`.** The unit is one gate block plus its mirrors, so it has no separable part to split off (the /away default for a non-separable unit, `review-fix-loop.md`). A verified candidate fix for R1/A10/A11 is in the orchestrator's report; applying it needs the user's go-ahead for a fourth iteration.
 
 ---
 
 ## 🔴 Must Fix
 
-None.
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | A valid commit that is the wrong base still passes silently: a reversed stack (BASE above HEAD), a BASE ahead of HEAD, or an unrelated history (`fatal: no merge base` then `0`) print 0 and exit 0, although the comment says a bad BASE "must fail loudly, not print 0" (executed) | Correctness | Incorrect (high), behavioral | Fact-check final C13c | `workflows/pr-prep.md:90-93` | for-author | — | 🔴 Unresolved (escalated at the cap) |
 
 ---
 
@@ -30,6 +34,10 @@ None.
 | A7 | Empty, unset, invalid or option-shaped `BASE` (or `BASE=HEAD`) makes the gate print 0 and pass; the harness does not keep shell variables between calls (`workflows/pr-prep.md:89-91`, executed) | Security | Low (regression of C1's class) | security iter2 F1 | for-author | — | Fixed (one command: `rev-parse --verify --end-of-options`, not-HEAD check, loud error; executed from root and `skills/`) | Tiered 🟡 though Low: it is a silent fail-open of the gate |
 | A8 | `chat-synthesis.md:128` still names `git diff --stat` as the next-action ladder's size input, while rule 2 uses step 1a's count | Consistency | Stale; Minor | FC iter2; api iter2 1; security iter2 F3 | for-author | — | Fixed | — |
 | A9 | The waiver must cite "the `questions.md` entry … ANSWERED", but answered entries are archived to `questions-archive.md`; the quick-ref omits the citation; the entry is agent-editable | Consistency | Mostly accurate; Minor; Informational | FC iter2; api iter2 2, 3; security iter2 F2 | for-author | — | Fixed (cite by `Q-NNN` in either file, quote the user's answer verbatim; quick-ref and row 62 aligned) | — |
+| A10 | The comment says an empty BASE "must fail loudly"; `${BASE:-main}` makes it count against main silently (errs toward over-counting, i.e. a spurious split) | Docs | Incorrect (high), comment-only | Fact-check final C13a | for-author | — | 🟡 Open (escalated) | Revisit with R1's fix |
+| A11 | Every error path of the gate exits 0, since the closing `echo … >&2` succeeds | Correctness | Mostly accurate (noted) | Fact-check final (open issues) | for-author | — | 🟡 Open (escalated) | Revisit with R1's fix |
+| A12 | Commit 6ac9dcd's summary says an empty BASE is refused with an error; its own Notes say it defaults to main | Docs | Mostly accurate | Fact-check final C21 | for-author | — | 🟡 Open | Unmerged commit; correct in the next commit's body |
+| A13 | chat-synthesis rule 2 still derives `split PR` for a user-waived unit that has a red finding | Consistency | Noted | Fact-check final (open issues) | for-author | — | 🟡 Open (escalated) | Revisit trigger: the first waived unit that reaches review |
 | A6 | Row 62's "+3,613 code lines" does not reproduce under the new counting rule (3,593 insertions / 3,628 added+removed outside `docs/`) | Docs | Mostly accurate | Fact-check C3 | for-author | — | Fixed (~+3,600) | — |
 
 ---
@@ -75,6 +83,7 @@ All findings' evidence resolved.
 | Critic | Reason | Signal |
 |---|---|---|
 | performance-reviewer | No fact-check claims or diff content in domain | Diff is 3 markdown files; the only executable content is one `git diff --numstat | awk` sum run once per unit |
+| security-reviewer, api-consistency-reviewer (iteration 3 only) | Fact-Check Gate paused on a behavioral high-confidence Incorrect at the loop cap; no user present | Fact-check final C13c |
 
 Contextual critics: none selected (no module-structure change, no manifest, no UI, 3 files / 15 lines).
 
