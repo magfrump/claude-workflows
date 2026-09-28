@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   bats \
+  parallel \
   ripgrep \
   shellcheck \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
