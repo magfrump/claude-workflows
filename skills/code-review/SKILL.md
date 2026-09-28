@@ -109,18 +109,24 @@ Accept user overrides:
   loop-pass default below)
 
 **Loop-pass default range.** On a `--loop-pass` run with none of the flags above, review only
-what changed since this loop's last review. The loop's rubric is the one file matching
-`docs/reviews/code-review-rubric-*-<branch-slug>.md` with the date as the only wildcard
-(naming per [references/rubric.md](references/rubric.md#deliverable-2-code-review-rubric)); its
-stamp is its first line, `Commit: <sha>`. If that file exists, its stamp is an ancestor of HEAD
-(`git merge-base --is-ancestor <sha> HEAD`) and differs from HEAD, the scope is `<sha>..HEAD`,
-and the partial-scope label below applies. If there is no such file, or its stamp is missing,
-is not an ancestor, or equals HEAD, use full-branch scope. If more than one file matches, or the
-branch has no name (detached HEAD), do not guess: name the candidates and require an explicit
-`--range` or `--full`. State the scope used and where it came from in the plan summary (Step 7).
-A run without `--loop-pass` (the confirming pass) keeps the full-branch default. Each pass
-rewrites the rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next
-pass's range correct. Why: in Q-076 every round re-checked the whole diff although
+what changed since this loop's last review. The loop's rubric is the **newest** file (by the date
+in its name, then mtime) whose name is exactly `code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md`
+in `docs/reviews/` (naming per [references/rubric.md](references/rubric.md#deliverable-2-code-review-rubric)).
+Several dated files for one slug are normal, since a new file starts on each new date. Ad-hoc
+suffixes (`-iter2`, `-final`) never count: rubrics must use the canonical name for this range and
+the short-circuit marker to work. The rubric's stamp is its first line, `Commit: <sha>`. If that
+file exists, its stamp is an ancestor of HEAD (`git merge-base --is-ancestor <sha> HEAD`) and
+differs from HEAD, the scope is `<sha>..HEAD`, and the partial-scope label below applies. If there
+is no such file, or its stamp is missing, is not an ancestor (including a git error on the stamp),
+or equals HEAD, use full-branch scope. If the branch has no name (detached HEAD), do not guess:
+require an explicit `--range` or `--full`. State the scope used and where it came from in the plan
+summary (Step 7). Only the final confirming pass (the one run to declare the branch clean) runs
+without `--loop-pass`, and it keeps the full-branch default; every earlier pass in the loop,
+including the first of 2-clean's two clean passes, takes the delta range. Each pass rewrites the
+rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next pass's range correct.
+Cost to recall: code no fix touches is redrawn only on the first and final passes, which weakens
+decision 031's N≥3 resampling argument for k=1 on that code; the full-branch final pass at k=3 is
+the mitigation. Why: in Q-076 every round re-checked the whole diff although
 [pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
 fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
@@ -431,8 +437,9 @@ A single sample of that judgment is a coin flip carrying merge-blocking authorit
 Replication converts it into a measured distribution.
 
 **Replication is loop-aware (decision 031, configuration C2 — 031 overrules the earlier
-blanket k=3 mandate).** On a `--loop-pass` (an intermediate or confirmation pass inside the
-review-fix loop, which requires **2 consecutive clean passes** before merge), run **k=1**: a
+blanket k=3 mandate).** On a `--loop-pass` (any pass inside the review-fix loop, which requires
+**2 consecutive clean passes** before merge, except the final confirming pass, which runs
+without the flag per [Step 1](#step-1-determine-scope)), run **k=1**: a
 single fact-check agent with the same rich shared brief (step 3b below — brief quality, not k,
 governs systematic recall), saving its report directly as the canonical
 `docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
@@ -678,7 +685,8 @@ Mechanics:
    T and does **not** trigger the short-circuit. An api-consistency `Breaking` or an
    architecture `Structural` finding is likewise a behavioral red.
 2. **Earliest trigger — the fact-check gate.** If Stage 1 already yields a behavioral 🔴, skip
-   the **entire** Stage-1.5/Stage-2 critic panel for this pass. This is the largest saving (the
+   the Stage-1.5/Stage-2 critic panel for this pass (all of it, except the security critic
+   when mechanic 7 applies). This is the largest saving (the
    whole critic block) — measured at **~73% of the pass** on the one case that fired it, a
    commit hunted from the external benchmark repo's history rather than one of the 8 canon
    cells (`runs/review-arms/baseline-2026-08-06/hunt-verify/results.md`). But it is **not** the
@@ -692,7 +700,8 @@ Mechanics:
    pair, or a large-diff subsequent file-group pass). Note this saves little in practice: the core
    panel is one parallel wave already in flight, so there is usually nothing left to skip (measured:
    a critic-surfaced red saved 0). Let in-flight critics finish and treat the pass as decided.
-4. **Amber is NOT collected on a short-circuited pass.** Ambers gate merge only on the final
+4. **Amber is NOT collected on a short-circuited pass,** except the security critic's under
+   mechanic 7. Ambers gate merge only on the final
    pass (0R+0A, decision 031); gathering them over a surface about to be re-fixed is wasted.
 5. **The terminal pass never short-circuits.** `pr-prep` runs the final, otherwise-clean pass
    **without** `--loop-pass`, so the full panel runs to completion and the amber inventory is
@@ -707,16 +716,26 @@ ran after four rounds, and security then found 2 High ("don't merge") issues tha
 have fixed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B3). #4's token rationale
 holds for one deferred pass, since the fix would churn the surface anyway. It does not hold for a
 string of them, because each deferral adds a round in which critic findings could have been fixed
-alongside the fact-check ones.
+alongside the fact-check ones. This narrows proposal B3, which asked for the full panel in
+iteration 1 on enforcement units: the bound applies to every unit, and on enforcement diffs only
+security is forced, because running the full panel on every early pass costs a whole critic
+block per round
+(032's own falsifier, `docs/decisions/032-review-loop-token-reduction-levers.md:90-91`, named this
+failure).
 
 6. **Once per loop.** Before skipping, read the loop's rubric (identified as in
    [Step 1](#step-1-determine-scope)'s loop-pass default range). If it carries the marker line
    `Loop-pass short-circuit: used at <sha>`, this loop has already skipped once. Run Stage 2 in
    full despite the red, with no critic-stage trigger (mechanic 3) and with amber collected.
-   The run still implies `--no-gate` and k=1. If the loop's rubric cannot be identified
-   unambiguously, do not short-circuit.
+   The run still implies `--no-gate` and k=1. If no canonical rubric exists yet (the first
+   pass of a loop), there is no marker, so the short-circuit is allowed. If rubrics for this
+   branch exist but none has the canonical name, or HEAD is detached, the loop's history cannot
+   be read, so do not short-circuit. When the loop's rubric is a new day's file, the pass that
+   creates it copies any marker line from the previous dated file, so the marker carries forward.
 7. **Security on enforcement files.** If the reviewed diff touches an enforcement file (a path
-   matched by the `enforcement` pattern in `hooks/live-verify-gate.sh`, which owns the list),
+   matched by the `enforcement` regex in `hooks/live-verify-gate.sh`, which mirrors
+   `devcontainer-config/cc-isolated.sh`'s `enforcement_files()`, the owner of the list, plus
+   `install.sh`),
    run the security critic even on a pass that short-circuits, whatever Stage 1.5 would decide.
    Its findings enter the rubric at their mapped tier, amber included. Only the other critics
    are skipped.

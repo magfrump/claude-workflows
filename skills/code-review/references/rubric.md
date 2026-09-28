@@ -19,7 +19,9 @@ prior loop's findings.
 
 The file's first line is `Commit: <reviewed HEAD short SHA>`, above the template below, and
 each pass rewrites it to the HEAD that pass reviewed. The next loop pass computes its default
-range from it, and a loop-pass short-circuit adds a marker line directly under it. Both rules
+range from it, and a loop-pass short-circuit adds a marker line directly under it; a pass that starts a new
+dated file copies any marker line from the previous one. Keep the canonical name (no `-iter2` or
+`-final` suffixes), or neither rule can find the file. Both rules
 are owned by SKILL.md: Step 1's loop-pass default range and the first-red short-circuit's
 once-per-loop bound.
 
