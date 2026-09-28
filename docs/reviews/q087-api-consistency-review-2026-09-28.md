@@ -1,118 +1,84 @@
-Commit: 27d483b
+Commit: 21d4eb8
 
-# API Consistency Review — review/q087 (Q-087 [2])
+# API Consistency Review — `review/q087` iteration 2 (fix commit 21d4eb8)
 
-**Scope:** `git -C /workspace/.claude/wt-q087 diff main...HEAD` (one commit, 27d483b; full branch, no partial-scope label)
+**Scope:** `git diff 27d483b..21d4eb8` (PARTIAL: fix commit 21d4eb8; 09d62ad review artifacts and 27d483b are context only)
 **Date:** 2026-09-28
-**Based on:** `docs/reviews/q087-code-fact-check-report.md` (Stage-1 merged fact-check, k=1 loop pass)
+**Based on:** `docs/reviews/q087-code-fact-check-report.md` (iteration 2, k=1 loop pass)
 
 ## Baseline Conventions
 
-The consumer-facing surface is the `code-review` skill's contract and the documents that invoke or parse it:
+The consumer-facing surface here is the `code-review` skill contract and the repo's decision/override record conventions:
 
-- **Flag semantics** (`skills/code-review/SKILL.md:103-109`, `:246-251`): `--loop-pass` marks a non-final pass. It enables the short-circuit and the delta default range, and implies `--no-gate`. `--full` and `--range` override scope only. On main, k was chosen by two conditions: the flag, and whether the branch had an open loop rubric. The final confirming pass ran k=1.
-- **Replication header vocabulary**: `**Replication:** k=1 (loop pass, decision 031)` (`SKILL.md:448`) versus `**Replication:** k=3` / `k=2 (one replicate failed)` (`SKILL.md:609`). Gate 1h (`scripts/self-improvement.sh:1581`, `:1604-1618`) parses this field. It treats `k=3*` as silent and anything else as an advisory "degraded" note.
-- **Rubric markers** (`references/rubric.md:18-28`, `SKILL.md:111-129`): `Commit:` stamp, `Loop-pass short-circuit: used at <sha>`, `Loop closed at <sha>`.
-- **Invokers**: `workflows/pr-prep.md:244` says "`--loop-pass` also sets the fact-check replicate count … code-review's SKILL.md owns both", and `:250-253` says to run the final confirmation pass "**without** it and without `--range`". `workflows/review-fix-loop.md:7` defers `--loop-pass` ownership to the skill.
-- **Decision conventions**: log rows that amend a full record say so inline. For example, row 60 amends 032 #4, and 032 carries no back-reference to row 60. Full-record-to-full-record amendments use `**Amends:**` / `Superseded by` notes (`023:10`, `022:72`). A log row that a later row replaces is marked inline in its decision cell (`log.md:66`, row 43 "SUPERSEDED BY #44"). Prose cites log rows as "decision log NN" (`workflows/review-fix-loop.md:50`, "decision log 59").
+- **k selection.** `--loop-pass` → k=1 with header `**Replication:** k=1 (loop pass, decision 031)` (`skills/code-review/SKILL.md:448`); every other run → k=3 protocol, merged report header `**Replication:** k=3` (`skills/code-review/SKILL.md:609`). Gate 1h reads that field with `sed -n 's/^\*\*Replication:\*\* *//p'` (`scripts/self-improvement.sh:1581`). Callers: pr-prep 3d invokes `/code-review --loop-pass --range <sha>..HEAD` and says "`--loop-pass` also sets the fact-check replicate count … code-review's SKILL.md owns both" (`workflows/pr-prep.md:244`); review-fix-loop.md defers ownership of `--loop-pass` to the skill (`workflows/review-fix-loop.md:7`).
+- **Decision-record header amendments.** A bullet in the header list: `- **Superseded in part (noted 2026-09-26)**: …` (`docs/decisions/030-*.md:11`); `**Superseded in part (noted 2026-09-26)**: …` (`docs/decisions/021-*.md:24`).
+- **Decision-log in-place row amendments.** A bold marker in the row: `**SUPERSEDED BY #44 — …**` (log.md:66, row 43, full supersession); `**Superseded in part by row 49**` (log.md:71, row 48); `**Amended 2026-09-27 (Q-070 [1], Q-077):**` (log.md:76, row 53).
+- **Override-log retirement.** "never delete entries even when they become stale (mark them with a `~` strikethrough in the `Finding` cell if a reviewer judges them no longer applicable, but keep the row for audit purposes)" (`skills/code-review/SKILL.md:1260`). Row format: `references/override-log.md` § Capture format (Date, PR ref, Finding with `path:line` + critic, Original verdict, Override verdict, Reason); newest rows at top.
 
 ## Name-Pattern Audit
 
-The diff introduces no new public names: no new flags, header values, marker lines or fields. It changes only which existing value (`k=3` vs `k=1`) a run without `--loop-pass` produces. The one new citation form is checked below.
+No new public names. The fix commit introduces no flags, header values, marker lines, or verdict vocabulary; it rewords the k-selection rule (SKILL.md:451-456), the Dependencies bullet (:20), two log rows, one decision-record header note, and three override-log rows, all using existing vocabulary (`--loop-pass`, `k=3`, `Loop closed at`, `Defer`, `Won't-Fix`, `🟡 Must-Address`, `🟢 Consider`).
 
 | New name | Category | Closest existing | Precedent path | Verdict |
 |---|---|---|---|---|
-| "decision log 63" (citation form) | doc cross-reference | "decision log 59", "decision-log row 29", "log row 27" | `workflows/review-fix-loop.md:50`; `docs/decisions/031-review-loop-tier-and-factcheck-policy.md:9`; `docs/thoughts/code-review-evaluation-state.md:225` | Consistent: matches the "decision log NN" form already used in workflows |
-| Log row number 63 | decision-log key | rows 60, 61 on this branch; row 62 on `answers-2026-09-28` | `docs/decisions/log.md:83-85` | Consistent once row 62 lands. The gap on this branch alone was already escalated by the fact-check, so it is not re-filed here |
+| `**Amended in part (noted 2026-09-28)**` | decision header note label | `**Superseded in part (noted 2026-09-26)**` | `docs/decisions/030-*.md:11`, `docs/decisions/021-*.md:24` | Consistent — same `(noted DATE)` shape; "Amended" is the right verb for a narrowing rather than a replacement, and log.md:76 already uses "Amended" |
 
 ## Findings
 
-#### A1. Row 60 still states the superseded k=1 final-pass rule, with no inline supersession marker
+#### Row 60's in-place amendment carries no amendment marker
 
 **Severity:** Minor
 **Location:** `docs/decisions/log.md:83`
-**Move:** 3 (consumer contract — documentation drift)
+**Move:** 1 (baseline conventions), 3 (documentation drift)
 **Confidence:** High
-**Legibility-target:** for-author
 
-Evidence (`docs/decisions/log.md:83`, excerpt from the Rationale cell; the row continues to the Full Record cell, read):
-> the mitigation is that the final confirming pass reviews the full branch (at 031's k=1, unchanged); raising it to k=3 is open as Q-087
+Precedent: bold in-row amendment marker used in `docs/decisions/log.md:66` (`**SUPERSEDED BY #44 — …**`), `:71` (`**Superseded in part by row 49**`), `:76` (`**Amended 2026-09-27 (Q-070 [1], Q-077):**`)
 
-Row 63 (`docs/decisions/log.md:85`) now says the opposite: "**A review-fix loop's final confirming pass runs the fact-check at k=3 …**". A reader who greps the log for the final-pass rule finds two rows that contradict each other, and only the newer one points at the other ("log 60"). The log already has a convention for this: row 43's decision cell opens with "**SUPERSEDED BY #44 …**" (`docs/decisions/log.md:66`). This corroborates fact-check Stale Claim 1.
+Evidence (log.md:83, excerpt; row continues to its `| 032 #4; …` sources cell — read):
+> "the mitigation is that the final confirming pass reviews the full branch (at 031's k=1, unchanged); raising it to k=3 was open as Q-087, since answered [2]: the final pass now runs k=3 (row 63)."
 
-**Recommendation:** Add a short inline pointer to row 60, such as "(k=3 since row 63)" after "unchanged", or a trailing "Final-pass k amended by #63." Row 60 is only partly superseded, so do not add a whole-row SUPERSEDED banner.
+The commit body says row 60 "was edited in place, following the row-43 precedent of marking superseded rows", but the edit adds no marker: the change is unbolded prose mid-sentence, and the parenthetical before it still asserts the superseded state in the present tense ("at 031's k=1, unchanged"; fact-check claim 8). The log's three existing in-place amendments each use a bold, greppable marker, so a reader scanning for amended rows (or grepping `Amended`/`Superseded`) misses row 60. Consumer impact is small (row 63 is adjacent and the pointer is correct), hence Minor.
 
-#### A2. Row 63's revisit trigger names the wrong source for its falsifier and gives no action
+**Recommendation:** Rewrite the tail as e.g. "…reviews the full branch (at 031's k=1 when written). **Amended 2026-09-28 (Q-087 [2]):** the final pass now runs k=3 (row 63)." This also resolves fact-check claim 8.
 
-**Severity:** Minor
-**Location:** `docs/decisions/log.md:85`
-**Move:** 3 (consumer contract — documentation drift against the cited decision)
-**Confidence:** High
-**Legibility-target:** for-author
-
-Evidence (`docs/decisions/log.md:85`, excerpt from the Rationale cell; the row continues to the Full Record cell, read):
-> Revisit if final-pass replicate agreement on untouched code stays ≥90% over ≥20 claims (031's k-reduction falsifier, applied to this pass).
-
-The source of the ≥90%/≥20 falsifier is `docs/thoughts/code-review-evaluation-state.md:78`: "**Falsifier worth checking first:** if k=3 fact-check verdicts agree ≥90% of the time on a". Its action is k=2, per `:225`: "(≥90% on a ≥20-claim *cumulative* sample → k=2)". Decision 031's own falsifier points the other way (`031-review-loop-tier-and-factcheck-policy.md:196`): "if a behavioral or security red is merged that a k=3 pass would have caught and k=1 across the actual number of passes did not — k=1 is under-sampling; restore k=2+". Every other trigger that follows the log's revisit convention names both a threshold and a source a future reader can check. This one names the wrong source and leaves open whether the fallback is k=1 or k=2. This corroborates fact-check Incorrect Claim 7.
-
-**Recommendation:** Re-attribute the trigger to "the §1.1 falsifier, `docs/thoughts/code-review-evaluation-state.md:78`". State the action, for example "→ drop the final pass to k=2" (the §1.1 action) or "→ back to k=1".
-
-#### A3. The k-selection rule keeps a rubric-state recognition clause that no longer decides k
+#### Struck override row: follows the documented convention, but Step 3.5 does not say how struck rows match
 
 **Severity:** Informational
-**Location:** `skills/code-review/SKILL.md:451-454`; `docs/decisions/log.md:85`
-**Move:** 3 (consumer contract — the flag's contract should be stated once and simply)
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
+**Location:** `docs/reviews/override-log.md:129`; `skills/code-review/SKILL.md:173-181`, `:1260`; `skills/code-review/references/override-log.md` § Capture format
+**Move:** 1 (baseline conventions), 3 (consumer contract)
+**Confidence:** High
 
-Evidence (`skills/code-review/SKILL.md:451-454`; the paragraph continues to :456, read):
-> 1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews and
-> to a loop's final confirming pass** — the pass that runs without `--loop-pass` per
-> [Step 1](#step-1-determine-scope), recognized by the branch's canonical rubric existing without a
-> `Loop closed at` line. Loop passes review only the delta since the last stamp, so code no fix
+Evidence (override-log.md:129, Finding cell):
+> "~~A second standalone review of a branch finds a canonical rubric with no `Loop closed at` line … — fact-check iter3 claim 10~~ (moot since decision log 63: every run without `--loop-pass` is k=3)"
 
-On main, rubric state decided k: standalone meant "no `--loop-pass` and no open loop rubric", and the final pass ran k=1. After this change, every run without `--loop-pass` is k=3. So the effective contract is simply `--loop-pass` ⇔ k=1, which is what Important Reminders (`SKILL.md:1279-1281`) and pr-prep 3d (`workflows/pr-prep.md:244`, "`--loop-pass` also sets the fact-check replicate count") already say. Consider a reader who takes the "recognized by …" clause as a test: a final pass run after the rubric is already closed fails it. That pass still ends up k=3 as a "standalone" run, so behaviour does not diverge. The clause adds a second, redundant decision path for a reader to evaluate. Row 63 repeats it and drops "canonical". This corroborates fact-check Mostly-Accurate Claims 3 and 12b. No consumer breaks.
+Answer to the fact-check escalation: the retirement form is documented, at `skills/code-review/SKILL.md:1260` ("mark them with a `~` strikethrough in the `Finding` cell … but keep the row"), and the fix commit follows it: `Finding` cell struck, row kept, verdict/Reason cells unchanged as audit history. The appended unstruck "(moot since decision log 63 …)" reason is not part of the stated convention but is a harmless extension and makes the retirement self-explaining. This is the first struck row in the log (no other `~~` in `docs/reviews/override-log.md`), so it sets the in-practice form. The residual gap is pre-existing and not introduced by this commit: Step 3.5's three match rules (SKILL.md:177-179) never say a struck row is excluded, and `references/override-log.md` (which declares itself the place to edit the format: "Edit here, not in the skill") does not mention strikethrough at all. A future run could match this row substantively and surface a moot `Defer`.
 
-**Recommendation:** Optionally rewrite the rule as "every run without `--loop-pass` runs the k=3 protocol", and keep the recognition clause only as a description of which pass is the final one.
-
-#### A4. "stays k=3" in the sub-skill summary reads as though the final pass was already k=3
-
-**Severity:** Informational
-**Location:** `skills/code-review/SKILL.md:20`
-**Move:** 3 (documentation drift)
-**Confidence:** Low
-**Legibility-target:** for-author
-
-Evidence (`skills/code-review/SKILL.md:20`; the bullet continues to :23, read):
-> Runs as **k=3 parallel replicates** merged most-severe-wins (k=1 on `--loop-pass` passes, decision 031; the final confirming pass stays k=3, decision log 63); the rationale lives in one
-
-Under decision 031, as in effect on main, the final pass ran k=1, so "stays" describes the change as no change. It is defensible if read as "stays at the default k=3", but the other three edited sites say "runs"/"takes".
-
-**Recommendation:** Optionally change "stays" to "runs".
+**Recommendation:** No change needed on this branch. As a follow-up, move the strikethrough rule into `references/override-log.md` § Capture format and add one sentence to Step 3.5 ("a row whose `Finding` is struck through is retired: surface it only if it is location-matched, marked retired"). File as a follow-up rather than expanding this PR's scope.
 
 ## What Looks Good
 
-- **Replication header vocabulary is unchanged, and Gate 1h's reading improves.** The final pass now takes the k=3 protocol, which writes `**Replication:** k=3` (`SKILL.md:609`). Gate 1h's `k=3*) : ;;` arm (`scripts/self-improvement.sh:1605`) treats that as silent. No new header value was introduced, so the parser needs no change. `route: code-fact-check`
-- **All four SKILL.md sites agree**: the summary (:20), the Step 1 cost-to-recall note (:131-133), the Stage 1 loop-aware paragraph (:443-456) and Important Reminders (:1279-1281) each state "k=1 on `--loop-pass`, k=3 on standalone and on the final confirming pass". This matches pr-prep 3d's delegation of k to the flag (`workflows/pr-prep.md:244`), and the invocation rules for `--loop-pass` / `--range` / `--full` are untouched. The short-circuit's "still implies `--no-gate` and k=1" (`SKILL.md:739`) applies only to `--loop-pass` runs, so it is still correct. `route: code-fact-check`
-- **The amendment follows the nearest precedent.** Row 63 says "Amends 031 C2" inline and cites `[031](031-…md)` in the link form that 24 other rows use. Adding no back-reference in 031 matches row 60 amending 032 #4 with no note in 032. The fact-check escalated the missing amended-by note on 031. Under current convention that note is optional, not an inconsistency. `route: code-fact-check`
-- **The test pins the new contract and keeps the old assertions.** `test/skills/code-review-factcheck-replication.bats:153-156` adds the final-pass assertion, and the existing `k=3 protocol below applies to standalone` check still passes. I ran `bats -f "replication is loop-aware"` on the branch: `ok 1`.
+- **k selection is now keyed on the flag alone** (SKILL.md:451-456: "The **k=3 protocol below applies to every run without `--loop-pass`** … The flag alone sets k, so no rubric check is needed to tell the two apart"). This matches what callers already rely on: pr-prep 3d (`workflows/pr-prep.md:244`) says `--loop-pass` sets the replicate count, and the final confirming pass runs "without it and without `--range`" (pr-prep "First-red short-circuit" paragraph). Dropping the `Loop closed at` recognition clause removes a hidden second input to k and closes the old standalone-rerun k=1 hole (the struck override row). `Loop closed at` remains only in its scope role (SKILL.md:121, :128, :739, :744), which is unchanged. route: code-fact-check
+- **Gate 1h contract unchanged.** Final passes now take the standard k=3 path, which writes `**Replication:** k=3` (SKILL.md:609), a value Gate 1h already treats as the full case (`scripts/self-improvement.sh:1581`, `:1609-1614`). No new header value is introduced. route: code-fact-check
+- **Dependencies bullet (SKILL.md:20)** now says "the loop's final confirming pass runs k=3, decision log 63", consistent with Stage 1 and with "the rationale lives in one place — Stage 1's **Why three**".
+- **031 header note** (`031-…md:28-31`) matches the `(noted DATE)` header-note convention of 030:11 and 021:24 and points to "decision log #63" in the same form 030 uses ("decision log #37").
+- **Row 63** now cites the falsifier's real source ("the state doc §1.1 k-reduction falsifier behind log row 27, `docs/thoughts/code-review-evaluation-state.md`") and names the action ("Revisit, lowering this pass's k"), matching the log's "Revisit if …" trigger form.
+- **New override-log rows** (override-log.md:80-81) use the Capture-format columns, the tier vocabulary (`🟡 Must-Address` → `Defer`, `🟢 Consider` → `Won't-Fix`), `path:line` plus source attribution, and sit at the top of the table per the reverse-chronological rule. (Fact-check claim 11b's `:232` → `:235` line-pointer error in row 80 is a fact-check matter, not a format one.)
+- **Replication test** pins the new positive contract with two greps (`k=3 protocol below applies to every run without .--loop-pass.` and `standalone single-pass reviews and a loop.s final confirming pass`); the suite runs 17/17 ok on this commit.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| A1 | Row 60 still states the superseded k=1 final-pass rule, with no inline marker | Minor | `docs/decisions/log.md:83` | High |
-| A2 | Row 63's revisit trigger names the wrong falsifier source and gives no action | Minor | `docs/decisions/log.md:85` | High |
-| A3 | Vestigial rubric-state recognition clause in the k rule | Informational | `skills/code-review/SKILL.md:451-454` | Medium |
-| A4 | "stays k=3" wording | Informational | `skills/code-review/SKILL.md:20` | Low |
+| 1 | Row 60's in-place amendment has no bold amendment marker, and its "(at 031's k=1, unchanged)" still reads as current | Minor | `docs/decisions/log.md:83` | High |
+| 2 | Struck override row follows SKILL.md:1260; Step 3.5 and `references/override-log.md` don't define struck-row matching (pre-existing gap) | Informational | `docs/reviews/override-log.md:129`; `skills/code-review/SKILL.md:173-181` | High |
 
 ## Overall Assessment
 
-The change keeps the skill's consumer contract consistent. It adds no flag, header value or marker, and every consumer (pr-prep 3d, review-fix-loop, Gate 1h, rubric.md) already delegates the replicate count to `--loop-pass` as the skill defines it. The new rule, "no `--loop-pass` ⇒ k=3", is simpler than the one it replaces. The four SKILL.md sites and the test agree with it. The findings are about the decision log's internal consistency: the older row 60 is not marked, and row 63's revisit trigger names the wrong source. One clause is also vestigial. All can be fixed in place with one-line edits. None affects any consumer.
+The fix commit keeps the `code-review` contract coherent. k is now determined by `--loop-pass` alone, which is what pr-prep and review-fix-loop already assume. The Gate-1h-parsed `**Replication:**` header gains no new values. The decision-record and override-log edits follow repo conventions, and the strikethrough follows the documented SKILL.md:1260 rule. The one convention miss is small and fixable in place: row 60's amendment lacks the bold dated marker the log's other in-place amendments use. That fix would also clear fact-check claim 8. No consumer-breaking change.
 
 ## Goal-Alignment Note
 - Success criterion (restated verbatim): a markdown report saved at the output path your role section names, structured per your role skill, every finding/claim carrying verbatim Evidence with `path:line`, and a Goal-Alignment Note appended.
 - Answered: yes
-- Out of scope: the Step 7 agent count ("3 fact-check replicates", `SKILL.md:259-260`). It predates this diff and is wrong only for `--loop-pass` runs; this diff makes it right for the final pass.
-- Escalate: nothing new. The row-62 gap and the 27d483b/65e51b7 duplicate are already escalated by the fact-check. Confirmed: `git diff 27d483b answers-2026-09-28 -- skills/code-review/SKILL.md test/skills/code-review-factcheck-replication.bats` is empty, so both branches carry identical changes to these files.
-- Decisions I made: I filed A1 and A2 as convention findings that corroborate fact-check claims 1 and 7, not as new discoveries. I treated the missing amended-by note on 031 as consistent with the row-60→032 precedent, so it is not a finding.
+- Out of scope: 27d483b's original change and the 09d62ad review artifacts (context only per the shared block); Step 3.5 struck-row matching rule (pre-existing, recommended as a follow-up).
+- Escalate: nothing
+- Decisions I made: resolved the fact-check's strikethrough escalation as "convention followed" using SKILL.md:1260 (per the orchestrator note), and rated the Step 3.5 gap Informational because this commit did not introduce it.
