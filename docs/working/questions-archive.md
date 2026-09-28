@@ -79,6 +79,9 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-071](#q-071--skill-eval-suite-design) | The 50 `@needs-reports` suites can't stay green under this repo's editing rate. Their freshness stamp hashe... | 2026-09-26 |
 | [Q-072](#q-072--living-ledger-not-fed) | The review-eval goal is "recall against the living issue ledger", but `docs/working/canon-issue-ledger.md` ... | 2026-09-26 |
 | [Q-073](#q-073--skill-descriptions-truncated) | Skill descriptions run 957–2973 characters, and the live skill listing truncates them. In this session 7 ... | 2026-09-26 |
+| [Q-077](#q-077--cc-isolated-auto-approve-backstops) | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
+| [Q-078](#q-078--narrow-skill-report-stamp) | - **Interim:** the suites print NOT RUN. | 2026-09-27 |
+| [Q-080](#q-080--front-load-skill-descriptions) | - **Interim:** 7 skills still show no description in the listing. | 2026-09-27 |
 <!-- index:end -->
 
 ## Answered
@@ -1461,5 +1464,29 @@ Skill descriptions run 957–2973 characters, and the live skill listing truncat
 
 - **Interim:** nothing changed. I removed only the health-check requirement for the unread `when:` field (F1).
 - **If the answer differs:** n/a.
+
+
+### Q-077 · cc-isolated-auto-approve-backstops
+**Needs:** agent · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sandbox config. Then re-run the reported `$(( ))` credentials reproduction against the result. **Done 2026-09-27, merged to main in b7fbb2a (deny half only).** The reproduction was re-run first-hand: the hook approved it before the change. The credentials deny rule is in `hooks/wiring.json`, and the hook now honours deny rules through a fail-closed parser, see its header. The sandbox half can't run in the current image, so it is filed as Q-081. The host checks for Claude Code's own deny behaviour are Q-082. Rubric: `docs/reviews/code-review-rubric-2026-09-27-integrate-q077-q078-q080.md`. Original entry:
+
+- **Interim:** nothing changed. The reproduction has still not been re-run first-hand.
+
+
+### Q-078 · narrow-skill-report-stamp
+**Needs:** agent · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+**Done 2026-09-27, merged to main in b7fbb2a.** Stamps are now `format 2` and cover only the skill directory, its `runner.bash` and the fixture. The per-skill runner stayed in the stamp because it sets that skill's prompt, tools and mode. A change to the shared harness only warns. `.gitignore` admits reports and their `.stamp`, `.failed` and `.transcript.jsonl` sidecars. No reports are generated yet, and generating them still waits on A8 (Q-067). Original entry: Implement Q-071 [1]. `report_stamp` in `test/skills/runner-contract.bash` hashes only the skill dir and the fixture, `.gitignore:5` stops ignoring `output/*.report.md`, and the freshness tests are updated to match.
+
+- **Interim:** the suites print NOT RUN.
+
+
+### Q-080 · front-load-skill-descriptions
+**Needs:** agent · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+**Done 2026-09-27, merged to main in b7fbb2a.** All 25 descriptions are 364–426 characters, and every "not this" line ends by character 250. Four skills (arithmetic-eval, matrix-analysis, self-eval, tech-debt-triage) have no such line, and never had one. Displaced phrases are kept in each body. No de-overlap was done. Whether the 7 previously blank skills now show a description in the live listing can only be seen in a fresh session. Original entry: Implement Q-073 [1] across the ~25 skills. The first ~250 characters of each description carry the trigger phrases and the "not this, use X" line, and the rest moves to the SKILL.md body. No de-overlap. The user skims the diffs.
+
+- **Interim:** 7 skills still show no description in the listing.
 
 

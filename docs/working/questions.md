@@ -31,10 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | agent | Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during ... | 2026-09-27 |
-| [Q-077](#q-077--cc-isolated-auto-approve-backstops) | agent | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
-| [Q-078](#q-078--narrow-skill-report-stamp) | agent | Implement Q-071 [1]. `report_stamp` in `test/skills/runner-contract.bash` hashes only the skill dir and the... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
-| [Q-080](#q-080--front-load-skill-descriptions) | agent | Implement Q-073 [1] across the ~25 skills. The first ~250 characters of each description carry the trigger ... | 2026-09-27 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 <!-- index:end -->
@@ -119,20 +116,6 @@ Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, 
 - **Interim:** the guide's documented caveat only.
 - **Blocks:** nothing. This is an enforcement file, so it needs a live-verified commit.
 
-### Q-077 · cc-isolated-auto-approve-backstops
-**Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sandbox config. Then re-run the reported `$(( ))` credentials reproduction against the result.
-
-- **Interim:** nothing changed. The reproduction has still not been re-run first-hand.
-
-### Q-078 · narrow-skill-report-stamp
-**Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Implement Q-071 [1]. `report_stamp` in `test/skills/runner-contract.bash` hashes only the skill dir and the fixture, `.gitignore:5` stops ignoring `output/*.report.md`, and the freshness tests are updated to match.
-
-- **Interim:** the suites print NOT RUN.
-
 ### Q-079 · canon-instance-proposal-filter
 **Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
 
@@ -140,13 +123,6 @@ Design, per Q-072, (a) a script that turns a commit or commit range into a canon
 
 - **Read:** `docs/working/canon-issue-ledger.md` · `review-canon.md` §1 · the 112 September `docs/reviews/` artifacts as the candidate pool
 - **Interim:** the ledger is unchanged.
-
-### Q-080 · front-load-skill-descriptions
-**Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Implement Q-073 [1] across the ~25 skills. The first ~250 characters of each description carry the trigger phrases and the "not this, use X" line, and the rest moves to the SKILL.md body. No de-overlap. The user skims the diffs.
-
-- **Interim:** 7 skills still show no description in the listing.
 
 ### Q-081 · cc-isolated-sandbox-half
 **Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN
