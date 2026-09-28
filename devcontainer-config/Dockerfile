@@ -1,6 +1,9 @@
 # Adapted from Anthropic's reference devcontainer for Claude Code
 # (anthropics/claude-code .devcontainer). Local changes:
 #   - decision 015: added bats, ripgrep, shellcheck (this repo's test suite and SI loop)
+#   - Q-086: added parallel (GNU parallel; `bats --jobs N` with N>1 needs it to run
+#     test files concurrently — bats' Debian package only Recommends it, and the
+#     install below uses --no-install-recommends)
 #   - decision 016: egress profiles baked in; the profile is written root-owned to
 #     /etc/cc-egress-profile so an in-container agent cannot widen its own allowlist.
 # Keep this file minimal-diff against upstream so refreshes are easy.

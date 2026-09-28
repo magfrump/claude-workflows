@@ -1,0 +1,20 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-28T21:23:16Z
+cwd: /tmp/tmp.yQIEu1N3Jx
+bats: Bats 1.8.2; parallel on PATH: none
+=== bats --jobs 2 t.bats
+Error: Cannot execute "2" jobs without GNU parallel
+exit=0
+=== bats --jobs 1 t.bats
+1..2
+ok 1 a
+ok 2 b
+exit=0
+=== bats --jobs 2 --no-parallelize-across-files t.bats
+1..2
+ok 1 a
+ok 2 b
+exit=0
+exit-code bats --jobs 2: 1
+exit-code bats --jobs 1: 0
+exit-code bats --jobs 2 --no-parallelize-across-files: 0
