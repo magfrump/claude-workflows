@@ -1869,3 +1869,191 @@ STUB
   [[ "$output" == *"could not snapshot"* ]]
   run ! grep -q 'devcontainer up' "$DC_LOG"
 }
+
+# --- Exit scan regressions from the iteration-3 fact-check (docs/reviews/
+# code-fact-check-report-r{1,2,3}.md at a42e37f): E6/E8 in r1, relremote in r3.
+
+# session_stub <ws> <commands>: the devcontainer stub, with <commands> run where
+# the session's `claude` exec would run (a plant, a marker, a sleep).
+session_stub() {
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  mv "$TEST_TMPDIR/bin/devcontainer" "$TEST_TMPDIR/bin/devcontainer.inner"
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<STUB
+#!/usr/bin/env bash
+if [ "\${*: -1}" = claude ]; then
+$2
+fi
+exec "$TEST_TMPDIR/bin/devcontainer.inner" "\$@"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$1")"
+  export STUB_IMAGE_HASH STUB_FP
+}
+
+@test "exit scan E6: a newline in a repointed common dir's name cannot forge a line (exit and launch)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local n=$'x\n  Scan clean: nothing changed, safe to run git'
+  mkdir -p "$SCAN_WS/$n"
+  ln -s "$SCAN_WS/$n" "$SCAN_WS/lnk"
+  echo "../lnk" > "$SCAN_WS/.git/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no git config at $SCAN_WS/x?  Scan clean: nothing changed, safe to run git/config"* ]]
+  run grep -c '^ *Scan clean' <<< "$output"
+  [ "$output" -eq 0 ]
+  # The launch baseline's reason (printed by main) is the same single line.
+  git_exec_snapshot "$SCAN_WS" 2> "$TEST_TMPDIR/err" && return 1
+  [ "$(wc -l < "$TEST_TMPDIR/err")" -eq 1 ]
+}
+
+@test "exit scan E6: an unreadable .git file's read error is not printed raw" {
+  not_root
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  mv "$SCAN_WS/.git" "$TEST_TMPDIR/gd"
+  echo "gitdir: $TEST_TMPDIR/gd" > "$SCAN_WS/.git"; chmod 000 "$SCAN_WS/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot locate the git directory of $SCAN_WS"* ]]
+  [[ "$output" != *"Permission denied"* ]]
+}
+
+@test "logical_workspace: the checkout by the (symlinked) route it was reached on" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  mkdir -p "$TEST_TMPDIR/real/proj/sub"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws; ws="$(git -C "$TEST_TMPDIR/lnk/proj" rev-parse --show-toplevel)"
+  [ "$ws" = "$(cd "$TEST_TMPDIR/real/proj" && pwd -P)" ]   # git reports it physical
+  [ "$(logical_workspace "$TEST_TMPDIR/lnk/proj" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(logical_workspace "$TEST_TMPDIR/lnk/proj/sub" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(cd "$TEST_TMPDIR/lnk/proj/sub" && logical_workspace "" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(logical_workspace "$ws" "$ws")" = "$ws" ]
+  [ -z "$(logical_workspace "$TEST_TMPDIR" "$ws")" ]
+}
+
+@test "exit scan E8: YOUR includeIf gitdir: naming the checkout by a symlinked route is walked" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws lws; ws="$(git -C "$TEST_TMPDIR/real/proj" rev-parse --show-toplevel)"
+  mkdir -p "$TEST_TMPDIR/ran"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .hk\n' > "$TEST_TMPDIR/w.gitconfig"
+  git config --global "includeIf.gitdir:$TEST_TMPDIR/lnk/proj/.path" w.gitconfig
+  # Host git run from the symlinked route takes it; from the physical one, not.
+  [ "$(cd "$TEST_TMPDIR/lnk/proj" && git config core.hooksPath)" = .hk ]
+  lws="$(logical_workspace "$TEST_TMPDIR/lnk/proj" "$ws")"
+  local before; before="$(git_exec_snapshot "$ws" "$lws")"
+  [[ "$before" == *"hooksdir"$'\t'"$ws/.hk"$'\t'"missing"* ]]
+  plant_hook "$ws/.hk" pre-commit
+  run git_exit_scan "$ws" "$before" "$lws"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $ws/.hk/pre-commit "* ]]
+  no_ran
+  # A trailing-slash pattern through a ~ route matches too (r1 e8's form).
+  export HOME="$TEST_TMPDIR"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host2.gitconfig"
+  git config --global "includeIf.gitdir:~/lnk/proj/.path" "$TEST_TMPDIR/w.gitconfig"
+  [ "$(cd "$TEST_TMPDIR/lnk/proj" && git config core.hooksPath)" = .hk ]
+  before="$(git_exec_snapshot "$ws" "$lws")"
+  [[ "$before" == *"$ws/.hk"* ]]
+}
+
+@test "exit scan E8: a launch from a symlinked route passes that route to both snapshots" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws; ws="$(git -C "$TEST_TMPDIR/real/proj" rev-parse --show-toplevel)"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .hk\n' > "$TEST_TMPDIR/w.gitconfig"
+  git config --global "includeIf.gitdir:$TEST_TMPDIR/lnk/proj/.path" "$TEST_TMPDIR/w.gitconfig"
+  session_stub "$ws" "mkdir -p '$ws/.hk'; printf '#!/bin/sh\n' > '$ws/.hk/pre-commit'; chmod +x '$ws/.hk/pre-commit'"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/lnk/proj"
+  echo "$output"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"+ hook $ws/.hk/pre-commit "* ]]
+}
+
+@test "exit scan relremote: an embedded repo's relative local remote resolves in that repo" {
+  scan_repo
+  make_repo "$SCAN_WS/sub"
+  git init -q --bare "$SCAN_WS/sub/hooked.git"
+  git init -q --bare "$SCAN_WS/sub/pd.git"
+  git init -q --bare "$SCAN_WS/sub/legacy.git"
+  git -C "$SCAN_WS/sub" remote add origin ./hooked.git
+  git -C "$SCAN_WS/sub" config remote.pushDefault ./pd.git
+  mkdir -p "$SCAN_WS/sub/.git/remotes"
+  printf 'URL: ./legacy.git\n' > "$SCAN_WS/sub/.git/remotes/old"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local r
+  for r in hooked pd legacy; do
+    plant_hook "$SCAN_WS/sub/$r.git/hooks" post-receive
+  done
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  for r in hooked pd legacy; do
+    [[ "$output" == *"+ hook $SCAN_WS/sub/$r.git/hooks/post-receive "* ]]
+  done
+  no_ran
+  # The hooks-off push warning no longer lists filters (a push runs none).
+  [[ "$output" != *"filters"* ]]
+  [[ "$output" == *"remote.*.receivepack"* ]]
+  # And host git agrees: a push from sub runs the planted hook.
+  git -C "$SCAN_WS/sub" push -q origin HEAD:refs/heads/m 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+}
+
+@test "exit scan size cap: a huge (sparse) planted hook fails the scan fast as unsafe, unhashed" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  truncate -s 100G "$SCAN_WS/.git/hooks/pre-push"; chmod +x "$SCAN_WS/.git/hooks/pre-push"
+  local t0=$SECONDS
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ $((SECONDS - t0)) -lt 20 ]
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"$SCAN_WS/.git/hooks/pre-push is too large to hash (107374182400 bytes"*"treat the checkout as unsafe"* ]]
+}
+
+@test "exit scan size cap: past the total to hash, the scan fails as unsafe" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # shellcheck disable=SC2034  # read by _snap_size_ok (sourced)
+  GIT_EXIT_SCAN_MAX_TOTAL_BYTES=100
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"more than 100 bytes to hash"* ]]
+}
+
+@test "a Ctrl-C during the exit scan exits 4, saying the scan did not finish" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" "touch '$TEST_TMPDIR/claude-done'"
+  # sha256sum stalls once the session is over (the exit scan), as a huge
+  # checkout would.
+  local real; real="$(command -v sha256sum)"
+  cat > "$TEST_TMPDIR/bin/sha256sum" <<STUB
+#!/usr/bin/env bash
+if [ -e "$TEST_TMPDIR/claude-done" ]; then touch "$TEST_TMPDIR/scanning"; sleep 60; fi
+exec "$real" "\$@"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/sha256sum"
+  # A process group of its own with SIGINT at its default (a background job's is
+  # ignored), so the INT reaches the launcher and its children like a terminal's.
+  setsid env --default-signal=INT bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj" \
+    > "$TEST_TMPDIR/out" 2>&1 &
+  local pid=$! _
+  for _ in $(seq 100); do [ -e "$TEST_TMPDIR/scanning" ] && break; sleep 0.1; done
+  [ -e "$TEST_TMPDIR/scanning" ]
+  kill -INT -- "-$pid"
+  local st=0; wait "$pid" || st=$?
+  cat "$TEST_TMPDIR/out"
+  [ "$st" -eq 4 ]
+  grep -q 'the exit scan was interrupted, so it checked nothing' "$TEST_TMPDIR/out"
+}

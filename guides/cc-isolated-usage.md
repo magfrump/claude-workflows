@@ -167,11 +167,14 @@ a tracked file (husky's `core.hooksPath=.husky/_`, the pre-commit framework,
 `git -c core.hooksPath=/dev/null -c core.fsmonitor=false push` is **not** a
 safe alternative: it still runs a planted `remote.*.receivepack`, pushes to a
 repointed `remote.*.url`/`pushurl` (whose hooks then run), and uses planted
-filters, includes, credential helpers and `core.sshCommand`.
+credential helpers and `core.sshCommand`, including ones in included config
+files. (It runs no clean/smudge filter: a push refreshes no index.)
 
 **What `cc-push` does.** It keeps a separate, bare clone that only the host
-writes (default `~/.local/share/cc-isolated/clones/<repo>-<id>`; override with
-`--clone` or `CC_PUSH_CLONES_DIR`), and never runs git in the checkout:
+writes (default `$XDG_DATA_HOME/cc-isolated/clones/<repo>-<id>`, which is
+`~/.local/share/cc-isolated/clones/<repo>-<id>` when `XDG_DATA_HOME` is unset;
+override with `--clone` or `CC_PUSH_CLONES_DIR`), and runs no git command in the
+checkout — its one contact with it is the fetch in step 1:
 
 ```bash
 cc-push --remote git@github.com:me/app.git ~/code/app   # first time: names the real remote
@@ -179,25 +182,45 @@ cc-push ~/code/app                                      # afterwards (or from in
 cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
 ```
 
-1. `git fetch <checkout>` into the clone (`refs/cc/heads/*`). Git runs
-   upload-pack in the checkout, which reads its refs, objects and config but
-   runs no hook, fsmonitor or filter; nothing is checked out, no submodule is
-   fetched.
+1. `git fetch <checkout>` into the clone (`refs/cc/heads/*`). For a local path
+   git starts upload-pack in the checkout's `.git`, which **reads** there — its
+   refs, objects and config (and your global config) — but runs no hook,
+   fsmonitor or filter; nothing is checked out, no submodule is fetched.
 2. `git fetch origin` — the real remote, as configured **in the clone** by
    `--remote`. Remotes are never read from the checkout.
-3. Prints the commits and diff stat the push adds (control bytes as `?`, no
-   external diff or textconv, no signature check), and asks `[y/N]` unless
-   `--yes`.
+3. Prints the commits the push adds, and a diff stat when origin already has
+   the branch (no external diff or textconv, no signature check; every string
+   from the checkout — branch name, commit text, git's and the remote's
+   messages — with anything outside printable ASCII shown as `?`, so C1
+   controls and bidi overrides too), and asks `[y/N]` unless `--yes`.
 4. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
    It never forces; a rewritten branch is refused by the remote as usual.
 
-Every git call it makes passes `core.hooksPath=/dev/null` and
-`core.fsmonitor=false`. `test/cc-push.bats` plants hooks (every name),
-fsmonitor, clean/smudge/process filters, receive-pack and upload-pack commands,
-`uploadpack.packObjectsHook`, `core.alternateRefsCommand`, `core.sshCommand`,
-`core.gitProxy`, a credential helper, includes, a legacy remotes file and a
-repointed `origin` in the checkout, and asserts that a `cc-push` fires none of
-them and pushes the fetched commit (git 2.39).
+Exit codes: 0 pushed (or nothing to push), 1 an error (usage, a refused
+checkout, a failed fetch, a rejected push — git's own status is never passed
+through), 2 declined at the prompt.
+
+**What it refuses.** upload-pack's reads are not confined to the checkout: a
+`.git` that is a `gitdir:` file or a symlink, a `commondir`, an
+`objects/info/alternates` (or `http-alternates`) file, or a symlink inside
+`.git` can point it at any repository on this machine that you can read, and
+`cc-push` would then offer that repository's history for push; an `[include]`
+naming a FIFO, or a FIFO in `.git`, blocks it forever. So before fetching,
+`cc-push` checks the checkout with plain file tests (no git) and refuses, with
+the reason, a `.git` that is not a real directory, or that holds a
+`commondir`, alternates, a symlink outside `hooks/`, a FIFO, socket or device,
+or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. Run it
+on the main checkout the session was launched on. What remains is upload-pack
+reading the checkout's own refs, objects and (include-free) config.
+
+Every git command it runs passes `core.hooksPath=/dev/null` and
+`core.fsmonitor=false`. `test/cc-push.bats` plants every hook `githooks(5)`
+lists, fsmonitor, clean/smudge/process filters, receive-pack and upload-pack
+commands, `uploadpack.packObjectsHook`, `core.alternateRefsCommand`,
+`core.sshCommand`, `core.gitProxy`, a credential helper, a legacy remotes file
+and a repointed `origin` in the checkout, and asserts that a `cc-push` fires
+none of them and pushes the fetched commit (git 2.39); it also covers each
+refusal above.
 
 **Keep the clone hook-free.** It holds content the container wrote. It is bare,
 so nothing is checked out and no `npm install` installs husky into it. If you
@@ -223,15 +246,22 @@ local-path remote — `config`, `config.worktree`, `commondir`,
 configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
-`url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`).
+`url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
+resolved in the working tree of the repo whose config names them).
 Your own global and system config is read with its includes evaluated for each
-git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched; `onbranch:` and
-`hasconfig:` taken as matching), so a relative `core.hooksPath` there is walked
-in the top-level working tree and in every embedded repo. It runs nothing from
-the checkout (plain file reads, `git config --file … --no-includes` from `/`,
-`find` without following symlinks, `stat`, `readlink`, `sha256sum`), and every
-name, value and error it prints is reduced to printable ASCII, line breaks
-included.
+git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
+path and against the path you launched on, symlinks kept, as git matches both;
+`onbranch:` and `hasconfig:` taken as matching), so a relative
+`core.hooksPath` or `core.attributesFile` there is walked in the top-level
+working tree and in every embedded repo. Those are the only entries of your own
+config it follows; the rest is not recorded. It runs nothing from the checkout
+(plain file reads, `git config --file … --no-includes` from `/`, and host tools:
+`find` without following symlinks, `stat`, `readlink`, `realpath`,
+`sha256sum`, `cat`, `tr`, `sort`, `awk`, `cut`, `mktemp`), and every name, value
+and error it prints is reduced to printable ASCII, line breaks included. A file
+it would hash that is over 64 MiB (a sparse file counts at its apparent size),
+or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
+unsafe) rather than stalling it.
 
 It catches the common plants. It **cannot** be complete, so a clean exit is not
 permission to run git in the checkout. Known routes it does not see:
@@ -248,10 +278,20 @@ permission to run git in the checkout. Known routes it does not see:
   the session left behind can plant after the scan. Only a stopped container
   (`docker stop`) cannot.
 - **No scan.** A launcher killed before claude exits (closed terminal,
-  SIGTERM) scans nothing. Ctrl-C that ends the session still scans.
+  SIGTERM) scans nothing. Ctrl-C that ends the session still scans; a Ctrl-C
+  *during* the scan stops it and exits 4 ("the exit scan was interrupted").
+- **A slow scan.** Hashing is capped (64 MiB a file, 1 GiB in all), but a
+  session can still plant many files or embedded repos to make the scan take
+  a long time. If you stop it, treat the checkout as unscanned.
 - **Tracked `.gitattributes` and `.gitmodules`.** Not scanned. An attribute
-  selects a driver that config defines (config is scanned); `.gitmodules`
-  URLs and `update` settings act on `git submodule update`.
+  selects a driver that config defines; the repository configs are scanned,
+  but your own global config's entries are not recorded, so an attribute that
+  selects a driver defined there (`filter.lfs.*`) runs it on session-written
+  content with no finding. `.gitmodules` URLs and `update` settings act on
+  `git submodule update`.
+- **Another route to the checkout.** `includeIf "gitdir:"` is evaluated for
+  the physical path and the path you launched on; running git through a
+  different symlinked route can match a condition the scan did not evaluate.
 - **Host programs pointed at the checkout.** Anything on the host that reads a
   path inside the checkout (an editor plugin, a language server, `direnv`, a
   build tool) is outside what the scan looks at.
