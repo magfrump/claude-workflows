@@ -130,7 +130,7 @@ DENY_ALL=false
 settings_files() {
   local root
   root=$(git rev-parse --show-toplevel 2>/dev/null) || root=""
-  printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" \
+  printf '%s\0' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" \
     "${root:-.}/.claude/settings.json" "${root:-.}/.claude/settings.local.json"
 }
 
@@ -158,6 +158,7 @@ read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
                      then .[] | if type == "string" then "D\t" + . else error("non-string deny rule") end
                      else error("permissions.deny is not an array") end)
   end
+| if explode | any(. == 0) then error("NUL inside a rule string") else . end
 | . + "\u0000"
 JQEOF
 
@@ -166,8 +167,20 @@ JQEOF
 read_settings_rules() {
   local -a candidates files=()
   local f
-  mapfile -t candidates < <(settings_files)
+  # A relative CLAUDE_CONFIG_DIR resolves against this hook's cwd, not the
+  # linker's, so the global deny rules could silently go missing: fail closed.
+  if [[ -n "${CLAUDE_CONFIG_DIR:-}" && "$CLAUDE_CONFIG_DIR" != /* ]]; then
+    debug "CLAUDE_CONFIG_DIR is relative: denying everything"
+    return 1
+  fi
+  mapfile -d '' candidates < <(settings_files)
   for f in "${candidates[@]}"; do
+    # A newline in a settings path would split it in `--args` bookkeeping
+    # and in debug output; treat it as unreadable rather than missing.
+    if [[ "$f" == *$'\n'* ]]; then
+      debug "A settings path contains a newline: denying everything"
+      return 1
+    fi
     if [[ -e "$f" ]]; then
       files+=("$f")
     else
@@ -259,14 +272,16 @@ load_rules() {
     debug "Using custom permissions: $CUSTOM_PERMISSIONS"
     # Unreadable --permissions fails safe: no allow rules.
     mapfile -d '' records < <(printf '%s' "$CUSTOM_PERMISSIONS" \
-      | jq -j '.[]? | select(type == "string") | . + "\u0000"' 2>/dev/null)
+      | jq -j '.[]? | select(type == "string" and (explode | any(. == 0) | not)) | . + "\u0000"' 2>/dev/null)
     for rec in "${records[@]}"; do add_allow_rule "$rec"; done
   fi
   if $CUSTOM_DENY_SET; then
     # Unreadable --deny fails closed, like an unreadable settings file.
     mapfile -d '' records < <(printf '%s' "$CUSTOM_DENY" | jq -j \
       'if type != "array" then error("not an array") else .[] end
-       | if type == "string" then . + "\u0000" else error("non-string rule") end' 2>/dev/null)
+       | if type != "string" then error("non-string rule")
+         elif explode | any(. == 0) then error("NUL inside a rule string")
+         else . + "\u0000" end' 2>/dev/null)
     if ! wait $!; then
       debug "--deny is not a JSON array of strings: denying everything"
       DENY_ALL=true
