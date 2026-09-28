@@ -32,7 +32,8 @@ Usage: devcontainer-config/install.sh [--yes]
 Offers two install targets in turn. Each one shows a review diff and asks y/N:
   1. devcontainer config -> $CLAUDE_DEVC_CONFIG_DIR
      (default ~/.config/claude-devcontainer); then blessed, and
-     cc-isolated linked into $CLAUDE_DEVC_BIN_DIR (default ~/.local/bin).
+     cc-isolated and cc-push linked into $CLAUDE_DEVC_BIN_DIR (default
+     ~/.local/bin).
   2. host Claude Code files -> $CLAUDE_HOME_DIR, else $CLAUDE_CONFIG_DIR,
      else ~/.claude. CLAUDE_HOME_DIR is read by install.sh only and outranks
      CLAUDE_CONFIG_DIR (which Claude Code, link-claude-home and health-check
@@ -106,7 +107,7 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # install.sh itself is not installed — it runs from the repo.
 # Every item is staged from the HEAD commit, not the tree (see install_devcontainer);
 # `claude-home` is assembled below from the repo root before the diff is shown.
-PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress claude-home)
+PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress claude-home)
 
 REPO_ROOT="$(cd "$SRC/.." && pwd)"
 
@@ -592,10 +593,14 @@ install_devcontainer() {
     dc_unwind "the devcontainer config copied into $DEST differs from what the review showed (the stage changed after review, during the copy)."
   fi
 
-  chmod +x "$DEST/cc-isolated.sh" "$DEST/init-firewall.sh"
+  chmod +x "$DEST/cc-isolated.sh" "$DEST/cc-push.sh" "$DEST/init-firewall.sh"
 
   ln -sf "$DEST/cc-isolated.sh" "$BIN_DIR/cc-isolated"
   echo "Linked $BIN_DIR/cc-isolated -> $DEST/cc-isolated.sh"
+  # cc-push is the way to push a session's commits (Q-076): it fetches into a
+  # host-only clone and pushes from there. The manifest hashes it like the launcher.
+  ln -sf "$DEST/cc-push.sh" "$BIN_DIR/cc-push"
+  echo "Linked $BIN_DIR/cc-push -> $DEST/cc-push.sh"
   echo
 
   CLAUDE_DEVC_CONFIG_DIR="$DEST" "$DEST/cc-isolated.sh" --bless
@@ -608,6 +613,7 @@ install_devcontainer() {
   echo "                                         # this config and records it verified live on a pass"
   echo "  cc-isolated                            # session for the repo containing \$PWD"
   echo "  cc-isolated --register <repo> --profile python   # widen a project's egress"
+  echo "  cc-push --remote <url> <repo>          # push a session's commits via a host-only clone"
   case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
     *) echo; echo "WARNING: $BIN_DIR is not on your PATH — add it, or call $DEST/cc-isolated.sh directly." ;;

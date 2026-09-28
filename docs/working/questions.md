@@ -30,6 +30,7 @@ The index below is generated — edit entries, not the table.
 | [Q-083](#q-083--host-tools-trust-category) | you: judgment | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
 | [Q-066](#q-066--sandbox-tool-map-host-drift-run) | you: terminal | The permission allow list exists only on your host, so the two drift checks in `test/sandbox-tool-map-drift... | 2026-09-26 |
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Two Claude Code behaviours decide whether the auto-approve hook's deny reader is load-bearing or redundant,... | 2026-09-27 |
+| [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | agent | Implement Q-069 [3]. At session exit, `cc-isolated.sh` warns about, or refuses, `.git` changes made during ... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -155,6 +156,24 @@ echo "$(cat ~/.claude/.credentials.json | wc -c)"
 Then repeat with the auto-approve hook removed from settings for that session.
 
 - **Interim:** the hook header calls its deny check load-bearing in cc-isolated until this is known.
+
+### Q-084 · q076-live-checks
+**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
+
+Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git 2.39.5. After merging, re-run `install.sh` (it re-blesses; `cc-push.sh`, `cc-exit-scan.sh` and `cc-gitdir.sh` are new), then run this on the host:
+
+```
+git --version          # cc-push refuses below 2.39.4 / 2.40.2 / 2.41.1 / 2.42.2 / 2.43.4 / 2.44.1 / 2.45.1 (or <2.46 otherwise)
+# 1. a clean session: launch, make one commit, exit claude -> expect exit 0 and no WARNING
+cc-isolated ~/path/to/a/scratch/repo
+# 2. while that container is still up, in another host shell -> expect a refusal naming the running container
+cc-push --remote <your real remote URL> ~/path/to/a/scratch/repo
+# 3. stop the container (or exit cc-isolated), then push for real -> expect the preview, then the push
+cc-push ~/path/to/a/scratch/repo
+```
+
+- **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
+- **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
 
 ### Q-083 · host-tools-trust-category
 **Needs:** you: judgment · **Opened:** 2026-09-27 · **Status:** OPEN

@@ -13,6 +13,24 @@
 #   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
 #                                        # boundary self-probe, record it verified live
 #   cc-isolated --list                   # registered projects, blessed config, verified?
+#   cc-isolated --help                   # this text
+# Push a session's commits with cc-push, never with host git in the checkout.
+#
+# EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
+#   0  success; after a session: the exit scan found nothing, and claude's own
+#      exit status is passed through — so a 1-4 from claude itself reads like
+#      one of the codes below;
+#   1  an error, including a launch refused because the scan's baseline could
+#      not be taken (the checkout's .git unreadable, not a git dir git accepts,
+#      or the root already looking like one) — 1 at launch; at exit an
+#      unreadable .git is 4, and an invalid .git or a repository at the root
+#      is a finding, 3;
+#   2  bad usage;
+#   3  the exit scan found a change the session made to what host git reads
+#      (replaces claude's status);
+#   4  the exit scan could not read everything, or was interrupted (replaces it).
+# A clean scan is not permission to run git in the checkout:
+# guides/cc-isolated-usage.md, "Known routes it does not see".
 #
 # WHY THE CONFIG LIVES OUTSIDE THE REPO (decision 016, H2). Under decision 015 the
 # boundary config was committed inside each repo, which meant it was bind-mounted
@@ -114,6 +132,9 @@ enforcement_files() {
   echo "cc-sni-proxy.py"
   echo "link-claude-home.sh"
   echo "cc-isolated.sh"
+  echo "cc-exit-scan.sh"
+  echo "cc-gitdir.sh"
+  echo "cc-push.sh"
   # Sorted globs so the manifest is order-stable. An empty projects/ dir is normal
   # (no project has widened its egress yet), hence the -e guard on each match.
   local f
@@ -533,12 +554,16 @@ probe_boundary() {
   echo "Recorded config $want_hash as verified live in $(verified_path)."
 }
 
+# The session-exit scan (git_exec_snapshot, git_exit_scan, scan_interrupted,
+# logical_workspace and their helpers) lives in cc-exit-scan.sh, next to this
+# file. readlink -f: the command on PATH is a symlink to the installed copy.
+# shellcheck source=cc-exit-scan.sh
+source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-exit-scan.sh"
+
+# usage: the header comment block, from line 2 to the first line that is not a
+# comment (cc-push's approach), so it cannot end mid-sentence when the block grows.
 usage() {
-  # Line range: the header block above, down to the last line of the "WHY THE
-  # WORKSPACE IS AN ARGUMENT" paragraph. Adding a line to that block means moving
-  # this bound with it — test/cc-isolated-functions.bats asserts the last line is
-  # still included, so a stale bound fails there rather than silently truncating.
-  sed -n '2,29p' "${BASH_SOURCE[0]}"
+  awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
 main() {
@@ -555,12 +580,12 @@ main() {
         if [ $# -lt 2 ]; then
           echo "ERROR: --profile needs a value, e.g. --profile python (comma-separate several)." >&2
           usage >&2
-          exit 1
+          exit 2
         fi
         profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
-      -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 1 ;;
+      -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 2 ;;
       *)            ws_arg="$1"; shift ;;
     esac
   done
@@ -622,6 +647,40 @@ main() {
             --override-config "$(config_dir)/devcontainer.json"
             --id-label "cc-project=$pid")
 
+  # Baseline for the exit scan, taken before the container is (re)started. A repo
+  # whose .git cannot be read here could not be scanned at exit either, so refuse.
+  # The reason can name files an earlier session chose, so it goes through scan_vis.
+  local git_before="" snap_err lws
+  lws="$(logical_workspace "$ws_arg" "$ws")"
+  if [ "$action" = "launch" ]; then
+    snap_err="$(mktemp)"
+    # A .git git would not accept, or a root that looks like a git dir, is refused
+    # rather than recorded: as the baseline it would hide a plant already there
+    # (an earlier session's emptied HEAD, a repository at the root) from the scan.
+    if ! launch_gitdir_ok "$ws" 2>"$snap_err"; then
+      {
+        echo "ERROR: refusing to launch on $ws: $(cat "$snap_err")."
+        echo "  The session-exit scan compares against the checkout as it is at launch, so"
+        echo "  this state would become its baseline and go unreported. Restore .git"
+        echo "  (compare with a fresh clone) or remove what is at the checkout root, then"
+        echo "  rerun. Do not run host git in the checkout meanwhile."
+      } | scan_vis >&2
+      rm -f "$snap_err"
+      exit 1
+    fi
+    if ! git_before="$(git_exec_snapshot "$ws" "$lws" 2>"$snap_err")"; then
+      {
+        echo "ERROR: could not snapshot $ws/.git for the session-exit scan: $(cat "$snap_err")"
+        echo "  cc-isolated checks at exit that the session changed nothing host git reads to"
+        echo "  decide what to run; without a complete baseline it cannot. Fix the checkout"
+        echo "  (an unreadable or unlistable path above), then rerun."
+      } | scan_vis >&2
+      rm -f "$snap_err"
+      exit 1
+    fi
+    rm -f "$snap_err"
+  fi
+
   if ! is_verified_live; then
     echo "NOTE: blessed config $CC_CONFIG_HASH has NOT been verified in a live container."
     echo "      This run is that verification: the container is rebuilt from it, and the"
@@ -671,7 +730,24 @@ main() {
     probe_boundary "$ws"
   fi
 
-  exec devcontainer exec "${dc[@]}" claude
+  # Not `exec`: the launcher has to outlive claude to run the exit scan. The INT
+  # trap keeps a Ctrl-C that ends the session from also killing the launcher
+  # before the scan (a trapped signal, unlike an ignored one, is reset to its
+  # default in the child, so claude still gets its own Ctrl-C).
+  local rc=0
+  trap ':' INT
+  devcontainer exec "${dc[@]}" claude || rc=$?
+  # A Ctrl-C during the scan (it can take a while on a large or hostile checkout)
+  # ends it; an unfinished scan is no scan, so say so and exit 4, never 0.
+  trap scan_interrupted INT
+  local scan=0
+  git_exit_scan "$ws" "$git_before" "$lws" || scan=$?
+  trap - INT
+  case "$scan" in
+    0) exit "$rc" ;;
+    1) exit 3 ;;   # the session planted something: never a clean exit
+    *) exit 4 ;;   # the scan could not read .git
+  esac
 }
 
 # Main-execution guard: allow sourcing for tests without running the launcher.

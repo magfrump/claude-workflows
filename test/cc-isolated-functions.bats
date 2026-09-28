@@ -32,6 +32,9 @@ setup() {
   echo 'FROM node:22'        > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
+  echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
+  echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/link-claude-home.sh"
   echo 'api.anthropic.com'   > "$CLAUDE_DEVC_CONFIG_DIR/egress/base.txt"
@@ -50,6 +53,8 @@ setup() {
 }
 
 teardown() {
+  # The exit-scan tests make dirs unlistable (chmod 0311); rm -rf needs them back.
+  chmod -R u+rwx "$TEST_TMPDIR" 2>/dev/null || true
   rm -rf "$TEST_TMPDIR"
 }
 
@@ -333,7 +338,7 @@ STUB
   # Regression (audit 2026-09-18): `shift 2` under set -e exited 1 with no output.
   make_repo "$TEST_TMPDIR/proj"
   run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 2 ]
   [[ "$output" == *"--profile needs a value"* ]]
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
@@ -346,12 +351,22 @@ STUB
   [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
 }
 
-@test "usage prints the whole header block, including its last line" {
+@test "usage prints the whole header block, exit status included, and nothing past it" {
   run usage
   [ "$status" -eq 0 ]
-  # Guards the hardcoded sed line range in usage() against header edits.
   [[ "$output" == *"REPLACES any"* ]]
   [[ "$output" == *"really is the repo you asked for"* ]]
+  [[ "$output" == *"EXIT STATUS"*"2  bad usage"*"3  the exit scan found a change"*"4  the exit scan could not read everything"* ]]
+  [[ "$output" == *"1 at launch; at exit an"*"unreadable .git is 4"*"is a finding, 3"* ]]
+  # The header's last line; and no code after it.
+  [[ "$output" == *'"Changing the boundary".'* ]]
+  [[ "$output" != *"set -euo pipefail"* ]]
+}
+
+@test "usage errors exit 2 (an unknown flag), with the help on stderr" {
+  run bash "$CONFIG_SRC/cc-isolated.sh" --nope
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"unknown flag: --nope"*"EXIT STATUS"* ]]
 }
 
 @test "suggest_profiles proposes python for a python repo but never applies it" {
@@ -600,7 +615,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -700,7 +715,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"
@@ -1144,4 +1159,1047 @@ h6_probe() {
   [ "$status" -eq 0 ]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
   ! grep -q ' claude$' "$DC_LOG"
+}
+
+# --- Exit scan: .git changes made during the session (Q-069 [3], Q-076) ---------
+# Each planted command touches a marker under $TEST_TMPDIR/ran; the scan must name
+# the item AND leave no marker, since it may run nothing from the container's .git.
+
+scan_repo() {
+  make_repo "$TEST_TMPDIR/proj"
+  SCAN_WS="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  mkdir -p "$TEST_TMPDIR/ran"
+}
+
+# plant_hook <dir> <name>: an executable hook that leaves a marker if run.
+plant_hook() {
+  mkdir -p "$1"
+  printf '#!/bin/sh\ntouch %s/ran/hook-%s\n' "$TEST_TMPDIR" "$2" > "$1/$2"
+  chmod +x "$1/$2"
+}
+
+@test "exit scan: a clean session is silent and returns 0" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo change > "$SCAN_WS/file.txt"
+  git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam "session work"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan: snapshots that differ with nothing to show fail closed (status 2), never 0" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/hooks" pre-push
+  # Stand-in for a file that changed while the scan read it: the snapshots
+  # differ, but the rendered difference comes out empty.
+  scan_diff() { :; }
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"could not be shown"* ]]
+}
+
+@test "exit scan: a hook planted in .git/hooks is named, and not run" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/hooks" pre-push
+  cd "$SCAN_WS"   # the launcher's cwd is often the repo itself
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/hooks/pre-push  file 755 "* ]]
+  [[ "$output" == *"core.hooksPath=/dev/null"* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan: a *.sample hook is ignored (git never runs one)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/hooks" pre-push.sample
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+}
+
+@test "exit scan: a planted core.hooksPath and a hook in it are both named" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.evil-hooks" post-checkout
+  git config --file "$SCAN_WS/.git/config" core.hooksPath .evil-hooks
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"core.hookspath .evil-hooks"* ]]
+  [[ "$output" == *"hook $SCAN_WS/.evil-hooks/post-checkout "* ]]
+}
+
+@test "exit scan: a planted core.fsmonitor is named, and not run" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" core.fsmonitor "touch $TEST_TMPDIR/ran/fsmonitor"
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ config $SCAN_WS/.git/config  file "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/fsmonitor   <- can run a program"* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan: a planted filter driver is named, and not run" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" filter.x.clean "touch $TEST_TMPDIR/ran/clean"
+  git config --file "$SCAN_WS/.git/config" filter.x.smudge "touch $TEST_TMPDIR/ran/smudge"
+  mkdir -p "$SCAN_WS/.git/info"
+  echo '* filter=x' > "$SCAN_WS/.git/info/attributes"
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"filter.x.clean touch "* ]]
+  [[ "$output" == *"filter.x.smudge touch "* ]]
+  [[ "$output" == *"attributes $SCAN_WS/.git/info/attributes "* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan: planted include and includeIf keys are named; the target is read, not run" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # The included file itself plants an fsmonitor; following the include would
+  # hide where the key came from.
+  printf '[core]\n\tfsmonitor = touch %s/ran/included\n' "$TEST_TMPDIR" > "$TEST_TMPDIR/inc.cfg"
+  git config --file "$SCAN_WS/.git/config" include.path "$TEST_TMPDIR/inc.cfg"
+  git config --file "$SCAN_WS/.git/config" "includeIf.gitdir:/.path" "$TEST_TMPDIR/inc.cfg"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"include.path $TEST_TMPDIR/inc.cfg"* ]]
+  [[ "$output" == *"includeif.gitdir:/.path $TEST_TMPDIR/inc.cfg"* ]]
+  # The target is read (and its entries shown), never passed to git as config.
+  [[ "$output" == *"+ include $TEST_TMPDIR/inc.cfg  file "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/included"* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan: a planted core.sshCommand (what host git push runs) is named" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" core.sshCommand "sh -c 'cat ~/.ssh/id_ed25519'"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"core.sshcommand sh -c"* ]]
+}
+
+@test "exit scan: items present at launch are baseline, not findings" {
+  scan_repo
+  plant_hook "$SCAN_WS/.git/hooks" pre-commit
+  git config --file "$SCAN_WS/.git/config" filter.lfs.smudge "git-lfs smudge -- %f"
+  git config --file "$SCAN_WS/.git/config" core.fsmonitor true
+  git config --file "$SCAN_WS/.git/config" include.path "$TEST_TMPDIR/inc.cfg"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan: a pre-existing hook or key that CHANGED is a finding" {
+  scan_repo
+  plant_hook "$SCAN_WS/.git/hooks" pre-commit
+  git config --file "$SCAN_WS/.git/config" filter.lfs.smudge "git-lfs smudge -- %f"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo 'true' >> "$SCAN_WS/.git/hooks/pre-commit"
+  git config --file "$SCAN_WS/.git/config" filter.lfs.smudge "sh -c evil"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"hook $SCAN_WS/.git/hooks/pre-commit "* ]]
+  [[ "$output" == *"filter.lfs.smudge sh -c evil"* ]]
+  [[ "$output" == *"- filter.lfs.smudge git-lfs smudge -- %f"* ]]
+}
+
+@test "exit scan: a linked worktree is scanned through its commondir, config.worktree included" {
+  scan_repo
+  git -C "$SCAN_WS" worktree add -q "$TEST_TMPDIR/wt" -b wt
+  local wt; wt="$(git -C "$TEST_TMPDIR/wt" rev-parse --show-toplevel)"
+  local before; before="$(git_exec_snapshot "$wt")"
+  plant_hook "$SCAN_WS/.git/hooks" pre-push
+  git config --file "$SCAN_WS/.git/worktrees/wt/config.worktree" core.fsmonitor "touch x"
+  run git_exit_scan "$wt" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"hook $SCAN_WS/.git/hooks/pre-push "* ]]
+  [[ "$output" == *"+ config $SCAN_WS/.git/worktrees/wt/config.worktree  file "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch x"* ]]
+}
+
+@test "exit scan: a repointed .git file is a finding" {
+  scan_repo
+  git -C "$SCAN_WS" worktree add -q "$TEST_TMPDIR/wt" -b wt
+  local wt; wt="$(git -C "$TEST_TMPDIR/wt" rev-parse --show-toplevel)"
+  local before; before="$(git_exec_snapshot "$wt")"
+  make_repo "$TEST_TMPDIR/other"
+  echo "gitdir: $TEST_TMPDIR/other/.git" > "$wt/.git"
+  run git_exit_scan "$wt" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ gitdir $wt/.git  $TEST_TMPDIR/other/.git"* ]]
+}
+
+# --- Git-directory validity (cc-gitdir.sh): with .git not a git dir git accepts,
+# git's discovery falls back to the checkout root as a bare repository.
+
+@test "exit scan gitdir: a .git made invalid (HEAD removed) during the session is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  rm "$SCAN_WS/.git/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ gitdir-valid $SCAN_WS/.git  invalid HEAD=invalid"* ]]
+  [[ "$output" == *"! $SCAN_WS/.git is not a valid git directory now"* ]]
+}
+
+@test "exit scan gitdir: a .git invalid at launch is still a finding at exit" {
+  scan_repo
+  echo garbage > "$SCAN_WS/.git/HEAD"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"! $SCAN_WS/.git is not a valid git directory now"* ]]
+}
+
+@test "exit scan gitdir: a repository planted at the checkout root (HEAD, objects/, refs/) is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  mkdir -p "$SCAN_WS/objects" "$SCAN_WS/refs/heads"
+  echo 'ref: refs/heads/main' > "$SCAN_WS/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ root-repo $SCAN_WS  looks like a git dir"* ]]
+}
+
+@test "exit scan gitdir: a commondir file planted at the checkout root is a finding" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo .git > "$SCAN_WS/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ root-repo $SCAN_WS  looks like a git dir"* ]]
+}
+
+@test "launch_gitdir_ok: a normal checkout passes; a .git without HEAD, or a root that looks like a git dir, fails with the reason" {
+  scan_repo
+  launch_gitdir_ok "$SCAN_WS"
+  mv "$SCAN_WS/.git/HEAD" "$TEST_TMPDIR/HEAD.saved"
+  run launch_gitdir_ok "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$SCAN_WS/.git is not a valid git directory"* ]]
+  mv "$TEST_TMPDIR/HEAD.saved" "$SCAN_WS/.git/HEAD"
+  echo .git > "$SCAN_WS/commondir"
+  run launch_gitdir_ok "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"$SCAN_WS itself looks like a git directory"* ]]
+}
+
+@test "launch: a repository already planted at the checkout root refuses the launch (exit 1), never becomes the baseline" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" ":"
+  # git itself still uses .git here (it is valid), so the launcher gets this far.
+  mkdir -p "$ws/objects" "$ws/refs/heads"
+  echo 'ref: refs/heads/main' > "$ws/HEAD"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"refusing to launch on $ws: $ws itself looks like a git directory"* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
+}
+
+@test "launch: a .git git accepts but the tools do not (HEAD over 255 bytes) refuses the launch (exit 1)" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" ":"
+  { printf 'ref: refs/heads/main\n'; head -c 300 /dev/zero | tr '\0' x; } > "$ws/.git/HEAD"
+  git -C "$ws" rev-parse --show-toplevel   # git still accepts it
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"refusing to launch on $ws: $ws/.git is not a valid git directory"* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
+}
+
+@test "exit scan gitdir: switching and creating branches is not a finding (HEAD's kind, not its ref)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *$'gitdir-valid\t'*$'\tvalid HEAD=symref'* ]]
+  git -C "$SCAN_WS" checkout -q -b feature
+  echo more >> "$SCAN_WS/file.txt"
+  git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam "on a branch"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan gitdir: a session that makes .git invalid ends the launcher with exit 3" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" "rm '$ws/.git/HEAD'"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  echo "$output"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"gitdir-valid $ws/.git  invalid HEAD=invalid"* ]]
+}
+
+@test "exit scan size cap: a huge (sparse) .git file fails the scan fast as unsafe, unread" {
+  scan_repo
+  git -C "$SCAN_WS" worktree add -q "$TEST_TMPDIR/wt" -b wt
+  local wt; wt="$(git -C "$TEST_TMPDIR/wt" rev-parse --show-toplevel)"
+  local before; before="$(git_exec_snapshot "$wt")"
+  rm "$wt/.git"; truncate -s 100G "$wt/.git"
+  local t0=$SECONDS
+  run git_exit_scan "$wt" "$before"
+  [ $((SECONDS - t0)) -lt 20 ]
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"$wt/.git is too large to read (107374182400 bytes"*"treat the checkout as unsafe"* ]]
+}
+
+@test "exit scan: control bytes in a planted value are shown as '?', not sent to the terminal" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" core.pager "$(printf 'less\033[2J')"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ core.pager less?[2J"* ]]
+  [[ "$output" != *$'\033'* ]]
+}
+
+@test "exit scan: an unreadable .git is reported (status 2), not passed" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  rm -rf "$SCAN_WS/.git"
+  echo "not a gitdir line" > "$SCAN_WS/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"could not read"* ]]
+}
+
+# --- Exit scan regressions from the 3-replicate fact-check of the key-list scan ---
+# docs/reviews/code-fact-check-report-r{1,2,3}.md: each shape below left host git
+# armed while the first version of the scan returned 0.
+
+# scan_remote: a bare repo outside the checkout, as origin, present at launch.
+scan_remote() {
+  git init -q --bare "$TEST_TMPDIR/remote.git"
+  git -C "$SCAN_WS" remote add origin "$TEST_TMPDIR/remote.git"
+}
+
+# not_root: permission tests mean nothing to root, who can list anything.
+not_root() {
+  [ "$(id -u)" -ne 0 ] || skip "running as root: directory permissions are not enforced"
+}
+
+@test "exit scan (a): remote.origin.receivepack is named; the hooks-only safe push would run it" {
+  scan_repo
+  scan_remote
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" remote.origin.receivepack \
+    "touch $TEST_TMPDIR/ran/receivepack; git-receive-pack"
+  git config --file "$SCAN_WS/.git/config" remote.origin.uploadpack \
+    "touch $TEST_TMPDIR/ran/uploadpack; git-upload-pack"
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ remote.origin.receivepack touch $TEST_TMPDIR/ran/receivepack; git-receive-pack   <- can run a program"* ]]
+  [[ "$output" == *"+ remote.origin.uploadpack touch "*"<- can run a program"* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+  # Why the report says the hooks-only push is not enough (pins the guide's claim)...
+  git -c core.hooksPath=/dev/null -c core.fsmonitor=false push -q origin HEAD:refs/heads/x
+  [ -e "$TEST_TMPDIR/ran/receivepack" ]
+  # ...and that refusing the file transport does stop this one.
+  rm "$TEST_TMPDIR/ran/receivepack"
+  run git -c protocol.file.allow=never push -q origin HEAD:refs/heads/y
+  [ "$status" -ne 0 ]
+  [ ! -e "$TEST_TMPDIR/ran/receivepack" ]
+}
+
+@test "exit scan (b): a pushurl repointed at a bare repo in the checkout names it and its hook" {
+  scan_repo
+  scan_remote
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git init -q --bare "$SCAN_WS/evil.git"
+  plant_hook "$SCAN_WS/evil.git/hooks" post-receive
+  git config --file "$SCAN_WS/.git/config" remote.origin.pushurl ./evil.git
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ remote.origin.pushurl ./evil.git   <- can run a program"* ]]
+  [[ "$output" == *"+ hook $SCAN_WS/evil.git/hooks/post-receive  file 755 "* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan (b): a hook planted in a local remote that was already in the checkout is named" {
+  scan_repo
+  git init -q --bare "$SCAN_WS/evil.git"
+  git -C "$SCAN_WS" remote add origin ./evil.git
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/evil.git/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/evil.git/hooks/pre-receive "* ]]
+}
+
+@test "exit scan (c): a submodule git dir's config, hooks and attributes are named, and not run" {
+  scan_repo
+  git init -q --bare "$SCAN_WS/.git/modules/sub"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local m="$SCAN_WS/.git/modules/sub"
+  git config --file "$m/config" core.fsmonitor "touch $TEST_TMPDIR/ran/sub-fsmonitor"
+  plant_hook "$m/hooks" post-checkout
+  mkdir -p "$m/info"
+  echo '* filter=x' > "$m/info/attributes"
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ config $m/config  file "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/sub-fsmonitor   <- can run a program"* ]]
+  [[ "$output" == *"+ hook $m/hooks/post-checkout "* ]]
+  [[ "$output" == *"+ attributes $m/info/attributes "* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan (c): nested submodule git dirs (modules/a/modules/b) are walked too" {
+  scan_repo
+  git init -q --bare "$SCAN_WS/.git/modules/a/modules/b"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/modules/a/modules/b/hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/modules/a/modules/b/hooks/pre-commit "* ]]
+}
+
+@test "exit scan (c): an embedded repo's .git in the working tree is scanned (host status recurses into it)" {
+  scan_repo
+  make_repo "$SCAN_WS/vendor/lib"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/vendor/lib/.git/config" core.fsmonitor "touch $TEST_TMPDIR/ran/nested"
+  make_repo "$SCAN_WS/newrepo"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ config $SCAN_WS/vendor/lib/.git/config "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/nested"* ]]
+  [[ "$output" == *"+ dotgit $SCAN_WS/newrepo/.git  dir "* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan (d): a hooks dir made traversable but not listable fails closed (status 2)" {
+  not_root
+  local mode
+  for mode in 0311 0111; do
+    rm -rf "$TEST_TMPDIR/proj" "$TEST_TMPDIR/ran"
+    scan_repo
+    local before; before="$(git_exec_snapshot "$SCAN_WS")"
+    plant_hook "$SCAN_WS/.git/hooks" post-commit
+    chmod "$mode" "$SCAN_WS/.git/hooks"
+    run git_exit_scan "$SCAN_WS" "$before"
+    chmod 0755 "$SCAN_WS/.git/hooks"
+    [ "$status" -eq 2 ] || { echo "mode $mode: status $status"; return 1; }
+    [[ "$output" == *"cannot list everything under $SCAN_WS/.git"* ]]
+    [[ "$output" == *"search permission"* ]]
+  done
+}
+
+@test "exit scan (d): an unlistable hooks dir at launch refuses the baseline, not an empty one" {
+  not_root
+  scan_repo
+  chmod 0311 "$SCAN_WS/.git/hooks"
+  run git_exec_snapshot "$SCAN_WS"
+  chmod 0755 "$SCAN_WS/.git/hooks"
+  [ "$status" -eq 1 ]
+}
+
+@test "exit scan (d): a changed hooks dir mode, a removed hook and a symlinked hooks dir are named" {
+  scan_repo
+  plant_hook "$SCAN_WS/.git/hooks" pre-commit
+  mkdir -p "$SCAN_WS/tools/hk"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  chmod 0700 "$SCAN_WS/.git/hooks"
+  rm "$SCAN_WS/.git/hooks/pre-commit"
+  plant_hook "$SCAN_WS/tools/hk" pre-push
+  git config --file "$SCAN_WS/.git/config" core.hooksPath tools/hk
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ hooksdir $SCAN_WS/.git/hooks  dir 700"* ]]
+  [[ "$output" == *"- hook $SCAN_WS/.git/hooks/pre-commit "* ]]
+  [[ "$output" == *"+ hook $SCAN_WS/tools/hk/pre-push "* ]]
+}
+
+@test "exit scan (d): a hook that is a symlink is recorded with its target, whose change is a finding" {
+  scan_repo
+  plant_hook "$SCAN_WS/tools" real-hook
+  ln -s ../../tools/real-hook "$SCAN_WS/.git/hooks/pre-push"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *"hook"$'\t'"$SCAN_WS/.git/hooks/pre-push"$'\t'"link -> ../../tools/real-hook file "* ]]
+  echo 'touch x' >> "$SCAN_WS/tools/real-hook"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ hook $SCAN_WS/.git/hooks/pre-push  link -> ../../tools/real-hook file "* ]]
+}
+
+@test "exit scan (e): keys outside any list are still named (a changed config is the finding)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local c="$SCAN_WS/.git/config" k
+  git config --file "$c" core.attributesFile "$SCAN_WS/attrs"
+  git config --file "$c" difftool.x.cmd "touch $TEST_TMPDIR/ran/difftool"
+  git config --file "$c" mergetool.x.cmd "touch $TEST_TMPDIR/ran/mergetool"
+  git config --file "$c" uploadpack.packObjectsHook "touch $TEST_TMPDIR/ran/pohook"
+  git config --file "$c" "url.$TEST_TMPDIR/evil.git.insteadOf" "https://example.invalid/"
+  git config --file "$c" credential.helper "!touch $TEST_TMPDIR/ran/cred"
+  git config --file "$c" interactive.diffFilter "touch $TEST_TMPDIR/ran/idf"
+  git config --file "$c" branch.main.pushRemote ./evil.git
+  git config --file "$c" madeup.futureKey "some value"
+  cd "$SCAN_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  for k in core.attributesfile difftool.x.cmd mergetool.x.cmd uploadpack.packobjectshook \
+           "url.$TEST_TMPDIR/evil.git.insteadof" credential.helper interactive.difffilter \
+           branch.main.pushremote; do
+    [[ "$output" == *"+ $k "*"<- can run a program"* ]] || { echo "not named/marked: $k"; return 1; }
+  done
+  # Unknown to the label list, still a finding, just without the mark.
+  [[ "$output" == *"+ madeup.futurekey some value"$'\n'* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan (e): an attributesFile or include target inside the checkout that changes is named" {
+  scan_repo
+  echo '*.x diff=plain' > "$SCAN_WS/attrs"
+  printf '[user]\n\tname = t\n' > "$SCAN_WS/shared.gitconfig"
+  git config --file "$SCAN_WS/.git/config" core.attributesFile "$SCAN_WS/attrs"
+  git config --file "$SCAN_WS/.git/config" include.path ../shared.gitconfig
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo '* filter=x' > "$SCAN_WS/attrs"
+  printf '[core]\n\tfsmonitor = touch %s/ran/inc\n' "$TEST_TMPDIR" >> "$SCAN_WS/shared.gitconfig"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ attributes $SCAN_WS/attrs  file "* ]]
+  [[ "$output" == *"~ include $SCAN_WS/.git/../shared.gitconfig  file "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/inc"* ]]
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ]
+}
+
+@test "exit scan (e): a relative core.hooksPath in YOUR global config is walked inside the checkout" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.githooks" pre-push
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.githooks/pre-push "* ]]
+}
+
+@test "exit scan (e): even an inert config change (user.name) is reported, not allowlisted" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git config --file "$SCAN_WS/.git/config" user.name "someone else"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ user.name someone else"$'\n'* ]]
+}
+
+@test "exit scan (f): an unreadable hook with control bytes in its name is reported through '?'" {
+  not_root
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local bad
+  bad="$SCAN_WS/.git/hooks/$(printf 'x\033[2Jy')"
+  printf '#!/bin/sh\n' > "$bad"
+  chmod 000 "$bad"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read"* ]]
+  [[ "$output" != *$'\033'* ]]
+}
+
+@test "exit scan (f): a launch whose baseline fails prints the container-chosen name through '?'" {
+  not_root
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  # What an earlier session could leave behind.
+  local bad
+  bad="$ws/.git/hooks/$(printf 'pre-push\033[2J')"
+  printf '#!/bin/sh\n' > "$bad"
+  chmod 000 "$bad"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not snapshot"* ]]
+  [[ "$output" == *"pre-push?[2J"* ]]
+  [[ "$output" != *$'\033'* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
+}
+
+# --- Exit scan regressions from the iteration-2 fact-check (docs/reviews/
+# code-fact-check-report-r{1,2,3}.md at 02d14b0): N* and P* are the probe names there.
+
+# no_ran: nothing planted was executed by the scan.
+no_ran() {
+  [ -z "$(ls -A "$TEST_TMPDIR/ran")" ] || { ls "$TEST_TMPDIR/ran"; return 1; }
+}
+
+@test "exit scan N5: a branch named config is not parsed as git config (launch not refused)" {
+  scan_repo
+  git -C "$SCAN_WS" checkout -q -b config
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo z >> "$SCAN_WS/file.txt"; git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam w
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan N6: a normal commit on a branch with a hooks component is not a finding" {
+  scan_repo
+  git -C "$SCAN_WS" checkout -q -b feat/hooks/x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  echo z >> "$SCAN_WS/file.txt"; git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam w
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "exit scan N7: a checkout under a directory named hooks: a normal commit is not a finding" {
+  make_repo "$TEST_TMPDIR/hooks/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/hooks/proj" rev-parse --show-toplevel)"
+  local before; before="$(git_exec_snapshot "$ws")"
+  # Objects, refs and logs are not recorded at all.
+  [[ "$before" != *"/objects/"* ]]
+  [[ "$before" != *"/refs/heads/"* ]]
+  echo z >> "$ws/file.txt"; git -C "$ws" -c commit.gpgsign=false commit -qam w
+  run git_exit_scan "$ws" "$before"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  # ...and a hook planted there is still found.
+  plant_hook "$ws/.git/hooks" pre-push
+  run git_exit_scan "$ws" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $ws/.git/hooks/pre-push "* ]]
+}
+
+@test "exit scan N13: a newline in an unreadable hook's name cannot forge a line in the warning" {
+  not_root
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local n=$'x\n  NOTE: nothing else changed; git status is safe here.\ny'
+  printf '#!/bin/sh\n' > "$SCAN_WS/.git/hooks/$n"; chmod 000 "$SCAN_WS/.git/hooks/$n"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read $SCAN_WS/.git/hooks/x?  NOTE: nothing else changed"* ]]
+  run grep -c 'NOTE: nothing else changed' <<< "$output"
+  [ "$output" -eq 1 ]
+  run grep -q '^ *NOTE: nothing else changed' <<< "$output"
+  [ "$status" -ne 0 ]
+}
+
+@test "exit scan: an unlistable directory in the working tree is named as such, not as .git" {
+  not_root
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  mkdir "$SCAN_WS/deep"; chmod 000 "$SCAN_WS/deep"
+  run git_exit_scan "$SCAN_WS" "$before"
+  chmod 755 "$SCAN_WS/deep"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"could not read everything it checks in $SCAN_WS (its git"* ]]
+  [[ "$output" != *"under $SCAN_WS/.git:"* ]]
+  [[ "$output" == *"cannot list everything under $SCAN_WS: "*"deep"* ]]
+  [[ "$output" == *"cc-push $SCAN_WS"* ]]
+}
+
+@test "exit scan P1: a relative hooksPath from YOUR global includeIf gitdir: is walked" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .githooks\n' > "$TEST_TMPDIR/work.gitconfig"
+  printf '[core]\n\thooksPath = .otherhooks\n' > "$TEST_TMPDIR/other.gitconfig"
+  git config --global "includeIf.gitdir:$SCAN_WS/.path" work.gitconfig
+  # A condition that does not match this checkout is not walked.
+  git config --global "includeIf.gitdir:/nowhere/.path" other.gitconfig
+  # The same file is what host git itself would use.
+  [ "$(git -C "$SCAN_WS" config core.hooksPath)" = .githooks ]
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *"hooksdir"$'\t'"$SCAN_WS/.githooks"$'\t'"missing"* ]]
+  [[ "$before" != *".otherhooks"* ]]
+  plant_hook "$SCAN_WS/.githooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.githooks/pre-commit "* ]]
+  no_ran
+}
+
+@test "exit scan P1: gitdir/i: matches case-insensitively and a relative pattern matches anywhere" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .ci-hooks\n' > "$TEST_TMPDIR/w.gitconfig"
+  git config --global "includeIf.gitdir/i:${SCAN_WS^^}/.path" w.gitconfig
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *"$SCAN_WS/.ci-hooks"* ]]
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host2.gitconfig"
+  git config --global "includeIf.gitdir:${SCAN_WS##*/}/.path" "$TEST_TMPDIR/w.gitconfig"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" == *"$SCAN_WS/.ci-hooks"* ]]
+}
+
+@test "exit scan P6: a nested worktree whose common dir is a bare repo in the checkout" {
+  scan_repo
+  make_repo "$TEST_TMPDIR/libsrc"
+  git clone -q --bare "$TEST_TMPDIR/libsrc" "$SCAN_WS/vendor/lib.bare"
+  git -C "$SCAN_WS/vendor/lib.bare" worktree add -q "$SCAN_WS/nested"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local b="$SCAN_WS/vendor/lib.bare"
+  git config --file "$b/config" core.fsmonitor "touch $TEST_TMPDIR/ran/p6-fsmonitor"
+  plant_hook "$b/hooks" post-checkout
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ config $b/config "* ]]
+  [[ "$output" == *"+ core.fsmonitor touch $TEST_TMPDIR/ran/p6-fsmonitor"* ]]
+  [[ "$output" == *"+ hook $b/hooks/post-checkout "* ]]
+  no_ran
+}
+
+@test "exit scan N2: remote.pushDefault and branch.*.pushRemote naming a path are walked" {
+  scan_repo
+  git init -q --bare "$SCAN_WS/b.git"
+  git init -q --bare "$SCAN_WS/b2"
+  git -C "$SCAN_WS" config remote.pushDefault ./b.git
+  git -C "$SCAN_WS" config branch.main.pushRemote b2
+  # A name that IS a remote is not a path.
+  git -C "$SCAN_WS" remote add origin "$TEST_TMPDIR/remote.git"
+  git -C "$SCAN_WS" config branch.main.remote origin
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ "$before" != *"remote"$'\t'"$SCAN_WS/origin"* ]]
+  plant_hook "$SCAN_WS/b.git/hooks" post-receive
+  plant_hook "$SCAN_WS/b2/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/b.git/hooks/post-receive "* ]]
+  [[ "$output" == *"+ hook $SCAN_WS/b2/hooks/pre-receive "* ]]
+  [[ "$output" == *"cc-push $SCAN_WS"* ]]
+  no_ran
+}
+
+@test "exit scan N2: url.<base>.insteadOf and file://localhost/ remotes inside the checkout are walked" {
+  scan_repo
+  git init -q --bare "$SCAN_WS/c.git"
+  git init -q --bare "$SCAN_WS/d.git"
+  git -C "$SCAN_WS" config "url.$SCAN_WS/c.git.insteadOf" https://example.invalid/
+  git -C "$SCAN_WS" remote add up "file://localhost$SCAN_WS/d.git"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/c.git/hooks" pre-receive
+  plant_hook "$SCAN_WS/d.git/hooks" update
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/c.git/hooks/pre-receive "* ]]
+  [[ "$output" == *"+ hook $SCAN_WS/d.git/hooks/update "* ]]
+}
+
+@test "exit scan N3: a relative remote path with a colon after a slash is local, and walked" {
+  scan_repo
+  mkdir -p "$SCAN_WS/sub"; git init -q --bare "$SCAN_WS/sub/a:b"
+  git -C "$SCAN_WS" remote add r sub/a:b
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/sub/a:b/hooks" post-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/sub/a:b/hooks/post-receive "* ]]
+}
+
+@test "exit scan N4: legacy .git/remotes and .git/branches files are recorded and their targets walked" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git init -q --bare "$SCAN_WS/.cache-b"
+  plant_hook "$SCAN_WS/.cache-b/hooks" post-receive
+  mkdir -p "$SCAN_WS/.git/remotes" "$SCAN_WS/.git/branches"
+  printf 'URL: ./.cache-b\n' > "$SCAN_WS/.git/remotes/upstream"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ legacy-remote $SCAN_WS/.git/remotes/upstream "* ]]
+  [[ "$output" == *"+ hook $SCAN_WS/.cache-b/hooks/post-receive "* ]]
+  # A remotes file present at launch: a hook planted in its target is found.
+  printf './.cache-c#main\n' > "$SCAN_WS/.git/branches/up"
+  git init -q --bare "$SCAN_WS/.cache-c"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.cache-c/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.cache-c/hooks/pre-receive "* ]]
+  no_ran
+}
+
+@test "exit scan N11: YOUR relative global hooksPath is walked inside a submodule's working tree" {
+  make_repo "$TEST_TMPDIR/subsrc"
+  scan_repo
+  git -C "$SCAN_WS" -c protocol.file.allow=always submodule add -q "$TEST_TMPDIR/subsrc" sm
+  git -C "$SCAN_WS" -c commit.gpgsign=false commit -qm sm
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/sm/.githooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/sm/.githooks/pre-commit "* ]]
+  no_ran
+}
+
+@test "exit scan N12: an exec line added to an in-progress rebase's todo list is a finding" {
+  scan_repo
+  echo 2 >> "$SCAN_WS/file.txt"; git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam two
+  echo 3 >> "$SCAN_WS/file.txt"; git -C "$SCAN_WS" -c commit.gpgsign=false commit -qam three
+  # A rebase already stopped at launch (the baseline holds its todo list)...
+  (cd "$SCAN_WS" && GIT_SEQUENCE_EDITOR="sed -i '1s/^pick/edit/'" \
+     git -c commit.gpgsign=false rebase -q -i HEAD~2) >/dev/null 2>&1 || true
+  [ -f "$SCAN_WS/.git/rebase-merge/git-rebase-todo" ]
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # ...and the session appends an exec line.
+  printf 'exec touch %s/ran/rebase-exec\n' "$TEST_TMPDIR" >> "$SCAN_WS/.git/rebase-merge/git-rebase-todo"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ sequencer $SCAN_WS/.git/rebase-merge/git-rebase-todo "* ]]
+  no_ran
+}
+
+@test "exit scan keys include every alternative of install.sh's refusal list" {
+  local re alt
+  local -a alts
+  re="$(sed -n "s/^GIT_EXEC_KEYS_RE='\^(\(.*\))'\$/\1/p" "$CONFIG_SRC/install.sh")"
+  [ -n "$re" ]
+  IFS='|' read -ra alts <<< "$re"
+  [ "${#alts[@]}" -ge 4 ]
+  for alt in "${alts[@]}"; do
+    [[ "$GIT_EXIT_SCAN_KEYS_RE" == *"|$alt|"* || "$GIT_EXIT_SCAN_KEYS_RE" == *"($alt|"* ]] \
+      || { echo "missing from GIT_EXIT_SCAN_KEYS_RE: $alt"; return 1; }
+  done
+}
+
+@test "a launch whose session plants a hook exits 3 and names it" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  # Wrap the stub: the `claude` exec plants a hook, as a session would.
+  mv "$TEST_TMPDIR/bin/devcontainer" "$TEST_TMPDIR/bin/devcontainer.inner"
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<STUB
+#!/usr/bin/env bash
+if [ "\${*: -1}" = claude ]; then
+  printf '#!/bin/sh\n' > "$ws/.git/hooks/pre-push"
+  chmod +x "$ws/.git/hooks/pre-push"
+fi
+exec "$TEST_TMPDIR/bin/devcontainer.inner" "\$@"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$ws")"
+  export STUB_IMAGE_HASH STUB_FP
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -eq 3 ]
+  grep -q '^devcontainer exec .* claude$' "$DC_LOG"
+  [[ "$output" == *"hook $ws/.git/hooks/pre-push "* ]]
+}
+
+@test "a launch refuses to start when .git cannot be snapshotted" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  # A .git that is a directory without a config: resolve_workspace still finds
+  # the repo from the parent's view, the snapshot cannot.
+  mv "$ws/.git/config" "$TEST_TMPDIR/config.bak"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not snapshot"* ]]
+  run ! grep -q 'devcontainer up' "$DC_LOG"
+}
+
+# --- Exit scan regressions from the iteration-3 fact-check (docs/reviews/
+# code-fact-check-report-r{1,2,3}.md at a42e37f): E6/E8 in r1, relremote in r3.
+
+# session_stub <ws> <commands>: the devcontainer stub, with <commands> run where
+# the session's `claude` exec would run (a plant, a marker, a sleep).
+session_stub() {
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  mv "$TEST_TMPDIR/bin/devcontainer" "$TEST_TMPDIR/bin/devcontainer.inner"
+  cat > "$TEST_TMPDIR/bin/devcontainer" <<STUB
+#!/usr/bin/env bash
+if [ "\${*: -1}" = claude ]; then
+$2
+fi
+exec "$TEST_TMPDIR/bin/devcontainer.inner" "\$@"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/devcontainer"
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$1")"
+  export STUB_IMAGE_HASH STUB_FP
+}
+
+@test "exit scan E6: a newline in a repointed common dir's name cannot forge a line (exit and launch)" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local n=$'x\n  Scan clean: nothing changed, safe to run git'
+  mkdir -p "$SCAN_WS/$n"
+  ln -s "$SCAN_WS/$n" "$SCAN_WS/lnk"
+  echo "../lnk" > "$SCAN_WS/.git/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no git config at $SCAN_WS/x?  Scan clean: nothing changed, safe to run git/config"* ]]
+  run grep -c '^ *Scan clean' <<< "$output"
+  [ "$output" -eq 0 ]
+  # The launch baseline's reason (printed by main) is the same single line.
+  git_exec_snapshot "$SCAN_WS" 2> "$TEST_TMPDIR/err" && return 1
+  [ "$(wc -l < "$TEST_TMPDIR/err")" -eq 1 ]
+}
+
+@test "exit scan E6: an unreadable .git file's read error is not printed raw" {
+  not_root
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  mv "$SCAN_WS/.git" "$TEST_TMPDIR/gd"
+  echo "gitdir: $TEST_TMPDIR/gd" > "$SCAN_WS/.git"; chmod 000 "$SCAN_WS/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot locate the git directory of $SCAN_WS"* ]]
+  [[ "$output" != *"Permission denied"* ]]
+}
+
+@test "logical_workspace: the checkout by the (symlinked) route it was reached on" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  mkdir -p "$TEST_TMPDIR/real/proj/sub"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws; ws="$(git -C "$TEST_TMPDIR/lnk/proj" rev-parse --show-toplevel)"
+  [ "$ws" = "$(cd "$TEST_TMPDIR/real/proj" && pwd -P)" ]   # git reports it physical
+  [ "$(logical_workspace "$TEST_TMPDIR/lnk/proj" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(logical_workspace "$TEST_TMPDIR/lnk/proj/sub" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(cd "$TEST_TMPDIR/lnk/proj/sub" && logical_workspace "" "$ws")" = "$TEST_TMPDIR/lnk/proj" ]
+  [ "$(logical_workspace "$ws" "$ws")" = "$ws" ]
+  [ -z "$(logical_workspace "$TEST_TMPDIR" "$ws")" ]
+}
+
+@test "exit scan E8: YOUR includeIf gitdir: naming the checkout by a symlinked route is walked" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws lws; ws="$(git -C "$TEST_TMPDIR/real/proj" rev-parse --show-toplevel)"
+  mkdir -p "$TEST_TMPDIR/ran"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .hk\n' > "$TEST_TMPDIR/w.gitconfig"
+  git config --global "includeIf.gitdir:$TEST_TMPDIR/lnk/proj/.path" w.gitconfig
+  # Host git run from the symlinked route takes it; from the physical one, not.
+  [ "$(cd "$TEST_TMPDIR/lnk/proj" && git config core.hooksPath)" = .hk ]
+  lws="$(logical_workspace "$TEST_TMPDIR/lnk/proj" "$ws")"
+  local before; before="$(git_exec_snapshot "$ws" "$lws")"
+  [[ "$before" == *"hooksdir"$'\t'"$ws/.hk"$'\t'"missing"* ]]
+  plant_hook "$ws/.hk" pre-commit
+  run git_exit_scan "$ws" "$before" "$lws"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $ws/.hk/pre-commit "* ]]
+  no_ran
+  # A trailing-slash pattern through a ~ route matches too (r1 e8's form).
+  export HOME="$TEST_TMPDIR"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host2.gitconfig"
+  git config --global "includeIf.gitdir:~/lnk/proj/.path" "$TEST_TMPDIR/w.gitconfig"
+  [ "$(cd "$TEST_TMPDIR/lnk/proj" && git config core.hooksPath)" = .hk ]
+  before="$(git_exec_snapshot "$ws" "$lws")"
+  [[ "$before" == *"$ws/.hk"* ]]
+}
+
+@test "exit scan E8: a launch from a symlinked route passes that route to both snapshots" {
+  mkdir -p "$TEST_TMPDIR/real"
+  make_repo "$TEST_TMPDIR/real/proj"
+  ln -s real "$TEST_TMPDIR/lnk"
+  local ws; ws="$(git -C "$TEST_TMPDIR/real/proj" rev-parse --show-toplevel)"
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  printf '[core]\n\thooksPath = .hk\n' > "$TEST_TMPDIR/w.gitconfig"
+  git config --global "includeIf.gitdir:$TEST_TMPDIR/lnk/proj/.path" "$TEST_TMPDIR/w.gitconfig"
+  session_stub "$ws" "mkdir -p '$ws/.hk'; printf '#!/bin/sh\n' > '$ws/.hk/pre-commit'; chmod +x '$ws/.hk/pre-commit'"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/lnk/proj"
+  echo "$output"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"+ hook $ws/.hk/pre-commit "* ]]
+}
+
+@test "exit scan relremote: an embedded repo's relative local remote resolves in that repo" {
+  scan_repo
+  make_repo "$SCAN_WS/sub"
+  git init -q --bare "$SCAN_WS/sub/hooked.git"
+  git init -q --bare "$SCAN_WS/sub/pd.git"
+  git init -q --bare "$SCAN_WS/sub/legacy.git"
+  git -C "$SCAN_WS/sub" remote add origin ./hooked.git
+  git -C "$SCAN_WS/sub" config remote.pushDefault ./pd.git
+  mkdir -p "$SCAN_WS/sub/.git/remotes"
+  printf 'URL: ./legacy.git\n' > "$SCAN_WS/sub/.git/remotes/old"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local r
+  for r in hooked pd legacy; do
+    plant_hook "$SCAN_WS/sub/$r.git/hooks" post-receive
+  done
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  for r in hooked pd legacy; do
+    [[ "$output" == *"+ hook $SCAN_WS/sub/$r.git/hooks/post-receive "* ]]
+  done
+  no_ran
+  # The hooks-off push warning no longer lists filters (a push runs none).
+  [[ "$output" != *"filters"* ]]
+  [[ "$output" == *"remote.*.receivepack"* ]]
+  # And host git agrees: a push from sub runs the planted hook.
+  git -C "$SCAN_WS/sub" push -q origin HEAD:refs/heads/m 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+}
+
+@test "exit scan size cap: a huge (sparse) planted hook fails the scan fast as unsafe, unhashed" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  truncate -s 100G "$SCAN_WS/.git/hooks/pre-push"; chmod +x "$SCAN_WS/.git/hooks/pre-push"
+  local t0=$SECONDS
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ $((SECONDS - t0)) -lt 20 ]
+  echo "$output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"$SCAN_WS/.git/hooks/pre-push is too large to hash (107374182400 bytes"*"treat the checkout as unsafe"* ]]
+}
+
+@test "exit scan size cap: past the total to hash, the scan fails as unsafe" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # shellcheck disable=SC2034  # read by _snap_size_ok (sourced)
+  GIT_EXIT_SCAN_MAX_TOTAL_BYTES=100
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"more than 100 bytes to hash"* ]]
+}
+
+@test "a Ctrl-C during the exit scan exits 4, saying the scan did not finish" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" "touch '$TEST_TMPDIR/claude-done'"
+  # sha256sum stalls once the session is over (the exit scan), as a huge
+  # checkout would.
+  local real; real="$(command -v sha256sum)"
+  cat > "$TEST_TMPDIR/bin/sha256sum" <<STUB
+#!/usr/bin/env bash
+if [ -e "$TEST_TMPDIR/claude-done" ]; then touch "$TEST_TMPDIR/scanning"; sleep 60; fi
+exec "$real" "\$@"
+STUB
+  chmod +x "$TEST_TMPDIR/bin/sha256sum"
+  # A process group of its own with SIGINT at its default (a background job's is
+  # ignored), so the INT reaches the launcher and its children like a terminal's.
+  setsid env --default-signal=INT bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj" \
+    > "$TEST_TMPDIR/out" 2>&1 &
+  local pid=$! _
+  for _ in $(seq 100); do [ -e "$TEST_TMPDIR/scanning" ] && break; sleep 0.1; done
+  [ -e "$TEST_TMPDIR/scanning" ]
+  kill -INT -- "-$pid"
+  local st=0; wait "$pid" || st=$?
+  cat "$TEST_TMPDIR/out"
+  [ "$st" -eq 4 ]
+  grep -q 'the exit scan was interrupted, so it checked nothing' "$TEST_TMPDIR/out"
 }
