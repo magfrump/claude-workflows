@@ -13,15 +13,17 @@ track code review resolution.
 
 **Within one review-fix loop, keep updating the same file** — iterations 2 and 3 update
 statuses in place, which is what the 🔴/🟡 `Status` columns are for. A *new* file is
-created only when the date or the branch changes, i.e. when it is a genuinely different
-review. This preserves in-loop status tracking while stopping each loop from destroying the
+created only when the date or the branch changes. A new date mid-loop is a continuation, not
+a new review: the new file copies the `Commit:` stamp and any marker line from the previous one. This preserves in-loop status tracking while stopping each loop from destroying the
 prior loop's findings.
 
 The file's first line is `Commit: <reviewed HEAD short SHA>`, above the template below, and
 each pass rewrites it to the HEAD that pass reviewed. The next loop pass computes its default
 range from it, and a loop-pass short-circuit adds a marker line directly under it; a pass that starts a new
 dated file copies any marker line from the previous one. Keep the canonical name (no `-iter2` or
-`-final` suffixes), or neither rule can find the file. Both rules
+`-final` suffixes), or neither rule can find the file. When the final confirming pass is
+clean it adds `Loop closed at <sha>` under the `Commit:` line; a later loop pass that finds it
+starts a new loop with full-branch scope and copies neither marker forward. Both rules
 are owned by SKILL.md: Step 1's loop-pass default range and the first-red short-circuit's
 once-per-loop bound.
 

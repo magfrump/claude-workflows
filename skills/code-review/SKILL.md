@@ -109,8 +109,8 @@ Accept user overrides:
   loop-pass default below)
 
 **Loop-pass default range.** On a `--loop-pass` run with none of the flags above, review only
-what changed since this loop's last review. The loop's rubric is the **newest** file (by the date
-in its name, then mtime) whose name is exactly `code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md`
+what changed since this loop's last review. The loop's rubric is the file with the latest date in
+its name among those whose name is exactly `code-review-rubric-<YYYY-MM-DD>-<branch-slug>.md`
 in `docs/reviews/` (naming per [references/rubric.md](references/rubric.md#deliverable-2-code-review-rubric)).
 Several dated files for one slug are normal, since a new file starts on each new date. Ad-hoc
 suffixes (`-iter2`, `-final`) never count: rubrics must use the canonical name for this range and
@@ -118,15 +118,20 @@ the short-circuit marker to work. The rubric's stamp is its first line, `Commit:
 file exists, its stamp is an ancestor of HEAD (`git merge-base --is-ancestor <sha> HEAD`) and
 differs from HEAD, the scope is `<sha>..HEAD`, and the partial-scope label below applies. If there
 is no such file, or its stamp is missing, is not an ancestor (including a git error on the stamp),
-or equals HEAD, use full-branch scope. If the branch has no name (detached HEAD), do not guess:
+or equals HEAD, use full-branch scope. If that file carries a `Loop closed at <sha>` line under
+its `Commit:` line, the previous loop has ended and this pass starts a new one: use full-branch
+scope, treat the file as having no short-circuit marker, and copy neither marker line into what
+this pass writes. If the branch has no name (detached HEAD), do not guess:
 require an explicit `--range` or `--full`. State the scope used and where it came from in the plan
 summary (Step 7). Only the final confirming pass (the one run to declare the branch clean) runs
-without `--loop-pass`, and it keeps the full-branch default; every earlier pass in the loop,
+without `--loop-pass`, and it keeps the full-branch default; when it is clean, it adds
+`Loop closed at <reviewed HEAD sha>` under the rubric's `Commit:` line. Every earlier pass in the loop,
 including the first of 2-clean's two clean passes, takes the delta range. Each pass rewrites the
 rubric's `Commit:` line to the HEAD it reviewed, which is what makes the next pass's range correct.
-Cost to recall: code no fix touches is redrawn only on the first and final passes, which weakens
-decision 031's N≥3 resampling argument for k=1 on that code; the full-branch final pass at k=3 is
-the mitigation. Why: in Q-076 every round re-checked the whole diff although
+Cost to recall: code no fix touches is redrawn only on each loop's first and final passes, which
+weakens decision 031's N≥3 resampling argument for k=1 on that code; the mitigation is that the
+final confirming pass reviews the full branch (at 031's k=1). Raising that pass to k=3 is open as
+Q-087 in `docs/working/questions.md`. Why: in Q-076 every round re-checked the whole diff although
 [pr-prep 3d](../../workflows/pr-prep.md#3-review-fix-loop) already said to review only the
 fixes; the instruction was prose nobody computed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B1).
 
@@ -437,16 +442,19 @@ A single sample of that judgment is a coin flip carrying merge-blocking authorit
 Replication converts it into a measured distribution.
 
 **Replication is loop-aware (decision 031, configuration C2 — 031 overrules the earlier
-blanket k=3 mandate).** On a `--loop-pass` (any pass inside the review-fix loop, which requires
-**2 consecutive clean passes** before merge, except the final confirming pass, which runs
-without the flag per [Step 1](#step-1-determine-scope)), run **k=1**: a
+blanket k=3 mandate).** Every pass of a review-fix loop (which requires **2 consecutive clean
+passes** before merge) runs **k=1**: each `--loop-pass`, and also the final confirming pass,
+which runs without the flag per [Step 1](#step-1-determine-scope) and is recognized by the
+branch's canonical rubric existing without a `Loop closed at` line. Decision 031 prices both clean
+passes at k=1; raising the final one to k=3 is open as Q-087. Run a
 single fact-check agent with the same rich shared brief (step 3b below — brief quality, not k,
 governs systematic recall), saving its report directly as the canonical
 `docs/reviews/code-fact-check-report.md` with `**Replication:** k=1 (loop pass, decision 031)`
 in the header; skip the merge machinery and the Verdict-stability section. The across-pass
 resampling of the 2-clean rule supplies the redundancy k=3 supplied within a pass (1−(1−p)ᴺ ≥
-1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** —
-no loop, no second draw, so the replication happens within the pass.
+1−(1−p)³ for N≥3 draws). The **k=3 protocol below applies to standalone single-pass reviews** only
+(no `--loop-pass` and no open loop rubric for the branch) — no loop, no second draw, so the
+replication happens within the pass.
 
 For each of the three replicate agents:
 
@@ -672,7 +680,8 @@ loop, so a fix and another full review pass are guaranteed to follow. Skip this 
 on a normal (terminal or standalone) run.
 
 The rule: **once a behavioral 🔴 is confirmed on a `--loop-pass` run, stop the pass and hand
-back to the loop for the fix — do not launch the remaining review work.** A branch carrying a
+back to the loop for the fix — do not launch the remaining review work** (subject to the bound below: at most once per loop,
+and never past the security critic on an enforcement file). A branch carrying a
 behavioral red is already non-mergeable this pass; the remaining critics' findings would be
 re-surfaced next pass over a churned surface, so paying for them now is waste (decision 032 #4;
 the token model is E1's finding that a pass is ~1M tokens regardless of how many findings it
@@ -716,10 +725,11 @@ ran after four rounds, and security then found 2 High ("don't merge") issues tha
 have fixed (`docs/working/proposal-2026-09-27-smaller-review-units.md`, B3). #4's token rationale
 holds for one deferred pass, since the fix would churn the surface anyway. It does not hold for a
 string of them, because each deferral adds a round in which critic findings could have been fixed
-alongside the fact-check ones. This narrows proposal B3, which asked for the full panel in
-iteration 1 on enforcement units: the bound applies to every unit, and on enforcement diffs only
-security is forced, because running the full panel on every early pass costs a whole critic
-block per round
+alongside the fact-check ones. This narrows proposal B3, which asked for the critic panel in
+iteration 1, alongside fact-check, for any unit touching an enforcement file: the bound applies to
+every unit, and on enforcement diffs only security is forced, because B3's full panel in iteration
+1 costs a whole critic block on top of the fact-check pass, and security is the critic the Q-076
+evidence names
 (032's own falsifier, `docs/decisions/032-review-loop-token-reduction-levers.md:90-91`, named this
 failure).
 
@@ -731,7 +741,8 @@ failure).
    pass of a loop), there is no marker, so the short-circuit is allowed. If rubrics for this
    branch exist but none has the canonical name, or HEAD is detached, the loop's history cannot
    be read, so do not short-circuit. When the loop's rubric is a new day's file, the pass that
-   creates it copies any marker line from the previous dated file, so the marker carries forward.
+   creates it copies any marker line from the previous dated file, so the marker carries forward,
+   unless that file is closed (`Loop closed at`), which starts a new loop per Step 1.
 7. **Security on enforcement files.** If the reviewed diff touches an enforcement file (a path
    matched by the `enforcement` regex in `hooks/live-verify-gate.sh`, which mirrors
    `devcontainer-config/cc-isolated.sh`'s `enforcement_files()`, the owner of the list, plus
