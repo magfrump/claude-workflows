@@ -116,7 +116,9 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
 
 ### Q-093 · cc-push-commondir-recurs
-**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** Relax cc-push to accept a `commondir` whose whole content is `.`. Implemented as its own enforcement unit (branch `q093-cc-push-self-commondir`, `Live-verified: no`); the host rerun of Q-084 step 3 without deleting the file is the live check.
 
 `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. Relax cc-push now (Q-091's fallback), or keep deleting it by hand until the writer is found?
 
@@ -133,7 +135,9 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 - **If the answer differs:** nothing is built yet, so nothing is redone.
 
 ### Q-094 · exit-scan-worktree-noise
-**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** The exit scan accepts git's standard linked-worktree layout with a `note:` line and exit 0; anything else still warns. Implemented as its own enforcement unit (branch `q094-exit-scan-worktree-layout`, `Live-verified: no`); the live check is a host session that leaves an agent worktree behind and exits 0.
 
 Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), because the worktree's `.git` file, its `commondir` and its missing `hooks/` dir are new records. Should the exit scan accept git's own worktree layout without a warning?
 
