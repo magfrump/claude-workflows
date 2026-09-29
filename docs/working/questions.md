@@ -34,6 +34,7 @@ The index below is generated — edit entries, not the table.
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
+| [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-090](#q-090--run-tests-jobs) | trigger | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
@@ -119,7 +120,7 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 ### Q-093 · cc-push-commondir-recurs
 **Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
 
-**Answer (2026-09-28): [1].** Relax cc-push to accept a `commondir` whose whole content is `.`. Implemented as its own enforcement unit (branch `q093-cc-push-self-commondir`, `Live-verified: no`); the host rerun of Q-084 step 3 without deleting the file is the live check.
+**Answer (2026-09-28): [1].** Relax cc-push to accept a `commondir` whose whole content is `.`. Implemented as its own enforcement unit (branch `q093-cc-push-self-commondir`, `Live-verified: no`); the host rerun of Q-084 step 3 without deleting the file is the live check. **Merged 2026-09-28 (f987ed6):** accepts exactly `.` or `.\n` (the bytes are checked as hex, and the file must be a regular file of 1–2 bytes); every other spelling is refused, including ones git also reads as self. Two review passes, both clean.
 
 `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. Relax cc-push now (Q-091's fallback), or keep deleting it by hand until the writer is found?
 
@@ -138,7 +139,7 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 ### Q-094 · exit-scan-worktree-noise
 **Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
 
-**Answer (2026-09-28): [1].** The exit scan accepts git's standard linked-worktree layout with a `note:` line and exit 0; anything else still warns. Implemented as its own enforcement unit (branch `q094-exit-scan-worktree-layout`, `Live-verified: no`); the live check is a host session that leaves an agent worktree behind and exits 0.
+**Answer (2026-09-28): [1].** The exit scan accepts git's standard linked-worktree layout with a `note:` line and exit 0; anything else still warns. Implemented as its own enforcement unit (branch `q094-exit-scan-worktree-layout`, `Live-verified: no`); the live check is a host session that leaves an agent worktree behind and exits 0. **Split under the 400-line cap (decision log 62):** A `q094-exit-scan-worktree-layout` accepts added worktrees (399 lines); B `q094b-exit-scan-worktree-removal`, stacked on A, accepts standard removals (+94). The loop hit its 3-iteration cap with three security Mediums found and fixed (relative `core.hooksPath`/`attributesFile`/remote and `.`/empty insteadOf bases resolving in the new worktree). **Interim:** neither merges until the final confirming full-panel pass (pr-prep 3d) is clean on both; B also refuses a removal whose old directory now looks like a git dir.
 
 Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), because the worktree's `.git` file, its `commondir` and its missing `hooks/` dir are new records. Should the exit scan accept git's own worktree layout without a warning?
 
@@ -170,6 +171,15 @@ Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to 
 
 - **Interim:** the branch is committed and unmerged; nothing is installed.
 - **If the answer differs:** [2] re-cuts the one commit into stacked branches; [3] edits the list, then reviews.
+
+### Q-096 · exit-scan-insteadof-target
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
+
+The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, including at the top level, so a session can repoint a remote through a rewrite the scan does not follow. Found in the Q-094 review and now listed in the guide's "Known routes it does not see". Close it: the rewritten local-path target is walked as a remote, as `_snap_remote` does for `remote.*.url`.
+
+- **Read:** Q-094 rubric `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md` · `_snap_config` / `_snap_remote` in `devcontainer-config/cc-exit-scan.sh`
+- **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
+- **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
 
 ### Q-092 · drop-hook-deny-reader
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
