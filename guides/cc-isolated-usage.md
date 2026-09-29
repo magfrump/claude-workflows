@@ -339,7 +339,9 @@ in git's standard layout changed (added: agent-x) …` line instead of the
 warning and returns claude's status. A linked worktree takes its config, hooks
 and `info/attributes` from the checkout's own `.git`, never from its private
 dir (tested on git 2.39.5), except `config.worktree`, which refuses the note.
-"Exact" (`scan_std_worktrees` has the full rule): the private dir is the
+For a removal, "exact" means the private dir is gone and the removed records
+are the ones git's layout makes (the `.git` file named that dir). For an added
+worktree (`scan_std_worktrees` has the full rule): the private dir is the
 checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
 `-`) with `commondir` exactly `../..\n` and no `hooks/`, `config`,
 `config.worktree` or symlink; its working tree is inside the checkout; and that

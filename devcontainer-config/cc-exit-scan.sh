@@ -795,8 +795,9 @@ _snap_file_is() {
 # removed in git's standard layout; else 1, silent (the caller warns). Anything
 # it cannot read or match declines; nothing passes on error. P = <common>/
 # worktrees/<n>, <n> of [A-Za-z0-9._-]. Only dotgit, commondir-file and hooksdir
-# records differ, and the exit snapshot has no W record. Removed <n>: those
-# two records gone, P gone on disk, and one gone `dotgit` record that held
+# records differ, and the exit snapshot has no W record. Removed <n>: gone
+# `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
+# "../..\n", P gone on disk, and one gone `dotgit` record that held
 # exactly "gitdir: P\n" (either form). Added <n>:
 # new `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
 # "../..\n"; on disk P and worktrees/ are real dirs, P has no hooks, config,
