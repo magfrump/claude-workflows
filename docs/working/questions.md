@@ -156,7 +156,9 @@ Every cc-isolated session that leaves an agent worktree behind exits with the fu
 - **If the answer differs:** nothing is built yet.
 
 ### Q-095 · allowlist-size-waiver
-**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** User: "Waive the limit and review it as one change". The unit is reviewed and merged as one change (pr-prep step 1a waiver).
 
 Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so every cc-isolated session gets it at container start. The unit is 915 changed code lines, over the ~400-line review cap (decision log 62), and almost all of it is one flat data list. Waive the cap for this unit?
 
