@@ -2260,6 +2260,24 @@ warns_listing_wt() {
   warns_listing_wt
 }
 
+@test "exit scan Q-094: YOUR relative hooksPath is walked in a container-form worktree too" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  GIT_EXIT_SCAN_CONTAINER_WS="$TEST_TMPDIR/cws"
+  printf 'gitdir: %s/.git/worktrees/agent-x\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_WT/.git"
+  printf '%s/.claude/worktrees/agent-x/.git\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_P/gitdir"
+  plant_hook "$STD_WT/.githooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+  [[ "$output" == *"$STD_WT/.githooks/pre-commit"* ]]
+  # What the note would have hidden: git worktree repair points .git here.
+  git -C "$STD_WT" worktree repair 2>/dev/null || git -C "$SCAN_WS" worktree repair "$STD_WT"
+  [ "$(cat "$STD_WT/.git")" = "gitdir: $STD_P" ]
+}
+
 @test "exit scan Q-094: a removed standard worktree is a note; a half-removed one warns" {
   scan_repo
   std_wt agent-x
@@ -2272,7 +2290,7 @@ warns_listing_wt() {
   std_wt agent-z
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"(added: agent-z; removed: agent-y). Removed ones left no git dir behind, and added ones take config"* ]]
+  [[ "$output" == *"(added: agent-z; removed: agent-y). Removed ones' git dir and .git file are gone, and added ones take config"* ]]
   # agent-x's working tree deleted without a prune: its git dir stays.
   rm -rf "$SCAN_WS/.claude/worktrees/agent-x"
   run git_exit_scan "$SCAN_WS" "$before"
@@ -2296,7 +2314,7 @@ warns_listing_wt() {
   mkdir -p "$STD_WT/objects"; echo x > "$STD_WT/notes.txt"
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"(removed: agent-y). Removed ones left no git dir behind, so this is not a finding."* ]]
+  [[ "$output" == *"(removed: agent-y). Removed ones' git dir and .git file are gone, so this is not a finding."* ]]
   # A bare-repo layout (HEAD next to objects/) in its place.
   echo 'ref: refs/heads/main' > "$STD_WT/HEAD"
   run git_exit_scan "$SCAN_WS" "$before"
@@ -2310,6 +2328,19 @@ warns_listing_wt() {
   [ "$status" -eq 1 ]
   [[ "$output" != *"note:"* ]]
   rm -rf "$STD_WT"
+  # Its parent swapped for a link to a dir outside the checkout that holds a
+  # repo at the old path: find records nothing there, the .git check warns.
+  local wts="$SCAN_WS/.claude/worktrees"
+  mkdir -p "$TEST_TMPDIR/outside"; mv "$wts"/* "$TEST_TMPDIR/outside/" 2>/dev/null || true
+  rmdir "$wts"; ln -s "$TEST_TMPDIR/outside" "$wts"
+  git init -q --bare "$TEST_TMPDIR/outside/agent-y/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+  rm -rf "$TEST_TMPDIR/outside/agent-y"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  rm "$wts"; mkdir -p "$wts"
   # A working tree whose path %q can only write as $'…' is not decoded: warns.
   local odd="$SCAN_WS/odd
 dir/agent-n"
@@ -2322,15 +2353,14 @@ dir/agent-n"
 }
 
 @test "_snap_unq: inverts printf %q's backslash form; other forms decline" {
-  local s out bs='\' sq="'"
+  local s bs='\' sq="'"
   for s in plain/path "a b/c" "x${bs}y" "~t" "q${sq}uote" "semi;&|" "*?[]"; do
-    _snap_unq "$(printf '%q' "$s")" out
-    [ "$out" = "$s" ]
+    [ "$(_snap_unq "$(printf '%q' "$s")")" = "$s" ]
   done
   run ! _snap_unq "$(printf '%q' "new
-line")" out
-  run ! _snap_unq "$sq$sq" out
-  run ! _snap_unq "a$bs" out
+line")"
+  run ! _snap_unq "$sq$sq"
+  run ! _snap_unq "a$bs"
 }
 
 @test "exit scan Q-094: a removed git dir pairs only with the .git that pointed at it" {
@@ -2349,12 +2379,12 @@ line")" out
 
 @test "exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal" {
   scan_repo
-  local before after pad i
+  local before after pad
   before="$(git_exec_snapshot "$SCAN_WS")"
   std_wt agent-x
   after="$(git_exec_snapshot "$SCAN_WS")"
   # Records sorted after the ones matched, in both snapshots, well past a pipe buffer.
-  for i in $(seq 40000); do pad+="F"$'\t'"zz"$'\t'"/p/$i"$'\t'"missing"$'\n'; done
+  pad="$(printf 'F\tzz\t/p/%s\tmissing\n' $(seq 40000))"$'\n'   # one printf: a loop costs ~16 s under bats
   set -o pipefail
   run scan_std_worktrees "$SCAN_WS" "$before"$'\n'"$pad" "$after"$'\n'"$pad"
   [ "$status" -eq 0 ]
