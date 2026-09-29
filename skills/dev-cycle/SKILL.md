@@ -118,8 +118,9 @@ reorder the user's stated priorities, propose it as one `you: judgment` entry in
 ### 7. Close
 
 Write `docs/working/cycles/cycle-YYYY-MM-DD.md` (if one already exists for today, update it):
-the window, one line per step (done / skipped and why), each trigger verdict, the questions
-filed by ID, and the roadmap diff. The next digest starts its window from this file's date,
-so a cycle without it silently falls back to 14 days. Commit it with the roadmap and
+the digest's `Main at: <sha>` line copied verbatim, the window, one line per step (done /
+skipped and why), each trigger verdict, the questions filed by ID, and the roadmap diff. The
+next digest starts its window from this file's date and compares triggers against the
+recorded commit, so a cycle without the record silently falls back to 14 days. Commit it with the roadmap and
 questions changes. In the final message, list the new `you: judgment` entries by ID and
 name; do not make the user open the file to find them.

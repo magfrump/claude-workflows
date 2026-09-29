@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-099](#q-099--roadmap-vs-feature-ideas) | you: judgment | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
+| [Q-100](#q-100--dev-cycle-digest-review-cap) | you: judgment | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -45,6 +46,24 @@ The index below is generated — edit entries, not the table.
 
 
 
+
+### Q-100 · dev-cycle-digest-review-cap
+**Needs:** you: judgment · **Opened:** 2026-09-29 · **Status:** OPEN
+
+`feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full pass found behavioural Incorrects, fixed in baa46e3 but not re-reviewed by a full pass. Merge it, or run a fourth pass first?
+
+- **Why it's yours:** the hard cap forbids a fourth iteration without your written escalate/split/abandon decision; this entry is that escalation.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md` (Final pass 2 table) · commit baa46e3's message
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fourth full pass, then merge** | k=3 fact-check + 3 critics on baa46e3; merge if clean | None; ~1.3M tokens | A little quota; delay until it finishes |
+| **[2] Merge now** | Rely on the fix's tests (each fails on the previous script) and the fix-drift check | None | An untested edge in the new window-start logic reaches the first real cycle; the script is read-only, so the cost is a wrong digest, not damage |
+| **[3] Abandon the script** | Keep the skill, drop the digest; the skill gathers signals by hand | Rework of skill step 0 | Loses the reason the script exists (steps only prose asks for do not run) |
+
+- **Blocks:** `feat/dev-cycle` (the skill, stacked on it) cannot merge first.
+- **Interim:** both branches held unmerged. The skill unit's own review runs meanwhile against the digest branch as its base.
+- **If the answer differs:** nothing to redo; only the order of merging changes.
 
 ### Q-099 · roadmap-vs-feature-ideas
 **Needs:** you: judgment · **Opened:** 2026-09-29 · **Status:** OPEN
