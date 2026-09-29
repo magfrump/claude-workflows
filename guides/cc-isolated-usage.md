@@ -63,7 +63,9 @@ directory is a hard error (it refuses rather than guessing another repo).
    host git reads to decide what to run (hooks, configs, attributes, submodule
    and embedded git dirs, local remotes, rebase todo lists); when claude exits
    it compares, and exits **3** naming anything the session added, removed or
-   changed. It exits 4 when the exit scan cannot list or read any of it, and
+   changed. A linked worktree added or removed in git's own layout (an agent
+   worktree left behind) is not a finding: one `note:` line, and the exit
+   status is claude's. It exits 4 when the exit scan cannot list or read any of it, and
    refuses to launch (exit 1) when the baseline snapshot cannot be taken — also
    when `.git` is already not a git directory git accepts, or the checkout root
    already looks like one, so a plant from an earlier session cannot become the
@@ -328,6 +330,25 @@ or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
 unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
 before its first line is read.
 
+**Linked worktrees left behind (Q-094).** When the only differences are
+worktrees added (`git worktree add`, as agent worktrees are) or removed
+(`git worktree remove`) in the exact layout git writes, the scan prints one
+`note: exit scan: only linked worktrees in git's standard layout changed
+(added: agent-x) …` line instead of the warning and returns claude's status.
+A linked worktree takes its config, hooks and `info/attributes` from the
+checkout's own `.git`, never from its private dir (tested on git 2.39.5).
+"Exact" (`scan_std_worktrees` has the full rule): the private dir is the
+checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
+`-`) with `commondir` exactly `../..\n` and no `hooks/`, `config`,
+`config.worktree` or symlink; its working tree is inside the checkout; and that
+tree's `.git` file is exactly `gitdir: <private dir>\n`, by host path or by the
+container's `/workspace/…` path (which, if it exists on the host, must be the
+same directory). Anything else warns as before, worktree lines included — also
+any other change in the session, a working tree deleted without a prune, and
+**any checkout whose config holds a relative `core.hooksPath` or
+`core.attributesFile` (husky's `.husky/_`) or a relative local remote**, which
+git would resolve in the new worktree's tree, unscanned.
+
 It catches the common plants. It **cannot** be complete, so a clean exit is not
 permission to run git in the checkout.
 
@@ -340,7 +361,8 @@ opens or closes a route.
 - **A hook that runs a tracked file.** A hook present at launch that runs a
   file from the working tree (husky, the pre-commit framework, lefthook,
   `exec ./scripts/check.sh`): the session edits the tracked file and nothing
-  in `.git` changes.
+  in `.git` changes. The same holds in a linked worktree the session leaves
+  behind: its files are never read, only its layout (see above).
 - **Anything present at launch.** The launch-time state is the baseline: an
   earlier session's plant you did not remove, a rebase left in progress, or a
   config value that names a program by path inside the checkout
