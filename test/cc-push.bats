@@ -259,6 +259,54 @@ not_pushed() {
   [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" != "$SESSION_HEAD" ]
 }
 
+# Q-093: a commondir whose whole content is `.` (the 1-byte file a host tool keeps
+# writing) or `.\n` names .git itself, so the push goes ahead. git reads the other
+# spellings refused below either as elsewhere or (./) as self too; only these two
+# byte strings are accepted.
+@test "Q-093: a commondir holding exactly '.' or '.\\n' is accepted and the push goes ahead" {
+  local c="$T/co/.git/commondir"
+  printf . > "$c"
+  [ "$(stat -c %s "$c")" -eq 1 ]
+  run bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$SESSION_HEAD" ]
+  echo more > "$T/co/f"
+  git -C "$T/co" commit -qam "second session commit"
+  printf '.\n' > "$c"
+  run bash "$CC_PUSH" --yes "$T/co"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$(git -C "$T/co" rev-parse HEAD)" ]
+}
+
+@test "Q-093: every other commondir is refused (spellings, empty, absolute self, dir, FIFO, symlink)" {
+  local c="$T/co/.git/commondir" bytes
+  # printf formats: '..', './', ' .', '.\n\n', '.\r\n', '.\0' (bash would drop the
+  # NUL on read), '.x', and the gitdir's own absolute path.
+  for bytes in '..' './' ' .' '.\n\n' '.\r\n' '.\0' '.x' "$T/co/.git"; do
+    printf "$bytes" > "$c"
+    run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+    [ "$status" -eq 1 ] || { echo "accepted: $(od -An -c "$c")"; return 1; }
+    [[ "$output" == *"commondir exists"* ]]
+  done
+  : > "$c"
+  run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
+  rm "$c"; mkdir "$c"
+  run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
+  # A FIFO is refused on its type, never opened (timeout: 124 would mean a hang).
+  rmdir "$c"; mkfifo "$c"
+  run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
+  # A symlink to a file holding exactly `.` is refused by the helper itself.
+  rm "$c"; printf . > "$T/dot"; ln -s "$T/dot" "$c"
+  run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
+  [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" != "$SESSION_HEAD" ]
+}
+
 @test "a symlinked object store (aliasing another repo's objects) is refused" {
   other_repo
   mv "$T/co/.git/objects" "$T/co-objects"
