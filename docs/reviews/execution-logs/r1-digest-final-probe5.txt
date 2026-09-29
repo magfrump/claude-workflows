@@ -1,0 +1,8 @@
+=== chronological order: record committed exactly at midnight of SINCE
+### docs/decisions/006-m.md (last changed 2026-09-10)
+if midnight-record.
+Carried forward (1): 007-b.md
+=== clock-skew: a later commit on top dated before SINCE (HEAD older than window)
+0 merge(s) on `main`'s first-parent line; 0 commit(s) reachable from it, merged branches included.
+Carried forward (2): 006-m.md 007-b.md
+  git log -1 --since midnight -- 006: []

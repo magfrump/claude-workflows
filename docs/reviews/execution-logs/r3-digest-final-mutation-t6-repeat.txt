@@ -1,0 +1,11 @@
+cmd: timeout 300 bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/mutate6.txt
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:26:18-07:00
+T1 KILLED — section 5 heading renamed
+T6 KILLED — seed random per run (repeat 1)
+T6 KILLED — seed random per run (repeat 2)
+T6 KILLED — seed random per run (repeat 3)
+T6 KILLED — seed random per run (repeat 4)
+T6 SURVIVED — seed random per run (repeat 5)
+T6 SURVIVED — seed random per run (repeat 6)
+exit: 0

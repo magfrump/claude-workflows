@@ -1,0 +1,7 @@
+cmd: timeout 60 python3 scripts/hermeticity-lint --closure test/scripts/dev-cycle.bats
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:27:30-07:00
+test/scripts/dev-cycle.bats
+scripts/dev-cycle.sh
+scripts/questions.sh
+exit: 0

@@ -1,0 +1,5 @@
+now 02:23:28
+bare --since=2026-09-29: 0
+--since='2026-09-29 00:00:00': 2
+log -1 --since midnight on commit exactly at midnight:
+  count: 1
