@@ -254,7 +254,10 @@ naming a FIFO, or a FIFO in `.git`, blocks it forever. So before fetching,
 `cc-push` checks the checkout with plain file tests (no git) and refuses, with
 the reason, a `.git` that is not a real directory, or that holds a
 `commondir`, alternates, a symlink outside `hooks/`, a FIFO, socket or device,
-or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. It
+or an `[include]`/`[includeIf]` section in `config` or `config.worktree`. The
+one `commondir` it accepts is a regular file holding exactly `.` (or `.` and a
+newline): git reads that as `.git` itself, as if the file were absent, and a
+host tool keeps writing one into the main checkout (Q-093). It
 also refuses a `.git` that git itself would not accept as a git directory (a
 HEAD that is not `ref: refs/…`, a commit id or a link into `refs/`, or no
 searchable `objects/` and `refs/`), and a checkout root that looks like a

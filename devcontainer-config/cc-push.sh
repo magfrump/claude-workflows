@@ -84,8 +84,10 @@
 #     directory (a `gitdir:` file or a symlink: a linked worktree or submodule,
 #     or a redirect to any repository on this machine), or that holds a
 #     commondir, objects/info/alternates or objects/info/http-alternates file
-#     (each names another object store), a symlink outside hooks/, a FIFO,
-#     socket or device (a read of one never ends), or a config /
+#     (each names another object store; the one exception is a commondir that
+#     is a regular file holding exactly `.` or `.\n`, which names .git itself
+#     and which some host tool keeps writing: Q-093), a symlink outside
+#     hooks/, a FIFO, socket or device (a read of one never ends), or a config /
 #     config.worktree with an [include] or [includeIf] section (git would read
 #     whatever path it names, a FIFO included). Otherwise upload-pack could
 #     fetch history from another repository you can read and cc-push would
@@ -257,6 +259,27 @@ find_checkout() {
   done
 }
 
+# commondir_is_self <file>: 0 when <file> is a regular file (not a symlink) whose
+# whole content is the bytes `.` or `.\n` (Q-093). git (setup.c
+# get_common_dir_noenv) reads that as "the common dir is this git dir", exactly as
+# when there is no commondir; a stray one of these keeps appearing in the main
+# checkout (Q-091). Nothing else passes, not even other spellings git also reads
+# as self (`./`, `.\r\n`, `.\0...`, the absolute path). The type test comes
+# before any read, so a FIFO is never opened (and the read is timed, so one
+# swapped in between cannot hang cc-push; one a live writer feeds `.` is the
+# check-then-use race every check here has, and find -P below still refuses a
+# FIFO left behind); the size must be 1 or 2 bytes; the bytes are compared
+# as hex, because bash's read drops NULs and $(...) strips trailing newlines.
+commondir_is_self() {
+  local c="$1" s hex
+  [ ! -L "$c" ] && [ -f "$c" ] || return 1
+  s="$(stat -c %s -- "$c" 2>/dev/null)" || return 1
+  case "$s" in 1|2) ;; *) return 1 ;; esac
+  hex="$(timeout 5 head -c 2 -- "$c" 2>/dev/null | od -An -tx1)" || return 1
+  hex="${hex//[[:space:]]/}"
+  [ "$hex" = 2e ] || [ "$hex" = 2e0a ]
+}
+
 # check_checkout <checkout>: refuse (die) a .git that would make upload-pack read
 # outside the checkout or block forever (see the header). Plain file tests, find
 # -P (never follows a link) and grep on the config as text: no git runs here.
@@ -269,8 +292,9 @@ check_checkout() {
   if [ ! -d "$g" ]; then
     die "$g is not a directory (a linked worktree's or submodule's gitdir: file): its gitdir: line can point git at any repository on this machine. $run_main"
   fi
-  if [ -e "$g/commondir" ] || [ -L "$g/commondir" ]; then
-    die "$g/commondir exists (a linked worktree's layout): it names another repository, which git would read. $run_main"
+  # A commondir holding only `.` names .git itself: allowed (commondir_is_self).
+  if { [ -e "$g/commondir" ] || [ -L "$g/commondir" ]; } && ! commondir_is_self "$g/commondir"; then
+    die "$g/commondir exists (a linked worktree's layout): it can name another repository, which git would read. (The only one accepted is a regular file holding exactly \`.\`, or \`.\` and a newline: .git itself.) $run_main"
   fi
   for f in objects/info/alternates objects/info/http-alternates; do
     if [ -e "$g/$f" ] || [ -L "$g/$f" ]; then
