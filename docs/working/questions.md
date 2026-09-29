@@ -36,6 +36,7 @@ The index below is generated — edit entries, not the table.
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
+| [Q-097](#q-097--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-090](#q-090--run-tests-jobs) | trigger | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 <!-- index:end -->
@@ -160,6 +161,8 @@ Every cc-isolated session that leaves an agent worktree behind exits with the fu
 
 **Answer (2026-09-28): [1].** User: "Waive the limit and review it as one change". The unit is reviewed and merged as one change (pr-prep step 1a waiver).
 
+**Superseded (2026-09-28):** the review stopped at the fact-check gate. The list auto-approved credentials reads and config-volume writes. The user then chose, in turn: harden the hook first (now `feat/hook-refuse-redirects`, decision log 64), narrow the list, and finally shelve the list until a sandbox exists. See Q-097. The waiver lapses with the unit; a revived list gets its own size decision.
+
 Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so every cc-isolated session gets it at container start. The unit is 915 changed code lines, over the ~400-line review cap (decision log 62), and almost all of it is one flat data list. Waive the cap for this unit?
 
 - **Why it's yours:** only you can waive the cap.
@@ -182,6 +185,20 @@ The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never 
 - **Read:** Q-094 rubric `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md` · `_snap_config` / `_snap_remote` in `devcontainer-config/cc-exit-scan.sh`
 - **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
 - **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
+
+### Q-097 · global-allowlist-after-sandbox
+**Needs:** deferred · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branch `feat/wiring-allowlist-b` holds the 778-rule list, its tests and two review passes. It stays unmerged: without a sandbox, allowed tools leak through their own flags. The hook's shape check (decision log 64) cannot see that.
+
+- **Read:** `docs/reviews/code-fact-check-report-wiring-pass1-5094b99.md` (on that branch) · the unit-B pass-2 fact-check (below) · decision log 64 · Q-088
+- **Leak list, to use as the sandbox spike's test set.** Each item was approved with no prompt by the 778-rule list and the shape-checked hook, or was run in a scratch repo:
+  - `git diff --no-index /dev/null ~/.claude/.c*` reads the credentials file;
+  - `git log -1 --format=%B --output=/home/node/.claude/settings.json` writes the config volume (`guard-trusted-writes.py` does not catch `--output`);
+  - `git status`, `git diff`, `git log -p` and `git show` run `core.fsmonitor`, `diff.external` and textconv drivers from repo config the agent can edit;
+  - `man -l <file>` reads a file. `date -f <file>` probably does too (not probed).
+- **Trigger:** Q-088 answers [1] (build the sandbox) and the sandbox denies reads of `~/.claude/.credentials.json` and writes to `~/.claude/settings*.json`. Then re-run the leak list inside it before merging any list.
+- **Interim:** no global allow list. cc-isolated sessions prompt for commands not in their project's `.claude/settings.json`.
 
 ### Q-092 · drop-hook-deny-reader
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
