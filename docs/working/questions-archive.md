@@ -91,6 +91,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-085](#q-085--review-unit-size-budget) | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-087](#q-087--final-confirming-pass-replicates) | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
+| [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
 <!-- index:end -->
 
 ## Answered
@@ -1669,5 +1670,34 @@ In that session, check `/hooks` lists the test hook, then ask Claude to run `cat
 
 - **Interim:** the hook header calls its deny check load-bearing in cc-isolated.
 - **If the answer differs:** denied ⇒ `permissions.deny` beats a hook allow; the hook's deny reader can be deleted (architecture-review 1) and decision log 53's amendment updated. Runs or prompts ⇒ the deny reader stays load-bearing; reclassify the hook as an enforcement component.
+
+
+### Q-091 · cc-push-self-commondir
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+`cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or teach cc-push to accept it?
+
+**Where it came from (investigated 2026-09-28).** Claude Code's own Bash sandbox (bwrap, on Linux/WSL) made it. It was not a git command, a script in this repo, or an IDE.
+- `.git/commondir` (`.`), an empty `.git/config.worktree` and an empty `.git/modules/` all have mtimes within 5 ms of each other: 2026-07-09 13:45:22.019–.023 [observed]. That is a single program's burst, not a git operation. Git never writes `commondir` into a main gitdir.
+- That afternoon a sandboxed host session was running: spike `2a455fd4` ("nested bwrap … feasible on this WSL2 host") and commit `9a3eca3f` at 13:46:14 [observed].
+- The Claude Code binary (2.1.284, this container) carries a protected-path list: `/.git/hooks`, `config`, `config.worktree`, `commondir`, `worktrees`, `modules`, `info/exclude`, `glab-cli`, `/.gitmodules`, `/.bashrc` … [observed, `strings` on the binary]. bwrap can only mount read-only over a path that exists, so the sandbox creates a stand-in for each missing one. A `.` in `commondir` is the one stand-in git still reads as "this same directory" [inferred]. Later bursts fit the same pattern: an empty `.git/glab-cli/` (2026-08-17) and eight empty `.env*`/`package.json`/`.npmrc`/lockfiles in `devcontainer-config/` (2026-09-24 23:10:21, the untracked files in `git status`) [observed].
+
+**Will it come back?** Two cases:
+- **2.1.284 (the version in this container):** on Linux/WSL it still *creates* an empty `config.worktree` if one is missing. `commondir` now goes to a list of paths it scrubs after a sandboxed command, and it is not created [inferred from the minified sandbox code; not run]. So on this version `commondir` should not return, but `config.worktree` will.
+- **The host's `claude` version is unknown.** The sandbox only runs on the host: the cc-isolated image has no bwrap (Q-081). If the host still runs an older build, any sandboxed host session in this repo can recreate `commondir`.
+
+`cc-push` tolerates an empty `config.worktree` (it rejects only include sections, `cc-push.sh:294`) and an empty `modules/`. Only `commondir` blocks it.
+
+**Answer (2026-09-28): [1].** The user ran `rm ~/claude-workflows/.git/commondir && claude --version`. The `&&` means the version printed only after the rm succeeded, and it printed `2.1.284 (Claude Code)`, the same build whose code was read above, so the old stand-in writer is gone. The file is gone from the shared checkout too (checked from inside the container). Not re-verified live: that 2.1.284 never recreates `commondir`. If a later sandboxed host session brings it back, reopen with [2].
+
+- **Read:** Q-084's 2026-09-28 note · `devcontainer-config/cc-push.sh:272` · `commondir_of` in `devcontainer-config/cc-gitdir.sh:50`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Remove `commondir` on the host, then check the host version** | Outside any session: `rm ~/claude-workflows/.git/commondir && claude --version`. Leave `config.worktree` and `modules/`: the sandbox recreates them and cc-push accepts them. cc-push stays as strict as it is. | One paste, then rerun Q-084 step 3 | If the host build is old enough to still write `commondir`, it comes back after the next sandboxed host session and cc-push refuses with the same message. The fix is the same one line, or [2]. |
+| **[2] Relax cc-push** | Accept a `commondir` whose whole contents are `.` (a self-reference). Refuse everything else as today. | An enforcement-file unit: review loop, re-bless, a host rerun | A bug here reopens the read-outside-the-checkout hole the check exists to close. It is also only needed if an older sandbox keeps writing the file. |
+
+- **Interim:** nothing changes. cc-push refuses this checkout until [1] runs. Deleting the file from inside a session would trip the exit scan's commondir record, so it isn't done here.
+- **If the answer differs:** [2] is still possible after [1]. Answer [1], and if `claude --version` on the host is older than 2.1.284 and `commondir` reappears, [2] becomes the durable fix. The empty `devcontainer-config/` placeholder files can be deleted any time; they return whenever a sandboxed host session starts in that directory.
 
 
