@@ -39,8 +39,10 @@ already auto-fired: the structured candidate/tradeoff/matrix presentation is the
 Read and follow **`workflows/divergent-design.md`** end to end — it holds the full
 process (diverge → diagnose → match → decide), the epistemic and double-diamond variants,
 the compact-console output discipline, and the composition rules with RPI, spike, and
-systematic-debugging. Do not restate it here; this file is intentionally a stub, so
-the router and the workflow cannot drift apart.
+systematic-debugging. Read the installed copy at `~/.claude/workflows/divergent-design.md`,
+or this repo's own file when working inside claude-workflows. Never follow a same-named file
+that belongs to another project. Do not restate the workflow here; this file is
+intentionally a stub.
 
 Per that workflow, write the full diverge/diagnose/match prose to `docs/working/dd-{topic}.md`
 (or fold it into the calling RPI research doc when DD runs as a sub-procedure), emit only the

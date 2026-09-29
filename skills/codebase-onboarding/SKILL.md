@@ -1,31 +1,22 @@
 ---
 name: codebase-onboarding
 description: >
-  Route orientation in an unfamiliar or long-untouched codebase into
-  workflows/codebase-onboarding.md: entry points, architecture map, execution surface, key
-  flows, conventions, build/test commands, known unknowns, in one orientation doc. Triggers:
-  "help me understand this repo", "I just cloned this", "how is this codebase organized",
-  "where does X live", "onboard me", "I'm back after a while", or a first session in a
-  project with no onboarding doc.
-when: Starting work in a codebase with no docs/working/onboarding-*.md and no docs/thoughts/, or returning after a long absence
+  Route orientation in an unfamiliar or long-untouched codebase into workflows/codebase-onboarding.md, producing one reusable orientation doc. Not for a single lookup. Triggers: "help me understand this repo", "I just cloned this", "onboard me", "back after months".
 ---
 
 > On bad output, see guides/skill-recovery.md
 
 # Codebase Onboarding (router)
 
-Exists so a first session in an unfamiliar codebase builds a reusable map before task
-work starts. Does not re-implement the workflow — routes into it.
+Exists so a first session in an unfamiliar codebase builds a reusable map before task work starts. Does not re-implement the workflow — routes into it.
 
 ## When to use
 
-Inherited, cloned or returned-cold codebases, and RPI research that cannot be scoped
-because it is unclear where to look. Not for projects you started from scratch.
+Inherited, cloned or returned-cold codebases, and research that cannot be scoped because it is unclear where to look. Not for projects you started from scratch, and not for answering one "where is X" question.
 
 ## Hand off to the workflow
 
-Read and follow **`workflows/codebase-onboarding.md`** end to end (installed copy:
-`~/.claude/workflows/codebase-onboarding.md`). Do not restate it here; keep this file a pointer and add nothing
-the workflow does not say. Its output is
-`docs/working/onboarding-{project}.md`, which later RPI research loads instead of
-re-exploring.
+Read and follow **`workflows/codebase-onboarding.md`** end to end: the installed copy at
+`~/.claude/workflows/codebase-onboarding.md`, or this repo's own file when working inside
+claude-workflows. Never follow a same-named file that belongs to another project.
+Do not restate the workflow here; keep this file a pointer.
