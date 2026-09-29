@@ -1,0 +1,4 @@
+cmd: bash scripts/questions.sh check ; cwd: /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3sf/repo ; date: 2026-09-29T03:04:10-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ✓ questions: structure valid, indexes current
+exit=0

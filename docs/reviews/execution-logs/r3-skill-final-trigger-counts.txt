@@ -1,0 +1,6 @@
+cmd: count decision records with '## Revisit triggers' and log rows matching revisit, per commit ; cwd: /workspace/.claude/wt-devcycle ; date: 2026-09-29T03:05:26-07:00
+ec297d4 2026-09-28 22:30:09 -0700 records=11 logrows=7
+c9a370a 2026-09-29 01:23:05 -0700 records=11 logrows=8
+4225753 2026-09-29 01:44:19 -0700 records=11 logrows=9
+e438cd1 2026-09-29 02:48:41 -0700 records=11 logrows=10
+exit=0

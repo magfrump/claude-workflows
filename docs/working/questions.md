@@ -57,7 +57,7 @@ The index below is generated — edit entries, not the table.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Fourth full pass, then merge** | k=3 fact-check + 3 critics on baa46e3; merge if clean | None; ~1.3M tokens | A little quota; delay until it finishes |
+| **[1] Fourth full pass, then merge** | k=3 fact-check + 3 critics on baa46e3; merge if clean | None; ~1.4M tokens (the last pass: six agents, ~220–260K each) | A little quota; delay until it finishes |
 | **[2] Merge now** | Rely on the fix's tests (each fails on the previous script) and the fix-drift check | None | An untested edge in the new window-start logic reaches the first real cycle; the script is read-only, so the cost is a wrong digest, not damage |
 | **[3] Abandon the script** | Keep the skill, drop the digest; the skill gathers signals by hand | Rework of skill step 0 | Loses the reason the script exists (steps only prose asks for do not run) |
 

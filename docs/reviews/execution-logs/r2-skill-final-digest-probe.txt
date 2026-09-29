@@ -1,0 +1,107 @@
+cmd: timeout 60 bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r2sf/probe.txt (script below); cwd: /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r2sf; exit=0; run 2026-09-29T03:02:26-07:00
+--- probe ---
+set -u
+W=/workspace/.claude/wt-devcycle
+S=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r2sf
+R=$S/repo; rm -rf $R; mkdir -p $R; cd $R
+git init -q -b main; git config user.email t@t; git config user.name t
+mkdir -p docs/decisions docs/working/cycles
+printf '# 001\n\n## Revisit triggers\n\nif X.\n' > docs/decisions/001-a.md
+printf '| # | Date | D | R | F |\n|---|---|---|---|---|\n| 1 | 2026-09-01 | thing. Revisit if Y. | r | f |\n' > docs/decisions/log.md
+GIT_AUTHOR_DATE=2026-09-01T10:00:00 GIT_COMMITTER_DATE=2026-09-01T10:00:00 git add -A; GIT_AUTHOR_DATE=2026-09-01T10:00:00 GIT_COMMITTER_DATE=2026-09-01T10:00:00 git commit -qm init
+echo "=== A: no record, no questions.md"
+DEV_CYCLE_TODAY=2026-09-29 bash $W/scripts/dev-cycle.sh; echo "exit=$?"
+SHA=$(git rev-parse HEAD)
+printf 'Main at: %s (copy)\n' "$SHA" > docs/working/cycles/cycle-2026-09-10.md
+git add -A; GIT_AUTHOR_DATE=2026-09-10T10:00:00 GIT_COMMITTER_DATE=2026-09-10T10:00:00 git commit -qm rec
+echo "=== B: record 2026-09-10 exists; next cycle (2026-09-20) wrote none; digest on 2026-09-29"
+DEV_CYCLE_TODAY=2026-09-29 bash $W/scripts/dev-cycle.sh | sed -n '1,20p'
+echo "=== C: record written as a bullet '- Main at:'"
+printf -- '- Main at: %s\n' "$SHA" > docs/working/cycles/cycle-2026-09-10.md
+DEV_CYCLE_TODAY=2026-09-29 bash $W/scripts/dev-cycle.sh | sed -n '1,12p'
+echo "=== D: broken questions.md with questions.sh"
+printf 'garbage\n' > docs/working/questions.md
+DEV_CYCLE_TODAY=2026-09-29 bash $W/scripts/dev-cycle.sh | sed -n '/## 3/,/## 4/p'
+--- output ---
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== A: no record, no questions.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)). Merges: `main` at dcdcf41. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: dcdcf41372f69d095f4006ff3acdaf7d254fa1ac (copy this line into the cycle record; the next digest compares triggers against it)
+
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 0 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+
+No earlier cycle record to carry verdicts from, so every trigger is printed in full.
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+### docs/decisions/001-a.md (last committed on this branch: 2026-09-01)
+> if X.
+- log row 1 (2026-09-01): > Revisit if Y. 
+
+## 3. Watched questions (trigger and deferred routes)
+
+No docs/working/questions.md (or questions.sh) in this repo.
+
+## 4. Spot-check sample
+
+No merges in the window to sample.
+
+## 5. Roadmap
+
+No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill.
+exit=0
+=== B: record 2026-09-10 exists; next cycle (2026-09-20) wrote none; digest on 2026-09-29
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-10 (from the last cycle record, docs/working/cycles/cycle-2026-09-10.md). Merges: `main` at b6532d9. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: b6532d9b6917f1496b5a9865a8706d0bc86f5139 (copy this line into the cycle record; the next digest compares triggers against it)
+
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 1 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-10, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-10.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (2): 001-a.md log row 1
+
+## 3. Watched questions (trigger and deferred routes)
+
+No docs/working/questions.md (or questions.sh) in this repo.
+
+=== C: record written as a bullet '- Main at:'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-10 (from the last cycle record, docs/working/cycles/cycle-2026-09-10.md). Merges: `main` at b6532d9. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: b6532d9b6917f1496b5a9865a8706d0bc86f5139 (copy this line into the cycle record; the next digest compares triggers against it)
+
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 1 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-10, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-10.md unless that record says "cannot tell" or "fired".
+=== D: broken questions.md with questions.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 3. Watched questions (trigger and deferred routes)
+
+**questions.sh open failed** — watched questions were NOT checked. Its error:
+
+```
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ✗ missing: /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r2sf/repo/docs/working/questions-archive.md
+  ✗ questions.sh: no questions doc here — run `~/.claude/scripts/questions.sh init` first
+```
+
+## 4. Spot-check sample

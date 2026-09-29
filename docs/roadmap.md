@@ -24,15 +24,18 @@ evidence and re-rank Next.
 2. **Q-088 — spike `sandbox.enableWeakerNestedSandbox` in cc-isolated.** Motive: Q-098
    (a global allow list) waits on a Bash sandbox. First step: the spike's own success
    criterion in Q-088.
-3. **Q-089 — host-tool trust category.** Motive: `cc-push.sh` and the exit scan are
-   gated by a `Live-verified:` trailer they can never satisfy, since they run only on the
-   host (Q-083 [1]). First step: the trust-manifest section.
+3. **Q-089 — host-tool trust category.** Motive: every commit to a host-only tool
+   (`cc-push.sh`, the exit scan) must carry `Live-verified: no`, which dilutes the debt list
+   those trailers exist to track, and a changed host tool blocks cc-isolated launches until
+   it is re-blessed (Q-083 [1]). First step: the trust-manifest section.
 4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
-   of the first three cycles after install, count multi-file merges that carry RPI
-   research/plan docs and pr-prep review artifacts (an artifact count, not the usage log,
-   which under-counts, Q-017).
+   of the first three cycles after install, count multi-file merges to main whose message
+   carries pr-prep's `← carried from RPI` line and whose branch committed a code-review
+   rubric. Both are tracked; research/plan docs are gitignored and the usage log
+   under-counts (Q-017), so neither can be counted.
 5. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
-   code and prompts settle; it validates code-review lever #3. First step: confirm
+   code and prompts settle; it validates code-review lever #3 (rubric row A8 in
+   `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
 
 ## Ideas

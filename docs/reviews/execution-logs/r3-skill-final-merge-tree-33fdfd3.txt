@@ -1,0 +1,25 @@
+cmd: git merge-tree --write-tree --name-only 33fdfd3^1 33fdfd3^2 ; cwd: /workspace/.claude/wt-devcycle ; date: 2026-09-29T03:05:26-07:00
+1163405aa4b736c53b42c0b10f5bbb83bc2b1b27
+docs/decisions/log.md
+docs/reviews/code-fact-check-report-r1.md
+docs/reviews/code-fact-check-report-r2.md
+docs/reviews/code-fact-check-report-r3.md
+docs/reviews/override-log.md
+docs/reviews/performance-review-2026-09-29.md
+docs/reviews/security-review-2026-09-29.md
+
+Auto-merging docs/decisions/log.md
+CONFLICT (content): Merge conflict in docs/decisions/log.md
+Auto-merging docs/reviews/code-fact-check-report-r1.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r1.md
+Auto-merging docs/reviews/code-fact-check-report-r2.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r2.md
+Auto-merging docs/reviews/code-fact-check-report-r3.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r3.md
+Auto-merging docs/reviews/override-log.md
+CONFLICT (content): Merge conflict in docs/reviews/override-log.md
+Auto-merging docs/reviews/performance-review-2026-09-29.md
+CONFLICT (add/add): Merge conflict in docs/reviews/performance-review-2026-09-29.md
+Auto-merging docs/reviews/security-review-2026-09-29.md
+CONFLICT (add/add): Merge conflict in docs/reviews/security-review-2026-09-29.md
+exit=1
