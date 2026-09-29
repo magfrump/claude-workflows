@@ -341,7 +341,12 @@ is_command_allowed() {
     # "git log --oneline" matches "git log" and "git"
     # "grep -E pattern" matches "grep"
     # "python3 .claude/skills/foo/bar.py" matches "python3 .claude/skills:*"
-    if [[ "$full_command" == "$allowed" ]] || [[ "$full_command" == "$allowed "* ]] || [[ "$full_command" == "$allowed/"* ]]; then
+    # The "$allowed/" form is for path-prefix rules ("python3 .claude/skills").
+    # It applies only when the rule has an argument: for a bare name like
+    # "ls", "ls/x" is a different program, which bash runs from a directory
+    # named ls (decision log row 64).
+    if [[ "$full_command" == "$allowed" ]] || [[ "$full_command" == "$allowed "* ]] \
+       || { [[ "$allowed" == *" "* ]] && [[ "$full_command" == "$allowed/"* ]]; }; then
       debug "ALLOWED: '$full_command' (matches '$allowed')"
       return 0
     fi
@@ -686,10 +691,24 @@ def lit_word:
 def plain_param:
   (del(.Pos, .End, .Type, .Dollar, .Param, .Rbrace, .Short, .Length)
    | with_entries(select(.value != null and .value != false)) | length) == 0;
+# External programs that run their arguments as code.
 def wrappers:
-  ["bash","sh","zsh","dash","ksh","fish","eval","source",".","exec","command",
-   "builtin","env","xargs","sudo","nohup","trap","alias","enable","nice",
+  ["bash","sh","zsh","dash","ksh","fish","env","xargs","sudo","nohup","nice",
    "timeout","stdbuf","watch","parallel","script","su"];
+# Every bash 5.2 builtin (`compgen -b`), except the few that evaluate nothing
+# (safe_builtins). A finite, known set, so refusing all of it converges where
+# naming dangerous ones did not: read/printf -v/test -v evaluate an array
+# subscript `a[$(cmd)]`, mapfile -C / compgen -C / bind -x run a command,
+# hash -p redefines what a name runs, unset/getopts/wait -p take names too.
+def builtins:
+  [".",":","[","alias","bg","bind","break","builtin","caller","cd","command",
+   "compgen","complete","compopt","continue","declare","dirs","disown","echo",
+   "enable","eval","exec","exit","export","false","fc","fg","getopts","hash",
+   "help","history","jobs","kill","let","local","logout","mapfile","popd",
+   "printf","pushd","pwd","read","readarray","readonly","return","set","shift",
+   "shopt","source","suspend","test","times","trap","true","type","typeset",
+   "ulimit","umask","unalias","unset","wait"];
+def safe_builtins: ["cd","pwd","echo","true","false","type"];
 [ .. | objects
   | if has("Type") then
       if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
@@ -702,6 +721,8 @@ def wrappers:
         ((.Args[0] // {}) | lit_word | gsub("\\\\"; "") | sub(".*/"; "")) as $name
         | if $name == "" or ($name | index("\u0001") != null) then "non-literal command name"
           elif ($name | IN(wrappers[])) then "interpreter or wrapper: \($name)"
+          elif ($name | IN(builtins[])) and ($name | IN(safe_builtins[]) | not)
+            then "shell builtin: \($name)"
           else empty end
       else empty end
     elif (.Background // false) or (.Coprocess // false) then "background statement"
@@ -775,8 +796,11 @@ extract_commands_raw() {
 #     /dev/null or it duplicates an fd (>&N, >&-); an input redirect `<` or
 #     `<&` is refused unless it reads /dev/null or duplicates an fd.
 #     Here-docs and here-strings (<<, <<<) pass: their text is inline.
-# Needed once hooks/wiring.json gave every cc-isolated project a global allow
-# list: any one allowed command is an outer command for these constructs.
+#   - a command name that is not a bash builtin, other than cd, pwd, echo,
+#     true, false and type (SHAPE_FILTER's builtins list says why).
+# Any one allowed command is an outer command for these constructs, so they
+# matter wherever an allow list exists: every project's own rules today, and a
+# global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-097).
 #
 # WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
 # in shfmt 3.13.1) with no stability promise across versions. The operator is

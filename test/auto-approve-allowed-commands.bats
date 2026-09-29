@@ -469,7 +469,17 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 # failed twice in review (each round found a new family). The hook now
 # approves only an allowlist of shapes. Each command below is a bypass family
 # a review round found; all must prompt with the outer commands allowed.
-SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*)","Bash(cd:*)","Bash(bash:*)","Bash(sh:*)"]'
+SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*)","Bash(cd:*)","Bash(bash:*)","Bash(sh:*)","Bash(pwd:*)","Bash(type:*)","Bash(true:*)","Bash(false:*)"]'
+
+# Not approved AND refused by the shape check itself: the debug log says
+# "Refusing" only in refuses_construct. Without this, an item could pass just
+# because its command has no allow rule, and the test would stay green if the
+# shape check lost that case.
+shape_refused() {
+  run bash -c 'printf "%s" "$1" | jq -Rs "{tool_input:{command:.}}" \
+    | bash "$3" --debug --permissions "$2" --deny "[]" 2>&1' _ "$1" "$SHAPE_RULES" "$HOOK"
+  not_approved && [[ "$output" == *"Refusing"* ]]
+}
 
 @test "a redirect that can write a file, or read a path, is not approved" {
   local cmd
@@ -477,8 +487,7 @@ SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*
     'ls <> out' 'ls >& out' 'ls 2> err.log' 'ls | wc -l > out' \
     'echo x > ~/.claude/settings.json' 'ls é > out' 'ls > "/dev/null"' \
     'tr -d x < ~/.claude/.c*' 'wc -l < in' 'tr a b 0< in'; do
-    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
-    not_approved || { echo "approved: $cmd"; return 1; }
+    shape_refused "$cmd" || { echo "not refused by the shape check: $cmd"; return 1; }
   done
 }
 
@@ -490,8 +499,7 @@ SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*
     '(ls)' '{ ls; }' 'if ls; then ls; fi' 'for i in 1; do ls; done' \
     'while false; do ls; done' 'case x in x) ls;; esac' 'f(){ ls; }; f' \
     'time ls' 'coproc ls' 'ls &'; do
-    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
-    not_approved || { echo "approved: $cmd"; return 1; }
+    shape_refused "$cmd" || { echo "not refused by the shape check: $cmd"; return 1; }
   done
 }
 
@@ -502,8 +510,7 @@ SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*
     'readonly Y=1' 'typeset -x Y=1' 'local Y=1' \
     'ls ${x:-y}' 'ls ${!x}' 'ls ${x@P}' 'ls ${a[1]}' 'ls ${a[$(id)]}' 'ls ${x:$(id)}' \
     'ls ${x/a/b}' 'ls ${x:1}'; do
-    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
-    not_approved || { echo "approved: $cmd"; return 1; }
+    shape_refused "$cmd" || { echo "not refused by the shape check: $cmd"; return 1; }
   done
 }
 
@@ -514,8 +521,7 @@ SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*
   for cmd in 'bash -c ls' 'sh -c ls' '/bin/bash -c ls' '\bash -c ls' "'ba''sh' -c ls" \
     'bash -c "ls \`id\`"' $'bash -c $\'ls \\x3e f\'' 'eval ls' 'env ls' 'xargs ls' \
     'source x' '. x' 'exec ls' 'command ls' 'builtin cd' 'nohup ls' '$X ls' '"$X" ls'; do
-    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
-    not_approved || { echo "approved: $cmd"; return 1; }
+    shape_refused "$cmd" || { echo "not refused by the shape check: $cmd"; return 1; }
   done
 }
 
@@ -527,13 +533,35 @@ SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*
   done
 }
 
+@test "shell builtins other than cd, pwd, echo, true, false and type are not approved" {
+  # Pass-2 fact-check: these evaluate their arguments (a[$(cmd)] subscripts,
+  # -C callbacks, hash -p), so the shape of the command line is not enough.
+  local cmd
+  for cmd in "read 'a[\$(id)]' <<< 1" "printf -v 'a[\$(id)]' x" "test -v 'a[1]'" \
+    "[ -v 'a[1]' ]" "mapfile -C 'id;:' -c 1 x <<< a" "readarray x <<< a" \
+    "compgen -C id x" "complete -C id x" "bind -x '\"x\":id'" \
+    'hash -p /usr/bin/touch ls; ls M' "unset 'a[\$(id)]'" 'getopts a x' 'wait -p x' \
+    'kill -l 1' 'fc -l' 'history' 'shopt -s extglob' 'set -x' 'ulimit -a' 'umask'; do
+    shape_refused "$cmd" || { echo "not refused by the shape check: $cmd"; return 1; }
+  done
+}
+
+@test "a bare-name rule does not approve a path under that name; a path-prefix rule still does" {
+  # Bash(ls:*) used to approve `ls/x`, which bash runs from a directory named ls.
+  run_hook_rules 'ls/x' '["Bash(ls:*)"]' '[]'
+  not_approved
+  run_hook_rules 'python3 tools/skills/foo/bar.py' '["Bash(python3 tools/skills:*)"]' '[]'
+  approved
+}
+
 @test "the approvable shapes are still approved" {
   local cmd
   for cmd in 'ls -la | wc -l' 'ls && wc -l x || echo none; ls' '! ls' 'ls |& wc -l' \
     'ls "$HOME" ${HOME} ${#HOME} $1 "$@"' "ls 'a b' \$'c\\n' \$\"d\"" \
     'ls 2>/dev/null' 'ls >/dev/null 2>&1' 'ls &>/dev/null' 'ls 2>&1' 'ls 1>&-' \
     'wc -l < /dev/null' 'ls 0<&-' 'wc -l <<< hi' $'wc -l <<EOF\nplain $HOME\nEOF' \
-    $'wc -l <<\'EOF\'\n$(ls)\nEOF' 'ls é 2>/dev/null' 'cd /tmp; ls'; do
+    $'wc -l <<\'EOF\'\n$(ls)\nEOF' 'ls é 2>/dev/null' 'cd /tmp; ls' 'pwd' 'echo hi' \
+    'type ls' 'true && false || true'; do
     run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
     approved || { echo "not approved: $cmd"; return 1; }
   done
