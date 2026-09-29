@@ -24,6 +24,6 @@ Ask: "do these share files or an order?" No → this skill. Yes → one task, so
 ## Hand off to the workflow
 
 Read and follow **`workflows/parallel-worktrees.md`** end to end (installed copy:
-`~/.claude/workflows/parallel-worktrees.md`). Do not restate it here; this file is a stub
-so the router and the workflow cannot drift apart. It includes the manual `git worktree
+`~/.claude/workflows/parallel-worktrees.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. It includes the manual `git worktree
 add` fallback for when Agent-tool worktree isolation fails.

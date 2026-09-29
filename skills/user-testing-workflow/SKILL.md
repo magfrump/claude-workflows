@@ -24,6 +24,6 @@ findings. For reviewing a UI's layout without users, use `ui-visual-review` inst
 ## Hand off to the workflow
 
 Read and follow **`workflows/user-testing-workflow.md`** end to end (installed copy:
-`~/.claude/workflows/user-testing-workflow.md`). Do not restate it here; this file is a
-stub so the router and the workflow cannot drift apart. Its findings report lands at
+`~/.claude/workflows/user-testing-workflow.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Its findings report lands at
 `docs/working/testing-findings-{topic}.md`.

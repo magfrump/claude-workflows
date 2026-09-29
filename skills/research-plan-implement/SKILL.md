@@ -25,7 +25,7 @@ value, a one-line fix whose cause is already known).
 ## Hand off to the workflow
 
 Read and follow **`workflows/research-plan-implement.md`** end to end (installed copy:
-`~/.claude/workflows/research-plan-implement.md`). Do not restate it here; this file is
-a stub so the router and the workflow cannot drift apart. Its outputs are
+`~/.claude/workflows/research-plan-implement.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Its outputs are
 `docs/working/research-{topic}.md`, `plan-{topic}.md` and `checkpoint-{topic}.md`, and its
 hard gate is plan approval before implementation.

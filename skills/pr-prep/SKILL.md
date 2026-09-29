@@ -19,11 +19,13 @@ bare merge. Does not re-implement the workflow — routes into it.
 ## When to use
 
 A branch's implementation is complete and it is about to merge locally or go up as a
-PR. The workflow picks the delivery path (local merge vs GitHub PR) in its first step.
+PR. The workflow picks the delivery path (local merge vs GitHub PR) before its Step 0.
 
 ## Hand off to the workflow
 
 Read and follow **`workflows/pr-prep.md`** end to end (installed copy:
-`~/.claude/workflows/pr-prep.md`). Do not restate it here; this file is a stub so the
-router and the workflow cannot drift apart. Its review-fix loop is owned by
-`workflows/review-fix-loop.md`; its reviews run through the `code-review` skill.
+`~/.claude/workflows/pr-prep.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Its step 3 is the review-fix loop, whose control rules
+(exit conditions, iteration cap) live in `workflows/review-fix-loop.md`, which has no
+router of its own because it runs only inside pr-prep; its reviews run through the
+`code-review` skill.

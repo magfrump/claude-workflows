@@ -25,6 +25,6 @@ stale-branch cleanup. A single feature branch needs none of this.
 ## Hand off to the workflow
 
 Read and follow **`workflows/branch-strategy.md`** end to end (installed copy:
-`~/.claude/workflows/branch-strategy.md`). Do not restate it here; this file is a stub so
-the router and the workflow cannot drift apart. Replacing a shared branch always needs
+`~/.claude/workflows/branch-strategy.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Replacing a shared branch always needs
 explicit user approval, in any operating mode.

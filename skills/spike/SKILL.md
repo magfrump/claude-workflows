@@ -24,6 +24,6 @@ reading the code. If the answer is already known and the task is to build it, us
 ## Hand off to the workflow
 
 Read and follow **`workflows/spike.md`** end to end (installed copy:
-`~/.claude/workflows/spike.md`). Do not restate it here; this file is a stub so the router
-and the workflow cannot drift apart. Its first step greps
+`~/.claude/workflows/spike.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Its first step greps
 `docs/thoughts/spike-graveyard.md` for prior abandoned attempts.

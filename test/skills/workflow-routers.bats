@@ -5,19 +5,24 @@
 #
 # Why: skills are listed with their descriptions in every Claude Code session
 # and invoked through the Skill tool; workflows are reached only through
-# instruction prose. The one workflow with a router (divergent-design) was
-# opened 15 times in 49 days while research-plan-implement, the documented
-# default, was opened zero times (docs/working/triage-2026-09-17-backlog.md
-# §2.2). A router per workflow puts each one at the skill-selection layer.
+# instruction prose. divergent-design got a router for exactly that reason
+# (its SKILL.md: "so divergent design competes at the skill-selection layer").
+# A router per workflow puts each one there. (Hook-based usage counts are not
+# cited: they under-count silently, Q-017.)
 # divergent-design's own, stricter contract lives in divergent-design-router.bats.
 #
 # Usage: bats test/skills/workflow-routers.bats
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-  # A router body is a short pointer; the workflows it points at run 70-600
-  # lines. Past this, the router has started restating its workflow.
+  # A router body is a short pointer; the workflows it points at run about
+  # 70-610 lines. Past this, the router has started restating its workflow.
   MAX_BODY_LINES=45
+  # Workflows that must not get a router, with the reason. A router would
+  # invite running them on their own. -g: bats runs setup inside a function.
+  declare -gA EXEMPT=(
+    [review-fix-loop]="runs only inside pr-prep step 3 (workflows/review-fix-loop.md: 'should not be run as a standalone workflow')"
+  )
 }
 
 frontmatter() {
@@ -35,13 +40,26 @@ workflow_names() {
   done
 }
 
-@test "every workflow has a router skill of the same name" {
+@test "every non-exempt workflow has a router skill of the same name" {
   local name missing=()
   while IFS= read -r name; do
+    [ -n "${EXEMPT[$name]+x}" ] && continue
     [ -f "$REPO_ROOT/skills/$name/SKILL.md" ] || missing+=("$name")
   done < <(workflow_names)
   if [ ${#missing[@]} -gt 0 ]; then
     echo "workflows with no skills/<name>/SKILL.md router: ${missing[*]}"
+    return 1
+  fi
+}
+
+@test "exempt workflows exist and have no router" {
+  local name bad=()
+  for name in "${!EXEMPT[@]}"; do
+    [ -f "$REPO_ROOT/workflows/$name.md" ] || bad+=("$name: no such workflow (stale exemption)")
+    [ ! -e "$REPO_ROOT/skills/$name" ] || bad+=("$name: has a router despite being exempt (${EXEMPT[$name]})")
+  done
+  if [ ${#bad[@]} -gt 0 ]; then
+    printf '%s\n' "${bad[@]}"
     return 1
   fi
 }
@@ -67,8 +85,8 @@ workflow_names() {
   while IFS= read -r name; do
     skill="$REPO_ROOT/skills/$name/SKILL.md"
     [ -f "$skill" ] || continue
-    # Asserted on the body, not the whole file: the description also names the
-    # workflow, so a whole-file match survives deleting the handoff.
+    # Asserted on the body, where the agent acts on it: the frontmatter only
+    # decides whether the skill fires (same rule as divergent-design-router.bats).
     body "$skill" | grep -qF "Read and follow **\`workflows/$name.md\`**" || bad+=("$name")
   done < <(workflow_names)
   if [ ${#bad[@]} -gt 0 ]; then

@@ -25,7 +25,7 @@ because it is unclear where to look. Not for projects you started from scratch.
 ## Hand off to the workflow
 
 Read and follow **`workflows/codebase-onboarding.md`** end to end (installed copy:
-`~/.claude/workflows/codebase-onboarding.md`). Do not restate it here; this file is a
-stub so the router and the workflow cannot drift apart. Its output is
+`~/.claude/workflows/codebase-onboarding.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. Its output is
 `docs/working/onboarding-{project}.md`, which later RPI research loads instead of
 re-exploring.

@@ -26,6 +26,6 @@ unrelated tasks instead, use `parallel-worktrees`.
 ## Hand off to the workflow
 
 Read and follow **`workflows/task-decomposition.md`** end to end (installed copy:
-`~/.claude/workflows/task-decomposition.md`). Do not restate it here; this file is a stub
-so the router and the workflow cannot drift apart. It ends by entering
+`~/.claude/workflows/task-decomposition.md`). Do not restate it here; keep this file a pointer and add nothing
+the workflow does not say. It ends by entering
 `research-plan-implement` with the synthesized research doc.
