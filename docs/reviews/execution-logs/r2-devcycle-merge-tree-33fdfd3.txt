@@ -1,0 +1,25 @@
+2026-09-29T02:02:16-07:00
+ecf246473d31d175e808e8fbee52df1f9965fc7e
+docs/decisions/log.md
+docs/reviews/code-fact-check-report-r1.md
+docs/reviews/code-fact-check-report-r2.md
+docs/reviews/code-fact-check-report-r3.md
+docs/reviews/override-log.md
+docs/reviews/performance-review-2026-09-29.md
+docs/reviews/security-review-2026-09-29.md
+
+Auto-merging docs/decisions/log.md
+CONFLICT (content): Merge conflict in docs/decisions/log.md
+Auto-merging docs/reviews/code-fact-check-report-r1.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r1.md
+Auto-merging docs/reviews/code-fact-check-report-r2.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r2.md
+Auto-merging docs/reviews/code-fact-check-report-r3.md
+CONFLICT (content): Merge conflict in docs/reviews/code-fact-check-report-r3.md
+Auto-merging docs/reviews/override-log.md
+CONFLICT (content): Merge conflict in docs/reviews/override-log.md
+Auto-merging docs/reviews/performance-review-2026-09-29.md
+CONFLICT (add/add): Merge conflict in docs/reviews/performance-review-2026-09-29.md
+Auto-merging docs/reviews/security-review-2026-09-29.md
+CONFLICT (add/add): Merge conflict in docs/reviews/security-review-2026-09-29.md
+exit=1

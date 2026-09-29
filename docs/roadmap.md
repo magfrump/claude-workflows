@@ -22,11 +22,11 @@ evidence and re-rank Next.
    generator and has been dormant since. First step: list every path, config, hook,
    credential and git ref `scripts/self-improvement.sh` can write outside its working docs.
 2. **Q-088 — spike `sandbox.enableWeakerNestedSandbox` in cc-isolated.** Motive: Q-098
-   (a global allow list) and Q-092 wait on a Bash sandbox. First step: the spike's own
-   success criterion in Q-088.
+   (a global allow list) waits on a Bash sandbox. First step: the spike's own success
+   criterion in Q-088.
 3. **Q-089 — host-tool trust category.** Motive: `cc-push.sh` and the exit scan are
-   verified by `Live-verified:`, which does not fit host-only tools (Q-083 [1]). First
-   step: the trust-manifest section.
+   gated by a `Live-verified:` trailer they can never satisfy, since they run only on the
+   host (Q-083 [1]). First step: the trust-manifest section.
 4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
    of the first three cycles after install, count multi-file merges that carry RPI
    research/plan docs and pr-prep review artifacts (an artifact count, not the usage log,
@@ -42,14 +42,15 @@ Unranked. Each names the signal that motivates it.
 - **Q-079 — canon-instance script and proposal filter.** Signal: the review canon grows
   only by hand (Q-072).
 - **Automate the failure-pattern harvest, or drop the "do not skip" line.** Signal: Q-074,
-  1 entry in ~128 fix commits; it reopens as a judgment on 2026-10-26.
+  1 entry in ~128 fix commits; it reopens as a judgment on 2026-10-26 if fewer than 5 new
+  entries have landed by then.
 - **Narrow code-review's "default whenever a PR is prepared" description.** Signal: it
   overlaps the pr-prep router (override log, deferred from log row 66's review).
 - **Finish skill-format-audit F1: drop `when:` repo-wide and from
   `divergent-design-router.bats`.** Signal: override log, deferred from log row 66's review.
 - **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
-  add/add conflicts on `code-fact-check-report-r*.md` and `*-review-<date>.md`, which are
-  per-run names shared by every branch reviewed the same day.
+  conflicts on `code-fact-check-report-r*.md` (undated, so any two branches collide) and
+  add/add conflicts on `*-review-<date>.md` (any two branches reviewed the same day).
 
 ## Done
 

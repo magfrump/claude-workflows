@@ -1,0 +1,145 @@
+0dab0d00b42ecf3a4310f25bf4ee14cc4e428eba673717b51cead334e507e61b  ./.git/COMMIT_EDITMSG
+28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80  ./.git/HEAD
+d63ad37826a40575d96a02d70403f56977fcdecf977b636e45c59a19df9c96b8  ./.git/ORIG_HEAD
+cfe7ba1238c9a78be7535d7c63bcaf5a4d5011d46b07c9b45d3bbf7d6c312dfe  ./.git/config
+85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee  ./.git/description
+0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7  ./.git/hooks/applypatch-msg.sample
+1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437  ./.git/hooks/commit-msg.sample
+e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0  ./.git/hooks/fsmonitor-watchman.sample
+81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5  ./.git/hooks/post-update.sample
+e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475  ./.git/hooks/pre-applypatch.sample
+f9af7d95eb1231ecf2eba9770fedfa8d4797a12b02d7240e98d568201251244a  ./.git/hooks/pre-commit.sample
+d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53  ./.git/hooks/pre-merge-commit.sample
+ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a  ./.git/hooks/pre-push.sample
+4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3  ./.git/hooks/pre-rebase.sample
+a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989  ./.git/hooks/pre-receive.sample
+e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619  ./.git/hooks/prepare-commit-msg.sample
+a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f  ./.git/hooks/push-to-checkout.sample
+8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106  ./.git/hooks/update.sample
+05d453f2ef6e719b30597f72e78e3a453311ca98a511b0a34f2a64a03d412fcf  ./.git/index
+6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1  ./.git/info/exclude
+c913203218f750133a383b2bc302ac3a3cdd7c4fe2bcd3797f301a7f4a01e39a  ./.git/logs/HEAD
+6d3948c6caaf233881e8ed2d2bd1c20571e10fe2a919f9e5a9f2850fa9fee989  ./.git/logs/refs/heads/f1
+00d45c533e334d877cba8cd9c0b2ca1b2fc6a73184aa22cab388aa20fc690451  ./.git/logs/refs/heads/f2
+1a4f9ddab44f72a0ca6e0c1b82fbb4b7c4634e791676c8be05d167cd03110a12  ./.git/logs/refs/heads/f3
+aac2b254a0f1742e91cf59b367e82f777d1c80648856a11dde315cde40140f7f  ./.git/logs/refs/heads/f4
+3e5c7dfe2594cc19dde8f4cf4049c10dd56e39d3924883fa93fd2b768cfef687  ./.git/logs/refs/heads/f5
+2b8b82417855242985e00e529f27a5d2d9ab5de20ab93a5de399ab78591c21d8  ./.git/logs/refs/heads/main
+ef01699914fbcf14543c45f6e4e0a75b23df558e6572d691e28993b0a4f91f90  ./.git/objects/04/6d910241a81439946af033636e05aa19bf4b65
+e5ac7123b402b65d7a6bb267ec028a5f0c586e790bdad6bb310f5030c226b208  ./.git/objects/0b/15fe5826bebcc10a5dc3aa543393d165b6b342
+b4e14495c82a3a38e09a18d642a5e75ee71b7bdb3cd79c08529948e79a42cd37  ./.git/objects/14/142835d590923e90793b35bb20cb98c2543a70
+dec639ec4eedb569b2e982dc6153ff7f2c87f63fe534992089641b5ac140d47e  ./.git/objects/1b/65c54a6c1d97d78d0e80c55e889d9b386939e5
+d980389a472e5908250d730f274ba5bd2677ebefcc6d54230aa6cf46b6d75369  ./.git/objects/35/5dbd40e8f77d90e15dff58c21238ca0538867d
+5997c78a3e4d9682c9862c0caa38edd53d3c55455affb21e3e910134aa3beb74  ./.git/objects/40/caf6b6a14dc92a5010292554a2ab73f2ab3b65
+e72602cad67ed061ec84b13e92568f873172efac19a512a1b561dbf54e2c8426  ./.git/objects/4b/825dc642cb6eb9a060e54bf8d69288fbee4904
+384e1f9be228cff38e99147589c5de7f954c514e0796bd55a046a978b12d4587  ./.git/objects/53/1e4742bff14b036773043ceca2572ffae46263
+ec4ea9923241d617b07b5e5b206d892682a6b8a62872a0e30d37823077af5c5f  ./.git/objects/5d/b194d03cfabd535b691c127fbca1c680fc0e5f
+e13f849956391d5ee726ac317db03fadf38a1d75910e9352372360726e4745fc  ./.git/objects/76/19fe29190f12694ddff9501366a2b7ae1579b3
+97a34bfab947fb20c290b1c816ead2e363f086d53b4c90f57ecae557deffc70e  ./.git/objects/8a/7556d2b753f842586ab7805c808c0aa7e8637c
+f94e5f3918a6c1986d6461f3c0ae5e14c2109831c19009e2c5c1afc76e5abf94  ./.git/objects/9c/d434f98f03923e82d3d098d7ffdd0a789cac73
+253dc72d785d6db45570d3bbf99a9c428e28cac406c28a9bd7e5e0dbb66e7e10  ./.git/objects/af/87b85cf43b83450683c459b5b4285296bba98c
+3d58c0fe8a43cb84304106a4a736506e329f8be910a85208a9ee7250f8b04c65  ./.git/objects/bc/dceba47e63bddbf2f891fafb604ff3d020249c
+14ed3e62474c2a91a1c1acc31d0bc882efa830005defbfe8f63aac263c7b314f  ./.git/objects/be/65d273b9204d503938abb182db3136065db87f
+2273ee09f672de81e4ce5fcc1670dae31a73f2699877484487105312b6f24264  ./.git/objects/d8/896046083fc4cba677eb505db36e7468eb6721
+6686925b3f5e39926a66bed499f40a8dfcb0a8028540d678e2330539cabd5cef  ./.git/objects/e8/de61d0f6f8a67962333b746186222e1a704572
+fba09c26fdc7c194dc456af996c70561c1501c5278e49334e460cd81f906bdbb  ./.git/objects/e8/fb2ddbbd8862c24f205b4536c532c903fdecb1
+6fb7bfa495222b1ab3e591e13bdaea4091f7ae7f897f26b0e47576d5aa0b4e2a  ./.git/objects/ef/b4cfe188715d2b1b54f4e07597859039ee45db
+e23b9a8aa606bd8359bb50006045907dd080a82435b4dac14ef6376681629d8e  ./.git/refs/heads/f1
+348e5ed0bb424ac2162b62d68b50b495e4b7675f8af14f6fff8523e5a1db3268  ./.git/refs/heads/f2
+8bded4d668b88ee3a273413d89f95aa0731337543b0f4d75f942849d113b1915  ./.git/refs/heads/f3
+7b4880519c4d7f332d51ff3795b6ff15f61888e9da00ba53c149d2c6043c6e6e  ./.git/refs/heads/f4
+c7a697376adbbaa630da24a0d26822dcee3097b4bde88826f7dd3f5f35ce9c54  ./.git/refs/heads/f5
+14057fcce7ce735708dc49e8e1c61e4a5eaa9757428974994745e24d30b3c4f5  ./.git/refs/heads/main
+4d00f883954001405495aa503732166be63bd8645c51907c16e12cd96cefb5d9  ./docs/roadmap.md
+87027c2d5b7c16b578acdcba90d74ee15cc59ebf373bf8b057b21140c4e8e822  ./docs/working/questions-archive.md
+12a20bdc858eea24ace6d18c3a86d7cfcc1600e255f25e1b666937f4433002d2  ./docs/working/questions.md
+.
+./.git
+./.git/COMMIT_EDITMSG
+./.git/HEAD
+./.git/ORIG_HEAD
+./.git/branches
+./.git/config
+./.git/description
+./.git/hooks
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/commit-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/post-update.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/push-to-checkout.sample
+./.git/hooks/update.sample
+./.git/index
+./.git/info
+./.git/info/exclude
+./.git/logs
+./.git/logs/HEAD
+./.git/logs/refs
+./.git/logs/refs/heads
+./.git/logs/refs/heads/f1
+./.git/logs/refs/heads/f2
+./.git/logs/refs/heads/f3
+./.git/logs/refs/heads/f4
+./.git/logs/refs/heads/f5
+./.git/logs/refs/heads/main
+./.git/objects
+./.git/objects/04
+./.git/objects/04/6d910241a81439946af033636e05aa19bf4b65
+./.git/objects/0b
+./.git/objects/0b/15fe5826bebcc10a5dc3aa543393d165b6b342
+./.git/objects/14
+./.git/objects/14/142835d590923e90793b35bb20cb98c2543a70
+./.git/objects/1b
+./.git/objects/1b/65c54a6c1d97d78d0e80c55e889d9b386939e5
+./.git/objects/35
+./.git/objects/35/5dbd40e8f77d90e15dff58c21238ca0538867d
+./.git/objects/40
+./.git/objects/40/caf6b6a14dc92a5010292554a2ab73f2ab3b65
+./.git/objects/4b
+./.git/objects/4b/825dc642cb6eb9a060e54bf8d69288fbee4904
+./.git/objects/53
+./.git/objects/53/1e4742bff14b036773043ceca2572ffae46263
+./.git/objects/5d
+./.git/objects/5d/b194d03cfabd535b691c127fbca1c680fc0e5f
+./.git/objects/76
+./.git/objects/76/19fe29190f12694ddff9501366a2b7ae1579b3
+./.git/objects/8a
+./.git/objects/8a/7556d2b753f842586ab7805c808c0aa7e8637c
+./.git/objects/9c
+./.git/objects/9c/d434f98f03923e82d3d098d7ffdd0a789cac73
+./.git/objects/af
+./.git/objects/af/87b85cf43b83450683c459b5b4285296bba98c
+./.git/objects/bc
+./.git/objects/bc/dceba47e63bddbf2f891fafb604ff3d020249c
+./.git/objects/be
+./.git/objects/be/65d273b9204d503938abb182db3136065db87f
+./.git/objects/d8
+./.git/objects/d8/896046083fc4cba677eb505db36e7468eb6721
+./.git/objects/e8
+./.git/objects/e8/de61d0f6f8a67962333b746186222e1a704572
+./.git/objects/e8/fb2ddbbd8862c24f205b4536c532c903fdecb1
+./.git/objects/ef
+./.git/objects/ef/b4cfe188715d2b1b54f4e07597859039ee45db
+./.git/objects/info
+./.git/objects/pack
+./.git/refs
+./.git/refs/heads
+./.git/refs/heads/f1
+./.git/refs/heads/f2
+./.git/refs/heads/f3
+./.git/refs/heads/f4
+./.git/refs/heads/f5
+./.git/refs/heads/main
+./.git/refs/tags
+./docs
+./docs/decisions
+./docs/roadmap.md
+./docs/working
+./docs/working/questions-archive.md
+./docs/working/questions.md

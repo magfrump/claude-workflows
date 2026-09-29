@@ -134,7 +134,7 @@ The table below captures the current state of all workflows and skills, noting w
 | `code-fact-check` | **Strong** | Single-pass verification. |
 | `fact-check` | **Strong** | Prose fact-checking, single-pass. |
 | `draft-review` | **Adequate** | Orchestrator dispatching critics in parallel. Similar to `code-review`. |
-| `dev-cycle` | **Adequate** | Workflow-shaped (seven ordered steps, triage output) but user-started and single-session, so a skill; its mechanical parts live in `scripts/dev-cycle.sh`. |
+| `dev-cycle` | **Adequate** | Workflow-shaped (eight ordered steps, 0–7) but, by the criteria above, a skill: Claude completes it in one pass given the digest, with no human checkpoint mid-run (decisions go to questions.md), and it produces a self-contained artifact (the cycle record). Its mechanical parts live in `scripts/dev-cycle.sh`. Promote it to a workflow with a router if a cycle ever needs a human gate mid-run. |
 | `self-eval` | **Strong** | Single-pass scoring against rubric. |
 | `test-strategy` | **Strong** | Single-pass analysis producing a test plan. |
 | `tech-debt-triage` | **Strong** | Single-pass prioritization. |

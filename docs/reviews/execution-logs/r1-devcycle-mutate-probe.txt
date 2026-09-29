@@ -1,0 +1,19 @@
+# probe: run test/dev-cycle.bats against mutated scratch copies of scripts/dev-cycle.sh
+S=$1; W=$2; M=$S/mut
+run_mut() { name="$1"; shift
+  rm -rf $M; mkdir -p $M/scripts $M/test; cp $W/scripts/dev-cycle.sh $W/scripts/questions.sh $M/scripts/; cp $W/test/dev-cycle.bats $M/test/
+  python3 - "$M/scripts/dev-cycle.sh" "$@" <<'PY'
+import sys
+p,old,new=sys.argv[1],sys.argv[2],sys.argv[3]
+t=open(p).read(); assert old in t, old; open(p,'w').write(t.replace(old,new,1))
+PY
+  echo "=== $name"; (cd $M && timeout 120 bats test/dev-cycle.bats 2>/dev/null | grep -E '^(ok|not ok)'); }
+run_mut "M1 unseeded shuf" ' --random-source=<(yes "$TODAY")' ''
+run_mut "M2 revisit section not bounded" 'on && /^## / { exit } on && NF { print }'"'"' "$f"' 'on && NF { print }'"'"' "$f"'
+run_mut "M3 oldest cycle record" '[[ "$d" > "$last" ]] && last="$d"' '[[ -z "$last" ]] \&\& last="$d"'
+run_mut "M4 grep route instead of column" "awk -F'  +' '\$2 == \"trigger\" || \$2 == \"deferred\"'" "grep -E 'trigger|deferred'"
+run_mut "M5 no --since validation" '[[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || {' '[[ 1 ]] || {'
+run_mut "M6 unknown option accepted" '*) echo "Unknown option: $1" >&2; exit 1 ;;' '*) shift ;;'
+run_mut "M7 log rows dropped" 'grep -i '"'"'revisit'"'"' || true' 'grep -i XYZNOPE || true'
+run_mut "M8 roadmap section header removed" 'echo "## 5. Roadmap"' 'echo "## Roadmap"'
+run_mut "M9 route counts not printed" 'echo "Open by route: $(' 'echo "Open by route: none"; : $('

@@ -1,0 +1,25 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-29, on `main` at f5f0836.
+
+## 1. Activity
+
+0 merge(s), 0 commit(s) on `main` in the window.
+
+## 2. Revisit triggers
+
+Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+No revisit triggers recorded.
+
+## 3. Watched questions (trigger and deferred routes)
+
+No docs/working/questions.md (or questions.sh) in this repo.
+
+## 4. Spot-check sample
+
+No merges in the window to sample.
+
+## 5. Roadmap
+
+No docs/roadmap.md yet — create it this cycle.

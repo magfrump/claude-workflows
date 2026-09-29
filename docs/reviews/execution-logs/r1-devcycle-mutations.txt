@@ -1,0 +1,172 @@
+2026-09-29T02:00:03-07:00
+cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad cmd: bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/mutate.txt /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad /workspace/.claude/wt-devcycle (script saved alongside as mutate.txt)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== M1 unseeded shuf
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+not ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M2 revisit section not bounded
+ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M3 oldest cycle record
+not ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+not ok 3 the window defaults to the newest cycle record's date
+not ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M4 grep route instead of column
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M5 no --since validation
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M6 unknown option accepted
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M7 log rows dropped
+ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M8 roadmap section header removed
+not ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M9 route count removed
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+exit=0
+2026-09-29T02:00:23-07:00
+RERUN after fixing escaped && in M2/M3 replacement strings and replacing M9 (label-only) with a behavioral mutation; cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad cmd: bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/mutate.txt /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad /workspace/.claude/wt-devcycle
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== M1 unseeded shuf
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M2 revisit section not bounded
+ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M3 oldest cycle record
+not ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+not ok 3 the window defaults to the newest cycle record's date
+not ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M4 grep route instead of column
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M5 no --since validation
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M6 unknown option accepted
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+not ok 6 rejects a malformed --since and an unknown option
+=== M7 log rows dropped
+ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M8 roadmap section header removed
+not ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+=== M9 route counts not printed
+not ok 1 prints all five sections in a repo with no docs
+not ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+not ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+exit=0
+2026-09-29T02:00:41-07:00
+RERUN 2 (manual edits via python, cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/mut2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+syntax ok
+=== M3 oldest cycle record
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+not ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+syntax ok
+=== M9 route counts not printed
+ok 1 prints all five sections in a repo with no docs
+ok 2 lists a decision record's revisit triggers and a log row's revisit clause
+ok 3 the window defaults to the newest cycle record's date
+ok 4 --sample N lists N merges, the same ones on a rerun
+not ok 5 watched questions list only trigger and deferred routes, by route column
+ok 6 rejects a malformed --since and an unknown option
+0
+=== M1 unseeded shuf, trial 1
+not ok 1 --sample N lists N merges, the same ones on a rerun
+0
+=== M1 unseeded shuf, trial 2
+not ok 1 --sample N lists N merges, the same ones on a rerun
+0
+=== M1 unseeded shuf, trial 3
+not ok 1 --sample N lists N merges, the same ones on a rerun
+0
+=== M1 unseeded shuf, trial 4
+not ok 1 --sample N lists N merges, the same ones on a rerun
+0
+=== M1 unseeded shuf, trial 5
+ok 1 --sample N lists N merges, the same ones on a rerun
+0
+=== M1 unseeded shuf, trial 6
+not ok 1 --sample N lists N merges, the same ones on a rerun

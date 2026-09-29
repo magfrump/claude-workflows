@@ -1,0 +1,57 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-15, on `main` at 40caf6b.
+
+## 1. Activity
+
+5 merge(s), 12 commit(s) on `main` in the window.
+
+```
+efb4cfe 2026-09-29 merge 5
+046d910 2026-09-29 merge 4
+9cd434f 2026-09-29 merge 3
+7619fe2 2026-09-29 merge 2
+e8de61d 2026-09-29 merge 1
+```
+
+## 2. Revisit triggers
+
+Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+No revisit triggers recorded.
+
+## 3. Watched questions (trigger and deferred routes)
+
+- Q-067  deferred        regenerate-skill-eval-reports
+- Q-098  deferred        global-allowlist-after-sandbox
+- Q-074  trigger         failure-pattern-writer-trigger
+- Q-090  trigger         run-tests-jobs
+
+Open by route: agent=7, deferred=2, trigger=2, you: terminal=1
+
+## 4. Spot-check sample
+
+- 7619fe2 2026-09-29 merge 2
+- 046d910 2026-09-29 merge 4
+
+## 5. Roadmap
+
+docs/roadmap.md last changed 2026-09-29. Its Next section:
+
+1. **Q-075 — evidence that the self-improvement loop is safe to resume.** Motive: Q-068
+   was answered "resume" on condition of this evidence; the loop is the repo's idea
+   generator and has been dormant since. First step: list every path, config, hook,
+   credential and git ref `scripts/self-improvement.sh` can write outside its working docs.
+2. **Q-088 — spike `sandbox.enableWeakerNestedSandbox` in cc-isolated.** Motive: Q-098
+   (a global allow list) and Q-092 wait on a Bash sandbox. First step: the spike's own
+   success criterion in Q-088.
+3. **Q-089 — host-tool trust category.** Motive: `cc-push.sh` and the exit scan are
+   verified by `Live-verified:`, which does not fit host-only tools (Q-083 [1]). First
+   step: the trust-manifest section.
+4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
+   of the first three cycles after install, count multi-file merges that carry RPI
+   research/plan docs and pr-prep review artifacts (an artifact count, not the usage log,
+   which under-counts, Q-017).
+5. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+   code and prompts settle; it validates code-review lever #3. First step: confirm
+   settlement (no open code-review SKILL changes), then re-run one canon cell.

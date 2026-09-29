@@ -1,0 +1,30 @@
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-01, on `main` at f6d9c4d.
+
+## 1. Activity
+
+1 merge(s), 3 commit(s) on `main` in the window.
+
+```
+f6d9c4d 2026-09-29 merge early today
+```
+
+## 2. Revisit triggers
+
+Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+No revisit triggers recorded.
+
+## 3. Watched questions (trigger and deferred routes)
+
+None open.
+
+Open by route: 
+
+## 4. Spot-check sample
+
+- f6d9c4d 2026-09-29 merge early today
+
+## 5. Roadmap
+
+No docs/roadmap.md yet — create it this cycle.

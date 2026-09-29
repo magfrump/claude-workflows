@@ -1,0 +1,17 @@
+2026-09-29T01:58:02-07:00
+cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/t3 (merge committed 2026-09-27T00:30; cycle record cycle-2026-09-27.md) cmd: timeout 30 bash /workspace/.claude/wt-devcycle/scripts/dev-cycle.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-27, on `main` at dddd631.
+
+## 1. Activity
+
+0 merge(s), 0 commit(s) on `main` in the window.
+
+## 2. Revisit triggers
+
+Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+No revisit triggers recorded.
+exit=
+exit=0 (rerun 2026-09-29T01:58:10-07:00)
