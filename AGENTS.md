@@ -6,16 +6,16 @@ This file provides workflow instructions for AI coding agents. It is tool-agnost
 
 When facing non-trivial tasks, check `workflows/` for applicable process docs before jumping to implementation:
 
-- **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
-- **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
-- **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
-- **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
-- **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
-- **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
-- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
-- **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+- **research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+- **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+- **parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+- **task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+- **pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+- **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+- **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+- **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
 - **Systematic debugging** — Hypothesis-test debugging loop (reproduce → read the error → hypothesize → test), defined in global-instructions/CLAUDE.md's Debugging defaults section along with the 3-failed-hypothesis escape hatch and RPI handoff.
-- **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+- **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
 
 When a workflow applies, follow it rather than jumping straight to implementation. Default: research-plan-implement for features, divergent-design for decisions, spike for unknowns, codebase-onboarding for new projects.
 

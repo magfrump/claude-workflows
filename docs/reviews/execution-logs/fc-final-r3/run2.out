@@ -1,0 +1,120 @@
+2026-09-29T07:36:15Z
+9 files; main bytes 358414 chars 355598 chars/4 88899.5 bytes/4 89603.5
+HEAD bytes 358414 chars 355598 chars/4 88899.5
+== extract_workflows
+        if [[ $drift_count -gt 0 ]]; then
+            warn "$drift_count file(s) with frontmatter issues (structural drift detected)"
+        fi
+    fi
+}
+
+# ── 2. Workflow cross-references resolve ────────────────────────────────────
+
+# Extract workflow filenames referenced in a markdown file.
+# Handles three syntaxes:
+#   CLAUDE.md:            `research-plan-implement.md`
+#   AGENTS.md, GEMINI.md: **research-plan-implement.md**
+#   legacy AGENTS.md:     **@./workflows/research-plan-implement.md**
+extract_workflows() {
+    local file="$1"
+    # Allow ** or ` as the delimiter. CLAUDE.md uses backticks for all filenames
+    # (so the result is filtered against workflows/ in the caller); AGENTS.md
+    # and GEMINI.md use bold. `|| true` keeps the function quiet under
+    # set -o pipefail when grep finds no matches.
+    { grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+        | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
+        | sort -u
+}
+
+check_workflow_crossrefs() {
+    section "Workflow cross-references"
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
+        local path="$REPO_ROOT/$mdfile"
+        [[ -f "$path" ]] || { warn "$mdfile not found, skipping"; continue; }
+
+        local workflows
+        workflows="$(extract_workflows "$path")"
+        if [[ -z "$workflows" ]]; then
+            warn "$mdfile: no workflow references found"
+            continue
+        fi
+
+        local all_ok=true
+        while IFS= read -r wf; do
+            if [[ ! -f "$REPO_ROOT/workflows/$wf" ]]; then
+                fail "$mdfile references $wf but workflows/$wf does not exist"
+                all_ok=false
+            fi
+        done <<< "$workflows"
+        if $all_ok; then
+            pass "$mdfile: all workflow references resolve"
+== callers
+208:extract_workflows() {
+226:        workflows="$(extract_workflows "$path")"
+261:        workflow_sets["$mdfile"]="$(extract_workflows "$path" | tr '\n' '|')"
+== CLAUDE.md-ish workflow refs in global
+19:| 1 | **New/unfamiliar codebase**, or first session in a project with neither `docs/thoughts/` nor a `docs/working/onboarding-*.md` orientation doc | `codebase-onboarding.md` | e.g., "Help me understand this repo" · Output feeds into RPI research — don't redo what onboarding already learned. |
+20:| 2 | **Message bundles 2+ independent tasks** — a batch of end-user feedback, a bug list, a "few things:" enumeration, a numbered/bulleted list of asks, or any prompt that decomposes into tasks that don't share state | `parallel-worktrees.md` — split first, then dispatch one subagent per item (parallel Agent-tool dispatch; git-worktree isolation for any item that implements) | e.g., "3 things: the export button is broken, the header overlaps on mobile, and add a CSV option" · This is a **pre-pass, not a destination**: split the batch into items, then route *each item* back through this tree (an item may itself be RPI, a bug fix, or a DD decision). Independent items implement **in parallel via isolated git worktrees**, then each is reviewed and merged on its own. Do NOT collapse a batch into one sequential pass — that's the default failure this row exists to prevent. The bar is low: if you can name 2+ items that share no files/state, fan out. See "Batch fan-out" below. |
+21:| 3 | **Task involves a design choice** with 3+ viable approaches, or keywords: "which approach", "compare options/approaches", "evaluate/weigh alternatives", "X vs Y", "should we use X or Y", "pick/choose/decide between", "what are the options", "multiple approaches", "design choice/decision", "tradeoff", "trade-offs", "pros and cons", "library/tool selection", "architecture" | `divergent-design.md` | e.g., "Should we use Postgres or DynamoDB for this?" · **Takes precedence over open-ended brainstorming** whenever the creative task is a decision with 3+ tradeoff-bearing options: if you can name 3+ viable options that differ on a tradeoff axis, route to DD for its matrix presentation. Brainstorming stays correct only when the solution space is genuinely open-ended with no competing options yet. · Often invoked as a sub-procedure within RPI (RPI step 2 signals → DD → decision feeds back into plan). DD↔RPI is the most common composition. · Within DD: `matrix-analysis` to score candidates, `what-if-analysis` to stress-test top picks, DD's Double Diamond variant if the framing feels off, escalating to `design-space-situating` only if the Double Diamond fails to produce a coherent framing. |
+22:| 4 | **Goal is to explain, theorize, or generate hypotheses** rather than build — keywords: "why does", "what's causing", "competing theories", "explain this behavior", "hypothesize" | `divergent-design.md` (epistemic variant) | e.g., "Why is latency spiking only on Tuesdays?" · Uses DD's Epistemic Reasoning section: candidates are competing explanations, output is a ranked hypothesis list, not a decision record. · When the thing to explain is a bug (something fails or misbehaves), the Debugging defaults below still apply: reproduce first, then use the epistemic variant to rank hypotheses. |
+24:| 6 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to RPI step 7, Verify and loop (see debugging defaults below). |
+9:- **research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+10:- **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+11:- **parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+== log-usage
+2:# PreToolUse hook: logs skill invocations, workflow file reads, and
+4:# Input: JSON on stdin with tool_name and tool_input
+7:# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+8:# read through Bash (`cat`), an `@` import, or text inlined into a subagent
+12:# Shared preamble + agent-name helper. Sets up trap, reads stdin into INPUT,
+13:# extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and
+16:source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib/usage-common.sh"
+19:source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../scripts/lib/skill-paths.sh"
+24:# Separator (\x1f) so `read` does not coalesce consecutive empty fields the
+26:# prompts contain embedded newlines that `read` would otherwise truncate.
+34:  #   file_read       — Read of SKILL.md / workflow / command (consultation)
+51:case "$TOOL_NAME" in
+53:    IFS=$'\x1f' read -r SKILL_NAME SKILL_ARGS < <(printf '%s' "$INPUT" \
+59:  Read)
+60:    FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""')
+61:    # Check skills first — a path like claude-workflows/skills/x.md contains
+62:    # both "workflows" and "skills"; the more specific match wins.
+63:    if [[ "$FILE_PATH" == */skills/* ]]; then
+64:      SKILL_NAME=$(extract_skill_name "$FILE_PATH")
+65:      [[ -n "$SKILL_NAME" ]] && log_event "skill" "$SKILL_NAME" "" "file_read"
+66:    elif [[ "$FILE_PATH" == */workflows/* ]]; then
+67:      WORKFLOW_NAME=$(extract_workflow_name "$FILE_PATH")
+68:      [[ -n "$WORKFLOW_NAME" ]] && log_event "workflow" "$WORKFLOW_NAME" "" "file_read"
+69:    elif [[ "$FILE_PATH" == */commands/* ]]; then
+70:      CMD_NAME=$(extract_command_name "$FILE_PATH")
+71:      [[ -n "$CMD_NAME" ]] && log_event "command" "$CMD_NAME" "" "file_read"
+75:    IFS=$'\x1f' read -r AGENT_PROMPT_B64 AGENT_TYPE AGENT_DESC < <(printf '%s' "$INPUT" \
+== shared headings
+5:## Cross-project Workflows
+22:## Skills
+41:## Context Packing
+52:## Shared Thoughts
+65:## General Principles
+126:## Context Packing
+153:## Shared Thoughts
+303:## General Principles
+== prior reports mention README/package.json
+docs/reviews/code-fact-check-report-r1.md
+docs/reviews/code-fact-check-report-r2.md
+docs/reviews/code-fact-check-report-r3.md
+docs/reviews/code-fact-check-report.md
+execution-logs
+override-log.md
+code-review-rubric-2026-09-29-fix-agents-md-no-imports.md
+code-fact-check-report.md
+security-review-2026-09-29.md
+performance-review-2026-09-29.md
+code-fact-check-report-r2.md
+code-fact-check-report-r1.md
+code-fact-check-report-r3.md
+u4-code-fact-check-report.md
+verification-rubric.md
+what-if-analysis-crb-direction1-2026-08-19.md
+tech-debt-triage-review-2026-09-25-q062-q063.md
+tech-debt-triage-review-2026-09-26-q062-q063-iter6.md
+tech-debt-triage-review-2026-09-27.md

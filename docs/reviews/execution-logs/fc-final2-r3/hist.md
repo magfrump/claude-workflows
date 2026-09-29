@@ -1,0 +1,9 @@
+@README
+@package.json
+@x.MD
+(@./x)
+"@../y"
+``@./y.md``
+```
+@./in/fence.md
+```

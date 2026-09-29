@@ -1,0 +1,36 @@
+2026-09-29T00:01:01-07:00
+regex: (^|[[:space:]*`])@\.{0,2}/
+== main:AGENTS.md matches ==
+9:- **@./workflows/research-plan-implement.md** — The defa
+10:- **@./workflows/divergent-design.md** — Structured bra
+11:- **@./workflows/parallel-worktrees.md** — Batch fan-ou
+12:- **@./workflows/task-decomposition.md** — Breaking lar
+13:- **@./workflows/pr-prep.md** — Packaging work for asyn
+14:- **@./workflows/spike.md** — Quick timeboxed explorati
+15:- **@./workflows/branch-strategy.md** — Branch manageme
+16:- **@./workflows/user-testing-workflow.md** — Planning,
+18:- **@./workflows/codebase-onboarding.md** — Structured 
+count=9
+== HEAD AGENTS.md ==
+exit=1
+== synthetic ==
+MATCH  | - **@./workflows/x.md** — desc
+MATCH  | @../x.md
+MATCH  | see @../x.md here
+MATCH  | @/abs/path.md
+MATCH  | see @/abs/path.md
+miss   | @x.md
+miss   | see @x.md here
+miss   | @workflows/x.md
+miss   | see @workflows/x.md
+miss   | @~/x.md
+miss   | see @~/.claude/x.md
+MATCH  | `@./x.md`
+miss   | (@./x.md)
+miss   | "@./x.md"
+miss   | [@./x.md]
+miss   | contact me at foo@bar.com
+miss   | email foo@./x
+miss   | path a/@/b
+miss   | @pytest.mark.integration
+miss   | - **@README.md**

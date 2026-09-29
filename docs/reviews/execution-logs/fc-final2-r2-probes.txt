@@ -1,0 +1,64 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== adversarial probes (label | finder output, '-' = no match)
+tab-before             1:	@./x.md
+strong                 1:**@x**
+em-underscore          1:_@x_
+em-star                1:*@x*
+strike                 -
+snake-intraword        1:snake_@x
+star-intraword         1:a*@x
+link-text              -
+after-link             -
+blockquote-nospace     -
+table-cell             -
+inline-html            -
+html-comment           1:<!-- @x -->
+after-codespan         1:@x
+tilde-fence            2:@./in/tilde.md
+indented-code          3:    @./in/indented.md
+nested-triple-span     -
+span-multiline         2:@x` c
+unmatched-tick         1:it`s @x
+mismatched-ticks       1:` @y
+crlf                   1:@./x.md
+crlf-fence             -
+fence-info-inside      3:@./a.md
+at-slash-alone         1:see @/ here
+at-at                  -
+at-hash                -
+at-paren               -
+escaped                -
+nonascii               -
+hash-fragment          1:@x.md#sec
+== synthetic pos/neg from the bats file
+pos lines: 11; matched: 11
+1:- **@./workflows/pr-prep.md** — the old AGENTS.md form
+2:@README
+3:@README.md
+4:@package.json
+5:@workflows/x.md
+6:load @~/.aws/credentials here
+7:see @../y.md
+8:@/abs/z.md
+9:@.claude/x.md
+10:@x.MD
+11:ping @alice about it
+neg lines: 7 (non-fence-marker lines: 5); matched: 0
+== real files (match counts)
+AGENTS.md: 0
+GEMINI.md: 0
+README.md: 0
+global-instructions/CLAUDE.md: 0
+workflows/branch-strategy.md: 0
+workflows/codebase-onboarding.md: 0
+workflows/divergent-design.md: 0
+workflows/parallel-worktrees.md: 0
+workflows/pr-prep.md: 0
+workflows/research-plan-implement.md: 0
+workflows/review-fix-loop.md: 0
+workflows/spike.md: 0
+workflows/task-decomposition.md: 0
+workflows/user-testing-workflow.md: 0
+main:AGENTS.md: 9
+== token figure: main's imported workflow files
+files: 9 bytes: 358414 chars: 355598 chars/4: 88899

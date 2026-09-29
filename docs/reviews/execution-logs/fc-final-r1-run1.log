@@ -1,0 +1,82 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+run at 2026-09-29T00:35:30-07:00 cwd=/workspace/.claude/wt-agents-md head=7c2253a
+FINDER IDENTICAL TO BATS
+--- cases.md
+1:install @alice/pkg from npm
+6:see @CLAUDE.local.md
+7:see @~/.claude/CLAUDE.md
+12:**@README.md**
+15:twitter @handle/status
+17:@x.md:
+--- AGENTS.md
+rc=1
+--- global-instructions/CLAUDE.md
+rc=1
+--- old AGENTS.md match count
+9
+old @./workflows lines: 9
+--- pos/neg from bats
+pos lines: 7  neg lines: 5
+1:- **@./workflows/pr-prep.md** — the old AGENTS.md form
+2:@README.md
+3:@workflows/x.md
+4:load @~/.aws/credentials here
+5:(@./x.md)
+6:"@../y.md"
+7:[@/abs/z.md]
+pos matches: 7
+neg matches: 0
+--- chars of 9 imported files (main)
+workflows/research-plan-implement.md 68867
+workflows/divergent-design.md 80340
+workflows/parallel-worktrees.md 7596
+workflows/task-decomposition.md 21556
+workflows/pr-prep.md 44652
+workflows/spike.md 24471
+workflows/branch-strategy.md 25541
+workflows/user-testing-workflow.md 30395
+workflows/codebase-onboarding.md 54996
+total=358414 tokens=89603
+--- bats file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the import finder catches every @-import form and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 AGENTS.md and the global instructions have no @-imports
+bats rc=0
+--- extract_workflows
+
+# ── 2. Workflow cross-references resolve ────────────────────────────────────
+
+# Extract workflow filenames referenced in a markdown file.
+# Handles three syntaxes:
+#   CLAUDE.md:            `research-plan-implement.md`
+#   AGENTS.md, GEMINI.md: **research-plan-implement.md**
+#   legacy AGENTS.md:     **@./workflows/research-plan-implement.md**
+extract_workflows() {
+    local file="$1"
+    # Allow ** or ` as the delimiter. CLAUDE.md uses backticks for all filenames
+    # (so the result is filtered against workflows/ in the caller); AGENTS.md
+    # and GEMINI.md use bold. `|| true` keeps the function quiet under
+    # set -o pipefail when grep finds no matches.
+    { grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+        | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
+        | sort -u
+}
+
+check_workflow_crossrefs() {
+    section "Workflow cross-references"
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
+        local path="$REPO_ROOT/$mdfile"
+        [[ -f "$path" ]] || { warn "$mdfile not found, skipping"; continue; }
+
+        local workflows
