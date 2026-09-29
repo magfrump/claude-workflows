@@ -443,3 +443,27 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   run_hook_rules 'ls -la' '["Bash(ls:*)"]' '["Bash"]'
   not_approved
 }
+
+# --- File-writing redirects are never approved (fact-check 2026-09-28) ---
+# Used to be an accepted gap (`ls > ~/.bashrc`); with a shared global allow
+# list in hooks/wiring.json it would let every listed command write any path.
+
+@test "a redirect that can write a file is not approved, at any nesting level" {
+  local cmd
+  for cmd in 'ls > out' 'ls >> out' 'ls &> out' 'ls &>> out' 'ls >| out' \
+    'ls <> out' 'ls >& out' 'ls 2> err.log' 'x=$(ls > out)' 'bash -c "ls > out"' \
+    'ls | wc -l > out' 'echo x > ~/.claude/settings.json' 'ls é > out' \
+    'ls > "/dev/null"'; do
+    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' '[]'
+    not_approved || { echo "approved: $cmd"; return 1; }
+  done
+}
+
+@test "/dev/null targets, fd duplication and input redirects are still approved" {
+  local cmd
+  for cmd in 'ls 2>/dev/null' 'ls >/dev/null 2>&1' 'ls &>/dev/null' 'ls 2>&1' \
+    'ls 1>&-' 'ls < in' 'wc -l <<< hi' 'ls | wc -l' 'ls é 2>/dev/null'; do
+    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)"]' '[]'
+    approved || { echo "not approved: $cmd"; return 1; }
+  done
+}

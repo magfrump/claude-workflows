@@ -31,8 +31,11 @@
 #   echo $((1 + $(cmd)))     arithmetic expansion is not searched for $(...)
 #   cat <<EOF / $(cmd) / EOF heredoc bodies are not searched
 #   PATH=/x ls, LD_PRELOAD=  assignment prefixes are dropped before matching
-#   ls > ~/.bashrc           redirect targets are not checked
 # Closing these one at a time does not converge, so they are accepted.
+# One former entry IS closed: `ls > ~/.bashrc` used to be approved because
+# redirect targets were not checked. A redirect that can write a file now
+# fails extraction (refuses_redirect), since the shared allow list in
+# hooks/wiring.json would otherwise let every listed command write any path.
 # Parse FAILURES do fail closed (see main).
 #
 # ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
@@ -404,8 +407,9 @@ main() {
   NUL_DELIM=true
   # FAIL CLOSED on a parse failure — and ONLY on a parse failure: constructs
   # that parse but that the extraction filter does not descend into (arithmetic
-  # expansion, heredoc bodies, VAR= prefixes, redirect targets) are still
-  # approved on the strength of the outer command (known gap, not fixed here).
+  # expansion, heredoc bodies, VAR= prefixes) are still approved on the
+  # strength of the outer command (known gap, not fixed here). A file-writing
+  # redirect is the exception: it fails extraction too (refuses_redirect).
   # mapfile's own status is always 0, so the parser's status has to be read from the process substitution via `wait $!`
   # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
   # Without this, an unparseable command extracted to an empty list and hit the
@@ -689,8 +693,43 @@ extract_commands_raw() {
 
   debug "AST parsed successfully"
 
+  # A redirect that can write a file is never approved (see refuses_redirect).
+  # Returning 1 makes main treat it like a parse failure: fall through to the
+  # normal prompt. Checked here so every bash -c level is covered.
+  if refuses_redirect "$cmd" "$ast"; then
+    return 1
+  fi
+
   # Extract commands using jq (always newline-separated internally)
   echo "$ast" | jq -r "$JQ_FILTER" 2>/dev/null
+}
+
+# True when the parsed command has a redirect that can write a file.
+# Any operator containing '>' counts (>, >>, &>, &>>, >|, <>, >&), except a
+# target of exactly /dev/null or an fd duplication (>&N, >&-). Input-only
+# redirects (<, <<, <<<, <&) pass. Without this, every allow-listed command
+# could write any path the agent can: `ls > ~/.claude/settings.json`.
+#
+# WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
+# in shfmt 3.13.1) with no stability promise across versions. The operator is
+# read instead from the command text between the redirect's OpPos and its
+# Word's Pos. Those are byte offsets into the string shfmt parsed, so $1 must be
+# that same (normalized) string, and slicing is done under LC_ALL=C (bytes).
+refuses_redirect() {
+  local cmd="$1" ast="$2" op_off word_off word_end op word
+  local LC_ALL=C
+  while read -r op_off word_off word_end; do
+    op=${cmd:op_off:word_off-op_off}
+    op=${op//[[:space:]]/}
+    word=${cmd:word_off:word_end-word_off}
+    [[ "$op" == *'>'* ]] || continue
+    if [[ "$op" == '>&' && "$word" =~ ^([0-9]+|-)$ ]]; then continue; fi
+    if [[ "$op" != '>&' && "$word" == /dev/null ]]; then continue; fi
+    debug "Refusing redirect: '$op' '$word'"
+    return 0
+  done < <(jq -r '.. | objects | select(has("Redirs")) | .Redirs[]?
+                  | "\(.OpPos.Offset) \(.Word.Pos.Offset) \(.Word.End.Offset)"' <<<"$ast")
+  return 1
 }
 
 # Check if a command is "bash -c" or "sh -c" and extract the inner command
