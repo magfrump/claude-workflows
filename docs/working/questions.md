@@ -26,12 +26,12 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-091](#q-091--cc-push-self-commondir) | you: judgment | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (a self-reference that does nothing... | 2026-09-28 |
-| [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-a... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
+| [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-090](#q-090--run-tests-jobs) | trigger | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
@@ -86,34 +86,6 @@ Design, per Q-072, (a) a script that turns a commit or commit range into a canon
 - **Read:** `docs/working/canon-issue-ledger.md` · `review-canon.md` §1 · the 112 September `docs/reviews/` artifacts as the candidate pool
 - **Interim:** the ledger is unchanged.
 
-### Q-082 · auto-approve-host-checks
-**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-approve hook's deny reader is load-bearing or redundant.
-
-**2026-09-28, first run (with the hook wired):** both credential lines were **denied** ("Permission to use Bash with command … has been denied"). That settles one thing: the leading `*` in `Bash(*.credentials.json*)` matches. It does not settle the question, because the hook's deny reader saw the match and fell through (header line 53), so no hook `allow` was ever in play. The deny came from Claude Code alone. The planned "no hook" rerun would test the same thing again. Your `!` run succeeding is expected: `!` commands skip permission checks entirely.
-
-**The test that decides it** needs a hook that always allows, next to a deny rule. It uses a throwaway directory outside the repo and a harmless canary file, so it touches neither the image, the manifest nor your user settings, and needs no re-bless:
-
-```
-mkdir -p ~/q082/.claude && cd ~/q082 && echo canary > x.q082-canary
-cat > .claude/settings.local.json <<'EOF'
-{
-  "permissions": { "deny": ["Bash(*.q082-canary*)"] },
-  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command",
-    "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"q082\"}}'" } ] } ] }
-}
-EOF
-claude
-```
-
-In that session, check `/hooks` lists the test hook, then ask Claude to run `cat x.q082-canary` and note whether it **runs**, **prompts**, or is **denied**. The test hook allows *every* Bash call in that session, so run only this one command, exit, and `rm -rf ~/q082`.
-
-**2026-09-28, second run (answers-9-28-26-2.txt):** `cat x.q082-canary` was **denied** ("Permission to use Bash with command cat x.q082-canary has been denied"). Claude then read the file with the Read tool instead. That is expected: the test deny rule covers Bash only, and the real wiring also has `Read(/{{CLAUDE_DIR}}/.credentials.json)` (`hooks/wiring.json:129`). **Not yet confirmed:** that `/hooks` listed the test hook in that session. A hook that never loaded gives the same denial, so without that check the result doesn't settle anything. Waiting on one line from you: "the hook was listed", or "it wasn't".
-
-- **Interim:** the hook header calls its deny check load-bearing in cc-isolated.
-- **If the answer differs:** denied ⇒ `permissions.deny` beats a hook allow; the hook's deny reader can be deleted (architecture-review 1) and decision log 53's amendment updated. Runs or prompts ⇒ the deny reader stays load-bearing; reclassify the hook as an enforcement component.
-
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
 
@@ -152,6 +124,15 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 
 - **Interim:** nothing changes. cc-push refuses this checkout until one of these is done. Deleting the files from inside a session would trip the exit scan's commondir record, so it isn't done here.
 - **If the answer differs:** [2] after [1] is still possible; [1] needs no code change to undo (`printf . > .git/commondir`).
+
+### Q-092 · drop-hook-deny-reader
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-approve-allowed-commands.sh`: the settings-file deny loading, `--deny`, the de-quoted matching and their tests. Update the hook header's rule table to match. This is architecture-review finding 1 on Q-076.
+
+- **Read:** Q-082 in the archive · decision log 53 (amended 2026-09-28) · the hook header
+- **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
+- **Interim:** the reader stays. It is redundant for `allow`, not harmful.
 
 ### Q-088 · spike-weaker-nested-sandbox
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN

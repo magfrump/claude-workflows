@@ -86,6 +86,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-078](#q-078--narrow-skill-report-stamp) | - **Interim:** the suites print NOT RUN. | 2026-09-27 |
 | [Q-080](#q-080--front-load-skill-descriptions) | - **Interim:** 7 skills still show no description in the listing. | 2026-09-27 |
 | [Q-081](#q-081--cc-isolated-sandbox-half) | Q-070 [1] asked for Bash deny rules *and* a sandbox config in cc-isolated. Only the deny half was built (Q-... | 2026-09-27 |
+| [Q-082](#q-082--auto-approve-host-checks) | Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-a... | 2026-09-27 |
 | [Q-083](#q-083--host-tools-trust-category) | The trust manifest's rule "every shipped file is hashed" puts host-only tools (`cc-push.sh`, and soon `cc-e... | 2026-09-27 |
 | [Q-085](#q-085--review-unit-size-budget) | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
@@ -1639,5 +1640,34 @@ Should the final confirming pass of a review-fix loop run the fact-check at k=3 
 - **Blocks:** nothing.
 - **Interim:** [1]. U4 (feat/u4-code-review-skill) keeps 031's k=1 and cites this entry.
 - **If the answer differs:** one-line change in `skills/code-review/SKILL.md` Stage 1 replication paragraph plus a decision-log row.
+
+
+### Q-082 · auto-approve-host-checks
+**Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-approve hook's deny reader is load-bearing or redundant.
+
+**2026-09-28, first run (with the hook wired):** both credential lines were **denied** ("Permission to use Bash with command … has been denied"). That settles one thing: the leading `*` in `Bash(*.credentials.json*)` matches. It does not settle the question, because the hook's deny reader saw the match and fell through (header line 53), so no hook `allow` was ever in play. The deny came from Claude Code alone. The planned "no hook" rerun would test the same thing again. Your `!` run succeeding is expected: `!` commands skip permission checks entirely.
+
+**The test that decides it** needs a hook that always allows, next to a deny rule. It uses a throwaway directory outside the repo and a harmless canary file, so it touches neither the image, the manifest nor your user settings, and needs no re-bless:
+
+```
+mkdir -p ~/q082/.claude && cd ~/q082 && echo canary > x.q082-canary
+cat > .claude/settings.local.json <<'EOF'
+{
+  "permissions": { "deny": ["Bash(*.q082-canary*)"] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command",
+    "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"q082\"}}'" } ] } ] }
+}
+EOF
+claude
+```
+
+In that session, check `/hooks` lists the test hook, then ask Claude to run `cat x.q082-canary` and note whether it **runs**, **prompts**, or is **denied**. The test hook allows *every* Bash call in that session, so run only this one command, exit, and `rm -rf ~/q082`.
+
+**2026-09-28, second run (answers-9-28-26-2.txt):** `cat x.q082-canary` was **denied** ("Permission to use Bash with command cat x.q082-canary has been denied"). Claude then read the file with the Read tool instead. That is expected: the test deny rule covers Bash only, and the real wiring also has `Read(/{{CLAUDE_DIR}}/.credentials.json)` (`hooks/wiring.json:129`). **Not yet confirmed:** that `/hooks` listed the test hook in that session. A hook that never loaded gives the same denial, so without that check the result doesn't settle anything. **Answer (2026-09-28):** the user confirmed `/hooks` listed the test hook. So a PreToolUse hook `allow` does **not** override a matching `permissions.deny` rule. The deny won. The hook's deny reader is therefore redundant for `allow`; its removal is filed as Q-092, and decision log 53 is amended.
+
+- **Interim:** the hook header calls its deny check load-bearing in cc-isolated.
+- **If the answer differs:** denied ⇒ `permissions.deny` beats a hook allow; the hook's deny reader can be deleted (architecture-review 1) and decision log 53's amendment updated. Runs or prompts ⇒ the deny reader stays load-bearing; reclassify the hook as an enforcement component.
 
 
