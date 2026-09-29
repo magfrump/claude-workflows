@@ -1,0 +1,35 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== H1 origin/HEAD -> nonexistent ref
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `main` at 4fcb67f.
+3 merge(s) on `main`'s first-parent line; 7 commit(s) reachable from it, merged branches included.
+  exit=0
+=== H2 origin/HEAD -> refs/heads/-p (branch -p exists)
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `main` at 4fcb67f.
+3 merge(s) on `main`'s first-parent line; 7 commit(s) reachable from it, merged branches included.
+  exit=0
+=== H3 origin/HEAD -> branch with glob/space-free glob name 'a*b' and local main absent
+fatal: 'x*' is not a valid branch name
+fatal: update_ref failed for ref 'refs/heads/a*b': refusing to update ref with bad name 'refs/heads/a*b'
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `trunk` at 4fcb67f.
+3 merge(s) on `trunk`'s first-parent line; 7 commit(s) reachable from it, merged branches included.
+  exit=0
+=== H4 detached HEAD on a repo with no main/master
+Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)
+  exit=1
+=== H5 current branch option-like, no main/master
+fatal: '--' is not a valid branch name
+refs/heads/--output=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fc1/victim5
+Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)
+  exit=1
+keep
+=== H6 remote-tracking only: origin/main exists, local main does not, on branch dev
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `dev` at 4fcb67f.
+3 merge(s) on `dev`'s first-parent line; 7 commit(s) reachable from it, merged branches included.
+  exit=0
+=== H7 ambiguous: tag named main and branch main
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `main` at 4fcb67f.
+3 merge(s) on `main`'s first-parent line; 7 commit(s) reachable from it, merged branches included.
+  exit=0
+=== G1 git bare-date semantics (--since=DATE vs DATE 00:00:00)
+now 02:23:11
+bare: 7  midnight: 7  total: 7

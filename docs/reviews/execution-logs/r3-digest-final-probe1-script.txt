@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# r3 digest-final probes. Throwaway repos only under $S.
+set -u
+DC=/workspace/.claude/wt-digest/scripts/dev-cycle.sh
+S=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/p
+rm -rf "$S"; mkdir -p "$S"
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 LC_ALL=C
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@x.invalid GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@x.invalid
+export HOME="$S/home"; mkdir -p "$HOME"
+run() { timeout 30 bash "$DC" "$@"; echo "[exit $?]"; }
+mk() { mkdir -p "$1"; ( cd "$1"; git init -q -b "$2"; git commit -q --allow-empty -m initial
+  for n in 1 2 3; do git checkout -q -b f$n; git commit -q --allow-empty -m "feature $n"; git checkout -q "$2"; git merge -q --no-ff f$n -m "merge $n"; done ); }
+
+echo "=== P1 bare date vs midnight (git semantics)"
+mk "$S/p1" main; cd "$S/p1"
+T=$(date +%F)
+GIT_COMMITTER_DATE="${T}T00:00:30" git commit -q --allow-empty --date="${T}T00:00:30" -m m
+echo "bare:     $(git rev-list --count --since="$T" HEAD)"
+echo "midnight: $(git rev-list --count --since="$T 00:00:00" HEAD)"
+echo "total:    $(git rev-list --count HEAD)"
+echo "--- exactly-midnight commit included by --since=<T 00:00:00>?"
+mk "$S/p1b" main; cd "$S/p1b"
+GIT_COMMITTER_DATE="2020-06-01T00:00:00" git commit -q --allow-empty --date="2020-06-01T00:00:00" -m at-midnight
+git log --since="2020-06-01 00:00:00" --format='%h %cI %s' HEAD -- | grep at-midnight || echo "NOT included"
+
+echo "=== P2 untracked roadmap / untracked+modified records in carry-forward mode"
+mk "$S/p2" main; cd "$S/p2"
+mkdir -p docs/decisions docs/working/cycles
+printf '# 001\n\n## Revisit triggers\nif committed-old.\n' > docs/decisions/001-a.md
+git add -A; GIT_COMMITTER_DATE=2020-01-02T12:00:00 git commit -q --date=2020-01-02T12:00:00 -m old
+printf '# 002\n\n## Revisit triggers\nif untracked-new.\n' > docs/decisions/002-b.md
+printf '\nif modified-in-worktree.\n' >> docs/decisions/001-a.md
+printf '# R\n\n## Next\n- do a thing\n' > docs/roadmap.md
+touch docs/working/cycles/cycle-$(date -d yesterday +%F).md
+run | sed -n '/## 2/,$p'
+echo "--- same, explicit --since (expect full)"
+run --since="$(date -d yesterday +%F)" | sed -n '/## 2/,/## 3/p'
+
+echo "=== P3 log row dated exactly on SINCE, and a row dated day before"
+mk "$S/p3" main; cd "$S/p3"
+mkdir -p docs/decisions docs/working/cycles
+printf '| 5 | 2026-03-10 | **x** | Revisit if on-boundary. | r |\n| 4 | 2026-03-09 | **x** | Revisit if before. | r |\n' > docs/decisions/log.md
+git add -A; git commit -q -m log
+touch docs/working/cycles/cycle-2026-03-10.md
+run | sed -n '/## 2/,/## 3/p'
+
+echo "=== P4 record committed exactly at SINCE midnight"
+mk "$S/p4" main; cd "$S/p4"
+mkdir -p docs/decisions docs/working/cycles
+printf '# 001\n\n## Revisit triggers\nif at-midnight.\n' > docs/decisions/001-a.md
+git add docs/decisions; GIT_COMMITTER_DATE=2026-03-10T00:00:00 git commit -q --date=2026-03-10T00:00:00 -m rec
+touch docs/working/cycles/cycle-2026-03-10.md
+run | sed -n '/## 2/,/## 3/p'
+
+echo "=== P5 hostile names"
+mk "$S/p5" main; cd "$S/p5"
+git update-ref refs/heads/-p HEAD
+git update-ref refs/remotes/origin/-p HEAD
+git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/-p 2>&1 || git symbolic-ref refs/remotes/origin/HEAD refs/heads/-p
+echo "origin/HEAD short: $(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)"
+run | sed -n '1,4p'
+echo "--- origin/HEAD -> nonexistent ref"
+git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/nosuch
+run | sed -n '3p'
+echo "--- glob-like branch name via origin/HEAD"
+git update-ref 'refs/heads/f*' HEAD 2>&1; git update-ref 'refs/remotes/origin/f*' HEAD 2>&1
+git symbolic-ref refs/remotes/origin/HEAD 'refs/remotes/origin/f*' 2>&1
+run | sed -n '3p'
+echo "--- branch named with space"
+git update-ref 'refs/heads/a b' HEAD 2>&1 | head -1
+echo "--- detached HEAD in a repo with no main/master"
+mk "$S/p5b" trunk; cd "$S/p5b"; git checkout -q --detach HEAD
+run 2>&1 | tail -2
+echo "--- empty repo, no commits"
+mkdir -p "$S/p5c"; cd "$S/p5c"; git init -q -b main
+run 2>&1 | tail -2
+echo "--- current branch option-like, no main/master"
+mk "$S/p5d" trunk; cd "$S/p5d"; git update-ref refs/heads/--output=$S/victim HEAD; git symbolic-ref HEAD refs/heads/--output=$S/victim; git branch -D trunk -q 2>/dev/null
+echo keep > $S/victim
+run 2>&1 | tail -2; echo "victim: $(cat $S/victim)"
+echo "--- other-named current branch (trunk)"
+mk "$S/p5e" trunk; cd "$S/p5e"; run | sed -n '3p'
+
+echo "=== P6 usage/exit codes"
+cd "$S/p1"
+run --since 2>&1 | tail -2
+run --sample x 2>&1 | tail -2
+run --since 2026-13-45 2>&1 | sed -n '3p;$p'
+run -h | head -3; echo ...; run -h | tail -4
+
+echo "=== P7 temp file"
+mkdir -p "$S/tmpd"; cd "$S/p1"; mkdir -p docs/working; printf '# q\n\n## Open\n' > docs/working/questions.md; : > docs/working/questions-archive.md
+TMPDIR="$S/tmpd" run >/dev/null; echo "leftovers in TMPDIR: $(ls -A $S/tmpd | wc -l)"
+echo "--- TMPDIR readonly"
+mkdir -p "$S/ro"; chmod 555 "$S/ro"; TMPDIR="$S/ro" run 2>&1 | sed -n '/## 3/,/## 4/p;$p'

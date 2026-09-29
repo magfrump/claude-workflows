@@ -1,0 +1,55 @@
+cmd: timeout 300 bats /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats  (HEAD tests vs 89a3d3b scripts/dev-cycle.sh + questions.sh)
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:23:31-07:00
+exit: 1
+1..13
+not ok 1 prints all five sections in a repo with no docs
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 49)
+#   `[[ "$output" == *"no cycle record found"* ]]' failed
+not ok 2 lists a decision record's revisit triggers and a log row's whole revisit clause
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 63)
+#   `[[ "$output" == *"log row 9 (2026-01-01): Revisit if gizmos appear"*" end. "* ]]' failed
+not ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 76)
+#   `[[ "$output" != *"if old thing."* ]]' failed
+not ok 4 the window defaults to the newest cycle record's date and says so
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 85)
+#   `[[ "$output" == *"Window: since 2026-02-10 (from the last cycle record"* ]]' failed
+not ok 5 --since counts from midnight, not from the current time of day
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 95)
+#   `[[ "$output" == *"; $total commit(s)"* ]] || { echo "expected $total"; echo "$output" | sed -n '/## 1/,/## 2/p'; return 1; }' failed
+# expected 8
+# ## 1. Activity
+#
+# 0 merge(s), 0 commit(s) on `main` in the window.
+#
+# ## 2. Revisit triggers
+ok 6 --sample N lists N merges, the same ones on a rerun
+not ok 7 different days sample different merges
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 120)
+#   `[ "$distinct" -ge 2 ] || { echo "all four dates sampled the same merges"; printf '%s\n' "${samples[0]}"; return 1; }' failed
+# all four dates sampled the same merges
+# - 5855543 2026-09-29 merge: g 15;- e33e65a 2026-09-29 merge: g 5;- e3e786d 2026-09-29 merge: g 19;
+not ok 8 runs from a subdirectory with a relative script path
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 130)
+#   `[ "$status" -eq 0 ] || { echo "$stderr"; return 1; }' failed
+# ../../../tools/dev-cycle.sh: line 38: cd: ../../../tools: No such file or directory
+not ok 9 watched questions list only trigger and deferred routes, by route column
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 159)
+#   `[[ "$section" == *"Q-002"* ]]' failed
+not ok 10 a questions.sh failure is reported, never shown as 'None open.'
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 171)
+#   `[[ "$section" == *"questions.sh open failed"* ]] || { echo "$section"; return 1; }' failed
+# ## 3. Watched questions (trigger and deferred routes)
+#
+# No docs/working/questions.md (or questions.sh) in this repo.
+#
+# ## 4. Spot-check sample
+not ok 11 a repo whose only branch is master works
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 180)
+#   `[ "$status" -eq 0 ]' failed
+not ok 12 an origin/HEAD naming an option-like branch cannot make git write a file
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/old/test/scripts/dev-cycle.bats, line 193)
+#   `[ "$(cat "$victim")" = "keep" ] || { echo "victim file was modified"; return 1; }' failed
+# victim file was modified
+ok 13 rejects a malformed --since and an unknown option

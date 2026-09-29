@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 # @category fast
-# Contract tests for scripts/dev-cycle.sh, the dev-cycle skill's signal digest.
-# Each test builds a throwaway git repo under $BATS_TEST_TMPDIR, so nothing
-# reads or writes this repo's own docs/.
+# Contract tests for scripts/dev-cycle.sh, the dev-cycle skill's digest. Each
+# test builds a throwaway repo under $BATS_TEST_TMPDIR; this repo is untouched.
 
 bats_require_minimum_version 1.5.0
 
@@ -12,8 +11,7 @@ setup() {
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
-    # HOME points at the temp dir so the ~/.claude/scripts fallback can't reach
-    # the real installed questions.sh.
+    # HOME in the temp dir: the ~/.claude/scripts fallback can't reach the real one.
     export HOME="$BATS_TEST_TMPDIR/home"
     mkdir -p "$HOME"
     R="$BATS_TEST_TMPDIR/repo"
@@ -51,16 +49,16 @@ make_repo() {
 
 @test "lists a decision record's revisit triggers and a log row's whole revisit clause" {
     mkdir -p docs/decisions
-    printf '# 001\n\n## Revisit triggers\nif the widget count exceeds 7.\n\n## Other\nnot a trigger\n' \
+    printf '# 001\n\n## Revisit triggers\nif the widget count exceeds 7.\033]52;c;eA==\a\n\n## Other\nnot a trigger\n' \
         > docs/decisions/001-widgets.md
     long=$(printf 'x%.0s' $(seq 1 500))
-    printf '| 9 | 2026-01-01 | **x** | Because. Revisit if gizmos appear %s end. | ref |\n' "$long" > docs/decisions/log.md
+    printf '| 9 | 2026-01-01 | **x**: revisit-trigger verdicts | Because. Revisit if gizmos appear %s end. | ref |\n' "$long" > docs/decisions/log.md
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     [[ "$output" == *"### docs/decisions/001-widgets.md"* ]]
     [[ "$output" == *"if the widget count exceeds 7."* ]]
-    [[ "$output" != *"not a trigger"* ]]
-    [[ "$output" == *"log row 9 (2026-01-01): Revisit if gizmos appear"*" end. "* ]]
+    [[ "$output" != *"not a trigger"* && "$output" != *$'\033'* ]]
+    [[ "$output" == *"log row 9 (2026-01-01): > Revisit if gizmos appear"*" end. "* ]]
 }
 
 @test "after a cycle record, unchanged triggers carry forward and changed ones print" {
@@ -68,28 +66,38 @@ make_repo() {
     printf '# 001\n\n## Revisit triggers\nif old thing.\n' > docs/decisions/001-old.md
     printf '| 8 | 2020-01-01 | **x** | Revisit if ancient. | r |\n| 9 | 2099-01-01 | **y** | Revisit if future. | r |\n' > docs/decisions/log.md
     git add -A && GIT_COMMITTER_DATE="2020-01-02T12:00:00" git commit -q --date="2020-01-02T12:00:00" -m "old record"
+    start=$(git rev-parse HEAD)
     printf '# 002\n\n## Revisit triggers\nif new thing.\n' > docs/decisions/002-new.md
     git add -A && git commit -q -m "new record"
-    touch "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
+    # Committed on a branch before the window, fast-forwarded into main inside it.
+    git checkout -q -b late && printf '# 003\n\n## Revisit triggers\nif late thing.\n' > docs/decisions/003-late.md
+    git add -A && GIT_COMMITTER_DATE="2020-01-03T12:00:00" git commit -q --date="2020-01-03T12:00:00" -m late
+    git checkout -q main && git merge -q --ff-only late
+    printf '\n## Other\nbulk edit\n' >> docs/decisions/001-old.md && git commit -qam "edit outside triggers"
+    printf '# 004\n\n## Revisit triggers\nif uncommitted thing.\n' > docs/decisions/004-wip.md
+    printf '| 7 | %s | **z** | Revisit if boundary. | r |\n' "$(date -d yesterday +%F)" >> docs/decisions/log.md
+    echo "Main at: $start" > "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
     run --separate-stderr bash "$DC"
-    [[ "$output" == *"if new thing."* ]]
+    for t in "if new thing." "if late thing." "if uncommitted thing." "Revisit if boundary."; do
+        [[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }
+    done
     [[ "$output" != *"if old thing."* ]]
     [[ "$output" == *"Carried forward (2): 001-old.md log row 8"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
-    [[ "$output" == *"log row 9 (2099-01-01): Revisit if future."* ]]
+    [[ "$output" == *"log row 9 (2099-01-01): > Revisit if future."* ]]
 }
 
 @test "the window defaults to the newest cycle record's date and says so" {
     mkdir -p docs/working/cycles
-    touch docs/working/cycles/cycle-2026-01-05.md docs/working/cycles/cycle-2026-02-10.md
+    touch docs/working/cycles/cycle-2026-01-05.md docs/working/cycles/cycle-2026-02-10.md docs/working/cycles/cycle-9999-12-31.md
     run --separate-stderr bash "$DC"
     [[ "$output" == *"Window: since 2026-02-10 (from the last cycle record"* ]]
+    run --separate-stderr bash "$DC" --since=2026-03-01
+    [[ "$output" == *"An explicit --since was given, so every trigger"* ]]
 }
 
 @test "--since counts from midnight, not from the current time of day" {
     GIT_COMMITTER_DATE="$(date +%F)T00:00:30" git commit -q --allow-empty --date="$(date +%F)T00:00:30" -m "just after midnight"
-    # Every commit in this repo was made today, all before "now": a window
-    # starting at midnight must count them all (a bare date would mean "today
-    # at the current time" to git and count none of them).
+    # All commits here are from today, before "now": a midnight window counts all.
     total=$(git rev-list --count HEAD)
     run --separate-stderr bash "$DC" --since="$(date +%F)"
     [[ "$output" == *"; $total commit(s)"* ]] || { echo "expected $total"; echo "$output" | sed -n '/## 1/,/## 2/p'; return 1; }
@@ -196,6 +204,8 @@ EOF
 
 @test "rejects a malformed --since and an unknown option" {
     run --separate-stderr bash "$DC" --since 2026/01/01
+    [ "$status" -eq 1 ]
+    run --separate-stderr bash "$DC" --since=2026-13-45
     [ "$status" -eq 1 ]
     run --separate-stderr bash "$DC" --bogus
     [ "$status" -eq 1 ]

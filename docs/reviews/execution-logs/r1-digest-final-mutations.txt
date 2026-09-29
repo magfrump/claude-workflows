@@ -1,0 +1,27 @@
+2026-09-29T02:25:35-07:00
+M1 print only first 400 chars of log clause -> failing tests matching 'whole revisit clause': 1
+M2 lowercase revisit preferred (drop capitalised pass) -> failing tests matching 'whole revisit clause': 0
+M3 always full (no carry-forward) -> failing tests matching 'carry forward': 1
+M4 log-row compare strict > instead of >= -> failing tests matching 'carry forward': 0
+M5 window ignores cycle record -> failing tests matching 'newest cycle record': 1
+M6 bare date -> failing tests matching 'midnight': 1
+M7 unseeded shuf -> failing tests matching 'same ones on a rerun': 0
+M8 raw date seed -> failing tests matching 'different days': 1
+M9 no SCRIPT_DIR resolution before cd (relative) -> failing tests matching 'subdirectory': 0
+M10 route match by substring -> failing tests matching 'by route column': 1
+M11 swallow questions.sh failure -> failing tests matching 'questions.sh failure': 1
+M12 main only (no master) -> failing tests matching 'only branch is master': 0
+M13 pass branch name to git log instead of hash -> failing tests matching 'option-like': 0
+M13b drop dash-skip and use name via rev-parse without refs/heads -> failing tests matching 'option-like': 0
+M14 accept any since -> failing tests matching 'malformed': 1
+M15 unknown option ignored -> failing tests matching 'malformed': 1
+M16 drop sections header 5 -> failing tests matching 'all five sections': 1
+2026-09-29T02:25:59-07:00
+M7 unseeded shuf (trial 1) -> failing tests matching 'same ones on a rerun': 1
+M7 unseeded shuf (trial 2) -> failing tests matching 'same ones on a rerun': 1
+M7 unseeded shuf (trial 3) -> failing tests matching 'same ones on a rerun': 1
+M7 unseeded shuf (trial 4) -> failing tests matching 'same ones on a rerun': 1
+M7 unseeded shuf (trial 5) -> failing tests matching 'same ones on a rerun': 1
+M7 unseeded shuf (trial 6) -> failing tests matching 'same ones on a rerun': 1
+M9b SCRIPT_DIR resolved after cd ROOT -> failing tests matching 'subdirectory': 1
+M13c drop dash-skip AND pass branch name to git log -> failing tests matching 'option-like': 1

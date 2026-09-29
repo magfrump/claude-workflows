@@ -1,0 +1,42 @@
+cmd: timeout 400 bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/probe2.txt
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:25:13-07:00
+=== Q1 record added on a branch before the cycle-record date, merged after it
+## 1. Activity
+
+2 merge(s) on `main`'s first-parent line; 4 commit(s) reachable from it, merged branches included.
+
+```
+44892d1 2026-09-29 merge late (now)
+dc1556b 2026-09-29 merge 1
+```
+
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-03-10, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-03-10.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (1): 003-late.md
+
+## 3. Watched questions (trigger and deferred routes)
+[exit 0]
+=== Q2 sample: same day same, different days (3 merges, sample 2) over 30 days
+same day: identical
+     16 1,2,
+      8 1,3,
+      6 2,3,
+--- adjacent days identical count (3 merges, sample 2):
+15 of 29 adjacent pairs identical
+--- raw-date seeding (old approach) across 4 dates, sample 3 of 20 merges
+      4 merge 19,merge 2,merge 5,
+--- raw-date seeding, dates in different decades
+      1 merge 12,merge 2,merge 5,
+      1 merge 19,merge 2,merge 5,
+      1 merge 2,merge 5,merge 9,
+=== Q4 questions.sh open output (read-only, the worktree's own questions doc)
+Q-084  you: terminal   q076-live-checks$
+Q-075  agent           si-loop-trust-before-resume$
+Q-079  agent           canon-instance-proposal-filter$
+Q-088  agent           spike-weaker-nested-sandbox$
+Q-089  agent           host-tools-trust-category$
+exit: 0
