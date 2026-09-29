@@ -2369,7 +2369,7 @@ warns_listing_wt() {
   local cfg before
   for cfg in "core.hooksPath .husky/_" "core.attributesFile .attrs" "remote.loc.url ./sub.git" \
       "remote.loc.url file://sub.git" "core.hooksPath $TEST_TMPDIR/abs-hooks" "branch.main.remote ." \
-      "url...insteadOf https://x.invalid/"; do
+      "url...insteadOf https://x.invalid/" "url..insteadOf https://x.invalid/" "url..pushInsteadOf https://x.invalid/"; do
     rm -rf "$TEST_TMPDIR/proj"
     scan_repo
     # shellcheck disable=SC2086  # key and value, split on purpose

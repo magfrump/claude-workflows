@@ -414,7 +414,7 @@ _snap_config() {
       url.*.insteadof|url.*.pushinsteadof)
         # url.<base>.insteadOf rewrites matching URLs to <base>.
         t="${key#url.}"; t="${t%.*}"
-        [ "$t" != . ] || _snap_wrel "$key" "$f" ./   # a base "." starts a relative path
+        case "$t" in ""|.) _snap_wrel "$key" "$f" ./ ;; esac   # a base "" or "." starts a relative path
         _snap_remote "$t" "$base" || return 1 ;;
     esac
   done < "$out"

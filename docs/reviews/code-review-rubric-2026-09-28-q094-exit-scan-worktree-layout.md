@@ -58,4 +58,21 @@ Fact-check (k=1): 36 claims. 1 Incorrect: the stacked unit was described as exis
 
 Status after the iteration-2 fixes: 0 Must Fix open, pending the confirming pass (iteration 3).
 
+---
+
+## Iteration 3 (`--range 5fadfc2..ba03833`: unit A's 037621f plus the stacked unit B's ba03833)
+
+Critics: security. Fact-check k=1, reports `security-review-2026-09-28-q094-iter3.md` and `code-fact-check-report-q094-iter3.md`. Performance was gated off: 037621f adds one case line, and B's removal loop has the same shape as the reviewed added-side index.
+
+| # | Tier | Source | Finding | Status |
+|---|---|---|---|---|
+| R4 | 🔴 (unit A) | security (Medium, experiment-confirmed) | An empty insteadOf base (`[url ""]`, key `url..insteadof`) also rewrites to a relative path, and 037621f's `.` guard missed it. The note plus a planted hook ran on push | Fixed on A: `case "$t" in ""\|.)` makes a W record; tests for `url..insteadOf` and `url..pushInsteadOf`; mutation-checked |
+| I2 | 🟢 (unit B) | security Info | A removal is accepted while the old working-tree dir remains, and that dir can hold a bare-repo layout. This is the documented known route ("a repository in a working-tree directory not named `.git`"), with no new capability; the note says "removed" about that dir | Deferred: an optional hardening is to decline a removal when that dir `looks_like_gitdir`. Recorded for the user |
+| M1 | 🟡 (unit B) | fact-check Mostly accurate ×2 | The removal comment omits the exact `../..\n` and `missing` checks; the guide's "Exact" list reads as covering removals | Fixed on B |
+| M2 | 🟡 (unit A) | fact-check Mostly accurate | Plan B30 "always make a W record" was over-broad | Fixed (B30 reworded) |
+
+Fact-check: 0 Incorrect, 0 Stale. Security: unit B is safe to merge; unit A is safe after R4.
+
+Loop status: iteration cap (3) reached. No Must Fix open after the R4 fix. The R4 fix itself has not been re-reviewed (a one-line widening of the reviewed guard, mutation-tested). The final confirming full-panel pass (pr-prep 3d, without `--loop-pass`, k=3) has not been run.
+
 Single-sample review; absence of findings is not an attestation.
