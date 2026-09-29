@@ -1,13 +1,7 @@
 ---
 name: dev-cycle
 description: >
-  Run one maintenance cycle over a repo: gather signals (scripts/dev-cycle.sh), health check
-  and cleanup, revisit-trigger sweep, watched-question check, spot-check audit of sampled
-  merges, feature brainstorm, roadmap update. Output is a cycle record plus triaged
-  questions.md entries, so only judgment calls reach the user. Triggers: "/dev-cycle", "run
-  the dev cycle", "maintenance pass", "what should we work on next", "update the roadmap",
-  "check the revisit triggers", "repo health pass".
-when: The user asks for a maintenance or planning pass over the repo, or it has been two weeks or more since docs/working/cycles/ last got a record
+  Run one maintenance cycle: signal digest, health and cleanup, revisit triggers, spot-check audit, brainstorm, roadmap. Not for landing one change (pr-prep). Triggers: "run the dev cycle", "maintenance pass", "what next", "update the roadmap".
 ---
 
 > On bad output, see guides/skill-recovery.md

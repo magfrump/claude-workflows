@@ -12,9 +12,8 @@ evidence and re-rank Next.
 
 ## Now
 
-- **Instruction loading and workflow reach**: AGENTS.md without `@` imports
-  (branch `fix/agents-md-no-imports`, log row 65), a router skill per workflow
-  (`feat/workflow-router-skills`, log row 66), and this dev cycle (`feat/dev-cycle`).
+- **This dev cycle** (`feat/dev-cycle`, log row 67). First run: after install, so the
+  router skills from log row 66 are live.
 
 ## Next
 
@@ -28,9 +27,10 @@ evidence and re-rank Next.
 3. **Q-089 — host-tool trust category.** Motive: `cc-push.sh` and the exit scan are
    verified by `Live-verified:`, which does not fit host-only tools (Q-083 [1]). First
    step: the trust-manifest section.
-4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: 30 days
-   after the next install, `scripts/skill-usage-report.sh` counts for
-   `research-plan-implement` and `pr-prep`.
+4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
+   of the first three cycles after install, count multi-file merges that carry RPI
+   research/plan docs and pr-prep review artifacts (an artifact count, not the usage log,
+   which under-counts, Q-017).
 5. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3. First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
@@ -43,7 +43,18 @@ Unranked. Each names the signal that motivates it.
   only by hand (Q-072).
 - **Automate the failure-pattern harvest, or drop the "do not skip" line.** Signal: Q-074,
   1 entry in ~128 fix commits; it reopens as a judgment on 2026-10-26.
+- **Narrow code-review's "default whenever a PR is prepared" description.** Signal: it
+  overlaps the pr-prep router (override log, deferred from log row 66's review).
+- **Finish skill-format-audit F1: drop `when:` repo-wide and from
+  `divergent-design-router.bats`.** Signal: override log, deferred from log row 66's review.
+- **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
+  add/add conflicts on `code-fact-check-report-r*.md` and `*-review-<date>.md`, which are
+  per-run names shared by every branch reviewed the same day.
 
 ## Done
 
-Items finished since the last cycle, with the merge. (None recorded yet.)
+Items finished since the last cycle, with the merge.
+
+- AGENTS.md names workflows by filename, not `@` import; guard test (log row 65, merge
+  c9a370a). Removes ~89K tokens from every session and subagent in this repo.
+- A router skill for every workflow except review-fix-loop (log row 66, merge 4225753).
