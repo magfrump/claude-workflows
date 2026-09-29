@@ -1,11 +1,16 @@
-Commit: 5ee8315
+Commit: d5880ad
+Loop closed at d5880ad
 
 # Code Review Rubric
 
-**Scope:** fix/agents-md-no-imports vs main (4 files, +36/−20) | **Reviewed:** 2026-09-29 | **Status: 🟢 PASS after fixes** — no Must Fix; both Must Address items fixed in 7b43db2; final confirming pass pending
+**Scope:** fix/agents-md-no-imports vs main (AGENTS.md, test/agents-gemini-sync.bats, scripts/health-check.sh comment, decision log row 65) | **Reviewed:** 2026-09-29 | **Status: 🟢 PASS** — no Must Fix; every Must Address fixed or acknowledged with a revisit trigger. Single-sample review; absence of findings is not an attestation.
 
-Pipeline: Stage 1 k=3 fact-check (opus) → Stage 1.5 gating → security + performance critics (opus) in parallel → synthesis. Delivery mode: self-read (agents read the skill files and diff from the worktree). Dispatch mode: parallel.
-Considered overrides: no prior overrides matched this diff.
+Loop: 3 iterations (the cap).
+1. Pass 1 on 5ee8315: full panel (k=3 fact-check, security, performance; api-consistency skipped, no public surface).
+2. Final pass 1 on 7c2253a: k=3 fact-check.
+3. Final pass 2 on 832932a: k=3 fact-check. Two replicates ran Claude Code 2.1.284's own extractor from the binary.
+
+Each round's fixes were verified by the targeted suites and the fix-drift lite check. There was no fourth full pass: the exit rule is met and the one open item carries a revisit trigger. Delivery mode: self-read. Considered overrides: no prior overrides matched this diff.
 
 ---
 
@@ -17,43 +22,30 @@ None.
 
 ## 🟡 Must Address
 
-| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
-|---|---|---|---|---|---|---|---|---|
-| A1 | Log row 65 and the test name claim the guard fails on "any `@path` import"; regex `(^|[[:space:]*\`])@\.{0,2}/` misses `@x.md`, `@dir/x`, `@~/x`, and `@./x` after `(` `"` `[`; fires inside code spans. Evidence: `test/agents-gemini-sync.bats:35` `if matches=$(grep -nE '(^|[[:space:]*\`])@\.{0,2}/' "$AGENTS"); then` | Fact-check (Claim 2, 15) + security #1 (Low) + performance #1 (Medium) | Incorrect (Medium), doc-class under policy T → 🟡; unanimous r1/r2/r3 on Claim 2 | fact-check merged; security-reviewer; performance-reviewer | for-author | — | ✅ Fixed (7b43db2) | `find_imports` catches `@/ @./ @../ @~/ @dir/x @x.md`, skips emails and code spans; a synthetic-case test pins 7 positives / 5 negatives; still catches all 9 old lines |
-| A2 | "~85K tokens" understates: 355,598 chars / 4 ≈ 89K | Fact-check (Claim 7, 14b) | Mostly accurate | fact-check merged (r3; r1/r2 Unverifiable) | for-author | — | ✅ Fixed (7b43db2) | Now "~89K tokens at chars/4" |
-
----
+| # | Finding | Source | Status | Author note |
+|---|---|---|---|---|
+| A1 | Guard narrower than claimed: caught only `@/ @./ @../` (pass 1) | fact-check ×3, security #1, performance #1 | ✅ Fixed (7b43db2 → d5880ad) | — |
+| A2 | Widened guard still missed `@README`, `@package.json`, `@x.MD`; "every form" overclaimed (final pass 1) | fact-check ×3 | ✅ Fixed (2f5fba3 → d5880ad) | — |
+| A3 | "Mirrors Claude Code's grammar" was false: 18/27 probes disagreed. A four-backtick fence hid the rest of a file; link text, `>@`, `~~@`, `<span>@` were missed (final pass 2) | fact-check ×3 (r1, r3 executed CC's extractor) | ✅ Fixed (d5880ad) | The finder now over-approximates and removes only same-line code spans. 16 must-flag forms are pinned, including the fence trap |
+| A4 | Known miss: an import inside a code span in a tight list item | final pass 2 r3 | 🟡 Acknowledged | Documented in the test comment and log row 65. Revisit if CC's import grammar widens, or a false alarm forces rewording a guarded file more than once |
+| A5 | "~85K tokens" → ~89K | fact-check | ✅ Fixed (7b43db2) | — |
 
 ## 🟢 Consider
 
-| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
-|---|---|---|---|---|---|---|
-| C1 | `extract_workflows` comment shows CLAUDE.md in bold; it uses backticks (pre-existing) — `scripts/health-check.sh:205` | fact-check Claim 11 (Stale) | Stale | for-author | — | ✅ Fixed (7b43db2) |
-| C2 | `global-instructions/CLAUDE.md` (loaded in every project) has no @-import guard | performance-reviewer #2 | Low | for-author | — | ✅ Fixed (7b43db2: guard covers both files) |
-| C3 | ~3 KB of sections shared with the global instructions load twice per session | performance-reviewer #3 | Informational | for-orchestrator-synthesis | — | 🟢 Won't-Fix (row 65: other agents read AGENTS.md without the global file) |
-| C4 | Bare workflow names could resolve to the installed `~/.claude/workflows` copy rather than the repo's | security-reviewer #2 | Informational | for-author | — | 🟢 Won't-Fix (same style as GEMINI.md and the global instructions; see override log) |
-| C5 | Harness claims (AGENTS.md loaded, `@` expanded; row 47's move caused it) have no in-repo evidence | fact-check Claims 4b, 5, 14a (Unverifiable / Verified-Medium from session context) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Accepted — observed directly in this session's injected context |
-
----
-
-## ✅ Confirmed Good
-
-| Claim | Evidence | Backing |
+| # | Finding | Status |
 |---|---|---|
-| AGENTS.md and GEMINI.md are identical below line 3 | `diff <(tail -n +4 AGENTS.md) <(tail -n +4 GEMINI.md)` exits 0 | fact-check Claim (Verified, executed, 3/3) |
-| `extract_workflows` returns the same 9 names for old AGENTS.md, new AGENTS.md and GEMINI.md | execution logs `fc-r1/`, `fc-r3-regex.txt` | fact-check (Verified, executed) |
-| `hooks/log-usage.sh` sees only Skill/Read/Agent calls | its COVERAGE header comment and `case "$TOOL_NAME"` | fact-check (Verified, static; scope: coverage of the hook's own dispatch) |
+| C1 | CLAUDE.md example in the extract_workflows comment used bold; the file uses backticks | ✅ Fixed |
+| C2 | Global instructions unguarded | ✅ Fixed (guard covers both files) |
+| C3 | ~3 KB of shared sections loads twice per session | 🟢 Won't-Fix (override log) |
+| C4 | Bare names could resolve to the installed workflow copy | 🟢 Won't-Fix (override log) |
+| C5 | Harness-loading claims have no in-repo evidence | 🟢 Accepted: observed in session context and confirmed from the binary |
+| C6 | Emphasis comment's mechanism read backwards | ✅ Fixed (comment rewritten) |
+| C7 | Fix-drift lite check on d5880ad: "row 65 says 16 must-flag forms, test has ~11–12" | 🟢 Dismissed: the test asserts exactly 16 matched lines and passes; the positive heredoc has 11 original plus 5 added forms |
 
-## ⏭️ Skipped Core Critics
-
-| Critic | Reason | Signal |
-|---|---|---|
-| api-consistency-reviewer | No public API surface touched | Diff: AGENTS.md list entries, one bats file, one comment, one log row; no exported symbol, schema, flag or config key |
+Immutable-history Incorrects (commit messages 5ee8315, 7b43db2, 2f5fba3) are logged as Accepted-immutable in the override log.
 
 ## 🧩 Composition check
 
-| Cluster | Fragments | Disposition |
-|---|---|---|
-| `test/agents-gemini-sync.bats:30-40` | fact-check Claims 2/15, security #1, performance #1 | distinct defects: none — all three state the same complete mechanism and fix; merged as A1 |
-
-Loop: pass 1 of the review-fix loop (full scope, k=3). Fix-drift lite check over 5ee8315..7b43db2: FINDINGS: NONE.
+| Cluster | Disposition |
+|---|---|
+| `test/agents-gemini-sync.bats` find_imports, across all three passes | distinct defects: none new. The same mechanism narrowed each round; see A1–A3 |
