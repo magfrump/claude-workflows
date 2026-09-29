@@ -24,19 +24,20 @@
 #   # Testing with custom permissions
 #   echo '{"tool_input":{"command":"ls | grep foo"}}' | auto-approve-allowed-commands.sh --permissions '["Bash(ls:*)", "Bash(grep:*)"]'
 #
-# ACCEPTED RISK (2026-09-18, decision log row 53): approval is prefix-matching
-# over the commands the extraction filter finds, and the filter does not descend
-# into every construct bash can execute. Reproduced bypasses — each gets
-# "allow" when only the outer command is allow-listed:
-#   echo $((1 + $(cmd)))     arithmetic expansion is not searched for $(...)
-#   cat <<EOF / $(cmd) / EOF heredoc bodies are not searched
-#   PATH=/x ls, LD_PRELOAD=  assignment prefixes are dropped before matching
-# Closing these one at a time does not converge, so they are accepted.
-# One former entry IS closed: `ls > ~/.bashrc` used to be approved because
-# redirect targets were not checked. A redirect that can write a file now
-# fails extraction (refuses_redirect), since the shared allow list in
-# hooks/wiring.json would otherwise let every listed command write any path.
-# Parse FAILURES do fail closed (see main).
+# CLOSED GAPS (2026-09-28, decision log row 64; row 53 had accepted them):
+# approval is prefix-matching over the commands the extraction filter finds,
+# and the filter does not descend into every construct bash can execute. These
+# used to get "allow" when only the outer command was allow-listed:
+#   echo $((1 + $(cmd)))     arithmetic expansion was not searched for $(...)
+#   cat <<EOF / $(cmd) / EOF heredoc bodies were not searched
+#   PATH=/x ls, LD_PRELOAD=  assignment prefixes were dropped before matching
+#   ls > ~/.bashrc           redirect targets were not checked
+# Row 53 found that closing them one at a time does not converge. They are
+# closed instead by class (refuses_construct): the hook never approves a
+# command with ANY command or process substitution, any VAR= assignment, or a
+# file-writing redirect. Cost: `echo "$(git rev-parse HEAD)"` now prompts.
+# Needed once hooks/wiring.json gave every cc-isolated project a global allow
+# list. Parse FAILURES fail closed too (see main).
 #
 # ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
 # CC-ISOLATED (Q-070/Q-077). Where a Claude Code sandbox runs, permissions.deny
@@ -106,6 +107,9 @@ set -euo pipefail
 # Debug mode
 DEBUG=false
 NUL_DELIM=false
+# Set by main only: the hook refuses constructs (refuses_construct) that the
+# parse_commands extractor must still be able to list.
+REFUSE_CONSTRUCTS=false
 # Custom permissions for testing (JSON array like: '["Bash(ls:*)", "Bash(cat:*)"]')
 CUSTOM_PERMISSIONS=""
 # Custom deny rules for testing (same format). Set => the settings files' deny lists are ignored.
@@ -405,11 +409,10 @@ main() {
 
   # Extract commands using built-in parser (NUL-delimited for multi-line command support)
   NUL_DELIM=true
-  # FAIL CLOSED on a parse failure — and ONLY on a parse failure: constructs
-  # that parse but that the extraction filter does not descend into (arithmetic
-  # expansion, heredoc bodies, VAR= prefixes) are still approved on the
-  # strength of the outer command (known gap, not fixed here). A file-writing
-  # redirect is the exception: it fails extraction too (refuses_redirect).
+  REFUSE_CONSTRUCTS=true
+  # FAIL CLOSED on a parse failure, and on any construct refuses_construct
+  # names (substitutions, assignments, file-writing redirects): extraction
+  # fails for both, so the command falls through to the normal prompt.
   # mapfile's own status is always 0, so the parser's status has to be read from the process substitution via `wait $!`
   # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
   # Without this, an unparseable command extracted to an empty list and hit the
@@ -693,10 +696,11 @@ extract_commands_raw() {
 
   debug "AST parsed successfully"
 
-  # A redirect that can write a file is never approved (see refuses_redirect).
-  # Returning 1 makes main treat it like a parse failure: fall through to the
-  # normal prompt. Checked here so every bash -c level is covered.
-  if refuses_redirect "$cmd" "$ast"; then
+  # Constructs the hook must never approve (see refuses_construct). Returning 1
+  # makes main treat it like a parse failure: fall through to the normal
+  # prompt. Checked here so every bash -c level is covered; gated on
+  # REFUSE_CONSTRUCTS so the parse_commands extractor still lists commands.
+  if $REFUSE_CONSTRUCTS && refuses_construct "$cmd" "$ast"; then
     return 1
   fi
 
@@ -704,20 +708,35 @@ extract_commands_raw() {
   echo "$ast" | jq -r "$JQ_FILTER" 2>/dev/null
 }
 
-# True when the parsed command has a redirect that can write a file.
-# Any operator containing '>' counts (>, >>, &>, &>>, >|, <>, >&), except a
-# target of exactly /dev/null or an fd duplication (>&N, >&-). Input-only
-# redirects (<, <<, <<<, <&) pass. Without this, every allow-listed command
-# could write any path the agent can: `ls > ~/.claude/settings.json`.
+# True when the parsed command holds a construct that lets an allow-listed
+# command do more than the rule names (decision log row 64). Any of:
+#   1. Command or process substitution ($(...), `...`, <(...), >(...)) ANYWHERE
+#      in the AST. The extraction filter descends into some positions but not
+#      all ($((...)), heredoc bodies, ${x:-...}), and row 53 found that closing
+#      those one at a time does not converge; refusing every substitution does.
+#   2. An assignment on a simple command (VAR=x cmd, or a bare VAR=x):
+#      LD_PRELOAD= or PATH= turn any allowed command into arbitrary code.
+#   3. A redirect that can write a file: any operator containing '>' (>, >>,
+#      &>, &>>, >|, <>, >&), except a target of exactly /dev/null or an fd
+#      duplication (>&N, >&-). Input-only redirects (<, <<, <<<, <&) pass.
+# These mattered once hooks/wiring.json gave every cc-isolated project a
+# global allow list: without them `ls` alone could read and send the
+# credentials file or write the config volume.
 #
 # WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
 # in shfmt 3.13.1) with no stability promise across versions. The operator is
 # read instead from the command text between the redirect's OpPos and its
 # Word's Pos. Those are byte offsets into the string shfmt parsed, so $1 must be
 # that same (normalized) string, and slicing is done under LC_ALL=C (bytes).
-refuses_redirect() {
+refuses_construct() {
   local cmd="$1" ast="$2" op_off word_off word_end op word
   local LC_ALL=C
+  if jq -e '[.. | objects | select(.Type == "CmdSubst" or .Type == "ProcSubst"
+             or (.Type == "CallExpr" and ((.Assigns // []) | length) > 0))]
+            | length > 0' <<<"$ast" >/dev/null; then
+    debug "Refusing: substitution or assignment"
+    return 0
+  fi
   while read -r op_off word_off word_end; do
     op=${cmd:op_off:word_off-op_off}
     op=${op//[[:space:]]/}
