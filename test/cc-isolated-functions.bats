@@ -2332,7 +2332,10 @@ warns_listing_wt() {
     run git_exit_scan "$SCAN_WS" "$before"
     warns_listing_wt
   done
-  printf '%s/.git\n' "$STD_WT" > "$STD_P/gitdir"
+  rm "$STD_P/gitdir"; mkfifo "$STD_P/gitdir"   # must not block the scan
+  run timeout 20 bash -c "source '$CONFIG_SRC/cc-isolated.sh'; git_exit_scan '$SCAN_WS' \"\$1\"" _ "$before"
+  warns_listing_wt
+  rm "$STD_P/gitdir"; printf '%s/.git\n' "$STD_WT" > "$STD_P/gitdir"
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 0 ]
   rm "$STD_WT/.git"; mkdir "$STD_WT/.git"   # a directory, not a file

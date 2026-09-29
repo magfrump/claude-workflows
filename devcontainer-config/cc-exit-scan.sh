@@ -857,6 +857,8 @@ scan_std_worktrees() {
     lnk="$(find -P "$p" -type l -print -quit 2>/dev/null)" || return 1
     [ -z "$lnk" ] || return 1
     # The back-pointer names the working tree, inside the checkout.
+    # Regular file first: a FIFO there would block the read.
+    [ -f "$p/gitdir" ] && [ ! -L "$p/gitdir" ] || return 1
     line="$(_snap_first_line "$p/gitdir" 2>/dev/null)" || return 1
     _snap_file_is "$p/gitdir" "$(_snap_hash_str "$line"$'\n')" || return 1
     case "$line" in
