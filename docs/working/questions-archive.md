@@ -1690,6 +1690,8 @@ In that session, check `/hooks` lists the test hook, then ask Claude to run `cat
 
 **Answer (2026-09-28): [1].** The user ran `rm ~/claude-workflows/.git/commondir && claude --version`. The `&&` means the version printed only after the rm succeeded, and it printed `2.1.284 (Claude Code)`, the same build whose code was read above, so the old stand-in writer is gone. The file is gone from the shared checkout too (checked from inside the container). Not re-verified live: that 2.1.284 never recreates `commondir`. If a later sandboxed host session brings it back, reopen with [2].
 
+**2026-09-28, later:** it came back, and the user deleted it again to get Q-084 step 3 through. The writer is not yet identified. Continued as Q-093.
+
 - **Read:** Q-084's 2026-09-28 note · `devcontainer-config/cc-push.sh:272` · `commondir_of` in `devcontainer-config/cc-gitdir.sh:50`
 
 | Option | What it means | Cost to you | If it's wrong |

@@ -25,6 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-093](#q-093--cc-push-commondir-recurs) | you: judgment | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
+| [Q-094](#q-094--exit-scan-worktree-noise) | you: judgment | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -108,8 +110,44 @@ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # exp
 
 **2026-09-28, step 2:** passed. With the container still running, `cc-push` refused and named the running container, as expected. The stray `commondir` behind step 3's refusal is removed (Q-091 [1]), so step 3 needs a rerun. Steps 1 and 4 are not reported yet.
 
+**2026-09-28, step 3:** passed. `cc-push` worked on `~/claude-workflows`, but only after the user deleted `.git/commondir` again. It had come back since Q-091 [1], which is now Q-093. Step 1 has not been run as written. Every session exited today gave a WARNING, mostly listing worktrees. The cause was reproduced in a scratch repo with the real `git_exit_scan`: a worktree still present at exit adds three records (`+ dotgit <wt>/.git`, `+ commondir-file .git/worktrees/<name>/commondir`, `+ hooksdir .git/worktrees/<name>/hooks missing`), so the scan returns 1. With the worktree removed and pruned it returns 0. That behaviour is what the scan specifies, not a bug, and whether it should change is Q-094. Step 1 is still a valid test as written: a scratch repo with no worktrees should exit 0. Steps 1 and 4 are not reported yet.
+
 - **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
+
+### Q-093 · cc-push-commondir-recurs
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+`.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. Relax cc-push now (Q-091's fallback), or keep deleting it by hand until the writer is found?
+
+- **What is known:** the host runs 2.1.284, the build whose code Q-091 read. So "2.1.284 no longer creates `commondir`" was wrong, or something else writes it. This container has no bwrap and no `sandbox` setting. This session's commands did not recreate the file: it was still absent after them. The deletion removed the file's mtime, the one clue to its writer.
+- **One fact that would pin the writer (optional, one line):** did any exit WARNING today include `+ commondir-file …/claude-workflows/.git/commondir` (with no `worktrees/` in the path)? Yes means a cc-isolated session wrote it. No, with a host `claude` session in this repo since the first rm, points to the host sandbox.
+- **Read:** Q-091 in the archive · `devcontainer-config/cc-push.sh:272`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Relax cc-push (Recommended)** | Accept a `commondir` whose whole content is `.`. That is a self-reference, which git reads exactly as if the file were absent. Refuse everything else as today. This is Q-091's [2]. | An enforcement-file unit: review loop, re-bless, one host rerun of Q-084 step 3 | A parsing bug (e.g. `./`, trailing bytes, a symlinked file) reopens the read-outside-the-checkout hole. Tests must pin the exact accepted bytes. |
+| **[2] Keep deleting by hand** | `rm ~/claude-workflows/.git/commondir` before each push. Nothing changes in code. | One command per push, for as long as the writer runs | Nothing unsafe. Friction only, and the writer stays unknown. |
+
+- **Interim:** [2]. Delete by hand before `cc-push`. The exit scan still reports a new `commondir` if a container session writes one.
+- **If the answer differs:** nothing is built yet, so nothing is redone.
+
+### Q-094 · exit-scan-worktree-noise
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), because the worktree's `.git` file, its `commondir` and its missing `hooks/` dir are new records. Should the exit scan accept git's own worktree layout without a warning?
+
+- **Why it's yours:** it trades warning fatigue against the scan's strictness, in an enforcement file.
+- **Read:** Q-084's 2026-09-28 step 3 note (the reproduction) · `_snap_gitdir` / `_snap_nested` in `devcontainer-config/cc-exit-scan.sh` · memory [[agent-worktrees-stall-and-stale-base]] (worktrees often outlive the session)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept the standard layout (Recommended)** | A new worktree passes with one `note:` line and exit 0 only when: its `.git` file names `<common>/worktrees/<name>`, that dir's `commondir` is exactly `../..`, and it has no `hooks/`, no `config.worktree` and no symlinks. Any other difference still warns. A linked worktree takes its config and hooks from the common dir, which the scan already covers [inferred; the plan's pre-mortem checks this]. | An enforcement unit: review loop, re-bless, a host rerun | If a linked worktree can run something the common dir does not show, a plant shaped like a standard worktree passes silently. |
+| **[2] Clean up before exit** | Scan unchanged. Remove and prune worktrees before leaving a session, e.g. via a reminder at session end. | Your time each session, and a worktree with unmerged work cannot be removed | Warning fatigue: a real plant listed among worktree lines gets skimmed past. |
+| **[3] Leave as is** | Every such exit warns. | Reading the list each time | Same fatigue as [2], every time. |
+
+- **Interim:** [3]. Nothing changes. Q-084 step 1 is still testable on a scratch repo with no worktrees.
+- **If the answer differs:** nothing is built yet.
 
 ### Q-092 · drop-hook-deny-reader
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
