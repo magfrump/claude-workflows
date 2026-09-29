@@ -178,10 +178,8 @@ echo
 echo "## 4. Spot-check sample"
 echo
 if [[ -n "$merges" && "$SAMPLE" -gt 0 ]]; then
-  # Seeded by a hash of the date: a rerun on the same day audits the same
-  # merges, and different days differ. (Seeding with the date string itself
-  # did not: every date starts with the same bytes, so shuf picked the same
-  # positions every cycle.)
+  # Seeded by a hash of the date: same day, same merges; different days differ.
+  # (The raw date seeded nothing: every date starts with the same bytes.)
   seed="$(printf '%s' "$TODAY" | sha256sum | cut -c1-64)"
   printf '%s\n' "$merges" | shuf -n "$SAMPLE" --random-source=<(yes "$seed") | sed 's/^/- /'
 else
