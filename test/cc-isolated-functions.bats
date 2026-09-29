@@ -2260,31 +2260,29 @@ warns_listing_wt() {
   warns_listing_wt
 }
 
-@test "exit scan Q-094: a removed standard worktree is a note; a half-removed one warns" {
+@test "exit scan Q-094: a worktree removed during the session still warns" {
   scan_repo
   std_wt agent-x
-  std_wt agent-y
   local before; before="$(git_exec_snapshot "$SCAN_WS")"
   git -C "$SCAN_WS" worktree remove "$STD_WT"
   run git_exit_scan "$SCAN_WS" "$before"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"(removed: agent-y)."* ]]
-  std_wt agent-z
-  run git_exit_scan "$SCAN_WS" "$before"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"(added: agent-z; removed: agent-y)."* ]]
-  # agent-x's working tree deleted without a prune: its git dir stays.
-  rm -rf "$SCAN_WS/.claude/worktrees/agent-x"
-  run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"- dotgit $SCAN_WS/.claude/worktrees/agent-x/.git "* ]]
-  # Its git dir made invisible to the scan (no HEAD, no commondir) but kept.
-  rm "$SCAN_WS/.git/worktrees/agent-x/HEAD" "$SCAN_WS/.git/worktrees/agent-x/commondir"
-  run git_exit_scan "$SCAN_WS" "$before"
-  [ "$status" -eq 1 ]
-  rm -rf "$SCAN_WS/.git/worktrees/agent-x"
-  run git_exit_scan "$SCAN_WS" "$before"
+  [[ "$output" == *"- commondir-file $STD_P/commondir "* ]]
+}
+
+@test "exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal" {
+  scan_repo
+  local before after pad i
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  after="$(git_exec_snapshot "$SCAN_WS")"
+  # Records sorted after the ones matched, in both snapshots, well past a pipe buffer.
+  for i in $(seq 40000); do pad+="F"$'\t'"zz"$'\t'"/p/$i"$'\t'"missing"$'\n'; done
+  set -o pipefail
+  run scan_std_worktrees "$SCAN_WS" "$before"$'\n'"$pad" "$after"$'\n'"$pad"
   [ "$status" -eq 0 ]
+  run scan_std_worktrees "$SCAN_WS" "$before"$'\n'"${pad//F$'\t'zz/W$'\t'zz}" "$after"$'\n'"${pad//F$'\t'zz/W$'\t'zz}"
+  [ "$status" -eq 1 ]
 }
 
 @test "exit scan Q-094: a private dir git would also accept (commondir variants, hooks, config, links) warns" {
@@ -2370,7 +2368,7 @@ warns_listing_wt() {
   # Git resolves these in the new worktree's own tree, which the scan never walked.
   local cfg before
   for cfg in "core.hooksPath .husky/_" "core.attributesFile .attrs" "remote.loc.url ./sub.git" \
-      "remote.loc.url file://sub.git" "core.hooksPath $TEST_TMPDIR/abs-hooks"; do
+      "remote.loc.url file://sub.git" "core.hooksPath $TEST_TMPDIR/abs-hooks" "branch.main.remote ."; do
     rm -rf "$TEST_TMPDIR/proj"
     scan_repo
     # shellcheck disable=SC2086  # key and value, split on purpose
@@ -2378,8 +2376,10 @@ warns_listing_wt() {
     before="$(git_exec_snapshot "$SCAN_WS")"
     std_wt agent-x
     run git_exit_scan "$SCAN_WS" "$before"
-    case "$cfg" in *abs-hooks) [ "$status" -eq 0 ] ;; *) warns_listing_wt ;; esac
+    case "$cfg" in *abs-hooks|*" .") [ "$status" -eq 0 ] ;; *) warns_listing_wt ;; esac
   done
+  # The container path the scan accepts is where devcontainer.json mounts the checkout.
+  grep -q "target=$GIT_EXIT_SCAN_CONTAINER_WS," "$CONFIG_SRC/devcontainer.json"
 }
 
 @test "exit scan Q-094: a session that leaves an agent worktree ends the launcher with claude's status and a note" {

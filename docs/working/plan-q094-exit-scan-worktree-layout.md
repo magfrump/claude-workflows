@@ -49,7 +49,7 @@ E3–E5 settle the key question: nothing in the private dir that git reads for e
 
 1. The exit git dir is valid (no `invalid` finding).
 2. The difference has **no config-entry (C) records** and **only** F records of kinds `dotgit`, `commondir-file`, `hooksdir`.
-3. The exit snapshot holds **no working-tree-relative path** (a new `W` record, see below): no config the scan reads has a relative `core.hooksPath` or `core.attributesFile`, or a remote (url, pushurl, insteadOf base, pushDefault / branch remote naming a path, legacy remotes/branches file) that is a relative local path (E7–E9).
+3. The exit snapshot holds **no working-tree-relative path** (a new `W` record, see below): no repo config the scan reads (your own global config is covered by B14 instead) has a relative `core.hooksPath` or `core.attributesFile`, or a remote (url, pushurl, insteadOf base, pushDefault / branch remote naming a path, legacy remotes/branches file) that is a relative local path (E7–E9).
 4. Every `commondir-file` record in the difference is at `<common>/worktrees/<n>/commondir`, where `<common>` is the checkout's own common dir (recomputed from `.git` by plain file reads and equal to the snapshot's `commondir` record), and `<n>` matches `^[A-Za-z0-9._-]+$` and is not `.` or `..`. Other names (spaces, newlines, `$'…'` quoting) are not accepted.
 5. **Added worktree `<n>`** (its `commondir-file` is new): with `P = <common>/worktrees/<n>`:
    - the difference adds exactly `hooksdir P/hooks missing` and `commondir-file P/commondir file <mode> H("../..\n")` (the snapshot-time content, via its hash);
@@ -57,7 +57,7 @@ E3–E5 settle the key question: nothing in the private dir that git reads for e
    - the back-pointer `P/gitdir` is a regular file whose whole content is `<X>/.git\n`, with `<X>` = `<ws>/<rel>` (host form) or `/workspace/<rel>` (container form), `<rel>` non-empty; the working tree is `<wt> = <ws>/<rel>`;
    - the difference adds `dotgit <wt>/.git file <mode> H(G)` and `<wt>/.git` on disk is a regular file hashing to `H(G)`, where `G` is `gitdir: P\n` or, when `<common>` is inside the checkout, `gitdir: /workspace/<common rel>/worktrees/<n>\n`;
    - container form only: if that `/workspace/…` path exists on the host, it must resolve to `P` itself (host checkout at `/workspace`); otherwise host git in the worktree would read some other directory.
-6. **Removed worktree `<n>`** (its `commondir-file` is gone): the difference removes exactly `hooksdir P/hooks missing` and `commondir-file P/commondir file <mode> H("../..\n")`, and `P` no longer exists on disk. Removed `dotgit … file …` records are paired by count: their number equals the number of removed worktrees.
+6. **Removed worktree `<n>`**: split into the stacked unit `q094b-exit-scan-worktree-removal` (decision log row 62 size cap; this unit came to 447 lines with it). In this unit any removed record warns. The stacked unit accepts a removal when the difference removes exactly `hooksdir P/hooks missing` and `commondir-file P/commondir file <mode> H("../..\n")`, `P` no longer exists on disk, and one removed `dotgit` record held exactly `gitdir: P\n` (either form). Review iteration 1 (security, Medium) showed that the first design, pairing removed `dotgit` records **by count**, let one clean removal absorb the deletion of another worktree's `.git`. Pairing is now by content.
 7. Every record in the difference is consumed by 5 or 6.
 
 A decline never errors: any read failure inside the acceptance just means "not standard", and the full warning follows (fail closed). The scan still runs no git command in the checkout, and the note names only `<n>` values restricted by rule 4, through `scan_vis`.
@@ -96,7 +96,9 @@ A decline never errors: any read failure inside the acceptance just means "not s
 | B24 | TOCTOU: the container (still running after claude exits) changes files between the snapshot and the checks | covered as far as the scan can | Rule 5 checks the snapshot-time hashes and the disk; a later change is the documented "After the scan" route, unchanged |
 | B25 | Newer git writing relative paths (`worktree.useRelativePaths`, git ≥ 2.48) | not accepted (warns) | Byte-exact rule. Not a bypass; a future false positive |
 | B26 | Worktree whose working tree is outside the checkout | not accepted (warns) | Back-pointer must be inside `<ws>` / `/workspace` |
-| B27 | Working tree removed but not pruned (`rm -rf` without `git worktree prune`) | not accepted (warns) | Only the `dotgit` record goes; rule 6 needs the whole triple. Not a bypass |
+| B27 | Working tree removed but not pruned (`rm -rf` without `git worktree prune`) | not accepted (warns) | Only the `dotgit` record goes. Here, any removal warns. In the stacked unit, count pairing did NOT cover this: another worktree's clean removal absorbed the lone `-dotgit` (security review iteration 1, confirmed by experiment). It is fixed there by pairing on content |
+| B28 | `printf \| grep -q` under the launcher's `pipefail`: an early match SIGPIPEs printf, so the check reads as "no match". For the W refusal that means it fails **open** on a large snapshot (performance review iteration 1) | covered | Pattern matches in bash (`[[ ]]`), no pipeline. The same fix was applied to the pre-existing `invalid` check in `git_exit_scan`. Test: 40k padding records |
+| B29 | `branch.<b>.remote = .` (local tracking) | covered: benign, exempt | `.` is the repository git runs in. From a linked worktree that means the same common dir and its hooks (verified: a push to `.` from the worktree ran the common `pre-receive`, not the private one). No W record |
 
 Unproven-benign shapes all warn. No family moves from covered to uncovered for the top-level checkout.
 
