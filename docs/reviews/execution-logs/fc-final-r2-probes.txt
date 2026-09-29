@@ -1,0 +1,69 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== date: 2026-09-29T07:35:42Z  locale: LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+== synthetic positives (from bats test)
+1:- **@./workflows/pr-prep.md** — the old AGENTS.md form
+2:@README.md
+3:@workflows/x.md
+4:load @~/.aws/credentials here
+5:(@./x.md)
+6:"@../y.md"
+7:[@/abs/z.md]
+count=7
+== synthetic negatives
+rc=1 (1 = no match)
+== per-line: which alternative matches each positive (grep -o)
+1:*@./
+2:@README.md
+3:@workflows/
+4: @~/
+5:(@./
+6:"@../
+7:[@/
+== extra probes (one per line; M = matched, - = not)
+-  | @package.json
+-  | @README
+-  | @notes.txt
+-  | @.claude/settings.md
+-  | @x.MD
+M  | @CLAUDE.md
+M  | @~/.claude/CLAUDE.md
+M  | see @alice/pkg on npm
+M  | install @types/node
+-  | ssh user@host:/path
+-  | [mail me](mailto:me@example.com)
+-  | <me@example.com>
+-  | foo@bar/baz
+-  | x-@./y.md
+-  | a/@./y.md
+-  | .@./y.md
+M  | see:@./y.md
+M  | —@./y.md
+-  | @@./y.md
+M  | ``@./y.md``
+-  | `` code ` @./y.md ``
+M  | @x.md.bak
+-  | @x.mdx
+M  | @x.md,
+== fenced code block with import inside
+2:@./inside-fence.md
+rc=0
+== real files
+-- AGENTS.md
+rc=1
+-- global-instructions/CLAUDE.md
+rc=1
+-- GEMINI.md
+rc=1
+-- main:AGENTS.md
+9:- **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+10:- **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+11:- **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+12:- **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+13:- **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+14:- **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+15:- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+16:- **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+18:- **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+count=9
+== raw @ occurrences in global-instructions/CLAUDE.md and AGENTS.md
+global-instructions/CLAUDE.md:76:Plugins under `~/.claude/plugins/cache/` ship skills that auto-trigger from their own descriptions, independent of the routing tables below. Auto-trigger applies only to *installed* plugins: `claude plugin install <name>@claude-plugins-official` works inside the cc-isolated sandbox (the marketplace clone is local; no image change needed) but the install lives in the per-project `~/.claude` volume and takes effect at the next session start. If one of the plugins below isn't installed in the current project's volume, install it rather than reimplementing it. The ones most relevant to routine work:
