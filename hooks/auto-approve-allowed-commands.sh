@@ -32,12 +32,14 @@
 #   cat <<EOF / $(cmd) / EOF heredoc bodies were not searched
 #   PATH=/x ls, LD_PRELOAD=  assignment prefixes were dropped before matching
 #   ls > ~/.bashrc           redirect targets were not checked
-# Row 53 found that closing them one at a time does not converge. They are
-# closed instead by class (refuses_construct): the hook never approves a
-# command with ANY command or process substitution, any VAR= assignment, or a
-# file-writing redirect. Cost: `echo "$(git rev-parse HEAD)"` now prompts.
-# Needed once hooks/wiring.json gave every cc-isolated project a global allow
-# list. Parse FAILURES fail closed too (see main).
+# Row 53 found that closing them one at a time does not converge, and so did
+# two review rounds on a class-based fix (let 'a[$(cmd)]=1', export PATH=,
+# escaped backticks in bash -c, `tr < secret`). The hook now approves only an
+# allowlist of AST SHAPES (refuses_construct): literal words, plain $NAME,
+# pipes and && || ;, and redirects that neither write nor read a path. Any
+# other construct prompts, including ones nobody has listed. Cost: compound
+# one-liners (`echo "$(git rev-parse HEAD)"`, `for ...`, `[[ ]]`) now prompt.
+# Parse FAILURES and commands that extract to nothing fail closed too.
 #
 # ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
 # CC-ISOLATED (Q-070/Q-077). Where a Claude Code sandbox runs, permissions.deny
@@ -410,9 +412,9 @@ main() {
   # Extract commands using built-in parser (NUL-delimited for multi-line command support)
   NUL_DELIM=true
   REFUSE_CONSTRUCTS=true
-  # FAIL CLOSED on a parse failure, and on any construct refuses_construct
-  # names (substitutions, assignments, file-writing redirects): extraction
-  # fails for both, so the command falls through to the normal prompt.
+  # FAIL CLOSED on a parse failure, and on any AST shape refuses_construct does
+  # not allow: extraction fails for both, so the command falls through to the
+  # normal prompt.
   # mapfile's own status is always 0, so the parser's status has to be read from the process substitution via `wait $!`
   # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
   # Without this, an unparseable command extracted to an empty list and hit the
@@ -430,9 +432,10 @@ main() {
   done
 
   # Check if no commands were found (empty input or only comments)
+  # Not approved: `let 'a[$(cmd)]=1'` extracted to nothing and used to be
+  # approved here, while bash ran the substitution (decision log row 64).
   if [[ ${#extracted_commands[@]} -eq 0 ]] || [[ -z "${extracted_commands[0]}" ]]; then
-    debug "No commands found in input, allowing"
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+    debug "No commands found in input; falling through to normal permission check"
     exit 0
   fi
 
@@ -666,6 +669,46 @@ def extract_commands:
 extract_commands | select(length > 0)
 JQEOF
 
+# jq filter for refuses_construct: prints the first reason the AST is not an
+# approvable shape, or nothing. A command name is the first Arg's literal text
+# (Lit, SglQuoted and literal-only DblQuoted parts joined, backslashes and any
+# leading path dropped, so 'ba''sh', \bash and /bin/bash all read as bash); any
+# other part (e.g. $X) makes it non-literal. The marker is \u0001, not \u0000:
+# jq 1.6's contains() treats a NUL-led needle as empty and matches everything.
+read -r -d '' SHAPE_FILTER << 'JQEOF' || true
+def lit_word:
+  [ .Parts[]?
+    | if .Type == "Lit" or .Type == "SglQuoted" then .Value
+      elif .Type == "DblQuoted" then
+        ([.Parts[]? | if .Type == "Lit" then .Value else "\u0001" end] | join(""))
+      else "\u0001" end ]
+  | join("");
+def plain_param:
+  (del(.Pos, .End, .Type, .Dollar, .Param, .Rbrace, .Short, .Length)
+   | with_entries(select(.value != null and .value != false)) | length) == 0;
+def wrappers:
+  ["bash","sh","zsh","dash","ksh","fish","eval","source",".","exec","command",
+   "builtin","env","xargs","sudo","nohup","trap","alias","enable","nice",
+   "timeout","stdbuf","watch","parallel","script","su"];
+[ .. | objects
+  | if has("Type") then
+      if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
+        then "node type \(.Type)"
+      elif .Type == "ParamExp" and (plain_param | not)
+        then "parameter expansion with an operator"
+      elif .Type == "CallExpr" and ((.Assigns // []) | length) > 0
+        then "assignment"
+      elif .Type == "CallExpr" then
+        ((.Args[0] // {}) | lit_word | gsub("\\\\"; "") | sub(".*/"; "")) as $name
+        | if $name == "" or ($name | index("\u0001") != null) then "non-literal command name"
+          elif ($name | IN(wrappers[])) then "interpreter or wrapper: \($name)"
+          else empty end
+      else empty end
+    elif (.Background // false) or (.Coprocess // false) then "background statement"
+    else empty end ]
+| first // empty
+JQEOF
+
 # Normalize shfmt-incompatible patterns
 # shfmt can't parse [[ ! X =~ Y ]] but can parse ! [[ X =~ Y ]]
 normalize_for_shfmt() {
@@ -696,10 +739,12 @@ extract_commands_raw() {
 
   debug "AST parsed successfully"
 
-  # Constructs the hook must never approve (see refuses_construct). Returning 1
+  # Shapes the hook must never approve (see refuses_construct). Returning 1
   # makes main treat it like a parse failure: fall through to the normal
-  # prompt. Checked here so every bash -c level is covered; gated on
-  # REFUSE_CONSTRUCTS so the parse_commands extractor still lists commands.
+  # prompt. bash -c / sh -c never reach the inner recursion with approval
+  # possible: refuses_construct already refuses those command names at the
+  # outer level. Gated on REFUSE_CONSTRUCTS so the parse_commands extractor
+  # still lists commands.
   if $REFUSE_CONSTRUCTS && refuses_construct "$cmd" "$ast"; then
     return 1
   fi
@@ -708,20 +753,30 @@ extract_commands_raw() {
   echo "$ast" | jq -r "$JQ_FILTER" 2>/dev/null
 }
 
-# True when the parsed command holds a construct that lets an allow-listed
-# command do more than the rule names (decision log row 64). Any of:
-#   1. Command or process substitution ($(...), `...`, <(...), >(...)) ANYWHERE
-#      in the AST. The extraction filter descends into some positions but not
-#      all ($((...)), heredoc bodies, ${x:-...}), and row 53 found that closing
-#      those one at a time does not converge; refusing every substitution does.
-#   2. An assignment on a simple command (VAR=x cmd, or a bare VAR=x):
-#      LD_PRELOAD= or PATH= turn any allowed command into arbitrary code.
-#   3. A redirect that can write a file: any operator containing '>' (>, >>,
-#      &>, &>>, >|, <>, >&), except a target of exactly /dev/null or an fd
-#      duplication (>&N, >&-). Input-only redirects (<, <<, <<<, <&) pass.
-# These mattered once hooks/wiring.json gave every cc-isolated project a
-# global allow list: without them `ls` alone could read and send the
-# credentials file or write the config volume.
+# True unless the parsed command has a SHAPE the hook may approve (decision log
+# row 64). This is an allowlist of AST shapes, not a list of bad constructs:
+# row 53, and then two rounds of review on this function, found that listing
+# bad constructs does not converge (arithmetic strings such as
+# `let 'a[$(cmd)]=1'`, `export PATH=...`, escaped backticks inside bash -c ...).
+# Anything not named here makes the hook fall through to the normal prompt,
+# including constructs nobody has thought of yet. Approvable:
+#   - node types File, CallExpr, BinaryCmd (| |& && ||), Lit, SglQuoted,
+#     DblQuoted, and ParamExp that is a plain $NAME / ${NAME} / ${#NAME}
+#     (no ${x:-}, ${!x}, ${x@P}, ${a[i]}, ${x/a/b}, ${x:1}: several of those
+#     evaluate code). So no $(...), `...`, <(...), $((...)), [[ ]], (( )),
+#     let, export/declare/local/readonly, subshells, { }, if/for/while/case,
+#     functions, time, coproc;
+#   - statements that are not backgrounded (&);
+#   - simple commands with no VAR= assignment (LD_PRELOAD=, PATH=) and whose
+#     command name is literal (not $X) and is not an interpreter or wrapper
+#     that runs its arguments as code (bash -c, eval, source, env, xargs, ...);
+#   - redirects that cannot write or read a file: any operator containing '>'
+#     (>, >>, &>, &>>, >|, <>, >&) is refused unless its target is exactly
+#     /dev/null or it duplicates an fd (>&N, >&-); an input redirect `<` or
+#     `<&` is refused unless it reads /dev/null or duplicates an fd.
+#     Here-docs and here-strings (<<, <<<) pass: their text is inline.
+# Needed once hooks/wiring.json gave every cc-isolated project a global allow
+# list: any one allowed command is an outer command for these constructs.
 #
 # WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
 # in shfmt 3.13.1) with no stability promise across versions. The operator is
@@ -729,19 +784,28 @@ extract_commands_raw() {
 # Word's Pos. Those are byte offsets into the string shfmt parsed, so $1 must be
 # that same (normalized) string, and slicing is done under LC_ALL=C (bytes).
 refuses_construct() {
-  local cmd="$1" ast="$2" op_off word_off word_end op word
+  local cmd="$1" ast="$2" op_off word_off word_end op word reason
   local LC_ALL=C
-  if jq -e '[.. | objects | select(.Type == "CmdSubst" or .Type == "ProcSubst"
-             or (.Type == "CallExpr" and ((.Assigns // []) | length) > 0))]
-            | length > 0' <<<"$ast" >/dev/null; then
-    debug "Refusing: substitution or assignment"
+  reason=$(jq -r "$SHAPE_FILTER" <<<"$ast") || reason="shape check failed"
+  if [[ -n "$reason" ]]; then
+    debug "Refusing: $reason"
     return 0
   fi
   while read -r op_off word_off word_end; do
     op=${cmd:op_off:word_off-op_off}
     op=${op//[[:space:]]/}
     word=${cmd:word_off:word_end-word_off}
-    [[ "$op" == *'>'* ]] || continue
+    # Here-docs and here-strings (<<, <<-, <<<) carry their text inline. A
+    # plain `<` (or `<&`) opens a path, and any approved command that prints its
+    # input would print that file (`tr -d x < ~/.claude/.c*`), so it passes only
+    # from /dev/null or as an fd duplication.
+    if [[ "$op" == '<<'* ]]; then continue; fi
+    if [[ "$op" == '<&' && "$word" =~ ^([0-9]+|-)$ ]]; then continue; fi
+    if [[ "$op" == '<' && "$word" == /dev/null ]]; then continue; fi
+    if [[ "$op" == '<'* && "$op" != *'>'* ]]; then
+      debug "Refusing input redirect: '$op' '$word'"
+      return 0
+    fi
     if [[ "$op" == '>&' && "$word" =~ ^([0-9]+|-)$ ]]; then continue; fi
     if [[ "$op" != '>&' && "$word" == /dev/null ]]; then continue; fi
     debug "Refusing redirect: '$op' '$word'"

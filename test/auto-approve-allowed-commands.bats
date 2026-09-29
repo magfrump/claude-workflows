@@ -464,40 +464,77 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   not_approved
 }
 
-# --- File-writing redirects are never approved (fact-check 2026-09-28) ---
-# Used to be an accepted gap (`ls > ~/.bashrc`); with a shared global allow
-# list in hooks/wiring.json it would let every listed command write any path.
+# --- Only approvable AST shapes are approved (decision log 64) ---
+# Row 53 accepted four extraction gaps; closing them by listing bad constructs
+# failed twice in review (each round found a new family). The hook now
+# approves only an allowlist of shapes. Each command below is a bypass family
+# a review round found; all must prompt with the outer commands allowed.
+SHAPE_RULES='["Bash(ls:*)","Bash(wc:*)","Bash(tr:*)","Bash(echo:*)","Bash(read:*)","Bash(cd:*)","Bash(bash:*)","Bash(sh:*)"]'
 
-@test "a redirect that can write a file is not approved, at any nesting level" {
+@test "a redirect that can write a file, or read a path, is not approved" {
   local cmd
   for cmd in 'ls > out' 'ls >> out' 'ls &> out' 'ls &>> out' 'ls >| out' \
-    'ls <> out' 'ls >& out' 'ls 2> err.log' 'x=$(ls > out)' 'bash -c "ls > out"' \
-    'ls | wc -l > out' 'echo x > ~/.claude/settings.json' 'ls é > out' \
-    'ls > "/dev/null"'; do
-    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' '[]'
+    'ls <> out' 'ls >& out' 'ls 2> err.log' 'ls | wc -l > out' \
+    'echo x > ~/.claude/settings.json' 'ls é > out' 'ls > "/dev/null"' \
+    'tr -d x < ~/.claude/.c*' 'wc -l < in' 'tr a b 0< in'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
     not_approved || { echo "approved: $cmd"; return 1; }
   done
 }
 
-@test "any command or process substitution, and any VAR= assignment, is not approved (log 64)" {
-  # Every nesting context, including ones the extraction filter never searched:
-  # $(( )), heredoc bodies, ${x:-...}. Plus assignment prefixes (LD_PRELOAD=,
-  # PATH=) and bare assignments.
+@test "substitutions, arithmetic, tests and compound commands are not approved" {
   local cmd
-  for cmd in 'ls $(pwd)' 'ls `pwd`' 'wc -l <(ls)' 'ls $((1 + $(wc -l)))' \
-    $'wc -l <<EOF\n$(ls)\nEOF' 'ls ${x:-$(pwd)}' 'echo "$(ls)"' \
-    'LD_PRELOAD=/workspace/x.so ls' 'PATH=/workspace/bin:$PATH ls' 'x=1; ls' \
-    'bash -c "ls \$(pwd)"'; do
-    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' '[]'
+  for cmd in 'ls $(pwd)' 'ls `pwd`' 'wc -l <(ls)' 'ls $((1 + $(wc -l)))' 'ls $((1 + 2))' \
+    $'wc -l <<EOF\n$(ls)\nEOF' 'echo "$(ls)"' "let 'a[\$(id)]=1'" \
+    "[[ 'a[\$(id)]' -eq 0 ]]" "read x <<< 'a[1]'; ls \$((x))" '(( 1 ))' \
+    '(ls)' '{ ls; }' 'if ls; then ls; fi' 'for i in 1; do ls; done' \
+    'while false; do ls; done' 'case x in x) ls;; esac' 'f(){ ls; }; f' \
+    'time ls' 'coproc ls' 'ls &'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
     not_approved || { echo "approved: $cmd"; return 1; }
   done
 }
 
-@test "arithmetic, parameter expansion and quoted heredocs without substitution are still approved" {
+@test "assignments, declarations and parameter-expansion operators are not approved" {
   local cmd
-  for cmd in 'ls $((1 + 2))' 'ls "$HOME"' 'ls ${HOME:-/tmp}' $'wc -l <<\'EOF\'\n$(ls)\nEOF' \
-    $'wc -l <<EOF\nplain\nEOF'; do
-    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)"]' '[]'
+  for cmd in 'LD_PRELOAD=/workspace/x.so ls' 'PATH=/workspace/bin:$PATH ls' 'x=1; ls' \
+    'export PATH=/x:$PATH; ls' 'export LD_PRELOAD=/workspace/x.so; ls' 'declare -x Y=1' \
+    'readonly Y=1' 'typeset -x Y=1' 'local Y=1' \
+    'ls ${x:-y}' 'ls ${!x}' 'ls ${x@P}' 'ls ${a[1]}' 'ls ${a[$(id)]}' 'ls ${x:$(id)}' \
+    'ls ${x/a/b}' 'ls ${x:1}'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
+    not_approved || { echo "approved: $cmd"; return 1; }
+  done
+}
+
+@test "interpreters, wrappers and non-literal command names are not approved" {
+  # Even with bash:* and sh:* allowed: their arguments are code, and the
+  # hook cannot see what bash will decode (\` inside "...", $'\x3e').
+  local cmd
+  for cmd in 'bash -c ls' 'sh -c ls' '/bin/bash -c ls' '\bash -c ls' "'ba''sh' -c ls" \
+    'bash -c "ls \`id\`"' $'bash -c $\'ls \\x3e f\'' 'eval ls' 'env ls' 'xargs ls' \
+    'source x' '. x' 'exec ls' 'command ls' 'builtin cd' 'nohup ls' '$X ls' '"$X" ls'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
+    not_approved || { echo "approved: $cmd"; return 1; }
+  done
+}
+
+@test "a command that extracts to nothing is not approved (used to be: 'no commands found, allowing')" {
+  local cmd
+  for cmd in "let 'a[\$(id)]=1'" '' ' ' '# just a comment'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
+    not_approved || { echo "approved: [$cmd]"; return 1; }
+  done
+}
+
+@test "the approvable shapes are still approved" {
+  local cmd
+  for cmd in 'ls -la | wc -l' 'ls && wc -l x || echo none; ls' '! ls' 'ls |& wc -l' \
+    'ls "$HOME" ${HOME} ${#HOME} $1 "$@"' "ls 'a b' \$'c\\n' \$\"d\"" \
+    'ls 2>/dev/null' 'ls >/dev/null 2>&1' 'ls &>/dev/null' 'ls 2>&1' 'ls 1>&-' \
+    'wc -l < /dev/null' 'ls 0<&-' 'wc -l <<< hi' $'wc -l <<EOF\nplain $HOME\nEOF' \
+    $'wc -l <<\'EOF\'\n$(ls)\nEOF' 'ls é 2>/dev/null' 'cd /tmp; ls'; do
+    run_hook_rules "$cmd" "$SHAPE_RULES" '[]'
     approved || { echo "not approved: $cmd"; return 1; }
   done
 }
@@ -508,13 +545,4 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   run bash "$HOOK" parse_commands 'ls $(pwd) > out'
   [ "$status" -eq 0 ]
   [[ "$output" == *ls* ]] || { echo "extractor output: $output"; return 1; }
-}
-
-@test "/dev/null targets, fd duplication and input redirects are still approved" {
-  local cmd
-  for cmd in 'ls 2>/dev/null' 'ls >/dev/null 2>&1' 'ls &>/dev/null' 'ls 2>&1' \
-    'ls 1>&-' 'ls < in' 'wc -l <<< hi' 'ls | wc -l' 'ls é 2>/dev/null'; do
-    run_hook_rules "$cmd" '["Bash(ls:*)","Bash(wc:*)"]' '[]'
-    approved || { echo "not approved: $cmd"; return 1; }
-  done
 }
