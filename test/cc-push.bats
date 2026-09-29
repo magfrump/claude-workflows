@@ -260,9 +260,10 @@ not_pushed() {
 }
 
 # Q-093: a commondir whose whole content is `.` (the 1-byte file a host tool keeps
-# writing) or `.\n` names .git itself, so the push goes ahead. git reads the other
-# spellings refused below either as elsewhere or (./) as self too; only these two
-# byte strings are accepted.
+# writing) or `.\n` names .git itself, so the push goes ahead. Of the spellings
+# refused below, git reads some as elsewhere or as no repository (`..`, ` .`,
+# `.x`) and some as .git itself too (`./`, `.\n\n`, `.\r\n`, `.\0`, the absolute
+# path); only the two byte strings above are accepted.
 @test "Q-093: a commondir holding exactly '.' or '.\\n' is accepted and the push goes ahead" {
   local c="$T/co/.git/commondir"
   printf . > "$c"
@@ -300,8 +301,10 @@ not_pushed() {
   rmdir "$c"; mkfifo "$c"
   run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
   [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
-  # A symlink to a file holding exactly `.` is refused by the helper itself.
-  rm "$c"; printf . > "$T/dot"; ln -s "$T/dot" "$c"
+  # A symlink to a file holding exactly `.` is refused by the helper itself. Its
+  # target name is 1 byte, so the link's own size (stat without -L) would pass the
+  # size check: only the helper's -L test refuses it.
+  rm "$c"; printf . > "$T/co/.git/d"; ln -s d "$c"
   run timeout 30 bash "$CC_PUSH" --remote "$T/upstream.git" --yes "$T/co"
   [ "$status" -eq 1 ]; [[ "$output" == *"commondir exists"* ]]
   [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" != "$SESSION_HEAD" ]

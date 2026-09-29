@@ -48,7 +48,9 @@ two bytes as hex (`head -c 2 | od -An -tx1`, whitespace removed) are `2e` or
 `2e0a`. Hex, because bash's `read` drops NUL bytes and `$(…)` strips trailing
 newlines: either would make `.\0` or `.\n\n` compare equal to `.`.
 `check_checkout` calls it where it now refuses any `commondir`; the refusal text
-stays, qualified ("other than a self-reference"). No git runs in the checkout.
+stays, with a note naming the one accepted form (as shipped: "it can name
+another repository … The only one accepted is a regular file holding exactly
+`.`, or `.` and a newline"). No git runs in the checkout.
 `gitdir_valid` then resolves the common dir to `<g>/.`, i.e. `<g>`: unchanged.
 
 ## Pre-mortem: bypass families
@@ -58,19 +60,19 @@ through `commondir`. How?
 
 | # | Family | Covered? | How |
 |---|---|---|---|
-| B1 | Bytes git reads as elsewhere (`..`, `../../x`, an absolute path) | Covered | Only `2e`/`2e0a` pass; tests for `..`, `../../elsewhere` |
+| B1 | Bytes git reads as elsewhere (`..`, `../../x`, an absolute path) | Covered | Only `2e`/`2e0a` pass; tests for `..` and the absolute path (new), `../../elsewhere` (the existing http-alternates/commondir test) |
 | B2 | Bytes git reads as self but a lax parser accepts along with bad ones (`./`, `.//`, `.\r\n`, `.\n\n`) | Covered (refused) | exact hex compare; tests for `./`, ` .` |
 | B3 | Whitespace / CRLF / multiple lines | Covered (refused) | size ≤ 2 and exact hex; `.\n.\n` is 4 bytes |
 | B4 | NUL tricks (`.\0/../x`; bash `read` dropping NULs) | Covered | size cap + `od` hex, not `read`; git reads `.\0…` as self anyway |
-| B5 | Symlinked `commondir` (to a file holding `.` that points elsewhere by being read relative to another dir, or a target swapped later) | Covered | helper refuses `-L` before anything else, independent of the later `find` symlink scan |
+| B5 | Symlinked `commondir` (to a file holding `.` that points elsewhere by being read relative to another dir, or a target swapped later) | Covered | helper refuses `-L` before anything else, independent of the later `find` symlink scan. (git resolves a relative commondir against the gitdir, not the link's directory, so this is defence in depth; the test uses a 1-byte link target so only the `-L` test refuses it, mutation-checked) |
 | B6 | `commondir` a directory, FIFO, socket or device (a read blocks) | Covered | `-f` and not `-L` checked before any read; a FIFO is never opened; test with `timeout` |
 | B7 | Large file | Covered | `stat` size must be 1 or 2 before reading; the read is `head -c 2` anyway |
 | B8 | Unreadable file | Covered | `head` fails → empty hex → refused |
 | B9 | Empty file | Covered (refused) | size 0; git dies on it too |
 | B10 | Absolute path to the gitdir itself | Covered (refused) | not in the accepted set, kept minimal; test |
-| B11 | TOCTOU: file replaced (by a FIFO, or new bytes) between the check and git's read | **Not covered (residual)** | same residual as every other check in `check_checkout`; the running-container refusal (`check_no_container`) is the mitigation, as today |
-| B12 | `commondir` at the checkout ROOT (bare-repo fallback) | Unchanged | `looks_like_gitdir` still refuses any root `commondir`; not relaxed |
-| B13 | A self-`commondir` changing what else git reads (`config.worktree`, `worktrees/`) | Covered by existing checks | `.` resolves common dir = gitdir, so git reads the same files as with no `commondir`; `config.worktree` is still include-checked; `worktreeConfig` behaviour does not depend on `commondir` |
+| B11 | TOCTOU: file replaced (by a FIFO, or new bytes) between the check and git's read | **Not covered (residual)** | same residual as every other check in `check_checkout`; the running-container refusal (`check_no_container`) is the mitigation, as today. cc-push's own read of the file is bounded (`timeout 5 head -c 2`), so a FIFO swapped in after the type test cannot hang it (review, performance F1) |
+| B12 | `commondir` at the checkout ROOT (bare-repo fallback) | Unchanged | `looks_like_gitdir` still refuses a root `commondir` that is a regular file (or a link to one), exactly as before; not relaxed |
+| B13 | A self-`commondir` changing what else git reads (`config.worktree`, `worktrees/`) | Covered by existing checks | `.` resolves common dir = gitdir, so git reads the same files as with no `commondir`; `config.worktree` is still include-checked. Verified after review (git 2.39.5, scratch repo with a linked worktree and `extensions.worktreeConfig=true`, `uploadpack.hideRefs` set per worktree): upload-pack --strict's ref advertisement, the `config.worktree` values read and HEAD are identical with commondir absent, `.` and `.\n` |
 
 Retrospective stories considered: (1) the parser used `$(cat)` and accepted
 `.\n\n…` or `.\0/../x` → B3/B4, hex compare. (2) a FIFO named `commondir` hung
@@ -87,7 +89,7 @@ bypass families enumerated and marked. `/architecture-review`: not triggered
 1. `cc-push.sh`: add `commondir_is_self`; use it in `check_checkout`; update the
    header's refusal list. 2. `guides/cc-isolated-usage.md`: note the exception.
 3. `test/cc-push.bats`: accept `.` and `.\n` (push succeeds); refuse `..`, `./`,
-   ` .`, `../../elsewhere`, the gitdir's absolute path, empty, a directory, a FIFO
+   ` .`, `.\n\n`, `.\r\n`, `.\0`, `.x`, the gitdir's absolute path, empty, a directory, a FIFO
    (under `timeout`), a symlink to a file holding `.`.
 4. `bats test/cc-push.bats`; `scripts/run-tests.sh test/cc-push.bats`.
 5. Review-fix loop (`code-review`, security-reviewer key).

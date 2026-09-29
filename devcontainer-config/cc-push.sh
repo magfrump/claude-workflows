@@ -265,15 +265,15 @@ find_checkout() {
 # when there is no commondir; a stray one of these keeps appearing in the main
 # checkout (Q-091). Nothing else passes, not even other spellings git also reads
 # as self (`./`, `.\r\n`, `.\0...`, the absolute path). The type test comes
-# before any read, so a FIFO is never opened; the size must be 1 or 2 bytes; the
-# bytes are compared as hex, because bash's read drops NULs and $(...) strips
-# trailing newlines.
+# before any read, so a FIFO is never opened (and the read is timed, should one
+# be swapped in between); the size must be 1 or 2 bytes; the bytes are compared
+# as hex, because bash's read drops NULs and $(...) strips trailing newlines.
 commondir_is_self() {
   local c="$1" s hex
   [ ! -L "$c" ] && [ -f "$c" ] || return 1
   s="$(stat -c %s -- "$c" 2>/dev/null)" || return 1
   case "$s" in 1|2) ;; *) return 1 ;; esac
-  hex="$(head -c 2 -- "$c" 2>/dev/null | od -An -tx1)" || return 1
+  hex="$(timeout 5 head -c 2 -- "$c" 2>/dev/null | od -An -tx1)" || return 1
   hex="${hex//[[:space:]]/}"
   [ "$hex" = 2e ] || [ "$hex" = 2e0a ]
 }
@@ -292,7 +292,7 @@ check_checkout() {
   fi
   # A commondir holding only `.` names .git itself: allowed (commondir_is_self).
   if { [ -e "$g/commondir" ] || [ -L "$g/commondir" ]; } && ! commondir_is_self "$g/commondir"; then
-    die "$g/commondir exists (a linked worktree's layout): it names another repository, which git would read. (Only a regular file holding just \`.\`, a self-reference, is accepted.) $run_main"
+    die "$g/commondir exists (a linked worktree's layout): it can name another repository, which git would read. (The only one accepted is a regular file holding exactly \`.\`, or \`.\` and a newline: .git itself.) $run_main"
   fi
   for f in objects/info/alternates objects/info/http-alternates; do
     if [ -e "$g/$f" ] || [ -L "$g/$f" ]; then
