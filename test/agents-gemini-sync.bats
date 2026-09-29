@@ -34,36 +34,48 @@ setup() {
 # usage hook. global-instructions/CLAUDE.md loads in every project, so it is
 # held to the same rule.
 #
-# An import is `@` followed by a path: `@/abs`, `@./x`, `@../x`, `@~/x`, or a
-# relative `@dir/x` / `@x.md`. The `@` must not follow a word character, so an
-# email address or `foo@bar/baz` is not one. Inline code spans are removed
-# first: Claude Code does not expand imports inside them.
+# The finder mirrors Claude Code's own import extractor (read from the
+# v2.1.284 binary during review; the docs were unreachable offline): an `@` at
+# the start of a text token or after whitespace, followed by `./`, `~/`, `/` or
+# a character in [A-Za-z0-9._-]. So `@README`, `@x.md`, `@dir/x` and even
+# `@alice` are imports, while `(@./x)`, `foo@bar` and email addresses are not.
+# Emphasis markers (`**@./x**`) do not start a new token in the markdown text,
+# so `*` and `_` count as token starts here. Fenced code blocks and inline
+# code spans (single or double backtick) are blanked first, keeping line
+# numbers: Claude Code skips both.
 find_imports() {
   # shellcheck disable=SC2016  # the backticks are literal regex characters
-  sed -E 's/`[^`]*`//g' "$1" \
-    | grep -nE '(^|[^[:alnum:]_.@/-])@(~?/|\.{1,2}/|[[:alnum:]_][[:alnum:]_.-]*(/|\.md([^[:alnum:]]|$)))'
+  awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
+    | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
+    | grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
 }
 
-@test "the import finder catches every @-import form and nothing else" {
+@test "the import finder matches Claude Code's import grammar" {
   local pos="$BATS_TEST_TMPDIR/pos.md" neg="$BATS_TEST_TMPDIR/neg.md"
   cat > "$pos" <<'EOF'
 - **@./workflows/pr-prep.md** — the old AGENTS.md form
+@README
 @README.md
+@package.json
 @workflows/x.md
 load @~/.aws/credentials here
-(@./x.md)
-"@../y.md"
-[@/abs/z.md]
+see @../y.md
+@/abs/z.md
+@.claude/x.md
+@x.MD
+ping @alice about it
 EOF
   cat > "$neg" <<'EOF'
 mail someone@example.com today
-ping @alice about it
-use `@./x.md` in a code span
+use `@./x.md` in a code span, or ``@./y.md`` in a double one
 the @ sign alone, and foo@bar/baz
-decorators like @dataclass
+(@./x.md) "@../y.md" [@/abs/z.md]
+```
+@./inside/a/fence.md
+```
 EOF
   run find_imports "$pos"
-  [ "$(printf '%s\n' "$output" | grep -c .)" -eq 7 ] || { echo "missed imports; matched:"; echo "$output"; return 1; }
+  [ "$(printf '%s\n' "$output" | grep -c .)" -eq 11 ] || { echo "missed imports; matched:"; echo "$output"; return 1; }
   run find_imports "$neg"
   [ -z "$output" ] || { echo "false positives:"; echo "$output"; return 1; }
 }
@@ -71,6 +83,7 @@ EOF
 @test "AGENTS.md and the global instructions have no @-imports" {
   local f matches failed=0
   for f in "$AGENTS" "$REPO_ROOT/global-instructions/CLAUDE.md"; do
+    [ -r "$f" ] || { echo "$f is missing or unreadable"; failed=1; continue; }
     if matches=$(find_imports "$f"); then
       echo "$f contains @-imports, which Claude Code expands into every session:"
       echo "$matches"
