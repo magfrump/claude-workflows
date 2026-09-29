@@ -1,0 +1,9 @@
+1..8
+ok 1 skill has required frontmatter fields (name, description, when/trigger)
+ok 2 skill identifies itself as a router in its title
+ok 3 skill body instructs the agent to read and follow the workflow file
+ok 4 the workflow file it routes to actually exists
+ok 5 skill body states the 3+ tradeoff-bearing options trigger test
+ok 6 skill body defines the brainstorming-supersession boundary
+ok 7 skill is a thin stub, not a re-implementation of the workflow
+ok 8 skill does not restate the full diverge/diagnose/match/decide process inline

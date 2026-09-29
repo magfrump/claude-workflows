@@ -1,0 +1,79 @@
+Tue Sep 29 08:28:21 UTC 2026
+test/agents-gemini-sync.bats
+test/skills/frontmatter-fields.bats
+### timeout 120 bats test/skills/workflow-routers.bats (cwd /workspace/.claude/wt-routers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=0
+### timeout 120 bats test/skills/divergent-design-router.bats (cwd /workspace/.claude/wt-routers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..8
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 skill has required frontmatter fields (name, description, when/trigger)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 skill identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 skill body instructs the agent to read and follow the workflow file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 the workflow file it routes to actually exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 skill body states the 3+ tradeoff-bearing options trigger test
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 skill body defines the brainstorming-supersession boundary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 skill is a thin stub, not a re-implementation of the workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 skill does not restate the full diverge/diagnose/match/decide process inline
+exit=0
+### timeout 120 bats test/agents-gemini-sync.bats (cwd /workspace/.claude/wt-routers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the import finder flags every form Claude Code imports, and not emails or code spans
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 AGENTS.md and the global instructions have no @-imports
+exit=0
+### timeout 120 bats test/skills/frontmatter-fields.bats (cwd /workspace/.claude/wt-routers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 all skills have required frontmatter fields
+exit=0

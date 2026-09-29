@@ -1,0 +1,24 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..8
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 skill has required frontmatter fields (name, description, when/trigger)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 skill identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 skill body instructs the agent to read and follow the workflow file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 the workflow file it routes to actually exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 skill body states the 3+ tradeoff-bearing options trigger test
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 skill body defines the brainstorming-supersession boundary
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 skill is a thin stub, not a re-implementation of the workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 skill does not restate the full diverge/diagnose/match/decide process inline

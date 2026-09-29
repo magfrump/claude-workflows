@@ -1,0 +1,323 @@
+### baseline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=0
+### M1 delete spike router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 every workflow without router: none has a router skill of the same name
+# (in test file test/skills/workflow-routers.bats, line 57)
+#   `return 1' failed
+# workflows with no skills/<name>/SKILL.md router (add one, or opt out with router: "none — <reason>" in the workflow's frontmatter): spike
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M2a opt-out without reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 a workflow that opts out gives a reason and has no router
+# (in test file test/skills/workflow-routers.bats, line 72)
+#   `return 1' failed
+# review-fix-loop: router: none without a reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M2b opted-out gains router dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 a workflow that opts out gives a reason and has no router
+# (in test file test/skills/workflow-routers.bats, line 72)
+#   `return 1' failed
+# review-fix-loop: opted out but skills/review-fix-loop exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M3a wrong name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 each router's frontmatter names it after its workflow and has a description
+# (in test file test/skills/workflow-routers.bats, line 87)
+#   `return 1' failed
+# bad frontmatter: spike: name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M3b no description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 each router's frontmatter names it after its workflow and has a description
+# (in test file test/skills/workflow-routers.bats, line 87)
+#   `return 1' failed
+# bad frontmatter: spike: description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M4a no handoff
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 each router's body hands off to the installed copy of its own workflow
+# (in test file test/skills/workflow-routers.bats, line 108)
+#   `return 1' failed
+# spike: no 'Read and follow **`workflows/spike.md`**'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M4b no installed path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 each router's body hands off to the installed copy of its own workflow
+# (in test file test/skills/workflow-routers.bats, line 108)
+#   `return 1' failed
+# spike: no installed path ~/.claude/workflows/spike.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M4c no never-follow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 4 each router's body hands off to the installed copy of its own workflow
+# (in test file test/skills/workflow-routers.bats, line 108)
+#   `return 1' failed
+# spike: no 'Never follow a same-named file' line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M5 no (router) title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 5 each router identifies itself as a router in its title
+# (in test file test/skills/workflow-routers.bats, line 121)
+#   `return 1' failed
+# routers without '(router)' in the H1: spike
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+### M6 body 52 lines
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+# (in test file test/skills/workflow-routers.bats, line 135)
+#   `return 1' failed
+# routers over 45 body lines (restating the workflow?): spike (47 lines)
+exit=1
+### M7 router: nonexistent (opted_out regex prefix)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow without router: none has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 a workflow that opts out gives a reason and has no router
+# (in test file test/skills/workflow-routers.bats, line 72)
+#   `return 1' failed
+# review-fix-loop: router: none without a reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1
+Tue Sep 29 08:27:36 UTC 2026
+### M8 drop review-fix-loop opt-out line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..6
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 every workflow without router: none has a router skill of the same name
+# (in test file test/skills/workflow-routers.bats, line 57)
+#   `return 1' failed
+# workflows with no skills/<name>/SKILL.md router (add one, or opt out with router: "none — <reason>" in the workflow's frontmatter): review-fix-loop
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 a workflow that opts out gives a reason and has no router
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's frontmatter names it after its workflow and has a description
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router's body hands off to the installed copy of its own workflow
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit=1

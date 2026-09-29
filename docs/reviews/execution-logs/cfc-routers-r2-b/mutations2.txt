@@ -1,0 +1,28 @@
+=== m5b 30 extra lines (2026-09-29T07:37:24Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+ok 2 each router's frontmatter names it after its workflow and has description and when
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+not ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m5b/test/skills/workflow-routers.bats, line 103)
+#   `return 1' failed
+# routers over 45 body lines (restating the workflow?): spike (50 lines)
+bats exit: 1
+=== body line counts (branch)
+skills/branch-strategy/SKILL.md 20
+skills/codebase-onboarding/SKILL.md 20
+skills/divergent-design/SKILL.md 37
+skills/parallel-worktrees/SKILL.md 19
+skills/pr-prep/SKILL.md 19
+skills/research-plan-implement/SKILL.md 22
+skills/review-fix-loop/SKILL.md 20
+skills/spike/SKILL.md 20
+skills/task-decomposition/SKILL.md 21
+skills/user-testing-workflow/SKILL.md 19
+=== whole-file grep for handoff phrase after deleting body handoff (m3/spike)
+0
+grep exit 1
+=== description lines naming workflow in m3/spike
+4:  Route a feasibility question into workflows/spike.md: graveyard check, one-sentence question
+26:`~/.claude/workflows/spike.md`). Do not restate it here; this file is a stub so the router

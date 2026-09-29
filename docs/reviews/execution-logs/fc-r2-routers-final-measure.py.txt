@@ -1,0 +1,20 @@
+import sys,re
+for s in sys.argv[1:]:
+    lines=open(f"skills/{s}/SKILL.md").read().split('\n')
+    fm=[];n=0
+    for l in lines:
+        if l=='---':
+            n+=1; 
+            if n==2: break
+            continue
+        if n==1: fm.append(l)
+    i=[k for k,l in enumerate(fm) if l.startswith('description:')][0]
+    parts=[]
+    for l in fm[i+1:]:
+        if l.startswith('  '): parts.append(l.strip())
+        else: break
+    d=' '.join(parts)
+    nf=d.find('Not for'); tr=d.find('Triggers:')
+    # end of not-for sentence
+    nfe = d.find('.', nf)+1 if nf>=0 else -1
+    print(repr(d[250:]));print(f"{s}: len={len(d)} NotFor_start={nf} NotFor_end={nfe} Triggers_start={tr} | chars 240-250: {d[240:250]!r}")
