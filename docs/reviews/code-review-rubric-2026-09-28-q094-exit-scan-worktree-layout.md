@@ -44,4 +44,18 @@ One multi-source cluster: `cc-exit-scan.sh:~325`, where fact-check A1 and securi
 ## ✅ Confirmed Good
 None asserted. The critics' endorsements (the added-worktree path's byte-exact checks) are pending execution verification; the loop pass skipped Stage 2.5.
 
+---
+
+## Iteration 2 (`--range 5a6d689..HEAD`, reviewed at c32a734 / 5fadfc2)
+
+Fact-check (k=1): 36 claims. 1 Incorrect: the stacked unit was described as existing. It now exists as branch `q094b-exit-scan-worktree-removal`. 5 Stale: "or removed" leftovers, fixed in 5fadfc2. 3 Mostly accurate, fixed (the header's "." exception, B28's coverage wording, the host-dependent ms figure). Critics: security and performance. Api-consistency was gated off: nothing on the public surface changed beyond doc text.
+
+| # | Tier | Source | Finding | Status |
+|---|---|---|---|---|
+| R3 | 🔴 | security (Medium, experiment-confirmed) | The `.` remote exemption also covered `url.<base>.insteadOf` bases, where `.` starts a relative path (`.evil`), so a planted hook in the new worktree passed with the note | Fixed: insteadOf bases of `.` always make a W record; a test case pins it and a mutation that drops the fix fails it. The older gap underneath (the rewritten URL is never walked) is now a guide Known route |
+| I1 | 🟢 | security Info | A container still running after exit can swap `P/gitdir` for a FIFO after the checks, so the scan hangs, then Ctrl-C and exit 4 | Accepted: fails closed; the existing "After the scan" route (B24) |
+| — | — | performance | No findings. The `[[ ]]` matches are linear (12–18 ms/MiB); the O(n²) is gone (3,000 worktrees: 165 s → 0.2 s); the note holds at 300 and 600 worktrees | — |
+
+Status after the iteration-2 fixes: 0 Must Fix open, pending the confirming pass (iteration 3).
+
 Single-sample review; absence of findings is not an attestation.

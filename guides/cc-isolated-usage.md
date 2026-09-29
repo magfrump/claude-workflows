@@ -381,8 +381,10 @@ opens or closes a route.
   repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
-  take a long time. If you stop it, treat the checkout as unscanned. Each
-  new worktree adds tens of milliseconds more to the check that allows the note.
+  take a long time. If you stop it, treat the checkout as unscanned.
+- **A URL rewritten by `url.<base>.insteadOf`.** The base is walked, never the
+  rewritten URL, so a remote rewritten to a local path the session plants runs
+  that repository's hooks on push.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
