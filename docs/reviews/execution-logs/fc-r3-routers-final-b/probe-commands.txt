@@ -1,0 +1,18 @@
+Mutation probe for test/skills/workflow-routers.bats (fact-check replicate b, final pass on 33fdfd3)
+cwd: /workspace/.claude/wt-routers ; run finished 2026-09-29T08:27:23Z
+Each case: fresh scratch copy of skills/, workflows/ and test/skills/workflow-routers.bats in
+$SCRATCH/mut, one mutation, then `cd $SCRATCH/mut && timeout 60 bats test/skills/workflow-routers.bats > <case>.txt`.
+The scratch tree was deleted afterwards. No tracked file was mutated.
+
+baseline            no change                                              exit 0 (6/6 ok)
+m1-missing-router   rm -r skills/spike                                     exit 1, only test 1 fails
+m1b-new-workflow    add workflows/newflow.md with no router                exit 1, only test 1 fails
+m2a-no-reason       review-fix-loop router: "none" (reason removed)        exit 1, only test 2 fails
+m2b-optout-has-dir  mkdir skills/review-fix-loop                           exit 1, only test 2 fails
+m3a-name            spike SKILL.md name: spikey                            exit 1, only test 3 fails
+m3b-desc            spike SKILL.md description block deleted               exit 1, only test 3 fails
+m4a-handoff         "Read and follow **`workflows/spike.md`**" -> "Read **..."  exit 1, only test 4 fails
+m4b-installed       ~/.claude/workflows/spike.md -> "the installed copy"   exit 1, only test 4 fails
+m4c-never           "Never follow a same-named file" -> "Ignore same-named files"  exit 1, only test 4 fails
+m5-title            "# Spike (router)" -> "# Spike"                        exit 1, only test 5 fails
+m6-long             30 lines appended to spike SKILL.md body               exit 1, only test 6 fails

@@ -1,7 +1,7 @@
 ---
 name: pr-prep
 description: >
-  Route a finished branch into workflows/pr-prep.md: review-fix loop, cleanup, then local merge or PR. Use code-review alone for a review with no landing. Triggers: "ready to merge", "open a PR", "ready for review", "package this up", "land this branch".
+  Route a finished branch into the pr-prep workflow: review-fix loop, cleanup, then local merge or PR. Not for a review with no landing (code-review). Triggers: "ready to merge", "open a PR", "ready for review", "package this up", "land this branch".
 ---
 
 > On bad output, see guides/skill-recovery.md

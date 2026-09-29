@@ -1,7 +1,7 @@
 ---
 name: spike
 description: >
-  Route a feasibility question into workflows/spike.md: timeboxed, throwaway branch, recorded verdict. Not for building something already known to work (research-plan-implement). Triggers: "can we use X", "is X feasible", "will X work", "proof of concept".
+  Route a feasibility question into the spike workflow: timeboxed, throwaway branch, recorded verdict. Not for building what is known to work (research-plan-implement). Triggers: "can we use X", "is X feasible", "will X work", "proof of concept".
 ---
 
 > On bad output, see guides/skill-recovery.md

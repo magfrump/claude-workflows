@@ -1,7 +1,7 @@
 ---
 name: research-plan-implement
 description: >
-  Route a feature or unclear bug that spans files into workflows/research-plan-implement.md. Not for one-line fixes, several unrelated asks (parallel-worktrees) or choosing among 3+ approaches (divergent-design). Triggers: "implement X", "add a feature", "fix this bug".
+  Route a multi-file feature or unclear bug into the RPI workflow. Not for one-line fixes, feasibility (spike), unrelated asks (parallel-worktrees) or 3+ approaches (divergent-design). Triggers: "implement X", "add a feature", "fix this bug".
 ---
 
 > On bad output, see guides/skill-recovery.md

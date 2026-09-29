@@ -10,7 +10,7 @@
 # (its SKILL.md: "so divergent design competes at the skill-selection layer").
 # A router per workflow puts each one there. (Hook-based usage counts are not
 # cited: they under-count silently, Q-017.)
-# divergent-design's own, stricter contract lives in divergent-design-router.bats.
+# divergent-design-router.bats adds checks specific to that router.
 #
 # Adding a workflow: either add skills/<name>/SKILL.md, or, for a workflow that
 # only runs inside another one, put `router: "none — <reason>"` in its
@@ -69,6 +69,19 @@ routed_names() {
   done
   if [ ${#bad[@]} -gt 0 ]; then
     printf '%s\n' "${bad[@]}"
+    return 1
+  fi
+}
+
+@test "every router skill points at a workflow that exists" {
+  local f name bad=()
+  for f in "$REPO_ROOT"/skills/*/SKILL.md; do
+    body "$f" | grep -qiE '^# .*\(router\)' || continue
+    name=$(basename "$(dirname "$f")")
+    [ -f "$REPO_ROOT/workflows/$name.md" ] || bad+=("$name")
+  done
+  if [ ${#bad[@]} -gt 0 ]; then
+    echo "router skills with no workflows/<name>.md (orphaned): ${bad[*]}"
     return 1
   fi
 }

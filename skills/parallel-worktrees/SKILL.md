@@ -1,7 +1,7 @@
 ---
 name: parallel-worktrees
 description: >
-  Route a message bundling 2+ unrelated tasks into workflows/parallel-worktrees.md: split, route each, build in parallel worktrees. Not for one task spanning subsystems (task-decomposition). Triggers: "a few things:", "couple of bugs", a list of asks.
+  Route a message bundling 2+ unrelated tasks into the parallel-worktrees workflow: split, route each, build in parallel worktrees. Not for one task spanning subsystems (task-decomposition). Triggers: "a few things:", "couple of bugs", a list of asks.
 ---
 
 > On bad output, see guides/skill-recovery.md

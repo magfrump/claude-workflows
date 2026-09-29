@@ -1,7 +1,7 @@
 ---
 name: codebase-onboarding
 description: >
-  Route orientation in an unfamiliar or long-untouched codebase into workflows/codebase-onboarding.md, producing one reusable orientation doc. Not for a single lookup. Triggers: "help me understand this repo", "I just cloned this", "onboard me", "back after months".
+  Route orientation in an unfamiliar or long-untouched codebase into the onboarding workflow, producing a reusable orientation doc. Not for a single lookup (Explore). Triggers: "help me understand this repo", "I just cloned this", "onboard me".
 ---
 
 > On bad output, see guides/skill-recovery.md

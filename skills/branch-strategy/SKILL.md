@@ -1,7 +1,7 @@
 ---
 name: branch-strategy
 description: >
-  Route multi-branch integration into workflows/branch-strategy.md: dev integration branch, rebuilding it from open PRs, stale-branch triage. Not for one feature branch. Triggers: "merge all open PRs", "build an integration branch", "rebuild dev", "stale branches".
+  Route multi-branch integration into the branch-strategy workflow: dev integration branch, rebuilding it from open PRs, stale branches. Not for one branch (pr-prep). Triggers: "merge all open PRs", "build an integration branch", "rebuild dev".
 ---
 
 > On bad output, see guides/skill-recovery.md

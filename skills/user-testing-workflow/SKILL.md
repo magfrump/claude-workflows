@@ -1,7 +1,7 @@
 ---
 name: user-testing-workflow
 description: >
-  Route usability-test work into workflows/user-testing-workflow.md: scoping, moderator script, pilot, analysis, findings. Not for reviewing a UI without users (ui-visual-review). Triggers: "user test", "usability test", "moderator script", "SUS score".
+  Route usability-test work into the user-testing workflow: scoping, moderator script, pilot, analysis, findings. Not for a UI review without users (ui-visual-review). Triggers: "user test", "usability test", "moderator script", "SUS score".
 ---
 
 > On bad output, see guides/skill-recovery.md

@@ -1,7 +1,7 @@
 ---
 name: task-decomposition
 description: >
-  Route one task spanning several subsystems into workflows/task-decomposition.md: parallel research, then sequential build. Not for several unrelated asks (parallel-worktrees). Triggers: "this touches auth, billing and jobs", "migrate X, Y and Z", "cross-cutting change".
+  Route one task spanning several subsystems into the task-decomposition workflow: parallel research, then sequential build. Not for several unrelated asks (parallel-worktrees). Triggers: "this touches auth, billing and jobs", "cross-cutting change".
 ---
 
 > On bad output, see guides/skill-recovery.md
