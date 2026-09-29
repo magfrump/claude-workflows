@@ -60,7 +60,7 @@ through `commondir`. How?
 
 | # | Family | Covered? | How |
 |---|---|---|---|
-| B1 | Bytes git reads as elsewhere (`..`, `../../x`, an absolute path) | Covered | Only `2e`/`2e0a` pass; tests for `..` and the absolute path (new), `../../elsewhere` (the existing http-alternates/commondir test) |
+| B1 | Bytes git reads as elsewhere (`..`, `../../x`, an absolute path) | Covered | Only `2e`/`2e0a` pass; tests for `..` (new) and `../../elsewhere` (the existing http-alternates/commondir test); an absolute path elsewhere is refused by the same exact-hex check but not tested separately (the absolute-path test writes the gitdir itself: B10) |
 | B2 | Bytes git reads as self but a lax parser accepts along with bad ones (`./`, `.//`, `.\r\n`, `.\n\n`) | Covered (refused) | exact hex compare; tests for `./`, ` .` |
 | B3 | Whitespace / CRLF / multiple lines | Covered (refused) | size ≤ 2 and exact hex; `.\n.\n` is 4 bytes |
 | B4 | NUL tricks (`.\0/../x`; bash `read` dropping NULs) | Covered | size cap + `od` hex, not `read`; git reads `.\0…` as self anyway |
@@ -72,7 +72,7 @@ through `commondir`. How?
 | B10 | Absolute path to the gitdir itself | Covered (refused) | not in the accepted set, kept minimal; test |
 | B11 | TOCTOU: file replaced (by a FIFO, or new bytes) between the check and git's read | **Not covered (residual)** | same residual as every other check in `check_checkout`; the running-container refusal (`check_no_container`) is the mitigation, as today. cc-push's own read of the file is bounded (`timeout 5 head -c 2`), so a FIFO swapped in after the type test cannot hang it (review, performance F1) |
 | B12 | `commondir` at the checkout ROOT (bare-repo fallback) | Unchanged | `looks_like_gitdir` still refuses a root `commondir` that is a regular file (or a link to one), exactly as before; not relaxed |
-| B13 | A self-`commondir` changing what else git reads (`config.worktree`, `worktrees/`) | Covered by existing checks | `.` resolves common dir = gitdir, so git reads the same files as with no `commondir`; `config.worktree` is still include-checked. Verified after review (git 2.39.5, scratch repo with a linked worktree and `extensions.worktreeConfig=true`, `uploadpack.hideRefs` set per worktree): upload-pack --strict's ref advertisement, the `config.worktree` values read and HEAD are identical with commondir absent, `.` and `.\n` |
+| B13 | A self-`commondir` changing what else git reads (`config.worktree`, `worktrees/`) | Covered by existing checks | `.` resolves common dir = gitdir, so git reads the same files as with no `commondir`; `config.worktree` is still include-checked. Verified after review (git 2.39.5, scratch repo with a linked worktree and `extensions.worktreeConfig=true`, `uploadpack.hideRefs` set per worktree): upload-pack --strict's ref advertisement, the `config.worktree` values read and HEAD are identical with commondir absent, `.` and `.\n` (protocol v0); and under `protocol.version=2` (cc-push's default on git ≥ 2.39.4), `ls-remote` output plus a full fetch into a bare clone (refs, object count) are identical too (review pass 2, D9) |
 
 Retrospective stories considered: (1) the parser used `$(cat)` and accepted
 `.\n\n…` or `.\0/../x` → B3/B4, hex compare. (2) a FIFO named `commondir` hung

@@ -265,8 +265,10 @@ find_checkout() {
 # when there is no commondir; a stray one of these keeps appearing in the main
 # checkout (Q-091). Nothing else passes, not even other spellings git also reads
 # as self (`./`, `.\r\n`, `.\0...`, the absolute path). The type test comes
-# before any read, so a FIFO is never opened (and the read is timed, should one
-# be swapped in between); the size must be 1 or 2 bytes; the bytes are compared
+# before any read, so a FIFO is never opened (and the read is timed, so one
+# swapped in between cannot hang cc-push; one a live writer feeds `.` is the
+# check-then-use race every check here has, and find -P below still refuses a
+# FIFO left behind); the size must be 1 or 2 bytes; the bytes are compared
 # as hex, because bash's read drops NULs and $(...) strips trailing newlines.
 commondir_is_self() {
   local c="$1" s hex

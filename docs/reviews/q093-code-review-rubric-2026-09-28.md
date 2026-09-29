@@ -51,6 +51,21 @@ No prior overrides matched this diff by location. Row 135 (2026-09-27, exit scan
 | git 2.39.5 reads `.` and `.\n` exactly as it reads an absent commondir | ✅ Confirmed (executed) | `rev-parse --git-common-dir` gives the gitdir, and `ls-remote` via `git-upload-pack --strict` succeeds. The scratchpad `cdexp.sh` and fact-check `exp.log` both show this. | Fact-check (executed) | for-orchestrator-synthesis |
 | Only `2e` and `2e0a` are accepted | ✅ Confirmed (executed) | The security probe of 13 inputs and the fact-check hex runs show this. The bats loop refuses 8 spellings plus empty, directory, FIFO and symlink. | Fact-check + security (executed) | for-orchestrator-synthesis |
 
+## Pass 2 (confirming): `2c8163f..b9f6cc4`
+
+Pass 2 ran a fact-check (k=1, opus) and then three critics: security (opus), and performance plus api-consistency combined in one opus agent. There were **0 🔴 and 0 🟡.** The fact-check verified 12 claims and rated 1 Mostly accurate: plan row B1 counted the absolute-path test as "elsewhere" coverage, but that test writes the gitdir itself. That was fixed in the plan.
+
+| # | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| P2-1 | B13 had been verified on protocol v0 only; cc-push runs v2. | Security pass 2 (D9) | Informational | Fixed. `b13v2.sh` in the scratchpad ran `protocol.version=2` `ls-remote` plus a full fetch into a bare clone. Refs, object count and hideRefs were identical for absent, `.` and `.\n`, and `GIT_TRACE_PACKET` showed `version 2`. The plan row is updated. |
+| P2-2 | A FIFO swapped in, fed `.` by a live writer and then closed, passes the helper. The new comment could be read as saying a swapped FIFO is refused. | Security pass 2 | Informational | Comment clarified. This is the existing residual B11: it needs `--allow-running`, and `find -P` still refuses any FIFO left behind. |
+| P2-3 | The header says each such file "names another object store", while the message now says "can name". | api pass 2 | Informational | Won't-Fix. The header sentence covers alternates too, where "names" is accurate. |
+| P2-4 | When the timeout fires, the refusal gives no stall-specific message. | performance pass 2 | Informational | Won't-Fix. It only occurs on the race path, which is already guarded. |
+
+After pass 2, one comment-only change went into `cc-push.sh` (P2-2) and the plan got text edits. No critic re-ran on them. The final test gate is `run-tests.sh` over cc-push, cc-isolated-functions and install-host under `LC_ALL=C`: 299/299 pass.
+
+**Final status: ✅ PASSES.** Two consecutive passes had no 🔴 and no open 🟡. This is still a single-sample review, so an empty findings list is not proof the code is clean.
+
 ## 🧩 Composition check
 
 The fact-check, security and api-consistency findings cluster at `cc-push.sh:291-296` (A3). Disposition: the defects are distinct, and each finding already states its own wording fix. The fact-check and security F1 cluster at `test/cc-push.bats:303` (C1) is the same defect reported twice, merged into one row. Nothing was composed.
