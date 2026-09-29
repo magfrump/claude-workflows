@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-093](#q-093--cc-push-commondir-recurs) | you: judgment | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
 | [Q-094](#q-094--exit-scan-worktree-noise) | you: judgment | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
+| [Q-095](#q-095--allowlist-size-waiver) | you: judgment | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -152,6 +153,23 @@ Every cc-isolated session that leaves an agent worktree behind exits with the fu
 
 - **Interim:** [3]. Nothing changes. Q-084 step 1 is still testable on a scratch repo with no worktrees.
 - **If the answer differs:** nothing is built yet.
+
+### Q-095 · allowlist-size-waiver
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so every cc-isolated session gets it at container start. The unit is 915 changed code lines, over the ~400-line review cap (decision log 62), and almost all of it is one flat data list. Waive the cap for this unit?
+
+- **Why it's yours:** only you can waive the cap.
+- **Read:** `git show 5d929dd` · the new `_comment` lines in `hooks/wiring.json` · decision log 62
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Waive (Recommended)** | Review it as one unit: read the comment, the tests and the two dropped rules, and skim the list against your host copy. | One review pass | A bad rule hides in a long list; it can only widen `allow`, never beat a deny. |
+| **[2] Split by rule group** | Stack units of under 400 lines each (e.g. core/git, language toolchains, cloud/infra), each with its own review loop. | Three or four review loops over what is a verbatim copy | Loop overhead with no gain in scrutiny. |
+| **[3] Trim, then review** | Cut the list to the rules that matter in a Linux container (drop macOS-only, cloud CLIs with no credentials), aiming under 400. | Deciding what to cut | The list diverges from the host copy; later syncs need a diff by hand. |
+
+- **Interim:** the branch is committed and unmerged; nothing is installed.
+- **If the answer differs:** [2] re-cuts the one commit into stacked branches; [3] edits the list, then reviews.
 
 ### Q-092 · drop-hook-deny-reader
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
