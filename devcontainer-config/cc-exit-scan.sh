@@ -72,6 +72,20 @@ logical_workspace() {
 # Any change to one of these is a finding, even an inert one such as user.name. The
 # key list below only labels report lines.
 #
+# STANDARD WORKTREES (Q-094 [1]). When every difference is a linked worktree
+# added or removed in git's own layout (agent worktrees outlive sessions), the
+# scan prints one `note:` and returns 0 (scan_std_worktrees has the rule). In a
+# linked worktree git takes config, hooks and info/attributes from the common
+# dir, never the private one (tested on git 2.39.5; the one exception,
+# config.worktree under extensions.worktreeConfig, refuses the note). A relative
+# core.hooksPath, core.attributesFile or local remote (a remote of "." excepted,
+# but not an insteadOf base of "." or "") in repo config (the checkout's or an
+# embedded repo's) would
+# resolve in the new worktree's own tree, unscanned: those leave W records, and
+# any W record refuses the note. (Your own config's relative hooksPath is walked
+# in each new worktree, including one whose .git names the container path, as
+# `git worktree repair` would point it here; its records refuse the note too.)
+#
 # FAIL CLOSED. A directory that cannot be listed, a file that cannot be read, a
 # config git cannot parse, or a file too large to hash (over 64 MiB, or past 1 GiB
 # in all: _snap_size_ok) makes the snapshot fail: at launch the launcher refuses
@@ -134,9 +148,14 @@ scan_git_dirs() {
 # (bash dynamic scoping): _snap (the records), _snap_seen (walked dirs), _snap_ws,
 # _snap_gd, _snap_common, _snap_tmp, _snap_names/_snap_rnames (remote names). Each
 # returns 1 after printing a reason on stderr when something cannot be read.
+# (_snap_hash_str, _snap_file_is and _snap_unq, further down, are silent helpers
+# of scan_std_worktrees, which declares the _snap_bytes _snap_file_is needs.)
 # Records are tab-separated:
 #   F <kind> <path %q> <attrs>     a file, dir or link host git reads
 #   C <config %q> <key> <value>    one config entry (labels the report only)
+#   W <kind> <config or path %q>   a path git resolves in the working tree it runs
+#                                  in (read by scan_std_worktrees; never reported,
+#                                  and it changes only with a C or F record)
 
 # _snap_fail <printf format> <args...>: the reason on stderr, every byte outside
 # printable ASCII (line breaks included) shown as '?'; returns 1.
@@ -270,6 +289,15 @@ _snap_path() {
   esac
 }
 
+# _snap_wrel <kind> <where> <value>: a W record when <value> is a relative path,
+# which git resolves in the working tree it runs in: in a linked worktree added
+# later, that is a tree the scan never walked (scan_std_worktrees then warns).
+_snap_wrel() {
+  # shellcheck disable=SC2088  # matching a literal "~/" in the value
+  case "$3" in ""|/*|"~/"*) return 0 ;; esac
+  _snap+="W"$'\t'"$1"$'\t'"$(printf '%q' "$2")"$'\n'
+}
+
 # _snap_inside_ws <path>: whether <path> (existing or not) resolves inside the
 # checkout — the only tree the container can write.
 _snap_inside_ws() {
@@ -302,7 +330,7 @@ _snap_worktree_of() {
   gd="$(cd "$(dirname -- "$1")" 2>/dev/null && pwd -P)" || gd="$(dirname -- "$1")"
   if [ "$gd" = "$_snap_gd" ] || [ "$gd" = "$_snap_common" ]; then
     printf '%s' "$_snap_ws"
-  elif v="$(cd / && git --no-pager config --file "$1" --no-includes --get core.worktree 2>/dev/null)"; then
+  elif [ -f "$1" ] && v="$(cd / && git --no-pager config --file "$1" --no-includes --get core.worktree 2>/dev/null)"; then
     _snap_path "$v" "$gd"
   elif [ "${gd##*/}" = .git ]; then
     printf '%s' "${gd%/*}"
@@ -329,6 +357,9 @@ _snap_remote() {
     *://*) return 0 ;;
   esac
   if [[ "$p" == *:* ]] && [[ "${p%%:*}" != */* ]]; then return 0; fi
+  # "." is the repository git runs in (a local-tracking branch's remote): in a
+  # linked worktree, the same common dir and hooks. Not a W record.
+  [ "$p" = . ] || _snap_wrel remote "$p" "$p"
   case "$p" in /*) ;; *) p="$base/$p" ;; esac
   for c in "$p" "$p.git"; do
     _snap_inside_ws "$c" || continue
@@ -364,6 +395,7 @@ _snap_config() {
     _snap+="C"$'\t'"$(printf '%q' "$f")"$'\t'"${key//$'\t'/?} ${t//$'\t'/?}"$'\n'
     case "$key" in
       core.hookspath)
+        _snap_wrel "$key" "$f" "$val"
         [ -z "$val" ] || _snap_hooks "$(_snap_path "$val" "$base")" || return 1 ;;
       include.path|includeif.*.path)
         [ -n "$val" ] || continue
@@ -371,6 +403,7 @@ _snap_config() {
         _snap_file include "$t" || return 1
         if [ -f "$t" ]; then _snap_config "$t" "$base" || return 1; fi ;;
       core.attributesfile)
+        _snap_wrel "$key" "$f" "$val"
         [ -z "$val" ] || _snap_file attributes "$(_snap_path "$val" "$base")" || return 1 ;;
       remote.pushdefault|branch.*.remote|branch.*.pushremote)
         # A remote name, or a URL/path when no remote has that name: decided once
@@ -386,6 +419,7 @@ _snap_config() {
       url.*.insteadof|url.*.pushinsteadof)
         # url.<base>.insteadOf rewrites matching URLs to <base>.
         t="${key#url.}"; t="${t%.*}"
+        case "$t" in ""|.) _snap_wrel "$key" "$f" ./ ;; esac   # a base "" or "." starts a relative path
         _snap_remote "$t" "$base" || return 1 ;;
     esac
   done < "$out"
@@ -515,6 +549,20 @@ _snap_dotgit_target() {
   else
     return 0
   fi
+  [ -d "$g" ] || return 0
+  (cd "$g" 2>/dev/null && pwd -P) || true
+}
+
+# _snap_container_target <path of a .git file>: for "gitdir: <container ws>/
+# <rel>" (git in the container wrote it; GIT_EXIT_SCAN_CONTAINER_WS) naming
+# nothing here, the host twin <ws>/<rel> if it is a dir, else nothing. Host git
+# stops at such a file, but `git worktree repair` rewrites it to that twin.
+_snap_container_target() {
+  local line g
+  [ -f "$1" ] && [ ! -L "$1" ] || return 0
+  line="$(_snap_first_line "$1")" || return 1
+  case "$line" in "gitdir: $GIT_EXIT_SCAN_CONTAINER_WS"/?*) ;; *) return 0 ;; esac
+  g="$_snap_ws/${line#"gitdir: $GIT_EXIT_SCAN_CONTAINER_WS"/}"
   [ -d "$g" ] || return 0
   (cd "$g" 2>/dev/null && pwd -P) || true
 }
@@ -669,6 +717,8 @@ git_exec_snapshot() {
       [ "$f" != "$_snap_ws/.git" ] || continue
       _snap_dotgit "$f" || { rc=1; break; }
       g="$(_snap_dotgit_target "$f")" || { rc=1; break; }
+      # A container-form .git: walk your config as it will apply after a repair.
+      [ -n "$g" ] || g="$(_snap_container_target "$f")" || { rc=1; break; }
       [ -z "$g" ] || _snap_host_config "$g" "$f" "${f%/*}" || { rc=1; break; }
     done < "$list"
   fi
@@ -739,9 +789,194 @@ scan_diff() {
     | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n -k3 | cut -f3-
 }
 
+# Where the container sees the checkout (devcontainer.json's workspaceMount
+# target). Git in the container writes absolute paths under it into a new
+# worktree's `.git` file and back-pointer.
+GIT_EXIT_SCAN_CONTAINER_WS=/workspace
+
+# _snap_hash_str <string>: _snap_hash of exactly those bytes.
+_snap_hash_str() {
+  local h
+  h="$(printf '%s' "$1" | sha256sum)"
+  printf '%s' "${h:0:16}"
+}
+
+# _snap_unq <%q string>: prints the string printf %q quoted, for its backslash
+# form only ($'…' and '…' forms return 1; only those can end in a newline, which
+# $(…) would drop). The result is checked by quoting it again, so a wrong decode
+# declines instead of passing.
+_snap_unq() {
+  local q="$1" s="" c i
+  case "$q" in \$\'*|\'*|"") return 1 ;; esac
+  for ((i = 0; i < ${#q}; i++)); do
+    c="${q:i:1}"
+    if [ "$c" = '\' ]; then i=$((i + 1)); c="${q:i:1}"; fi
+    s+="$c"
+  done
+  [ "$(printf '%q' "$s")" = "$q" ] || return 1
+  printf '%s' "$s"
+}
+
+# _snap_file_is <path> <hash>: <path> is a regular file, not a link, within the
+# size cap, whose bytes hash to <hash>.
+_snap_file_is() {
+  local h
+  [ -f "$1" ] && [ ! -L "$1" ] || return 1
+  _snap_size_ok "$1" 2>/dev/null || return 1
+  h="$(_snap_hash "$1" 2>/dev/null)" || return 1
+  [ "$h" = "$2" ]
+}
+
+# scan_std_worktrees <ws> <before> <after>: 0 and one `note:` line when every
+# difference is a linked worktree of the checkout's own common dir added or
+# removed in git's standard layout; else 1, silent (the caller warns). Anything
+# it cannot read or match declines; nothing passes on error. P = <common>/
+# worktrees/<n>, <n> of [A-Za-z0-9._-]. Only dotgit, commondir-file and hooksdir
+# records differ, and the exit snapshot has no W record. Removed <n>: gone
+# `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
+# "../..\n", P gone on disk, one gone `dotgit` record that held exactly
+# "gitdir: P\n" (either form), and at that record's path no .git and a
+# directory (the old working tree) gone or not a git dir (looks_like_gitdir).
+# Added <n>:
+# new `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
+# "../..\n"; on disk P and worktrees/ are real dirs, P has no hooks, config,
+# config.worktree or symlink, P/gitdir is exactly "<ws or container ws>/<rel>/
+# .git\n", and a new `dotgit <ws>/<rel>/.git` is a regular file of exactly
+# "gitdir: P\n" or its container form (which, if it exists here, must be P),
+# at snapshot time and now. It also declines <n> of . or .., a back-pointer
+# over 4097 bytes, a <rel> with ., .. or empty parts, a working tree inside the
+# common dir, and the container form when the common dir is outside the
+# checkout. Added paths are compared as the %q strings the records hold,
+# recomputed; a removal decodes only its dotgit path (_snap_unq).
+scan_std_worktrees() {
+  local ws="$1" before="$2" after="$3" dirs common wsp ccommon="" cws="$GIT_EXIT_SCAN_CONTAINER_WS"
+  # _snap_bytes: _snap_size_ok's running total (unset under set -u otherwise).
+  local diff line rec q attrs n p hk dk k wtrel wt g h ok std re pre lnk why _snap_bytes=0
+  local -a added=() removed=()
+  local -A left=() used=() dot=()
+  # Pattern matches, not `printf | grep -q`: under the launcher's pipefail an
+  # early match SIGPIPEs printf, and the pipeline reads as "no match".
+  [[ $'\n'"$after" != *$'\n'W$'\t'* ]] || return 1
+  dirs="$(scan_git_dirs "$ws" 2>/dev/null)" || return 1
+  common="${dirs#*$'\n'}"
+  wsp="$(cd "$ws" 2>/dev/null && pwd -P)" || return 1
+  # The same common dir the exit snapshot recorded (plain file reads, no git).
+  line="F"$'\t'"commondir"$'\t'"$(printf '%q' "$ws/.git")"$'\t'"$(printf '%q' "$common")"
+  [[ $'\n'"$after"$'\n' == *$'\n'"$line"$'\n'* ]] || return 1
+  case "$common" in
+    "$wsp") ccommon="$cws" ;;
+    "$wsp"/*) ccommon="$cws${common#"$wsp"}" ;;
+  esac
+  # The record-level difference: +<added line>, -<removed line>.
+  diff="$(LC_ALL=C awk 'FNR == NR { b[$0] = 1; next } { a[$0] = 1 }
+    END { for (k in a) if (!(k in b)) print "+" k; for (k in b) if (!(k in a)) print "-" k }' \
+    <(printf '%s\n' "$before") <(printf '%s\n' "$after"))" || return 1
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in
+      [+-]F$'\t'dotgit$'\t'*) left["$line"]=1; dot["${line%$'\t'*}"]="$line" ;;
+      [+-]F$'\t'commondir-file$'\t'*|[+-]F$'\t'hooksdir$'\t'*) left["$line"]=1 ;;
+      *) return 1 ;;
+    esac
+  done <<< "$diff"
+  [ "${#left[@]}" -gt 0 ] || return 1
+  std="$(_snap_hash_str $'../..\n')"
+  pre="$(printf '%q' "$common/worktrees/")"
+  for rec in "${!left[@]}"; do
+    case "$rec" in [+-]F$'\t'commondir-file$'\t'*) ;; *) continue ;; esac
+    line="${rec#?F$'\t'commondir-file$'\t'}"
+    q="${line%%$'\t'*}"; attrs="${line#*$'\t'}"
+    case "$q" in "$pre"*/commondir) ;; *) return 1 ;; esac
+    n="${q#"$pre"}"; n="${n%/commondir}"
+    [[ "$n" =~ ^[A-Za-z0-9._-]+$ ]] && [ "$n" != . ] && [ "$n" != .. ] || return 1
+    p="$common/worktrees/$n"
+    [ "$q" = "$(printf '%q' "$p/commondir")" ] || return 1
+    re="^file [0-7]+ $std\$"
+    [[ "$attrs" =~ $re ]] || return 1
+    hk="${rec:0:1}F"$'\t'"hooksdir"$'\t'"$(printf '%q' "$p/hooks")"$'\t'"missing"
+    [ -n "${left[$hk]:-}" ] || return 1
+    used["$rec"]=1; used["$hk"]=1
+    if [ "${rec:0:1}" = - ]; then
+      [ ! -e "$p" ] && [ ! -L "$p" ] || return 1
+      # Its own `.git` file gone too: a removed dotgit record that held exactly
+      # "gitdir: P\n" (either form). Another worktree's .git never pairs.
+      ok="" h="$(_snap_hash_str "gitdir: $p"$'\n')" g=""
+      [ -z "$ccommon" ] || g="$(_snap_hash_str "gitdir: $ccommon/worktrees/$n"$'\n')"
+      re="^file [0-7]+ ($h${g:+|$g})\$"
+      for dk in "${!dot[@]}"; do
+        if [ "${dk:0:1}" != - ] || [ -n "${used[${dot[$dk]}]:-}" ]; then continue; fi
+        if [[ "${dot[$dk]##*$'\t'}" =~ $re ]]; then ok="${dot[$dk]}"; break; fi
+      done
+      [ -n "$ok" ] || return 1
+      # The old working tree, if still there, must not look like a git dir, nor
+      # hold a .git (one behind a symlinked parent makes no record): a
+      # repository left in its place is not "removed".
+      q="${ok%$'\t'*}"; q="${q#?F$'\t'dotgit$'\t'}"
+      wt="$(_snap_unq "$q")" || return 1
+      case "$wt" in */.git) ;; *) return 1 ;; esac
+      [ ! -e "$wt" ] && [ ! -L "$wt" ] || return 1
+      wt="${wt%/.git}"
+      ! looks_like_gitdir "$wt" || return 1
+      used["$ok"]=1; removed+=("$n")
+      continue
+    fi
+    # Added: the private dir as git made it, on disk now.
+    [ -d "$common/worktrees" ] && [ ! -L "$common/worktrees" ] && [ -d "$p" ] && [ ! -L "$p" ] || return 1
+    _snap_file_is "$p/commondir" "$std" || return 1
+    for k in hooks config config.worktree; do [ ! -e "$p/$k" ] && [ ! -L "$p/$k" ] || return 1; done
+    lnk="$(find -P "$p" -type l -print -quit 2>/dev/null)" && [ -z "$lnk" ] || return 1
+    # The back-pointer names the working tree, inside the checkout.
+    # Regular file first: a FIFO there would block the read.
+    [ -f "$p/gitdir" ] && [ ! -L "$p/gitdir" ] || return 1
+    [ "$(stat -c %s -- "$p/gitdir" 2>/dev/null || echo 99999)" -le 4097 ] || return 1   # PATH_MAX + \n
+    line="$(_snap_first_line "$p/gitdir" 2>/dev/null)" || return 1
+    _snap_file_is "$p/gitdir" "$(_snap_hash_str "$line"$'\n')" || return 1
+    case "$line" in
+      "$wsp"/?*/.git) wtrel="${line#"$wsp"/}" ;;
+      "$cws"/?*/.git) [ -n "$ccommon" ] || return 1; wtrel="${line#"$cws"/}" ;;
+      *) return 1 ;;
+    esac
+    wtrel="${wtrel%/.git}"
+    case "/$wtrel/" in */../*|*/./*|*//*) return 1 ;; esac
+    wt="$wsp/$wtrel"
+    case "$wt/" in "$common"/*) return 1 ;; esac
+    # Its `.git` file: a new record, and the bytes git writes, then and now.
+    dk="${dot["+F"$'\t'"dotgit"$'\t'"$(printf '%q' "$wt/.git")"]:-}"
+    [ -n "$dk" ] || return 1
+    attrs="${dk##*$'\t'}"
+    ok=""
+    for g in "$p" ${ccommon:+"$ccommon/worktrees/$n"}; do
+      h="$(_snap_hash_str "gitdir: $g"$'\n')"
+      re="^file [0-7]+ $h\$"
+      if [[ "$attrs" =~ $re ]] && _snap_file_is "$wt/.git" "$h"; then ok="$g"; break; fi
+    done
+    [ -n "$ok" ] || return 1
+    # The container form names a host path too: if it exists, it must be P.
+    if [ "$ok" != "$p" ] && { [ -e "$ok" ] || [ -L "$ok" ]; }; then
+      [ "$(cd "$ok" 2>/dev/null && pwd -P)" = "$p" ] || return 1
+    fi
+    used["$dk"]=1
+    added+=("$n")
+  done
+  # Every record accounted for by one of the worktrees above.
+  for rec in "${!left[@]}"; do [ -n "${used[$rec]:-}" ] || return 1; done
+  # Names are [A-Za-z0-9._-] only (checked above); the caller still scan_vis-es.
+  line=""
+  [ "${#added[@]}" -eq 0 ] || line="added: $(printf '%s\n' "${added[@]}" | LC_ALL=C sort | tr '\n' ' ')"
+  [ "${#removed[@]}" -eq 0 ] || line="${line:+${line% }; }removed: $(printf '%s\n' "${removed[@]}" | LC_ALL=C sort | tr '\n' ' ')"
+  why="They take config and hooks from the checkout's own .git"
+  if [ "${#removed[@]}" -gt 0 ]; then
+    [ "${#added[@]}" -eq 0 ] && why="Removed ones' git dir and .git file are gone" ||
+      why="Removed ones' git dir and .git file are gone, and added ones take config and hooks from the checkout's own .git"
+  fi
+  echo "note: exit scan: only linked worktrees in git's standard layout changed (${line% }). $why, so this is not a finding."
+}
+
 # git_exit_scan <ws> <launch snapshot> [<logical ws>]: 0 when nothing the tripwire
-# records changed; 1 (warning on stderr, naming each item) when something did; 2
-# when the exit state could not be read. 0 is not "safe": see LIMITS above.
+# records changed, or only standard linked worktrees did (one `note:` line on
+# stderr: scan_std_worktrees); 1 (warning on stderr, naming each item) when
+# anything else did; 2 when the exit state could not be read, or the snapshots
+# differ but nothing renders. 0 is not "safe": see LIMITS above.
 # <logical ws> must be what the launch snapshot was taken with.
 git_exit_scan() {
   local ws="$1" before="$2" lws="${3:-}" after changes errf reason
@@ -765,10 +1000,19 @@ git_exit_scan() {
   # A git dir git would not accept is a finding even when it was so at launch:
   # host git would go looking for a repository elsewhere (the checkout root).
   local invalid=""
-  if printf '%s\n' "$after" | LC_ALL=C grep -q $'^F\tgitdir-valid\t[^\t]*\tinvalid'; then
+  # A pattern match, not `printf | grep -q` (pipefail: see scan_std_worktrees).
+  local re=$'(^|\n)F\tgitdir-valid\t[^\t\n]*\tinvalid'
+  if [[ "$after" =~ $re ]]; then
     invalid="    ! $(printf '%q' "$ws/.git") is not a valid git directory now: host git would look for a repository elsewhere (the checkout root)"
   fi
   [ "$before" != "$after" ] || [ -n "$invalid" ] || return 0
+  # Only linked worktrees added or removed in git's standard layout (STANDARD
+  # WORKTREES above): a note, not a finding.
+  local note
+  if [ -z "$invalid" ] && note="$(scan_std_worktrees "$ws" "$before" "$after" 2>/dev/null)"; then
+    printf '%s\n' "$note" | scan_vis >&2
+    return 0
+  fi
   changes="$(scan_diff "$before" "$after")"
   if [ -n "$invalid" ]; then changes="${changes:+$changes$'\n'}$invalid"; fi
   # The snapshots differ but nothing rendered (e.g. a file changed while the

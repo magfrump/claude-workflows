@@ -17,7 +17,8 @@
 # Push a session's commits with cc-push, never with host git in the checkout.
 #
 # EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
-#   0  success; after a session: the exit scan found nothing, and claude's own
+#   0  success; after a session: the exit scan found nothing (or only standard
+#      linked worktrees, with a note on stderr), and claude's own
 #      exit status is passed through — so a 1-4 from claude itself reads like
 #      one of the codes below;
 #   1  an error, including a launch refused because the scan's baseline could

@@ -2203,3 +2203,299 @@ STUB
   [ "$st" -eq 4 ]
   grep -q 'the exit scan was interrupted, so it checked nothing' "$TEST_TMPDIR/out"
 }
+
+# --- Exit scan: linked worktrees in git's standard layout (Q-094 [1]) ------------
+# A worktree left in the layout `git worktree add` writes is one note and status
+# 0; any other shape, or anything else changed, still warns (status 1).
+
+# std_wt <name>: a worktree at <ws>/.claude/worktrees/<name>, as an agent leaves
+# one. Sets STD_WT and STD_P (its private git dir).
+std_wt() {
+  git -C "$SCAN_WS" worktree add -q "$SCAN_WS/.claude/worktrees/$1" -b "wt-$1"
+  STD_WT="$SCAN_WS/.claude/worktrees/$1"
+  STD_P="$SCAN_WS/.git/worktrees/$1"
+}
+
+# warns_listing_wt: the full warning, which still lists the worktree.
+warns_listing_wt() {
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"WARNING: this session changed what HOST git reads"* ]]
+  [[ "$output" == *"dotgit $STD_WT/.git "* ]]
+  [[ "$output" != *"note:"* ]]
+}
+
+@test "exit scan Q-094: a new worktree in git's standard layout is one note and status 0; plus a plant, a warning" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$output" | wc -l)" -eq 1 ]
+  [[ "$output" == "note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
+  # Plus an unrelated plant: the full warning, listing both.
+  plant_hook "$SCAN_WS/.git/hooks" pre-push
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+  [[ "$output" == *"+ hook $SCAN_WS/.git/hooks/pre-push "* ]]
+  no_ran
+}
+
+@test "exit scan Q-094: the container's /workspace form is accepted unless it is another host dir" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  GIT_EXIT_SCAN_CONTAINER_WS="$TEST_TMPDIR/cws"
+  printf 'gitdir: %s/.git/worktrees/agent-x\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_WT/.git"
+  printf '%s/.claude/worktrees/agent-x/.git\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_P/gitdir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  # A host whose checkout really is at the container path: the same dir.
+  ln -s "$SCAN_WS" "$GIT_EXIT_SCAN_CONTAINER_WS"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  # Some other directory there: host git in the worktree would read it.
+  rm "$GIT_EXIT_SCAN_CONTAINER_WS"
+  mkdir -p "$GIT_EXIT_SCAN_CONTAINER_WS/.git/worktrees/agent-x"
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+}
+
+@test "exit scan Q-094: YOUR relative hooksPath is walked in a container-form worktree too" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  GIT_EXIT_SCAN_CONTAINER_WS="$TEST_TMPDIR/cws"
+  printf 'gitdir: %s/.git/worktrees/agent-x\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_WT/.git"
+  printf '%s/.claude/worktrees/agent-x/.git\n' "$GIT_EXIT_SCAN_CONTAINER_WS" > "$STD_P/gitdir"
+  plant_hook "$STD_WT/.githooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+  [[ "$output" == *"$STD_WT/.githooks/pre-commit"* ]]
+  # What the note would have hidden: git worktree repair points .git here.
+  git -C "$STD_WT" worktree repair 2>/dev/null || git -C "$SCAN_WS" worktree repair "$STD_WT"
+  [ "$(cat "$STD_WT/.git")" = "gitdir: $STD_P" ]
+}
+
+@test "exit scan Q-094: a removed standard worktree is a note; a half-removed one warns" {
+  scan_repo
+  std_wt agent-x
+  std_wt agent-y
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git -C "$SCAN_WS" worktree remove "$STD_WT"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(removed: agent-y)."* ]]
+  std_wt agent-z
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(added: agent-z; removed: agent-y). Removed ones' git dir and .git file are gone, and added ones take config"* ]]
+  # agent-x's working tree deleted without a prune: its git dir stays.
+  rm -rf "$SCAN_WS/.claude/worktrees/agent-x"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"- dotgit $SCAN_WS/.claude/worktrees/agent-x/.git "* ]]
+  # Its git dir made invisible to the scan (no HEAD, no commondir) but kept.
+  rm "$SCAN_WS/.git/worktrees/agent-x/HEAD" "$SCAN_WS/.git/worktrees/agent-x/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  rm -rf "$SCAN_WS/.git/worktrees/agent-x"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+}
+
+@test "exit scan Q-094: a removal whose old working tree now looks like a git dir warns" {
+  scan_repo
+  std_wt agent-y
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git -C "$SCAN_WS" worktree remove "$STD_WT"
+  # Control: the old directory back, holding ordinary files only.
+  mkdir -p "$STD_WT/objects"; echo x > "$STD_WT/notes.txt"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(removed: agent-y). Removed ones' git dir and .git file are gone, so this is not a finding."* ]]
+  # A bare-repo layout (HEAD next to objects/) in its place.
+  echo 'ref: refs/heads/main' > "$STD_WT/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"WARNING: this session changed what HOST git reads"* ]]
+  [[ "$output" == *"- dotgit $STD_WT/.git "* ]]
+  [[ "$output" != *"note:"* ]]
+  # A commondir file alone (a linked-worktree git dir layout) too.
+  rm -rf "$STD_WT"; mkdir -p "$STD_WT"; echo ../.. > "$STD_WT/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+  rm -rf "$STD_WT"
+  # Its parent swapped for a link to a dir outside the checkout that holds a
+  # repo at the old path: find records nothing there, the .git check warns.
+  local wts="$SCAN_WS/.claude/worktrees"
+  mkdir -p "$TEST_TMPDIR/outside"; mv "$wts"/* "$TEST_TMPDIR/outside/" 2>/dev/null || true
+  rmdir "$wts"; ln -s "$TEST_TMPDIR/outside" "$wts"
+  git init -q --bare "$TEST_TMPDIR/outside/agent-y/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+  rm -rf "$TEST_TMPDIR/outside/agent-y"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  rm "$wts"; mkdir -p "$wts"
+  # A working tree whose path %q can only write as $'…' is not decoded: warns.
+  local odd="$SCAN_WS/odd
+dir/agent-n"
+  git -C "$SCAN_WS" worktree add -q "$odd" -b wt-odd
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  git -C "$SCAN_WS" worktree remove "$odd"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+}
+
+@test "_snap_unq: inverts printf %q's backslash form; other forms decline" {
+  local s bs='\' sq="'"
+  for s in plain/path "a b/c" "x${bs}y" "~t" "q${sq}uote" "semi;&|" "*?[]"; do
+    [ "$(_snap_unq "$(printf '%q' "$s")")" = "$s" ]
+  done
+  run ! _snap_unq "$(printf '%q' "new
+line")"
+  run ! _snap_unq "$sq$sq"
+  run ! _snap_unq "a$bs"
+}
+
+@test "exit scan Q-094: a removed git dir pairs only with the .git that pointed at it" {
+  scan_repo
+  std_wt agent-a
+  std_wt agent-b
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # agent-a's git dir gone (its .git file stays), agent-b's .git gone (its git
+  # dir stays): one of each record, but not one worktree.
+  rm -rf "$SCAN_WS/.git/worktrees/agent-a"
+  rm "$SCAN_WS/.claude/worktrees/agent-b/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"- dotgit $SCAN_WS/.claude/worktrees/agent-b/.git "* ]]
+}
+
+@test "exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal" {
+  scan_repo
+  local before after pad
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  after="$(git_exec_snapshot "$SCAN_WS")"
+  # Records sorted after the ones matched, in both snapshots, well past a pipe buffer.
+  pad="$(printf 'F\tzz\t/p/%s\tmissing\n' $(seq 40000))"$'\n'   # one printf: a loop costs ~16 s under bats
+  set -o pipefail
+  run scan_std_worktrees "$SCAN_WS" "$before"$'\n'"$pad" "$after"$'\n'"$pad"
+  [ "$status" -eq 0 ]
+  run scan_std_worktrees "$SCAN_WS" "$before"$'\n'"${pad//F$'\t'zz/W$'\t'zz}" "$after"$'\n'"${pad//F$'\t'zz/W$'\t'zz}"
+  [ "$status" -eq 1 ]
+}
+
+@test "exit scan Q-094: a private dir git would also accept (commondir variants, hooks, config, links) warns" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  local v
+  for v in "$SCAN_WS/.git"$'\n' $'../../\n' $'../..\r\n' '../..'; do
+    printf '%s' "$v" > "$STD_P/commondir"
+    run git_exit_scan "$SCAN_WS" "$before"
+    warns_listing_wt
+  done
+  printf '../..\n' > "$STD_P/commondir"
+  for v in hooks config config.worktree info; do
+    case "$v" in
+      hooks) plant_hook "$STD_P/hooks" pre-commit ;;
+      info) ln -s /etc "$STD_P/info" ;;
+      *) git config --file "$STD_P/$v" core.fsmonitor "touch $TEST_TMPDIR/ran/fsm" ;;
+    esac
+    run git_exit_scan "$SCAN_WS" "$before"
+    warns_listing_wt
+    rm -rf "${STD_P:?}/$v"
+  done
+  # Back to git's layout: accepted (each case above was the only change).
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  no_ran
+}
+
+@test "exit scan Q-094: a .git file or back-pointer that is not git's own warns" {
+  scan_repo
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  local dg v; dg="$(cat "$STD_WT/.git")"
+  # A relative form (git accepts it), another repo, extra bytes, no newline.
+  for v in $'gitdir: ../../../.git/worktrees/agent-x\n' "gitdir: $TEST_TMPDIR/other/.git"$'\n' "$dg"$'\n\n' "$dg"; do
+    printf '%s' "$v" > "$STD_WT/.git"
+    run git_exit_scan "$SCAN_WS" "$before"
+    warns_listing_wt
+  done
+  printf '%s\n' "$dg" > "$STD_WT/.git"
+  # The back-pointer: outside the checkout, another working tree, a .. route.
+  for v in "$TEST_TMPDIR/elsewhere" "$SCAN_WS/.claude/other" "$SCAN_WS/.claude/../.claude/worktrees/agent-x"; do
+    printf '%s/.git\n' "$v" > "$STD_P/gitdir"
+    run git_exit_scan "$SCAN_WS" "$before"
+    warns_listing_wt
+  done
+  rm "$STD_P/gitdir"; mkfifo "$STD_P/gitdir"   # must not block the scan
+  run timeout 20 bash -c "source '$CONFIG_SRC/cc-isolated.sh'; git_exit_scan '$SCAN_WS' \"\$1\"" _ "$before"
+  warns_listing_wt
+  rm "$STD_P/gitdir"; printf '%s/.git\n' "$STD_WT" > "$STD_P/gitdir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  rm "$STD_WT/.git"; mkdir "$STD_WT/.git"   # a directory, not a file
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+}
+
+@test "exit scan Q-094: an odd name, an embedded repo, or a nested repo's worktree warns" {
+  scan_repo
+  make_repo "$TEST_TMPDIR/libsrc"
+  git clone -q --bare "$TEST_TMPDIR/libsrc" "$SCAN_WS/vendor/lib.bare"
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  make_repo "$STD_WT/inner"
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+  rm -rf "$STD_WT/inner"
+  # git keeps '+' in a worktree name (a space it turns into '-').
+  git -C "$SCAN_WS" worktree add -q "$SCAN_WS/wts/agent+x" -b wt-plus
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ dotgit $SCAN_WS/wts/agent+x/.git "* ]]
+  git -C "$SCAN_WS" worktree remove "$SCAN_WS/wts/agent+x"
+  # Only worktrees of the checkout's own common dir are accepted.
+  git -C "$SCAN_WS/vendor/lib.bare" worktree add -q "$SCAN_WS/nested"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ dotgit $SCAN_WS/nested/.git "* ]]
+}
+
+@test "exit scan Q-094: a relative hooksPath, attributesFile or remote keeps a new worktree a finding" {
+  # Git resolves these in the new worktree's own tree, which the scan never walked.
+  local cfg before
+  for cfg in "core.hooksPath .husky/_" "core.attributesFile .attrs" "remote.loc.url ./sub.git" \
+      "remote.loc.url file://sub.git" "core.hooksPath $TEST_TMPDIR/abs-hooks" "branch.main.remote ." \
+      "url...insteadOf https://x.invalid/" "url..insteadOf https://x.invalid/" "url..pushInsteadOf https://x.invalid/"; do
+    rm -rf "$TEST_TMPDIR/proj"
+    scan_repo
+    # shellcheck disable=SC2086  # key and value, split on purpose
+    git -C "$SCAN_WS" config $cfg
+    before="$(git_exec_snapshot "$SCAN_WS")"
+    std_wt agent-x
+    run git_exit_scan "$SCAN_WS" "$before"
+    case "$cfg" in *abs-hooks|*" .") [ "$status" -eq 0 ] ;; *) warns_listing_wt ;; esac
+  done
+  # The container path the scan accepts is where devcontainer.json mounts the checkout.
+  grep -q "target=$GIT_EXIT_SCAN_CONTAINER_WS," "$CONFIG_SRC/devcontainer.json"
+}
+
+@test "exit scan Q-094: a session that leaves an agent worktree ends the launcher with claude's status and a note" {
+  make_repo "$TEST_TMPDIR/proj"
+  local ws; ws="$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)"
+  session_stub "$ws" "git -C '$ws' worktree add -q '$ws/.claude/worktrees/agent-x' -b wt-x"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
+  [[ "$output" != *"WARNING: this session changed"* ]]
+}

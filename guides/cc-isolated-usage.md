@@ -63,7 +63,9 @@ directory is a hard error (it refuses rather than guessing another repo).
    host git reads to decide what to run (hooks, configs, attributes, submodule
    and embedded git dirs, local remotes, rebase todo lists); when claude exits
    it compares, and exits **3** naming anything the session added, removed or
-   changed. It exits 4 when the exit scan cannot list or read any of it, and
+   changed. A linked worktree added or removed in git's own layout (an agent
+   worktree left behind) is not a finding: one `note:` line, and the exit
+   status is claude's. It exits 4 when the exit scan cannot list or read any of it, and
    refuses to launch (exit 1) when the baseline snapshot cannot be taken — also
    when `.git` is already not a git directory git accepts, or the checkout root
    already looks like one, so a plant from an earlier session cannot become the
@@ -71,7 +73,8 @@ directory is a hard error (it refuses rather than guessing another repo).
    either way (see [Pushing: cc-push](#pushing-cc-push)).
 
 **Exit status.** 0 on success; 1 an error (a refused launch included); 2 bad
-usage; 3 the exit scan found a change; 4 the exit scan could not finish. Two
+usage; 3 the exit scan found a change (a note about standard worktrees is not
+one); 4 the exit scan could not finish. Two
 things to know when a script reads it. After a clean scan the launcher passes
 **claude's own exit status** through, so a 1, 2, 3 or 4 can come from claude
 rather than the launcher; a 3 or 4 from the scan replaces claude's status. And a
@@ -331,6 +334,39 @@ or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
 unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
 before its first line is read.
 
+**Linked worktrees left behind (Q-094).** When the only differences are
+worktrees added (`git worktree add`, as agent worktrees are) or removed
+(`git worktree remove`: git dir and `.git` file both gone) in the exact layout
+git writes, the scan prints one `note: exit scan: only linked worktrees
+in git's standard layout changed (added: agent-x) …` line (or `removed: …`,
+or `added: …; removed: …`) instead of the warning and returns claude's status. A linked worktree takes its config, hooks
+and `info/attributes` from the checkout's own `.git`, never from its private
+dir (tested on git 2.39.5), except `config.worktree`, which refuses the note.
+For a removal, "exact" means the private dir is gone and the removed records
+are the ones git's layout makes (the `.git` file named that dir), nothing is at
+the old `.git` path, and the old working-tree directory is gone or does not look
+like a git dir (no `HEAD` next to `objects/`, no `commondir` file). A
+working-tree path with a tab or other byte that bash's `%q` quotes as `$'…'`
+is a note when added but warns when removed; one with a newline warns either
+way. For an added
+worktree (`scan_std_worktrees` has the full rule): the private dir is the
+checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
+`-`) with `commondir` exactly `../..\n` and no `hooks/`, `config`,
+`config.worktree` or symlink; its working tree is inside the checkout; and that
+tree's `.git` file is exactly `gitdir: <private dir>\n`, by host path or by the
+container's `/workspace/…` path (which, if it exists on the host, must be the
+same directory). Anything else warns as before, worktree lines included — also
+any other change in the session, a working tree deleted without a prune, and **any
+checkout whose config holds a relative `core.hooksPath` or
+`core.attributesFile` (husky's `.husky/_`) or a relative local remote** (a
+remote of `.` is fine; an `insteadOf` base of `.` or `""` is not), which git
+would resolve in the new worktree's tree, unscanned. That includes the config
+of any repo embedded in the checkout. A relative `core.hooksPath` or
+`core.attributesFile` in your own config is walked in each new worktree, also
+one whose `.git` names the container's `/workspace/…` path (as
+`git worktree repair` would point it here), so its paths refuse the note too:
+with such a setting, adding or removing a worktree always warns.
+
 It catches the common plants. It **cannot** be complete, so a clean exit is not
 permission to run git in the checkout.
 
@@ -343,7 +379,8 @@ opens or closes a route.
 - **A hook that runs a tracked file.** A hook present at launch that runs a
   file from the working tree (husky, the pre-commit framework, lefthook,
   `exec ./scripts/check.sh`): the session edits the tracked file and nothing
-  in `.git` changes.
+  in `.git` changes. The same holds in a linked worktree the session leaves
+  behind: its tracked files are not scanned, only its layout (see above).
 - **Anything present at launch.** The launch-time state is the baseline: an
   earlier session's plant you did not remove, a rebase left in progress, or a
   config value that names a program by path inside the checkout
@@ -362,6 +399,9 @@ opens or closes a route.
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time. If you stop it, treat the checkout as unscanned.
+- **A URL rewritten by `url.<base>.insteadOf`.** The base is walked, never the
+  rewritten URL, so a remote rewritten to a local path the session plants runs
+  that repository's hooks on push.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
@@ -372,6 +412,20 @@ opens or closes a route.
   `objects/`, `refs/`) under another name is not walked; host git run *inside*
   that directory would use it and run its hooks. (Only the checkout root is
   checked for that layout.)
+- **A symlink to a directory outside the checkout.** The embedded-repo search
+  does not follow symlinked directories, so a link in the working tree to a
+  repository outside the checkout (somewhere the container can write, such as
+  a rootless-Docker volume) is not walked; host git run through that link
+  would use the repository behind it. (A removed worktree's old `.git` path is
+  checked directly, so the note is refused there.)
+- **A `.git` file naming the container's path, present at launch.** One that
+  reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
+  elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
+  config there, not that git dir. `git worktree repair` may point it at a
+  different git dir (it goes by the worktree's name), and a git dir the scan
+  never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
+  during the session is either git's exact form, which maps to its own private
+  dir, or a finding; the gap is one left by an earlier session. Delete such files, or repair them and start a new session.
 - **`~` forms.** Only a leading `~/` in a config path value
   (`core.hooksPath`, `include.path`, `core.attributesFile`, an `includeIf`
   pattern) is expanded to your home. `~user/…`, a bare `~`, and a `~` in a
