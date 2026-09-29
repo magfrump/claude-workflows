@@ -2260,14 +2260,45 @@ warns_listing_wt() {
   warns_listing_wt
 }
 
-@test "exit scan Q-094: a worktree removed during the session still warns" {
+@test "exit scan Q-094: a removed standard worktree is a note; a half-removed one warns" {
   scan_repo
   std_wt agent-x
+  std_wt agent-y
   local before; before="$(git_exec_snapshot "$SCAN_WS")"
   git -C "$SCAN_WS" worktree remove "$STD_WT"
   run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(removed: agent-y)."* ]]
+  std_wt agent-z
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(added: agent-z; removed: agent-y)."* ]]
+  # agent-x's working tree deleted without a prune: its git dir stays.
+  rm -rf "$SCAN_WS/.claude/worktrees/agent-x"
+  run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"- commondir-file $STD_P/commondir "* ]]
+  [[ "$output" == *"- dotgit $SCAN_WS/.claude/worktrees/agent-x/.git "* ]]
+  # Its git dir made invisible to the scan (no HEAD, no commondir) but kept.
+  rm "$SCAN_WS/.git/worktrees/agent-x/HEAD" "$SCAN_WS/.git/worktrees/agent-x/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  rm -rf "$SCAN_WS/.git/worktrees/agent-x"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+}
+
+@test "exit scan Q-094: a removed git dir pairs only with the .git that pointed at it" {
+  scan_repo
+  std_wt agent-a
+  std_wt agent-b
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # agent-a's git dir gone (its .git file stays), agent-b's .git gone (its git
+  # dir stays): one of each record, but not one worktree.
+  rm -rf "$SCAN_WS/.git/worktrees/agent-a"
+  rm "$SCAN_WS/.claude/worktrees/agent-b/.git"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"- dotgit $SCAN_WS/.claude/worktrees/agent-b/.git "* ]]
 }
 
 @test "exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal" {

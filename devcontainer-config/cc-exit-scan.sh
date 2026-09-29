@@ -73,7 +73,7 @@ logical_workspace() {
 # key list below only labels report lines.
 #
 # STANDARD WORKTREES (Q-094 [1]). When every difference is a linked worktree
-# added in git's own layout (agent worktrees outlive sessions), the
+# added or removed in git's own layout (agent worktrees outlive sessions), the
 # scan prints one `note:` and returns 0 (scan_std_worktrees has the rule). In a
 # linked worktree git takes config, hooks and info/attributes from the common
 # dir, never the private one (tested on git 2.39.5; the one exception,
@@ -791,11 +791,13 @@ _snap_file_is() {
 }
 
 # scan_std_worktrees <ws> <before> <after>: 0 and one `note:` line when every
-# difference is a linked worktree of the checkout's own common dir added in
-# git's standard layout; else 1, silent (the caller warns). Anything
+# difference is a linked worktree of the checkout's own common dir added or
+# removed in git's standard layout; else 1, silent (the caller warns). Anything
 # it cannot read or match declines; nothing passes on error. P = <common>/
 # worktrees/<n>, <n> of [A-Za-z0-9._-]. Only dotgit, commondir-file and hooksdir
-# records are added (a removal warns), and the exit snapshot has no W record:
+# records differ, and the exit snapshot has no W record. Removed <n>: those
+# two records gone, P gone on disk, and one gone `dotgit` record that held
+# exactly "gitdir: P\n" (either form). Added <n>:
 # new `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
 # "../..\n"; on disk P and worktrees/ are real dirs, P has no hooks, config,
 # config.worktree or symlink, P/gitdir is exactly "<ws or container ws>/<rel>/
@@ -806,7 +808,7 @@ _snap_file_is() {
 scan_std_worktrees() {
   local ws="$1" before="$2" after="$3" dirs common wsp ccommon="" cws="$GIT_EXIT_SCAN_CONTAINER_WS"
   local diff line rec q attrs n p hk dk k wtrel wt g h ok std re pre lnk _snap_bytes=0
-  local -a added=()
+  local -a added=() removed=()
   local -A left=() used=() dot=()
   # Pattern matches, not `printf | grep -q`: under the launcher's pipefail an
   # early match SIGPIPEs printf, and the pipeline reads as "no match".
@@ -828,8 +830,8 @@ scan_std_worktrees() {
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     case "$line" in
-      +F$'\t'dotgit$'\t'*) left["$line"]=1; dot["${line%$'\t'*}"]="$line" ;;
-      +F$'\t'commondir-file$'\t'*|+F$'\t'hooksdir$'\t'*) left["$line"]=1 ;;
+      [+-]F$'\t'dotgit$'\t'*) left["$line"]=1; dot["${line%$'\t'*}"]="$line" ;;
+      [+-]F$'\t'commondir-file$'\t'*|[+-]F$'\t'hooksdir$'\t'*) left["$line"]=1 ;;
       *) return 1 ;;
     esac
   done <<< "$diff"
@@ -837,8 +839,8 @@ scan_std_worktrees() {
   std="$(_snap_hash_str $'../..\n')"
   pre="$(printf '%q' "$common/worktrees/")"
   for rec in "${!left[@]}"; do
-    case "$rec" in +F$'\t'commondir-file$'\t'*) ;; *) continue ;; esac
-    line="${rec#+F$'\t'commondir-file$'\t'}"
+    case "$rec" in [+-]F$'\t'commondir-file$'\t'*) ;; *) continue ;; esac
+    line="${rec#?F$'\t'commondir-file$'\t'}"
     q="${line%%$'\t'*}"; attrs="${line#*$'\t'}"
     case "$q" in "$pre"*/commondir) ;; *) return 1 ;; esac
     n="${q#"$pre"}"; n="${n%/commondir}"
@@ -847,10 +849,25 @@ scan_std_worktrees() {
     [ "$q" = "$(printf '%q' "$p/commondir")" ] || return 1
     re="^file [0-7]+ $std\$"
     [[ "$attrs" =~ $re ]] || return 1
-    hk="+F"$'\t'"hooksdir"$'\t'"$(printf '%q' "$p/hooks")"$'\t'"missing"
+    hk="${rec:0:1}F"$'\t'"hooksdir"$'\t'"$(printf '%q' "$p/hooks")"$'\t'"missing"
     [ -n "${left[$hk]:-}" ] || return 1
     used["$rec"]=1; used["$hk"]=1
-    # The private dir as git made it, on disk now.
+    if [ "${rec:0:1}" = - ]; then
+      [ ! -e "$p" ] && [ ! -L "$p" ] || return 1
+      # Its own `.git` file gone too: a removed dotgit record that held exactly
+      # "gitdir: P\n" (either form). Another worktree's .git never pairs.
+      ok="" h="$(_snap_hash_str "gitdir: $p"$'\n')" g=""
+      [ -z "$ccommon" ] || g="$(_snap_hash_str "gitdir: $ccommon/worktrees/$n"$'\n')"
+      re="^file [0-7]+ ($h${g:+|$g})\$"
+      for dk in "${!dot[@]}"; do
+        if [ "${dk:0:1}" != - ] || [ -n "${used[${dot[$dk]}]:-}" ]; then continue; fi
+        if [[ "${dot[$dk]##*$'\t'}" =~ $re ]]; then ok="${dot[$dk]}"; break; fi
+      done
+      [ -n "$ok" ] || return 1
+      used["$ok"]=1; removed+=("$n")
+      continue
+    fi
+    # Added: the private dir as git made it, on disk now.
     [ -d "$common/worktrees" ] && [ ! -L "$common/worktrees" ] && [ -d "$p" ] && [ ! -L "$p" ] || return 1
     _snap_file_is "$p/commondir" "$std" || return 1
     for k in hooks config config.worktree; do [ ! -e "$p/$k" ] && [ ! -L "$p/$k" ] || return 1; done
@@ -891,7 +908,9 @@ scan_std_worktrees() {
   # Every record accounted for by one of the worktrees above.
   for rec in "${!left[@]}"; do [ -n "${used[$rec]:-}" ] || return 1; done
   # Names are [A-Za-z0-9._-] only (checked above); the caller still scan_vis-es.
-  line="added: $(printf '%s\n' "${added[@]}" | LC_ALL=C sort | tr '\n' ' ')"
+  line=""
+  [ "${#added[@]}" -eq 0 ] || line="added: $(printf '%s\n' "${added[@]}" | LC_ALL=C sort | tr '\n' ' ')"
+  [ "${#removed[@]}" -eq 0 ] || line="${line:+${line% }; }removed: $(printf '%s\n' "${removed[@]}" | LC_ALL=C sort | tr '\n' ' ')"
   echo "note: exit scan: only linked worktrees in git's standard layout changed (${line% }). They take config and hooks from the checkout's own .git, so this is not a finding."
 }
 
@@ -929,7 +948,7 @@ git_exit_scan() {
     invalid="    ! $(printf '%q' "$ws/.git") is not a valid git directory now: host git would look for a repository elsewhere (the checkout root)"
   fi
   [ "$before" != "$after" ] || [ -n "$invalid" ] || return 0
-  # Only linked worktrees added in git's standard layout (STANDARD
+  # Only linked worktrees added or removed in git's standard layout (STANDARD
   # WORKTREES above): a note, not a finding.
   local note
   if [ -z "$invalid" ] && note="$(scan_std_worktrees "$ws" "$before" "$after" 2>/dev/null)"; then

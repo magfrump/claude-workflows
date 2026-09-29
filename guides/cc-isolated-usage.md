@@ -63,7 +63,7 @@ directory is a hard error (it refuses rather than guessing another repo).
    host git reads to decide what to run (hooks, configs, attributes, submodule
    and embedded git dirs, local remotes, rebase todo lists); when claude exits
    it compares, and exits **3** naming anything the session added, removed or
-   changed. A linked worktree added in git's own layout (an agent
+   changed. A linked worktree added or removed in git's own layout (an agent
    worktree left behind) is not a finding: one `note:` line, and the exit
    status is claude's. It exits 4 when the exit scan cannot list or read any of it, and
    refuses to launch (exit 1) when the baseline snapshot cannot be taken — also
@@ -332,8 +332,9 @@ unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 Mi
 before its first line is read.
 
 **Linked worktrees left behind (Q-094).** When the only differences are
-worktrees added (`git worktree add`, as agent worktrees are) in the exact
-layout git writes, the scan prints one `note: exit scan: only linked worktrees
+worktrees added (`git worktree add`, as agent worktrees are) or removed
+(`git worktree remove`: git dir and `.git` file both gone) in the exact layout
+git writes, the scan prints one `note: exit scan: only linked worktrees
 in git's standard layout changed (added: agent-x) …` line instead of the
 warning and returns claude's status. A linked worktree takes its config, hooks
 and `info/attributes` from the checkout's own `.git`, never from its private
@@ -345,7 +346,7 @@ checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
 tree's `.git` file is exactly `gitdir: <private dir>\n`, by host path or by the
 container's `/workspace/…` path (which, if it exists on the host, must be the
 same directory). Anything else warns as before, worktree lines included — also
-any other change in the session, a worktree removed during it, and **any
+any other change in the session, a working tree deleted without a prune, and **any
 checkout whose config holds a relative `core.hooksPath` or
 `core.attributesFile` (husky's `.husky/_`) or a relative local remote** other
 than `.`, which git would resolve in the new worktree's tree, unscanned.
