@@ -49,7 +49,7 @@ make_repo() {
 
 @test "lists a decision record's revisit triggers and a log row's whole revisit clause" {
     mkdir -p docs/decisions
-    printf '# 001\n\n## Revisit triggers\nif the widget count exceeds 7.\n\n## Other\nnot a trigger\n' \
+    printf '# 001\n\n## Revisit triggers\nif the widget count exceeds 7.\033]52;c;eA==\a\n\n## Other\nnot a trigger\n' \
         > docs/decisions/001-widgets.md
     long=$(printf 'x%.0s' $(seq 1 500))
     printf '| 9 | 2026-01-01 | **x**: revisit-trigger verdicts | Because. Revisit if gizmos appear %s end. | ref |\n' "$long" > docs/decisions/log.md
@@ -57,7 +57,7 @@ make_repo() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"### docs/decisions/001-widgets.md"* ]]
     [[ "$output" == *"if the widget count exceeds 7."* ]]
-    [[ "$output" != *"not a trigger"* ]]
+    [[ "$output" != *"not a trigger"* && "$output" != *$'\033'* ]]
     [[ "$output" == *"log row 9 (2026-01-01): > Revisit if gizmos appear"*" end. "* ]]
 }
 
@@ -66,15 +66,17 @@ make_repo() {
     printf '# 001\n\n## Revisit triggers\nif old thing.\n' > docs/decisions/001-old.md
     printf '| 8 | 2020-01-01 | **x** | Revisit if ancient. | r |\n| 9 | 2099-01-01 | **y** | Revisit if future. | r |\n' > docs/decisions/log.md
     git add -A && GIT_COMMITTER_DATE="2020-01-02T12:00:00" git commit -q --date="2020-01-02T12:00:00" -m "old record"
+    start=$(git rev-parse HEAD)
     printf '# 002\n\n## Revisit triggers\nif new thing.\n' > docs/decisions/002-new.md
     git add -A && git commit -q -m "new record"
-    # Committed on a branch before the window, merged into main inside it.
+    # Committed on a branch before the window, fast-forwarded into main inside it.
     git checkout -q -b late && printf '# 003\n\n## Revisit triggers\nif late thing.\n' > docs/decisions/003-late.md
     git add -A && GIT_COMMITTER_DATE="2020-01-03T12:00:00" git commit -q --date="2020-01-03T12:00:00" -m late
-    git checkout -q main && git merge -q --no-ff late -m "merge: late"
+    git checkout -q main && git merge -q --ff-only late
+    printf '\n## Other\nbulk edit\n' >> docs/decisions/001-old.md && git commit -qam "edit outside triggers"
     printf '# 004\n\n## Revisit triggers\nif uncommitted thing.\n' > docs/decisions/004-wip.md
     printf '| 7 | %s | **z** | Revisit if boundary. | r |\n' "$(date -d yesterday +%F)" >> docs/decisions/log.md
-    touch "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
+    echo "Main at: $start" > "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
     run --separate-stderr bash "$DC"
     for t in "if new thing." "if late thing." "if uncommitted thing." "Revisit if boundary."; do
         [[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }
