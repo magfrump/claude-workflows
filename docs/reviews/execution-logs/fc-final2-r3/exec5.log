@@ -1,0 +1,6 @@
+$ grep -nE '(^|[[:space:]*`])@\.{0,2}/' old-agents.md | wc -l  # 5ee8315 guard regex; cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad 2026-09-29T07:55:02Z
+9
+exit=0
+$ same regex on @README @x.md @dir/x @~/x:
+0
+exit=1

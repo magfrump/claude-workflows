@@ -1,16 +1,16 @@
-Commit: 7c2253a
+Commit: 832932a
 
 # Code Fact-Check Report
 
-**Repository:** claude-workflows (worktree `/workspace/.claude/wt-agents-md`, branch `fix/agents-md-no-imports`)
-**Scope:** `git diff main...HEAD -- . ':(exclude)docs/reviews'` (AGENTS.md, docs/decisions/log.md row 65, scripts/health-check.sh comment, test/agents-gemini-sync.bats) plus commit messages `git log main..HEAD` (5ee8315, 7b43db2; 64671f0 and 7c2253a are review-artifact commits with no code claims). Final confirming pass, replicate r3.
+**Repository:** /workspace/.claude/wt-agents-md (branch fix/agents-md-no-imports)
+**Scope:** `git diff main...HEAD -- . ':(exclude)docs/reviews'` (AGENTS.md, docs/decisions/log.md, scripts/health-check.sh, test/agents-gemini-sync.bats) plus commit messages `git log main..HEAD` (5ee8315, 7b43db2, 2f5fba3). Replicate r3 of the final confirming pass (k=3).
 **Checked:** 2026-09-29
-**Total claims checked:** 22
-**Summary:** 15 verified, 3 mostly accurate, 0 stale, 3 incorrect, 1 unverifiable
+**Total claims checked:** 29
+**Summary:** 18 verified, 6 mostly accurate, 0 stale, 5 incorrect, 0 unverifiable
 
-Hallucination-pattern log: `docs/reviews/hallucination-patterns.md` read; no claim below matches a logged pattern (no fabricated symbol, flag or API is claimed on this branch).
+Method note (applies to every `executed` claim below). I located the installed Claude Code (`claude --version` → `2.1.284 (Claude Code)`, binary `/usr/local/share/npm-global/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`). I cut two pieces out of the binary: the `@`-import extractor `yRn` (byte-identical to the binary text; the check is in `yrn-binary.js`), and the bundled `marked` lexer (`function Vy()` … `class rq`, 28,046 chars). Together they make a runnable harness, `cc-extract.js`. It runs `yRn(new rq({gfm:!1}).lex(text))`, the same call the binary makes: `F=w||M?new rq({gfm:!1}).lex(h):void 0 … K=F&&s!==void 0?yRn(F,s):[]`. The only stubs are `fC` (path-exclusion predicate, stubbed false) and the path resolvers `Ye`/`Nb` (identity), so the harness reports the raw captured paths. I then diffed the harness against the branch's `find_imports` on 27 adversarial files. All captured output is in `docs/reviews/execution-logs/fc-final2-r3/` (the scripts are `run-exec.sh` to `run-exec4.sh`; the logs are `exec.log` to `exec5.log`; the probe inputs are in `cases/`). Every command ran under `timeout`, in the stated cwd, with node v22.23.2, between 2026-09-29T07:52Z and 07:55Z. No process was left running.
 
-Execution provenance (applies to every `executed` claim below): cwd `/workspace/.claude/wt-agents-md`; scripts `docs/reviews/execution-logs/fc-final-r3/run.sh` (2026-09-29T07:35:36Z, exit 0), `run2.sh` (07:36:15Z, exit 0), `run3.sh` (07:37:10Z, exit 0), each run as `bash <script> 2>&1 | tee <script>.out`; captured output in `run.out`, `run2.out`, `run3.out` in the same directory. `fi.sh` is a byte-for-byte copy of `find_imports` from `test/agents-gemini-sync.bats:41-45` (minus the shellcheck comment); `pos.md`/`neg.md` copy the test's heredocs; `probe.md` holds extra adversarial lines. The bats file itself was run once (`timeout 120 bats test/agents-gemini-sync.bats`, inside `run.sh`): `1..3`, all ok, exit 0.
+Hallucination-pattern log consulted. Claim 18b resembles the logged count-in-commit-message class ("mode1-equiv 33" claimed in commit 37c5ea9's test tally …). No other claim matches a logged pattern.
 
 ---
 
@@ -21,431 +21,568 @@ Execution provenance (applies to every `executed` claim below): cwd `/workspace/
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers AGENTS.md vs GEMINI.md from line 4 onward at commit 7c2253a; does not establish that the three-line headers match (they are meant to differ) or future drift beyond what `test/agents-gemini-sync.bats` test 1 enforces.
+**Scope:** Covers AGENTS.md vs GEMINI.md from line 4 onward at HEAD, as checked by the sync test; does not establish anything about the three header lines, which the test deliberately strips.
 
-`diff <(tail -n +4 AGENTS.md) <(tail -n +4 GEMINI.md); echo diffrc=$?` printed nothing and `diffrc=0` (`run.out`, "== head diff agents/gemini"). The bats test that enforces it passed: `ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)` (`run.out`).
+The sync test diffs the two files after stripping 3 header lines:
 
-**Evidence:** `AGENTS.md:4-`, `GEMINI.md:4-`, `test/agents-gemini-sync.bats:15-27`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+```bash
+# test/agents-gemini-sync.bats:20-21
+agents_body=$(tail -n +4 "$AGENTS")
+gemini_body=$(tail -n +4 "$GEMINI")
+```
+
+Command `timeout 120 bats test/agents-gemini-sync.bats`, cwd `/workspace/.claude/wt-agents-md`, 2026-09-29T07:52:11Z, exit 0, output `ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)`.
+
+**Evidence:** `test/agents-gemini-sync.bats:15-28`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
 
 ---
 
-## Claim 2: "`test/agents-gemini-sync.bats` fails on any `@path` import (`@/`, `@./`, `@../`, `@~/`, `@dir/x`, `@x.md`; not inside code spans) in AGENTS.md or `global-instructions/CLAUDE.md`" — the enumerated forms and the two covered files
+## Claim 2a: "using Claude Code's own grammar as read from the v2.1.284 binary during review (`@` at a token start or after whitespace, then `./`, `~/`, `/` or `[A-Za-z0-9._-]`…)" (the grammar as described)
 
 **Location:** `docs/decisions/log.md:88`
-**Type:** Behavioral
+**Type:** Reference / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the six enumerated forms, the single-backtick code-span exclusion, and that test 3 loops over exactly AGENTS.md and global-instructions/CLAUDE.md; does not establish the word "any" (see Claim 3), behavior inside fenced code blocks or double-backtick spans (see Claim 14), or behavior if global-instructions/CLAUDE.md is absent (see Claim 17).
+**Scope:** Covers the regex and prefix conditions in the v2.1.284 extractor. Does not establish three extractor details the summary leaves out: a `#fragment` suffix is stripped, a bare `@/` is excluded (`M!=="/"`), and paths matching `fC(...)` are dropped. It also does not establish which tokens count as "text" (see Claims 2b, 2c and 13).
 
-The finder:
+The binary's extractor, quoted verbatim (`docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, extracted from `claude.exe`):
 
-```bash
-# test/agents-gemini-sync.bats:43-44
-  sed -E 's/`[^`]*`//g' "$1" \
-    | grep -nE '(^|[^[:alnum:]_.@/-])@(~?/|\.{1,2}/|[[:alnum:]_][[:alnum:]_.-]*(/|\.md([^[:alnum:]]|$)))'
+```js
+let S=/(?:^|\s)@((?:[^\s\\]|\\ )+)/g, … let F=M.indexOf("#");if(F!==-1)M=M.substring(0,F); …
+if(!fC(M)&&(M.startsWith("./")||M.startsWith("~/")||M.startsWith("/")&&M!=="/"||!M.startsWith("@")&&!M.match(/^[#%^&*()]+/)&&M.match(/^[a-zA-Z0-9._-]/)))
 ```
 
-The alternation after `@` is `~?/` (`@/`, `@~/`), `\.{1,2}/` (`@./`, `@../`), and a name followed by `/` (`@dir/x`) or `.md` plus non-alnum/end (`@x.md`). Executed, each form matched on `pos.md` (lines 1-7 all printed, `run.out` "== pos"), and ``use `@./x.md` in a code span`` did not match (`run.out` "== neg", rc=1). Test 3 iterates exactly the two files:
+The regex's `^` and `\s` match exactly "at a token start or after whitespace". The allowed prefixes are exactly `./`, `~/`, `/` or `[a-zA-Z0-9._-]`. The version is from `claude --version` → `2.1.284 (Claude Code)` (exec3.log).
 
-```bash
-# test/agents-gemini-sync.bats:73
-  for f in "$AGENTS" "$REPO_ROOT/global-instructions/CLAUDE.md"; do
-```
-
-(excerpt ends :73; enclosing @test continues to :81 — read)
-
-**Evidence:** `test/agents-gemini-sync.bats:41-45`, `test/agents-gemini-sync.bats:71-81`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
 
 ---
 
-## Claim 3: "fails on any `@path` import" (the universal "any")
+## Claim 2b: "fenced blocks and code spans skipped"
 
 **Location:** `docs/decisions/log.md:88`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers the finder's behavior on extensionless, non-`.md` and uppercase-extension bare-relative forms and on fenced code blocks; does not establish Claude Code's actual import grammar, which is external documentation not fetchable in this sandbox (the Medium confidence rests on it).
-
-The parenthetical enumeration is exact (Claim 2), so the mechanism is right, but "any" overstates it. Executed on `probe.md` (`run.out` "== probe"): `See @README for overview`, `and @package.json for commands` and `@x.MD` produce no match, because the name branch requires a following `/` or a lowercase `.md`:
-
-```bash
-# test/agents-gemini-sync.bats:44
-[[:alnum:]_][[:alnum:]_.-]*(/|\.md([^[:alnum:]]|$))
-```
-
-Claude Code's own memory documentation uses `@README` and `@package.json` as its import example (paraphrased — no quote available because the documentation is external and the sandbox has no egress; recalled, not fetched), and pass 1's r1 replicate named `@README` as a missed form (`docs/reviews/code-fact-check-report.md:61`). Precise version: "fails on `@/`, `@./`, `@../`, `@~/`, `@dir/x` and `@name.md` imports", not "any". The practical exposure is small (neither file currently contains such a line; `run.out` "== @ in AGENTS" empty, "== @ in global" only a backticked `<name>@claude-plugins-official`).
-
-**Evidence:** `test/agents-gemini-sync.bats:44`, `docs/reviews/execution-logs/fc-final-r3/probe.md`, `docs/reviews/execution-logs/fc-final-r3/run.out`, `docs/reviews/code-fact-check-report.md:61`
-
----
-
-## Claim 4: "The sections AGENTS.md shares with the global instructions (Context Packing, Shared Thoughts, General Principles) stay"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Architectural
-**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the presence of the three headings in both files; does not establish that the section bodies are identical between the two files.
+**Scope:** Covers Claude Code skipping `code` and `codespan` tokens. It does not establish that code-span text is never scanned: Claude Code does scan it inside tight list items, where marked's block-level `text` token carries the raw inline text.
 
-`grep -n '^## '` output (`run2.out`, "== shared headings"): AGENTS.md has `41:## Context Packing`, `52:## Shared Thoughts`, `65:## General Principles`; global-instructions/CLAUDE.md has `126:## Context Packing`, `153:## Shared Thoughts`, `303:## General Principles`. The branch diff does not touch those AGENTS.md sections (paraphrased — no quote available because the claim concerns absence of changes; the AGENTS.md hunk is confined to lines 9-18).
+The walker skips code tokens:
 
-**Evidence:** `AGENTS.md:41`, `AGENTS.md:52`, `AGENTS.md:65`, `global-instructions/CLAUDE.md:126`, `docs/reviews/execution-logs/fc-final-r3/run2.out`
+```js
+// yrn-binary.js
+function g(h){for(let S of h){if(S.type==="code"||S.type==="codespan")continue; … if(S.type==="text")s(S.text||"");if(S.tokens)g(S.tokens);if(S.items)g(S.items)}}
+```
+
+Fenced blocks (backtick and `~~~`) and indented code blocks are `code` tokens, and the harness confirms each is skipped (`cases/tilde_fence.md` → `[]`, `cases/indented_code.md` → `[]`). The one exception: a tight list item's block-level `text` token has `text` equal to the item's raw source, code span included, and `s()` scans that string. So `- code \`a @./listcs.md\` here` yields `["./listcs.md\`"]` (`cases/tight_list_cs.md`, exec3.log). The precise version would be: "code blocks and code spans skipped, except a code span in a tight list item whose content has whitespace before the `@`."
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/tight_list_cs.md`
 
 ---
 
-## Claim 5: "Claude Code loads AGENTS.md as this repo's project instructions and expands `@` imports inline: the nine `@./workflows/*.md` entries put ... workflow text into every session and subagent here"
+## Claim 2c: "`test/agents-gemini-sync.bats` fails on an `@` import in AGENTS.md or `global-instructions/CLAUDE.md`, using Claude Code's own grammar"
 
 **Location:** `docs/decisions/log.md:88`
 **Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the harness behavior as observed in this replicate's own injected context (a subagent session in this repo, main checkout still on the old AGENTS.md); does not establish the behavior for every Claude Code version or for other agents (Copilot, Cursor, Gemini).
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers whether the guard flags every form Claude Code v2.1.284 imports. It does not establish that the two guarded files contain any such form today (Claim 15: they do not, by either implementation).
 
-Paraphrased — no quote available because the evidence is this agent's own system context, not a repo file: this subagent's injected context lists `/workspace/AGENTS.md` as "project instructions, checked into the codebase", with the `**@./workflows/…**` lines, immediately followed by the full contents of `/workspace/workflows/research-plan-implement.md`, `divergent-design.md`, `parallel-worktrees.md`, `task-decomposition.md`, `pr-prep.md`, `spike.md`, `branch-strategy.md`, `user-testing-workflow.md` and `codebase-onboarding.md`. That confirms both the expansion and the "and subagent" part. It agrees with override-log row 153, which accepted this claim on the same kind of observation.
+The guard is a per-line regex applied after a backtick-only fence toggle and a code-span strip (`test/agents-gemini-sync.bats:48-50`, quoted in Claim 13). Claude Code instead walks marked's token tree. In the differential run (exec3.log), the harness imports each of the following while `find_imports` returns nothing:
 
-**Evidence:** `docs/reviews/override-log.md:153`, `AGENTS.md:9-18` (main version via `git show main:AGENTS.md`)
+- `[@./linktext.md](http://u)`: link text is a child `text` token.
+- `>@./bq.md`: blockquote, no space.
+- `` a`code`@aftercs.md ``, `[l](u)@afterlink.md`, `x<br>@brhtml.md`, `a\\@escbs.md`: a new text token starts after a code span, a link, inline HTML or an escape.
+- `a \`b @./escbt.md \`c`: an escaped backtick opens a false span in the sed.
+- `x\xc2\xa0@nbsp.md`: JS `\s` matches NBSP, while `[[:space:]]` in the test's C locale does not.
+- `- code \`a @./listcs.md\` here`: see Claim 2b.
+- Two cases that leave the whole rest of a file unguarded: a ```` fence that wraps a ``` line (`cases/four_fence.md`), and a line that starts with an inline ``` span (`cases/inline_triple_at_start.md`). Each toggles the awk fence state wrongly, so later real imports are blanked.
+
+The row states the grammar correctly (Claim 2a). The claim that the test *uses* it overstates a line-level approximation that under-matches.
+
+**Evidence:** `test/agents-gemini-sync.bats:46-51`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
 
 ---
 
-## Claim 6: "~358 KB (~89K tokens at chars/4)"
+## Claim 3: "the nine `@./workflows/*.md` entries put ~358 KB (~89K tokens at chars/4) of workflow text into every session"
 
 **Location:** `docs/decisions/log.md:88`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the byte and UTF-8 character counts of the nine files `git show main:AGENTS.md` imports, and the chars/4 arithmetic; does not establish actual tokenizer counts.
+**Scope:** Covers the byte and character totals of the nine files as they are on `main` and the chars/4 arithmetic. It does not establish a real tokenizer count.
 
-Python over the nine paths extracted from `git show main:AGENTS.md`: `9 files; main bytes 358414 chars 355598 chars/4 88899.5 bytes/4 89603.5`; the HEAD copies are identical in size (`run2.out`, first lines). 358,414 bytes ≈ 358 KB; 355,598 / 4 = 88,899.5 ≈ 89K. (`wc -m` in `run.out` reports chars equal to bytes only because the sandbox locale is unset; the Python UTF-8 count is the authoritative one.)
+Summing `git show main:<f> | wc -c` and the Python `len()` over the nine paths extracted from `main:AGENTS.md` gives `bytes=358414 chars=355598 chars/4=88899` (exec2.log, 07:52:27Z, exit 0). Old AGENTS.md has exactly 9 import lines (Claim 19).
 
-**Evidence:** `docs/reviews/execution-logs/fc-final-r3/run2.sh`, `docs/reviews/execution-logs/fc-final-r3/run2.out`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
 
 ---
 
-## Claim 7: "`hooks/log-usage.sh` cannot see `@` loads, so workflow use went unmeasured"
+## Claim 4: "After row 47 moved the root CLAUDE.md out, Claude Code loads AGENTS.md as this repo's project instructions and expands `@` imports inline … into every session and subagent here"
+
+**Location:** `docs/decisions/log.md:88`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** Covers observed behavior in this repo with v2.1.284: this subagent's own context shows AGENTS.md from the main checkout loaded as "project instructions", with each `@./workflows/*.md` target expanded inline as its own entry. It does not establish the loader's precedence rules (for example, what happens when both CLAUDE.md and AGENTS.md exist).
+
+Paraphrased — no quote available because the evidence is this agent's injected system context, not a repo file. The context lists "Contents of /workspace/AGENTS.md (project instructions, checked into the codebase)". It follows with "Contents of /workspace/workflows/research-plan-implement.md (project instructions …)" and the other imported workflow files, and this agent is a subagent. The mechanism is the extractor quoted in Claim 2a, applied at load time (`… new rq({gfm:!1}).lex(h) … yRn(F,s) …`, found in the binary next to `context_claude_md_load`). Row 47's move is at `docs/decisions/log.md:70`: "The global instructions file moves out of the repo root to `global-instructions/CLAUDE.md`."
+
+**Evidence:** `docs/decisions/log.md:70`, `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`
+
+---
+
+## Claim 5: "`hooks/log-usage.sh` cannot see `@` loads, so workflow use went unmeasured"
 
 **Location:** `docs/decisions/log.md:88`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the hook's tool-name dispatch (Skill, Read, Agent only); does not establish whether other telemetry in the repo records `@` loads.
+**Scope:** Covers the hook's tool filter. It does not establish whether any other logger records `@` loads.
 
 ```bash
-# hooks/log-usage.sh:7-8
+# hooks/log-usage.sh:7-9
 # COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
 # read through Bash (`cat`), an `@` import, or text inlined into a subagent
+# brief produces no event, …
 ```
 
-(excerpt ends :8; the coverage comment continues — read) and the dispatch `case "$TOOL_NAME" in` (`hooks/log-usage.sh:51`) has arms only for Skill, `Read)` (`:59`) and Agent (`:75` area). An `@` import is expanded by the harness into the prompt, with no tool call for the hook to see (paraphrased — no quote available because this is the harness's loading path, not repo code).
-
-**Evidence:** `hooks/log-usage.sh:7-13`, `hooks/log-usage.sh:51-75`, `docs/reviews/execution-logs/fc-final-r3/run2.out`
+**Evidence:** `hooks/log-usage.sh:7-14`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
 
 ---
 
-## Claim 8: "Handles three syntaxes: CLAUDE.md: `research-plan-implement.md` / AGENTS.md, GEMINI.md: **research-plan-implement.md** / legacy AGENTS.md: **@./workflows/research-plan-implement.md**"
+## Claim 6: "Handles three syntaxes: CLAUDE.md `` `research-plan-implement.md` ``; AGENTS.md, GEMINI.md `**research-plan-implement.md**`; legacy AGENTS.md `**@./workflows/research-plan-implement.md**`"
 
 **Location:** `scripts/health-check.sh:203-207`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers `extract_workflows` on the current global-instructions/CLAUDE.md, AGENTS.md, GEMINI.md and the main-branch AGENTS.md; does not establish the rest of `check_workflow_crossrefs` or behavior on mixed delimiters.
+**Scope:** Covers the regex accepting all three forms and normalizing them to bare filenames. It does not establish the caller's filtering against `workflows/`.
 
 ```bash
-# scripts/health-check.sh:213-215
-    { grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
-        | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
-        | sort -u
+# scripts/health-check.sh:214-216
+{ grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+    | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
+    | sort -u
 ```
 
-Both delimiters and the optional legacy prefix are in the regex. Executed (the function body `eval`'d from the script), all four files yield the same nine names (`run3.out`, "== extract …"). "CLAUDE.md" here is `GLOBAL_MD="global-instructions/CLAUDE.md"` (`scripts/health-check.sh:54`), which uses backticks, e.g. `` `codebase-onboarding.md` `` (`global-instructions/CLAUDE.md:19`).
+The optional `(@\./workflows/)?` group covers the legacy form, and the delimiter alternation covers bold and backtick. Greps in exec2.log show `AGENTS.md:9` and `GEMINI.md:9` bold names, and nine distinct backticked workflow names in `global-instructions/CLAUDE.md`.
 
-**Evidence:** `scripts/health-check.sh:54`, `scripts/health-check.sh:203-216`, `global-instructions/CLAUDE.md:19`, `docs/reviews/execution-logs/fc-final-r3/run3.out`
+**Evidence:** `scripts/health-check.sh:203-217`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
 
 ---
 
-## Claim 9: "CLAUDE.md uses backticks for all filenames (so the result is filtered against workflows/ in the caller); AGENTS.md and GEMINI.md use bold"
+## Claim 7: "CLAUDE.md uses backticks for all filenames … AGENTS.md and GEMINI.md use bold"
 
 **Location:** `scripts/health-check.sh:210-212`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the delimiter style of workflow-style filenames in the three files; does not establish the caller-side filtering sentence (unchanged context, not in this diff).
+**Scope:** Covers workflow-filename delimiters in the three files at HEAD. It does not establish delimiter use for non-workflow filenames.
 
-`grep -cE '\*\*[a-z][-a-z0-9]*\.md\*\*' global-instructions/CLAUDE.md` → `0` (`run3.out`); AGENTS.md and GEMINI.md list entries are bold, e.g. `- **research-plan-implement.md** — …` (`GEMINI.md:9`, identical in AGENTS.md per Claim 1).
+`grep -cE '\*\*[a-z][-a-z0-9]*\.md\*\*' global-instructions/CLAUDE.md` → `0` (exec4.log). The backtick grep finds nine workflow names in it (exec2.log). AGENTS.md and GEMINI.md each have 9 bold names (exec2.log).
 
-**Evidence:** `scripts/health-check.sh:210-212`, `GEMINI.md:9`, `docs/reviews/execution-logs/fc-final-r3/run3.out`
+**Evidence:** `scripts/health-check.sh:210-212`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
 
 ---
 
-## Claim 10: "Strips the first 3 lines (tool-specific headers) from each file, then diffs."
+## Claim 8: "Strips the first 3 lines (tool-specific headers) from each file, then diffs. Any difference means an edit was made to one file but not the other."
 
-**Location:** `test/agents-gemini-sync.bats:4`
+**Location:** `test/agents-gemini-sync.bats:3-5`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers test 1's transformation; does not establish that line 3 of each file is always the last header line.
+**Scope:** Covers the strip-and-diff mechanics. It does not establish that the header really is exactly 3 lines in both files; the passing test is consistent with that but does not prove it.
 
 ```bash
-# test/agents-gemini-sync.bats:19-23
-  local agents_body gemini_body
-  agents_body=$(tail -n +4 "$AGENTS")
-  gemini_body=$(tail -n +4 "$GEMINI")
+# test/agents-gemini-sync.bats:20-23
+agents_body=$(tail -n +4 "$AGENTS")
+gemini_body=$(tail -n +4 "$GEMINI")
 
-  if ! diff_output=$(diff <(echo "$agents_body") <(echo "$gemini_body")); then
+if ! diff_output=$(diff <(echo "$agents_body") <(echo "$gemini_body")); then
 ```
-
-(excerpt ends :23; enclosing @test continues to :28 — read) No prefix stripping remains.
 
 **Evidence:** `test/agents-gemini-sync.bats:15-28`
 
 ---
 
-## Claim 11: "The old `@./workflows/*.md` list pulled ~89K tokens of workflow text into every session and subagent here ... global-instructions/CLAUDE.md loads in every project"
+## Claim 9: "The old `@./workflows/*.md` list pulled ~89K tokens of workflow text into every session and subagent here, invisible to the usage hook. global-instructions/CLAUDE.md loads in every project"
 
-**Location:** `test/agents-gemini-sync.bats:32-35`
-**Type:** Configuration / Behavioral
+**Location:** `test/agents-gemini-sync.bats:30-35`
+**Type:** Behavioral / Configuration
 **Verdict:** Verified
 **Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the token figure (Claim 6 arithmetic) and the global file's install path as documented in health-check.sh and observed in this session; does not establish the install script's staging code, which was not read.
+**Verification mode:** executed
+**Scope:** Same evidence as Claims 3-5, plus row 47's install path for the global file. It does not establish the install mechanics on hosts outside the devcontainer.
 
-The ~89K figure is Claim 6's 88,899.5 (`run2.out`). For the global file:
+The token figure, the subagent observation and the hook coverage are established in Claims 3, 4 and 5. For "loads in every project": `docs/decisions/log.md:70` reads "`~/.claude/CLAUDE.md` still resolves to the same content".
 
-```bash
-# scripts/health-check.sh:49-53
-# The global instructions file lives under global-instructions/ rather than the
-# repo root: at the root, Claude Code loads it a second time as this project's
-# own instructions on top of the ~/.claude copy the image links (prompt audit
-# 2026-09-11, F1). devcontainer-config/install.sh stages it to the payload root,
-# so the installed layout is unchanged — only the source path moved.
-```
-
-This session's context also shows the global file loaded as `/home/node/.claude/CLAUDE.md` "user's private global instructions for all projects" (paraphrased — no quote available because the evidence is this agent's injected context).
-
-**Evidence:** `test/agents-gemini-sync.bats:30-35`, `scripts/health-check.sh:49-54`, `docs/reviews/execution-logs/fc-final-r3/run2.out`
+**Evidence:** `docs/decisions/log.md:70`, `hooks/log-usage.sh:7-9`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
 
 ---
 
-## Claim 12: "An import is `@` followed by a path: `@/abs`, `@./x`, `@../x`, `@~/x`, or a relative `@dir/x` / `@x.md`."
+## Claim 10: "an `@` at the start of a text token or after whitespace, followed by `./`, `~/`, `/` or a character in [A-Za-z0-9._-]. So `@README`, `@x.md`, `@dir/x` and even `@alice` are imports, while `(@./x)`, `foo@bar` and email addresses are not."
 
-**Location:** `test/agents-gemini-sync.bats:37-38`
-**Type:** Behavioral
+**Location:** `test/agents-gemini-sync.bats:38-41`
+**Type:** Reference / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the sentence as a description of what `find_imports` matches; does not establish that this is Claude Code's full import grammar (see Claim 3).
+**Scope:** Covers the grammar statement and every named example, run through the verbatim extractor. It does not establish that `find_imports` implements the grammar (Claim 13).
 
-The regex alternation maps one-to-one onto the listed forms (quoted in Claim 2, `test/agents-gemini-sync.bats:44`), and each listed form matched in `pos.md` (`run.out` "== pos").
+The grammar matches the extractor (Claim 2a). Per-line harness output (exec3.log and the earlier per-line run): `@README` → `["README"]`, `ping @alice about it` → `["alice"]`, `(@./x.md) "@../y.md" [@/abs/z.md]` → `[]`, `mail someone@example.com today` → `[]`, `foo@bar/baz` → `[]`.
 
-**Evidence:** `test/agents-gemini-sync.bats:37-44`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+**Evidence:** `test/agents-gemini-sync.bats:37-41`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
 
 ---
 
-## Claim 13: "The `@` must not follow a word character, so an email address or `foo@bar/baz` is not one."
+## Claim 11a: "Emphasis markers (`**@./x**`) do not start a new token in the markdown text"
 
-**Location:** `test/agents-gemini-sync.bats:38-39`
+**Location:** `test/agents-gemini-sync.bats:42-43`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers how marked (as bundled in v2.1.284, `gfm:false`) tokenizes `**@./x**`. It does not establish the author's intended meaning; the sentence may mean "the markers are not part of the text", which is true.
+
+As written, the mechanism is the reverse of what happens. marked lexes `**@./x**` as a `strong` token whose child is a `text` token `"@./x"`, and the walker recurses into it (`if(S.tokens)g(S.tokens)`, yrn-binary.js). So the emphasis marker is exactly what makes `@` start a new text token, which is why `^` matches and `cases/strong.md` yields `["./strong.md"]` (exec3.log). The conclusion the comment draws is right for real emphasis; the mechanism stated is wrong.
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/strong.md`
+
+---
+
+## Claim 11b: "so `*` and `_` count as token starts here"
+
+**Location:** `test/agents-gemini-sync.bats:43`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the preceding-character class and the two named consequences; does not establish every email-like or scoped-name form in prose (see note on `@alice/pkg`).
+**Scope:** Covers the finder's treatment of `*` and `_`. It does not establish other token starts (Claim 13).
 
-The actual preceding-character class is wider than "word character":
+The finder counts *any* `*` or `_` before `@` as a token start:
 
 ```bash
-# test/agents-gemini-sync.bats:44
-(^|[^[:alnum:]_.@/-])@
+# test/agents-gemini-sync.bats:50
+| grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
 ```
 
-It also excludes `.`, `@`, `/` and `-`. Executed on `probe.md`: `x.@./y.md`, `-@./y.md`, `/@./y.md`, `@@./y.md` and `foo@./y.md` all produce no match (`run.out` "== probe": only lines 1, 6, 12, 13, 17, 19, 20 print). The two consequences hold: `someone@example.com`, `foo@bar/baz`, `user@host:/path/x` and `mailto:a@b.com` do not match. Precise version: "must not follow a word character, `.`, `@`, `/` or `-`". Note for readers: `install @alice/pkg from npm` does match, since an npm scope after a space has the `@dir/x` shape (consistent with the stated definition, not a mismatch with this comment).
+Claude Code counts them only when they actually delimit emphasis. `a*@star.md` and `snake_@intra.md` yield `[]` from the harness but are flagged by the finder (exec3.log). `_@emus.md_` and `**@./strong.md**` agree. So the finder over-matches, which errs in the safe direction for a guard. The precise wording would be "`*` and `_` are treated as token starts (a superset of real emphasis)".
 
-**Evidence:** `test/agents-gemini-sync.bats:38-44`, `docs/reviews/execution-logs/fc-final-r3/probe.md`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+**Evidence:** `test/agents-gemini-sync.bats:50`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
 
 ---
 
-## Claim 14: "Inline code spans are removed first: Claude Code does not expand imports inside them."
+## Claim 12: "Fenced code blocks and inline code spans (single or double backtick) are blanked first, keeping line numbers: Claude Code skips both."
 
-**Location:** `test/agents-gemini-sync.bats:39-40`
+**Location:** `test/agents-gemini-sync.bats:43-45`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the `sed` removal on single- and double-backtick spans and fenced blocks; does not establish Claude Code's own code-span rule (external).
+**Scope:** Covers the awk and sed blanking stages and Claude Code's skip of code tokens. It does not establish correct fence detection for `~~~` fences, fences of four or more backticks, or a line that starts with an inline ``` span, and it does not establish Claude Code's tight-list exception (Claim 2b).
 
 ```bash
-# test/agents-gemini-sync.bats:43
-  sed -E 's/`[^`]*`//g' "$1" \
+# test/agents-gemini-sync.bats:48-49
+awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
+  | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
 ```
 
-This removes single-backtick spans (``use `@./x.md` in a code span`` → no match, `run.out` "== neg"). A double-backtick span is not removed: ``` ``@./double.md`` ``` matches (`run.out` "== probe", line 19), because the pattern deletes the two empty `` `` `` pairs and leaves the contents. Fenced code blocks are not code spans and are not removed either: `@./fenced.md` between ```` ``` ```` fences matches (line 17). Precise version: "single-backtick inline code spans are removed first". Neither form currently appears in AGENTS.md or the global file (test 3 passes).
+Line numbers are kept (awk prints `""` for blanked lines). Code spans, single and double, are removed. But only backtick fences are recognized, and any line starting with ``` toggles the state:
 
-**Evidence:** `test/agents-gemini-sync.bats:43`, `docs/reviews/execution-logs/fc-final-r3/probe.md`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+- `~~~` fences and indented code blocks are scanned. This over-matches: `cases/tilde_fence.md` and `cases/indented_code.md` are flagged, while the harness gives `[]`.
+- A ```` fence containing ``` lines, and an inline ``` span at line start, flip the toggle wrongly. This under-matches everything after them (Claim 2c).
+
+"Claude Code skips both" holds except inside tight list items (Claim 2b). Both halves earn the same verdict, so the claim is not split.
+
+**Evidence:** `test/agents-gemini-sync.bats:48-49`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
 
 ---
 
-## Claim 15: "the import finder catches every @-import form and nothing else" (test name)
+## Claim 13: "The finder mirrors Claude Code's own import extractor (read from the v2.1.284 binary during review …)"; test name "the import finder matches Claude Code's import grammar"
 
-**Location:** `test/agents-gemini-sync.bats:47`
+**Location:** `test/agents-gemini-sync.bats:37`
 **Type:** Behavioral
 **Verdict:** Incorrect
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the finder's behavior on the probe lines and what the test asserts; does not establish Claude Code's grammar for `@README`/`@package.json` or fenced blocks (external; the Medium confidence rests on it), nor that the misses are currently exploitable (neither guarded file contains such a line).
-
-Both halves are refuted by execution. "Every": `@README`, `@package.json` and `@x.MD` do not match (Claim 3). "Nothing else": text inside a fenced code block and inside a double-backtick span does match (Claim 14), though the finder's own comment says imports inside code are not expanded. The test asserts only its own 7 positives and 5 negatives:
+**Scope:** Covers equivalence between `find_imports` and the v2.1.284 extractor over 27 adversarial inputs plus the synthetic cases (also `:53`). It does not establish a wrong result on the two guarded files today; both implementations find nothing there (Claim 15).
 
 ```bash
-# test/agents-gemini-sync.bats:65-68
-  run find_imports "$pos"
-  [ "$(printf '%s\n' "$output" | grep -c .)" -eq 7 ] || { echo "missed imports; matched:"; echo "$output"; return 1; }
-  run find_imports "$neg"
-  [ -z "$output" ] || { echo "false positives:"; echo "$output"; return 1; }
+# test/agents-gemini-sync.bats:46-51
+find_imports() {
+  # shellcheck disable=SC2016  # the backticks are literal regex characters
+  awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
+    | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
+    | grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
+}
 ```
 
-(excerpt ends :68; enclosing @test ends :69 — read) A green result establishes "catches these 7 forms and none of these 5", not "every form and nothing else". Pass 1's r1 named `@README` as a missed form (`docs/reviews/code-fact-check-report.md:61`); the widened regex still misses it. A precise name would be e.g. "the import finder matches the listed @-import forms and skips the listed non-imports".
+It agrees with the harness on the 11 synthetic positives and the negatives (Claim 14), and on `tab`, `crlf`, `strong`, `em_us`, `heading`, `table` (non-GFM, so plain text), `frag`, `paren` and `nested_bt`.
 
-**Evidence:** `test/agents-gemini-sync.bats:44-69`, `docs/reviews/execution-logs/fc-final-r3/probe.md`, `docs/reviews/execution-logs/fc-final-r3/run.out`, `docs/reviews/code-fact-check-report.md:61`
+It diverges on 18 of the 27 probes (exec3.log):
+- Under-matches (Claude Code imports, finder silent), 11: `link_text`, `blockquote` (no space), `after_codespan`, `after_link`, `br_html`, `escaped_bs`, `escaped_bt`, `nbsp`, `tight_list_cs`, `four_fence`, `inline_triple_at_start`. The last two blank every later line.
+- Over-matches (finder flags, Claude Code does not), 7: `tilde_fence`, `indented_code`, `html_comment` (Claude Code strips `<!-- -->`), `html_block` (Claude Code skips non-comment HTML), `intraword_us`, `star_nonemph`, `multiline_cs`.
+
+The finder errs in both directions. The under-matches include a plausible authoring form, a markdown link whose text is the path (`- [@./workflows/x.md](workflows/x.md)`), which Claude Code would import and this guard would pass. "Mirrors" and "matches" overstate an approximation that is correct for the regex-level grammar only.
+
+**Evidence:** `test/agents-gemini-sync.bats:46-53`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cc-extract.js`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
 
 ---
 
-## Claim 16: The synthetic-case test asserts exactly 7 matches on the positive file and none on the negative, each positive matched for the intended form
+## Claim 14: Synthetic test: 11 positive lines each an import; each negative line a non-import (as pinned by `-eq 11` and `[ -z "$output" ]`)
 
-**Location:** `test/agents-gemini-sync.bats:47-69`
+**Location:** `test/agents-gemini-sync.bats:55-80`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the 7/0 counts and which regex branch each positive line hits; does not establish coverage beyond these 12 lines (Claim 15).
+**Scope:** Covers the heredoc contents against both the finder and the verbatim extractor. It does not establish coverage of forms outside the heredocs (Claim 13).
 
-`find_imports pos.md` printed exactly lines 1-7 (rc=0); `find_imports neg.md` printed nothing (rc=1) (`run.out`). Branch per line, from the regex at `test/agents-gemini-sync.bats:44`: line 1 `**@./workflows/…` — `\.{1,2}/` after `*`; line 2 `@README.md` — name + `.md$` at `^`; line 3 `@workflows/x.md` — name + `/`; line 4 `@~/.aws/…` — `~?/`; line 5 `(@./x.md)` — `\.{1,2}/` after `(`; line 6 `"@../y.md"` — `\.{1,2}/` after `"`; line 7 `[@/abs/z.md]` — `~?/` after `[`. The count is of matching lines (`grep -c .`), and each positive line holds one import, so lines = imports. `bats` reported `ok 2` (`run.out`).
+```bash
+# test/agents-gemini-sync.bats:78,80
+[ "$(printf '%s\n' "$output" | grep -c .)" -eq 11 ] || …
+[ -z "$output" ] || { echo "false positives:"; …
+```
 
-**Evidence:** `test/agents-gemini-sync.bats:47-69`, `docs/reviews/execution-logs/fc-final-r3/pos.md`, `docs/reviews/execution-logs/fc-final-r3/neg.md`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+Running the harness on the extracted heredocs (exec3.log, 07:53:07Z, exit 0): pos → 11 distinct paths, one per line; neg → `[]`. The finder gives 11 and 0. So every positive is an import and every negative is a non-import under Claude Code's actual extractor, not only under the stated grammar. The bats run passes test 2 (exec.log).
+
+**Evidence:** `test/agents-gemini-sync.bats:53-81`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
 
 ---
 
-## Claim 17: "AGENTS.md and the global instructions have no @-imports" (test 3 name and assertion)
+## Claim 15: No-imports test fails when a guarded file is missing; passes on the current files
 
-**Location:** `test/agents-gemini-sync.bats:71-81`
-**Type:** Invariant
+**Location:** `test/agents-gemini-sync.bats:83-94`
+**Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers both files at 7c2253a under the finder's definition; does not establish forms the finder misses (Claim 3), and does not establish that the test fails if global-instructions/CLAUDE.md is missing or unreadable — it passes silently in that case.
+**Scope:** Covers the missing-file branch and the current AGENTS.md and global-instructions/CLAUDE.md. It does not establish detection of the under-matched forms in Claim 13.
 
-`find_imports AGENTS.md` and `find_imports global-instructions/CLAUDE.md` both return rc=1 with no output (`run.out` "== AGENTS", "== GLOBAL"); the global file's only `@` is ``claude plugin install <name>@claude-plugins-official`` inside backticks (`global-instructions/CLAUDE.md:76`). `bats` reported `ok 3`. Residue, executed: `find_imports /nonexistent/x.md` returns rc=1 with only sed's stderr message (`run3.out` "== missing-file behaviour"), so `if matches=$(find_imports "$f")` (`:74`) is false and the file counts as clean.
+```bash
+# test/agents-gemini-sync.bats:86,93
+[ -r "$f" ] || { echo "$f is missing or unreadable"; failed=1; continue; }
+…
+[ "$failed" -eq 0 ]
+```
 
-**Evidence:** `test/agents-gemini-sync.bats:71-81`, `global-instructions/CLAUDE.md:76`, `docs/reviews/execution-logs/fc-final-r3/run.out`, `docs/reviews/execution-logs/fc-final-r3/run3.out`
+In a fake repo containing the test, AGENTS.md and GEMINI.md but no `global-instructions/` (cwd `…/scratchpad/fake`, 07:52:12Z), bats exits 1 with `not ok 3 … global-instructions/CLAUDE.md is missing or unreadable`. On the real worktree, test 3 is `ok` (exit 0). Both implementations find nothing in either guarded file: finder `0`, harness `[]` (exec.log).
+
+**Evidence:** `test/agents-gemini-sync.bats:83-94`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`, `docs/reviews/execution-logs/fc-final2-r3/run-exec.sh`
 
 ---
 
-## Claim 18: Commit 5ee8315: "put ~358 KB (~85K tokens) of workflow text into every session" and "gains a guard that fails on any @-import in AGENTS.md"
+## Claim 16: "the guard still missed bare imports with no .md (`@README`, `@package.json`, `@x.MD`), flagged forms Claude Code does not import (`(@./x)`, `"@../y"`, fenced blocks, double-backtick spans)"
 
-**Location:** `5ee8315` (commit message)
+**Location:** commit 2f5fba3 (message, paragraph 1)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers 7b43db2's `find_imports` on the listed forms. It does not establish the "log row 65 and the test name overclaimed" part beyond Claims 2c and 13.
+
+The 7b43db2 finder (`finder-7b43.sh`, from `git show 7b43db2:test/agents-gemini-sync.bats`) run on those nine lines flags only `(@./x)`, `"@../y"`, `@./y.md` (the double-backtick span, whose inner single-backtick strip leaves `@./y.md`) and the fenced line. It misses `@README`, `@package.json` and `@x.MD` (exec4.log). The harness confirms these are the correct classifications.
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec4.log`, `docs/reviews/execution-logs/fc-final2-r3/finder-7b43.sh`, `docs/reviews/execution-logs/fc-final2-r3/hist.md`
+
+---
+
+## Claim 17a: "find_imports mirrors the extractor replicate r2 read from the Claude Code v2.1.284 binary"
+
+**Location:** commit 2f5fba3 (message, first bullet)
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same as Claim 13. It does not establish that the grammar the commit message states is wrong; that grammar is right (Claim 2a).
+
+Paraphrased — no quote available because the evidence is the differential run summarized in Claim 13 (11 under-matches, 7 over-matches across 27 probes, exec3.log). The grammar summary in the same bullet ("`@` at a token start or after whitespace (plus emphasis markers), then `./`, `~/`, `/` or [A-Za-z0-9._-]") matches the binary, but the implementation does not mirror the token-walking extractor.
+
+**Evidence:** `test/agents-gemini-sync.bats:46-51`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 17b: "fenced blocks and single/double code spans are blanked first, line numbers kept"
+
+**Location:** commit 2f5fba3 (message, first bullet)
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same as Claim 12.
+
+Paraphrased — no quote available because it is the same awk/sed pair analysed in Claim 12. Backtick fences and code spans are blanked with line numbers kept. `~~~` fences are not blanked, and fences of four or more backticks, or a line starting with an inline ``` span, mis-toggle the fence state.
+
+**Evidence:** `test/agents-gemini-sync.bats:48-49`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 18a: "The synthetic test pins 11 positives (incl. @README, @alice)"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the positive heredoc and its `-eq 11` pin.
+
+```text
+# test/agents-gemini-sync.bats:57,66
+@README
+ping @alice about it
+```
+
+The positive heredoc has 11 lines and the finder returns 11 (exec3.log).
+
+**Evidence:** `test/agents-gemini-sync.bats:55-67,78`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 18b: "and 6 negatives"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers counting the negative heredoc. It does not establish which counting unit the author meant.
+
+The negative heredoc has 7 lines (`sed … | wc -l` → `7`, exec4.log). Those are 4 prose lines and a 3-line fence, holding 9 distinct negative forms: email, single span, double span, lone `@`, `foo@bar/baz`, `(@./x.md)`, `"@../y.md"`, `[@/abs/z.md]`, fenced line. None of the natural counts is 6. The test itself pins no count (`[ -z "$output" ]`), so the mismatch is only in the message. Matches prior pattern: count-in-commit-message class ("mode1-equiv 33" claimed in commit 37c5ea9's test tally). This is not logged as a hallucination, because it is a miscount rather than a fabricated symbol.
+
+**Evidence:** `test/agents-gemini-sync.bats:68-76`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
+
+---
+
+## Claim 19: "the old AGENTS.md still yields 9 matches; GEMINI.md, README.md and every workflow file yield none"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers `main:AGENTS.md`, GEMINI.md, README.md and all 12 `workflows/*.md` at HEAD. It does not establish files other than these.
+
+Finder on `git show main:AGENTS.md` gives `9`, and the harness gives the nine `./workflows/*.md` paths. GEMINI.md, README.md and each `workflows/*.md` give finder `0` and harness `[]` (exec.log, 07:52:11-12Z, each exit 0).
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec.log`
+
+---
+
+## Claim 20: "The no-imports test fails if a guarded file is missing (r3 note). Log row 65 states the grammar instead of 'any'."
+
+**Location:** commit 2f5fba3 (message, bullets 3-4)
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the missing-file branch (Claim 15) and the row text. It does not establish that the stated grammar is fully implemented (Claim 2c).
+
+The missing-file behaviour is verified in Claim 15. Row 65 now reads "…using Claude Code's own grammar as read from the v2.1.284 binary during review (`@` at a token start or after whitespace, …)" (`docs/decisions/log.md:88`) and no longer contains "any".
+
+**Evidence:** `docs/decisions/log.md:88`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
+
+---
+
+## Claim 21: "~85K -> ~89K tokens (355,598 chars / 4)" and "Still catches all 9 lines of the previous AGENTS.md"
+
+**Location:** commit 7b43db2 (message)
 **Type:** Configuration / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the character arithmetic and 7b43db2's finder on `main:AGENTS.md`. It does not establish the other 7b43db2 coverage claims, which 2f5fba3 later corrected (Claim 16).
+
+`chars=355598 chars/4=88899` (exec2.log). The 7b43db2 finder on the old AGENTS.md gives `9` (exec4.log).
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
+
+---
+
+## Claim 22: "put ~358 KB (~85K tokens) of workflow text into every session in this repo"
+
+**Location:** commit 5ee8315 (message)
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the byte total and the chars/4 estimate. It does not establish a real tokenizer count. The figure is superseded in 7b43db2, and the commit is immutable history.
+
+The byte total, 358,414, is right. At the chars/4 rule the branch later adopted, the token figure is 88,899, not ~85K (exec2.log). The message also says "every session" without "and subagent", which 7b43db2 added.
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
+
+---
+
+## Claim 23a: "gains a guard that fails on any @-import in AGENTS.md"
+
+**Location:** commit 5ee8315 (message)
+**Type:** Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the token figure and the guard regex as of commit 5ee8315; does not establish anything about HEAD, where both were corrected by 7b43db2 (Claims 21-22).
-
-Token figure: 355,598 chars / 4 = 88,899.5 and 358,414 bytes / 4 = 89,603.5 (`run2.out`), so ~85K is low by either measure. Guard: at 5ee8315 the regex was
+**Scope:** Covers the 5ee8315 guard regex. It is superseded by 7b43db2 and 2f5fba3, and the commit is immutable history.
 
 ```bash
-# 5ee8315:test/agents-gemini-sync.bats:35
-  if matches=$(grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"); then
+# git show 5ee8315:test/agents-gemini-sync.bats:35
+if matches=$(grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"); then
 ```
 
-(`run3.out` "== 5ee8315 regex"), which matches only `@/`, `@./`, `@../` after start, whitespace, `*` or a backtick — not "any @-import". Both parts are Incorrect; 7b43db2's message acknowledges and corrects them. Commit messages are immutable, so this is a historical record only.
+The regex catches only `@/`, `@./` and `@../`. On `@README`, `@x.md`, `@dir/x` and `@~/x` it matches 0 lines (exec5.log, exit 1).
 
-**Evidence:** `docs/reviews/execution-logs/fc-final-r3/run2.out`, `docs/reviews/execution-logs/fc-final-r3/run3.out`
-
----
-
-## Claim 19: Commit 5ee8315: "Verified: scripts/health-check.sh, \"All checks passed.\""
-
-**Location:** `5ee8315` (commit message)
-**Type:** Behavioral
-**Verdict:** Unverifiable
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers nothing about the gate's result; the brief for this pass forbids running `scripts/health-check.sh`, and the claim concerns a past commit's tree.
-
-Execution required but blocked by the pass's constraints (paraphrased — no quote available because the claim is an executable guarantee that was not run). The components this replicate did run — the one bats file (all 3 ok) and `extract_workflows` on the three files (Claim 8) — pass at 7c2253a.
-
-**Evidence:** `scripts/health-check.sh:203-240`, `docs/reviews/execution-logs/fc-final-r3/run.out`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec4.log`, `docs/reviews/execution-logs/fc-final2-r3/exec5.log`
 
 ---
 
-## Claim 20: Commit 7b43db2 subject: "catch every @-import form"
+## Claim 23b: "(verified to fail on the previous AGENTS.md)"
 
-**Location:** `7b43db2` (commit message)
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers the finder at 7b43db2 (unchanged through 7c2253a); same residue as Claim 15.
-
-Same finding as Claim 15: `@README`, `@package.json` and `@x.MD` are not caught (`run.out` "== probe"). The body's own enumeration (Claim 21) is accurate; the subject's "every" is not.
-
-**Evidence:** `test/agents-gemini-sync.bats:44`, `docs/reviews/execution-logs/fc-final-r3/run.out`
-
----
-
-## Claim 21: Commit 7b43db2 body: "the regex caught only @/, @./, @../. find_imports now catches @~/, @dir/x and @x.md too, ignores email-like foo@bar and inline code spans, and a synthetic-case test pins exactly what it matches (7 positives, 5 negatives). Still catches all 9 lines of the previous AGENTS.md."
-
-**Location:** `7b43db2` (commit message)
+**Location:** commit 5ee8315 (message)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the old regex's forms, the new forms, the 7/5 synthetic counts and the nine old AGENTS.md lines; "inline code spans" holds for single-backtick spans only (Claim 14), and "pins exactly what it matches" holds for those 12 lines, not in general (Claim 15).
+**Scope:** Covers the 5ee8315 regex on `main:AGENTS.md`.
 
-Old regex (quoted in Claim 18) matches only `@/`, `@./`, `@../`. New forms: `pos.md` lines 2-4 (Claim 16). Counts: `pos.md` has 7 lines, `neg.md` 5 (`test/agents-gemini-sync.bats:49-64`). Old AGENTS.md: `find_imports` on `git show main:AGENTS.md` printed lines 9-16 and 18, nine lines, rc=0; `grep -c '@\./workflows'` = 9 (`run.out` "== old AGENTS").
+The same regex matches 9 lines of the old AGENTS.md (exec5.log, 07:55:02Z, exit 0), so the guard would have failed there.
 
-**Evidence:** `test/agents-gemini-sync.bats:41-69`, `docs/reviews/execution-logs/fc-final-r3/run.out`, `docs/reviews/execution-logs/fc-final-r3/run3.out`
-
----
-
-## Claim 22: Commit 7b43db2 body: "The guard now also covers global-instructions/CLAUDE.md, which loads in every project" and "~85K -> ~89K tokens (355,598 chars / 4)"; "health-check extract_workflows comment: CLAUDE.md uses backticks"
-
-**Location:** `7b43db2` (commit message)
-**Type:** Configuration / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the file list in test 3, the character count and arithmetic, and the health-check comment edit; does not establish the missing-file case (Claim 17).
-
-Test 3 loops over both files (`test/agents-gemini-sync.bats:73`, quoted in Claim 2). UTF-8 character count of the nine files is exactly 355,598 (`run2.out`), and 355,598 / 4 = 88,899.5 ≈ 89K. The comment now reads `#   CLAUDE.md:            `research-plan-implement.md`` (`scripts/health-check.sh:205`), matching the global file's backticks (Claim 9).
-
-**Evidence:** `test/agents-gemini-sync.bats:73`, `scripts/health-check.sh:205`, `docs/reviews/execution-logs/fc-final-r3/run2.out`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec5.log`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 15** (`test/agents-gemini-sync.bats:47`): test name says "every @-import form and nothing else"; the finder misses `@README`, `@package.json`, `@x.MD` and matches fenced-block and double-backtick content. Narrow the name to the listed forms, or widen the finder.
-- **Claim 18** (`5ee8315`): "~85K tokens" (actual ~89K) and "fails on any @-import" (regex covered only `@/`, `@./`, `@../`); historical, already corrected by 7b43db2.
-- **Claim 20** (`7b43db2`): subject "catch every @-import form"; same gap as Claim 15. Historical (immutable message).
+- **Claim 2c** (`docs/decisions/log.md:88`): the test does not "use Claude Code's own grammar". It is a line-regex approximation that misses link-text, blockquote-no-space, after-code-span/link/HTML/escape and NBSP imports, and silently blanks the rest of a file after a ```` fence or a line-start inline ``` span. Reword to "approximates", or close the gaps.
+- **Claim 11a** (`test/agents-gemini-sync.bats:42-43`): emphasis markers *do* start a new (child) text token, which is why `**@./x**` imports. The mechanism sentence is inverted.
+- **Claim 13** (`test/agents-gemini-sync.bats:37`, `:53`): "mirrors" and "matches" Claude Code's extractor. The differential run shows 11 under-matches and 7 over-matches across 27 probes.
+- **Claim 17a** (commit 2f5fba3): the same "mirrors" overclaim, in immutable history.
+- **Claim 23a** (commit 5ee8315): "fails on any @-import", when the guard caught only `@/`, `@./`, `@../`. Immutable history, superseded.
+
+### Stale
+- (none)
 
 ### Mostly Accurate
-- **Claim 3** (`docs/decisions/log.md:88`): "fails on any `@path` import" — the enumeration is exact, "any" is not (`@README`, `@package.json` not caught).
-- **Claim 13** (`test/agents-gemini-sync.bats:38-39`): preceding-character class also excludes `.`, `@`, `/`, `-`, not only word characters.
-- **Claim 14** (`test/agents-gemini-sync.bats:39-40`): only single-backtick spans are removed; double-backtick spans and fenced blocks are still scanned.
+- **Claim 2b** (`docs/decisions/log.md:88`): Claude Code skips code tokens, but scans code-span text inside tight list items.
+- **Claim 11b** (`test/agents-gemini-sync.bats:43`): any `*`/`_` counts as a token start in the finder, a superset of real emphasis (over-match).
+- **Claim 12** (`test/agents-gemini-sync.bats:43-45`): only backtick fences are blanked. `~~~` and indented code are scanned, and a ```` or line-start inline ``` mis-toggles the fence state.
+- **Claim 17b** (commit 2f5fba3): as Claim 12.
+- **Claim 18b** (commit 2f5fba3): "6 negatives". The heredoc holds 7 lines and 9 negative forms.
+- **Claim 22** (commit 5ee8315): ~85K tokens should be ~89K at chars/4 (superseded).
 
 ### Unverifiable
-- **Claim 19** (`5ee8315`): "health-check.sh: All checks passed" — needs a health-check run, forbidden in this pass.
+- (none)
 
 ---
 
 ## Goal-Alignment Note
-- **Answered:** Every claim the brief flagged was checked by execution: row 65's enumeration and file coverage (Verified), the "any"/"every" universals (Mostly accurate in row 65; Incorrect in the test name and 7b43db2's subject), the word-character comment (Mostly accurate), the 7/0 synthetic counts and per-line branches (Verified), ~89K at chars/4 (Verified: 355,598 chars), 7b43db2's 7/5 and nine-line claims (Verified), and the health-check comment (Verified). Adversarial probes found misses (`@README`, `@package.json`, `@x.MD`) and false positives (fenced blocks, double-backtick spans, `@alice/pkg` by design).
-- **Out of scope:** Did not run `scripts/health-check.sh` or the full suite (brief), so Claim 19 is Unverifiable. Did not fetch Claude Code's import-grammar docs (no egress); Claims 3, 15 and 20 rest on the recalled `@README`/`@package.json` doc example, hence Medium confidence.
-- **Escalate:** The blocking-grade question for the orchestrator is whether the remaining gap (extensionless or non-`.md` bare imports) is fixed or the test name and row 65 are narrowed. The practical exposure is nil today: neither guarded file contains such a line. The missing-file silent pass in test 3 (Claim 17 residue) is a note, not a claim mismatch. Probe logs are new untracked files under `docs/reviews/execution-logs/fc-final-r3/`; no tracked file other than this report was edited, and no processes remain.
+- **Answered:** I verified every claim the brief listed by running things. I read the @-import extractor from the installed Claude Code 2.1.284 binary and confirmed my copy is byte-identical. I ran that extractor with the binary's own bundled marked lexer, against `find_imports`, on the synthetic cases and 27 adversarial files (tabs, `**@x**`, `_@x_`, `~~~` fences, indented code, nested backticks, CRLF and more). I checked the synthetic counts and the missing-file failure, the 2f5fba3 message claims, log row 65, the ~89K figure (355,598 chars / 4 = 88,899), and the `extract_workflows` comment. The grammar as written is correct. The claim that the finder "mirrors" the extractor is not: it under-matches 11 forms, including `[@./x.md](url)` link text, and it can blank the rest of a file after a ```` fence. It also over-matches 7 forms. Neither guarded file contains an import today, by either implementation.
+- **Out of scope:** I did not run health-check.sh or the full suite, per the brief. The only tracked file I edited is this report. I also wrote new captured-output files under `docs/reviews/execution-logs/fc-final2-r3/`. I did not verify `fC` path exclusions or path resolution (both stubbed), and I did not look at loader precedence beyond what this session's own context shows.
+- **Escalate:** Whether to fix the finder gaps (for example, add `[` and `>` as token starts and handle ```` and `~~~` fences) or to reword the "mirrors" and "matches" claims is the author's call. The link-text form is the one a future AGENTS.md edit could realistically hit.

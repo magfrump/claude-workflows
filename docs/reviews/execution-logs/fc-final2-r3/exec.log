@@ -1,0 +1,91 @@
+$ timeout 120 bats test/agents-gemini-sync.bats # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+1..3
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+ok 2 the import finder matches Claude Code's import grammar
+ok 3 AGENTS.md and the global instructions have no @-imports
+exit=0
+$ source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/old-agents.md | wc -l # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+9
+exit=0
+$ timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/old-agents.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+["./workflows/research-plan-implement.md","./workflows/divergent-design.md","./workflows/parallel-worktrees.md","./workflows/task-decomposition.md","./workflows/pr-prep.md","./workflows/spike.md","./workflows/branch-strategy.md","./workflows/user-testing-workflow.md","./workflows/codebase-onboarding.md"]
+exit=0
+$ echo FILE AGENTS.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports AGENTS.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js AGENTS.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE AGENTS.md
+0
+[]
+exit=0
+$ echo FILE global-instructions/CLAUDE.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports global-instructions/CLAUDE.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js global-instructions/CLAUDE.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE global-instructions/CLAUDE.md
+0
+[]
+exit=0
+$ echo FILE GEMINI.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports GEMINI.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js GEMINI.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE GEMINI.md
+0
+[]
+exit=0
+$ echo FILE README.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports README.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js README.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE README.md
+0
+[]
+exit=0
+$ echo FILE workflows/branch-strategy.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/branch-strategy.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/branch-strategy.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/branch-strategy.md
+0
+[]
+exit=0
+$ echo FILE workflows/codebase-onboarding.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/codebase-onboarding.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/codebase-onboarding.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/codebase-onboarding.md
+0
+[]
+exit=0
+$ echo FILE workflows/divergent-design.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/divergent-design.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/divergent-design.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/divergent-design.md
+0
+[]
+exit=0
+$ echo FILE workflows/parallel-worktrees.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/parallel-worktrees.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/parallel-worktrees.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/parallel-worktrees.md
+0
+[]
+exit=0
+$ echo FILE workflows/pr-prep.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/pr-prep.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/pr-prep.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/pr-prep.md
+0
+[]
+exit=0
+$ echo FILE workflows/research-plan-implement.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/research-plan-implement.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/research-plan-implement.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:11Z
+FILE workflows/research-plan-implement.md
+0
+[]
+exit=0
+$ echo FILE workflows/review-fix-loop.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/review-fix-loop.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/review-fix-loop.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:12Z
+FILE workflows/review-fix-loop.md
+0
+[]
+exit=0
+$ echo FILE workflows/spike.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/spike.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/spike.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:12Z
+FILE workflows/spike.md
+0
+[]
+exit=0
+$ echo FILE workflows/task-decomposition.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/task-decomposition.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/task-decomposition.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:12Z
+FILE workflows/task-decomposition.md
+0
+[]
+exit=0
+$ echo FILE workflows/user-testing-workflow.md; source /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/finder.sh; find_imports workflows/user-testing-workflow.md | wc -l; timeout 20 node /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cc-extract.js workflows/user-testing-workflow.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:12Z
+FILE workflows/user-testing-workflow.md
+0
+[]
+exit=0
+$ cd /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fake && timeout 120 bats test/agents-gemini-sync.bats # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:12Z
+1..3
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+ok 2 the import finder matches Claude Code's import grammar
+not ok 3 AGENTS.md and the global instructions have no @-imports
+# (in test file test/agents-gemini-sync.bats, line 93)
+#   `[ "$failed" -eq 0 ]' failed
+# /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fake/test/../global-instructions/CLAUDE.md is missing or unreadable
+exit=1
