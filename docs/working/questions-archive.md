@@ -92,6 +92,9 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-087](#q-087--final-confirming-pass-replicates) | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
+| [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
+| [Q-094](#q-094--exit-scan-worktree-noise) | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
+| [Q-095](#q-095--allowlist-size-waiver) | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
 <!-- index:end -->
 
 ## Answered
@@ -1701,5 +1704,65 @@ In that session, check `/hooks` lists the test hook, then ask Claude to run `cat
 
 - **Interim:** nothing changes. cc-push refuses this checkout until [1] runs. Deleting the file from inside a session would trip the exit scan's commondir record, so it isn't done here.
 - **If the answer differs:** [2] is still possible after [1]. Answer [1], and if `claude --version` on the host is older than 2.1.284 and `commondir` reappears, [2] becomes the durable fix. The empty `devcontainer-config/` placeholder files can be deleted any time; they return whenever a sandboxed host session starts in that directory.
+
+
+### Q-093 · cc-push-commondir-recurs
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** Relax cc-push to accept a `commondir` whose whole content is `.`. Implemented as its own enforcement unit (branch `q093-cc-push-self-commondir`, `Live-verified: no`); the host rerun of Q-084 step 3 without deleting the file is the live check. **Merged 2026-09-28 (f987ed6):** accepts exactly `.` or `.\n` (the bytes are checked as hex, and the file must be a regular file of 1–2 bytes); every other spelling is refused, including ones git also reads as self. Two review passes, both clean.
+
+`.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. Relax cc-push now (Q-091's fallback), or keep deleting it by hand until the writer is found?
+
+- **What is known:** the host runs 2.1.284, the build whose code Q-091 read. So "2.1.284 no longer creates `commondir`" was wrong, or something else writes it. This container has no bwrap and no `sandbox` setting. This session's commands did not recreate the file: it was still absent after them. The deletion removed the file's mtime, the one clue to its writer.
+- **One fact that would pin the writer (optional, one line):** did any exit WARNING today include `+ commondir-file …/claude-workflows/.git/commondir` (with no `worktrees/` in the path)? Yes means a cc-isolated session wrote it. No, with a host `claude` session in this repo since the first rm, points to the host sandbox.
+- **Read:** Q-091 in the archive · `devcontainer-config/cc-push.sh:272`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Relax cc-push (Recommended)** | Accept a `commondir` whose whole content is `.`. That is a self-reference, which git reads exactly as if the file were absent. Refuse everything else as today. This is Q-091's [2]. | An enforcement-file unit: review loop, re-bless, one host rerun of Q-084 step 3 | A parsing bug (e.g. `./`, trailing bytes, a symlinked file) reopens the read-outside-the-checkout hole. Tests must pin the exact accepted bytes. |
+| **[2] Keep deleting by hand** | `rm ~/claude-workflows/.git/commondir` before each push. Nothing changes in code. | One command per push, for as long as the writer runs | Nothing unsafe. Friction only, and the writer stays unknown. |
+
+- **Interim:** [2]. Delete by hand before `cc-push`. The exit scan still reports a new `commondir` if a container session writes one.
+- **If the answer differs:** nothing is built yet, so nothing is redone.
+
+
+### Q-094 · exit-scan-worktree-noise
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** The exit scan accepts git's standard linked-worktree layout with a `note:` line and exit 0; anything else still warns. Implemented as its own enforcement unit (branch `q094-exit-scan-worktree-layout`, `Live-verified: no`); the live check is a host session that leaves an agent worktree behind and exits 0. **Split under the 400-line cap (decision log 62):** A `q094-exit-scan-worktree-layout` accepts added worktrees (399 lines); B `q094b-exit-scan-worktree-removal`, stacked on A, accepts standard removals (+94). The loop hit its 3-iteration cap with three security Mediums found and fixed (relative `core.hooksPath`/`attributesFile`/remote and `.`/empty insteadOf bases resolving in the new worktree). **Interim:** neither merges until the final confirming full-panel pass (pr-prep 3d) is clean on both; B also refuses a removal whose old directory now looks like a git dir. **Merged 2026-09-28 (17dad3f, A+B together):** the final confirming pass passed both units with no Must Fix open. It found one more Medium (A1: a container-made worktree's `/workspace/…` `.git` hid the user's relative `core.hooksPath` from the scan), fixed in B, which is why A could never merge alone. Side effect: with a relative `core.hooksPath` in your own git config, adding or removing a worktree always warns. Two older Medium routes are documented, not closed (Q-097).
+
+Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), because the worktree's `.git` file, its `commondir` and its missing `hooks/` dir are new records. Should the exit scan accept git's own worktree layout without a warning?
+
+- **Why it's yours:** it trades warning fatigue against the scan's strictness, in an enforcement file.
+- **Read:** Q-084's 2026-09-28 step 3 note (the reproduction) · `_snap_gitdir` / `_snap_nested` in `devcontainer-config/cc-exit-scan.sh` · memory [[agent-worktrees-stall-and-stale-base]] (worktrees often outlive the session)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept the standard layout (Recommended)** | A new worktree passes with one `note:` line and exit 0 only when: its `.git` file names `<common>/worktrees/<name>`, that dir's `commondir` is exactly `../..`, and it has no `hooks/`, no `config.worktree` and no symlinks. Any other difference still warns. A linked worktree takes its config and hooks from the common dir, which the scan already covers [inferred; the plan's pre-mortem checks this]. | An enforcement unit: review loop, re-bless, a host rerun | If a linked worktree can run something the common dir does not show, a plant shaped like a standard worktree passes silently. |
+| **[2] Clean up before exit** | Scan unchanged. Remove and prune worktrees before leaving a session, e.g. via a reminder at session end. | Your time each session, and a worktree with unmerged work cannot be removed | Warning fatigue: a real plant listed among worktree lines gets skimmed past. |
+| **[3] Leave as is** | Every such exit warns. | Reading the list each time | Same fatigue as [2], every time. |
+
+- **Interim:** [3]. Nothing changes. Q-084 step 1 is still testable on a scratch repo with no worktrees.
+- **If the answer differs:** nothing is built yet.
+
+
+### Q-095 · allowlist-size-waiver
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answer (2026-09-28): [1].** User: "Waive the limit and review it as one change". The unit is reviewed and merged as one change (pr-prep step 1a waiver).
+
+Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so every cc-isolated session gets it at container start. The unit is 915 changed code lines, over the ~400-line review cap (decision log 62), and almost all of it is one flat data list. Waive the cap for this unit?
+
+- **Why it's yours:** only you can waive the cap.
+- **Read:** `git show 5d929dd` · the new `_comment` lines in `hooks/wiring.json` · decision log 62
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Waive (Recommended)** | Review it as one unit: read the comment, the tests and the two dropped rules, and skim the list against your host copy. | One review pass | A bad rule hides in a long list; it can only widen `allow`, never beat a deny. |
+| **[2] Split by rule group** | Stack units of under 400 lines each (e.g. core/git, language toolchains, cloud/infra), each with its own review loop. | Three or four review loops over what is a verbatim copy | Loop overhead with no gain in scrutiny. |
+| **[3] Trim, then review** | Cut the list to the rules that matter in a Linux container (drop macOS-only, cloud CLIs with no credentials), aiming under 400. | Deciding what to cut | The list diverges from the host copy; later syncs need a diff by hand. |
+
+- **Interim:** the branch is committed and unmerged; nothing is installed.
+- **If the answer differs:** [2] re-cuts the one commit into stacked branches; [3] edits the list, then reviews.
 
 
