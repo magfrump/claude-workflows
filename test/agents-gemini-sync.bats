@@ -34,23 +34,24 @@ setup() {
 # usage hook. global-instructions/CLAUDE.md loads in every project, so it is
 # held to the same rule.
 #
-# The finder mirrors Claude Code's own import extractor (read from the
-# v2.1.284 binary during review; the docs were unreachable offline): an `@` at
-# the start of a text token or after whitespace, followed by `./`, `~/`, `/` or
-# a character in [A-Za-z0-9._-]. So `@README`, `@x.md`, `@dir/x` and even
-# `@alice` are imports, while `(@./x)`, `foo@bar` and email addresses are not.
-# Emphasis markers (`**@./x**`) do not start a new token in the markdown text,
-# so `*` and `_` count as token starts here. Fenced code blocks and inline
-# code spans (single or double backtick) are blanked first, keeping line
-# numbers: Claude Code skips both.
+# Claude Code v2.1.284 (its extractor, read from the binary during review)
+# imports an `@` that starts a markdown text token or follows whitespace, when
+# the next character is `./`, `~/`, `/` or one of [A-Za-z0-9._-]; it skips code
+# blocks and code spans. Imitating its markdown tokenizer in awk proved
+# fragile both ways (a four-backtick fence hid the rest of a file), so this
+# finder over-approximates instead: it flags any such `@` not preceded by a
+# letter or digit, and removes only same-line inline code spans. It therefore
+# also flags some things Claude Code would skip (`(@./x)`, `@` inside fenced or
+# indented code); a false alarm costs one edit, a miss costs every session.
+# Known remaining miss: an import inside an inline code span in a tight list
+# item, which Claude Code still expands.
 find_imports() {
   # shellcheck disable=SC2016  # the backticks are literal regex characters
-  awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
-    | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
-    | grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
+  sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' "$1" \
+    | grep -nE '(^|[^[:alnum:]])@(\./|~/|/|[[:alnum:]._-])'
 }
 
-@test "the import finder matches Claude Code's import grammar" {
+@test "the import finder flags every form Claude Code imports, and not emails or code spans" {
   local pos="$BATS_TEST_TMPDIR/pos.md" neg="$BATS_TEST_TMPDIR/neg.md"
   cat > "$pos" <<'EOF'
 - **@./workflows/pr-prep.md** — the old AGENTS.md form
@@ -64,18 +65,22 @@ see @../y.md
 @.claude/x.md
 @x.MD
 ping @alice about it
+[@./x.md](url) link text
+>@./quoted.md
+~~@./struck.md~~
+<span>@./html.md</span>
+````
+```
+````
+@./after-a-four-backtick-fence.md
 EOF
   cat > "$neg" <<'EOF'
 mail someone@example.com today
 use `@./x.md` in a code span, or ``@./y.md`` in a double one
 the @ sign alone, and foo@bar/baz
-(@./x.md) "@../y.md" [@/abs/z.md]
-```
-@./inside/a/fence.md
-```
 EOF
   run find_imports "$pos"
-  [ "$(printf '%s\n' "$output" | grep -c .)" -eq 11 ] || { echo "missed imports; matched:"; echo "$output"; return 1; }
+  [ "$(printf '%s\n' "$output" | grep -c '@')" -eq 16 ] || { echo "missed imports; matched:"; echo "$output"; return 1; }
   run find_imports "$neg"
   [ -z "$output" ] || { echo "false positives:"; echo "$output"; return 1; }
 }
