@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-091](#q-091--cc-push-self-commondir) | you: judgment | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (a self-reference that does nothing... | 2026-09-28 |
 | [Q-082](#q-082--auto-approve-host-checks) | you: terminal | Does a PreToolUse hook `allow` override a matching `permissions.deny` rule? That decides whether the auto-a... | 2026-09-27 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
@@ -108,6 +109,8 @@ claude
 
 In that session, check `/hooks` lists the test hook, then ask Claude to run `cat x.q082-canary` and note whether it **runs**, **prompts**, or is **denied**. The test hook allows *every* Bash call in that session, so run only this one command, exit, and `rm -rf ~/q082`.
 
+**2026-09-28, second run (answers-9-28-26-2.txt):** `cat x.q082-canary` was **denied** ("Permission to use Bash with command cat x.q082-canary has been denied"). Claude then read the file with the Read tool instead. That is expected: the test deny rule covers Bash only, and the real wiring also has `Read(/{{CLAUDE_DIR}}/.credentials.json)` (`hooks/wiring.json:129`). **Not yet confirmed:** that `/hooks` listed the test hook in that session. A hook that never loaded gives the same denial, so without that check the result doesn't settle anything. Waiting on one line from you: "the hook was listed", or "it wasn't".
+
 - **Interim:** the hook header calls its deny check load-bearing in cc-isolated.
 - **If the answer differs:** denied ⇒ `permissions.deny` beats a hook allow; the hook's deny reader can be deleted (architecture-review 1) and decision log 53's amendment updated. Runs or prompts ⇒ the deny reader stays load-bearing; reclassify the hook as an enforcement component.
 
@@ -130,8 +133,25 @@ apt-cache depends parallel                 # Q-086 review C3: note any hard depe
 bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'   # expect no output (C2)
 ```
 
+**2026-09-28 (answers-9-28-26-2.txt), step 3:** `cc-push` refused on `~/claude-workflows` itself (not a scratch repo): "`.git/commondir` exists (a linked worktree's layout)". Cause: the main checkout's `.git` has a stray 1-byte `commondir` holding `.` (it points to itself, so git behaves as if it weren't there). Next to it are an empty `config.worktree` and an empty `modules/`, all dated 2026-07-09 13:45. No commit that day runs `git worktree`, so some tool probably wrote them. `extensions.worktreeConfig` is unset, so git never reads `config.worktree`. `cc-push.sh:272` refuses any `commondir` without resolving it: a false positive on this repo. The fix is Q-091. Steps 1, 2 and 4 are not reported yet.
+
 - **Interim:** every enforcement-file commit on Q-076 carries `Live-verified: no`.
 - **If the answer differs:** a refusal on step 3, a warning on step 1, or a version refused that git's release notes list as fixed means a follow-up fix. Also check git's May 2024 security release notes against the version list in the `cc-push.sh` header, which was written from memory.
+
+### Q-091 · cc-push-self-commondir
+**Needs:** you: judgment · **Opened:** 2026-09-28 · **Status:** OPEN
+
+`cc-push` refuses your main checkout because `.git/commondir` holds `.` (a self-reference that does nothing; see Q-084). Remove the stray file, or teach cc-push to accept it?
+
+- **Read:** Q-084's 2026-09-28 note · `devcontainer-config/cc-push.sh:272` · `commondir_of` in `devcontainer-config/cc-gitdir.sh:50`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Remove the stray files on the host** | Outside any session: `rm ~/claude-workflows/.git/commondir ~/claude-workflows/.git/config.worktree && rmdir ~/claude-workflows/.git/modules`. cc-push stays as strict as it is. | One paste, then rerun Q-084 step 3 | Whatever wrote them in July may write them again, and cc-push refuses again. Same message, same one-line fix. |
+| **[2] Relax cc-push** | Accept a `commondir` whose contents resolve to `.git` itself (reusing `commondir_of`). Refuse everything else as today. | An enforcement-file unit: review loop, re-bless, a host rerun | A resolution bug here opens the exact read-outside-the-checkout hole the check exists to close. |
+
+- **Interim:** nothing changes. cc-push refuses this checkout until one of these is done. Deleting the files from inside a session would trip the exit scan's commondir record, so it isn't done here.
+- **If the answer differs:** [2] after [1] is still possible; [1] needs no code change to undo (`printf . > .git/commondir`).
 
 ### Q-088 · spike-weaker-nested-sandbox
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
