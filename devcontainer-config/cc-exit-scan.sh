@@ -78,7 +78,7 @@ logical_workspace() {
 # linked worktree git takes config, hooks and info/attributes from the common
 # dir, never the private one (tested on git 2.39.5; the one exception,
 # config.worktree under extensions.worktreeConfig, refuses the note). A relative
-# core.hooksPath, core.attributesFile or local remote in repo config would
+# core.hooksPath, core.attributesFile or local remote (not ".") in repo config would
 # resolve in the new worktree's own tree, unscanned: those leave W records, and
 # any W record refuses the note. (Your own config's relative hooksPath is walked
 # in each new worktree, so its records refuse the note as well.)
@@ -928,7 +928,7 @@ git_exit_scan() {
     invalid="    ! $(printf '%q' "$ws/.git") is not a valid git directory now: host git would look for a repository elsewhere (the checkout root)"
   fi
   [ "$before" != "$after" ] || [ -n "$invalid" ] || return 0
-  # Only linked worktrees added or removed in git's standard layout (STANDARD
+  # Only linked worktrees added in git's standard layout (STANDARD
   # WORKTREES above): a note, not a finding.
   local note
   if [ -z "$invalid" ] && note="$(scan_std_worktrees "$ws" "$before" "$after" 2>/dev/null)"; then

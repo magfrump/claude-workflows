@@ -63,7 +63,7 @@ directory is a hard error (it refuses rather than guessing another repo).
    host git reads to decide what to run (hooks, configs, attributes, submodule
    and embedded git dirs, local remotes, rebase todo lists); when claude exits
    it compares, and exits **3** naming anything the session added, removed or
-   changed. A linked worktree added or removed in git's own layout (an agent
+   changed. A linked worktree added in git's own layout (an agent
    worktree left behind) is not a finding: one `note:` line, and the exit
    status is claude's. It exits 4 when the exit scan cannot list or read any of it, and
    refuses to launch (exit 1) when the baseline snapshot cannot be taken — also
@@ -382,7 +382,7 @@ opens or closes a route.
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time. If you stop it, treat the checkout as unscanned. Each
-  new worktree adds about 35 ms more to the check that allows the note.
+  new worktree adds tens of milliseconds more to the check that allows the note.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
