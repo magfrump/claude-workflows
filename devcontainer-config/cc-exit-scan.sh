@@ -79,7 +79,8 @@ logical_workspace() {
 # dir, never the private one (tested on git 2.39.5; the one exception,
 # config.worktree under extensions.worktreeConfig, refuses the note). A relative
 # core.hooksPath, core.attributesFile or local remote (a remote of "." excepted,
-# but not an insteadOf base of "." or "") in any config the scan reads would
+# but not an insteadOf base of "." or "") in repo config (the checkout's or an
+# embedded repo's) would
 # resolve in the new worktree's own tree, unscanned: those leave W records, and
 # any W record refuses the note. (Your own config's relative hooksPath is walked
 # in each new worktree, including one whose .git names the container path, as
@@ -148,7 +149,7 @@ scan_git_dirs() {
 # _snap_gd, _snap_common, _snap_tmp, _snap_names/_snap_rnames (remote names). Each
 # returns 1 after printing a reason on stderr when something cannot be read.
 # (_snap_hash_str, _snap_file_is and _snap_unq, further down, are silent helpers
-# of scan_std_worktrees, which declares the _snap_bytes they need.)
+# of scan_std_worktrees, which declares the _snap_bytes _snap_file_is needs.)
 # Records are tab-separated:
 #   F <kind> <path %q> <attrs>     a file, dir or link host git reads
 #   C <config %q> <key> <value>    one config entry (labels the report only)

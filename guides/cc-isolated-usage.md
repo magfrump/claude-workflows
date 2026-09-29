@@ -343,8 +343,9 @@ For a removal, "exact" means the private dir is gone and the removed records
 are the ones git's layout makes (the `.git` file named that dir), nothing is at
 the old `.git` path, and the old working-tree directory is gone or does not look
 like a git dir (no `HEAD` next to `objects/`, no `commondir` file). A
-working-tree path with a tab, newline or other byte that bash's `%q` quotes as
-`$'…'` is a note when added but warns when removed. For an added
+working-tree path with a tab or other byte that bash's `%q` quotes as `$'…'`
+is a note when added but warns when removed; one with a newline warns either
+way. For an added
 worktree (`scan_std_worktrees` has the full rule): the private dir is the
 checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
 `-`) with `commondir` exactly `../..\n` and no `hooks/`, `config`,
@@ -360,7 +361,8 @@ would resolve in the new worktree's tree, unscanned. That includes the config
 of any repo embedded in the checkout. A relative `core.hooksPath` or
 `core.attributesFile` in your own config is walked in each new worktree, also
 one whose `.git` names the container's `/workspace/…` path (as
-`git worktree repair` would point it here), so its paths refuse the note too.
+`git worktree repair` would point it here), so its paths refuse the note too:
+with such a setting, adding or removing a worktree always warns.
 
 It catches the common plants. It **cannot** be complete, so a clean exit is not
 permission to run git in the checkout.
@@ -413,6 +415,14 @@ opens or closes a route.
   a rootless-Docker volume) is not walked; host git run through that link
   would use the repository behind it. (A removed worktree's old `.git` path is
   checked directly, so the note is refused there.)
+- **A `.git` file naming the container's path, present at launch.** One that
+  reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
+  elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
+  config there, not that git dir. `git worktree repair` may point it at a
+  different git dir (it goes by the worktree's name), and a git dir the scan
+  never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
+  during the session is either git's exact form, which maps to its own private
+  dir, or a finding; the gap is one left by an earlier session. Delete such files, or repair them and start a new session.
 - **`~` forms.** Only a leading `~/` in a config path value
   (`core.hooksPath`, `include.path`, `core.attributesFile`, an `includeIf`
   pattern) is expanded to your home. `~user/…`, a bare `~`, and a `~` in a
