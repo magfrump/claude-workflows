@@ -1,0 +1,9 @@
+2026-09-29T07:38:37Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/main/test/skills/workflow-routers.bats' exit=1 failing=not ok 1 every workflow has a router skill of the same name
+2026-09-29T07:38:38Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m1/test/skills/workflow-routers.bats' exit=1 failing=not ok 1 every workflow has a router skill of the same name
+2026-09-29T07:38:38Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m2/test/skills/workflow-routers.bats' exit=1 failing=not ok 2 each router's frontmatter names it after its workfl
+2026-09-29T07:38:39Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m2b/test/skills/workflow-routers.bats' exit=1 failing=not ok 2 each router's frontmatter names it after its workfl
+2026-09-29T07:38:39Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m3/test/skills/workflow-routers.bats' exit=1 failing=not ok 3 each router's body hands off to its own workflow fi
+2026-09-29T07:38:39Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m3b/test/skills/workflow-routers.bats' exit=1 failing=not ok 3 each router's body hands off to its own workflow fi
+2026-09-29T07:38:40Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m4/test/skills/workflow-routers.bats' exit=1 failing=not ok 4 each router identifies itself as a router in its ti
+2026-09-29T07:38:40Z cwd=/workspace/.claude/wt-routers cmd='timeout 120 bats <scratch>/m5b/test/skills/workflow-routers.bats' exit=1 failing=not ok 5 each router stays a stub (body at most MAX_BODY_LIN
+2026-09-29T07:38:40Z branch (worktree) exit=0

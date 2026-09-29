@@ -1,0 +1,85 @@
+=== main (2026-09-29T07:37:10Z)
+1..5
+not ok 1 every workflow has a router skill of the same name
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/main/test/skills/workflow-routers.bats, line 45)
+#   `return 1' failed
+# workflows with no skills/<name>/SKILL.md router: branch-strategy codebase-onboarding parallel-worktrees pr-prep research-plan-implement review-fix-loop spike task-decomposition user-testing-workflow
+ok 2 each router's frontmatter names it after its workflow and has description and when
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m1 (2026-09-29T07:37:10Z)
+1..5
+not ok 1 every workflow has a router skill of the same name
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m1/test/skills/workflow-routers.bats, line 45)
+#   `return 1' failed
+# workflows with no skills/<name>/SKILL.md router: spike
+ok 2 each router's frontmatter names it after its workflow and has description and when
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m2 (2026-09-29T07:37:11Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+not ok 2 each router's frontmatter names it after its workflow and has description and when
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m2/test/skills/workflow-routers.bats, line 61)
+#   `return 1' failed
+# bad frontmatter: pr-prep: name
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m2b (2026-09-29T07:37:11Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+not ok 2 each router's frontmatter names it after its workflow and has description and when
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m2b/test/skills/workflow-routers.bats, line 61)
+#   `return 1' failed
+# bad frontmatter: pr-prep: when
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m3 (2026-09-29T07:37:12Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+ok 2 each router's frontmatter names it after its workflow and has description and when
+not ok 3 each router's body hands off to its own workflow file
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m3/test/skills/workflow-routers.bats, line 76)
+#   `return 1' failed
+# routers whose body lacks 'Read and follow **`workflows/<name>.md`**': spike
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m3b (2026-09-29T07:37:12Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+ok 2 each router's frontmatter names it after its workflow and has description and when
+not ok 3 each router's body hands off to its own workflow file
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m3b/test/skills/workflow-routers.bats, line 76)
+#   `return 1' failed
+# routers whose body lacks 'Read and follow **`workflows/<name>.md`**': spike
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m4 (2026-09-29T07:37:12Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+ok 2 each router's frontmatter names it after its workflow and has description and when
+ok 3 each router's body hands off to its own workflow file
+not ok 4 each router identifies itself as a router in its title
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcb/m4/test/skills/workflow-routers.bats, line 89)
+#   `return 1' failed
+# routers without '(router)' in the H1: spike
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 
+=== m5 (2026-09-29T07:37:13Z)
+1..5
+ok 1 every workflow has a router skill of the same name
+ok 2 each router's frontmatter names it after its workflow and has description and when
+ok 3 each router's body hands off to its own workflow file
+ok 4 each router identifies itself as a router in its title
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
+exit 

@@ -1,0 +1,18 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..5
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 every workflow has a router skill of the same name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 each router's frontmatter names it after its workflow and has description and when
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 each router's body hands off to its own workflow file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 each router identifies itself as a router in its title
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 each router stays a stub (body at most MAX_BODY_LINES lines)
