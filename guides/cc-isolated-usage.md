@@ -340,7 +340,10 @@ warning and returns claude's status. A linked worktree takes its config, hooks
 and `info/attributes` from the checkout's own `.git`, never from its private
 dir (tested on git 2.39.5), except `config.worktree`, which refuses the note.
 For a removal, "exact" means the private dir is gone and the removed records
-are the ones git's layout makes (the `.git` file named that dir). For an added
+are the ones git's layout makes (the `.git` file named that dir), and the old
+working-tree directory is gone or does not look like a git dir (no `HEAD` next
+to `objects/`, no `commondir` file); a working-tree path with a newline or
+other byte that bash's `%q` quotes as `$'…'` warns. For an added
 worktree (`scan_std_worktrees` has the full rule): the private dir is the
 checkout's own `.git/worktrees/<name>` (`<name>` of letters, digits, `.`, `_`,
 `-`) with `commondir` exactly `../..\n` and no `hooks/`, `config`,

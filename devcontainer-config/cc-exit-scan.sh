@@ -780,6 +780,21 @@ _snap_hash_str() {
   printf '%s' "${h:0:16}"
 }
 
+# _snap_unq <%q string> <var>: sets <var> to the string printf %q quoted, for
+# its backslash form only ($'…' and '…' forms return 1). The result is checked
+# by quoting it again, so a wrong decode declines instead of passing.
+_snap_unq() {
+  local q="$1" s="" c i
+  case "$q" in \$\'*|\'*|"") return 1 ;; esac
+  for ((i = 0; i < ${#q}; i++)); do
+    c="${q:i:1}"
+    if [ "$c" = '\' ]; then i=$((i + 1)); c="${q:i:1}"; fi
+    s+="$c"
+  done
+  [ "$(printf '%q' "$s")" = "$q" ] || return 1
+  printf -v "$2" '%s' "$s"
+}
+
 # _snap_file_is <path> <hash>: <path> is a regular file, not a link, within the
 # size cap, whose bytes hash to <hash>.
 _snap_file_is() {
@@ -797,8 +812,9 @@ _snap_file_is() {
 # worktrees/<n>, <n> of [A-Za-z0-9._-]. Only dotgit, commondir-file and hooksdir
 # records differ, and the exit snapshot has no W record. Removed <n>: gone
 # `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
-# "../..\n", P gone on disk, and one gone `dotgit` record that held
-# exactly "gitdir: P\n" (either form). Added <n>:
+# "../..\n", P gone on disk, one gone `dotgit` record that held exactly
+# "gitdir: P\n" (either form), and that record's directory (the old working
+# tree) either gone or not looking like a git dir (looks_like_gitdir). Added <n>:
 # new `hooksdir P/hooks missing` and `commondir-file P/commondir` of exactly
 # "../..\n"; on disk P and worktrees/ are real dirs, P has no hooks, config,
 # config.worktree or symlink, P/gitdir is exactly "<ws or container ws>/<rel>/
@@ -808,7 +824,7 @@ _snap_file_is() {
 # strings the records hold, recomputed from <n>; nothing is unquoted.
 scan_std_worktrees() {
   local ws="$1" before="$2" after="$3" dirs common wsp ccommon="" cws="$GIT_EXIT_SCAN_CONTAINER_WS"
-  local diff line rec q attrs n p hk dk k wtrel wt g h ok std re pre lnk _snap_bytes=0
+  local diff line rec q attrs n p hk dk k wtrel wt g h ok std re pre lnk why _snap_bytes=0
   local -a added=() removed=()
   local -A left=() used=() dot=()
   # Pattern matches, not `printf | grep -q`: under the launcher's pipefail an
@@ -865,6 +881,12 @@ scan_std_worktrees() {
         if [[ "${dot[$dk]##*$'\t'}" =~ $re ]]; then ok="${dot[$dk]}"; break; fi
       done
       [ -n "$ok" ] || return 1
+      # The old working tree, if still there, must not look like a git dir: a
+      # repository left in its place is not "removed".
+      q="${ok%$'\t'*}"; q="${q#?F$'\t'dotgit$'\t'}"
+      _snap_unq "$q" wt || return 1
+      case "$wt" in */.git) wt="${wt%/.git}" ;; *) return 1 ;; esac
+      ! looks_like_gitdir "$wt" || return 1
       used["$ok"]=1; removed+=("$n")
       continue
     fi
@@ -912,7 +934,12 @@ scan_std_worktrees() {
   line=""
   [ "${#added[@]}" -eq 0 ] || line="added: $(printf '%s\n' "${added[@]}" | LC_ALL=C sort | tr '\n' ' ')"
   [ "${#removed[@]}" -eq 0 ] || line="${line:+${line% }; }removed: $(printf '%s\n' "${removed[@]}" | LC_ALL=C sort | tr '\n' ' ')"
-  echo "note: exit scan: only linked worktrees in git's standard layout changed (${line% }). They take config and hooks from the checkout's own .git, so this is not a finding."
+  why="They take config and hooks from the checkout's own .git"
+  if [ "${#removed[@]}" -gt 0 ]; then
+    [ "${#added[@]}" -eq 0 ] && why="Removed ones left no git dir behind" ||
+      why="Removed ones left no git dir behind, and added ones take config and hooks from the checkout's own .git"
+  fi
+  echo "note: exit scan: only linked worktrees in git's standard layout changed (${line% }). $why, so this is not a finding."
 }
 
 # git_exit_scan <ws> <launch snapshot> [<logical ws>]: 0 when nothing the tripwire

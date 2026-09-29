@@ -2272,7 +2272,7 @@ warns_listing_wt() {
   std_wt agent-z
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"(added: agent-z; removed: agent-y)."* ]]
+  [[ "$output" == *"(added: agent-z; removed: agent-y). Removed ones left no git dir behind, and added ones take config"* ]]
   # agent-x's working tree deleted without a prune: its git dir stays.
   rm -rf "$SCAN_WS/.claude/worktrees/agent-x"
   run git_exit_scan "$SCAN_WS" "$before"
@@ -2285,6 +2285,52 @@ warns_listing_wt() {
   rm -rf "$SCAN_WS/.git/worktrees/agent-x"
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 0 ]
+}
+
+@test "exit scan Q-094: a removal whose old working tree now looks like a git dir warns" {
+  scan_repo
+  std_wt agent-y
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  git -C "$SCAN_WS" worktree remove "$STD_WT"
+  # Control: the old directory back, holding ordinary files only.
+  mkdir -p "$STD_WT/objects"; echo x > "$STD_WT/notes.txt"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(removed: agent-y). Removed ones left no git dir behind, so this is not a finding."* ]]
+  # A bare-repo layout (HEAD next to objects/) in its place.
+  echo 'ref: refs/heads/main' > "$STD_WT/HEAD"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"WARNING: this session changed what HOST git reads"* ]]
+  [[ "$output" == *"- dotgit $STD_WT/.git "* ]]
+  [[ "$output" != *"note:"* ]]
+  # A commondir file alone (a linked-worktree git dir layout) too.
+  rm -rf "$STD_WT"; mkdir -p "$STD_WT"; echo ../.. > "$STD_WT/commondir"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+  rm -rf "$STD_WT"
+  # A working tree whose path %q can only write as $'…' is not decoded: warns.
+  local odd="$SCAN_WS/odd
+dir/agent-n"
+  git -C "$SCAN_WS" worktree add -q "$odd" -b wt-odd
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  git -C "$SCAN_WS" worktree remove "$odd"
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" != *"note:"* ]]
+}
+
+@test "_snap_unq: inverts printf %q's backslash form; other forms decline" {
+  local s out bs='\' sq="'"
+  for s in plain/path "a b/c" "x${bs}y" "~t" "q${sq}uote" "semi;&|" "*?[]"; do
+    _snap_unq "$(printf '%q' "$s")" out
+    [ "$out" = "$s" ]
+  done
+  run ! _snap_unq "$(printf '%q' "new
+line")" out
+  run ! _snap_unq "$sq$sq" out
+  run ! _snap_unq "a$bs" out
 }
 
 @test "exit scan Q-094: a removed git dir pairs only with the .git that pointed at it" {
