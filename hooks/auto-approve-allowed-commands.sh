@@ -24,16 +24,30 @@
 #   # Testing with custom permissions
 #   echo '{"tool_input":{"command":"ls | grep foo"}}' | auto-approve-allowed-commands.sh --permissions '["Bash(ls:*)", "Bash(grep:*)"]'
 #
-# ACCEPTED RISK (2026-09-18, decision log row 53): approval is prefix-matching
-# over the commands the extraction filter finds, and the filter does not descend
-# into every construct bash can execute. Reproduced bypasses — each gets
-# "allow" when only the outer command is allow-listed:
-#   echo $((1 + $(cmd)))     arithmetic expansion is not searched for $(...)
-#   cat <<EOF / $(cmd) / EOF heredoc bodies are not searched
-#   PATH=/x ls, LD_PRELOAD=  assignment prefixes are dropped before matching
-#   ls > ~/.bashrc           redirect targets are not checked
-# Closing these one at a time does not converge, so they are accepted.
-# Parse FAILURES do fail closed (see main).
+# CLOSED GAPS (2026-09-28, decision log row 64; row 53 had accepted them):
+# approval is prefix-matching over the commands the extraction filter finds,
+# and the filter does not descend into every construct bash can execute. These
+# used to get "allow" when only the outer command was allow-listed:
+#   echo $((1 + $(cmd)))     arithmetic expansion was not searched for $(...)
+#   cat <<EOF / $(cmd) / EOF heredoc bodies were not searched
+#   PATH=/x ls, LD_PRELOAD=  assignment prefixes were dropped before matching
+#   ls > ~/.bashrc           redirect targets were not checked
+# Row 53 found that closing them one at a time does not converge, and so did
+# two review rounds on a class-based fix (let 'a[$(cmd)]=1', export PATH=,
+# escaped backticks in bash -c, `tr < secret`, `read 'a[$(cmd)]'`). The hook
+# now approves only an allowlist of AST SHAPES (refuses_construct): literal
+# words, plain $NAME, pipes and && || ;, no VAR= assignment, no background &,
+# a literal command name that is neither an interpreter or wrapper (bash, sh,
+# env, xargs, sudo, ...) nor a bash builtin other than cd, pwd, echo, true,
+# false and type, and redirects that neither write nor read a path. Any other
+# construct prompts, including ones nobody has listed. Parse failures and
+# commands that extract to nothing fail closed too.
+# Cost: compound one-liners (`echo "$(git rev-parse HEAD)"`, `for ...`, `[[ ]]`,
+# `test`, `export`, `< file`) prompt even when allow-listed, and so does any
+# command run through `bash` (a `Bash(bash scripts/x.sh:*)` rule no longer
+# approves a pipeline; Claude Code's own matching still sees the rule).
+# Each approved call spawns one more jq process than before: about +25 ms
+# (mean of 20 approved `git status` calls, 110 -> 136 ms, 2026-09-28).
 #
 # ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
 # CC-ISOLATED (Q-070/Q-077). Where a Claude Code sandbox runs, permissions.deny
@@ -84,7 +98,10 @@
 # whole command in which only `*` is a wildcard (`?`, `[...]` and extglob
 # characters are literal); an allow rule is a literal command prefix:
 #   rule         as allow                               as deny
-#   Bash(ls)     prefix: `ls`, `ls -la`, `ls/x`          exact: `ls` only
+#   Bash(ls)     prefix: `ls`, `ls -la` (not `ls/x`:     exact: `ls` only
+#                a bare name never covers a path under
+#                it; `Bash(a/b)` and `Bash(python3 d)`
+#                do cover `a/b/x` and `python3 d/x`)
 #   Bash(rm:*)   word prefix: `rm x`, not `rmdir`        plain prefix `rm*`: `rmdir` too
 #   Bash(ls *)   literal `ls *`: approves nothing        glob: `ls -la`
 #   Bash         ignored                                 every command (so do
@@ -103,6 +120,9 @@ set -euo pipefail
 # Debug mode
 DEBUG=false
 NUL_DELIM=false
+# Set by main only: the hook refuses constructs (refuses_construct) that the
+# parse_commands extractor must still be able to list.
+REFUSE_CONSTRUCTS=false
 # Custom permissions for testing (JSON array like: '["Bash(ls:*)", "Bash(cat:*)"]')
 CUSTOM_PERMISSIONS=""
 # Custom deny rules for testing (same format). Set => the settings files' deny lists are ignored.
@@ -332,7 +352,13 @@ is_command_allowed() {
     # "git log --oneline" matches "git log" and "git"
     # "grep -E pattern" matches "grep"
     # "python3 .claude/skills/foo/bar.py" matches "python3 .claude/skills:*"
-    if [[ "$full_command" == "$allowed" ]] || [[ "$full_command" == "$allowed "* ]] || [[ "$full_command" == "$allowed/"* ]]; then
+    # The "$allowed/" form is for path-prefix rules ("python3 .claude/skills",
+    # "scripts/tools"). It does not apply to a bare name like "ls": "ls/x" is
+    # a different program, which bash runs from a directory named ls
+    # (decision log row 64). A rule that has an argument or is itself a path
+    # keeps it.
+    if [[ "$full_command" == "$allowed" ]] || [[ "$full_command" == "$allowed "* ]] \
+       || { [[ "$allowed" == *[\ /]* ]] && [[ "$full_command" == "$allowed/"* ]]; }; then
       debug "ALLOWED: '$full_command' (matches '$allowed')"
       return 0
     fi
@@ -402,10 +428,10 @@ main() {
 
   # Extract commands using built-in parser (NUL-delimited for multi-line command support)
   NUL_DELIM=true
-  # FAIL CLOSED on a parse failure — and ONLY on a parse failure: constructs
-  # that parse but that the extraction filter does not descend into (arithmetic
-  # expansion, heredoc bodies, VAR= prefixes, redirect targets) are still
-  # approved on the strength of the outer command (known gap, not fixed here).
+  REFUSE_CONSTRUCTS=true
+  # FAIL CLOSED on a parse failure, and on any AST shape refuses_construct does
+  # not allow: extraction fails for both, so the command falls through to the
+  # normal prompt.
   # mapfile's own status is always 0, so the parser's status has to be read from the process substitution via `wait $!`
   # (bash >= 4.4; older bash makes `wait` fail, which also falls through).
   # Without this, an unparseable command extracted to an empty list and hit the
@@ -423,9 +449,10 @@ main() {
   done
 
   # Check if no commands were found (empty input or only comments)
+  # Not approved: `let 'a[$(cmd)]=1'` extracted to nothing and used to be
+  # approved here, while bash ran the substitution (decision log row 64).
   if [[ ${#extracted_commands[@]} -eq 0 ]] || [[ -z "${extracted_commands[0]}" ]]; then
-    debug "No commands found in input, allowing"
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'
+    debug "No commands found in input; falling through to normal permission check"
     exit 0
   fi
 
@@ -659,6 +686,69 @@ def extract_commands:
 extract_commands | select(length > 0)
 JQEOF
 
+# jq filter for refuses_construct: prints the first reason the AST is not an
+# approvable shape, or nothing. A command name is the first Arg's literal text
+# (Lit, SglQuoted and literal-only DblQuoted parts joined, backslashes and any
+# leading path dropped, so 'ba''sh', \bash and /bin/bash all read as bash); any
+# other part (e.g. $X) makes it non-literal. The marker is \u0001, not \u0000:
+# jq 1.6's contains() treats a NUL-led needle as empty and matches everything.
+read -r -d '' SHAPE_FILTER << 'JQEOF' || true
+def lit_word:
+  [ .Parts[]?
+    | if .Type == "Lit" or .Type == "SglQuoted" then .Value
+      elif .Type == "DblQuoted" then
+        ([.Parts[]? | if .Type == "Lit" then .Value else "\u0001" end] | join(""))
+      else "\u0001" end ]
+  | join("");
+def plain_param:
+  (del(.Pos, .End, .Type, .Dollar, .Param, .Rbrace, .Short, .Length)
+   | with_entries(select(.value != null and .value != false)) | length) == 0;
+# External programs that run their arguments as code.
+def wrappers:
+  ["bash","sh","zsh","dash","ksh","fish","env","xargs","sudo","nohup","nice",
+   "timeout","stdbuf","watch","parallel","script","su"];
+# Every bash 5.2 builtin (`compgen -b`), except the few that evaluate nothing
+# (safe_builtins). A finite, known set, so refusing all of it converges where
+# naming dangerous ones did not: read/printf -v/test -v evaluate an array
+# subscript `a[$(cmd)]`, mapfile -C / compgen -C / bind -x run a command,
+# hash -p redefines what a name runs, unset/getopts/wait -p take names too.
+def builtins:
+  [".",":","[","alias","bg","bind","break","builtin","caller","cd","command",
+   "compgen","complete","compopt","continue","declare","dirs","disown","echo",
+   "enable","eval","exec","exit","export","false","fc","fg","getopts","hash",
+   "help","history","jobs","kill","let","local","logout","mapfile","popd",
+   "printf","pushd","pwd","read","readarray","readonly","return","set","shift",
+   "shopt","source","suspend","test","times","trap","true","type","typeset",
+   "ulimit","umask","unalias","unset","wait"];
+def safe_builtins: ["cd","pwd","echo","true","false","type"];
+([ .. | objects
+  | if has("Type") then
+      if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
+        then "node type \(.Type)"
+      elif .Type == "ParamExp" and (plain_param | not)
+        then "parameter expansion with an operator"
+      elif .Type == "CallExpr" and ((.Assigns // []) | length) > 0
+        then "assignment"
+      elif .Type == "CallExpr" then
+        ((.Args[0] // {}) | lit_word | gsub("\\\\"; "") | sub(".*/"; "")) as $name
+        | if $name == "" or ($name | index("\u0001") != null) then "non-literal command name"
+          elif ($name | IN(wrappers[])) then "interpreter or wrapper: \($name)"
+          elif ($name | IN(builtins[])) and ($name | IN(safe_builtins[]) | not)
+            then "shell builtin: \($name)"
+          else empty end
+      else empty end
+    elif (.Background // false) or (.Coprocess // false) then "background statement"
+    else empty end ]
+| first) as $reason
+# One jq pass for both answers (performance review: each extra jq process is
+# ~20 ms on every approved call): "REFUSE <reason>", or else one line of byte
+# offsets per redirect for refuses_construct's operator check.
+| if $reason != null then "REFUSE \($reason)"
+  else (.. | objects | select(has("Redirs")) | .Redirs[]?
+        | "\(.OpPos.Offset) \(.Word.Pos.Offset) \(.Word.End.Offset)")
+  end
+JQEOF
+
 # Normalize shfmt-incompatible patterns
 # shfmt can't parse [[ ! X =~ Y ]] but can parse ! [[ X =~ Y ]]
 normalize_for_shfmt() {
@@ -689,8 +779,86 @@ extract_commands_raw() {
 
   debug "AST parsed successfully"
 
+  # Shapes the hook must never approve (see refuses_construct). Returning 1
+  # makes main treat it like a parse failure: fall through to the normal
+  # prompt. bash -c / sh -c never reach the inner recursion with approval
+  # possible: refuses_construct already refuses those command names at the
+  # outer level. Gated on REFUSE_CONSTRUCTS so the parse_commands extractor
+  # still lists commands.
+  if $REFUSE_CONSTRUCTS && refuses_construct "$cmd" "$ast"; then
+    return 1
+  fi
+
   # Extract commands using jq (always newline-separated internally)
   echo "$ast" | jq -r "$JQ_FILTER" 2>/dev/null
+}
+
+# True unless the parsed command has a SHAPE the hook may approve (decision log
+# row 64). This is an allowlist of AST shapes, not a list of bad constructs:
+# row 53, and then two rounds of review on this function, found that listing
+# bad constructs does not converge (arithmetic strings such as
+# `let 'a[$(cmd)]=1'`, `export PATH=...`, escaped backticks inside bash -c ...).
+# Anything not named here makes the hook fall through to the normal prompt,
+# including constructs nobody has thought of yet. Approvable:
+#   - node types File, CallExpr, BinaryCmd (| |& && ||), Lit, SglQuoted,
+#     DblQuoted, and ParamExp that is a plain $NAME / ${NAME} / ${#NAME}
+#     (no ${x:-}, ${!x}, ${x@P}, ${a[i]}, ${x/a/b}, ${x:1}: several of those
+#     evaluate code). So no $(...), `...`, <(...), $((...)), [[ ]], (( )),
+#     let, export/declare/local/readonly, subshells, { }, if/for/while/case,
+#     functions, time, coproc;
+#   - statements that are not backgrounded (&);
+#   - simple commands with no VAR= assignment (LD_PRELOAD=, PATH=) and whose
+#     command name is literal (not $X) and is not an interpreter or wrapper
+#     that runs its arguments as code (bash -c, eval, source, env, xargs, ...);
+#   - redirects that cannot write or read a file: any operator containing '>'
+#     (>, >>, &>, &>>, >|, <>, >&) is refused unless its target is exactly
+#     /dev/null or it duplicates an fd (>&N, >&-); an input redirect `<` or
+#     `<&` is refused unless it reads /dev/null or duplicates an fd.
+#     Here-docs and here-strings (<<, <<<) pass: their text is inline.
+#   - a command name that is not a bash builtin, other than cd, pwd, echo,
+#     true, false and type (SHAPE_FILTER's builtins list says why).
+# Any one allowed command is an outer command for these constructs, so they
+# matter wherever an allow list exists: every project's own rules today, and a
+# global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-098).
+#
+# WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
+# in shfmt 3.13.1) with no stability promise across versions. The operator is
+# read instead from the command text between the redirect's OpPos and its
+# Word's Pos. Those are byte offsets into the string shfmt parsed, so $1 must be
+# that same (normalized) string, and slicing is done under LC_ALL=C (bytes).
+refuses_construct() {
+  local cmd="$1" ast="$2" op_off word_off word_end op word out
+  local LC_ALL=C
+  if ! out=$(jq -r "$SHAPE_FILTER" <<<"$ast"); then
+    debug "Refusing: shape check failed"
+    return 0
+  fi
+  if [[ "$out" == 'REFUSE '* ]]; then
+    debug "Refusing: ${out#REFUSE }"
+    return 0
+  fi
+  while read -r op_off word_off word_end; do
+    [[ -n "$op_off" ]] || continue
+    op=${cmd:op_off:word_off-op_off}
+    op=${op//[[:space:]]/}
+    word=${cmd:word_off:word_end-word_off}
+    # Here-docs and here-strings (<<, <<-, <<<) carry their text inline. A
+    # plain `<` (or `<&`) opens a path, and any approved command that prints its
+    # input would print that file (`tr -d x < ~/.claude/.c*`), so it passes only
+    # from /dev/null or as an fd duplication.
+    if [[ "$op" == '<<'* ]]; then continue; fi
+    if [[ "$op" == '<&' && "$word" =~ ^([0-9]+|-)$ ]]; then continue; fi
+    if [[ "$op" == '<' && "$word" == /dev/null ]]; then continue; fi
+    if [[ "$op" == '<'* && "$op" != *'>'* ]]; then
+      debug "Refusing input redirect: '$op' '$word'"
+      return 0
+    fi
+    if [[ "$op" == '>&' && "$word" =~ ^([0-9]+|-)$ ]]; then continue; fi
+    if [[ "$op" != '>&' && "$word" == /dev/null ]]; then continue; fi
+    debug "Refusing redirect: '$op' '$word'"
+    return 0
+  done <<<"$out"
+  return 1
 }
 
 # Check if a command is "bash -c" or "sh -c" and extract the inner command

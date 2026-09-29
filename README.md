@@ -159,7 +159,7 @@ machine, they must be recreated by hand:
 - `hooks/guard-trusted-writes.py` — `PreToolUse` gate on writes to trusted-policy files: hard-deny on Bash write primitives targeting protected config paths, ask on soft policy paths when the session is web-tainted
 - `hooks/web-taint-mark.py` — `PostToolUse` marker that records the session ingested web content, feeding the guard's taint check
 - `hooks/live-verify-gate.sh` — `PreToolUse` Bash gate that blocks a `git commit` touching a cc-isolated enforcement file unless the message carries a `Live-verified:` trailer
-- `hooks/auto-approve-allowed-commands.sh` — `PreToolUse` Bash hook that auto-approves piped/compound commands when every component matches an allowlisted prefix (Claude Code's native prefix matching doesn't handle pipes); depends on `shfmt` + `jq`
+- `hooks/auto-approve-allowed-commands.sh` — `PreToolUse` Bash hook that auto-approves pipelines and `&&`/`||`/`;` lists when every component matches an allowlisted prefix and the command has only safe shapes (no substitutions, assignments, compound commands, interpreters or file redirects; decision log row 64). Claude Code's native prefix matching doesn't handle pipes. Depends on `shfmt` + `jq`
 
 ### Tests
 Bats suites under `test/` cover hooks (`test/hooks/`), skill contracts (`test/skills/`), scripts (`test/scripts/`), and repo invariants (cross-reference integrity, guide-index sync, workflow required sections). Run a suite with `bats <file>`.

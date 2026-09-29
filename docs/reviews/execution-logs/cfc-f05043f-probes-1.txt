@@ -1,0 +1,65 @@
+# cmd: bash /tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/probe.sh '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)"]' '[]' < cmds1.txt ; cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:51:22-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+no     ls > out
+no     ls $(pwd)
+no     (ls $(pwd))
+no     { ls $(pwd); }
+no     f() { ls $(pwd); }; f
+no     ls | ls $(pwd)
+no     ls && ls $(pwd) || ls
+no     if ls; then ls $(pwd); fi
+no     while ls $(pwd); do ls; done
+no     for i in a; do ls $(pwd); done
+no     case x in x) ls $(pwd);; esac
+no     bash -c 'ls $(pwd)'
+no     sh -c 'ls > out'
+no     coproc ls $(pwd)
+no     coproc ls > out
+no     time ls $(pwd)
+no     time ls > out
+no     ! ls $(pwd)
+no     ! ls > out
+no     a=( $(ls) )
+no     declare x=$(ls)
+no     export x=$(ls)
+no     local x=$(ls)
+no     [[ $(ls) ]]
+no     (( $(ls) ))
+no     ls <<< $(pwd)
+no     ls < <(ls)
+no     ls > >(ls)
+no     ls >(ls)
+ALLOW  export PATH=/workspace/bin:$PATH; ls
+ALLOW  declare -x LD_PRELOAD=/workspace/x.so; ls
+ALLOW  readonly PATH=/workspace/bin; ls
+ALLOW  typeset -x PATH=/workspace/bin; ls
+ALLOW  export PATH=/workspace/bin
+ALLOW  let 'a[$(id>/dev/null)]=1'
+ALLOW  [[ 'a[$(id)]' -eq 0 ]]
+ALLOW  (( a[1] ))
+ALLOW  bash -c "ls \\`pwd\\`"
+no     bash -c "ls \\$(pwd)"
+ALLOW  bash -c "ls \\$HOME"
+ALLOW  bash -c $'ls \\x3e out'
+no     bash -c $'ls \\x24(pwd)'
+no     bash -c "ls \\\\> out"
+no     ls >&file
+ALLOW  ls >& 2
+no     ls 2>&1-
+no     ls >&$fd
+ALLOW  ls <> /dev/null
+no     ls {fd}>out
+ALLOW  ls 2>/dev/null
+ALLOW  ls >/dev/null
+ALLOW  ls >&-
+ALLOW  ls >&2
+ALLOW  ls > /dev/null
+no     ls >/dev/null2
+ALLOW  ls 1>/dev/null
+no     > out
+no     ls é > out
+ALLOW  ls é 2>/dev/null
+no     ls 'é' > out; ls
+no     ls\r > out
+no     ls\t>\tout
+# exit: 0

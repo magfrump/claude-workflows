@@ -1,0 +1,153 @@
+# cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:53:20-07:00 ; HEAD=f05043f
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## bats --count at HEAD: hook=42 wiring=16
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## bats --count at 4dff0e9: hook=38 wiring=16
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## bats --count at main: hook=36 wiring=16
+## cmd: bats test/auto-approve-allowed-commands.bats test/link-claude-home-wiring.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..58
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 project allow entries are honored when the global settings.json has only a deny list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 project allow entries are honored when the global settings.json has no permissions key at all
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 a command outside every allow list still falls through to the normal prompt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 a pipeline is allowed only when every component is allow-listed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 a command the parser cannot read falls through instead of being allowed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 an unparseable bash -c inner script falls through instead of being allowed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 a parseable allow-listed command is still allowed after the fail-closed change
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 reproduction: the $(( )) exfiltration is refused even with no Bash deny rule (log 64)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 reproduction: with no Bash deny rule the plain exfiltration is approved when curl is allowed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 reproduction: the wired credentials deny rule makes the hook fall through
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 deny rules from the project settings are honored as well as the global ones
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 a legacy prefix deny rule blocks an extracted command inside a pipeline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 a deny rule does not stop unrelated allow-listed commands
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 the credentials deny rule in hooks/wiring.json is one the hook honors
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 quote-split and backslash spellings of the credentials name are caught by the de-quoted match
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 string-match limit: a glob spelling of the credentials path is still approved (documented, not fixed)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 string-match limit: a variable set by an earlier command is still approved (documented, not fixed)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 a variable whose value is spelled out in the same command is caught by the raw-string check
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 glob metacharacters other than * in a deny rule match literally
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 ? in a deny rule is a literal character, not a one-character wildcard
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 a bare Bash deny rule means the hook never approves
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 Bash(*) and Bash(**) deny rules mean the hook never approves
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 a malformed global settings file means nothing is approved, even with the deny rule in the project
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 settings files of the wrong shape fail closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 an unparseable project settings.json fails closed when the deny rule sits in settings.local.json
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 --deny that is not a JSON array of strings fails closed; an empty array denies nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 quoting a word does not get a command past a narrower deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 the global settings file is read from CLAUDE_CONFIG_DIR, as link-claude-home.sh writes it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 a relative CLAUDE_CONFIG_DIR fails closed instead of dropping the global deny rules
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 a newline in the global settings path fails closed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 a NUL inside a settings deny rule fails closed, never becomes an allow rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 a NUL-split credentials deny rule fails closed instead of being dropped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 a NUL inside a --deny rule fails closed; inside a --permissions rule it is dropped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 rule table: Bash(ls) is a prefix as allow and an exact command as deny
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 rule table: Bash(rm:*) is a word prefix as allow and a plain prefix as deny
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 rule table: Bash(ls *) approves nothing as allow and is a glob as deny
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 rule table: a bare Bash rule is ignored as allow and denies everything as deny
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 a redirect that can write a file is not approved, at any nesting level
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 any command or process substitution, and any VAR= assignment, is not approved (log 64)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 arithmetic, parameter expansion and quoted heredocs without substitution are still approved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 the parse_commands extractor still lists commands the hook refuses to approve
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 /dev/null targets, fd duplication and input redirects are still approved
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 fresh volume with no settings.json gets every wired hook and deny rule
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 merge is idempotent across repeated container starts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 unrelated settings keys, foreign hooks, and user permissions survive the merge
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 {{CLAUDE_DIR}} is substituted and _comment is stripped
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 an unparseable settings.json is refused, not overwritten
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 every command in wiring.json points at a hook that exists
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 every declared hook command arrives in settings.json by name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 a stale version of one of our groups is replaced, not duplicated
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 a foreign group is kept even when it shares an event with ours
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 wiring.json declares only known hook event names
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 wiring.json declares only known permission modes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 the deny rules the guard hook's HARD tier depends on are wired
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 the merged settings carry the Bash deny rule for the credentials file (Q-077)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 legacy single-slash deny rules are pruned; the user's own rules survive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install
+# exit: 0

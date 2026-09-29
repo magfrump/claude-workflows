@@ -1,0 +1,51 @@
+# cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:52:34-07:00
+## cmd: printf %s 'bash -c "ls \$(pwd)"' | jq -Rs '{tool_input:{command:.}}' | bash hooks/auto-approve-allowed-commands.sh --debug --permissions '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' --deny '[]'
+[DEBUG] Found shell -c, recursing into: ls \$(pwd)
+[DEBUG] Parse error: 1:6: a command can only contain words and redirects; encountered `(`
+Parse error: 1:6: a command can only contain words and redirects; encountered `(`
+[DEBUG] Command parsing failed
+# exit: 0
+## cmd: printf %s 'x=$(ls > out)' | jq -Rs '{tool_input:{command:.}}' | bash hooks/auto-approve-allowed-commands.sh --debug --permissions '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' --deny '[]'
+[DEBUG] Refusing: substitution or assignment
+[DEBUG] Command parsing failed
+# exit: 0
+## cmd: printf %s 'ls $((1 + $(wc -l)))' | jq -Rs '{tool_input:{command:.}}' | bash hooks/auto-approve-allowed-commands.sh --debug --permissions '["Bash(ls:*)","Bash(wc:*)","Bash(echo:*)","Bash(bash:*)"]' --deny '[]'
+[DEBUG] Refusing: substitution or assignment
+[DEBUG] Command parsing failed
+# exit: 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+## normalize round-trip: in=-n out='' same=no
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+## normalize round-trip: in=-e out='' same=no
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+## normalize round-trip: in=ls\ a\\\\tb\ \>\ /dev/null out=ls\ a\\\\tb\ \>\ /dev/null same=yes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+## normalize round-trip: in=$'ls \r>/dev/null' out=$'ls \r>/dev/null' same=yes
