@@ -1,8 +1,8 @@
-Commit: 3aee138
+Commit: de53069
 
 # Code Review Rubric
 
-**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29 | **Status: 🟡 fixes applied; confirming pass pending**
+**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29 | **Status: 🟡 HELD — review cap reached (3 iterations); gate decision: escalate to the user.** Final pass 2 found Incorrects, fixed in baa46e3 and verified by tests (each new test fails on the previous script) and the fix-drift check, but not by a fourth full pass.
 
 Loop:
 1. **Iteration 1:** pass 1 on the combined unit (89a3d3b); rubric `code-review-rubric-2026-09-29-feat-dev-cycle.md`.
@@ -42,3 +42,20 @@ None. Security confirmed the option-name fix complete: 7 bypass shapes, no execu
 | C9 | Option-name test needs both defences removed to fail; carried list not machine-splittable; symlinked roadmap followed | 🟢 Won't-Fix (override log / informational) |
 
 Size: the unit stays ≤400 changed code lines (396) after the fixes. Comments and section echoes were compressed; output is unchanged apart from the fixes.
+
+---
+
+## Final pass 2 (iteration 3, on de53069)
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| F1 | Records reaching main by fast-forward, or existing only on the checked-out branch, were carried forward unjudged | api final2 F1 (High); fact-check r1, r2, r3 | ✅ Fixed (baa46e3): compare the trigger section at the recorded window start ("Main at:") with the working tree; tests |
+| F2 | `git status` rewrote .git/index (lock contention in the shared checkout; "writes nothing" false) | security final2 #2; fact-check r2 (Incorrect), r1, r3 | ✅ Fixed (no git status call) |
+| F3 | Control codes stripped only from merge subjects; rubric C5 had claimed fixed | security final2 #1 (Medium) | ✅ Fixed (one filter on all output); test |
+| F4 | Header: failed step "exits 1" (it exits with the command's code) | fact-check r1 (Incorrect) | ✅ Fixed (wording) |
+| F5 | File names as pathspec wildcards; newline in a file name forges a line | security final2 #3, #4 | ✅ Fixed (literal pathspecs; newline replaced) |
+| F6 | Two spellings of "uncommitted"; Window line imprecise; "last committed" reads the current branch | api final2 F2; fact-check | ✅ Fixed (one spelling; labelled "on this branch") |
+| F7 | File-level carry-forward cost (earlier deferral) | performance | ✅ Resolved by F1's design |
+| F8 | TAB kept by the control filter; `--since` with no value prints bash's message; DEV_CYCLE_TODAY not in --help | fact-check, api | 🟢 Won't-Fix (tab is layout; exit code correct; test hook) |
+
+**Gate (review-fix-loop hard cap): escalate.** The unit changed after its last full pass. It is held unmerged, with Q-100 in docs/working/questions.md on feat/dev-cycle. That entry offers two choices: a fourth full pass, or merge on the evidence above.
