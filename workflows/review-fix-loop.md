@@ -1,5 +1,6 @@
 ---
 value-justification: "Replaces open-ended review-comment-fix cycles with a structured convergence loop that reaches clean code in fewer iterations."
+router: "none — runs only inside pr-prep step 3, never on its own (see Relationship to other workflows)"
 ---
 
 # Review → Fix → Revalidate Loop

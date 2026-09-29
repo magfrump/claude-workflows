@@ -1,0 +1,13 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:01:09Z
+== AGENTS.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== GEMINI.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/old-AGENTS.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== global-instructions/CLAUDE.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== global lines mentioning research-plan-implement
+11:**How to use these workflows:** Just describe your task to Claude — it will evaluate the triggers below and automatically select the matching workflow. You can also request a specific workflow by name (e.g., "use the spike workflow for this"). If no trigger matches, Claude defaults to research-plan-implement (RPI). You don't need to memorize the table; it's here so you can see what Claude will do and why.
+24:| 6 | **Non-trivial feature or bug fix** (touches >1 file, root cause unclear, needs codebase understanding) | `research-plan-implement.md` | e.g., "Fix the login timeout bug" or "Add CSV export to the reports page" · The default. If RPI research reveals a design fork, invoke DD inline. If research reveals root cause of a bug, skip to RPI step 7, Verify and loop (see debugging defaults below). |

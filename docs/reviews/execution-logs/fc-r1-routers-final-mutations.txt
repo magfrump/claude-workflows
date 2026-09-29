@@ -1,0 +1,85 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== M1 delete spike router
+not ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M2a opt-out without reason
+ok 1 every workflow without router: none has a router skill of the same name
+not ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M2b opted-out gains skills dir
+ok 1 every workflow without router: none has a router skill of the same name
+not ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M3a wrong name
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+not ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M3b no description
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+not ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M4a no handoff
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+not ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M4b no installed path
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+not ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M4c no never-follow
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+not ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M5 no (router) in H1
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+not ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M6 body > 45 lines
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+not ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M7 control: handoff moved (valid body keeps it) sanity
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)
+== M8 handoff only in frontmatter
+ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+not ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)

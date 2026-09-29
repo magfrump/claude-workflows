@@ -1,0 +1,19 @@
+set -u
+W=/workspace/.claude/wt-routers
+S=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad
+fresh() { rm -rf $S/mut; mkdir -p $S/mut/test/skills; cp -r $W/skills $W/workflows $S/mut/; cp $W/test/skills/workflow-routers.bats $S/mut/test/skills/; }
+run() { echo "== $1"; timeout 60 bats $S/mut/test/skills/workflow-routers.bats 2>/dev/null | grep -E '^(ok|not ok)'; }
+M=$S/mut
+fresh; rm -r $M/skills/spike; run "M1 delete spike router"
+fresh; sed -i 's/^router: .*/router: "none"/' $M/workflows/review-fix-loop.md; run "M2a opt-out without reason"
+fresh; mkdir $M/skills/review-fix-loop; run "M2b opted-out gains skills dir"
+fresh; sed -i 's/^name: spike$/name: spikey/' $M/skills/spike/SKILL.md; run "M3a wrong name"
+fresh; sed -i 's/^description:/desc:/' $M/skills/spike/SKILL.md; run "M3b no description"
+fresh; sed -i 's/Read and follow/Read/' $M/skills/spike/SKILL.md; run "M4a no handoff"
+fresh; sed -i 's#~/.claude/workflows/spike.md#the installed copy#' $M/skills/spike/SKILL.md; run "M4b no installed path"
+fresh; sed -i 's/Never follow a same-named file/Avoid a same-named file/' $M/skills/spike/SKILL.md; run "M4c no never-follow"
+fresh; sed -i 's/^# Spike (router)/# Spike/' $M/skills/spike/SKILL.md; run "M5 no (router) in H1"
+fresh; for i in $(seq 40); do echo "filler $i" >> $M/skills/spike/SKILL.md; done; run "M6 body > 45 lines"
+fresh; printf -- '---\nname: spike\ndescription: x\n---\n# Spike (router)\n' > $M/skills/spike/SKILL.md; printf 'Read and follow **`workflows/spike.md`** ~/.claude/workflows/spike.md Never follow a same-named file\n' >> $M/skills/spike/SKILL.md; sed -i 's/^description: x$/description: x\nRead and follow **`workflows\/spike.md`**/' $M/skills/spike/SKILL.md; run "M7 control: handoff moved (valid body keeps it) sanity"
+fresh; printf -- '---\nname: spike\ndescription: x Read and follow **`workflows/spike.md`** ~/.claude/workflows/spike.md Never follow a same-named file\n---\n# Spike (router)\nnothing\n' > $M/skills/spike/SKILL.md; run "M8 handoff only in frontmatter"
+rm -rf $S/mut

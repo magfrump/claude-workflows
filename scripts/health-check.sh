@@ -202,9 +202,9 @@ check_skill_frontmatter() {
 
 # Extract workflow filenames referenced in a markdown file.
 # Handles three syntaxes:
-#   CLAUDE.md:  **research-plan-implement.md**
-#   AGENTS.md:  **@./workflows/research-plan-implement.md**
-#   GEMINI.md:  **research-plan-implement.md**
+#   CLAUDE.md:            `research-plan-implement.md`
+#   AGENTS.md, GEMINI.md: **research-plan-implement.md**
+#   legacy AGENTS.md:     **@./workflows/research-plan-implement.md**
 extract_workflows() {
     local file="$1"
     # Allow ** or ` as the delimiter. CLAUDE.md uses backticks for all filenames

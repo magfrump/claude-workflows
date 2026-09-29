@@ -1,0 +1,77 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:35:36Z
+== pos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1:- **@./workflows/pr-prep.md** — the old AGENTS.md form
+2:@README.md
+3:@workflows/x.md
+4:load @~/.aws/credentials here
+5:(@./x.md)
+6:"@../y.md"
+7:[@/abs/z.md]
+rc=0
+== neg
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+rc=1
+== probe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1:install @alice/pkg from npm
+6:@LOCALNOTES.local.md
+12:**@x.md**
+13:@x.md.
+17:@./fenced.md
+19:@./double.md
+20:a @scope/thing b
+rc=0
+== AGENTS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+rc=1
+== GLOBAL
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+rc=1
+== old AGENTS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+9:- **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+10:- **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+11:- **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+12:- **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+13:- **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+14:- **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+15:- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+16:- **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+18:- **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+rc=0
+== old @./workflows count
+9
+== @ in global
+76:Plugins under `~/.claude/plugins/cache/` ship skills that auto-trigger from their own descriptions, independent of the routing tables below. Auto-trigger applies only to *installed* plugins: `claude plugin install <name>@claude-plugins-official` works inside the cc-isolated sandbox (the marketplace clone is local; no image change needed) but the install lives in the per-project `~/.claude` volume and takes effect at the next session start. If one of the plugins below isn't installed in the current project's volume, install it rather than reimplementing it. The ones most relevant to routine work:
+== @ in AGENTS
+== sizes
+workflows/research-plan-implement.md bytes=68867 chars=68867
+workflows/divergent-design.md bytes=80340 chars=80340
+workflows/parallel-worktrees.md bytes=7596 chars=7596
+workflows/task-decomposition.md bytes=21556 chars=21556
+workflows/pr-prep.md bytes=44652 chars=44652
+workflows/spike.md bytes=24471 chars=24471
+workflows/branch-strategy.md bytes=25541 chars=25541
+workflows/user-testing-workflow.md bytes=30395 chars=30395
+workflows/codebase-onboarding.md bytes=54996 chars=54996
+total bytes=358414 chars=358414 tokens(bytes/4)=89603 tokens(chars/4)=89603
+== head diff agents/gemini
+diffrc=0
+== bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the import finder catches every @-import form and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 AGENTS.md and the global instructions have no @-imports
+batsrc=0

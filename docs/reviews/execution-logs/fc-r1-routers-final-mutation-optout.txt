@@ -1,0 +1,7 @@
+== M9 drop the opt-out line
+not ok 1 every workflow without router: none has a router skill of the same name
+ok 2 a workflow that opts out gives a reason and has no router
+ok 3 each router's frontmatter names it after its workflow and has a description
+ok 4 each router's body hands off to the installed copy of its own workflow
+ok 5 each router identifies itself as a router in its title
+ok 6 each router stays a stub (body at most MAX_BODY_LINES lines)

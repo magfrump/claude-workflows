@@ -1,0 +1,173 @@
+== 2026-09-29T07:48:34Z cwd=/workspace/.claude/wt-agents-md
+$ timeout 120 bats test/agents-gemini-sync.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the import finder matches Claude Code's import grammar
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 AGENTS.md and the global instructions have no @-imports
+exit=0
+== 2026-09-29T07:48:55Z adversarial
+  | A^I@tab.md$
+  | B **@bold.md**$
+  | C _@em.md_$
+  | D ~~@strike.md~~$
+  | E > @quote.md$
+  | F >@quote2.md$
+  | G [@link.md](http://x)$
+  | H <span>@html.md</span>$
+  | I <!-- @comment.md -->$
+  | J foo_@intraword.md$
+  | K foo**@intraword2.md**$
+  | L ``a ` @nested.md ``$
+  | M `a` @between.md `b`$
+  | N @@double.md$
+  | O @#frag$
+  | P ~~~$
+  |     @tildefence.md$
+  | ~~~$
+  | Q$
+  | $
+  |     @indented.md$
+  | $
+  | R ````$
+  | ```$
+  | @inquadfence.md$
+  | ````$
+  | S after quad fence @x.md$
+$ source fi.sh; find_imports adv.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1:A	@tab.md
+2:B **@bold.md**
+3:C _@em.md_
+5:E > @quote.md
+9:I <!-- @comment.md -->
+10:J foo_@intraword.md
+11:K foo**@intraword2.md**
+13:M  @between.md 
+17:    @tildefence.md
+21:    @indented.md
+27:S after quad fence @x.md
+exit=0
+$ find_imports crlf.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1:T @crlf.md^M$
+exit=0
+== 2026-09-29T07:49:08Z adversarial-2 (fences, multi-line span)
+  |      1	~~~
+  |      2	@tildefence.md
+  |      3	~~~
+  |      4	````
+  |      5	```
+  |      6	@inquadfence.md
+  |      7	````
+  |      8	after @x.md
+  |      9	`start
+  |     10	@multilinespan.md`
+$ find_imports adv2.md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2:@tildefence.md
+6:@inquadfence.md
+exit=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-29T07:49:37Z adversarial-3 (multi-line code span)
+  |      1	para `start
+  |      2	@multilinespan.md` end
+$ find_imports adv3.md
+2:@multilinespan.md` end
+exit=0
+== 2026-09-29T07:49:37Z repo files
+$ find_imports <main:AGENTS.md>
+9:- **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+10:- **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+11:- **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+12:- **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+13:- **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+14:- **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+15:- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+16:- **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+18:- **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+exit=0
+$ find_imports <5ee8315^:AGENTS.md> | wc -l
+9
+GEMINI.md: 0
+README.md: 0
+AGENTS.md: 0
+global-instructions/CLAUDE.md: 0
+workflows/branch-strategy.md: 0
+workflows/codebase-onboarding.md: 0
+workflows/divergent-design.md: 0
+workflows/parallel-worktrees.md: 0
+workflows/pr-prep.md: 0
+workflows/research-plan-implement.md: 0
+workflows/review-fix-loop.md: 0
+workflows/spike.md: 0
+workflows/task-decomposition.md: 0
+workflows/user-testing-workflow.md: 0
+== 2026-09-29T07:49:37Z missing-file behaviour of the no-imports test loop
+/nonexistent/AGENTS.md is missing or unreadable
+/nonexistent/global-instructions/CLAUDE.md is missing or unreadable
+failed=1
+== 2026-09-29T07:49:37Z sizes of the nine workflows named by main:AGENTS.md
+workflows/research-plan-implement.md bytes=68867 chars=68505
+workflows/divergent-design.md bytes=80340 chars=79048
+workflows/parallel-worktrees.md bytes=7596 chars=7562
+workflows/task-decomposition.md bytes=21556 chars=21474
+workflows/pr-prep.md bytes=44652 chars=44461
+workflows/spike.md bytes=24471 chars=24347
+workflows/branch-strategy.md bytes=25541 chars=25395
+workflows/user-testing-workflow.md bytes=30395 chars=30158
+workflows/codebase-onboarding.md bytes=54996 chars=54648
+total bytes=358414 chars=355598 chars/4=88899
+== byte-for-byte below header
+identical below line 3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-29T07:50:13Z cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/t: copy of the bats file; AGENTS.md and the global instructions file absent
+$ timeout 120 bats test/agents-gemini-sync.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+# (in test file test/agents-gemini-sync.bats, line 16)
+#   `[ -f "$AGENTS" ] || { echo "AGENTS.md not found"; return 1; }' failed
+# AGENTS.md not found
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 the import finder matches Claude Code's import grammar
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 AGENTS.md and the global instructions have no @-imports
+# (in test file test/agents-gemini-sync.bats, line 93)
+#   `[ "$failed" -eq 0 ]' failed
+# /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/t/test/../AGENTS.md is missing or unreadable
+# /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/t/test/../global-instructions/CLAUDE.md is missing or unreadable
+exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== 2026-09-29T07:51:44Z old (7b43db2) finder on 2f5fba3's named cases
+  |      1	@README
+  |      2	@package.json
+  |      3	@x.MD
+  |      4	(@./x)
+  |      5	"@../y"
+  |      6	```
+  |      7	@./fenced.md
+  |      8	```
+  |      9	a ``@./y.md`` b
+$ old_find_imports old-cases.md
+4:(@./x)
+5:"@../y"
+7:@./fenced.md
+9:a @./y.md b
+exit=0

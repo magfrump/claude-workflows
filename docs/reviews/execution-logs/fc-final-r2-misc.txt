@@ -1,0 +1,28 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:37:08Z
+== byte comparison below header
+identical below line 3
+== shared section headings
+5:## Cross-project Workflows
+22:## Skills
+41:## Context Packing
+52:## Shared Thoughts
+65:## General Principles
+126:## Context Packing
+153:## Shared Thoughts
+303:## General Principles
+== log-usage.sh event/tool matching
+4:# Input: JSON on stdin with tool_name and tool_input
+7:# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+13:# extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and
+32:  # `via == "skill_tool"` to count real Skill-tool invocations.
+33:  #   skill_tool      — Skill tool invocation (real use)
+34:  #   file_read       — Read of SKILL.md / workflow / command (consultation)
+52:  Skill)
+59:  Read)
+61:    # Check skills first — a path like claude-workflows/skills/x.md contains
+62:    # both "workflows" and "skills"; the more specific match wins.
+66:    elif [[ "$FILE_PATH" == */workflows/* ]]; then
+== Claude Code installed version and memory-import extractor
+2.1.284 (Claude Code)
+function yRn(e,n){let r=new Set;function s(h){let S=/(?:^|\s)@((?:[^\s\\]|\\ )+)/g,w;while((w=S.exec(h))!==null){let M=w[1];if(!M)continue;let F=M.indexOf("#");if(F!==-1)M=M.substring(0,F);if(!M)continue;if(M=M.replaceAll("\\ "," "),M){if(!fC(M)&&(M.startsWith("./")||M.startsWith("~/")||M.startsWith("/")&&M!=="/"||!M.startsWith("@")&&!M.match(/^[#%^&*()]+/)&&M.match(/^[a-zA-Z0-9._-]/))){let K=Ye(M,Nb(n));r.add(K)}}}}function g(h){for(let S of h){if(S.type==="code"||S.type==="codespan")continue;if(S.type==="html"){let w=S.raw||"",M=w.trimStart();if(M.startsWith("<!--")&&M.includes("-->")){let F=/<!--[\s\S]*?-->/g,W=w.replace(F,"");if(W.trim().length>0)s(W)}continue}if(S.type==="text")s(S.text||"");if(S.tokens)g(S.tokens);if(S.items)g(S.items)}}return g(e),[...r]}var _Rn=5;function RL(e,n){if(!n.isSymlink||n.isCanonical)return!1;return!(n.resolvedPath===e&&UN(e))}function het(){let e=Je().claudeMdExcludes;if(!e||e.length===0)return()=>!1;let n=kRn(ae(),e).filter((s)=>s.length>0);if(n.length===0)return()=>!1;let r=iet.default(n,{dot:!0});return(s,g)=>(g==="User"||g==="Project"||g==="Local")&&r(s.replaceA

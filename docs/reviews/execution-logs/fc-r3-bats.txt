@@ -1,0 +1,67 @@
+2026-09-29T00:02:07-07:00
+cwd=/workspace/.claude/wt-agents-md
+$ timeout 120 bats test/agents-gemini-sync.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 AGENTS.md has no @-imports
+exit=0
+$ (copy with main:AGENTS.md) timeout 120 bats /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/oldrepo/test/agents-gemini-sync.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/oldrepo/test/agents-gemini-sync.bats, line 26)
+#   `return 1' failed
+# AGENTS.md and GEMINI.md have drifted (after stripping headers):
+# 6,13c6,13
+# < - **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+# < - **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+# < - **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+# < - **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+# < - **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+# < - **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+# < - **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+# < - **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+# ---
+# > - **research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+# > - **divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+# > - **parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+# > - **task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+# > - **pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+# > - **spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+# > - **branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+# > - **user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+# 15c15
+# < - **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+# ---
+# > - **codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 2 AGENTS.md has no @-imports
+# (in test file /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/oldrepo/test/agents-gemini-sync.bats, line 38)
+#   `return 1' failed
+# AGENTS.md contains @-imports, which Claude Code expands into every session:
+# 9:- **@./workflows/research-plan-implement.md** — The default development loop. Research the codebase, write a plan, get human review, implement. Use for any non-trivial feature or bug fix.
+# 10:- **@./workflows/divergent-design.md** — Structured brainstorming for architectural, library, or design decisions. Use when the first idea is probably not the best idea.
+# 11:- **@./workflows/parallel-worktrees.md** — Batch fan-out: when one message bundles 2+ independent tasks, split them, route each item on its own, and implement independent items in parallel git worktrees, then review and merge each item on its own. Use when a request decomposes into tasks that share no files or state.
+# 12:- **@./workflows/task-decomposition.md** — Breaking large tasks into independent sub-investigations. Use when a task touches multiple subsystems.
+# 13:- **@./workflows/pr-prep.md** — Packaging work for async review across timezones. Use before opening any PR.
+# 14:- **@./workflows/spike.md** — Quick timeboxed exploration of a library, approach, or proof-of-concept. Use when the question is "can this work?" not "build this."
+# 15:- **@./workflows/branch-strategy.md** — Branch management and dev integration branch workflow for high-throughput feature development with async review.
+# 16:- **@./workflows/user-testing-workflow.md** — Planning, running, and interpreting usability tests. Use when you need to design a user test, write moderator scripts, or analyze usability findings.
+# 18:- **@./workflows/codebase-onboarding.md** — Structured orientation for unfamiliar codebases. Use when starting a new project or returning after a long absence — before any task-specific work.
+exit=1

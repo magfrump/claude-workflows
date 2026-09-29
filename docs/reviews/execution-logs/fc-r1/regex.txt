@@ -1,0 +1,23 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:01:09Z
+== old AGENTS.md matches (count):
+9
+== new AGENTS.md:
+grep exit=1
+== synthetic lines (MATCH/miss):
+MATCH  - **@./workflows/x.md** — old form
+MATCH  @./workflows/x.md
+MATCH  see @../x.md here
+MATCH  @/abs/path.md
+MATCH  `@./x.md`
+miss   @x.md
+miss   see @x.md here
+miss   @~/x.md
+miss   see @~/.claude/x.md
+miss   @workflows/x.md
+miss   (@./x.md)
+miss   "@./x.md"
+miss   [@./x.md]
+miss   contact magfrump@gmail.com
+miss   user@./weird
+miss   foo@/bar

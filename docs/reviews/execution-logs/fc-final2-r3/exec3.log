@@ -1,0 +1,60 @@
+$ grep -nE '^[[:space:]]*(````|~~~)' AGENTS.md global-instructions/CLAUDE.md; grep -nE '^[[:space:]]*```.*```' AGENTS.md global-instructions/CLAUDE.md; echo done # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:53:06Z
+done
+exit=0
+$ sed -n '1,14p' hooks/log-usage.sh # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:53:06Z
+#!/usr/bin/env bash
+# PreToolUse hook: logs skill invocations, workflow file reads, and
+# sub-agent skill dispatches to JSONL.
+# Input: JSON on stdin with tool_name and tool_input
+# Output: nothing (passthrough — never blocks tool execution)
+#
+# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+# read through Bash (`cat`), an `@` import, or text inlined into a subagent
+# brief produces no event, and nothing fires in sessions without the wiring.
+# Counts from this log are lower bounds; see Q-017 (questions-archive.md).
+
+# Shared preamble + agent-name helper. Sets up trap, reads stdin into INPUT,
+# extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and
+# populates TS / PROJECT / BRANCH / LOG_FILE.
+exit=0
+$ cd /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/cases && for f in *.md; do fin=$(source ../finder.sh; find_imports $f | tr '\n' '|'); cc=$(timeout 20 node ../cc-extract.js $f); printf '%-24s finder=[%s]  cc=%s\n' "${f%.md}" "$fin" "$cc"; done # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:53:06Z
+after_codespan           finder=[]  cc=["aftercs.md"]
+after_link               finder=[]  cc=["afterlink.md"]
+blockquote               finder=[]  cc=["./bq.md"]
+br_html                  finder=[]  cc=["brhtml.md"]
+crlf                     finder=[1:@./crlf.md|]  cc=["./crlf.md"]
+em_us                    finder=[1:_@emus.md_|]  cc=["emus.md"]
+escaped_bs               finder=[]  cc=["escbs.md"]
+escaped_bt               finder=[]  cc=["./escbt.md"]
+four_fence               finder=[]  cc=["./after4.md"]
+frag                     finder=[1:@x.md#sec and @#only|]  cc=["x.md"]
+heading                  finder=[1:# @./head.md|]  cc=["./head.md"]
+html_block               finder=[2: @./htmlblock.md|]  cc=[]
+html_comment             finder=[1:<!-- @./comment.md -->|]  cc=[]
+indented_code            finder=[3:    @./indent.md|]  cc=[]
+inline_triple_at_start   finder=[]  cc=["./afterfakefence.md"]
+intraword_us             finder=[1:snake_@intra.md|]  cc=[]
+link_text                finder=[]  cc=["./linktext.md"]
+multiline_cs             finder=[2:@./mlcs.md` b|]  cc=[]
+nbsp                     finder=[]  cc=["nbsp.md"]
+nested_bt                finder=[]  cc=[]
+paren                    finder=[]  cc=[]
+star_nonemph             finder=[1:a*@star.md|]  cc=[]
+strong                   finder=[1:**@./strong.md**|]  cc=["./strong.md"]
+tab                      finder=[1:x	@./tab.md|]  cc=["./tab.md"]
+table                    finder=[3:| @./tbl.md ||]  cc=["./tbl.md"]
+tight_list_cs            finder=[]  cc=["./listcs.md`"]
+tilde_fence              finder=[2:@./tfence.md|]  cc=[]
+exit=0
+$ cd /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad && for f in pos neg; do echo $f; timeout 20 node cc-extract.js $f.md; source finder.sh; find_imports $f.md | wc -l; done # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:53:07Z
+pos
+["README","README.md","package.json","workflows/x.md","~/.aws/credentials","../y.md","/abs/z.md",".claude/x.md","x.MD","alice","./workflows/pr-prep.md"]
+11
+neg
+[]
+0
+exit=0
+$ node --version; claude --version # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:53:07Z
+v22.23.2
+2.1.284 (Claude Code)
+exit=0

@@ -84,6 +84,12 @@ Practice has blurred the original line in two directions:
 
 3. **Workflows used like skills.** Divergent Design is defined as a workflow, but it's most often invoked *within* RPI as a sub-procedure — RPI's research surfaces 3+ approaches, DD runs, the decision feeds back into RPI's plan. The user rarely triggers DD directly; it's summoned by workflow logic, much like how skills are summoned by diff context.
 
+### Routers: how workflows reach the skill layer (2026-09-29)
+
+The difference that shows up in practice is not content but discovery. Claude Code lists every skill's `description` in every session and starts one with a single Skill call; a workflow is reached only if instruction prose sends the model to read it. So every workflow now ships a **router skill** of the same name (`skills/<name>/SKILL.md`): a stub whose description says when the workflow applies and when a sibling applies instead, and whose body hands off to `~/.claude/workflows/<name>.md`. The workflow stays the only copy of the procedure. A workflow that only runs inside another one opts out with `router: "none — <reason>"` in its frontmatter (today: `review-fix-loop`). `test/skills/workflow-routers.bats` enforces both directions. Decision log row 66.
+
+When adding a workflow, add its router in the same change, keeping the description's "Not for X (Y)" clause and triggers within 250 characters.
+
 ### Decision criteria for new additions
 
 When proposing a new workflow or skill, ask:
