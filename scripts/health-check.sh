@@ -203,7 +203,7 @@ check_skill_frontmatter() {
 # Extract workflow filenames referenced in a markdown file.
 # Handles three syntaxes:
 #   CLAUDE.md:  **research-plan-implement.md**
-#   AGENTS.md:  **@./workflows/research-plan-implement.md**
+#   AGENTS.md:  **research-plan-implement.md** (legacy form: **@./workflows/…**)
 #   GEMINI.md:  **research-plan-implement.md**
 extract_workflows() {
     local file="$1"
