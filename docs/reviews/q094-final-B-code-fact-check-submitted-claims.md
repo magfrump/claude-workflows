@@ -5,7 +5,9 @@ Commit: 2eebdf8
 **Repository:** claude-workflows (`git archive 2eebdf8` of `/workspace/.claude/worktrees/agent-aaad54fc687b7548c`, extracted to `/tmp/claude-1000/-workspace/0d5be710-0e7c-4a4f-8e65-09d2e983c2f5/scratchpad/s25-2763022088/B`; unit A's 9075003 extracted alongside at `.../A` for the Claim 3b comparison)
 **Scope:** Stage 2.5 submitted-claims pass only — three critic endorsements on Q-094 unit B (`devcontainer-config/cc-exit-scan.sh` at 2eebdf8); no fresh harvesting
 **Checked:** 2026-09-28
-**Total claims checked:** 4 (submitted claim 3 split into 3a/3b on verdict divergence)
+**Total claims checked:** 4
+
+Submitted claim 3 was split into 3a/3b on verdict divergence.
 **Summary:** 3 verified, 1 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
 Hallucination pattern log (`docs/reviews/hallucination-patterns.md`, 5 entries) read. Claim 3b matches the logged class "a specific measured value quoted … that does not contain it" in form: it quotes a timing. Here the value is a host timing that could not be reproduced, not a value missing from a checked-in artifact, so no new pattern entry is warranted (a timing miss is not a fabricated symbol).

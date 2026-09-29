@@ -9,7 +9,7 @@
 **Total claims checked:** 47
 **Summary:** 40 verified, 3 mostly accurate, 0 stale, 3 incorrect, 1 unverifiable
 
-**Execution environment.** All runs used a scratch extract rather than the worktree: `git -C <repo> archive 7c97a6b | tar -x` into `$D/b` (and 31baaba into `$D/a`, a7e9b7a into `$D/old`), where `D=/tmp/claude-1000/-workspace/0d5be710-0e7c-4a4f-8e65-09d2e983c2f5/scratchpad/re-fc-1065017133`. bats ran as `TMPDIR=$D/tmp LC_ALL=C bats …` (Bats 1.8.2, GNU bash 5.2.15, git 2.39.5). Mutation copies are `$D/m-<name>`. Experiment tests (EXP1–EXP5) were appended to a copy of the test file in `$D/x` only. The worktree was not modified.
+**Execution environment.** All runs used a scratch extract rather than the worktree: `git -C <repo> archive 7c97a6b | tar -x` into `re-fc-1065017133/b` (and 31baaba into `re-fc-1065017133/a`, a7e9b7a into `re-fc-1065017133/old`), where `D=/tmp/claude-1000/-workspace/0d5be710-0e7c-4a4f-8e65-09d2e983c2f5/scratchpad/re-fc-1065017133`. bats ran as `TMPDIR=$D/tmp LC_ALL=C bats …` (Bats 1.8.2, GNU bash 5.2.15, git 2.39.5). Mutation copies are `re-fc-1065017133/m-<name>`. Experiment tests (EXP1–EXP5) were appended to a copy of the test file in `re-fc-1065017133/x` only. The worktree was not modified.
 
 **Hallucination-pattern log.** I read `docs/reviews/hallucination-patterns.md`, which has 5 real entries. Three of them are test-tally or count claims (for example, "All 85 tests … pass", "mode1-equiv 33"). This run checks the count-shaped claims (173/173, 267, 399, 16 s) the same way, by running them. None matched a logged pattern.
 
@@ -17,7 +17,7 @@
 
 ## Claim 1: "Unit A sits at the row-62 size cap (399 lines)" / "Unit B at 267 changed code lines on top of A" (also 31baaba: "399 changed code lines outside docs/")
 
-**Location:** `git show 7c97a6b` (message, paragraph 1 and Notes); `git show 31baaba` (message, paragraph 2)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, paragraph 1 and Notes); `git show 31baaba` (message, paragraph 2)
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
@@ -26,13 +26,13 @@
 
 Command (cwd = the worktree, 2026-09-29T04:02:03Z, exit 0): `git diff --numstat 31baaba 7c97a6b -- . ':!docs'` gives `95 19 cc-exit-scan.sh`, `28 10 guides/cc-isolated-usage.md` and `111 4 test/cc-isolated-functions.bats`, which sum to 267. `git diff --numstat dfe4c0d 31baaba -- . ':!docs'` gives 171+4, 2+1, 29+3 and 189+0, which sum to 399. `git merge-base main 31baaba` = `dfe4c0df…`. Decision log row 62 says the cap is "~400 changed code lines, counted outside `docs/` … Added and removed lines both count … the gate fires above 400" (`docs/decisions/log.md:85`). So 399 is at the cap without firing it.
 
-**Evidence:** `$D/git-counts.log`, `docs/decisions/log.md:85`
+**Evidence:** `re-fc-1065017133/git-counts.log`, `docs/decisions/log.md:85`
 
 ---
 
 ## Claim 2: "a worktree made by container git has .git = "gitdir: /workspace/...", which names nothing on a host whose checkout is elsewhere, so the snapshot never walked your own relative core.hooksPath in it; the note hid a planted hook that ran after `git worktree repair`. The snapshot now maps such a .git to its host twin (_snap_container_target) and walks your config there, at launch and at exit. Test: …"
 
-**Location:** `git show 7c97a6b` (message, "Unit A, security")
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, "Unit A, security")
 **Type:** Behavioral / Error-handling
 **Verdict:** Verified
 **Confidence:** High
@@ -51,16 +51,16 @@ Before the fix, the walk ran only when `_snap_dotgit_target` resolved. The fix a
 
 `git_exec_snapshot` is the one function that takes both the launch and the exit snapshot (`git_exit_scan` calls it at `:983`), so "at launch and at exit" holds.
 
-- **Mutation (line 720 deleted, 2026-09-29T03:56:10Z, cwd `$D/m-container-walk`, exit 1).** The new test fails at `warns_listing_wt`: the note is printed where a warning is required.
-- **EXP3 (cwd `$D/x`, 2026-09-29T03:59:34Z, exit 0).** With a container-form `.git` naming a missing path, `git status` gives `fatal: not a git repository` (status 128). After `git worktree repair`, `.git` reads `gitdir: …/proj/.git/worktrees/agent-x`, and `git commit` runs the planted hook (marker `hook-pre-commit` present).
+- **Mutation (line 720 deleted, 2026-09-29T03:56:10Z, cwd `re-fc-1065017133/m-container-walk`, exit 1).** The new test fails at `warns_listing_wt`: the note is printed where a warning is required.
+- **EXP3 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:34Z, exit 0).** With a container-form `.git` naming a missing path, `git status` gives `fatal: not a git repository` (status 128). After `git worktree repair`, `.git` reads `gitdir: …/proj/.git/worktrees/agent-x`, and `git commit` runs the planted hook (marker `hook-pre-commit` present).
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:555-567`, `devcontainer-config/cc-exit-scan.sh:714-723`, `$D/mut-container-walk.log`, `$D/experiments.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:555-567`, `devcontainer-config/cc-exit-scan.sh:714-723`, `re-fc-1065017133/mut-container-walk.log`, `re-fc-1065017133/experiments.log`
 
 ---
 
 ## Claim 3: "a removal was accepted while a repository sat at the old .git path behind a symlinked parent (find -P makes no record there). The removal now also requires nothing at that path. Test: parent swapped for a link to an outside dir holding a repo warns; the same link without the repo is a note (control)."
 
-**Location:** `git show 7c97a6b` (message, "Unit B, security")
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, "Unit B, security")
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
@@ -80,16 +80,16 @@ The new check:
 
 `_snap_find` runs `find -P "$@" -print0` (`:273-279`), so it does not descend a symlinked `.claude/worktrees`.
 
-- **Mutation (line 916 deleted, cwd `$D/m-old-dotgit`, exit 1).** The test fails at `test/cc-isolated-functions.bats:2338` (`[ "$status" -eq 1 ]`, the symlinked-parent case). Without the check, the case produces a note, which shows that no record is made there.
+- **Mutation (line 916 deleted, cwd `re-fc-1065017133/m-old-dotgit`, exit 1).** The test fails at `test/cc-isolated-functions.bats:2338` (`[ "$status" -eq 1 ]`, the symlinked-parent case). Without the check, the case produces a note, which shows that no record is made there.
 - **The control.** `:2341-2342` expects status 0, and in `git_exit_scan` status 0 with differing snapshots is only reachable through the note (`:1011-1013`). The control does not assert the note text itself.
 
-**Evidence:** `test/cc-isolated-functions.bats:2331-2343`, `devcontainer-config/cc-exit-scan.sh:273-279`, `$D/mut-old-dotgit.log`
+**Evidence:** `test/cc-isolated-functions.bats:2331-2343`, `devcontainer-config/cc-exit-scan.sh:273-279`, `re-fc-1065017133/mut-old-dotgit.log`
 
 ---
 
 ## Claim 4: "_snap_unq returns on stdout like its siblings (api-consistency); the note says "Removed ones' git dir and .git file are gone", which is what is checked."
 
-**Location:** `git show 7c97a6b` (message); `devcontainer-config/cc-exit-scan.sh:968-969`
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message); `devcontainer-config/cc-exit-scan.sh:968-969`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
@@ -107,7 +107,7 @@ The new check:
 
 ## Claim 5: "Docs: the header's container-form and "." wording …, the scan_std_worktrees comment …, the _snap_* header and the _snap_bytes local, plan B14/B18, and the guide (note forms, the $'…' add/remove asymmetry, the insteadOf/embedded-repo cases, "not scanned", and a Known routes bullet …)"
 
-**Location:** `git show 7c97a6b` (message, "Docs:")
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, "Docs:")
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
@@ -131,7 +131,7 @@ Every listed item appears in `git diff a7e9b7a 7c97a6b`:
 
 ## Claim 6: "The pipefail test builds its padding with one printf (16 s -> 0.1 s)." / test comment "one printf: a loop costs ~16 s under bats"
 
-**Location:** `git show 7c97a6b` (message); `test/cc-isolated-functions.bats:2387`
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message); `test/cc-isolated-functions.bats:2387`
 **Type:** Performance
 **Verdict:** Verified
 **Confidence:** High
@@ -147,20 +147,20 @@ Command: `bats -T timing.bats` (cwd `$D`, 2026-09-29T03:58:24Z, exit 0). It hold
 
 "16 s" is within machine variance of 18 s, and "0.1 s" matches.
 
-**Evidence:** `$D/timing.log`, `$D/timing-pipefail-old.log`, `$D/timing-pipefail-new.log`, `test/cc-isolated-functions.bats:2380-2393`
+**Evidence:** `re-fc-1065017133/timing.log`, `re-fc-1065017133/timing-pipefail-old.log`, `re-fc-1065017133/timing-pipefail-new.log`, `test/cc-isolated-functions.bats:2380-2393`
 
 ---
 
 ## Claim 7: "Mutations: dropping the container walk, the old-.git check, the re-quote check, or looks_like_gitdir each fail a test."
 
-**Location:** `git show 7c97a6b` (message)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
 **Scope:** Covers the four named single-line mutations against the Q-094 and `_snap_unq` tests. It does not establish that other mutations would be caught.
 
-`$D/mut.sh <name> <sed>` copies the extract, applies the edit, and runs `bats -f 'Q-094|_snap_unq'` (cwd `$D/m-<name>`, 2026-09-29T03:56:10Z). The unmutated control passed 13/13, exit 0.
+`re-fc-1065017133/mut.sh <name> <sed>` copies the extract, applies the edit, and runs `bats -f 'Q-094|_snap_unq'` (cwd `re-fc-1065017133/m-<name>`, 2026-09-29T03:56:10Z). The unmutated control passed 13/13, exit 0.
 
 | Mutation | Edit | Exit | Failing test (line) |
 |---|---|---|---|
@@ -169,35 +169,35 @@ Command: `bats -T timing.bats` (cwd `$D`, 2026-09-29T03:58:24Z, exit 0). It hold
 | re-quote check | `:815` → `true` | 1 | "_snap_unq: …" (`:2363`, `run ! _snap_unq "a$bs"`) |
 | looks_like_gitdir | delete `:918` | 1 | "a removal whose old working tree …" |
 
-**Evidence:** `$D/mut-container-walk.log`, `$D/mut-old-dotgit.log`, `$D/mut-requote.log`, `$D/mut-looks-like.log`, `$D/mut-none.log`
+**Evidence:** `re-fc-1065017133/mut-container-walk.log`, `re-fc-1065017133/mut-old-dotgit.log`, `re-fc-1065017133/mut-requote.log`, `re-fc-1065017133/mut-looks-like.log`, `re-fc-1065017133/mut-none.log`
 
 ---
 
 ## Claim 8: "cc-isolated-functions.bats 173/173."
 
-**Location:** `git show 7c97a6b` (message)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
 **Scope:** Covers this one file at 7c97a6b in this container. It does not establish that other suites pass, or that the result is the same on a host.
 
-Command: `TMPDIR=$D/tmp LC_ALL=C bats test/cc-isolated-functions.bats` (cwd `$D/b`, 2026-09-29T03:52:18Z, exit 0). 173 `ok` lines, 0 `not ok`.
+Command: `TMPDIR=$D/tmp LC_ALL=C bats test/cc-isolated-functions.bats` (cwd `re-fc-1065017133/b`, 2026-09-29T03:52:18Z, exit 0). 173 `ok` lines, 0 `not ok`.
 
-**Evidence:** `$D/bats-full.log`
+**Evidence:** `re-fc-1065017133/bats-full.log`
 
 ---
 
 ## Claim 9a: "wrong for tabs and other $'…' bytes (only a newline declines on add)"
 
-**Location:** `git show 7c97a6b` (message, Notes)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, Notes)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
 **Scope:** Covers a tab (run) and a newline (run) in a working-tree path. The claim for other `$'…'` bytes rests on static reading: the back-pointer is read with `read -r`, which stops only at `\n`, and the `%q` strings are recomputed on both sides.
 
-EXP1 (cwd `$D/x`, 2026-09-29T03:59:34Z, exit 0):
+EXP1 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:34Z, exit 0):
 
 - A worktree added at `…/odd<TAB>dir/agent-t` gives status 0 and `note: … (added: agent-t)`.
 - The same path with a newline, when added, gives status 1.
@@ -205,13 +205,13 @@ EXP1 (cwd `$D/x`, 2026-09-29T03:59:34Z, exit 0):
 
 The newline declines because `line="$(_snap_first_line "$p/gitdir" …)"` reads one line, and `_snap_file_is "$p/gitdir" "$(_snap_hash_str "$line"$'\n')"` then fails (`:931-932`).
 
-**Evidence:** `$D/experiments.log`, `devcontainer-config/cc-exit-scan.sh:929-937`
+**Evidence:** `re-fc-1065017133/experiments.log`, `devcontainer-config/cc-exit-scan.sh:929-937`
 
 ---
 
 ## Claim 9b: "2eebdf8's note "the added side already declines such paths" is wrong …"
 
-**Location:** `git show 7c97a6b` (message, Notes)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, Notes)
 **Type:** Reference
 **Verdict:** Mostly accurate
 **Confidence:** High
@@ -226,28 +226,28 @@ a7e9b7a message:29  choice; the added side already declines such paths (its back
 
 A reader running `git log` on the merged branch will not find 2eebdf8. The precise reference is a7e9b7a, the rebased copy of 2eebdf8.
 
-**Evidence:** `$D/git-counts.log`, `git show a7e9b7a`, `git show 2eebdf8`
+**Evidence:** `re-fc-1065017133/git-counts.log`, `git show a7e9b7a`, `git show 2eebdf8`
 
 ---
 
 ## Claim 10: "Users with a relative hooksPath in their own config now see the warning on every new worktree in either form, as host-form ones already did."
 
-**Location:** `git show 7c97a6b` (message, Notes)
+**Location:** commit 7c97a6b message — `git show 7c97a6b` (message, Notes)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
 **Scope:** Covers a global `core.hooksPath .githooks` with no hook planted, in host form and in container form. "Already did" for host form rests on the diff: only the container-form fallback was added.
 
-EXP2 (cwd `$D/x`, 2026-09-29T03:59:45Z, exit 0) prints `OWN[core.hooksPath .githooks] host-form status=1` and `container-form status=1`. The same holds for `core.attributesFile .attrs`. The warning comes from the new `hooksdir <wt>/.githooks missing` record: `_snap_hooks` records a missing dir (`:312-314`), and `scan_std_worktrees` never marks that record `used` (`:961`).
+EXP2 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:45Z, exit 0) prints `OWN[core.hooksPath .githooks] host-form status=1` and `container-form status=1`. The same holds for `core.attributesFile .attrs`. The warning comes from the new `hooksdir <wt>/.githooks missing` record: `_snap_hooks` records a missing dir (`:312-314`), and `scan_std_worktrees` never marks that record `used` (`:961`).
 
-**Evidence:** `$D/experiments-exp2.log`, `devcontainer-config/cc-exit-scan.sh:310-323`, `devcontainer-config/cc-exit-scan.sh:961`
+**Evidence:** `re-fc-1065017133/experiments-exp2.log`, `devcontainer-config/cc-exit-scan.sh:310-323`, `devcontainer-config/cc-exit-scan.sh:961`
 
 ---
 
 ## Claim 11: 31baaba message: "Plan-only fixes from the fact-check: B21's rule-6 reference …, steps 2 and 3 …, the cc-isolated.sh line …, B13 …, B15 …, B28 …, the uncommitted 447-line count, and the extra declines rule 5 did not list." / "B14 is reopened … the fix … land[s] in the stacked unit"
 
-**Location:** `git show 31baaba` (message)
+**Location:** commit 31baaba message — `git show 31baaba` (message)
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
@@ -280,9 +280,9 @@ The fix for B14 is in 7c97a6b (Claim 2).
 - **The `"."` exemption and the insteadOf rule.** `_snap_config` records W through `_snap_wrel` for `core.hookspath` and `core.attributesfile` (`:397`, `:405`). For insteadOf, `case "$t" in ""|.) _snap_wrel "$key" "$f" ./ ;; esac` (`:421`). `_snap_remote` exempts only `.`, with `[ "$p" = . ] || _snap_wrel remote "$p" "$p"` (`:361`).
 - **The refusal.** `[[ $'\n'"$after" != *$'\n'W$'\t'* ]] || return 1` (`:858`).
 - **Tests.** The existing test at `test/cc-isolated-functions.bats:2474-2491` passed in the 173/173 run. It covers `.husky/_`, `.attrs`, `./sub.git`, `url...insteadOf` and `url..insteadOf` (warn), and `branch.main.remote .` (note).
-- **Embedded repos.** EXP5 (cwd `$D/x`, 2026-09-29T04:01:17Z, exit 0): an embedded repo with `core.hooksPath .hk` makes a new standard worktree warn (status 1). The control without it gives status 0.
+- **Embedded repos.** EXP5 (cwd `re-fc-1065017133/x`, 2026-09-29T04:01:17Z, exit 0): an embedded repo with `core.hooksPath .hk` makes a new standard worktree warn (status 1). The control without it gives status 0.
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:376-425`, `devcontainer-config/cc-exit-scan.sh:858`, `$D/bats-full.log`, `$D/experiments-exp5.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:376-425`, `devcontainer-config/cc-exit-scan.sh:858`, `re-fc-1065017133/bats-full.log`, `re-fc-1065017133/experiments-exp5.log`
 
 ---
 
@@ -297,11 +297,11 @@ The fix for B14 is in 7c97a6b (Claim 2).
 
 The scan reads your own config, but `_snap_host_config` follows only three kinds of key and creates no W record. Its `case` handles `core.hookspath`, `core.attributesfile` and `include.path|includeif.*.path` only (`:516-534`), which matches the header's own "Only those three kinds of entry are followed in your own config" (`:66`).
 
-EXP2 (cwd `$D/x`, 2026-09-29T03:59:45Z, exit 0) sets global `url..insteadOf https://x.invalid/` or global `remote.loc.url ./sub.git`, then adds a new standard worktree. Result: status 0 and the note, in both host form and container form.
+EXP2 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:45Z, exit 0) sets global `url..insteadOf https://x.invalid/` or global `remote.loc.url ./sub.git`, then adds a new standard worktree. Result: status 0 and the note, in both host form and container form.
 
 The pre-7c97a6b wording said "in repo config", which was accurate. The new "any config the scan reads" is broader than the code. The precise version is "in any repository config the scan reads (the checkout's, an embedded repo's, an include target in the checkout)".
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:60-67`, `devcontainer-config/cc-exit-scan.sh:500-536`, `$D/experiments-exp2.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:60-67`, `devcontainer-config/cc-exit-scan.sh:500-536`, `re-fc-1065017133/experiments-exp2.log`
 
 ---
 
@@ -319,7 +319,7 @@ The pre-7c97a6b wording said "in repo config", which was accurate. The new "any 
 - **The repair target.** The test's assertion `[ "$(cat "$STD_WT/.git")" = "gitdir: $STD_P" ]` confirms that repair points the `.git` at the host twin.
 - **Without a planted hook.** EXP2 shows status 1 in both forms (Claim 10).
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:714-723`, `test/cc-isolated-functions.bats:2263-2279`, `$D/experiments-exp2.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:714-723`, `test/cc-isolated-functions.bats:2263-2279`, `re-fc-1065017133/experiments-exp2.log`
 
 ---
 
@@ -365,7 +365,7 @@ _snap_container_target() {
 
 The only caller is `:720`. EXP3 shows that "host git stops" (`fatal: not a git repository`, status 128) and that repair rewrites the file to the host twin.
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:555-567`, `devcontainer-config/cc-exit-scan.sh:720`, `$D/experiments.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:555-567`, `devcontainer-config/cc-exit-scan.sh:720`, `re-fc-1065017133/experiments.log`
 
 ---
 
@@ -386,7 +386,7 @@ The guard: `case "$q" in \$\'*|\'*|"") return 1 ;; esac … [ "$(printf '%q' "$s
 
 The re-quote mutation fails a test (Claim 7).
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:807-817`, `$D/mut-requote.log`, `test/cc-isolated-functions.bats:2355-2364`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:807-817`, `re-fc-1065017133/mut-requote.log`, `test/cc-isolated-functions.bats:2355-2364`
 
 ---
 
@@ -404,7 +404,7 @@ The re-quote mutation fails a test (Claim 7).
 - **`looks_like_gitdir`.** It is `{ [ -e "$d/HEAD" ] || [ -L "$d/HEAD" ]; } && [ -d "$d/objects" ]; } || [ -f "$d/commondir" ]` (`devcontainer-config/cc-gitdir.sh:87-90`). It is false for a directory that is gone.
 - **Tests.** The two mutations in Claim 7 and the 173/173 run.
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:884-921`, `devcontainer-config/cc-gitdir.sh:87-90`, `$D/bats-full.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:884-921`, `devcontainer-config/cc-gitdir.sh:87-90`, `re-fc-1065017133/bats-full.log`
 
 ---
 
@@ -457,7 +457,7 @@ Added paths are compared through `printf '%q'` recomputation (`:892`, `:895`, `:
 
 See Claim 3 for the code at `:914-918` and the old-.git mutation. The looks_like_gitdir mutation also fails a test (Claim 7).
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:910-918`, `$D/mut-old-dotgit.log`, `$D/mut-looks-like.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:910-918`, `re-fc-1065017133/mut-old-dotgit.log`, `re-fc-1065017133/mut-looks-like.log`
 
 ---
 
@@ -472,7 +472,7 @@ See Claim 3 for the code at `:914-918` and the old-.git mutation. The looks_like
 
 The code sets `why="Removed ones' git dir and .git file are gone"` (removed only) and `why="Removed ones' git dir and .git file are gone, and added ones take config and hooks from the checkout's own .git"` (added and removed) (`:968-969`). The tests assert both verbatim (`test/cc-isolated-functions.bats:2293`, `:2317`) and passed.
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:966-971`, `test/cc-isolated-functions.bats:2293`, `test/cc-isolated-functions.bats:2317`, `$D/bats-full.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:966-971`, `test/cc-isolated-functions.bats:2293`, `test/cc-isolated-functions.bats:2317`, `re-fc-1065017133/bats-full.log`
 
 ---
 
@@ -551,7 +551,7 @@ paraphrased — no quote available because the claim is about an uncommitted sta
 - **399.** Claim 1.
 - **The fix and the test.** Claim 2. The test name matches `test/cc-isolated-functions.bats:2263`, "exit scan Q-094: YOUR relative hooksPath is walked in a container-form worktree too".
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:714-723`, `test/cc-isolated-functions.bats:2263-2279`, `$D/experiments.log`, `$D/git-counts.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:714-723`, `test/cc-isolated-functions.bats:2263-2279`, `re-fc-1065017133/experiments.log`, `re-fc-1065017133/git-counts.log`
 
 ---
 
@@ -564,9 +564,9 @@ paraphrased — no quote available because the claim is about an uncommitted sta
 **Verification mode:** executed
 **Scope:** Covers git 2.39.5's `submodule update --init` with `update = !cmd` only in `.gitmodules`. It does not cover `update` set in `.git/config`, which the scan records.
 
-EXP4 (cwd `$D/x`, 2026-09-29T03:59:34Z, exit 0): `git submodule update --init` exits 128 with `fatal: invalid value for 'submodule.sub.update'`, and no marker was written.
+EXP4 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:34Z, exit 0): `git submodule update --init` exits 128 with `fatal: invalid value for 'submodule.sub.update'`, and no marker was written.
 
-**Evidence:** `$D/experiments.log`
+**Evidence:** `re-fc-1065017133/experiments.log`
 
 ---
 
@@ -656,7 +656,7 @@ The code comment dropped "from <n>" in this commit (`:848-849`, "recomputed"). T
 
 See Claim 1 for the 399 count. 31baaba's stat shows one file, the plan.
 
-**Evidence:** `$D/git-counts.log`
+**Evidence:** `re-fc-1065017133/git-counts.log`
 
 ---
 
@@ -671,7 +671,7 @@ See Claim 1 for the 399 count. 31baaba's stat shows one file, the plan.
 
 `git log --all --oneline -- docs/reviews/code-review-rubric-2026-09-28-q094-final-A.md` returns nothing: the path was never committed on any ref. It is also absent from 31baaba's and 7c97a6b's `docs/reviews/` and from the worktree. The only Q-094 rubric in the tree is `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md`. The final-pass review files exist only in the session scratchpad (`…/scratchpad/reviews/A-*-final.md`). A reader following the link finds nothing.
 
-**Evidence:** `$D/git-counts.log`
+**Evidence:** `re-fc-1065017133/git-counts.log`
 
 ---
 
@@ -716,7 +716,7 @@ The parenthetical matches `looks_like_gitdir` (`devcontainer-config/cc-gitdir.sh
 
 EXP1 gives TAB-ADD status 0 with the note, and TAB-REMOVE status 1.
 
-**Evidence:** `$D/experiments.log`
+**Evidence:** `re-fc-1065017133/experiments.log`
 
 ---
 
@@ -729,11 +729,11 @@ EXP1 gives TAB-ADD status 0 with the note, and TAB-REMOVE status 1.
 **Verification mode:** executed
 **Scope:** Covers an added worktree whose path contains a newline.
 
-EXP1 (cwd `$D/x`, 2026-09-29T03:59:34Z) prints `NL-ADD status=1`: the warning, not the note. The reason is that the back-pointer is read as one line (`line="$(_snap_first_line "$p/gitdir" …)"`, `:931`) and then re-hashed against the whole file (`:932`), which fails.
+EXP1 (cwd `re-fc-1065017133/x`, 2026-09-29T03:59:34Z) prints `NL-ADD status=1`: the warning, not the note. The reason is that the back-pointer is read as one line (`line="$(_snap_first_line "$p/gitdir" …)"`, `:931`) and then re-hashed against the whole file (`:932`), which fails.
 
 7c97a6b's own commit Notes say "(only a newline declines on add)", which contradicts this guide sentence. The precise version: "A working-tree path with a newline warns either way. A tab or other byte that `%q` quotes as `$'…'` is a note when added but warns when removed."
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:929-932`, `$D/experiments.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:929-932`, `re-fc-1065017133/experiments.log`
 
 ---
 
@@ -748,7 +748,7 @@ EXP1 (cwd `$D/x`, 2026-09-29T03:59:34Z) prints `NL-ADD status=1`: the warning, n
 
 The test at `:2474-2491` covers `branch.main.remote .` (note), `url...insteadOf` (warn), `url..insteadOf` (warn) and `url..pushInsteadOf` (warn). It passed in the 173/173 run.
 
-**Evidence:** `test/cc-isolated-functions.bats:2474-2491`, `$D/bats-full.log`
+**Evidence:** `test/cc-isolated-functions.bats:2474-2491`, `re-fc-1065017133/bats-full.log`
 
 ---
 
@@ -763,7 +763,7 @@ The test at `:2474-2491` covers `branch.main.remote .` (note), `url...insteadOf`
 
 EXP5 gives status 1 with the relative hooksPath and status 0 in the control without it. Embedded repos' configs go through `_snap_dotgit` → `_snap_gitdir` → `_snap_config` (`:717`, `:596-598`).
 
-**Evidence:** `$D/experiments-exp5.log`, `devcontainer-config/cc-exit-scan.sh:596-599`, `devcontainer-config/cc-exit-scan.sh:714-722`
+**Evidence:** `re-fc-1065017133/experiments-exp5.log`, `devcontainer-config/cc-exit-scan.sh:596-599`, `devcontainer-config/cc-exit-scan.sh:714-722`
 
 ---
 
@@ -778,7 +778,7 @@ EXP5 gives status 1 with the relative hooksPath and status 0 in the control with
 
 EXP2 gives status 1 for `core.hooksPath` and `core.attributesFile` in both host form and container form.
 
-**Evidence:** `$D/experiments-exp2.log`, `devcontainer-config/cc-exit-scan.sh:516-522`
+**Evidence:** `re-fc-1065017133/experiments-exp2.log`, `devcontainer-config/cc-exit-scan.sh:516-522`
 
 ---
 
@@ -809,7 +809,7 @@ In a working tree, the scan runs only `_snap_find "$list" "$_snap_ws" -mindepth 
 - **The search.** `find -P "$@" -print0` (`:275`).
 - **The parenthetical.** Claim 3 (test `:2331-2340` plus the mutation).
 
-**Evidence:** `devcontainer-config/cc-exit-scan.sh:273-279`, `$D/mut-old-dotgit.log`
+**Evidence:** `devcontainer-config/cc-exit-scan.sh:273-279`, `re-fc-1065017133/mut-old-dotgit.log`
 
 ---
 
@@ -824,7 +824,7 @@ In a working tree, the scan runs only `_snap_find "$list" "$_snap_ws" -mindepth 
 
 The test sets global `core.hooksPath .githooks`, writes the container form, plants the hook, and asserts `warns_listing_wt` plus `*"$STD_WT/.githooks/pre-commit"*`. It passed, and it failed under the container-walk mutation.
 
-**Evidence:** `$D/bats-full.log`, `$D/mut-container-walk.log`
+**Evidence:** `re-fc-1065017133/bats-full.log`, `re-fc-1065017133/mut-container-walk.log`
 
 ---
 
@@ -839,7 +839,7 @@ The test sets global `core.hooksPath .githooks`, writes the container form, plan
 
 The old-.git mutation fails exactly at `:2338` in this block.
 
-**Evidence:** `$D/mut-old-dotgit.log`
+**Evidence:** `re-fc-1065017133/mut-old-dotgit.log`
 
 ---
 
@@ -854,7 +854,7 @@ The old-.git mutation fails exactly at `:2338` in this block.
 
 The test compares `[ "$(_snap_unq "$(printf '%q' "$s")")" = "$s" ]` for each sample, and `run !` for the three decline inputs (Bats 1.8.2 supports `run !`). It passed, and it failed under the re-quote mutation.
 
-**Evidence:** `$D/bats-full.log`, `$D/mut-requote.log`
+**Evidence:** `re-fc-1065017133/bats-full.log`, `re-fc-1065017133/mut-requote.log`
 
 ---
 
