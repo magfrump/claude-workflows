@@ -1751,6 +1751,8 @@ Every cc-isolated session that leaves an agent worktree behind exits with the fu
 
 **Answer (2026-09-28): [1].** User: "Waive the limit and review it as one change". The unit is reviewed and merged as one change (pr-prep step 1a waiver).
 
+**Superseded (2026-09-28):** the review stopped at the fact-check gate. The list auto-approved credentials reads and config-volume writes. The user then chose, in turn: harden the hook first (merged as `feat/hook-refuse-redirects`, decision log 64), narrow the list, and finally shelve the list until a sandbox exists. See Q-098. The waiver lapses with the unit; a revived list gets its own size decision.
+
 Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so every cc-isolated session gets it at container start. The unit is 915 changed code lines, over the ~400-line review cap (decision log 62), and almost all of it is one flat data list. Waive the cap for this unit?
 
 - **Why it's yours:** only you can waive the cap.

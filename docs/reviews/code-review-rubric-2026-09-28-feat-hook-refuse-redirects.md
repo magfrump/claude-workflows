@@ -43,7 +43,7 @@ None open.
 ## Coverage and escalations
 - **Security review is static only on pass 3.** Two security-critic dispatches declined to build and run inputs designed to get past the gate. Executed bypass probing for this unit comes from the pass-1 and pass-2 fact-checks (dozens of candidates, run in bash with marker files) and from the author's probe sets, now pinned as tests.
 - **The pass-3 fact-check is partial.** A classifier stopped it while it was generating disguised builtin names. Only the builtin-list match and the "Refusing" provenance were verified. The fix-range claims were covered by the author's executed runs (240/240 suites, mutation check, probes) and the fix-drift lite review.
-- Out of scope, by design: what an allowed external program does with its own flags (e.g. `git --output=`, git config-driven exec). That is the allow list's job. Recorded in Q-097.
+- Out of scope, by design: what an allowed external program does with its own flags (e.g. `git --output=`, git config-driven exec). That is the allow list's job. Recorded in Q-098.
 
 ## Considered overrides
 Rows matched from `docs/reviews/override-log.md`: 2026-09-27 `integrate/q077-q078-q080` (the hook re-implements part of the permission engine, and the deny-check residuals). Both stand. Row 64 adds shape refusal on top of the deny check and changes neither.

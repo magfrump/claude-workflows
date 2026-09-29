@@ -819,7 +819,7 @@ extract_commands_raw() {
 #     true, false and type (SHAPE_FILTER's builtins list says why).
 # Any one allowed command is an outer command for these constructs, so they
 # matter wherever an allow list exists: every project's own rules today, and a
-# global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-097).
+# global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-098).
 #
 # WHY SOURCE TEXT, NOT shfmt's Op FIELD: Op is a numeric token code (63 is `>`
 # in shfmt 3.13.1) with no stability promise across versions. The operator is
