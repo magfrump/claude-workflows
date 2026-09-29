@@ -1,0 +1,11 @@
+# cmd: bash probe-main.sh (hook = git show main:hooks/auto-approve-allowed-commands.sh) '["Bash(ls:*)"]' '[]' < cmds2.txt ; cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:52:20-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ALLOW  let 'a[$(touch M_let)]=1'
+ALLOW  [[ 'a[$(touch M_test)]' -eq 0 ]]
+ALLOW  bash -c "ls \\`touch M_bt\\`"
+ALLOW  bash -c $'ls \\x3e M_ansi'
+ALLOW  export PATH=$PWD/evil:$PATH; ls
+ALLOW  declare -x PATH=$PWD/evil:$PATH; ls
+ALLOW  bash -c "ls \\"\\`touch M_bt2\\`\\""
+ALLOW  sh -c "ls \\`touch M_sh\\`"
+# exit: 0

@@ -1,0 +1,236 @@
+# cmd: bats test/hooks/*.bats test/auto-approve-allowed-commands.bats test/link-claude-home-wiring.bats ; cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:54:13-07:00 ; HEAD=f05043f
+1..233
+ok 1 two numbered items fire the reminder
+ok 2 two hyphen bullets fire the reminder
+ok 3 two • bullets fire the reminder even in the C locale
+ok 4 an explicit multi-item phrasing fires the reminder
+ok 5 a single task stays silent
+ok 6 a single bullet stays silent
+ok 7 malformed input and an empty prompt exit 0 silently
+ok 8 HIGH finding in settings.json → exit 2 with findings on stderr
+ok 9 clean policy file → silent exit 0, auditor was invoked
+ok 10 auditor crash without HIGH banner → silent exit 0 (no false alarm)
+ok 11 gate accepts CLAUDE.md, .claude/ files, skills markdown, .mdc rules
+ok 12 gate skips ordinary source files, even inside skills dirs
+ok 13 non-edit tool (Bash) → silent exit 0, auditor not invoked
+ok 14 malformed payload → silent exit 0
+ok 15 missing file_path / nonexistent file → silent exit 0
+ok 16 missing auditor script → silent exit 0
+ok 17 CLAUDE_CONFIG_AUDIT_DISABLE=1 → silent exit 0, auditor not invoked
+ok 18 the auditor ships in this repo
+ok 19 with no env override the hook resolves the in-repo auditor
+ok 20 real auditor: bypassPermissions directive in settings.json → exit 2
+ok 21 real auditor: hidden bidi override in CLAUDE.md → exit 2
+ok 22 real auditor: a stray invalid-UTF-8 byte does not hide a bidi override
+ok 23 real auditor: undecodable bytes are reported as a MED HIDDEN finding
+ok 24 real auditor: a directory walk skips install.sh's .claude-workflows-backup
+ok 25 real auditor: benign settings.json → silent exit 0
+ok 26 plain > to settings.json is denied
+ok 27 >> to settings.json is denied
+ok 28 1> to settings.json is denied (B1 bypass)
+ok 29 1> with no space to settings.json is denied (B1 bypass)
+ok 30 2> to a hooks file is denied (B1 bypass)
+ok 31 &> to settings.json is denied (B1 bypass)
+ok 32 >& FILE (stdout+stderr to a file) to settings.json is denied
+ok 33 >&- (close stdout) on a read of settings.json is not a write
+ok 34 a HARD-path deny holds in an untainted session too
+ok 35 2>&1 on a read of settings.json is not a write
+ok 36 >&2 on a read of settings.json is not a write
+ok 37 2>/dev/null on a read of settings.json is not a write
+ok 38 2>/dev/null on a listing of the hooks dir is not a write
+ok 39 a /dev/null redirect does not mask a later real write
+ok 40 SOFT path write in a tainted session asks
+ok 41 SOFT path write in an untainted session defers
+ok 42 fd-prefixed SOFT path write in a tainted session asks
+ok 43 Write to HARD settings.json defers (never ask; deny rules own it)
+ok 44 Edit to a HARD hooks file defers even when tainted
+ok 45 Write to a SOFT skill file asks when tainted
+ok 46 Write to a SOFT skill file defers when untainted
+ok 47 Write to a project .claude/settings.local.json asks when tainted
+ok 48 Write to a project .claude/settings.local.json defers when untainted
+ok 49 Edit to a project .claude/hooks file asks when tainted
+ok 50 Write to the global ~/.claude/settings.local.json still defers when tainted
+ok 51 Write to the global dir via an absolute HOME path still defers when tainted
+ok 52 CLAUDE_CONFIG_DIR is the global dir when set
+ok 53 a heredoc commit message naming a bare CLAUDE.md is not denied (untainted)
+ok 54 a heredoc naming a bare CLAUDE.md asks, not denies, when tainted
+ok 55 read-only commands on a project CLAUDE.md are not denied
+ok 56 a Bash write to a project CLAUDE.md asks when tainted
+ok 57 a Bash write to the global ~/.claude/CLAUDE.md is still denied
+ok 58 a Bash write to ~/CLAUDE.md, $HOME/CLAUDE.md or ${HOME}/CLAUDE.md is denied
+ok 59 a Bash write to the literal home path CLAUDE.md is denied
+ok 60 a Bash write to global-instructions/CLAUDE.md stays denied (2026-09-12 review)
+ok 61 R1: quoted, doubled-slash, dot-segment and quoted-name spellings are denied
+ok 62 R1: the literal home path with a doubled slash is denied
+ok 63 R1: the global spellings are denied in a tainted session too (not ask)
+ok 64 R1: a heredoc whose prose names ~/.claude/CLAUDE.md is denied (accepted cost)
+ok 65 R1: a bare CLAUDE.md with no home indicator stays SOFT
+ok 66 A10: settings/hooks spellings with .claude anywhere are denied
+ok 67 R3: with CLAUDE_CONFIG_DIR elsewhere, ~/.claude is SOFT (asks when tainted)
+ok 68 R3: an empty CLAUDE_CONFIG_DIR falls back to ~/.claude, as the linker does
+ok 69 R3: a '~' in CLAUDE_CONFIG_DIR is not expanded (the linker doesn't)
+ok 70 R3: managed-settings.json is SOFT for file tools (no deny rule covers it)
+ok 71 R4: symlinked global CLAUDE.md and hooks defer when tainted
+ok 72 R4: the MultiEdit tool and the path key defer on a '..' global path
+ok 73 N1: a project .claude symlinked to ~/.claude is denied on its hooks, CLAUDE.md, settings
+ok 74 N1: the payload CLAUDE.md and hooks by their real path are denied (resolve-only HARD)
+ok 75 N1: a symlinked config dir addressed by its resolved path is denied
+ok 76 N1: case variants are not HARD (deny rules are case-sensitive): SOFT, ask when tainted
+ok 77 N1: a lexical global path still defers, tainted, in the symlink layout
+ok 78 R4: a real (non-symlinked) project .claude still asks when tainted
+ok 79 Q-048 withdrawn: a Bash write into a real .claude/wt-* worktree's hooks/ or settings is denied
+ok 80 Q-048 withdrawn: a Bash write into a real .claude/worktrees/<name> worktree's hooks/ is denied
+ok 81 Q-048 withdrawn: a worktree CLAUDE.md Bash write is denied (.claude is a home indicator)
+ok 82 Q-048: a relative worktree path is not exempt (no cwd at hook time)
+ok 83 Q-048: a worktree path that does not exist, or is not a git worktree, is not exempt
+ok 84 Q-048 bypass: quote-split '..' after a worktree segment is denied
+ok 85 Q-048 bypass: a quote before /.claude or a second '=' does not exempt a home worktree
+ok 86 Q-048 bypass: a quoted parent of a wt-shaped CLAUDE_CONFIG_DIR is denied
+ok 87 Q-048 bypass: a symlinked worktree dir is not exempt
+ok 88 Q-048: a real worktree inside the config dir is not exempt
+ok 89 Q-048: a symlink inside a worktree that leads out of it is not exempt
+ok 90 Q-048: a '..' after a worktree segment is still denied
+ok 91 Q-048: a worktree path under ~, $HOME or the literal home config dir is still denied
+ok 92 Q-048: a worktree path does not mask a real .claude indicator elsewhere
+ok 93 Q-048: CLAUDE_CONFIG_DIR set to a wt-shaped dir is not exempt
+ok 94 Q-048 gate: cd into a worktree then '..' reaches the parent project's .claude: denied
+ok 95 Q-048 gate: the cd/'..' routes are denied in a tainted session too (were deferred)
+ok 96 Q-048 gate: replacing a worktree root in the same command is not exempt (time of check)
+ok 97 Q-048 gate: a worktree root whose parent is derived by the command is not exempt
+ok 98 Q-048 withdrawn: plain absolute worktree policy writes are denied, look-alike words or not
+ok 99 Q-048 withdrawn: a worktree write naming no policy file is not denied
+ok 100 Q-048 pass 3: -t.., brace-built '..', env -C and link-creating tools are denied
+ok 101 Q-050: the checkout CLAUDE.md behind a symlinked ~/.claude/CLAUDE.md is denied
+ok 102 Q-050 / N12: a per-file symlinked hook's checkout target is denied
+ok 103 Q-050: a repo hook file with no link into ~/.claude/hooks is not denied
+ok 104 Q-050: with a regular-file ~/.claude/CLAUDE.md copy, the checkout file is not denied
+ok 105 N15: the resolved-path deny reason does not send the user to a denied path
+ok 106 A5: the file-tool deny reason says Bash is not the way round it
+ok 107 A1/A2: the Bash deny reason fits project files and only suggests prose files
+ok 108 C1: an unreadable ~/.claude/hooks entry does not stop the linked-hook scan
+ok 109 non-JSON stdin defers
+ok 110 JSON array stdin defers
+ok 111 JSON string stdin defers
+ok 112 non-object tool_input defers
+ok 113 null tool_input defers
+ok 114 blocks a commit of an enforcement file with no Live-verified trailer
+ok 115 passes when the -m message carries the trailer
+ok 116 passes when the trailer is an explicit 'no' with a reason
+ok 117 reads the trailer from a -F message file
+ok 118 blocks when the -F message file lacks the trailer
+ok 119 ignores commits that touch no enforcement file
+ok 120 counts unstaged tracked changes when -a is given
+ok 121 every manifest-hashed file is in the enforcement set
+ok 122 install.sh is gated although it is not manifest-hashed (decision 035)
+ok 123 ignores non-commit git commands and non-git commands
+ok 124 leaves an --amend --no-edit alone
+ok 125 a comment-only edit to an egress list passes without a trailer
+ok 126 a diff that changes a comment AND a real line still blocks
+ok 127 commenting OUT an existing allowlist line still blocks
+ok 128 removing a --flag line alongside a comment edit still blocks
+ok 129 a pure whitespace or blank-line change passes
+ok 130 adding a NEW enforcement file whose content is all comments still blocks
+ok 131 the -a path honors the narrowing too
+ok 132 a // comment-only change to devcontainer.json passes
+ok 133 the gate is wired into the live settings.json
+ok 134 malformed input, missing command, and the disable switch all exit 0
+ok 135 skill completion emits skill_completed event
+ok 136 skill completion captures duration_ms when supplied
+ok 137 skill completion captures total_tokens when supplied
+ok 138 missing duration and tokens are omitted, not zeroed
+ok 139 skill completion with no skill name does not log
+ok 140 agent completion uses subagent_type when no frontmatter
+ok 141 agent completion prefers frontmatter name over subagent_type
+ok 142 Bash completion is silently ignored
+ok 143 Read completion is silently ignored
+ok 144 hook exits 0 on malformed JSON and logs nothing
+ok 145 hook exits 0 on empty input and logs nothing
+ok 146 hook produces no stdout
+ok 147 each logged line is valid JSON
+ok 148 post-event name matches pre-event name for the same skill
+ok 149 skill invocation is logged with all fields
+ok 150 skill with no args omits args field
+ok 151 skill with empty name does not log
+ok 152 skill with missing skill field does not log
+ok 153 reading a workflow file is logged
+ok 154 workflow name is extracted from basename without .md
+ok 155 project-local workflow files are also logged
+ok 156 agent with skill frontmatter in prompt is logged as agent_skill
+ok 157 agent with no skill frontmatter logs as agent with subagent_type
+ok 158 agent with frontmatter but no name field falls back to agent log
+ok 159 agent extracts first frontmatter name only
+ok 160 a --- rule later in a prompt is not frontmatter
+ok 161 project falls back to the directory name outside a git repo
+ok 162 reading a non-workflow file does not log
+ok 163 reading a skill file is logged with extracted skill name
+ok 164 reading a file with 'workflows' in name but not in a workflows dir does not log
+ok 165 unrecognized tool input does not log
+ok 166 each logged line is valid JSON
+ok 167 hook produces no stdout (never interferes with tool permission)
+ok 168 hook exits 0 on malformed JSON input
+ok 169 hook exits 0 on empty input
+ok 170 hook creates log directory if missing
+ok 171 multiple invocations append to the same log file
+ok 172 skill tool invocation tags via=skill_tool
+ok 173 reading a SKILL.md tags via=file_read
+ok 174 reading a workflow file tags via=file_read
+ok 175 agent dispatch tags via=agent_dispatch
+ok 176 project allow entries are honored when the global settings.json has only a deny list
+ok 177 project allow entries are honored when the global settings.json has no permissions key at all
+ok 178 a command outside every allow list still falls through to the normal prompt
+ok 179 a pipeline is allowed only when every component is allow-listed
+ok 180 a command the parser cannot read falls through instead of being allowed
+ok 181 an unparseable bash -c inner script falls through instead of being allowed
+ok 182 a parseable allow-listed command is still allowed after the fail-closed change
+ok 183 reproduction: the $(( )) exfiltration is refused even with no Bash deny rule (log 64)
+ok 184 reproduction: with no Bash deny rule the plain exfiltration is approved when curl is allowed
+ok 185 reproduction: the wired credentials deny rule makes the hook fall through
+ok 186 deny rules from the project settings are honored as well as the global ones
+ok 187 a legacy prefix deny rule blocks an extracted command inside a pipeline
+ok 188 a deny rule does not stop unrelated allow-listed commands
+ok 189 the credentials deny rule in hooks/wiring.json is one the hook honors
+ok 190 quote-split and backslash spellings of the credentials name are caught by the de-quoted match
+ok 191 string-match limit: a glob spelling of the credentials path is still approved (documented, not fixed)
+ok 192 string-match limit: a variable set by an earlier command is still approved (documented, not fixed)
+ok 193 a variable whose value is spelled out in the same command is caught by the raw-string check
+ok 194 glob metacharacters other than * in a deny rule match literally
+ok 195 ? in a deny rule is a literal character, not a one-character wildcard
+ok 196 a bare Bash deny rule means the hook never approves
+ok 197 Bash(*) and Bash(**) deny rules mean the hook never approves
+ok 198 a malformed global settings file means nothing is approved, even with the deny rule in the project
+ok 199 settings files of the wrong shape fail closed
+ok 200 an unparseable project settings.json fails closed when the deny rule sits in settings.local.json
+ok 201 --deny that is not a JSON array of strings fails closed; an empty array denies nothing
+ok 202 quoting a word does not get a command past a narrower deny rule
+ok 203 the global settings file is read from CLAUDE_CONFIG_DIR, as link-claude-home.sh writes it
+ok 204 a relative CLAUDE_CONFIG_DIR fails closed instead of dropping the global deny rules
+ok 205 a newline in the global settings path fails closed
+ok 206 a NUL inside a settings deny rule fails closed, never becomes an allow rule
+ok 207 a NUL-split credentials deny rule fails closed instead of being dropped
+ok 208 a NUL inside a --deny rule fails closed; inside a --permissions rule it is dropped
+ok 209 rule table: Bash(ls) is a prefix as allow and an exact command as deny
+ok 210 rule table: Bash(rm:*) is a word prefix as allow and a plain prefix as deny
+ok 211 rule table: Bash(ls *) approves nothing as allow and is a glob as deny
+ok 212 rule table: a bare Bash rule is ignored as allow and denies everything as deny
+ok 213 a redirect that can write a file is not approved, at any nesting level
+ok 214 any command or process substitution, and any VAR= assignment, is not approved (log 64)
+ok 215 arithmetic, parameter expansion and quoted heredocs without substitution are still approved
+ok 216 the parse_commands extractor still lists commands the hook refuses to approve
+ok 217 /dev/null targets, fd duplication and input redirects are still approved
+ok 218 fresh volume with no settings.json gets every wired hook and deny rule
+ok 219 merge is idempotent across repeated container starts
+ok 220 unrelated settings keys, foreign hooks, and user permissions survive the merge
+ok 221 {{CLAUDE_DIR}} is substituted and _comment is stripped
+ok 222 an unparseable settings.json is refused, not overwritten
+ok 223 CC_SKIP_HOOK_WIRING=1 leaves settings.json untouched
+ok 224 every command in wiring.json points at a hook that exists
+ok 225 every declared hook command arrives in settings.json by name
+ok 226 a stale version of one of our groups is replaced, not duplicated
+ok 227 a foreign group is kept even when it shares an event with ours
+ok 228 wiring.json declares only known hook event names
+ok 229 wiring.json declares only known permission modes
+ok 230 the deny rules the guard hook's HARD tier depends on are wired
+ok 231 the merged settings carry the Bash deny rule for the credentials file (Q-077)
+ok 232 legacy single-slash deny rules are pruned; the user's own rules survive
+ok 233 installed ~/.claude/scripts/{lite-review.py,questions.sh} resolve after install
+# exit: 0

@@ -1,0 +1,28 @@
+locale: Cannot set LC_CTYPE to default locale: No such file or directory
+locale: Cannot set LC_MESSAGES to default locale: No such file or directory
+locale: Cannot set LC_COLLATE to default locale: No such file or directory
+# cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:52:59-07:00 ; locales: C C.utf8 POSIX 
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 8: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8: char count of 'é>' = 2
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8 hook: ALLOW  cmd: ls é 2>/dev/null
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8 hook: no  cmd: ls é > out
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8 hook: ALLOW  cmd: ls ééé >/dev/null
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8 hook: ALLOW  cmd: ls éé >&2
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.UTF-8 hook: no  cmd: ls ééé > /dev/nullx
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 8: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8: char count of 'é>' = 2
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8 hook: ALLOW  cmd: ls é 2>/dev/null
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8 hook: no  cmd: ls é > out
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8 hook: ALLOW  cmd: ls ééé >/dev/null
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8 hook: ALLOW  cmd: ls éé >&2
+/tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/utf8.sh: line 10: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## LC_ALL=C.utf8 hook: no  cmd: ls ééé > /dev/nullx

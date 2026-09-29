@@ -1,0 +1,9 @@
+# cmd (per rev in main f05043f; hook = git show <rev>:hooks/auto-approve-allowed-commands.sh):
+#   printf '%s' "$c" | jq -Rs '{tool_input:{command:.}}' | bash hook-<rev>.sh --permissions '["Bash(ls:*)","Bash(echo:*)","Bash(git:*)","Bash(pwd:*)","Bash(bats:*)"]' --deny '[]'
+# cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:57 (-07:00) ; exit 0 for every call (hook always exits 0)
+main ALLOW :: echo "$(git rev-parse HEAD)"
+main ALLOW :: ls $(pwd)
+main ALLOW :: bats test/x.bats > log
+f05043f  :: echo "$(git rev-parse HEAD)"
+f05043f  :: ls $(pwd)
+f05043f  :: bats test/x.bats > log

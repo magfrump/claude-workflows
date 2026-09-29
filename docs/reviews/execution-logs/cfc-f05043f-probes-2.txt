@@ -1,0 +1,11 @@
+# cmd: bash /tmp/claude-1000/-workspace/aef7a10c-6785-42b5-b88a-f42ac33780a8/scratchpad/exec2.sh < cmds2.txt ; cwd: /workspace/.claude/wt-hook-a ; 2026-09-28T20:51:57-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+hook=ALLOW | cmd: let 'a[$(touch M_let)]=1' | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)  | files created: M_let 
+hook=ALLOW | cmd: [[ 'a[$(touch M_test)]' -eq 0 ]] | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)  | files created: M_test 
+hook=ALLOW | cmd: bash -c "ls \`touch M_bt\`" | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) M_bt evil  | files created: M_bt 
+hook=ALLOW | cmd: bash -c $'ls \x3e M_ansi' | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)  | files created: M_ansi 
+hook=ALLOW | cmd: export PATH=$PWD/evil:$PATH; ls | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) FAKE-LS-RAN  | files created: 
+hook=ALLOW | cmd: declare -x PATH=$PWD/evil:$PATH; ls | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) FAKE-LS-RAN  | files created: 
+hook=ALLOW | cmd: bash -c "ls \"\`touch M_bt2\`\"" | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) ls: cannot access '': No such file or directory  | files created: M_bt2 
+hook=ALLOW | cmd: sh -c "ls \`touch M_sh\`" | bash output: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8) M_sh evil  | files created: M_sh 
+# exit: 0
