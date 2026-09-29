@@ -1,0 +1,27 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:36:58Z
+54:GLOBAL_MD="global-instructions/CLAUDE.md"
+-- global-instructions/CLAUDE.md raw match delimiter counts:
+      1 `b
+      1 `c
+      2 `d
+      2 `p
+      1 `r
+      1 `s
+      1 `t
+      1 `u
+-- global-instructions/CLAUDE.md extracted:
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+-- AGENTS.md raw match delimiter counts:
+      9 **
+-- AGENTS.md extracted:
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+-- GEMINI.md raw match delimiter counts:
+      9 **
+-- GEMINI.md extracted:
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+-- /tmp/tmp.vT242Unfn8/legacy-agents.md raw match delimiter counts:
+      9 **
+-- /tmp/tmp.vT242Unfn8/legacy-agents.md extracted:
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+-- bold .md filenames in global-instructions/CLAUDE.md: 0

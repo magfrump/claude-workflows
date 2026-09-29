@@ -1,0 +1,19 @@
+2026-09-29T07:37:10Z
+== GLOBAL_MD def
+54:GLOBAL_MD="global-instructions/CLAUDE.md"
+== extract global-instructions/CLAUDE.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== extract AGENTS.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== extract GEMINI.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== extract /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fc3/oldagents.md
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+== bold .md in global
+0
+== install links global
+grep: install.sh: No such file or directory
+== 5ee8315 regex
+35:  if matches=$(grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"); then
+== missing-file behaviour
+rc=1 out=[sed: can't read /nonexistent/x.md: No such file or directory]

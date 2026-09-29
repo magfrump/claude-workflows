@@ -1,0 +1,11 @@
+2026-09-29T07:36:37Z
+workflows/research-plan-implement.md bytes=68867 chars=68505
+workflows/divergent-design.md bytes=80340 chars=79048
+workflows/parallel-worktrees.md bytes=7596 chars=7562
+workflows/task-decomposition.md bytes=21556 chars=21474
+workflows/pr-prep.md bytes=44652 chars=44461
+workflows/spike.md bytes=24471 chars=24347
+workflows/branch-strategy.md bytes=25541 chars=25395
+workflows/user-testing-workflow.md bytes=30395 chars=30158
+workflows/codebase-onboarding.md bytes=54996 chars=54648
+total bytes 358414 KB(1000) 358.414 KiB 350.013671875 chars 355598 chars/4 88899.5

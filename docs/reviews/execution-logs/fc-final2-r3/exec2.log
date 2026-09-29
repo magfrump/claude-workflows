@@ -1,0 +1,79 @@
+$ tot=0; ch=0; for f in $(git show main:AGENTS.md | grep -oE "@\./workflows/[a-z-]+\.md" | sed "s|@\./||"); do b=$(git show main:$f | wc -c); c=$(git show main:$f | python3 -c "import sys; print(len(sys.stdin.read()))"); echo "$f $b $c"; tot=$((tot+b)); ch=$((ch+c)); done; echo "bytes=$tot chars=$ch chars/4=$((ch/4))" # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+workflows/research-plan-implement.md 68867 68505
+workflows/divergent-design.md 80340 79048
+workflows/parallel-worktrees.md 7596 7562
+workflows/task-decomposition.md 21556 21474
+workflows/pr-prep.md 44652 44461
+workflows/spike.md 24471 24347
+workflows/branch-strategy.md 25541 25395
+workflows/user-testing-workflow.md 30395 30158
+workflows/codebase-onboarding.md 54996 54648
+bytes=358414 chars=355598 chars/4=88899
+exit=0
+$ sed -n "200,230p" scripts/health-check.sh # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+
+# ── 2. Workflow cross-references resolve ────────────────────────────────────
+
+# Extract workflow filenames referenced in a markdown file.
+# Handles three syntaxes:
+#   CLAUDE.md:            `research-plan-implement.md`
+#   AGENTS.md, GEMINI.md: **research-plan-implement.md**
+#   legacy AGENTS.md:     **@./workflows/research-plan-implement.md**
+extract_workflows() {
+    local file="$1"
+    # Allow ** or ` as the delimiter. CLAUDE.md uses backticks for all filenames
+    # (so the result is filtered against workflows/ in the caller); AGENTS.md
+    # and GEMINI.md use bold. `|| true` keeps the function quiet under
+    # set -o pipefail when grep finds no matches.
+    { grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+        | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
+        | sort -u
+}
+
+check_workflow_crossrefs() {
+    section "Workflow cross-references"
+    for mdfile in "$GLOBAL_MD" AGENTS.md GEMINI.md; do
+        local path="$REPO_ROOT/$mdfile"
+        [[ -f "$path" ]] || { warn "$mdfile not found, skipping"; continue; }
+
+        local workflows
+        workflows="$(extract_workflows "$path")"
+        if [[ -z "$workflows" ]]; then
+            warn "$mdfile: no workflow references found"
+            continue
+        fi
+exit=0
+$ grep -c "\*\*[a-z-]*\.md\*\*" AGENTS.md GEMINI.md; grep -oE "\`[a-z-]+\.md\`" global-instructions/CLAUDE.md | sort -u | head -20 # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+AGENTS.md:9
+GEMINI.md:9
+`branch-strategy.md`
+`codebase-onboarding.md`
+`divergent-design.md`
+`parallel-worktrees.md`
+`pr-prep.md`
+`research-plan-implement.md`
+`spike.md`
+`task-decomposition.md`
+`user-testing-workflow.md`
+exit=0
+$ grep -n "extract_workflows" scripts/health-check.sh # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+208:extract_workflows() {
+226:        workflows="$(extract_workflows "$path")"
+261:        workflow_sets["$mdfile"]="$(extract_workflows "$path" | tr '\n' '|')"
+exit=0
+$ grep -nE "global-instructions/CLAUDE.md|CLAUDE.md" install.sh | head -10 # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+grep: install.sh: No such file or directory
+exit=0
+$ grep -nE "Read|tool_name|workflows" hooks/log-usage.sh | head -20 # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+4:# Input: JSON on stdin with tool_name and tool_input
+7:# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+13:# extracts TOOL_NAME (exits 0 for tools that aren't Skill/Read/Agent), and
+34:  #   file_read       — Read of SKILL.md / workflow / command (consultation)
+59:  Read)
+61:    # Check skills first — a path like claude-workflows/skills/x.md contains
+62:    # both "workflows" and "skills"; the more specific match wins.
+66:    elif [[ "$FILE_PATH" == */workflows/* ]]; then
+exit=0
+$ sed -n "1,20p" docs/decisions/log.md | grep -n "47" ; grep -nE "^\| 47 " docs/decisions/log.md # cwd=/workspace/.claude/wt-agents-md 2026-09-29T07:52:27Z
+70:| 47 | 2026-09-11 | **The global instructions file moves out of the repo root to `global-instructions/CLAUDE.md`.** `devcontainer-config/install.sh` stages payload entries under their basename, so the image payload and `link-claude-home.sh` are unchanged — `~/.claude/CLAUDE.md` still resolves to the same content. `scripts/health-check.sh` reads the path from a `GLOBAL_MD` variable instead of a bare filename. README, `guides/cross-project-setup.md`, AGENTS.md and GEMINI.md point at the new path. | Prompt audit 2026-09-11, F1: at the repo root the file was loaded **twice** in every session inside this repo — once as the linked global instructions and once as this project's own — about 8K tokens of byte-identical duplication per request, with the model reconciling two copies of one rule set. The audit's Option A (drop the global symlink) was rejected: the file exists to apply in *every other* project, and the duplication is specific to this repo, where the payload source doubles as the project instructions. Moving the source is the only fix that removes the second load without removing the first. Takes effect for existing containers at the next `install.sh` + rebuild; a session started before that still sees both copies. | `docs/reviews/prompt-audit-2026-09-11.md` F1 |
+exit=0

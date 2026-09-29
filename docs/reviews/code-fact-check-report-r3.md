@@ -1,602 +1,588 @@
-Commit: 3a63c56
+Commit: 832932a
 
 # Code Fact-Check Report
 
-**Repository:** claude-workflows (worktree `/workspace/.claude/wt-routers`, branch `feat/workflow-router-skills`)
-**Scope:** `git diff main...HEAD` (12 files: 9 new `skills/<workflow>/SKILL.md` routers, `test/skills/workflow-routers.bats`, `global-instructions/CLAUDE.md`, `docs/decisions/log.md` row 66) plus the commit message of `3a63c56`; replicate 3 of 3
+**Repository:** /workspace/.claude/wt-agents-md (branch fix/agents-md-no-imports)
+**Scope:** `git diff main...HEAD -- . ':(exclude)docs/reviews'` (AGENTS.md, docs/decisions/log.md, scripts/health-check.sh, test/agents-gemini-sync.bats) plus commit messages `git log main..HEAD` (5ee8315, 7b43db2, 2f5fba3). Replicate r3 of the final confirming pass (k=3).
 **Checked:** 2026-09-29
-**Total claims checked:** 26
-**Summary:** 16 verified, 6 mostly accurate, 0 stale, 4 incorrect, 0 unverifiable
+**Total claims checked:** 29
+**Summary:** 18 verified, 6 mostly accurate, 0 stale, 5 incorrect, 0 unverifiable
 
-Hallucination-pattern log read (8 entries). No claim below asserts a fabricated symbol; Claims 1/21 resemble the logged class "a specific measured value quoted from a checked-in artifact" but differ in that the artifact does contain the numbers and then withdraws them. No log append.
+Method note (applies to every `executed` claim below). I located the installed Claude Code (`claude --version` → `2.1.284 (Claude Code)`, binary `/usr/local/share/npm-global/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`). I cut two pieces out of the binary: the `@`-import extractor `yRn` (byte-identical to the binary text; the check is in `yrn-binary.js`), and the bundled `marked` lexer (`function Vy()` … `class rq`, 28,046 chars). Together they make a runnable harness, `cc-extract.js`. It runs `yRn(new rq({gfm:!1}).lex(text))`, the same call the binary makes: `F=w||M?new rq({gfm:!1}).lex(h):void 0 … K=F&&s!==void 0?yRn(F,s):[]`. The only stubs are `fC` (path-exclusion predicate, stubbed false) and the path resolvers `Ye`/`Nb` (identity), so the harness reports the raw captured paths. I then diffed the harness against the branch's `find_imports` on 27 adversarial files. All captured output is in `docs/reviews/execution-logs/fc-final2-r3/` (the scripts are `run-exec.sh` to `run-exec4.sh`; the logs are `exec.log` to `exec5.log`; the probe inputs are in `cases/`). Every command ran under `timeout`, in the stated cwd, with node v22.23.2, between 2026-09-29T07:52Z and 07:55Z. No process was left running.
 
-Execution logs (untracked, created by this run): `docs/reviews/execution-logs/fc-r3-routers-bats.log`, `docs/reviews/execution-logs/fc-r3-mutations.log` (full TAP output of each mutation), `docs/reviews/execution-logs/fc-r3-mutations-exitcodes.log` (exit code, cwd, timestamp per mutation). Mutations ran on copies of `workflows/`, `skills/` and the bats file under the session scratchpad (`.../scratchpad/fcr3/r`, deleted afterwards); no tracked worktree file was modified.
+Hallucination-pattern log consulted. Claim 18b resembles the logged count-in-commit-message class ("mode1-equiv 33" claimed in commit 37c5ea9's test tally …). No other claim matches a logged pattern.
 
 ---
 
-## Claim 1: "The only workflow with a router (DD) was opened 15 times in 49 days while RPI, the documented default, was opened zero times (triage 2026-09-17 §2.2)"
+## Claim 1: "Its workflow list now matches GEMINI.md byte for byte below the header"
 
 **Location:** `docs/decisions/log.md:88`
-**Type:** Reference
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether the cited source supports the 15:0 counts as evidence; does not establish the true usage of either workflow (the source says the instrument cannot tell).
-**Legibility-target:** for-author
-
-The numbers match the table in the cited section:
-
-```
-// docs/working/triage-2026-09-17-backlog.md:158-163
-| workflow | reads in 49 days |
-| `divergent-design` | **15** |
-...
-| **`research-plan-implement`** | **0** |
-```
-
-But the same section withdraws them as evidence, the same day:
-
-```
-// docs/working/triage-2026-09-17-backlog.md:174-178
-> to lose faith in the numbers, including after fixes shipped]. **So this finding
-> is withdrawn as evidence.** 0 reads is equally consistent with the doc being
-> unused and with the instrument not seeing it, and the data cannot separate
-> them. The 15:0 contrast goes with it: divergent-design's 15 is a lower bound
-```
-
-The row states "was opened zero times" as fact and uses the 15:0 contrast as the rationale, which is exactly what the source says the data cannot support (recorded as Q-017). The same sentence appears in `test/skills/workflow-routers.bats:8-11` (Claim 21) and the commit message body of `3a63c56` (paraphrased — no quote available because the commit message is not a file; `git log -1 3a63c56` shows "was opened 15 times in 49 days while research-plan-implement, the documented default, was opened zero times (docs/working/triage-2026-09-17-backlog.md §2.2)"). The global instructions also prohibit routing a number from an instrument with a known under-counting history without re-validating it (paraphrased — no quote available because the rule lives in the user's global instruction file loaded into this session, "Never route a number from an instrument with a known under-counting history...").
-
-**Evidence:** `docs/decisions/log.md:88`, `docs/working/triage-2026-09-17-backlog.md:152-179`
-
----
-
-## Claim 2: "pr-prep's advisory Step 0 wrote 1 failure pattern across ~128 fix commits (Q-074)"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers agreement with Q-074's text; does not re-count fix commits or failure-pattern entries independently.
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// docs/working/questions.md:70
-After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only.
-```
-
-**Evidence:** `docs/working/questions.md:67-72`
-
----
-
-## Claim 3: "`test/skills/workflow-routers.bats` fails if a workflow lacks a router, a router's body lacks the handoff, or a body passes 45 lines."
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three named failure conditions on a mutated copy of the tree; does not establish behavior on CRLF frontmatter (`frontmatter()` does not strip `\r`) or on handoffs hidden in comments/code fences.
-**Legibility-target:** for-orchestrator-synthesis
-
-Command, per mutation: `timeout 60 bats test/skills/workflow-routers.bats`, cwd `/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/fcr3/r` (copy of `workflows/`, `skills/`, the bats file), 2026-09-29T07:36:26Z–07:36:28Z. Unmutated copy: exit 0. Deleting `skills/spike/SKILL.md` (M1): exit 1, `not ok 1 ... workflows with no skills/<name>/SKILL.md router: spike`. Replacing the body handoff line (M3): exit 1, `not ok 3`. Appending 30 lines (M5): exit 1, `not ok 5 ... spike (50 lines)`. The limit is the constant:
-
-```
-// test/skills/workflow-routers.bats:20
-  MAX_BODY_LINES=45
-```
-
-**Evidence:** `test/skills/workflow-routers.bats:16-105`, `docs/reviews/execution-logs/fc-r3-mutations.log`, `docs/reviews/execution-logs/fc-r3-mutations-exitcodes.log`
-
----
-
-## Claim 4: "User request 2026-09-28; log 65"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether log row 65 exists on this branch and main; does not assess the relationship between rows 65 and 66.
-**Legibility-target:** for-author
-
-There is no row 65 on this branch: the table goes from 64 to 66 (paraphrased — no quote available because the claim is about an absent row; `grep -n "^| 6[0-9] " docs/decisions/log.md` returns rows 60–64 and 66 only). Row 65 exists only on the unmerged branch `fix/agents-md-no-imports`, commit `5ee83154` ("AGENTS.md names workflows by bare filename, never by `@` import"). The reference resolves only if that branch merges; if this branch lands first, `log 65` dangles.
-
-**Evidence:** `docs/decisions/log.md:83-88`, commit `5ee83154` (`git branch -a --contains 5ee83154` → `fix/agents-md-no-imports`)
-
----
-
-## Claim 5: "Revisit if, 30 days after install, router invocations stay near zero for RPI and pr-prep (`scripts/skill-usage-report.sh`)"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers that the named script exists and reads skill-invocation events the hook logs on Skill-tool calls; does not establish that the instrument counts reliably (the same hook family has the under-counting history cited in Claim 1).
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// scripts/skill-usage-report.sh:2-3
-# Reads ~/.claude/logs/usage.jsonl and reports skill/workflow usage frequency,
-# recency, and which skills/workflows have never been invoked.
-```
-
-```
-// hooks/log-usage.sh:55-57
-    if [[ -n "$SKILL_NAME" ]]; then
-      log_event "skill" "$SKILL_NAME" "$SKILL_ARGS" "skill_tool"
-    fi
-```
-
-**Evidence:** `scripts/skill-usage-report.sh:1-30`, `hooks/log-usage.sh:55-69`
-
----
-
-## Claim 6: "Each `workflows/<name>.md` ships a router skill of the same name (`skills/<name>/SKILL.md`)"
-
-**Location:** `global-instructions/CLAUDE.md:13`
 **Type:** Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers all 10 files under `workflows/` at `3a63c56`; does not establish the routers are installed in any given session (needs install.sh + rebuild, Claim 26).
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers AGENTS.md vs GEMINI.md from line 4 onward at HEAD, as checked by the sync test; does not establish anything about the three header lines, which the test deliberately strips.
 
-`timeout 120 bats test/skills/workflow-routers.bats`, cwd `/workspace/.claude/wt-routers`, exit 0, 2026-09-29T07:35:55Z: `ok 1 every workflow has a router skill of the same name` and all 5 tests pass.
+The sync test diffs the two files after stripping 3 header lines:
 
-**Evidence:** `test/skills/workflow-routers.bats:38-48`, `docs/reviews/execution-logs/fc-r3-routers-bats.log`
+```bash
+# test/agents-gemini-sync.bats:20-21
+agents_body=$(tail -n +4 "$AGENTS")
+gemini_body=$(tail -n +4 "$GEMINI")
+```
+
+Command `timeout 120 bats test/agents-gemini-sync.bats`, cwd `/workspace/.claude/wt-agents-md`, 2026-09-29T07:52:11Z, exit 0, output `ok 1 AGENTS.md and GEMINI.md content is in sync (ignoring headers)`.
+
+**Evidence:** `test/agents-gemini-sync.bats:15-28`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
 
 ---
 
-## Claim 7: "so it appears in the session's skill list and is started with the Skill tool, which loads the workflow"
+## Claim 2a: "using Claude Code's own grammar as read from the v2.1.284 binary during review (`@` at a token start or after whitespace, then `./`, `~/`, `/` or `[A-Za-z0-9._-]`…)" (the grammar as described)
 
-**Location:** `global-instructions/CLAUDE.md:13`
+**Location:** `docs/decisions/log.md:88`
+**Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the regex and prefix conditions in the v2.1.284 extractor. Does not establish three extractor details the summary leaves out: a `#fragment` suffix is stripped, a bare `@/` is excluded (`M!=="/"`), and paths matching `fC(...)` are dropped. It also does not establish which tokens count as "text" (see Claims 2b, 2c and 13).
+
+The binary's extractor, quoted verbatim (`docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, extracted from `claude.exe`):
+
+```js
+let S=/(?:^|\s)@((?:[^\s\\]|\\ )+)/g, … let F=M.indexOf("#");if(F!==-1)M=M.substring(0,F); …
+if(!fC(M)&&(M.startsWith("./")||M.startsWith("~/")||M.startsWith("/")&&M!=="/"||!M.startsWith("@")&&!M.match(/^[#%^&*()]+/)&&M.match(/^[a-zA-Z0-9._-]/)))
+```
+
+The regex's `^` and `\s` match exactly "at a token start or after whitespace". The allowed prefixes are exactly `./`, `~/`, `/` or `[a-zA-Z0-9._-]`. The version is from `claude --version` → `2.1.284 (Claude Code)` (exec3.log).
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 2b: "fenced blocks and code spans skipped"
+
+**Location:** `docs/decisions/log.md:88`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers what a router's content does when loaded; does not establish Skill-tool loading semantics beyond "loads SKILL.md".
-**Legibility-target:** for-author
+**Verification mode:** executed
+**Scope:** Covers Claude Code skipping `code` and `codespan` tokens. It does not establish that code-span text is never scanned: Claude Code does scan it inside tight list items, where marked's block-level `text` token carries the raw inline text.
 
-The Skill call loads the router stub, not the workflow. The stub then tells the agent to read the workflow, which takes a separate Read:
+The walker skips code tokens:
 
-```
-// skills/spike/SKILL.md:26-27
-Read and follow **`workflows/spike.md`** end to end (installed copy:
-`~/.claude/workflows/spike.md`).
+```js
+// yrn-binary.js
+function g(h){for(let S of h){if(S.type==="code"||S.type==="codespan")continue; … if(S.type==="text")s(S.text||"");if(S.tokens)g(S.tokens);if(S.items)g(S.items)}}
 ```
 
-A more precise wording: "which loads a stub that directs reading the workflow."
+Fenced blocks (backtick and `~~~`) and indented code blocks are `code` tokens, and the harness confirms each is skipped (`cases/tilde_fence.md` → `[]`, `cases/indented_code.md` → `[]`). The one exception: a tight list item's block-level `text` token has `text` equal to the item's raw source, code span included, and `s()` scans that string. So `- code \`a @./listcs.md\` here` yields `["./listcs.md\`"]` (`cases/tight_list_cs.md`, exec3.log). The precise version would be: "code blocks and code spans skipped, except a code span in a tight list item whose content has whitespace before the `@`."
 
-**Evidence:** `skills/spike/SKILL.md:24-29` (same pattern in all nine routers)
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/tight_list_cs.md`
 
 ---
 
-## Claim 8: "including its approval gate on force-pushing a shared branch" / "Replacing a shared branch always needs explicit user approval, in any operating mode."
+## Claim 2c: "`test/agents-gemini-sync.bats` fails on an `@` import in AGENTS.md or `global-instructions/CLAUDE.md`, using Claude Code's own grammar"
 
-**Location:** `skills/branch-strategy/SKILL.md:16-17`
-**Type:** Reference
+**Location:** `docs/decisions/log.md:88`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers whether the guard flags every form Claude Code v2.1.284 imports. It does not establish that the two guarded files contain any such form today (Claim 15: they do not, by either implementation).
+
+The guard is a per-line regex applied after a backtick-only fence toggle and a code-span strip (`test/agents-gemini-sync.bats:48-50`, quoted in Claim 13). Claude Code instead walks marked's token tree. In the differential run (exec3.log), the harness imports each of the following while `find_imports` returns nothing:
+
+- `[@./linktext.md](http://u)`: link text is a child `text` token.
+- `>@./bq.md`: blockquote, no space.
+- `` a`code`@aftercs.md ``, `[l](u)@afterlink.md`, `x<br>@brhtml.md`, `a\\@escbs.md`: a new text token starts after a code span, a link, inline HTML or an escape.
+- `a \`b @./escbt.md \`c`: an escaped backtick opens a false span in the sed.
+- `x\xc2\xa0@nbsp.md`: JS `\s` matches NBSP, while `[[:space:]]` in the test's C locale does not.
+- `- code \`a @./listcs.md\` here`: see Claim 2b.
+- Two cases that leave the whole rest of a file unguarded: a ```` fence that wraps a ``` line (`cases/four_fence.md`), and a line that starts with an inline ``` span (`cases/inline_triple_at_start.md`). Each toggles the awk fence state wrongly, so later real imports are blanked.
+
+The row states the grammar correctly (Claim 2a). The claim that the test *uses* it overstates a line-level approximation that under-matches.
+
+**Evidence:** `test/agents-gemini-sync.bats:46-51`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
+
+---
+
+## Claim 3: "the nine `@./workflows/*.md` entries put ~358 KB (~89K tokens at chars/4) of workflow text into every session"
+
+**Location:** `docs/decisions/log.md:88`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the workflow's dev reset and integration-refresh promotion paths; does not cover branch deletion, which the workflow gates separately.
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** executed
+**Scope:** Covers the byte and character totals of the nine files as they are on `main` and the chars/4 arithmetic. It does not establish a real tokenizer count.
 
-```
-// workflows/branch-strategy.md:186-188
-`git push --force-with-lease origin dev` replaces a shared branch in place — that pointer swap is a
-**gated operation requiring explicit human approval** (see Operating Modes in CLAUDE.md), regardless
-of away/active mode.
-```
+Summing `git show main:<f> | wc -c` and the Python `len()` over the nine paths extracted from `main:AGENTS.md` gives `bytes=358414 chars=355598 chars/4=88899` (exec2.log, 07:52:27Z, exit 0). Old AGENTS.md has exactly 9 import lines (Claim 19).
 
-The same gate is restated for refresh promotion at `workflows/branch-strategy.md:373` ("Never force-push over shared branches outside the approval gate").
-
-**Evidence:** `skills/branch-strategy/SKILL.md:16-30`, `workflows/branch-strategy.md:184-190`, `workflows/branch-strategy.md:327-337`, `workflows/branch-strategy.md:373-376`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
 
 ---
 
-## Claim 9: "Its output is `docs/working/onboarding-{project}.md`, which later RPI research loads instead of re-exploring."
+## Claim 4: "After row 47 moved the root CLAUDE.md out, Claude Code loads AGENTS.md as this repo's project instructions and expands `@` imports inline … into every session and subagent here"
 
-**Location:** `skills/codebase-onboarding/SKILL.md:29-31`
-**Type:** Reference
+**Location:** `docs/decisions/log.md:88`
+**Type:** Behavioral
 **Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the output path and the RPI handoff; does not check the description's list of sections.
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// workflows/codebase-onboarding.md:30
-- `docs/working/onboarding-{project}.md` — the orientation document
-```
-
-The "→ RPI" pivot says the onboarding doc's architecture map, key flows and conventions "replace the broad exploration part of RPI research" (paraphrased — no quote available because the sentence is long; it is in the "When to pivot" section of `workflows/codebase-onboarding.md`). The router's "Not for projects you started from scratch" matches the workflow's "Not a trigger: from-scratch projects you started yourself".
-
-**Evidence:** `workflows/codebase-onboarding.md:30`, `workflows/codebase-onboarding.md:375`
-
----
-
-## Claim 10: "It includes the manual `git worktree add` fallback for when Agent-tool worktree isolation fails."
-
-**Location:** `skills/parallel-worktrees/SKILL.md:28-29`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the fallback's existence and one trigger; the workflow also uses it for human-driven sessions and when isolation is unavailable.
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// workflows/parallel-worktrees.md:42-43
-git worktree add .claude/wt-item-1 -b feat/item-1 main   # inside the project, so sandbox writes are allowed
-git worktree add .claude/wt-item-2 -b feat/item-2 main
-```
-
-The router's "do these share files or an order?" test and the task-decomposition boundary match the workflow's "When NOT to fan out" paragraph.
-
-**Evidence:** `workflows/parallel-worktrees.md:36-47`
-
----
-
-## Claim 11: "Runs code-review as one of its steps; use this for the whole landing, code-review alone for a review only."
-
-**Location:** `skills/pr-prep/SKILL.md:5-6`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that pr-prep step 3a invokes code-review; does not check the description's stage order (on the GitHub path the draft PR opens at step 2, before the loop).
-**Legibility-target:** for-orchestrator-synthesis
-
-pr-prep step 3a lists "**Code review** (`/code-review`) — multi-critic structural review of the diff vs main" (paraphrased — no quote available because the line number shifted in the reviewed tree; `grep -n "Code review\*\* (\`/code-review\`)" workflows/pr-prep.md` finds it under "#### 3. Review-fix loop").
-
-**Evidence:** `workflows/pr-prep.md` step 3a (under the heading at `#### 3. Review-fix loop`)
-
----
-
-## Claim 12: "The workflow picks the delivery path (local merge vs GitHub PR) in its first step."
-
-**Location:** `skills/pr-prep/SKILL.md:21-22`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers where the delivery-path choice sits in the workflow; does not assess the choice criteria.
-**Legibility-target:** for-author
-
-The choice is a section placed before the numbered steps, not the first step:
-
-```
-// workflows/pr-prep.md:18-20
-### Delivery path: local merge or GitHub PR
-
-Pick the path before Step 0.
-```
-
-Precise version: "picks the delivery path before Step 0."
-
-**Evidence:** `workflows/pr-prep.md:18-32`
-
----
-
-## Claim 13: "Its review-fix loop is owned by `workflows/review-fix-loop.md`"
-
-**Location:** `skills/pr-prep/SKILL.md:28-29`
-**Type:** Architectural
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the ownership split both docs state; does not check further cross-references.
-**Legibility-target:** for-author
-
-review-fix-loop.md owns the loop's control rules only. pr-prep step 3 owns the per-iteration sequence and when override-log rows are written:
-
-```
-// workflows/review-fix-loop.md:7
-This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the early split trigger, the fix-drift check, and the two re-fire filters ... [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written.
-```
-
-Precise version: "its loop's control rules (cap, exits, re-fire filters) are owned by `workflows/review-fix-loop.md`."
-
-**Evidence:** `workflows/review-fix-loop.md:7`
-
----
-
-## Claim 14: "Its outputs are `docs/working/research-{topic}.md`, `plan-{topic}.md` and `checkpoint-{topic}.md`, and its hard gate is plan approval before implementation."
-
-**Location:** `skills/research-plan-implement/SKILL.md:29-31`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the three working docs and the step-4 gate; does not cover the optional handoff doc or the test-review checkpoint in step 6.
-**Legibility-target:** for-orchestrator-synthesis
-
-RPI's "Working documents" section lists `docs/working/research-{topic}.md`, `plan-{topic}.md` and `checkpoint-{topic}.md`, and step 4 opens with "This is the hard gate. ... **implementation does not begin until the user has reviewed the plan**" (paraphrased — no quote available because the line numbers were read from the section headings rather than a numbered dump; both are under `## Working documents` and `### 4. Annotate` in `workflows/research-plan-implement.md`). The description's sequence (research doc, plan doc, plan approval, tests first, implement) matches steps 2–6.
-
-**Evidence:** `workflows/research-plan-implement.md` (`## Working documents`, `### 4. Annotate`, `#### Test-first gate`)
-
----
-
-## Claim 15: "triage by tier, fix, record declined findings in the override log, re-review only the delta, stop at 3 iterations or 2 clean passes"
-
-**Location:** `skills/review-fix-loop/SKILL.md:4-6`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers what `workflows/review-fix-loop.md` (the file the router says to read) states about these steps and its stop rule; does not adjudicate the existing tension between that file's single-clean exit and code-review's 2-clean rule.
-**Legibility-target:** for-author
+**Scope:** Covers observed behavior in this repo with v2.1.284: this subagent's own context shows AGENTS.md from the main checkout loaded as "project instructions", with each `@./workflows/*.md` target expanded inline as its own entry. It does not establish the loader's precedence rules (for example, what happens when both CLAUDE.md and AGENTS.md exist).
 
-Three imprecisions, same verdict, so not split:
+Paraphrased — no quote available because the evidence is this agent's injected system context, not a repo file. The context lists "Contents of /workspace/AGENTS.md (project instructions, checked into the codebase)". It follows with "Contents of /workspace/workflows/research-plan-implement.md (project instructions …)" and the other imported workflow files, and this agent is a subagent. The mechanism is the extractor quoted in Claim 2a, applied at load time (`… new rq({gfm:!1}).lex(h) … yRn(F,s) …`, found in the binary next to `context_claude_md_load`). Row 47's move is at `docs/decisions/log.md:70`: "The global instructions file moves out of the repo root to `global-instructions/CLAUDE.md`."
 
-- The triage, override-log writing and delta re-review steps are pr-prep step 3's, not this workflow's (see Claim 13's quote of `workflows/review-fix-loop.md:7`). A reader who follows only the workflow file will not find the delta rule there.
-- At 3 iterations the loop does not stop. It reaches a written decision gate:
-
-```
-// workflows/review-fix-loop.md:25
-iteration 4 cannot begin until an explicit `escalate | split | abandon` decision has been recorded in writing.
-```
-
-- "2 clean passes" is not in the workflow. Its exit is one clean iteration, or shipping with documented known issues and no Must Fix left:
-
-```
-// workflows/review-fix-loop.md:43-44
-1. **Clean convergence.** No Must Fix items remain and every Must Address item is resolved ...
-2. **Ship with documented known issues.** No Must Fix items remain, but Must Address or Consider items persist.
-```
-
-The 2-clean rule lives in `skills/code-review/SKILL.md:445` ("which requires **2 consecutive clean passes** before merge"). Decision 031 limits it to branches that touch behavior, security or a consumer contract. Comment/doc/test-only branches use 1-clean (`docs/decisions/031-review-loop-tier-and-factcheck-policy.md:148-152`).
-
-**Evidence:** `workflows/review-fix-loop.md:7`, `workflows/review-fix-loop.md:23-46`, `skills/code-review/SKILL.md:443-446`, `docs/decisions/031-review-loop-tier-and-factcheck-policy.md:148-152`
+**Evidence:** `docs/decisions/log.md:70`, `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`
 
 ---
 
-## Claim 16: "Usually entered from `pr-prep` step 3, but applies whenever a rubric is being acted on."
+## Claim 5: "`hooks/log-usage.sh` cannot see `@` loads, so workflow use went unmeasured"
 
-**Location:** `skills/review-fix-loop/SKILL.md:21-22`
+**Location:** `docs/decisions/log.md:88`
 **Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the hook's tool filter. It does not establish whether any other logger records `@` loads.
+
+```bash
+# hooks/log-usage.sh:7-9
+# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill
+# read through Bash (`cat`), an `@` import, or text inlined into a subagent
+# brief produces no event, …
+```
+
+**Evidence:** `hooks/log-usage.sh:7-14`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 6: "Handles three syntaxes: CLAUDE.md `` `research-plan-implement.md` ``; AGENTS.md, GEMINI.md `**research-plan-implement.md**`; legacy AGENTS.md `**@./workflows/research-plan-implement.md**`"
+
+**Location:** `scripts/health-check.sh:203-207`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the regex accepting all three forms and normalizing them to bare filenames. It does not establish the caller's filtering against `workflows/`.
+
+```bash
+# scripts/health-check.sh:214-216
+{ grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)' "$file" || true; } \
+    | sed 's/\*\*//g; s/`//g; s|@\./workflows/||' \
+    | sort -u
+```
+
+The optional `(@\./workflows/)?` group covers the legacy form, and the delimiter alternation covers bold and backtick. Greps in exec2.log show `AGENTS.md:9` and `GEMINI.md:9` bold names, and nine distinct backticked workflow names in `global-instructions/CLAUDE.md`.
+
+**Evidence:** `scripts/health-check.sh:203-217`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
+
+---
+
+## Claim 7: "CLAUDE.md uses backticks for all filenames … AGENTS.md and GEMINI.md use bold"
+
+**Location:** `scripts/health-check.sh:210-212`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers workflow-filename delimiters in the three files at HEAD. It does not establish delimiter use for non-workflow filenames.
+
+`grep -cE '\*\*[a-z][-a-z0-9]*\.md\*\*' global-instructions/CLAUDE.md` → `0` (exec4.log). The backtick grep finds nine workflow names in it (exec2.log). AGENTS.md and GEMINI.md each have 9 bold names (exec2.log).
+
+**Evidence:** `scripts/health-check.sh:210-212`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
+
+---
+
+## Claim 8: "Strips the first 3 lines (tool-specific headers) from each file, then diffs. Any difference means an edit was made to one file but not the other."
+
+**Location:** `test/agents-gemini-sync.bats:3-5`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the strip-and-diff mechanics. It does not establish that the header really is exactly 3 lines in both files; the passing test is consistent with that but does not prove it.
+
+```bash
+# test/agents-gemini-sync.bats:20-23
+agents_body=$(tail -n +4 "$AGENTS")
+gemini_body=$(tail -n +4 "$GEMINI")
+
+if ! diff_output=$(diff <(echo "$agents_body") <(echo "$gemini_body")); then
+```
+
+**Evidence:** `test/agents-gemini-sync.bats:15-28`
+
+---
+
+## Claim 9: "The old `@./workflows/*.md` list pulled ~89K tokens of workflow text into every session and subagent here, invisible to the usage hook. global-instructions/CLAUDE.md loads in every project"
+
+**Location:** `test/agents-gemini-sync.bats:30-35`
+**Type:** Behavioral / Configuration
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Same evidence as Claims 3-5, plus row 47's install path for the global file. It does not establish the install mechanics on hosts outside the devcontainer.
+
+The token figure, the subagent observation and the hook coverage are established in Claims 3, 4 and 5. For "loads in every project": `docs/decisions/log.md:70` reads "`~/.claude/CLAUDE.md` still resolves to the same content".
+
+**Evidence:** `docs/decisions/log.md:70`, `hooks/log-usage.sh:7-9`, `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
+
+---
+
+## Claim 10: "an `@` at the start of a text token or after whitespace, followed by `./`, `~/`, `/` or a character in [A-Za-z0-9._-]. So `@README`, `@x.md`, `@dir/x` and even `@alice` are imports, while `(@./x)`, `foo@bar` and email addresses are not."
+
+**Location:** `test/agents-gemini-sync.bats:38-41`
+**Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the grammar statement and every named example, run through the verbatim extractor. It does not establish that `find_imports` implements the grammar (Claim 13).
+
+The grammar matches the extractor (Claim 2a). Per-line harness output (exec3.log and the earlier per-line run): `@README` → `["README"]`, `ping @alice about it` → `["alice"]`, `(@./x.md) "@../y.md" [@/abs/z.md]` → `[]`, `mail someone@example.com today` → `[]`, `foo@bar/baz` → `[]`.
+
+**Evidence:** `test/agents-gemini-sync.bats:37-41`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 11a: "Emphasis markers (`**@./x**`) do not start a new token in the markdown text"
+
+**Location:** `test/agents-gemini-sync.bats:42-43`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers how marked (as bundled in v2.1.284, `gfm:false`) tokenizes `**@./x**`. It does not establish the author's intended meaning; the sentence may mean "the markers are not part of the text", which is true.
+
+As written, the mechanism is the reverse of what happens. marked lexes `**@./x**` as a `strong` token whose child is a `text` token `"@./x"`, and the walker recurses into it (`if(S.tokens)g(S.tokens)`, yrn-binary.js). So the emphasis marker is exactly what makes `@` start a new text token, which is why `^` matches and `cases/strong.md` yields `["./strong.md"]` (exec3.log). The conclusion the comment draws is right for real emphasis; the mechanism stated is wrong.
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/yrn-binary.js`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/strong.md`
+
+---
+
+## Claim 11b: "so `*` and `_` count as token starts here"
+
+**Location:** `test/agents-gemini-sync.bats:43`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the finder's treatment of `*` and `_`. It does not establish other token starts (Claim 13).
+
+The finder counts *any* `*` or `_` before `@` as a token start:
+
+```bash
+# test/agents-gemini-sync.bats:50
+| grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
+```
+
+Claude Code counts them only when they actually delimit emphasis. `a*@star.md` and `snake_@intra.md` yield `[]` from the harness but are flagged by the finder (exec3.log). `_@emus.md_` and `**@./strong.md**` agree. So the finder over-matches, which errs in the safe direction for a guard. The precise wording would be "`*` and `_` are treated as token starts (a superset of real emphasis)".
+
+**Evidence:** `test/agents-gemini-sync.bats:50`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 12: "Fenced code blocks and inline code spans (single or double backtick) are blanked first, keeping line numbers: Claude Code skips both."
+
+**Location:** `test/agents-gemini-sync.bats:43-45`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the awk and sed blanking stages and Claude Code's skip of code tokens. It does not establish correct fence detection for `~~~` fences, fences of four or more backticks, or a line that starts with an inline ``` span, and it does not establish Claude Code's tight-list exception (Claim 2b).
+
+```bash
+# test/agents-gemini-sync.bats:48-49
+awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
+  | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
+```
+
+Line numbers are kept (awk prints `""` for blanked lines). Code spans, single and double, are removed. But only backtick fences are recognized, and any line starting with ``` toggles the state:
+
+- `~~~` fences and indented code blocks are scanned. This over-matches: `cases/tilde_fence.md` and `cases/indented_code.md` are flagged, while the harness gives `[]`.
+- A ```` fence containing ``` lines, and an inline ``` span at line start, flip the toggle wrongly. This under-matches everything after them (Claim 2c).
+
+"Claude Code skips both" holds except inside tight list items (Claim 2b). Both halves earn the same verdict, so the claim is not split.
+
+**Evidence:** `test/agents-gemini-sync.bats:48-49`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
+
+---
+
+## Claim 13: "The finder mirrors Claude Code's own import extractor (read from the v2.1.284 binary during review …)"; test name "the import finder matches Claude Code's import grammar"
+
+**Location:** `test/agents-gemini-sync.bats:37`
+**Type:** Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers what the target workflow says about standalone use; does not establish whether standalone use would be harmful.
-**Legibility-target:** for-author
+**Verification mode:** executed
+**Scope:** Covers equivalence between `find_imports` and the v2.1.284 extractor over 27 adversarial inputs plus the synthetic cases (also `:53`). It does not establish a wrong result on the two guarded files today; both implementations find nothing there (Claim 15).
 
-The workflow the router hands off to forbids standalone use:
-
+```bash
+# test/agents-gemini-sync.bats:46-51
+find_imports() {
+  # shellcheck disable=SC2016  # the backticks are literal regex characters
+  awk '/^[[:space:]]*```/ { fence = !fence; print ""; next } fence { print ""; next } { print }' "$1" \
+    | sed -E 's/``([^`]|`[^`])*``//g; s/`[^`]*`//g' \
+    | grep -nE '(^|[[:space:]*_])@(\./|~/|/|[[:alnum:]._-])'
+}
 ```
-// workflows/review-fix-loop.md:211
-The loop is embedded in pr-prep as a required step (Phase 1, step 3). It should not be run as a standalone workflow — use pr-prep, which sequences it within a two-phase process
-```
 
-The router's `when:` ("A code-review rubric exists ... and its findings are being fixed or declined"), its description triggers ("fix the review findings", "re-review") and this line all send an agent into the loop on its own. The workflow says to go through pr-prep instead.
+It agrees with the harness on the 11 synthetic positives and the negatives (Claim 14), and on `tab`, `crlf`, `strong`, `em_us`, `heading`, `table` (non-GFM, so plain text), `frag`, `paren` and `nested_bt`.
 
-**Evidence:** `skills/review-fix-loop/SKILL.md:6-8`, `skills/review-fix-loop/SKILL.md:19-22`, `workflows/review-fix-loop.md:207-211`
+It diverges on 18 of the 27 probes (exec3.log):
+- Under-matches (Claude Code imports, finder silent), 11: `link_text`, `blockquote` (no space), `after_codespan`, `after_link`, `br_html`, `escaped_bs`, `escaped_bt`, `nbsp`, `tight_list_cs`, `four_fence`, `inline_triple_at_start`. The last two blank every later line.
+- Over-matches (finder flags, Claude Code does not), 7: `tilde_fence`, `indented_code`, `html_comment` (Claude Code strips `<!-- -->`), `html_block` (Claude Code skips non-comment HTML), `intraword_us`, `star_nonemph`, `multiline_cs`.
+
+The finder errs in both directions. The under-matches include a plausible authoring form, a markdown link whose text is the path (`- [@./workflows/x.md](workflows/x.md)`), which Claude Code would import and this guard would pass. "Mirrors" and "matches" overstate an approximation that is correct for the regex-level grammar only.
+
+**Evidence:** `test/agents-gemini-sync.bats:46-53`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/cc-extract.js`, `docs/reviews/execution-logs/fc-final2-r3/cases/`
 
 ---
 
-## Claim 17: "The tier definitions it acts on live in `skills/code-review/references/rubric.md`."
+## Claim 14: Synthetic test: 11 positive lines each an import; each negative line a non-import (as pinned by `-eq 11` and `[ -z "$output" ]`)
 
-**Location:** `skills/review-fix-loop/SKILL.md:28-29`
-**Type:** Reference
+**Location:** `test/agents-gemini-sync.bats:55-80`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers where the tier definitions are declared to live; does not verify the rubric's contents.
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** executed
+**Scope:** Covers the heredoc contents against both the finder and the verbatim extractor. It does not establish coverage of forms outside the heredocs (Claim 13).
 
+```bash
+# test/agents-gemini-sync.bats:78,80
+[ "$(printf '%s\n' "$output" | grep -c .)" -eq 11 ] || …
+[ -z "$output" ] || { echo "false positives:"; …
 ```
-// workflows/review-fix-loop.md:7
-The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md))
-```
 
-The file exists and defines the tiers (`skills/code-review/references/rubric.md:48` `## 🔴 Must Fix`).
+Running the harness on the extracted heredocs (exec3.log, 07:53:07Z, exit 0): pos → 11 distinct paths, one per line; neg → `[]`. The finder gives 11 and 0. So every positive is an import and every negative is a non-import under Claude Code's actual extractor, not only under the stated grammar. The bats run passes test 2 (exec.log).
 
-**Evidence:** `workflows/review-fix-loop.md:7`, `skills/code-review/references/rubric.md:48`
+**Evidence:** `test/agents-gemini-sync.bats:53-81`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
 
 ---
 
-## Claim 18: "Its first step greps `docs/thoughts/spike-graveyard.md` for prior abandoned attempts."
+## Claim 15: No-imports test fails when a guarded file is missing; passes on the current files
 
-**Location:** `skills/spike/SKILL.md:28-29`
-**Type:** Reference
+**Location:** `test/agents-gemini-sync.bats:83-94`
+**Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers step 1 of the spike workflow; does not check the description's later steps in detail (they match the step headings).
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** executed
+**Scope:** Covers the missing-file branch and the current AGENTS.md and global-instructions/CLAUDE.md. It does not establish detection of the under-matched forms in Claim 13.
 
+```bash
+# test/agents-gemini-sync.bats:86,93
+[ -r "$f" ] || { echo "$f is missing or unreadable"; failed=1; continue; }
+…
+[ "$failed" -eq 0 ]
 ```
-// workflows/spike.md:22-24
-### 1. Check the graveyard (essential)
 
-Before scoping the spike question, grep `docs/thoughts/spike-graveyard.md` for keywords from the question
-```
+In a fake repo containing the test, AGENTS.md and GEMINI.md but no `global-instructions/` (cwd `…/scratchpad/fake`, 07:52:12Z), bats exits 1 with `not ok 3 … global-instructions/CLAUDE.md is missing or unreadable`. On the real worktree, test 3 is `ok` (exit 0). Both implementations find nothing in either guarded file: finder `0`, harness `[]` (exec.log).
 
-**Evidence:** `workflows/spike.md:22-32`
+**Evidence:** `test/agents-gemini-sync.bats:83-94`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`, `docs/reviews/execution-logs/fc-final2-r3/run-exec.sh`
 
 ---
 
-## Claim 19: "It ends by entering `research-plan-implement` with the synthesized research doc." / "Not for several unrelated tasks in one message (that is parallel-worktrees)."
+## Claim 16: "the guard still missed bare imports with no .md (`@README`, `@package.json`, `@x.MD`), flagged forms Claude Code does not import (`(@./x)`, `"@../y"`, fenced blocks, double-backtick spans)"
 
-**Location:** `skills/task-decomposition/SKILL.md:30-31`
-**Type:** Reference / Architectural
+**Location:** commit 2f5fba3 (message, paragraph 1)
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers step 7 and the row-2/row-7 boundary; does not check the interface-contract step in detail.
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** executed
+**Scope:** Covers 7b43db2's `find_imports` on the listed forms. It does not establish the "log row 65 and the test name overclaimed" part beyond Claims 2c and 13.
 
-Step 7's Done-when is "The RPI workflow has been entered with the synthesized research doc as input", and parallel-worktrees says it is not for "*One* task whose research fans out but whose implementation stays sequential → `task-decomposition.md` (row 7)" (paraphrased — no quote available because both lines were checked against the workflow texts by heading, not a numbered dump: `### 7. Plan and implement sequentially` in `workflows/task-decomposition.md` and "Not this workflow" in `workflows/parallel-worktrees.md:5-8`).
+The 7b43db2 finder (`finder-7b43.sh`, from `git show 7b43db2:test/agents-gemini-sync.bats`) run on those nine lines flags only `(@./x)`, `"@../y"`, `@./y.md` (the double-backtick span, whose inner single-backtick strip leaves `@./y.md`) and the fenced line. It misses `@README`, `@package.json` and `@x.MD` (exec4.log). The harness confirms these are the correct classifications.
 
-**Evidence:** `workflows/task-decomposition.md` (`### 7.`), `workflows/parallel-worktrees.md:5-8`
-
----
-
-## Claim 20: "Its findings report lands at `docs/working/testing-findings-{topic}.md`." / "For reviewing a UI's layout without users, use `ui-visual-review` instead."
-
-**Location:** `skills/user-testing-workflow/SKILL.md:21-29`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the Phase 4 output path and the sibling boundary; does not check the description's phase list in detail.
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// workflows/user-testing-workflow.md:404
-Save the report as `docs/working/testing-findings-{topic}.md` — this is "the findings doc" that the RPI and DD pivots above carry forward.
-```
-
-The `ui-visual-review` skill describes itself as reviewing rendered UI layout issues (cut-off, overlap, overflow), with no users involved (paraphrased — no quote available because the description comes from this session's skill listing, not a file in scope).
-
-**Evidence:** `workflows/user-testing-workflow.md:404`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec4.log`, `docs/reviews/execution-logs/fc-final2-r3/finder-7b43.sh`, `docs/reviews/execution-logs/fc-final2-r3/hist.md`
 
 ---
 
-## Claim 21: "The one workflow with a router (divergent-design) was opened 15 times in 49 days while research-plan-implement, the documented default, was opened zero times (docs/working/triage-2026-09-17-backlog.md §2.2)."
+## Claim 17a: "find_imports mirrors the extractor replicate r2 read from the Claude Code v2.1.284 binary"
 
-**Location:** `test/skills/workflow-routers.bats:8-11`
-**Type:** Reference
+**Location:** commit 2f5fba3 (message, first bullet)
+**Type:** Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Same as Claim 1: covers whether the cited source supports the counts as evidence; does not establish actual usage.
-**Legibility-target:** for-author
+**Verification mode:** executed
+**Scope:** Same as Claim 13. It does not establish that the grammar the commit message states is wrong; that grammar is right (Claim 2a).
 
-```
-// test/skills/workflow-routers.bats:8-11
-# instruction prose. The one workflow with a router (divergent-design) was
-# opened 15 times in 49 days while research-plan-implement, the documented
-# default, was opened zero times (docs/working/triage-2026-09-17-backlog.md
-# §2.2).
-```
+Paraphrased — no quote available because the evidence is the differential run summarized in Claim 13 (11 under-matches, 7 over-matches across 27 probes, exec3.log). The grammar summary in the same bullet ("`@` at a token start or after whitespace (plus emphasis markers), then `./`, `~/`, `/` or [A-Za-z0-9._-]") matches the binary, but the implementation does not mirror the token-walking extractor.
 
-The cited section withdraws these numbers as evidence (`docs/working/triage-2026-09-17-backlog.md:174-178`, quoted in Claim 1).
-
-**Evidence:** `test/skills/workflow-routers.bats:6-12`, `docs/working/triage-2026-09-17-backlog.md:152-179`
+**Evidence:** `test/agents-gemini-sync.bats:46-51`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
 
 ---
 
-## Claim 22: "A router body is a short pointer; the workflows it points at run 70-600 lines."
+## Claim 17b: "fenced blocks and single/double code spans are blanked first, line numbers kept"
 
-**Location:** `test/skills/workflow-routers.bats:18-19`
+**Location:** commit 2f5fba3 (message, first bullet)
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same as Claim 12.
+
+Paraphrased — no quote available because it is the same awk/sed pair analysed in Claim 12. Backtick fences and code spans are blanked with line numbers kept. `~~~` fences are not blanked, and fences of four or more backticks, or a line starting with an inline ``` span, mis-toggle the fence state.
+
+**Evidence:** `test/agents-gemini-sync.bats:48-49`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 18a: "The synthetic test pins 11 positives (incl. @README, @alice)"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the positive heredoc and its `-eq 11` pin.
+
+```text
+# test/agents-gemini-sync.bats:57,66
+@README
+ping @alice about it
+```
+
+The positive heredoc has 11 lines and the finder returns 11 (exec3.log).
+
+**Evidence:** `test/agents-gemini-sync.bats:55-67,78`, `docs/reviews/execution-logs/fc-final2-r3/exec3.log`
+
+---
+
+## Claim 18b: "and 6 negatives"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Configuration
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers counting the negative heredoc. It does not establish which counting unit the author meant.
+
+The negative heredoc has 7 lines (`sed … | wc -l` → `7`, exec4.log). Those are 4 prose lines and a 3-line fence, holding 9 distinct negative forms: email, single span, double span, lone `@`, `foo@bar/baz`, `(@./x.md)`, `"@../y.md"`, `[@/abs/z.md]`, fenced line. None of the natural counts is 6. The test itself pins no count (`[ -z "$output" ]`), so the mismatch is only in the message. Matches prior pattern: count-in-commit-message class ("mode1-equiv 33" claimed in commit 37c5ea9's test tally). This is not logged as a hallucination, because it is a miscount rather than a fabricated symbol.
+
+**Evidence:** `test/agents-gemini-sync.bats:68-76`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
+
+---
+
+## Claim 19: "the old AGENTS.md still yields 9 matches; GEMINI.md, README.md and every workflow file yield none"
+
+**Location:** commit 2f5fba3 (message, second bullet)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers `main:AGENTS.md`, GEMINI.md, README.md and all 12 `workflows/*.md` at HEAD. It does not establish files other than these.
+
+Finder on `git show main:AGENTS.md` gives `9`, and the harness gives the nine `./workflows/*.md` paths. GEMINI.md, README.md and each `workflows/*.md` give finder `0` and harness `[]` (exec.log, 07:52:11-12Z, each exit 0).
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec.log`
+
+---
+
+## Claim 20: "The no-imports test fails if a guarded file is missing (r3 note). Log row 65 states the grammar instead of 'any'."
+
+**Location:** commit 2f5fba3 (message, bullets 3-4)
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the missing-file branch (Claim 15) and the row text. It does not establish that the stated grammar is fully implemented (Claim 2c).
+
+The missing-file behaviour is verified in Claim 15. Row 65 now reads "…using Claude Code's own grammar as read from the v2.1.284 binary during review (`@` at a token start or after whitespace, …)" (`docs/decisions/log.md:88`) and no longer contains "any".
+
+**Evidence:** `docs/decisions/log.md:88`, `docs/reviews/execution-logs/fc-final2-r3/exec.log`
+
+---
+
+## Claim 21: "~85K -> ~89K tokens (355,598 chars / 4)" and "Still catches all 9 lines of the previous AGENTS.md"
+
+**Location:** commit 7b43db2 (message)
+**Type:** Configuration / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the character arithmetic and 7b43db2's finder on `main:AGENTS.md`. It does not establish the other 7b43db2 coverage claims, which 2f5fba3 later corrected (Claim 16).
+
+`chars=355598 chars/4=88899` (exec2.log). The 7b43db2 finder on the old AGENTS.md gives `9` (exec4.log).
+
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`, `docs/reviews/execution-logs/fc-final2-r3/exec4.log`
+
+---
+
+## Claim 22: "put ~358 KB (~85K tokens) of workflow text into every session in this repo"
+
+**Location:** commit 5ee8315 (message)
 **Type:** Configuration
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the line counts of the 10 workflow files at `3a63c56`; does not bear on whether 45 is the right limit.
-**Legibility-target:** for-author
+**Scope:** Covers the byte total and the chars/4 estimate. It does not establish a real tokenizer count. The figure is superseded in 7b43db2, and the commit is immutable history.
 
-`wc -l workflows/*.md`, cwd `/workspace/.claude/wt-routers`, exit 0, 2026-09-29T07:35Z: the smallest is `72 workflows/parallel-worktrees.md` and the largest is `608 workflows/divergent-design.md`. Precise range: 72–608. The loose upper bound is harmless for the 45-line limit. Output was read inline and not captured to a file (paraphrased — no quote available because `wc` output is not a source file).
+The byte total, 358,414, is right. At the chars/4 rule the branch later adopted, the token figure is 88,899, not ~85K (exec2.log). The message also says "every session" without "and subagent", which 7b43db2 added.
 
-**Evidence:** `workflows/*.md` (wc -l), `test/skills/workflow-routers.bats:18-20`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec2.log`
 
 ---
 
-## Claim 23: "Asserted on the body, not the whole file: the description also names the workflow, so a whole-file match survives deleting the handoff."
+## Claim 23a: "gains a guard that fails on any @-import in AGENTS.md"
 
-**Location:** `test/skills/workflow-routers.bats:71-72`
+**Location:** commit 5ee8315 (message)
 **Type:** Behavioral
 **Verdict:** Incorrect
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers a whole-file match of the same fixed string the test asserts; does not cover looser patterns (a bare `workflows/<name>.md` grep would survive, since the description contains that path).
-**Legibility-target:** for-author
+**Scope:** Covers the 5ee8315 guard regex. It is superseded by 7b43db2 and 2f5fba3, and the commit is immutable history.
 
-The asserted string is the full handoff phrase:
-
-```
-// test/skills/workflow-routers.bats:73
-    body "$skill" | grep -qF "Read and follow **\`workflows/$name.md\`**" || bad+=("$name")
+```bash
+# git show 5ee8315:test/agents-gemini-sync.bats:35
+if matches=$(grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"); then
 ```
 
-The descriptions contain `workflows/spike.md` but never `Read and follow **`. After mutation M3 removed the body handoff from a copy of `skills/spike/SKILL.md`, `grep -c "Read and follow"` on the whole file returned `0`. So a whole-file match of this string would also fail, and the stated reason for body-scoping does not hold (logged in `docs/reviews/execution-logs/fc-r3-mutations.log`, line before the "M3" heading; cwd scratchpad copy, 2026-09-29T07:36:11Z). Body-scoping is harmless. Only the comment's rationale is wrong. Medium confidence because "whole-file match" could mean a looser pattern than the one the test uses.
+The regex catches only `@/`, `@./` and `@../`. On `@README`, `@x.md`, `@dir/x` and `@~/x` it matches 0 lines (exec5.log, exit 1).
 
-**Evidence:** `test/skills/workflow-routers.bats:66-80`, `skills/spike/SKILL.md:3-8`, `docs/reviews/execution-logs/fc-r3-mutations.log`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec4.log`, `docs/reviews/execution-logs/fc-final2-r3/exec5.log`
 
 ---
 
-## Claim 24: Each test's name/claim that it fails when its contract breaks (router present; `name`/`description`/`when` frontmatter; body handoff; `(router)` in H1; body ≤ `MAX_BODY_LINES`)
+## Claim 23b: "(verified to fail on the previous AGENTS.md)"
 
-**Location:** `test/skills/workflow-routers.bats:38-105`
+**Location:** commit 5ee8315 (message)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers one mutation per test on the `spike` router (plus a `when:` deletion for test 2); does not establish detection of CRLF-encoded frontmatter, a missing `description:` (not mutated), or handoffs placed inside comments.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the 5ee8315 regex on `main:AGENTS.md`.
 
-Command, each run: `timeout 60 bats test/skills/workflow-routers.bats`, cwd scratchpad copy `.../scratchpad/fcr3/r`, 2026-09-29T07:36:26Z–07:36:28Z. Baseline M0 exited 0. Every mutation exited 1, and only the targeted test failed. M1 (delete router) → `not ok 1`. M2 (`name: spikex`) → `not ok 2 ... spike: name`. M2b (delete `when:`) → `not ok 2 ... spike: when`. M3 (remove handoff) → `not ok 3`. M4 (drop `(router)` from H1) → `not ok 4`. M5 (+30 lines) → `not ok 5 ... spike (50 lines)`. Current body lengths are 19–22 lines for the nine new routers and 37 for divergent-design, all under 45.
+The same regex matches 9 lines of the old AGENTS.md (exec5.log, 07:55:02Z, exit 0), so the guard would have failed there.
 
-**Evidence:** `test/skills/workflow-routers.bats:38-105`, `docs/reviews/execution-logs/fc-r3-mutations.log`, `docs/reviews/execution-logs/fc-r3-mutations-exitcodes.log`
-
----
-
-## Claim 25: "Verified to fail on main (9 missing routers)."
-
-**Location:** commit `3a63c56` message body
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the test file run against `git archive main`; does not show which other tests would fail on main (tests 2–5 skip missing routers by design and pass).
-**Legibility-target:** for-orchestrator-synthesis
-
-`git archive main | tar -x`, then the branch's bats file was copied in, then `timeout 60 bats test/skills/workflow-routers.bats` ran in cwd `.../scratchpad/fcr3/r` at 2026-09-29T07:36:28Z. Exit 1: `not ok 1 ... workflows with no skills/<name>/SKILL.md router: branch-strategy codebase-onboarding parallel-worktrees pr-prep research-plan-implement review-fix-loop spike task-decomposition user-testing-workflow`. That lists 9 missing routers.
-
-**Evidence:** `docs/reviews/execution-logs/fc-r3-mutations.log` (M6), `docs/reviews/execution-logs/fc-r3-mutations-exitcodes.log` (M6-main)
-
----
-
-## Claim 26: "Takes effect in other projects after install.sh + rebuild (~/.claude/skills links to the installed payload)."
-
-**Location:** commit `3a63c56` message body
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the cc-isolated image path (staging in install.sh, symlink in this container); does not cover the bare-host copy install (decision 037).
-**Legibility-target:** for-orchestrator-synthesis
-
-```
-// devcontainer-config/install.sh:115-117
-# The skills/workflows/guides/patterns/hooks and the global CLAUDE.md are baked
-# into the image so that EVERY cc-isolated session gets this repo's process, not
-# just sessions that happen to be editing this repo.
-```
-
-```
-// devcontainer-config/install.sh:135
-CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)
-```
-
-In this container, `~/.claude/skills -> /opt/claude-workflows/skills` and `~/.claude/workflows -> /opt/claude-workflows/workflows` (paraphrased — no quote available because this is `ls -la` output of the live container, not a file).
-
-**Evidence:** `devcontainer-config/install.sh:110-135`
+**Evidence:** `docs/reviews/execution-logs/fc-final2-r3/exec5.log`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 1** (`docs/decisions/log.md:88`): the 15-vs-0 workflow-open counts come from triage §2.2, and that section withdraws them as evidence (instrument under-counts; Q-017). Drop the counts or state the withdrawal.
-- **Claim 16** (`skills/review-fix-loop/SKILL.md:21-22`): "applies whenever a rubric is being acted on" contradicts `workflows/review-fix-loop.md:211` ("should not be run as a standalone workflow — use pr-prep"). Align the router (and its `when:`/triggers) with the workflow, or change the workflow.
-- **Claim 21** (`test/skills/workflow-routers.bats:8-11`): same withdrawn 15:0 evidence as Claim 1. The commit message repeats it too.
-- **Claim 23** (`test/skills/workflow-routers.bats:71-72`): the descriptions never contain `Read and follow **`, so a whole-file match of the asserted string would not survive deleting the handoff. Fix the comment's rationale.
+- **Claim 2c** (`docs/decisions/log.md:88`): the test does not "use Claude Code's own grammar". It is a line-regex approximation that misses link-text, blockquote-no-space, after-code-span/link/HTML/escape and NBSP imports, and silently blanks the rest of a file after a ```` fence or a line-start inline ``` span. Reword to "approximates", or close the gaps.
+- **Claim 11a** (`test/agents-gemini-sync.bats:42-43`): emphasis markers *do* start a new (child) text token, which is why `**@./x**` imports. The mechanism sentence is inverted.
+- **Claim 13** (`test/agents-gemini-sync.bats:37`, `:53`): "mirrors" and "matches" Claude Code's extractor. The differential run shows 11 under-matches and 7 over-matches across 27 probes.
+- **Claim 17a** (commit 2f5fba3): the same "mirrors" overclaim, in immutable history.
+- **Claim 23a** (commit 5ee8315): "fails on any @-import", when the guard caught only `@/`, `@./`, `@../`. Immutable history, superseded.
+
+### Stale
+- (none)
 
 ### Mostly Accurate
-- **Claim 4** (`docs/decisions/log.md:88`): "log 65" exists only on unmerged `fix/agents-md-no-imports` (5ee83154). It dangles if this branch lands first.
-- **Claim 7** (`global-instructions/CLAUDE.md:13`): the Skill tool loads the router stub, which then directs a Read of the workflow. It does not load the workflow itself.
-- **Claim 12** (`skills/pr-prep/SKILL.md:21-22`): the delivery path is picked "before Step 0", in a pre-step section, not in the first step.
-- **Claim 13** (`skills/pr-prep/SKILL.md:28-29`): review-fix-loop.md owns only the loop's control rules. pr-prep step 3 owns the iteration sequence and override-log writing.
-- **Claim 15** (`skills/review-fix-loop/SKILL.md:4-6`): the delta re-review and override-log writing are pr-prep step 3's. At 3 iterations the loop reaches a written gate rather than stopping. "2 clean passes" is code-review's rule, scoped by decision 031, and not in the workflow, whose exit is one clean iteration or shipping with known issues.
-- **Claim 22** (`test/skills/workflow-routers.bats:18-19`): the workflows run 72–608 lines, not 70–600.
+- **Claim 2b** (`docs/decisions/log.md:88`): Claude Code skips code tokens, but scans code-span text inside tight list items.
+- **Claim 11b** (`test/agents-gemini-sync.bats:43`): any `*`/`_` counts as a token start in the finder, a superset of real emphasis (over-match).
+- **Claim 12** (`test/agents-gemini-sync.bats:43-45`): only backtick fences are blanked. `~~~` and indented code are scanned, and a ```` or line-start inline ``` mis-toggles the fence state.
+- **Claim 17b** (commit 2f5fba3): as Claim 12.
+- **Claim 18b** (commit 2f5fba3): "6 negatives". The heredoc holds 7 lines and 9 negative forms.
+- **Claim 22** (commit 5ee8315): ~85K tokens should be ~89K at chars/4 (superseded).
+
+### Unverifiable
+- (none)
 
 ---
 
 ## Goal-Alignment Note
-- **Answered:** Every "claims that particularly need checking" item in the brief. Router-vs-workflow facts for all nine routers (Claims 8–20). Sibling positioning (11, 16, 19, 20). The bats header (21, 22), per-test failure on mutation (24), and verified-on-main (25). Log row 66 and commit claims (1–5, 25, 26). The global-instructions paragraph (6, 7).
-- **Out of scope:** I did not run health-check.sh or the full suite, per the brief. I did not check divergent-design's existing router beyond its handoff/H1 matching the generic contract. I did not assess router trigger-phrase quality, which is judgment, not a checkable claim.
-- **Escalate:** Claim 16 is a real routing conflict between the new router and its workflow. Claim 1/21 reuses evidence the source withdrew, and it is the headline rationale of row 66 and the commit. Also, I added three untracked execution-log files under `docs/reviews/execution-logs/` in the worktree, as the skill's provenance rule requires. Delete them if the orchestrator wants only the report. The brief mentions legibility-target tags, and code-fact-check's SKILL.md does not define them. I applied `patterns/orchestrated-review.md`'s three values as an extra per-claim line.
+- **Answered:** I verified every claim the brief listed by running things. I read the @-import extractor from the installed Claude Code 2.1.284 binary and confirmed my copy is byte-identical. I ran that extractor with the binary's own bundled marked lexer, against `find_imports`, on the synthetic cases and 27 adversarial files (tabs, `**@x**`, `_@x_`, `~~~` fences, indented code, nested backticks, CRLF and more). I checked the synthetic counts and the missing-file failure, the 2f5fba3 message claims, log row 65, the ~89K figure (355,598 chars / 4 = 88,899), and the `extract_workflows` comment. The grammar as written is correct. The claim that the finder "mirrors" the extractor is not: it under-matches 11 forms, including `[@./x.md](url)` link text, and it can blank the rest of a file after a ```` fence. It also over-matches 7 forms. Neither guarded file contains an import today, by either implementation.
+- **Out of scope:** I did not run health-check.sh or the full suite, per the brief. The only tracked file I edited is this report. I also wrote new captured-output files under `docs/reviews/execution-logs/fc-final2-r3/`. I did not verify `fC` path exclusions or path resolution (both stubbed), and I did not look at loader precedence beyond what this session's own context shows.
+- **Escalate:** Whether to fix the finder gaps (for example, add `[` and `>` as token starts and handle ```` and `~~~` fences) or to reword the "mirrors" and "matches" claims is the author's call. The link-text form is the one a future AGENTS.md edit could realistically hit.

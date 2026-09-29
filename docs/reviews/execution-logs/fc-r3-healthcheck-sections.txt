@@ -1,0 +1,53 @@
+2026-09-29T00:01:49-07:00
+cwd=/workspace/.claude/wt-agents-md
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== extract HEAD AGENTS ==
+branch-strategy.md
+codebase-onboarding.md
+divergent-design.md
+parallel-worktrees.md
+pr-prep.md
+research-plan-implement.md
+spike.md
+task-decomposition.md
+user-testing-workflow.md
+== extract main AGENTS (legacy @ form) ==
+branch-strategy.md
+codebase-onboarding.md
+divergent-design.md
+parallel-worktrees.md
+pr-prep.md
+research-plan-implement.md
+spike.md
+task-decomposition.md
+user-testing-workflow.md
+== extract GEMINI ==
+branch-strategy.md
+codebase-onboarding.md
+divergent-design.md
+parallel-worktrees.md
+pr-prep.md
+research-plan-implement.md
+spike.md
+task-decomposition.md
+user-testing-workflow.md
+== extract GLOBAL ==
+branch-strategy.md codebase-onboarding.md divergent-design.md parallel-worktrees.md pr-prep.md research-plan-implement.md spike.md task-decomposition.md user-testing-workflow.md 
+
+── Workflow cross-references ──
+  ✓ global-instructions/CLAUDE.md: all workflow references resolve
+  ✓ AGENTS.md: all workflow references resolve
+  ✓ GEMINI.md: all workflow references resolve
+
+── MD file consistency (workflows) ──
+  ✓ All MD files reference the same workflows
+
+── MD file semantic divergence ──
+  global-instructions/CLAUDE.md: 328 lines, 8 H2 + 16 H3 sections, 17 skill ref(s)
+  AGENTS.md: 76 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  GEMINI.md: 76 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  ✓ AGENTS.md and GEMINI.md have identical section structure
+
+  ✓ No semantic divergence detected across MD files
+FAIL=0
+exit=0

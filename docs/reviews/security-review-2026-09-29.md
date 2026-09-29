@@ -1,136 +1,103 @@
-Commit: de96617
+Commit: 5ee8315
 
-# Security Review — feat/workflow-router-skills
+# Security Review — fix/agents-md-no-imports
 
-**Scope:** `git diff main...HEAD` (8 new `skills/<name>/SKILL.md` routers, `test/skills/workflow-routers.bats`, `global-instructions/CLAUDE.md` paragraph, README count, decision log row 66). Review artifacts under `docs/reviews/` read as context only.
+**Scope:** `git diff main...HEAD` in `/workspace/.claude/wt-agents-md` (AGENTS.md, docs/decisions/log.md, scripts/health-check.sh, test/agents-gemini-sync.bats)
 **Date:** 2026-09-29
-**Based on:** critic brief b (Stage-1 fact-check summary, k=3 on 3a63c56, fixes in 881762a)
-
-The code-fact-check report was supplied only as a summary in the brief; I relied on it for router-vs-workflow factual accuracy and did not re-verify those facts, except where a gate is involved.
-
-Threat model: these files contain no executable code except a bats test. What matters for security is **agent-instruction integrity**. The routers are loaded as user-level skills in every project (via `~/.claude/skills -> /opt/claude-workflows/skills`). The questions are whether a router weakens an approval gate its workflow carries, routes an agent around one, or lets less-trusted content take over the gate-bearing procedure.
+**Based on:** Stage-1 code-fact-check (k=3, merged), summarized in the critic brief
 
 ## Trust Boundary Map
 
 ```
-B1 (new): [skill listing: router description/when, every session] → [agent's skill-selection + first action] → [workflow procedure incl. gates]
-B2 (new): [router body "Read and follow `workflows/<name>.md`"]    → [agent path resolution, relative to cwd] → [file treated as the user's own workflow, "end to end"]
-B3:       [project-level skills / project files of the current repo] → [same skill name / same relative path]  → [user-level router authority]
-B4:       [test/skills/workflow-routers.bats]                      → [bats, repo-local paths only]           → [CI/health-check verdict]
+B1: [AGENTS.md text in repo]          → [Claude Code @-import expansion at session start] → [model context as project instructions]
+B2: [file named by an @path]          → [inline expansion, no review of target content]  → [model context as project instructions] (removed for the 9 workflow entries)
+B3: [workflows/*.md named by filename] → [agent's own Read tool call, visible to hooks]     → [model context as read file content] (new)
+B4: [AGENTS.md edit in a commit]      → [test/agents-gemini-sync.bats guard + sync diff]  → [merged main] (new guard)
 ```
 
-| Label | Source | Mutability | Trust (per sink) |
+| Label | Source | Mutability | Trust classification |
 |---|---|---|---|
-| S1 | Router frontmatter + body in `skills/` (this repo, installed to `/opt/claude-workflows`) | deploy-time (install.sh review diff, decision 037) | trusted for all sinks (user-authored, reviewed at install) |
-| S2 | `~/.claude/workflows/<name>.md` (installed copy) | deploy-time | trusted as the gate-bearing procedure |
-| S3 | `./workflows/<name>.md` inside **whatever repo the session is in** | request-time / repo-controlled (any cloned repo) | UNTRUSTED as a source of approval-gate policy. In claude-workflows itself it is the same file as S2's source, so it is trusted there. |
-| S4 | Project-level `.claude/skills/<same-name>/` in a foreign repo | repo-controlled | UNTRUSTED toward "user's workflow" authority |
-| S5 | `workflows/*.md` enumerated by the bats test | repo files | trusted (test reads, never executes them) |
+| S1 | AGENTS.md / GEMINI.md contents | deploy-time (committed, reviewed) | trusted as instruction text, to the extent reviewed |
+| S2 | Target of an `@path` import | whatever the target's mutability is (committed file, gitignored file, a file under `~/`, a tool-written file) | UNTRUSTED toward the instruction sink unless the target is itself committed and reviewed: the import line is reviewed, the target content is not |
+| S3 | `workflows/*.md` read on demand | deploy-time (committed) | trusted as instruction text; now loaded by explicit Read, which `hooks/log-usage.sh` can observe |
+| S4 | Installed copy at `~/.claude/workflows` → `/opt/claude-workflows/workflows` | separate checkout, updated by install | trusted, but may differ from the repo's `workflows/` |
 
-The diff adds B1 and B2. The routers are trusted, user-level instructions. B2 tells the agent to follow a **cwd-relative** path first and names the installed copy only in a parenthetical. So in any project other than claude-workflows, the file that gets "read and followed end to end" is chosen by the current repo's contents whenever a same-named file exists. The global paragraph and the routers otherwise strengthen gates: the RPI and branch-strategy routers restate their hard gates correctly, and none tells the agent to skip one.
+The diff removes nine B2 crossings (repo-internal `@./workflows/*.md` targets, all committed files, so no untrusted content was actually entering) and replaces them with B3, where content enters only when an agent chooses to read it. The one new control is the B4 guard. The security questions are therefore: (a) does dropping the inlined workflow text remove any safety gate an agent was relying on, and (b) does the B4 guard stop an `@` import that would let unreviewed or sensitive content into the instruction channel.
 
 ## Findings
 
-#### 1. Router handoff resolves a cwd-relative path first, so a repo-local `workflows/<name>.md` can replace the gate-bearing workflow in other projects
-
-**Severity:** Medium
-**Location:** `skills/{branch-strategy,codebase-onboarding,parallel-worktrees,pr-prep,research-plan-implement,spike,task-decomposition,user-testing-workflow}/SKILL.md` (the "Hand off to the workflow" paragraph, lines ~25-31 in each); pinned by `test/skills/workflow-routers.bats:95` (`grep -qF "Read and follow **\`workflows/$name.md\`**"`)
-**Boundary:** B2, B3 (S3)
-**Move:** #1 trust boundaries (runtime-mutable/repo-controlled ⇒ untrusted toward high-consequence sinks); #5 invert the access model
-**Confidence:** Medium on the mechanism. Low on real-world likelihood: it needs a same-named `.md` under `workflows/`, and a malicious repo already has a stronger channel through its own CLAUDE.md.
-**Legibility-target:** router author / reviewer of row 66
-
-Evidence (verbatim, pr-prep router):
-> Read and follow **`workflows/pr-prep.md`** end to end (installed copy:
-> `~/.claude/workflows/pr-prep.md`).
-
-When a session in a non-claude-workflows project invokes `pr-prep` or `branch-strategy` (for example "ship it" or "merge all open PRs"), the first path an agent resolves is `./workflows/pr-prep.md` in that project. A repo that ships a file of that name controls the procedure the agent now treats as the user's own workflow. The router says to follow it "end to end", and the router is user-level, so it lends the file user authority. That file can drop the /active-mode "ask first" before merging into `main`, or branch-strategy's "force-push over shared `dev` requires explicit approval". A benign name collision gives the same wrong outcome: the agent follows an unrelated project's `workflows/spike.md` as if it were this repo's spike protocol. The two routers that restate their gate (branch-strategy: "Replacing a shared branch always needs explicit user approval, in any operating mode"; RPI: "hard gate is plan approval") limit the damage for those two. The pr-prep, parallel-worktrees and spike routers restate no gate. The pattern is inherited from `skills/divergent-design/SKILL.md` (pre-existing), but this branch copies it to the two workflows that carry merge and force-push gates. The DD hook (`hooks/dd-routing-reminder.sh:53`) already points at the installed path, `~/.claude/workflows/divergent-design.md`, which shows the safer prior art.
-
-**Recommendation:** Make the path explicit and scoped. Suggested wording: "In the claude-workflows repo, read `workflows/<name>.md` (the working-tree copy). In any other project, read `~/.claude/workflows/<name>.md`, never a same-named file in that project." Update the bats handoff assertion to match. Optionally, restate the one-line merge gate in the pr-prep router, the same way branch-strategy restates its gate.
-
-#### 2. pr-prep and parallel-worktrees descriptions list "merge" as an outcome of the flow without its gate, and the description is the only text guaranteed to reach the agent
+#### B4 guard misses `@` forms that pull unreviewed or sensitive files into model context
 
 **Severity:** Low
-**Location:** `skills/pr-prep/SKILL.md:4-8`, `skills/parallel-worktrees/SKILL.md:4-8`
-**Boundary:** B1
-**Move:** #5 invert the access model (what does the always-loaded text authorize?)
-**Confidence:** Low. The gate survives in two places the agent should also read: global CLAUDE.md Operating Modes, and `workflows/pr-prep.md` "Merging into `main` follows the Operating Modes … in /active mode, ask first". A violation requires the agent to act on the description alone.
-**Legibility-target:** agent reading the skill listing
+**Location:** `test/agents-gemini-sync.bats:34`
+**Boundary:** B4, B2
+**Move:** #11 (enumerate bypasses for every guardrail)
+**Confidence:** High (probed)
+**Legibility-target:** the author of the next AGENTS.md edit, and the reviewer reading row 65
 
-Evidence:
-> history cleanup, verification, then a local merge (solo) or a GitHub PR.
-> Triggers: "ready to merge", "open a PR", "ready for review", "package this up", "ship it",
+Evidence (verbatim regex): `grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"`. Running the probe strings through this regex gave: `@workflows/pr-prep.md` MISSED, `@~/.ssh/id_rsa` MISSED, `(@./workflows/x.md)` MISSED, `"@./x.md"` MISSED, `[@../x](y)` MISSED; `` `@./x.md` `` CAUGHT (a false positive, since Claude Code does not expand imports inside code spans); `mail a@b.com` not matched (correct). Claude Code's import syntax accepts relative paths with no `./` prefix and home-relative `@~/…` paths, so a line like `- @~/.aws/credentials` or `- @docs/working/notes.md` would pass the guard and be expanded. The first puts credential material into every session's context, and so into API traffic and transcripts. The second raises a gitignored or tool-written file to project-instruction authority, even though the reviewed AGENTS.md diff shows only a harmless-looking path. That is runtime-mutable content arriving with instruction authority (S2). The severity stays below the Medium floor because adding such a line already requires committing to AGENTS.md, which gives the same author direct control of the instruction text. The added risk is **review evasion** (the line looks harmless and the target content is not in the diff), not new capability. The guard is also stated as a cost control rather than a security control. The fact-check already records the correctness side (INCORRECT: row 65 says "fails on any `@path` import").
 
-> parallel git worktrees, then review and merge each item as soon as it is clean.
+**Recommendation:** Widen the pattern to what Claude Code actually expands: `@` followed by a path-like token (`~/`, `/`, `./`, `../`, or `name/…`/`name.md`), preceded by start of line, whitespace or common punctuation (`(`, `[`, `"`, `*`). Also exclude code spans, or accept that false positive. Alternatively, narrow the wording of row 65 to the forms actually caught. Add the MISSED strings above as fixture cases so the guard's coverage is pinned.
 
-These descriptions sit in every session's context. They describe merging as the flow's end state, with broad triggers ("ship it", "wrap this up"). In /active mode, a merge into `main` and pushing or opening a PR each need approval. That gate is absent from both descriptions and from the pr-prep router body, while the branch-strategy router does restate its gate. This is not a bypass; the gate text is intact elsewhere. It is an inconsistency, and a one-phrase fix would close it.
-
-**Recommendation:** Add "(merge/PR per Operating Modes: ask first in /active)" to the pr-prep router body's "When to use" line, or to its description. Say "merge each item when clean, with approval per Operating Modes" in parallel-worktrees.
-
-#### 3. Generic user-level skill names can be shadowed by project-level skills of the same name
+#### Bare filenames can resolve to the installed workflow copy rather than the repo copy
 
 **Severity:** Informational
-**Location:** `name:` frontmatter of all 8 routers (e.g. `name: pr-prep`, `name: spike`)
-**Boundary:** B3 (S4)
-**Move:** #1 trust boundaries
-**Confidence:** Low. Claude Code's precedence between personal and project skills of the same name was **not tested** here.
-**Legibility-target:** maintainer
+**Location:** `AGENTS.md:9-18`
+**Boundary:** B3 (S3 vs S4)
+**Move:** #2 (implicit assumption about where a name resolves)
+**Confidence:** Medium
+**Legibility-target:** agents following AGENTS.md in this repo
 
-If project skills take precedence, a foreign repo's `.claude/skills/pr-prep/` would replace the gate-bearing router, and the global instruction "invoke its skill rather than paraphrasing" would then direct the agent into the project's version. As with finding 1, a malicious repo already has project CLAUDE.md, so the added risk is small. It matters mainly for benign collisions: generic names like `spike` and `pr-prep` make them likelier.
+Evidence: the entries are now `**pr-prep.md**` etc., with the intro line "check `workflows/` for applicable process docs". The global instructions say that process docs live in `~/.claude/workflows/`, and in this environment `~/.claude/workflows -> /opt/claude-workflows/workflows`, a separate checkout. An agent working in this repo may open the installed copy instead of `workflows/<name>`. While a change to a workflow is in flight, the two can differ, so the agent follows the stale gate text. This is an integrity and consistency issue, not an exploit. It matches what GEMINI.md already did.
 
-**Recommendation:** None required. If a collision is ever observed, consider namespaced names (e.g. `cw-pr-prep`). Record the precedence question as a Known Unknown.
+**Recommendation:** None required. If it matters, write the entries as `` `workflows/pr-prep.md` `` in both files. This breaks neither the sync test nor the guard, and `extract_workflows` would need its pattern extended.
 
 ## Untested bypass candidates
 
-Guardrail: the bats contract test (as a guard against a router drifting into restating or weakening its workflow).
-- A router that stays ≤45 body lines, keeps the handoff string, and still adds a sentence contradicting a gate (e.g. "merging needs no approval in solo projects"). Untested because the test checks only structure, never gate content. The Stage-1 fact-check covered content at 881762a; nothing mechanical guards it afterwards.
-- A router whose **description** (not body) weakens a gate. The test asserts only the `name`/`description`/`when` keys exist. Untested for the same reason.
-- A new workflow added to `EXEMPT` to dodge the router requirement. The test only checks the exempted workflow exists and has no router; reviewers catch this, not the test.
-
-For these reasons the test does not appear in Endorsement Claims as a gate-integrity guard.
+None. Every bypass candidate enumerated for the B4 guard was executed against the regex (results above).
 
 ## Endorsement Claims
 
-- **Claim:** The 8 routers pass the structural contract at de96617 (frontmatter keys, handoff string, "(router)" title, ≤45 body lines, review-fix-loop exempt with no router).
-  **Location:** `test/skills/workflow-routers.bats`
-  **Evidence:** executed
-  **Verified:** `timeout 60 bats test/skills/workflow-routers.bats`: tests 1-6 ok. `ls skills/review-fix-loop`: no such directory.
-  **Not verified:** gate content of router text (see Untested bypass candidates).
-- **Claim:** The branch-strategy router restates the shared-branch force-push approval gate, and the RPI router restates plan approval as the hard gate. Both are consistent with their workflows' text as read.
-  **Location:** `skills/branch-strategy/SKILL.md:29-30`, `skills/research-plan-implement/SKILL.md:29-31`
+- **Claim:** Removing the inlined workflow text does not remove the force-push/reset/branch-deletion approval gate from the instructions an agent sees in this repo.
+  **Location:** `global-instructions/CLAUDE.md:217`; `AGENTS.md` (whole file)
   **Evidence:** read-static
-  **Verified:** router lines, compared with `workflows/branch-strategy.md` "Promote only through the approval gate" and RPI step 4 "This is the hard gate".
-  **Not verified:** whether an agent acting from the description alone, without reading the body, observes these gates.
-  **route: code-fact-check**
-- **Claim:** The workflows the routers point to are installed alongside the skills, so the parenthetical installed path exists in other projects.
-  **Location:** `devcontainer-config/install.sh:135` (`CLAUDE_HOME_SRC=(... skills workflows ...)`)
-  **Evidence:** read-static, plus `ls ~/.claude/workflows` in this container (all 10 present)
-  **Verified:** the install source list; this container's `~/.claude/workflows`.
-  **Not verified:** host installs that use `install.sh`'s non-container target.
-- **Claim:** The bats test reads repo files only and passes no file content to eval or exec.
-  **Location:** `test/skills/workflow-routers.bats:16-123`
+  **Verified:** grep found the gate text ("Force-push, `git reset --hard`, deleting branches, dropping database tables") under "Still require user approval" in global-instructions/CLAUDE.md. That file is installed as `~/.claude/CLAUDE.md` (symlink to `/opt/claude-workflows/CLAUDE.md`).
+  **Not verified:** whether the installed `/opt/claude-workflows/CLAUDE.md` matches this worktree's `global-instructions/CLAUDE.md` byte for byte, and whether non-Claude agents that read only AGENTS.md (the audience row 65 names) ever had this gate, since AGENTS.md itself does not carry it before or after the diff.
+- **Claim:** The `security-reviewer` trigger row stays visible in AGENTS.md without the workflow imports.
+  **Location:** `AGENTS.md:29,39`
   **Evidence:** read-static
-  **Verified:** full file read. The only external commands are awk, tr, grep, wc and basename, on `$REPO_ROOT` paths.
-  **Not verified:** the bats harness's own setup under `scripts/run-tests.sh`.
+  **Verified:** grep of the post-diff AGENTS.md shows the skill-routing row and the composition note.
+  **Not verified:** whether pr-prep's code-review → security-reviewer composition, previously inlined, is reached in practice now that pr-prep.md loads only on an explicit Read.
+- **Claim:** The guard rejects all nine pre-branch `@./workflows/*.md` lines.
+  **Location:** `test/agents-gemini-sync.bats:33-39`
+  **Evidence:** executed (per Stage-1 fact-check: "guard fails on the old AGENTS.md")
+  **Verified:** the fact-check ran the guard against the old AGENTS.md; my probes confirm that the `@./` form after `*` or whitespace matches.
+  **Not verified:** the non-`./` import forms listed in the finding above.
 
 ## Primitive sweep
 
-Primitive sweep: no dangerous primitives in scope. The only executable change is the bats test, which uses `grep -qE "^name:[[:space:]]*${name}…"` with `name` taken from `workflows/*.md` basenames. That is a regex built from trusted repo filenames, with no exec, eval or deserialize sink.
+Primitive: instruction-file `@path` import (content inclusion into model context)
+
+| Call site | Source | Guard | Disposition |
+|---|---|---|---|
+| `AGENTS.md:9-16,18` (pre-branch, 9 lines) | S2 → committed `workflows/*.md` | none before; B4 after | removed by the diff |
+| `AGENTS.md` (post-branch) | S1 | B4 regex | no `@` imports present (grep over all import shapes returned nothing) |
+| `GEMINI.md` | S1 | sync test only | no `@` imports present; Gemini CLI also supports `@` imports, and the sync test forces any import to appear in both files but does not forbid one |
+| `global-instructions/CLAUDE.md`, tracked `*CLAUDE.md` | S1 | none | no `@` imports present (same grep); out of the guard's scope |
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
-|---|---------|----------|----------|----------|------------|
-| 1 | Cwd-relative handoff lets a repo-local `workflows/<name>.md` replace the gate-bearing workflow in other projects | Medium | B2, B3 | 8 router handoff paragraphs; bats:95 | Medium (mechanism) / Low (likelihood) |
-| 2 | pr-prep / parallel-worktrees descriptions describe merging without its Operating-Modes gate | Low | B1 | `skills/pr-prep/SKILL.md:4-8`, `skills/parallel-worktrees/SKILL.md:4-8` | Low |
-| 3 | Generic skill names shadowable by project skills (precedence untested) | Informational | B3 | router `name:` fields | Low |
+|---|---|---|---|---|---|
+| 1 | Guard misses `@~/…`, `@name/…`, punctuation-prefixed imports | Low | B4, B2 | `test/agents-gemini-sync.bats:34` | High |
+| 2 | Bare filenames may resolve to the installed workflow copy | Informational | B3 | `AGENTS.md:9-18` | Medium |
 
 ## Overall Assessment
 
-No router weakens or contradicts a gate its workflow carries. The global paragraph ("invoke its skill rather than paraphrasing") and the restated gates in the branch-strategy and RPI routers make gates more likely to be applied, not less. The one design-level issue is the handoff path (finding 1): outside claude-workflows it lets the current repo's contents pick the procedure that the user-level router endorses. The fix is a one-line wording change in each router plus the matching test string. It is fixable in place and not architectural. The most important thing to address: point the routers at `~/.claude/workflows/<name>.md` outside the claude-workflows repo. No findings beyond these within the code paths read. The endorsement claims marked read-static are pending execution verification.
+The change narrows the instruction-loading surface. Nine inline inclusions become explicit, hook-visible Reads, and no approval gate or security-routing rule is lost from what agents in this repo see (the Operating Modes gate lives in the global instructions; the security-reviewer trigger stays in AGENTS.md). The one security-relevant gap is that the new guard covers only `./`/`../`/`/`-prefixed imports after whitespace, `*` or a backtick. It misses `@~/…` and prefix-less relative imports, which are exactly the forms that could put credentials or unreviewed runtime files into context. The risk is bounded, because only someone who can already edit AGENTS.md can exploit the gap. Fixable in place: widen the regex, or narrow row 65's claim. No findings within the code paths read rise above Low. Endorsement claims are read-static except the third, and are pending execution verification where marked.
 
 ## Goal-Alignment Note
 
-- **Answered:** Security critique of `main...HEAD` at de96617, focused on whether any router weakens, contradicts or routes around an approval gate: none does. Also covered: the cwd-relative path issue the brief flagged (as finding 1), description-level gate omission, and skill-name shadowing.
-- **Out of scope:** Trigger-overlap and mis-routing quality, and per-session context cost (not security; left to the other critics). Router-vs-workflow factual accuracy beyond gates (relied on the Stage-1 fact-check summary).
-- **Escalate:** Finding 1's recommended wording changes the bats handoff assertion, so the author needs to update the test with the text. Claude Code's personal-vs-project skill precedence (finding 3) is unverified and would need a host check.
+- **Answered:** Security review of the full `main...HEAD` diff at 5ee8315, covering what agents are now instructed to load and whether the new guard can be bypassed. The bypass candidates were probed by execution.
+- **Out of scope:** Whether `/opt/claude-workflows` is in sync with this worktree; Gemini CLI's exact import grammar (assumed from its docs, not tested).
+- **Escalate:** None. No HALT pattern matched.

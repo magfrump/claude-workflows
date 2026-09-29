@@ -1,0 +1,12 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-09-29T07:51:50Z
+## timeout 20 claude --version
+2.1.284 (Claude Code)
+exit=0
+## cmp of AGENTS.md and GEMINI.md below line 3
+identical
+## main:AGENTS.md with @./workflows/ stripped vs AGENTS.md
+no other difference
+## root instructions file present?
+ls: cannot access './CLAUDE.md': No such file or directory
+exit=2

@@ -1,0 +1,467 @@
+2026-09-29T00:02:21-07:00
+cwd=/workspace/.claude/wt-agents-md
+$ HEALTH_CHECK_SKIP_BATS=1 timeout 300 scripts/health-check.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Repo Health Check
+=================
+
+── Skill YAML frontmatter ──
+  ✓ ai-personas-critique
+  ✓ api-consistency-reviewer
+  ✓ architecture-review
+  ✓ arithmetic-eval
+  ✓ business-plan-critique-market-sizing
+  ✓ business-plan-critique-moat
+  ✓ business-plan-critique-unit-economics
+  ✓ code-fact-check
+  ✓ code-review
+  ✓ cowen-critique
+  ✓ dependency-upgrade
+  ✓ design-space-situating
+  ✓ divergent-design
+  ✓ draft-review
+  ✓ fact-check
+  ✓ matrix-analysis
+  ✓ performance-reviewer
+  ✓ pre-mortem
+  ✓ security-reviewer
+  ✓ self-eval
+  ✓ tech-debt-triage
+  ✓ test-strategy
+  ✓ ui-visual-review
+  ✓ what-if-analysis
+  ✓ yglesias-critique
+  ✓ 25 skill(s) checked
+
+── Workflow cross-references ──
+  ✓ global-instructions/CLAUDE.md: all workflow references resolve
+  ✓ AGENTS.md: all workflow references resolve
+  ✓ GEMINI.md: all workflow references resolve
+
+── MD file consistency (workflows) ──
+  ✓ All MD files reference the same workflows
+
+── Fixture ↔ expected-verdicts coverage ──
+  ✓ ai-personas-critique: all fixtures have verdicts and vice versa
+  ✓ api-consistency-reviewer: all fixtures have verdicts and vice versa
+  ✓ architecture-review: all fixtures have verdicts and vice versa
+  ✓ arithmetic-eval: all fixtures have verdicts and vice versa
+  ✓ business-plan-critique-market-sizing: all fixtures have verdicts and vice versa
+  ✓ business-plan-critique-moat: all fixtures have verdicts and vice versa
+  ✓ business-plan-critique-unit-economics: all fixtures have verdicts and vice versa
+  ✓ code-fact-check: all fixtures have verdicts and vice versa
+  ✓ cowen-critique: all fixtures have verdicts and vice versa
+  ✓ dependency-upgrade: all fixtures have verdicts and vice versa
+  ✓ design-space-situating: all fixtures have verdicts and vice versa
+  ✓ divergent-design: all fixtures have verdicts and vice versa
+  ✓ fact-check: all fixtures have verdicts and vice versa
+  ✓ matrix-analysis: all fixtures have verdicts and vice versa
+  ✓ performance-reviewer: all fixtures have verdicts and vice versa
+  ✓ pre-mortem: all fixtures have verdicts and vice versa
+  ✓ security-reviewer: all fixtures have verdicts and vice versa
+  ✓ self-eval: all fixtures have verdicts and vice versa
+  ✓ tech-debt-triage: all fixtures have verdicts and vice versa
+  ✓ test-strategy: all fixtures have verdicts and vice versa
+  ✓ ui-visual-review: all fixtures have verdicts and vice versa
+  ✓ what-if-analysis: all fixtures have verdicts and vice versa
+  ✓ yglesias-critique: all fixtures have verdicts and vice versa
+
+── BATS tests ──
+  ⚠ HEALTH_CHECK_SKIP_BATS=1 — BATS gate skipped (nested run; the outer run gates the suites)
+
+── shellcheck ──
+  ✓ docs/reviews/execution-logs/sec-5bdee46-iter4-probes2.sh
+  ✓ docs/reviews/execution-logs/cfc-299727c-r3-c36-probes.sh
+  ✓ docs/reviews/execution-logs/copy-install-r2/s3.sh
+  ✓ docs/reviews/execution-logs/copy-install-r2/s2.sh
+  ✓ docs/reviews/execution-logs/copy-install-r2/s4.sh
+  ✓ docs/reviews/execution-logs/q058p3-fc/prefix-bats.sh
+  ✓ docs/reviews/execution-logs/q058p3-fc/ln-first-wins.sh
+  ✓ docs/reviews/execution-logs/q058p3-fc/old-remedy-worktree.sh
+  ✓ docs/reviews/execution-logs/q058p3-fc/probe-p3b.sh
+  ✓ docs/reviews/execution-logs/q058p3-fc/probe-p3.sh
+  ✓ docs/reviews/execution-logs/cfc-299727c-census-probes.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r3/run-suites.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r3/probe.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r3/probe9.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1-d0fdd04/run-suites.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1-d0fdd04/exp.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1-d0fdd04/run-fast.sh
+  ✓ docs/reviews/execution-logs/cfc-9c73ae4-helper-probes.sh
+  ✓ docs/reviews/execution-logs/sec-5bdee46-iter4-probes.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-submitted-c25-gen.sh
+  ✓ docs/reviews/execution-logs/q058-r1-gate.sh
+  ✓ docs/reviews/execution-logs/acr-9c73ae4-probes.sh
+  ✓ docs/reviews/execution-logs/q058-648124c/self.sh
+  ✓ docs/reviews/execution-logs/q058-648124c/regex.sh
+  ✓ docs/reviews/execution-logs/q058-648124c/nul.sh
+  ✓ docs/reviews/execution-logs/q058-648124c/prefix.sh
+  ✓ docs/reviews/execution-logs/q058-648124c/esc.sh
+  ✓ docs/reviews/execution-logs/q058-r1-run4.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-eval-helpers-probes.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p3/newroutes-probe.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p3/global-filter-probe.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1/run-suites.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1/exp.sh
+  ✓ docs/reviews/execution-logs/cfc-copy-install-r1/run-fast.sh
+  ✓ docs/reviews/execution-logs/q058-r1-prefix.sh
+  ✓ docs/reviews/execution-logs/arch-299727c-fix-suites.sh
+  ✓ docs/reviews/execution-logs/acr-299727c-probes.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/run-all.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/newroutes-probe.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/hookkeys-probe.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/run-links.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/global-filter-probe.sh
+  ✓ docs/reviews/execution-logs/arch-9c73ae4-census-probe.sh
+  ✓ docs/reviews/execution-logs/q058p2-fc/probe-a2-pgrep.sh
+  ✓ docs/reviews/execution-logs/q058p2-fc/probe-docs.sh
+  ✓ docs/reviews/execution-logs/q058p2-fc/probe-r2-sigint.sh
+  ✓ docs/reviews/execution-logs/q058p2-fc/probe-r1-git-exec.sh
+  ✓ docs/reviews/execution-logs/q058p2-fc/probe-r2-a1.sh
+  ✓ docs/reviews/execution-logs/q058p4-fc/probe-p4.sh
+  ✓ docs/reviews/execution-logs/q058p4-fc/probe-p4b.sh
+  ✓ docs/reviews/execution-logs/q058p4-fc/t85-shape-old.sh
+  ✓ docs/reviews/execution-logs/q058p4-fc/t84-t85-old.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-c25-mutation.sh
+  ✓ docs/reviews/execution-logs/gfc-rr-r1/run_bats.sh
+  ✓ docs/reviews/execution-logs/gfc-rr-r1/e2e.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-readable.sh
+  ✓ docs/reviews/execution-logs/q058-r3-b4fd792/regex-probe.sh
+  ✓ docs/reviews/execution-logs/q058-r3-b4fd792/payload-nul.sh
+  ✓ docs/reviews/execution-logs/q058-r3-b4fd792/prefix.sh
+  ✓ docs/reviews/execution-logs/q058-r3-b4fd792/vis-paths.sh
+  ✓ docs/reviews/execution-logs/cfc-9c73ae4-reader-probes.sh
+  ✓ docs/reviews/execution-logs/code-fact-check-r2-guard/run.sh
+  ✓ docs/reviews/execution-logs/code-fact-check-r2-guard/demo.sh
+  ✓ docs/reviews/execution-logs/code-fact-check-r2-guard/probe.sh
+  ✓ docs/reviews/execution-logs/code-fact-check-r2-guard/demo2.sh
+  ✓ docs/reviews/execution-logs/q058-b4fd792-r2/run-other-suites.sh
+  ✓ docs/reviews/execution-logs/q058-b4fd792-r2/proc-shape-probe.sh
+  ✓ docs/reviews/execution-logs/q058-b4fd792-r2/nul-scan-payload.sh
+  ✓ docs/reviews/execution-logs/arch-299727c-marker-property.sh
+  ✓ docs/reviews/execution-logs/cfc-299727c-e2e-probes.sh
+  ✓ docs/reviews/execution-logs/q058-r1-nulscan.sh
+  ✓ docs/reviews/execution-logs/q058-r1-t60.sh
+  ✓ docs/reviews/execution-logs/sec-9c73ae4-probes.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-submitted-c27-fork.sh
+  ✓ docs/reviews/execution-logs/arch-9c73ae4-insertion-fuzz.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-mode1-probes.sh
+  ✓ docs/reviews/execution-logs/perf-9c73ae4-transcript-jq-probes.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-gen-jq-probes.sh
+  ✓ docs/reviews/execution-logs/sec-299727c-iter6-probes.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p2/run-probes.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p2/git-keys-probe.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p2/fix-flags-probe.sh
+  ✓ docs/reviews/execution-logs/cfc-9c73ae4-gen-probes.sh
+  ✓ docs/reviews/execution-logs/cfc-5bdee46-patterns-mutation.sh
+  ✓ docs/reviews/execution-logs/perf-299727c-census-probes.sh
+  ✓ runs/review-arms/e7-fable-3x/run-host.sh
+  ✓ runs/review-arms/e7-fable-3x/debug-auth-host.sh
+  ✓ runs/review-arms/e5-cc-builtin/run-host.sh
+  ✓ runs/review-arms/e4-opus-k3/run-live.sh
+  ✓ runs/review-arms/crb/run-cubic.sh
+  ✓ runs/review-arms/e6-ultra/run-host.sh
+  ✓ runs/review-arms/e2/run-live.sh
+  ✓ test/lib/hermetic-env.bash
+  ✓ test/skills/dependency-upgrade/runner.bash
+  ✓ test/skills/dependency-upgrade/expected-verdicts.bash
+  ✓ test/skills/pre-mortem/runner.bash
+  ✓ test/skills/pre-mortem/expected-verdicts.bash
+  ✓ test/skills/architecture-review/runner.bash
+  ✓ test/skills/architecture-review/expected-verdicts.bash
+  ✓ test/skills/what-if-analysis/runner.bash
+  ✓ test/skills/what-if-analysis/expected-verdicts.bash
+  ✓ test/skills/business-plan-critique-unit-economics/runner.bash
+  ✓ test/skills/business-plan-critique-unit-economics/expected-verdicts.bash
+  ✓ test/skills/business-plan-critique-moat/runner.bash
+  ✓ test/skills/business-plan-critique-moat/expected-verdicts.bash
+  ✓ test/skills/fact-check/runner.bash
+  ✓ test/skills/fact-check/expected-verdicts.bash
+  ✓ test/skills/tech-debt-triage/runner.bash
+  ✓ test/skills/tech-debt-triage/expected-verdicts.bash
+  ✓ test/skills/api-consistency-reviewer/runner.bash
+  ✓ test/skills/api-consistency-reviewer/expected-verdicts.bash
+  ✓ test/skills/performance-reviewer/runner.bash
+  ✓ test/skills/performance-reviewer/expected-verdicts.bash
+  ✓ test/skills/divergent-design/runner.bash
+  ✓ test/skills/divergent-design/expected-verdicts.bash
+  ✓ test/skills/self-eval/runner.bash
+  ✓ test/skills/self-eval/expected-verdicts.bash
+  ✓ test/skills/arithmetic-eval/after-denial-patterns.bash
+  ✓ test/skills/arithmetic-eval/runner.bash
+  ✓ test/skills/arithmetic-eval/expected-verdicts.bash
+  ✓ test/skills/helpers.bash
+  ✓ test/skills/security-reviewer/runner.bash
+  ✓ test/skills/security-reviewer/expected-verdicts.bash
+  ✓ test/skills/malformed-transcripts.bash
+  ✓ test/skills/critic-dimensions.bash
+  ✓ test/skills/test-strategy/runner.bash
+  ✓ test/skills/test-strategy/expected-verdicts.bash
+  ✓ test/skills/eval-helpers.bash
+  ✓ test/skills/business-plan-critique-market-sizing/runner.bash
+  ✓ test/skills/business-plan-critique-market-sizing/expected-verdicts.bash
+  ✓ test/skills/ai-personas-critique/runner.bash
+  ✓ test/skills/ai-personas-critique/expected-verdicts.bash
+  ✓ test/skills/runner-contract.bash
+  ✓ test/skills/design-space-situating/runner.bash
+  ✓ test/skills/design-space-situating/expected-verdicts.bash
+  ✓ test/skills/code-fact-check/runner.bash
+  ✓ test/skills/code-fact-check/expected-verdicts.bash
+  ✓ test/skills/cowen-critique/runner.bash
+  ✓ test/skills/cowen-critique/expected-verdicts.bash
+  ✓ test/skills/generate-reports.bash
+  ✓ test/skills/ui-visual-review/runner.bash
+  ✓ test/skills/ui-visual-review/expected-verdicts.bash
+  ✓ test/skills/matrix-analysis/runner.bash
+  ✓ test/skills/matrix-analysis/expected-verdicts.bash
+  ✓ test/skills/yglesias-critique/runner.bash
+  ✓ test/skills/yglesias-critique/expected-verdicts.bash
+  ✓ devcontainer-config/cc-isolated.sh
+  ✓ devcontainer-config/link-claude-home.sh
+  ✓ devcontainer-config/init-firewall.sh
+  ✓ devcontainer-config/cc-exit-scan.sh
+  ✓ devcontainer-config/cc-gitdir.sh
+  ✓ devcontainer-config/install.sh
+  ✓ devcontainer-config/cc-push.sh
+  ✓ .apir5-probe2.sh
+  ✓ hooks/claude-config-audit.sh
+  ✓ hooks/auto-approve-allowed-commands.sh
+  ✓ hooks/dd-routing-reminder.sh
+  ✓ hooks/log-usage.sh
+  ✓ hooks/batch-feedback-routing-reminder.sh
+  ✓ hooks/lib/usage-common.sh
+  ✓ hooks/log-usage-post.sh
+  ✓ hooks/live-verify-gate.sh
+  ✓ .apir5-probe.sh
+  ✓ scripts/skill-usage-report.sh
+  ✓ scripts/archive-working-docs.sh
+  ✓ scripts/flag-removal-candidates.sh
+  ✓ scripts/questions.sh
+  ✓ scripts/health-check.sh
+  ✓ scripts/confine-tests.sh
+  ✓ scripts/lib/preflight.sh
+  ✓ scripts/lib/si-morning-summary.sh
+  ✓ scripts/lib/skill-paths.sh
+  ✓ scripts/lib/md-utils.sh
+  ✓ scripts/lib/json-utils.sh
+  ✓ scripts/lib/si-input.sh
+  ✓ scripts/lib/log-format.sh
+  ✓ scripts/lib/si-functions.sh
+  ✓ scripts/run-tests.sh
+  ✓ scripts/paper-queue.sh
+  ✓ scripts/self-improvement.sh
+  ✓ docs/reviews/execution-logs/secrev-q058p4/links-probe.bats
+  ✓ docs/reviews/execution-logs/q058-r1-scratch-experiments.bats
+  ✓ docs/reviews/execution-logs/q058-b4fd792-r2/probe5.bats
+  ✓ docs/reviews/execution-logs/q058-b4fd792-r2/probe.bats
+  ✓ docs/reviews/execution-logs/secrev-q058-b4fd792/probe.bats
+  ✓ docs/reviews/execution-logs/secrev-q058p2/probe.bats
+  ✓ test/test-baseline-gate.bats
+  ✓ test/cc-push.bats
+  ✓ test/install-host.bats
+  ✓ test/auto-approve-allowed-commands.bats
+  ✓ test/cross-model-review-parse.bats
+  ✓ test/function-inventory.bats
+  ✓ test/guide-index-sync.bats
+  ✓ test/init-firewall-rules.bats
+  ✓ test/questions-doc.bats
+  ✓ test/hermeticity-lint.bats
+  ✓ test/rubric-selection.bats
+  ✓ test/dd-cross-model-sweep.bats
+  ✓ test/si-input-parse-comments.bats
+  ✓ test/si-clean-state.bats
+  ✓ test/lever-measurement-drift.bats
+  ✓ test/workflow-required-sections.bats
+  ✓ test/parse-si-priority-hypotheses.bats
+  ✓ test/generate-reports.bats
+  ✓ test/lite-review-grammar.bats
+  ✓ test/morning-summary-generate.bats
+  ✓ test/cross-reference-integrity.bats
+  ✓ test/merge-safety.bats
+  ✓ test/sandbox-tool-map-drift.bats
+  ✓ test/code-review-gate.bats
+  ✓ test/convergence-detection.bats
+  ✓ test/agents-gemini-sync.bats
+  ✓ test/cross-model-review-stage1.bats
+  ✓ test/paper-queue.bats
+  ✓ test/cc-isolated-functions.bats
+  ✓ test/link-claude-home-wiring.bats
+  ✓ test/pivot-consistency.bats
+  ✓ test/precondition-gate.bats
+  ✓ test/append-approved-hypotheses.bats
+  ✓ test/skills/ui-visual-review-eval.bats
+  ✓ test/skills/fact-check-eval.bats
+  ✓ test/skills/business-plan-critique-moat-format.bats
+  ✓ test/skills/eval-helpers-freshness.bats
+  ✓ test/skills/code-review-executable-defect.bats
+  ✓ test/skills/performance-reviewer-eval.bats
+  ✓ test/skills/ai-personas-critique-eval.bats
+  ✓ test/skills/test-strategy-format.bats
+  ✓ test/skills/arithmetic-eval-after-denial-patterns.bats
+  ✓ test/skills/ai-personas-critique-format.bats
+  ✓ test/skills/cowen-critique-eval.bats
+  ✓ test/skills/arithmetic-eval-eval.bats
+  ✓ test/skills/tech-debt-triage-eval.bats
+  ✓ test/skills/what-if-analysis-format.bats
+  ✓ test/skills/what-if-analysis-eval.bats
+  ✓ test/skills/ui-visual-review-format.bats
+  ✓ test/skills/business-plan-critique-moat-eval.bats
+  ✓ test/skills/code-review-context-delivery.bats
+  ✓ test/skills/code-review-format.bats
+  ✓ test/skills/matrix-analysis-eval.bats
+  ✓ test/skills/eval-helpers-transcript.bats
+  ✓ test/skills/divergent-design-eval.bats
+  ✓ test/skills/code-fact-check-edge-cases.bats
+  ✓ test/skills/yglesias-critique-eval.bats
+  ✓ test/skills/code-fact-check-eval.bats
+  ✓ test/skills/design-space-situating-format.bats
+  ✓ test/skills/eval-helpers-gating.bats
+  ✓ test/skills/business-plan-critique-unit-economics-format.bats
+  ✓ test/skills/dependency-upgrade-format.bats
+  ✓ test/skills/eval-helpers-empty-report.bats
+  ✓ test/skills/self-eval-eval.bats
+  ✓ test/skills/self-eval-format.bats
+  ✓ test/skills/frontmatter-fields.bats
+  ✓ test/skills/performance-reviewer-format.bats
+  ✓ test/skills/yglesias-critique-format.bats
+  ✓ test/skills/tech-debt-triage-format.bats
+  ✓ test/skills/pre-mortem-eval.bats
+  ✓ test/skills/mode1-equiv.bats
+  ✓ test/skills/code-fact-check-format.bats
+  ✓ test/skills/code-review-assurance-contract.bats
+  ✓ test/skills/divergent-design-router.bats
+  ✓ test/skills/code-review-factcheck-replication.bats
+  ✓ test/skills/dependency-upgrade-eval.bats
+  ✓ test/skills/arithmetic-eval-format.bats
+  ✓ test/skills/security-reviewer-eval.bats
+  ✓ test/skills/code-review-format-contract.bats
+  ✓ test/skills/architecture-review-eval.bats
+  ✓ test/skills/matrix-analysis-format.bats
+  ✓ test/skills/code-review-soundness-crosscheck.bats
+  ✓ test/skills/test-strategy-eval.bats
+  ✓ test/skills/security-reviewer-format.bats
+  ✓ test/skills/design-space-situating-eval.bats
+  ✓ test/skills/api-consistency-reviewer-format.bats
+  ✓ test/skills/arithmetic-eval-gate.bats
+  ✓ test/skills/architecture-review-format.bats
+  ✓ test/skills/business-plan-critique-market-sizing-format.bats
+  ✓ test/skills/fact-check-edge-cases.bats
+  ✓ test/skills/cowen-critique/dimensions-skill.bats
+  ✓ test/skills/cowen-critique/dimensions.bats
+  ✓ test/skills/pre-mortem-format.bats
+  ✓ test/skills/api-consistency-reviewer-eval.bats
+  ✓ test/skills/business-plan-critique-unit-economics-eval.bats
+  ✓ test/skills/cowen-critique-format.bats
+  ✓ test/skills/draft-review-format.bats
+  ✓ test/skills/fact-check-format.bats
+  ✓ test/skills/business-plan-critique-market-sizing-eval.bats
+  ✓ test/skills/yglesias-critique/dimensions-skill.bats
+  ✓ test/skills/yglesias-critique/dimensions.bats
+  ✓ test/validate-task-json.bats
+  ✓ test/worktree-cleanup-functions.bats
+  ✓ test/hooks/live-verify-gate.bats
+  ✓ test/hooks/guard-trusted-writes.bats
+  ✓ test/hooks/log-usage.bats
+  ✓ test/hooks/log-usage-post.bats
+  ✓ test/hooks/claude-config-audit.bats
+  ✓ test/hooks/batch-feedback-routing-reminder.bats
+  ✓ test/cc-sni-proxy-unittest.bats
+  ✓ test/fixture-hermeticity.bats
+  ✓ test/morning-summary-clusters.bats
+  ✓ test/claude-headless-flags.bats
+  ✓ test/round-log-functions.bats
+  ✓ test/scripts/health-check.bats
+  ✓ test/scripts/skill-paths.bats
+  ✓ test/scripts/utility-smoke.bats
+  ✓ test/scripts/flag-removal-candidates.bats
+  ✓ test/scripts/self-improvement-clean-state.bats
+  ✓ test/scripts/skill-usage-report.bats
+  ✓ test/scripts/run-tests.bats
+  ✓ test/scripts/self-improvement-smoke.bats
+  ✓ test/scripts/archive-working-docs.bats
+
+── Workflow value-justification ──
+  ✓ branch-strategy.md: value-justification present
+  ✓ codebase-onboarding.md: value-justification present
+  ✓ divergent-design.md: value-justification present
+  ✓ parallel-worktrees.md: value-justification present
+  ✓ pr-prep.md: value-justification present
+  ✓ research-plan-implement.md: value-justification present
+  ✓ review-fix-loop.md: value-justification present
+  ✓ spike.md: value-justification present
+  ✓ task-decomposition.md: value-justification present
+  ✓ user-testing-workflow.md: value-justification present
+  ✓ 10 workflow(s) checked — all have value-justification
+
+── Hook script permissions ──
+  ✓ auto-approve-allowed-commands.sh is executable
+  ✓ batch-feedback-routing-reminder.sh is executable
+  ✓ claude-config-audit.sh is executable
+  ✓ dd-routing-reminder.sh is executable
+  ✓ live-verify-gate.sh is executable
+  ✓ log-usage-post.sh is executable
+  ✓ log-usage.sh is executable
+  ✓ 7 hook(s) checked
+
+── Hook wiring (live settings.json) ──
+  ✓ 9 wired hook command(s), all targets present
+  ✓ permissions.deny present (12 rule(s))
+
+── Skill test-fixture coverage ──
+
+  Coverage: 24/25 skills have test fixtures (1 without)
+  ⚠ Skills lacking fixtures: draft-review
+
+── Feature integration (si-functions.sh) ──
+  ✓ find_task_lineage: called from sibling helper in si-functions.sh
+  ✓ prepend_lineage_to_plan: called from sibling helper in si-functions.sh
+  ✓ remove_worktree_and_branch: called from entry point
+  ✓ require_clean_main: called from entry point
+  ✓ merge_landed: called from entry point
+  ✓ validate_task_json: called from entry point
+  ✓ check_convergence_threshold: called from entry point
+  ✓ print_gate_stats: called from entry point
+  ✓ si_default_run_id: called from entry point
+  ✓ append_approved_hypotheses: called from entry point
+  ✓ _migrate_hypothesis_log_run_column: called from sibling helper in si-functions.sh
+  ✓ tap_failing_names: called from entry point
+  ✓ tap_new_failures: called from entry point
+  ✓ parse_code_review_red: called from entry point
+  ✓ count_rubric_red: called from entry point
+  ✓ code_review_gate_verdict: called from entry point
+
+  Feature integration: 16/16 functions called from entry points
+  ✓ All si-functions.sh functions are called from at least one entry point
+
+── Document freshness (spikes + onboarding + thoughts) ──
+  ⚠ docs/spikes/invocation-logger-hook-point.md: STALE — 1 commit(s) to tracked paths since 2026-09-24
+  ⚠ docs/spikes/staleness-heuristic.md: STALE — 7 commit(s) to tracked paths since 2026-09-24
+  ⚠ docs/thoughts/code-review-evaluation-state.md: STALE — 79 commit(s) to tracked paths since 2026-07-30
+  ⚠ docs/thoughts/failure-patterns.md: STALE — 11 commit(s) to tracked paths since 2026-09-17
+  ⚠ docs/thoughts/netfilter-local-out-gotchas.md: STALE — 15 commit(s) to tracked paths since 2026-09-09
+  ⚠ docs/thoughts/spike-graveyard.md: STALE — 7 commit(s) to tracked paths since 2026-05-15
+  ⚠ docs/thoughts/unity-cli-cc-isolated-integration.md: STALE — 33 commit(s) to tracked paths since 2026-08-22
+
+  Freshness: 7 checked, 0 fresh, 7 stale, 0 missing fields
+
+── Persona freshness (last-sampled within ~6 months) ──
+  ✓ ai-personas-critique: fresh (149 days since 2026-05-03)
+  ✓ cowen-critique: fresh (149 days since 2026-05-03)
+  ✓ yglesias-critique: fresh (149 days since 2026-05-03)
+
+  Persona freshness: 3 checked, 3 fresh, 0 stale, 0 invalid
+
+── MD file semantic divergence ──
+  global-instructions/CLAUDE.md: 328 lines, 8 H2 + 16 H3 sections, 17 skill ref(s)
+  AGENTS.md: 76 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  GEMINI.md: 76 lines, 5 H2 + 0 H3 sections, 17 skill ref(s)
+  ✓ AGENTS.md and GEMINI.md have identical section structure
+
+  ✓ No semantic divergence detected across MD files
+
+── Running questions ──
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ✓ questions: structure valid, indexes current
+
+All checks passed.
+exit=0

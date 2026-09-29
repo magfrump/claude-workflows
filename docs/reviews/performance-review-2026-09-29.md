@@ -1,130 +1,89 @@
-Commit: de96617
+Commit: 5ee8315
 
-# Performance Review — feat/workflow-router-skills
+# Performance Review — fix/agents-md-no-imports
 
-**Scope:** `git diff main...HEAD` (8 router skills, `test/skills/workflow-routers.bats`, global-instructions paragraph, decision log row 66, README); review artifacts under `docs/reviews/` treated as context only
+**Scope:** `git diff main...HEAD` (AGENTS.md, docs/decisions/log.md, scripts/health-check.sh, test/agents-gemini-sync.bats)
 **Date:** 2026-09-29
-**Based on:** Stage-1 code-fact-check summary in the critic brief (k=3 on 3a63c56, fixes in 881762a); `docs/reviews/code-fact-check-report-r{1,2,3}.md`
-
-"Performance" for this diff means (a) per-session context cost of the skill listing and always-loaded global instructions, (b) per-invocation cost of the router hop before the workflow is read, (c) test runtime. There is no request path, query or data structure in the diff.
+**Based on:** Stage-1 code-fact-check (merged k=3, most-severe-wins), via the shared critic brief
 
 ## Data Flow and Hot Paths
 
-- **Hottest path: the skill listing.** Every skill's `description` is injected into every Claude Code session, in this repo and in every project once `devcontainer-config/install.sh` copies `skills/` into `~/.claude/skills` (`install.sh:135`, `CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows ...)`). This is paid per session whether or not any router fires. Path temperature: hot (every session, every project).
-- **Always-loaded instructions.** The new paragraph in `global-instructions/CLAUDE.md` is loaded in every session on an installed host. Hot, but small.
-- **Router invocation.** When a router fires: one Skill call returns the router body (737–951 bytes measured), then one Read of the workflow (7,596–68,867 bytes measured, `wc -c workflows/<name>.md`). Warm: per task that matches a trigger, not per turn.
-- **Test.** `test/skills/workflow-routers.bats` — 6 tests, file-existence checks and `awk`/`grep` over ~9 small files. Cold (CI/health-check only).
+The "hot path" here is session start-up context. AGENTS.md is loaded as this repo's project instructions on every Claude Code session in the repo, and on every subagent a session spawns. Before this branch, Claude Code expanded AGENTS.md's nine `@./workflows/*.md` imports inline. The nine files total 358,414 bytes (`wc -c`, measured on this worktree, 2026-09-29). The fact-check counted 355,598 characters, about 89K tokens at 4 chars/token. After the branch, AGENTS.md is 7,815 bytes with no imports; it was 7,932 bytes on main before expansion. So per-session instruction cost for this file drops by about 98%.
 
-Measured sizes (this review, `python3` over frontmatter and `wc -c`):
+The load multiplies by fan-out. A `code-review` run starts ~3 fact-check replicates plus 3–6 critics, and each is a fresh context that loads the project instructions. This reviewer's own system context (a subagent spawned from the `/workspace` main checkout) contains the full text of all nine workflow files under "Contents of /workspace/workflows/…". That shows the multiplication happens today: roughly 89K tokens per agent, times about 6–10 agents per review.
 
-| Quantity | Value |
-|---|---|
-| Total `description` chars, all 33 skills | 13,234 |
-| `description` chars added by the 8 routers | 3,239 (+32% of the prior 9,995) |
-| Router bodies | 737–951 bytes each |
-| Workflows routed to | 7,596 (parallel-worktrees) – 68,867 (research-plan-implement) bytes |
-| `workflow-routers.bats` wall time | 0.39 s (`time timeout 60 bats test/skills/workflow-routers.bats`, 6/6 ok) |
+Test runtime: `bats test/agents-gemini-sync.bats` runs in 0.063 s wall (measured with `time`, 2026-09-29). The new guard adds one `grep` over a 7.8 KB file, which is negligible.
 
 ## Findings
 
-#### 1. research-plan-implement's broad triggers can pull a ~69 KB workflow into trivial tasks
+#### Guard regex misses import forms that would restore the ~89K-token load
 
 **Severity:** Medium
-**Location:** `skills/research-plan-implement/SKILL.md:3-8`
-**Move:** Count the hidden multiplications / what's the size of N
-**Confidence:** Medium
-**Baseline:** no baseline available — flagged as speculative
-**Classification:** Macro (per-task multiplier on a large fixed read) / Warm path (per matching task)
-**Legibility-target:** agent selecting a skill from the listing
+**Location:** `test/agents-gemini-sync.bats:34`
+**Move:** 3 (work moved to the wrong place) / 1 (hidden multiplication)
+**Classification:** Macro (whole-file expansion per agent) / Hot path (every session and every subagent start)
+**Confidence:** High (the regex behaviour is fact-checked). Medium on Claude Code expanding the bare `@workflows/x.md` form, which is documented import syntax but was not run here.
+**Legibility-target:** the next editor of AGENTS.md
+**Baseline:** 358,414 bytes of workflow text per expansion (`wc -c` on the nine files, 2026-09-29)
 
-Evidence (verbatim): `Triggers: "add a feature", "implement X", "fix this bug", "build X", "make X do Y", "change how X works", "refactor X".` and body line 27: `Read and follow **\`workflows/research-plan-implement.md\`** end to end`.
+Evidence (verbatim):
+```
+  if matches=$(grep -nE '(^|[[:space:]*`])@\.{0,2}/' "$AGENTS"); then
+```
+The guard exists to stop the context regression from coming back, but it only matches `@/`, `@./` and `@../`. A probe line `x @workflows/spike.md` produced 0 matches (run in the scratchpad, 2026-09-29). The fact-check also found misses for `@docs/x.md`, `@~/x.md`, and `@./x` after `(`, `"` or `[`. Claude Code's import syntax allows paths without a `./` prefix. So an editor who writes `@workflows/pr-prep.md` would silently re-add about 11K tokens per agent for that one file, and the test would stay green. The same mismatch is the fact-check's INCORRECT verdict on log row 65 ("fails on any `@path` import").
 
-The router's exclusion for trivial edits ("Skip it only for trivial edits (a typo, a config value, a one-line fix whose cause is already known)", body lines 22-23) lives in the body, which the agent sees only after the Skill call has already been made. The description's first clause does say "non-trivial" and "more than one file", but the trigger list names phrasings ("fix this bug", "build X", "refactor X") that users also use for one-line changes. Each mis-fire costs one Skill call plus an "end to end" read of 68,867 bytes — roughly 17k tokens at ~4 chars/token — plus the procedure overhead (research/plan docs) if the agent follows it. Before this branch the same workflow could be reached from the global decision tree, so the delta is the change in firing rate, not the per-fire cost; that firing-rate change is the point of the PR, which is why the risk is on mis-fires rather than fires. The same shape, smaller, applies to `pr-prep` ("ship it", "wrap this up"; 44,652-byte workflow) and `codebase-onboarding` ("where does X live"; 54,996 bytes).
+**Recommendation:** Widen the pattern to any `@` followed by a path-like token ending in a file extension, e.g. `(^|[^[:alnum:]_.+-])@[~./[:alnum:]_-][^[:space:]]*\.[[:alnum:]]+`, and add a negative case for emails. Or narrow log row 65's wording to what the regex actually catches. Widening matches the test's stated purpose.
 
-**Recommendation:** Move the trivial-edit exclusion into the description ahead of the trigger list (e.g. "Not for a one-line fix whose cause is known"), mirroring how `pr-prep` and `task-decomposition` already put their "not this" clause in the description. Consider dropping "where does X live" from `codebase-onboarding`, which is a single lookup, not an onboarding.
-
-#### 2. Every session in every project pays ~850 tokens more for the listing
-
-**Severity:** Low
-**Location:** `skills/{branch-strategy,codebase-onboarding,parallel-worktrees,pr-prep,research-plan-implement,spike,task-decomposition,user-testing-workflow}/SKILL.md:3-8`
-**Move:** Find the work that moved to the wrong place
-**Confidence:** High (on the size), Medium (on the token conversion)
-**Baseline:** no baseline available — flagged as speculative
-**Classification:** Micro (fixed per-session constant) / Hot path (every session)
-**Legibility-target:** repo maintainer weighing listing budget
-
-Evidence: 3,239 description chars added (measured above) plus the eight names, ≈3,400 chars ≈ ~850 tokens per session at ~4 chars/token. The global paragraph adds another ~450 chars (~110 tokens) on installed hosts: `**Every workflow is also a skill.** Each \`workflows/<name>.md\` ships a router skill ...`.
-
-The cost is paid in projects where most of these workflows never apply (e.g. `user-testing-workflow` and `branch-strategy` in a solo repo — the user's memory records "No GitHub routing — solo dev", which makes `branch-strategy`'s open-PR triggers mostly dead weight on this host). The token cost is likely cache-read priced after the first turn, so the money cost is small; the real cost is listing attention (the user's own framing: "Attention is the binding budget"), and some routing text now appears twice per session, once in the global decision tree and once in the descriptions. This is the intended trade and is modest; it is filed so the constant is on record.
-
-**Recommendation:** Accept, but record the measured +3,239 chars in decision log row 66 so a later cycle can price it against the Revisit trigger. If trimming is wanted, `codebase-onboarding` (451) and `task-decomposition` (441) are the longest and can drop their mid-description procedure summaries without losing triggers.
-
-#### 3. Relative handoff path costs one failed Read outside this repo
+#### Only AGENTS.md is guarded; other always-loaded instruction files are not
 
 **Severity:** Low
-**Location:** every router, handoff line (e.g. `skills/spike/SKILL.md:26-27`)
-**Move:** Price the deployment environment
+**Location:** `test/agents-gemini-sync.bats:33-40`
+**Move:** 10 (price the deployment environment)
+**Classification:** Macro / Hot path (conditional: only if an import is ever added)
 **Confidence:** Medium
+**Legibility-target:** maintainers of global-instructions/
 **Baseline:** no baseline available — flagged as speculative
-**Classification:** Micro (one extra tool call) / Warm path (per router fire, other projects only)
-**Legibility-target:** agent executing the handoff in a non-claude-workflows project
 
-Evidence: `Read and follow **\`workflows/spike.md\`** end to end (installed copy:
-\`~/.claude/workflows/spike.md\`).` The bolded, first-named path does not exist in other projects; only the parenthetical one does. An agent that reads the bolded path first gets a file-not-found and retries — one wasted tool round-trip per fire. The parenthetical mitigates it, so this is not a correctness problem. The test pins the relative form (`workflow-routers.bats:90`), so changing it needs a test change.
+Evidence (verbatim):
+```
+@test "AGENTS.md has no @-imports" {
+```
+`global-instructions/CLAUDE.md` (35,413 bytes) is installed as every project's global instructions. An `@` import added there would cost more than the one this PR removes, because it would load in every project, not just this repo. A scan of that file today finds no imports, so this is a coverage gap, not a current cost.
 
-**Recommendation:** Optional: phrase it as "`~/.claude/workflows/spike.md` (in the claude-workflows repo: `workflows/spike.md`)", or keep as is and accept one occasional failed Read. Not worth a loop iteration on its own.
+**Recommendation:** Optional: loop the same guard over `global-instructions/CLAUDE.md`. Otherwise record in row 65 that the guard covers AGENTS.md only.
 
-#### 4. Router hop adds one tool call and ~200–240 tokens per workflow use
+#### Shared sections stay loaded twice per session (accepted tradeoff)
 
 **Severity:** Informational
-**Location:** router bodies, e.g. `skills/pr-prep/SKILL.md:12-31`
-**Move:** Count the hidden multiplications
+**Location:** `AGENTS.md:41-end` (Context Packing, Shared Thoughts, General Principles)
+**Move:** 6 (serialization tax: the same content crosses into context twice)
+**Classification:** Micro / Hot path
 **Confidence:** High
-**Baseline:** no baseline available — flagged as speculative
-**Classification:** Micro / Warm
-**Legibility-target:** reviewer weighing router overhead
+**Legibility-target:** decision-log readers
+**Baseline:** 2,995 bytes from `## Context Packing` to end of AGENTS.md (`awk | wc -c`, 2026-09-29)
 
-Evidence: bodies measure 737–951 bytes; each fire is Skill → body → Read workflow, versus a single Read before. That is ~1–1.5% on top of the workflow read itself (7.6–69 KB). Negligible; the body-length cap in the test (`MAX_BODY_LINES=45`, `workflow-routers.bats:20`) keeps it that way.
-
-**Recommendation:** None.
-
-#### 5. Descriptions put triggers after char ~230, past the repo's own 250-char front-load rule
-
-**Severity:** Informational
-**Location:** all 8 router descriptions
-**Move:** Price the deployment environment
-**Confidence:** Low (depends on harness truncation behavior)
-**Baseline:** no baseline available — flagged as speculative
-**Classification:** Micro / Hot
-**Legibility-target:** agent matching triggers from a possibly truncated listing
-
-Evidence: measured `Triggers:` offsets 232 (spike) to 323 (task-decomposition); pr-prep's "not this" clause ("code-review alone for a review only") starts at char 234 and task-decomposition's ("Not for several unrelated tasks") at 246, both ending past 250. `guides/skill-format-audit.md:198` records as done: `every "not this" line ends by char 250`. In this session's own listing, 400+-char descriptions were shown untruncated, so the 250 limit may not currently apply; if it does on some harness, the eight routers pay the listing cost for text the model never sees, including the disambiguation clauses. Mostly a routing concern for the API-consistency/fact-check critics; noted here because it decides whether the ~850 tokens in Finding 2 buy anything.
-
-**Recommendation:** Either front-load the "not this" clauses within 250 chars as the audit row requires, or update the audit row if the harness no longer truncates.
+About 3 KB (~750 tokens) of AGENTS.md repeats sections of the global instructions, so Claude Code sessions here load it twice. Log row 65 keeps this on purpose so non-Claude agents that read only AGENTS.md still get it. The cost is about 0.8% of what the PR saves. No action needed; noted so the tradeoff has a price on it.
 
 ## Endorsements
 
-- The contract test is cheap: 0.39 s wall for 6 tests, no subprocess per router beyond `awk`/`grep`/`wc`, safe to keep in the fast category (`# @category fast`, line 2). [read: test/skills/workflow-routers.bats:1-123]
-- `MAX_BODY_LINES=45` bounds the per-fire router cost structurally; a router that grows toward restating its workflow fails the test. [read: test/skills/workflow-routers.bats:18-20,111-123]
-- The `when:` fields add no per-session listing cost because the loader ignores them and triggers on `description` only. [unverified — submitted as claim; source is the repo's own `test/skills/frontmatter-fields.bats:4-5` comment citing `guides/skill-format-audit.md` F1]
-- Claim for fact-check: Claude Code applies a total character budget to the combined skill listing, and at ~13.2k chars of repo descriptions plus plugin/built-in skills this host may be near it, which could drop skills from the listing. [unverified — submitted as claim]
+- Removing the nine `@./workflows/*.md` imports cuts the per-agent instruction load by about 358 KB, roughly 89K tokens, and the cut applies again for every subagent in fan-out workflows. [read: AGENTS.md:9-18 on 5ee8315 vs main] (load-mechanism claim: [unverified — submitted as claim] that Claude Code expands `@./` imports in AGENTS.md; this reviewer's own system context is consistent with it)
+- Dropping `sed 's|@\./workflows/||g'` from the sync test leaves a single `tail` per file, which is simpler and no slower. [read: test/agents-gemini-sync.bats:15-27]
+- `extract_workflows` returns the same 9 names for old AGENTS.md, new AGENTS.md and GEMINI.md, so health-check work is unchanged. [fact-check: extract_workflows parity — VERIFIED]
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | RPI broad triggers pull a ~69 KB workflow into trivial tasks; exclusion lives only in the body | Medium | `skills/research-plan-implement/SKILL.md:3-8` | Medium |
-| 2 | +3,239 description chars (~850 tokens) per session, every project | Low | 8 router descriptions | High |
-| 3 | Relative handoff path → one failed Read outside this repo | Low | router handoff lines | Medium |
-| 4 | Router hop: +1 tool call, ~200–240 tokens per fire | Informational | router bodies | High |
-| 5 | Triggers/"not this" clauses sit past char 250 | Informational | 8 router descriptions | Low |
+| 1 | Guard regex misses `@workflows/x.md` and similar forms that would restore the load | Medium | `test/agents-gemini-sync.bats:34` | High |
+| 2 | Global instructions file not covered by the guard | Low | `test/agents-gemini-sync.bats:33-40` | Medium |
+| 3 | ~3 KB of shared sections loaded twice (accepted) | Informational | `AGENTS.md:41-end` | High |
 
 ## Overall Assessment
 
-The performance posture is sound: the fixed per-session cost (~850 tokens, +32% of the repo's skill-listing text) and the per-fire router hop (~1% of the workflow read) are modest and bounded by the body-length test, and the test itself runs in 0.39 s. The one cost worth fixing before merge is Finding 1: the routers raise the firing rate by design, so the expensive failure mode is a mis-fire, and research-plan-implement — the largest workflow at 68,867 bytes — keeps its trivial-edit exclusion only in the body, where it arrives after the cost is paid. Moving that clause into the description is a one-line fix in place. No profiling is needed; the decision log's Revisit trigger (artifact counts over three dev cycles) is the right measurement for whether the listing cost buys anything.
+This is a large performance win for very little code. It removes about 89K tokens from every session and every subagent in this repo, and in orchestrated reviews that multiplies to hundreds of thousands of tokens per run. The only real performance concern is durability. The regression guard is narrower than its stated purpose, so the common `@workflows/x.md` form would slip back in with the test still passing. Fix it in place by widening the regex, or at least correct log row 65's claim. No benchmarking is needed. The byte counts are measured, and the token figure is a standard chars/4 estimate.
 
 ## Goal-Alignment Note
 
-- **Answered:** per-session context cost (measured chars, estimated tokens), per-invocation router overhead, mis-fire cost on the largest workflows, relative-path extra tool call, test runtime (measured).
-- **Out of scope:** whether the trigger overlaps route correctly (API-consistency / fact-check critics); correctness of router facts against workflows (Stage 1 covered).
-- **Escalate:** two runtime claims I could not verify from the repo — whether the loader truncates descriptions at 250 chars on the target harness, and whether a total skill-listing budget exists that 33+ skills approach. Token counts use a ~4 chars/token estimate, not a tokenizer.
+- **Answered:** Performance review of the full `main...HEAD` diff at 5ee8315, covering per-session context cost (measured byte counts, fan-out multiplication) and test runtime (0.063 s). Every finding has severity, location, verbatim evidence, confidence, legibility target and baseline.
+- **Out of scope:** Whether Claude Code expands un-prefixed `@path` forms was not tested by starting a live session (sandbox, no nested CLI run). It rests on documented import syntax and is marked Medium confidence.
+- **Escalate:** Finding 1 overlaps the fact-check's INCORRECT verdict on log row 65. Synthesis should merge the two rather than count them twice.

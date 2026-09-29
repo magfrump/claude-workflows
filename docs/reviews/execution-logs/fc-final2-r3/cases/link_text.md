@@ -1,0 +1,1 @@
+[@./linktext.md](http://u)

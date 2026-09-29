@@ -1,0 +1,6 @@
+2026-09-29T07:03:10Z
+cmd: timeout 580 scripts/run-tests.sh --fast (cwd /workspace/.claude/wt-agents-md)
+Locale en_US.UTF-8 is not installed; running with LC_ALL=C.UTF-8
+another run-tests.sh run is in progress in this checkout
+exit=
+2026-09-29T07:03:10Z
