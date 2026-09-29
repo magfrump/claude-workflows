@@ -552,6 +552,19 @@ shape_refused() {
   not_approved
   run_hook_rules 'python3 tools/skills/foo/bar.py' '["Bash(python3 tools/skills:*)"]' '[]'
   approved
+  # A rule that is itself a path keeps covering files under it.
+  run_hook_rules 'scripts/tools/x.sh' '["Bash(scripts/tools:*)"]' '[]'
+  approved
+}
+
+@test "the hook's builtin list matches this bash's compgen -b" {
+  # The shape check refuses every builtin except six; a bash that adds one
+  # would otherwise leave it approvable if allow-listed (security review
+  # 2026-09-28). Update SHAPE_FILTER's builtins list when this fails.
+  local want have
+  want=$(bash -c 'compgen -b' | sort -u)
+  have=$(sed -n '/^def builtins:/,/];/p' "$HOOK" | grep -o '"[^"]*"' | tr -d '"' | sort -u)
+  [ "$have" = "$want" ] || { diff <(echo "$want") <(echo "$have"); return 1; }
 }
 
 @test "the approvable shapes are still approved" {

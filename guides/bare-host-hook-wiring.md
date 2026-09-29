@@ -145,9 +145,14 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
   heredoc commit message that names a hard policy path is denied, because the
   `Co-Authored-By: ... <noreply@anthropic.com>` trailer's closing `>` matches the
   redirect regex. Write the message to a file and use `git commit -F <file>`.
-- `auto-approve-allowed-commands.sh` has filter-coverage gaps: arithmetic expansion,
-  heredoc bodies, `VAR=` prefixes and redirect targets. They are accepted as risk in
-  decision log row 53. Commands it cannot parse fall through to the normal prompt.
+- `auto-approve-allowed-commands.sh` approves only an allowlist of command shapes
+  (decision log row 64, which closed the filter-coverage gaps row 53 had accepted):
+  literal words, plain `$NAME`, pipes and `&&`/`||`/`;`, and redirects that neither
+  write nor read a path. It never approves substitutions, arithmetic, `[[ ]]`,
+  `VAR=` assignments, `export`, compound commands, interpreters and wrappers (`bash`,
+  `env`, `xargs`, ...) or bash builtins other than `cd`, `pwd`, `echo`, `true`,
+  `false` and `type`, whatever the allow rules say. Those, and commands it cannot
+  parse, fall through to the normal prompt.
   It also checks `Bash(...)` deny rules, which makes it part of the credentials
   backstop where no sandbox runs (cc-isolated has none). That check is a string match
   with known residuals; the hook header's WHAT THE DENY CHECK GUARANTEES and RULE

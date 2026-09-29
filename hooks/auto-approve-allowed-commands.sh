@@ -34,12 +34,20 @@
 #   ls > ~/.bashrc           redirect targets were not checked
 # Row 53 found that closing them one at a time does not converge, and so did
 # two review rounds on a class-based fix (let 'a[$(cmd)]=1', export PATH=,
-# escaped backticks in bash -c, `tr < secret`). The hook now approves only an
-# allowlist of AST SHAPES (refuses_construct): literal words, plain $NAME,
-# pipes and && || ;, and redirects that neither write nor read a path. Any
-# other construct prompts, including ones nobody has listed. Cost: compound
-# one-liners (`echo "$(git rev-parse HEAD)"`, `for ...`, `[[ ]]`) now prompt.
-# Parse FAILURES and commands that extract to nothing fail closed too.
+# escaped backticks in bash -c, `tr < secret`, `read 'a[$(cmd)]'`). The hook
+# now approves only an allowlist of AST SHAPES (refuses_construct): literal
+# words, plain $NAME, pipes and && || ;, no VAR= assignment, no background &,
+# a literal command name that is neither an interpreter or wrapper (bash, sh,
+# env, xargs, sudo, ...) nor a bash builtin other than cd, pwd, echo, true,
+# false and type, and redirects that neither write nor read a path. Any other
+# construct prompts, including ones nobody has listed. Parse failures and
+# commands that extract to nothing fail closed too.
+# Cost: compound one-liners (`echo "$(git rev-parse HEAD)"`, `for ...`, `[[ ]]`,
+# `test`, `export`, `< file`) prompt even when allow-listed, and so does any
+# command run through `bash` (a `Bash(bash scripts/x.sh:*)` rule no longer
+# approves a pipeline; Claude Code's own matching still sees the rule).
+# Each approved call spawns one more jq process than before: about +25 ms
+# (mean of 20 approved `git status` calls, 110 -> 136 ms, 2026-09-28).
 #
 # ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
 # CC-ISOLATED (Q-070/Q-077). Where a Claude Code sandbox runs, permissions.deny
@@ -90,7 +98,10 @@
 # whole command in which only `*` is a wildcard (`?`, `[...]` and extglob
 # characters are literal); an allow rule is a literal command prefix:
 #   rule         as allow                               as deny
-#   Bash(ls)     prefix: `ls`, `ls -la`, `ls/x`          exact: `ls` only
+#   Bash(ls)     prefix: `ls`, `ls -la` (not `ls/x`:     exact: `ls` only
+#                a bare name never covers a path under
+#                it; `Bash(a/b)` and `Bash(python3 d)`
+#                do cover `a/b/x` and `python3 d/x`)
 #   Bash(rm:*)   word prefix: `rm x`, not `rmdir`        plain prefix `rm*`: `rmdir` too
 #   Bash(ls *)   literal `ls *`: approves nothing        glob: `ls -la`
 #   Bash         ignored                                 every command (so do
@@ -341,12 +352,13 @@ is_command_allowed() {
     # "git log --oneline" matches "git log" and "git"
     # "grep -E pattern" matches "grep"
     # "python3 .claude/skills/foo/bar.py" matches "python3 .claude/skills:*"
-    # The "$allowed/" form is for path-prefix rules ("python3 .claude/skills").
-    # It applies only when the rule has an argument: for a bare name like
-    # "ls", "ls/x" is a different program, which bash runs from a directory
-    # named ls (decision log row 64).
+    # The "$allowed/" form is for path-prefix rules ("python3 .claude/skills",
+    # "scripts/tools"). It does not apply to a bare name like "ls": "ls/x" is
+    # a different program, which bash runs from a directory named ls
+    # (decision log row 64). A rule that has an argument or is itself a path
+    # keeps it.
     if [[ "$full_command" == "$allowed" ]] || [[ "$full_command" == "$allowed "* ]] \
-       || { [[ "$allowed" == *" "* ]] && [[ "$full_command" == "$allowed/"* ]]; }; then
+       || { [[ "$allowed" == *[\ /]* ]] && [[ "$full_command" == "$allowed/"* ]]; }; then
       debug "ALLOWED: '$full_command' (matches '$allowed')"
       return 0
     fi
@@ -709,7 +721,7 @@ def builtins:
    "shopt","source","suspend","test","times","trap","true","type","typeset",
    "ulimit","umask","unalias","unset","wait"];
 def safe_builtins: ["cd","pwd","echo","true","false","type"];
-[ .. | objects
+([ .. | objects
   | if has("Type") then
       if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
         then "node type \(.Type)"
@@ -727,7 +739,14 @@ def safe_builtins: ["cd","pwd","echo","true","false","type"];
       else empty end
     elif (.Background // false) or (.Coprocess // false) then "background statement"
     else empty end ]
-| first // empty
+| first) as $reason
+# One jq pass for both answers (performance review: each extra jq process is
+# ~20 ms on every approved call): "REFUSE <reason>", or else one line of byte
+# offsets per redirect for refuses_construct's operator check.
+| if $reason != null then "REFUSE \($reason)"
+  else (.. | objects | select(has("Redirs")) | .Redirs[]?
+        | "\(.OpPos.Offset) \(.Word.Pos.Offset) \(.Word.End.Offset)")
+  end
 JQEOF
 
 # Normalize shfmt-incompatible patterns
@@ -808,14 +827,18 @@ extract_commands_raw() {
 # Word's Pos. Those are byte offsets into the string shfmt parsed, so $1 must be
 # that same (normalized) string, and slicing is done under LC_ALL=C (bytes).
 refuses_construct() {
-  local cmd="$1" ast="$2" op_off word_off word_end op word reason
+  local cmd="$1" ast="$2" op_off word_off word_end op word out
   local LC_ALL=C
-  reason=$(jq -r "$SHAPE_FILTER" <<<"$ast") || reason="shape check failed"
-  if [[ -n "$reason" ]]; then
-    debug "Refusing: $reason"
+  if ! out=$(jq -r "$SHAPE_FILTER" <<<"$ast"); then
+    debug "Refusing: shape check failed"
+    return 0
+  fi
+  if [[ "$out" == 'REFUSE '* ]]; then
+    debug "Refusing: ${out#REFUSE }"
     return 0
   fi
   while read -r op_off word_off word_end; do
+    [[ -n "$op_off" ]] || continue
     op=${cmd:op_off:word_off-op_off}
     op=${op//[[:space:]]/}
     word=${cmd:word_off:word_end-word_off}
@@ -834,8 +857,7 @@ refuses_construct() {
     if [[ "$op" != '>&' && "$word" == /dev/null ]]; then continue; fi
     debug "Refusing redirect: '$op' '$word'"
     return 0
-  done < <(jq -r '.. | objects | select(has("Redirs")) | .Redirs[]?
-                  | "\(.OpPos.Offset) \(.Word.Pos.Offset) \(.Word.End.Offset)"' <<<"$ast")
+  done <<<"$out"
   return 1
 }
 
