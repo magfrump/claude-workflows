@@ -25,12 +25,12 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
-| [Q-090](#q-090--run-tests-jobs) | agent | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
@@ -41,9 +41,21 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
+### Q-102 · default-test-parallelism
+**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** OPEN
 
+`scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no caller passes `--jobs`. Should health-check.sh and pr-prep's test gate run in parallel by default?
 
+- **Why it's yours:** it trades wall time on every gate against a small flake risk, in the checks you rely on.
+- **Read:** Q-090 (archive) · the "Parallel runs" section of the `scripts/run-tests.sh` header · `docs/reviews/code-review-rubric-2026-09-30-feat-run-tests-jobs.md`
 
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Parallel by default, with an env override** | health-check and pr-prep pass `--jobs 8` (a `RUN_TESTS_JOBS`-style variable picks N, and 1 means serial). Falls back to serial when there is no GNU parallel. | A small reviewed change | A timing race shows up as a flaky gate. So far that is 1 in about 13 runs, since fixed. You re-run, or set N=1. |
+| **[2] Opt-in only** | Callers stay serial; agents and you pass `--jobs` by hand | None | Every gate keeps costing about 7.5 min instead of 2.5 min, and agents rarely remember the flag |
+
+- **Interim:** [2]. Nothing calls `--jobs` yet.
+- **If the answer differs:** nothing to redo.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -179,12 +191,3 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
 - **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
-### Q-090 · run-tests-jobs
-**Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
-
-**2026-09-30: trigger fired** (Q-084 step 4 printed `GNU parallel 20221122` in the image, with no cite/locale output). Work is in progress on branch `feat/run-tests-jobs`.
-
-When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tests.sh` (suite-level `bats --jobs`, serial when `parallel` is missing) and measure the full-suite wall time against the 742 s serial baseline. install-host.bats, the slowest suite, bounds the speedup.
-
-- **Interim:** the suite stays serial.
-- **From the Q-086 review (C2, C5):** `bats --jobs N` with N>1 aborts without `parallel` even on one file, so the serial fallback must test `command -v parallel`, not the file count. bats runs `parallel` without `--will-cite`, so check its citation notice and Perl locale warnings stay out of test output. `--jobs` also parallelizes tests *within* a file, and install-host.bats may flake, since `install.sh`'s `procs_in_checkout` scans the real /proc; consider `--no-parallelize-within-files`.
