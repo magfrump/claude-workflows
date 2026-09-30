@@ -1,4 +1,4 @@
-Commit: 088bc97
+Commit: 78b3b08
 
 # Code Review Rubric — feat/run-tests-jobs (Q-090)
 
@@ -10,6 +10,7 @@ Commit: 088bc97
 | Pass | Commit | Scope | Stages | Outcome |
 |---|---|---|---|---|
 | 1 | 088bc97 | full | fact-check k=1 (opus), security, performance, api-consistency (opus) | 1 Incorrect (comment only), 5 Mostly accurate, security Low + Info, performance 1 Medium + 3 Low + 1 Info, api 3 Minor + 3 Info. Fixed in 084868f; fix-drift lite review of 088bc97..084868f found 1 comment drift, fixed in f733a51. |
+| 2 | b34a6fe | full | fact-check k=3 (opus) only | 3 Incorrect agreed by all replicates: PARALLEL_HOME did not isolate parallel's config; `unset PARALLEL` ran after the GNU check (unparsable $PARALLEL made the run serial); install-host exposure mechanism ("starting and ending" processes are skipped). Plus a stale comment, weak shim assertions (a mutant never handing bats --jobs passed 3 tests), a weak within-file example and an unmeasured core-count claim. Fixed in 78b3b08; fix-drift lite review: none. Critics deferred to pass 3 on the fixed code. Replicates: `q090-final-code-fact-check-report-r{1,2,3}.md` (not merged into one report; each lists the same three Incorrects). |
 
 ## 🔴 Must Fix
 None.
