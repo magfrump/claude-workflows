@@ -1,0 +1,76 @@
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e2.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 control   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:49:29Z
+## KIND=control
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+1..2
+ok 1 gamma clean output
+ok 2 beta steady
+## exit=0
+. .. tmp 
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e2.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 home-dot-parallel   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:49:29Z
+## KIND=home-dot-parallel
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+1..2
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-dot-parallel/my repo/.bats/run-log-anchor' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-CpaQng/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-dot-parallel/my repo/test/gamma.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-CpaQng/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-dot-parallel/my repo/test/sub/beta.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-CpaQng/test_list_file.txt
+# bats warning: Executed 0 instead of expected 2 tests
+## exit=1
+. .. tmp 
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e2.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 parallelrc   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:49:30Z
+## KIND=parallelrc
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+1..2
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/parallelrc/my repo/.bats/run-log-anchor' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-j5D0Q5/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/parallelrc/my repo/test/gamma.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-j5D0Q5/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/parallelrc/my repo/test/sub/beta.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-j5D0Q5/test_list_file.txt
+# bats warning: Executed 0 instead of expected 2 tests
+## exit=1
+. .. tmp 
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e2.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 xdg   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:49:30Z
+## KIND=xdg
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+1..2
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/xdg/my repo/.bats/run-log-anchor' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-n2Ddm1/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/xdg/my repo/test/gamma.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-n2Ddm1/test_list_file.txt
+bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  '/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/xdg/my repo/test/sub/beta.bats' /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-n2Ddm1/test_list_file.txt
+# bats warning: Executed 0 instead of expected 2 tests
+## exit=1
+. .. tmp 
+# ---- e2.sh ----
+#!/usr/bin/env bash
+# Probe: does a user's ~/.parallel/config (or ~/.parallelrc, $XDG_CONFIG_HOME/parallel/config) reach bats' parallel under run-tests.sh --jobs 2?
+set -u
+WT=/workspace/.claude/wt-run-tests-jobs
+S=$1; KIND=$2
+T="$S/$KIND/my repo"; H="$S/$KIND/home"
+rm -rf "$S/$KIND"; mkdir -p "$T/scripts" "$T/test/skills" "$T/test/lib" "$T/test/sub" "$H"
+cp "$WT/scripts/run-tests.sh" "$T/scripts/"; cp "$WT/test/skills/runner-contract.bash" "$T/test/skills/"; cp "$WT/test/lib/hermetic-env.bash" "$T/test/lib/"
+printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '@test "gamma clean output" { true; }' > "$T/test/gamma.bats"
+printf '%s\n' '#!/usr/bin/env bats' '# @category slow' '@test "beta steady" { true; }' > "$T/test/sub/beta.bats"
+envx=()
+case $KIND in
+  home-dot-parallel) mkdir -p "$H/.parallel"; echo '--dry-run' > "$H/.parallel/config" ;;
+  parallelrc) echo '--dry-run' > "$H/.parallelrc" ;;
+  xdg) mkdir -p "$H/xdg/parallel"; echo '--dry-run' > "$H/xdg/parallel/config"; envx=(XDG_CONFIG_HOME="$H/xdg") ;;
+  control) : ;;
+esac
+echo "## KIND=$KIND"
+timeout 60 env -i PATH=/usr/local/bin:/usr/bin:/bin HOME="$H" TMPDIR="$S" LC_ALL=C.UTF-8 "${envx[@]}" bash "$T/scripts/run-tests.sh" --jobs 2 test/gamma.bats test/sub/beta.bats 3>&-
+echo "## exit=$?"
+ls -a "$T/.bats/parallel-home" 2>&1 | tr '\n' ' '; echo

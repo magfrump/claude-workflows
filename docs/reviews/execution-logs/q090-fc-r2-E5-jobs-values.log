@@ -1,0 +1,65 @@
+# scaffold: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo (copy of scripts/run-tests.sh at b34a6fe); shim logs parallel args to /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim.log
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:52:21Z
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '01' --fast
+--jobs takes a number from 1 to 999, got: 01
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '-1' --fast
+--jobs takes a number from 1 to 999, got: -1
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '+2' --fast
+--jobs takes a number from 1 to 999, got: +2
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '2x' --fast
+--jobs takes a number from 1 to 999, got: 2x
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '1000' --fast
+--jobs takes a number from 1 to 999, got: 1000
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '' --fast
+--jobs takes a number from 1 to 999, got: (nothing)
+Usage: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '999' --fast
+=== Running fast tests ===
+  gamma.bats
+1..1
+ok 1 gamma clean output
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '3' --fast
+=== Running fast tests ===
+  gamma.bats
+1..1
+ok 1 gamma clean output
+## exit=
+## cmd: timeout 60 env -i PATH=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/shim:/usr/local/bin:/usr/bin:/bin HOME=$HOME TMPDIR=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 LC_ALL=C.UTF-8 bash "/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e5/my repo/scripts/run-tests.sh" --jobs '1' --fast
+=== Running fast tests ===
+  gamma.bats
+1..1
+ok 1 gamma clean output
+## exit=
+## cmd: ... --jobs 3 --slow test/gamma.bats test/sub/beta.bats (category+FILE)
+=== Running slow tests ===
+  beta.bats
+1..1
+ok 1 beta steady
+## exit=
+# end: 2026-09-30T21:52:21Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# exit-code rerun (the zsh wrapper above had no PIPESTATUS); start: 2026-09-30T21:52:30Z
+## --jobs [01] --fast exit=2
+## --jobs [-1] --fast exit=2
+## --jobs [+2] --fast exit=2
+## --jobs [2x] --fast exit=2
+## --jobs [1000] --fast exit=2
+## --jobs [] --fast exit=2
+## --jobs [999] --fast exit=0
+## --jobs [3] --fast exit=0
+## --jobs [1] --fast exit=0
+## --jobs 999 --all (2 files) exit=0
+shim: --version
+shim: --keep-order --jobs 2 bats-exec-file --dummy-flag -j 2 --no-parallelize-wi

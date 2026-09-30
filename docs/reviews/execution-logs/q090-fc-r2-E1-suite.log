@@ -1,0 +1,35 @@
+# cmd: timeout 300 bats test/scripts/run-tests.bats
+# cwd: /workspace/.claude/wt-run-tests-jobs
+# start: 2026-09-30T21:49:10Z  HEAD: b34a6fe
+1..29
+ok 1 locale: an uninstalled LC_ALL is replaced with C.UTF-8 and reported
+ok 2 locale: an uninstalled LANG (LC_ALL unset) is pinned too
+ok 3 locale: a working locale is left alone
+ok 4 FILE: only the named suites run (repo-relative and absolute paths)
+ok 5 FILE: a missing file, a non-.bats file or one outside test/ is an error
+ok 6 FILE: an untagged named suite fails the tag check
+ok 7 category + FILE: the category flag filters the named files
+ok 8 FILE: a directory or file symlink out of test/ is rejected
+ok 9 FILE: a suite named twice (or via ..) runs once, also after --
+ok 10 FILE: paths with spaces in the directory and file name
+ok 11 a run whose first file is in a subdirectory still records its log under .bats/
+ok 12 an unwritable .bats/ warns and runs without recording
+ok 13 --failed re-runs only the last run's failures, then reports none left
+ok 14 --failed with a category flag or FILE is a usage error
+ok 15 --failed with no recorded run is an error
+ok 16 --failed with no recorded run is an error even when every selected suite is gated
+ok 17 --failed refuses the log of a run killed partway
+ok 18 --failed refuses the log of a run whose setup_file failed
+ok 19 a run while another holds the lock exits 1 and runs nothing
+ok 20 --jobs: a missing, zero, non-numeric or 4-digit N is a usage error
+ok 21 --jobs 2 runs files through parallel, not tests within a file
+ok 22 --jobs 1 runs serially and needs no parallel
+ok 23 --jobs: a parallel run records a complete log that --failed re-runs from
+ok 24 --jobs: a parallel run killed partway is refused by --failed
+ok 25 --jobs: an uninstalled locale leaves no perl or citation text in the output
+ok 26 --jobs above the file count is lowered to it
+ok 27 --jobs: the user's PARALLEL options do not reach bats' parallel
+ok 28 --jobs with a non-GNU parallel first on PATH warns and runs serially
+ok 29 --jobs without GNU parallel on PATH warns and runs serially
+# exit: 0
+# end: 2026-09-30T21:49:16Z

@@ -327,7 +327,9 @@ age_logs() {
 }
 
 # parallel_shim: put a `parallel` first on PATH that logs its arguments to
-# $T/parallel.args and execs the real one, so a test can see bats used it.
+# $T/parallel.args and execs the real one. The runner's own --version check
+# is logged too, so a test that wants to see bats used parallel greps for
+# the --no-parallelize-within-files it hands bats.
 parallel_shim() {
   local real
   real="$(command -v parallel)" || skip "GNU parallel is not installed here"
@@ -364,13 +366,12 @@ parallel_shim() {
   [[ "$output" == *"ok"*"beta steady"* ]]
   [[ "$output" == *"ok"*"gamma clean output"* ]]
   [ -f "$T/parallel.args" ]
-  grep -q -- '--jobs 2' "$T/parallel.args"
-  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
 }
 
 @test "--jobs 1 runs serially and needs no parallel" {
   parallel_shim
-  runner --jobs 1 test/gamma.bats
+  runner --jobs 1 test/gamma.bats test/sub/beta.bats
   [ "$status" -eq 0 ]
   [[ "$output" == *"ok 1 gamma clean output"* ]]
   [ ! -f "$T/parallel.args" ]
@@ -378,18 +379,24 @@ parallel_shim() {
 
 @test "--jobs: a parallel run records a complete log that --failed re-runs from" {
   parallel_shim
+  # A second file that fails until $T/fixed exists, so --failed re-runs two
+  # files and stays parallel.
+  fixture delta.bats fast '@test "delta flaky" { [ -f "$BATS_TEST_DIRNAME/../fixed" ]; }'
   runner --jobs 2
   [ "$status" -eq 1 ]
-  [ "$(sed -n 1p "$T/.bats/last-run")" = "expected=4" ]
-  [ "$(grep -cE '^(passed|failed) ' "$LOG_DIR"/*.log)" -eq 4 ]
+  [ "$(sed -n 1p "$T/.bats/last-run")" = "expected=5" ]
+  [ "$(grep -cE '^(passed|failed) ' "$LOG_DIR"/*.log)" -eq 5 ]
   age_logs
 
   touch "$T/fixed"
+  rm "$T/parallel.args"
   runner --failed --jobs 2
   [ "$status" -eq 0 ]
-  [[ "$output" == *"1..1"* ]]
+  [[ "$output" == *"1..2"* ]]
   [[ "$output" == *"ok 1 alpha flaky"* ]]
+  [[ "$output" == *"ok 2 delta flaky"* ]]
   [[ "$output" != *"beta"* ]]
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
   age_logs
 
   runner --failed
@@ -418,7 +425,7 @@ parallel_shim() {
   in_runner LANG=xx_XX.UTF-8 -- --jobs 2
   [ "$status" -eq 1 ]
   [[ "$output" == *"Locale xx_XX.UTF-8 is not installed"* ]]
-  [ -f "$T/parallel.args" ]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
   # gamma asserts its own subprocess output is clean; the suite-level output
   # must be clean too.
   [[ "$output" == *"ok"*"gamma clean output"* ]]
@@ -429,17 +436,30 @@ parallel_shim() {
   parallel_shim
   runner --jobs 999 test/gamma.bats test/sub/beta.bats
   [ "$status" -eq 0 ]
-  grep -q -- '--jobs 2 ' "$T/parallel.args"
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
 }
 
-@test "--jobs: the user's PARALLEL options do not reach bats' parallel" {
+@test "--jobs: the user's PARALLEL options neither reach bats' parallel nor fail the check" {
   parallel_shim
-  # --dry-run would run no test at all.
-  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL=--dry-run -- --jobs 2
+  # --dry-run would run no test at all; an unknown option would fail the
+  # --version check and make the run serial.
+  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL="--dry-run --no-such-option" -- --jobs 2
   [ "$status" -eq 1 ]
   [[ "$output" == *"1..4"* ]]
   [[ "$output" == *"ok"*"beta steady"* ]]
-  [ -d "$T/.bats/parallel-home" ]
+  [[ "$output" != *"running serially"* ]]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+}
+
+@test "--jobs: a parallel config file cannot fail the GNU parallel check" {
+  parallel_shim
+  mkdir -p "$BATS_TEST_TMPDIR/home/.parallel"
+  echo '--no-such-option' > "$BATS_TEST_TMPDIR/home/.parallel/config"
+  run env -i PATH="${PATH//"$BATS_LIBEXEC:"/}" HOME="$BATS_TEST_TMPDIR/home" \
+    TMPDIR="$BATS_TEST_TMPDIR" LC_ALL="$WORKING_LOCALE" \
+    bash "$T/scripts/run-tests.sh" --jobs 2 3>&-
+  [[ "$output" != *"running serially"* ]]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
 }
 
 @test "--jobs with a non-GNU parallel first on PATH warns and runs serially" {

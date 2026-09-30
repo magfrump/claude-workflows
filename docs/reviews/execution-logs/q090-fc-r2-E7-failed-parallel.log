@@ -1,0 +1,51 @@
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e7.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2  (body at end)  cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:53:57Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## run 1: --jobs 2 (all)
+=== Running all tests ===
+  a.bats
+  c.bats
+  b.bats
+
+1..5
+ok 1 a steady
+not ok 2 a flaky
+# (in test file /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e7/my repo/test/a.bats, line 4)
+#   `@test "a flaky" { [ -f "$BATS_TEST_DIRNAME/../fixed" ]; }' failed
+ok 3 c steady
+not ok 4 b flaky
+# (in test file /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e7/my repo/test/sub/b.bats, line 3)
+#   `@test "b flaky" { [ -f "$BATS_TEST_DIRNAME/../../fixed" ]; }' failed
+ok 5 b steady
+## exit=1
+## run 2: --failed --jobs 2
+=== Re-running failed all tests ===
+  a.bats
+  b.bats
+
+1..2
+ok 1 a flaky
+ok 2 b flaky
+## exit=0
+shim: --version
+shim: --keep-order --jobs 2 bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  {} /tmp/claude-1000/-workspa
+## run 3: --failed
+--failed: no failed tests among the selected files in the last recorded run (2000-01-01 00:00:02 UTC.log, 2 file(s)); nothing to re-run
+## exit=0
+# end: 2026-09-30T21:53:58Z
+# ---- e7.sh ----
+#!/usr/bin/env bash
+# Probe: --failed --jobs 2 when the last run's failures span 2 files, so the re-run really goes through parallel.
+set -u
+WT=/workspace/.claude/wt-run-tests-jobs; S=$1
+T="$S/e7/my repo"; rm -rf "$S/e7"; mkdir -p "$T/scripts" "$T/test/skills" "$T/test/lib" "$T/test/sub" "$S/e7/shim"
+cp "$WT/scripts/run-tests.sh" "$T/scripts/"; cp "$WT/test/skills/runner-contract.bash" "$T/test/skills/"; cp "$WT/test/lib/hermetic-env.bash" "$T/test/lib/"
+printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '@test "a steady" { true; }' '@test "a flaky" { [ -f "$BATS_TEST_DIRNAME/../fixed" ]; }' > "$T/test/a.bats"
+printf '%s\n' '#!/usr/bin/env bats' '# @category slow' '@test "b flaky" { [ -f "$BATS_TEST_DIRNAME/../../fixed" ]; }' '@test "b steady" { true; }' > "$T/test/sub/b.bats"
+printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '@test "c steady" { true; }' > "$T/test/c.bats"
+printf '%s\n' '#!/usr/bin/env bash' "echo \"shim: \$*\" | cut -c1-120 >> '$S/e7/shim.log'" 'exec /usr/bin/parallel "$@"' > "$S/e7/shim/parallel"; chmod +x "$S/e7/shim/parallel"
+run() { timeout 60 env -i PATH="$S/e7/shim:/usr/local/bin:/usr/bin:/bin" HOME="$HOME" TMPDIR="$S" LC_ALL=C.UTF-8 bash "$T/scripts/run-tests.sh" "$@" 3>&- 2>&1; echo "## exit=$?"; }
+age() { local n=$1 f; for f in "$T/.bats/.bats/run-logs"/*.log; do [[ "$(basename "$f")" == 2000-* ]] && continue; mv "$f" "$T/.bats/.bats/run-logs/2000-01-01 00:00:0$n UTC.log"; done; }
+echo "## run 1: --jobs 2 (all)"; run --jobs 2; age 1
+touch "$T/fixed"; : > "$S/e7/shim.log"
+echo "## run 2: --failed --jobs 2"; run --failed --jobs 2; cat "$S/e7/shim.log"; age 2
+echo "## run 3: --failed"; run --failed

@@ -84,20 +84,21 @@
 #
 # Parallel runs: --jobs N (N > 1) hands bats `--jobs N
 # --no-parallelize-within-files`, so whole files run side by side and the
-# tests within a file stay serial, as the suites were written: a file's tests
-# may share state (health-check.bats caches one health-check run in
-# $BATS_FILE_TMPDIR in setup_file for all its tests). The slowest file bounds
-# the speedup, and N above the core count buys nothing. Files still share the
-# machine: install.sh's procs_in_checkout, which install-host.bats runs,
-# refuses when it cannot read the working directory of any process of the
-# user, so other files' processes starting and ending beside it can make it
-# refuse where a serial run would not.
+# tests within a file stay serial, the only way the suites have ever run: no
+# suite has been checked for tests that interfere when run at once. The
+# slowest file bounds the speedup. Files still share the machine: install.sh's
+# agent_gate, which install-host.bats runs, refuses when procs_in_checkout
+# cannot read the working directory of a live process of the user (a
+# non-dumpable one, say), and under --jobs other files' processes are live
+# beside it.
 # bats runs files through GNU parallel and aborts without it even for one
 # file, so when the first `parallel` on PATH is missing or is not GNU
 # parallel (moreutils ships one too), the runner warns and runs serially. It
-# unsets $PARALLEL and points $PARALLEL_HOME at .bats/parallel-home (left at
-# the user's default when that cannot be created), so the user's parallel
-# options and config cannot change how bats' run behaves.
+# unsets $PARALLEL, so the user's parallel options do not reach bats' run.
+# parallel's config files (~/.parallel/config, ~/.parallelrc,
+# /etc/parallel/config and the like) still apply; one that breaks the run
+# fails closed: bats reports fewer tests run than expected and exits 1, and
+# --failed refuses that log.
 # bats keeps each file's output together (parallel groups output by default)
 # and in file order (--keep-order), so a file's results appear once it and
 # every file before it have ended. Every test still writes its own run-log
@@ -398,16 +399,14 @@ echo ""
 mapfile -t files <<< "$matched"
 bats_args=()
 [[ "$failed_only" == true ]] && bats_args+=(--filter-status failed)
-# See "Parallel runs" in the header. Test for GNU parallel itself, not the
-# file count: bats aborts without it whenever N > 1. bats runs the first
-# `parallel` on PATH, so that is the one checked.
+# See "Parallel runs" in the header. N is first lowered to the file count,
+# so a one-file run needs no parallel. Otherwise bats aborts without GNU
+# parallel, so that is what is checked: the first `parallel` on PATH, the one
+# bats runs, with --plain so the user's parallel config cannot fail the check.
 (( jobs > ${#files[@]} )) && jobs=${#files[@]}
 if [[ "$jobs" -gt 1 ]]; then
-  if [[ "$(parallel --version 2>/dev/null)" == "GNU parallel"* ]]; then
-    unset PARALLEL
-    if mkdir -p "$REPO_ROOT/.bats/parallel-home" 2>/dev/null; then
-      export PARALLEL_HOME="$REPO_ROOT/.bats/parallel-home"
-    fi
+  unset PARALLEL
+  if [[ "$(parallel --plain --version 2>/dev/null)" == "GNU parallel"* ]]; then
     bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
   else
     echo "WARNING: --jobs $jobs needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially" >&2

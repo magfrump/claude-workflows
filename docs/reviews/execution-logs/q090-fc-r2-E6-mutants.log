@@ -1,0 +1,70 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:53:23Z  HEAD: b34a6fe
+## M1 clamp line deleted: diff vs HEAD:
+404d403
+< (( jobs > ${#files[@]} )) && jobs=${#files[@]}
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-clamp && timeout 120 bats -f "above the file count" test/scripts/run-tests.bats)
+1..1
+not ok 1 --jobs above the file count is lowered to it
+# (in test file test/scripts/run-tests.bats, line 432)
+#   `grep -q -- '--jobs 2 ' "$T/parallel.args"' failed
+## exit=1
+## M2 unset PARALLEL disabled: diff vs HEAD:
+407c407
+<     unset PARALLEL
+---
+>     : unset PARALLEL
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-unset && timeout 120 bats -f "PARALLEL options" test/scripts/run-tests.bats)
+1..1
+not ok 1 --jobs: the user's PARALLEL options do not reach bats' parallel
+# (in test file test/scripts/run-tests.bats, line 441)
+#   `[[ "$output" == *"ok"*"beta steady"* ]]' failed
+## exit=1
+## M3 GNU check weakened to any output: diff vs HEAD:
+406c406
+<   if [[ "$(parallel --version 2>/dev/null)" == "GNU parallel"* ]]; then
+---
+>   if [[ "$(parallel --version 2>/dev/null)" != "" ]]; then
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-gnucheck && timeout 120 bats -f "non-GNU parallel" test/scripts/run-tests.bats)
+1..1
+not ok 1 --jobs with a non-GNU parallel first on PATH warns and runs serially
+# (in test file test/scripts/run-tests.bats, line 452)
+#   `[ "$status" -eq 0 ]' failed
+## exit=1
+## M4 parallel path disabled entirely (always serial fallback): diff vs HEAD:
+406c406
+<   if [[ "$(parallel --version 2>/dev/null)" == "GNU parallel"* ]]; then
+---
+>   if false; then
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-locale-noshimcall && timeout 120 bats -f "uninstalled locale leaves" test/scripts/run-tests.bats)
+1..1
+not ok 1 --jobs: an uninstalled locale leaves no perl or citation text in the output
+# (in test file test/scripts/run-tests.bats, line 421)
+#   `[ -f "$T/parallel.args" ]' failed
+## exit=1
+# end: 2026-09-30T21:53:25Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# start: 2026-09-30T21:53:35Z
+## M5 GNU check kept, but bats never given --jobs (every run serial): diff vs HEAD:
+411c411
+<     bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
+---
+>     : no --jobs to bats
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-nobatsjobs && timeout 120 bats -f "uninstalled locale leaves" test/scripts/run-tests.bats)
+1..1
+ok 1 --jobs: an uninstalled locale leaves no perl or citation text in the output
+## exit=0
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-nobatsjobs && timeout 120 bats -f "PARALLEL options" test/scripts/run-tests.bats)
+1..1
+ok 1 --jobs: the user's PARALLEL options do not reach bats' parallel
+## exit=0
+## cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-nobatsjobs && timeout 120 bats -f "records a complete log" test/scripts/run-tests.bats)
+1..1
+ok 1 --jobs: a parallel run records a complete log that --failed re-runs from
+## exit=0
+# end: 2026-09-30T21:53:36Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## M5 (same tree) cmd: (cd /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/mut-nobatsjobs && timeout 120 bats -f "killed partway is refused" test/scripts/run-tests.bats)  start: 2026-09-30T21:54:47Z
+1..1
+ok 1 --jobs: a parallel run killed partway is refused by --failed
+## exit=0

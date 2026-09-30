@@ -1,0 +1,75 @@
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:50:59Z
+6.18.35.2-microsoft-standard-WSL2
+# cmd A (baseline, no churn): timeout 120 /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e4-scan.sh 200
+scans-done: 200
+# exit: 0
+# cmd B: timeout 150 /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e4-churn.sh x4 & ; timeout 120 /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e4-scan.sh 200
+scans-done: 200
+# exit: 0
+# churn pids killed: 2977285 2977286 2977287 2977288
+# end: 2026-09-30T21:51:06Z
+# ---- e4-scan.sh ----
+#!/usr/bin/env bash
+# Scan N times with install.sh's own procs_in_checkout; print unknown lines.
+REPO_ROOT=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/fakeroot
+ppid_of() {
+  local k v _
+  while read -r k v _; do
+    [ "$k" = "PPid:" ] && { printf '%s\n' "$v"; return 0; }
+  done 2>/dev/null < "/proc/$1/status"
+}
+
+# in_lineage <pid>: true if <pid> is this script, an ancestor of it, or a
+# descendant of it.
+in_lineage() {
+  local p="$1" q="$$"
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+    [ "$p" = "$$" ] && return 0
+    p="$(ppid_of "$p")"
+  done
+  while [ -n "$q" ] && [ "$q" -gt 1 ]; do
+    [ "$q" = "$1" ] && return 0
+    q="$(ppid_of "$q")"
+  done
+  return 1
+}
+
+# procs_in_checkout: for each other process of this uid, print
+#   in <PID> <command line>        its working directory is $REPO_ROOT or below
+#   unknown <PID> <command line>   its working directory cannot be read
+# Returns 2 when /proc is not mounted, 3 when the checkout's own path cannot be
+# resolved. install.sh itself, its ancestors and its descendants are exempt
+# either way; a process that exited mid-scan (no command line) is skipped.
+#
+# An unreadable cwd is refused, not skipped (Q-064 [2], answered 2026-09-26):
+# a process can hide its cwd (prctl PR_SET_DUMPABLE), and a scan that cannot
+# read any cwd (an LSM hiding /proc) lists every other process this way, so a
+# blind scan refuses rather than passing. ssh-agent's cwd is unreadable too:
+# stop it before installing (the refusal names it). It cannot detect running
+# inside a PID namespace: there its own namespace's processes are readable,
+# and everything outside is simply not listed (the usage text says to run
+# from the host).
+procs_in_checkout() {
+  local root d pid cwd cmd kind
+  [ -d /proc/self ] || return 2
+  root="$(cd "$REPO_ROOT" && pwd -P)" || return 3
+  for d in /proc/[0-9]*; do
+    [ -O "$d" ] || continue                     # this uid's processes only
+    if cwd="$(readlink "$d/cwd" 2>/dev/null)"; then
+      case "$cwd" in "$root"|"$root"/*) kind=in ;; *) continue ;; esac
+    else
+      kind=unknown
+    fi
+    pid="${d#/proc/}"
+    in_lineage "$pid" && continue
+    cmd="$(tr '\0' ' ' 2>/dev/null < "$d/cmdline")"
+    [ -n "$cmd" ] || continue                   # exited, or a kernel thread
+    printf '%s %s %s\n' "$kind" "$pid" "${cmd% }"
+  done
+}
+for i in $(seq $1); do procs_in_checkout | grep '^unknown' | sed "s/^/scan$i: /"; done
+echo "scans-done: $1"
+# ---- e4-churn.sh ----
+#!/usr/bin/env bash
+# Start and end short-lived processes continuously (like bats files running beside install-host.bats).
+while :; do (cd /tmp && /bin/true); sh -c 'echo x >/dev/null'; env true; done
