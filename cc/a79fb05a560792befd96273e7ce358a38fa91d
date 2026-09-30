@@ -1,0 +1,14 @@
+docs/human-author/test.txt
+  h_1feca2c05bde8e 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cca79fb05a560792befd96273e7ce358a38fa91d",
+  "prompts": {},
+  "humans": {
+    "h_1feca2c05bde8e": {
+      "author": "magfrump <magfrump@gmail.com>"
+    }
+  }
+}
