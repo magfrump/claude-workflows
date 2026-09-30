@@ -95,8 +95,9 @@
 # bats runs files through GNU parallel and aborts without it even for one
 # file, so when the first `parallel` on PATH is missing or is not GNU
 # parallel (moreutils ships one too), the runner warns and runs serially. It
-# unsets $PARALLEL and points $PARALLEL_HOME at .bats/parallel-home, so the
-# user's parallel options and config cannot change how bats' run behaves.
+# unsets $PARALLEL and points $PARALLEL_HOME at .bats/parallel-home (left at
+# the user's default when that cannot be created), so the user's parallel
+# options and config cannot change how bats' run behaves.
 # bats keeps each file's output together (parallel groups output by default)
 # and in file order (--keep-order), so a file's results appear once it and
 # every file before it have ended. Every test still writes its own run-log
