@@ -1,0 +1,29 @@
+Q-084:
+0. I updated git to 2.55.0; the WSL apt had an old version previously and didn't list newer versions
+1. Works, exited without error on a small test commit
+2. cc-push correctly refuses while a session is running
+3. cc-push succeeds, showing a preview, and not requiring .git/commondir to be deleted
+4.
+```
+$ parallel --version | head -1
+GNU parallel 20221122
+
+$ apt-cache depends parallel
+parallel
+  Depends: procps
+  Depends: sysstat
+  Depends: <perl:any>
+    perl
+  Suggests: <csh>
+  Suggests: <fish>
+  Suggests: <ksh>
+  Suggests: <tcsh>
+  Suggests: zsh
+
+$ bats --jobs 2 test/agents-gemini-sync.bats 2>&1 | grep -iE 'cite|locale'
+$
+```
+
+Q-099: [1]
+
+Q-100: [1]
