@@ -295,7 +295,9 @@ age_logs() {
 
   runner --failed
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--failed: the last run ("*") recorded 1 of 3 tests: it did not complete"* ]]
+  # 2 of 3 when s2's own failure line reaches the log before the TERM ends
+  # bats' output reader, which a loaded machine allows.
+  [[ "$output" == *"--failed: the last run ("*") recorded "[12]" of 3 tests: it did not complete"* ]]
 }
 
 @test "--failed refuses the log of a run whose setup_file failed" {
@@ -414,6 +416,7 @@ parallel_shim() {
   wait "$pid" || rc=$?
   [ "$rc" -eq 143 ]
   wait_unlocked
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
 
   runner --failed
   [ "$status" -eq 1 ]
@@ -441,9 +444,10 @@ parallel_shim() {
 
 @test "--jobs: the user's PARALLEL options neither reach bats' parallel nor fail the check" {
   parallel_shim
-  # --dry-run would run no test at all; an unknown option would fail the
-  # --version check and make the run serial.
-  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL="--dry-run --no-such-option" -- --jobs 2
+  # Either option in $PARALLEL or $PARALLEL_CSH would break bats' run:
+  # --dry-run runs no test, and an unknown option makes parallel exit.
+  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL="--dry-run --no-such-option" \
+    PARALLEL_CSH="--dry-run" -- --jobs 2
   [ "$status" -eq 1 ]
   [[ "$output" == *"1..4"* ]]
   [[ "$output" == *"ok"*"beta steady"* ]]
@@ -468,9 +472,9 @@ parallel_shim() {
     > "$BATS_TEST_TMPDIR/fake/parallel"
   chmod +x "$BATS_TEST_TMPDIR/fake/parallel"
   PATH="$BATS_TEST_TMPDIR/fake:$PATH"
-  runner --jobs 2 test/gamma.bats test/sub/beta.bats
+  runner --jobs 8 test/gamma.bats test/sub/beta.bats
   [ "$status" -eq 0 ]
-  [[ "$output" == *"is not GNU parallel; running serially"* ]]
+  [[ "$output" == *"WARNING: --jobs 8 needs GNU parallel"*"is not GNU parallel; running serially"* ]]
   [[ "$output" == *"ok 2 beta steady"* ]]
 }
 
