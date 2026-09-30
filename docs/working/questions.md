@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-101](#q-101--dev-cycle-digest-after-pass-4) | you: judgment | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Four full passes ha... | 2026-09-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -41,9 +42,29 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
+### Q-101 · dev-cycle-digest-after-pass-4
+**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** OPEN
 
+The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Four full passes have now each found new Incorrects. Fix and re-review, redesign the fragile part, or drop the script?
 
+- **Why it's yours:** the loop cap is spent twice over, and the skill's mechanical rule (3+ reds) says escalate to a pre-mortem. Each further pass costs about 0.85M tokens.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md` § Final pass 3 (on feat/dev-cycle-digest, 894e532), especially composite X1.
+- **The findings, briefly:**
+  - **R1:** a newline in a record's file name still forges digest lines. Only one of three print sites replaces it.
+  - **R2, A1, A3:** these share one root (X1). The `Main at:` lookup accepts any short or decorated hex, then silently falls back to commit dates.
+  - **R3:** sections 1 and 4 stop at the first old-dated commit. This has been in the script since 3aee138.
+  - **A2:** control characters are filtered from stdout only, and only C0 codes.
+  - **A4 to A6:** the Window and "changed since" wording, and an empty trigger section counted as carried forward.
 
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Pre-mortem, redesign the window start, then one more full pass (Recommended)** | Run the pre-mortem the rule requires. Replace the fragile parts: accept only a full sha that is an ancestor of main, and otherwise say so and print every trigger. Select sections 1 and 4 by `$base..main`, not by date. Filter once, stdout and stderr, C0+C1+bidi. Fix the wording. Then a fifth pass, merging if it is clean. | None; about 1.2M tokens | A fifth pass could still find something. The pattern so far says the design, not the patches, is the problem, which is why [1] redesigns. |
+| **[2] Fix the listed findings, merge on tests** | Same fixes, each with a test that fails on the old script. Skip the fifth pass. | None | New edge cases in a read-only script. The cost is a wrong digest the agent copies into a cycle record, not damage. R1 is exactly that kind of error. |
+| **[3] Drop the script** | Merge the skill only. Step 0 gathers the signals by hand. | Rework of skill step 0, then its own review | Steps that only prose asks for tend not to run (Q-074). |
+
+- **Blocks:** `feat/dev-cycle` (the skill) is stacked on the digest, and its own iteration-3 pass is also still pending.
+- **Interim:** both branches held unmerged. Nothing else waits on them.
+- **If the answer differs:** nothing is built yet.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN

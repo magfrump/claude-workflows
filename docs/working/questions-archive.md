@@ -1775,6 +1775,8 @@ Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to 
 
 **Answer (2026-09-30, answers-9-30-26.txt): [1].** A fourth full pass (k=3 fact-check, security, performance, api-consistency) is running on baa46e3. The digest merges if that pass is clean. Any Must Fix or Must Address finding goes back to you, because the cap is spent. `feat/dev-cycle` merges after the digest.
 
+**Result (2026-09-30):** the fourth pass was **not clean**: 3 Must Fix and 6 Must Address findings (rubric Final pass 3, commit 894e532 on feat/dev-cycle-digest). Nothing merged. Continued as Q-101.
+
 `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full pass found behavioural Incorrects, fixed in baa46e3 but not re-reviewed by a full pass. Merge it, or run a fourth pass first?
 
 - **Why it's yours:** the hard cap forbids a fourth iteration without your written escalate/split/abandon decision; this entry is that escalation.
