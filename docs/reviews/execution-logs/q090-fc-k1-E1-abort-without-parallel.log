@@ -1,0 +1,11 @@
+# E1 2026-09-30T21:09:33Z cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc
+$ env -i PATH=$P/nopar HOME=$HOME TMPDIR=$P bats --jobs 2 files/one.bats
+Error: Cannot execute "2" jobs without GNU parallel
+exit=1
+$ ... bats --jobs 2 --no-parallelize-within-files files/one.bats
+Error: Cannot execute "2" jobs without GNU parallel
+exit=1
+$ ... (PATH with parallel) bats --jobs 2 files/one.bats
+1..1
+ok 1 one
+exit=0

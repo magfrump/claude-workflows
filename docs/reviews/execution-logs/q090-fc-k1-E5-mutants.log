@@ -1,0 +1,82 @@
+# E5 mutation runs 2026-09-30T21:10:46Z
+
+## mutant mut-fallback  cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc/mut-fallback
+--- /workspace/.claude/wt-run-tests-jobs/scripts/run-tests.sh	2026-09-30 14:05:41.491734242 -0700
++++ scripts/run-tests.sh	2026-09-30 14:10:45.967593565 -0700
+@@ -388,11 +388,7 @@
+ # See "Parallel runs" in the header. Test for parallel itself, not the file
+ # count: bats aborts without it whenever N > 1.
+ if [[ "$jobs" -gt 1 ]]; then
+-  if command -v parallel > /dev/null; then
+     bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
+-  else
+-    echo "WARNING: --jobs $jobs needs GNU parallel, which is not on PATH; running serially" >&2
+-  fi
+ fi
+ 
+ if [[ "$recording" == true ]]; then
+$ timeout 200 bats -f '--jobs without GNU parallel' test/scripts/run-tests.bats
+1..1
+not ok 1 --jobs without GNU parallel on PATH warns and runs serially
+# (in test file test/scripts/run-tests.bats, line 440)
+#   `[ "$status" -eq 0 ]' failed
+exit=1
+
+## mutant mut-locale-whole  cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc/mut-locale-whole
+--- /workspace/.claude/wt-run-tests-jobs/scripts/run-tests.sh	2026-09-30 14:05:41.491734242 -0700
++++ scripts/run-tests.sh	2026-09-30 14:10:45.980600373 -0700
+@@ -154,7 +154,7 @@
+ # shellcheck source=../test/lib/hermetic-env.bash
+ source "$TEST_DIR/lib/hermetic-env.bash"
+ ambient_locale="${LC_ALL:-${LANG:-}}"
+-if ! locale_installed "$ambient_locale"; then
++if false; then
+   pinned=C
+   locale_installed C.UTF-8 && pinned=C.UTF-8
+   export LC_ALL="$pinned"
+$ timeout 200 bats -f 'uninstalled locale leaves no perl' test/scripts/run-tests.bats
+1..1
+not ok 1 --jobs: an uninstalled locale leaves no perl or citation text in the output
+# (in test file test/scripts/run-tests.bats, line 417)
+#   `[[ "$output" == *"Locale xx_XX.UTF-8 is not installed"* ]]' failed
+exit=1
+
+## mutant mut-locale-noexport  cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc/mut-locale-noexport
+--- /workspace/.claude/wt-run-tests-jobs/scripts/run-tests.sh	2026-09-30 14:05:41.491734242 -0700
++++ scripts/run-tests.sh	2026-09-30 14:10:45.995613270 -0700
+@@ -157,7 +157,6 @@
+ if ! locale_installed "$ambient_locale"; then
+   pinned=C
+   locale_installed C.UTF-8 && pinned=C.UTF-8
+-  export LC_ALL="$pinned"
+   echo "Locale $ambient_locale is not installed; running with LC_ALL=$pinned"
+ fi
+ 
+$ timeout 200 bats -f 'uninstalled locale leaves no perl' test/scripts/run-tests.bats
+1..1
+not ok 1 --jobs: an uninstalled locale leaves no perl or citation text in the output
+# (in test file test/scripts/run-tests.bats, line 422)
+#   `! grep -iE 'perl|setlocale|cite|citation' <<< "$output"' failed
+# perl: warning: Setting locale failed.
+# perl: warning: Please check that your locale settings:
+# perl: warning: Falling back to the standard locale ("C").
+exit=1
+
+## mutant mut-nowithin  cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc/mut-nowithin
+--- /workspace/.claude/wt-run-tests-jobs/scripts/run-tests.sh	2026-09-30 14:05:41.491734242 -0700
++++ scripts/run-tests.sh	2026-09-30 14:10:46.009294213 -0700
+@@ -389,7 +389,7 @@
+ # count: bats aborts without it whenever N > 1.
+ if [[ "$jobs" -gt 1 ]]; then
+   if command -v parallel > /dev/null; then
+-    bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
++    bats_args+=(--jobs "$jobs")
+   else
+     echo "WARNING: --jobs $jobs needs GNU parallel, which is not on PATH; running serially" >&2
+   fi
+$ timeout 200 bats -f 'runs files through parallel' test/scripts/run-tests.bats
+1..1
+not ok 1 --jobs 2 runs files through parallel, not tests within a file
+# (in test file test/scripts/run-tests.bats, line 365)
+#   `grep -q -- '--no-parallelize-within-files' "$T/parallel.args"' failed
+exit=1

@@ -1,0 +1,25 @@
+# E3 2026-09-30T21:10:10Z cwd=/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/q090fc
+## ~/.parallel of real HOME:
+total 16
+drwxr-xr-x 3 node node 4096 Sep 30 13:50 .
+drwxr-xr-x 1 node node 4096 Sep 30 13:50 ..
+drwxr-xr-x 3 node node 4096 Sep 30 13:50 tmp
+## $ HOME=$P/fakehome timeout 30 script -qec "parallel echo ::: x; test -t 2 && echo STDERR_IS_TTY" /dev/null
+x
+STDERR_IS_TTY
+exit=0
+## $ rg -n "citation_notice" /usr/bin/parallel
+2578:#    citation_notice();
+5632:sub citation_notice() {
+## dpkg -s parallel version
+Version: 20221122+ds-2
+## $ HOME=$P/fakehome timeout 60 script -qec "bats --jobs 2 --no-parallelize-within-files g/b.bats g/a.bats" /dev/null   (tty stdin/stdout -> pretty formatter)
+^[[0m^[[1G   b1^[[K^[[77G1/4^[[2G^[[1G M-bM-^\M-^S b1^[[K^M
+^[[0m^[[34;1ma.bats^M
+^[[0m^[[1G   a1^[[K^[[77G2/4^[[2G^[[1G M-bM-^\M-^S a1^[[K^M
+^[[0m^[[1G   a2^[[K^[[77G3/4^[[2G^[[1G M-bM-^\M-^S a2^[[K^M
+^[[0m^[[1G   a3^[[K^[[77G4/4^[[2G^[[1G M-bM-^\M-^S a3^[[K^M
+^[[0m^[[32;1m^M
+4 tests, 0 failures^M
+^[[0m^M
+exit=0

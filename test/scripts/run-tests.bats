@@ -339,16 +339,19 @@ parallel_shim() {
   PATH="$BATS_TEST_TMPDIR/shim:$PATH"
 }
 
-@test "--jobs: a missing, zero or non-numeric N is a usage error" {
+@test "--jobs: a missing, zero, non-numeric or 4-digit N is a usage error" {
   runner --jobs
   [ "$status" -eq 2 ]
-  [[ "$output" == *"--jobs takes a positive integer, got: (nothing)"* ]]
+  [[ "$output" == *"--jobs takes a number from 1 to 999, got: (nothing)"* ]]
   runner --jobs 0 test/gamma.bats
   [ "$status" -eq 2 ]
   [[ "$output" == *"got: 0"* ]]
   runner --jobs x test/gamma.bats
   [ "$status" -eq 2 ]
   [[ "$output" == *"got: x"* ]]
+  runner --jobs 1000 test/gamma.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"got: 1000"* ]]
   [[ "$output" != *"gamma clean output"* ]]
 }
 
@@ -422,8 +425,38 @@ parallel_shim() {
   ! grep -iE 'perl|setlocale|cite|citation' <<< "$output"
 }
 
+@test "--jobs above the file count is lowered to it" {
+  parallel_shim
+  runner --jobs 999 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  grep -q -- '--jobs 2 ' "$T/parallel.args"
+}
+
+@test "--jobs: the user's PARALLEL options do not reach bats' parallel" {
+  parallel_shim
+  # --dry-run would run no test at all.
+  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL=--dry-run -- --jobs 2
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"1..4"* ]]
+  [[ "$output" == *"ok"*"beta steady"* ]]
+  [ -d "$T/.bats/parallel-home" ]
+}
+
+@test "--jobs with a non-GNU parallel first on PATH warns and runs serially" {
+  mkdir -p "$BATS_TEST_TMPDIR/fake"
+  printf '%s\n' '#!/usr/bin/env bash' 'echo "parallel from moreutils"; exit 1' \
+    > "$BATS_TEST_TMPDIR/fake/parallel"
+  chmod +x "$BATS_TEST_TMPDIR/fake/parallel"
+  PATH="$BATS_TEST_TMPDIR/fake:$PATH"
+  runner --jobs 2 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"is not GNU parallel; running serially"* ]]
+  [[ "$output" == *"ok 2 beta steady"* ]]
+}
+
 @test "--jobs without GNU parallel on PATH warns and runs serially" {
-  # A PATH holding everything the current one does except parallel.
+  # A PATH holding everything the current one does except parallel (and
+  # bats' libexec directory, which in_runner drops too).
   local bin="$BATS_TEST_TMPDIR/noparallel" dir f
   mkdir -p "$bin"
   local IFS=:
@@ -438,7 +471,7 @@ parallel_shim() {
     bash -c 'command -v parallel || bash "$1" --jobs 2 test/gamma.bats test/sub/beta.bats' \
     _ "$T/scripts/run-tests.sh" 3>&-
   [ "$status" -eq 0 ]
-  [[ "$output" == *"WARNING: --jobs 2 needs GNU parallel, which is not on PATH; running serially"* ]]
+  [[ "$output" == *"WARNING: --jobs 2 needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially"* ]]
   [[ "$output" == *"1..2"* ]]
   [[ "$output" == *"ok 1 gamma clean output"* ]]
   [[ "$output" == *"ok 2 beta steady"* ]]
