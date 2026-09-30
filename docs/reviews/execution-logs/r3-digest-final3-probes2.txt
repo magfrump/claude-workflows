@@ -1,0 +1,16 @@
+2026-09-30T14:08:57-07:00
+cmd: timeout 120 bash scratchpad/r3/probes2.sh (cwd /workspace/.claude/wt-digest)
+=== Q1: record merged with --no-ff in window (old-dated branch commit) and a committed branch-only record, Main at recorded ===
+### docs/decisions/001-m.md (last committed on this branch: 2020-01-02)
+> if merged.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-30)
+> if branch only.
+=== Q2: triggers changed after SINCE midnight but before the recorded Main at (prior digest ran later that day) ===
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Carried forward (1): 001-x.md
+=== Q3: SHA-256 object format repo: recorded 64-hex Main at is captured as 40 hex; is it still used? ===
+sha len 64
+40-hex prefix resolves: 6fb5ad0a8937
+### docs/decisions/003-late.md (last committed on this branch: 2020-01-03)
+> if late thing.
+exit=0

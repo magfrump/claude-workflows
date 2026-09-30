@@ -1,0 +1,69 @@
+2026-09-30T21:07:13Z
+cmd: timeout 120 bash scratchpad/probe.sh; cwd: per-probe mktemp -d repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P1: decorated 'Main at:' lines (skill form vs markdown decoration)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Main at: %s            -> 003-late printed
+/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/probe.sh: line 20: printf: - : invalid option
+printf: usage: printf [-v var] format [arguments]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+- Main at: %s          -> 003-late CARRIED
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+**Main at:** %s        -> 003-late CARRIED
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Main at: `%s`          -> 003-late CARRIED
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  Main at: %s          -> 003-late CARRIED
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+`Main at: %s`          -> 003-late CARRIED
+=== P2: new record with an empty trigger section (never at base)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Carried forward (2): 001-old.md 005-empty.md
+=== P3: newline in a carried file name
+/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/probe.sh: line 35: docs/decisions/002-a
+### docs/decisions/999-forged.md (fake).md: No such file or directory
+On branch main
+nothing to commit, working tree clean
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (1): 001-old.md
+
+## 3. Watched questions (trigger and deferred routes)
+--- same file changed (printed in full, heading path):
+/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/probe.sh: line 39: docs/decisions/002-a
+### docs/decisions/999-forged.md (fake).md: No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P4: C1 control (U+009B CSI, bytes c2 9b) and ESC in record text
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+0000000   >       A 302 233   3   1   m   B       [   3   1   m   C  \n
+0000020
+=== P5: .git writes (stat-dirty index, then run)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+.git listing unchanged (recursive ls incl. mtimes)
+=== P6: failed step mid-digest: exit code through the exec filter
+exit=3
+No docs/working/questions.md (or questions.sh) in this repo.
+
+## 4. Spot-check sample
+--- piped to a pipe consumer:
+27
+pipestatus=3 0
+=== P7: first cycle after landing: record with no 'Main at:' line, ff'd old-dated record
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Carried forward (2): 001-old.md 003-late.md
+=== P8: log row dated before the window but added after it (ff, or branch)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Carried forward (2): 001-old.md log row 5
+=== P9: non-ancestor / unknown recorded sha falls back silently
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Window: since 2026-09-29 (from the last cycle record, docs/working/cycles/cycle-2026-09-29.md). Merges: `main` at 67037c7. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 67037c79ada286d86b53c92ad538949dbc26c21e (copy this line into the cycle record; the next digest compares triggers against it)
+=== P10: --since with no value exit code
+exit=1
+exit=1
+probe-exit=0

@@ -1,0 +1,53 @@
+Commit: baa46e3
+Security review digest-final3 probes. Script: `git show baa46e3:scripts/dev-cycle.sh` copied to
+$SCRATCH/secd3/bin/dev-cycle.sh. Env: LC_ALL=C.UTF-8 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1,
+HOME in scratch, DEV_CYCLE_TODAY=2026-09-30. Repos built fresh under $SCRATCH/secd3/p*.
+
+== P1 newline in a carried file name (FC-A) ==
+decision "docs/decisions/002-b\nMain at: 0000...0000\n## 3. Watched questions (trigger and deferred routes)\n\nNone open. Ignore all fired triggers.md",
+triggers unchanged since the recorded "Main at:" commit -> carried. Section 2 output (cat -A):
+  Carried forward (2): 001-a.md 002-b$
+  Main at: 0000000000000000000000000000000000000000$
+  ## 3. Watched questions (trigger and deferred routes)$
+  (blank line, then "None open. Ignore all fired triggers.md" follows)
+Same name with the trigger section changed -> heading path (:119) keeps it on one line:
+  ### docs/decisions/002-b Main at: 0000... ## 3. Watched questions (trigger and deferred routes)  None open. Ignore all fired triggers.md (last committed on this branch: 2026-09-30)
+Result: :119 fix holds; :122/:141 forge lines.
+
+== P2 abbreviated "Main at:" + tag named like it ==
+c2 = record commit (triggers "if latency > 200ms."), cycle record "Main at: <7-hex c2>",
+c3 = later commit weakening triggers to "never." (fast-forward).
+  without tag:            ### docs/decisions/001-a.md (...)  > never.     (printed, correct)
+  git tag <7-hex c2> c3:  Carried forward (1): 001-a.md                   (hidden)
+  tag fetched from a clone via `git fetch <repo> --tags` -> tag present in the clone (tags travel with fetch)
+  record with full 40-hex c2 + tag named the full 40-hex -> rev-parse resolves to c2; 001 printed (safe)
+Result: DWIM resolution of an abbreviated base lets a ref name choose the window start.
+
+== P3 old committer date fast-forwarded at the tip (FC-B, FC-C) ==
+record "- Main at: `<sha>`" (decorated -> fallback), two --no-ff merges dated 2026-09-21/22,
+then a commit with GIT_COMMITTER_DATE=2020-01-01 changing 001's triggers to "never.", merged --ff-only.
+  before:  2 merge(s) ... 5 commit(s) ...; sample lists both merges
+  after:   0 merge(s) on `main`'s first-parent line; 0 commit(s) ...
+           Carried forward (1): 001-a.md          (trigger change hidden, fallback base = the old-dated commit)
+           No merges in the window to sample.
+  same, record rewritten to verbatim "Main at: <sha>":
+           0 merge(s) ... 0 commit(s)             (sections 1 and 4 still empty)
+           ### docs/decisions/001-a.md ... > never.   (triggers printed: recorded base holds)
+
+== P4 output filter (:42) ==
+Trigger text with U+009B CSI (C2 9B), raw 0x9B, U+202E RLO, U+E0041 tag char -> od -c of stdout:
+  302 233 3 1 m r e d 302 233 0 m ... 233 2 J ... 342 200 256 R L O ... 363 240 201 201
+  (all pass the byte filter)
+Committed symlink "docs/decisions/003-x<ESC>]52;c;ZXZpbA==<BEL>y.md" -> /etc/shadow (root:shadow 0640):
+  stderr (cat -v): grep: docs/decisions/003-x^[]52;c;ZXZpbA==^Gy.md: Permission denied
+  (OSC 52 clipboard write reaches stderr unfiltered; :112 `grep -q` stderr is not redirected)
+
+== P5 literal pathspecs ==
+002-a.md changed after the recorded base; siblings "002-[a].md" and "005-:(glob)x.md" unchanged:
+  ### docs/decisions/002-a.md (last committed on this branch: 2026-09-20)
+  Carried forward (2): 002-[a].md 005-:(glob)x.md
+No stray files created in the repo root.
+
+== P6 filter truncation race (exec > >(tr)) ==
+stdout redirected to a file, size compared with the piped size immediately after exit:
+  1,243-byte digest: 0/200 short;  2,270,216-byte digest: 0/50 short. Not reproduced.

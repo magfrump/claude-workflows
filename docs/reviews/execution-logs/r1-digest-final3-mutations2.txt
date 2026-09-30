@@ -1,0 +1,8 @@
+cmd: bash scratchpad/fc3/mut2.sh  cwd: /workspace/.claude/wt-digest (copies under mktemp -d)  at: 2026-09-30T14:08:23-07:00
+=== M1b ignore Main at (base empty before line 109)  (sed '108s/^base=.*/base=""/'; changed lines: 1)
+not ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+# (in test file /tmp/tmp.n9wVJ2PbDR/test/scripts/dev-cycle.bats, line 82)
+#   `[[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }' failed
+# not printed in full: if new thing.
+summary: 1 failing
+exit: 0
