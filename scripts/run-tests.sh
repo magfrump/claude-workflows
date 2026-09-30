@@ -13,7 +13,7 @@
 # "Report gating" below).
 #
 # Usage:
-#   scripts/run-tests.sh [--fast|--slow|--all] [--failed] [FILE...]
+#   scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
 #
 # Environment:
 #   RUN_TESTS_NOT_RUN_FILE  When set, the number of report-dependent suites
@@ -33,6 +33,10 @@
 #             hold a result for every test it selected (see "Run logs"); 0
 #             with a message naming the last run's scope when it had no
 #             failures among the selected files.
+#   --jobs N  Run up to N test files at once (see "Parallel runs"). N is a
+#             positive integer; anything else is a usage error (exit 2). 1,
+#             the default, runs serially. Combines with every other flag,
+#             --failed included.
 #   FILE...   Run only these .bats files (absolute, or relative to the repo
 #             root, NOT the current directory; each must be under test/ once
 #             every symlink in its path, the file's own included, is
@@ -76,6 +80,21 @@
 # that into the $output a test asserts on. The runner then exports
 # LC_ALL=C.UTF-8 (C when that is missing too) and says so; a working locale
 # is left alone. "Installed" is locale_installed in test/lib/hermetic-env.bash.
+#
+# Parallel runs: --jobs N (N > 1) hands bats `--jobs N
+# --no-parallelize-within-files`, so whole files run side by side and the
+# tests within a file stay serial, as the suites were written: a file's tests
+# may share state (install-host.bats' install.sh scans the real /proc for
+# processes in its checkout). The slowest file therefore bounds the speedup.
+# bats runs files through GNU parallel and aborts without it even for one
+# file, so when `parallel` is not on PATH the runner warns and runs serially.
+# bats keeps each file's output together and in order (parallel
+# --keep-order), so a file's results appear when the whole file ends. Every
+# test still writes its own run-log line, so the run log, the test-count check
+# and --failed work as in a serial run. bats folds parallel's stderr into its
+# output; the locale pin above keeps perl's setlocale warnings out of it, and
+# parallel prints its citation notice only when its stderr is a terminal,
+# which inside bats it never is.
 
 set -euo pipefail
 
@@ -87,12 +106,13 @@ RUN_LOCK="$REPO_ROOT/.bats/lock"
 LAST_RUN="$REPO_ROOT/.bats/last-run"
 
 usage() {
-  echo "Usage: $0 [--fast|--slow|--all] [--failed] [FILE...]" >&2
+  echo "Usage: $0 [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]" >&2
 }
 
 category="all"
 category_set=false
 failed_only=false
+jobs=1
 requested=()
 
 while [[ $# -gt 0 ]]; do
@@ -101,6 +121,15 @@ while [[ $# -gt 0 ]]; do
     --slow)   category="slow"; category_set=true; shift ;;
     --all)    category="all";  category_set=true; shift ;;
     --failed) failed_only=true; shift ;;
+    --jobs)
+      if [[ ! "${2:-}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "--jobs takes a positive integer, got: ${2:-(nothing)}" >&2
+        usage
+        exit 2
+      fi
+      jobs="$2"
+      shift 2
+      ;;
     -h|--help)
       sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
       exit 0
@@ -356,6 +385,15 @@ echo ""
 mapfile -t files <<< "$matched"
 bats_args=()
 [[ "$failed_only" == true ]] && bats_args+=(--filter-status failed)
+# See "Parallel runs" in the header. Test for parallel itself, not the file
+# count: bats aborts without it whenever N > 1.
+if [[ "$jobs" -gt 1 ]]; then
+  if command -v parallel > /dev/null; then
+    bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
+  else
+    echo "WARNING: --jobs $jobs needs GNU parallel, which is not on PATH; running serially" >&2
+  fi
+fi
 
 if [[ "$recording" == true ]]; then
   bats_args+=("$RUN_LOG_ANCHOR")
