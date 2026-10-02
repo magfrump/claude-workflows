@@ -1,4 +1,4 @@
-Commit: 38578a9 (digest) / c345865 (skill, feat/dev-cycle)
+Commit: f4d27d2 (digest) / a7dfc0c (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -716,4 +716,20 @@ Scope: `366efd7..38578a9`, `b73069e..c345865`, partial: the pass-28 fix round. F
 | A1 | `lead()` applied to closers: an indented or list-marker fence line inside a fence closed it (wrong drop / done) | 🟡 Inconsistent | api F1; security L1; fact-check 6, 19; performance (cross-lane) | digest: closer bounded by the opener's column, no marker; 4+ spaces is indented code |
 | A2 | One stray fence line flips the rest of the file, and questions.sh archive can produce one | 🟡 Low | security L2, L3; fact-check (questions.sh probe) | digest: a file ending inside a fence is a skip for every ID |
 | C1 | Help for unrecognized, fenced `### ` comments losing answers, trim wording, stale test title, closed/ open briefs in the final message, orphan rule narrower than In flight | 🟢 | api F2–F6; security Info 4–7; fact-check 2, 11, 14, 20, 23, 24, 28; performance Info 1, 2 | digest, skill |
+
+---
+
+## Pass 30 (review-fix loop, k=1, all critics; on f4d27d2 digest / a7dfc0c skill)
+
+**Status: 🟡 not clean — 0 Incorrect from fact-check; 1 Inconsistent (the fence closer still diverged from CommonMark for indented and list-item openers: wrong drop/keep/done) and Lows. Nothing Medium or above from security or performance. Fixed in 6f24d91 (digest) and e19f411 (skill). Health check on 35987c1: passed (rc 0).**
+
+Scope: `38578a9..f4d27d2`, `c345865..a7dfc0c`, partial: the pass-29 fix round. Fact-check k=1 (26 claims: 23 V / 2 MA / 1 S / 0 I). Artifacts: `code-fact-check-report-digest-pass30.md`, `security-review-2026-10-02-digest-pass30.md`, `performance-review-2026-10-02-digest-pass30.md`, `api-consistency-review-2026-10-02-digest-pass30.md`.
+
+**Design change:** five passes in a row each found a new fence shape where the reader and CommonMark disagreed. The reader now interprets only plain column-0 fences, where the two agree by construction, and refuses the whole file (naming the line) on any other fence-like line, a raw HTML block that can hold one, an open fence at the end, or a question heading inside a fence. No real questions file has any of these; all 102 real IDs read as before.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | Closer bound measured from the opener (indented or list-item openers), tabs, ordinals, `<pre>` blocks: wrong keep/drop/done in new shapes | 🟡 Inconsistent / Low | api F1; security L1, L2; fact-check 5, 16 | digest: plain column-0 fences only; anything else refuses the file |
+| A2 | Two archive splits can rebalance a file; the never-closed skip only catches odd flips; no line number in the skip | 🟡 Low | security L3; api F2; performance Info 2 | digest: a fenced question heading refuses the file; every skip names its line |
+| C1 | `--check-brief` had no balance guard; stale output list; unused local; which closed/ briefs the final message lists | 🟢 | api F3–F5; fact-check 6; performance Info 1, 3; security Info 4, 5 | digest, skill |
 
