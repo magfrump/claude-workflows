@@ -1,4 +1,4 @@
-Commit: fd22d29 (digest) / 5085e64 (skill, feat/dev-cycle)
+Commit: e93312d (digest) / 823f494 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -775,4 +775,19 @@ Scope: `4b7ec02..fd22d29`, `f54ca74..5085e64`, partial: the pass-32 fix round. F
 | A2 | `refdef()` missed an escaped `]`, a label spanning lines, and definitions behind `>` or a list marker | 🔴 Incorrect (fact-check 3c) / Low | fact-check R2; api F1; security F2; performance cross-lane | digest: a line (after container markers) starting `[` that holds `]:` or never closes its `[` |
 | A3 | Decision log 69: "a skip, so the question is asked again" contradicts the skill | 🔴 Incorrect (fact-check 9c) | fact-check R3; api F2 | log 69: a skip keeps the ID off `Applied:` and the brief's slot until fixed |
 | C1 | Reason and help wording ("starts like", "after blanks", BOM on line 1), the ANSWER_AWK cause list, "fences cannot be trusted" for non-fence refusals, the brief clause (open `<!--`, BOM, outside fences), "refused" vs "skip", naming PI/CDATA/declarations in the accepted class | 🟢 | fact-check 5a, 5c, 6, 10, 12; api F3–F6; security F3 and out-of-scope note | digest, skill, log |
+
+---
+
+## Pass 34 (review-fix loop, k=1, all critics; on e93312d digest / 823f494 skill)
+
+**Status: 🟡 not clean — 6 Incorrect from fact-check, two roots in `refdef()` (R-A: one list marker stripped; R-B: an escaped-only `]` counted as a close), the same as api F1 and security F1–F2; performance Low (quadratic `opencomment()` loop, also security F3). Nothing Medium or above. Fixed in f3c9ebb (digest) and 2bf03da (log 69, brief clause). Health check on ba93f23: passed (rc 0).**
+
+Scope: `fd22d29..e93312d`, `5085e64..823f494`, partial: the pass-33 fix round. Fact-check k=1 (30 claims: 21 V / 3 MA / 0 S / 6 I). Artifacts: `code-fact-check-report-digest-pass34.md`, `security-review-2026-10-02-digest-pass34.md`, `performance-review-2026-10-02-digest-pass34.md`, `api-consistency-review-2026-10-02-digest-pass34.md`. Security's harvest (7,831 answer and 3,522 brief readings): no reading changed, no skip became a reading. Real files on all 9 branches: same readings, none refused. A performance probe briefly left a stray `p5.log` in the wt-devcycle worktree (a failed `cd` before a redirect); the critic deleted it and the worktree was verified clean.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `refdef()` stripped one list marker only (`- - [x]:` read) | 🔴 Incorrect (fact-check 4b, 7, 19a, 22a) / Low | fact-check R-A; api F1; security F2 | digest: strip markers in a loop |
+| A2 | `refdef()` treated an escaped `]` as closing the label (`[a\]` read) | 🔴 Incorrect (fact-check 8, 15a) / Low | fact-check R-B; security F1 | digest: drop backslash escapes before the test |
+| A3 | `opencomment()` re-scanned the rest of the line per `<!--`: quadratic (8.5 s at 1.6 MB) | 🟡 Low | performance 1; security F3 | digest: one `split`; `fence()` stops after a refusal |
+| C1 | `--check-brief` help named an internal variable; log 69 / brief clause / comment wording ("starts like", `<` after blanks, BOM on line 1, question headings for questions files only, passes 30–34); the escaped-bracket test literal held an escaped backslash | 🟢 | api F2–F4; fact-check 13, 19b, 22b | digest, log, skill |
 
