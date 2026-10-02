@@ -337,9 +337,10 @@ list-item fences), and outside fences a brief has no line starting with `<` (wri
 placeholders as `NAME`, not `<name>`, even indented), no `<!--` left open on its line, no
 line starting with `[` (even indented, or behind `>` or list markers) that holds `]:` or leaves
 its `[` open, counting an escaped `\]` as no close (a link reference definition, or text that
-starts like one), no stray carriage return and no byte-order mark. These rules are stricter
-than `--check-brief` needs; it prints a skip for a brief with any line it cannot trust, and a
-skipped brief keeps its slot until it is fixed. Later cycles add `Asked:`, `Applied:` and `Kept:`
+starts like one), no stray carriage return and no byte-order mark. `--check-brief` prints a
+skip, naming the line, for a brief with any line it cannot trust (a few shapes these rules
+allow are also skipped, such as a fence-like line inside a fence's content or a `]:` made by
+an escape), and a skipped brief keeps its slot until it is fixed. Later cycles add `Asked:`, `Applied:` and `Kept:`
 lines (In flight, above). Move the item to In flight, naming the brief's path. The briefs
 land with step 7, so they are on the default branch when the user starts one.
 
