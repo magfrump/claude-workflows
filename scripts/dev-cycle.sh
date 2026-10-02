@@ -9,8 +9,9 @@
 #
 #   --since   start of the cycle window: commits whose committer date, in the
 #             committer's own time zone (git's %cs), is on or after this date.
-#             Default: the date in the newest docs/working/cycles/cycle-YYYY-MM-DD.md
-#             (only its file name is read), else 14 days ago. The digest says which.
+#             Default: the date in the newest cycle-YYYY-MM-DD.md in docs/working/cycles
+#             that is a plain file and not future-dated (only its name is read), else
+#             14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
@@ -70,13 +71,14 @@ fi
 
 SINCE=""
 SAMPLE=2
+need() { [[ -n "$2" ]] || { echo "$1 needs a value" >&2; exit 1; }; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --since) SINCE="${2:?--since needs a date}"; shift 2 ;;
-    --since=*) SINCE="${1#--since=}"; shift ;;
-    --sample) SAMPLE="${2:?--sample needs a number}"; shift 2 ;;
-    --sample=*) SAMPLE="${1#--sample=}"; shift ;;
-    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --since) need --since "${2:-}"; SINCE="$2"; shift 2 ;;
+    --since=*) SINCE="${1#--since=}"; need --since "$SINCE"; shift ;;
+    --sample) need --sample "${2:-}"; SAMPLE="$2"; shift 2 ;;
+    --sample=*) SAMPLE="${1#--sample=}"; need --sample "$SAMPLE"; shift ;;
+    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -196,18 +198,29 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full (an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full: each decision record's \`## Revisit triggers\` section and each decision-log row that mentions revisiting (a trigger written elsewhere in a record is not found; an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
 if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
+# Each record's last commit date, from one path-limited walk (newest first, so
+# the first date seen per path wins) instead of one `git log` per record, which
+# cost records x history. A name git still quotes (a control character) misses
+# the map and falls back to its own lookup.
+declare -A last_date=()
+if [[ ${#decisions_glob[@]} -gt 0 ]]; then
+  while IFS=$'\t' read -r path day; do last_date["$path"]="$day"; done < <(
+    git -c core.quotePath=false log --format='@%ad' --date=short --name-only -- docs/decisions \
+      | awk '/^@/ { d = substr($0, 2); next } NF && !seen[$0]++ { print $0 "\t" d }')
+fi
 for f in "${decisions_glob[@]}"; do
   rawfile "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
   echo
-  d="$(git log -1 --format=%ad --date=short -- "$f")"
+  d="${last_date[$f]-}"
+  [[ -n "$d" || "$f" != *[[:cntrl:]]* ]] || d="$(git log -1 --format=%ad --date=short -- "$f")"
   # A newline in a file name would otherwise print a line of its own.
   echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
   trig < "$f" | sed 's/^/> /'
@@ -269,7 +282,8 @@ else
       echo "None open."
     fi
     echo
-    echo "Open by route: $(printf '%s\n' "$open_q" | awk -F'  +' 'NF >= 2 { print $2 }' | sort | uniq -c | awk '{ c = $1; $1 = ""; printf "%s%s=%s", sep, substr($0, 2), c; sep = ", " }')"
+    routes="$(printf '%s\n' "$open_q" | awk -F'  +' 'NF >= 2 { print $2 }' | sort | uniq -c | awk '{ c = $1; $1 = ""; printf "%s%s=%s", sep, substr($0, 2), c; sep = ", " }')"
+    echo "Open by route: ${routes:-none}"
   else
     echo "$nc questions.sh open failed. Its error:"
     echo
@@ -325,7 +339,7 @@ printf '\n%s\n\n' "## 7. Inputs for steps 4b and 5"
 # character (so each name is one line), and the patterns below accept the quote.
 changed="$(git -c core.quotePath=false log "$MAIN_SHA" --first-parent --diff-merges=first-parent --name-only --format='@%cs' -- skills workflows docs/decisions \
   | awk -v s="$SINCE" '/^@/ { on = (substr($0, 2) >= s); next } on && NF' | sort -u)"
-skills_changed="$(printf '%s\n' "$changed" | grep -E '^"?(skills/.*/SKILL\.md|workflows/[^/]*\.md)"?$' || true)"
+skills_changed="$(printf '%s\n' "$changed" | grep -E '^"?(skills|workflows)/' || true)"
 records_changed="$(printf '%s\n' "$changed" | grep -E '^"?docs/decisions/[0-9]{3}-[^/]*\.md"?$' || true)"
 echo "Step 4b (deep-audit triggers). The model version is not in git: compare it with the last cycle record's."
 for kind in skills records; do
@@ -367,6 +381,11 @@ elif skipped "$LOG"; then
 else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
 fi
+
+# The dev-cycle skill also reads these; they are checked here so that a
+# non-plain one is listed below like every other input.
+skipped docs/dev-cycle.md || true
+skipdir docs/working/briefs || true
 
 printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then

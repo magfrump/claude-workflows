@@ -34,7 +34,7 @@ make_repo() {
     )
 }
 
-@test "prints all seven sections in a repo with no docs" {
+@test "prints all eight sections in a repo with no docs" {
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     for h in "## 1. Activity" "## 2. Revisit triggers" "## 3. Watched questions" \
@@ -364,6 +364,13 @@ EOF
     [ "$status" -eq 1 ]
     run --separate-stderr bash "$DC" --bogus
     [ "$status" -eq 1 ]
+    # An empty value is an error, not "no flag", and the message is plain.
+    run --separate-stderr bash "$DC" --since=
+    [ "$status" -eq 1 ]
+    # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
+    [[ "$stderr" == *"--since needs a value"* && "$stderr" != *"line "* ]] || { echo "$stderr"; return 1; }
+    run --separate-stderr bash "$DC" --sample
+    [ "$status" -eq 1 ]
 }
 
 @test "flags a merge that changed code with no doc change, not one that did both" {
@@ -416,7 +423,7 @@ EOF
     roadmap2=$(echo "$output" | sed -n '/## 5/,/## 6/p')
     [[ "$roadmap2" == *"> 1. e"* && "$roadmap2" != *"not next"* ]] || { echo "$roadmap2"; return 1; }
     section=$(echo "$first" | sed -n '/## 7/,/## 8/p')
-    for t in "in the window: 3" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
+    for t in "in the window: 4" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - skills/demo/tmp.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
              "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
              "Last brainstorm: 2026-01-01 (7 day(s) ago)" "Ideas seeded since: 2"; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
