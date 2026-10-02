@@ -332,7 +332,9 @@ the path yet; add `-2`, `-3` if it is taken): a line that is exactly
 acceptance criteria (the doc change included, and "in the change that merges this work,
 change this brief's status line from open to done"), branch (a new name: `--check-branch`
 prints `absent` for it), and
-out-of-scope; later cycles add `Asked:`, `Applied:` and `Kept:`
+out-of-scope. Any code in a brief sits in plain column-0 ``` fences, with no indented or
+list-item fences, raw HTML or stray carriage returns (`--check-brief` refuses a brief with
+those, and a refused brief keeps its slot). Later cycles add `Asked:`, `Applied:` and `Kept:`
 lines (In flight, above). Move the item to In flight, naming the brief's path. The briefs
 land with step 7, so they are on the default branch when the user starts one.
 
