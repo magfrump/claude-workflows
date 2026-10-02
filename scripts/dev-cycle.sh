@@ -272,7 +272,8 @@ check_write() {
 # still open at the end is recorded in `fline` (its opening line) and refuses
 # the file too.
 # Accepted limit (decision log 69): inline constructs that span lines (an open
-# tag attribute, link title, code span or emphasis) are not modelled, so text
+# tag attribute, link title, code span, emphasis, or a processing instruction,
+# CDATA section or declaration opened mid-line) are not modelled, so text
 # CommonMark would hide inside them is read as text. Whoever can write such a
 # shape can write the answer or Status line itself; no real file has one.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
