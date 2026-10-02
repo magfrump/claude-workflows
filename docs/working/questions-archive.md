@@ -97,6 +97,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-095](#q-095--allowlist-size-waiver) | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
 | [Q-099](#q-099--roadmap-vs-feature-ideas) | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
 | [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
+| [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
 <!-- index:end -->
 
 ## Answered
@@ -1811,5 +1812,27 @@ Where should improvement ideas live now that `docs/roadmap.md` exists: in the ro
 
 - **Interim:** [1]. Step 5 lists `feature-ideas*.md` as a signal source; nothing in the SI loop changes.
 - **If the answer differs:** edit steps 5–6 of the skill; [3] also needs a self-improvement.sh change.
+
+
+### Q-101 · dev-cycle-digest-after-pass-4
+**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** ANSWERED
+
+The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward and re-review, harden it, or drop the script?
+
+- **2026-09-30:** at your request, the pre-mortem is written (`docs/reviews/pre-mortem-dev-cycle.md`). The skill is laid out for your step-by-step approval and notes in the doc "Dev cycle skill — for your approval" (https://claude.ai/code/artifact/78a2f851-e696-4a86-bfe8-474212e5e645). The options below are reframed by it and replace the first draft.
+- **Why it's yours:** the loop cap is spent twice over, and the options differ in what the skill does each cycle.
+- **Read:** the approval doc's sections 3–5 · `docs/reviews/pre-mortem-dev-cycle.md` · rubric Final pass 3 (feat/dev-cycle-digest, 894e532)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Cut, then one confirming pass (Recommended)** | Remove carry-forward and the `Main at:` handshake; fix `--since` (R3) and add one scrub function. One full pass on the smaller script; merge both branches if clean | Reading the approval doc; ~0.85M tokens | Each cycle judges all 21 triggers instead of ~2 plus a carried list; carry-forward can return later with its own design review |
+| **[2] Keep carry-forward, harden it** | Rubric X1 (full ancestor sha only, name the base, print all on fallback), then a fifth pass | ~0.85M tokens per pass; history suggests more than one | Pre-mortem story 1: the review treadmill continues |
+| **[3] Drop the script** | Merge the skill with a hand-run step 0 | Rework of step 0, then its own review | Step 0 gets skipped (Q-074's failure) |
+
+- **Answer (2026-10-01, in chat):** [1]. Cut carry-forward and `Main at:`, fix `--since`, add one scrub function, then one confirming pass. Same session's doc edits: step 3 drops the two-week cutoff, step 5 thresholds tightened (0–1 ready items, 10+ ideas, a week by date), digest gains 4b/5 inputs, record notes the model version, optional `docs/dev-cycle-sources.md` drafted; double-diamond gaps #1, #2, #4–8 still await the user.
+
+- **Blocks:** `feat/dev-cycle` (the skill) is stacked on the digest; its own iteration-3 pass runs after this, on the text you approve.
+- **Interim:** both branches held unmerged; nothing is built until you approve the skill.
+- **If the answer differs:** nothing is built yet.
 
 
