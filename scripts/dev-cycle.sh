@@ -10,6 +10,8 @@
 #        scripts/dev-cycle.sh --check-write PATH...
 #        scripts/dev-cycle.sh --check-brief PATH...
 #        scripts/dev-cycle.sh --check-branch NAME...
+#        scripts/dev-cycle.sh --check-fix PATH...
+#        scripts/dev-cycle.sh --check-answer Q-NNN...
 #
 #   --since   start of the cycle window: commits whose committer date, in the
 #             committer's own time zone (git's %cs), is on or after this date.
@@ -21,13 +23,20 @@
 #             taken from repo text: "ok <path>" for each file that may be read (a
 #             tracked file, or a gitignored one under docs/working/; at most 50
 #             per argument), "skip <arg or match>: <reason>" otherwise.
-#   --check-write  the same for a file the cycle writes: only its own files
-#             (roadmap, questions files, idea log, cycle records, briefs).
+#   --check-write  the same for one of the cycle's own bookkeeping files
+#             (roadmap, questions files, idea log, cycle records, briefs); the
+#             file need not exist yet.
 #   --check-brief  the same, for a build brief only (docs/working/briefs/
-#             YYYY-MM-DD-<slug>.md): what a roadmap brief path must pass.
-#   --check-branch  "ok <name>" for a branch name from a brief that git may be
-#             given as refs/heads/<name>: letters, digits, . _ - / only, not
-#             starting with -, and a valid ref name.
+#             YYYY-MM-DD-<slug>.md); a roadmap brief path must also pass
+#             --check-path (which needs the file to exist).
+#   --check-branch  "ok <name> <hash>" (or "ok <name> absent") for a branch
+#             name from a brief: letters, digits, . _ - / only, not starting
+#             with -, a valid ref name; the hash is refs/heads/<name>'s, so a
+#             tag of the same name never stands in for it. Give git the hash.
+#   --check-fix  "ok <path>" for an existing file an in-cycle fix may edit:
+#             one --check-path allows, under docs/ or README.md.
+#   --check-answer  "keep|drop|open|unrecognized Q-NNN" for a keep-or-drop
+#             question, read from docs/working/questions.md or its archive.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
@@ -95,11 +104,11 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; need --since "$SINCE"; shift ;;
     --sample) need --sample "${2:-}"; SAMPLE="$2"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; need --sample "$SAMPLE"; shift ;;
-    --check-path|--check-write|--check-brief|--check-branch)
+    --check-path|--check-write|--check-brief|--check-branch|--check-fix|--check-answer)
       CHECK="$1"; shift; CHECK_ARGS=("$@")
-      [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one path" >&2; exit 1; }
+      [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,39p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,48p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -171,18 +180,20 @@ pathform() {  # $1 path, $2 "glob" to allow * and ?
     [[ -n "$c" && "$c" != "." && "$c" != ".." && "$c" != [.][gG][iI][tT]* ]] || return 1
   done
 }
+# Every grep here runs in the C locale (set through env, which bash does not
+# apply to its own locale), so a name that is not UTF-8 still passes, to be
+# skipped by the form check.
+exact() {  # $1 the argument: a plain path keeps only itself (not a directory's contents)
+  if [[ "$1" == *[*?]* ]]; then cat; else env LC_ALL=C grep -zxF -- "$1" || true; fi
+}
 matches() {  # $1 pathspec, $2 the argument; NUL-separated tracked files, then ignored ones under docs/working/
   local fixed="${2%%[*?]*}"
-  if [[ "$2" == *[*?]* ]]; then GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
-  else  # a plain path names one file: drop a directory's contents here, not one by one
-    GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1" | { env LC_ALL=C grep -zxF -- "$2" || true; }
-  fi
+  GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1" | exact "$2"
   # Ignored files count only under docs/working/; skip the query when the
   # argument's fixed prefix cannot lead there (it lists every ignored match).
   if [[ "$fixed" == docs/working/* || docs/working/ == "$fixed"* ]]; then
     GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
-      | { env LC_ALL=C grep -z '^docs/working/' || true; }  # C (set through env, which bash does not apply
-      # to its own locale): a name that is not UTF-8 still passes, to be skipped below
+      | { env LC_ALL=C grep -z '^docs/working/' || true; } | exact "$2"
   fi
 }
 check_path() {
@@ -219,13 +230,69 @@ check_write() {  # $1 path, $2 "brief" to allow only a build brief
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# A brief's branch reaches git as refs/heads/<name>, so it can never be read as
-# an option or as some other ref.
+# A brief's branch reaches git only as the hash show-ref finds at exactly
+# refs/heads/<name>: never as an option, and never as a tag of the same name
+# (git's own name lookup falls back to refs/tags/refs/heads/<name>).
 check_branch() {
-  local a="$1"
+  local a="$1" sha
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
   elif ! git check-ref-format "refs/heads/$a"; then echo "skip $a: not a valid branch name"
-  else echo "ok $a"; fi
+  else
+    sha="$(git show-ref --verify --hash "refs/heads/$a" 2>/dev/null || true)"
+    echo "ok $a ${sha:-absent}"
+  fi
+}
+# An in-cycle fix edits documentation only: anything else (scripts, hooks,
+# egress lists, instruction files) is filed, never changed by the cycle itself.
+check_fix() {
+  local a="$1"
+  if ! pathform "$a" || [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: not an allowed path form"
+  elif [[ ! "$a" =~ ^docs/|^README\.md$ ]]; then echo "skip $a: in-cycle fixes edit only docs/ and README.md; file it instead"
+  else check_path "$a"; fi
+}
+# The keep-or-drop answer rule, for one entry of a questions file: prints keep,
+# drop, open (no answer line and not marked ANSWERED) or unrecognized, and nothing when the file has
+# no such entry. The answer is the first line in the entry that starts with
+# "Q-NNN:" or with a bold "**Answer" / "**Answered" label (any case, after an
+# optional "- "); only the text after the label's colon counts, and when the
+# answer sits inside the bold, only up to the bold's end (notes after it are the
+# recorder's). [1] or [2] alone decides; both together are unrecognized; with
+# neither, a first word 1, keep, 2 or drop followed by nothing or punctuation.
+# shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
+ANSWER_AWK='
+function option(span,   one, two, w) {
+  one = index(span, "[1]") > 0; two = index(span, "[2]") > 0
+  if (one != two) return one ? "keep" : "drop"
+  if (one) return "unrecognized"
+  span = tolower(span); sub(/^[ \t*]+/, "", span)
+  if (!match(span, /^(1|2|keep|drop)([.,;:!)]|$)/)) return "unrecognized"
+  w = substr(span, 1, RLENGTH); sub(/[.,;:!)]$/, "", w)
+  return (w == "1" || w == "keep") ? "keep" : "drop"
+}
+$0 == "### " id || index($0, "### " id " ") == 1 { inside = 1; found = 1; next }
+inside && /^##/ { inside = 0 }
+inside && tolower($0) ~ /\*\*status:\*\* *answered/ { answered = 1 }
+inside && !done {
+  line = $0; sub(/^[ \t]*(- )?/, "", line)
+  if (index(line, id ":") == 1) { result = option(substr(line, length(id) + 2)); done = 1; next }
+  label = tolower(substr(line, 1, 10))
+  if (label !~ /^\*\*answer([^a-z]|ed)/) next
+  c = index(line, ":"); if (!c) next
+  rest = substr(line, c + 1)
+  if (substr(rest, 1, 2) == "**") rest = substr(rest, 3)
+  else if ((e = index(rest, "**")) > 0) rest = substr(rest, 1, e - 1)
+  result = option(rest); done = 1
+}
+END { if (found) print (done ? result : answered ? "unrecognized" : "open") }'
+check_answer() {
+  local a="$1" f r
+  if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
+  for f in docs/working/questions.md docs/working/questions-archive.md; do
+    inrepo "$f" || continue
+    r="$(env LC_ALL=C awk -v id="$a" "$ANSWER_AWK" "$f")"
+    if [[ -n "$r" ]]; then echo "$r $a"; return; fi
+  done
+  echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md"
 }
 if [[ -n "$CHECK" ]]; then
   for a in "${CHECK_ARGS[@]}"; do
@@ -234,6 +301,8 @@ if [[ -n "$CHECK" ]]; then
       --check-write) check_write "$a" ;;
       --check-brief) check_write "$a" brief ;;
       --check-branch) check_branch "$a" ;;
+      --check-fix) check_fix "$a" ;;
+      --check-answer) check_answer "$a" ;;
     esac
   done
   exit 0
@@ -247,7 +316,10 @@ origin_head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/
 candidates+=(main master)
 for c in "${candidates[@]}"; do
   [[ "$c" == -* ]] && continue
-  sha="$(git rev-parse --verify --quiet "refs/heads/$c^{commit}" 2>/dev/null || true)"
+  # show-ref --verify takes only the exact ref, so a tag named refs/heads/<c>
+  # cannot stand in for a missing branch (rev-parse would accept it).
+  sha="$(git show-ref --verify --hash "refs/heads/$c" 2>/dev/null || true)"
+  [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
   if [[ -n "$sha" ]]; then MAIN="$c"; MAIN_SHA="$sha"; break; fi
 done
 if [[ -z "$MAIN_SHA" ]]; then
