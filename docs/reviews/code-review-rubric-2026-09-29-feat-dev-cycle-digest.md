@@ -1,4 +1,4 @@
-Commit: 1b0c4ff (digest) / 462e561 (skill, feat/dev-cycle)
+Commit: 546b86e (digest) / 46d3423 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -560,3 +560,19 @@ User decisions (2026-10-02): scope = tracked files plus gitignored files under `
 | A1 | A tracked directory passed check 2; cycle writes checked directories only | 🟡 Medium | security M2, M3; fact-check 10 | `--check-path` requires one regular file; `--check-write` |
 | A2 | The fallback still walked history for staged-but-uncommitted records; comment overstated | 🟡 Info | performance 1; fact-check 6b; api 8; security Info 4 | digest: fallback only for records in HEAD |
 | C1 | Rule name drift, docs paraphrase, final message, step 0 wording, test reach | 🟢 | api 5–7, 10, 11; fact-check 1a, 15, 18c, 20 | skill, digest |
+
+---
+
+## Pass 20 (review-fix loop, k=1, all critics; on 546b86e digest / 46d3423 skill)
+
+**Status: 🟡 not clean — no Incorrect claim; 1 Medium (write scope) and 1 Medium (glob cost), both fixed in d5d9121 (digest) and fbc7101 (skill).**
+
+Scope: `1b0c4ff..546b86e`, `462e561..46d3423`, partial: the new `--check-path` / `--check-write` modes and the skill's use of them. Fact-check k=1 (26 claims: 22 V / 4 MA / 0 I). Artifacts: `code-fact-check-report-digest-pass20.md`, `security-review-2026-10-02-digest-pass20.md`, `performance-review-2026-10-02-digest-pass20.md`, `api-consistency-review-2026-10-02-digest-pass20.md`. The read gate held against every bypass the security critic and fact-check built (outside paths, `.git`/`.GIT`, untracked or ignored outside docs/working, symlinks at any depth, directories, odd characters, smuggled pathspec magic, case variants).
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `--check-write` had no scope: with the brief-shape rule gone from the skill, a roadmap line naming any tracked file would be treated as a brief and written to | 🟡 Medium | security M1; api Inconsistent 1; fact-check 22 | digest: writable() allowlist; skill: a brief path counts only on `--check-write` ok |
+| A2 | A broad glob cost ~4.5 ms per match with no cap (231 s for `**/*.md` on 50k files) | 🟡 Medium | performance | digest: 50 per argument |
+| A3 | Answers recorded behind a dated label never matched the whole-word rule | 🟡 Inconsistent (fails safe) | api 2 | skill: text after the label colon |
+| A4 | Ignored-files query on every argument; `.` listed the tree; locale-dependent `.git*` fold | 🟡 Low/Info | performance Low, Info; security untested | digest |
+| C1 | Help/Exit text, comment accuracy, bare script name, write list, recorded pre-filter skips, re-answer wording, branch-name charset, test gaps | 🟢 | api Minor 3–9; fact-check 2, 3, 14; security L2, L3, Info 5 | digest, skill |

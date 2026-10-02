@@ -261,6 +261,11 @@ make_repo() {
         [[ "$output" == *"### $f (last committed on this branch: $want)"* ]] || { echo "$f: want $want"; echo "$output" | grep '^###'; return 1; }
     done
     [[ "$output" == *"004-merge.md (last committed on this branch: 2026-03-01)"* ]]
+    # A staged, never-committed record with a quoted name: no date, no walk.
+    printf '# x\n\n## Revisit triggers\nif y.\n' > 'docs/decisions/006-s"t.md'
+    git add 'docs/decisions/006-s"t.md'
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [[ "$output" == *'006-s"t.md (last committed on this branch: never, uncommitted)'* ]] || { echo "$output" | grep '^###'; return 1; }
 }
 
 @test "a skipped newer cycle record is named in the window line" {
@@ -490,6 +495,17 @@ EOF
     [[ "$output" != *"ok docs/working/round-2.md"* && "$output" != *"ok .env"* ]]
     run --separate-stderr bash "$DC" --check-path
     [ "$status" -eq 1 ]
+    # A symlinked parent directory, ** across directories, a case variant, a
+    # glob over too many files.
+    mkdir -p "$BATS_TEST_TMPDIR/outside/d" && echo x > "$BATS_TEST_TMPDIR/outside/d/f.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/d" docs/working/linkdir
+    for i in $(seq 1 55); do echo "$i" > "docs/decisions/m$i.md"; done
+    git add -A && git commit -qm many
+    run --separate-stderr bash "$DC" --check-path 'docs/working/linkdir/f.md' 'docs/**' '.Git/x' 'docs/decisions/*.md'
+    [[ "$output" == *"skip docs/working/linkdir/f.md: no tracked file"* || "$output" == *"skip docs/working/linkdir/f.md: reached through a symlink"* ]] || { echo "$output"; return 1; }
+    [[ "$output" != *"ok docs/working/linkdir"* ]]
+    [[ "$output" == *"skip .Git/x: not an allowed path form"* ]]
+    [[ "$output" == *"skip docs/decisions/*.md: matches more than 50 files"* ]] || { echo "$output" | tail -3; return 1; }
 }
 
 @test "--check-write allows a new file under plain directories and refuses symlinks" {
@@ -497,10 +513,13 @@ EOF
     ln -s "$BATS_TEST_TMPDIR/outside" docs/working/briefs
     ln -s "$BATS_TEST_TMPDIR/outside/r.md" docs/roadmap.md
     run --separate-stderr bash "$DC" --check-write docs/working/cycles/cycle-2026-01-01.md \
-        docs/working/briefs/2026-01-01-x.md docs/roadmap.md ../out
+        docs/working/briefs/2026-01-01-x.md docs/roadmap.md ../out AGENTS.md scripts/x.sh .env \
+        docs/working/idea-log.md docs/working/briefs/x.md
     [ "$status" -eq 0 ]
     for want in "ok docs/working/cycles/cycle-2026-01-01.md" "skip docs/working/briefs/2026-01-01-x.md: reached through a symlink" \
-                "skip docs/roadmap.md: reached through a symlink" "skip ../out: not an allowed path form"; do
+                "skip docs/roadmap.md: reached through a symlink" "skip ../out: not an allowed path form" \
+                "skip AGENTS.md: not one of the files the dev cycle writes" "skip scripts/x.sh: not one of" \
+                "skip .env: not one of" "ok docs/working/idea-log.md" "skip docs/working/briefs/x.md: not one of"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }
