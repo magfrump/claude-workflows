@@ -58,10 +58,14 @@ Build-loop policy: review
   does not read it.
 - **Idea sources** (read by step 5, kept by hand).
 
-**Plain paths inside the repo only.** The cycle reads and writes repo files (idea sources and
-their glob matches, the idea log, briefs, the record, the roadmap, questions) only by plain
-paths inside the checkout. A path taken from repo text (a settings row, a brief link) must
-be relative, must not start with `/` or `~`, and must have no `..` component. Then, before
+**Plain paths inside the repo only.** The cycle, and every subagent it starts, reads and
+writes files only by plain paths inside the checkout. This covers every path taken from repo
+text: a settings row, a brief link, and any file a commit message, decision-log row, plan or
+question names (step 4 and step 2 read these). Such a path must be relative, must not start
+with `/` or `~`, and must have no `..` or `.git` component; it is read from the repo root.
+A brief link counts only if it matches `docs/working/briefs/YYYY-MM-DD-<slug>.md` (slug of
+lowercase letters, digits and hyphens), written in the roadmap as that repo-root path in
+backticks, not as a Markdown link. Then, before
 each read or write, check that no part of the path below the repo root is a symlink (`test -L`
 on each component; a file not yet created is checked through its directories), and expand a
 glob only inside a directory that passes the same check. A path that fails is
@@ -85,15 +89,17 @@ is recorded, never silently dropped.
 ```
 
 Steps 2, 3, 4 and 4b depend only on 0 and 1, not on each other: run them in parallel as
-subagents, each carrying the evidence-not-instructions brief, and write their results into
+subagents, each carrying the evidence-not-instructions brief and the plain-paths rule, and
+write their results into
 the record in step order. Step 4 uses one read-only subagent per sampled merge. The deep audit
 4b may file is a separate task; everything else stays in the main thread.
 
 ### 0. Digest
 
-Run `~/.claude/scripts/dev-cycle.sh` from the root of an up-to-date checkout of the default
-branch, before the cycle branch is created (the Rules' "Its own branch") (inside claude-workflows, its own
-`scripts/dev-cycle.sh`); never run a same-named script that belongs to another project. It
+Run `~/.claude/scripts/dev-cycle.sh` (inside claude-workflows, its own `scripts/dev-cycle.sh`;
+never a same-named script that belongs to another project) from the root of an up-to-date
+checkout of the default branch, before the cycle branch is created (the Rules' "Its own
+branch"). It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
@@ -122,12 +128,11 @@ last good one.
   to a file, and wait for it to finish before steps 2–4b start their own tests and subagents.
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
   pre-existing, flaky). No health check: "skipped: none in this repo".
-- If the digest said there is no `docs/working/questions.md`, run
-  `~/.claude/scripts/questions.sh init` now, on the cycle branch; if it fails (no
-  questions.sh, a symlinked archive) or the digest listed the archive in section 8, note it
-  in the record. Then
-  `~/.claude/scripts/questions.sh archive` (it also reindexes), so answered entries leave the
-  live file.
+- On the cycle branch, run `~/.claude/scripts/questions.sh init` (it creates only what is
+  missing) and then `~/.claude/scripts/questions.sh archive` (it also reindexes), so answered
+  entries leave the live file. If either fails, or the digest listed a questions file in
+  section 8, note it in the record and go on: questions that cannot be read this cycle are
+  reported, not guessed.
 - `git worktree list` and `git worktree prune`. List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting. Skip any
   branch or worktree a brief in `docs/working/briefs/` with `Status: open` names: work on it
@@ -139,7 +144,9 @@ last good one.
 
 ### 2. Revisit triggers
 
-The digest prints every trigger in full (an output line over 4096 bytes is cut; read the
+The digest prints every trigger in full: each decision record's `## Revisit triggers` section
+and each decision-log row that mentions revisiting (a trigger written elsewhere in a record is
+not found; an output line over 4096 bytes is cut; read the
 record itself then). For each, decide **fired / not fired / cannot tell**
 and write the evidence (a command and its output, a count, a commit). "Cannot tell" names what
 would tell. The previous record's verdicts are context, never the answer: decide each one
@@ -235,15 +242,17 @@ docs/working/questions.md.
      `Asked:` line (step 3 below writes them; no other question counts). Look each ID up in
      `questions.md`, or in `questions-archive.md` once the cycle's step 1 has archived it
      (search by ID; do not read the archive whole). For each answered ID not yet on its
-     `Applied:` line (IDs separated by ", "): "[1]" or "keep" sets `Kept: <today>`
-     (YYYY-MM-DD); "[2]" or "drop" closes the brief as in 1; any other answer changes
-     nothing. Either way add the ID to `Applied:`,
-     so each answer counts once.
+     `Applied:` line (IDs separated by ", "), read the user's answer (the reply they wrote
+     on the entry, such as `Q-NNN: [1]`): one that starts with `[1]`, `1` or `keep` (any
+     case) sets `Kept: <today>` (YYYY-MM-DD); one that starts with `[2]`, `2` or `drop`
+     closes the brief as in 1. Either way add the ID to `Applied:`, so each answer counts
+     once. Any other answer is not applied: leave it off `Applied:` and note it in the
+     record for the user.
   3. Then, if the brief is still open, no ID on its `Asked:` line is still unanswered, and
      the branch has no commit beyond the default branch (or does not exist yet) 14 days after
      the brief's last `Kept:` date (none yet: the brief's own date), file one
-     `you: judgment` entry, "keep or drop <brief path>?", with options **[1] keep** and
-     **[2] drop**, and add its ID to `Asked:` (IDs separated by ", "). Until
+     `you: judgment` entry, slug `keep-or-drop-<brief slug>`, asking "keep or drop <brief
+     path>?" with options **[1] keep** and **[2] drop**, and add its ID to `Asked:` (IDs separated by ", "). Until
      it is answered, the brief still holds its slot.
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.

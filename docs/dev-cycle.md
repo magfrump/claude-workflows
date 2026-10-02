@@ -24,8 +24,8 @@ answered.
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Relative paths inside the repo only (no leading `/` or `~`, no `..`), never through a
-symlink.
+Paths relative to the repo root only (no leading `/` or `~`, no `..` or `.git` component),
+never through a symlink.
 
 | Source | Path or glob | Format |
 | --- | --- | --- |
