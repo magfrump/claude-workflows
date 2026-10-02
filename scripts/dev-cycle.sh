@@ -24,20 +24,39 @@ set -euo pipefail
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
-# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F). Perl is pinned
-# to bytes (-C0, and PERL_UNICODE / PERL5OPT removed: either could turn on UTF-8
-# decoding and switch the byte patterns off). C0 goes first and the substitution
-# repeats until nothing changes, so neither a control byte inside a sequence nor
-# a nested sequence can reassemble one. Not covered: a lone 0x9B byte (invalid
-# UTF-8, inert on a UTF-8 terminal) and zero-width characters (cannot start a line).
+# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F), and cuts lines
+# over 4096 bytes. Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
+# removed (each can turn on UTF-8 decoding and switch the byte patterns off),
+# -C0 is set, and both handles are binmoded. C0 goes first; after each deletion
+# the search resumes 3 bytes before it (no sequence is longer than 4 bytes), so a
+# control byte inside a sequence or a nested sequence cannot reassemble one, and
+# the work stays linear in the line. Not covered: lone bytes 0x80-0x9F and
+# overlong encodings (invalid UTF-8, which a UTF-8 terminal does not decode),
+# U+061C and U+2028/2029, and zero-width characters (none can start a line).
 scrub() {
-  env -u PERL_UNICODE -u PERL5OPT LC_ALL=C perl -C0 -pe 'BEGIN { $| = 1 } tr/\000-\010\013-\037\177//d; 1 while s/\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]//g'
+  # shellcheck disable=SC2016  # perl code, not shell: $_ must stay literal
+  env -u PERL_UNICODE -u PERL5OPT -u PERLIO LC_ALL=C perl -C0 -ne '
+    BEGIN { $| = 1; binmode STDIN; binmode STDOUT }
+    $_ = substr($_, 0, 4096) . " [line cut at 4096 bytes]\n" if length($_) > 4097;
+    tr/\000-\010\013-\037\177//d;
+    my $i = 0;
+    while (1) {
+      pos($_) = $i;
+      last unless /\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]/g;
+      my $s = $-[0];
+      substr($_, $s, $+[0] - $s) = "";
+      $i = $s > 3 ? $s - 3 : 0;
+    }
+    print'
 }
 # Run the body as a child whose stdout and stderr each pass through scrub as
 # members of one pipeline, so the shell waits for both filters before exiting:
-# a redirected digest is complete when the script returns. stdout goes to fd 3,
-# stderr takes the inner pipe, then fd 3 takes the outer one. Exit status: the
-# body's (pipefail; scrub itself does not fail). DEV_CYCLE_SCRUBBED marks the child.
+# a redirected digest is complete when the script returns. Each stream keeps its
+# own order; merged with 2>&1 the two may interleave differently. fd 3 takes the
+# outer pipe (to the outer scrub), then inside the group the child's stderr takes
+# the inner pipe and its stdout goes to fd 3. Exit status: the body's (pipefail;
+# scrub itself does not fail). DEV_CYCLE_SCRUBBED marks the child; a caller that
+# sets it skips the scrub (an environment choice, not something repo text can do).
 if [[ -z "${DEV_CYCLE_SCRUBBED:-}" ]]; then
   { DEV_CYCLE_SCRUBBED=1 bash "${BASH_SOURCE[0]}" "$@" 2>&1 1>&3 3>&- | scrub >&2; } 3>&1 | scrub
   exit "${PIPESTATUS[0]}"
@@ -91,7 +110,7 @@ fi
 
 last_record=""
 for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
-  [[ -f "$f" ]] || continue
+  inrepo "$f" || continue
   d="${f##*/cycle-}"; d="${d%.md}"
   [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
 done
@@ -190,19 +209,19 @@ if inrepo docs/roadmap.md; then
   d="$(git log -1 --format=%ad --date=short -- docs/roadmap.md)"
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
-  awk '/^## Next/ { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
+  awk 'index(tolower($0), "## next") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
 
 printf '\n%s\n\n' "## 6. Merges with code but no docs"
 # A merge whose diff against its first parent touches files but no doc (a path
-# under docs/, a *.md file, or a file named README or README.*, any case): step 4
+# under docs/, a *.md file, or a file named README or README.*, all any case): step 4
 # checks each one (rule: undocumented is broken). Listed up to 30.
 flagged=()
 while read -r _ full rest; do
   [[ -n "$full" ]] || continue
-  counts="$(git diff --name-only -z "$full^1" "$full" | awk -v RS='\0' 'NF { b = tolower($0); sub(/.*\//, "", b); if ($0 ~ /^docs\// || $0 ~ /\.md$/ || b == "readme" || index(b, "readme.") == 1) d++; else c++ } END { print c + 0, d + 0 }')"
+  counts="$(git diff --name-only -z "$full^1" "$full" | awk -v RS='\0' 'NF { b = tolower($0); sub(/.*\//, "", b); p = tolower($0); if (p ~ /^docs\// || p ~ /\.md$/ || b == "readme" || index(b, "readme.") == 1) d++; else c++ } END { print c + 0, d + 0 }')"
   read -r n_code n_docs <<< "$counts"
   [[ "$n_code" -gt 0 && "$n_docs" -eq 0 ]] && flagged+=("- $rest ($n_code file(s), no doc change)")
 done <<< "$merges_full"
@@ -216,12 +235,13 @@ fi
 printf '\n%s\n\n' "## 7. Inputs for steps 4b and 5"
 # Every file any first-parent commit in the window touched (a merge counts its
 # diff against its first parent), not a net diff: a change reverted inside the
-# window still counts. "@" lines carry each commit's date; git quotes a name
-# holding a control character, so each name is one line.
-changed="$(git log "$MAIN_SHA" --first-parent --diff-merges=first-parent --name-only --format='@%cs' -- skills workflows docs/decisions \
+# window still counts. "@" lines carry each commit's date. core.quotePath=false
+# prints non-ASCII names as they are; git still quotes a name holding a control
+# character (so each name is one line), and the patterns below accept the quote.
+changed="$(git -c core.quotePath=false log "$MAIN_SHA" --first-parent --diff-merges=first-parent --name-only --format='@%cs' -- skills workflows docs/decisions \
   | awk -v s="$SINCE" '/^@/ { on = (substr($0, 2) >= s); next } on && NF' | sort -u)"
-skills_changed="$(printf '%s\n' "$changed" | grep -E '^(skills/.*/SKILL\.md|workflows/[^/]*\.md)$' || true)"
-records_changed="$(printf '%s\n' "$changed" | grep -E '^docs/decisions/[0-9]{3}-[^/]*\.md$' || true)"
+skills_changed="$(printf '%s\n' "$changed" | grep -E '^"?(skills/.*/SKILL\.md|workflows/[^/]*\.md)"?$' || true)"
+records_changed="$(printf '%s\n' "$changed" | grep -E '^"?docs/decisions/[0-9]{3}-[^/]*\.md"?$' || true)"
 echo "Step 4b (deep-audit triggers). The model version is not in git: compare it with the last cycle record's."
 for kind in skills records; do
   if [[ $kind == skills ]]; then list="$skills_changed"; label="Skill or workflow files changed on \`$MAIN\` in the window"
@@ -235,7 +255,7 @@ echo
 echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
 if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
-    n="$(awk -v h="## $sec" '$0 == h { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
+    n="$(awk -v h="## $sec" 'index(tolower($0), tolower(h)) == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
     echo "- Roadmap $sec: $n item(s)"
   done
 else
@@ -244,10 +264,11 @@ fi
 LOG=docs/working/idea-log.md
 if inrepo "$LOG"; then
   # The skill's step 5 appends "## Brainstorm YYYY-MM-DD" after reading the log
-  # (its ideas go to the roadmap); seeding appends "- " lines after that heading.
+  # (its ideas go to the roadmap); seeding appends "- <idea> (signal: …)" lines,
+  # and only lines of that shape count.
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
-  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- / { c++ } END { print c + 0 }' "$LOG")"
+  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- .*\(signal: / { c++ } END { print c + 0 }' "$LOG")"
   if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
     echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else

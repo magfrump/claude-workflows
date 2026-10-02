@@ -97,10 +97,16 @@ make_repo() {
     printf '# 001\n\n## Revisit triggers\nif a\xc2\x9bb\xe2\x80\xaec\xf3\xa0\x81\x81d\033e\rf.\n' > docs/decisions/001-x.md
     # Split by a C0 byte, and nested: neither may reassemble a sequence.
     printf '# 002\n\n## Revisit triggers\nif g\xc2\x01\x9bh\xe2\x80\x01\xaei\xc2\xc2\x9b\x9bj\xe2\x80\xe2\x80\xae\xaek\xf3\xa0\xf3\xa0\x81\x81\x81\x81l.\n' > docs/decisions/002-y.md
-    for env in "" PERL_UNICODE=SDA PERL5OPT=-CSD; do
+    for env in "" PERL_UNICODE=SDA PERL5OPT=-CSD PERLIO=:utf8 PERLIO=:raw:utf8; do
         run --separate-stderr env $env bash "$DC"
         [[ "$output" == *"if abcdef."* && "$output" == *"if ghijkl."* ]] || { echo "env: $env"; echo "$output" | sed -n '/## 2/,/## 3/p' | od -c | head -20; return 1; }
     done
+    # Deep nesting stays fast (the scrub used to restart the line per layer), and
+    # an over-long line is cut.
+    perl -e 'print "# 003\n\n## Revisit triggers\nif m", "\xC2" x 40000, "\x9B" x 40000, "n.\n"' > docs/decisions/003-z.md
+    run --separate-stderr timeout 20 bash "$DC"
+    [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
+    [[ "$output" == *"[line cut at 4096 bytes]"* ]]
     # An unknown-option error carrying an ESC reaches stderr scrubbed.
     run --separate-stderr bash "$DC" $'--bo\033gus'
     [ "$status" -eq 1 ]
@@ -270,7 +276,7 @@ EOF
     [[ "$section" == *"merge: code only (1 file(s), no doc change)"* ]] || { echo "$section"; return 1; }
     [[ "$section" != *"code and docs"* && "$section" != *"feature 1"* ]] || { echo "$section"; return 1; }
     # README_gen.sh is code; a README.txt or docs/ alone is a doc.
-    for spec in "readme-like:src/README_gen.sh:flag" "readme-txt:x.sh lib/README.txt:ok" "docs-only:docs/a.txt y.sh:ok" "md-only:notes.md z.sh:ok"; do
+    for spec in "readme-like:src/README_gen.sh:flag" "readme-txt:x.sh lib/README.txt:ok" "docs-only:docs/a.txt y.sh:ok" "md-only:notes.md z.sh:ok" "md-upper:NOTES.MD w.sh:ok"; do
         IFS=: read -r br files _ <<< "$spec"
         git checkout -q -b "$br"
         for f in $files; do mkdir -p "$(dirname "$f")"; echo "$br" >> "$f"; done
@@ -278,7 +284,7 @@ EOF
     done
     run --separate-stderr bash "$DC"
     section=$(echo "$output" | sed -n '/## 6/,/## 7/p')
-    for spec in readme-like:flag readme-txt:ok docs-only:ok md-only:ok; do
+    for spec in readme-like:flag readme-txt:ok docs-only:ok md-only:ok md-upper:ok; do
         IFS=: read -r br want <<< "$spec"
         if [[ "$want" == flag ]]; then [[ "$section" == *"merge: $br "* ]]; else [[ "$section" != *"merge: $br "* ]]; fi \
             || { echo "$br: expected $want"; echo "$section"; return 1; }
@@ -293,11 +299,14 @@ EOF
     echo t > skills/demo/tmp.md && git add -A && git commit -q -m tmp && git rm -q skills/demo/tmp.md && git commit -q -m untmp
     git checkout -q -b wf && mkdir -p workflows && echo w > workflows/flow.md && git add -A && git commit -q -m wf
     git checkout -q main && git merge -q --no-ff wf -m "merge: wf" && git rm -q workflows/flow.md && git commit -q -m "drop wf"
-    printf '# Roadmap\n\n## Now\n- a\n\n## In flight\n- b\n- c\n\n## Next\n1. d\n' > docs/roadmap.md
-    printf '# Ideas\n- old\n\n## Brainstorm 2026-01-01\n- one\n- two\n' > docs/working/idea-log.md
+    # A non-ASCII skill name still counts.
+    mkdir -p "skills/café" && echo c > "skills/café/SKILL.md" && git add -A && git commit -q -m cafe
+    # Heading case and suffixes do not hide items.
+    printf '# Roadmap\n\n## Now\n- a\n\n## In Flight\n- b\n- c\n\n## Next (ranked)\n1. d\n' > docs/roadmap.md
+    printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- two (signal: b)\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
     section=$(echo "$output" | sed -n '/## 7/,$p')
-    for t in "in the window: 2" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
+    for t in "in the window: 3" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
              "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
              "Last brainstorm: 2026-01-01 (7 day(s) ago)" "Ideas seeded since: 2"; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
