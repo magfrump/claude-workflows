@@ -1,4 +1,4 @@
-Commit: b88a9c4 (digest) / 79b1bfe (skill, feat/dev-cycle)
+Commit: c034a75 (digest) / a218ad8 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -399,3 +399,20 @@ Before this pass the user chose to split the autonomous build-loop handoff out o
 | C1 | "(0 items ready for 6b)"; a directory or FIFO labelled "symlink"; section 8 header and record name; step 2 "printed line"; step 0's skipped-record inference; Q-103 interim line, option [2] list, closing line; seed vs docs/dev-cycle.md policy rule; brief-reading reminder | 🟢 | fact-check 4, 6, 7, 15, 16, 20, 21; api F3–F8; security F3–F6 | c034a75, a218ad8 |
 
 Not acted on: section 8 and `## Skipped inputs` have no cap (performance #2; ~30 bytes per path, only with many committed symlinks); `skipped()` re-runs `inrepo` (performance #3, 0.3 ms per path). Carried to the handoff seed: `git diff --summary` shows a file turned symlink as `mode change 100644 => 120000` (security, probe P4).
+
+---
+
+## Pass 11 (review-fix loop, k=1, all critics; on c034a75 digest / a218ad8 skill)
+
+**Status: 🔴 not clean — 1 behavioral red (two reports); fixed in e08d526, 5dd5377, 71e618d (digest) and 8286c2b (skill).**
+
+Scope: `b88a9c4..c034a75`, `79b1bfe..a218ad8`, partial. Fact-check k=1 (27 claims: 18 V / 7 MA / 2 I) and the three critics in parallel on pass 10's fact-check input. Artifacts: `code-fact-check-report-digest-pass11.md`, `security-review-2026-10-01-digest-pass11.md`, `performance-review-2026-10-01-digest-pass11.md`, `api-consistency-review-2026-10-01-digest-pass11.md`. Confirmed correct by execution: the guarded globs (no outside names), newline handling in skipped names, the Window line when no record is readable, `## Skipped inputs` naming, the brief cap and record line.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | Section 2 took its skip count after `skipdir docs/decisions`, so a skipped decisions directory still printed "No revisit triggers recorded"; c034a75's message claimed otherwise | 🔴 behavioral | fact-check 7, 23b; api F1; security F1; performance referral | e08d526 (+ test 7 assertion) |
+| A1 | A skipped cycle record newer than a readable one silently widened the window | 🟡 | api F2; performance referral; security P3 | e08d526 (Window line names it; new test) |
+| A2 | Step 0's "fix or report the link" invited copying an arbitrary link target into a committed record | 🟡 Medium | security F3 | 8286c2b: report it, never read, copy or rewrite through it |
+| A3 | A fixed name below a skipped directory was still probed, revealing which files exist out there | 🟡 Low | security F2; fact-check 23a | 5dd5377: parents checked first, nothing probed below a failing one |
+| A4 | The 14-day brief rule: "keep" not remembered, start date and "no commit" ambiguous | 🟡 Low | performance #1; api F3; fact-check 18, 24a | 8286c2b: `Kept:` date, commits beyond the default branch |
+| C1 | "every input is a plain file" when inputs are merely absent; section 8 header; test 7 title; symlink-rule wording; Q-103 "harness config"; seed policy-line edge (HTML comment) for the future unit | 🟢 | api F4, F6–F8; fact-check 13, 14, 16, 22; security F4 | 5dd5377, 71e618d, 8286c2b; F4 left for the handoff unit |
