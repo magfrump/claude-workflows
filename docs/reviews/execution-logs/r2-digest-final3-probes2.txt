@@ -1,0 +1,25 @@
+2026-09-30T21:07:30Z
+cmd: timeout 120 bash scratchpad/probe2.sh; cwd: per-probe mktemp -d repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P1b: '- Main at:' bullet form
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Carried forward (2): 001-old.md 003-late.md
+=== P3b: newline in a carried file name
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+Carried forward (2): 001-old.md 002-a
+### 999-forged (fake).md
+## 3. Watched questions (trigger and deferred routes)
+--- same file changed after the recorded start (printed in full):
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+6:### docs/decisions/002-a ### 999-forged (fake).md (last committed on this branch: 2026-09-30)
+7-> if x.
+8-> if y.
+=== P11: pathspec-magic file name, literal pathspecs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### docs/decisions/001-old.md (last committed on this branch: 2020-01-02)
+### docs/decisions/007-*.md (last committed on this branch: 2026-09-30)
+### docs/decisions/007-zz.md (last committed on this branch: never, uncommitted)
+probe-exit=0

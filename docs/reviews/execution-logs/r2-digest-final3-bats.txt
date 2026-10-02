@@ -1,0 +1,36 @@
+2026-09-30T21:06:33Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..13
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 prints all five sections in a repo with no docs
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 lists a decision record's revisit triggers and a log row's whole revisit clause
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 the window defaults to the newest cycle record's date and says so
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 --since counts from midnight, not from the current time of day
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 --sample N lists N merges, the same ones on a rerun
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 different days sample different merges
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 runs from a subdirectory with a relative script path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 watched questions list only trigger and deferred routes, by route column
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 a questions.sh failure is reported, never shown as 'None open.'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 a repo whose only branch is master works
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 an origin/HEAD naming an option-like branch cannot make git write a file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 rejects a malformed --since and an unknown option
+exit=0

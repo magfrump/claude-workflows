@@ -1,0 +1,19 @@
+cmd: bash scratchpad/fc3/mut.sh  cwd: /workspace/.claude/wt-digest (copies under mktemp -d)  at: 2026-09-30T14:08:01-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== M1 ignore Main at (always date fallback)  (sed 's/^Main at: \\(\[0-9a-f\]/^NEVERMATCH\\(\[0-9a-f]/'; changed lines: 0)
+summary: 0 failing
+=== M2 compare whole file, not trigger section  (sed '116s/| trig) <(trig < "\$f")/) "$f"/'; changed lines: 1)
+not ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+# (in test file /tmp/tmp.EYMGzNDJoH/test/scripts/dev-cycle.bats, line 84)
+#   `[[ "$output" != *"if old thing."* ]]' failed
+summary: 1 failing
+=== M3 drop the control filter  (sed '42s/^exec .*/:/'; changed lines: 1)
+not ok 2 lists a decision record's revisit triggers and a log row's whole revisit clause
+# (in test file /tmp/tmp.SoL405tZCY/test/scripts/dev-cycle.bats, line 60)
+#   `[[ "$output" != *"not a trigger"* && "$output" != *$'\033'* ]]' failed
+summary: 1 failing
+=== M4 drop newline replacement in heading  (sed '119s/\${f\/\/\$'\\n'\/ }/$f/'; changed lines: 1)
+summary: 0 failing
+=== M5 drop GIT_LITERAL_PATHSPECS  (sed '41s/export GIT_LITERAL_PATHSPECS=1/:/'; changed lines: 1)
+summary: 0 failing
+exit: 0

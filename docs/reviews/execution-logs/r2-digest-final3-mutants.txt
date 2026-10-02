@@ -1,0 +1,16 @@
+2026-09-30T21:07:41Z
+cwd=/tmp/tmp.9i8aoVQnq2; each mutant: bats test/scripts/dev-cycle.bats -f 'cycle record, unchanged|decision record'
+108:base=""
+--- mutant: M1 ignore recorded Main at (date fallback only)
+ok 1 lists a decision record's revisit triggers and a log row's whole revisit clause
+not ok 2 after a cycle record, unchanged triggers carry forward and changed ones print
+#   `[[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }' failed
+116:  if [[ $full -eq 1 || -z "$base" ]] || ! git diff --quiet "$base" -- "$f"; then
+--- mutant: M2 file-level compare instead of trigger-section compare
+ok 1 lists a decision record's revisit triggers and a log row's whole revisit clause
+not ok 2 after a cycle record, unchanged triggers carry forward and changed ones print
+#   `[[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }' failed
+--- mutant: M3 no output filter
+not ok 1 lists a decision record's revisit triggers and a log row's whole revisit clause
+#   `[[ "$output" != *"not a trigger"* && "$output" != *$'\033'* ]]' failed
+ok 2 after a cycle record, unchanged triggers carry forward and changed ones print

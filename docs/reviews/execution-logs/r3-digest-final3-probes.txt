@@ -1,0 +1,87 @@
+2026-09-30T14:07:42-07:00
+cmd: timeout 300 bash scratchpad/r3/probes.sh (cwd /workspace/.claude/wt-digest; probes build repos under mktemp -d)
+=== P1: Main-at line decorations (old-dated record fast-forwarded in window) ===
+[Main at: SHA] -> PRINTED
+[Main at: SHA (copy this line ...)] -> PRINTED
+[- Main at: SHA] -> CARRIED
+[`Main at: SHA`] -> CARRIED
+[**Main at:** SHA] -> CARRIED
+[  Main at: SHA] -> CARRIED
+[Main at: `SHA`] -> CARRIED
+[main at: SHA] -> CARRIED
+[Main at: SHAUPPER] -> CARRIED
+=== P2: no Main-at line (first cycle after landing), old-dated record fast-forwarded in window ===
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (1): 003-late.md
+
+## 3. Watched questions (trigger and deferred routes)
+=== P3: new uncommitted record with an empty trigger section; new branch-only record whose section only has blank lines ===
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+### docs/decisions/006-real.md (last committed on this branch: never, uncommitted)
+> new real trigger
+
+Carried forward (1): 005-empty.md
+
+## 3. Watched questions (trigger and deferred routes)
+=== P4: newline in a carried record's file name ===
+## 2. Revisit triggers$
+$
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".$
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.$
+$
+Carried forward (1): 001-a$
+### FORGED heading.md$
+$
+## 3. Watched questions (trigger and deferred routes)$
+=== P5: colon and glob chars in record names (unchanged, should carry) ===
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (2): 001-a:b.md 002-*.md
+
+## 3. Watched questions (trigger and deferred routes)
+=== P6: recorded sha not an ancestor (different default branch) -> date fallback ===
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+### docs/decisions/001-f.md (last committed on this branch: 2026-09-30)
+> if fresh.
+
+=== P7: .git unchanged by a run (stat-dirty index, untracked + modified files, questions docs present) ===
+exit=0
+.git UNCHANGED
+--- same with the de53069 version (control) ---
+old: .git CHANGED
+=== P8: failed step mid-digest (shuf shim exits 3): exit code, stdout content, stderr ===
+exit=3
+stdout tail:
+
+## 4. Spot-check sample
+
+stderr:
+shuf: boom
+combined 2>&1 ordering:
+2:shuf: boom
+23:## 3. Watched questions (trigger and deferred routes)
+27:## 4. Spot-check sample
+=== P9: redirect to file then immediate read: is output complete when bash returns? (200 runs) ===
+full=1078 bytes; runs short at return: 0/200
+=== P10: stderr filtered? (control char in a message routed to stderr) ===
+Unknown option: --bogus^[X$
+=== P11: rev-list --before fallback picks a fast-forwarded old-dated commit ===
+ece86d2 2020-01-03 late
+88ad97a 2020-01-01 init
+fallback base: ece86d2
+exit=0
