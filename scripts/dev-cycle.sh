@@ -13,7 +13,8 @@
 #             (only its file name is read), else 14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
 #
-# Every revisit trigger is printed in full every run; nothing carries forward.
+# Every revisit trigger is printed every run (a line over 4096 bytes is cut);
+# nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed; 1 bad usage, not a git repo, no default branch or no
@@ -24,16 +25,18 @@ set -euo pipefail
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
-# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F), and cuts lines
+# U+202A-202E, U+2066-2069), the line and paragraph separators U+2028/2029 (some
+# readers split lines on them) and tag characters (U+E0000-E007F), and cuts lines
 # longer than 4096 input bytes. Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
 # removed (each can turn on UTF-8 decoding and switch the byte patterns off),
 # -C0 is set, and both handles are binmoded. C0 goes first; after each deletion
 # the search resumes 3 bytes before it (no sequence is longer than 4 bytes), so a
 # control byte inside a sequence or a nested sequence cannot reassemble one;
-# each pass is local, and the line cut bounds the total work. Not covered: lone
-# bytes 0x80-0x9F and overlong encodings (invalid UTF-8, which a UTF-8 terminal
-# does not decode), U+061C, U+2028/2029, and invisible format characters such as
-# zero-width ones, U+00AD, U+206A-206F and U+FFF9-FFFB (none can start a line).
+# each search restarts near the last deletion, and the line cut bounds the
+# scrub's work per line (the awk readers upstream still read a long line whole).
+# Not covered: lone bytes 0x80-0x9F and overlong encodings (invalid UTF-8, which
+# a UTF-8 terminal does not decode), U+061C, and invisible format characters such
+# as zero-width ones, U+00AD, U+206A-206F and U+FFF9-FFFB (none can start a line).
 scrub() {
   # shellcheck disable=SC2016  # perl code, not shell: $_ must stay literal
   env -u PERL_UNICODE -u PERL5OPT -u PERLIO LC_ALL=C perl -C0 -ne '
@@ -45,7 +48,7 @@ scrub() {
     my $i = 0;
     while (1) {
       pos($_) = $i;
-      last unless /\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]/g;
+      last unless /\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xA8-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]/g;
       my $s = $-[0];
       substr($_, $s, $+[0] - $s) = "";
       $i = $s > 3 ? $s - 3 : 0;
@@ -73,7 +76,7 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; shift ;;
     --sample) SAMPLE="${2:?--sample needs a number}"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; shift ;;
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -145,7 +148,7 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full. Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full (a line over 4096 bytes is cut). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
@@ -212,7 +215,7 @@ if inrepo docs/roadmap.md; then
   d="$(git log -1 --format=%ad --date=short -- docs/roadmap.md)"
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
-  awk '{ t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
+  awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
@@ -258,7 +261,7 @@ echo
 echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
 if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
-    n="$(awk -v h="## $sec" '{ t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
+    n="$(awk -v h="## $sec" '{ sub(/\r$/, ""); t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
     echo "- Roadmap $sec: $n item(s)"
   done
 else
@@ -271,7 +274,7 @@ if inrepo "$LOG"; then
   # and only lines of that shape count.
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
-  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- [^ ].*\(signal: .*\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
+  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
   if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
     echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else
