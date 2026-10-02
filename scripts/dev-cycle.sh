@@ -13,7 +13,7 @@
 #             (only its file name is read), else 14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
 #
-# Every revisit trigger is printed every run (a line over 4096 bytes is cut);
+# Every revisit trigger is printed every run (a printed line over 4096 bytes is cut);
 # nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
@@ -86,10 +86,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: rel
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
 ROOT_REAL="$(pwd -P)"
-# A regular file whose real path stays inside the repo: a committed symlink (to
-# the file or a parent directory) must not make the digest print text from
-# outside the checkout.
-inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL"/* ]]; }
+# A regular file reached without any symlink: its real path must be exactly the
+# repo root plus the path as given, so a committed symlink (to the file or to a
+# parent directory, pointing outside the checkout or into .git) is never read.
+inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
@@ -148,7 +148,7 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full (a line over 4096 bytes is cut). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full (a printed line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 for f in docs/decisions/[0-9][0-9][0-9]-*.md; do

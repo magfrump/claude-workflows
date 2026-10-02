@@ -107,8 +107,9 @@ make_repo() {
     run --separate-stderr timeout 20 bash "$DC"
     [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
     [[ "$output" == *"if mn."* && "$output" == *"[line cut at 4096 bytes]"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p' | cut -c1-120; return 1; }
-    # Many nested lines stay fast: restarting each line per layer took ~1 minute.
-    perl -e 'print "# 004\n\n## Revisit triggers\n"; print "if ", "\xC2" x 1300, "\x9B" x 1300, ".\n" for 1 .. 600' > docs/decisions/004-many.md
+    # Many nested lines stay fast: restarting each line per layer took ~35 s on
+    # the authoring host for these 1200 lines, against about 1 s with the resume.
+    perl -e 'print "# 004\n\n## Revisit triggers\n"; print "if ", "\xC2" x 1300, "\x9B" x 1300, ".\n" for 1 .. 1200' > docs/decisions/004-many.md
     run --separate-stderr timeout 10 bash "$DC"
     [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
     # U+2028 / U+2029 are removed too.
@@ -122,12 +123,15 @@ make_repo() {
     [[ "$stderr" == *"Unknown option: --bogus"* ]] || { printf '%s' "$stderr" | od -c | head; return 1; }
 }
 
-@test "a symlink out of the repo is not followed" {
+@test "no input is read through a symlink, inside or outside the repo" {
     mkdir -p docs/decisions "$BATS_TEST_TMPDIR/outside"
     printf '# 9\n\n## Revisit triggers\nSECRET line.\n' > "$BATS_TEST_TMPDIR/outside/x.md"
     printf '## Next\n- SECRET next\n' > "$BATS_TEST_TMPDIR/outside/roadmap.md"
     ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/decisions/002-link.md
     ln -s "$BATS_TEST_TMPDIR/outside/roadmap.md" docs/roadmap.md
+    # An in-repo symlink (here into .git) is skipped too.
+    printf '# 8\n\n## Revisit triggers\nSECRET in git.\n' > .git/x.md
+    ln -s ../../.git/x.md docs/decisions/003-git.md
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     [[ "$output" != *SECRET* ]] || { echo "$output"; return 1; }
@@ -310,7 +314,7 @@ EOF
     # A non-ASCII skill name still counts.
     mkdir -p "skills/café" && echo c > "skills/café/SKILL.md" && git add -A && git commit -q -m cafe
     # Heading case and suffixes do not hide items.
-    printf '# Roadmap\r\n\r\n## Now\r\n- a\r\n\r\n## In Flight\r\n- b\r\n- c\r\n\r\n## Next (ranked)\r\n1. d\r\n\r\n## Nextgen ideas\r\n- not next\r\n' > docs/roadmap.md
+    printf '# Roadmap\r\n\r\n## Now (current)\r\n- a\r\n\r\n## In Flight\r\n- b\r\n- c\r\n\r\n## Next\r\n1. d\r\n\r\n## Nextgen ideas\r\n- not next\r\n' > docs/roadmap.md
     printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- (signal: unclosed\n- two (signal: b)\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
     # Section 5 uses the same heading rule (CRLF, case, suffix; "## Nextgen" is not Next).
