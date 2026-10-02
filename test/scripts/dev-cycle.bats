@@ -537,17 +537,18 @@ EOF
 
 @test "--check-branch allows only a plain, valid branch name" {
     run --separate-stderr bash "$DC" --check-branch feat/x-1 chore/dev-cycle-2026-01-01 '--output=x' -x \
-        'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}'
+        'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}' HEAD refs/heads/x
     [ "$status" -eq 0 ]
     for want in "ok feat/x-1" "ok chore/dev-cycle-2026-01-01" "skip --output=x: not an allowed branch name" \
                 "skip -x: not an allowed" "skip a..b: not a valid branch name" "skip x.lock: not a valid" \
-                "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed"; do
+                "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed" \
+                "skip HEAD: not a valid" "skip refs/heads/x: not a valid"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
     [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ]
 }
 
-@test "the check modes do not warn per match under an uninstalled locale" {
+@test "--check-path does not warn per match under an uninstalled locale" {
     mkdir -p docs/decisions
     for i in 1 2 3 4 5 6; do echo "$i" > "docs/decisions/m$i.md"; done
     git add -A && git commit -qm files
@@ -566,4 +567,55 @@ EOF
     run --separate-stderr env LC_ALL=C.UTF-8 bash "$DC" --check-path 'docs/working/*'
     [ "$status" -eq 0 ]
     [[ "$output" == "skip docs/working/r"*".md: not an allowed path form" ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-branch gives the branch's own hash, never a tag's" {
+    git branch feat/real
+    git tag refs/heads/feat/ghost 2>/dev/null || git tag "refs/heads/feat/ghost"
+    run --separate-stderr bash "$DC" --check-branch feat/real feat/ghost
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok feat/real $(git rev-parse feat/real)"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"ok feat/ghost absent"* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-branch
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"needs at least one argument"* ]]
+}
+
+@test "--check-fix allows only existing docs/ and README.md files" {
+    mkdir -p docs/decisions hooks egress
+    echo d > docs/decisions/log.md && echo r > README.md && echo h > hooks/x.sh && echo e > egress/x.txt && echo a > AGENTS.md
+    git add -A && git commit -qm files
+    run --separate-stderr bash "$DC" --check-fix docs/decisions/log.md README.md hooks/x.sh egress/x.txt AGENTS.md \
+        docs/new.md 'docs/*.md' docs
+    [ "$status" -eq 0 ]
+    for want in "ok docs/decisions/log.md" "ok README.md" "skip hooks/x.sh: in-cycle fixes edit only" \
+                "skip egress/x.txt: in-cycle fixes edit only" "skip AGENTS.md: in-cycle fixes edit only" \
+                "skip docs/new.md: no tracked file" "skip docs/*.md: not an allowed path form" "skip docs: in-cycle fixes edit only"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}
+
+@test "--check-answer reads keep-or-drop answers in the archive's real shapes" {
+    mkdir -p docs/working
+    q() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\nkeep or drop?\n\n%s\n\n' "$1" "$2"; }
+    {
+        echo '# Questions'; echo; echo '## Open'; echo
+        q Q-001 '**Answer (2026-09-28): [1].** The user ran it; reopen with [2] if needed.'
+        q Q-002 '- **Answer (2026-10-01, in chat):** [2]. Dropped.'
+        q Q-003 '**Answered 2026-09-17: between [1] and [2].**'
+        q Q-004 '**Answered 2026-09-17: keep. Still wanted.**'
+        q Q-005 '**Answered 2026-09-17: keep both — neither is wrong.**'
+        q Q-006 'Q-006: DROP'
+        q Q-007 '**Answering this later:** [2]'
+        q Q-008 '**ANSWERED 2026-09-20, run 3: [2] drop it.** Notes [1].'
+        q Q-009 '- **If the answer differs:** nothing.'
+        printf '### Q-010 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** OPEN\n\nkeep or drop?\n'
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-001 Q-002 Q-003 Q-004 Q-005 Q-006 Q-007 Q-008 Q-009 Q-010 Q-999 'Q-1;x'
+    [ "$status" -eq 0 ]
+    for want in "keep Q-001" "drop Q-002" "unrecognized Q-003" "keep Q-004" "unrecognized Q-005" "drop Q-006" \
+                "unrecognized Q-007" "drop Q-008" "unrecognized Q-009" "open Q-010" "skip Q-999: no such entry" "skip Q-1;x: not a question ID"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
 }
