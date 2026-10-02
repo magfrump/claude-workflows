@@ -1,4 +1,4 @@
-Commit: e93312d (digest) / 823f494 (skill, feat/dev-cycle)
+Commit: f3c9ebb (digest) / 2bf03da (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -790,4 +790,17 @@ Scope: `fd22d29..e93312d`, `5085e64..823f494`, partial: the pass-33 fix round. F
 | A2 | `refdef()` treated an escaped `]` as closing the label (`[a\]` read) | 🔴 Incorrect (fact-check 8, 15a) / Low | fact-check R-B; security F1 | digest: drop backslash escapes before the test |
 | A3 | `opencomment()` re-scanned the rest of the line per `<!--`: quadratic (8.5 s at 1.6 MB) | 🟡 Low | performance 1; security F3 | digest: one `split`; `fence()` stops after a refusal |
 | C1 | `--check-brief` help named an internal variable; log 69 / brief clause / comment wording ("starts like", `<` after blanks, BOM on line 1, question headings for questions files only, passes 30–34); the escaped-bracket test literal held an escaped backslash | 🟢 | api F2–F4; fact-check 13, 19b, 22b | digest, log, skill |
+
+---
+
+## Pass 35 (review-fix loop, k=1, all critics; on f3c9ebb digest / 2bf03da skill)
+
+**Status: 🟡 not clean — 0 Incorrect (fact-check 15 V / 3 MA); one Low (the new `refdef()` marker loop was quadratic: 16.6 s on a 1 MiB line of markers, paid even on accepted files), found by performance and security; API nothing at Minor or above. All fixed: dd1988d, adb5260 (digest), e6c3fe9, d39c8f2 (skill). Health check on 55bdb14: passed (rc 0).**
+
+Scope: `e93312d..f3c9ebb`, `823f494..2bf03da`, partial: the pass-34 fix round. Artifacts: `code-fact-check-report-digest-pass35.md`, `security-review-2026-10-02-digest-pass35.md`, `performance-review-2026-10-02-digest-pass35.md`, `api-consistency-review-2026-10-02-digest-pass35.md`. Every pass-34 probe now refuses or reads as CommonMark; security's harvest (7,872 answer and 3,532 brief readings) shows no reading change; no real file on any branch is refused. Two critics broke the probe rule in minor ways (performance wrote two files from top-level commands, inside its own scratch dir; security ran input generators without `timeout`, stopped by PID); no worktree was touched.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `refdef()`'s marker loop rebuilt the line per marker (quadratic) | 🟡 Low | performance Low; security F1 | digest: one anchored `match()` strips every leading blank, `>` and list marker |
+| C1 | Help lists missed the one-line comment exception; the brief clause named only unprefixed `[` lines and claimed every listed shape is skipped | 🟢 | api F1, F2; fact-check 1, 17, 18; security F2 | digest help; skill brief clause |
 
