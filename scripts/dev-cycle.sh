@@ -52,8 +52,8 @@
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
-#             heading, a heading only inside a code fence (an earlier fence
-#             left open hides what follows), a questions file
+#             heading, a heading only inside a code fence, a code fence never
+#             closed, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
@@ -358,14 +358,15 @@ check_fix() {
 # counting copies inside code fences), fenced (it appears only inside a fence),
 # or nothing when the file has no such entry. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK): a heading inside one is
-# a quote, never the entry (though a "### " line there still ends the entry
-# being read), and no fenced line is read. A fence left open hides
-# the rest of the file, which can only make an answer unreadable (a skip, open
-# or unrecognized), never read one from elsewhere.
+# a quote, never the entry (though a "### Q-NNN " line there still ends the
+# entry being read), and no fenced line is read. A file that ends with a fence
+# still open is a skip for every ID: one stray fence line (questions.sh archive
+# can split an entry at a fenced heading) flips what follows, so nothing in
+# that file is trusted.
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
-# exactly "**Status:** ANSWERED" (the last Status field counts, as in
-# questions.sh); any other entry is open, whatever its body says: the answer is
+# "**Status:** ANSWERED" once blanks around the field are trimmed (the last
+# Status field counts, as in questions.sh); any other entry is open, whatever its body says: the answer is
 # read only after it has been recorded. The answer is the first line in the
 # entry, outside fences, that starts, after an optional "- ", with "Q-NNN:" or a
 # bold "**Answer:", "**Answer (" or "**Answered" label (any case); the
@@ -398,7 +399,7 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-infence { if (heading($0)) quoted++; if ($0 ~ /^### /) inside = 0; if (closes($0)) infence = 0; next }
+infence { if (heading($0)) quoted++; if ($0 ~ /^### Q-[0123456789]+ /) inside = 0; if (closes($0)) infence = 0; next }
 opens($0) { infence = 1; next }
 heading($0) { count++; inside = (count == 1); header = 0; next }
 /^(#|##|###) / { inside = 0; next }
@@ -424,7 +425,8 @@ heading($0) { count++; inside = (count == 1); header = 0; next }
   result = option(rest); done = 1
 }
 END {
-  if (count + quoted > 1) print "dup"
+  if (infence) print "unbalanced"
+  else if (count + quoted > 1) print "dup"
   else if (quoted) print "fenced"
   else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
@@ -437,6 +439,7 @@ check_answer() {
     r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f (counting copies inside code fences)"; return; fi
+    if [[ "$r" == unbalanced ]]; then echo "skip $a: a code fence in $f is never closed, so nothing after it can be trusted"; return; fi
     if [[ "$r" == fenced ]]; then echo "skip $a: its heading appears only inside a code fence in $f"; return; fi
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
     hit="$r"; where="$f"
