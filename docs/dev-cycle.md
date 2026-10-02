@@ -24,7 +24,8 @@ answered.
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Plain paths only: the skill never reads through a symlink.
+Relative paths inside the repo only (no leading `/` or `~`, no `..`), never through a
+symlink.
 
 | Source | Path or glob | Format |
 | --- | --- | --- |

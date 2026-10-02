@@ -37,7 +37,12 @@ reads loop markers, and runs the pre-merge checks, with bats tests.
 4. In flight outcomes: merged → Done; ready and unasked → the cycle asks; asked → stays;
    approved → the cycle merges; building (a commit within 7 days) → stays; anything else →
    Ideas. A returned item re-enters Now only by the user.
-5. Never read or write through a symlink (the digest's `inrepo` already enforces this).
+5. Never read or write through a symlink. The digest enforces this for its own reads
+   (`inrepo`, `dirok`); it writes nothing, so the handoff unit needs its own write check.
+
+Since the split, the cycle writes its build briefs to `docs/working/briefs/` (the quoted text
+below still says `handoffs/`), and keep-or-drop questions are keyed on IDs recorded in each
+brief (`Asked:`, `Applied:`); the handoff unit should build on those.
 
 ## Open edges pass 9 had not yet re-reviewed
 
