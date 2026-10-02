@@ -38,8 +38,8 @@
 #             the reason: a code fence never closed or not in plain column-0
 #             form, a line starting (after blanks) with < other than a
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
-#             a line starting like a link reference definition, a stray
-#             carriage return, or a byte-order mark on line 1.
+#             a line starting like a link reference definition (behind any >
+#             and list markers too), a stray carriage return, or a byte-order mark on line 1.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -60,8 +60,8 @@
 #             heading, a code fence never closed or not in plain column-0
 #             form, a line starting (after blanks) with < other than a
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
-#             a line starting like a link reference definition, a stray
-#             carriage return, a byte-order mark on line 1, a question heading
+#             a line starting like a link reference definition (behind any >
+#             and list markers too), a stray carriage return, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
