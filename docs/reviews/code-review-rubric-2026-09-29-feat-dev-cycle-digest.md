@@ -1,4 +1,4 @@
-Commit: 723c242 (digest) / 1f36885 (skill, feat/dev-cycle)
+Commit: 36417f5 (digest) / db24c74 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -525,3 +525,20 @@ Scope: `09f6fe7..723c242`, `074164b..1f36885`, partial. Fact-check k=1 (27 claim
 | A2 | Keep-or-drop answers: unbracketed numbers not matched, unmatched answers consumed; init only when questions.md absent; step 2 caveat; step 0 parenthetical; path base | 🟡 Minor | api 2–6; fact-check 25 | db24c74 |
 | A3 | A cycle record named with an impossible date failed the run | 🟡 Low (pre-existing) | fact-check 4 | cf18055 |
 | C1 | Untested: settings/briefs skips, "Open by route: none", record dates | 🟢 | api 7 | cf18055 |
+
+---
+
+## Pass 18 (review-fix loop, k=1, all critics; on 36417f5 digest / db24c74 skill)
+
+**Status: 🟡 not clean — 0 red beyond a documented-difference Incorrect (date map, Low), 4 Medium (Low confidence) in the skill's path prose; fixed in 1b0c4ff (digest) and 462e561 (skill).**
+
+Scope: `723c242..36417f5`, `1f36885..db24c74`, partial. Fact-check k=1 (26 claims: 19 V / 5 MA / 2 I) and the three critics in parallel on pass 17's fact-check. Artifacts: `code-fact-check-report-digest-pass18.md`, `security-review-2026-10-02-digest-pass18.md`, `performance-review-2026-10-02-digest-pass18.md`, `api-consistency-review-2026-10-02-digest-pass18.md`.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | The path rule checked a path's text, not what it names: globs expanding to `.git`, case variants, untracked secret files, shell injection through the `test -L` command | 🟡 Medium ×3 (Low confidence) | security M1–M3 | skill: fixed character set, tracked files only (`git ls-files --error-unmatch`), no symlink component, single-quoted |
+| A2 | Step 1's unconditional init/archive wrote through a symlinked `docs/` the digest had flagged | 🟡 Medium | security M4 | skill: skip when section 8 lists docs/, docs/working/ or a questions file |
+| A3 | The date map's documented difference was one shape of a wider class (either direction, identical change on both sides); cf18055's "exact" overstated | 🟡 Low (fact-check Incorrect, behavioral) | fact-check 6a, 6b, 22; security Low 5; api 8 | digest: comment states the general rule |
+| A4 | The any-miss fallback walked all history for every uncommitted record (150 of them passed 120 s on a 220k-commit repo) | 🟡 Low | performance Low 1 | digest: fallback only for tracked records; test adds an uncommitted record |
+| A5 | Answer matching: "starts with" never matched `Q-NNN: [1]`; no word boundary; unmatched answers re-read forever; slug not unique; "linking" vs backticked path | 🟡 Minor | api 2–5; fact-check 8, 15, 16; security Info 6 | skill |
+| C1 | Path rule scope too wide (scratch output); step list; skipped-record date check; test name | 🟢 | api 1, 6, 8; fact-check 7 | digest, skill |
