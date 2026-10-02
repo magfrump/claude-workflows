@@ -48,11 +48,12 @@
 #             or README.md; "skip <path>: <reason>" otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive: keep, drop, done,
-#             open (not marked ANSWERED yet) or unrecognized (answered, but the
-#             first answer line's text does not start with one of the
-#             options); "skip Q-NNN:
+#             open (not marked ANSWERED yet) or unrecognized (answered, but no
+#             answer line was found, or the first one's text does not start
+#             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
-#             heading, a heading only inside a code fence, a questions file
+#             heading, a heading only inside a code fence, a code fence never
+#             closed, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
@@ -127,7 +128,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,66p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,67p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -251,27 +252,30 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# Code fences, close to CommonMark: a line of 3 or more ` or ~ opens one (after
-# any indentation and an optional list marker such as "- " or "1. "; a ` fence's
-# info string holds no `), and only a line of the same character, at least as
-# long and followed by nothing but spaces or tabs, closes it.
+# Code fences, close to CommonMark. An opener is a line of 3 or more ` or ~
+# after at most 3 spaces, or after a list marker ("- ", "* ", "+ ", "1. ",
+# "1) ") that itself has at most 3 spaces before it; a ` fence's info string
+# holds no `. A line indented 4 or more spaces without a marker is indented
+# code, not a fence. Only a line of the same character, at least as long,
+# with no list marker, indented at most 3 columns past the opener's fence and
+# followed by nothing but spaces or tabs, closes it.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
-function lead(l) {
-  sub(/^[ \t]+/, "", l)
-  if (l ~ /^[-*+][ \t]/ || l ~ /^[0123456789]+[.)][ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l) }
-  return l
-}
+function spaces(l,   n) { n = 0; while (substr(l, n + 1, 1) == " ") n++; return n }
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
-function opens(l,   s, ch, n) {
-  s = lead(l); ch = substr(s, 1, 1)
+function opens(l,   i, s, m, ch, n) {
+  i = spaces(l); if (i > 3) return 0
+  s = substr(l, i + 1)
+  if (match(s, /^([-*+]|[0123456789]+[.)])[ \t]+/)) { i += RLENGTH; s = substr(s, RLENGTH + 1) }
+  ch = substr(s, 1, 1)
   if (ch != "`" && ch != "~") return 0
   n = run(s, ch); if (n < 3) return 0
   if (ch == "`" && index(substr(s, n + 1), "`")) return 0
-  fch = ch; flen = n; return 1
+  fch = ch; flen = n; fcol = i; return 1
 }
-function closes(l,   s, n) {
-  s = lead(l); n = run(s, fch)
+function closes(l,   i, s, n) {
+  i = spaces(l); if (i > fcol + 3) return 0
+  s = substr(l, i + 1); n = run(s, fch)
   return n >= flen && substr(s, n + 1) ~ /^[ \t]*$/
 }
 '
@@ -354,14 +358,15 @@ check_fix() {
 # counting copies inside code fences), fenced (it appears only inside a fence),
 # or nothing when the file has no such entry. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK): a heading inside one is
-# a quote, never the entry (though a "### " line there still ends the entry
-# being read), and no fenced line is read. A fence left open hides
-# the rest of the file, which can only make an answer unreadable (skip or
-# unrecognized), never read one from elsewhere.
+# a quote, never the entry (though a "### Q-NNN " line there still ends the
+# entry being read), and no fenced line is read. A file that ends with a fence
+# still open is a skip for every ID: one stray fence line (questions.sh archive
+# can split an entry at a fenced heading) flips what follows, so nothing in
+# that file is trusted.
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
-# exactly "**Status:** ANSWERED" (the last Status field counts, as in
-# questions.sh); any other entry is open, whatever its body says: the answer is
+# "**Status:** ANSWERED" once blanks around the field are trimmed (the last
+# Status field counts, as in questions.sh); any other entry is open, whatever its body says: the answer is
 # read only after it has been recorded. The answer is the first line in the
 # entry, outside fences, that starts, after an optional "- ", with "Q-NNN:" or a
 # bold "**Answer:", "**Answer (" or "**Answered" label (any case); the
@@ -394,7 +399,7 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-infence { if (heading($0)) quoted++; if ($0 ~ /^### /) inside = 0; if (closes($0)) infence = 0; next }
+infence { if (heading($0)) quoted++; if ($0 ~ /^### Q-[0123456789]+ /) inside = 0; if (closes($0)) infence = 0; next }
 opens($0) { infence = 1; next }
 heading($0) { count++; inside = (count == 1); header = 0; next }
 /^(#|##|###) / { inside = 0; next }
@@ -420,7 +425,8 @@ heading($0) { count++; inside = (count == 1); header = 0; next }
   result = option(rest); done = 1
 }
 END {
-  if (count + quoted > 1) print "dup"
+  if (infence) print "unbalanced"
+  else if (count + quoted > 1) print "dup"
   else if (quoted) print "fenced"
   else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
@@ -433,6 +439,7 @@ check_answer() {
     r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f (counting copies inside code fences)"; return; fi
+    if [[ "$r" == unbalanced ]]; then echo "skip $a: a code fence in $f is never closed, so nothing after it can be trusted"; return; fi
     if [[ "$r" == fenced ]]; then echo "skip $a: its heading appears only inside a code fence in $f"; return; fi
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
     hit="$r"; where="$f"
