@@ -89,7 +89,7 @@ ROOT_REAL="$(pwd -P)"
 # A regular file reached without any symlink: its real path must be exactly the
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
-inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+rawfile() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
 # A directory the digest globs in must be plain too, or the glob would list
 # names from wherever a symlinked directory points.
 plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
@@ -109,8 +109,12 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
   done
   [[ -e "$1" || -L "$1" ]] || return 0
   if [[ "$2" == dir ]]; then plaindir "$1" || printf '%s/' "$1"
-  else inrepo "$1" || printf '%s' "${1//$'\n'/ }"; fi
+  else rawfile "$1" || printf '%s' "${1//$'\n'/ }"; fi
 }
+# A fixed-name input is read only when no part of its path blocks it; the walk
+# runs first, so nothing is looked up through a non-plain parent. (Glob items
+# use rawfile directly: their directory has already passed plaindir.)
+inrepo() { [[ -z "$(blocker "$1" file)" ]] && rawfile "$1"; }
 skipped() { SKIP_AT="$(blocker "$1" "${2:-file}")"; [[ -n "$SKIP_AT" ]] || return 1; SKIPPED+=("$SKIP_AT"); }
 skipdir() { skipped "$1" dir; }
 skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (section 8)."; }
@@ -142,7 +146,7 @@ last_record=""; skipped_record=""
 if plaindir docs/working/cycles; then
   for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
     d="${f##*/cycle-}"; d="${d%.md}"
-    if ! inrepo "$f"; then
+    if ! rawfile "$f"; then
       # Keep the newest skipped date (not future-dated) to warn when it is newer
       # than the record the window starts from.
       skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
@@ -196,7 +200,7 @@ n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
 if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
 for f in "${decisions_glob[@]}"; do
-  inrepo "$f" || { skipped "$f" || true; continue; }
+  rawfile "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
   echo
