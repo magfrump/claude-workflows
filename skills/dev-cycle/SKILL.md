@@ -368,7 +368,8 @@ the next digest runs on it, and the briefs must be there before work on them sta
 
 Then send the final message: list the new `you: judgment` entries by ID and name, any
 keep-or-drop answer step 6 could not read, read as `unrecognized`, or found still `open`
-(each with its brief), each `closed/` brief that reads `open` or `new` (for the user to
+(each with its brief), each `closed/` brief an In flight line was repointed to that reads
+`open` or `new` (for the user to
 set its status), and each
 brief holding a slot by path, so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
