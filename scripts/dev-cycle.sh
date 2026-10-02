@@ -114,7 +114,10 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
 # use rawfile directly: their directory has already passed plaindir.)
-inrepo() { [[ -z "$(blocker "$1" file)" ]] && rawfile "$1"; }
+inrepo() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
+# The same for a directory the digest globs in: the walk first, so nothing is
+# looked up through a non-plain parent.
+dirok() { [[ -z "$(blocker "$1" dir)" && -d "$1" ]]; }
 skipped() { SKIP_AT="$(blocker "$1" "${2:-file}")"; [[ -n "$SKIP_AT" ]] || return 1; SKIPPED+=("$SKIP_AT"); }
 skipdir() { skipped "$1" dir; }
 skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (section 8)."; }
@@ -143,7 +146,7 @@ fi
 [[ -n "$MAIN_SHA" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 
 last_record=""; skipped_record=""
-if plaindir docs/working/cycles; then
+if dirok docs/working/cycles; then
   for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
     d="${f##*/cycle-}"; d="${d%.md}"
     if ! rawfile "$f"; then
@@ -168,7 +171,7 @@ elif [[ -n "$last_record" ]]; then
 else
   SINCE="$(date -d "$TODAY - 14 days" +%F)"
   if [[ $records_skipped -gt 0 ]]; then
-    source_note="no readable cycle record (records or their directory were skipped as not plain: section 8), so the default of 14 days"
+    source_note="no readable cycle record (records, or a directory above them, were skipped as not a plain file or directory: section 8), so the default of 14 days"
   else
     source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
   fi
@@ -198,7 +201,7 @@ found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
-if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
+if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
 for f in "${decisions_glob[@]}"; do
   rawfile "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
@@ -223,15 +226,30 @@ if inrepo docs/decisions/log.md; then
 else
   skipped docs/decisions/log.md || true
 fi
+# Name every decision input skipped here, even when other triggers printed: a
+# reader of this section alone must see that some were not read.
+if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then
+  echo
+  printf '%s\n' "${SKIPPED[@]:$n_before_triggers}" | sort -u | while IFS= read -r p; do
+    echo "Not read: $p is not a plain file or directory (section 8); its triggers are missing above."
+  done
+fi
 if [[ $found -eq 0 ]]; then
-  if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then echo "No revisit triggers read: decision records or the log were skipped as not plain files (section 8)."
+  if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then echo "No revisit triggers read: every decision input that exists was skipped."
   else echo "No revisit triggers recorded."; fi
 fi
 
 printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
-if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
+QA=docs/working/questions-archive.md
+# questions.sh reads the archive too and would follow a symlink there, so the
+# archive passes the same check before questions.sh runs.
+if skipped docs/working/questions.md; then
+  skipnote docs/working/questions.md
+elif skipped "$QA"; then
+  skipnote "$QA"; echo "Watched questions were NOT checked: questions.sh reads the archive too."
+elif inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
   if open_q="$(bash "$QS" open 2>"$qs_err")"; then
     # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
@@ -249,8 +267,6 @@ if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
     echo
     echo '```'; cat "$qs_err"; echo '```'
   fi
-elif skipped docs/working/questions.md; then
-  skipnote docs/working/questions.md
 else
   echo "No docs/working/questions.md (or questions.sh) in this repo."
 fi
