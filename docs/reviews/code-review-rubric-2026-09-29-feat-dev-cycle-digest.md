@@ -1,4 +1,4 @@
-Commit: d503a43 (digest) / 1ae9b21 (skill, feat/dev-cycle)
+Commit: b88a9c4 (digest) / 79b1bfe (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -381,3 +381,21 @@ Scope: `ab8ec06..d503a43`, `cfe4b51..1ae9b21`, labelled partial. Fact-check k=1 
 | A1 | "running" vs "7 days quiet" overlapped | 🟡 | fact-check 13b; security F4; api 3; performance #4 | 8b3a8ad: building = a commit within 7 days |
 | A2 | The digest reported a skipped symlinked input as absent ("create it", "no record") | 🟡 | api 2; fact-check 9 | b88a9c4: "NOT read" where it would be read, plus section 8 |
 | C1 | Policy line gloss vs exclusions; Q-103 [1]/[2] wording and edit; docs/dev-cycle.md looser rule; Ideas definition; cut wording; test 6 reach; test 20 suffix | 🟢 | api 4–7, 9, 10; fact-check 1, 5, 6, 12, 14, 20, 23; security F5 | b88a9c4, 8b3a8ad |
+
+---
+
+## Pass 10 (review-fix loop, k=1, all critics; on b88a9c4 digest / 79b1bfe skill)
+
+**Status: 🔴 not clean — 1 behavioral red; fixed in c034a75 (digest) and a218ad8 (skill).**
+
+Before this pass the user chose to split the autonomous build-loop handoff out of the branch (79b1bfe; seed `docs/working/seed-build-loop-handoff.md`, roadmap Now "Build-loop handoff", Q-103 deferred). The split removed every pass-9 autonomous-merge red (security, api, performance all confirm). Scope: `d503a43..b88a9c4`, `1ae9b21..79b1bfe`, partial. Fact-check k=1 (29 claims: 19 V / 6 MA / 2 S / 2 I) and the three critics in parallel on pass 9's fact-check input. Artifacts: `code-fact-check-report-digest-pass10.md`, `security-review-2026-10-01-digest-pass10.md`, `performance-review-2026-10-01-digest-pass10.md`, `api-consistency-review-2026-10-01-digest-pass10.md`.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | A skipped cycle record still read as absent ("the previous cycle did not write its record"), and section 2 said "No revisit triggers recorded" when its inputs were skipped; b88a9c4's message claimed otherwise | 🔴 behavioral | fact-check 14b, 26a; api F1, F2; performance referral | c034a75 |
+| A1 | A symlinked `docs/decisions` or `docs/working/cycles` made section 8 list names from the outside directory, which the record commits | 🟡 Medium | security F1 | c034a75: globs only in plain directories; the directory is listed once |
+| A2 | A newline in a skipped name split into a forged section-8 line | 🟡 Low | security F2; api F7; performance referral | c034a75 |
+| A3 | Open briefs never expire, so three unstarted briefs hold every slot | 🟡 Low | performance #1 | a218ad8: 14-day "keep or drop?" entry |
+| C1 | "(0 items ready for 6b)"; a directory or FIFO labelled "symlink"; section 8 header and record name; step 2 "printed line"; step 0's skipped-record inference; Q-103 interim line, option [2] list, closing line; seed vs docs/dev-cycle.md policy rule; brief-reading reminder | 🟢 | fact-check 4, 6, 7, 15, 16, 20, 21; api F3–F8; security F3–F6 | c034a75, a218ad8 |
+
+Not acted on: section 8 and `## Skipped inputs` have no cap (performance #2; ~30 bytes per path, only with many committed symlinks); `skipped()` re-runs `inrepo` (performance #3, 0.3 ms per path). Carried to the handoff seed: `git diff --summary` shows a file turned symlink as `mode change 100644 => 120000` (security, probe P4).
