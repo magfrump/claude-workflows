@@ -89,29 +89,35 @@ ROOT_REAL="$(pwd -P)"
 # A regular file reached without any symlink: its real path must be exactly the
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
-inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+rawfile() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
 # A directory the digest globs in must be plain too, or the glob would list
 # names from wherever a symlinked directory points.
 plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
-# An input that exists in some form but is not a plain file (reached through a
-# symlink, or not a regular file) is skipped, not absent: it is named where it
-# would have been read and listed in section 8. A newline in a name becomes a
-# space here, before the name is ever printed.
-SKIPPED=()
-# Parents are checked first, top down: below a parent that is not a plain
-# directory nothing is probed (not even whether a file exists there), and the
-# parent is what gets recorded.
-skipped() {
+# One rule decides whether an input is skipped, for files and directories alike:
+# walking the path top down, the first part that exists but is not plain (a
+# symlink, or not a regular file / directory) blocks it. Nothing below a blocking
+# part is probed, not even whether a file exists there; the blocking part is what
+# section 8 lists and what the inline note names. A newline in a name becomes a
+# space before it is ever printed. An absent path is not skipped, just absent.
+SKIPPED=(); SKIP_AT=""
+blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
   local p="" c rest="$1"
   while [[ "$rest" == */* ]]; do
     c="${rest%%/*}"; rest="${rest#*/}"; p="${p:+$p/}$c"
-    [[ -e "$p" || -L "$p" ]] || return 1
-    plaindir "$p" || { SKIPPED+=("$p/"); return 0; }
+    [[ -e "$p" || -L "$p" ]] || return 0
+    plaindir "$p" || { printf '%s/' "$p"; return 0; }
   done
-  if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi
-  return 1
+  [[ -e "$1" || -L "$1" ]] || return 0
+  if [[ "$2" == dir ]]; then plaindir "$1" || printf '%s/' "$1"
+  else rawfile "$1" || printf '%s' "${1//$'\n'/ }"; fi
 }
-skipdir() { if [[ -e "$1" || -L "$1" ]] && ! plaindir "$1"; then SKIPPED+=("$1/"); return 0; fi; return 1; }
+# A fixed-name input is read only when no part of its path blocks it; the walk
+# runs first, so nothing is looked up through a non-plain parent. (Glob items
+# use rawfile directly: their directory has already passed plaindir.)
+inrepo() { [[ -z "$(blocker "$1" file)" ]] && rawfile "$1"; }
+skipped() { SKIP_AT="$(blocker "$1" "${2:-file}")"; [[ -n "$SKIP_AT" ]] || return 1; SKIPPED+=("$SKIP_AT"); }
+skipdir() { skipped "$1" dir; }
+skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (section 8)."; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
@@ -140,10 +146,10 @@ last_record=""; skipped_record=""
 if plaindir docs/working/cycles; then
   for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
     d="${f##*/cycle-}"; d="${d%.md}"
-    if ! inrepo "$f"; then
+    if ! rawfile "$f"; then
       # Keep the newest skipped date (not future-dated) to warn when it is newer
       # than the record the window starts from.
-      skipped "$f" && [[ "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
+      skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
       continue
     fi
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
@@ -157,12 +163,12 @@ if [[ -n "$SINCE" ]]; then
 elif [[ -n "$last_record" ]]; then
   SINCE="$last_record"; source_note="the last cycle record, docs/working/cycles/cycle-$last_record.md"
   if [[ "$skipped_record" > "$last_record" ]]; then
-    source_note+="; a newer record, cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
+    source_note+="; a newer record, docs/working/cycles/cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
   fi
 else
   SINCE="$(date -d "$TODAY - 14 days" +%F)"
   if [[ $records_skipped -gt 0 ]]; then
-    source_note="no readable cycle record (one or more were skipped as not plain files: section 8), so the default of 14 days"
+    source_note="no readable cycle record (records or their directory were skipped as not plain: section 8), so the default of 14 days"
   else
     source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
   fi
@@ -194,7 +200,7 @@ n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
 if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
 for f in "${decisions_glob[@]}"; do
-  inrepo "$f" || { skipped "$f" || true; continue; }
+  rawfile "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
   echo
@@ -244,7 +250,7 @@ if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
     echo '```'; cat "$qs_err"; echo '```'
   fi
 elif skipped docs/working/questions.md; then
-  echo "docs/working/questions.md is not a plain file (reached through a symlink, or not a regular file): NOT read (section 8)."
+  skipnote docs/working/questions.md
 else
   echo "No docs/working/questions.md (or questions.sh) in this repo."
 fi
@@ -266,7 +272,7 @@ if inrepo docs/roadmap.md; then
   echo
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
 elif skipped docs/roadmap.md; then
-  echo "docs/roadmap.md is not a plain file (reached through a symlink, or not a regular file): NOT read (section 8)."
+  skipnote docs/roadmap.md
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
@@ -316,7 +322,7 @@ if inrepo docs/roadmap.md; then
     echo "- Roadmap $sec: $n item(s)"
   done
 elif skipped docs/roadmap.md; then
-  echo "- Roadmap: not a plain file (reached through a symlink, or not a regular file), NOT read (section 8)"
+  echo "- $(skipnote docs/roadmap.md)"
 else
   echo "- Roadmap: none yet (nothing to brief)"
 fi
@@ -335,7 +341,7 @@ if inrepo "$LOG"; then
   fi
   echo "- Ideas seeded since: $seeded"
 elif skipped "$LOG"; then
-  echo "- $LOG: not a plain file (reached through a symlink, or not a regular file), NOT read (section 8)"
+  echo "- $(skipnote "$LOG")"
 else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
 fi
@@ -344,6 +350,6 @@ printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
   echo "None: no input was skipped."
 else
-  echo "Reached through a symlink, or not a regular file or directory, so not read; nothing below a listed directory was read or probed:"
+  echo "Each is a symlink, or a file or directory of the wrong kind, so it was not read; nothing below a listed directory was read or probed:"
   printf '%s\n' "${SKIPPED[@]}" | sort -u | sed 's/^/- /'
 fi
