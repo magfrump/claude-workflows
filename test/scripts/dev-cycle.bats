@@ -107,6 +107,14 @@ make_repo() {
     run --separate-stderr timeout 20 bash "$DC"
     [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
     [[ "$output" == *"if mn."* && "$output" == *"[line cut at 4096 bytes]"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p' | cut -c1-120; return 1; }
+    # Many nested lines stay fast: restarting each line per layer took ~1 minute.
+    perl -e 'print "# 004\n\n## Revisit triggers\n"; print "if ", "\xC2" x 1300, "\x9B" x 1300, ".\n" for 1 .. 600' > docs/decisions/004-many.md
+    run --separate-stderr timeout 10 bash "$DC"
+    [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
+    # U+2028 / U+2029 are removed too.
+    printf '# 005\n\n## Revisit triggers\nif p\xe2\x80\xa8q\xe2\x80\xa9r.\n' > docs/decisions/005-sep.md
+    run --separate-stderr bash "$DC"
+    [[ "$output" == *"if pqr."* ]]
     # An unknown-option error carrying an ESC reaches stderr scrubbed.
     run --separate-stderr bash "$DC" $'--bo\033gus'
     [ "$status" -eq 1 ]
@@ -302,9 +310,12 @@ EOF
     # A non-ASCII skill name still counts.
     mkdir -p "skills/café" && echo c > "skills/café/SKILL.md" && git add -A && git commit -q -m cafe
     # Heading case and suffixes do not hide items.
-    printf '# Roadmap\n\n## Now\n- a\n\n## In Flight\n- b\n- c\n\n## Next (ranked)\n1. d\n\n## Nextgen ideas\n- not next\n' > docs/roadmap.md
+    printf '# Roadmap\r\n\r\n## Now\r\n- a\r\n\r\n## In Flight\r\n- b\r\n- c\r\n\r\n## Next (ranked)\r\n1. d\r\n\r\n## Nextgen ideas\r\n- not next\r\n' > docs/roadmap.md
     printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- (signal: unclosed\n- two (signal: b)\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
+    # Section 5 uses the same heading rule (CRLF, case, suffix; "## Nextgen" is not Next).
+    roadmap=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$roadmap" == *"> 1. d"* && "$roadmap" != *"not next"* ]] || { echo "$roadmap"; return 1; }
     section=$(echo "$output" | sed -n '/## 7/,$p')
     for t in "in the window: 3" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
              "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
