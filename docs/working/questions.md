@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-103](#q-103--dev-cycle-build-loop-policy) | you: judgment | May the dev cycle's autonomous build loops (step 6b) merge their own branches in claude-workflows, or must ... | 2026-10-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -40,6 +41,22 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-103 · dev-cycle-build-loop-policy
+**Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** OPEN
+
+May the dev cycle's autonomous build loops (step 6b) merge their own branches in claude-workflows, or must each stop for your review?
+
+- **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed.
+- **Read:** `skills/dev-cycle/SKILL.md` step 6b · `docs/dev-cycle.md` · decision log row 68
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] review** | Each loop runs pr-prep's review-fix loop, then files one "merge <branch>?" entry (no PRs here) | One decision per finished item | Finished work queues up behind you; at most 3 items in flight |
+| **[2] autonomous** | Each loop lands its branch through pr-prep's local merge on its own | None per item; you read results in the next cycle's digest | A bad change lands on main and is caught only by the next cycle's spot-check |
+
+- **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`; the skill treats an interim value as unset and does not re-ask while this entry is open.
+- **If the answer differs:** edit that one line in `docs/dev-cycle.md`.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN

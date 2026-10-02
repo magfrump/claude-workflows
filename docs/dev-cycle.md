@@ -1,9 +1,10 @@
 # Dev-cycle settings
 
 This repo's settings for the dev-cycle skill (`skills/dev-cycle/SKILL.md`). Codebase
-onboarding sets them (its step 13); change them by editing this file.
+onboarding asks the user for the build-loop policy (its step 13); the idea sources are kept
+by hand. Change either by editing this file.
 
-Build-loop policy: review
+Build-loop policy: review (interim; Q-103)
 
 `autonomous`: a build loop the cycle hands an item to (step 6b) lands its branch through
 pr-prep on its own. `review`: it runs pr-prep's review-fix loop, then stops for a separate
