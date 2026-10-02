@@ -15,16 +15,20 @@
 #             that is a plain file, a real date and not future-dated (only its name is read), else
 #             14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
-#   --check-path / --check-write  instead of a digest, apply the dev-cycle skill's
-#             rule for paths taken from repo text: print "ok <path>" for each file
-#             that may be read (or written), "skip <arg>: <reason>" otherwise.
+#   --check-path  instead of a digest, apply the dev-cycle skill's rule for paths
+#             taken from repo text: "ok <path>" for each file that may be read (a
+#             tracked file, or a gitignored one under docs/working/; at most 50
+#             per argument), "skip <arg or match>: <reason>" otherwise.
+#   --check-write  the same for a file the cycle writes: only its own files
+#             (roadmap, questions files, idea log, cycle records, briefs).
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
-# Exit: 0 digest printed; 1 bad usage, not a git repo, no default branch or no
-# perl; a failed step exits non-zero mid-digest. Printed repo text is data.
+# Exit: 0 digest printed (or, for the check modes, every argument answered: a
+# skip is an answer, not an error); 1 bad usage, not a git repo, no default branch
+# or no perl; a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
 
@@ -88,7 +92,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one path" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -146,36 +150,53 @@ TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
 #  - plain: a regular file reached without any symlink (inrepo).
 # Globs are matched by git (":(glob)"), never by a shell.
 pathform() {  # $1 path, $2 "glob" to allow * and ?
-  local p="$1" rest c set='^[A-Za-z0-9._/-]+$'
+  # C locale: ranges and case folding must not depend on the user's locale (a
+  # Turkish one can fold .GIT to something other than .git).
+  local LC_ALL=C p="$1" rest c set='^[A-Za-z0-9._/-]+$'
   [[ "${2:-}" == glob ]] && set='^[A-Za-z0-9._/*?-]+$'
   [[ "$p" =~ $set && "$p" != /* && "$p" != -* ]] || return 1
   rest="$p/"
   while [[ -n "$rest" ]]; do
     c="${rest%%/*}"; rest="${rest#*/}"
-    [[ -n "$c" && "$c" != ".." && "${c,,}" != .git* ]] || return 1
+    [[ -n "$c" && "$c" != "." && "$c" != ".." && "$c" != [.][gG][iI][tT]* ]] || return 1
   done
 }
-matches() {  # $1 pathspec; NUL-separated tracked files, then ignored ones under docs/working/
+matches() {  # $1 pathspec, $2 the argument; NUL-separated tracked files, then ignored ones under docs/working/
+  local fixed="${2%%[*?]*}"
   GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
-  GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
-    | while IFS= read -r -d '' m; do [[ "$m" == docs/working/* ]] && printf '%s\0' "$m"; done
+  # Ignored files count only under docs/working/; skip the query when the
+  # argument's fixed prefix cannot lead there (it lists every ignored match).
+  if [[ "$fixed" == docs/working/* || docs/working/ == "$fixed"* ]]; then
+    GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
+      | { grep -z '^docs/working/' || true; }
+  fi
 }
 check_path() {
-  local a="$1" spec m n=0
+  local a="$1" spec m n=0 max=50
   if ! pathform "$a" glob; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   if [[ "$a" == *[*?]* ]]; then spec=":(glob)$a"; else spec=":(literal)$a"; fi
   while IFS= read -r -d '' m; do
     [[ "$a" == *[*?]* || "$m" == "$a" ]] || continue  # a plain path names one file, not a directory
     n=$((n + 1))
+    if [[ $n -gt $max ]]; then echo "skip $a: matches more than $max files; the rest are not listed"; break; fi
     if ! pathform "$m"; then echo "skip ${m//$'\n'/ }: not an allowed path form"
     elif ! inrepo "$m"; then echo "skip $m: reached through a symlink, or not a regular file"
     else echo "ok $m"; fi
-  done < <(matches "$spec")
+  done < <(matches "$spec" "$a")
   [[ $n -gt 0 ]] || echo "skip $a: no tracked file (or ignored file under docs/working/) matches"
+}
+# The only files the cycle writes; anything else named in repo text (a roadmap
+# line pointing at an instruction file, say) is refused, so it is never treated
+# as a brief and written to.
+writable() {
+  [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ \
+    || "$1" =~ ^docs/working/cycles/cycle-[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$ \
+    || "$1" =~ ^docs/working/briefs/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$ ]]
 }
 check_write() {
   local a="$1"
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"
+  elif ! writable "$a"; then echo "skip $a: not one of the files the dev cycle writes"
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
@@ -288,9 +309,10 @@ for f in "${decisions_glob[@]}"; do
   echo
   d="${last_date[$f]-}"
   # Fall back only for a record present in HEAD's tree (one object lookup, no
-  # history walk). One absent from HEAD prints "never, uncommitted" without a
-  # full walk to prove it (~1 s per record on a 220k-commit repo); that is also
-  # what a record committed earlier and since removed from HEAD shows.
+  # history walk): a record the map missed (a name git quotes) that is absent
+  # from HEAD prints "never, uncommitted" without a full walk to prove it (~1 s
+  # per record on a 220k-commit repo), even if it was committed once and later
+  # removed. A plain-named record keeps the map's date, removal included.
   if [[ -z "${last_date[$f]+set}" ]] && git cat-file -e "HEAD:$f" 2>/dev/null; then
     d="$(git log -1 --format=%ad --date=short -- "$f")"
   fi
