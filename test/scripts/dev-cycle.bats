@@ -143,9 +143,10 @@ make_repo() {
     [ "$status" -eq 0 ]
     [[ "$output" != *SECRET* ]] || { echo "$output"; return 1; }
     # Each is reported as skipped, not as absent.
-    [[ "$output" == *"docs/roadmap.md is reached through a symlink: NOT read"* ]] || { echo "$output"; return 1; }
-    [[ "$output" == *"docs/working/questions.md is reached through a symlink: NOT read"* ]]
-    [[ "$output" != *"from the last cycle record"* ]]
+    [[ "$output" == *"docs/roadmap.md is not a plain file"*"NOT read"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"docs/working/questions.md is not a plain file"*"NOT read"* ]]
+    [[ "$output" == *"no readable cycle record (one or more were skipped"* ]]
+    [[ "$output" == *"No revisit triggers read: decision records or the log were skipped"* ]]
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     for f in docs/decisions/002-link.md docs/decisions/003-git.md docs/decisions/log.md docs/roadmap.md \
              docs/working/questions.md docs/working/idea-log.md docs/working/cycles/cycle-2026-02-01.md; do
@@ -153,10 +154,29 @@ make_repo() {
     done
 }
 
+@test "a symlinked directory is listed once, never its contents; a newline in a skipped name stays on one line" {
+    mkdir -p "$BATS_TEST_TMPDIR/outside/dec" "$BATS_TEST_TMPDIR/outside/cyc" docs/working
+    printf '# 1\n\n## Revisit triggers\nSECRET.\n' > "$BATS_TEST_TMPDIR/outside/dec/001-private-plan.md"
+    touch "$BATS_TEST_TMPDIR/outside/cyc/cycle-2026-02-01.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/dec" docs/decisions
+    ln -s "$BATS_TEST_TMPDIR/outside/cyc" docs/working/cycles
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *private-plan* && "$output" != *SECRET* && "$output" != *cycle-2026-02-01* ]] || { echo "$output"; return 1; }
+    skipped=$(echo "$output" | sed -n '/## 8/,$p')
+    [[ "$skipped" == *"- docs/decisions/"* && "$skipped" == *"- docs/working/cycles/"* ]] || { echo "$skipped"; return 1; }
+    rm docs/decisions && mkdir -p docs/decisions
+    ln -s "$BATS_TEST_TMPDIR/outside/dec/001-private-plan.md" "docs/decisions/002-a"$'\n'"- FORGED.md"
+    run --separate-stderr bash "$DC"
+    skipped=$(echo "$output" | sed -n '/## 8/,$p')
+    [[ "$skipped" == *"- docs/decisions/002-a - FORGED.md"* ]] || { echo "$skipped"; return 1; }
+    [[ "$skipped" != *$'\n'"- - FORGED"* ]]
+}
+
 @test "the exit status and the whole digest survive a redirect to a file" {
     bash "$DC" > "$BATS_TEST_TMPDIR/out.md" 2> "$BATS_TEST_TMPDIR/err.txt"
     grep -q '^## 7. Inputs for steps 4b and 5' "$BATS_TEST_TMPDIR/out.md"
-    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'no input is reached through a symlink'
+    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'every input is a plain file'
     run bash "$DC" --since=nope
     [ "$status" -eq 1 ]
 }
