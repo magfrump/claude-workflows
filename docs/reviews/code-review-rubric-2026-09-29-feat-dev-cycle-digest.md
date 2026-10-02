@@ -1,4 +1,4 @@
-Commit: f47de85 (digest) / cb2e5f9 (skill, feat/dev-cycle)
+Commit: 09f6fe7 (digest) / 5423a33 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -479,3 +479,17 @@ Scope: `096042b..f47de85`, `374d559..cb2e5f9`, partial. Fact-check k=1 (24 claim
 | A1 | Two "nothing checked" states in section 3 printed no banner; a missing questions.sh read as a missing questions.md; a symlinked archive was unlisted when questions.md was absent or questions.sh missing | 🟡 | api F2, F3; security Info 2 | 09f6fe7: one ordered chain, archive checked up front, one banner with the cause |
 | A2 | Step 3's 14-day clock ambiguous (either date); steps 2–3 not limited to still-open briefs; "step 1" ambiguous | 🟡 | api F4; fact-check 17, 18, 20 | 5423a33 |
 | C1 | Banner styles differ; section 3 checks questions.md's path up to three times; test 10 adds a run | 🟢 | api F5; performance Info 1, 2 | 09f6fe7 (one banner style); the rest kept |
+
+---
+
+## Pass 16 (review-fix loop, k=1, all critics; on 09f6fe7 digest / 5423a33 skill)
+
+**Status: 🟢 no red, no Incorrect claim; the remaining Minor/Informational items fixed in 074164b. No known issues remain, so the next pass is the k=1 full review.**
+
+Scope: `f47de85..09f6fe7`, `cb2e5f9..5423a33`, partial. Fact-check k=1 (20 claims: 18 V / 2 MA / 0 I) and the three critics in parallel on pass 15's fact-check input. Artifacts: `code-fact-check-report-digest-pass16.md`, `security-review-2026-10-01-digest-pass16.md`, `performance-review-2026-10-01-digest-pass16.md`, `api-consistency-review-2026-10-01-digest-pass16.md`. The digest (A) had no finding: section 3 probed in 34–36 combinations by three reviewers, the archive listed in section 8 in every one. Pass 15's red (date-keyed answers) is confirmed fixed.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | Steps 2–3 selected any question naming the brief, not only the keep-or-drop questions the cycle filed | 🟡 Minor | fact-check 7b, 11; security Info 1; api F1 | 074164b: `Asked:` IDs |
+| C1 | Step 3's banner quote not exact; `Answered:` clashes with questions' ANSWERED; other answers undefined; init refusal; brief path reuse; "never through" not repeated in step 3 | 🟢 | api F2, F4–F7; security Info 2 | 074164b |
+| C2 | B carries the old digest until A merges in (merge order) | 🟢 | api F3; security note | merge A into B before landing (done at every round) |
