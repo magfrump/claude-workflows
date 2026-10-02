@@ -97,13 +97,17 @@ its output. It is read-only. Its sections feed the steps: 1 activity (context), 
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
 docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
 record's `## Skipped inputs`). If the repo has no
-`docs/working/questions.md`, run `~/.claude/scripts/questions.sh init` first. If the window
-starts before the last cycle you know ran (or says no cycle record was found when one ran),
-that cycle skipped step 7: note it in this record and rerun with `--since` set to that cycle's
-date. If instead it says records were skipped, or names a newer record that was skipped, a
-record (or the cycles directory) exists but is not a plain file: note that in this record, file
-one `agent` entry reporting the path (never read, copy or rewrite through it), and rerun with
-`--since` the same way.
+`docs/working/questions.md`, run `~/.claude/scripts/questions.sh init` first. Then check the
+Window line, in this order:
+
+- It says records or their directory were skipped, or names a newer record that was skipped:
+  a record exists but is not a plain file, or a directory above it (`docs/`, `docs/working/`,
+  the cycles directory) is not. Note that in this record, file one `agent` entry reporting
+  the path section 8 lists (never read, copy or rewrite through it), and rerun with
+  `--since` set to the last cycle's date.
+- Otherwise, if the window starts before the last cycle you know ran (or says no cycle record
+  was found when one ran), that cycle skipped step 7: note it and rerun with `--since` set to
+  that cycle's date.
 
 If the digest fails (non-zero exit or a missing section), stop the cycle: file one `agent`
 entry with the error and write **no** cycle record, so the next window still starts at the
@@ -217,10 +221,12 @@ docs/working/questions.md.
 - **In flight**: items with an open build brief, each linking it. Every cycle checks each:
   its branch merged into the default branch → Done; the user dropped it (closed the brief,
   or said so) → Ideas, with the reason. Either way the brief gets `Status: closed`. When a
-  brief's branch has no commit beyond the default branch 14 days after the brief's date (or
-  after its last `Kept:` date), file one `you: judgment` entry, "keep or drop the brief for
+  brief's branch has no commit beyond the default branch (or does not exist yet) 14 days after
+  the brief's date (or after its last `Kept:` date), file one `you: judgment` entry, "keep or drop the brief for
   <item>?", unless one is already open: "keep" adds `Kept: YYYY-MM-DD` to the brief, "drop"
-  closes it as above. Until the user answers, the brief still holds its slot.
+  closes it as above. Apply answers here, reading `questions-archive.md` too (step 1 has
+  already archived answered entries), and apply each before deciding whether to ask again.
+  Until the user answers, the brief still holds its slot.
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
