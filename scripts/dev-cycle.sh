@@ -54,7 +54,8 @@
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a code fence never closed or not in plain column-0
-#             form, a raw HTML block, a stray carriage return or byte-order
+#             form, a line starting with < or opening an unclosed comment, a
+#             link reference definition, a stray carriage return or byte-order
 #             mark, a question heading inside a fence, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
@@ -130,7 +131,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,69p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,70p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -260,18 +261,26 @@ check_write() {
 # of the same character, at least as long and followed by nothing but spaces or
 # tabs, closes it. Any other fence-like line (indented, after a list marker, or
 # a column-0 line that neither opens nor, inside a fence, is plain content) is
-# ambiguous, and so is anything this reader does not model: a line outside a
-# fence that starts with < (an HTML block can hold a fence line; only a
-# complete one-line <!-- comment --> is read), a carriage return inside a line
-# (CommonMark ends a line there), or a byte-order mark: fence() records the
-# first one's line number in `odd` (and why in `oddwhy`), and the
-# caller refuses the whole file. A fence still open at the end is recorded in
-# `fline` (its opening line) and refuses the file too.
+# ambiguous, and so is anything this reader does not model: outside a fence,
+# a line that starts (after spaces or tabs) with < (an HTML block can hold a
+# fence line; only a complete one-line <!-- comment --> is read), one that
+# opens an HTML comment it does not close, a link reference definition, a
+# carriage return inside a line (CommonMark ends a line there), or a
+# byte-order mark on line 1: fence() records the first one's line number in
+# `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
+# still open at the end is recorded in `fline` (its opening line) and refuses
+# the file too.
+# Accepted limit (decision log 69): inline constructs that span lines (an open
+# tag attribute, link title, code span or emphasis) are not modelled, so text
+# CommonMark would hide inside them is read as text. Whoever can write such a
+# shape can write the answer or Status line itself; no real file has one.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
 function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
+function opencomment(l,   i) { i = index(l, "<!--"); return i && !index(substr(l, i + 4), "-->") }
+function refdef(l) { return l ~ /^[ \t]*\[[^]]+\]:/ }
 function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
   ch = substr(l, 1, 1)
@@ -282,7 +291,8 @@ function opens(l,   ch, n) {
 }
 function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) ~ /^[ \t]*$/ }
 function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
-  if (index(l, "\r") || (NR == 1 && substr(l, 1, 3) == "\357\273\277")) { refuse("cr"); return 1 }
+  if (index(l, "\r")) { refuse("cr"); return 1 }
+  if (NR == 1 && substr(l, 1, 3) == "\357\273\277") { refuse("bom"); return 1 }
   if (infence) {
     if (closes(l)) infence = 0
     else if (fenceish(l) && substr(l, 1, 1) != "`" && substr(l, 1, 1) != "~") refuse("fence")
@@ -291,13 +301,18 @@ function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary
   if (opens(l)) { infence = 1; fline = NR; return 1 }
   if (fenceish(l)) { refuse("fence"); return 1 }
   if (rawhtml(l)) { refuse("html"); return 1 }
+  if (opencomment(l)) { refuse("comment"); return 1 }
+  if (refdef(l)) { refuse("refdef"); return 1 }
   return 0
 }
 '
 oddwhy() {  # the reason fence() refused a file, for a skip line
   case "$1" in
-    html) echo "starts a raw HTML block (only a one-line <!-- comment --> is read)" ;;
-    cr) echo "holds a carriage return that does not end it, or a byte-order mark" ;;
+    html) echo "starts with < (a possible raw HTML block; only a complete one-line <!-- comment --> is read)" ;;
+    comment) echo "opens an HTML comment that does not close on the same line" ;;
+    refdef) echo "is a link reference definition (its title can span lines)" ;;
+    cr) echo "holds a carriage return that does not end it" ;;
+    bom) echo "starts with a byte-order mark" ;;
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
   esac
 }
@@ -381,8 +396,8 @@ check_fix() {
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),
-# "odd N", "unbalanced N" or "quoted N" (the file's fences cannot be trusted; N
-# is the line), or nothing when the file has no such entry. A trailing CR is dropped.
+# "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
+# the line, WHY the oddwhy reason), or nothing when the file has no such entry. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
 # read. Each of these makes the whole file a skip for every ID, naming the line,
 # because one stray fence line flips everything after it (and two flips can
