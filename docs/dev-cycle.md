@@ -24,8 +24,9 @@ answered.
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Paths relative to the repo root only (no leading `/` or `~`, no `..` or `.git` component),
-never through a symlink.
+Tracked files only, as plain paths from the repo root (letters, digits, `.`, `_`, `-`, `/`;
+no `..` or `.git` component), never through a symlink: the skill's "Plain, tracked repo
+paths only" rule.
 
 | Source | Path or glob | Format |
 | --- | --- | --- |
