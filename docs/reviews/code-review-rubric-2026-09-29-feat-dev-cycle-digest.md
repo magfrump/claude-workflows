@@ -1,4 +1,4 @@
-Commit: 09f6fe7 (digest) / 5423a33 (skill, feat/dev-cycle)
+Commit: bc5dc76 (feat/dev-cycle, full branch)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -493,3 +493,19 @@ Scope: `f47de85..09f6fe7`, `cb2e5f9..5423a33`, partial. Fact-check k=1 (20 claim
 | A1 | Steps 2–3 selected any question naming the brief, not only the keep-or-drop questions the cycle filed | 🟡 Minor | fact-check 7b, 11; security Info 1; api F1 | 074164b: `Asked:` IDs |
 | C1 | Step 3's banner quote not exact; `Answered:` clashes with questions' ANSWERED; other answers undefined; init refusal; brief path reuse; "never through" not repeated in step 3 | 🟢 | api F2, F4–F7; security Info 2 | 074164b |
 | C2 | B carries the old digest until A merges in (merge order) | 🟢 | api F3; security note | merge A into B before landing (done at every round) |
+
+---
+
+## Full review 1 (k=1, full branch, all critics; feat/dev-cycle at bc5dc76)
+
+**Status: 🟡 not clean — 0 red, 1 amber (security Medium, a regression), 1 Inconsistent; all fixed in 723c242 (digest) and 1f36885 (skill). Next: a k=1 delta pass on those fixes, then the full review again.**
+
+Scope: `git diff main...bc5dc76 -- . ':!docs/reviews'` (13 files, ~1,420 lines). Fact-check k=1 (80 claims: 74 V / 5 MA / 1 S / 0 I; 47 executed) and the three critics in parallel (the critics without the new fact-check, which was still running; performance used it). Artifacts on feat/dev-cycle: `code-fact-check-report-dev-cycle-full.md`, `security-review-2026-10-02-dev-cycle-full.md`, `performance-review-2026-10-02-dev-cycle-full.md`, `api-consistency-review-2026-10-02-dev-cycle-full.md`. Confirmed by execution: the scrub under PERLIO/PERL_UNICODE, every skip shape, exit codes, read-only, the measured figures in comments and docs.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | The skill's path rule lost "inside the repo" when pass 8 replaced it with a symlink-only check: a committed idea-sources row such as an absolute path or `../` passed and step 5 would read it | 🟡 Medium (regression of pass-7 A2) | security | 1f36885: relative, no `/`, `~` or `..`, then the symlink walk; slugs `[a-z0-9-]` |
+| A2 | A keep-or-drop answer given as an option number (`[2]`, the questions grammar's normal form) was consumed with no effect | 🟡 Inconsistent | api F1 | 1f36885: options [1] keep / [2] drop; number or word accepted |
+| C1 | Section 2 cost records × history (one git log per record): above ~141 records at 200k commits it passed the 120 s Bash default | 🟢 Low | performance #1 | 723c242: one path-limited walk; same output here |
+| C2 | Section 7 counted only SKILL.md / top-level workflows; "every trigger" overstated; empty `--since=` accepted; bash-prefixed errors; test name "seven"; empty "Open by route"; `handoffs/` name clash; init before the branch; redundant index; formats unstated; seed/help/step-0 wording | 🟢 | api F2–F11; fact-check 19, 25, 58, 60, 72, 78; security Info | 723c242, 1f36885 |
+| C3 | Sections 1 and 7 walk all history (~3 s at 200k commits); section 6 one diff per merge; awk reads a huge line whole | 🟢 Low/Info | performance #2, #3, #5 | kept (prior C1/C2; bounded for realistic windows) |
