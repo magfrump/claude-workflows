@@ -7,17 +7,28 @@
 #
 # Usage: scripts/dev-cycle.sh [--since=YYYY-MM-DD] [--sample=N]
 #
-#   --since   start of the cycle window (midnight, local time). Default: the
-#             date in the newest docs/working/cycles/cycle-YYYY-MM-DD.md, else
-#             14 days ago. The digest says which.
-#   --sample  how many merges to sample for the spot-check audit (default 2).
+#   --since   start of the cycle window: merges committed on or after this date.
+#             Default: the date in the newest docs/working/cycles/cycle-YYYY-MM-DD.md
+#             (only its file name is read), else 14 days ago. The digest says which.
+#   --sample  how many merges to sample for the spot-check (default 2).
 #
+# Every revisit trigger is printed in full every run; nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
-# Exit: 0 digest printed; 1 bad usage, not a git repo or no default branch; a
-# failed step exits non-zero mid-digest. Printed repo text is data, not orders.
+# Exit: 0 digest printed; 1 bad usage, not a git repo, no default branch or no
+# perl; a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
+
+command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
+# The one scrub for everything printed, stdout and stderr: drops C0 controls but
+# TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
+# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F). Byte patterns
+# under LC_ALL=C, so invalid UTF-8 in a file name cannot make perl warn or die.
+scrub() {
+  LC_ALL=C perl -pe 's/\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]//g; tr/\000-\010\013-\037\177//d'
+}
+exec > >(scrub) 2> >(scrub >&2)
 
 SINCE=""
 SAMPLE=2
@@ -27,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; shift ;;
     --sample) SAMPLE="${2:?--sample needs a number}"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; shift ;;
-    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -37,9 +48,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: rel
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
-# not pathspecs; control characters are stripped from everything printed.
+# not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
-exec > >(LC_ALL=C tr -d '\000-\010\013-\037\177')
 # Pass git only a hash for the default branch: origin/HEAD comes from the remote,
 # and a branch named `--output=<path>` would reach `git log` as an option.
 MAIN=""; MAIN_SHA=""
@@ -76,69 +86,50 @@ else
   source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
 fi
 if ! [[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$SINCE" >/dev/null 2>&1; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
-# A bare date means "this time of day" to git; anchor it at midnight.
-SINCE_TS="$SINCE 00:00:00"
 
 echo "# Dev-cycle digest — $TODAY"
 echo
-echo "Window: since $SINCE (from $source_note). Merges: \`$MAIN\` at ${MAIN_SHA:0:7}. Triggers: the working tree, compared with \`$MAIN\` at the window start. Questions, roadmap: the working tree."
-echo "Main at: $MAIN_SHA (copy this line into the cycle record; the next digest compares triggers against it)"
+echo "Window: since $SINCE (from $source_note). Merges and commits: those on \`$MAIN\` at ${MAIN_SHA:0:7} committed on or after $SINCE, filtered by date after a full walk. Triggers: all of them, from the working tree. Questions, roadmap, idea log: the working tree."
 
 echo
 echo "## 1. Activity"
-merges="$(git log "$MAIN_SHA" --first-parent --merges --since="$SINCE_TS" --format='%h %ad %s' --date=short)"
+# Walk all of history and filter by committer date afterwards: `--since` stops
+# at the first old-dated commit, so one such commit hid every merge after it.
+# %cs is the committer date as YYYY-MM-DD, which compares as a string.
+merges_full="$(git log "$MAIN_SHA" --first-parent --merges --format='%cs %H %h %ad %s' --date=short | awk -v s="$SINCE" '$1 >= s')"
+merges="$(printf '%s' "$merges_full" | cut -d' ' -f3-)"
 n_merges="$(printf '%s' "$merges" | grep -c . || true)"
-commits="$(git rev-list --count --since="$SINCE_TS" "$MAIN_SHA")"
+commits="$(git log "$MAIN_SHA" --format=%cs | awk -v s="$SINCE" '$1 >= s' | wc -l)"
 echo
 echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) reachable from it, merged branches included."
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-if [[ -n "$last_record" && "$source_note" != "--since" ]]; then
-  full=0
-  echo "Printed in full: triggers in decision records changed since $SINCE, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-$last_record.md unless that record says \"cannot tell\" or \"fired\"."
-else
-  full=1
-  echo "$([[ "$source_note" == --since ]] && echo 'An explicit --since was given' || echo 'No earlier cycle record to carry verdicts from'), so every trigger is printed in full."
-fi
-echo "Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry."
-found=0; carried=()
+echo "Every trigger, in full. Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
-# Window start = the commit the last cycle recorded ("Main at:"), else by date.
-base="$(sed -n 's/^Main at: \([0-9a-f]\{7,40\}\).*/\1/p' "docs/working/cycles/cycle-$last_record.md" 2>/dev/null | head -1 || true)"
-[[ -n "$base" && "$source_note" != --since ]] && git merge-base --is-ancestor "$base" "$MAIN_SHA" 2>/dev/null || base="$(git rev-list -1 --first-parent --before="$SINCE_TS" "$MAIN_SHA")"
 for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
   [[ -f "$f" ]] || continue
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
-  # Changed = its trigger section differs from the default branch's copy at the
-  # window start: merged, fast-forwarded, branch-only and uncommitted all count.
-  if [[ $full -eq 1 || -z "$base" ]] || ! cmp -s <(git show "$base:$f" 2>/dev/null | trig) <(trig < "$f"); then
-    echo
-    d="$(git log -1 --format=%ad --date=short -- "$f")"
-    echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
-    trig < "$f" | sed 's/^/> /'
-  else
-    carried+=("${f#docs/decisions/}")
-  fi
+  echo
+  d="$(git log -1 --format=%ad --date=short -- "$f")"
+  # A newline in a file name would otherwise print a line of its own.
+  echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
+  trig < "$f" | sed 's/^/> /'
 done
 if [[ -f docs/decisions/log.md ]]; then
   while IFS= read -r row; do
     found=1
     n="$(awk -F'|' '{ gsub(/ /, "", $2); print $2 }' <<< "$row")"
     d="$(awk -F'|' '{ gsub(/ /, "", $3); print $3 }' <<< "$row")"
-    if [[ $full -eq 1 || ! "$d" < "$SINCE" ]]; then
-      # The whole clause to the cell's end; prefer a capitalised "Revisit" (the
-      # trigger sentence) over an earlier "revisit-trigger verdicts" mention.
-      text="$(grep -oE 'Revisit[^|]*' <<< "$row" | head -1 || true)"
-      [[ -n "$text" ]] || text="$(grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
-      echo "- log row $n ($d): > $text"
-    else
-      carried+=("log row $n")
-    fi
+    # The whole clause to the cell's end; prefer a capitalised "Revisit" (the
+    # trigger sentence) over an earlier "revisit-trigger verdicts" mention.
+    text="$(grep -oE 'Revisit[^|]*' <<< "$row" | head -1 || true)"
+    [[ -n "$text" ]] || text="$(grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
+    echo "- log row $n ($d): > $text"
   done < <(grep -E '^\| [0-9]+ \|' docs/decisions/log.md | grep -i 'revisit' || true)
 fi
-[[ ${#carried[@]} -eq 0 ]] || printf '\nCarried forward (%s): %s\n' "${#carried[@]}" "${carried[*]}"
 [[ $found -eq 1 ]] || echo "No revisit triggers recorded."
 
 printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"

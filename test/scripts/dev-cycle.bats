@@ -61,29 +61,53 @@ make_repo() {
     [[ "$output" == *"log row 9 (2026-01-01): > Revisit if gizmos appear"*" end. "* ]]
 }
 
-@test "after a cycle record, unchanged triggers carry forward and changed ones print" {
+@test "after a cycle record, every trigger still prints in full and nothing is carried" {
     mkdir -p docs/decisions docs/working/cycles
     printf '# 001\n\n## Revisit triggers\nif old thing.\n' > docs/decisions/001-old.md
     printf '| 8 | 2020-01-01 | **x** | Revisit if ancient. | r |\n| 9 | 2099-01-01 | **y** | Revisit if future. | r |\n' > docs/decisions/log.md
     git add -A && GIT_COMMITTER_DATE="2020-01-02T12:00:00" git commit -q --date="2020-01-02T12:00:00" -m "old record"
-    start=$(git rev-parse HEAD)
-    printf '# 002\n\n## Revisit triggers\nif new thing.\n' > docs/decisions/002-new.md
-    git add -A && git commit -q -m "new record"
-    # Committed on a branch before the window, fast-forwarded into main inside it.
-    git checkout -q -b late && printf '# 003\n\n## Revisit triggers\nif late thing.\n' > docs/decisions/003-late.md
-    git add -A && GIT_COMMITTER_DATE="2020-01-03T12:00:00" git commit -q --date="2020-01-03T12:00:00" -m late
-    git checkout -q main && git merge -q --ff-only late
-    printf '\n## Other\nbulk edit\n' >> docs/decisions/001-old.md && git commit -qam "edit outside triggers"
-    printf '# 004\n\n## Revisit triggers\nif uncommitted thing.\n' > docs/decisions/004-wip.md
-    printf '| 7 | %s | **z** | Revisit if boundary. | r |\n' "$(date -d yesterday +%F)" >> docs/decisions/log.md
-    echo "Main at: $start" > "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
+    printf '# 002\n\n## Revisit triggers\nif uncommitted thing.\n' > docs/decisions/002-wip.md
+    echo "Main at: $(git rev-parse HEAD)" > "docs/working/cycles/cycle-$(date -d yesterday +%F).md"
     run --separate-stderr bash "$DC"
-    for t in "if new thing." "if late thing." "if uncommitted thing." "Revisit if boundary."; do
-        [[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }
+    for t in "if old thing." "if uncommitted thing." "log row 8 (2020-01-01): > Revisit if ancient." \
+             "log row 9 (2099-01-01): > Revisit if future."; do
+        [[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
     done
-    [[ "$output" != *"if old thing."* ]]
-    [[ "$output" == *"Carried forward (2): 001-old.md log row 8"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
-    [[ "$output" == *"log row 9 (2099-01-01): > Revisit if future."* ]]
+    [[ "$output" != *"Carried forward"* && "$output" != *"Main at:"* ]]
+}
+
+@test "an old-dated commit on main does not hide the merges after it" {
+    # Fast-forward a 2020-dated commit onto main, then merge today: --since used
+    # to stop its walk at the old commit and report 0 merges.
+    git checkout -q -b old && GIT_COMMITTER_DATE="2020-01-02T12:00:00" git commit -q --allow-empty --date="2020-01-02T12:00:00" -m old
+    git checkout -q main && git merge -q --ff-only old
+    git checkout -q -b f4 && git commit -q --allow-empty -m "feature 4" && git checkout -q main
+    git merge -q --no-ff f4 -m "merge: feature 4"
+    run --separate-stderr bash "$DC" --since="$(date +%F)"
+    [[ "$output" == *"4 merge(s)"* ]] || { echo "$output" | sed -n '/## 1/,/## 2/p'; return 1; }
+    [[ "$output" == *"merge: feature 4"* ]]
+    [[ "$output" != *"No merges in the window"* ]]
+}
+
+@test "the scrub strips C0, C1, bidi and tag characters from stdout and stderr" {
+    mkdir -p docs/decisions
+    # C1 CSI (U+009B), RLO (U+202E), a tag character (U+E0041), ESC, CR.
+    printf '# 001\n\n## Revisit triggers\nif a\xc2\x9bb\xe2\x80\xaec\xf3\xa0\x81\x81d\033e\rf.\n' > docs/decisions/001-x.md
+    run --separate-stderr bash "$DC"
+    [[ "$output" == *"if abcdef."* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p' | od -c | head; return 1; }
+    # A non-repo error message carrying an ESC still reaches stderr scrubbed.
+    run --separate-stderr bash "$DC" $'--bo\033gus'
+    [ "$status" -eq 1 ]
+    # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
+    [[ "$stderr" == *"Unknown option: --bogus"* ]] || { printf '%s' "$stderr" | od -c | head; return 1; }
+}
+
+@test "a newline in a decision record's name cannot print a line of its own" {
+    mkdir -p docs/decisions
+    printf '# 002\n\n## Revisit triggers\nif x.\n' > "docs/decisions/002-a"$'\n'"## 3. Fake.md"
+    run --separate-stderr bash "$DC"
+    [[ "$output" != *$'\n'"## 3. Fake"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"### docs/decisions/002-a ## 3. Fake.md"* ]]
 }
 
 @test "the window defaults to the newest cycle record's date and says so" {
@@ -92,7 +116,7 @@ make_repo() {
     run --separate-stderr bash "$DC"
     [[ "$output" == *"Window: since 2026-02-10 (from the last cycle record"* ]]
     run --separate-stderr bash "$DC" --since=2026-03-01
-    [[ "$output" == *"An explicit --since was given, so every trigger"* ]]
+    [[ "$output" == *"Window: since 2026-03-01 (from --since)"* ]]
 }
 
 @test "--since counts from midnight, not from the current time of day" {
