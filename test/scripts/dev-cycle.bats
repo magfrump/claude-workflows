@@ -990,3 +990,32 @@ EOF
     [[ "$output" == *"drop Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
 }
 
+
+@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email is not one" {
+    mkdir -p docs
+    { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
+      echo 'Also @docs/frag.md#intro, [@docs/link.md](docs/link.md) and (@docs/paren.md).'
+      echo 'Mail user@docs/email.md is not an import.'; } > GEMINI.md
+    for f in my_notes bold em_one star frag link paren email; do echo x > "docs/$f.md"; done
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/my_notes.md docs/bold.md docs/em_one.md docs/star.md \
+        docs/frag.md docs/link.md docs/paren.md docs/email.md
+    [ "$status" -eq 0 ]
+    for f in my_notes bold em_one star frag link paren; do
+        [[ "$output" == *"skip docs/$f.md: an instruction file imports"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
+    done
+    [[ "$output" == *"ok docs/email.md"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-fix finds instruction files in any case among many unrelated tracked files" {
+    mkdir -p docs sub
+    for i in $(seq 1 300); do echo x > "docs/n$i.md"; done
+    printf 'See @../docs/deep.md\n' > sub/Agents.Local.md
+    echo x > docs/deep.md
+    git add -A && git commit -qm many
+    printf 'See @docs/ign.md\n' > CLAUDE.local.md && echo CLAUDE.local.md >> .git/info/exclude && echo x > docs/ign.md
+    git add docs/ign.md && git commit -qm ign
+    run --separate-stderr bash "$DC" --check-fix docs/deep.md docs/ign.md docs/n7.md
+    [[ "$output" == *"skip docs/deep.md: an instruction file imports"* && "$output" == *"skip docs/ign.md: an instruction file imports"* \
+       && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
+}

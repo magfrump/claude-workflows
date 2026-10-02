@@ -417,10 +417,13 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
 # gitignored), resolves each @path against the importing file's directory as
 # Claude Code does (~/ and absolute paths lead outside the repo and are not
-# followed), and reads each plain file it reaches once. A token may sit after a
-# blank, ( or emphasis marks, and loses trailing punctuation. Computed once.
+# followed), and reads each plain file it reaches once. A token may follow any
+# byte but a letter or digit (so user@host is not one); it ends at a blank, \, #,
+# a backtick, ( ) [ or ], and loses trailing punctuation and emphasis marks
+# (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
+# Over-reading (a code span) only over-refuses. Computed once.
 IMPORTED=$'\n'; IMPORTED_DONE=""
-IMPORT_RE='(^|[[:space:](*_])@[^[:space:]`)*_]+'
+IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 imported_names() {
   local f t d p seen=$'\n' queue=()
@@ -429,15 +432,20 @@ imported_names() {
     if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
-  done < <(git ls-files -z
-           GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'
-           GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- ':(glob,icase)**/*.md')
+  # One grep keeps only instruction-file basenames before the loop forks lower
+  # and inrepo per path (forking for every tracked file took seconds). It
+  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.
+  # LC_ALL=C makes -i ASCII-only. --others without --exclude-standard already
+  # lists ignored files, so one untracked listing covers both.
+  done < <({ git ls-files -z
+             GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; } \
+           | env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true)
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     while IFS= read -r t; do
       t="${t#*@}"
-      while [[ "$t" == *[.,\;:!?] ]]; do t="${t%?}"; done
+      while [[ "$t" == *[.,\;:!?*_~] ]]; do t="${t%?}"; done
       [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
       p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$t" 2>/dev/null)" || continue
       [[ "$p" != ..* ]] || continue
