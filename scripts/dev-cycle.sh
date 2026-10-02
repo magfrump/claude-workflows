@@ -8,6 +8,8 @@
 # Usage: scripts/dev-cycle.sh [--since=YYYY-MM-DD] [--sample=N]
 #        scripts/dev-cycle.sh --check-path PATH-OR-GLOB...
 #        scripts/dev-cycle.sh --check-write PATH...
+#        scripts/dev-cycle.sh --check-brief PATH...
+#        scripts/dev-cycle.sh --check-branch NAME...
 #
 #   --since   start of the cycle window: commits whose committer date, in the
 #             committer's own time zone (git's %cs), is on or after this date.
@@ -21,6 +23,11 @@
 #             per argument), "skip <arg or match>: <reason>" otherwise.
 #   --check-write  the same for a file the cycle writes: only its own files
 #             (roadmap, questions files, idea log, cycle records, briefs).
+#   --check-brief  the same, for a build brief only (docs/working/briefs/
+#             YYYY-MM-DD-<slug>.md): what a roadmap brief path must pass.
+#   --check-branch  "ok <name>" for a branch name from a brief that git may be
+#             given as refs/heads/<name>: letters, digits, . _ - / only, not
+#             starting with -, and a valid ref name.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
@@ -88,11 +95,11 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; need --since "$SINCE"; shift ;;
     --sample) need --sample "${2:-}"; SAMPLE="$2"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; need --sample "$SAMPLE"; shift ;;
-    --check-path|--check-write)
+    --check-path|--check-write|--check-brief|--check-branch)
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one path" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,39p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -144,16 +151,19 @@ TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
 # The path rule for repo text (commit messages, plans, settings rows, roadmap
 # brief paths), so the skill runs it instead of re-deriving it in prose:
 #  - form: only letters, digits, . _ - / (and * ? in a glob), not starting with
-#    / or -, no empty or .. component, no component starting .git (any case);
+#    / or -, no empty, . or .. component, no component starting .git (any case);
 #  - scope (reads): a tracked file, or a gitignored file under docs/working/ (the
 #    cycle's own working files); never any other untracked or ignored file;
 #  - plain: a regular file reached without any symlink (inrepo).
 # Globs are matched by git (":(glob)"), never by a shell.
+# Characters are listed one by one, not as ranges, so the check does not depend
+# on the caller's locale (a range like A-Z can take in other letters, and a
+# Turkish locale can fold .GIT differently); setting LC_ALL here instead printed
+# a setlocale warning per call when the caller's locale was not installed.
+NAMECHARS='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-'
 pathform() {  # $1 path, $2 "glob" to allow * and ?
-  # C locale: ranges and case folding must not depend on the user's locale (a
-  # Turkish one can fold .GIT to something other than .git).
-  local LC_ALL=C p="$1" rest c set='^[A-Za-z0-9._/-]+$'
-  [[ "${2:-}" == glob ]] && set='^[A-Za-z0-9._/*?-]+$'
+  local p="$1" rest c set="^[$NAMECHARS]+\$"
+  [[ "${2:-}" == glob ]] && set="^[*?$NAMECHARS]+\$"  # * ? first: - must stay last
   [[ "$p" =~ $set && "$p" != /* && "$p" != -* ]] || return 1
   rest="$p/"
   while [[ -n "$rest" ]]; do
@@ -163,12 +173,16 @@ pathform() {  # $1 path, $2 "glob" to allow * and ?
 }
 matches() {  # $1 pathspec, $2 the argument; NUL-separated tracked files, then ignored ones under docs/working/
   local fixed="${2%%[*?]*}"
-  GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
+  if [[ "$2" == *[*?]* ]]; then GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
+  else  # a plain path names one file: drop a directory's contents here, not one by one
+    GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1" | { env LC_ALL=C grep -zxF -- "$2" || true; }
+  fi
   # Ignored files count only under docs/working/; skip the query when the
   # argument's fixed prefix cannot lead there (it lists every ignored match).
   if [[ "$fixed" == docs/working/* || docs/working/ == "$fixed"* ]]; then
     GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
-      | { grep -z '^docs/working/' || true; }
+      | { env LC_ALL=C grep -z '^docs/working/' || true; }  # C (set through env, which bash does not apply
+      # to its own locale): a name that is not UTF-8 still passes, to be skipped below
   fi
 }
 check_path() {
@@ -178,31 +192,49 @@ check_path() {
   while IFS= read -r -d '' m; do
     [[ "$a" == *[*?]* || "$m" == "$a" ]] || continue  # a plain path names one file, not a directory
     n=$((n + 1))
-    if [[ $n -gt $max ]]; then echo "skip $a: matches more than $max files; the rest are not listed"; break; fi
+    if [[ $n -gt $max ]]; then echo "skip $a: matches more than $max files; the rest are not listed (narrow the glob)"; break; fi
     if ! pathform "$m"; then echo "skip ${m//$'\n'/ }: not an allowed path form"
     elif ! inrepo "$m"; then echo "skip $m: reached through a symlink, or not a regular file"
     else echo "ok $m"; fi
   done < <(matches "$spec" "$a")
-  [[ $n -gt 0 ]] || echo "skip $a: no tracked file (or ignored file under docs/working/) matches"
+  if [[ $n -gt 0 ]]; then return; fi
+  if [[ "$a" != *[*?]* ]] && dirok "$a"; then echo "skip $a: a directory, not a file"
+  else echo "skip $a: no tracked file (or ignored file under docs/working/) matches"; fi
 }
-# The only files the cycle writes; anything else named in repo text (a roadmap
+# The cycle's own bookkeeping files (in-cycle fixes to other files go through
+# --check-path instead); anything else named in repo text (a roadmap
 # line pointing at an instruction file, say) is refused, so it is never treated
 # as a brief and written to.
+DIGIT='[0123456789]'
+isbrief() { [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-[abcdefghijklmnopqrstuvwxyz0123456789-]+\.md$ ]]; }
 writable() {
   [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ \
-    || "$1" =~ ^docs/working/cycles/cycle-[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$ \
-    || "$1" =~ ^docs/working/briefs/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$ ]]
+    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]] || isbrief "$1"
 }
-check_write() {
+check_write() {  # $1 path, $2 "brief" to allow only a build brief
   local a="$1"
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"
-  elif ! writable "$a"; then echo "skip $a: not one of the files the dev cycle writes"
+  elif [[ "${2:-}" == brief ]] && ! isbrief "$a"; then echo "skip $a: not a build brief (docs/working/briefs/YYYY-MM-DD-<slug>.md)"
+  elif ! writable "$a"; then echo "skip $a: not one of the dev cycle's own files"
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
+  else echo "ok $a"; fi
+}
+# A brief's branch reaches git as refs/heads/<name>, so it can never be read as
+# an option or as some other ref.
+check_branch() {
+  local a="$1"
+  if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
+  elif ! git check-ref-format "refs/heads/$a"; then echo "skip $a: not a valid branch name"
   else echo "ok $a"; fi
 }
 if [[ -n "$CHECK" ]]; then
   for a in "${CHECK_ARGS[@]}"; do
-    if [[ "$CHECK" == --check-path ]]; then check_path "$a"; else check_write "$a"; fi
+    case "$CHECK" in
+      --check-path) check_path "$a" ;;
+      --check-write) check_write "$a" ;;
+      --check-brief) check_write "$a" brief ;;
+      --check-branch) check_branch "$a" ;;
+    esac
   done
   exit 0
 fi

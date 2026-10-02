@@ -1,4 +1,4 @@
-Commit: 546b86e (digest) / 46d3423 (skill, feat/dev-cycle)
+Commit: d5d9121 (digest) / fbc7101 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -576,3 +576,21 @@ Scope: `1b0c4ff..546b86e`, `462e561..46d3423`, partial: the new `--check-path` /
 | A3 | Answers recorded behind a dated label never matched the whole-word rule | 🟡 Inconsistent (fails safe) | api 2 | skill: text after the label colon |
 | A4 | Ignored-files query on every argument; `.` listed the tree; locale-dependent `.git*` fold | 🟡 Low/Info | performance Low, Info; security untested | digest |
 | C1 | Help/Exit text, comment accuracy, bare script name, write list, recorded pre-filter skips, re-answer wording, branch-name charset, test gaps | 🟢 | api Minor 3–9; fact-check 2, 3, 14; security L2, L3, Info 5 | digest, skill |
+
+---
+
+## Pass 21 (review-fix loop, k=1, all critics; on d5d9121 digest / fbc7101 skill)
+
+**Status: 🔴 not clean — 1 Incorrect (write-list wording) and 1 Medium (unchecked brief branch), both fixed in 3d839c1 / bc98571 (digest) and 6c8ae91 (skill).**
+
+Scope: `546b86e..d5d9121`, `46d3423..fbc7101`, partial: the pass-20 fix round. Fact-check k=1 (27 claims: 21 V / 4 MA / 1 S / 1 I). Artifacts: `code-fact-check-report-digest-pass21.md`, `security-review-2026-10-02-digest-pass21.md`, `performance-review-2026-10-02-digest-pass21.md`, `api-consistency-review-2026-10-02-digest-pass21.md`. The 50 cap removed pass 20's cliff (`**/*.md` 231 s → 0.22 s); the ignored-files prefix test held for every argument form tried.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | "The only files the cycle writes" was false: the skill also makes in-cycle fixes, which `--check-write` refuses | 🔴 Incorrect | fact-check 12a; api Inconsistent 1 | digest: bookkeeping-files wording; skill: in-cycle fixes edit only an existing file `--check-path` allows |
+| A2 | A committed brief's branch reached git unchecked in In-flight steps 1 and 3 | 🟡 Medium | security M | digest: `--check-branch` (charset, check-ref-format, `refs/heads/`); skill uses it |
+| A3 | The brief-path gate admitted the roadmap, questions files and cycle records as briefs; absent briefs held a slot | 🟡 Low | security L; api Minor 4 | digest: `--check-brief`; skill: `--check-brief` and `--check-path` both |
+| A4 | `local LC_ALL=C` printed a setlocale warning per argument and per match | 🟡 Low | performance Low; api Minor 2; security Info; fact-check 6 | digest: explicit character lists |
+| A5 | Answer parsing: bare words with trailing prose, `[1]` and `[2]` together, `**Answering**`, upper case | 🟢 | api Minor 3, Info 7 | skill |
+| C1 | Directory skip reason, `.` component in lists, cap hint, settings file, non-UTF-8 ignored name dropped by grep, plain directory read loop, test comments | 🟢 | api Minor 5, 6, Info 8; fact-check 5, 7b, 8, 15; performance Info 2 | digest, skill |
+
