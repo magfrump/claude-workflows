@@ -26,8 +26,9 @@ reads loop markers, and runs the pre-merge checks, with bats tests.
 1. A loop writes only to its own branch and ends with one marker commit: `handoff: ready` or
    `handoff: stopped: <reason>`. The cycle files the merge or stop entries on the default
    branch and performs approved merges.
-2. Policy: set only by one exact `Build-loop policy:` line of `self-merge` or `review`;
-   anything else is `review`. Each brief records the resolved value; at merge time a loop
+2. Policy: set only when `docs/dev-cycle.md` has exactly one line, outside code blocks,
+   reading exactly `Build-loop policy: self-merge` or `Build-loop policy: review` (a trailing
+   CR is ignored); anything else is `review`. Each brief records the resolved value; at merge time a loop
    follows the stricter of its brief and the default branch's current setting.
 3. Self-merge only for work outside what later runs follow unreviewed (hooks, enforcement and
    harness settings, instruction files, `skills/`, `workflows/`, `scripts/`, `guides/`,

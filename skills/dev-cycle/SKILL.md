@@ -61,9 +61,10 @@ Build-loop policy: review
 **Never through a symlink.** The cycle reads and writes repo files (idea sources and their
 glob matches, the idea log, briefs, the record, the roadmap, questions) only by plain paths:
 before each read or write, check that no part of the path below the repo root is a symlink
-(`test -L` on each component; a file not yet created is checked through its directories).
-A path that fails is skipped and listed in the record under `## Skipped paths`. The digest
-applies the same rule to everything it reads and lists what it skipped in its section 8.
+(`test -L` on each component; a file not yet created is checked through its directories),
+and expand a glob only inside a directory that passes the same check. A path that fails is
+skipped and listed in the record under `## Skipped inputs`. The digest applies the same rule
+to everything it reads and lists what it skipped in its section 8.
 
 **Seeding is always on.** Any step that notices an idea appends one line to
 `docs/working/idea-log.md` (create it with a `# Idea log` heading), shaped
@@ -94,11 +95,12 @@ reads the window start, triggers, questions, roadmap and idea log from that work
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
 docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
-record's `## Skipped paths`). If the repo has no
+record's `## Skipped inputs`). If the repo has no
 `docs/working/questions.md`, run `~/.claude/scripts/questions.sh init` first. If the window
 starts before the last cycle you know ran (or says no cycle record was found when one ran),
 that cycle skipped step 7: note it in this record and rerun with `--since` set to that cycle's
-date.
+date. If instead it says the records were skipped (section 8), the record exists but is not a
+plain file: note that, fix or report the link, and rerun with `--since` the same way.
 
 If the digest fails (non-zero exit or a missing section), stop the cycle: file one `agent`
 entry with the error and write **no** cycle record, so the next window still starts at the
@@ -124,8 +126,8 @@ last good one.
 
 ### 2. Revisit triggers
 
-The digest prints every trigger in full (a printed line over 4096 bytes is cut; read the record
-itself then). For each, decide **fired / not fired / cannot tell**
+The digest prints every trigger in full (an output line over 4096 bytes is cut; read the
+record itself then). For each, decide **fired / not fired / cannot tell**
 and write the evidence (a command and its output, a count, a commit). "Cannot tell" names what
 would tell. The previous record's verdicts are context, never the answer: decide each one
 again. A fired trigger becomes a questions.md entry that links the decision record; route it
@@ -211,7 +213,10 @@ docs/working/questions.md.
 - **Now**: work ready to start or in progress by hand, each with its motive and first step.
 - **In flight**: items with an open build brief, each linking it. Every cycle checks each:
   its branch merged into the default branch → Done; the user dropped it (closed the brief,
-  or said so) → Ideas, with the reason. Either way the brief gets `Status: closed`.
+  or said so) → Ideas, with the reason. Either way the brief gets `Status: closed`. A brief
+  open for 14 days with no commit on its branch gets one `you: judgment` entry, "keep or
+  drop the brief for <item>?" (unless one is already open), so unstarted briefs do not hold
+  the slots for good.
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
@@ -242,8 +247,8 @@ Model: <the model id running this cycle>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
-6. roadmap: <done>; briefs: <written this cycle, or none>; <k>/3 open
-## Skipped paths
+6. roadmap: <done>; briefs: <written this cycle, or none>; <k>/3 open (3/3: no new briefs)
+## Skipped inputs
 ## Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
 - log row 62: cannot tell — <what would tell>
@@ -260,4 +265,5 @@ the next digest runs on it, and the briefs must be there before work on them sta
 
 Then send the final message: list the new `you: judgment` entries by ID and name, and each
 open build brief by path, so the user can start any of them (one `research-plan-implement`
-session per brief, on its own branch and worktree) without opening the record.
+session per brief, on its own branch and worktree) without opening the record. A brief is
+written from repo text: the user reads it before starting it.
