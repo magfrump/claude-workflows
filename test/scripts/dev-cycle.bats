@@ -532,20 +532,22 @@ EOF
         docs/working/briefs/2026-01-01-X.md AGENTS.md
     [ "$status" -eq 0 ]
     [[ "$output" == *"ok docs/working/briefs/2026-01-01-x-2.md"* ]] || { echo "$output"; return 1; }
-    [ "$(grep -c '^skip .*: not a build brief' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
+    [ "$(grep -c '^skip .*: not an open build brief' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
 }
 
 @test "--check-branch allows only a plain, valid branch name" {
-    run --separate-stderr bash "$DC" --check-branch feat/x-1 chore/dev-cycle-2026-01-01 '--output=x' -x \
+    git branch feat/x-1
+    run --separate-stderr bash "$DC" --check-branch feat/x-1 chore/dev-cycle-2026-01-01 main '--output=x' -x \
         'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}' HEAD refs/heads/x
     [ "$status" -eq 0 ]
-    for want in "ok feat/x-1" "ok chore/dev-cycle-2026-01-01" "skip --output=x: not an allowed branch name" \
+    for want in "ok feat/x-1 $(git rev-parse feat/x-1)" "absent chore/dev-cycle-2026-01-01" "skip main: the default branch" \
+                "skip --output=x: not an allowed branch name" \
                 "skip -x: not an allowed" "skip a..b: not a valid branch name" "skip x.lock: not a valid" \
                 "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed" \
                 "skip HEAD: not a valid" "skip refs/heads/x: not a valid"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
-    [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ]
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ]
 }
 
 @test "--check-path does not warn per match under an uninstalled locale" {
@@ -575,7 +577,7 @@ EOF
     run --separate-stderr bash "$DC" --check-branch feat/real feat/ghost
     [ "$status" -eq 0 ]
     [[ "$output" == *"ok feat/real $(git rev-parse feat/real)"* ]] || { echo "$output"; return 1; }
-    [[ "$output" == *"ok feat/ghost absent"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"absent feat/ghost"* ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-branch
     [ "$status" -eq 1 ]
     [[ "$stderr" == *"needs at least one argument"* ]]
@@ -590,7 +592,7 @@ EOF
     [ "$status" -eq 0 ]
     for want in "ok docs/decisions/log.md" "ok README.md" "skip hooks/x.sh: in-cycle fixes edit only" \
                 "skip egress/x.txt: in-cycle fixes edit only" "skip AGENTS.md: in-cycle fixes edit only" \
-                "skip docs/new.md: no tracked file" "skip docs/*.md: not an allowed path form" "skip docs: in-cycle fixes edit only"; do
+                "skip docs/new.md: no tracked file" "skip docs/*.md: --check-fix takes one file" "skip docs: in-cycle fixes edit only"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }
@@ -618,4 +620,62 @@ EOF
                 "unrecognized Q-007" "drop Q-008" "unrecognized Q-009" "open Q-010" "skip Q-999: no such entry" "skip Q-1;x: not a question ID"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
+}
+
+@test "--check-answer: notes cannot flip an answer; mid-line labels, fences, duplicates, CR, the archive" {
+    mkdir -p docs/working
+    q() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\nkeep or drop?\n\n%s\n\n' "$1" "$2"; }
+    {
+        echo '# Questions'; echo
+        q Q-1 '- **Answer (2026-10-01, in chat):** drop. Option [1] would cost more.'
+        q Q-2 'Q-2: keep, not [2]'
+        q Q-3 '**Answer:** drop — [1] was the interim'
+        q Q-4 'Keep or drop? **Answered 2026-09-27: [1] supply the backstops.** Notes [2].'
+        q Q-5 '**Answered 2026-09-27 10:30: [2].**'
+        # shellcheck disable=SC2016  # literal ``` fence, not a command substitution
+        printf '### Q-6 · x\n**Status:** OPEN\n\n```\n### Q-7 · quoted\n**Answer:** [2]\n```\n\n'
+        q Q-8 "$(printf '**Answer:** [1].\r')"
+        q Q-9 '**Answer:** [1].'
+        q Q-9 '**Answer:** [2].'
+        q Q-10 '**Answer:** [2].'
+    } > docs/working/questions.md
+    { echo '# Archive'; echo; q Q-100 '**Answer:** [1].'; q Q-10 '**Answer:** [1].'; } > docs/working/questions-archive.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-10 Q-100
+    [ "$status" -eq 0 ]
+    for want in "drop Q-1" "keep Q-2" "drop Q-3" "keep Q-4" "drop Q-5" "open Q-6" "skip Q-7: no such entry" \
+                "keep Q-8" "skip Q-9: more than one entry" "skip Q-10: more than one entry" "keep Q-100"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    # A questions.md that is not plain is reported, not passed over to the archive.
+    git mv docs/working/questions.md docs/working/q-real.md && ln -s q-real.md docs/working/questions.md
+    run --separate-stderr bash "$DC" --check-answer Q-100
+    [[ "$output" == "skip Q-100: docs/working/questions.md is not a plain file or directory"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-fix refuses code, the user's own files and ignored scratch under docs/" {
+    mkdir -p docs/reviews/execution-logs docs/human-author docs/working docs/guides
+    echo 'docs/working/round-*' > .gitignore
+    echo s > docs/reviews/execution-logs/x.sh && echo a > docs/human-author/answers.txt && echo h > docs/human-author/notes.md
+    echo g > docs/guides/g.md && echo w > docs/working/plan.md && echo r > docs/roadmap.md
+    git add -A && git commit -qm files
+    echo i > docs/working/round-3.md
+    run --separate-stderr bash "$DC" --check-fix docs/guides/g.md docs/reviews/execution-logs/x.sh docs/human-author/answers.txt \
+        docs/human-author/notes.md docs/working/round-3.md docs/working/plan.md docs/roadmap.md
+    [ "$status" -eq 0 ]
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ] && [[ "$output" == *"ok docs/guides/g.md"* ]] || { echo "$output"; return 1; }
+    [ "$(grep -c '^skip .*: in-cycle fixes edit only' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
+}
+
+@test "closed briefs move out of the glob, so open ones are listed past 50 briefs" {
+    mkdir -p docs/working/briefs/closed
+    for i in $(seq 10 64); do echo c > "docs/working/briefs/closed/2026-01-$((i % 28 + 1))-b$i.md"; done
+    echo o > docs/working/briefs/2026-03-01-open-a.md && echo o > docs/working/briefs/2026-03-02-open-b.md
+    git add -A && git commit -qm briefs
+    run --separate-stderr bash "$DC" --check-path 'docs/working/briefs/*.md'
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-write docs/working/briefs/closed/2026-03-01-open-a.md
+    [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md" ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-03-01-open-a.md
+    [[ "$output" == *"not an open build brief"* ]] || { echo "$output"; return 1; }
 }
