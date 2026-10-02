@@ -113,7 +113,7 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 }
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
-# use rawfile directly: their directory has already passed plaindir.)
+# use rawfile directly: their directory has already passed dirok.)
 inrepo() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
 # The same for a directory the digest globs in: the walk first, so nothing is
 # looked up through a non-plain parent.
