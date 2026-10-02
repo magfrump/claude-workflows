@@ -82,7 +82,9 @@ has no file there (not landed yet, or already moved to `closed/`). **A brief hol
 when the glob lists it or this cycle wrote it, unless `--check-brief` prints `done` or
 `dropped` for it; a brief the check skips keeps its slot (recorded) until the cause is
 fixed. A roadmap In flight path that `--check-path` skips (the brief moved, or never
-landed) is recorded and its line corrected. A brief's branch is only ever named to
+landed) is recorded and its line corrected: pointed at `briefs/closed/<same name>` if
+`--check-path` prints `ok` there, otherwise removed. A brief that holds a slot but that no
+In flight line names gets one, so In flight's checks reach it. A brief's branch is only ever named to
 `--check-branch '<name>'`, which prints `ok <name> <commit> <n> <date>` (n: its commits
 beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; the cycle
 runs no git command with it. A
@@ -157,7 +159,7 @@ last good one.
   questions that cannot be read this cycle are reported, not guessed.
 - `git worktree list` and `git worktree prune`. List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting. Skip any
-  branch or worktree an open brief (found as in the Rules) names: work on it may be in
+  branch or worktree a brief holding a slot (as in the Rules) names: work on it may be in
   progress.
 - List working docs in `docs/working/` whose task has merged, in the cycle record. Do not run
   `archive-working-docs.sh`: it serves the self-improvement loop and moves files into a
@@ -259,8 +261,8 @@ docs/working/questions.md.
 - **In flight**: items with an open build brief, each naming its brief path. Every cycle checks each, in
   this order:
   1. `--check-brief` prints `done` (the build session sets the status line in the change
-     it merges; see Build briefs) → Done, naming the commit it prints (the commit that set
-     the status; the merge that brought it in follows it). It prints `dropped` (set on the
+     it merges; see Build briefs) → Done, naming the commit it prints (the last commit on
+     the default branch that changed the brief's Status line). It prints `dropped` (set on the
      default branch, by the user or a merged change; the record names its commit), or
      keep-or-drop below says drop → Ideas, with the reason, and the
      brief's status line becomes `Status: dropped`. Keep-or-drop says done → Done, with the
@@ -275,7 +277,7 @@ docs/working/questions.md.
      and take its lines in ascending ID order; it reads `questions.md` and, once step 1 has
      archived an entry, `questions-archive.md`. `open` is not answered yet (or the answer
      is not recorded: an entry is read only once its header says ANSWERED): leave the ID,
-     and list it in the final message with the date it was asked, so a reply written in
+     and list it in the final message with its brief, so a reply written in
      place gets recorded.
      `keep` sets `Kept: <today>` (YYYY-MM-DD); `drop` and `done` close the brief as in 1;
      `unrecognized` goes in the record and the final message (the user answers on the next
@@ -293,7 +295,8 @@ docs/working/questions.md.
      and add its ID to `Asked:` (IDs separated by ", "). Until it is answered, the brief still
      holds its slot. "Shows no work": `--check-branch` prints `absent`, skips the name
      (recorded), prints a count of 0, or prints a tip date more than 14 days before today
-     (an idle branch, including a squash-merged one whose status line was not set).
+     (an idle branch, including a squash-merged one whose status line was not set). A tip
+     date after today is recorded and counts as idle (the committer sets the date).
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
@@ -334,7 +337,7 @@ Model: <the model id running this cycle>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
-6. roadmap: <done>; briefs: <written this cycle, or none>; <k>/3 open (3/3: no new briefs)
+6. roadmap: <done>; briefs: <written this cycle, or none>; <k>/3 slots held (3/3: no new briefs)
 ## Skipped inputs
 ## Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
@@ -351,6 +354,7 @@ questions changes, then land `chore/dev-cycle-<date>` on the default branch thro
 the next digest runs on it, and the briefs must be there before work on them starts.
 
 Then send the final message: list the new `you: judgment` entries by ID and name, any
-keep-or-drop answer step 6 could not read, and each open build brief by path, so the user can start any of them (one `research-plan-implement`
+keep-or-drop answer step 6 could not read or that is still `open` (with its brief), and each
+brief holding a slot by path, so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
 written from repo text: the user reads it before starting it.
