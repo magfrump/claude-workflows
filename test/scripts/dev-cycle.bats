@@ -532,7 +532,7 @@ EOF
         docs/working/briefs/2026-01-01-X.md AGENTS.md
     [ "$status" -eq 0 ]
     [[ "$output" == *"ok docs/working/briefs/2026-01-01-x-2.md"* ]] || { echo "$output"; return 1; }
-    [ "$(grep -c '^skip .*: not an open build brief' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
+    [ "$(grep -c '^skip .*: not a build brief' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
 }
 
 @test "--check-branch allows only a plain, valid branch name" {
@@ -677,8 +677,9 @@ EOF
     [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-write docs/working/briefs/closed/2026-03-01-open-a.md
     [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md" ]] || { echo "$output"; return 1; }
+    # A closed/ path is read for its state (not landed there yet: new); it never holds a slot.
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-03-01-open-a.md
-    [[ "$output" == *"not an open build brief"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md new" ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-answer reads nothing from an entry not marked ANSWERED, and reads done" {
@@ -722,7 +723,7 @@ EOF
     [ "$status" -eq 0 ]
     for want in "ok docs/working/briefs/2026-01-01-a.md open $c" "ok docs/working/briefs/2026-01-02-b.md done $c" \
                 "skip docs/working/briefs/2026-01-03-c.md: its first Status: line is not exactly" "ok docs/working/briefs/2026-01-04-new.md new" \
-                "skip docs/roadmap.md: not an open build brief"; do
+                "skip docs/roadmap.md: not a build brief"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }
@@ -755,9 +756,9 @@ EOF
     printf '# Brief\n\n%s\nStatus: done\n%s\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-a.md
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
-    # A heading-shaped line ends the entry even inside a fence: the answer after
-    # it is lost (unrecognized, asked again), never read from elsewhere.
-    [[ "$output" == *"open Q-1"* && "$output" == *"unrecognized Q-2"* ]] || { echo "$output"; return 1; }
+    # Inside a fence only a "### Q-NNN " heading ends the entry, so a shell
+    # comment in a pasted block does not cut it short.
+    [[ "$output" == *"open Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-a.md
     [[ "$output" == "ok docs/working/briefs/2026-01-01-a.md open "* ]] || { echo "$output"; return 1; }
 }
@@ -817,5 +818,39 @@ EOF
     run --separate-stderr bash "$DC" --check-answer Q-11 Q-10
     [[ "$output" == *"skip Q-11: more than one entry with this heading"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"unrecognized Q-10"* ]] || { echo "$output"; return 1; }
+}
+
+@test "fences follow CommonMark: longer fences, info strings, indented fences; the status field is read whole" {
+    mkdir -p docs/working/briefs
+    local f3=$'\x60\x60\x60' f4=$'\x60\x60\x60\x60'
+    {
+        echo '# Questions'; echo
+        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n%s\nQ-1: [1]\n%s\n%s\nQ-1: [2]\n\n' "$f4" "$f3" "$f3" "$f4"
+        printf '### Q-2 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n%sbash\n**Answer:** [2]\n%s\n**Answer:** [1]\n\n' "$f3" "$f3" "$f3"
+        printf '### Q-3 · keep-or-drop-x-3\n**Needs:** you: judgment · **Status:** ANSWERED\n\n  %s\n**Answer:** [2]\n  %s\n**Answer:** [1]\n\n' "$f3" "$f3"
+        printf '### Q-4 · keep-or-drop-x-4\n**Needs:** you: judgment · **Status:** OPEN · was set by **Status:** ANSWERED\n\n**Answer:** [2]\n\n'
+    } > docs/working/questions.md
+    printf '# Brief\n%s\n%s\nStatus: done\n%s\n%s\nStatus: open\n' "$f4" "$f3" "$f3" "$f4" > docs/working/briefs/2026-01-01-n.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4
+    for want in "drop Q-1" "keep Q-2" "keep Q-3" "open Q-4"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-n.md
+    [[ "$output" == "ok docs/working/briefs/2026-01-01-n.md open "* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-brief names the merge that brought a status change in, and reads closed/ briefs" {
+    mkdir -p docs/working/briefs/closed
+    b=docs/working/briefs/2026-01-01-m.md
+    printf '# Brief\nStatus: open\n\ngoal\nmotive\ncriteria\nbranch\n\n' > "$b" && git add -A && git commit -qm brief
+    git checkout -q -b feat/m && sed -i 's/^Status: open$/Status: done/' "$b" && git commit -qam "status done"
+    git checkout -q main && printf 'Asked: Q-1\n' >> "$b" && git commit -qam asked
+    git merge -q --no-ff -m "merge feat/m" feat/m && m=$(git rev-parse HEAD)
+    run --separate-stderr bash "$DC" --check-brief "$b"
+    [[ "$output" == "ok $b done $m" ]] || { echo "$output"; return 1; }
+    git mv "$b" docs/working/briefs/closed/ && git commit -qm close
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-01-01-m.md "$b"
+    [[ "$output" == *"ok docs/working/briefs/closed/2026-01-01-m.md done "* && "$output" == *"ok $b new"* ]] || { echo "$output"; return 1; }
 }
 

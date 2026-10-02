@@ -26,12 +26,12 @@
 #   --check-write  the same for one of the cycle's own bookkeeping files
 #             (roadmap, questions files, idea log, cycle records, open briefs and
 #             briefs/closed/); the file need not exist yet.
-#   --check-brief  for a build brief path (docs/working/briefs/YYYY-MM-DD-
-#             <slug>.md): "ok <path> new" when the default branch has no file
+#   --check-brief  for a build brief path (docs/working/briefs/[closed/]
+#             YYYY-MM-DD-<slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
 #             open|done|dropped <commit>" from its first unfenced "Status:" line
-#             on the default branch and the commit that last changed a Status
-#             line there;
+#             on the default branch and its own commit (for merged work, the
+#             merge) that last added or removed a "Status: " line there;
 #             "skip <path>: <reason>" otherwise.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
@@ -46,8 +46,9 @@
 #             or README.md; "skip <path>: <reason>" otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive: keep, drop, done,
-#             open (not marked ANSWERED yet) or unrecognized (answered, but the
-#             answer does not start with one of the options); "skip Q-NNN:
+#             open (not marked ANSWERED yet) or unrecognized (answered, but no
+#             answer line starts with one of the options, or a fence in the
+#             entry is left open); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a questions file that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
@@ -123,7 +124,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,62p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,64p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -247,33 +248,56 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
+# Code fences, as CommonMark has them: a line of 3 or more ` or ~ (after up to 3
+# spaces; a ` fence's info string holds no `) opens one, and only a line of the
+# same character, at least as long and with nothing after it, closes it.
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+FENCE_AWK='
+function lead(l,   i) { i = 1; while (i <= 3 && substr(l, i, 1) == " ") i++; return substr(l, i) }
+function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
+function opens(l,   s, ch, n) {
+  s = lead(l); ch = substr(s, 1, 1)
+  if (ch != "`" && ch != "~") return 0
+  n = run(s, ch); if (n < 3) return 0
+  if (ch == "`" && index(substr(s, n + 1), "`")) return 0
+  fch = ch; flen = n; return 1
+}
+function closes(l,   s, n) {
+  s = lead(l); n = run(s, fch)
+  return n >= flen && substr(s, n + 1) ~ /^[ \t]*$/
+}
+'
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
 # "Status:", which must be exactly "Status: open|done|dropped". "new" when the
 # default branch has no file at that path (not landed yet, or moved to
-# closed/). The commit that last added or removed a Status line in the file
-# there is printed: the commit that set the status, which a merge brought in.
+# closed/). A closed/ path is read the same way (its state, for In flight; it
+# never holds a slot).
 check_brief() {
   local a="$1" st c
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
-  if ! isbrief "$a"; then echo "skip $a: not an open build brief (docs/working/briefs/YYYY-MM-DD-<slug>.md)"; return; fi
+  if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
+    echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
+  fi
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
   if [[ "$(git cat-file -t "$MAIN_SHA:$a" 2>/dev/null || true)" != blob ]]; then echo "ok $a new"; return; fi
-  # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
   # The whole blob is read (no early exit, which would kill git cat-file with
-  # SIGPIPE under pipefail); a fence closes only with the characters that opened it.
-  st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk '
+  # SIGPIPE under pipefail); fenced lines are skipped (FENCE_AWK).
+  # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+  st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk "$FENCE_AWK"'
     { sub(/\r$/, "") }
     seen { next }
-    fence != "" { if (substr($0, 1, 3) == fence) fence = ""; next }
-    /^(```|~~~)/ { fence = substr($0, 1, 3); next }
+    infence { if (closes($0)) infence = 0; next }
+    opens($0) { infence = 1; next }
     /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) print }')"
-  # The commit on the default branch that last added or removed a Status line
-  # in this file (not a later edit to its Asked:/Kept: lines, nor the merge).
-  c="$(git log -1 --format=%H -G'^Status: ' "$MAIN_SHA" -- "$a")"
+  if [[ -z "$st" ]]; then echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return; fi
+  # The default branch's own commit (first-parent history, a merge diffed
+  # against its first parent) that last added or removed a line starting
+  # "Status: " in this file: for merged work, the merge that brought the change
+  # in; never a later Asked:/Kept: edit. Any such line counts, a quoted one too.
+  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s -G'^Status: ' "$MAIN_SHA" -- "$a")"
   [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
-  if [[ -n "$st" ]]; then echo "ok $a ${st#Status: } $c"
-  else echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; fi
+  echo "ok $a ${st#Status: } $c"
 }
 # A brief's branch reaches git only as the commit show-ref finds at exactly
 # refs/heads/<name>: never as an option, and never as a tag of the same name
@@ -282,13 +306,13 @@ check_brief() {
 # fresh branch or one merged with a merge commit; a squash-merged branch keeps
 # its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
 # time zone (as the committer set it: a future date is possible).
-# The default branch, when one was found by name, is refused.
+# The default branch is refused (the check modes that read it need it found by name).
 check_branch() {
   local a="$1" sha
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
   elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
     || [[ "$a" == HEAD || "$a" == refs/* ]]; then echo "skip $a: not a valid branch name"
-  elif [[ -n "$MAIN_BY_NAME" && "$a" == "$MAIN" ]]; then echo "skip $a: the default branch"
+  elif [[ "$a" == "$MAIN" ]]; then echo "skip $a: the default branch"
   else
     sha="$(git show-ref --verify --hash "refs/heads/$a" 2>/dev/null || true)"
     [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
@@ -322,11 +346,11 @@ check_fix() {
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) ends with " **Status:** ANSWERED";
 # any other entry is open, whatever its body says: the answer is read only after
-# it has been recorded. Entries are bounded by heading lines alone (a heading
-# inside a fence still ends the entry, which can only lose an answer). Inside
-# the entry, lines in a fence are skipped; a fence closes only with the
-# characters that opened it, and one still open when the entry ends makes the
-# answer unrecognized. The recorder's own answer line is the one read (the questions
+# it has been recorded. Its status is the first "**Status:** " field of that
+# line, up to the next space. Entries are bounded by heading lines; inside the
+# target entry, fenced lines are skipped (FENCE_AWK), and inside a fence only a
+# "### Q-NNN " heading ends it (then, or when the entry ends with a fence still
+# open, the answer is unrecognized: lost, never read from another entry). The recorder's own answer line is the one read (the questions
 # protocol records the user's answer there); a note above it would be read
 # first. Then the answer is the
 # first line in the entry (outside a fence opened inside it) that starts, after
@@ -359,12 +383,20 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-heading($0) { count++; inside = (count == 1); fence = ""; header = 0; next }
-/^(#|##|###) / { if (inside && fence != "") broken = 1; inside = 0 }
+heading($0) { count++; inside = (count == 1); infence = 0; header = 0; next }
+inside && infence {
+  if ($0 ~ /^### Q-[0123456789]+ /) { broken = 1; inside = 0; next }
+  if (closes($0)) infence = 0
+  next
+}
+/^(#|##|###) / { inside = 0 }
 !inside { next }
-fence != "" { if (substr($0, 1, 3) == fence) fence = ""; next }
-/^(```|~~~)/ { fence = substr($0, 1, 3); next }
-!header && /^\*\*Needs:\*\*/ { header = 1; answered = ($0 ~ / \*\*Status:\*\* ANSWERED$/); next }
+opens($0) { infence = 1; next }
+!header && /^\*\*Needs:\*\*/ {
+  header = 1; v = $0; p = index(v, "**Status:** "); answered = 0
+  if (p) { v = substr(v, p + 12); q = index(v, " "); if (q) v = substr(v, 1, q - 1); answered = (v == "ANSWERED") }
+  next
+}
 !done {
   line = $0; sub(/^- /, "", line)
   if (index(line, id ":") == 1) { result = option(substr(line, length(id) + 2)); done = 1; next }
@@ -380,7 +412,7 @@ fence != "" { if (substr($0, 1, 3) == fence) fence = ""; next }
   result = option(rest); done = 1
 }
 END {
-  if (inside && fence != "") broken = 1
+  if (inside && infence) broken = 1
   if (count > 1) print "dup"
   else if (count) print (!answered ? "open" : broken ? "unrecognized" : done ? result : "unrecognized")
 }'
@@ -390,7 +422,7 @@ check_answer() {
   for f in docs/working/questions.md docs/working/questions-archive.md; do
     if skipped "$f"; then echo "skip $a: $SKIP_AT is not a plain file or directory, so $f is not read"; return; fi
     [[ -f "$f" ]] || continue
-    r="$(env LC_ALL=C awk -v id="$a" "$ANSWER_AWK" "$f")"
+    r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
