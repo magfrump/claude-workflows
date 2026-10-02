@@ -217,6 +217,13 @@ make_repo() {
     section3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
     [[ "$section3" == *"**Watched questions were NOT checked** — docs/working/questions-archive.md is not read"* ]] || { echo "$section3"; return 1; }
     [[ "$section3" != *"questions.sh open failed"* && "$section3" != *"no-such-file"* ]] || { echo "$section3"; return 1; }
+    # The settings file and the briefs directory are checked like any input.
+    ln -s "$BATS_TEST_TMPDIR/outside/log.md" docs/dev-cycle.md
+    mkdir -p docs/working && ln -s "$BATS_TEST_TMPDIR/outside" docs/working/briefs
+    run --separate-stderr bash "$DC"
+    sec8=$(echo "$output" | sed -n '/## 8/,$p')
+    [[ "$sec8" == *"- docs/dev-cycle.md"* && "$sec8" == *"- docs/working/briefs/"* ]] || { echo "$sec8"; return 1; }
+    rm docs/dev-cycle.md docs/working/briefs
     # No questions.md: reported as absent, and the symlinked archive is still
     # listed in section 8.
     rm docs/working/questions.md
@@ -233,6 +240,27 @@ make_repo() {
     [[ "$section2" == *"No revisit triggers in the decision inputs that were read; the skipped ones above were not read."* ]] || { echo "$section2"; return 1; }
 }
 
+@test "record dates match per-file git log, including quoted names and merge-only changes" {
+    mkdir -p docs/decisions
+    for n in '001-a"b' '002-a\b' 003-plain 004-merge; do
+        printf '# x\n\n## Revisit triggers\nif y.\n' > "docs/decisions/$n.md"
+    done
+    git add -A && GIT_COMMITTER_DATE=2026-01-01T12:00 git commit -q --date=2026-01-01T12:00 -m records
+    git checkout -q -b side && echo s >> docs/decisions/004-merge.md
+    GIT_COMMITTER_DATE=2026-02-01T12:00 git commit -qam s --date=2026-02-01T12:00
+    git checkout -q main && echo m >> docs/decisions/004-merge.md
+    GIT_COMMITTER_DATE=2026-02-02T12:00 git commit -qam m --date=2026-02-02T12:00
+    git merge -q side -m mg 2>/dev/null || true
+    printf '# x\n\n## Revisit triggers\nif y.\nresolved\n' > docs/decisions/004-merge.md
+    git add -A && GIT_COMMITTER_DATE=2026-03-01T12:00 GIT_AUTHOR_DATE=2026-03-01T12:00 git commit -qm mg
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    for f in docs/decisions/*.md; do
+        want="$(git log -1 --format=%ad --date=short -- "$f")"
+        [[ "$output" == *"### $f (last committed on this branch: $want)"* ]] || { echo "$f: want $want"; echo "$output" | grep '^###'; return 1; }
+    done
+    [[ "$output" == *"004-merge.md (last committed on this branch: 2026-03-01)"* ]]
+}
+
 @test "a skipped newer cycle record is named in the window line" {
     mkdir -p docs/working/cycles
     touch docs/working/cycles/cycle-2026-01-01.md "$BATS_TEST_TMPDIR/c.md"
@@ -243,7 +271,8 @@ make_repo() {
 
 @test "the window defaults to the newest cycle record's date and says so" {
     mkdir -p docs/working/cycles
-    touch docs/working/cycles/cycle-2026-01-05.md docs/working/cycles/cycle-2026-02-10.md docs/working/cycles/cycle-9999-12-31.md
+    touch docs/working/cycles/cycle-2026-01-05.md docs/working/cycles/cycle-2026-02-10.md docs/working/cycles/cycle-9999-12-31.md \
+          docs/working/cycles/cycle-2026-02-30.md
     run --separate-stderr bash "$DC"
     [[ "$output" == *"Window: since 2026-02-10 (from the last cycle record"* ]]
     run --separate-stderr bash "$DC" --since=2026-03-01
@@ -322,6 +351,10 @@ EOF
     [[ "$section" == *"Q-002"* ]]
     [[ "$section" != *"- Q-001"* ]] || { echo "$section"; return 1; }
     [[ "$section" == *"agent=1, trigger=1"* ]] || { echo "$section"; return 1; }
+    # No open entries: the route line says none.
+    printf '# Running questions\n\n## Index\n\n<!-- index:start -->\n<!-- index:end -->\n\n## Open\n' > docs/working/questions.md
+    run --separate-stderr bash "$DC"
+    [[ "$output" == *"Open by route: none"* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
 }
 
 @test "a questions.sh failure is reported, never shown as 'None open.'" {

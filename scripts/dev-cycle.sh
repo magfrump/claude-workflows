@@ -10,7 +10,7 @@
 #   --since   start of the cycle window: commits whose committer date, in the
 #             committer's own time zone (git's %cs), is on or after this date.
 #             Default: the date in the newest cycle-YYYY-MM-DD.md in docs/working/cycles
-#             that is a plain file and not future-dated (only its name is read), else
+#             that is a plain file, a real date and not future-dated (only its name is read), else
 #             14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
 #
@@ -157,6 +157,7 @@ if dirok docs/working/cycles; then
       skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
       continue
     fi
+    date -d "$d" >/dev/null 2>&1 || continue  # a name that is not a real date
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
   done
 else
@@ -206,12 +207,14 @@ decisions_glob=()
 if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
 # Each record's last commit date, from one path-limited walk (newest first, so
 # the first date seen per path wins) instead of one `git log` per record, which
-# cost records x history. A name git still quotes (a control character) misses
-# the map and falls back to its own lookup.
+# cost records x history. Merges list the files their result changed against
+# every parent (combined), as a per-file `git log` counts them. A name git still
+# quotes (a quote, backslash or control character) misses the map and falls back
+# to its own lookup.
 declare -A last_date=()
 if [[ ${#decisions_glob[@]} -gt 0 ]]; then
   while IFS=$'\t' read -r path day; do last_date["$path"]="$day"; done < <(
-    git -c core.quotePath=false log --format='@%ad' --date=short --name-only -- docs/decisions \
+    git -c core.quotePath=false log --diff-merges=combined --format='@%ad' --date=short --name-only -- docs/decisions \
       | awk '/^@/ { d = substr($0, 2); next } NF && !seen[$0]++ { print $0 "\t" d }')
 fi
 for f in "${decisions_glob[@]}"; do
@@ -220,7 +223,7 @@ for f in "${decisions_glob[@]}"; do
   found=1
   echo
   d="${last_date[$f]-}"
-  [[ -n "$d" || "$f" != *[[:cntrl:]]* ]] || d="$(git log -1 --format=%ad --date=short -- "$f")"
+  [[ -n "${last_date[$f]+set}" ]] || d="$(git log -1 --format=%ad --date=short -- "$f")"
   # A newline in a file name would otherwise print a line of its own.
   echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
   trig < "$f" | sed 's/^/> /'
