@@ -9,13 +9,14 @@ Build-loop policy: review (interim; Q-103)
 `self-merge`: a build loop the cycle hands an item to (step 6b) lands its branch through
 pr-prep on its own. `review`: it runs pr-prep's review-fix loop, then stops for the user's
 review (a PR, or one `you: judgment` "merge <branch>?" entry where the project has no PRs).
-Only a single line reading exactly `Build-loop policy: self-merge` means self-merge; the
-interim marker above keeps this `review` until Q-103 is answered.
+The skill counts the setting as made only when one line reads exactly
+`Build-loop policy: self-merge` or `Build-loop policy: review`; the interim marker above keeps
+it unset (so `review`) until Q-103 is answered.
 
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Paths must resolve inside the repo (symlinks followed).
+Plain paths only: the skill never reads through a symlink.
 
 | Source | Path or glob | Format |
 | --- | --- | --- |
