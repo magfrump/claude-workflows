@@ -853,7 +853,7 @@ EOF
     [[ "$output" == *"ok docs/working/briefs/closed/2026-01-01-m.md done "* && "$output" == *"ok $b new"* ]] || { echo "$output"; return 1; }
 }
 
-@test "fences are tracked across the file: forged copies, a list-item fence refuses a brief, sections after an open fence" {
+@test "header status fields, a second answer line, a list-item fence refusing a brief, a section after an open fence" {
     mkdir -p docs/working/briefs
     local f=$'\x60\x60\x60'  # a ``` fence line
     {

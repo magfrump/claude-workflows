@@ -303,7 +303,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 }
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". "new" when the
+# "Status:", which must be exactly "Status: open|done|dropped". A brief whose
+# fences cannot be trusted (FENCE_AWK refuses it) is not read at all. "new" when the
 # default branch has no file at that path (not landed yet, or moved to
 # closed/). A closed/ path is read the same way (its state, for In flight; it
 # never holds a slot).
