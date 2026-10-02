@@ -277,7 +277,9 @@ Re-ranking is proposed to the user as one `you: judgment` entry, not done, when 
 reorder their stated priorities.
 
 **Build briefs.** Take the Now items whose first step needs no open choice (no open
-`you: judgment` names them), while fewer than 3 briefs are open, counting earlier cycles'.
+`you: judgment` names them), while fewer than 3 briefs are open, counting earlier cycles'
+(found as in the Rules) and the ones this cycle has written (not yet committed, so
+`--check-path` does not list them).
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a path no brief has used before; add `-2`, `-3` if it is
 taken): `Status: open`, the line "repo
