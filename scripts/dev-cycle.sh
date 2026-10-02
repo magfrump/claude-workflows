@@ -30,8 +30,10 @@
 #             YYYY-MM-DD-<slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
 #             open|done|dropped <commit>" from its first unfenced "Status:" line
-#             on the default branch and its own commit (for merged work, the
-#             merge) that last added or removed a "Status: " line there;
+#             on the default branch and the commit in its first-parent history
+#             that last added or removed a "Status: " line there (a merge
+#             commit, the branch's own commit after a fast-forward, or a later
+#             move or quoted Status line);
 #             "skip <path>: <reason>" otherwise.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
@@ -46,11 +48,12 @@
 #             or README.md; "skip <path>: <reason>" otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive: keep, drop, done,
-#             open (not marked ANSWERED yet) or unrecognized (answered, but no
-#             answer line starts with one of the options, or a fence in the
-#             entry is left open); "skip Q-NNN:
+#             open (not marked ANSWERED yet) or unrecognized (answered, but the
+#             first answer line's text does not start with one of the
+#             options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
-#             heading, a questions file that is not plain).
+#             heading, a heading only inside a code fence, a questions file
+#             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
 #
@@ -124,7 +127,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,64p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,66p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -248,12 +251,17 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# Code fences, as CommonMark has them: a line of 3 or more ` or ~ (after up to 3
-# spaces; a ` fence's info string holds no `) opens one, and only a line of the
-# same character, at least as long and with nothing after it, closes it.
+# Code fences, close to CommonMark: a line of 3 or more ` or ~ opens one (after
+# any indentation and an optional list marker such as "- " or "1. "; a ` fence's
+# info string holds no `), and only a line of the same character, at least as
+# long and followed by nothing but spaces or tabs, closes it.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
-function lead(l,   i) { i = 1; while (i <= 3 && substr(l, i, 1) == " ") i++; return substr(l, i) }
+function lead(l) {
+  sub(/^[ \t]+/, "", l)
+  if (l ~ /^[-*+][ \t]/ || l ~ /^[0123456789]+[.)][ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l) }
+  return l
+}
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function opens(l,   s, ch, n) {
   s = lead(l); ch = substr(s, 1, 1)
@@ -293,8 +301,9 @@ check_brief() {
   if [[ -z "$st" ]]; then echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return; fi
   # The default branch's own commit (first-parent history, a merge diffed
   # against its first parent) that last added or removed a line starting
-  # "Status: " in this file: for merged work, the merge that brought the change
-  # in; never a later Asked:/Kept: edit. Any such line counts, a quoted one too.
+  # "Status: " in this file: a merge commit for merged work, the branch's own
+  # commit after a fast-forward; never a later Asked:/Kept: edit. Any such line
+  # counts (a quoted one, or a move into closed/, which adds the file whole).
   c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s -G'^Status: ' "$MAIN_SHA" -- "$a")"
   [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
   echo "ok $a ${st#Status: } $c"
@@ -341,26 +350,28 @@ check_fix() {
   else check_path "$a"; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
-# drop, done, open, unrecognized, dup (the heading appears more than once), or
-# nothing when the file has no such entry. A trailing CR is dropped.
+# drop, done, open, unrecognized, dup (the heading appears more than once,
+# counting copies inside code fences), fenced (it appears only inside a fence),
+# or nothing when the file has no such entry. A trailing CR is dropped.
+# Fences are tracked across the whole file (FENCE_AWK): a heading inside one is
+# a quote, never the entry (though a "### " line there still ends the entry
+# being read), and no fenced line is read. A fence left open hides
+# the rest of the file, which can only make an answer unreadable (skip or
+# unrecognized), never read one from elsewhere.
 # An entry is answered only when its header line (the first line starting
-# "**Needs:**", as questions.sh writes it) ends with " **Status:** ANSWERED";
-# any other entry is open, whatever its body says: the answer is read only after
-# it has been recorded. Its status is the first "**Status:** " field of that
-# line, up to the next space. Entries are bounded by heading lines; inside the
-# target entry, fenced lines are skipped (FENCE_AWK), and inside a fence only a
-# "### Q-NNN " heading ends it (then, or when the entry ends with a fence still
-# open, the answer is unrecognized: lost, never read from another entry). The recorder's own answer line is the one read (the questions
-# protocol records the user's answer there); a note above it would be read
-# first. Then the answer is the
-# first line in the entry (outside a fence opened inside it) that starts, after
-# an optional "- ", with "Q-NNN:" or a bold "**Answer:", "**Answer (" or
-# "**Answered" label (any case). Its text starts after the label: at ":**" when
-# the label alone is bold, else at the first ": ", and then ends at the bold's
-# close if it opened inside the bold. Only the text's leading token decides:
-# [1], 1 or keep; [2], 2 or drop; [3], 3 or done (a word must be followed by
-# the end, punctuation or a dash). Anything else, including a hedge or a
-# bracket further in, is unrecognized, and the user is asked again.
+# "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
+# exactly "**Status:** ANSWERED" (the last Status field counts, as in
+# questions.sh); any other entry is open, whatever its body says: the answer is
+# read only after it has been recorded. The answer is the first line in the
+# entry, outside fences, that starts, after an optional "- ", with "Q-NNN:" or a
+# bold "**Answer:", "**Answer (" or "**Answered" label (any case); the
+# recorder's line is that one (the questions protocol records the user's answer
+# there), and a note above it would be read first. Its text starts after the
+# label: at ":**" when the label alone is bold, else at the first ": ", and then
+# ends at the bold's close if it opened inside the bold. Only the text's leading
+# token decides: [1], 1 or keep; [2], 2 or drop; [3], 3 or done (a word must be
+# followed by the end, punctuation or a dash). Anything else, including a hedge
+# or a bracket further in, is unrecognized, and the user is asked again.
 # shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
 ANSWER_AWK='
 function option(span,   s, w, r, t) {
@@ -383,18 +394,15 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-heading($0) { count++; inside = (count == 1); infence = 0; header = 0; next }
-inside && infence {
-  if ($0 ~ /^### Q-[0123456789]+ /) { broken = 1; inside = 0; next }
-  if (closes($0)) infence = 0
-  next
-}
-/^(#|##|###) / { inside = 0 }
-!inside { next }
+infence { if (heading($0)) quoted++; if ($0 ~ /^### /) inside = 0; if (closes($0)) infence = 0; next }
 opens($0) { infence = 1; next }
+heading($0) { count++; inside = (count == 1); header = 0; next }
+/^(#|##|###) / { inside = 0; next }
+!inside { next }
 !header && /^\*\*Needs:\*\*/ {
-  header = 1; v = $0; p = index(v, "**Status:** "); answered = 0
-  if (p) { v = substr(v, p + 12); q = index(v, " "); if (q) v = substr(v, 1, q - 1); answered = (v == "ANSWERED") }
+  header = 1; v = ""; n = split($0, fld, " · ")
+  for (i = 1; i <= n; i++) { f = fld[i]; sub(/^[ \t]+/, "", f); if (substr(f, 1, 12) == "**Status:** ") v = substr(f, 13) }
+  sub(/[ \t]+$/, "", v); answered = (v == "ANSWERED")
   next
 }
 !done {
@@ -412,9 +420,9 @@ opens($0) { infence = 1; next }
   result = option(rest); done = 1
 }
 END {
-  if (inside && infence) broken = 1
-  if (count > 1) print "dup"
-  else if (count) print (!answered ? "open" : broken ? "unrecognized" : done ? result : "unrecognized")
+  if (count + quoted > 1) print "dup"
+  else if (quoted) print "fenced"
+  else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
 check_answer() {
   local a="$1" f r hit="" where=""
@@ -424,7 +432,8 @@ check_answer() {
     [[ -f "$f" ]] || continue
     r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
     [[ -n "$r" ]] || continue
-    if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
+    if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f (counting copies inside code fences)"; return; fi
+    if [[ "$r" == fenced ]]; then echo "skip $a: its heading appears only inside a code fence in $f"; return; fi
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
     hit="$r"; where="$f"
   done
