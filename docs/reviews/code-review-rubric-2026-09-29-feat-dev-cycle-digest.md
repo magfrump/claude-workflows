@@ -1,4 +1,4 @@
-Commit: c034a75 (digest) / a218ad8 (skill, feat/dev-cycle)
+Commit: 71e618d (digest) / 8286c2b (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -416,3 +416,19 @@ Scope: `b88a9c4..c034a75`, `79b1bfe..a218ad8`, partial. Fact-check k=1 (27 claim
 | A3 | A fixed name below a skipped directory was still probed, revealing which files exist out there | 🟡 Low | security F2; fact-check 23a | 5dd5377: parents checked first, nothing probed below a failing one |
 | A4 | The 14-day brief rule: "keep" not remembered, start date and "no commit" ambiguous | 🟡 Low | performance #1; api F3; fact-check 18, 24a | 8286c2b: `Kept:` date, commits beyond the default branch |
 | C1 | "every input is a plain file" when inputs are merely absent; section 8 header; test 7 title; symlink-rule wording; Q-103 "harness config"; seed policy-line edge (HTML comment) for the future unit | 🟢 | api F4, F6–F8; fact-check 13, 14, 16, 22; security F4 | 5dd5377, 71e618d, 8286c2b; F4 left for the handoff unit |
+
+---
+
+## Pass 12 (review-fix loop, k=1, all critics; on 71e618d digest / 8286c2b skill)
+
+**Status: 🔴 not clean — 1 behavioral red; fixed in 6d6637d, 591f098 (digest) and 44d06b7 (skill).**
+
+Scope: `c034a75..71e618d`, `a218ad8..8286c2b`, partial. Fact-check k=1 (28 claims: 16 V / 7 MA / 1 S / 4 I) and the three critics in parallel on pass 11's fact-check input. Artifacts: `code-fact-check-report-digest-pass12.md`, `security-review-2026-10-01-digest-pass12.md`, `performance-review-2026-10-01-digest-pass12.md`, `api-consistency-review-2026-10-01-digest-pass12.md`. Performance: no finding above Informational. Fixes for this pass started while the fact-check and security reviews were still running; both pinned their runs to 71e618d and say so.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | `skipdir()` had no parent walk: a symlinked `docs/` or `docs/working/` revealed whether `decisions/` or `cycles/` exist in the target, the Window line read it as "no cycle record found", and section 8's "nothing below … probed" plus 5dd5377's and 71e618d's messages were false | 🔴 behavioral (leak Low) | fact-check 11b, 24, 25a; api F1; security Low | 6d6637d: one `blocker()` decides every skip (files and directories), shared by section 8, inline notes and the Window line |
+| A1 | Inline notes named a file section 8 did not list (the blocking parent was listed) | 🟡 | api F2; fact-check 9 | 6d6637d: notes name the blocking part |
+| A2 | `inrepo` looked fixed-name paths up through a symlinked parent before skipping | 🟡 Informational | security Info; fact-check 11b note | 591f098: the walk runs first |
+| A3 | Step 0's two branches overlapped; skipped-directory cases missing; stale-brief answers archived before step 6 reads them; branch-not-created case | 🟡 | api F3, F4; fact-check 13, 15 | 44d06b7 |
+| C1 | Window note path form; section 8 header wording; stale comment; e08d526 "test 3" (test 10; immutable) | 🟢 | api F5, F6; fact-check 2, 3, 11a, 22, 25b | 6d6637d |
