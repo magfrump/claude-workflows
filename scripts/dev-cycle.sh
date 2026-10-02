@@ -113,7 +113,7 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 }
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
-# use rawfile directly: their directory has already passed plaindir.)
+# use rawfile directly: their directory has already passed dirok.)
 inrepo() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
 # The same for a directory the digest globs in: the walk first, so nothing is
 # looked up through a non-plain parent.
@@ -235,7 +235,7 @@ if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then
   done
 fi
 if [[ $found -eq 0 ]]; then
-  if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then echo "No revisit triggers read: every decision input that exists was skipped."
+  if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then echo "No revisit triggers in the decision inputs that were read; the skipped ones above were not read."
   else echo "No revisit triggers recorded."; fi
 fi
 
@@ -243,12 +243,14 @@ printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
 QA=docs/working/questions-archive.md
-# questions.sh reads the archive too and would follow a symlink there, so the
-# archive passes the same check before questions.sh runs.
+# questions.sh checks that the archive exists with a test that follows a
+# symlink, which would answer "does this host path exist?", so the archive
+# passes the same check before questions.sh runs.
 if skipped docs/working/questions.md; then
   skipnote docs/working/questions.md
-elif skipped "$QA"; then
-  skipnote "$QA"; echo "Watched questions were NOT checked: questions.sh reads the archive too."
+  skipped "$QA" || true  # still listed in section 8, so it shows this cycle
+elif inrepo docs/working/questions.md && [[ -f "$QS" ]] && skipped "$QA"; then
+  echo "**Watched questions were NOT checked** — $(skipnote "$QA")"
 elif inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
   if open_q="$(bash "$QS" open 2>"$qs_err")"; then

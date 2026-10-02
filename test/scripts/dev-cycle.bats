@@ -146,7 +146,7 @@ make_repo() {
     [[ "$output" == *"docs/roadmap.md is not read: docs/roadmap.md is not a plain file or directory"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"docs/working/questions.md is not read: docs/working/questions.md is not"* ]]
     [[ "$output" == *"no readable cycle record (records, or a directory above them, were skipped"* ]]
-    [[ "$output" == *"No revisit triggers read: every decision input that exists was skipped"* ]]
+    [[ "$output" == *"No revisit triggers in the decision inputs that were read"* ]]
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     for f in docs/decisions/002-link.md docs/decisions/003-git.md docs/decisions/log.md docs/roadmap.md \
              docs/working/questions.md docs/working/idea-log.md docs/working/cycles/cycle-2026-02-01.md; do
@@ -170,7 +170,7 @@ make_repo() {
     [[ "$output" != *"docs/decisions/log.md"* ]] || { echo "$output" | sed -n '/## 8/,$p'; return 1; }
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     [[ "$skipped" == *"- docs/decisions/"* && "$skipped" == *"- docs/working/cycles/"* ]] || { echo "$skipped"; return 1; }
-    [[ "$output" == *"No revisit triggers read: every decision input that exists was skipped"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
+    [[ "$output" == *"No revisit triggers in the decision inputs that were read"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
     rm docs/decisions && mkdir -p docs/decisions
     ln -s "$BATS_TEST_TMPDIR/outside/dec/001-private-plan.md" "docs/decisions/002-a"$'\n'"- FORGED.md"
     run --separate-stderr bash "$DC"
@@ -215,8 +215,15 @@ make_repo() {
     section2=$(echo "$output" | sed -n '/## 2/,/## 3/p')
     [[ "$section2" == *"if plain."* && "$section2" == *"Not read: docs/decisions/log.md is not a plain file or directory"* ]] || { echo "$section2"; return 1; }
     section3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
-    [[ "$section3" == *"docs/working/questions-archive.md is not read"*"Watched questions were NOT checked"* ]] || { echo "$section3"; return 1; }
+    [[ "$section3" == *"**Watched questions were NOT checked** — docs/working/questions-archive.md is not read"* ]] || { echo "$section3"; return 1; }
     [[ "$section3" != *"questions.sh open failed"* && "$section3" != *"no-such-file"* ]] || { echo "$section3"; return 1; }
+    # A plain record with no triggers beside a skipped log: the summary must
+    # not claim every input was skipped.
+    printf '# 002\n\nno triggers here\n' > docs/decisions/002-none.md
+    rm docs/decisions/001-plain.md
+    run --separate-stderr bash "$DC"
+    section2=$(echo "$output" | sed -n '/## 2/,/## 3/p')
+    [[ "$section2" == *"No revisit triggers in the decision inputs that were read; the skipped ones above were not read."* ]] || { echo "$section2"; return 1; }
 }
 
 @test "a skipped newer cycle record is named in the window line" {
