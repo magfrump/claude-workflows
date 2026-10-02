@@ -1,4 +1,4 @@
-Commit: f4d27d2 (digest) / a7dfc0c (skill, feat/dev-cycle)
+Commit: 6f24d91 (digest) / e19f411 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -732,4 +732,17 @@ Scope: `38578a9..f4d27d2`, `c345865..a7dfc0c`, partial: the pass-29 fix round. F
 | A1 | Closer bound measured from the opener (indented or list-item openers), tabs, ordinals, `<pre>` blocks: wrong keep/drop/done in new shapes | 🟡 Inconsistent / Low | api F1; security L1, L2; fact-check 5, 16 | digest: plain column-0 fences only; anything else refuses the file |
 | A2 | Two archive splits can rebalance a file; the never-closed skip only catches odd flips; no line number in the skip | 🟡 Low | security L3; api F2; performance Info 2 | digest: a fenced question heading refuses the file; every skip names its line |
 | C1 | `--check-brief` had no balance guard; stale output list; unused local; which closed/ briefs the final message lists | 🟢 | api F3–F5; fact-check 6; performance Info 1, 3; security Info 4, 5 | digest, skill |
+
+---
+
+## Pass 31 (review-fix loop, k=1, all critics; on 6f24d91 digest / e19f411 skill)
+
+**Status: 🟡 not clean — 2 Incorrect from fact-check (one root: the plain-fence reader did not yet refuse HTML blocks other than four tags, or a stray CR / BOM, so a fence line inside those gave a wrong keep/drop/done) and the same root as API Inconsistent F1–F2, performance Medium 1 and security L1–L2. Fixed in d0bf53f, 4b7ec02 (digest) and 4e5cbbc plus the brief-format commit (skill). Health check on 0c45039: passed (rc 0).**
+
+Scope: `f4d27d2..6f24d91`, `a7dfc0c..e19f411`, partial: the pass-30 fix round (plain fences only). Fact-check k=1 (25 claims: 19 V / 3 MA / 1 S / 2 I). Artifacts: `code-fact-check-report-digest-pass31.md`, `security-review-2026-10-02-digest-pass31.md`, `performance-review-2026-10-02-digest-pass31.md`, `api-consistency-review-2026-10-02-digest-pass31.md`. Security harvested every input from the pass 26–30 probes (6,885 answer and 3,445 brief readings): no non-skip reading changed, and every earlier wrong reading now refuses. All real IDs read as before with no skip.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | HTML blocks of types 2–7 (multi-line comments, `<details>`, `<div>`, lone tags, `<?`, `<!X`, CDATA) could hold a column-0 fence line; a lone CR or a BOM hid one | 🔴 Incorrect (fact-check 4, 20a) / 🟡 | fact-check 4, 20a; api F1, F2; performance Medium 1; security L1, L2 | digest: any line starting `<` outside a fence refuses the file (except a one-line comment); so does a CR inside a line or a BOM |
+| C1 | Skip wording for HTML, help for --check-brief's refusals, untested refusal paths, final-message scope, brief comment, stale test title, `tolower` on whole lines, briefs written with non-plain fences | 🟢 | api F3–F5; fact-check 1, 7, 9, 18; performance Info 2; security Info F3, F4 | digest, skill |
 

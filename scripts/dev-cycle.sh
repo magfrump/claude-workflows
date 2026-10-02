@@ -33,8 +33,9 @@
 #             on the default branch and the commit in its first-parent history
 #             that last added or removed a "Status: " line there (a merge
 #             commit, the branch's own commit after a fast-forward, or a later
-#             move or quoted Status line);
-#             "skip <path>: <reason>" otherwise.
+#             move or quoted Status line); "skip <path>: <reason>" otherwise,
+#             including a brief whose fences cannot be trusted (as for
+#             --check-answer, naming the line).
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -53,7 +54,8 @@
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a code fence never closed or not in plain column-0
-#             form, a question heading inside a fence, a questions file
+#             form, a raw HTML block, a stray carriage return or byte-order
+#             mark, a question heading inside a fence, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
@@ -128,7 +130,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,67p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,69p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -258,16 +260,19 @@ check_write() {
 # of the same character, at least as long and followed by nothing but spaces or
 # tabs, closes it. Any other fence-like line (indented, after a list marker, or
 # a column-0 line that neither opens nor, inside a fence, is plain content) is
-# ambiguous, and so is the start of a raw HTML block that can hold one (<pre>,
-# <script>, <style>, <textarea>): fence() records the first one's line number
-# in `odd`, and the
+# ambiguous, and so is anything this reader does not model: a line outside a
+# fence that starts with < (an HTML block can hold a fence line; only a
+# complete one-line <!-- comment --> is read), a carriage return inside a line
+# (CommonMark ends a line there), or a byte-order mark: fence() records the
+# first one's line number in `odd` (and why in `oddwhy`), and the
 # caller refuses the whole file. A fence still open at the end is recorded in
 # `fline` (its opening line) and refuses the file too.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
-function rawhtml(l) { l = tolower(l); return l ~ /^[ \t]*<(pre|script|style|textarea)([ \t>]|$)/ }
+function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
+function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
   ch = substr(l, 1, 1)
   if (ch != "`" && ch != "~") return 0
@@ -277,24 +282,34 @@ function opens(l,   ch, n) {
 }
 function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) ~ /^[ \t]*$/ }
 function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
+  if (index(l, "\r") || (NR == 1 && substr(l, 1, 3) == "\357\273\277")) { refuse("cr"); return 1 }
   if (infence) {
     if (closes(l)) infence = 0
-    else if (fenceish(l) && substr(l, 1, 1) != "`" && substr(l, 1, 1) != "~" && !odd) odd = NR
+    else if (fenceish(l) && substr(l, 1, 1) != "`" && substr(l, 1, 1) != "~") refuse("fence")
     return 1
   }
   if (opens(l)) { infence = 1; fline = NR; return 1 }
-  if (fenceish(l) || rawhtml(l)) { if (!odd) odd = NR; return 1 }
+  if (fenceish(l)) { refuse("fence"); return 1 }
+  if (rawhtml(l)) { refuse("html"); return 1 }
   return 0
 }
 '
+oddwhy() {  # the reason fence() refused a file, for a skip line
+  case "$1" in
+    html) echo "starts a raw HTML block (only a one-line <!-- comment --> is read)" ;;
+    cr) echo "holds a carriage return that does not end it, or a byte-order mark" ;;
+    *) echo "is a fence-like line that is not a plain column-0 fence" ;;
+  esac
+}
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". "new" when the
+# "Status:", which must be exactly "Status: open|done|dropped". A brief whose
+# fences cannot be trusted (FENCE_AWK refuses it) is not read at all. "new" when the
 # default branch has no file at that path (not landed yet, or moved to
 # closed/). A closed/ path is read the same way (its state, for In flight; it
 # never holds a slot).
 check_brief() {
-  local a="$1" st c
+  local a="$1" st c n why
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
@@ -308,9 +323,9 @@ check_brief() {
     { sub(/\r$/, "") }
     fence($0) { next }
     !seen && /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) st = $0 }
-    END { if (odd) print "odd " odd; else if (infence) print "unbalanced " fline; else if (st != "") print st }')"
+    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else if (st != "") print st }')"
   case "$st" in
-    odd\ *) echo "skip $a: line ${st#odd } is a fence-like line that is not a plain column-0 fence, so the brief is not read"; return ;;
+    odd\ *) read -r _ n why <<<"$st"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read"; return ;;
     unbalanced\ *) echo "skip $a: the code fence opened at line ${st#unbalanced } is never closed, so the brief is not read"; return ;;
     '') echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return ;;
   esac
@@ -437,14 +452,14 @@ heading($0) { count++; inside = (count == 1); header = 0; next }
   result = option(rest); done = 1
 }
 END {
-  if (odd) print "odd " odd
+  if (odd) print "odd " odd " " oddwhy
   else if (infence) print "unbalanced " fline
   else if (qline) print "quoted " qline
   else if (count > 1) print "dup"
   else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
 check_answer() {
-  local a="$1" f r hit="" where=""
+  local a="$1" f r hit="" where="" n why
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   for f in docs/working/questions.md docs/working/questions-archive.md; do
     if skipped "$f"; then echo "skip $a: $SKIP_AT is not a plain file or directory, so $f is not read"; return; fi
@@ -453,7 +468,7 @@ check_answer() {
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
     case "$r" in
-      odd\ *) echo "skip $a: line ${r#odd } of $f is a fence-like line that is not a plain column-0 fence, so no entry in $f is read"; return ;;
+      odd\ *) read -r _ n why <<<"$r"; echo "skip $a: line $n of $f $(oddwhy "$why"), so no entry in $f is read"; return ;;
       unbalanced\ *) echo "skip $a: the code fence opened at line ${r#unbalanced } of $f is never closed, so no entry in $f is read"; return ;;
       quoted\ *) echo "skip $a: line ${r#quoted } of $f is a question heading inside a code fence (questions.sh archive splits entries there), so no entry in $f is read"; return ;;
     esac
