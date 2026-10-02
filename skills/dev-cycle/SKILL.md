@@ -283,7 +283,7 @@ docs/working/questions.md.
      Done never depends on the branch, so a squash, a rebase or a deleted branch does not
      matter.
   2. If the brief is still open, apply answers to its keep-or-drop questions: the IDs on its
-     `Asked:` line (step 3 below writes them; no other question counts). Run
+     `Asked:` line (check 3 below writes them; no other question counts). Run
      `--check-answer` with the IDs not yet on its `Applied:` line (IDs separated by ", "),
      and take its lines in ascending ID order; it reads `questions.md` and, once step 1 has
      archived an entry, `questions-archive.md`. `open` is not answered yet (or the answer
@@ -292,7 +292,7 @@ docs/working/questions.md.
      place gets recorded.
      `keep` sets `Kept: <today>` (YYYY-MM-DD); `drop` and `done` close the brief as in 1;
      `unrecognized` goes in the record and the final message (the user answers on the next
-     keep-or-drop entry, which step 3 files; a second reply on this one is not read). Add the
+     keep-or-drop entry, which check 3 files; a second reply on this one is not read). Add the
      ID to `Applied:` after `keep`, `drop`, `done` or `unrecognized`, so each answer is read
      once. A
      `skip` (the entry could not be read) goes in the record and the final message, and the
