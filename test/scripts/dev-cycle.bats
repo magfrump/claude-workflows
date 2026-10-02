@@ -721,7 +721,7 @@ EOF
         docs/working/briefs/2026-01-03-c.md docs/working/briefs/2026-01-04-new.md docs/roadmap.md
     [ "$status" -eq 0 ]
     for want in "ok docs/working/briefs/2026-01-01-a.md open $c" "ok docs/working/briefs/2026-01-02-b.md done $c" \
-                "skip docs/working/briefs/2026-01-03-c.md: no line that is exactly" "ok docs/working/briefs/2026-01-04-new.md new" \
+                "skip docs/working/briefs/2026-01-03-c.md: its first Status: line is not exactly" "ok docs/working/briefs/2026-01-04-new.md new" \
                 "skip docs/roadmap.md: not an open build brief"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
@@ -731,10 +731,40 @@ EOF
     git checkout -q -b feat/w && git commit -q --allow-empty -m one && git commit -q --allow-empty -m two
     git checkout -q main && git branch feat/idle
     mkdir -p docs/sub docs/.agents/skills/x docs/guides
-    for f in docs/GEMINI.md docs/sub/agents.md docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md; do echo x > "$f"; done
+    for f in docs/GEMINI.md docs/sub/agents.md docs/sub/AGENTS.override.md docs/sub/gemini.local.md \
+             docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md; do echo x > "$f"; done
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-branch feat/w feat/idle
-    [[ "$output" == *"ok feat/w $(git rev-parse feat/w) 2"* && "$output" == *"ok feat/idle $(git rev-parse feat/idle) 0"* ]] || { echo "$output"; return 1; }
-    run --separate-stderr bash "$DC" --check-fix docs/GEMINI.md docs/sub/agents.md docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md
+    [[ "$output" == *"ok feat/w $(git rev-parse feat/w) 2 $(git log -1 --format=%cs feat/w)"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"ok feat/idle $(git rev-parse feat/idle) 0 "* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-fix docs/GEMINI.md docs/sub/agents.md docs/sub/AGENTS.override.md \
+        docs/sub/gemini.local.md docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md
     [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ] && [[ "$output" == *"ok docs/guides/g.md"* ]] || { echo "$output"; return 1; }
 }
+
+@test "the ANSWERED gate reads only the header line; a fenced Status line in a brief is not its status" {
+    local f=$'\x60\x60\x60'  # a ``` fence line
+    mkdir -p docs/working/briefs
+    {
+        echo '# Questions'; echo
+        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** OPEN\n\n'
+        printf '(Q-0 was **Status:** ANSWERED earlier.)\n\n- Q-1: [2]\n\n'
+        printf '### Q-2 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** ANSWERED\n\n'
+        printf '%s\n# a comment, not a heading\n%s\n**Answer:** [2]\n\n' "$f" "$f"
+    } > docs/working/questions.md
+    printf '# Brief\n\n%s\nStatus: done\n%s\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-a.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [[ "$output" == *"open Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-a.md
+    [[ "$output" == "ok docs/working/briefs/2026-01-01-a.md open "* ]] || { echo "$output"; return 1; }
+}
+
+@test "the check modes need a default branch found by name" {
+    git checkout -q -b trunk && git branch -q -D main
+    run --separate-stderr bash "$DC" --check-branch feat/x
+    [ "$status" -eq 1 ]
+    # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
+    [[ "$stderr" == *"needs a default branch"* ]] || { echo "$stderr"; return 1; }
+}
+
