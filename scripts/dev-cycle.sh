@@ -50,7 +50,8 @@
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
 #             file under docs/ (not the cycle's own files, working/,
 #             human-author/, reviews/, decisions/, dev-cycle.md, a dot-directory
-#             or an instruction file) or README.md; "skip <path>: <reason>"
+#             or dotfile, an instruction file, or a file an instruction file
+#             imports with @; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive: keep, drop, done,
@@ -137,7 +138,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,76p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,77p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -352,6 +353,11 @@ check_brief() {
   fi
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
   if [[ "$(git cat-file -t "$MAIN_SHA:$a" 2>/dev/null || true)" != blob ]]; then echo "ok $a new"; return; fi
+  # Only a regular file counts: a symlink's blob is its target text, not a brief.
+  case "$(git ls-tree "$MAIN_SHA" -- "$a" | cut -c1-6)" in
+    100644|100755) ;;
+    *) echo "skip $a: not a regular file on the default branch"; return ;;
+  esac
   # The whole blob is read (no early exit, which would kill git cat-file with
   # SIGPIPE under pipefail); fenced lines are skipped (FENCE_AWK).
   # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
@@ -404,15 +410,34 @@ check_branch() {
 # AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
 # written inline, the hermeticity lint reads the alternation as a command.)
 INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz0123456789_-]+)?\.md$|^skill\.md$'
+# Basenames, lower-cased, that a tracked instruction file pulls in with an @
+# import (Claude Code's "@path" syntax): such a file is read as instructions
+# too, so an in-cycle fix never edits it. Computed once, on first use.
+IMPORTED=""; IMPORTED_DONE=""
+imported_names() {
+  local f
+  [[ -n "$IMPORTED_DONE" ]] && return; IMPORTED_DONE=1
+  while IFS= read -r -d '' f; do
+    local b="${f##*/}"; b="$(printf '%s' "$b" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
+    if [[ ! "$b" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
+    IMPORTED+="$( { env LC_ALL=C grep -oE '(^|[[:space:](])@[^[:space:]`)]+' -- "$f" || true; } \
+      | sed 's/.*@//; s#^\./##; s#^~/##; s#.*/##' | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"$'\n'
+  done < <(git ls-files -z)
+}
 check_fix() {
-  local a="$1" base low
+  local a="$1" base low lp
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
-  base="${a##*/}"; low="$(printf '%s' "$base" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
-  if writable "$a"; then echo "skip $a: one of the cycle's own files (use --check-write)"
-  elif [[ ! "$a" =~ ^docs/.*\.md$|^README\.md$ || "$a" =~ ^docs/(working|human-author|reviews|decisions)/ \
-    || "$a" == docs/dev-cycle.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
+  # Compared lower-cased: on a case-insensitive filesystem docs/Working/ is docs/working/.
+  lp="$(printf '%s' "$a" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
+  base="${a##*/}"; low="${lp##*/}"
+  imported_names
+  if writable "$a" || writable "$lp"; then echo "skip $a: one of the cycle's own files (use --check-write)"
+  elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
+    || "$lp" == docs/dev-cycle.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, dot-directories or instruction files) and README.md; file it instead"
+  elif [[ $'\n'"$IMPORTED" == *$'\n'"$low"$'\n'* ]]; then
+    echo "skip $a: an instruction file imports a file named $base with @, so it is read as instructions; file it instead"
   else check_path "$a"; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
@@ -449,7 +474,7 @@ function option(span,   s, w, r, t) {
   if (substr(s, 1, 3) == "[3]") return "done"
   if (!match(s, /^(1|2|3|keep|drop|done)/)) return "unrecognized"
   w = substr(s, 1, RLENGTH); r = substr(s, RLENGTH + 1); t = r; sub(/^[ \t]+/, "", t)
-  if (!(r == "" || r ~ /^[.,;:!)]/ || (t != r && (t == "" || substr(t, 1, 1) == "-" \
+  if (!(r == "" || r ~ /^[.,;:!)*]/ || (t != r && (t == "" || substr(t, 1, 1) == "-" \
       || substr(t, 1, 3) == "\342\200\224" || substr(t, 1, 3) == "\342\200\223"))))
     return "unrecognized"
   if (w == "1" || w == "keep") return "keep"
@@ -482,8 +507,9 @@ heading($0) { count++; inside = (count == 1); header = 0; next }
   if ((c = index(rest, ":**")) > 0 && (c < (d = index(rest, ": ")) || !d)) {
     rest = substr(rest, c + 3)
   } else if ((c = index(rest, ": ")) > 0) {
+    e = index(rest, "**"); inbold = !(e > 0 && e < c)   # is the bold of the label still open at ": "?
     rest = substr(rest, c + 2)
-    if ((e = index(rest, "**")) > 0) rest = substr(rest, 1, e - 1)
+    if (inbold && (e = index(rest, "**")) > 0) rest = substr(rest, 1, e - 1)
   } else next
   result = option(rest); done = 1
 }
@@ -629,7 +655,7 @@ if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.m
 declare -A last_date=()
 if [[ ${#decisions_glob[@]} -gt 0 ]]; then
   while IFS=$'\t' read -r path day; do last_date["$path"]="$day"; done < <(
-    git -c core.quotePath=false log --diff-merges=combined --format='@%ad' --date=short --name-only -- docs/decisions \
+    git -c core.quotePath=false log --diff-merges=combined --format='@%cd' --date=short --name-only -- docs/decisions \
       | awk '/^@/ { d = substr($0, 2); next } NF && !seen[$0]++ { print $0 "\t" d }')
 fi
 for f in "${decisions_glob[@]}"; do
@@ -644,7 +670,7 @@ for f in "${decisions_glob[@]}"; do
   # per record on a 220k-commit repo), even if it was committed once and later
   # removed. A plain-named record keeps the map's date, removal included.
   if [[ -z "${last_date[$f]+set}" ]] && git cat-file -e "HEAD:$f" 2>/dev/null; then
-    d="$(git log -1 --format=%ad --date=short -- "$f")"
+    d="$(git log -1 --format=%cd --date=short -- "$f")"
   fi
   # A newline in a file name would otherwise print a line of its own.
   echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
@@ -728,7 +754,7 @@ fi
 
 printf '\n%s\n\n' "## 5. Roadmap"
 if inrepo docs/roadmap.md; then
-  d="$(git log -1 --format=%ad --date=short -- docs/roadmap.md)"
+  d="$(git log -1 --format=%cd --date=short -- docs/roadmap.md)"
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
