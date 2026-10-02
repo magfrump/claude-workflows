@@ -1,4 +1,4 @@
-Commit: 47c9a8e (digest) / d6e1f24 (skill, feat/dev-cycle)
+Commit: ab8ec06 (digest) / cfe4b51 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -345,3 +345,22 @@ Scope: the two fix rounds since final pass 5 (`28c6178..47c9a8e`, `c079e8c..d6e1
 | C1 | U+2028/2029 can split lines for some readers; "every trigger in full" vs the cut; CRLF headings; section 5 heading rule untested; timing case could not catch a revert; onboarding/row 68 "separate PR review"; no settings template; rule 3 "names the item it blocks"; row 68 4b trigger; Q-103 option [2] wording; global row 12; guide row | 🟢 | security F5; api F2, F4–F7, F9, F11; fact-check MA; performance #5 | ab8ec06, cfe4b51 |
 
 Not acted on: brief `Status:` as a third status form (api F8, informational); awk reading a 100 MB line slowly (performance #4, unrealistic input; comment now scopes the cut to the scrub).
+
+---
+
+## Pass 8 (review-fix loop, k=1, all critics; on ab8ec06 digest / cfe4b51 skill)
+
+**Status: 🔴 not clean — 1 behavioral red; fixed in d503a43 (digest) and 1ae9b21 (skill).**
+
+Scope: `47c9a8e..ab8ec06`, `d6e1f24..cfe4b51`, labelled partial. Fact-check k=1 (41 claims: 27 V / 12 MA / 2 I) and the three critics ran in parallel on pass 7's fact-check input. Artifacts: `code-fact-check-report-digest-pass8.md`, `security-review-2026-10-01-digest-pass8.md`, `performance-review-2026-10-01-digest-pass8.md`, `api-consistency-review-2026-10-01-digest-pass8.md`. The digest half held under every probe except the in-repo symlink case.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | "Anything else means review, and file one" also covered a deliberate `Build-loop policy: review`, so a repo that chose review was re-asked every cycle | 🔴 behavioral (procedure) | fact-check Claim 16c | 1ae9b21: set = one exact line of either value |
+| A1 | Path rule followed symlinks: a committed `docs/roadmap.md` → `.git/...` was read by the digest, and the cycle's writes would follow such links; the rule cited `inrepo`, which the cycle cannot run and which rejects files not yet created | 🟡 Medium | security F1; api 1, 6; fact-check 17b, 18 | d503a43 (inrepo rejects any symlink component), 1ae9b21 (never through a symlink, per component) |
+| A2 | Stop conditions as a denylist kept missing files later runs follow (`scripts/questions.sh`, review procedures, instruction files) | 🟡 Medium | security F2 | 1ae9b21: an allowlist of paths per brief; fixed exclusions, stricter under self-merge |
+| A3 | A pinned self-merge could not be lowered for loops in flight; the brief's `Policy:` line had no parse rule | 🟡 Medium/Low | security F3, F4; api 2 | 1ae9b21: stricter of the brief and the current setting; anything but self-merge = review |
+| A4 | In-flight bookkeeping: declined items re-queued every cycle; `blocked` never cleared; no stall count; the archive hides answers | 🟡 Medium | performance #1–#3; api 3, 4; fact-check 19b, 19c, 20, 30c | 1ae9b21: three outcomes only; a returned item goes to Ideas and re-enters Now only by the user |
+| C1 | Step 2 still said "in full"; final message omitted PRs; Q-103 wording; "~1 minute"; section 5's CRLF untested; printed-line cut wording; CRLF in the settings line | 🟢 | api 5, 7, 8, 10; fact-check 6, 9, 25, 27, 29c; performance #5 | d503a43, 1ae9b21 |
+
+Commit-message claim cfe4b51 "symlinked paths are skipped" (Claim 30a) is unmerged history; the rule it described is now true (1ae9b21).
