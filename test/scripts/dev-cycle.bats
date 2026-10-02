@@ -165,6 +165,7 @@ make_repo() {
     [[ "$output" != *private-plan* && "$output" != *SECRET* && "$output" != *cycle-2026-02-01* ]] || { echo "$output"; return 1; }
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     [[ "$skipped" == *"- docs/decisions/"* && "$skipped" == *"- docs/working/cycles/"* ]] || { echo "$skipped"; return 1; }
+    [[ "$output" == *"No revisit triggers read: decision records or the log were skipped"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
     rm docs/decisions && mkdir -p docs/decisions
     ln -s "$BATS_TEST_TMPDIR/outside/dec/001-private-plan.md" "docs/decisions/002-a"$'\n'"- FORGED.md"
     run --separate-stderr bash "$DC"
@@ -187,6 +188,14 @@ make_repo() {
     run --separate-stderr bash "$DC"
     [[ "$output" != *$'\n'"## 3. Fake"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"### docs/decisions/002-a ## 3. Fake.md"* ]]
+}
+
+@test "a skipped newer cycle record is named in the window line" {
+    mkdir -p docs/working/cycles
+    touch docs/working/cycles/cycle-2026-01-01.md "$BATS_TEST_TMPDIR/c.md"
+    ln -s "$BATS_TEST_TMPDIR/c.md" docs/working/cycles/cycle-2026-02-20.md
+    DEV_CYCLE_TODAY=2026-03-01 run --separate-stderr bash "$DC"
+    [[ "$output" == *"Window: since 2026-01-01 (from the last cycle record"*"a newer record, cycle-2026-02-20.md, was skipped"* ]] || { echo "$output" | sed -n 3p; return 1; }
 }
 
 @test "the window defaults to the newest cycle record's date and says so" {

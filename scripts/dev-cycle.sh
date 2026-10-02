@@ -124,11 +124,16 @@ if [[ -z "$MAIN_SHA" ]]; then
 fi
 [[ -n "$MAIN_SHA" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 
-last_record=""
+last_record=""; skipped_record=""
 if plaindir docs/working/cycles; then
   for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
-    inrepo "$f" || { skipped "$f" || true; continue; }
     d="${f##*/cycle-}"; d="${d%.md}"
+    if ! inrepo "$f"; then
+      # Keep the newest skipped date (not future-dated) to warn when it is newer
+      # than the record the window starts from.
+      skipped "$f" && [[ "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
+      continue
+    fi
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
   done
 else
@@ -139,6 +144,9 @@ if [[ -n "$SINCE" ]]; then
   source_note="--since"
 elif [[ -n "$last_record" ]]; then
   SINCE="$last_record"; source_note="the last cycle record, docs/working/cycles/cycle-$last_record.md"
+  if [[ "$skipped_record" > "$last_record" ]]; then
+    source_note+="; a newer record, cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
+  fi
 else
   SINCE="$(date -d "$TODAY - 14 days" +%F)"
   if [[ $records_skipped -gt 0 ]]; then
@@ -170,9 +178,9 @@ printf '\n%s\n\n' "## 2. Revisit triggers"
 echo "Every trigger, in full (an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
+n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
 if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
-n_before_triggers=${#SKIPPED[@]}
 for f in "${decisions_glob[@]}"; do
   inrepo "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
