@@ -1,4 +1,4 @@
-Commit: 36417f5 (digest) / db24c74 (skill, feat/dev-cycle)
+Commit: 1b0c4ff (digest) / 462e561 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -542,3 +542,21 @@ Scope: `723c242..36417f5`, `1f36885..db24c74`, partial. Fact-check k=1 (26 claim
 | A4 | The any-miss fallback walked all history for every uncommitted record (150 of them passed 120 s on a 220k-commit repo) | 🟡 Low | performance Low 1 | digest: fallback only for tracked records; test adds an uncommitted record |
 | A5 | Answer matching: "starts with" never matched `Q-NNN: [1]`; no word boundary; unmatched answers re-read forever; slug not unique; "linking" vs backticked path | 🟡 Minor | api 2–5; fact-check 8, 15, 16; security Info 6 | skill |
 | C1 | Path rule scope too wide (scratch output); step list; skipped-record date check; test name | 🟢 | api 1, 6, 8; fact-check 7 | digest, skill |
+
+---
+
+## Pass 19 (review-fix loop, k=1, all critics; on 1b0c4ff digest / 462e561 skill)
+
+**Status: 🔴 not clean — behavioral Incorrects in the skill's prose path rule and answer parsing; the user chose to put the path rule in code (fixed in 546b86e digest and 46d3423 skill).**
+
+Scope: `36417f5..1b0c4ff`, `db24c74..462e561`, partial. Fact-check k=1 (29 claims: 19 V / 5 MA / 4 I / 1 U) and the three critics. Artifacts: `code-fact-check-report-digest-pass19.md`, `security-review-2026-10-02-digest-pass19.md`, `performance-review-2026-10-02-digest-pass19.md`, `api-consistency-review-2026-10-02-digest-pass19.md`. Performance: the tracked-only fallback works (150 untracked records 142 s → 10 s on a 220k-commit repo).
+
+User decisions (2026-10-02): scope = tracked files plus gitignored files under `docs/working/`; the rule moves into `dev-cycle.sh --check-path / --check-write`, tested, and the skill calls it.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | The prose rule rejected the repo's own glob idea-source row (check 1 before glob expansion), and "tracked only" skipped the gitignored idea and plan files that row exists for | 🔴 behavioral | fact-check 1b, 9, 23; api 1, 2; security M1 | `--check-path` (git matches globs; ignored docs/working files allowed) |
+| R2 | "2 more weeks" read as drop; the answer's boundary undefined (options table could match) | 🔴 behavioral | fact-check 18b; api 3, 4; security Info 5 | skill: read the answer line; bare word only as the whole answer |
+| A1 | A tracked directory passed check 2; cycle writes checked directories only | 🟡 Medium | security M2, M3; fact-check 10 | `--check-path` requires one regular file; `--check-write` |
+| A2 | The fallback still walked history for staged-but-uncommitted records; comment overstated | 🟡 Info | performance 1; fact-check 6b; api 8; security Info 4 | digest: fallback only for records in HEAD |
+| C1 | Rule name drift, docs paraphrase, final message, step 0 wording, test reach | 🟢 | api 5–7, 10, 11; fact-check 1a, 15, 18c, 20 | skill, digest |
