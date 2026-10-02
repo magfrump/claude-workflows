@@ -1,4 +1,4 @@
-Commit: 366efd7 (digest) / b73069e (skill, feat/dev-cycle)
+Commit: 38578a9 (digest) / c345865 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -702,4 +702,18 @@ Scope: `b00c057..366efd7`, `7f3e392..b73069e`, partial: the pass-27 fix round. F
 |---|---|---|---|---|
 | A1 | Help said unrecognized means "no answer line starts with an option"; only the first answer line is read | 🟡 Incorrect (wording) | fact-check 2a; api Minor 1 | digest: help |
 | C1 | Stale header comment; per-entry fence tracking let a forged fenced copy decide and a list-item fence invert; header field read as a substring; printed-commit wording (fast-forward, later move); In flight excluded the briefs check 1 closes; closed/ briefs still open; future tip dates past a day; help nits | 🟢 | fact-check 1b, 5, 8, 10, 14, 16b, 18, 19; security L1, L2, Info 3–7; api Minor 2–5, Info 6–9; performance Info 1, 2 | digest: whole-file fences, list-marker openers, field-wise status; skill |
+
+---
+
+## Pass 29 (review-fix loop, k=1, all critics; on 38578a9 digest / c345865 skill)
+
+**Status: 🟡 not clean — 0 Incorrect from fact-check; 1 Inconsistent (regression: pass 28's lenient fence leader also loosened closers, so a nested fence line exposed content: wrong drop/done) plus Lows. Nothing Medium or above from security or performance. Fixed in e2f2d54, the pass-29 skip commit (digest) and a7dfc0c (skill). Health check on 5a50016: passed (rc 0).**
+
+Scope: `366efd7..38578a9`, `b73069e..c345865`, partial: the pass-28 fix round. Fact-check k=1 (29 claims: 20 V / 8 MA / 1 S / 0 I). Artifacts: `code-fact-check-report-digest-pass29.md`, `security-review-2026-10-02-digest-pass29.md`, `performance-review-2026-10-02-digest-pass29.md`, `api-consistency-review-2026-10-02-digest-pass29.md`. All real questions files have balanced fences; all real IDs unchanged.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `lead()` applied to closers: an indented or list-marker fence line inside a fence closed it (wrong drop / done) | 🟡 Inconsistent | api F1; security L1; fact-check 6, 19; performance (cross-lane) | digest: closer bounded by the opener's column, no marker; 4+ spaces is indented code |
+| A2 | One stray fence line flips the rest of the file, and questions.sh archive can produce one | 🟡 Low | security L2, L3; fact-check (questions.sh probe) | digest: a file ending inside a fence is a skip for every ID |
+| C1 | Help for unrecognized, fenced `### ` comments losing answers, trim wording, stale test title, closed/ open briefs in the final message, orphan rule narrower than In flight | 🟢 | api F2–F6; security Info 4–7; fact-check 2, 11, 14, 20, 23, 24, 28; performance Info 1, 2 | digest, skill |
 
