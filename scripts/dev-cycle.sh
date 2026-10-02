@@ -291,8 +291,9 @@ function opencomment(l,   n, p) {  # the last <!-- on the line has no --> after 
   return n > 1 && !index(p[n], "-->")
 }
 function refdef(l) {  # also behind any number of blockquote and list markers
-  sub(/^[ \t>]*/, "", l)
-  while (l ~ /^([-*+]|[0123456789]+[.)])[ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l); sub(/^[ \t>]*/, "", l) }
+  # One anchored match strips every leading blank, > and list marker (a loop of
+  # sub() calls rebuilt the line per marker: quadratic on a line of markers).
+  if (match(l, /^([ \t>]|[-*+][ \t]|[0123456789]+[.)][ \t])*/)) l = substr(l, RLENGTH + 1)
   # Any line starting [ that holds ]: or never closes its [ with an unescaped ]
   # (a label that continues on the next line) counts; escapes are dropped first.
   if (substr(l, 1, 1) != "[") return 0
