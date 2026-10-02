@@ -755,16 +755,67 @@ EOF
     printf '# Brief\n\n%s\nStatus: done\n%s\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-a.md
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
-    [[ "$output" == *"open Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
+    # A heading-shaped line ends the entry even inside a fence: the answer after
+    # it is lost (unrecognized, asked again), never read from elsewhere.
+    [[ "$output" == *"open Q-1"* && "$output" == *"unrecognized Q-2"* ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-a.md
     [[ "$output" == "ok docs/working/briefs/2026-01-01-a.md open "* ]] || { echo "$output"; return 1; }
 }
 
-@test "the check modes need a default branch found by name" {
+@test "--check-brief and --check-branch need a default branch found by name; the others do not" {
+    echo r > README.md && git add README.md && git commit -qm readme
     git checkout -q -b trunk && git branch -q -D main
-    run --separate-stderr bash "$DC" --check-branch feat/x
-    [ "$status" -eq 1 ]
-    # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
-    [[ "$stderr" == *"needs a default branch"* ]] || { echo "$stderr"; return 1; }
+    for m in --check-branch --check-brief; do
+        run --separate-stderr bash "$DC" "$m" feat/x
+        [ "$status" -eq 1 ]
+        # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
+        [[ "$stderr" == *"needs a default branch"* ]] || { echo "$stderr"; return 1; }
+    done
+    run --separate-stderr bash "$DC" --check-path README.md
+    [ "$status" -eq 0 ] && [[ "$output" == "ok README.md" ]] || { echo "$output"; return 1; }
+}
+
+@test "an unclosed fence stays inside its entry; fences close only with their own kind; the gate is anchored" {
+    mkdir -p docs/working
+    local f=$'\x60\x60\x60'  # a ``` fence line
+    {
+        echo '# Questions'; echo
+        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\nno close\n\n' "$f"
+        printf '### Q-2 · other\n**Needs:** you: judgment · **Status:** OPEN\n\n%s\n**Answer:** [2] drop\n%s\n\n' "$f" "$f"
+        printf '### Q-3 · keep-or-drop-x-3\n**Needs:** you: judgment · **Status:** ANSWERED\n\n~~~\n%s\n**Answer:** [2]\n~~~\n**Answer:** [1]\n\n' "$f"
+        printf '### Q-4 · keep-or-drop-x-4\n**Needs:** you: judgment · **Status:** OPEN (was **Status:** ANSWERED)\n\n**Answer:** [2]\n\n'
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-3 Q-4
+    for want in "unrecognized Q-1" "keep Q-3" "open Q-4"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}
+
+@test "--check-brief reads a large brief whole and names the commit that set its status" {
+    mkdir -p docs/working/briefs
+    b=docs/working/briefs/2026-01-01-big.md
+    { printf '# Brief\nStatus: open\n'; head -c 200000 /dev/zero | tr '\0' 'x'; echo; } > "$b"
+    git add -A && git commit -qm brief
+    sed -i 's/^Status: open$/Status: done/' "$b" && git commit -qam "status done" && c=$(git rev-parse HEAD)
+    printf 'Asked: Q-1\n' >> "$b" && git commit -qam asked
+    run --separate-stderr bash "$DC" --check-brief "$b"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "ok $b done $c" ]] || { echo "$output"; return 1; }
+}
+
+@test "a fenced copy of an entry quoted in another entry makes the ID a duplicate, never its answer" {
+    mkdir -p docs/working
+    local f=$'\x60\x60\x60'  # a ``` fence line
+    {
+        echo '# Questions'; echo
+        printf '### Q-10 · notes\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [1]\n\nOriginal:\n%s\n' "$f"
+        printf '### Q-11 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [2]\n%s\n\n' "$f"
+        printf '### Q-11 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** OPEN\n\nkeep or drop?\n\n'
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-11 Q-10
+    [[ "$output" == *"skip Q-11: more than one entry with this heading"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"unrecognized Q-10"* ]] || { echo "$output"; return 1; }
 }
 

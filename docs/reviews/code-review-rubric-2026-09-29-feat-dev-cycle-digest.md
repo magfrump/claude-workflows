@@ -1,4 +1,4 @@
-Commit: cbfdf35 (digest) / 77e21af (skill, feat/dev-cycle)
+Commit: 10c2809 (digest) / 875b41f (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -661,4 +661,18 @@ Scope: `c1d0a80..cbfdf35`, `fb643e2..77e21af`, partial: the pass-24 fix round. F
 | A3 | `--check-fix` allowed CLAUDE.local.md / AGENTS.override.md | 🟡 Medium | security M2; api Minor 5 | digest |
 | A4 | Health check: the hermeticity lint read the inline basename alternation as a call to a network binary | 🟡 (gate) | health-check.sh | digest: the pattern in a quoted variable |
 | C1 | Fenced heading lines in an entry, fenced status lines in a brief, unrecorded answers silent, Done's commit, "new" meanings, idle squash-merged branches, name check within a cycle, current-branch fallback, comments | 🟢 | fact-check 6, 8, 9, 12b, 21, 25, 27, 30; security L3, L4, Info 5–7; api Inconsistent 3, Minor 4, 6, 7, 8, Info 9, 10; performance Low 3, Info 1, 2 | digest, skill |
+
+---
+
+## Pass 26 (review-fix loop, k=1, all critics; on 10c2809 digest / 875b41f skill)
+
+**Status: 🔴 not clean — 1 Incorrect and 2 Medium (the same regression: the pass-25 fence reorder let an unclosed fence hide the next entry's heading), 1 Breaking (the no-default-branch exit stopped all six modes), all fixed in b00c057 (digest) and the pass-26 skill commit. Health check on bf5dfac: passed (rc 0).**
+
+Scope: `cbfdf35..10c2809`, `77e21af..875b41f`, partial: the pass-25 fix round. Fact-check k=1 (30 claims: 24 V / 5 MA / 0 S / 1 I). Artifacts: `code-fact-check-report-digest-pass26.md`, `security-review-2026-10-02-digest-pass26.md`, `performance-review-2026-10-02-digest-pass26.md`, `api-consistency-review-2026-10-02-digest-pass26.md`. All 102 real IDs read the same as at cbfdf35.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | Fence test before the heading test: an unclosed fence hid later headings, so another entry's answer (or a fenced copy) was read, and duplicates were missed | 🔴 Incorrect / 🟡 Medium | fact-check 10; security M1; performance Medium 1; api Minor 5 | digest: headings bound entries; fences tracked in the entry only, by kind; an open fence at the end is unrecognized |
+| A2 | The no-default-branch exit refused all six modes; only two read the default branch | 🔴 Breaking | api Breaking 1 | digest: only `--check-brief` and `--check-branch` |
+| C1 | Substring ANSWERED gate, mixed fence kinds in briefs, SIGPIPE above 64 KiB, the printed commit after later edits, ranges in the pattern, open-ID date with no source, final-message list, "open" wording, orphan briefs, stale-line correction, tip-date zone and future dates | 🟢 | security L2–L5, Info 6–9; api Inconsistent 2, Minor 3, 4, 6, 7, Info 8–10; fact-check 7, 19, 21, 25, 30; performance Low 2, Info 3 | digest, skill |
 
