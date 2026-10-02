@@ -90,10 +90,16 @@ ROOT_REAL="$(pwd -P)"
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
 inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
-# An input that exists in some form but fails inrepo is skipped, not absent:
-# it is named where it would have been read and listed in section 8.
+# A directory the digest globs in must be plain too, or the glob would list
+# names from wherever a symlinked directory points.
+plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+# An input that exists in some form but is not a plain file (reached through a
+# symlink, or not a regular file) is skipped, not absent: it is named where it
+# would have been read and listed in section 8. A newline in a name becomes a
+# space here, before the name is ever printed.
 SKIPPED=()
-skipped() { if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("$1"); return 0; fi; return 1; }
+skipped() { if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi; return 1; }
+skipdir() { if [[ -e "$1" || -L "$1" ]] && ! plaindir "$1"; then SKIPPED+=("$1/"); return 0; fi; return 1; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
@@ -119,18 +125,27 @@ fi
 [[ -n "$MAIN_SHA" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 
 last_record=""
-for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
-  inrepo "$f" || { skipped "$f" || true; continue; }
-  d="${f##*/cycle-}"; d="${d%.md}"
-  [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
-done
+if plaindir docs/working/cycles; then
+  for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
+    inrepo "$f" || { skipped "$f" || true; continue; }
+    d="${f##*/cycle-}"; d="${d%.md}"
+    [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
+  done
+else
+  skipdir docs/working/cycles || true
+fi
+records_skipped=${#SKIPPED[@]}
 if [[ -n "$SINCE" ]]; then
   source_note="--since"
 elif [[ -n "$last_record" ]]; then
   SINCE="$last_record"; source_note="the last cycle record, docs/working/cycles/cycle-$last_record.md"
 else
   SINCE="$(date -d "$TODAY - 14 days" +%F)"
-  source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
+  if [[ $records_skipped -gt 0 ]]; then
+    source_note="no readable cycle record (one or more were skipped as not plain files: section 8), so the default of 14 days"
+  else
+    source_note="no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)"
+  fi
 fi
 if ! [[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$SINCE" >/dev/null 2>&1; then echo "--since must be a real YYYY-MM-DD date" >&2; exit 1; fi
 
@@ -155,7 +170,10 @@ printf '\n%s\n\n' "## 2. Revisit triggers"
 echo "Every trigger, in full (an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
-for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
+decisions_glob=()
+if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
+n_before_triggers=${#SKIPPED[@]}
+for f in "${decisions_glob[@]}"; do
   inrepo "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
@@ -179,7 +197,10 @@ if inrepo docs/decisions/log.md; then
 else
   skipped docs/decisions/log.md || true
 fi
-[[ $found -eq 1 ]] || echo "No revisit triggers recorded."
+if [[ $found -eq 0 ]]; then
+  if [[ ${#SKIPPED[@]} -gt $n_before_triggers ]]; then echo "No revisit triggers read: decision records or the log were skipped as not plain files (section 8)."
+  else echo "No revisit triggers recorded."; fi
+fi
 
 printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
@@ -203,7 +224,7 @@ if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
     echo '```'; cat "$qs_err"; echo '```'
   fi
 elif skipped docs/working/questions.md; then
-  echo "docs/working/questions.md is reached through a symlink: NOT read (section 8)."
+  echo "docs/working/questions.md is not a plain file (reached through a symlink, or not a regular file): NOT read (section 8)."
 else
   echo "No docs/working/questions.md (or questions.sh) in this repo."
 fi
@@ -225,7 +246,7 @@ if inrepo docs/roadmap.md; then
   echo
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
 elif skipped docs/roadmap.md; then
-  echo "docs/roadmap.md is reached through a symlink: NOT read (section 8)."
+  echo "docs/roadmap.md is not a plain file (reached through a symlink, or not a regular file): NOT read (section 8)."
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
@@ -275,9 +296,9 @@ if inrepo docs/roadmap.md; then
     echo "- Roadmap $sec: $n item(s)"
   done
 elif skipped docs/roadmap.md; then
-  echo "- Roadmap: reached through a symlink, NOT read (section 8)"
+  echo "- Roadmap: not a plain file (reached through a symlink, or not a regular file), NOT read (section 8)"
 else
-  echo "- Roadmap: none yet (0 items ready for 6b)"
+  echo "- Roadmap: none yet (nothing to brief)"
 fi
 LOG=docs/working/idea-log.md
 if inrepo "$LOG"; then
@@ -294,15 +315,15 @@ if inrepo "$LOG"; then
   fi
   echo "- Ideas seeded since: $seeded"
 elif skipped "$LOG"; then
-  echo "- $LOG: reached through a symlink, NOT read (section 8)"
+  echo "- $LOG: not a plain file (reached through a symlink, or not a regular file), NOT read (section 8)"
 else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
 fi
 
 printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
-  echo "None: no input is reached through a symlink."
+  echo "None: every input is a plain file."
 else
-  echo "Reached through a symlink, so not read. Absent from the sections above, not missing from the repo:"
-  printf '%s\n' "${SKIPPED[@]}" | sort -u | while IFS= read -r f; do echo "- ${f//$'\n'/ }"; done
+  echo "Not plain files (reached through a symlink, or not regular files), so not read; they exist but their contents are not in the sections above:"
+  printf '%s\n' "${SKIPPED[@]}" | sort -u | sed 's/^/- /'
 fi
