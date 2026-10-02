@@ -344,6 +344,6 @@ printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
   echo "None: no input was skipped."
 else
-  echo "Not plain files (reached through a symlink, or not regular files), so not read; they exist but their contents are not in the sections above:"
+  echo "Reached through a symlink, or not a regular file or directory, so not read; nothing below a listed directory was read or probed:"
   printf '%s\n' "${SKIPPED[@]}" | sort -u | sed 's/^/- /'
 fi
