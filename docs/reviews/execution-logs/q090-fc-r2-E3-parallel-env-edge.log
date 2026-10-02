@@ -1,0 +1,62 @@
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e3.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 env-bogus   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:52:00Z
+## KIND=env-bogus
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+WARNING: --jobs 2 needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially
+1..2
+ok 1 gamma clean output
+ok 2 beta steady
+## exit=0
+shim: args=[--version] PARALLEL_HOME=[unset] PARALLEL=[--no-such-option]
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e3.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 config-bogus   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:52:00Z
+## KIND=config-bogus
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+WARNING: --jobs 2 needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially
+1..2
+ok 1 gamma clean output
+ok 2 beta steady
+## exit=0
+shim: args=[--version] PARALLEL_HOME=[unset] PARALLEL=[unset]
+# cmd: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/e3.sh /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2 home-uncreatable   (script body at end of log)
+# cwd: /workspace/.claude/wt-run-tests-jobs  start: 2026-09-30T21:52:00Z
+## KIND=home-uncreatable
+=== Running all tests ===
+  gamma.bats
+  beta.bats
+
+1..2
+ok 1 gamma clean output
+ok 2 beta steady
+## exit=0
+shim: args=[--version] PARALLEL_HOME=[/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-uncreatable/home/users-own] PARALLEL=[unset]
+shim: args=[--keep-order --jobs 2 bats-exec-file --dummy-flag -j 2 --no-parallelize-within-files  {} /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/bats-run-fpR87M/test_list_file.txt ::: /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-uncreatable/my repo/.bats/run-log-anchor /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-uncreatable/my repo/test/gamma.bats /tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-uncreatable/my repo/test/sub/beta.bats] PARALLEL_HOME=[/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/run-tests-jobs/fc-r2/home-uncreatable/home/users-own] PARALLEL=[unset]
+# ---- e3.sh ----
+#!/usr/bin/env bash
+# Probe: $PARALLEL / config that makes `parallel --version` fail, and an uncreatable .bats/parallel-home.
+set -u
+WT=/workspace/.claude/wt-run-tests-jobs
+S=$1; KIND=$2
+T="$S/$KIND/my repo"; H="$S/$KIND/home"
+rm -rf "$S/$KIND"; mkdir -p "$T/scripts" "$T/test/skills" "$T/test/lib" "$T/test/sub" "$H" "$S/$KIND/shim"
+cp "$WT/scripts/run-tests.sh" "$T/scripts/"; cp "$WT/test/skills/runner-contract.bash" "$T/test/skills/"; cp "$WT/test/lib/hermetic-env.bash" "$T/test/lib/"
+printf '%s\n' '#!/usr/bin/env bats' '# @category fast' '@test "gamma clean output" { true; }' > "$T/test/gamma.bats"
+printf '%s\n' '#!/usr/bin/env bats' '# @category slow' '@test "beta steady" { true; }' > "$T/test/sub/beta.bats"
+# shim: log PARALLEL_HOME/PARALLEL seen by each parallel call, then exec the real one
+printf '%s\n' '#!/usr/bin/env bash' "echo \"shim: args=[\$*] PARALLEL_HOME=[\${PARALLEL_HOME-unset}] PARALLEL=[\${PARALLEL-unset}]\" >> '$S/$KIND/shim.log'" 'exec /usr/bin/parallel "$@"' > "$S/$KIND/shim/parallel"; chmod +x "$S/$KIND/shim/parallel"
+envx=()
+case $KIND in
+  env-bogus) envx=(PARALLEL=--no-such-option) ;;
+  config-bogus) mkdir -p "$H/.parallel"; echo '--no-such-option' > "$H/.parallel/config" ;;
+  home-uncreatable) mkdir -p "$T/.bats"; : > "$T/.bats/parallel-home"; envx=(PARALLEL_HOME="$H/users-own") ;;
+esac
+echo "## KIND=$KIND"
+timeout 60 env -i PATH="$S/$KIND/shim:/usr/local/bin:/usr/bin:/bin" HOME="$H" TMPDIR="$S" LC_ALL=C.UTF-8 "${envx[@]}" bash "$T/scripts/run-tests.sh" --jobs 2 test/gamma.bats test/sub/beta.bats 3>&-
+echo "## exit=$?"
+cat "$S/$KIND/shim.log" 2>/dev/null

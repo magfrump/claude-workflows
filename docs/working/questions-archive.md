@@ -91,6 +91,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-085](#q-085--review-unit-size-budget) | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-087](#q-087--final-confirming-pass-replicates) | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
+| [Q-090](#q-090--run-tests-jobs) | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
 | [Q-094](#q-094--exit-scan-worktree-noise) | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
@@ -1835,4 +1836,13 @@ The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address fi
 - **Interim:** both branches held unmerged; nothing is built until you approve the skill.
 - **If the answer differs:** nothing is built yet.
 
+### Q-090 · run-tests-jobs
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**2026-09-30: trigger fired** (Q-084 step 4 printed `GNU parallel 20221122` in the image, with no cite/locale output). **Done and merged the same day** (main 6ee986d, from `feat/run-tests-jobs`). `scripts/run-tests.sh --jobs N` (1–999) runs bats with `--jobs N --no-parallelize-within-files`, and warns then runs serially when no GNU `parallel` is on PATH. Run logs and `--failed` still work. The review loop took 3 iterations, with no Must Fix at any pass (rubric `docs/reviews/code-review-rubric-2026-09-30-feat-run-tests-jobs.md`). Wall time on the 16-core sandbox: serial 451 s, `--jobs 8` 140–145 s (3.1×), `--jobs 16` 137 s. The merge gate was 1498/1498 in 139 s. The 742 s baseline came from another host, so compare the ratio, not the seconds. install-host.bats, at 105 s alone, sets the lower limit. There was 1 flake in about 13 parallel runs, in run-tests.bats' killed-run test (a race between a trap and bats' output reader); the assertion now accepts either count. Longest-first order and overlapping `bats --count` are deferred in the override log. Whether any caller should pass `--jobs` by default is Q-102.
+
+When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tests.sh` (suite-level `bats --jobs`, serial when `parallel` is missing) and measure the full-suite wall time against the 742 s serial baseline. install-host.bats, the slowest suite, bounds the speedup.
+
+- **Interim:** the suite stays serial.
+- **From the Q-086 review (C2, C5):** `bats --jobs N` with N>1 aborts without `parallel` even on one file, so the serial fallback must test `command -v parallel`, not the file count. bats runs `parallel` without `--will-cite`, so check its citation notice and Perl locale warnings stay out of test output. `--jobs` also parallelizes tests *within* a file, and install-host.bats may flake, since `install.sh`'s `procs_in_checkout` scans the real /proc; consider `--no-parallelize-within-files`.
 

@@ -1,0 +1,13 @@
+# E7 2026-09-30T21:11:25Z cwd=/workspace/.claude/wt-digest
+$ env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_CTYPE=xx_XX.UTF-8 perl -e 1
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LC_CTYPE = "xx_XX.UTF-8",
+	LANG = "C.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("C.UTF-8").
+exit=0
+$ env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_CTYPE=xx_XX.UTF-8 bash -c "source test/lib/hermetic-env.bash; locale_installed \"\${LC_ALL:-\${LANG:-}}\" && echo pin-would-not-fire"
+pin-would-not-fire

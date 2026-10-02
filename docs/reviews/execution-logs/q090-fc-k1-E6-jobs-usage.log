@@ -1,0 +1,31 @@
+# E6 2026-09-30T21:11:14Z cwd=/workspace/.claude/wt-run-tests-jobs (usage errors exit before the lock is taken)
+$ timeout 20 bash scripts/run-tests.sh --jobs
+--jobs takes a positive integer, got: (nothing)
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs 0
+--jobs takes a positive integer, got: 0
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs 02
+--jobs takes a positive integer, got: 02
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs -1
+--jobs takes a positive integer, got: -1
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs x
+--jobs takes a positive integer, got: x
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs --failed
+--jobs takes a positive integer, got: --failed
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ timeout 20 bash scripts/run-tests.sh --jobs 2 --failed --slow
+--failed re-runs every failure of the last run and takes no --fast/--slow/--all or FILE
+Usage: scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
+exit=2
+$ bash -c "[[ 18446744073709551617 -gt 1 ]] && echo gt || echo notgt"
+notgt

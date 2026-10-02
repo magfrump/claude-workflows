@@ -13,7 +13,7 @@
 # "Report gating" below).
 #
 # Usage:
-#   scripts/run-tests.sh [--fast|--slow|--all] [--failed] [FILE...]
+#   scripts/run-tests.sh [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]
 #
 # Environment:
 #   RUN_TESTS_NOT_RUN_FILE  When set, the number of report-dependent suites
@@ -33,6 +33,11 @@
 #             hold a result for every test it selected (see "Run logs"); 0
 #             with a message naming the last run's scope when it had no
 #             failures among the selected files.
+#   --jobs N  Run up to N test files at once (see "Parallel runs"). N is 1
+#             to 999, digits only, no leading zero; anything else is a usage
+#             error (exit 2). 1, the default, runs serially; N above the
+#             number of selected files is lowered to it. Combines with every
+#             other flag, --failed included.
 #   FILE...   Run only these .bats files (absolute, or relative to the repo
 #             root, NOT the current directory; each must be under test/ once
 #             every symlink in its path, the file's own included, is
@@ -49,7 +54,7 @@
 # signal handling are the runner's own.
 #
 # Just before the exec it writes .bats/last-run: the selected files, their
-# test count (`bats --count`, which adds about 15 s to a full run) and the
+# test count (`bats --count`, which adds about 5 s to a full run) and the
 # name of the newest log before the run. bats writes a log line per test as
 # the test ends, so --failed accepts the newest log (the one bats' own
 # --filter-status reads) only when it is not that previous log and holds a
@@ -76,6 +81,37 @@
 # that into the $output a test asserts on. The runner then exports
 # LC_ALL=C.UTF-8 (C when that is missing too) and says so; a working locale
 # is left alone. "Installed" is locale_installed in test/lib/hermetic-env.bash.
+#
+# Parallel runs: --jobs N (N > 1) hands bats `--jobs N
+# --no-parallelize-within-files`, so whole files run side by side and the
+# tests within a file stay serial, the only way this runner has ever run
+# them: no suite has been checked for tests that interfere when run at once.
+# The slowest file bounds the speedup (measured on 16 cores: --jobs 16 was
+# only about 5% faster than --jobs 8). Files still share the machine: install.sh's
+# agent_gate, which install-host.bats runs, refuses when procs_in_checkout
+# cannot read the working directory of a live process of the user (a
+# non-dumpable one, say), and under --jobs other files' processes are live
+# beside it.
+# bats runs files through GNU parallel: it aborts, even for one file, when no
+# `parallel` is on PATH, and runs no test when the first one is not GNU
+# parallel (moreutils ships one too). In both cases the runner warns and runs
+# serially instead. It unsets $PARALLEL and $PARALLEL_CSH, so options the
+# user set there do not reach bats' run. parallel's config files
+# (~/.parallel/config, ~/.parallelrc, /etc/parallel/config and the like)
+# still apply. One that breaks the run fails closed: bats reports a test
+# count other than expected and exits 1. When the config stopped tests from
+# running, --failed refuses the log; when it only changed the output (say
+# --tag), the log is complete and --failed re-runs from it.
+# bats keeps each file's output together (parallel groups output by default)
+# and in file order (--keep-order), so a file's results appear once it and
+# every file before it have ended. Every test still writes its own run-log
+# line, so the run log, the test-count check and --failed work as in a
+# serial run. bats folds parallel's stderr into its output; the locale pin
+# above keeps perl's setlocale warnings out of it, and upstream parallel
+# prints its citation notice only when its stderr is a terminal, which inside
+# bats it never is (Debian's build never prints it). parallel's usage text,
+# printed when a config file hands it a bad option, carries the same request
+# to cite, so that case shows it.
 
 set -euo pipefail
 
@@ -87,12 +123,13 @@ RUN_LOCK="$REPO_ROOT/.bats/lock"
 LAST_RUN="$REPO_ROOT/.bats/last-run"
 
 usage() {
-  echo "Usage: $0 [--fast|--slow|--all] [--failed] [FILE...]" >&2
+  echo "Usage: $0 [--fast|--slow|--all] [--failed] [--jobs N] [FILE...]" >&2
 }
 
 category="all"
 category_set=false
 failed_only=false
+jobs=1
 requested=()
 
 while [[ $# -gt 0 ]]; do
@@ -101,6 +138,17 @@ while [[ $# -gt 0 ]]; do
     --slow)   category="slow"; category_set=true; shift ;;
     --all)    category="all";  category_set=true; shift ;;
     --failed) failed_only=true; shift ;;
+    --jobs)
+      # At most 3 digits, so the value never overflows bash arithmetic and
+      # parallel never sizes thousands of job slots.
+      if [[ ! "${2:-}" =~ ^[1-9][0-9]{0,2}$ ]]; then
+        echo "--jobs takes a number from 1 to 999, got: ${2:-(nothing)}" >&2
+        usage
+        exit 2
+      fi
+      jobs="$2"
+      shift 2
+      ;;
     -h|--help)
       sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
       exit 0
@@ -356,6 +404,20 @@ echo ""
 mapfile -t files <<< "$matched"
 bats_args=()
 [[ "$failed_only" == true ]] && bats_args+=(--filter-status failed)
+# See "Parallel runs" in the header. N is first lowered to the file count,
+# so a one-file run needs no parallel. Otherwise bats needs GNU parallel, so
+# that is what is checked: the first `parallel` on PATH, the one
+# bats runs, with --plain so the user's parallel config cannot fail the check.
+requested_jobs="$jobs"
+(( jobs > ${#files[@]} )) && jobs=${#files[@]}
+if [[ "$jobs" -gt 1 ]]; then
+  unset PARALLEL PARALLEL_CSH
+  if [[ "$(parallel --plain --version 2>/dev/null)" == "GNU parallel"* ]]; then
+    bats_args+=(--jobs "$jobs" --no-parallelize-within-files)
+  else
+    echo "WARNING: --jobs $requested_jobs needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially" >&2
+  fi
+fi
 
 if [[ "$recording" == true ]]; then
   bats_args+=("$RUN_LOG_ANCHOR")

@@ -1,10 +1,10 @@
 #!/usr/bin/env bats
 # @category slow
 # scripts/run-tests.sh: the locale pin, FILE... selection, category + FILE
-# filtering and --failed. Runs a copy of the script in a throwaway repo layout
-# whose test/ holds small fixture suites, with the real bats, so --failed reads
-# real bats run logs. The real suite never runs. The repo root has a space in
-# its name, so every test also covers word-splitting of paths.
+# filtering, --failed and --jobs. Runs a copy of the script in a throwaway repo
+# layout whose test/ holds small fixture suites, with the real bats, so
+# --failed reads real bats run logs. The real suite never runs. The repo root
+# has a space in its name, so every test also covers word-splitting of paths.
 
 REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
 # shellcheck source=../lib/hermetic-env.bash
@@ -295,7 +295,9 @@ age_logs() {
 
   runner --failed
   [ "$status" -eq 1 ]
-  [[ "$output" == *"--failed: the last run ("*") recorded 1 of 3 tests: it did not complete"* ]]
+  # 2 of 3 when s2's own failure line reaches the log before the TERM ends
+  # bats' output reader, which a loaded machine allows.
+  [[ "$output" == *"--failed: the last run ("*") recorded "[12]" of 3 tests: it did not complete"* ]]
 }
 
 @test "--failed refuses the log of a run whose setup_file failed" {
@@ -324,4 +326,178 @@ age_logs() {
   kill -TERM "$pid"
   wait "$pid" || true
   wait_unlocked
+}
+
+# parallel_shim: put a `parallel` first on PATH that logs its arguments to
+# $T/parallel.args and execs the real one. The runner's own --version check
+# is logged too, so a test that wants to see bats used parallel greps for
+# the --no-parallelize-within-files it hands bats.
+parallel_shim() {
+  local real
+  real="$(command -v parallel)" || skip "GNU parallel is not installed here"
+  mkdir -p "$BATS_TEST_TMPDIR/shim"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    "printf '%s\n' \"\$*\" >> '$T/parallel.args'" \
+    "exec '$real' \"\$@\"" > "$BATS_TEST_TMPDIR/shim/parallel"
+  chmod +x "$BATS_TEST_TMPDIR/shim/parallel"
+  PATH="$BATS_TEST_TMPDIR/shim:$PATH"
+}
+
+@test "--jobs: a missing, zero, non-numeric or 4-digit N is a usage error" {
+  runner --jobs
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--jobs takes a number from 1 to 999, got: (nothing)"* ]]
+  runner --jobs 0 test/gamma.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"got: 0"* ]]
+  runner --jobs x test/gamma.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"got: x"* ]]
+  runner --jobs 1000 test/gamma.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"got: 1000"* ]]
+  [[ "$output" != *"gamma clean output"* ]]
+}
+
+@test "--jobs 2 runs files through parallel, not tests within a file" {
+  parallel_shim
+  runner --jobs 2
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"1..4"* ]]
+  [[ "$output" == *"not ok"*"alpha flaky"* ]]
+  [[ "$output" == *"ok"*"beta steady"* ]]
+  [[ "$output" == *"ok"*"gamma clean output"* ]]
+  [ -f "$T/parallel.args" ]
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
+}
+
+@test "--jobs 1 runs serially and needs no parallel" {
+  parallel_shim
+  runner --jobs 1 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok 1 gamma clean output"* ]]
+  [ ! -f "$T/parallel.args" ]
+}
+
+@test "--jobs: a parallel run records a complete log that --failed re-runs from" {
+  parallel_shim
+  # A second file that fails until $T/fixed exists, so --failed re-runs two
+  # files and stays parallel.
+  fixture delta.bats fast '@test "delta flaky" { [ -f "$BATS_TEST_DIRNAME/../fixed" ]; }'
+  runner --jobs 2
+  [ "$status" -eq 1 ]
+  [ "$(sed -n 1p "$T/.bats/last-run")" = "expected=5" ]
+  [ "$(grep -cE '^(passed|failed) ' "$LOG_DIR"/*.log)" -eq 5 ]
+  age_logs
+
+  touch "$T/fixed"
+  rm "$T/parallel.args"
+  runner --failed --jobs 2
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1..2"* ]]
+  [[ "$output" == *"ok 1 alpha flaky"* ]]
+  [[ "$output" == *"ok 2 delta flaky"* ]]
+  [[ "$output" != *"beta"* ]]
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
+  age_logs
+
+  runner --failed
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to re-run"* ]]
+}
+
+@test "--jobs: a parallel run killed partway is refused by --failed" {
+  parallel_shim
+  sleeper_fixture slow.bats
+  runner_bg "$BATS_TEST_TMPDIR/killed.out" --jobs 2 test/slow.bats test/gamma.bats
+  local pid=$! rc=0
+  wait_for "$T/sleep.pid"
+  kill -TERM "$pid"
+  wait "$pid" || rc=$?
+  [ "$rc" -eq 143 ]
+  wait_unlocked
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+
+  runner --failed
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"--failed: the last run ("*") recorded "*" of 4 tests: it did not complete"* ]]
+}
+
+@test "--jobs: an uninstalled locale leaves no perl or citation text in the output" {
+  parallel_shim
+  in_runner LANG=xx_XX.UTF-8 -- --jobs 2
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Locale xx_XX.UTF-8 is not installed"* ]]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+  # gamma asserts its own subprocess output is clean; the suite-level output
+  # must be clean too.
+  [[ "$output" == *"ok"*"gamma clean output"* ]]
+  ! grep -iE 'perl|setlocale|cite|citation' <<< "$output"
+}
+
+@test "--jobs above the file count is lowered to it" {
+  parallel_shim
+  runner --jobs 999 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  grep -q -- '--jobs 2 .*--no-parallelize-within-files' "$T/parallel.args"
+}
+
+@test "--jobs: the user's PARALLEL options neither reach bats' parallel nor fail the check" {
+  parallel_shim
+  # Either option in $PARALLEL or $PARALLEL_CSH would break bats' run:
+  # --dry-run runs no test, and an unknown option makes parallel exit.
+  in_runner LC_ALL="$WORKING_LOCALE" PARALLEL="--dry-run --no-such-option" \
+    PARALLEL_CSH="--dry-run" -- --jobs 2
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"1..4"* ]]
+  [[ "$output" == *"ok"*"beta steady"* ]]
+  [[ "$output" != *"running serially"* ]]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+}
+
+@test "--jobs: a parallel config file cannot fail the GNU parallel check" {
+  parallel_shim
+  mkdir -p "$BATS_TEST_TMPDIR/home/.parallel"
+  echo '--no-such-option' > "$BATS_TEST_TMPDIR/home/.parallel/config"
+  run env -i PATH="${PATH//"$BATS_LIBEXEC:"/}" HOME="$BATS_TEST_TMPDIR/home" \
+    TMPDIR="$BATS_TEST_TMPDIR" LC_ALL="$WORKING_LOCALE" \
+    bash "$T/scripts/run-tests.sh" --jobs 2 3>&-
+  [[ "$output" != *"running serially"* ]]
+  grep -q -- '--no-parallelize-within-files' "$T/parallel.args"
+}
+
+@test "--jobs with a non-GNU parallel first on PATH warns and runs serially" {
+  mkdir -p "$BATS_TEST_TMPDIR/fake"
+  printf '%s\n' '#!/usr/bin/env bash' 'echo "parallel from moreutils"; exit 1' \
+    > "$BATS_TEST_TMPDIR/fake/parallel"
+  chmod +x "$BATS_TEST_TMPDIR/fake/parallel"
+  PATH="$BATS_TEST_TMPDIR/fake:$PATH"
+  runner --jobs 8 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING: --jobs 8 needs GNU parallel"*"is not GNU parallel; running serially"* ]]
+  [[ "$output" == *"ok 2 beta steady"* ]]
+}
+
+@test "--jobs without GNU parallel on PATH warns and runs serially" {
+  # A PATH holding everything the current one does except parallel (and
+  # bats' libexec directory, which in_runner drops too).
+  local bin="$BATS_TEST_TMPDIR/noparallel" dir f
+  mkdir -p "$bin"
+  local IFS=:
+  for dir in $PATH; do
+    [[ -d "$dir" && "$dir" != "$BATS_LIBEXEC" ]] || continue
+    for f in "$dir"/*; do
+      [[ -x "$f" && ! -e "$bin/${f##*/}" && "${f##*/}" != parallel ]] && ln -s "$f" "$bin/${f##*/}"
+    done
+  done
+  unset IFS
+  run env -i PATH="$bin" HOME="$HOME" TMPDIR="$BATS_TEST_TMPDIR" LC_ALL="$WORKING_LOCALE" \
+    bash -c 'command -v parallel || bash "$1" --jobs 2 test/gamma.bats test/sub/beta.bats' \
+    _ "$T/scripts/run-tests.sh" 3>&-
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARNING: --jobs 2 needs GNU parallel, and the first parallel on PATH is missing or is not GNU parallel; running serially"* ]]
+  [[ "$output" == *"1..2"* ]]
+  [[ "$output" == *"ok 1 gamma clean output"* ]]
+  [[ "$output" == *"ok 2 beta steady"* ]]
+  grep -q "^passed $T/test/sub/beta.bats" "$LOG_DIR"/*.log
 }
