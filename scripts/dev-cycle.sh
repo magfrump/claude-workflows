@@ -154,7 +154,8 @@ if dirok docs/working/cycles; then
     if ! rawfile "$f"; then
       # Keep the newest skipped date (not future-dated) to warn when it is newer
       # than the record the window starts from.
-      skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
+      skipped "$f" && [[ "$SKIP_AT" == "$f" && "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] \
+        && date -d "$d" >/dev/null 2>&1 && skipped_record="$d"
       continue
     fi
     date -d "$d" >/dev/null 2>&1 || continue  # a name that is not a real date
@@ -209,10 +210,12 @@ if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.m
 # the first date seen per path wins) instead of one `git log` per record, which
 # cost records x history. Merges list the files their result changed against
 # every parent (combined), as a per-file `git log` counts them. A name git still
-# quotes (a quote, backslash or control character) misses the map and falls back
-# to its own lookup. One known difference from per-file `git log -1`: when a
-# merge kept the main line's version of a record but a side branch had changed
-# it later, this date is that later side commit's.
+# quotes (a quote, backslash or control character) misses the map and, if
+# tracked, falls back to its own lookup. Around merges the date can differ from per-file
+# `git log -1`, in either direction: one walk over the whole directory does not
+# simplify history per file, so a change a merge discarded, or the same change
+# made on both sides, can decide the date. It is always a real commit on this
+# branch that touched the record; it is shown as evidence only.
 declare -A last_date=()
 if [[ ${#decisions_glob[@]} -gt 0 ]]; then
   while IFS=$'\t' read -r path day; do last_date["$path"]="$day"; done < <(
@@ -225,7 +228,12 @@ for f in "${decisions_glob[@]}"; do
   found=1
   echo
   d="${last_date[$f]-}"
-  [[ -n "${last_date[$f]+set}" ]] || d="$(git log -1 --format=%ad --date=short -- "$f")"
+  # Fall back only for a tracked record (an index lookup, no history walk): an
+  # untracked one was never committed here, and a full walk to prove it cost
+  # ~1 s per record on a 220k-commit repo.
+  if [[ -z "${last_date[$f]+set}" ]] && git ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then
+    d="$(git log -1 --format=%ad --date=short -- "$f")"
+  fi
   # A newline in a file name would otherwise print a line of its own.
   echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
   trig < "$f" | sed 's/^/> /'

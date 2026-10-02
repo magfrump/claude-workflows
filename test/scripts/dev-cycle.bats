@@ -240,7 +240,7 @@ make_repo() {
     [[ "$section2" == *"No revisit triggers in the decision inputs that were read; the skipped ones above were not read."* ]] || { echo "$section2"; return 1; }
 }
 
-@test "record dates match per-file git log, including quoted names and merge-only changes" {
+@test "record dates match per-file git log for quoted names and a merge-resolution change" {
     mkdir -p docs/decisions
     for n in '001-a"b' '002-a\b' 003-plain 004-merge; do
         printf '# x\n\n## Revisit triggers\nif y.\n' > "docs/decisions/$n.md"
@@ -253,8 +253,10 @@ make_repo() {
     git merge -q side -m mg 2>/dev/null || true
     printf '# x\n\n## Revisit triggers\nif y.\nresolved\n' > docs/decisions/004-merge.md
     git add -A && GIT_COMMITTER_DATE=2026-03-01T12:00 GIT_AUTHOR_DATE=2026-03-01T12:00 git commit -qm mg
+    printf '# x\n\n## Revisit triggers\nif y.\n' > docs/decisions/005-uncommitted.md
     run --separate-stderr bash "$DC" --since=2000-01-01
-    for f in docs/decisions/*.md; do
+    [[ "$output" == *"005-uncommitted.md (last committed on this branch: never, uncommitted)"* ]] || { echo "$output" | grep '^###'; return 1; }
+    for f in docs/decisions/00[1-4]*.md; do
         want="$(git log -1 --format=%ad --date=short -- "$f")"
         [[ "$output" == *"### $f (last committed on this branch: $want)"* ]] || { echo "$f: want $want"; echo "$output" | grep '^###'; return 1; }
     done
