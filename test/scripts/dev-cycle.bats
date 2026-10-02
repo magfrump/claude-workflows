@@ -464,3 +464,43 @@ EOF
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
     done
 }
+
+@test "--check-path allows tracked files and ignored docs/working files, and nothing else" {
+    mkdir -p docs/working docs/decisions "$BATS_TEST_TMPDIR/outside"
+    printf 'docs/working/round-*.md\n.env\n' > .gitignore
+    echo i > docs/working/ideas.md && echo d > docs/decisions/001-x.md && echo g > .gitignore-like.md
+    git add -A && git commit -qm files
+    echo r > docs/working/round-1.md      # ignored, under docs/working: allowed
+    echo s > .env                          # ignored elsewhere: never
+    echo u > docs/untracked.md             # untracked: never
+    echo o > "$BATS_TEST_TMPDIR/outside/x.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/working/round-2.md
+    run --separate-stderr bash "$DC" --check-path 'docs/working/*.md' docs/decisions/001-x.md docs .env \
+        docs/untracked.md .git/config .GIT/config '../x' /etc/passwd -x "a'b" '.g*' docs/working/round-2.md
+    [ "$status" -eq 0 ]
+    for want in "ok docs/working/ideas.md" "ok docs/working/round-1.md" "ok docs/decisions/001-x.md" \
+                "skip docs: no tracked file" "skip .env: no tracked file" "skip docs/untracked.md: no tracked file" \
+                "skip .git/config: not an allowed path form" "skip .GIT/config: not an allowed path form" \
+                "skip ../x: not an allowed path form" "skip /etc/passwd: not an allowed path form" \
+                "skip -x: not an allowed path form" "skip a'b: not an allowed path form" \
+                "skip .gitignore: not an allowed path form" \
+                "skip docs/working/round-2.md: reached through a symlink"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    [[ "$output" != *"ok docs/working/round-2.md"* && "$output" != *"ok .env"* ]]
+    run --separate-stderr bash "$DC" --check-path
+    [ "$status" -eq 1 ]
+}
+
+@test "--check-write allows a new file under plain directories and refuses symlinks" {
+    mkdir -p docs/working "$BATS_TEST_TMPDIR/outside"
+    ln -s "$BATS_TEST_TMPDIR/outside" docs/working/briefs
+    ln -s "$BATS_TEST_TMPDIR/outside/r.md" docs/roadmap.md
+    run --separate-stderr bash "$DC" --check-write docs/working/cycles/cycle-2026-01-01.md \
+        docs/working/briefs/2026-01-01-x.md docs/roadmap.md ../out
+    [ "$status" -eq 0 ]
+    for want in "ok docs/working/cycles/cycle-2026-01-01.md" "skip docs/working/briefs/2026-01-01-x.md: reached through a symlink" \
+                "skip docs/roadmap.md: reached through a symlink" "skip ../out: not an allowed path form"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}

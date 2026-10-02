@@ -6,6 +6,8 @@
 # steps that only prose asks for do not run (scripts/questions.sh header; Q-074).
 #
 # Usage: scripts/dev-cycle.sh [--since=YYYY-MM-DD] [--sample=N]
+#        scripts/dev-cycle.sh --check-path PATH-OR-GLOB...
+#        scripts/dev-cycle.sh --check-write PATH...
 #
 #   --since   start of the cycle window: commits whose committer date, in the
 #             committer's own time zone (git's %cs), is on or after this date.
@@ -13,6 +15,9 @@
 #             that is a plain file, a real date and not future-dated (only its name is read), else
 #             14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
+#   --check-path / --check-write  instead of a digest, apply the dev-cycle skill's
+#             rule for paths taken from repo text: print "ok <path>" for each file
+#             that may be read (or written), "skip <arg>: <reason>" otherwise.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
@@ -71,6 +76,7 @@ fi
 
 SINCE=""
 SAMPLE=2
+CHECK=""; CHECK_ARGS=()
 need() { [[ -n "$2" ]] || { echo "$1 needs a value" >&2; exit 1; }; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -78,7 +84,11 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; need --since "$SINCE"; shift ;;
     --sample) need --sample "${2:-}"; SAMPLE="$2"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; need --sample "$SAMPLE"; shift ;;
-    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --check-path|--check-write)
+      CHECK="$1"; shift; CHECK_ARGS=("$@")
+      [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one path" >&2; exit 1; }
+      break ;;
+    -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -126,6 +136,55 @@ skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (se
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
+
+# The path rule for repo text (commit messages, plans, settings rows, roadmap
+# brief paths), so the skill runs it instead of re-deriving it in prose:
+#  - form: only letters, digits, . _ - / (and * ? in a glob), not starting with
+#    / or -, no empty or .. component, no component starting .git (any case);
+#  - scope (reads): a tracked file, or a gitignored file under docs/working/ (the
+#    cycle's own working files); never any other untracked or ignored file;
+#  - plain: a regular file reached without any symlink (inrepo).
+# Globs are matched by git (":(glob)"), never by a shell.
+pathform() {  # $1 path, $2 "glob" to allow * and ?
+  local p="$1" rest c set='^[A-Za-z0-9._/-]+$'
+  [[ "${2:-}" == glob ]] && set='^[A-Za-z0-9._/*?-]+$'
+  [[ "$p" =~ $set && "$p" != /* && "$p" != -* ]] || return 1
+  rest="$p/"
+  while [[ -n "$rest" ]]; do
+    c="${rest%%/*}"; rest="${rest#*/}"
+    [[ -n "$c" && "$c" != ".." && "${c,,}" != .git* ]] || return 1
+  done
+}
+matches() {  # $1 pathspec; NUL-separated tracked files, then ignored ones under docs/working/
+  GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
+  GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
+    | while IFS= read -r -d '' m; do [[ "$m" == docs/working/* ]] && printf '%s\0' "$m"; done
+}
+check_path() {
+  local a="$1" spec m n=0
+  if ! pathform "$a" glob; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
+  if [[ "$a" == *[*?]* ]]; then spec=":(glob)$a"; else spec=":(literal)$a"; fi
+  while IFS= read -r -d '' m; do
+    [[ "$a" == *[*?]* || "$m" == "$a" ]] || continue  # a plain path names one file, not a directory
+    n=$((n + 1))
+    if ! pathform "$m"; then echo "skip ${m//$'\n'/ }: not an allowed path form"
+    elif ! inrepo "$m"; then echo "skip $m: reached through a symlink, or not a regular file"
+    else echo "ok $m"; fi
+  done < <(matches "$spec")
+  [[ $n -gt 0 ]] || echo "skip $a: no tracked file (or ignored file under docs/working/) matches"
+}
+check_write() {
+  local a="$1"
+  if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"
+  elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
+  else echo "ok $a"; fi
+}
+if [[ -n "$CHECK" ]]; then
+  for a in "${CHECK_ARGS[@]}"; do
+    if [[ "$CHECK" == --check-path ]]; then check_path "$a"; else check_write "$a"; fi
+  done
+  exit 0
+fi
 # Pass git only a hash for the default branch: origin/HEAD comes from the remote,
 # and a branch named `--output=<path>` would reach `git log` as an option.
 MAIN=""; MAIN_SHA=""
@@ -210,8 +269,8 @@ if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.m
 # the first date seen per path wins) instead of one `git log` per record, which
 # cost records x history. Merges list the files their result changed against
 # every parent (combined), as a per-file `git log` counts them. A name git still
-# quotes (a quote, backslash or control character) misses the map and, if
-# tracked, falls back to its own lookup. Around merges the date can differ from per-file
+# quotes (a quote, backslash or control character) misses the map and, if it
+# is in HEAD, falls back to its own lookup. Around merges the date can differ from per-file
 # `git log -1`, in either direction: one walk over the whole directory does not
 # simplify history per file, so a change a merge discarded, or the same change
 # made on both sides, can decide the date. It is always a real commit on this
@@ -228,10 +287,11 @@ for f in "${decisions_glob[@]}"; do
   found=1
   echo
   d="${last_date[$f]-}"
-  # Fall back only for a tracked record (an index lookup, no history walk): an
-  # untracked one was never committed here, and a full walk to prove it cost
-  # ~1 s per record on a 220k-commit repo.
-  if [[ -z "${last_date[$f]+set}" ]] && git ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then
+  # Fall back only for a record present in HEAD's tree (one object lookup, no
+  # history walk). One absent from HEAD prints "never, uncommitted" without a
+  # full walk to prove it (~1 s per record on a 220k-commit repo); that is also
+  # what a record committed earlier and since removed from HEAD shows.
+  if [[ -z "${last_date[$f]+set}" ]] && git cat-file -e "HEAD:$f" 2>/dev/null; then
     d="$(git log -1 --format=%ad --date=short -- "$f")"
   fi
   # A newline in a file name would otherwise print a line of its own.
