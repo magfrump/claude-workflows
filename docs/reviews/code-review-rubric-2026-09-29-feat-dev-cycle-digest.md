@@ -1,8 +1,8 @@
-Commit: baa46e3
+Commit: db0e5ca
 
 # Code Review Rubric
 
-**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29; final pass 3 on 2026-09-30 | **Status: 🔴 DOES NOT PASS** — 3 red item(s) unresolved (final pass 3 on baa46e3; see that section). Not clean; the review cap is exhausted, so the findings go back to the user (Q-100) with no fixes applied.
+**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29; final pass 3 on 2026-09-30; final pass 4 on 2026-10-01 | **Status: 🔴 DOES NOT PASS** — 2 red item(s) unresolved (final pass 4 on db0e5ca; see that section). This was the single confirming pass of Q-101 [1]; the findings go back to the user with no fixes applied.
 
 Loop:
 1. **Iteration 1:** pass 1 on the combined unit (89a3d3b); rubric `code-review-rubric-2026-09-29-feat-dev-cycle.md`.
@@ -150,3 +150,90 @@ All core critics ran; no skips applied. (architecture-review is not a core criti
 **Next action (mechanical, chat-synthesis rule 3, ≥3 🔴):** escalate to /pre-mortem. Per the brief, the loop cap is exhausted, so this goes to the user under Q-100 rather than into a fifth iteration.
 
 Tokens: fact-check 3 × ~120K (119K, 122K, 127K); critics security 119K, api 107K, performance 93K; orchestrator merge and rubric about 150K. Total about 0.84M across 6 agents.
+
+---
+
+## Final pass 4 (Q-101 [1] confirming pass, on db0e5ca)
+
+**Status: 🔴 DOES NOT PASS — 2 red item(s) unresolved. Not clean. Q-101 [1] allowed one confirming pass, so nothing was fixed; the findings go back to the user.**
+
+Scope: full branch, `scripts/dev-cycle.sh` + `test/scripts/dev-cycle.bats` (504 lines), focus d9e4cb9 (carry-forward cut, post-walk date filter, `scrub()`) and db0e5ca (sections 6–7). Panel: fact-check k=3 on opus (merged: 39 Verified, 16 Mostly accurate, 6 Incorrect, 1 Unverifiable over 62 rows; agreement 46/62 ≈ 74%), then security, performance, api-consistency on opus, in parallel. Delivery mode: self-read (shared brief and Stage-1 summary in session-unique scratch files). Artifacts: `code-fact-check-report-digest-final4.md` (merged), `code-fact-check-report-r{1,2,3}-digest-final4.md`, `security-review-2026-10-01-digest-final4.md`, `performance-review-2026-10-01-digest-final4.md`, `api-consistency-review-2026-10-01-digest-final4.md`. Execution logs stayed in the session scratchpad (the brief forbade other worktree writes).
+
+Process notes:
+- Fact-Check Gate: high-confidence Incorrects (Claims 11, 12, 39, 49) did not pause the run; the user's Q-101 [1] asked for one full confirming pass.
+- Stage 2.5 skipped: 3 routed endorsement claims (security #1 and #3, performance's `--since-as-filter` margin) stay *pending execution verification*. The pass already has reds, so no ✅ row depends on them.
+- Contextual critics: tech-debt-triage not run (504 lines, of which 263 tests, just over the trigger; advisory only); architecture-review not selected (single script).
+- Pass 3's cut-targeted findings: the code behind R1, R2, A1, A3, A5, A6, C1, C3 is gone (fact-check r1, r2, r3, executed). R3 is fixed (test 4 fails on baa46e3). A2 is **not** closed (R1 below). C6 still reproduces (A5 below).
+
+### 🔴 Must Fix
+
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | `scrub()` is bypassable by repo bytes. One `s///g` pass runs before `tr`, so (a) a C0 byte inside a C1/bidi/tag encoding survives the substitution and `tr` then rejoins the sequence, and (b) nested sequences (`\xC2\xC2\x9B\x9B`) collapse to a live C1 after one pass. A decision record's trigger line reached stdout with CSI, RLO and tag characters. Fix: `tr` first, repeat the substitution until stable, add both cases to test 5. | Security/Correctness | Fact-check Incorrect (high, executed; r1); security Medium (High conf., executed) | fact-check r1 (Claims 11, 49); security #1 | `scripts/dev-cycle.sh:24-31` | for-author | Final pass 2 F8 (TAB Won't-Fix) does not cover this | 🔴 Unresolved; composed → X1 |
+| R2 | The skill on `feat/dev-cycle` (70cc7dc) still instructs writing `Main at: <sha from the digest>` and says the next digest compares triggers against it; the digest no longer prints or reads it. | API | Breaking | api F1 | `feat/dev-cycle:skills/dev-cycle/SKILL.md` step 7 | for-author | — | 🔴 Unresolved; fix lands on feat/dev-cycle (the stacked unit), and neither branch merges alone |
+
+### 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | `PERL_UNICODE=SD[A]` or `PERL5OPT=-CSD` in the caller's environment switches the scrub off (perl decodes, warns, C1/RLO pass). The comment's "LC_ALL=C, so invalid UTF-8 cannot make perl warn" names the wrong mechanism. Fix: unset both, run perl with `-C0`. | Security/Docs | Fact-check Incorrect (high, r2; comment); security Medium (executed) | fact-check r2 (Claim 12), r1, r3; security #2 | for-author | — | 🟡 Open; composed → X1 | — |
+| A2 | Section 7's step-5 half assumes contracts nothing defines yet: "the thresholds are the skill's", a roadmap `## In flight` section, `docs/working/idea-log.md` with `## Brainstorm YYYY-MM-DD` headings. On a clone of feat/dev-cycle it always prints "In flight: 0" and "No …idea-log.md"; the bats test pins a format nothing writes. "Ideas seeded since" also counts the last brainstorm's own bullets. | API/Docs | Fact-check Incorrect (Claims 30, 31; comment, medium); api Inconsistent | fact-check r1, r3; api F3, F8 | for-author | — | 🟡 Open; composed → X2 | — |
+| A3 | The skill still tells the agent to keep carried verdicts ("Triggers the digest lists as carried forward keep the previous record's verdict"; record example "(carried from cycle-<date>)"), contradicting the digest's "verdicts are context, not answers". | API | Inconsistent | api F2 | for-author | — | 🟡 Open (feat/dev-cycle) | — |
+| A4 | A symlink committed under `docs/decisions/` (or roadmap / idea log) makes the digest read and print a file outside the repo; `-f` follows links. Exposure: text under `## Revisit triggers` / `## Next`. | Security | Medium (impact Low) | security #3 | for-author | — | 🟡 Open | — |
+| A5 | The two perl filters are not waited for: a redirected digest can be incomplete at exit (exit 0), and with `2>&1` errors land before the header. Pass-3 C6, now with a measured truncation. | Correctness | Fact-check Mostly accurate (executed, 3/3) | fact-check r1, r2, r3; security #5; api F10 | for-author | — | 🟡 Open | — |
+| A6 | The window changed from local midnight to each committer's own-zone date (`%cs`); `--help`, the Window line and the "--since counts from midnight" test do not say so. A −12:00 merge at 04:30 local on the start day is now excluded. | API/Docs | Fact-check Mostly accurate (r1, r2, r3); api Minor | fact-check Claims 1/3, 13; api F7 | for-author | — | 🟡 Open | — |
+| A7 | Section 6's classification: `(^\|/)README` matches any path component starting README (`src/README_gen.sh` counts as a doc), `readme.txt` counts as code; mutants dropping the `^docs/` or `.md`/README rules pass all 18 tests. | Correctness/Tests | Fact-check Mostly accurate (3/3, executed) | fact-check Claims 20, 25 | for-author | — | 🟡 Open | — |
+| A8 | Section 7's 4b lists are a net diff from a base commit: a skill changed and reverted inside the window shows 0, so db0e5ca's "never misses" is wrong; mutant M6 (base off by one) survives. The Window line does not describe this basis. | Correctness/Docs | Fact-check Mostly accurate (3/3) | fact-check Claims 22/26b/44; api F9 | for-author | — | 🟡 Open | — |
+| A9 | Test 4's comment says baa46e3 "report[s] 0 merges"; it reported 1 (feature 4) and hid the three older merges. Its name ("merges after it") has the direction reversed. | Docs/Tests | Fact-check Incorrect (high; test comment → 🟡 under T) | fact-check Claims 28, 39 | for-author | — | 🟡 Open | — |
+
+### 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | Section 6 has no output cap (10,000 lines on a wide window) and spawns two git processes per merge; one `--diff-merges=first-parent --name-only` walk does it in 0.5 s vs 25 s | performance #3 | Low | for-author | — | 🟢 Open |
+| C2 | Full-history walks in sections 1 and 7 (`:99,102,199`) cost ~2.1 s each on a 220k-commit repo; `--since-as-filter` with a one-day margin keeps results identical (git ≥ 2.37; margin claim pending verification) | performance #1 | Low | for-author | — | 🟢 Open |
+| C3 | One `git log -1 -- f` per decision record (`:116`) is the largest cost (3.6 s with commit-graph, 26 s without); one path-limited walk does it in 0.12 s | performance #2 | Low | for-author | — | 🟢 Open |
+| C4 | Section 6 calls its list "a step 4 finding", but skill step 4 covers sampled merges only; digest sections 6 and 7 collide with skill steps 6 and 7 by number | api F4, F6 | Minor | for-author | — | 🟢 Open (both branches) |
+| C5 | Trigger names print as `### docs/decisions/<file>`; the skill's "name the digest prints" example uses the basename | api F5 | Minor | for-author | Final pass 3 C1 (name forms) | 🟢 Open (feat/dev-cycle) |
+| C6 | "Every revisit trigger" covers only `## Revisit triggers` sections and log rows; an unreadable record is skipped silently; inline triggers (e.g. `docs/decisions/013-…md:21`) never print | fact-check Claims 3/6b | Low | for-author | — | 🟢 Open |
+| C7 | The scrub leaves zero-width and format characters (U+200B, U+2028, U+2060, U+FEFF); none can start a line | security #4 | Informational | for-author | — | 🟢 Open |
+| C8 | Test 5's comment says "non-repo error" but tests the unknown-option error; test 6 passes on baa46e3 (regression guard only) | fact-check Claims 37, r2 | Informational | for-author | — | 🟢 Open |
+
+Commit-message claims: d9e4cb9's A2 list (Claim 49) and db0e5ca's "never misses" are unmerged history; logged `Accepted-immutable` in override-log.md. The defects behind them are R1 and A8.
+
+### ↩️ Considered overrides
+
+| Override | Prior finding | This run's treatment |
+|---|---|---|
+| 2026-09-29 carry-forward cost (resolved in baa46e3) | performance | Moot: carry-forward is cut. |
+| 2026-09-29 option-name test needs both defences removed | api/fact-check | Inherited, not re-flagged. |
+| 2026-09-29 SIGPIPE fix untested | fact-check | Inherited. |
+| 2026-09-29 carried list not machine-splittable | api | Moot: the list is gone; C5 is the remaining name-form gap. |
+| Final pass 2 F8: TAB kept | fact-check/api | Inherited for TAB; R1 and C7 are different bytes. |
+| 2026-09-30 baa46e3 / 83e7895 commit messages (Accepted-immutable) | fact-check | Inherited. |
+
+### ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source |
+|---|---|---|---|
+| The cut removed every code path behind pass-3 R1, R2, A1, A3, A5, A6, C1, C3; no `Main at:` or carried list remains, and test 3 pins both absences | ✅ Confirmed (executed) | merged Claims 6a, 40–42; api "cut is clean in the script" | fact-check r1+r2+r3; api |
+| R3 fixed: merges and commits are filtered after a full walk | ✅ Confirmed (executed) | test 4 fails on baa46e3, passes on db0e5ca (merged Claims 14, 28) | fact-check r1+r2+r3 |
+| Commit-message tallies: 16/16 at d9e4cb9, 18/18 at db0e5ca, 241 lines, shellcheck clean at both | ✅ Confirmed (executed) | merged Claims 45–48 | fact-check r1+r2+r3 |
+| No awk `{n}` interval remains; mawk 1.3.4 lacks them | ✅ Confirmed (executed) | merged Claim 33 | fact-check r1+r2+r3 |
+
+### ⚠️ Unverified Findings
+
+Pending execution verification (Stage 2.5 skipped): security endorsements #1 and #3 as routed, and performance's claim that a one-day `--since-as-filter` margin keeps results identical on every repo.
+
+### ⏭️ Skipped Core Critics
+
+All core critics ran; no skips applied.
+
+### 🧩 Composition check
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| X1 | `scripts/dev-cycle.sh:22-31` | R1, A1, C7 (fact-check r1, r2; security #1, #2, #4) | composed → X1 (inherits 🔴): the scrub has to normalise before it matches. Pin perl to bytes (`-C0`, unset `PERL_UNICODE`/`PERL5OPT`), delete C0 with `tr` first, then repeat the substitution until the string stops changing, and add the split, nested and env cases to test 5. |
+| X2 | `scripts/dev-cycle.sh:216-241` + `feat/dev-cycle:skills/dev-cycle/SKILL.md` | A2, C4 (fact-check r1, r3; api F3, F4, F8) | composed → X2 (inherits 🟡): section 7's step-5 half reads a format only the approved doc describes. Land the skill text (idea-log path, brainstorm heading, In flight, thresholds) in the same change as the digest, or cut the step-5 half until it does. |
+| 3 | `scripts/dev-cycle.sh:89-102` | A6, C2 | distinct defects: semantics (zone) vs cost (walk length) |
+| 4 | `scripts/dev-cycle.sh:178-193` | A7, C1 | distinct defects: classification vs per-merge cost and no cap |
