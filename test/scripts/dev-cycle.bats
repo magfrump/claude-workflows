@@ -39,7 +39,7 @@ make_repo() {
     [ "$status" -eq 0 ]
     for h in "## 1. Activity" "## 2. Revisit triggers" "## 3. Watched questions" \
              "## 4. Spot-check sample" "## 5. Roadmap" "## 6. Merges with code but no docs" \
-             "## 7. Inputs for steps 4b and 5"; do
+             "## 7. Inputs for steps 4b and 5" "## 8. Skipped inputs"; do
         [[ "$output" == *"$h"* ]] || { echo "missing: $h"; echo "$output"; return 1; }
     done
     [[ "$output" == *"3 merge(s)"* ]]
@@ -132,15 +132,31 @@ make_repo() {
     # An in-repo symlink (here into .git) is skipped too.
     printf '# 8\n\n## Revisit triggers\nSECRET in git.\n' > .git/x.md
     ln -s ../../.git/x.md docs/decisions/003-git.md
+    # The log, questions, idea log and a cycle record through symlinks, too.
+    mkdir -p docs/working/cycles
+    printf '| 1 | 2026-01-01 | x | SECRET Revisit if y. | r |\n' > "$BATS_TEST_TMPDIR/outside/log.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/log.md" docs/decisions/log.md
+    ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/working/questions.md
+    ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/working/idea-log.md
+    ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/working/cycles/cycle-2026-02-01.md
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     [[ "$output" != *SECRET* ]] || { echo "$output"; return 1; }
+    # Each is reported as skipped, not as absent.
+    [[ "$output" == *"docs/roadmap.md is reached through a symlink: NOT read"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"docs/working/questions.md is reached through a symlink: NOT read"* ]]
+    [[ "$output" != *"from the last cycle record"* ]]
+    skipped=$(echo "$output" | sed -n '/## 8/,$p')
+    for f in docs/decisions/002-link.md docs/decisions/003-git.md docs/decisions/log.md docs/roadmap.md \
+             docs/working/questions.md docs/working/idea-log.md docs/working/cycles/cycle-2026-02-01.md; do
+        [[ "$skipped" == *"- $f"* ]] || { echo "not listed: $f"; echo "$skipped"; return 1; }
+    done
 }
 
 @test "the exit status and the whole digest survive a redirect to a file" {
     bash "$DC" > "$BATS_TEST_TMPDIR/out.md" 2> "$BATS_TEST_TMPDIR/err.txt"
     grep -q '^## 7. Inputs for steps 4b and 5' "$BATS_TEST_TMPDIR/out.md"
-    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'idea-log'
+    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'no input is reached through a symlink'
     run bash "$DC" --since=nope
     [ "$status" -eq 1 ]
 }
@@ -317,10 +333,17 @@ EOF
     printf '# Roadmap\r\n\r\n## Now (current)\r\n- a\r\n\r\n## In Flight\r\n- b\r\n- c\r\n\r\n## Next\r\n1. d\r\n\r\n## Nextgen ideas\r\n- not next\r\n' > docs/roadmap.md
     printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- (signal: unclosed\n- two (signal: b)\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
-    # Section 5 uses the same heading rule (CRLF, case, suffix; "## Nextgen" is not Next).
-    roadmap=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    # Section 5 uses the same heading rule: CRLF on a bare heading here, then a
+    # suffix below; "## Nextgen" is not Next.
+    first="$output"
+    roadmap=$(echo "$first" | sed -n '/## 5/,/## 6/p')
     [[ "$roadmap" == *"> 1. d"* && "$roadmap" != *"not next"* ]] || { echo "$roadmap"; return 1; }
-    section=$(echo "$output" | sed -n '/## 7/,$p')
+    printf '## NEXT (ranked)\n1. e\n## Nextgen\n- not next\n' > "$BATS_TEST_TMPDIR/r2.md"
+    cp "$BATS_TEST_TMPDIR/r2.md" docs/roadmap.md
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    roadmap2=$(echo "$output" | sed -n '/## 5/,/## 6/p')
+    [[ "$roadmap2" == *"> 1. e"* && "$roadmap2" != *"not next"* ]] || { echo "$roadmap2"; return 1; }
+    section=$(echo "$first" | sed -n '/## 7/,/## 8/p')
     for t in "in the window: 3" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
              "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
              "Last brainstorm: 2026-01-01 (7 day(s) ago)" "Ideas seeded since: 2"; do

@@ -13,7 +13,7 @@
 #             (only its file name is read), else 14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
 #
-# Every revisit trigger is printed every run (a printed line over 4096 bytes is cut);
+# Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
@@ -27,7 +27,7 @@ command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its outp
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
 # U+202A-202E, U+2066-2069), the line and paragraph separators U+2028/2029 (some
 # readers split lines on them) and tag characters (U+E0000-E007F), and cuts lines
-# longer than 4096 input bytes. Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
+# longer than 4096 bytes as the scrub receives them (before controls are removed). Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
 # removed (each can turn on UTF-8 decoding and switch the byte patterns off),
 # -C0 is set, and both handles are binmoded. C0 goes first; after each deletion
 # the search resumes 3 bytes before it (no sequence is longer than 4 bytes), so a
@@ -90,6 +90,10 @@ ROOT_REAL="$(pwd -P)"
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
 inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+# An input that exists in some form but fails inrepo is skipped, not absent:
+# it is named where it would have been read and listed in section 8.
+SKIPPED=()
+skipped() { if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("$1"); return 0; fi; return 1; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
@@ -116,7 +120,7 @@ fi
 
 last_record=""
 for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
-  inrepo "$f" || continue
+  inrepo "$f" || { skipped "$f" || true; continue; }
   d="${f##*/cycle-}"; d="${d%.md}"
   [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
 done
@@ -148,11 +152,11 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full (a printed line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full (an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
-  inrepo "$f" || continue
+  inrepo "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
   echo
@@ -172,6 +176,8 @@ if inrepo docs/decisions/log.md; then
     [[ -n "$text" ]] || text="$(grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
     echo "- log row $n ($d): > $text"
   done < <(grep -E '^\| [0-9]+ \|' docs/decisions/log.md | grep -i 'revisit' || true)
+else
+  skipped docs/decisions/log.md || true
 fi
 [[ $found -eq 1 ]] || echo "No revisit triggers recorded."
 
@@ -196,6 +202,8 @@ if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
     echo
     echo '```'; cat "$qs_err"; echo '```'
   fi
+elif skipped docs/working/questions.md; then
+  echo "docs/working/questions.md is reached through a symlink: NOT read (section 8)."
 else
   echo "No docs/working/questions.md (or questions.sh) in this repo."
 fi
@@ -216,6 +224,8 @@ if inrepo docs/roadmap.md; then
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
   awk '{ sub(/\r$/, ""); t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
+elif skipped docs/roadmap.md; then
+  echo "docs/roadmap.md is reached through a symlink: NOT read (section 8)."
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
@@ -264,6 +274,8 @@ if inrepo docs/roadmap.md; then
     n="$(awk -v h="## $sec" '{ sub(/\r$/, ""); t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
     echo "- Roadmap $sec: $n item(s)"
   done
+elif skipped docs/roadmap.md; then
+  echo "- Roadmap: reached through a symlink, NOT read (section 8)"
 else
   echo "- Roadmap: none yet (0 items ready for 6b)"
 fi
@@ -281,6 +293,16 @@ if inrepo "$LOG"; then
     echo "- Last brainstorm: none recorded in $LOG"
   fi
   echo "- Ideas seeded since: $seeded"
+elif skipped "$LOG"; then
+  echo "- $LOG: reached through a symlink, NOT read (section 8)"
 else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
+fi
+
+printf '\n%s\n\n' "## 8. Skipped inputs"
+if [[ ${#SKIPPED[@]} -eq 0 ]]; then
+  echo "None: no input is reached through a symlink."
+else
+  echo "Reached through a symlink, so not read. Absent from the sections above, not missing from the repo:"
+  printf '%s\n' "${SKIPPED[@]}" | sort -u | while IFS= read -r f; do echo "- ${f//$'\n'/ }"; done
 fi
