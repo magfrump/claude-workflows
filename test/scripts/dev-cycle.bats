@@ -963,3 +963,30 @@ EOF
     [[ "$output" == *"skip docs/working/briefs/2026-01-02-u.md: the code fence opened at line 2 is never closed"* ]] || { echo "$output"; return 1; }
 }
 
+@test "--check-fix refuses files an instruction file imports, and compares paths ignoring case" {
+    mkdir -p docs/Working docs/guides
+    printf 'Rules: see @docs/conventions.md and @README.md\n' > GEMINI.md
+    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md; do echo x > "$f"; done
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md
+    [ "$status" -eq 0 ]
+    for want in "skip docs/conventions.md: an instruction file imports" "skip README.md: an instruction file imports" \
+                "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
+                "ok docs/notes.md"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}
+
+@test "--check-brief refuses a brief that is a symlink on the default branch; a bold-closed label answer is read" {
+    mkdir -p docs/working/briefs
+    ln -s 'Status: done' docs/working/briefs/2026-01-01-s.md
+    { echo '# Questions'; echo; printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer (2026-10-02)**: **[2]**\n\n'
+      printf '### Q-2 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer (2026-10-02)**: **drop** because\n\n'; } > docs/working/questions.md
+    git add -A && git commit -qm s
+    rm docs/working/briefs/2026-01-01-s.md && printf 'Status: done\n' > docs/working/briefs/2026-01-01-s.md
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-s.md
+    [[ "$output" == "skip docs/working/briefs/2026-01-01-s.md: not a regular file on the default branch" ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
+    [[ "$output" == *"drop Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
+}
+
