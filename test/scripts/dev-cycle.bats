@@ -643,7 +643,7 @@ EOF
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-10 Q-100
     [ "$status" -eq 0 ]
-    for want in "drop Q-1" "keep Q-2" "drop Q-3" "unrecognized Q-4" "drop Q-5" "open Q-6" "open Q-7" \
+    for want in "drop Q-1" "keep Q-2" "drop Q-3" "unrecognized Q-4" "drop Q-5" "open Q-6" "skip Q-7: its heading appears only inside a code fence" \
                 "keep Q-8" "skip Q-9: more than one entry" "skip Q-10: an entry with this heading in both" "keep Q-100"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
@@ -781,10 +781,10 @@ EOF
     local f=$'\x60\x60\x60'  # a ``` fence line
     {
         echo '# Questions'; echo
-        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\nno close\n\n' "$f"
-        printf '### Q-2 · other\n**Needs:** you: judgment · **Status:** OPEN\n\n%s\n**Answer:** [2] drop\n%s\n\n' "$f" "$f"
         printf '### Q-3 · keep-or-drop-x-3\n**Needs:** you: judgment · **Status:** ANSWERED\n\n~~~\n%s\n**Answer:** [2]\n~~~\n**Answer:** [1]\n\n' "$f"
         printf '### Q-4 · keep-or-drop-x-4\n**Needs:** you: judgment · **Status:** OPEN (was **Status:** ANSWERED)\n\n**Answer:** [2]\n\n'
+        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\nno close\n\n' "$f"
+        printf '### Q-2 · other\n**Needs:** you: judgment · **Status:** OPEN\n\n%s\n**Answer:** [2] drop\n%s\n\n' "$f" "$f"
     } > docs/working/questions.md
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-3 Q-4
@@ -817,7 +817,7 @@ EOF
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-11 Q-10
     [[ "$output" == *"skip Q-11: more than one entry with this heading"* ]] || { echo "$output"; return 1; }
-    [[ "$output" == *"unrecognized Q-10"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"keep Q-10"* ]] || { echo "$output"; return 1; }   # its answer line is above the fence
 }
 
 @test "fences follow CommonMark: longer fences, info strings, indented fences; the status field is read whole" {
@@ -852,5 +852,28 @@ EOF
     git mv "$b" docs/working/briefs/closed/ && git commit -qm close
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-01-01-m.md "$b"
     [[ "$output" == *"ok docs/working/briefs/closed/2026-01-01-m.md done "* && "$output" == *"ok $b new"* ]] || { echo "$output"; return 1; }
+}
+
+@test "fences are tracked across the file: forged copies, list-item fences, sections after an open fence" {
+    mkdir -p docs/working/briefs
+    local f=$'\x60\x60\x60'  # a ``` fence line
+    {
+        echo '# Questions'; echo
+        printf '### Q-1 · notes\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [1]\n\n%s\n### Q-18 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n**Answer:** [3]\n%s\n\n%sbash\nls\n%s\n\n' "$f" "$f" "$f" "$f"
+        printf '### Q-15 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** ANSWERED\n\n- %s\n  **Answer:** [2]\n  %s\n**Answer:** [1]\n\n' "$f" "$f"
+        printf '### Q-20 · keep-or-drop-x-3\n**Needs:** you: judgment · **Status:** ANSWERED · **Note:** x\n\n**Answer:** maybe later\n**Answer:** [1]\n\n'
+        printf '### Q-22 · keep-or-drop-x-4\n**Needs:** you: judgment · **Status:** ANSWERED (by user)\n\n**Answer:** [2]\n\n'
+        printf '### Q-23 · keep-or-drop-x-5\n**Needs:** (was **Status:** ANSWERED) · **Status:** OPEN\n\n**Answer:** [2]\n\n'
+        printf '### Q-21 · keep-or-drop-x-6\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\nopen\n\n## Archive\n\n**Answer:** [2]\n' "$f"
+    } > docs/working/questions.md
+    printf '# Brief\n- %s\n  Status: done\n  %s\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-l.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-18 Q-15 Q-20 Q-22 Q-23 Q-21
+    for want in "skip Q-18: its heading appears only inside a code fence" "keep Q-15" "unrecognized Q-20" \
+                "open Q-22" "open Q-23" "unrecognized Q-21"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-l.md
+    [[ "$output" == "ok docs/working/briefs/2026-01-01-l.md open "* ]] || { echo "$output"; return 1; }
 }
 

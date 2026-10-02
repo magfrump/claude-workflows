@@ -1,4 +1,4 @@
-Commit: b00c057 (digest) / 7f3e392 (skill, feat/dev-cycle)
+Commit: 366efd7 (digest) / b73069e (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -689,4 +689,17 @@ Scope: `10c2809..b00c057`, `875b41f..7f3e392`, partial: the pass-26 fix round. F
 | A1 | A stale In flight line pointed at briefs/closed/ was refused by `--check-brief` every cycle and never reached Done or Ideas | 🔴 Incorrect | fact-check 16; api Inconsistent 1; security Info 5 | digest: `--check-brief` reads closed/ paths; skill: check 1 resolves them |
 | A2 | Fences closed on their first three characters: a longer fence, an info-string line or an indented fence exposed a quoted answer or status | 🟡 Inconsistent / Low | api Inconsistent 2; security L1; fact-check 5, 14 | digest: one CommonMark fence reader for both |
 | C1 | The printed status commit (fenced examples, renames, merges), help for unrecognized, Exit line, header field read, shell comments in fences ending entries, In flight definition, glob skip lines, final message, future tip dates, redundant qualifier, skipped-lookup cost | 🟢 | fact-check 2, 4, 6, 13, 19, 23, 29a; api Minor 3–6, Info 7–10; security L2, Info 3, 4, 6, 7; performance Info 1, 2 | digest, skill |
+
+---
+
+## Pass 28 (review-fix loop, k=1, all critics; on 366efd7 digest / b73069e skill)
+
+**Status: 🟡 not clean — 1 Incorrect (help wording: unrecognized described as "no answer line", not the first) and 1 Stale comment; nothing Medium or above from any critic, no Breaking or Inconsistent. Fixed in 38578a9 (digest) and the pass-28 skill commit. Health check on d535260: passed (rc 0).**
+
+Scope: `b00c057..366efd7`, `7f3e392..b73069e`, partial: the pass-27 fix round. Fact-check k=1 (29 claims: 20 V / 7 MA / 1 S / 1 I). Artifacts: `code-fact-check-report-digest-pass28.md`, `security-review-2026-10-02-digest-pass28.md`, `performance-review-2026-10-02-digest-pass28.md`, `api-consistency-review-2026-10-02-digest-pass28.md`. Every pass-27 fence probe reads the CommonMark answer; all 102 real IDs unchanged.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | Help said unrecognized means "no answer line starts with an option"; only the first answer line is read | 🟡 Incorrect (wording) | fact-check 2a; api Minor 1 | digest: help |
+| C1 | Stale header comment; per-entry fence tracking let a forged fenced copy decide and a list-item fence invert; header field read as a substring; printed-commit wording (fast-forward, later move); In flight excluded the briefs check 1 closes; closed/ briefs still open; future tip dates past a day; help nits | 🟢 | fact-check 1b, 5, 8, 10, 14, 16b, 18, 19; security L1, L2, Info 3–7; api Minor 2–5, Info 6–9; performance Info 1, 2 | digest: whole-file fences, list-marker openers, field-wise status; skill |
 
