@@ -15,6 +15,8 @@ evidence and re-rank Next.
 - **This dev cycle** (`feat/dev-cycle`, log row 67). First run: after install, so the
   router skills from log row 66 are live.
 
+## In flight
+
 ## Next
 
 1. **Q-075 — evidence that the self-improvement loop is safe to resume.** Motive: Q-068
