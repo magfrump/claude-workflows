@@ -1,4 +1,4 @@
-Commit: 591f098 (digest) / 44d06b7 (skill, feat/dev-cycle)
+Commit: 096042b (digest) / 374d559 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -448,3 +448,19 @@ Scope: `71e618d..591f098`, `8286c2b..44d06b7`, partial. Fact-check k=1 (31 claim
 | A3 | Section 2 said nothing when some decision inputs were skipped but others printed | 🟡 | api F1 | 096042b: every skipped decision input is named in section 2 |
 | A4 | Stale-brief answers could be re-applied every cycle; the archive read whole | 🟡 Low | api F6; performance #2; fact-check gap | 374d559: `Kept:` = answer date, apply only newer answers, search not read |
 | C1 | Three phrasings of "not plain"; step 0's `--since` target and singular path; inrepo's duplicate leaf realpath; trailing-slash convention; section 7 sentence lines | 🟢 | api F2–F5; fact-check 13b, 19, 25; performance #1 | 096042b, 374d559; F4/F5 kept as is |
+
+---
+
+## Pass 14 (review-fix loop, k=1, all critics; on 096042b digest / 374d559 skill)
+
+**Status: 🔴 not clean — 1 behavioral red (a false printed sentence); fixed in f920f0d, f47de85 (digest) and cb2e5f9 (skill).**
+
+Scope: `591f098..096042b`, `44d06b7..374d559`, partial. Fact-check k=1 (24 claims: 19 V / 4 MA / 1 I, plus one behavioral gap) and the three critics in parallel on pass 13's fact-check input. Artifacts: `code-fact-check-report-digest-pass14.md`, `security-review-2026-10-01-digest-pass14.md`, `performance-review-2026-10-01-digest-pass14.md`, `api-consistency-review-2026-10-01-digest-pass14.md`. Security and performance: nothing above Informational; both pass-13 security findings closed (archive gate; no lookup below a non-plain ancestor, traced).
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | Section 2 printed "every decision input that exists was skipped" when some were read and had no triggers | 🔴 behavioral (printed output) | fact-check 6; api F1; security Info 1 | f920f0d (+ test 10 mixed case) |
+| A1 | Stale-brief rule: answers archived in step 1 were no longer "open", so a "keep" drew one duplicate question; no date bounds | 🟡 Low | fact-check G1; security Info 3; api F5 | cb2e5f9: In flight as ordered steps (apply, then ask); dated answers within bounds |
+| A2 | Section 3's archive notice hid a missing questions.md / questions.sh and was not in the banner shape step 3 acts on; questions.md skipped left the archive unlisted | 🟡 | api F3, F6; fact-check 9 | f920f0d; cb2e5f9 (step 3 acts on the banner) |
+| A3 | Step 0 quoted the Window text loosely and could file a duplicate entry each cycle | 🟡 | api F2, F4 | cb2e5f9 |
+| C1 | Comments: what questions.sh does with the archive; "passed plaindir"; 096042b "one phrase" partly done; section 3 walks questions.md twice | 🟢 | fact-check 2, 7a, 20; security Info 2; performance Info | f920f0d, f47de85; the extra walk kept (1 ms, cold) |
