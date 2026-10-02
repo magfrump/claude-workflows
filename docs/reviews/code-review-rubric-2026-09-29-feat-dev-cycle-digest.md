@@ -1,4 +1,4 @@
-Commit: ab8ec06 (digest) / cfe4b51 (skill, feat/dev-cycle)
+Commit: d503a43 (digest) / 1ae9b21 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -364,3 +364,20 @@ Scope: `47c9a8e..ab8ec06`, `d6e1f24..cfe4b51`, labelled partial. Fact-check k=1 
 | C1 | Step 2 still said "in full"; final message omitted PRs; Q-103 wording; "~1 minute"; section 5's CRLF untested; printed-line cut wording; CRLF in the settings line | 🟢 | api 5, 7, 8, 10; fact-check 6, 9, 25, 27, 29c; performance #5 | d503a43, 1ae9b21 |
 
 Commit-message claim cfe4b51 "symlinked paths are skipped" (Claim 30a) is unmerged history; the rule it described is now true (1ae9b21).
+
+---
+
+## Pass 9 (review-fix loop, k=1, all critics; on d503a43 digest / 1ae9b21 skill)
+
+**Status: 🔴 not clean — 3 behavioral reds in the skill's handoff rules; fixed in b88a9c4 (digest) and 8b3a8ad (skill).**
+
+Scope: `ab8ec06..d503a43`, `cfe4b51..1ae9b21`, labelled partial. Fact-check k=1 (29 claims: 15 V / 10 MA / 3 I / 1 U) and the three critics in parallel on pass 8's fact-check input. Artifacts: `code-fact-check-report-digest-pass9.md`, `security-review-2026-10-01-digest-pass9.md`, `performance-review-2026-10-01-digest-pass9.md`, `api-consistency-review-2026-10-01-digest-pass9.md`. The digest's `inrepo` was confirmed correct and complete by three independent probes; the policy rule and stricter-of-two rule fail safe.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | An approved "merge <branch>?" had no owner; once archived the item fell to Ideas unmerged | 🔴 behavioral | fact-check 13c; performance #3 | 8b3a8ad: the cycle merges approved branches |
+| R2 | Loops had to file questions entries, which their Paths rule made a stop condition; process artifacts uncovered | 🔴 behavioral | fact-check 15; security F3; api 1; performance #1, #2 | 8b3a8ad: loops write only their branch and end with a `handoff:` marker commit; the cycle files entries |
+| R3 | Self-merge exclusions missed test/, guides/, GEMINI.md and more; nothing checked the diff | 🔴 behavioral (under self-merge) | fact-check 16; security F1, F2 | 8b3a8ad: wider exclusions plus a pre-merge `git diff --name-only` ⊆ Paths and no-symlink check, then re-read the setting |
+| A1 | "running" vs "7 days quiet" overlapped | 🟡 | fact-check 13b; security F4; api 3; performance #4 | 8b3a8ad: building = a commit within 7 days |
+| A2 | The digest reported a skipped symlinked input as absent ("create it", "no record") | 🟡 | api 2; fact-check 9 | b88a9c4: "NOT read" where it would be read, plus section 8 |
+| C1 | Policy line gloss vs exclusions; Q-103 [1]/[2] wording and edit; docs/dev-cycle.md looser rule; Ideas definition; cut wording; test 6 reach; test 20 suffix | 🟢 | api 4–7, 9, 10; fact-check 1, 5, 6, 12, 14, 20, 23; security F5 | b88a9c4, 8b3a8ad |
