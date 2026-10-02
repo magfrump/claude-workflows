@@ -90,9 +90,9 @@ corrected: pointed at `docs/working/briefs/closed/<same name>` if `--check-path`
 `ok` there (In flight's check 1 then moves it to Done or Ideas by the state
 `--check-brief` prints; a `closed/` brief that reads `open` or `new` is recorded and listed
 in the final message for the user to set, and gets no keep-or-drop question), otherwise
-removed. A brief that holds a slot but whose path no In
-flight line names (compared as text with the glob's `ok` paths) gets one, so In flight's
-checks reach it. A brief's branch is only ever named to
+removed. A brief the glob prints `ok` for, or this cycle wrote, whose path no In flight
+line names (compared as text) gets one, whatever its state, so In flight's checks reach
+it. A brief's branch is only ever named to
 `--check-branch '<name>'`, which prints `ok <name> <commit> <n> <date>` (n: its commits
 beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; the cycle
 runs no git command with it. A
@@ -266,7 +266,7 @@ docs/working/questions.md.
 ```
 
 - **Now**: work ready to start or in progress by hand, each with its motive and first step.
-- **In flight**: items whose brief the Rules' glob lists or this cycle wrote (whatever
+- **In flight**: items whose brief the Rules' glob prints `ok` for or this cycle wrote (whatever
   state `--check-brief` prints, so check 1 can close it), plus any line being resolved
   after its brief moved to `closed/`, each naming its brief path. Every cycle checks each,
   in this order:
@@ -368,7 +368,8 @@ the next digest runs on it, and the briefs must be there before work on them sta
 
 Then send the final message: list the new `you: judgment` entries by ID and name, any
 keep-or-drop answer step 6 could not read, read as `unrecognized`, or found still `open`
-(each with its brief), and each
+(each with its brief), each `closed/` brief that reads `open` or `new` (for the user to
+set its status), and each
 brief holding a slot by path, so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
 written from repo text: the user reads it before starting it.
