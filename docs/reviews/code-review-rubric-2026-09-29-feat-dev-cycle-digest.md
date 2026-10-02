@@ -1,4 +1,5 @@
-Commit: 28c6178 (digest) / c079e8c (skill, feat/dev-cycle)
+Commit: ef0471c (digest) / 5e8bfd9 (skill, feat/dev-cycle)
+Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
 
@@ -307,3 +308,21 @@ All core critics ran.
 | X1 | `scripts/dev-cycle.sh:22-40` | R1, A1, C7 | composed → X1 (inherits 🔴): the scrub must be both closed and bounded. Pin I/O to bytes (`env -u PERLIO` with the other two, or `binmode`), rescan from just before each deletion instead of restarting the line, and cap line length; test the env, nesting-depth and timing cases. |
 | X2 | `skills/dev-cycle/SKILL.md:41-44,154-160` + `scripts/dev-cycle.sh:244` + `docs/dev-cycle-sources.md` | A2, C3 | composed → X2 (inherits 🟡): the seed log is configurable in the skill but fixed in the digest. Either fix the path everywhere (drop the option) or have the digest read the sources file with an in-repo check and print which file it used. |
 | 3 | `skills/dev-cycle/SKILL.md:186-232` | A3, A4, C4 | distinct defects: gate design (who approves autonomous merges) vs slot lifecycle vs brief integrity |
+
+---
+
+## Pass 6 (review-fix loop, `--loop-pass`, k=1; on ef0471c digest / 5e8bfd9 skill)
+
+**Status: 🔴 short-circuited — 1 behavioral red at fact-check; critics skipped; fixed in 47c9a8e (digest) and d6e1f24 (skill).**
+
+The user asked to follow the review-fix-loop guidance: k=1 delta passes until no known issues remain, then a k=1 full review for the clean pass. Scope: `28c6178..ef0471c` (digest) and `c079e8c..5e8bfd9` (skill and docs), labelled partial. Fact-check k=1 on opus: 42 claims, 29 V / 7 MA / 6 I (`code-fact-check-report-digest-pass6.md`). Executed: 20/20 tests; shellcheck clean; 250k-line fuzz equal to a repeat-until-stable reference; scrub output unchanged under PERLIO/PERL_UNICODE/PERL5OPT variants; the cut does not reassemble a straddling sequence; section 7 counts tab, newline, quote and non-ASCII names.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | In-flight rules overlapped: a `review` item waiting > 7 days on the merge decision also matched "no commit for 7 days → back to Now", so step 6 could hand it to a second loop | 🔴 behavioral (procedure) | fact-check Claim 35 | d6e1f24: waiting items stay; the idle rule applies only to loops still building |
+| A1 | Scrub comment claimed linear work; test 5's 40k-layer case was cut before nesting ran | 🟡 (comment, test) | Claims 5, 13, 15b | 47c9a8e |
+| A2 | `docs/dev-cycle.md` and the skill said onboarding sets the idea sources | 🟡 (doc) | Claims 23, 30a | d6e1f24 |
+| A3 | This repo's interim `review` policy was recorded only in a commit body; the skill would never ask | 🟡 (process) | Claim 25 | d6e1f24: interim counts as unset; Q-103 filed |
+| C1 | 4097-byte unterminated line not cut; `## Nextgen` reopened Next; loose seed regex; rule 1 vs step 6 brief contents; "done-criteria"; window fallback; row 68 condition; guide promotion clause; "Not covered" list | 🟢 | Claims 2, 20, 27, 28, 29, 37; scope notes | 47c9a8e, d6e1f24 |
+
+Skipped core critics: security, performance, api-consistency (loop-pass short-circuit: behavioral red confirmed). The next pass runs them (the short-circuit is used for this loop).
