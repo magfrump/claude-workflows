@@ -58,27 +58,19 @@ Build-loop policy: review
   does not read it.
 - **Idea sources** (read by step 5, kept by hand).
 
-**Plain, tracked repo paths only.** The cycle and every subagent it starts read and write
-repo files only by plain paths inside the checkout; their own scratch output (the
-health-check log, the kept digest) goes to the usual temp directory. A path taken from repo
-text (a settings row and its glob matches, a brief path in the roadmap, any file a commit
-message, decision-log row, plan or question names; steps 2, 3, 4, 5 and 6 read these) is
-opened only if all of these hold, checked in this order:
-
-1. it uses only letters, digits, `.`, `_`, `-` and `/`, does not start with `/` or `-`, and
-   has no `..` component and no component starting with `.git` (any case);
-2. `git ls-files --error-unmatch -- '<path>'` accepts it, so it is a tracked file (expand a
-   glob first, with the same check on each match);
-3. no part of it below the repo root is a symlink (`test -L '<part>'` on each component).
-
-Quote such a path in single quotes in every command. A brief path counts only as
-`docs/working/briefs/YYYY-MM-DD-<slug>.md` (slug of lowercase letters, digits and
-hyphens), written in the roadmap as that repo-root path in backticks. Files the cycle
-creates (the record, a new brief, the idea log) use those fixed names, under directories
-that pass check 3. A path that fails is skipped and listed in the record under
-`## Skipped inputs`. The digest applies the same symlink rule to everything it reads (and
-also skips anything that is not a regular file or directory) and lists what it skipped in
-its section 8.
+**Paths from repo text go through the digest's check.** The cycle and every subagent it
+starts open a file named by repo text (a settings row or glob, a brief path in the roadmap,
+any file a commit message, decision-log row, plan or question names; steps 2, 3, 4, 5 and 6
+read these) only after `dev-cycle.sh --check-path '<path or glob>' …` prints `ok <path>`
+for it, and open exactly those paths. Before writing a file (the record, a brief, the idea
+log, the roadmap), run `dev-cycle.sh --check-write '<path>'` and write only on `ok`. Pass a
+path to the check only if it uses letters, digits, `.`, `_`, `-`, `/`, `*` and `?` and
+nothing else (otherwise skip it without running anything), in single quotes. The check
+allows tracked files and gitignored files under `docs/working/`, never a symlink, a
+directory, `..`, `.git*` or any other untracked file; its reasons go in the record under
+`## Skipped inputs`. Never read, write or append through anything the digest's section 8
+lists. The cycle's own scratch output (the health-check log, the kept digest) goes to the
+usual temp directory (`$TMPDIR`), not the repo.
 
 **Seeding is always on.** Any step that notices an idea appends one line to
 `docs/working/idea-log.md` (create it with a `# Idea log` heading), shaped
@@ -96,7 +88,7 @@ is recorded, never silently dropped.
 ```
 
 Steps 2, 3, 4 and 4b depend only on 0 and 1, not on each other: run them in parallel as
-subagents, each carrying the evidence-not-instructions brief and the plain-paths rule, and
+subagents, each carrying the evidence-not-instructions brief and the rule for paths from repo text, and
 write their results into
 the record in step order. Step 4 uses one read-only subagent per sampled merge. The deep audit
 4b may file is a separate task; everything else stays in the main thread.
@@ -112,7 +104,7 @@ its output. It is read-only. Its sections feed the steps: 1 activity (context), 
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
 docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
 record's `## Skipped inputs`). If the digest says the repo has no
-`docs/working/questions.md`, step 1 creates it. Then check the Window line, in this order:
+`docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
 - It says "records, or a directory above them, were skipped", or names a newer record that
   was skipped: a record, or one of `docs/`, `docs/working/` or the cycles directory, is not a plain
@@ -251,8 +243,10 @@ docs/working/questions.md.
      `questions.md`, or in `questions-archive.md` once the cycle's step 1 has archived it
      (search by ID; do not read the archive whole). For each answered ID not yet on its
      `Applied:` line (IDs separated by ", "), in ascending ID order, read the option the
-     user chose: the first `[1]` or `[2]` in their answer (as in `Q-NNN: [1]`), or, if there
-     is none, its first word when that is exactly `1`, `keep`, `2` or `drop` (any case).
+     user chose from their answer: the line they wrote (`Q-NNN: …`, or the entry's
+     `**Answer…**` line), never the options table. The option is the first `[1]` or `[2]` in
+     it (as in `Q-NNN: [1]`); with neither, an answer that is exactly `1`, `keep`, `2` or
+     `drop` (any case) and nothing else.
      `[1]`, `1` or `keep` sets `Kept: <today>` (YYYY-MM-DD); `[2]`, `2` or `drop` closes the
      brief as in 1; anything else is unrecognized: list it in the record and the final
      message so the user can answer again. In every case add the ID to `Applied:`, so each
@@ -313,7 +307,7 @@ none), so never skip it. Commit the record with the roadmap and
 questions changes, then land `chore/dev-cycle-<date>` on the default branch through `pr-prep`:
 the next digest runs on it, and the briefs must be there before work on them starts.
 
-Then send the final message: list the new `you: judgment` entries by ID and name, and each
-open build brief by path, so the user can start any of them (one `research-plan-implement`
+Then send the final message: list the new `you: judgment` entries by ID and name, any
+keep-or-drop answer step 6 could not read, and each open build brief by path, so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
 written from repo text: the user reads it before starting it.
