@@ -68,11 +68,14 @@ open exactly those paths. `--check-path` allows tracked files and gitignored fil
 directory, a `.` or `..` component, `.git*` or any other untracked file. Before writing one
 of the cycle's own files (the record, a brief, the idea log, the roadmap, the questions
 files), run the same script with `--check-write '<path>'` and write only on `ok`; it allows
-only those files. An in-cycle fix (steps 1, 2, 3, 4) edits only an existing file that
-`--check-path` prints `ok` for; a fix that needs a new file is filed, not written. A roadmap
-brief path counts as a brief (and holds a slot) only if `--check-brief '<path>'` and
-`--check-path '<path>'` both print `ok` for it. A brief's branch reaches git only after
-`--check-branch '<name>'` prints `ok`, and then only as `refs/heads/<name>`. Pass a value to
+only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
+`--check-fix '<path>'` prints `ok` for: an existing file under `docs/`, or `README.md`;
+anything else (a new file, code, scripts, hooks, egress lists, instruction files) is filed,
+not written. Briefs are found only through `--check-path 'docs/working/briefs/*.md'`, and a
+roadmap brief path counts as a brief (and holds a slot) only if `--check-brief '<path>'` and
+`--check-path '<path>'` both print `ok` for it. A brief's branch reaches git only as the hash
+`--check-branch '<name>'` prints (`ok <name> <hash>`; `ok <name> absent` means no such
+branch), never by name. A question ID from a brief is read only through `--check-answer`. Pass a value to
 any check only if it uses letters, digits, `.`, `_`, `-`, `/`, `*` and `?` and nothing else,
 in single quotes; a value that fails this is skipped without running anything. Every skip,
 with its reason, goes in the record under `## Skipped inputs`. Never read, write or append through anything the digest's section 8
@@ -142,8 +145,8 @@ last good one.
   questions that cannot be read this cycle are reported, not guessed.
 - `git worktree list` and `git worktree prune`. List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting. Skip any
-  branch or worktree a brief in `docs/working/briefs/` with `Status: open` names: work on it
-  may be in progress.
+  branch or worktree an open brief (found as in the Rules) names: work on it may be in
+  progress.
 - List working docs in `docs/working/` whose task has merged, in the cycle record. Do not run
   `archive-working-docs.sh`: it serves the self-improvement loop and moves files into a
   gitignored archive.
@@ -243,27 +246,22 @@ docs/working/questions.md.
 - **Now**: work ready to start or in progress by hand, each with its motive and first step.
 - **In flight**: items with an open build brief, each naming its brief path. Every cycle checks each, in
   this order:
-  1. Its branch (checked as in the Rules; one that fails is a skip, and the brief is left as
-     it is) merged into the default branch → Done. The user dropped it (closed the brief,
-     or said so) → Ideas, with the reason. Either way the brief gets `Status: closed`.
+  1. Its branch's hash (from `--check-branch`, as in the Rules) is an ancestor of the default
+     branch → Done. The user dropped it (closed the brief, or said so) → Ideas, with the
+     reason. Either way the brief gets `Status: closed`. A branch the check skips is
+     recorded; checks 2 and 3 still run.
   2. If the brief is still open, apply answers to its keep-or-drop questions: the IDs on its
-     `Asked:` line (step 3 below writes them; no other question counts). Look each ID up in
-     `questions.md`, or in `questions-archive.md` once the cycle's step 1 has archived it
-     (search by ID; do not read the archive whole). For each answered ID not yet on its
-     `Applied:` line (IDs separated by ", "), in ascending ID order, read the option the
-     user chose from their answer: the line they wrote (`Q-NNN: …`, or the entry's
-     `**Answer:**` / `**Answered <date>:**` line, any case; not `**Answering …**`), never the
-     options table, taking only the text after that line's label colon, with `*` removed.
-     If that text has `[1]` or `[2]` but not both, that is the option (as in `Q-NNN: [1]`);
-     with neither, its first word, with a trailing `.` or `,` removed, if that is `1`,
-     `keep`, `2` or `drop` (any case).
-     `[1]`, `1` or `keep` sets `Kept: <today>` (YYYY-MM-DD); `[2]`, `2` or `drop` closes the
-     brief as in 1; anything else is unrecognized: list it in the record and the final
-     message (the user answers on the next keep-or-drop entry, which step 3 files; a second
-     reply on this one is not read). In every case add the ID to `Applied:`, so each
-     answer is read once.
-  3. Then, if the brief is still open, no ID on its `Asked:` line is still unanswered, and
-     the branch has no commit beyond the default branch (or does not exist yet) 14 days after
+     `Asked:` line (step 3 below writes them; no other question counts). Run
+     `--check-answer` with the IDs not yet on its `Applied:` line (IDs separated by ", "),
+     and take its lines in ascending ID order; it reads `questions.md` and, once step 1 has
+     archived an entry, `questions-archive.md`. `open` is not answered yet: leave the ID.
+     `keep` sets `Kept: <today>` (YYYY-MM-DD); `drop` closes the brief as in 1;
+     `unrecognized` or a skip goes in the record and the final message (the user answers on
+     the next keep-or-drop entry, which step 3 files; a second reply on this one is not
+     read). In each of these cases add the ID to `Applied:`, so each answer is read once.
+  3. Then, if the brief is still open, no ID on its `Asked:` line is still `open`, its branch
+     passed the check, and that branch has no commit beyond the default branch (or is
+     `absent`) 14 days after
      the brief's last `Kept:` date (none yet: the brief's own date), file one
      `you: judgment` entry, slug `keep-or-drop-<brief file name without .md>-<n>` (n = how
      many it has been asked), asking "keep or drop <brief path>?" with options **[1] keep**

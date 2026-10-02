@@ -24,7 +24,8 @@ answered.
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Each row is passed to `~/.claude/scripts/dev-cycle.sh --check-path`, which allows tracked
+Each row is passed to `~/.claude/scripts/dev-cycle.sh --check-path` (in claude-workflows
+itself, `scripts/dev-cycle.sh`), which allows tracked
 files and gitignored files under `docs/working/` (so the self-improvement loop's ignored round
 files count), at most 50 per row, never a symlink, a directory, a `.` or `..` component,
 `.git*` or any other untracked file. Paths use only letters, digits, `.`, `_`, `-`, `/`, and
