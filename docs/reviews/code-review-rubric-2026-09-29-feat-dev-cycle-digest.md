@@ -1,4 +1,4 @@
-Commit: 6f24d91 (digest) / e19f411 (skill, feat/dev-cycle)
+Commit: 4b7ec02 (digest) / f54ca74 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -745,4 +745,19 @@ Scope: `f4d27d2..6f24d91`, `a7dfc0c..e19f411`, partial: the pass-30 fix round (p
 |---|---|---|---|---|
 | A1 | HTML blocks of types 2–7 (multi-line comments, `<details>`, `<div>`, lone tags, `<?`, `<!X`, CDATA) could hold a column-0 fence line; a lone CR or a BOM hid one | 🔴 Incorrect (fact-check 4, 20a) / 🟡 | fact-check 4, 20a; api F1, F2; performance Medium 1; security L1, L2 | digest: any line starting `<` outside a fence refuses the file (except a one-line comment); so does a CR inside a line or a BOM |
 | C1 | Skip wording for HTML, help for --check-brief's refusals, untested refusal paths, final-message scope, brief comment, stale test title, `tolower` on whole lines, briefs written with non-plain fences | 🟢 | api F3–F5; fact-check 1, 7, 9, 18; performance Info 2; security Info F3, F4 | digest, skill |
+
+---
+
+## Pass 32 (review-fix loop, k=1, all critics; on 4b7ec02 digest / f54ca74 skill)
+
+**Status: 🟡 not clean — 0 Incorrect; 1 Inconsistent (inline constructs that span lines hide text CommonMark would not read) which the user accepted as a limit (decision log 69), plus wording. Performance: no findings at any level. Fixed in fd22d29 (digest) and 5085e64 (skill, decision log). Health check on 2080f23: passed (rc 0).**
+
+Scope: `6f24d91..4b7ec02`, `e19f411..f54ca74`, partial: the pass-31 fix round. Fact-check k=1 (19 claims: 13 V / 5 MA / 1 S / 0 I). Artifacts: `code-fact-check-report-digest-pass32.md`, `security-review-2026-10-02-digest-pass32.md`, `performance-review-2026-10-02-digest-pass32.md`, `api-consistency-review-2026-10-02-digest-pass32.md`. Security's harvest (7,003 answer and 3,475 brief readings from the pass 26–31 probes): no non-skip change; every pass-31 wrong reading refuses. All real questions files on all 9 branches read the same, none refused.
+
+**User decision (2026-10-02, decision log 69):** inline constructs that span lines (open tag attribute, link title, code span, emphasis) are an accepted, documented limit of the reader; later passes treat that class as out of scope.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | Inline constructs spanning lines (open `<!--` mid-line, tag attribute, link title, reference definition, code span) hide text CommonMark would not read | 🟡 Inconsistent / Low | api F1; security F1 | accepted limit (decision log 69); cheap refusals for an unclosed inline comment and a reference definition (fd22d29) |
+| C1 | "raw HTML" wording vs the "starts with <" rule (skip reason, help, brief clause), BOM sharing the CR reason, stale ANSWER_AWK output list, refused briefs not marked in the final message, commit-message count | 🟢 | api F2–F4; fact-check 2, 4b, 5a, 7, 10b, 12a; security F2 | digest, skill |
 

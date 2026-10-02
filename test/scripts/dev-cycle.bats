@@ -900,7 +900,7 @@ EOF
     [[ "$output" == *"skip docs/working/briefs/2026-01-01-i.md: line 3 is a fence-like line"* && "$output" == *"skip docs/working/briefs/2026-01-02-l.md: line 3 is a fence-like line"* ]] || { echo "$output"; return 1; }
 }
 
-@test "HTML blocks, stray carriage returns and a byte-order mark refuse the file; a one-line comment is read" {
+@test "lines starting with <, open comments, reference definitions, stray CRs and a BOM refuse the file; one-line comments and code spans are read" {
     mkdir -p docs/working/briefs
     local f=$'\x60\x60\x60'  # a ``` fence line
     q() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n\n' "$1" "$2"; }
@@ -911,11 +911,11 @@ EOF
     { echo '# Questions'; echo; printf '<details>\n%s\n' "$f"; q Q-1 'Q-1: [1]'; printf '%s\n**Answer:** [2]\n</details>\n' "$f"; } > docs/working/questions.md
     git commit -qam details
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts a raw HTML block"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts with <"* ]] || { echo "$output"; return 1; }
     { echo '# Questions'; echo; printf '<!--\n%s\n-->\n' "$f"; q Q-1 'Q-1: [1]'; } > docs/working/questions.md
     git commit -qam comment
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts a raw HTML block"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip Q-1: line 3 of docs/working/questions.md starts with <"* ]] || { echo "$output"; return 1; }
     { echo '# Questions'; printf 'x\r%s\n' "$f"; q Q-1 'Q-1: [1]'; printf '%s\n' "$f"; } > docs/working/questions.md
     git commit -qam cr
     run --separate-stderr bash "$DC" --check-answer Q-1
@@ -923,12 +923,27 @@ EOF
     { printf '\357\273\277%s\n' "$f"; q Q-1 'Q-1: [1]'; printf '%s\n' "$f"; } > docs/working/questions.md
     git commit -qam bom
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [[ "$output" == "skip Q-1: line 1 of docs/working/questions.md holds a carriage return that does not end it, or a byte-order mark"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip Q-1: line 1 of docs/working/questions.md starts with a byte-order mark"* ]] || { echo "$output"; return 1; }
+    # An inline comment left open, and a link reference definition, refuse too;
+    # a < inside a code span mid-line (as the real files have) does not.
+    local bt=$'\x60'
+    { echo '# Questions'; echo; echo "Answer as ${bt}Q-0NN: <your answer>${bt}."; q Q-1 'Q-1: [1]'; } > docs/working/questions.md
+    git commit -qam codespan
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [[ "$output" == "keep Q-1" ]] || { echo "$output"; return 1; }
+    { echo '# Questions'; echo 'Note <!--'; q Q-1 'Q-1: [2]'; echo '-->'; } > docs/working/questions.md
+    git commit -qam inline
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md opens an HTML comment"* ]] || { echo "$output"; return 1; }
+    { echo '# Questions'; echo "[x]: /u 'title"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
+    git commit -qam refdef
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md is a link reference definition"* ]] || { echo "$output"; return 1; }
     printf '# Brief\n<div>\n%s\nStatus: done\n%s\n</div>\nStatus: open\n' "$f" "$f" > docs/working/briefs/2026-01-01-h.md
     printf '# Brief\n%s\nStatus: open\n' "$f" > docs/working/briefs/2026-01-02-u.md
     git add -A && git commit -qm briefs
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-h.md docs/working/briefs/2026-01-02-u.md
-    [[ "$output" == *"skip docs/working/briefs/2026-01-01-h.md: line 2 starts a raw HTML block"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"skip docs/working/briefs/2026-01-01-h.md: line 2 starts with <"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"skip docs/working/briefs/2026-01-02-u.md: the code fence opened at line 2 is never closed"* ]] || { echo "$output"; return 1; }
 }
 
