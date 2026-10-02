@@ -1,4 +1,4 @@
-Commit: bc5dc76 (feat/dev-cycle, full branch)
+Commit: 723c242 (digest) / 1f36885 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -509,3 +509,19 @@ Scope: `git diff main...bc5dc76 -- . ':!docs/reviews'` (13 files, ~1,420 lines).
 | C1 | Section 2 cost records × history (one git log per record): above ~141 records at 200k commits it passed the 120 s Bash default | 🟢 Low | performance #1 | 723c242: one path-limited walk; same output here |
 | C2 | Section 7 counted only SKILL.md / top-level workflows; "every trigger" overstated; empty `--since=` accepted; bash-prefixed errors; test name "seven"; empty "Open by route"; `handoffs/` name clash; init before the branch; redundant index; formats unstated; seed/help/step-0 wording | 🟢 | api F2–F11; fact-check 19, 25, 58, 60, 72, 78; security Info | 723c242, 1f36885 |
 | C3 | Sections 1 and 7 walk all history (~3 s at 200k commits); section 6 one diff per merge; awk reads a huge line whole | 🟢 Low/Info | performance #2, #3, #5 | kept (prior C1/C2; bounded for realistic windows) |
+
+---
+
+## Pass 17 (review-fix loop, k=1, all critics; delta over full-review fixes, on 723c242 digest / 1f36885 skill)
+
+**Status: 🔴 not clean — 2 behavioral Incorrect (record dates); fixed in cf18055, 36417f5 (digest) and db24c74 (skill).**
+
+Scope: `09f6fe7..723c242`, `074164b..1f36885`, partial. Fact-check k=1 (27 claims: 21 V / 3 MA / 2 I / 1 U) and the three critics in parallel, on the full review's fact-check. Artifacts: `code-fact-check-report-digest-pass17.md`, `security-review-2026-10-02-digest-pass17.md`, `performance-review-2026-10-02-digest-pass17.md`, `api-consistency-review-2026-10-02-digest-pass17.md`. Performance: the date map removes the timeout cliff (301 records on a 220k-commit repo: 167.7 s → 0.89 s without commit-graph).
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | The new date map missed merge-made changes (merges list no files) and names git still quotes (`"`, `\`), printing an older date or "never, uncommitted" | 🔴 behavioral | fact-check 7, 8; api 1; security Low; performance Low 1, 2 | cf18055: combined merge diffs, fallback on any miss, a test that fails on 723c242; 36417f5 documents the one remaining difference (a merge that discarded a later side change) |
+| A1 | The path rule did not cover paths subagents take from repo text (commit messages, plans), nor where a path may point (`.git`, any file as a "brief link") | 🟡 Medium ×2 | security M1, M2; fact-check 12 | db24c74 |
+| A2 | Keep-or-drop answers: unbracketed numbers not matched, unmatched answers consumed; init only when questions.md absent; step 2 caveat; step 0 parenthetical; path base | 🟡 Minor | api 2–6; fact-check 25 | db24c74 |
+| A3 | A cycle record named with an impossible date failed the run | 🟡 Low (pre-existing) | fact-check 4 | cf18055 |
+| C1 | Untested: settings/briefs skips, "Open by route: none", record dates | 🟢 | api 7 | cf18055 |
