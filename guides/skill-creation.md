@@ -134,7 +134,7 @@ The table below captures the current state of all workflows and skills, noting w
 | `code-fact-check` | **Strong** | Single-pass verification. |
 | `fact-check` | **Strong** | Prose fact-checking, single-pass. |
 | `draft-review` | **Adequate** | Orchestrator dispatching critics in parallel. Similar to `code-review`. |
-| `dev-cycle` | **Adequate** | Workflow-shaped (steps 0–7 plus conditional 4b and 5 and the 6b handoff) but, by the criteria above, a skill: Claude completes it in one pass given the digest, with no human checkpoint mid-run beyond the Operating Modes rule (under /active the user confirms the handoff queue, as for any launch; decisions go to questions.md), and it produces a self-contained artifact (the cycle record). Its mechanical parts live in `scripts/dev-cycle.sh`. Promote it to a workflow with a router if a cycle ever needs a human gate mid-run. |
+| `dev-cycle` | **Adequate** | Workflow-shaped (steps 0–7, with step 4b and the 6b handoff added and steps 4b and 5 conditional) but, by the criteria above, a skill: Claude completes it in one pass given the digest; its one mid-run checkpoint is its own (under /active the user confirms the handoff queue in step 6), beside the Operating Modes approvals for commits and merges, and decisions go to questions.md. It produces a self-contained artifact (the cycle record). Its mechanical parts live in `scripts/dev-cycle.sh`. Promote it to a workflow with a router if a cycle ever needs a human gate mid-run. |
 | `self-eval` | **Strong** | Single-pass scoring against rubric. |
 | `test-strategy` | **Strong** | Single-pass analysis producing a test plan. |
 | `tech-debt-triage` | **Strong** | Single-pass prioritization. |
