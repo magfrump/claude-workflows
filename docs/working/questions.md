@@ -52,11 +52,11 @@ May the dev cycle's build loops (step 6b) merge their own branches in claude-wor
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] review** | Each loop runs pr-prep's review-fix loop, then files one "merge <branch>?" entry (no PRs here) | One decision per finished item | Finished work queues up behind you; at most 3 items in flight |
-| **[2] self-merge** | Each loop lands its branch through pr-prep's local merge on its own | None per item; you read results in the next cycle's digest | A bad change that pr-prep's automated review misses lands on main; afterwards the next cycle's health check, spot-check (2 sampled merges by default) and code-without-docs check might catch it |
+| **[1] review** | Each loop runs pr-prep's review-fix loop and stops; the next cycle files one "merge <branch>?" entry (no PRs here) and merges once you approve | One decision per finished item | Finished work queues up behind you; at most 3 items in flight |
+| **[2] self-merge** | Each loop lands its branch through pr-prep's local merge on its own, but only for work outside skills/, workflows/, scripts/, test/, guides/ and instruction files; anything else still stops for review | None for that work, which here is mostly docs; most work in this repo still comes to you as under [1] | A bad change that pr-prep's automated review misses lands on main; afterwards the next cycle's health check, spot-check (2 sampled merges by default) and code-without-docs check might catch it |
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`; the skill counts that line as unset (so `review`) and does not re-ask while this entry is open.
-- **If the answer differs:** replace that line with `Build-loop policy: self-merge` (or `review` for [1]) and drop the interim sentence below it in `docs/dev-cycle.md`.
+- **On either answer:** in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]) and delete the paragraph starting "Interim note:".
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN

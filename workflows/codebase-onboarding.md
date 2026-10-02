@@ -450,7 +450,7 @@ If possible, have someone familiar with the codebase review the orientation doc.
 
 If no reviewer is available, treat the Known Unknowns section as a list of things to verify during your first RPI research phase.
 
-Also settle the project's **build-loop policy** with the user: may the build loops the dev-cycle skill hands roadmap items to (its step 6b) merge on their own (`self-merge`), or must each stop for the user's review (`review`: a PR, or a "merge <branch>?" questions entry where the project has no PRs)? It depends on the project's structure and who reviews its changes, so it is the user's call, not inferred. Record it as `Build-loop policy: <value>` in `docs/dev-cycle.md`, creating the file from the template in the skill's "Project settings" if missing. Until it is set, the skill uses `review`.
+Also settle the project's **build-loop policy** with the user: may the build loops the dev-cycle skill hands roadmap items to (its step 6b) merge on their own (`self-merge`; it covers only work outside what later runs follow unreviewed, such as skills, scripts, tests and instruction files, so in a repo made of those most work still stops for review), or must each stop for the user's review (`review`: a PR, or a "merge <branch>?" questions entry where the project has no PRs)? It depends on the project's structure and who reviews its changes, so it is the user's call, not inferred. Record it as `Build-loop policy: <value>` in `docs/dev-cycle.md`, creating the file from the template in the skill's "Project settings" if missing. Until it is set, the skill uses `review`.
 
 **Done when...**
 - [ ] A codebase-familiar reviewer has approved the orientation doc, OR Known Unknowns are flagged for verification during the first RPI research phase
