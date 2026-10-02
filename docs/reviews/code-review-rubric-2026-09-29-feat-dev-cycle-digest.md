@@ -1,4 +1,4 @@
-Commit: dd1988d (digest) / d39c8f2 (skill, feat/dev-cycle)
+Commit: 2fd9401 (feat/dev-cycle, full review)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -815,4 +815,20 @@ Scope: `f3c9ebb..dd1988d`, `2bf03da..d39c8f2`, partial: the pass-35 fix round. A
 | # | Finding | Severity | Source | Fix |
 |---|---|---|---|---|
 | C1 | The brief clause claimed to be stricter than `--check-brief` (a fence-like content line and an escape-made `]:` are skipped); `--help` did not say reference definitions count behind `>` and list markers | 🟢 Minor / Info | api F1, F2; fact-check 12; security F1 | skill d47dd8d; digest help 3d580cd |
+
+---
+
+## Full review 1 (k=1, all critics, whole branch at 2fd9401; main bf54363 merged in)
+
+**Status: 🔴 not clean — security 2 Medium (`--check-fix` allowed files an instruction file imports with `@`, including README.md; step 1 put unchecked merged-branch names into a `you: terminal` paste block) and 1 Low (case-sensitive exclusions); fact-check 1 Incorrect (a bold-closed answer label was cut at the next `**`, fails safe) and 2 Mostly accurate; API 2 Minor (help omitted the cycle's own files; "step 3" vs "check 3"); performance no new issue (Info: batch check calls). All fixed: 11714a3, 6f3d55e (digest), b684ff2, 91b88d7, 2e65ad5 (skill). Health check on 2fd9401: passed (rc 0).**
+
+Scope: `git diff main...2fd9401 -- . ':!docs/reviews'` (13 files, ~2,500 lines). Artifacts on feat/dev-cycle: `code-fact-check-report-devcycle-fullreview-2026-10-02.md` (52 claims: 49 V / 2 MA / 0 S / 1 I), `security-review-2026-10-02-devcycle-fullreview.md`, `performance-review-2026-10-02-devcycle-fullreview.md`, `api-consistency-review-2026-10-02-devcycle-fullreview.md`. The merge of main (2fd9401, add-add conflicts in the override log and both questions files, resolved by keeping both sides) checked out in every lane. None of the security findings sat in lines the delta passes changed, which is why only the full pass surfaced them.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `--check-fix` checked only basenames: a docs file or README.md that a tracked instruction file imports with `@` is read as instructions but was fixable | 🟡 Medium | security F1 | digest: refuse any file whose basename a tracked instruction file imports; skill wording |
+| A2 | Step 1's merged-branch list reached a `you: terminal` paste block unchecked (`a$(id)` is a valid branch name) | 🟡 Medium | security F2 | skill: only names `--check-branch` accepts go in the block |
+| A3 | `**Answer (date)**: **[2]**` read unrecognized (cut at the next `**` though the label's bold had closed) | 🔴 Incorrect (fails safe) | fact-check 33a | digest: cut only while the label's bold is open; `*` ends a word |
+| A4 | `--check-fix` exclusions case-sensitive | 🟡 Low | security F3 | digest: compare lower-cased |
+| C1 | Help omitted the cycle's own files and dotfiles; "step 3"/"check 3"; author vs committer date; a symlinked brief's target text read; batch check calls; the roadmap's seed Now item (left for the first cycle) | 🟢 | api F1–F3; fact-check 20, 35; security F4; performance Info 3 | digest, skill |
 
