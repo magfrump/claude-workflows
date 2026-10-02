@@ -484,7 +484,7 @@ EOF
         docs/untracked.md .git/config .GIT/config '../x' /etc/passwd -x "a'b" '.g*' docs/working/round-2.md
     [ "$status" -eq 0 ]
     for want in "ok docs/working/ideas.md" "ok docs/working/round-1.md" "ok docs/decisions/001-x.md" \
-                "skip docs: no tracked file" "skip .env: no tracked file" "skip docs/untracked.md: no tracked file" \
+                "skip docs: a directory, not a file" "skip .env: no tracked file" "skip docs/untracked.md: no tracked file" \
                 "skip .git/config: not an allowed path form" "skip .GIT/config: not an allowed path form" \
                 "skip ../x: not an allowed path form" "skip /etc/passwd: not an allowed path form" \
                 "skip -x: not an allowed path form" "skip a'b: not an allowed path form" \
@@ -522,4 +522,38 @@ EOF
                 "skip .env: not one of" "ok docs/working/idea-log.md" "skip docs/working/briefs/x.md: not one of"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
+}
+
+@test "--check-brief allows only a dated build brief" {
+    mkdir -p docs/working
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-x-2.md docs/roadmap.md \
+        docs/working/idea-log.md docs/working/cycles/cycle-2026-01-01.md docs/working/briefs/2026-1-01-x.md \
+        docs/working/briefs/2026-01-01-X.md AGENTS.md
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok docs/working/briefs/2026-01-01-x-2.md"* ]] || { echo "$output"; return 1; }
+    [ "$(grep -c '^skip .*: not a build brief' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
+}
+
+@test "--check-branch allows only a plain, valid branch name" {
+    run --separate-stderr bash "$DC" --check-branch feat/x-1 chore/dev-cycle-2026-01-01 '--output=x' -x \
+        'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}'
+    [ "$status" -eq 0 ]
+    for want in "ok feat/x-1" "ok chore/dev-cycle-2026-01-01" "skip --output=x: not an allowed branch name" \
+                "skip -x: not an allowed" "skip a..b: not a valid branch name" "skip x.lock: not a valid" \
+                "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ]
+}
+
+@test "the check modes do not warn per match under an uninstalled locale" {
+    mkdir -p docs/decisions
+    for i in 1 2 3 4 5 6; do echo "$i" > "docs/decisions/m$i.md"; done
+    git add -A && git commit -qm files
+    run --separate-stderr env LC_ALL=xx_XX.UTF-8 bash "$DC" --check-path 'docs/decisions/*.md' docs/decisions/m1.md
+    [ "$status" -eq 0 ]
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 7 ]
+    # At most bash's own start-up warnings (one per bash process), none per match.
+    # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
+    [ "$(grep -c . <<<"$stderr")" -le 2 ] || { echo "$stderr"; return 1; }
 }
