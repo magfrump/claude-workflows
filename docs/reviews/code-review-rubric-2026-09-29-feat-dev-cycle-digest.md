@@ -1,4 +1,4 @@
-Commit: 10c2809 (digest) / 875b41f (skill, feat/dev-cycle)
+Commit: b00c057 (digest) / 7f3e392 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -675,4 +675,18 @@ Scope: `cbfdf35..10c2809`, `77e21af..875b41f`, partial: the pass-25 fix round. F
 | A1 | Fence test before the heading test: an unclosed fence hid later headings, so another entry's answer (or a fenced copy) was read, and duplicates were missed | 🔴 Incorrect / 🟡 Medium | fact-check 10; security M1; performance Medium 1; api Minor 5 | digest: headings bound entries; fences tracked in the entry only, by kind; an open fence at the end is unrecognized |
 | A2 | The no-default-branch exit refused all six modes; only two read the default branch | 🔴 Breaking | api Breaking 1 | digest: only `--check-brief` and `--check-branch` |
 | C1 | Substring ANSWERED gate, mixed fence kinds in briefs, SIGPIPE above 64 KiB, the printed commit after later edits, ranges in the pattern, open-ID date with no source, final-message list, "open" wording, orphan briefs, stale-line correction, tip-date zone and future dates | 🟢 | security L2–L5, Info 6–9; api Inconsistent 2, Minor 3, 4, 6, 7, Info 8–10; fact-check 7, 19, 21, 25, 30; performance Low 2, Info 3 | digest, skill |
+
+---
+
+## Pass 27 (review-fix loop, k=1, all critics; on b00c057 digest / 7f3e392 skill)
+
+**Status: 🔴 not clean — 1 Incorrect (a stale In flight line pointed at closed/ could never resolve) and 1 Inconsistent (nested fences shorter than CommonMark); no Medium or above from security or performance. Fixed in 56cc6fe, 366efd7 (digest) and the pass-27 skill commit. Health check on c7a29b3: passed (rc 0).**
+
+Scope: `10c2809..b00c057`, `875b41f..7f3e392`, partial: the pass-26 fix round. Fact-check k=1 (31 claims: 21 V / 9 MA / 0 S / 1 I). Artifacts: `code-fact-check-report-digest-pass27.md`, `security-review-2026-10-02-digest-pass27.md`, `performance-review-2026-10-02-digest-pass27.md`, `api-consistency-review-2026-10-02-digest-pass27.md`. Every pass-26 fence probe now reads a skip, open or unrecognized; all 102 real IDs unchanged; briefs to 64 MiB read; the four non-brief modes work with no default branch.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | A stale In flight line pointed at briefs/closed/ was refused by `--check-brief` every cycle and never reached Done or Ideas | 🔴 Incorrect | fact-check 16; api Inconsistent 1; security Info 5 | digest: `--check-brief` reads closed/ paths; skill: check 1 resolves them |
+| A2 | Fences closed on their first three characters: a longer fence, an info-string line or an indented fence exposed a quoted answer or status | 🟡 Inconsistent / Low | api Inconsistent 2; security L1; fact-check 5, 14 | digest: one CommonMark fence reader for both |
+| C1 | The printed status commit (fenced examples, renames, merges), help for unrecognized, Exit line, header field read, shell comments in fences ending entries, In flight definition, glob skip lines, final message, future tip dates, redundant qualifier, skipped-lookup cost | 🟢 | fact-check 2, 4, 6, 13, 19, 23, 29a; api Minor 3–6, Info 7–10; security L2, Info 3, 4, 6, 7; performance Info 1, 2 | digest, skill |
 
