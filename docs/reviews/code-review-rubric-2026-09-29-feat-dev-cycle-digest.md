@@ -1,4 +1,4 @@
-Commit: 71e618d (digest) / 8286c2b (skill, feat/dev-cycle)
+Commit: 591f098 (digest) / 44d06b7 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -432,3 +432,19 @@ Scope: `c034a75..71e618d`, `a218ad8..8286c2b`, partial. Fact-check k=1 (28 claim
 | A2 | `inrepo` looked fixed-name paths up through a symlinked parent before skipping | 🟡 Informational | security Info; fact-check 11b note | 591f098: the walk runs first |
 | A3 | Step 0's two branches overlapped; skipped-directory cases missing; stale-brief answers archived before step 6 reads them; branch-not-created case | 🟡 | api F3, F4; fact-check 13, 15 | 44d06b7 |
 | C1 | Window note path form; section 8 header wording; stale comment; e08d526 "test 3" (test 10; immutable) | 🟢 | api F5, F6; fact-check 2, 3, 11a, 22, 25b | 6d6637d |
+
+---
+
+## Pass 13 (review-fix loop, k=1, all critics; on 591f098 digest / 44d06b7 skill)
+
+**Status: 🟡 not clean — 0 red beyond one Informational-impact probe (fact-check graded it behavioral), 1 Medium; fixed in 096042b (digest) and 374d559 (skill).**
+
+Scope: `71e618d..591f098`, `8286c2b..44d06b7`, partial. Fact-check k=1 (31 claims: 25 V / 3 MA / 3 I) and the three critics in parallel on pass 12's fact-check input. Artifacts: `code-fact-check-report-digest-pass13.md`, `security-review-2026-10-01-digest-pass13.md`, `performance-review-2026-10-01-digest-pass13.md`, `api-consistency-review-2026-10-01-digest-pass13.md`. All four confirm `blocker()` as the one rule: section 8, inline notes and the Window line name the same part; plain and absent inputs are never listed; step 0 matches every Window variant.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `questions.sh` follows a symlinked `questions-archive.md`, so section 3's result is a one-bit oracle on any host path a committer names | 🟡 Medium (floor) | security F1 | 096042b: the archive passes the same check before questions.sh runs |
+| A2 | The two glob-directory gates ran `plaindir` (stat, realpath) through a symlinked ancestor; section 8's "nothing … probed" and 6d6637d's message overclaimed (output unchanged) | 🟡 (fact-check: behavioral, no output effect) | fact-check 12b, 17b, 20b; security F2 | 096042b: `dirok()` walks first |
+| A3 | Section 2 said nothing when some decision inputs were skipped but others printed | 🟡 | api F1 | 096042b: every skipped decision input is named in section 2 |
+| A4 | Stale-brief answers could be re-applied every cycle; the archive read whole | 🟡 Low | api F6; performance #2; fact-check gap | 374d559: `Kept:` = answer date, apply only newer answers, search not read |
+| C1 | Three phrasings of "not plain"; step 0's `--since` target and singular path; inrepo's duplicate leaf realpath; trailing-slash convention; section 7 sentence lines | 🟢 | api F2–F5; fact-check 13b, 19, 25; performance #1 | 096042b, 374d559; F4/F5 kept as is |
