@@ -34,11 +34,12 @@ make_repo() {
     )
 }
 
-@test "prints all five sections in a repo with no docs" {
+@test "prints all seven sections in a repo with no docs" {
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     for h in "## 1. Activity" "## 2. Revisit triggers" "## 3. Watched questions" \
-             "## 4. Spot-check sample" "## 5. Roadmap"; do
+             "## 4. Spot-check sample" "## 5. Roadmap" "## 6. Merges with code but no docs" \
+             "## 7. Inputs for steps 4b and 5"; do
         [[ "$output" == *"$h"* ]] || { echo "missing: $h"; echo "$output"; return 1; }
     done
     [[ "$output" == *"3 merge(s)"* ]]
@@ -233,4 +234,30 @@ EOF
     [ "$status" -eq 1 ]
     run --separate-stderr bash "$DC" --bogus
     [ "$status" -eq 1 ]
+}
+
+@test "flags a merge that changed code with no doc change, not one that did both" {
+    git checkout -q -b code && echo x > tool.sh && git add tool.sh && git commit -q -m code
+    git checkout -q main && git merge -q --no-ff code -m "merge: code only"
+    git checkout -q -b both && echo y >> tool.sh && mkdir -p docs && echo d > docs/tool.md
+    git add -A && git commit -q -m both && git checkout -q main && git merge -q --no-ff both -m "merge: code and docs"
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 6/,/## 7/p')
+    [[ "$section" == *"merge: code only (1 file(s), no doc change)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" != *"code and docs"* && "$section" != *"feature 1"* ]] || { echo "$section"; return 1; }
+}
+
+@test "prints the step 4b and step 5 inputs" {
+    mkdir -p skills/demo docs/decisions docs/working
+    echo s > skills/demo/SKILL.md && echo r > docs/decisions/001-big.md
+    git add -A && git commit -q -m "skill and record"
+    printf '# Roadmap\n\n## Now\n- a\n\n## In flight\n- b\n- c\n\n## Next\n1. d\n' > docs/roadmap.md
+    printf '# Ideas\n- old\n\n## Brainstorm 2026-01-01\n- one\n- two\n' > docs/working/idea-log.md
+    DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
+    section=$(echo "$output" | sed -n '/## 7/,$p')
+    for t in "in the window: 1" "    - skills/demo/SKILL.md" "    - docs/decisions/001-big.md" \
+             "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
+             "Last brainstorm: 2026-01-01 (7 day(s) ago)" "Ideas seeded since: 2"; do
+        [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
+    done
 }

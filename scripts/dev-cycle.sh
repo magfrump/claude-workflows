@@ -176,3 +176,66 @@ if [[ -f docs/roadmap.md ]]; then
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
+
+printf '\n%s\n\n' "## 6. Merges with code but no docs"
+# A merge whose diff against its first parent touches files but no docs/ path,
+# *.md or README is a step 4 finding to check (rule: undocumented is broken).
+flagged=0
+while read -r _ full _; do
+  [[ -n "$full" ]] || continue
+  counts="$(git diff --name-only -z "$full^1" "$full" | awk -v RS='\0' 'NF { if ($0 ~ /^docs\// || $0 ~ /\.md$/ || $0 ~ /(^|\/)README/) d++; else c++ } END { print c + 0, d + 0 }')"
+  read -r n_code n_docs <<< "$counts"
+  if [[ "$n_code" -gt 0 && "$n_docs" -eq 0 ]]; then
+    flagged=1
+    echo "- $(git log -1 --format='%h %ad %s' --date=short "$full") ($n_code file(s), no doc change)"
+  fi
+done <<< "$merges_full"
+[[ $flagged -eq 1 ]] || echo "None in the window."
+
+printf '\n%s\n\n' "## 7. Inputs for steps 4b and 5"
+# Base = the parent of the oldest first-parent commit in the window (the empty
+# tree when that commit is the root). Old-dated commits after it are included:
+# re-reading a file is cheap, missing one is not.
+oldest="$(git log "$MAIN_SHA" --first-parent --format='%cs %H' | awk -v s="$SINCE" '$1 >= s { h = $2 } END { print h }')"
+if [[ -z "$oldest" ]]; then
+  changed=""
+else
+  base="$(git rev-parse --verify --quiet "$oldest^1" || git hash-object -t tree /dev/null)"
+  changed="$(git diff --name-only -z "$base" "$MAIN_SHA" -- skills workflows docs/decisions | tr '\0\n' '\n ')"
+fi
+skills_changed="$(printf '%s\n' "$changed" | grep -E '^(skills/.*/SKILL\.md|workflows/[^/]*\.md)$' || true)"
+records_changed="$(printf '%s\n' "$changed" | grep -E '^docs/decisions/[0-9]{3}-[^/]*\.md$' || true)"
+echo "Step 4b (deep-audit triggers). The model version is not in git: compare it with the last cycle record's."
+for kind in skills records; do
+  if [[ $kind == skills ]]; then list="$skills_changed"; label="Skill or workflow files changed on \`$MAIN\` in the window"
+  else list="$records_changed"; label="Decision records added or changed on \`$MAIN\` in the window (is any a major design decision?)"; fi
+  n="$(printf '%s' "$list" | grep -c . || true)"
+  echo "- $label: $n"
+  [[ -z "$list" ]] || printf '%s\n' "$list" | sed -n '1,20s/^/    - /p'
+  [[ "$n" -le 20 ]] || echo "    - … $((n - 20)) more"
+done
+echo
+echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
+if [[ -f docs/roadmap.md ]]; then
+  for sec in Now "In flight" Next; do
+    n="$(awk -v h="## $sec" '$0 == h { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
+    echo "- Roadmap $sec: $n item(s)"
+  done
+else
+  echo "- Roadmap: none yet (0 items ready for 6b)"
+fi
+LOG=docs/working/idea-log.md
+if [[ -f "$LOG" ]]; then
+  # Step 5 heads each brainstorm "## Brainstorm YYYY-MM-DD"; ideas are "- " lines.
+  # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
+  last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
+  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- / { c++ } END { print c + 0 }' "$LOG")"
+  if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
+    echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
+  else
+    echo "- Last brainstorm: none recorded in $LOG"
+  fi
+  echo "- Ideas seeded since: $seeded"
+else
+  echo "- No $LOG: no ideas seeded, no brainstorm recorded"
+fi
