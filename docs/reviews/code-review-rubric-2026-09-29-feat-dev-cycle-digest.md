@@ -1,4 +1,4 @@
-Commit: c1d0a80 (digest) / fb643e2 (skill, feat/dev-cycle)
+Commit: cbfdf35 (digest) / 77e21af (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -645,4 +645,20 @@ Scope: `ba39470..c1d0a80`, `36ca12c..fb643e2`, partial: the pass-23 fix round. F
 | A4 | Done was a prose self-report, and every brief's acceptance text contained `Status: done` | 🟡 Medium | security M2; api Inconsistent 1 | digest: `--check-brief` reads the exact status line on the default branch; skill uses it; acceptance text reworded |
 | A5 | `--check-fix` allowed instruction files, dot-directories, decision records and the settings file under docs/ | 🟡 Medium | security M3; api Minor 7 | digest |
 | C1 | Fence scope, open/closed naming, no done option, default-commit source, roadmap skip reason, glob newline, default-branch fallback, duplicate-skip wording, help, name uniqueness, non-zero exits | 🟢 | security L4, Info 5; api Inconsistent 2, Minor 4, 5, 6, 8, 9, Info 10, 11, 12; fact-check 3, 12a, 15, 16, 21; performance Info 1–3 | digest, skill |
+
+---
+
+## Pass 25 (review-fix loop, k=1, all critics; on cbfdf35 digest / 77e21af skill)
+
+**Status: 🔴 not clean — 2 Incorrect (ANSWERED matched anywhere; contradictory slot rules) and 2 Medium (the same ANSWERED gate; two instruction-file names), plus a health-check failure (hermeticity lint), all fixed in 10c2809 (digest) and the pass-25 skill commit.**
+
+Scope: `c1d0a80..cbfdf35`, `fb643e2..77e21af`, partial: the pass-24 fix round. Fact-check k=1 (33 claims: 23 V / 8 MA / 0 S / 2 I). Artifacts: `code-fact-check-report-digest-pass25.md`, `security-review-2026-10-02-digest-pass25.md`, `performance-review-2026-10-02-digest-pass25.md`, `api-consistency-review-2026-10-02-digest-pass25.md`. All four agree the real answer corpus changed in exactly the six expected entries, with no wrong keep, drop or done.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | The ANSWERED test matched the marker on any line, so an OPEN entry that quoted it was read | 🔴 Incorrect | fact-check 12a; security M1; api Inconsistent 1 | digest: header line only |
+| A2 | Three different slot rules for a brief `--check-brief` skips | 🔴 Incorrect | fact-check 22; api Inconsistent 2 | skill: one rule in the Rules |
+| A3 | `--check-fix` allowed CLAUDE.local.md / AGENTS.override.md | 🟡 Medium | security M2; api Minor 5 | digest |
+| A4 | Health check: the hermeticity lint read the inline basename alternation as a call to a network binary | 🟡 (gate) | health-check.sh | digest: the pattern in a quoted variable |
+| C1 | Fenced heading lines in an entry, fenced status lines in a brief, unrecorded answers silent, Done's commit, "new" meanings, idle squash-merged branches, name check within a cycle, current-branch fallback, comments | 🟢 | fact-check 6, 8, 9, 12b, 21, 25, 27, 30; security L3, L4, Info 5–7; api Inconsistent 3, Minor 4, 6, 7, 8, Info 9, 10; performance Low 3, Info 1, 2 | digest, skill |
 
