@@ -1,4 +1,4 @@
-Commit: 096042b (digest) / 374d559 (skill, feat/dev-cycle)
+Commit: f47de85 (digest) / cb2e5f9 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -464,3 +464,18 @@ Scope: `591f098..096042b`, `44d06b7..374d559`, partial. Fact-check k=1 (24 claim
 | A2 | Section 3's archive notice hid a missing questions.md / questions.sh and was not in the banner shape step 3 acts on; questions.md skipped left the archive unlisted | 🟡 | api F3, F6; fact-check 9 | f920f0d; cb2e5f9 (step 3 acts on the banner) |
 | A3 | Step 0 quoted the Window text loosely and could file a duplicate entry each cycle | 🟡 | api F2, F4 | cb2e5f9 |
 | C1 | Comments: what questions.sh does with the archive; "passed plaindir"; 096042b "one phrase" partly done; section 3 walks questions.md twice | 🟢 | fact-check 2, 7a, 20; security Info 2; performance Info | f920f0d, f47de85; the extra walk kept (1 ms, cold) |
+
+---
+
+## Pass 15 (review-fix loop, k=1, all critics; on f47de85 digest / cb2e5f9 skill)
+
+**Status: 🔴 not clean — 1 behavioral red in the skill; fixed in 09f6fe7 (digest) and 5423a33 (skill).**
+
+Scope: `096042b..f47de85`, `374d559..cb2e5f9`, partial. Fact-check k=1 (24 claims: 19 V / 3 MA / 2 I) and the three critics in parallel on pass 14's fact-check input. Artifacts: `code-fact-check-report-digest-pass15.md`, `security-review-2026-10-01-digest-pass15.md`, `performance-review-2026-10-01-digest-pass15.md`, `api-consistency-review-2026-10-01-digest-pass15.md`. The digest (A) had no finding above Informational: section 2 and section 3 were probed in 16 and 32 combinations and held.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| R1 | Stale-brief answers keyed on dates: an undated answer took today's date every cycle, so a "keep" re-applied forever and an old "drop" could close a new brief; cb2e5f9's message claimed otherwise | 🔴 behavioral (procedure) | fact-check 19b, 22; security F1 (Medium); api F1 | 5423a33: questions name the brief path; the brief's `Answered:` line holds applied IDs |
+| A1 | Two "nothing checked" states in section 3 printed no banner; a missing questions.sh read as a missing questions.md; a symlinked archive was unlisted when questions.md was absent or questions.sh missing | 🟡 | api F2, F3; security Info 2 | 09f6fe7: one ordered chain, archive checked up front, one banner with the cause |
+| A2 | Step 3's 14-day clock ambiguous (either date); steps 2–3 not limited to still-open briefs; "step 1" ambiguous | 🟡 | api F4; fact-check 17, 18, 20 | 5423a33 |
+| C1 | Banner styles differ; section 3 checks questions.md's path up to three times; test 10 adds a run | 🟢 | api F5; performance Info 1, 2 | 09f6fe7 (one banner style); the rest kept |
