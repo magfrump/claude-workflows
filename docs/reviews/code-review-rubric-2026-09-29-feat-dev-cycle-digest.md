@@ -1,4 +1,4 @@
-Commit: d5d9121 (digest) / fbc7101 (skill, feat/dev-cycle)
+Commit: bc98571 (digest) / 6c8ae91 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -593,4 +593,22 @@ Scope: `546b86e..d5d9121`, `46d3423..fbc7101`, partial: the pass-20 fix round. F
 | A4 | `local LC_ALL=C` printed a setlocale warning per argument and per match | 🟡 Low | performance Low; api Minor 2; security Info; fact-check 6 | digest: explicit character lists |
 | A5 | Answer parsing: bare words with trailing prose, `[1]` and `[2]` together, `**Answering**`, upper case | 🟢 | api Minor 3, Info 7 | skill |
 | C1 | Directory skip reason, `.` component in lists, cap hint, settings file, non-UTF-8 ignored name dropped by grep, plain directory read loop, test comments | 🟢 | api Minor 5, 6, Info 8; fact-check 5, 7b, 8, 15; performance Info 2 | digest, skill |
+
+---
+
+## Pass 22 (review-fix loop, k=1, all critics; on bc98571 digest / 6c8ae91 skill)
+
+**Status: 🔴 not clean — 1 Breaking (answer labels) and 3 Medium (fix scope, tag-shadowed branch, unchecked brief listing), all fixed in 2008343 / ba39470 (digest) and 6db3d8a / 36ca12c (skill).**
+
+Scope: `d5d9121..bc98571`, `fbc7101..6c8ae91`, partial: the pass-21 fix round. Fact-check k=1 (31 claims: 23 V / 8 MA / 0 I). Artifacts: `code-fact-check-report-digest-pass22.md`, `security-review-2026-10-02-digest-pass22.md`, `performance-review-2026-10-02-digest-pass22.md`, `api-consistency-review-2026-10-02-digest-pass22.md`.
+
+**Incident:** a fact-check probe ran with its temp-dir variable unset and committed e28afaa "init" (965 previously untracked files, empty `.env*`, `.gitignore` overwritten, local identity `t@t`) on the shared checkout's main. Not pushed. Repaired with the user's approval: reset --mixed to bf54363, `.gitignore` restored, local identity unset, leftovers removed. Later briefs require each probe to create and enter its own temp dir in the same script and abort otherwise.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | The literal `**Answer:**` label missed every answer since 2026-09-28 (`**Answer (<date>):**`); "both [1] and [2]" read the recorder's notes | 🔴 Breaking | api Breaking 1, Minor 2; fact-check 22a, 22b | digest: `--check-answer` (the rule in code, tested on the archive's real shapes); skill uses it |
+| A2 | In-cycle fixes used the read check, so a fix named in repo text could edit an egress list or a hook | 🟡 Medium | security M1; fact-check 18 | digest: `--check-fix` (existing docs/ files and README.md); skill |
+| A3 | `refs/heads/<name>` fell back to a tag of that name when the branch was absent (also the default-branch lookup) | 🟡 Medium | security M2 | digest: show-ref --verify hashes; skill gives git only the hash |
+| A4 | Briefs listed from the directory were read unchecked | 🟡 Medium | security M3 | skill: list through `--check-path` |
+| C1 | Q-ID shape, help text, usage wording, skipped-branch flow, HEAD as a branch, test title, this cycle's briefs in the count, in-repo script path, plain-path ignored filter | 🟢 | security L4; api Minor 3, 4, 5, Info 6, 7; fact-check 1a, 3, 4, 9, 19, 20, 24, 25; performance Info 1 | digest, skill |
 
