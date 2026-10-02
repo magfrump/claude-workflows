@@ -832,3 +832,13 @@ Scope: `git diff main...2fd9401 -- . ':!docs/reviews'` (13 files, ~2,500 lines).
 | A4 | `--check-fix` exclusions case-sensitive | 🟡 Low | security F3 | digest: compare lower-cased |
 | C1 | Help omitted the cycle's own files and dotfiles; "step 3"/"check 3"; author vs committer date; a symlinked brief's target text read; batch check calls; the roadmap's seed Now item (left for the first cycle) | 🟢 | api F1–F3; fact-check 20, 35; security F4; performance Info 3 | digest, skill |
 
+---
+
+## Pass 37 (k=1 delta on 6f3d55e digest / 2e65ad5 skill) — stopped at the user's request, 2026-10-02
+
+**Status: ⏸ paused, not clean.** The user asked for a stopping point mid-pass. API reported 2 Minor + 4 Informational, fixed in 5652d33f (transitive `@`-import walk from every instruction file, matched by resolved path; skip-reason wording; gitlink/tree briefs skipped). Fact-check, security and performance for pass 37 had not reported when the loop stopped; their reports, if they land, are untracked in `docs/reviews/` and unread. 5652d33f itself is unreviewed.
+
+**Recorded here because no new commit can fix it:** commits fa2b9b3 (this branch) and 2839cc4 (feat/dev-cycle) carry a stale, wrong message ("k=1 full-review artifacts on bc5dc76; 0 red, 1 amber") picked up from a reused scratch file after a hook blocked the write of the right one. Their contents are correct: the Full review 1 rubric section, and the four full-review reports.
+
+**To resume:** run pass 37 again as a k=1 delta over `6f3d55e..5652d33f` (digest) and `2fd9401..` the feat/dev-cycle head (skill), all four critics, with the brief `digest-pass37-brief` rules (probe rule, acceptance bar, decision log 69's accepted inline class). When a delta finds no known issue, run k=1 full review 2 over `git diff main...feat/dev-cycle -- . ':!docs/reviews'`, merge main in first if it has moved. If that is clean, merge feat/dev-cycle into main locally through a temp worktree. Nothing is pushed.
+

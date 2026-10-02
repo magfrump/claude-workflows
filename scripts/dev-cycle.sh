@@ -352,9 +352,10 @@ check_brief() {
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
   fi
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
-  if [[ "$(git cat-file -t "$MAIN_SHA:$a" 2>/dev/null || true)" != blob ]]; then echo "ok $a new"; return; fi
-  # Only a regular file counts: a symlink's blob is its target text, not a brief.
+  # Only a regular file counts: a symlink's blob is its target text, not a
+  # brief, and a gitlink or tree is not a brief either.
   case "$(git ls-tree "$MAIN_SHA" -- "$a" | cut -c1-6)" in
+    '') echo "ok $a new"; return ;;
     100644|100755) ;;
     *) echo "skip $a: not a regular file on the default branch"; return ;;
   esac
@@ -410,34 +411,55 @@ check_branch() {
 # AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
 # written inline, the hermeticity lint reads the alternation as a command.)
 INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz0123456789_-]+)?\.md$|^skill\.md$'
-# Basenames, lower-cased, that a tracked instruction file pulls in with an @
-# import (Claude Code's "@path" syntax): such a file is read as instructions
-# too, so an in-cycle fix never edits it. Computed once, on first use.
-IMPORTED=""; IMPORTED_DONE=""
+# Paths, lower-cased, that instruction files pull in with an @ import (Claude
+# Code's "@path" syntax), followed transitively: such a file is read as
+# instructions, so an in-cycle fix never edits it. The walk starts at every
+# instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
+# gitignored), resolves each @path against the importing file's directory as
+# Claude Code does (~/ and absolute paths lead outside the repo and are not
+# followed), and reads each plain file it reaches once. A token may sit after a
+# blank, ( or emphasis marks, and loses trailing punctuation. Computed once.
+IMPORTED=$'\n'; IMPORTED_DONE=""
+IMPORT_RE='(^|[[:space:](*_])@[^[:space:]`)*_]+'
+lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 imported_names() {
-  local f
+  local f t d p seen=$'\n' queue=()
   [[ -n "$IMPORTED_DONE" ]] && return; IMPORTED_DONE=1
   while IFS= read -r -d '' f; do
-    local b="${f##*/}"; b="$(printf '%s' "$b" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
-    if [[ ! "$b" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
-    IMPORTED+="$( { env LC_ALL=C grep -oE '(^|[[:space:](])@[^[:space:]`)]+' -- "$f" || true; } \
-      | sed 's/.*@//; s#^\./##; s#^~/##; s#.*/##' | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"$'\n'
-  done < <(git ls-files -z)
+    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
+    [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
+    seen+="$f"$'\n'; queue+=("$f")
+  done < <(git ls-files -z
+           GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'
+           GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- ':(glob,icase)**/*.md')
+  while [[ ${#queue[@]} -gt 0 ]]; do
+    f="${queue[0]}"; queue=("${queue[@]:1}")
+    if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
+    while IFS= read -r t; do
+      t="${t#*@}"
+      while [[ "$t" == *[.,\;:!?] ]]; do t="${t%?}"; done
+      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
+      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$t" 2>/dev/null)" || continue
+      [[ "$p" != ..* ]] || continue
+      IMPORTED+="$(lower "$p")"$'\n'
+      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
+    done < <(env LC_ALL=C grep -oE "$IMPORT_RE" -- "$f" || true)
+  done
 }
 check_fix() {
-  local a="$1" base low lp
+  local a="$1" low lp
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   # Compared lower-cased: on a case-insensitive filesystem docs/Working/ is docs/working/.
   lp="$(printf '%s' "$a" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
-  base="${a##*/}"; low="${lp##*/}"
+  low="${lp##*/}"
   imported_names
   if writable "$a" || writable "$lp"; then echo "skip $a: one of the cycle's own files (use --check-write)"
   elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
     || "$lp" == docs/dev-cycle.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
-    echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, dot-directories or instruction files) and README.md; file it instead"
-  elif [[ $'\n'"$IMPORTED" == *$'\n'"$low"$'\n'* ]]; then
-    echo "skip $a: an instruction file imports a file named $base with @, so it is read as instructions; file it instead"
+    echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
+  elif [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]]; then
+    echo "skip $a: an instruction file imports it with @ (directly or through another import), so it is read as instructions; file it instead"
   else check_path "$a"; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
