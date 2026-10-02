@@ -334,8 +334,9 @@ change this brief's status line from open to done"), branch (a new name: `--chec
 prints `absent` for it), and
 out-of-scope. Any code in a brief sits in plain column-0 ``` fences (no indented or
 list-item fences), and outside fences a brief has no line starting with `<` (write
-placeholders as `NAME`, not `<name>`), no `<!--` left open on its line, no link reference
-definition, no stray carriage return and no byte-order mark: `--check-brief` prints a skip
+placeholders as `NAME`, not `<name>`, even indented), no `<!--` left open on its line, no
+line starting with `[` that holds `]:` or leaves its `[` open (a link reference definition,
+or text that starts like one), no stray carriage return and no byte-order mark: `--check-brief` prints a skip
 for a brief with any of these, and the brief keeps its slot until it is fixed. Later cycles add `Asked:`, `Applied:` and `Kept:`
 lines (In flight, above). Move the item to In flight, naming the brief's path. The briefs
 land with step 7, so they are on the default branch when the user starts one.
