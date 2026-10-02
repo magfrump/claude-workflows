@@ -76,15 +76,20 @@ cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
 records, instruction files) is filed, not written. Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
-comes only from `--check-brief '<path>'`, which reads its `Status:` line on the default
-branch: `ok <path> open|done|dropped <commit>`, or `ok <path> new` when the default branch
-has no file there (not landed yet, or already moved to `closed/`). **A brief holds a slot**
-when the glob lists it or this cycle wrote it, unless `--check-brief` prints `done` or
-`dropped` for it; a brief the check skips keeps its slot (recorded) until the cause is
-fixed. A roadmap In flight path that `--check-path` skips (the brief moved, or never
-landed) is recorded and its line corrected: pointed at `briefs/closed/<same name>` if
-`--check-path` prints `ok` there, otherwise removed. A brief that holds a slot but that no
-In flight line names gets one, so In flight's checks reach it. A brief's branch is only ever named to
+comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
+which reads its `Status:` line on the default branch: `ok <path> open|done|dropped
+<commit>` (the commit is the default branch's own commit that last changed a `Status:`
+line there; for merged work, the merge), or `ok <path> new` when the default branch has no
+file there (not landed yet, or already moved). **A brief holds a slot** when the glob
+prints `ok` for it (its skip lines are only recorded) or this cycle wrote it, unless it is
+under `closed/` or `--check-brief` prints `done` or `dropped` for it; a brief the check
+skips keeps its slot (recorded) until the cause is fixed. A roadmap In flight path that
+`--check-path` skips (the brief moved, or never landed) is recorded and its line
+corrected: pointed at `docs/working/briefs/closed/<same name>` if `--check-path` prints
+`ok` there (In flight's check 1 then moves it to Done or Ideas by the state
+`--check-brief` prints), otherwise removed. A brief that holds a slot but whose path no In
+flight line names (compared as text with the glob's `ok` paths) gets one, so In flight's
+checks reach it. A brief's branch is only ever named to
 `--check-branch '<name>'`, which prints `ok <name> <commit> <n> <date>` (n: its commits
 beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; the cycle
 runs no git command with it. A
@@ -258,17 +263,19 @@ docs/working/questions.md.
 ```
 
 - **Now**: work ready to start or in progress by hand, each with its motive and first step.
-- **In flight**: items with an open build brief, each naming its brief path. Every cycle checks each, in
+- **In flight**: items whose brief holds a slot (as in the Rules), plus any line being
+  resolved after its brief moved to `closed/`, each naming its brief path. Every cycle checks each, in
   this order:
   1. `--check-brief` prints `done` (the build session sets the status line in the change
-     it merges; see Build briefs) → Done, naming the commit it prints (the last commit on
-     the default branch that changed the brief's Status line). It prints `dropped` (set on the
+     it merges; see Build briefs) → Done, naming the commit it prints (for merged work, the
+     merge that brought the status in). It prints `dropped` (set on the
      default branch, by the user or a merged change; the record names its commit), or
      keep-or-drop below says drop → Ideas, with the reason, and the
      brief's status line becomes `Status: dropped`. Keep-or-drop says done → Done, with the
      status line set to `Status: done` and the user's answer as the source. Either way,
      create `docs/working/briefs/closed/` if it is missing, `git mv` the brief there (same
-     file name; the destination passes `--check-write`) and point the roadmap line there.
+     file name; the destination passes `--check-write`; a brief already under `closed/`
+     stays) and point the roadmap line there.
      Done never depends on the branch, so a squash, a rebase or a deleted branch does not
      matter.
   2. If the brief is still open, apply answers to its keep-or-drop questions: the IDs on its
@@ -296,7 +303,8 @@ docs/working/questions.md.
      holds its slot. "Shows no work": `--check-branch` prints `absent`, skips the name
      (recorded), prints a count of 0, or prints a tip date more than 14 days before today
      (an idle branch, including a squash-merged one whose status line was not set). A tip
-     date after today is recorded and counts as idle (the committer sets the date).
+     date more than a day after today is recorded and counts as idle (the committer sets
+     the date; a day covers time zones ahead of the cycle's).
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
@@ -354,7 +362,8 @@ questions changes, then land `chore/dev-cycle-<date>` on the default branch thro
 the next digest runs on it, and the briefs must be there before work on them starts.
 
 Then send the final message: list the new `you: judgment` entries by ID and name, any
-keep-or-drop answer step 6 could not read or that is still `open` (with its brief), and each
+keep-or-drop answer step 6 could not read, read as `unrecognized`, or found still `open`
+(each with its brief), and each
 brief holding a slot by path, so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
 written from repo text: the user reads it before starting it.
