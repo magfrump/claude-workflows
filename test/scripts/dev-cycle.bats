@@ -143,9 +143,9 @@ make_repo() {
     [ "$status" -eq 0 ]
     [[ "$output" != *SECRET* ]] || { echo "$output"; return 1; }
     # Each is reported as skipped, not as absent.
-    [[ "$output" == *"docs/roadmap.md is not a plain file"*"NOT read"* ]] || { echo "$output"; return 1; }
-    [[ "$output" == *"docs/working/questions.md is not a plain file"*"NOT read"* ]]
-    [[ "$output" == *"no readable cycle record (one or more were skipped"* ]]
+    [[ "$output" == *"docs/roadmap.md is not read: docs/roadmap.md is not a plain file or directory"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"docs/working/questions.md is not read: docs/working/questions.md is not"* ]]
+    [[ "$output" == *"no readable cycle record (records or their directory were skipped"* ]]
     [[ "$output" == *"No revisit triggers read: decision records or the log were skipped"* ]]
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     for f in docs/decisions/002-link.md docs/decisions/003-git.md docs/decisions/log.md docs/roadmap.md \
@@ -177,6 +177,15 @@ make_repo() {
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     [[ "$skipped" == *"- docs/decisions/002-a - FORGED.md"* ]] || { echo "$skipped"; return 1; }
     [[ "$skipped" != *$'\n'"- - FORGED"* ]]
+    # docs/working itself a symlink: only it is listed (nothing below it is
+    # probed), the window says records were skipped, and notes name it.
+    mkdir -p "$BATS_TEST_TMPDIR/outside/work/cycles"
+    rm -rf docs/working && ln -s "$BATS_TEST_TMPDIR/outside/work" docs/working
+    run --separate-stderr bash "$DC"
+    skipped=$(echo "$output" | sed -n '/## 8/,$p')
+    [[ "$skipped" == *"- docs/working/"* && "$skipped" != *"docs/working/cycles"* && "$skipped" != *"questions.md"* ]] || { echo "$skipped"; return 1; }
+    [[ "$output" == *"no readable cycle record (records or their directory were skipped"* ]] || { echo "$output" | sed -n 3p; return 1; }
+    [[ "$output" == *"docs/working/questions.md is not read: docs/working/ is not a plain file or directory"* ]] || { echo "$output"; return 1; }
 }
 
 @test "the exit status and the whole digest survive a redirect to a file" {
@@ -200,7 +209,7 @@ make_repo() {
     touch docs/working/cycles/cycle-2026-01-01.md "$BATS_TEST_TMPDIR/c.md"
     ln -s "$BATS_TEST_TMPDIR/c.md" docs/working/cycles/cycle-2026-02-20.md
     DEV_CYCLE_TODAY=2026-03-01 run --separate-stderr bash "$DC"
-    [[ "$output" == *"Window: since 2026-01-01 (from the last cycle record"*"a newer record, cycle-2026-02-20.md, was skipped"* ]] || { echo "$output" | sed -n 3p; return 1; }
+    [[ "$output" == *"Window: since 2026-01-01 (from the last cycle record"*"a newer record, docs/working/cycles/cycle-2026-02-20.md, was skipped"* ]] || { echo "$output" | sed -n 3p; return 1; }
 }
 
 @test "the window defaults to the newest cycle record's date and says so" {
