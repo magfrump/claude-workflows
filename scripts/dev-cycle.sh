@@ -151,7 +151,7 @@ TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
 # The path rule for repo text (commit messages, plans, settings rows, roadmap
 # brief paths), so the skill runs it instead of re-deriving it in prose:
 #  - form: only letters, digits, . _ - / (and * ? in a glob), not starting with
-#    / or -, no empty or .. component, no component starting .git (any case);
+#    / or -, no empty, . or .. component, no component starting .git (any case);
 #  - scope (reads): a tracked file, or a gitignored file under docs/working/ (the
 #    cycle's own working files); never any other untracked or ignored file;
 #  - plain: a regular file reached without any symlink (inrepo).
@@ -175,13 +175,14 @@ matches() {  # $1 pathspec, $2 the argument; NUL-separated tracked files, then i
   local fixed="${2%%[*?]*}"
   if [[ "$2" == *[*?]* ]]; then GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1"
   else  # a plain path names one file: drop a directory's contents here, not one by one
-    GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1" | { grep -zxF -- "$2" || true; }
+    GIT_LITERAL_PATHSPECS=0 git ls-files -z -- "$1" | { env LC_ALL=C grep -zxF -- "$2" || true; }
   fi
   # Ignored files count only under docs/working/; skip the query when the
   # argument's fixed prefix cannot lead there (it lists every ignored match).
   if [[ "$fixed" == docs/working/* || docs/working/ == "$fixed"* ]]; then
     GIT_LITERAL_PATHSPECS=0 git ls-files -z --others --ignored --exclude-standard -- "$1" \
-      | { grep -z '^docs/working/' || true; }
+      | { env LC_ALL=C grep -z '^docs/working/' || true; }  # C (set through env, which bash does not apply
+      # to its own locale): a name that is not UTF-8 still passes, to be skipped below
   fi
 }
 check_path() {
@@ -200,7 +201,8 @@ check_path() {
   if [[ "$a" != *[*?]* ]] && dirok "$a"; then echo "skip $a: a directory, not a file"
   else echo "skip $a: no tracked file (or ignored file under docs/working/) matches"; fi
 }
-# The only files the cycle writes; anything else named in repo text (a roadmap
+# The cycle's own bookkeeping files (in-cycle fixes to other files go through
+# --check-path instead); anything else named in repo text (a roadmap
 # line pointing at an instruction file, say) is refused, so it is never treated
 # as a brief and written to.
 DIGIT='[0123456789]'
@@ -213,7 +215,7 @@ check_write() {  # $1 path, $2 "brief" to allow only a build brief
   local a="$1"
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"
   elif [[ "${2:-}" == brief ]] && ! isbrief "$a"; then echo "skip $a: not a build brief (docs/working/briefs/YYYY-MM-DD-<slug>.md)"
-  elif ! writable "$a"; then echo "skip $a: not one of the files the dev cycle writes"
+  elif ! writable "$a"; then echo "skip $a: not one of the dev cycle's own files"
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }

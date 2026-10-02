@@ -495,8 +495,8 @@ EOF
     [[ "$output" != *"ok docs/working/round-2.md"* && "$output" != *"ok .env"* ]]
     run --separate-stderr bash "$DC" --check-path
     [ "$status" -eq 1 ]
-    # A symlinked parent directory, ** across directories, a case variant, a
-    # glob over too many files.
+    # A symlinked parent directory (git tracks the link itself and lists nothing
+    # through it), ** across directories, a case variant, a glob over too many files.
     mkdir -p "$BATS_TEST_TMPDIR/outside/d" && echo x > "$BATS_TEST_TMPDIR/outside/d/f.md"
     ln -s "$BATS_TEST_TMPDIR/outside/d" docs/working/linkdir
     for i in $(seq 1 55); do echo "$i" > "docs/decisions/m$i.md"; done
@@ -504,6 +504,7 @@ EOF
     run --separate-stderr bash "$DC" --check-path 'docs/working/linkdir/f.md' 'docs/**' '.Git/x' 'docs/decisions/*.md'
     [[ "$output" == *"skip docs/working/linkdir/f.md: no tracked file"* || "$output" == *"skip docs/working/linkdir/f.md: reached through a symlink"* ]] || { echo "$output"; return 1; }
     [[ "$output" != *"ok docs/working/linkdir"* ]]
+    [[ "$output" == *"ok docs/decisions/001-x.md"* && "$output" == *"skip docs/**: matches more than 50"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"skip .Git/x: not an allowed path form"* ]]
     [[ "$output" == *"skip docs/decisions/*.md: matches more than 50 files"* ]] || { echo "$output" | tail -3; return 1; }
 }
@@ -518,7 +519,7 @@ EOF
     [ "$status" -eq 0 ]
     for want in "ok docs/working/cycles/cycle-2026-01-01.md" "skip docs/working/briefs/2026-01-01-x.md: reached through a symlink" \
                 "skip docs/roadmap.md: reached through a symlink" "skip ../out: not an allowed path form" \
-                "skip AGENTS.md: not one of the files the dev cycle writes" "skip scripts/x.sh: not one of" \
+                "skip AGENTS.md: not one of the dev cycle's own files" "skip scripts/x.sh: not one of" \
                 "skip .env: not one of" "ok docs/working/idea-log.md" "skip docs/working/briefs/x.md: not one of"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
@@ -556,4 +557,13 @@ EOF
     # At most bash's own start-up warnings (one per bash process), none per match.
     # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
     [ "$(grep -c . <<<"$stderr")" -le 2 ] || { echo "$stderr"; return 1; }
+}
+
+@test "--check-path reports an ignored docs/working name that is not UTF-8" {
+    mkdir -p docs/working && echo 'docs/working/r*' > .gitignore
+    git add -A && git commit -qm ignore
+    echo x > "docs/working/r$(printf '\xff').md"
+    run --separate-stderr env LC_ALL=C.UTF-8 bash "$DC" --check-path 'docs/working/*'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "skip docs/working/r"*".md: not an allowed path form" ]] || { echo "$output"; return 1; }
 }
