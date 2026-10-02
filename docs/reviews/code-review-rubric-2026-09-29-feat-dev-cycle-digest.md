@@ -1,4 +1,4 @@
-Commit: bc98571 (digest) / 6c8ae91 (skill, feat/dev-cycle)
+Commit: ba39470 (digest) / 36ca12c (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -611,4 +611,21 @@ Scope: `d5d9121..bc98571`, `fbc7101..6c8ae91`, partial: the pass-21 fix round. F
 | A3 | `refs/heads/<name>` fell back to a tag of that name when the branch was absent (also the default-branch lookup) | 🟡 Medium | security M2 | digest: show-ref --verify hashes; skill gives git only the hash |
 | A4 | Briefs listed from the directory were read unchecked | 🟡 Medium | security M3 | skill: list through `--check-path` |
 | C1 | Q-ID shape, help text, usage wording, skipped-branch flow, HEAD as a branch, test title, this cycle's briefs in the count, in-repo script path, plain-path ignored filter | 🟢 | security L4; api Minor 3, 4, 5, Info 6, 7; fact-check 1a, 3, 4, 9, 19, 20, 24, 25; performance Info 1 | digest, skill |
+
+---
+
+## Pass 23 (review-fix loop, k=1, all critics; on ba39470 digest / 36ca12c skill)
+
+**Status: 🔴 not clean — 3 Incorrect (blocked questions file, ancestry-as-Done, notes flip answers) and 2 Medium (fix scope, 50-brief listing), all fixed in c1d0a80 (digest) and fb643e2 (skill).**
+
+Scope: `bc98571..ba39470`, `6c8ae91..36ca12c`, partial: the pass-22 fix round. Fact-check k=1 (38 claims: 26 V / 8 MA / 1 S / 3 I). Artifacts: `code-fact-check-report-digest-pass23.md`, `security-review-2026-10-02-digest-pass23.md`, `performance-review-2026-10-02-digest-pass23.md`, `api-consistency-review-2026-10-02-digest-pass23.md`. Every probe followed the hard probe rule; /workspace was untouched.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | "Branch is an ancestor of the default branch → Done" closed unstarted branches as Done and never reached Done for merged-then-deleted ones | 🔴 Incorrect | fact-check 21; api Inconsistent 1, 2, Info 8; security L5 | skill: Done is the brief's own `Status: done`, set by the build session in its merge; branches must be new when written |
+| A2 | A recorder's note after a label-only bold or `Q-NNN:` could flip the answer | 🔴 Incorrect | fact-check 30a; security L3 | digest: the leading token decides |
+| A3 | A questions.md that is not plain read as "no such entry", and the answer was used up | 🔴 Incorrect | fact-check 14; security L4; api Minor 7 | digest: skip with the cause; skill: skips stay off `Applied:` |
+| A4 | `--check-fix` allowed code, the user's own files and ignored scratch under docs/ | 🟡 Medium | security M1; api Minor 4; fact-check 12, 16 | digest: tracked .md outside working/, human-author/, reviews/ |
+| A5 | The one brief glob dropped the open (newest) briefs after 50 | 🟡 Medium | performance Medium 1; fact-check 17; security Info | digest + skill: closed briefs move to briefs/closed/ |
+| C1 | Mid-line answer labels, fences, duplicate headings, CR, time colons; `absent` in the hash slot; default branch as a brief branch; help and comments; skipped-branch slot; brief count; test gaps | 🟢 | api Inconsistent 3, Minor 5, 6, 7, Info 9; security L2, Info 1; fact-check 4, 10, 13c, 13e, 22, 24 | digest, skill |
 
