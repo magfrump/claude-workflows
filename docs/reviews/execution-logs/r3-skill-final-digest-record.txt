@@ -1,0 +1,73 @@
+cmd: DEV_CYCLE_TODAY=2026-09-29 bash scripts/dev-cycle.sh --sample=1 (with cycle-2026-09-28.md, Main at HEAD~3) ; cwd: /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3sf/repo ; date: 2026-09-29T03:03:59-07:00
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-28 (from the last cycle record, docs/working/cycles/cycle-2026-09-28.md). Merges: `feat/dev-cycle` at e438cd1. Triggers: the working tree, compared with `feat/dev-cycle` at the window start. Questions, roadmap: the working tree.
+Main at: e438cd182cf9ce161858afa23aee668ff3e5cfcd (copy this line into the cycle record; the next digest compares triggers against it)
+
+## 1. Activity
+
+12 merge(s) on `feat/dev-cycle`'s first-parent line; 130 commit(s) reachable from it, merged branches included.
+
+```
+c8ef1b0 2026-09-29 Merge branch 'feat/dev-cycle-digest' into feat/dev-cycle
+25389f0 2026-09-29 Merge branch 'main' into feat/dev-cycle
+ec297d4 2026-09-28 merge: auto-approve hook approves only safe command shapes (decision log 64)
+7bf3b58 2026-09-28 merge: Q-094 exit scan accepts git's standard worktree layout (units A+B)
+f987ed6 2026-09-28 merge: Q-093 cc-push accepts a self-referencing commondir
+c7a6251 2026-09-28 Merge Q-087: k=3 fact-check on the loop's final confirming pass (review/q087)
+6a370cb 2026-09-28 Merge Q-085: ~400-line review-unit size gate (review/q085)
+d943e33 2026-09-28 Merge Q-065: delete the uncalled rejected-history helper (review/q065)
+9e5477a 2026-09-28 Merge Q-086: GNU parallel in the image (review/q086)
+2c32226 2026-09-28 Merge U3: review loops split early, re-review by range, gate on a quiet machine
+0ee9704 2026-09-28 Merge U1: run-tests.sh pins a broken locale, runs named FILEs, re-runs --failed
+f493516 2026-09-28 Merge U4: bound the code-review first-red short-circuit; loop-pass default range
+```
+
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-28, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-28.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+- log row 62 (2026-09-28): > Revisit if stacking overhead dominates small features, or if units under the cap still balloon during review. 
+- log row 63 (2026-09-28): > Revisit, lowering this pass's k, if final-pass replicate agreement on untouched code stays ≥90% over ≥20 claims (the state doc §1.1 k-reduction falsifier behind log row 27, `docs/thoughts/code-review-evaluation-state.md`, applied to this pass). 
+- log row 65 (2026-09-28): > Revisit if Claude Code's import grammar widens, or a false alarm forces rewording a guarded file more than once. The sections AGENTS.md shares with the global instructions (Context Packing, Shared Thoughts, General Principles) stay, since other agents read AGENTS.md without the global file. 
+- log row 66 (2026-09-29): > Revisit if, over the first three dev cycles after install, multi-file merges still land without the RPI research/plan docs or pr-prep review artifacts they should carry (an artifact count, not the usage log), which would mean selection, not discovery, is the bottleneck. 
+- log row 67 (2026-09-29): > Revisit if three cycles in a row file nothing (the cycle is ceremony), or if the gap between cycles passes a month twice (then add a `/loop` or `/schedule` trigger). 
+
+Carried forward (16): 014-secure-tool-guidance-layers.md 015-cc-process-isolation-docker-devcontainer.md 016-multi-project-devcontainer-central-config.md 017-polyglot-test-hermeticity.md 021-reviewer-context-management.md 028-escalation-second-channel.md 030-lightweight-review-path.md 031-review-loop-tier-and-factcheck-policy.md 035-install-sh-gating.md 036-cc-isolated-repo-split.md 037-bare-host-copy-install.md log row 35 log row 53 log row 57 log row 58 log row 60
+
+## 3. Watched questions (trigger and deferred routes)
+
+- Q-067  deferred        regenerate-skill-eval-reports
+- Q-098  deferred        global-allowlist-after-sandbox
+- Q-074  trigger         failure-pattern-writer-trigger
+- Q-090  trigger         run-tests-jobs
+
+Open by route: agent=7, deferred=2, trigger=2, you: judgment=2, you: terminal=1
+
+## 4. Spot-check sample
+
+- 2c32226 2026-09-28 Merge U3: review loops split early, re-review by range, gate on a quiet machine
+
+## 5. Roadmap
+
+docs/roadmap.md last committed on this branch: 2026-09-29. Its Next section:
+
+> 1. **Q-075 — evidence that the self-improvement loop is safe to resume.** Motive: Q-068
+>    was answered "resume" on condition of this evidence; the loop is the repo's idea
+>    generator and has been dormant since. First step: list every path, config, hook,
+>    credential and git ref `scripts/self-improvement.sh` can write outside its working docs.
+> 2. **Q-088 — spike `sandbox.enableWeakerNestedSandbox` in cc-isolated.** Motive: Q-098
+>    (a global allow list) waits on a Bash sandbox. First step: the spike's own success
+>    criterion in Q-088.
+> 3. **Q-089 — host-tool trust category.** Motive: `cc-push.sh` and the exit scan are
+>    gated by a `Live-verified:` trailer they can never satisfy, since they run only on the
+>    host (Q-083 [1]). First step: the trust-manifest section.
+> 4. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
+>    of the first three cycles after install, count multi-file merges that carry RPI
+>    research/plan docs and pr-prep review artifacts (an artifact count, not the usage log,
+>    which under-counts, Q-017).
+> 5. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+>    code and prompts settle; it validates code-review lever #3. First step: confirm
+>    settlement (no open code-review SKILL changes), then re-run one canon cell.
+exit=0

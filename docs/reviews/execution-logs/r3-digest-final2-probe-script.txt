@@ -1,0 +1,46 @@
+set -u
+DC=/workspace/.claude/wt-digest/scripts/dev-cycle.sh
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@x GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@x
+B=$PWD
+Y=$(date -d yesterday +%F)
+echo "=== P1 fast-forward merge of a branch commit dated before the window"
+rm -rf p1; mkdir p1; cd p1; git init -q -b main; git commit -q --allow-empty -m init
+mkdir -p docs/decisions docs/working/cycles
+git checkout -q -b ff; printf '# 005\n\n## Revisit triggers\nif ff thing.\n' > docs/decisions/005-ff.md
+git add -A; GIT_COMMITTER_DATE=2020-01-03T12:00:00 git commit -q --date=2020-01-03T12:00:00 -m ff
+git checkout -q main; git merge -q --ff-only ff
+touch docs/working/cycles/cycle-$Y.md
+timeout 30 bash $DC | sed -n '/## 2/,/## 3/p'; echo "exit ${PIPESTATUS[0]}"
+cd $B
+echo "=== P2 does a run modify .git/index?"
+rm -rf p2; mkdir p2; cd p2; git init -q -b main; mkdir -p docs/decisions; printf '# 001\n\n## Revisit triggers\nif x.\n' > docs/decisions/001-a.md; git add -A; git commit -q -m a
+touch -d '2020-01-01' docs/decisions/001-a.md
+s1=$(stat -c '%Y %s' .git/index; sha256sum .git/index)
+sleep 1; timeout 30 bash $DC >/dev/null; echo "exit $?"
+s2=$(stat -c '%Y %s' .git/index; sha256sum .git/index)
+[ "$s1" = "$s2" ] && echo "index unchanged" || { echo "index CHANGED"; echo "$s1"; echo "$s2"; }
+cd $B
+echo "=== P3 exit status when a step fails (unreadable roadmap)"
+rm -rf p3; mkdir p3; cd p3; git init -q -b main; git commit -q --allow-empty -m a; mkdir docs; echo '## Next' > docs/roadmap.md; chmod 000 docs/roadmap.md
+timeout 30 bash $DC >out.txt 2>err.txt; echo "exit $?"; tail -3 out.txt; cat err.txt; chmod 644 docs/roadmap.md
+cd $B
+echo "=== P4 --help"
+timeout 10 bash $DC --help; echo "exit $?"
+echo "=== P5 malformed cycle-record name, no --since given"
+rm -rf p5; mkdir p5; cd p5; git init -q -b main; git commit -q --allow-empty -m a; mkdir -p docs/working/cycles; touch docs/working/cycles/cycle-2026-13-45.md
+timeout 10 bash $DC; echo "exit $?"
+cd $B
+echo "=== P6 missing --since argument exit code"
+cd p5; timeout 10 bash $DC --since; echo "exit $?"; cd $B
+echo "=== P7 SIGPIPE: sed vs head under pipefail"
+bash -c 'set -o pipefail; x=$(seq 1 300000); printf "%s\n" "$x" | sed -n "1,30p" >/dev/null; echo sed=$?; printf "%s\n" "$x" | head -30 >/dev/null; echo head=$?'
+echo "=== P8 uncommitted record label"
+rm -rf p8; mkdir p8; cd p8; git init -q -b main; git commit -q --allow-empty -m a; mkdir -p docs/decisions; printf '# 001\n\n## Revisit triggers\nif x.\n' > docs/decisions/001-a.md
+timeout 10 bash $DC | grep '###'; cd $B
+echo "=== P9 control chars in merge subject"
+rm -rf p9; mkdir p9; cd p9; git init -q -b main; git commit -q --allow-empty -m a; git checkout -q -b b; git commit -q --allow-empty -m b; git checkout -q main; git merge -q --no-ff b -m "$(printf 'merge: \033[31mred\033[0m\ttab')"
+timeout 10 bash $DC | sed -n '/```/,/```/p' | od -c | head; cd $B
+echo "=== P10 DEV_CYCLE_TODAY pins default window"
+cd p9; DEV_CYCLE_TODAY=2026-01-20 timeout 10 bash $DC | grep Window; cd $B
+echo "=== P11 --sample=0"
+cd p9; timeout 10 bash $DC --sample=0 | sed -n '/## 4/,/## 5/p'; cd $B

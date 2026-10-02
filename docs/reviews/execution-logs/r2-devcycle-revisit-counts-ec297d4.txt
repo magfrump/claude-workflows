@@ -1,0 +1,15 @@
+2026-09-29T02:02:16-07:00
+docs/decisions/014-secure-tool-guidance-layers.md
+docs/decisions/015-cc-process-isolation-docker-devcontainer.md
+docs/decisions/016-multi-project-devcontainer-central-config.md
+docs/decisions/017-polyglot-test-hermeticity.md
+docs/decisions/021-reviewer-context-management.md
+docs/decisions/028-escalation-second-channel.md
+docs/decisions/030-lightweight-review-path.md
+docs/decisions/031-review-loop-tier-and-factcheck-policy.md
+docs/decisions/035-install-sh-gating.md
+docs/decisions/036-cc-isolated-repo-split.md
+docs/decisions/037-bare-host-copy-install.md
+records=11
+log rows grep 'Revisit' (case-sensitive): 6
+log rows grep -i revisit: 7

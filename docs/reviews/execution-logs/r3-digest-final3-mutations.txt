@@ -1,0 +1,41 @@
+2026-09-30T14:08:08-07:00
+cwd=/tmp/tmp.3RDLuPmtbT; per mutation: copy scripts/, apply sed mutation to dev-cycle.sh, run bats test/scripts/dev-cycle.bats
+--- M1 ignore Main at (always date fallback)
+108c108
+< base="$(sed -n 's/^Main at: \([0-9a-f]\{7,40\}\).*/\1/p' "docs/working/cycles/cycle-$last_record.md" 2>/dev/null | head -1 || true)"
+---
+> base=""
+not ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+#   `[[ "$output" == *"$t"* ]] || { echo "not printed in full: $t"; return 1; }' failed
+# not printed in full: if new thing.
+bats exit=0
+--- M2 drop output control filter
+42c42
+< exec > >(LC_ALL=C tr -d '\000-\010\013-\037\177')
+---
+> :
+not ok 2 lists a decision record's revisit triggers and a log row's whole revisit clause
+#   `[[ "$output" != *"not a trigger"* && "$output" != *$'\033'* ]]' failed
+bats exit=0
+--- M3 whole-file comparison instead of trigger section
+116c116
+<   if [[ $full -eq 1 || -z "$base" ]] || ! cmp -s <(git show "$base:$f" 2>/dev/null | trig) <(trig < "$f"); then
+---
+>   if [[ $full -eq 1 || -z "$base" ]] || ! cmp -s <(git show "$base:$f" 2>/dev/null ) "$f"; then
+not ok 3 after a cycle record, unchanged triggers carry forward and changed ones print
+#   `[[ "$output" != *"if old thing."* ]]' failed
+bats exit=0
+--- M4 drop GIT_LITERAL_PATHSPECS
+41c41
+< TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
+---
+> TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"
+bats exit=1
+--- M5 drop newline replacement in heading
+119c119
+<     echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
+---
+>     echo "### $f (last committed on this branch: ${d:-never, uncommitted})"
+bats exit=1
+
+NOTE: "bats exit=" above is the exit status of the grep that filters failures (zsh pipestatus inside a subshell): 0 = at least one failing test line found, 1 = no test failed.

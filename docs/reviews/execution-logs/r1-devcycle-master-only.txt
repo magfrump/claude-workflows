@@ -1,0 +1,13 @@
+2026-09-29T01:58:02-07:00
+cwd=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/t2 cmd: timeout 30 bash /workspace/.claude/wt-devcycle/scripts/dev-cycle.sh
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+fatal: Needed a single revision
+Window: since 2026-09-15, on `main` at .
+
+## 1. Activity
+fatal: ambiguous argument 'main': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+exit=128

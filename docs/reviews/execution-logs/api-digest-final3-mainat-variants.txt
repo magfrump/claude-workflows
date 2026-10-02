@@ -1,0 +1,94 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== verbatim: record line: [Main at: 854ebd1644fd9b0a8401b687e18ee1528e87bfe5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at c87c0b1. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: c87c0b14e23886250d6e94ed9cc1c46e8e5af6d2 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+Carried forward (2): 001-a.md 002-b.md
+=== fullline: record line: [Main at: 854ebd1644fd9b0a8401b687e18ee1528e87bfe5 (copy this line into the cycle record; the next digest compares triggers against it)]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 2bc255f. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 2bc255f24025aec966db64180c1a764f120c459f (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+Carried forward (2): 001-a.md 002-b.md
+=== bullet: record line: [- Main at: 854ebd1644fd9b0a8401b687e18ee1528e87bfe5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 7f00d86. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 7f00d86d3fb7c6acb5136b5c4094b70067653377 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== backtick: record line: [Main at: `854ebd1644fd9b0a8401b687e18ee1528e87bfe5`]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 5b94b10. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 5b94b104e400b523e06a3ed5e464143aca6b7de3 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== bold: record line: [**Main at:** 854ebd1644fd9b0a8401b687e18ee1528e87bfe5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 46c2c7f. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 46c2c7f9141455d165f6b56881b04093a20302ea (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== indent: record line: [  Main at: 854ebd1644fd9b0a8401b687e18ee1528e87bfe5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 1afbae2. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 1afbae2792ddcf80b0c9e79995026e9497e9851c (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== lower: record line: [main at: 854ebd1644fd9b0a8401b687e18ee1528e87bfe5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 6621eec. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 6621eeccf7cc4d301c9c6ee5f994e4a9e0e3c411 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== upper: record line: [Main at: 854EBD1644FD9B0A8401B687E18EE1528E87BFE5]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 62fecab. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 62fecab56f97d268962d22f1cb6148f7ea512157 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== short: record line: [Main at: 854ebd1]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 61e4327. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 61e4327559aab8858f69663a3796a1d5a7bdc8c2 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+Carried forward (2): 001-a.md 002-b.md
+=== notancestor: record line: [Main at: 0123456789abcdef0123456789abcdef01234567]
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 30882da. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 30882da3870a9b4b2c0baa19b97171325a5ca45a (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md
+=== none: record line: []
+Window: since 2026-09-25 (from the last cycle record, docs/working/cycles/cycle-2026-09-25.md). Merges: `main` at 5b8d3af. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 5b8d3afd14795a186e005c613a8ea2e91d0768c0 (copy this line into the cycle record; the next digest compares triggers against it)
+## 2. Revisit triggers
+Printed in full: triggers in decision records changed since 2026-09-25, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-25.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+### docs/decisions/002-b.md (last committed on this branch: 2026-09-25)
+> Revisit if y.
+Carried forward (1): 001-a.md

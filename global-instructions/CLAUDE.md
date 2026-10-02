@@ -29,6 +29,7 @@ Evaluate triggers top-to-bottom. Take the **first match**; if none match, defaul
 | 9 | **Work is ready to open a PR**, or keywords: "open PR", "ready for review", "package this up" | `pr-prep.md` | e.g., "This is ready, open a PR" · Includes the review-fix loop (code-review + self-eval → fix → retest → re-review until clean). The review-fix loop is a required sub-procedure, not optional. |
 | 10 | **Planning, running, or analyzing a usability test**, or keywords: "user test", "moderator script", "usability" | `user-testing-workflow.md` | e.g., "Write a moderator script for testing the onboarding flow" |
 | 11 | **High-throughput multi-branch development** with async review | `branch-strategy.md` | e.g., "I have 5 features to ship this week, let's parallelize" |
+| 12 | **Maintenance or planning pass over the repo**, or keywords: "run the dev cycle", "maintenance pass", "what should we work on next", "update the roadmap" | `dev-cycle` skill | e.g., "Run the dev cycle" · The outer loop over rows 6/9: health and cleanup, every revisit trigger, watched questions, claim spot-check, conditional deep-audit check and brainstorm, roadmap (`docs/roadmap.md`), then writes build briefs for its top items. User-started, no timer. Output is triage in `docs/working/questions.md`. |
 
 ### Debugging defaults
 

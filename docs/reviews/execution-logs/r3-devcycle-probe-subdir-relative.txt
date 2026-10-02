@@ -1,0 +1,1 @@
+../../scripts/dev-cycle.sh: line 38: cd: ../../scripts: No such file or directory

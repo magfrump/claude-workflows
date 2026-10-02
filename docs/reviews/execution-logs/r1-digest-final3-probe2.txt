@@ -1,0 +1,52 @@
+cmd: bash scratchpad/fc3/probe2.sh  cwd: throwaway mktemp -d repo  at: 2026-09-30T14:07:41-07:00
+/tmp/claude-1000/-workspace/21797f19-046e-4351-9c55-0471f4b3d3b6/scratchpad/fc3/probe2.sh: line 11: docs/decisions/005-a
+### docs/decisions/999-forged.md (last committed on this branch: 2026-01-01)
+> forged trigger.md: No such file or directory
+=== D1: carried list with newline file names (unchanged since base -> carried)
+## 2. Revisit triggers$
+$
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdic
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.$
+$
+Carried forward (3): 006-b$
+Carried forward (9): forged.md 007-empty.md 008-c1.md$
+$
+## 3. Watched questions (trigger and deferred routes)$
+=== D2: same names, full mode (--since) headings
+## 2. Revisit triggers$
+$
+An explicit --since was given, so every trigger is printed in full.$
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.$
+$
+### docs/decisions/006-b Carried forward (9): forged.md (last committed on this branch: 2026-09-30)$
+> if y.$
+$
+### docs/decisions/007-empty.md (last committed on this branch: 2026-09-30)$
+$
+### docs/decisions/008-c1.md (last committed on this branch: 2026-09-30)$
+> if c1 M-BM-^[31mred and [31mesc.$
+$
+## 3. Watched questions (trigger and deferred routes)$
+=== E: new uncommitted record with empty trigger section vs base
+Carried forward (4): 006-b$
+Carried forward (9): forged.md 007-empty.md 008-c1.md 009-new-empty.md$
+=== F: .git unchanged by a run (listing with full mtimes before/after)
+run exit 0
+.git listing identical
+=== G: mid-digest failing step (shuf shim exits 3) -> exit code and partial output
+exit 3
+
+No docs/working/questions.md (or questions.sh) in this repo.
+
+## 4. Spot-check sample
+=== H: stderr not filtered: git error with control chars in --since? use bad option after filter
+--since must be a real YYYY-MM-DD date$
+=== I: --since without value exit code
+exit 1
+=== J: output after parent exit? run 20 times capturing via pipe to wc -c
+     20 1286
+=== K: stdout to a file then immediate read (no pipe waits for tr)
+     20 1286
+after 1s:
+1286
+exit: 

@@ -1,0 +1,11 @@
+2026-09-29T02:02:16-07:00
+@./workflows/branch-strategy.md 25541
+@./workflows/codebase-onboarding.md 54996
+@./workflows/divergent-design.md 80340
+@./workflows/parallel-worktrees.md 7596
+@./workflows/pr-prep.md 44652
+@./workflows/research-plan-implement.md 68867
+@./workflows/spike.md 24471
+@./workflows/task-decomposition.md 21556
+@./workflows/user-testing-workflow.md 30395
+total 358414 chars/4 89603.5

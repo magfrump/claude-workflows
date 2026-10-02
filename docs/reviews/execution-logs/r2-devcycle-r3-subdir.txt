@@ -1,0 +1,18 @@
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-15, on `main` at 40caf6b.
+
+## 1. Activity
+
+5 merge(s), 12 commit(s) on `main` in the window.
+
+## 3. Watched questions (trigger and deferred routes)
+
+- Q-067  deferred        regenerate-skill-eval-reports
+- Q-098  deferred        global-allowlist-after-sandbox
+- Q-074  trigger         failure-pattern-writer-trigger
+- Q-090  trigger         run-tests-jobs
+
+Open by route: agent=7, deferred=2, trigger=2, you: terminal=1
+
+## 4. Spot-check sample

@@ -1,0 +1,74 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..33
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 stamp: a report generated from the current tree passes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 stamp: a missing stamp fails and says to regenerate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 stamp: editing any input after generation fails, naming the input
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 stamp: editing the shared runner-contract.bash does not stale a report (Q-071 [1])
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 stamp: a changed harness warns but does not fail; a comment-only edit is silent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 stamp: any stamp without the current format line reads as stale: stamp format
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 stamp: reports and every sidecar the suites read are tracked, not gitignored
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 stamp: another fixture's edit does not stale this report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 stamp: eval_fixture fails a stale report before grading it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 missing report: skips when the skill has no reports at all
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 missing report: fails when the skill has another fixture's report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 format_check: a nested suite that skipped every test fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 format_check: one test that ran is enough; a failing one fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 finding_match: tier and pattern in different findings fail (the tc-sec2 hole)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 finding_match: tier and pattern in the same finding pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 finding_match: a finding's own sub-headings belong to it; its parent section does not
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 finding_match: a summary-table row is a finding; only the Severity column counts
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 finding_match: eval_fixture dispatches it and ignores a quoted fixture line
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 finding_match: && needs every pattern in the same finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 claim_match: the verdict and the mechanism in the same claim section
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 cites_count: counts matching lines outside the fixture echo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 web_search_used: needs a Sources line naming a source, not the word Sources
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 cites_pattern: a line copied verbatim from the fixture does not count
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 cites_pattern: tree fixtures (directories) are echo-filtered too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 positive-check guard: an absence-only fixture fails unless allowlisted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 positive-check guard: an allowlisted fixture that gained a positive check fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 positive-check guard: which checks count as positive
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 positive-check guard: the allowlist is exactly the real absence-only fixtures
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 resolve_skill_report: no committed default; skips when the skill has no reports
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 resolve_skill_report: the default fixture's report, fresh, once the skill has reports
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 resolve_skill_report: fails on a missing, stale, failed or empty default report
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 resolve_skill_report: REPORT_PATH wins, and a missing REPORT_PATH fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 no format suite falls back to a committed report

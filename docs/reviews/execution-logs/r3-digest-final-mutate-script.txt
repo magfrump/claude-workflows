@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Mutation sweep: each mutant breaks the behaviour one test names; run that test only.
+set -u
+W=/workspace/.claude/wt-digest
+M=/tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/mut
+export LC_ALL=C
+mut() { # $1 test-number  $2 bats -f filter  $3 description  $4 perl expr
+  rm -rf "$M"; mkdir -p "$M/scripts" "$M/test/scripts"
+  cp "$W/scripts/dev-cycle.sh" "$W/scripts/questions.sh" "$M/scripts/"
+  cp "$W/test/scripts/dev-cycle.bats" "$M/test/scripts/"
+  perl -0pi -e "$4" "$M/scripts/dev-cycle.sh"
+  if cmp -s "$W/scripts/dev-cycle.sh" "$M/scripts/dev-cycle.sh"; then echo "T$1 MUTATION DID NOT APPLY: $3"; return; fi
+  out=$(timeout 120 bats -f "$2" "$M/test/scripts/dev-cycle.bats" 2>&1 | grep -v setlocale)
+  if grep -q '^not ok' <<< "$out"; then r=KILLED; elif grep -q '^ok' <<< "$out"; then r=SURVIVED; else r="NO-RUN"; fi
+  echo "T$1 $r — $3"
+}
+mut 1 'prints all five' 'section 5 heading renamed' 's/echo "## 5\. Roadmap"/echo "## 5 Roadmap"/'
+mut 2 'whole revisit clause' 'log clause truncated at 400 chars' 's/\[\^\|\]\*/[^|]{0,400}/g'
+mut 2 'whole revisit clause' 'decision-record awk does not stop at next heading' 's/on && \/\^## \/ \{ exit \} on && NF \{ print \}'"'"' "\$f"/on \&\& NF { print }'"'"' "\$f"/'
+mut 2 'whole revisit clause' 'lowercase match preferred over capitalised' "s/grep -oE 'Revisit\[\^\|\]\*'/grep -oiE 'revisit[^|]*'/"
+mut 3 'carry forward' 'carry-forward disabled (full=1 always)' 's/  full=0\n/  full=1\n/'
+mut 3 'carry forward' 'log-row date test inverted to strictly after' 's/! "\$d" < "\$SINCE"/"\$d" > "\$SINCE"/'
+mut 4 'newest cycle' 'oldest record chosen' 's/\[\[ "\$d" > "\$last_record" \]\] && last_record="\$d"/[[ -z "\$last_record" || "\$d" < "\$last_record" ]] \&\& last_record="\$d"/'
+mut 5 'counts from midnight' 'bare date passed to git' 's/SINCE_TS="\$SINCE 00:00:00"/SINCE_TS="\$SINCE"/'
+mut 6 'same ones on a rerun' 'seed random per run' 's/seed="\$\(printf .*?\)"\n/seed="\$RANDOM\$\$"\n/'
+mut 6 'same ones on a rerun' 'sample count ignored (always 1)' 's/shuf -n "\$SAMPLE"/shuf -n 1/'
+mut 7 'different days' 'seed constant' 's/seed="\$\(printf .*?\)"\n/seed="constant"\n/'
+mut 8 'subdirectory' 'SCRIPT_DIR resolved after cd' 's/(SCRIPT_DIR=.*?\n)(.*?cd "\$ROOT"\n)/$2$1/s'
+mut 9 'by route column' 'whole-line match for trigger/deferred' "s/awk -F'  \+' '\\\$2 == \"trigger\" \|\| \\\$2 == \"deferred\"'/grep -E 'trigger|deferred'/"
+mut 10 'questions.sh failure' 'failure swallowed' 's/if open_q="\$\(bash "\$QS" open 2>"\$qs_err"\)"; then/open_q="\$(bash "\$QS" open 2>"\$qs_err" || true)"; if true; then/'
+mut 11 'only branch is master' 'master dropped from candidates (fallback still present)' 's/candidates\+=\(main master\)/candidates+=(main)/'
+mut 11 'only branch is master' 'master dropped and current-branch fallback removed' 's/candidates\+=\(main master\)/candidates+=(main)/; s/if \[\[ -z "\$MAIN_SHA" \]\]; then\n  # A repo/if false; then\n  # A repo/'
+mut 12 'option-like branch' 'name (not hash) passed to git log, dash-skip removed' 's/  \[\[ "\$c" == -\* \]\] && continue\n//; s/git log "\$MAIN_SHA"/git log "\$MAIN"/'
+mut 12 'option-like branch' 'dash-skip removed only (hash still used)' 's/  \[\[ "\$c" == -\* \]\] && continue\n//'
+mut 13 'malformed --since' 'date regex check removed' 's/\[\[ "\$SINCE" =~ .*?exit 1; \}\n//'
+mut 13 'malformed --since' 'unknown option accepted' 's/\*\) echo "Unknown option: \$1" >&2; exit 1 ;;/*) shift ;;/'

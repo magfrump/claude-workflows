@@ -96,6 +96,9 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
 | [Q-094](#q-094--exit-scan-worktree-noise) | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
 | [Q-095](#q-095--allowlist-size-waiver) | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
+| [Q-099](#q-099--roadmap-vs-feature-ideas) | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
+| [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
+| [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
 <!-- index:end -->
 
 ## Answered
@@ -1768,6 +1771,70 @@ Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to 
 - **Interim:** the branch is committed and unmerged; nothing is installed.
 - **If the answer differs:** [2] re-cuts the one commit into stacked branches; [3] edits the list, then reviews.
 
+
+### Q-100 · dev-cycle-digest-review-cap
+**Needs:** you: judgment · **Opened:** 2026-09-29 · **Status:** ANSWERED
+
+**Answer (2026-09-30, answers-9-30-26.txt): [1].** A fourth full pass (k=3 fact-check, security, performance, api-consistency) is running on baa46e3. The digest merges if that pass is clean. Any Must Fix or Must Address finding goes back to you, because the cap is spent. `feat/dev-cycle` merges after the digest.
+
+**Result (2026-09-30):** the fourth pass was **not clean**: 3 Must Fix and 6 Must Address findings (rubric Final pass 3, commit 894e532 on feat/dev-cycle-digest). Nothing merged. Continued as Q-101.
+
+`feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full pass found behavioural Incorrects, fixed in baa46e3 but not re-reviewed by a full pass. Merge it, or run a fourth pass first?
+
+- **Why it's yours:** the hard cap forbids a fourth iteration without your written escalate/split/abandon decision; this entry is that escalation.
+- **Read:** `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md` (Final pass 2 table) · commit baa46e3's message
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fourth full pass, then merge** | k=3 fact-check + 3 critics on baa46e3; merge if clean | None; ~1.4M tokens (the last pass: six agents, ~220–260K each) | A little quota; delay until it finishes |
+| **[2] Merge now** | Rely on the fix's tests (each fails on the previous script) and the fix-drift check | None | An untested edge in the new window-start logic reaches the first real cycle; the script is read-only, so the cost is a wrong digest, not damage |
+| **[3] Abandon the script** | Keep the skill, drop the digest; the skill gathers signals by hand | Rework of skill step 0 | Loses the reason the script exists (steps only prose asks for do not run) |
+
+- **Blocks:** `feat/dev-cycle` (the skill, stacked on it) cannot merge first.
+- **Interim:** both branches held unmerged. The skill unit's own review runs meanwhile against the digest branch as its base.
+- **If the answer differs:** nothing to redo; only the order of merging changes.
+
+
+### Q-099 · roadmap-vs-feature-ideas
+**Needs:** you: judgment · **Opened:** 2026-09-29 · **Status:** ANSWERED
+
+**Answer (2026-09-30, answers-9-30-26.txt): [1].** The roadmap is the one backlog. This matches the interim, so the skill needs no change. Decision log row 67 now records it as decided.
+
+Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in the self-improvement loop's `docs/working/feature-ideas*.md`, or both?
+
+- **Why it's yours:** it decides whether the dormant SI loop (Q-075) and the new dev cycle feed one backlog or two.
+- **Read:** `skills/dev-cycle/SKILL.md` steps 5–6 · `docs/reviews/architecture-review-2026-09-29-devcycle.md` finding 3 · decision log row 67
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Roadmap is the one backlog** | SI loop output is read in dev-cycle step 5 as a signal; only the roadmap ranks | None now; SI loop changes later if it resumes | SI-generated ideas get re-triaged once per cycle instead of per round |
+| **[2] Two backlogs** | Roadmap for cycle ideas, feature-ideas for SI rounds; neither reads the other | None | Duplicate or conflicting ideas; Next #1 (resume SI) ranks work in a list it doesn't read |
+| **[3] SI loop writes the roadmap** | Change `self-improvement.sh` to append to roadmap Ideas | A reviewed change to the loop | Couples a dormant loop to a new file before Q-075's safety evidence exists |
+
+- **Interim:** [1]. Step 5 lists `feature-ideas*.md` as a signal source; nothing in the SI loop changes.
+- **If the answer differs:** edit steps 5–6 of the skill; [3] also needs a self-improvement.sh change.
+
+
+### Q-101 · dev-cycle-digest-after-pass-4
+**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** ANSWERED
+
+The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward and re-review, harden it, or drop the script?
+
+- **2026-09-30:** at your request, the pre-mortem is written (`docs/reviews/pre-mortem-dev-cycle.md`). The skill is laid out for your step-by-step approval and notes in the doc "Dev cycle skill — for your approval" (https://claude.ai/code/artifact/78a2f851-e696-4a86-bfe8-474212e5e645). The options below are reframed by it and replace the first draft.
+- **Why it's yours:** the loop cap is spent twice over, and the options differ in what the skill does each cycle.
+- **Read:** the approval doc's sections 3–5 · `docs/reviews/pre-mortem-dev-cycle.md` · rubric Final pass 3 (feat/dev-cycle-digest, 894e532)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Cut, then one confirming pass (Recommended)** | Remove carry-forward and the `Main at:` handshake; fix `--since` (R3) and add one scrub function. One full pass on the smaller script; merge both branches if clean | Reading the approval doc; ~0.85M tokens | Each cycle judges all 21 triggers instead of ~2 plus a carried list; carry-forward can return later with its own design review |
+| **[2] Keep carry-forward, harden it** | Rubric X1 (full ancestor sha only, name the base, print all on fallback), then a fifth pass | ~0.85M tokens per pass; history suggests more than one | Pre-mortem story 1: the review treadmill continues |
+| **[3] Drop the script** | Merge the skill with a hand-run step 0 | Rework of step 0, then its own review | Step 0 gets skipped (Q-074's failure) |
+
+- **Answer (2026-10-01, in chat):** [1]. Cut carry-forward and `Main at:`, fix `--since`, add one scrub function, then one confirming pass. Same session's doc edits: step 3 drops the two-week cutoff, step 5 thresholds tightened (0–1 ready items, 10+ ideas, a week by date), digest gains 4b/5 inputs, record notes the model version, optional `docs/dev-cycle-sources.md` drafted; double-diamond gaps #1, #2, #4–8 still await the user.
+
+- **Blocks:** `feat/dev-cycle` (the skill) is stacked on the digest; its own iteration-3 pass runs after this, on the text you approve.
+- **Interim:** both branches held unmerged; nothing is built until you approve the skill.
+- **If the answer differs:** nothing is built yet.
 
 ### Q-090 · run-tests-jobs
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED

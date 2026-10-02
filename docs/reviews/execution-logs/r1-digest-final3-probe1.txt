@@ -1,0 +1,47 @@
+cmd: bash scratchpad/fc3/probe1.sh  cwd: throwaway mktemp -d repo  at: 2026-09-30T14:07:19-07:00
+=== A: record without Main at line (first cycle after landing)
+Window: since 2026-09-29 (from the last cycle record, docs/working/cycles/cycle-2026-09-29.md). Merges: `main` at 70a542e. Triggers: the working tree, compared with `main` at the window start. Questions, roadmap: the working tree.
+Main at: 70a542e07724e9ec58080e37665bed0aa917cbf7 (copy this line into the cycle record; the next digest compares triggers against it)
+
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 0 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-29, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-29.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+
+## 3. Watched questions (trigger and deferred routes)
+fallback base would be: 70a542e Fri Jan 3 12:00:00 2020 -0800 late
+true window start (Main at a correct run): caa6018 old record
+=== B: record line [Main at: caa6018ad1381603c5fe3e58349ac0bcbfbeb763]
+### docs/decisions/002-new.md (last committed on this branch: 2026-09-30)
+### docs/decisions/003-late.md (last committed on this branch: 2020-01-03)
+Carried forward (1): 001-old.md
+=== B: record line [- Main at: caa6018ad1381603c5fe3e58349ac0bcbfbeb763]
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+=== B: record line [Main at: `caa6018ad1381603c5fe3e58349ac0bcbfbeb763`]
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+=== B: record line [**Main at:** caa6018ad1381603c5fe3e58349ac0bcbfbeb763]
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+=== B: record line [  Main at: caa6018ad1381603c5fe3e58349ac0bcbfbeb763]
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+=== B: record line [Main at: caa6018]
+### docs/decisions/002-new.md (last committed on this branch: 2026-09-30)
+### docs/decisions/003-late.md (last committed on this branch: 2020-01-03)
+Carried forward (1): 001-old.md
+=== B: record line [Main at: CAA6018AD1381603C5FE3E58349AC0BCBFBEB763]
+Carried forward (3): 001-old.md 002-new.md 003-late.md
+=== C: Activity counts vs true (window since 2026-09-29)
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 0 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+true merges on first-parent dated in window (no --since walk stop):
+43a0ed6 Wed Sep 30 14:07:19 2026 -0700 merge: feature 2
+2b19796 Wed Sep 30 14:07:19 2026 -0700 merge: feature 1
+exit: 

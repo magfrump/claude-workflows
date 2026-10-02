@@ -1,0 +1,20 @@
+cwd: /workspace/.claude/wt-devcycle; 2026-09-29T03:04:52-07:00
+1f8ed13^ 2026-09-28 22:30:09 -0700 records=11 logrows=7
+feat/dev-cycle-digest 2026-09-29 02:47:59 -0700 records=11 logrows=9
+HEAD 2026-09-29 02:48:41 -0700 records=11 logrows=10
+cmd: git show 1f8ed13:test/dev-cycle.bats | grep -c '^@test'
+6
+cmd: size gate count 4225753...d8b0cca
+531
+cmd: ls skills | wc -l
+34
+cmd: description length
+245
+cmd: git ls-files docs/working/plan-* research-*
+docs/working/plan-copy-install-bare-host.md
+docs/working/plan-q093-cc-push-self-commondir.md
+docs/working/plan-q094-exit-scan-worktree-layout.md
+docs/working/research-copy-install-bare-host.md
+.gitignore:26:docs/working/plan-*.md	docs/working/plan-x.md
+.gitignore:27:docs/working/research-*.md	docs/working/research-x.md
+.gitignore:28:docs/working/feature-ideas-round-*.md	docs/working/feature-ideas-round-1.md

@@ -1,0 +1,25 @@
+=== S1 raw-date seed: does 'yes DATE' give the same sample across dates? (20 lines, n=3)
+2026-01-01 raw=11,1,14,  hashed=18,2,8,
+2026-01-15 raw=11,1,14,  hashed=19,1,5,
+2026-02-01 raw=11,1,14,  hashed=9,16,14,
+2026-03-01 raw=11,1,14,  hashed=16,5,17,
+2026-09-29 raw=11,1,14,  hashed=18,10,5,
+=== S2 with 3 merges, sample 2: distinct outcomes across 60 days
+     18 a,b,
+     19 a,c,
+     23 b,c,
+=== B1 log row dated exactly SINCE, and one the day before; record uncommitted
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-10, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-10.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+- log row 1 (2026-09-10): Revisit if on-boundary. 
+
+Carried forward (4): 005-u.md 006-m.md 007-b.md log row 2
+
+## 3. Watched questions (trigger and deferred routes)
+=== R1 read-only: files created in TMPDIR during a run with questions
+strace exit=127
+?? docs/decisions/005-u.md
+?? docs/decisions/log.md
+?? docs/working/

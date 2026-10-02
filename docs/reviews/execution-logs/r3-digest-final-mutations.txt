@@ -1,0 +1,24 @@
+cmd: timeout 590 bash /tmp/claude-1000/-workspace/fba1bfc0-301f-41fe-8500-89690af4d400/scratchpad/r3df/mutate.txt
+cwd: /workspace/.claude/wt-digest
+time: 2026-09-29T02:26:02-07:00
+T1 KILLED — section 5 heading renamed
+T2 KILLED — log clause truncated at 400 chars
+T2 KILLED — decision-record awk does not stop at next heading
+T2 SURVIVED — lowercase match preferred over capitalised
+T3 KILLED — carry-forward disabled (full=1 always)
+T3 SURVIVED — log-row date test inverted to strictly after
+T4 KILLED — oldest record chosen
+T5 KILLED — bare date passed to git
+T6 SURVIVED — seed random per run
+T6 KILLED — sample count ignored (always 1)
+T7 KILLED — seed constant
+T8 KILLED — SCRIPT_DIR resolved after cd
+T9 KILLED — whole-line match for trigger/deferred
+T10 KILLED — failure swallowed
+T11 SURVIVED — master dropped from candidates (fallback still present)
+T11 KILLED — master dropped and current-branch fallback removed
+T12 KILLED — name (not hash) passed to git log, dash-skip removed
+T12 SURVIVED — dash-skip removed only (hash still used)
+T13 KILLED — date regex check removed
+T13 KILLED — unknown option accepted
+exit: 0

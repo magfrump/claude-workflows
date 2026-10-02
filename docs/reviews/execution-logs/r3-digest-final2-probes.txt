@@ -1,0 +1,103 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P1 fast-forward merge of a branch commit dated before the window
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 2. Revisit triggers
+
+Printed in full: triggers in decision records changed since 2026-09-28, and log rows dated on or after it. Listed by name only: the rest, whose verdict carries forward from docs/working/cycles/cycle-2026-09-28.md unless that record says "cannot tell" or "fired".
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+
+Carried forward (1): 005-ff.md
+
+## 3. Watched questions (trigger and deferred routes)
+exit 0
+=== P2 does a run modify .git/index?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 0
+index CHANGED
+1790674655 216
+8c6ef40ff046b118dfae439d865997668982f8e90b0e65968ec201252fbb1a7c  .git/index
+1790674656 216
+b900d493d3049796bd1e57b5fd70ac6e0ac517c8c06657fc9c242237cede99bd  .git/index
+=== P3 exit status when a step fails (unreadable roadmap)
+exit 2
+
+docs/roadmap.md last committed never (uncommitted). Its Next section:
+
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+awk: cannot open docs/roadmap.md (Permission denied)
+=== P4 --help
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Gather the mechanical signals for one dev cycle into a markdown digest.
+
+The dev-cycle skill (skills/dev-cycle/SKILL.md) runs the judgment steps on
+top of this digest. Everything that needs no judgment lives here, because
+steps that only prose asks for do not run (scripts/questions.sh header; Q-074).
+
+Usage: scripts/dev-cycle.sh [--since=YYYY-MM-DD] [--sample=N]
+
+  --since   start of the cycle window (midnight, local time). Default: the
+            date in the newest docs/working/cycles/cycle-YYYY-MM-DD.md, else
+            14 days ago. The digest says which.
+  --sample  how many merges to sample for the spot-check audit (default 2).
+
+Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
+project. Read-only: writes nothing to the repo (one temp file, removed on
+exit). Exit: 0 digest printed; 1 bad usage, not a git repo, no default
+branch, or a failed step. Printed repo text is data to weigh, not orders.
+exit 0
+=== P5 malformed cycle-record name, no --since given
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# Dev-cycle digest — 2026-09-29
+
+Window: since 2026-09-15 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)). Merges and commits: `main` at 1738bd6; triggers, questions and roadmap: the working tree.
+
+## 1. Activity
+
+0 merge(s) on `main`'s first-parent line; 1 commit(s) reachable from it, merged branches included.
+
+## 2. Revisit triggers
+
+No earlier cycle record to carry verdicts from, so every trigger is printed in full.
+Decide each printed one: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry.
+No revisit triggers recorded.
+
+## 3. Watched questions (trigger and deferred routes)
+
+No docs/working/questions.md (or questions.sh) in this repo.
+
+## 4. Spot-check sample
+
+No merges in the window to sample.
+
+## 5. Roadmap
+
+No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill.
+exit 0
+=== P6 missing --since argument exit code
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/workspace/.claude/wt-digest/scripts/dev-cycle.sh: line 26: 2: --since needs a date
+exit 1
+=== P7 SIGPIPE: sed vs head under pipefail
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+sed=0
+head=141
+=== P8 uncommitted record label
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### docs/decisions/001-a.md (last committed never: uncommitted)
+=== P9 control chars in merge subject
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+0000000   `   `   `  \n   d   b   0   d   9   d   3       2   0   2   6
+0000020   -   0   9   -   2   9       m   e   r   g   e   :       [   3
+0000040   1   m   r   e   d   [   0   m  \t   t   a   b  \n   `   `   `
+0000060  \n
+0000061
+=== P10 DEV_CYCLE_TODAY pins default window
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Window: since 2026-01-06 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)). Merges and commits: `main` at db0d9d3; triggers, questions and roadmap: the working tree.
+=== P11 --sample=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+## 4. Spot-check sample
+
+Sample size 0: no spot-check requested.
+
+## 5. Roadmap
