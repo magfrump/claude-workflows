@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-103](#q-103--dev-cycle-build-loop-policy) | you: judgment | May the dev cycle's build loops (step 6b) merge their own branches in claude-workflows, or must each stop f... | 2026-10-01 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -36,6 +35,7 @@ The index below is generated — edit entries, not the table.
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
+| [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-090](#q-090--run-tests-jobs) | trigger | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 <!-- index:end -->
@@ -43,12 +43,13 @@ The index below is generated — edit entries, not the table.
 ## Open
 
 ### Q-103 · dev-cycle-build-loop-policy
-**Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** OPEN
+**Needs:** deferred · **Opened:** 2026-10-01 · **Status:** OPEN
 
-May the dev cycle's build loops (step 6b) merge their own branches in claude-workflows, or must each stop for your review?
+Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or must each stop for your review?
 
 - **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed.
-- **Read:** `skills/dev-cycle/SKILL.md` step 6b · `docs/dev-cycle.md` · decision log row 68
+- **Read:** `docs/working/seed-build-loop-handoff.md` · `docs/dev-cycle.md` · decision log row 68
+- **Deferred 2026-10-01:** the handoff was split out of `feat/dev-cycle`; nothing reads this setting until it lands. Becomes `you: judgment` then.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|

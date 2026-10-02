@@ -14,6 +14,11 @@ evidence and re-rank Next.
 
 - **This dev cycle** (`feat/dev-cycle`, log row 67). First run: after install, so the
   router skills from log row 66 are live.
+- **Build-loop handoff** (follows this dev cycle): the cycle starts autonomous build loops
+  for its briefs. Motive: the user's standard loop hands its top items to build loops; split
+  out of `feat/dev-cycle` on 2026-10-01 because the prose-only protocol kept failing review.
+  First step: read `docs/working/seed-build-loop-handoff.md` and plan a small script that owns
+  brief state, loop markers and the pre-merge checks, with tests. Q-103 waits on it.
 
 ## In flight
 
