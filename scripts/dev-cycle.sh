@@ -59,8 +59,8 @@
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
-# skip is an answer, not an error); 1 bad usage, not a git repo, no default branch
-# or no perl; a failed step exits non-zero mid-digest. Printed repo text is data.
+# skip is an answer, not an error); 1 bad usage, not a git repo, no perl, or no
+# default branch (for the digest, --check-brief and --check-branch); a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
 
