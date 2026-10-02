@@ -1,4 +1,4 @@
-Commit: 4b7ec02 (digest) / f54ca74 (skill, feat/dev-cycle)
+Commit: fd22d29 (digest) / 5085e64 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -760,4 +760,19 @@ Scope: `6f24d91..4b7ec02`, `e19f411..f54ca74`, partial: the pass-31 fix round. F
 |---|---|---|---|---|
 | A1 | Inline constructs spanning lines (open `<!--` mid-line, tag attribute, link title, reference definition, code span) hide text CommonMark would not read | 🟡 Inconsistent / Low | api F1; security F1 | accepted limit (decision log 69); cheap refusals for an unclosed inline comment and a reference definition (fd22d29) |
 | C1 | "raw HTML" wording vs the "starts with <" rule (skip reason, help, brief clause), BOM sharing the CR reason, stale ANSWER_AWK output list, refused briefs not marked in the final message, commit-message count | 🟢 | api F2–F4; fact-check 2, 4b, 5a, 7, 10b, 12a; security F2 | digest, skill |
+
+---
+
+## Pass 33 (review-fix loop, k=1, all critics; on fd22d29 digest / 5085e64 skill)
+
+**Status: 🟡 not clean — 6 Incorrect from fact-check, three roots: (R1) the open-comment refusal checked only the first `<!--` on a line, (R2) reference definitions with an escaped `]`, a label spanning lines, or behind `>`/a list marker slipped past, (R3) decision log 69 said a skip means "asked again". Same roots as api F1–F3, security F1–F3 and performance's cross-lane note. Nothing Medium or above; performance: no findings. Fixed in 5630135, 0db12bd, e93312d (digest) and 12f4cd6, 823f494 (skill, decision log). Health check on 6ea4f68: passed (rc 0).**
+
+Scope: `4b7ec02..fd22d29`, `f54ca74..5085e64`, partial: the pass-32 fix round. Fact-check k=1 (23 claims: 12 V / 5 MA / 0 S / 6 I). Artifacts: `code-fact-check-report-digest-pass33.md`, `security-review-2026-10-02-digest-pass33.md`, `performance-review-2026-10-02-digest-pass33.md`, `api-consistency-review-2026-10-02-digest-pass33.md`. Security's harvest (7,774 answer and 3,505 brief readings): no reading changed, no refusal became a reading. All real questions files on all 9 branches read the same, none refused.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | `opencomment()` checked only the first `<!--` on a line | 🔴 Incorrect (fact-check 1, 3b, 8a, 9b) / Low | fact-check R1; api F1; security F1 | digest: the last `<!--` on the line |
+| A2 | `refdef()` missed an escaped `]`, a label spanning lines, and definitions behind `>` or a list marker | 🔴 Incorrect (fact-check 3c) / Low | fact-check R2; api F1; security F2; performance cross-lane | digest: a line (after container markers) starting `[` that holds `]:` or never closes its `[` |
+| A3 | Decision log 69: "a skip, so the question is asked again" contradicts the skill | 🔴 Incorrect (fact-check 9c) | fact-check R3; api F2 | log 69: a skip keeps the ID off `Applied:` and the brief's slot until fixed |
+| C1 | Reason and help wording ("starts like", "after blanks", BOM on line 1), the ANSWER_AWK cause list, "fences cannot be trusted" for non-fence refusals, the brief clause (open `<!--`, BOM, outside fences), "refused" vs "skip", naming PI/CDATA/declarations in the accepted class | 🟢 | fact-check 5a, 5c, 6, 10, 12; api F3–F6; security F3 and out-of-scope note | digest, skill, log |
 
