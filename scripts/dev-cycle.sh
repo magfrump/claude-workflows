@@ -34,8 +34,8 @@
 #             that last added or removed a "Status: " line there (a merge
 #             commit, the branch's own commit after a fast-forward, or a later
 #             move or quoted Status line); "skip <path>: <reason>" otherwise,
-#             including a brief whose fences cannot be trusted (as for
-#             --check-answer, naming the line).
+#             including a brief FENCE_AWK refuses (as for --check-answer,
+#             naming the line and the reason).
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -54,9 +54,10 @@
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a code fence never closed or not in plain column-0
-#             form, a line starting with < or opening an unclosed comment, a
-#             link reference definition, a stray carriage return or byte-order
-#             mark, a question heading inside a fence, a questions file
+#             form, a line starting (after blanks) with < or leaving a <!--
+#             open, a line starting like a link reference definition, a stray
+#             carriage return, a byte-order mark on line 1, a question heading
+#             inside a fence, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
@@ -131,7 +132,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,70p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,71p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -271,7 +272,8 @@ check_write() {
 # still open at the end is recorded in `fline` (its opening line) and refuses
 # the file too.
 # Accepted limit (decision log 69): inline constructs that span lines (an open
-# tag attribute, link title, code span or emphasis) are not modelled, so text
+# tag attribute, link title, code span, emphasis, or a processing instruction,
+# CDATA section or declaration opened mid-line) are not modelled, so text
 # CommonMark would hide inside them is read as text. Whoever can write such a
 # shape can write the answer or Status line itself; no real file has one.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
@@ -279,8 +281,17 @@ FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
 function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
-function opencomment(l,   i) { i = index(l, "<!--"); return i && !index(substr(l, i + 4), "-->") }
-function refdef(l) { return l ~ /^[ \t]*\[[^]]+\]:/ }
+function opencomment(l,   i, j) {  # the last <!-- on the line has no --> after it
+  i = 0; while ((j = index(substr(l, i + 1), "<!--")) > 0) i += j
+  return i && !index(substr(l, i + 4), "-->")
+}
+function refdef(l) {  # also behind blockquote markers and list markers
+  sub(/^[ \t>]*/, "", l)
+  if (l ~ /^([-*+]|[0123456789]+[.)])[ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l); sub(/^[ \t>]*/, "", l) }
+  # Any line starting [ that holds ]: (an escaped ] in the label too) or never
+  # closes its [ (a label that continues on the next line) counts.
+  return substr(l, 1, 1) == "[" && (index(l, "]:") || !index(l, "]"))
+}
 function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
   ch = substr(l, 1, 1)
@@ -308,9 +319,9 @@ function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary
 '
 oddwhy() {  # the reason fence() refused a file, for a skip line
   case "$1" in
-    html) echo "starts with < (a possible raw HTML block; only a complete one-line <!-- comment --> is read)" ;;
+    html) echo "starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)" ;;
     comment) echo "opens an HTML comment that does not close on the same line" ;;
-    refdef) echo "is a link reference definition (its title can span lines)" ;;
+    refdef) echo "starts like a link reference definition (its label or title can span lines)" ;;
     cr) echo "holds a carriage return that does not end it" ;;
     bom) echo "starts with a byte-order mark" ;;
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
@@ -318,8 +329,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 }
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". A brief whose
-# fences cannot be trusted (FENCE_AWK refuses it) is not read at all. "new" when the
+# "Status:", which must be exactly "Status: open|done|dropped". A brief
+# FENCE_AWK refuses (see its comment for every reason) is not read at all. "new" when the
 # default branch has no file at that path (not landed yet, or moved to
 # closed/). A closed/ path is read the same way (its state, for In flight; it
 # never holds a slot).
@@ -399,12 +410,12 @@ check_fix() {
 # "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
 # the line, WHY the oddwhy reason), or nothing when the file has no such entry. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
-# read. Each of these makes the whole file a skip for every ID, naming the line,
-# because one stray fence line flips everything after it (and two flips can
-# balance again): an ambiguous fence-like line, a fence still open at the end,
-# or a "### Q-NNN " heading inside a fence (questions.sh archive splits entries
-# at such a line, which is how stray fences arise). No real questions file has
-# any of them.
+# read. Each of these makes the whole file a skip for every ID, naming the line
+# and the reason: anything FENCE_AWK refuses (see its comment), a fence still
+# open at the end, or a "### Q-NNN " heading inside a fence (questions.sh
+# archive splits entries at such a line, which is how stray fences arise; one
+# stray fence line flips everything after it, and two can balance again). No
+# real questions file has any of them.
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
 # "**Status:** ANSWERED" once blanks around the field are trimmed (the last
