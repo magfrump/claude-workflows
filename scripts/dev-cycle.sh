@@ -48,9 +48,10 @@
 #             (HEAD, refs/...) or the default branch. The commit is
 #             refs/heads/<name>'s own, never a same-named tag's.
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
-#             file under docs/ (not working/, human-author/, reviews/,
-#             decisions/, dev-cycle.md, a dot-directory or an instruction file)
-#             or README.md; "skip <path>: <reason>" otherwise.
+#             file under docs/ (not the cycle's own files, working/,
+#             human-author/, reviews/, decisions/, dev-cycle.md, a dot-directory
+#             or an instruction file) or README.md; "skip <path>: <reason>"
+#             otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive: keep, drop, done,
 #             open (not marked ANSWERED yet) or unrecognized (answered, but no
@@ -136,7 +137,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,75p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,76p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
