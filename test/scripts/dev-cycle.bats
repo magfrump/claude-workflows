@@ -271,16 +271,17 @@ EOF
     [[ "$section" != *"code and docs"* && "$section" != *"feature 1"* ]] || { echo "$section"; return 1; }
     # README_gen.sh is code; a README.txt or docs/ alone is a doc.
     for spec in "readme-like:src/README_gen.sh:flag" "readme-txt:x.sh lib/README.txt:ok" "docs-only:docs/a.txt y.sh:ok" "md-only:notes.md z.sh:ok"; do
-        IFS=: read -r br files want <<< "$spec"
+        IFS=: read -r br files _ <<< "$spec"
         git checkout -q -b "$br"
         for f in $files; do mkdir -p "$(dirname "$f")"; echo "$br" >> "$f"; done
         git add -A && git commit -q -m "$br" && git checkout -q main && git merge -q --no-ff "$br" -m "merge: $br"
     done
     run --separate-stderr bash "$DC"
     section=$(echo "$output" | sed -n '/## 6/,/## 7/p')
-    [[ "$section" == *"merge: readme-like"* ]] || { echo "$section"; return 1; }
-    for br in readme-txt docs-only md-only; do
-        [[ "$section" != *"merge: $br"* ]] || { echo "$br flagged"; echo "$section"; return 1; }
+    for spec in readme-like:flag readme-txt:ok docs-only:ok md-only:ok; do
+        IFS=: read -r br want <<< "$spec"
+        if [[ "$want" == flag ]]; then [[ "$section" == *"merge: $br "* ]]; else [[ "$section" != *"merge: $br "* ]]; fi \
+            || { echo "$br: expected $want"; echo "$section"; return 1; }
     done
 }
 
