@@ -36,8 +36,9 @@
 #             move or quoted Status line); "skip <path>: <reason>" otherwise,
 #             including a brief the reader cannot trust, naming the line and
 #             the reason: a code fence never closed or not in plain column-0
-#             form, a line starting (after blanks) with < or leaving a <!--
-#             open, a line starting like a link reference definition, a stray
+#             form, a line starting (after blanks) with < other than a
+#             complete one-line <!-- comment -->, a line leaving a <!-- open,
+#             a line starting like a link reference definition, a stray
 #             carriage return, or a byte-order mark on line 1.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
@@ -57,11 +58,11 @@
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a code fence never closed or not in plain column-0
-#             form, a line starting (after blanks) with < or leaving a <!--
-#             open, a line starting like a link reference definition, a stray
+#             form, a line starting (after blanks) with < other than a
+#             complete one-line <!-- comment -->, a line leaving a <!-- open,
+#             a line starting like a link reference definition, a stray
 #             carriage return, a byte-order mark on line 1, a question heading
-#             inside a fence, a questions file
-#             that is not plain).
+#             inside a fence, a questions file that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
 #
@@ -135,7 +136,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,74p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,75p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
