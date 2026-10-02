@@ -6,14 +6,16 @@ by hand. Change either by editing this file.
 
 Build-loop policy: review (interim; Q-103)
 
-`autonomous`: a build loop the cycle hands an item to (step 6b) lands its branch through
-pr-prep on its own. `review`: it runs pr-prep's review-fix loop, then stops for a separate
+`self-merge`: a build loop the cycle hands an item to (step 6b) lands its branch through
+pr-prep on its own. `review`: it runs pr-prep's review-fix loop, then stops for the user's
 review (a PR, or one `you: judgment` "merge <branch>?" entry where the project has no PRs).
+Only a single line reading exactly `Build-loop policy: self-merge` means self-merge; the
+interim marker above keeps this `review` until Q-103 is answered.
 
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.
-Paths must stay inside the repo.
+Paths must resolve inside the repo (symlinks followed).
 
 | Source | Path or glob | Format |
 | --- | --- | --- |
