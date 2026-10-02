@@ -165,6 +165,27 @@ agent_input() {
   [ "$(head -1 "$TEST_LOG" | jq -r '.project')" = "not-a-repo" ]
 }
 
+@test "branch is HEAD on a detached checkout, not empty" {
+  # Own repo, so the result does not depend on the runner's checkout state.
+  dir=$(mktemp -d)
+  git -C "$dir" init -q
+  git -C "$dir" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  git -C "$dir" checkout -q --detach
+  (cd "$dir" && skill_input "spike" | bash "$HOOK")
+  rm -rf "$dir"
+
+  [ "$(head -1 "$TEST_LOG" | jq -r '.branch')" = "HEAD" ]
+}
+
+@test "branch is unknown outside a git repo" {
+  dir=$(mktemp -d)
+  mkdir "$dir/not-a-repo"
+  (cd "$dir/not-a-repo" && GIT_CEILING_DIRECTORIES="$dir" skill_input "spike" | bash "$HOOK")
+  rm -rf "$dir"
+
+  [ "$(head -1 "$TEST_LOG" | jq -r '.branch')" = "unknown" ]
+}
+
 # --- Non-matching reads are ignored ---
 
 @test "reading a non-workflow file does not log" {

@@ -61,8 +61,17 @@ init_usage_hook() {
     else
         PROJECT=${PWD##*/}
     fi
+    # Same trap as PROJECT above: on a detached HEAD `git branch --show-current`
+    # exits 0 with empty output, so an `|| echo` fallback never fires. Record
+    # "HEAD" there (git's own name for it, as `rev-parse --abbrev-ref` prints),
+    # and "unknown" only when git fails (outside a repo).
+    local br
     # shellcheck disable=SC2034
-    BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+    if br=$(git branch --show-current 2>/dev/null); then
+        BRANCH=${br:-HEAD}
+    else
+        BRANCH="unknown"
+    fi
 }
 
 # Extract the first `name:` value from a YAML frontmatter block at the top
