@@ -1,4 +1,4 @@
-Commit: ba39470 (digest) / 36ca12c (skill, feat/dev-cycle)
+Commit: c1d0a80 (digest) / fb643e2 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -628,4 +628,21 @@ Scope: `bc98571..ba39470`, `6c8ae91..36ca12c`, partial: the pass-22 fix round. F
 | A4 | `--check-fix` allowed code, the user's own files and ignored scratch under docs/ | 🟡 Medium | security M1; api Minor 4; fact-check 12, 16 | digest: tracked .md outside working/, human-author/, reviews/ |
 | A5 | The one brief glob dropped the open (newest) briefs after 50 | 🟡 Medium | performance Medium 1; fact-check 17; security Info | digest + skill: closed briefs move to briefs/closed/ |
 | C1 | Mid-line answer labels, fences, duplicate headings, CR, time colons; `absent` in the hash slot; default branch as a brief branch; help and comments; skipped-branch slot; brief count; test gaps | 🟢 | api Inconsistent 3, Minor 5, 6, 7, Info 9; security L2, Info 1; fact-check 4, 10, 13c, 13e, 22, 24 | digest, skill |
+
+---
+
+## Pass 24 (review-fix loop, k=1, all critics; on c1d0a80 digest / fb643e2 skill)
+
+**Status: 🔴 not clean — 2 Incorrect (a worded answer flipped by a later bracket; git mv into a missing dir) and 3 Medium (answers read from unanswered entries, Done as an unchecked self-report, instruction files under docs/), all fixed in cbfdf35 (digest) and the pass-24 skill commit.**
+
+Scope: `ba39470..c1d0a80`, `36ca12c..fb643e2`, partial: the pass-23 fix round. Fact-check k=1 (28 claims: 20 V / 6 MA / 0 S / 2 I). Artifacts: `code-fact-check-report-digest-pass24.md`, `security-review-2026-10-02-digest-pass24.md`, `performance-review-2026-10-02-digest-pass24.md`, `api-consistency-review-2026-10-02-digest-pass24.md`. Every probe followed the probe rule.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | A worded answer followed by a bracket naming the other option read as that option | 🔴 Incorrect | fact-check 12b; security M1 (negation) | digest: only the leading token decides; no bracket fallback |
+| A2 | `git mv` into `briefs/closed/` failed on the first close (git tracks no empty dirs) | 🔴 Incorrect | fact-check 19; security Info 6; api Minor 3 | skill: create the directory first |
+| A3 | Mid-line labels read answers out of OPEN entries (quoted earlier answers, blockquotes, inline code) | 🟡 Medium | security M1; fact-check 10 | digest: ANSWERED entries only, line-start labels only |
+| A4 | Done was a prose self-report, and every brief's acceptance text contained `Status: done` | 🟡 Medium | security M2; api Inconsistent 1 | digest: `--check-brief` reads the exact status line on the default branch; skill uses it; acceptance text reworded |
+| A5 | `--check-fix` allowed instruction files, dot-directories, decision records and the settings file under docs/ | 🟡 Medium | security M3; api Minor 7 | digest |
+| C1 | Fence scope, open/closed naming, no done option, default-commit source, roadmap skip reason, glob newline, default-branch fallback, duplicate-skip wording, help, name uniqueness, non-zero exits | 🟢 | security L4, Info 5; api Inconsistent 2, Minor 4, 5, 6, 8, 9, Info 10, 11, 12; fact-check 3, 12a, 15, 16, 21; performance Info 1–3 | digest, skill |
 

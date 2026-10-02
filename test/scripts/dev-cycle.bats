@@ -590,7 +590,7 @@ EOF
     run --separate-stderr bash "$DC" --check-fix docs/decisions/log.md README.md hooks/x.sh egress/x.txt AGENTS.md \
         docs/new.md 'docs/*.md' docs
     [ "$status" -eq 0 ]
-    for want in "ok docs/decisions/log.md" "ok README.md" "skip hooks/x.sh: in-cycle fixes edit only" \
+    for want in "skip docs/decisions/log.md: in-cycle fixes edit only" "ok README.md" "skip hooks/x.sh: in-cycle fixes edit only" \
                 "skip egress/x.txt: in-cycle fixes edit only" "skip AGENTS.md: in-cycle fixes edit only" \
                 "skip docs/new.md: no tracked file" "skip docs/*.md: --check-fix takes one file" "skip docs: in-cycle fixes edit only"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
@@ -622,7 +622,7 @@ EOF
     done
 }
 
-@test "--check-answer: notes cannot flip an answer; mid-line labels, fences, duplicates, CR, the archive" {
+@test "--check-answer: notes cannot flip an answer; line-start labels only, fences, duplicates, CR, the archive" {
     mkdir -p docs/working
     q() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\nkeep or drop?\n\n%s\n\n' "$1" "$2"; }
     {
@@ -643,8 +643,8 @@ EOF
     git add -A && git commit -qm q
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-10 Q-100
     [ "$status" -eq 0 ]
-    for want in "drop Q-1" "keep Q-2" "drop Q-3" "keep Q-4" "drop Q-5" "open Q-6" "skip Q-7: no such entry" \
-                "keep Q-8" "skip Q-9: more than one entry" "skip Q-10: more than one entry" "keep Q-100"; do
+    for want in "drop Q-1" "keep Q-2" "drop Q-3" "unrecognized Q-4" "drop Q-5" "open Q-6" "open Q-7" \
+                "keep Q-8" "skip Q-9: more than one entry" "skip Q-10: an entry with this heading in both" "keep Q-100"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
     # A questions.md that is not plain is reported, not passed over to the archive.
@@ -664,7 +664,8 @@ EOF
         docs/human-author/notes.md docs/working/round-3.md docs/working/plan.md docs/roadmap.md
     [ "$status" -eq 0 ]
     [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ] && [[ "$output" == *"ok docs/guides/g.md"* ]] || { echo "$output"; return 1; }
-    [ "$(grep -c '^skip .*: in-cycle fixes edit only' <<<"$output")" -eq 6 ] || { echo "$output"; return 1; }
+    [ "$(grep -c '^skip .*: in-cycle fixes edit only' <<<"$output")" -eq 5 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"skip docs/roadmap.md: one of the cycle's own files"* ]] || { echo "$output"; return 1; }
 }
 
 @test "closed briefs move out of the glob, so open ones are listed past 50 briefs" {
@@ -678,4 +679,62 @@ EOF
     [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md" ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-03-01-open-a.md
     [[ "$output" == *"not an open build brief"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer reads nothing from an entry not marked ANSWERED, and reads done" {
+    mkdir -p docs/working
+    o() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** OPEN\n\nkeep or drop?\n\n%s\n\n' "$1" "$2"; }
+    a() { printf '### %s · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\nkeep or drop?\n\n%s\n\n' "$1" "$2"; }
+    {
+        echo '# Questions'; echo
+        o Q-1 'Last time: **Answered 2026-09-01: [2].** was not read.'
+        o Q-2 '> **Answer:** [2]'
+        # shellcheck disable=SC2016  # literal backticks in the entry text
+        o Q-3 'Reply like `**Answer:** [2]`.'
+        o Q-4 '**Answer:** [2]'
+        a Q-5 '**Answer:** [3] it shipped in abc123.'
+        a Q-6 '**Answer:** done.'
+        a Q-7 '**Answer:** not [2]; keep it'
+        a Q-8 '**Answer format:** [2] means drop.'
+        a Q-9 '| **Answer:** [1] | x |'
+        a Q-11 '**Answer:** drop because [1] costs more'
+        a Q-12 '    **Answer:** [2]'
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-6 Q-7 Q-8 Q-9 Q-11 Q-12
+    [ "$status" -eq 0 ]
+    for want in "open Q-1" "open Q-2" "open Q-3" "open Q-4" "done Q-5" "done Q-6" "unrecognized Q-7" \
+                "unrecognized Q-8" "unrecognized Q-9" "unrecognized Q-11" "unrecognized Q-12"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}
+
+@test "--check-brief reads the status line from the default branch only" {
+    mkdir -p docs/working/briefs
+    printf '# Brief\nStatus: open\n\n- set this brief to Status: done in the merge\n' > docs/working/briefs/2026-01-01-a.md
+    printf '# Brief\nStatus: done\n' > docs/working/briefs/2026-01-02-b.md
+    printf '# Brief\nStatus: closed\n' > docs/working/briefs/2026-01-03-c.md
+    git add -A && git commit -qm briefs
+    c=$(git rev-parse HEAD)
+    printf '# Brief\nStatus: done\n' > docs/working/briefs/2026-01-01-a.md   # working tree only: not read
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-a.md docs/working/briefs/2026-01-02-b.md \
+        docs/working/briefs/2026-01-03-c.md docs/working/briefs/2026-01-04-new.md docs/roadmap.md
+    [ "$status" -eq 0 ]
+    for want in "ok docs/working/briefs/2026-01-01-a.md open $c" "ok docs/working/briefs/2026-01-02-b.md done $c" \
+                "skip docs/working/briefs/2026-01-03-c.md: no line that is exactly" "ok docs/working/briefs/2026-01-04-new.md new" \
+                "skip docs/roadmap.md: not an open build brief"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+}
+
+@test "--check-branch counts the branch's own commits; --check-fix refuses instruction files" {
+    git checkout -q -b feat/w && git commit -q --allow-empty -m one && git commit -q --allow-empty -m two
+    git checkout -q main && git branch feat/idle
+    mkdir -p docs/sub docs/.agents/skills/x docs/guides
+    for f in docs/GEMINI.md docs/sub/agents.md docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md; do echo x > "$f"; done
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-branch feat/w feat/idle
+    [[ "$output" == *"ok feat/w $(git rev-parse feat/w) 2"* && "$output" == *"ok feat/idle $(git rev-parse feat/idle) 0"* ]] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-fix docs/GEMINI.md docs/sub/agents.md docs/.agents/skills/x/SKILL.md docs/dev-cycle.md docs/guides/g.md
+    [ "$(grep -c '^ok ' <<<"$output")" -eq 1 ] && [[ "$output" == *"ok docs/guides/g.md"* ]] || { echo "$output"; return 1; }
 }
