@@ -1,8 +1,8 @@
-Commit: db0e5ca
+Commit: 28c6178 (digest) / c079e8c (skill, feat/dev-cycle)
 
 # Code Review Rubric
 
-**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29; final pass 3 on 2026-09-30; final pass 4 on 2026-10-01 | **Status: 🔴 DOES NOT PASS** — 2 red item(s) unresolved (final pass 4 on db0e5ca; see that section). This was the single confirming pass of Q-101 [1]; the findings go back to the user with no fixes applied.
+**Scope:** feat/dev-cycle-digest vs main (scripts/dev-cycle.sh, test/scripts/dev-cycle.bats): the lower unit of the size-gate split of feat/dev-cycle | **Reviewed:** 2026-09-29; final pass 3 on 2026-09-30; final pass 4 and the delta confirming pass 5 on 2026-10-01 | **Status: 🔴 DOES NOT PASS** — 1 red item unresolved (final pass 5 on 28c6178 / c079e8c; see that section). Pass 5 confirmed every final-pass-4 fix but one partial; the findings go back to the user.
 
 Loop:
 1. **Iteration 1:** pass 1 on the combined unit (89a3d3b); rubric `code-review-rubric-2026-09-29-feat-dev-cycle.md`.
@@ -237,3 +237,73 @@ All core critics ran; no skips applied.
 | X2 | `scripts/dev-cycle.sh:216-241` + `feat/dev-cycle:skills/dev-cycle/SKILL.md` | A2, C4 (fact-check r1, r3; api F3, F4, F8) | composed → X2 (inherits 🟡): section 7's step-5 half reads a format only the approved doc describes. Land the skill text (idea-log path, brainstorm heading, In flight, thresholds) in the same change as the digest, or cut the step-5 half until it does. |
 | 3 | `scripts/dev-cycle.sh:89-102` | A6, C2 | distinct defects: semantics (zone) vs cost (walk length) |
 | 4 | `scripts/dev-cycle.sh:178-193` | A7, C1 | distinct defects: classification vs per-merge cost and no cap |
+
+---
+
+## Final pass 5 (delta confirming pass, on 28c6178 digest / c079e8c skill)
+
+**Status: 🔴 DOES NOT PASS — 1 red item unresolved. Not clean; no fixes applied in this pass.**
+
+Scope (partial, labelled): A = `db0e5ca..28c6178 -- scripts/dev-cycle.sh test/scripts/dev-cycle.bats`; B = `6ee33e3..c079e8c` on feat/dev-cycle (skill, decision log, roadmap, skill-creation guide, global row 12, `docs/dev-cycle-sources.md`); plus the A↔B contract. Panel: fact-check k=3 on opus (merged 96 claims: 72 V / 16 MA / 1 S / 6 I / 1 U; agreement 68/80 = 85% on multi-replicate claims), then security, performance, api-consistency on opus. Delivery: self-read (session-unique brief and Stage-1 files). Artifacts: `code-fact-check-report-digest-final5.md` (merged), `-r{1,2,3}-digest-final5.md`, `security-review-2026-10-01-digest-final5.md`, `performance-review-2026-10-01-digest-final5.md`, `api-consistency-review-2026-10-01-digest-final5.md`. Health check on feat/dev-cycle at c079e8c: all checks passed.
+
+Final pass 4 items: R2, A2 (default path), A3, A4 (out-of-repo targets), A5, A6, A7, A8, A9 closed (fact-check r1–r3, api, security). R1/A1 closed for split, nested, PERL_UNICODE and PERL5OPT, **not** PERLIO (R1 below). Stage 2.5 skipped (pass already red): security's two executed endorsements and performance's timing endorsements stay pending.
+
+### 🔴 Must Fix
+
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | `PERLIO=:utf8` (also `:raw:utf8`, `:unix:utf8`) in the caller's environment switches the scrub off; `-C0` does not override it. C1 CSI and RLO from a merge subject reach stdout, exit 0. "Perl is pinned to bytes" is false. Fix: `env -u PERLIO` or `binmode` STDIN/STDOUT in the perl call, plus a test-5 env case. | Security/Correctness | Fact-check Incorrect (high, executed; r1, r3); security Medium (executed) | fact-check Claims 5, 29; security F1 | `scripts/dev-cycle.sh:27-34` | for-author | — | 🔴 Unresolved; composed → X1 |
+
+### 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | `1 while s///g` removes one nesting layer per pass, so the scrub is quadratic on nested input: 64 KB line 17.8 s, ~128 KB passes a 2-minute Bash timeout, after which the skill's digest-failure rule stops every cycle with no record. Tested fix: rescan from 3 bytes before each deletion (40 ms, identical output on a 20k-line fuzz), plus a per-line cap. | Performance/Availability | Medium (High conf., executed) | performance #1 | for-author | — | 🟡 Open; composed → X1 | — |
+| A2 | The skill lets `docs/dev-cycle-sources.md` name the seed log; the digest hard-codes `docs/working/idea-log.md`, so step 5's seed and date inputs are wrong in any repo that renames it. The sources file can also point seeding or brainstorm reads outside the repo (e.g. at the user's global instructions file). | API/Security | Fact-check Incorrect (3/3); api Inconsistent; security Medium | fact-check Claim 61; api F1; security F2 | for-author | — | 🟡 Open; composed → X2 | — |
+| A3 | Under /away nothing human sits between repo-derived text and an autonomous build that merges: seeded idea → Now (who may promote is unstated) → queue "stands" → agent-written brief → RPI loop → pr-prep local merge. The skill does not say whether a brief replaces RPI's plan gate; brief stop conditions and out-of-scope have no required minimum. | Security/Design | Medium | security F3 | for-author | — | 🟡 Open — needs the user's judgment | — |
+| A4 | In-flight slots leak: the only exit from In flight is "merged → Done". A loop that stops or stalls keeps its slot, so 3 of them block 6b for good; step 1 skips branches named by an "open" brief, and "open" is never defined. | Correctness/API | Medium; api Minor | performance #2; api F7 | for-author | — | 🟡 Open | — |
+| A5 | Section 7 drops file names git quotes (non-ASCII under default `core.quotePath`, control characters): `skills/café/SKILL.md` counted 0, so a renamed skill can evade the 4b trigger. Fix: `-c core.quotePath=false` or `-z`. | Correctness | Fact-check Mostly accurate (executed); security F7 | fact-check r2, r3; security F7 | for-author | — | 🟡 Open | — |
+| A6 | Sibling docs drift from the skill: the skill-creation guide row cites an Operating Modes "launch" rule that does not exist (fact-check Incorrect, doc) and miscounts steps; decision log row 67 is not marked revised by 68 (Stale); row 68 calls the thresholds "section 7's" and the audit "full-history" where the skill files a scoped task. | Docs | Fact-check Incorrect (doc → 🟡 under T), Stale, Mostly accurate; api F9 | fact-check Claims 42, 56; api F9 | for-author | — | 🟡 Open | — |
+
+### 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | Sections 5 and 7 match roadmap headings differently (`## Next (ranked)`, `## In Flight` count 0 in section 7) | api F3 | Minor | for-author | — | 🟢 Open |
+| C2 | Skill wording: "Now + Next hold 0–1 items ready for 6b" (only Now is handed off); rule 1 names 6b as writing briefs (step 6 does); "done-criteria" vs "acceptance criteria"; "step 1's bar (… small …)"; "silently widens"; "the next digest … from the default branch" (it reads the working tree); record template doubles `Window:` and writes the 6b line before 6b runs | fact-check MA; api F2, F4, F6, F8 | Minor | for-author | — | 🟢 Open |
+| C3 | Idea-log seed counting counts any `- ` line (a format example counts); no template; "none recorded" not said to count as due | api F5 | Minor | for-author | — | 🟢 Open |
+| C4 | Brief not pinned to the landed commit (a loop can edit its own stop conditions); 6b loops not required to use their own worktree | security F4, F5 | Low | for-author | — | 🟢 Open |
+| C5 | Every cycle's docs-only chore branch now lands through the full pr-prep review loop; cycles may run many a day | performance #3 | Low | for-author | — | 🟢 Open |
+| C6 | Section 7 lists names without churn, so "substantially changed" needs a diff per file (43 skill files since 2026-09-01) | performance #4 | Low | for-author | — | 🟢 Open |
+| C7 | Scrub "Not covered" list incomplete (all lone C1 bytes, overlong encodings, U+061C, U+2028/9); `DEV_CYCLE_SCRUBBED=1` in the environment disables it; fd comment order backwards; exit 141 under a closed reader is ambiguous | fact-check MA; security F6 | Informational | for-author | — | 🟢 Open |
+| C8 | Section 6 matches `docs/` and `.md` case-sensitively; cycle-record glob not behind `inrepo` (a symlinked `docs/working` can move the window start); `QUESTIONS_LIVE` env bypasses it in questions.sh | fact-check r1–r3 | Low | for-author | — | 🟢 Open |
+
+Commit-message claims (26b7590: "pins perl to bytes", "stream order follows the body", "shellcheck clean"; c079e8c "matches the approval doc" with undisclosed deviations) are unmerged history; logged `Accepted-immutable`.
+
+### ↩️ Considered overrides
+
+Inherited from final pass 4 (TAB Won't-Fix; option-name test; SIGPIPE; accepted-immutable commit messages). No new matches.
+
+### ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source |
+|---|---|---|---|
+| Final-pass-4 R2/A3: no `Main at:` or carried-verdict text remains in the skill | ✅ Confirmed (executed grep + read) | fact-check r1–r3; api "F1, F2 closed" | fact-check, api |
+| Final-pass-4 A5: the re-exec waits for both filters and returns the body's exit status | ✅ Confirmed (executed) | merged Claim 31 (part-verdicts) | fact-check r1–r3 |
+| New tests 5, 6, 19, 20 fail on db0e5ca and pass at 28c6178 (test 7 passes on both, as its commit says) | ✅ Confirmed (executed) | merged Claims 33–36 | fact-check r1–r3 |
+
+### ⚠️ Unverified Findings
+
+Pending execution verification (Stage 2.5 skipped): security's symlink and scrub endorsements; performance's re-exec overhead and synthetic-repo timings. Row 68's account of the user's comments (Unverifiable: comment text not read).
+
+### ⏭️ Skipped Core Critics
+
+All core critics ran.
+
+### 🧩 Composition check
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| X1 | `scripts/dev-cycle.sh:22-40` | R1, A1, C7 | composed → X1 (inherits 🔴): the scrub must be both closed and bounded. Pin I/O to bytes (`env -u PERLIO` with the other two, or `binmode`), rescan from just before each deletion instead of restarting the line, and cap line length; test the env, nesting-depth and timing cases. |
+| X2 | `skills/dev-cycle/SKILL.md:41-44,154-160` + `scripts/dev-cycle.sh:244` + `docs/dev-cycle-sources.md` | A2, C3 | composed → X2 (inherits 🟡): the seed log is configurable in the skill but fixed in the digest. Either fix the path everywhere (drop the option) or have the digest read the sources file with an in-repo check and print which file it used. |
+| 3 | `skills/dev-cycle/SKILL.md:186-232` | A3, A4, C4 | distinct defects: gate design (who approves autonomous merges) vs slot lifecycle vs brief integrity |
