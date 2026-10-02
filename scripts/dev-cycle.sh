@@ -210,7 +210,9 @@ if dirok docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.m
 # cost records x history. Merges list the files their result changed against
 # every parent (combined), as a per-file `git log` counts them. A name git still
 # quotes (a quote, backslash or control character) misses the map and falls back
-# to its own lookup.
+# to its own lookup. One known difference from per-file `git log -1`: when a
+# merge kept the main line's version of a record but a side branch had changed
+# it later, this date is that later side commit's.
 declare -A last_date=()
 if [[ ${#decisions_glob[@]} -gt 0 ]]; then
   while IFS=$'\t' read -r path day; do last_date["$path"]="$day"; done < <(
