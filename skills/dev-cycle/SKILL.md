@@ -100,11 +100,12 @@ record's `## Skipped inputs`). If the repo has no
 `docs/working/questions.md`, run `~/.claude/scripts/questions.sh init` first. Then check the
 Window line, in this order:
 
-- It says records or their directory were skipped, or names a newer record that was skipped:
-  a record exists but is not a plain file, or a directory above it (`docs/`, `docs/working/`,
-  the cycles directory) is not. Note that in this record, file one `agent` entry reporting
-  the path section 8 lists (never read, copy or rewrite through it), and rerun with
-  `--since` set to the last cycle's date.
+- It says records (or a directory above them) were skipped, or names a newer record that was
+  skipped: a record, or one of `docs/`, `docs/working/` or the cycles directory, is not a plain
+  file or directory, so records may exist that the digest could not read. Note that in this
+  record, file one `agent` entry listing the paths section 8 gives (never read, copy or
+  rewrite through them), and rerun with `--since` set to the date of the last cycle you know
+  ran (none known: keep the window the digest chose).
 - Otherwise, if the window starts before the last cycle you know ran (or says no cycle record
   was found when one ran), that cycle skipped step 7: note it and rerun with `--since` set to
   that cycle's date.
@@ -223,10 +224,12 @@ docs/working/questions.md.
   or said so) → Ideas, with the reason. Either way the brief gets `Status: closed`. When a
   brief's branch has no commit beyond the default branch (or does not exist yet) 14 days after
   the brief's date (or after its last `Kept:` date), file one `you: judgment` entry, "keep or drop the brief for
-  <item>?", unless one is already open: "keep" adds `Kept: YYYY-MM-DD` to the brief, "drop"
-  closes it as above. Apply answers here, reading `questions-archive.md` too (step 1 has
-  already archived answered entries), and apply each before deciding whether to ask again.
-  Until the user answers, the brief still holds its slot.
+  <item>?", unless one is already open: "keep" adds `Kept: <the answer's date>` to the brief,
+  "drop" closes it as above. Apply an answer only if it is newer than the brief's last
+  `Kept:` date (so each answer counts once); find it by searching `questions.md` and
+  `questions-archive.md` for that question (step 1 has already archived answered entries)
+  rather than reading the archive whole. Until the user answers, the brief still holds its
+  slot.
 - **Next**: at most five items, ranked. Each names its motive and its first concrete step. An
   item that is an open question points at its `Q-NNN` rather than restating it.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
