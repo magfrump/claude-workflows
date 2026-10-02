@@ -245,13 +245,19 @@ QS="$SCRIPT_DIR/questions.sh"
 QA=docs/working/questions-archive.md
 # questions.sh checks that the archive exists with a test that follows a
 # symlink, which would answer "does this host path exist?", so the archive
-# passes the same check before questions.sh runs.
+# passes the same check first. It is checked once, up front, so a non-plain
+# archive is listed in section 8 whatever branch below runs.
+qa_at=""; skipped "$QA" && qa_at="$SKIP_AT"
+nc="**Watched questions were NOT checked** —"
 if skipped docs/working/questions.md; then
-  skipnote docs/working/questions.md
-  skipped "$QA" || true  # still listed in section 8, so it shows this cycle
-elif inrepo docs/working/questions.md && [[ -f "$QS" ]] && skipped "$QA"; then
-  echo "**Watched questions were NOT checked** — $(skipnote "$QA")"
-elif inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
+  echo "$nc $(skipnote docs/working/questions.md)"
+elif ! inrepo docs/working/questions.md; then
+  echo "No docs/working/questions.md in this repo."
+elif [[ ! -f "$QS" ]]; then
+  echo "$nc questions.sh was not found (next to this script or in ~/.claude/scripts)."
+elif [[ -n "$qa_at" ]]; then
+  SKIP_AT="$qa_at"; echo "$nc $(skipnote "$QA")"
+else
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
   if open_q="$(bash "$QS" open 2>"$qs_err")"; then
     # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
@@ -265,12 +271,10 @@ elif inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
     echo
     echo "Open by route: $(printf '%s\n' "$open_q" | awk -F'  +' 'NF >= 2 { print $2 }' | sort | uniq -c | awk '{ c = $1; $1 = ""; printf "%s%s=%s", sep, substr($0, 2), c; sep = ", " }')"
   else
-    echo "**questions.sh open failed** — watched questions were NOT checked. Its error:"
+    echo "$nc questions.sh open failed. Its error:"
     echo
     echo '```'; cat "$qs_err"; echo '```'
   fi
-else
-  echo "No docs/working/questions.md (or questions.sh) in this repo."
 fi
 
 printf '\n%s\n\n' "## 4. Spot-check sample"

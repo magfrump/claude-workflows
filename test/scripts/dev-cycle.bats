@@ -217,6 +217,13 @@ make_repo() {
     section3=$(echo "$output" | sed -n '/## 3/,/## 4/p')
     [[ "$section3" == *"**Watched questions were NOT checked** — docs/working/questions-archive.md is not read"* ]] || { echo "$section3"; return 1; }
     [[ "$section3" != *"questions.sh open failed"* && "$section3" != *"no-such-file"* ]] || { echo "$section3"; return 1; }
+    # No questions.md: reported as absent, and the symlinked archive is still
+    # listed in section 8.
+    rm docs/working/questions.md
+    run --separate-stderr bash "$DC"
+    [[ "$output" == *"No docs/working/questions.md in this repo."* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
+    [[ "$(echo "$output" | sed -n '/## 8/,$p')" == *"- docs/working/questions-archive.md"* ]] || { echo "$output" | sed -n '/## 8/,$p'; return 1; }
+    printf '# Running questions\n\n## Open\n' > docs/working/questions.md
     # A plain record with no triggers beside a skipped log: the summary must
     # not claim every input was skipped.
     printf '# 002\n\nno triggers here\n' > docs/decisions/002-none.md
