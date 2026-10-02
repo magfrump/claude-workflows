@@ -97,7 +97,8 @@ it. A brief's branch is only ever named to
 beyond the default branch; date: its tip commit's), `absent <name>`, or a skip; the cycle
 runs no git command with it. A
 question ID from a brief is read only through `--check-answer`. A check that exits
-non-zero (no default branch, say) is recorded, and the step that needed it stops. Pass a value to
+non-zero (no default branch, say) is recorded, and the step that needed it stops. Every mode
+takes many arguments: batch a step's values into one call per mode. Pass a value to
 any check only if it uses letters, digits, `.`, `_`, `-`, `/`, `*` and `?` and nothing else,
 in single quotes; a value that fails this is skipped without running anything. Every skip,
 with its reason, goes in the record under `## Skipped inputs`. Never read, write or append through anything the digest's section 8
