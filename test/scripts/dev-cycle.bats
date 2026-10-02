@@ -877,3 +877,23 @@ EOF
     [[ "$output" == "ok docs/working/briefs/2026-01-01-l.md open "* ]] || { echo "$output"; return 1; }
 }
 
+@test "a fence line inside a fence is content, not a closer; indented code is not a fence" {
+    mkdir -p docs/working/briefs
+    local f=$'\x60\x60\x60'  # a ``` fence line
+    {
+        echo '# Questions'; echo
+        printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n    %s\n**Answer:** [2]\n%s\n**Answer:** [1]\n\n' "$f" "$f" "$f"
+        printf '### Q-2 · keep-or-drop-x-2\n**Needs:** you: judgment · **Status:** ANSWERED\n\n%s\n- %s\n**Answer:** [2]\n%s\n**Answer:** [1]\n\n' "$f" "$f" "$f"
+        printf '### Q-3 · keep-or-drop-x-3\n**Needs:** you: judgment · **Status:** ANSWERED\n\n    %s\n**Answer:** [1]\n\n' "$f"
+    } > docs/working/questions.md
+    printf '# Brief\n%s\n    %s\nStatus: done\n%s\nStatus: open\n' "$f" "$f" "$f" > docs/working/briefs/2026-01-01-i.md
+    printf '# Brief\n%s\n1. %s\nStatus: done\n%s\nStatus: open\n' "$f" "$f" "$f" > docs/working/briefs/2026-01-02-l.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3
+    for want in "keep Q-1" "keep Q-2" "keep Q-3"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
+    run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-i.md docs/working/briefs/2026-01-02-l.md
+    [[ "$output" == *"ok docs/working/briefs/2026-01-01-i.md open "* && "$output" == *"ok docs/working/briefs/2026-01-02-l.md open "* ]] || { echo "$output"; return 1; }
+}
+
