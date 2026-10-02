@@ -34,8 +34,8 @@
 #             that last added or removed a "Status: " line there (a merge
 #             commit, the branch's own commit after a fast-forward, or a later
 #             move or quoted Status line); "skip <path>: <reason>" otherwise,
-#             including a brief whose fences cannot be trusted (as for
-#             --check-answer, naming the line).
+#             including a brief FENCE_AWK refuses (as for --check-answer,
+#             naming the line and the reason).
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -279,8 +279,15 @@ FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
 function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
-function opencomment(l,   i) { i = index(l, "<!--"); return i && !index(substr(l, i + 4), "-->") }
-function refdef(l) { return l ~ /^[ \t]*\[[^]]+\]:/ }
+function opencomment(l,   i, j) {  # the last <!-- on the line has no --> after it
+  i = 0; while ((j = index(substr(l, i + 1), "<!--")) > 0) i += j
+  return i && !index(substr(l, i + 4), "-->")
+}
+function refdef(l) {  # also behind blockquote markers and list markers
+  sub(/^[ \t>]*/, "", l)
+  if (l ~ /^([-*+]|[0123456789]+[.)])[ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l); sub(/^[ \t>]*/, "", l) }
+  return l ~ /^\[[^]]+\]:/
+}
 function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
   ch = substr(l, 1, 1)
@@ -318,8 +325,8 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 }
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". A brief whose
-# fences cannot be trusted (FENCE_AWK refuses it) is not read at all. "new" when the
+# "Status:", which must be exactly "Status: open|done|dropped". A brief
+# FENCE_AWK refuses (see its comment for every reason) is not read at all. "new" when the
 # default branch has no file at that path (not landed yet, or moved to
 # closed/). A closed/ path is read the same way (its state, for In flight; it
 # never holds a slot).
@@ -399,12 +406,12 @@ check_fix() {
 # "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
 # the line, WHY the oddwhy reason), or nothing when the file has no such entry. A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
-# read. Each of these makes the whole file a skip for every ID, naming the line,
-# because one stray fence line flips everything after it (and two flips can
-# balance again): an ambiguous fence-like line, a fence still open at the end,
-# or a "### Q-NNN " heading inside a fence (questions.sh archive splits entries
-# at such a line, which is how stray fences arise). No real questions file has
-# any of them.
+# read. Each of these makes the whole file a skip for every ID, naming the line
+# and the reason: anything FENCE_AWK refuses (see its comment), a fence still
+# open at the end, or a "### Q-NNN " heading inside a fence (questions.sh
+# archive splits entries at such a line, which is how stray fences arise; one
+# stray fence line flips everything after it, and two can balance again). No
+# real questions file has any of them.
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
 # "**Status:** ANSWERED" once blanks around the field are trimmed (the last
