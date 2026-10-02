@@ -236,7 +236,8 @@ check_write() {  # $1 path, $2 "brief" to allow only a build brief
 check_branch() {
   local a="$1" sha
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
-  elif ! git check-ref-format "refs/heads/$a"; then echo "skip $a: not a valid branch name"
+  elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
+    || [[ "$a" == HEAD || "$a" == refs/* ]]; then echo "skip $a: not a valid branch name"
   else
     sha="$(git show-ref --verify --hash "refs/heads/$a" 2>/dev/null || true)"
     echo "ok $a ${sha:-absent}"

@@ -537,17 +537,18 @@ EOF
 
 @test "--check-branch allows only a plain, valid branch name" {
     run --separate-stderr bash "$DC" --check-branch feat/x-1 chore/dev-cycle-2026-01-01 '--output=x' -x \
-        'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}'
+        'a..b' x.lock 'a b' 'a/' 'a;b' 'HEAD@{1}' HEAD refs/heads/x
     [ "$status" -eq 0 ]
     for want in "ok feat/x-1" "ok chore/dev-cycle-2026-01-01" "skip --output=x: not an allowed branch name" \
                 "skip -x: not an allowed" "skip a..b: not a valid branch name" "skip x.lock: not a valid" \
-                "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed"; do
+                "skip a b: not an allowed" "skip a/: not a valid" "skip a;b: not an allowed" "skip HEAD@{1}: not an allowed" \
+                "skip HEAD: not a valid" "skip refs/heads/x: not a valid"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
     [ "$(grep -c '^ok ' <<<"$output")" -eq 2 ]
 }
 
-@test "the check modes do not warn per match under an uninstalled locale" {
+@test "--check-path does not warn per match under an uninstalled locale" {
     mkdir -p docs/decisions
     for i in 1 2 3 4 5 6; do echo "$i" > "docs/decisions/m$i.md"; done
     git add -A && git commit -qm files
