@@ -30,7 +30,8 @@
 #             <slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
 #             open|done|dropped <commit>" from its first unfenced "Status:" line
-#             on the default branch and the commit that last changed it there;
+#             on the default branch and the commit that last changed a Status
+#             line there;
 #             "skip <path>: <reason>" otherwise.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
@@ -49,8 +50,8 @@
 #             answer does not start with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
 #             heading, a questions file that is not plain).
-#   The check modes need a default branch found by name (origin/HEAD, main
-#   or master): they read its commit.
+#   --check-brief and --check-branch need a default branch found by name
+#   (origin/HEAD, main or master): they read its commit.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
@@ -250,8 +251,8 @@ check_write() {
 # working tree): its first line outside a ``` or ~~~ fence that starts with
 # "Status:", which must be exactly "Status: open|done|dropped". "new" when the
 # default branch has no file at that path (not landed yet, or moved to
-# closed/). The commit that last changed the file there is printed: the commit
-# that set the status, which a merge brought in (not the merge itself).
+# closed/). The commit that last added or removed a Status line in the file
+# there is printed: the commit that set the status, which a merge brought in.
 check_brief() {
   local a="$1" st c
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
@@ -259,11 +260,18 @@ check_brief() {
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
   if [[ "$(git cat-file -t "$MAIN_SHA:$a" 2>/dev/null || true)" != blob ]]; then echo "ok $a new"; return; fi
   # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+  # The whole blob is read (no early exit, which would kill git cat-file with
+  # SIGPIPE under pipefail); a fence closes only with the characters that opened it.
   st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk '
     { sub(/\r$/, "") }
-    /^(```|~~~)/ { fence = !fence; next }
-    !fence && /^Status:/ { if ($0 ~ /^Status: (open|done|dropped)$/) print; exit }')"
-  c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
+    seen { next }
+    fence != "" { if (substr($0, 1, 3) == fence) fence = ""; next }
+    /^(```|~~~)/ { fence = substr($0, 1, 3); next }
+    /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) print }')"
+  # The commit on the default branch that last added or removed a Status line
+  # in this file (not a later edit to its Asked:/Kept: lines, nor the merge).
+  c="$(git log -1 --format=%H -G'^Status: ' "$MAIN_SHA" -- "$a")"
+  [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
   if [[ -n "$st" ]]; then echo "ok $a ${st#Status: } $c"
   else echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; fi
 }
@@ -272,7 +280,8 @@ check_brief() {
 # (git's own name lookup falls back to refs/tags/refs/heads/<name>). The last
 # fields are the branch's commits not on the default branch (0: none, as for a
 # fresh branch or one merged with a merge commit; a squash-merged branch keeps
-# its count) and the date of its tip commit, YYYY-MM-DD in the committer's zone.
+# its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
+# time zone (as the committer set it: a future date is possible).
 # The default branch, when one was found by name, is refused.
 check_branch() {
   local a="$1" sha
@@ -290,12 +299,12 @@ check_branch() {
 # An in-cycle fix edits documentation only: a tracked .md file under docs/,
 # outside the cycle's own files, working/, human-author/ (the user's), reviews/
 # and decisions/ (records), the settings file, any dot-directory, and any
-# instruction file (CLAUDE.md, AGENTS.md, GEMINI.md, SKILL.md, any case); or
+# instruction file (CLAUDE.md, AGENT(S).md, GEMINI.md, SKILL.md, any case); or
 # README.md. Anything else is filed.
 # Instruction-file basenames, lower-cased: CLAUDE.md, CLAUDE.local.md,
 # AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
 # written inline, the hermeticity lint reads the alternation as a command.)
-INSTRUCTION_FILE='^(claude|agents|gemini)(\.[a-z0-9_-]+)?\.md$|^skill\.md$'
+INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz0123456789_-]+)?\.md$|^skill\.md$'
 check_fix() {
   local a="$1" base low
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
@@ -311,10 +320,13 @@ check_fix() {
 # drop, done, open, unrecognized, dup (the heading appears more than once), or
 # nothing when the file has no such entry. A trailing CR is dropped.
 # An entry is answered only when its header line (the first line starting
-# "**Needs:**", as questions.sh writes it) carries "**Status:** ANSWERED"; any
-# other entry is open, whatever its body says: the answer is read only after it
-# has been recorded. Lines inside a fence in the entry are skipped, headings
-# included. The recorder's own answer line is the one read (the questions
+# "**Needs:**", as questions.sh writes it) ends with " **Status:** ANSWERED";
+# any other entry is open, whatever its body says: the answer is read only after
+# it has been recorded. Entries are bounded by heading lines alone (a heading
+# inside a fence still ends the entry, which can only lose an answer). Inside
+# the entry, lines in a fence are skipped; a fence closes only with the
+# characters that opened it, and one still open when the entry ends makes the
+# answer unrecognized. The recorder's own answer line is the one read (the questions
 # protocol records the user's answer there); a note above it would be read
 # first. Then the answer is the
 # first line in the entry (outside a fence opened inside it) that starts, after
@@ -347,12 +359,12 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-inside && /^(```|~~~)/ { fence = !fence; next }
-inside && fence { next }
-heading($0) { count++; inside = (count == 1); fence = 0; header = 0; next }
-/^(#|##|###) / { inside = 0 }
+heading($0) { count++; inside = (count == 1); fence = ""; header = 0; next }
+/^(#|##|###) / { if (inside && fence != "") broken = 1; inside = 0 }
 !inside { next }
-!header && /^\*\*Needs:\*\*/ { header = 1; answered = ($0 ~ /\*\*Status:\*\* ANSWERED( |$)/); next }
+fence != "" { if (substr($0, 1, 3) == fence) fence = ""; next }
+/^(```|~~~)/ { fence = substr($0, 1, 3); next }
+!header && /^\*\*Needs:\*\*/ { header = 1; answered = ($0 ~ / \*\*Status:\*\* ANSWERED$/); next }
 !done {
   line = $0; sub(/^- /, "", line)
   if (index(line, id ":") == 1) { result = option(substr(line, length(id) + 2)); done = 1; next }
@@ -368,8 +380,9 @@ heading($0) { count++; inside = (count == 1); fence = 0; header = 0; next }
   result = option(rest); done = 1
 }
 END {
+  if (inside && fence != "") broken = 1
   if (count > 1) print "dup"
-  else if (count) print (!answered ? "open" : done ? result : "unrecognized")
+  else if (count) print (!answered ? "open" : broken ? "unrecognized" : done ? result : "unrecognized")
 }'
 check_answer() {
   local a="$1" f r hit="" where=""
@@ -408,10 +421,11 @@ if [[ -z "$MAIN_SHA" ]]; then
     MAIN="$cur"; MAIN_SHA="$(git rev-parse --verify --quiet HEAD 2>/dev/null || true)"
   fi
 fi
-[[ -n "$MAIN_SHA" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
-# The check modes run here: they read the default branch's commit, so they
-# need one found by name (origin/HEAD, main or master), not the current branch.
-if [[ -n "$CHECK" && -z "$MAIN_BY_NAME" ]]; then
+[[ -n "$MAIN_SHA" || -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
+# The check modes run here. --check-brief and --check-branch read the default
+# branch's commit, so they need one found by name (origin/HEAD, main or
+# master), not the current branch; the other modes do not use it.
+if [[ ( "$CHECK" == --check-brief || "$CHECK" == --check-branch ) && -z "$MAIN_BY_NAME" ]]; then
   echo "$CHECK needs a default branch (origin/HEAD, main or master); found none" >&2; exit 1
 fi
 if [[ -n "$CHECK" ]]; then
