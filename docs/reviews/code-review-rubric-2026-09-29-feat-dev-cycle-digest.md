@@ -1,4 +1,4 @@
-Commit: ef0471c (digest) / 5e8bfd9 (skill, feat/dev-cycle)
+Commit: 47c9a8e (digest) / d6e1f24 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -326,3 +326,22 @@ The user asked to follow the review-fix-loop guidance: k=1 delta passes until no
 | C1 | 4097-byte unterminated line not cut; `## Nextgen` reopened Next; loose seed regex; rule 1 vs step 6 brief contents; "done-criteria"; window fallback; row 68 condition; guide promotion clause; "Not covered" list | 🟢 | Claims 2, 20, 27, 28, 29, 37; scope notes | 47c9a8e, d6e1f24 |
 
 Skipped core critics: security, performance, api-consistency (loop-pass short-circuit: behavioral red confirmed). The next pass runs them (the short-circuit is used for this loop).
+
+---
+
+## Pass 7 (review-fix loop, k=1, all critics; on 47c9a8e digest / d6e1f24 skill)
+
+**Status: 🟡 not clean — 0 red, ambers fixed in ab8ec06 (digest) and cfe4b51 (skill).**
+
+Scope: the two fix rounds since final pass 5 (`28c6178..47c9a8e`, `c079e8c..d6e1f24`), labelled partial. Fact-check k=1 (48 claims: 40 V / 7 MA / 1 I, the Incorrect an already-fixed commit message) and the three critics ran in parallel; the critics took loop pass 6's fact-check report as Stage-1 input (a deviation from the sequential order, to save wall-clock time). Artifacts: `code-fact-check-report-digest-pass7.md`, `security-review-2026-10-01-digest-pass7.md`, `performance-review-2026-10-01-digest-pass7.md`, `api-consistency-review-2026-10-01-digest-pass7.md`. Pass 5's R1 (PERLIO) and A1 (quadratic scrub) confirmed fixed by execution.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| A1 | The build-loop policy was read at loop end, unpinned: a loop could flip `docs/dev-cycle.md` on its branch and merge itself; stop conditions did not name the cycle's own files | 🟡 Medium | security F1 | cfe4b51: policy recorded in the brief at step 6; stop conditions name settings*.json and the dev cycle's files |
+| A2 | A committed symlink at the idea-log path or an idea source sends writes/reads outside the repo | 🟡 Medium | security F2 | cfe4b51: every path must resolve inside the checkout; symlinked paths skipped |
+| A3 | The 47c9a8e seed regex backtracks in mawk (18.7 s on a 640 KB line) | 🟡 Low (regression) | performance #1 | ab8ec06 |
+| A4 | In-flight gaps: declined merges and blocked items matched no rule; stalled items re-queued forever; full pool invisible in the record | 🟡 | fact-check scope; performance #2, #3 | cfe4b51 |
+| A5 | Interim marker matched literally, unknown values undefined; `autonomous` clashed with "autonomous build loop" | 🟡 | api F1, F3; security F4 | cfe4b51: `self-merge` \| `review`; only one exact self-merge line counts |
+| C1 | U+2028/2029 can split lines for some readers; "every trigger in full" vs the cut; CRLF headings; section 5 heading rule untested; timing case could not catch a revert; onboarding/row 68 "separate PR review"; no settings template; rule 3 "names the item it blocks"; row 68 4b trigger; Q-103 option [2] wording; global row 12; guide row | 🟢 | security F5; api F2, F4–F7, F9, F11; fact-check MA; performance #5 | ab8ec06, cfe4b51 |
+
+Not acted on: brief `Status:` as a third status form (api F8, informational); awk reading a 100 MB line slowly (performance #4, unrealistic input; comment now scopes the cut to the scrub).
