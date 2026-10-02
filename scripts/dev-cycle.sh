@@ -52,8 +52,8 @@
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
 #             <reason>" when it cannot be read (no such entry, a duplicate
-#             heading, a heading only inside a code fence, a code fence never
-#             closed, a questions file
+#             heading, a code fence never closed or not in plain column-0
+#             form, a question heading inside a fence, a questions file
 #             that is not plain).
 #   --check-brief and --check-branch need a default branch found by name
 #   (origin/HEAD, main or master): they read its commit.
@@ -252,31 +252,39 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# Code fences, close to CommonMark. An opener is a line of 3 or more ` or ~
-# after at most 3 spaces, or after a list marker ("- ", "* ", "+ ", "1. ",
-# "1) ") that itself has at most 3 spaces before it; a ` fence's info string
-# holds no `. A line indented 4 or more spaces without a marker is indented
-# code, not a fence. Only a line of the same character, at least as long,
-# with no list marker, indented at most 3 columns past the opener's fence and
-# followed by nothing but spaces or tabs, closes it.
+# Code fences, read only in their plain form, so that every fence this reads is
+# read the way CommonMark reads it: a line starting at column 0 with 3 or more `
+# or ~ opens one (a ` fence's info string holds no `), and only a column-0 line
+# of the same character, at least as long and followed by nothing but spaces or
+# tabs, closes it. Any other fence-like line (indented, after a list marker, or
+# a column-0 line that neither opens nor, inside a fence, is plain content) is
+# ambiguous, and so is the start of a raw HTML block that can hold one (<pre>,
+# <script>, <style>, <textarea>): fence() records the first one's line number
+# in `odd`, and the
+# caller refuses the whole file. A fence still open at the end is recorded in
+# `fline` (its opening line) and refuses the file too.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
-function spaces(l,   n) { n = 0; while (substr(l, n + 1, 1) == " ") n++; return n }
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
-function opens(l,   i, s, m, ch, n) {
-  i = spaces(l); if (i > 3) return 0
-  s = substr(l, i + 1)
-  if (match(s, /^([-*+]|[0123456789]+[.)])[ \t]+/)) { i += RLENGTH; s = substr(s, RLENGTH + 1) }
-  ch = substr(s, 1, 1)
+function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
+function rawhtml(l) { l = tolower(l); return l ~ /^[ \t]*<(pre|script|style|textarea)([ \t>]|$)/ }
+function opens(l,   ch, n) {
+  ch = substr(l, 1, 1)
   if (ch != "`" && ch != "~") return 0
-  n = run(s, ch); if (n < 3) return 0
-  if (ch == "`" && index(substr(s, n + 1), "`")) return 0
-  fch = ch; flen = n; fcol = i; return 1
+  n = run(l, ch); if (n < 3) return 0
+  if (ch == "`" && index(substr(l, n + 1), "`")) return 0
+  fch = ch; flen = n; return 1
 }
-function closes(l,   i, s, n) {
-  i = spaces(l); if (i > fcol + 3) return 0
-  s = substr(l, i + 1); n = run(s, fch)
-  return n >= flen && substr(s, n + 1) ~ /^[ \t]*$/
+function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) ~ /^[ \t]*$/ }
+function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
+  if (infence) {
+    if (closes(l)) infence = 0
+    else if (fenceish(l) && substr(l, 1, 1) != "`" && substr(l, 1, 1) != "~" && !odd) odd = NR
+    return 1
+  }
+  if (opens(l)) { infence = 1; fline = NR; return 1 }
+  if (fenceish(l) || rawhtml(l)) { if (!odd) odd = NR; return 1 }
+  return 0
 }
 '
 # A brief's state, read only from the default branch's commit (never the
@@ -298,11 +306,14 @@ check_brief() {
   # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
   st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk "$FENCE_AWK"'
     { sub(/\r$/, "") }
-    seen { next }
-    infence { if (closes($0)) infence = 0; next }
-    opens($0) { infence = 1; next }
-    /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) print }')"
-  if [[ -z "$st" ]]; then echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return; fi
+    fence($0) { next }
+    !seen && /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) st = $0 }
+    END { if (odd) print "odd " odd; else if (infence) print "unbalanced " fline; else if (st != "") print st }')"
+  case "$st" in
+    odd\ *) echo "skip $a: line ${st#odd } is a fence-like line that is not a plain column-0 fence, so the brief is not read"; return ;;
+    unbalanced\ *) echo "skip $a: the code fence opened at line ${st#unbalanced } is never closed, so the brief is not read"; return ;;
+    '') echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return ;;
+  esac
   # The default branch's own commit (first-parent history, a merge diffed
   # against its first parent) that last added or removed a line starting
   # "Status: " in this file: a merge commit for merged work, the branch's own
@@ -354,15 +365,16 @@ check_fix() {
   else check_path "$a"; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
-# drop, done, open, unrecognized, dup (the heading appears more than once,
-# counting copies inside code fences), fenced (it appears only inside a fence),
-# or nothing when the file has no such entry. A trailing CR is dropped.
-# Fences are tracked across the whole file (FENCE_AWK): a heading inside one is
-# a quote, never the entry (though a "### Q-NNN " line there still ends the
-# entry being read), and no fenced line is read. A file that ends with a fence
-# still open is a skip for every ID: one stray fence line (questions.sh archive
-# can split an entry at a fenced heading) flips what follows, so nothing in
-# that file is trusted.
+# drop, done, open, unrecognized, dup (the heading appears more than once),
+# "odd N", "unbalanced N" or "quoted N" (the file's fences cannot be trusted; N
+# is the line), or nothing when the file has no such entry. A trailing CR is dropped.
+# Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
+# read. Each of these makes the whole file a skip for every ID, naming the line,
+# because one stray fence line flips everything after it (and two flips can
+# balance again): an ambiguous fence-like line, a fence still open at the end,
+# or a "### Q-NNN " heading inside a fence (questions.sh archive splits entries
+# at such a line, which is how stray fences arise). No real questions file has
+# any of them.
 # An entry is answered only when its header line (the first line starting
 # "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
 # "**Status:** ANSWERED" once blanks around the field are trimmed (the last
@@ -399,8 +411,8 @@ function heading(l,   h) {
   return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
 }
 { sub(/\r$/, "") }
-infence { if (heading($0)) quoted++; if ($0 ~ /^### Q-[0123456789]+ /) inside = 0; if (closes($0)) infence = 0; next }
-opens($0) { infence = 1; next }
+infence && /^### Q-[0123456789]+ / { if (!qline) qline = NR; inside = 0 }
+fence($0) { next }
 heading($0) { count++; inside = (count == 1); header = 0; next }
 /^(#|##|###) / { inside = 0; next }
 !inside { next }
@@ -425,9 +437,10 @@ heading($0) { count++; inside = (count == 1); header = 0; next }
   result = option(rest); done = 1
 }
 END {
-  if (infence) print "unbalanced"
-  else if (count + quoted > 1) print "dup"
-  else if (quoted) print "fenced"
+  if (odd) print "odd " odd
+  else if (infence) print "unbalanced " fline
+  else if (qline) print "quoted " qline
+  else if (count > 1) print "dup"
   else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
 check_answer() {
@@ -438,9 +451,12 @@ check_answer() {
     [[ -f "$f" ]] || continue
     r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
     [[ -n "$r" ]] || continue
-    if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f (counting copies inside code fences)"; return; fi
-    if [[ "$r" == unbalanced ]]; then echo "skip $a: a code fence in $f is never closed, so nothing after it can be trusted"; return; fi
-    if [[ "$r" == fenced ]]; then echo "skip $a: its heading appears only inside a code fence in $f"; return; fi
+    if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
+    case "$r" in
+      odd\ *) echo "skip $a: line ${r#odd } of $f is a fence-like line that is not a plain column-0 fence, so no entry in $f is read"; return ;;
+      unbalanced\ *) echo "skip $a: the code fence opened at line ${r#unbalanced } of $f is never closed, so no entry in $f is read"; return ;;
+      quoted\ *) echo "skip $a: line ${r#quoted } of $f is a question heading inside a code fence (questions.sh archive splits entries there), so no entry in $f is read"; return ;;
+    esac
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
     hit="$r"; where="$f"
   done
