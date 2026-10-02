@@ -7,7 +7,8 @@
 #
 # Usage: scripts/dev-cycle.sh [--since=YYYY-MM-DD] [--sample=N]
 #
-#   --since   start of the cycle window: merges committed on or after this date.
+#   --since   start of the cycle window: commits whose committer date, in the
+#             committer's own time zone (git's %cs), is on or after this date.
 #             Default: the date in the newest docs/working/cycles/cycle-YYYY-MM-DD.md
 #             (only its file name is read), else 14 days ago. The digest says which.
 #   --sample  how many merges to sample for the spot-check (default 2).
@@ -23,12 +24,24 @@ set -euo pipefail
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
-# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F). Byte patterns
-# under LC_ALL=C, so invalid UTF-8 in a file name cannot make perl warn or die.
+# U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F). Perl is pinned
+# to bytes (-C0, and PERL_UNICODE / PERL5OPT removed: either could turn on UTF-8
+# decoding and switch the byte patterns off). C0 goes first and the substitution
+# repeats until nothing changes, so neither a control byte inside a sequence nor
+# a nested sequence can reassemble one. Not covered: a lone 0x9B byte (invalid
+# UTF-8, inert on a UTF-8 terminal) and zero-width characters (cannot start a line).
 scrub() {
-  LC_ALL=C perl -pe 's/\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]//g; tr/\000-\010\013-\037\177//d'
+  env -u PERL_UNICODE -u PERL5OPT LC_ALL=C perl -C0 -pe 'BEGIN { $| = 1 } tr/\000-\010\013-\037\177//d; 1 while s/\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]|\xF3\xA0[\x80\x81][\x80-\xBF]//g'
 }
-exec > >(scrub) 2> >(scrub >&2)
+# Run the body as a child whose stdout and stderr each pass through scrub as
+# members of one pipeline, so the shell waits for both filters before exiting:
+# a redirected digest is complete when the script returns. stdout goes to fd 3,
+# stderr takes the inner pipe, then fd 3 takes the outer one. Exit status: the
+# body's (pipefail; scrub itself does not fail). DEV_CYCLE_SCRUBBED marks the child.
+if [[ -z "${DEV_CYCLE_SCRUBBED:-}" ]]; then
+  { DEV_CYCLE_SCRUBBED=1 bash "${BASH_SOURCE[0]}" "$@" 2>&1 1>&3 3>&- | scrub >&2; } 3>&1 | scrub
+  exit "${PIPESTATUS[0]}"
+fi
 
 SINCE=""
 SAMPLE=2
@@ -38,7 +51,7 @@ while [[ $# -gt 0 ]]; do
     --since=*) SINCE="${1#--since=}"; shift ;;
     --sample) SAMPLE="${2:?--sample needs a number}"; shift 2 ;;
     --sample=*) SAMPLE="${1#--sample=}"; shift ;;
-    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -47,6 +60,11 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: relative paths work
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
+ROOT_REAL="$(pwd -P)"
+# A regular file whose real path stays inside the repo: a committed symlink (to
+# the file or a parent directory) must not make the digest print text from
+# outside the checkout.
+inrepo() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL"/* ]]; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
 TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
@@ -89,12 +107,12 @@ if ! [[ "$SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$SINCE" >/dev/
 
 echo "# Dev-cycle digest — $TODAY"
 echo
-echo "Window: since $SINCE (from $source_note). Merges and commits: those on \`$MAIN\` at ${MAIN_SHA:0:7} committed on or after $SINCE, filtered by date after a full walk. Triggers: all of them, from the working tree. Questions, roadmap, idea log: the working tree."
+echo "Window: since $SINCE (from $source_note). Merges, commits and section 7's changed files: those on \`$MAIN\` at ${MAIN_SHA:0:7} whose committer date (in the committer's time zone) is on or after $SINCE, filtered after a full walk. Triggers: all of them, from the working tree. Questions, roadmap, idea log: the working tree."
 
 echo
 echo "## 1. Activity"
 # Walk all of history and filter by committer date afterwards: `--since` stops
-# at the first old-dated commit, so one such commit hid every merge after it.
+# at the first old-dated commit, so one such commit hid every merge behind it.
 # %cs is the committer date as YYYY-MM-DD, which compares as a string.
 merges_full="$(git log "$MAIN_SHA" --first-parent --merges --format='%cs %H %h %ad %s' --date=short | awk -v s="$SINCE" '$1 >= s')"
 merges="$(printf '%s' "$merges_full" | cut -d' ' -f3-)"
@@ -109,7 +127,7 @@ echo "Every trigger, in full. Decide each: fired / not fired / cannot tell, with
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
-  [[ -f "$f" ]] || continue
+  inrepo "$f" || continue
   grep -q '^## Revisit triggers' "$f" || continue
   found=1
   echo
@@ -118,7 +136,7 @@ for f in docs/decisions/[0-9][0-9][0-9]-*.md; do
   echo "### ${f//$'\n'/ } (last committed on this branch: ${d:-never, uncommitted})"
   trig < "$f" | sed 's/^/> /'
 done
-if [[ -f docs/decisions/log.md ]]; then
+if inrepo docs/decisions/log.md; then
   while IFS= read -r row; do
     found=1
     n="$(awk -F'|' '{ gsub(/ /, "", $2); print $2 }' <<< "$row")"
@@ -135,7 +153,7 @@ fi
 printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
-if [[ -f docs/working/questions.md && -f "$QS" ]]; then
+if inrepo docs/working/questions.md && [[ -f "$QS" ]]; then
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
   if open_q="$(bash "$QS" open 2>"$qs_err")"; then
     # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
@@ -168,7 +186,7 @@ else
 fi
 
 printf '\n%s\n\n' "## 5. Roadmap"
-if [[ -f docs/roadmap.md ]]; then
+if inrepo docs/roadmap.md; then
   d="$(git log -1 --format=%ad --date=short -- docs/roadmap.md)"
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
@@ -178,31 +196,30 @@ else
 fi
 
 printf '\n%s\n\n' "## 6. Merges with code but no docs"
-# A merge whose diff against its first parent touches files but no docs/ path,
-# *.md or README is a step 4 finding to check (rule: undocumented is broken).
-flagged=0
-while read -r _ full _; do
+# A merge whose diff against its first parent touches files but no doc (a path
+# under docs/, a *.md file, or a file named README or README.*, any case): step 4
+# checks each one (rule: undocumented is broken). Listed up to 30.
+flagged=()
+while read -r _ full rest; do
   [[ -n "$full" ]] || continue
-  counts="$(git diff --name-only -z "$full^1" "$full" | awk -v RS='\0' 'NF { if ($0 ~ /^docs\// || $0 ~ /\.md$/ || $0 ~ /(^|\/)README/) d++; else c++ } END { print c + 0, d + 0 }')"
+  counts="$(git diff --name-only -z "$full^1" "$full" | awk -v RS='\0' 'NF { b = tolower($0); sub(/.*\//, "", b); if ($0 ~ /^docs\// || $0 ~ /\.md$/ || b == "readme" || index(b, "readme.") == 1) d++; else c++ } END { print c + 0, d + 0 }')"
   read -r n_code n_docs <<< "$counts"
-  if [[ "$n_code" -gt 0 && "$n_docs" -eq 0 ]]; then
-    flagged=1
-    echo "- $(git log -1 --format='%h %ad %s' --date=short "$full") ($n_code file(s), no doc change)"
-  fi
+  [[ "$n_code" -gt 0 && "$n_docs" -eq 0 ]] && flagged+=("- $rest ($n_code file(s), no doc change)")
 done <<< "$merges_full"
-[[ $flagged -eq 1 ]] || echo "None in the window."
+if [[ ${#flagged[@]} -eq 0 ]]; then
+  echo "None in the window."
+else
+  printf '%s\n' "${flagged[@]:0:30}"
+  [[ ${#flagged[@]} -le 30 ]] || echo "… $((${#flagged[@]} - 30)) more"
+fi
 
 printf '\n%s\n\n' "## 7. Inputs for steps 4b and 5"
-# Base = the parent of the oldest first-parent commit in the window (the empty
-# tree when that commit is the root). Old-dated commits after it are included:
-# re-reading a file is cheap, missing one is not.
-oldest="$(git log "$MAIN_SHA" --first-parent --format='%cs %H' | awk -v s="$SINCE" '$1 >= s { h = $2 } END { print h }')"
-if [[ -z "$oldest" ]]; then
-  changed=""
-else
-  base="$(git rev-parse --verify --quiet "$oldest^1" || git hash-object -t tree /dev/null)"
-  changed="$(git diff --name-only -z "$base" "$MAIN_SHA" -- skills workflows docs/decisions | tr '\0\n' '\n ')"
-fi
+# Every file any first-parent commit in the window touched (a merge counts its
+# diff against its first parent), not a net diff: a change reverted inside the
+# window still counts. "@" lines carry each commit's date; git quotes a name
+# holding a control character, so each name is one line.
+changed="$(git log "$MAIN_SHA" --first-parent --diff-merges=first-parent --name-only --format='@%cs' -- skills workflows docs/decisions \
+  | awk -v s="$SINCE" '/^@/ { on = (substr($0, 2) >= s); next } on && NF' | sort -u)"
 skills_changed="$(printf '%s\n' "$changed" | grep -E '^(skills/.*/SKILL\.md|workflows/[^/]*\.md)$' || true)"
 records_changed="$(printf '%s\n' "$changed" | grep -E '^docs/decisions/[0-9]{3}-[^/]*\.md$' || true)"
 echo "Step 4b (deep-audit triggers). The model version is not in git: compare it with the last cycle record's."
@@ -216,7 +233,7 @@ for kind in skills records; do
 done
 echo
 echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
-if [[ -f docs/roadmap.md ]]; then
+if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
     n="$(awk -v h="## $sec" '$0 == h { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
     echo "- Roadmap $sec: $n item(s)"
@@ -225,8 +242,9 @@ else
   echo "- Roadmap: none yet (0 items ready for 6b)"
 fi
 LOG=docs/working/idea-log.md
-if [[ -f "$LOG" ]]; then
-  # Step 5 heads each brainstorm "## Brainstorm YYYY-MM-DD"; ideas are "- " lines.
+if inrepo "$LOG"; then
+  # The skill's step 5 appends "## Brainstorm YYYY-MM-DD" after reading the log
+  # (its ideas go to the roadmap); seeding appends "- " lines after that heading.
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
   seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- / { c++ } END { print c + 0 }' "$LOG")"

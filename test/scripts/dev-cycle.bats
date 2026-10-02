@@ -77,9 +77,10 @@ make_repo() {
     [[ "$output" != *"Carried forward"* && "$output" != *"Main at:"* ]]
 }
 
-@test "an old-dated commit on main does not hide the merges after it" {
+@test "an old-dated commit on main does not hide the merges behind it" {
     # Fast-forward a 2020-dated commit onto main, then merge today: --since used
-    # to stop its walk at the old commit and report 0 merges.
+    # to stop its walk at the old commit, so it counted only the newest merge and
+    # hid the three older ones behind the old commit.
     git checkout -q -b old && GIT_COMMITTER_DATE="2020-01-02T12:00:00" git commit -q --allow-empty --date="2020-01-02T12:00:00" -m old
     git checkout -q main && git merge -q --ff-only old
     git checkout -q -b f4 && git commit -q --allow-empty -m "feature 4" && git checkout -q main
@@ -94,13 +95,36 @@ make_repo() {
     mkdir -p docs/decisions
     # C1 CSI (U+009B), RLO (U+202E), a tag character (U+E0041), ESC, CR.
     printf '# 001\n\n## Revisit triggers\nif a\xc2\x9bb\xe2\x80\xaec\xf3\xa0\x81\x81d\033e\rf.\n' > docs/decisions/001-x.md
-    run --separate-stderr bash "$DC"
-    [[ "$output" == *"if abcdef."* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p' | od -c | head; return 1; }
-    # A non-repo error message carrying an ESC still reaches stderr scrubbed.
+    # Split by a C0 byte, and nested: neither may reassemble a sequence.
+    printf '# 002\n\n## Revisit triggers\nif g\xc2\x01\x9bh\xe2\x80\x01\xaei\xc2\xc2\x9b\x9bj\xe2\x80\xe2\x80\xae\xaek\xf3\xa0\xf3\xa0\x81\x81\x81\x81l.\n' > docs/decisions/002-y.md
+    for env in "" PERL_UNICODE=SDA PERL5OPT=-CSD; do
+        run --separate-stderr env $env bash "$DC"
+        [[ "$output" == *"if abcdef."* && "$output" == *"if ghijkl."* ]] || { echo "env: $env"; echo "$output" | sed -n '/## 2/,/## 3/p' | od -c | head -20; return 1; }
+    done
+    # An unknown-option error carrying an ESC reaches stderr scrubbed.
     run --separate-stderr bash "$DC" $'--bo\033gus'
     [ "$status" -eq 1 ]
     # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
     [[ "$stderr" == *"Unknown option: --bogus"* ]] || { printf '%s' "$stderr" | od -c | head; return 1; }
+}
+
+@test "a symlink out of the repo is not followed" {
+    mkdir -p docs/decisions "$BATS_TEST_TMPDIR/outside"
+    printf '# 9\n\n## Revisit triggers\nSECRET line.\n' > "$BATS_TEST_TMPDIR/outside/x.md"
+    printf '## Next\n- SECRET next\n' > "$BATS_TEST_TMPDIR/outside/roadmap.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/x.md" docs/decisions/002-link.md
+    ln -s "$BATS_TEST_TMPDIR/outside/roadmap.md" docs/roadmap.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *SECRET* ]] || { echo "$output"; return 1; }
+}
+
+@test "the exit status and the whole digest survive a redirect to a file" {
+    bash "$DC" > "$BATS_TEST_TMPDIR/out.md" 2> "$BATS_TEST_TMPDIR/err.txt"
+    grep -q '^## 7. Inputs for steps 4b and 5' "$BATS_TEST_TMPDIR/out.md"
+    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'idea-log'
+    run bash "$DC" --since=nope
+    [ "$status" -eq 1 ]
 }
 
 @test "a newline in a decision record's name cannot print a line of its own" {
@@ -120,9 +144,9 @@ make_repo() {
     [[ "$output" == *"Window: since 2026-03-01 (from --since)"* ]]
 }
 
-@test "--since counts from midnight, not from the current time of day" {
+@test "--since includes commits from the start date itself" {
     GIT_COMMITTER_DATE="$(date +%F)T00:00:30" git commit -q --allow-empty --date="$(date +%F)T00:00:30" -m "just after midnight"
-    # All commits here are from today, before "now": a midnight window counts all.
+    # All commits here are from today: a window starting today counts all of them.
     total=$(git rev-list --count HEAD)
     run --separate-stderr bash "$DC" --since="$(date +%F)"
     [[ "$output" == *"; $total commit(s)"* ]] || { echo "expected $total"; echo "$output" | sed -n '/## 1/,/## 2/p'; return 1; }
@@ -245,17 +269,34 @@ EOF
     section=$(echo "$output" | sed -n '/## 6/,/## 7/p')
     [[ "$section" == *"merge: code only (1 file(s), no doc change)"* ]] || { echo "$section"; return 1; }
     [[ "$section" != *"code and docs"* && "$section" != *"feature 1"* ]] || { echo "$section"; return 1; }
+    # README_gen.sh is code; a README.txt or docs/ alone is a doc.
+    for spec in "readme-like:src/README_gen.sh:flag" "readme-txt:x.sh lib/README.txt:ok" "docs-only:docs/a.txt y.sh:ok" "md-only:notes.md z.sh:ok"; do
+        IFS=: read -r br files want <<< "$spec"
+        git checkout -q -b "$br"
+        for f in $files; do mkdir -p "$(dirname "$f")"; echo "$br" >> "$f"; done
+        git add -A && git commit -q -m "$br" && git checkout -q main && git merge -q --no-ff "$br" -m "merge: $br"
+    done
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 6/,/## 7/p')
+    [[ "$section" == *"merge: readme-like"* ]] || { echo "$section"; return 1; }
+    for br in readme-txt docs-only md-only; do
+        [[ "$section" != *"merge: $br"* ]] || { echo "$br flagged"; echo "$section"; return 1; }
+    done
 }
 
 @test "prints the step 4b and step 5 inputs" {
     mkdir -p skills/demo docs/decisions docs/working
     echo s > skills/demo/SKILL.md && echo r > docs/decisions/001-big.md
     git add -A && git commit -q -m "skill and record"
+    # Changed and reverted inside the window: still a change.
+    echo t > skills/demo/tmp.md && git add -A && git commit -q -m tmp && git rm -q skills/demo/tmp.md && git commit -q -m untmp
+    git checkout -q -b wf && mkdir -p workflows && echo w > workflows/flow.md && git add -A && git commit -q -m wf
+    git checkout -q main && git merge -q --no-ff wf -m "merge: wf" && git rm -q workflows/flow.md && git commit -q -m "drop wf"
     printf '# Roadmap\n\n## Now\n- a\n\n## In flight\n- b\n- c\n\n## Next\n1. d\n' > docs/roadmap.md
     printf '# Ideas\n- old\n\n## Brainstorm 2026-01-01\n- one\n- two\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
     section=$(echo "$output" | sed -n '/## 7/,$p')
-    for t in "in the window: 1" "    - skills/demo/SKILL.md" "    - docs/decisions/001-big.md" \
+    for t in "in the window: 2" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
              "Roadmap Now: 1 item(s)" "Roadmap In flight: 2 item(s)" "Roadmap Next: 1 item(s)" \
              "Last brainstorm: 2026-01-01 (7 day(s) ago)" "Ideas seeded since: 2"; do
         [[ "$section" == *"$t"* ]] || { echo "missing: $t"; echo "$section"; return 1; }
