@@ -1,4 +1,4 @@
-Commit: f3c9ebb (digest) / 2bf03da (skill, feat/dev-cycle)
+Commit: dd1988d (digest) / d39c8f2 (skill, feat/dev-cycle)
 Loop-pass short-circuit: used at ef0471c / 5e8bfd9
 
 # Code Review Rubric
@@ -803,4 +803,16 @@ Scope: `e93312d..f3c9ebb`, `823f494..2bf03da`, partial: the pass-34 fix round. A
 |---|---|---|---|---|
 | A1 | `refdef()`'s marker loop rebuilt the line per marker (quadratic) | 🟡 Low | performance Low; security F1 | digest: one anchored `match()` strips every leading blank, `>` and list marker |
 | C1 | Help lists missed the one-line comment exception; the brief clause named only unprefixed `[` lines and claimed every listed shape is skipped | 🟢 | api F1, F2; fact-check 1, 17, 18; security F2 | digest help; skill brief clause |
+
+---
+
+## Pass 36 (review-fix loop, k=1, all critics; on dd1988d digest / d39c8f2 skill)
+
+**Status: 🟢 no known issue left open — fact-check 0 Incorrect (14 V / 1 MA, wording); API 1 Minor + 1 Informational (wording), both fixed in d47dd8d (skill) and 3d580cd (digest help); security nothing at Low or above (1 Informational, the same sentence, fixed by d47dd8d); performance nothing at Low or above (1 Informational: mawk timing jitter on 16 MiB+ adversarial lines, no action). Health check on dbfe402: passed (rc 0). Next: the k=1 full review over the whole branch, per the user's instruction.**
+
+Scope: `f3c9ebb..dd1988d`, `2bf03da..d39c8f2`, partial: the pass-35 fix round. Artifacts: `code-fact-check-report-digest-pass36.md`, `security-review-2026-10-02-digest-pass36.md`, `performance-review-2026-10-02-digest-pass36.md`, `api-consistency-review-2026-10-02-digest-pass36.md`. The single-`match()` marker strip matches the old loop on 300k–400k fuzzed prefixes and is linear; security's harvest (7,918 answer and 3,543 brief readings) is byte-identical to f3c9ebb; 1,286–9,713 tracked `.md` verdicts unchanged; no real file refused. Minor probe-rule slips: fact-check tee'd once from a top-level command (inside its scratch dir); security stopped its own wait loop with a pattern `pkill`; performance stopped a self-matching wait loop by PID. No worktree touched.
+
+| # | Finding | Severity | Source | Fix |
+|---|---|---|---|---|
+| C1 | The brief clause claimed to be stricter than `--check-brief` (a fence-like content line and an escape-made `]:` are skipped); `--help` did not say reference definitions count behind `>` and list markers | 🟢 Minor / Info | api F1, F2; fact-check 12; security F1 | skill d47dd8d; digest help 3d580cd |
 
