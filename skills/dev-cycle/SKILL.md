@@ -333,7 +333,8 @@ acceptance criteria (the doc change included, and "in the change that merges thi
 change this brief's status line from open to done"), branch (a new name: `--check-branch`
 prints `absent` for it), and
 out-of-scope. Any code in a brief sits in plain column-0 ``` fences, with no indented or
-list-item fences, raw HTML or stray carriage returns (`--check-brief` refuses a brief with
+list-item fences, no line starting with `<` (write placeholders as `NAME`, not `<name>`), and
+no link reference definitions or stray carriage returns (`--check-brief` refuses a brief with
 those, and a refused brief keeps its slot). Later cycles add `Asked:`, `Applied:` and `Kept:`
 lines (In flight, above). Move the item to In flight, naming the brief's path. The briefs
 land with step 7, so they are on the default branch when the user starts one.
@@ -373,6 +374,6 @@ keep-or-drop answer step 6 could not read, read as `unrecognized`, or found stil
 (each with its brief), each In flight line naming a `closed/` brief that reads `open` or
 `new` (for the user to
 set its status), and each
-brief holding a slot by path, so the user can start any of them (one `research-plan-implement`
+brief holding a slot by path (marking any `--check-brief` refused, with its reason), so the user can start any of them (one `research-plan-implement`
 session per brief, on its own branch and worktree) without opening the record. A brief is
 written from repo text: the user reads it before starting it.
