@@ -98,7 +98,19 @@ plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" &&
 # would have been read and listed in section 8. A newline in a name becomes a
 # space here, before the name is ever printed.
 SKIPPED=()
-skipped() { if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi; return 1; }
+# Parents are checked first, top down: below a parent that is not a plain
+# directory nothing is probed (not even whether a file exists there), and the
+# parent is what gets recorded.
+skipped() {
+  local p="" c rest="$1"
+  while [[ "$rest" == */* ]]; do
+    c="${rest%%/*}"; rest="${rest#*/}"; p="${p:+$p/}$c"
+    [[ -e "$p" || -L "$p" ]] || return 1
+    plaindir "$p" || { SKIPPED+=("$p/"); return 0; }
+  done
+  if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi
+  return 1
+}
 skipdir() { if [[ -e "$1" || -L "$1" ]] && ! plaindir "$1"; then SKIPPED+=("$1/"); return 0; fi; return 1; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
@@ -330,7 +342,7 @@ fi
 
 printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
-  echo "None: every input is a plain file."
+  echo "None: no input was skipped."
 else
   echo "Not plain files (reached through a symlink, or not regular files), so not read; they exist but their contents are not in the sections above:"
   printf '%s\n' "${SKIPPED[@]}" | sort -u | sed 's/^/- /'

@@ -163,6 +163,11 @@ make_repo() {
     run --separate-stderr bash "$DC"
     [ "$status" -eq 0 ]
     [[ "$output" != *private-plan* && "$output" != *SECRET* && "$output" != *cycle-2026-02-01* ]] || { echo "$output"; return 1; }
+    # A fixed name below a skipped directory is not probed: whether log.md
+    # exists out there must not show.
+    touch "$BATS_TEST_TMPDIR/outside/dec/log.md"
+    run --separate-stderr bash "$DC"
+    [[ "$output" != *"docs/decisions/log.md"* ]] || { echo "$output" | sed -n '/## 8/,$p'; return 1; }
     skipped=$(echo "$output" | sed -n '/## 8/,$p')
     [[ "$skipped" == *"- docs/decisions/"* && "$skipped" == *"- docs/working/cycles/"* ]] || { echo "$skipped"; return 1; }
     [[ "$output" == *"No revisit triggers read: decision records or the log were skipped"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p'; return 1; }
@@ -177,7 +182,7 @@ make_repo() {
 @test "the exit status and the whole digest survive a redirect to a file" {
     bash "$DC" > "$BATS_TEST_TMPDIR/out.md" 2> "$BATS_TEST_TMPDIR/err.txt"
     grep -q '^## 7. Inputs for steps 4b and 5' "$BATS_TEST_TMPDIR/out.md"
-    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'every input is a plain file'
+    tail -1 "$BATS_TEST_TMPDIR/out.md" | grep -q 'None: no input was skipped'
     run bash "$DC" --since=nope
     [ "$status" -eq 1 ]
 }
