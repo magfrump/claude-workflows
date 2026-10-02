@@ -154,7 +154,7 @@ make_repo() {
     done
 }
 
-@test "a symlinked directory is listed once, never its contents; a newline in a skipped name stays on one line" {
+@test "a symlinked directory is listed and nothing below it is read or probed; a newline in a skipped name stays on one line" {
     mkdir -p "$BATS_TEST_TMPDIR/outside/dec" "$BATS_TEST_TMPDIR/outside/cyc" docs/working
     printf '# 1\n\n## Revisit triggers\nSECRET.\n' > "$BATS_TEST_TMPDIR/outside/dec/001-private-plan.md"
     touch "$BATS_TEST_TMPDIR/outside/cyc/cycle-2026-02-01.md"
