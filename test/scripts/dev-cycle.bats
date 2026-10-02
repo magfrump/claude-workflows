@@ -939,13 +939,13 @@ EOF
     git commit -qam second-comment
     run --separate-stderr bash "$DC" --check-answer Q-1
     [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md opens an HTML comment"* ]] || { echo "$output"; return 1; }
-    for shape in '[a\\]b]: /u' '[a' ; do
+    for shape in '[a\]b]: /u' '[a' '[a\]' ; do
         { echo '# Questions'; echo "$shape"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
         git commit -qam "refdef shape"
         run --separate-stderr bash "$DC" --check-answer Q-1
         [[ "$output" == "skip Q-1: line 2 of docs/working/questions.md starts like a link reference definition"* ]] || { echo "$shape: $output"; return 1; }
     done
-    for pre in '- ' '> ' '1. '; do
+    for pre in '- ' '> ' '1. ' '- - ' '1. - ' '> - - '; do
         { echo '# Questions'; echo "${pre}[x]: /u 'title"; q Q-1 'Q-1: [2]'; } > docs/working/questions.md
         git commit -qam "refdef $pre"
         run --separate-stderr bash "$DC" --check-answer Q-1
