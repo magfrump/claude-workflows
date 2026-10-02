@@ -25,19 +25,22 @@ command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its outp
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
 # U+202A-202E, U+2066-2069) and tag characters (U+E0000-E007F), and cuts lines
-# over 4096 bytes. Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
+# longer than 4096 input bytes. Perl is pinned to bytes: PERL_UNICODE, PERL5OPT and PERLIO are
 # removed (each can turn on UTF-8 decoding and switch the byte patterns off),
 # -C0 is set, and both handles are binmoded. C0 goes first; after each deletion
 # the search resumes 3 bytes before it (no sequence is longer than 4 bytes), so a
-# control byte inside a sequence or a nested sequence cannot reassemble one, and
-# the work stays linear in the line. Not covered: lone bytes 0x80-0x9F and
-# overlong encodings (invalid UTF-8, which a UTF-8 terminal does not decode),
-# U+061C and U+2028/2029, and zero-width characters (none can start a line).
+# control byte inside a sequence or a nested sequence cannot reassemble one;
+# each pass is local, and the line cut bounds the total work. Not covered: lone
+# bytes 0x80-0x9F and overlong encodings (invalid UTF-8, which a UTF-8 terminal
+# does not decode), U+061C, U+2028/2029, and invisible format characters such as
+# zero-width ones, U+00AD, U+206A-206F and U+FFF9-FFFB (none can start a line).
 scrub() {
   # shellcheck disable=SC2016  # perl code, not shell: $_ must stay literal
   env -u PERL_UNICODE -u PERL5OPT -u PERLIO LC_ALL=C perl -C0 -ne '
     BEGIN { $| = 1; binmode STDIN; binmode STDOUT }
-    $_ = substr($_, 0, 4096) . " [line cut at 4096 bytes]\n" if length($_) > 4097;
+    my $nl = s/\n\z//;
+    $_ = substr($_, 0, 4096) . " [line cut at 4096 bytes]" if length($_) > 4096;
+    $_ .= "\n" if $nl;
     tr/\000-\010\013-\037\177//d;
     my $i = 0;
     while (1) {
@@ -209,7 +212,7 @@ if inrepo docs/roadmap.md; then
   d="$(git log -1 --format=%ad --date=short -- docs/roadmap.md)"
   echo "docs/roadmap.md last committed on this branch: ${d:-never, uncommitted}. Its Next section:"
   echo
-  awk 'index(tolower($0), "## next") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
+  awk '{ t = tolower($0) } t == "## next" || index(t, "## next ") == 1 || index(t, "## next(") == 1 { on = 1; next } on && /^## / { exit } on && NF { print "> " $0 }' docs/roadmap.md
 else
   echo "No docs/roadmap.md yet — create it this cycle from the template in the dev-cycle skill."
 fi
@@ -255,7 +258,7 @@ echo
 echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
 if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
-    n="$(awk -v h="## $sec" 'index(tolower($0), tolower(h)) == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
+    n="$(awk -v h="## $sec" '{ t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
     echo "- Roadmap $sec: $n item(s)"
   done
 else
@@ -268,7 +271,7 @@ if inrepo "$LOG"; then
   # and only lines of that shape count.
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
-  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- .*\(signal: / { c++ } END { print c + 0 }' "$LOG")"
+  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- [^ ].*\(signal: .*\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
   if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
     echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else

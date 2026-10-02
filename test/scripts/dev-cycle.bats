@@ -101,12 +101,12 @@ make_repo() {
         run --separate-stderr env $env bash "$DC"
         [[ "$output" == *"if abcdef."* && "$output" == *"if ghijkl."* ]] || { echo "env: $env"; echo "$output" | sed -n '/## 2/,/## 3/p' | od -c | head -20; return 1; }
     done
-    # Deep nesting stays fast (the scrub used to restart the line per layer), and
-    # an over-long line is cut.
-    perl -e 'print "# 003\n\n## Revisit triggers\nif m", "\xC2" x 40000, "\x9B" x 40000, "n.\n"' > docs/decisions/003-z.md
+    # 1000 nested layers inside the cut are removed entirely; a 80 KB line is cut
+    # (which is what bounds the scrub's work) and the run stays fast.
+    perl -e 'print "# 003\n\n## Revisit triggers\nif m", "\xC2" x 1000, "\x9B" x 1000, "n.\n- ", "x" x 80000, "\n"' > docs/decisions/003-z.md
     run --separate-stderr timeout 20 bash "$DC"
     [ "$status" -eq 0 ] || { echo "status $status (124 = timed out)"; return 1; }
-    [[ "$output" == *"[line cut at 4096 bytes]"* ]]
+    [[ "$output" == *"if mn."* && "$output" == *"[line cut at 4096 bytes]"* ]] || { echo "$output" | sed -n '/## 2/,/## 3/p' | cut -c1-120; return 1; }
     # An unknown-option error carrying an ESC reaches stderr scrubbed.
     run --separate-stderr bash "$DC" $'--bo\033gus'
     [ "$status" -eq 1 ]
@@ -302,8 +302,8 @@ EOF
     # A non-ASCII skill name still counts.
     mkdir -p "skills/café" && echo c > "skills/café/SKILL.md" && git add -A && git commit -q -m cafe
     # Heading case and suffixes do not hide items.
-    printf '# Roadmap\n\n## Now\n- a\n\n## In Flight\n- b\n- c\n\n## Next (ranked)\n1. d\n' > docs/roadmap.md
-    printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- two (signal: b)\n' > docs/working/idea-log.md
+    printf '# Roadmap\n\n## Now\n- a\n\n## In Flight\n- b\n- c\n\n## Next (ranked)\n1. d\n\n## Nextgen ideas\n- not next\n' > docs/roadmap.md
+    printf '# Ideas\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n- one (signal: a)\n- a format example, not a seed\n- (signal: unclosed\n- two (signal: b)\n' > docs/working/idea-log.md
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
     section=$(echo "$output" | sed -n '/## 7/,$p')
     for t in "in the window: 3" "    - skills/café/SKILL.md" "    - skills/demo/SKILL.md" "    - workflows/flow.md" "    - docs/decisions/001-big.md" \
