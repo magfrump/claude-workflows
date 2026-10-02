@@ -34,8 +34,11 @@
 #             that last added or removed a "Status: " line there (a merge
 #             commit, the branch's own commit after a fast-forward, or a later
 #             move or quoted Status line); "skip <path>: <reason>" otherwise,
-#             including a brief FENCE_AWK refuses (as for --check-answer,
-#             naming the line and the reason).
+#             including a brief the reader cannot trust, naming the line and
+#             the reason: a code fence never closed or not in plain column-0
+#             form, a line starting (after blanks) with < or leaving a <!--
+#             open, a line starting like a link reference definition, a stray
+#             carriage return, or a byte-order mark on line 1.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -132,7 +135,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,71p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,74p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -265,7 +268,8 @@ check_write() {
 # ambiguous, and so is anything this reader does not model: outside a fence,
 # a line that starts (after spaces or tabs) with < (an HTML block can hold a
 # fence line; only a complete one-line <!-- comment --> is read), one that
-# opens an HTML comment it does not close, a link reference definition, a
+# opens an HTML comment it does not close, a line starting like a link
+# reference definition (after any > and list markers), a
 # carriage return inside a line (CommonMark ends a line there), or a
 # byte-order mark on line 1: fence() records the first one's line number in
 # `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
@@ -281,16 +285,18 @@ FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
 function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
-function opencomment(l,   i, j) {  # the last <!-- on the line has no --> after it
-  i = 0; while ((j = index(substr(l, i + 1), "<!--")) > 0) i += j
-  return i && !index(substr(l, i + 4), "-->")
+function opencomment(l,   n, p) {  # the last <!-- on the line has no --> after it
+  n = split(l, p, /<!--/)  # one linear pass; <!-- cannot overlap itself
+  return n > 1 && !index(p[n], "-->")
 }
-function refdef(l) {  # also behind blockquote markers and list markers
+function refdef(l) {  # also behind any number of blockquote and list markers
   sub(/^[ \t>]*/, "", l)
-  if (l ~ /^([-*+]|[0123456789]+[.)])[ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l); sub(/^[ \t>]*/, "", l) }
-  # Any line starting [ that holds ]: (an escaped ] in the label too) or never
-  # closes its [ (a label that continues on the next line) counts.
-  return substr(l, 1, 1) == "[" && (index(l, "]:") || !index(l, "]"))
+  while (l ~ /^([-*+]|[0123456789]+[.)])[ \t]/) { sub(/^[^ \t]+[ \t]+/, "", l); sub(/^[ \t>]*/, "", l) }
+  # Any line starting [ that holds ]: or never closes its [ with an unescaped ]
+  # (a label that continues on the next line) counts; escapes are dropped first.
+  if (substr(l, 1, 1) != "[") return 0
+  gsub(/\\./, "", l)
+  return index(l, "]:") || !index(l, "]")
 }
 function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
 function opens(l,   ch, n) {
@@ -302,6 +308,7 @@ function opens(l,   ch, n) {
 }
 function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) ~ /^[ \t]*$/ }
 function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
+  if (odd) return 1   # the file is already refused: nothing after it is read
   if (index(l, "\r")) { refuse("cr"); return 1 }
   if (NR == 1 && substr(l, 1, 3) == "\357\273\277") { refuse("bom"); return 1 }
   if (infence) {
