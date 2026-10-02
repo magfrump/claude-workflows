@@ -98,7 +98,19 @@ plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" &&
 # would have been read and listed in section 8. A newline in a name becomes a
 # space here, before the name is ever printed.
 SKIPPED=()
-skipped() { if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi; return 1; }
+# Parents are checked first, top down: below a parent that is not a plain
+# directory nothing is probed (not even whether a file exists there), and the
+# parent is what gets recorded.
+skipped() {
+  local p="" c rest="$1"
+  while [[ "$rest" == */* ]]; do
+    c="${rest%%/*}"; rest="${rest#*/}"; p="${p:+$p/}$c"
+    [[ -e "$p" || -L "$p" ]] || return 1
+    plaindir "$p" || { SKIPPED+=("$p/"); return 0; }
+  done
+  if [[ -e "$1" || -L "$1" ]] && ! inrepo "$1"; then SKIPPED+=("${1//$'\n'/ }"); return 0; fi
+  return 1
+}
 skipdir() { if [[ -e "$1" || -L "$1" ]] && ! plaindir "$1"; then SKIPPED+=("$1/"); return 0; fi; return 1; }
 # DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
 # not pathspecs.
@@ -124,11 +136,16 @@ if [[ -z "$MAIN_SHA" ]]; then
 fi
 [[ -n "$MAIN_SHA" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 
-last_record=""
+last_record=""; skipped_record=""
 if plaindir docs/working/cycles; then
   for f in docs/working/cycles/cycle-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
-    inrepo "$f" || { skipped "$f" || true; continue; }
     d="${f##*/cycle-}"; d="${d%.md}"
+    if ! inrepo "$f"; then
+      # Keep the newest skipped date (not future-dated) to warn when it is newer
+      # than the record the window starts from.
+      skipped "$f" && [[ "$d" > "$skipped_record" && ! "$d" > "$TODAY" ]] && skipped_record="$d"
+      continue
+    fi
     [[ "$d" > "$last_record" && ! "$d" > "$TODAY" ]] && last_record="$d"  # ignore future-dated
   done
 else
@@ -139,6 +156,9 @@ if [[ -n "$SINCE" ]]; then
   source_note="--since"
 elif [[ -n "$last_record" ]]; then
   SINCE="$last_record"; source_note="the last cycle record, docs/working/cycles/cycle-$last_record.md"
+  if [[ "$skipped_record" > "$last_record" ]]; then
+    source_note+="; a newer record, cycle-$skipped_record.md, was skipped as not a plain file (section 8), so this window may start too early"
+  fi
 else
   SINCE="$(date -d "$TODAY - 14 days" +%F)"
   if [[ $records_skipped -gt 0 ]]; then
@@ -170,9 +190,9 @@ printf '\n%s\n\n' "## 2. Revisit triggers"
 echo "Every trigger, in full (an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
+n_before_triggers=${#SKIPPED[@]}
 decisions_glob=()
 if plaindir docs/decisions; then decisions_glob=(docs/decisions/[0-9][0-9][0-9]-*.md); else skipdir docs/decisions || true; fi
-n_before_triggers=${#SKIPPED[@]}
 for f in "${decisions_glob[@]}"; do
   inrepo "$f" || { skipped "$f" || true; continue; }
   grep -q '^## Revisit triggers' "$f" || continue
@@ -322,7 +342,7 @@ fi
 
 printf '\n%s\n\n' "## 8. Skipped inputs"
 if [[ ${#SKIPPED[@]} -eq 0 ]]; then
-  echo "None: every input is a plain file."
+  echo "None: no input was skipped."
 else
   echo "Not plain files (reached through a symlink, or not regular files), so not read; they exist but their contents are not in the sections above:"
   printf '%s\n' "${SKIPPED[@]}" | sort -u | sed 's/^/- /'
