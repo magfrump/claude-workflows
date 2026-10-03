@@ -6,21 +6,26 @@ skill (`skills/dev-cycle/SKILL.md`), step 6; each cycle's record is in
 `docs/working/questions.md`, not here: this file says *what* and *in what order*, the
 questions doc says *who has to decide*.
 
-**Seeded 2026-09-29 by hand** from `docs/working/questions.md` and project memory, before
-any cycle had run. The first `/dev-cycle` run should re-check every line against its
-evidence and re-rank Next.
+Seeded 2026-09-29 by hand; first re-checked by the dev cycle on 2026-10-02 (Next kept in the
+user's order).
 
 ## Now
 
-- **This dev cycle** (`feat/dev-cycle`, log row 67). First run: after install, so the
-  router skills from log row 66 are live.
-- **Build-loop handoff** (follows this dev cycle): the cycle starts autonomous build loops
-  for its briefs. Motive: the user's standard loop hands its top items to build loops; split
-  out of `feat/dev-cycle` on 2026-10-01 because the prose-only protocol kept failing review.
-  First step: read `docs/working/seed-build-loop-handoff.md` and plan a small script that owns
-  brief state, loop markers and the pre-merge checks, with tests. Q-103 waits on it.
+- **Build-loop handoff**: the cycle starts autonomous build loops for its briefs. Motive: the
+  user's standard loop hands its top items to build loops; split out of `feat/dev-cycle` on
+  2026-10-01 because the prose-only protocol kept failing review. First step: the brief.
+  Q-103 waits on it.
+- **Doc drift from cycle 2026-10-02** (bug: undocumented is broken). Motive: two guides still
+  advise a bare `devcontainer up --remove-existing-container` that fc3bff82 moved away from;
+  AGENTS.md/GEMINI.md omit the `dev-cycle` skill. First step: the brief.
+- **Q-096 — exit scan follows insteadOf targets.** Motive: a known route around the exit
+  scan; unblocked now that Q-094 merged. First step: the brief's pre-mortem.
 
 ## In flight
+
+- Build-loop handoff — `docs/working/briefs/2026-10-02-build-loop-handoff.md`
+- Doc drift from cycle 2026-10-02 — `docs/working/briefs/2026-10-02-doc-drift-cycle1.md`
+- Q-096 exit scan insteadOf — `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`
 
 ## Next
 
@@ -40,6 +45,8 @@ evidence and re-rank Next.
    carries pr-prep's `← carried from RPI` line and whose branch committed a code-review
    rubric. Both are tracked; research/plan docs are gitignored and the usage log
    under-counts (Q-017), so neither can be counted.
+   Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
+   committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
 5. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
@@ -49,6 +56,19 @@ evidence and re-rank Next.
 
 Unranked. Each names the signal that motivates it.
 
+- **Scoped deep audit** (step 4b). Signal: cycle 2026-10-02's deep-audit triggers fired —
+  10 router skills and the dev-cycle skill added in the window, and no earlier cycle record
+  to compare the model with. Scope and timing are the user's; runs on its own branch.
+- **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
+  tell" for lack of the field (cycle 2026-10-02).
+- **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health
+  check 11 shows 7/7 stale, 0 fresh. A choice among 3+ remedies: flag for `divergent-design`.
+- **Fixtures for dev-cycle and the 9 other unfixtured skills.** Signal: health check 9. The
+  report-dependent half waits on Q-067.
+- **Retire the stale idea-source row in `docs/dev-cycle.md`.** Signal: its only file is a
+  March 2026 DD whose survivors have shipped.
+- **Author adjudication of Contested-Soundness rubric rows.** Signal: decision 028 T3 can't
+  be decided without it (~6 rows, none adjudicated).
 - **Q-079 — canon-instance script and proposal filter.** Signal: the review canon grows
   only by hand (Q-072).
 - **Automate the failure-pattern harvest, or drop the "do not skip" line.** Signal: Q-074,
@@ -66,6 +86,8 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The dev cycle (skill and digest script, log rows 67–68, merge 90364c73); first cycle run
+  2026-10-02.
 - AGENTS.md names workflows by filename, not `@` import; guard test (log row 65, merge
   c9a370a). Removes ~89K tokens from every session and subagent in this repo.
 - A router skill for every workflow except review-fix-loop (log row 66, merge 4225753).

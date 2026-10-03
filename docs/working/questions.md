@@ -26,7 +26,11 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
+| [Q-104](#q-104--unit-growth-during-review) | you: judgment | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
+| [Q-105](#q-105--devcontainer-breakage-definition) | you: judgment | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
+| [Q-106](#q-106--host-settings-merge-after-q049) | you: judgment | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
+| [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
@@ -34,13 +38,97 @@ The index below is generated — edit entries, not the table.
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
-| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
+| [Q-107](#q-107--claude-home-payload-second-consumer) | agent | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
+| [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
+| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 49 `@needs-reports` suites (50 when filed; r... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 <!-- index:end -->
 
 ## Open
+
+### Q-104 · unit-growth-during-review
+**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the cap also be re-checked inside the review-fix loop, or is growth during review accepted?
+
+- **Why it's yours:** row 62 is your rule, and both answers trade your review time against loop length.
+- **Read:** decision log row 62 · cycle record `docs/working/cycles/cycle-2026-10-02.md` (step 2) · `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md`
+- **Evidence:** the `feat/dev-cycle-digest` unit had 396 code lines outside `docs/` at its first rubric (de530691, against 4225753a). It landed at 1861 (5652d33f) after 38 review passes, with no re-split and no waiver entry. The other two landings since then stayed small (run-tests 254 lines, skill-invocation fix 32 lines).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Re-check per iteration** | pr-prep re-measures the unit at each loop iteration. Past 400 lines, the loop stops and the growth is split into a stacked unit (in /away mode, automatically). | None. One more check per iteration, run by the agent. | Splitting partway through review costs some re-review. |
+| **[2] Re-check, waiver past 2×** | Same as [1], but growth up to ~800 lines is tolerated. Past that, the loop stops and asks you for a waiver. | An occasional waiver question. | A 1.9× unit still gets the long-loop pattern. |
+| **[3] Accept growth** | The cap stays an entry gate only, and row 62 is amended to say so. | None. | Loops like the 38-pass dev-cycle one recur. |
+
+- **Blocks:** nothing on the roadmap.
+- **Interim:** no change. Row 62 stays as written (entry gate only).
+- **If the answer differs:** [1] or [2] is a small pr-prep / review-fix-loop change plus a log-row amendment. Filed as a roadmap item once answered.
+
+### Q-105 · devcontainer-breakage-definition
+**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a commit reading. Did it really fire, given that all three breakages came from this repo's own boundary changes and none came from Docker?
+
+- **Why it's yours:** the record leaves "breakage" undefined, and its response, "Revisit", reopens the choice of isolation mechanism.
+- **Read:** `docs/decisions/015-cc-process-isolation-docker-devcontainer.md` (Revisit triggers) · commits f906b50f (2026-09-09: node had no DNS or HTTPS while the boundary reported healthy), 6c35e39d (09-12: cc-isolated refused to start on every healthy container), 7c970bfe (09-19: Artifact reads failed through the resolver)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Define breakage as Docker/devcontainer-caused** | Amend 015's trigger to exclude defects introduced by this repo's own boundary changes. The trigger is then not fired. | None. | Real fragility in the boundary layer goes unwatched. Our own churn is what breaks sessions. |
+| **[2] Count it, and add a boundary-churn watch instead** | 015 stays. A new trigger on 015 counts session-breaking boundary-layer fixes per 2 weeks and asks whether the boundary design itself (not Docker) needs a rethink. | None now. A future question if it fires. | Same as [1], with a later alarm. |
+| **[3] Revisit 015** | Re-run 015's step 4 (Docker vs podman vs other). | One DD session. | Spends a decision round on a cause that wasn't Docker. |
+
+- **Blocks:** nothing.
+- **Interim:** treated as [2] for the cycle record (fired, with self-inflicted cause noted). No change to 015 until answered.
+- **If the answer differs:** an amendment to 015's trigger section, nothing else.
+
+### Q-106 · host-settings-merge-after-q049
+**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the host target" has fired. Q-049 was answered on 2026-09-23 (aa21535d, now in the archive). Should the host target of `devcontainer-config/install.sh` start merging `settings.json`, or keep the merge manual?
+
+- **Why it's yours:** it writes host-private hardening in your host `~/.claude/settings.json`, and 037 deliberately kept that manual.
+- **Read:** `docs/decisions/037-bare-host-copy-install.md` (line 37: "settings.json stays a manual merge … Q-049 is open") · Q-049 in `questions-archive.md` · `devcontainer-config/install.sh` header (line 44) · FP-161 in `docs/thoughts/failure-patterns.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep manual** | 037 is amended to say the trigger was considered and declined. The installer keeps printing the reminder. | One manual merge per wiring change, as now. | Hook wiring drifts on the host when the merge is skipped. |
+| **[2] Automate via link-claude-home's provenance jq** | The host target runs the same provenance-tracked merge the container uses. TTY-gated, like the rest of the host install. | Review of one enforcement-adjacent change. | A merge bug rewrites your host hardening. The backup stamp is the recovery path. |
+| **[3] Automate dry-run only** | The installer prints the diff it would apply, and you apply it. | One paste per wiring change. | Little. It is mostly [1] with a better reminder. |
+
+- **Blocks:** nothing on the roadmap.
+- **Interim:** [1]. Nothing changes.
+- **If the answer differs:** [2] or [3] becomes a roadmap item (an RPI on `install.sh`, an enforcement file, so a pre-mortem comes first).
+
+### Q-107 · claude-home-payload-second-consumer
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is owed". 037's host target (29cdd160) now installs the same `CLAUDE_HOME_SRC` assembly as the devcontainer target (`devcontainer-config/install.sh`: `assemble` at lines 498 and 857). Check whether the shared `assemble()` over `git archive` already meets [11]'s seam. If it does, record that in 036. If not, file the seam work on the roadmap.
+
+- **Read:** `docs/decisions/036-cc-isolated-repo-split.md` (candidate [11], Revisit triggers) · `assemble()` in `devcontainer-config/install.sh`
+- **Interim:** both targets share `assemble()`, which is not a `cp -r` encoding one consumer's layout. The risk 036 named is at least partly covered.
+
+### Q-108 · decision-037-stale-lines
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae610 and `test/hooks/live-verify-gate.bats` ("install.sh is gated although it is not manifest-hashed") covers install.sh. Line 37 says "Q-049 is open", but Q-049 was answered on 2026-09-23. Amend both, and record that the "035's regex lands" trigger is discharged. Decision records are outside the dev cycle's in-cycle fix scope, so this is filed rather than fixed.
+
+- **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
+- **Interim:** the lines stay stale. Neither one changes behavior.
+
+### Q-109 · delete-merged-branches-2026-10-02
+**Needs:** you: terminal · **Opened:** 2026-10-02 · **Status:** OPEN
+
+Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting branches needs your approval:
+
+```
+git -C /workspace branch -d feat/hook-refuse-redirects feat/run-tests-jobs feat/workflow-router-skills fix/agents-md-no-imports
+```
+
+- **Interim:** the branches stay. They cost nothing but clutter.
 
 ### Q-103 · dev-cycle-build-loop-policy
 **Needs:** deferred · **Opened:** 2026-10-01 · **Status:** OPEN
@@ -78,7 +166,7 @@ Once the build-loop handoff exists, may its build loops merge their own branches
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
 
-When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the current SKILL.md files instead of being NOT RUN?
+When should the skill eval reports be regenerated, so that the 49 `@needs-reports` suites (50 when filed; recounted 2026-10-02) constrain the current SKILL.md files instead of being NOT RUN?
 
 - **Why it's yours:** regenerating means one headless model run per fixture, about 180 fixtures across 23 skills. Memory [[run-a8-measurement-after-settling]] says no big compute before the A8 measurement.
 - **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G, and commit 48680e2 (stamps plus the per-skill gate).
@@ -158,6 +246,7 @@ The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never 
 - **Read:** Q-094 rubric `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md` · `_snap_config` / `_snap_remote` in `devcontainer-config/cc-exit-scan.sh`
 - **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
 - **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
+- **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
 
 ### Q-097 · exit-scan-older-routes
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
