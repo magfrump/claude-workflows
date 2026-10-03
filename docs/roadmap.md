@@ -11,21 +11,17 @@ user's order).
 
 ## Now
 
-- **Build-loop handoff**: the cycle starts autonomous build loops for its briefs. Motive: the
-  user's standard loop hands its top items to build loops; split out of `feat/dev-cycle` on
-  2026-10-01 because the prose-only protocol kept failing review. First step: the brief.
-  Q-103 waits on it.
-- **Doc drift from cycle 2026-10-02** (bug: undocumented is broken). Motive: two guides still
-  advise a bare `devcontainer up --remove-existing-container` that fc3bff82 moved away from;
-  AGENTS.md/GEMINI.md omit the `dev-cycle` skill. First step: the brief.
-- **Q-096 — exit scan follows insteadOf targets.** Motive: a known route around the exit
-  scan; unblocked now that Q-094 merged. First step: the brief's pre-mortem.
+Nothing waiting outside a brief: this cycle's three ready items moved to In flight.
 
 ## In flight
 
-- Build-loop handoff — `docs/working/briefs/2026-10-02-build-loop-handoff.md`
-- Doc drift from cycle 2026-10-02 — `docs/working/briefs/2026-10-02-doc-drift-cycle1.md`
-- Q-096 exit scan insteadOf — `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`
+- **Build-loop handoff**: the cycle starts autonomous build loops for its briefs; Q-103
+  waits on it. Brief: `docs/working/briefs/2026-10-02-build-loop-handoff.md`
+- **Doc drift from cycle 2026-10-02** (bug: undocumented is broken): two guides still advise
+  a bare `devcontainer up --remove-existing-container`; AGENTS.md/GEMINI.md omit `dev-cycle`.
+  Brief: `docs/working/briefs/2026-10-02-doc-drift-cycle1.md`
+- **Q-096 — exit scan follows insteadOf targets**: a known route around the exit scan,
+  unblocked by Q-094's merge. Brief: `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`
 
 ## Next
 
@@ -57,8 +53,10 @@ user's order).
 Unranked. Each names the signal that motivates it.
 
 - **Scoped deep audit** (step 4b). Signal: cycle 2026-10-02's deep-audit triggers fired —
-  10 router skills and the dev-cycle skill added in the window, and no earlier cycle record
+  8 router skills and the dev-cycle skill added in the window, and no earlier cycle record
   to compare the model with. Scope and timing are the user's; runs on its own branch.
+- **Health check under-counts NOT RUN suites (Q-110).** Signal: the runner printed 50
+  report-dependent suites NOT RUN; the health-check summary said 4 (cycle 2026-10-02).
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health

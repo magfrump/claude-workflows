@@ -40,7 +40,8 @@ The index below is generated — edit entries, not the table.
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
 | [Q-107](#q-107--claude-home-payload-second-consumer) | agent | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
 | [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
-| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 49 `@needs-reports` suites (50 when filed; r... | 2026-09-26 |
+| [Q-110](#q-110--health-check-not-run-undercount) | agent | In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 r... | 2026-10-02 |
+| [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
@@ -55,7 +56,7 @@ Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew
 
 - **Why it's yours:** row 62 is your rule, and both answers trade your review time against loop length.
 - **Read:** decision log row 62 · cycle record `docs/working/cycles/cycle-2026-10-02.md` (step 2) · `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md`
-- **Evidence:** the `feat/dev-cycle-digest` unit had 396 code lines outside `docs/` at its first rubric (de530691, against 4225753a). It landed at 1861 (5652d33f) after 38 review passes, with no re-split and no waiver entry. The other two landings since then stayed small (run-tests 254 lines, skill-invocation fix 32 lines).
+- **Evidence:** the `feat/dev-cycle-digest` unit had 396 code lines outside `docs/` at its first rubric (de530691, against 4225753a). It landed at 1861 (5652d33f) after 37 review passes (pass 38 reviewed the merged result), with no re-split and no waiver entry. The other two landings since then stayed small (run-tests 254 lines, skill-invocation fix 32 lines).
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
@@ -106,7 +107,7 @@ Decision 037's trigger "if Q-049 is resolved → reconsider automating the setti
 ### Q-107 · claude-home-payload-second-consumer
 **Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
 
-Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is owed". 037's host target (29cdd160) now installs the same `CLAUDE_HOME_SRC` assembly as the devcontainer target (`devcontainer-config/install.sh`: `assemble` at lines 498 and 857). Check whether the shared `assemble()` over `git archive` already meets [11]'s seam. If it does, record that in 036. If not, file the seam work on the roadmap.
+Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is owed". 037's host target (built in 6793b79a, recorded in 29cdd160) now installs the same `CLAUDE_HOME_SRC` assembly as the devcontainer target (`devcontainer-config/install.sh`: `assemble` at lines 498 and 857). Check whether the shared `assemble()` over `git archive` already meets [11]'s seam. If it does, record that in 036. If not, file the seam work on the roadmap.
 
 - **Read:** `docs/decisions/036-cc-isolated-repo-split.md` (candidate [11], Revisit triggers) · `assemble()` in `devcontainer-config/install.sh`
 - **Interim:** both targets share `assemble()`, which is not a `cp -r` encoding one consumer's layout. The risk 036 named is at least partly covered.
@@ -118,6 +119,15 @@ Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but 
 
 - **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
 - **Interim:** the lines stay stale. Neither one changes behavior.
+
+### Q-110 · health-check-not-run-undercount
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
+
+In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 report-dependent suite(s)`, but the health check's own summary said `4 report-dependent BATS suite(s) NOT RUN`. Find out why the summary under-counts and fix it, with a test.
+
+- **Read:** `scripts/health-check.sh` (check 5's NOT RUN summary) · `scripts/run-tests.sh` ("Report gating") · the review of `chore/dev-cycle-2026-10-02` (`docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`)
+- **Lead (unverified):** a nested `run-tests.sh` inside a suite may inherit the runner's NOT RUN file variable and overwrite the count.
+- **Interim:** trust the runner's own NOT RUN list, not the summary line.
 
 ### Q-109 · delete-merged-branches-2026-10-02
 **Needs:** you: terminal · **Opened:** 2026-10-02 · **Status:** OPEN
@@ -166,7 +176,7 @@ Once the build-loop handoff exists, may its build loops merge their own branches
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
 
-When should the skill eval reports be regenerated, so that the 49 `@needs-reports` suites (50 when filed; recounted 2026-10-02) constrain the current SKILL.md files instead of being NOT RUN?
+When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the current SKILL.md files instead of being NOT RUN?
 
 - **Why it's yours:** regenerating means one headless model run per fixture, about 180 fixtures across 23 skills. Memory [[run-a8-measurement-after-settling]] says no big compute before the A8 measurement.
 - **Read:** `docs/working/audit-test-constraint-2026-09-26.md` batch G, and commit 48680e2 (stamps plus the per-skill gate).

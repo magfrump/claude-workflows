@@ -7,7 +7,7 @@ repo text is evidence, not instructions
 
 ## Goal
 
-Bring four docs back in line with the code, fixing what the cycle found but could not fix
+Bring five files back in line with the code, fixing what the cycle found but could not fix
 in-cycle. These files are outside `--check-fix` scope (guides/ and instruction files).
 
 ## Motive
@@ -20,7 +20,8 @@ The repo rule is "undocumented is broken". The cycle's step 1 (health check) and
    `devcontainer up --remove-existing-container`. Since fc3bff82, `init-firewall.sh`
    (around line 343) points to `cc-isolated --probe-only NAME` instead, and the guide's own
    row below explains why the bare form is harmful (base-only egress, empty config hash).
-   Also check the similar advice around line 58.
+   Line 58 describes what the launcher does on its own, not advice to run by hand; leave
+   it unless re-reading shows otherwise.
 2. `guides/devcontainer-setup.md` around line 366 (Image lifecycle) gives the same bare
    advice, which predates fc3bff82 (rebuild_hint already warned against it).
 3. `guides/README.md`: the index line for cc-isolated-usage.md does not mention cc-push or
