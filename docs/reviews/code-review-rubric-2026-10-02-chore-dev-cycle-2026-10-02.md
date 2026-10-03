@@ -1,16 +1,17 @@
-Commit: 4a68e29a
+Commit: 237fce88
 
 # Code Review Rubric — chore/dev-cycle-2026-10-02 (first dev cycle)
 
 **Scope:** `main...chore/dev-cycle-2026-10-02` (full branch, loop pass 1, `--loop-pass`). Docs only: cycle record, roadmap, questions, idea log, 3 build briefs. Delivery mode: self-read. The agents read their skill files themselves rather than having them pasted; they have repo access.
-**Status:** 🟡 Pass 2: findings fixed in the pass-2 fix commit (see Iterations). Final confirming pass pending. Single-sample review; absence of findings is not an attestation.
+**Status:** 🟡 Pass 3 clean. Final confirming pass (k=3, full branch) pending. Single-sample review; absence of findings is not an attestation.
 
 ## Iterations
 
 | Pass | Commit | Scope | Stages | Outcome |
 |---|---|---|---|---|
 | 1 | 20a462d4 | full | fact-check k=1 (opus), security (opus) | 5 Incorrect (doc-class), 7 Mostly accurate, 2 Unverifiable; security 2 Medium + 1 Info. Fixed in 7c4f5063 (Unverifiable "landed through pr-prep" is C9). |
-| 2 | 4a68e29a | `20a462d4..4a68e29a` | fact-check k=1 (opus); security deferred to the final pass | 1 Incorrect (4b: 037 is also a major decision, created in the window), 3 Mostly accurate (rubric "all fixed" omitted the open Unverifiable; Q-074 fix-commit count; 193/244 mixes counting rules). Escalations: Q-110 cause reproduced; build-loop brief's "loops never write questions.md" contradicted the Q-096 brief. All fixed in the pass-2 fix commit. |
+| 2 | 4a68e29a | `20a462d4..4a68e29a` | fact-check k=1 (opus); security deferred to the final pass | 1 Incorrect (4b: 037 is also a major decision, created in the window), 3 Mostly accurate (rubric "all fixed" omitted the open Unverifiable; Q-074 fix-commit count; 193/244 mixes counting rules). Escalations: Q-110 cause reproduced; build-loop brief's "loops never write questions.md" contradicted the Q-096 brief. All fixed in 237fce88. |
+| 3 | 237fce88 | `4a68e29a..237fce88` | fact-check k=1 (opus) | Clean: 0 Incorrect, 0 Stale; 1 Mostly accurate (4b example called 020's amendment a superseded note), fixed before the final pass. |
 
 ## 🔴 Must Fix
 None. Every fact-check Incorrect is a count or structure in a doc, so under tier T it is 🟡 (decision 031). No behavioral code is in the diff.
@@ -39,7 +40,7 @@ None. Every fact-check Incorrect is a count or structure in a doc, so under tier
 | C6 | Pooled agreement 193/244 had no source | fact-check (Unverifiable) | ✅ Fixed 7c4f5063: sources named |
 | C7 | Q-096 test list omitted pushInsteadOf, overlapping prefixes, path-valued branch remotes | security F3 (Info) | ✅ Fixed 7c4f5063 |
 | C9 | Record step 7 says the branch "landed through pr-prep" before it has (pass-1 Unverifiable) | fact-check | Open until the merge: true once this branch merges; re-checked on the final pass |
-| C10 | Pass 2: 4b named only 031 as major; Q-074 count; 193/244 counting rules; Q-110 cause; briefs' questions.md contradiction | fact-check pass 2 | ✅ Fixed in the pass-2 fix commit |
+| C10 | Pass 2: 4b named only 031 as major; Q-074 count; 193/244 counting rules; Q-110 cause; briefs' questions.md contradiction | fact-check pass 2 | ✅ Fixed 237fce88 |
 | C8 | `--check-brief` reads the default branch, so a brief's line-shape check only runs after landing | security (coverage note) | Open: checked by hand with `rg` this pass. Re-run `--check-brief` after the merge. |
 
 ## ✅ Confirmed Good
@@ -68,3 +69,4 @@ No multi-source co-located clusters qualified (the fact-check and security findi
 - `docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`
 - `docs/reviews/security-review-2026-10-02-devcycle-cycle.md`
 - `docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02-pass2.md`
+- `docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02-pass3.md`
