@@ -2,7 +2,7 @@ Commit: 237fce88
 
 # Code Review Rubric — chore/dev-cycle-2026-10-02 (first dev cycle)
 
-**Scope:** `main...chore/dev-cycle-2026-10-02` (full branch, loop pass 1, `--loop-pass`). Docs only: cycle record, roadmap, questions, idea log, 3 build briefs. Delivery mode: self-read. The agents read their skill files themselves rather than having them pasted; they have repo access.
+**Scope:** `main...chore/dev-cycle-2026-10-02`. Passes 1 and 4 (final) reviewed the full branch; passes 2 and 3 reviewed the fix ranges shown in Iterations. Docs only: cycle record, roadmap, questions, idea log, 3 build briefs. Delivery mode: self-read. The agents read their skill files themselves rather than having them pasted; they have repo access.
 **Status:** 🟡 Pass 3 clean. Final confirming pass (k=3, full branch) pending. Single-sample review; absence of findings is not an attestation.
 
 ## Iterations
