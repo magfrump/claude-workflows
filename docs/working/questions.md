@@ -126,7 +126,7 @@ Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but 
 In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 report-dependent suite(s)`, but the health check's own summary said `4 report-dependent BATS suite(s) NOT RUN`. Find out why the summary under-counts and fix it, with a test.
 
 - **Read:** `scripts/health-check.sh` (check 5's NOT RUN summary) · `scripts/run-tests.sh` ("Report gating") · the review of `chore/dev-cycle-2026-10-02` (`docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`)
-- **Lead (unverified):** a nested `run-tests.sh` inside a suite may inherit the runner's NOT RUN file variable and overwrite the count.
+- **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356`) with its own 4. Fix: override the variable in those calls, or have the runner refuse an inherited one; add a test.
 - **Interim:** trust the runner's own NOT RUN list, not the summary line.
 
 ### Q-109 · delete-merged-branches-2026-10-02

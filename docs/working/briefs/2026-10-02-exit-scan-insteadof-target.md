@@ -31,8 +31,10 @@ unblocked as of this cycle. The decision is already made (close it), so no choic
   describes the new behavior (the doc change).
 - The commit carries `Live-verified: no — REASON` (the container cannot run the host probe),
   never a bare yes or a hash, unless the host probe actually ran; and one `you: terminal`
-  entry in `docs/working/questions.md` carries the host probe.
-- Q-096 is set ANSWERED or closed with the merge commit.
+  entry in `docs/working/questions.md` carries the host probe. (If an autonomous build loop
+  runs this brief, it does not write questions.md: it names the probe and Q-096's closure in
+  its stop or ready marker, and the dev cycle files both.)
+- Q-096 is set ANSWERED or closed with the merge commit (by the cycle, under a build loop).
 - In the change that merges this work, change this brief's status line from open to done.
 
 ## Branch
