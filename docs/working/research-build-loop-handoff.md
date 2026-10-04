@@ -3,7 +3,7 @@
 - **Goal**: The dev cycle can hand a build brief to an autonomous build loop and later collect its result, with the state and checks in a small tested script (`scripts/build-loop.sh`) rather than in prose.
 - **Problem framing**: The loop protocol needs code-owned state and gates. The prose version kept failing because each fix opened new edges between separate sessions sharing state. Considered and discarded: "the seed design is right and only needs re-wording", which is how passes 6–9 went. Each re-wording found new reds, and 9 of the 27 findings below are still uncovered by the seed.
 - **Project state**: delivers the build-loop handoff (script, tests, skill/doc changes) · roadmap In flight item, split out of `feat/dev-cycle`; Q-103 waits on it · not blocked (cite: docs/working/briefs/2026-10-02-build-loop-handoff.md)
-- **Task status**: in-progress (research done; plan revision 2 awaiting approval)
+- **Task status**: paused (research done. The goal widened on 2026-10-03: the cycle becomes an orchestrator loop that dispatches build loops with no human gates; see `docs/working/handoff-build-loop-handoff.md`. The "Design forks found" section below is superseded there.)
 
 Brief reading (restated per the terse-instruction rule): "start this" means run RPI on the brief up to the plan-approval gate. The brief says it does not stand in for plan approval. No code is written before the user approves the plan.
 

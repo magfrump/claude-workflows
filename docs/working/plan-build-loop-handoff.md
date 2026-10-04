@@ -2,7 +2,7 @@
 
 - **Goal**: The dev cycle can hand a build brief to an autonomous build loop and later collect its result, with the state and checks in a small tested script (`scripts/build-loop.sh`) rather than in prose.
 - **Project state**: delivers the build-loop handoff (script, tests, skill/doc changes) · roadmap In flight item, split out of `feat/dev-cycle`; Q-103 waits on it · not blocked (cite: docs/working/briefs/2026-10-02-build-loop-handoff.md)
-- **Task status**: in-progress (plan revision 2 after pre-mortem, architecture review and test strategy; awaiting approval; no code written)
+- **Task status**: paused (revision 2 is partly superseded: the 2026-10-03 conversation replaced D1–D4 and the In flight lifecycle with the v2 orchestrator flow. Read `docs/working/handoff-build-loop-handoff.md` first. The gate sections, D5, D7, F1–F31 and the tests, still apply.)
 
 Research: docs/working/research-build-loop-handoff.md
 Plan-time reviews: `docs/reviews/pre-mortem-build-loop-handoff.md`, `docs/reviews/architecture-review-build-loop-handoff.md`, `docs/reviews/test-strategy-build-loop-handoff.md`

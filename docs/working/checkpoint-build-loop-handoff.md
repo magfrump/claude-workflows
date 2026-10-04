@@ -7,7 +7,7 @@ Plan: docs/working/plan-build-loop-handoff.md
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate and state for autonomous build loops), the shared reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill/doc changes that describe the handoff as built.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0(a/b) → U1 → U2 → U3 → U4.
-- **Blocked on**: user approval of plan revision 2 (D1–D7). After U3 lands, the handoff runs in this repo only once the image is rebuilt and blessed (D6).
+- **Blocked on**: plan revision 3. **Revised 2026-10-03:** this checkpoint describes revision 2. The design conversation replaced D1–D4, D6's bless dependency and the In flight lifecycle. Read `docs/working/handoff-build-loop-handoff.md` first. The gate parts below (D5, D7, invariants, file map for the script and lib) still hold.
 
 ## Key findings
 - Brief state has one reader: `check_brief` reads main's commit, never the working tree [observed]. Keep it that way: `brief_fields` lives beside it in the lib.
