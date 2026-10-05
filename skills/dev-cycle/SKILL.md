@@ -181,9 +181,15 @@ last good one.
 ### 2. Revisit triggers
 
 The digest prints every trigger in full: each decision record's `## Revisit triggers` section
-and each decision-log row that mentions revisiting (a trigger written elsewhere in a record is
-not found; an output line over 4096 bytes is cut; read the
-record itself then). For each, decide **fired / not fired / cannot tell**
+and each decision-log row that mentions revisiting (a trigger written elsewhere in a record, or
+in a `docs/working/` design doc such as `dd-*.md`, is not found; an output line over 4096 bytes
+is cut; read the record itself then). Log rows are read in two layouts: numbered (`| N | date |`,
+named `log row N`) and date-first (`| YYYY-MM-DD |`, named `log row L<line>` by its line in
+`log.md`; an L-number moves when lines above it change, so the cycle record quotes the row's
+date and decision too). A revisit row whose first cell fits neither, in a table that has rows
+that do, prints as `log row L<line> (first cell not parsed)`. A log where no row fits either
+layout is reported as **NOT checked**: read it by hand, and do not take the missing triggers as
+none. For each, decide **fired / not fired / cannot tell**
 and write the evidence (a command and its output, a count, a commit). "Cannot tell" names what
 would tell. The previous record's verdicts are context, never the answer: decide each one
 again. A fired trigger becomes a questions.md entry that links the decision record; route it

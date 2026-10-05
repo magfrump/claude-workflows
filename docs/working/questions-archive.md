@@ -104,6 +104,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
 | [Q-114](#q-114--build-loop-u1c-size-waiver) | U1c of the build-loop handoff (`feat/build-loop-u1c`, the constraints line and `--status`) is 426 changed c... | 2026-10-05 |
 | [Q-115](#q-115--build-loop-u1b-r5) | U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useRepla... | 2026-10-05 |
+| [Q-118](#q-118--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
 <!-- index:end -->
 
 ## Answered
@@ -1934,5 +1935,21 @@ U1b's fourth review pass found R5: the replace-ref guard does not beat a caller'
 | **[1] fix + scoped 5th pass** | Apply the GIT_CONFIG_PARAMETERS fix and the wording fixes; a fifth pass over the fix commits only. | None. | About a third of a full pass. |
 | **[2] fix + land without re-review** | Fix, test, fix-drift, health check, land. | None. | An unreviewed fix lands. |
 | **[3] narrow the claim, land** | The comment says the caller's environment is trusted; the route goes to U3b's --state. | None. | The guard covers repo config only until U3b. |
+
+
+### Q-118 · build-loop-u1c-r1-and-size
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** ANSWERED
+
+U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` silently emptied the F31 duplicate-branch check. How should U1c finish, and may the fix and its test extend the size waiver?
+
+**Answer (2026-10-05, in chat):** "Fix + scoped 4th pass (Recommended)", then "Extend to ~450 (Recommended)"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] fix + scoped 4th pass** | `--no-color`, fail closed on any git grep exit but 0 or 1, a colour test; a fourth pass over the fix commit only. | None. | A fraction of a full pass. |
+| **[2] fix + full 4th pass** | The same fixes, then a full panel. | None. | ~1.3M tokens. |
+| **[3] fix + land without re-review** | Fix, test, fix-drift, health check, land. | None. | An unreviewed fix lands. |
+
+Size: the fix and its test take U1c to 448 changed code lines; the waiver (Q-114, ~430) is extended to ~450.
 
 
