@@ -649,8 +649,9 @@ EOF
     done
     # A questions.md that is not plain is reported, not passed over to the archive.
     git mv docs/working/questions.md docs/working/q-real.md && ln -s q-real.md docs/working/questions.md
+    git add -A && git commit -qm link
     run --separate-stderr bash "$DC" --check-answer Q-100
-    [[ "$output" == "skip Q-100: docs/working/questions.md is not a plain file or directory"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip Q-100: docs/working/questions.md is not a regular file on the default branch"* ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-fix refuses code, the user's own files and ignored scratch under docs/" {
@@ -1028,11 +1029,11 @@ EOF
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
-                 oddwhy check_brief check_branch resolve_main main_by_name lower imported_names check_answer; do
+                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
-        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
@@ -1112,4 +1113,93 @@ none 1: [] []" ] || { echo "$output"; return 1; }
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR/other"
     [ "$output" = " docs/a.md 
  docs/b.md " ] || { echo "[$output]"; return 1; }
+}
+
+@test "--check-answer reads main's commit: a working-tree or branch-only answer is open (T34)" {
+    mkdir -p docs/working
+    e() { printf '### Q-1 · keep-or-drop-x-1\n**Needs:** you: judgment · **Status:** %s\n\nkeep or drop?\n\n%s\n' "$1" "$2"; }
+    e OPEN '' > docs/working/questions.md && git add -A && git commit -qm open
+    # Answered only in the working tree: still open (D8: a loop can write any working tree).
+    e ANSWERED '**Answer:** [2]' > docs/working/questions.md
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$status" -eq 0 ] && [ "$output" = "open Q-1" ] || { echo "$output"; return 1; }
+    # Committed only on another branch: still open.
+    git checkout -q -b side && git commit -qam answer && git checkout -q main
+    [ "$(git show main:docs/working/questions.md | grep -c ANSWERED)" -eq 0 ]
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "open Q-1" ] || { echo "$output"; return 1; }
+    # A working tree with no questions file at all reads main's.
+    git merge -q side && rm docs/working/questions.md
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "drop Q-1" ] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer refuses a questions file or directory that is not plain on main, whatever the working tree holds" {
+    mkdir -p docs/working real
+    printf '### Q-1 · x\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [1]\n' > real/q.md
+    ln -s ../../real/q.md docs/working/questions.md && git add -A && git commit -qm link
+    # The working tree holds a plain file now; main's symlink still decides.
+    rm docs/working/questions.md && cp real/q.md docs/working/questions.md
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read" ] \
+        || { echo "$output"; return 1; }
+    # A symlinked directory above it is named as the blocking part.
+    git rm -rq --cached docs/working && rm -rf docs/working && ln -s real docs/working && git add -A && git commit -qm dirlink
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$output" = "skip Q-1: docs/working is not a directory on the default branch, so docs/working/questions.md is not read" ] \
+        || { echo "$output"; return 1; }
+}
+
+@test "--check-answer needs a default branch found by name" {
+    mkdir -p docs/working && printf '### Q-1 · x\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [1]\n' > docs/working/questions.md
+    git add -A && git commit -qm q && git checkout -q -b trunk && git branch -q -D main
+    run --separate-stderr bash "$DC" --check-answer Q-1
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"needs a default branch"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "check_answer reads git only: no ROOT_REAL needed, SKIPPED untouched, skip without main by name" {
+    mkdir -p docs/working && printf '### Q-1 · x\n**Needs:** you: judgment · **Status:** ANSWERED\n\n**Answer:** [1]\n' > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        check_answer Q-1; resolve_main; cd docs; check_answer Q-1; echo "skipped=${#SKIPPED[@]}"' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
+    [ "$output" = "skip Q-1: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run
+keep Q-1
+skipped=0" ] || { echo "$output"; return 1; }
+}
+
+@test "brief_fields reads each machine line's first unfenced copy from main in one pass; check_brief agrees (T31)" {
+    local f=$'\x60\x60\x60' b=docs/working/briefs/2026-01-01-f.md
+    mkdir -p docs/working/briefs
+    {
+        printf '# Brief\n\n%s\nStatus: done\nBranch: fenced\n%s\n' "$f" "$f"
+        printf 'Status: open\r\nBranch: feat/f\nPolicy: self-merge\nPaths: scripts/x.sh docs/a/\n'
+        printf 'Asked: Q-1@abc, Q-2@def\nDispatched: 2\nBranch: second\nStatus: done\n'
+    } > "$b"
+    git add -A && git commit -qm brief
+    # The working tree's copy is never read.
+    printf 'Status: dropped\nBranch: wt\n' > "$b"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; resolve_main
+        brief_fields "$2"
+        for k in status branch policy paths asked dispatched; do printf "%s=[%s]\n" "$k" "${BRIEF[$k]-unset}"; done
+        check_brief "$2"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$b"
+    [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
+    [ "${lines[0]}" = "status=[Status: open]" ] && [ "${lines[1]}" = "branch=[Branch: feat/f]" ] \
+        && [ "${lines[2]}" = "policy=[Policy: self-merge]" ] && [ "${lines[3]}" = "paths=[Paths: scripts/x.sh docs/a/]" ] \
+        && [ "${lines[4]}" = "asked=[Asked: Q-1@abc, Q-2@def]" ] && [ "${lines[5]}" = "dispatched=[Dispatched: 2]" ] \
+        && [[ "${lines[6]}" == "ok $b open "* ]] || { echo "$output"; return 1; }
+    # Absent keys stay unset; a file FENCE_AWK refuses sets none and returns 1, naming the line.
+    printf 'Status: open\n  %s\nBranch: x\n' "$f" > "$b" && git commit -qam odd
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; resolve_main
+        brief_fields "$2" || echo "refused [$BRIEF_ODD] ${#BRIEF[@]}"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$b"
+    [ "$output" = "refused [odd 2 fence] 0" ] || { echo "$output $stderr"; return 1; }
+    printf 'Status: open\n%s\nBranch: x\n' "$f" > "$b" && git commit -qam open-fence
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; resolve_main
+        brief_fields "$2" || echo "refused [$BRIEF_ODD] ${#BRIEF[@]}"
+        printf "Status: open\n" > x.md; git add x.md; git commit -qm x; resolve_main; brief_fields x.md
+        echo "status=[${BRIEF[status]-unset}] branch=[${BRIEF[branch]-unset}] odd=[$BRIEF_ODD]"' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$b"
+    [ "$output" = "refused [unbalanced 2] 0
+status=[Status: open] branch=[unset] odd=[]" ] || { echo "$output $stderr"; return 1; }
 }
