@@ -289,8 +289,10 @@ docs/working/questions.md.
   2. If the brief is still open, apply answers to its keep-or-drop questions: the IDs on its
      `Asked:` line (check 3 below writes them; no other question counts). Run
      `--check-answer` with the IDs not yet on its `Applied:` line (IDs separated by ", "),
-     and take its lines in ascending ID order; it reads `questions.md` and, once step 1 has
-     archived an entry, `questions-archive.md`. `open` is not answered yet (or the answer
+     and take its lines in ascending ID order; it reads `questions.md` and
+     `questions-archive.md` from the default branch's commit, so an answer, or an archive
+     move, made only in the working tree is not seen until it lands (it reads what main's
+     copy says, usually `open` or no such entry). `open` is not answered yet (or the answer
      is not recorded: an entry is read only once its header says ANSWERED): leave the ID,
      and list it in the final message with its brief, so a reply written in
      place gets recorded.
