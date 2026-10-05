@@ -17,7 +17,11 @@
 # skipped records each blocked input in SKIPPED and SKIP_AT. The caller runs
 # resolve_main once per process (a second call re-reads main); check_brief and
 # check_branch skip every argument unless it returned 0 with main found by name.
-# Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
+# Both answer with one printed line per argument that can echo repo text: print
+# it through scrub, read it as `out="$(check_brief ...)"` under set -e (which
+# stops when need_root exits; `if out=...` and `< <(...)` would carry on), and
+# treat any line that does not start with ok as a refusal. Every script that
+# calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -281,7 +285,7 @@ check_brief() {
 # fresh branch or one merged with a merge commit; a squash-merged branch keeps
 # its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
 # time zone (as the committer set it: a future date is possible).
-# The default branch is refused, and so is every name when there is no default
+# The default branch is skipped, and so is every name when there is no default
 # branch found by name (main_by_name).
 check_branch() {
   local a="$1" sha
