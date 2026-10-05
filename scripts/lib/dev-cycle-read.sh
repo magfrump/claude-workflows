@@ -250,7 +250,8 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # "absent", "notfile" (the path is some other kind of entry), "notdir PART"
 # (PART, a directory above the path, is stored as something else) or "error"
 # (no default branch found by name, ls-tree failed, or the tree lists a name
-# twice, which git's own reads resolve to the first copy: never read as absent). One ls-tree
+# twice; git's own reads would take the first copy, which may not be the one a
+# check saw, so this answers error instead; never read as absent). One ls-tree
 # call lists the path and every directory above it (-t: trees too; --full-tree:
 # paths from the top level, whatever the current directory). The caller has checked
 # main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
@@ -281,8 +282,8 @@ main_entry() {
 # drop), and empties BRIEF_ODD. Otherwise it sets no key and returns 1, with
 # BRIEF_ODD "odd N WHY" (FENCE_AWK refused line N; WHY for oddwhy),
 # "unbalanced N" (the fence opened at line N never closes) or "error" (no
-# default branch found by name, a path pathform refuses, no regular file there
-# on main by main_entry, or the blob could not be read). The callers judge the
+# default branch found by name, a path pathform refuses, any main_entry answer
+# but blob, its error included, or the blob could not be read). The callers judge the
 # values. Call it in the caller's own shell: it sets globals.
 declare -gA BRIEF=(); BRIEF_ODD=""
 brief_fields() {
