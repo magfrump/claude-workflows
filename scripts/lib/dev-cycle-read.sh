@@ -1,13 +1,14 @@
-#!/usr/bin/env bash
-# The dev cycle's reader, shared by scripts/dev-cycle.sh and scripts/build-loop.sh:
-# the output scrub, the plain-file and path-form rules, and the cycle's own
-# file names.
+#!/bin/bash
+# The dev cycle's reader, used by scripts/dev-cycle.sh and kept apart so the
+# planned scripts/build-loop.sh can share it: the output scrub, the plain-file
+# and path-form rules, and the cycle's own file names.
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. The caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check.
+# calling any file check; a check run without it exits 1 (need_root). Every
+# script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -50,7 +51,7 @@ scrub() {
 # scrub itself does not fail). DEV_CYCLE_SCRUBBED marks the child; a caller that
 # sets it skips the scrub (an environment choice, not something repo text can do).
 # scrub_reexec takes the script to re-run and its arguments, and returns only
-# in the child.
+# in the child (or when the caller already set DEV_CYCLE_SCRUBBED).
 scrub_reexec() {
   [[ -z "${DEV_CYCLE_SCRUBBED:-}" ]] || return 0
   local self="$1"; shift
@@ -60,15 +61,19 @@ scrub_reexec() {
 # A regular file reached without any symlink: its real path must be exactly the
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
-rawfile() { local r; [[ -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
-# A directory the digest globs in must be plain too, or the glob would list
+# With no ROOT_REAL nothing is plain (fail closed); need_root makes the callers
+# below stop instead, outside the command substitution where blocker runs (an
+# exit there would end only the subshell, and set -u would not catch it).
+need_root() { [[ -n "${ROOT_REAL:-}" ]] || { echo "dev-cycle-read.sh: ROOT_REAL is not set; the caller sets it before any file check" >&2; exit 1; }; }
+rawfile() { local r; [[ -n "${ROOT_REAL:-}" && -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+# A directory dev-cycle.sh's digest globs in must be plain too, or the glob would list
 # names from wherever a symlinked directory points.
-plaindir() { local r; [[ -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
+plaindir() { local r; [[ -n "${ROOT_REAL:-}" && -d "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
 # One rule decides whether an input is skipped, for files and directories alike:
 # walking the path top down, the first part that exists but is not plain (a
 # symlink, or not a regular file / directory) blocks it. Nothing below a blocking
 # part is probed, not even whether a file exists there; the blocking part is what
-# section 8 lists and what the inline note names. A newline in a name becomes a
+# the digest's section 8 lists and what the inline note names. A newline in a name becomes a
 # space before it is ever printed. An absent path is not skipped, just absent.
 SKIPPED=(); SKIP_AT=""
 blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
@@ -85,11 +90,11 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
 # use rawfile directly: their directory has already passed dirok.)
-inrepo() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
+inrepo() { need_root; [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
 # The same for a directory the digest globs in: the walk first, so nothing is
 # looked up through a non-plain parent.
-dirok() { [[ -z "$(blocker "$1" dir)" && -d "$1" ]]; }
-skipped() { SKIP_AT="$(blocker "$1" "${2:-file}")"; [[ -n "$SKIP_AT" ]] || return 1; SKIPPED+=("$SKIP_AT"); }
+dirok() { need_root; [[ -z "$(blocker "$1" dir)" && -d "$1" ]]; }
+skipped() { need_root; SKIP_AT="$(blocker "$1" "${2:-file}")"; [[ -n "$SKIP_AT" ]] || return 1; SKIPPED+=("$SKIP_AT"); }
 
 # The path rule for repo text (commit messages, plans, settings rows, roadmap
 # brief paths), so the skill runs it instead of re-deriving it in prose:

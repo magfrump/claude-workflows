@@ -1020,14 +1020,14 @@ EOF
        && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
 }
 
-@test "sourcing the reader lib defines its functions and runs nothing" {
+@test "sourcing the reader lib defines its functions and calls neither git nor perl" {
     # Stub git and perl ahead of the real ones: sourcing must call neither. LC_ALL=C
     # keeps a host locale warning out of stderr.
     S="$BATS_TEST_TMPDIR/stubs"; mkdir -p "$S"
     for b in git perl; do printf '#!/bin/sh\necho "%s" >> "%s/called"\n' "$b" "$S" > "$S/$b"; chmod +x "$S/$b"; done
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
-        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable; do
+        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
@@ -1041,4 +1041,18 @@ EOF
     run --separate-stderr bash "$BATS_TEST_TMPDIR/bare/dev-cycle.sh" --check-path README.md
     [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$output"; echo "$stderr"; return 1; }
     [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "the lib's file checks stop, not pass, when the caller has not set ROOT_REAL" {
+    mkdir -p real && echo x > real/f.md && ln -s real linkdir && ln -s real/f.md link.md
+    for check in "inrepo link.md" "dirok linkdir" "skipped link.md"; do
+        run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; $2 $3; echo "passed: $2"' _ \
+            "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" $check
+        [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$check: $status $output"; return 1; }
+        [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$stderr"; return 1; }
+    done
+    run env LC_ALL=C bash -c 'source "$1"; rawfile real/f.md || echo closed; plaindir real || echo closed' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "closed
+closed" ] || { echo "$output"; return 1; }
 }

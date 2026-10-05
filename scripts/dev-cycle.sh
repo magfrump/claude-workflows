@@ -73,15 +73,15 @@
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
-# skip is an answer, not an error); 1 bad usage, not a git repo, no perl, or no
+# skip is an answer, not an error); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no
 # default branch (for the digest, --check-brief and --check-branch); a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
 
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: relative paths work
-# The reader this script shares with build-loop.sh, from this script's own
-# directory: the scrub and the file and path rules.
+# The reader, kept in a lib so the planned scripts/build-loop.sh can share it,
+# from this script's own directory: the scrub and the file and path rules.
 READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 [[ -f "$READ_LIB" ]] || { echo "dev-cycle.sh needs $READ_LIB" >&2; exit 1; }
 # shellcheck source=lib/dev-cycle-read.sh
