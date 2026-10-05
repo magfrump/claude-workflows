@@ -8,8 +8,8 @@
 #        scripts/build-loop.sh -h | --help
 #
 #   --settings  four lines from the default branch's commit, never the working
-#             tree (a build loop can write any working tree). The first three
-#             each come from one line of docs/dev-cycle.md; a second copy, or a file the lib's
+#             tree (a build loop can write any working tree). Lines 1-3 from
+#             one line of docs/dev-cycle.md; a second copy, or a file the lib's
 #             FENCE_AWK refuses, leaves the default (WHY says which):
 #             policy self-merge|review set|unset: WHY
 #                 Set only by "Build-loop policy: self-merge" or "...: review",
