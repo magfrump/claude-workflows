@@ -1,992 +1,1048 @@
-Commit: 553a50d5
+Commit: c143b929
 
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u1c (claude-workflows, branch feat/build-loop-u1c)
-**Scope:** unit diff `feat/build-loop-u1b...feat/build-loop-u1c` (scripts/build-loop.sh, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats) plus the commit messages of 859e29e8, aaae80c6 and 553a50d5; lib code (`scripts/lib/dev-cycle-read.sh`) and the plan are context only
+**Scope:** unit diff `feat/build-loop-u1b...feat/build-loop-u1c` at HEAD c143b929: comments, help text and test names/comments in scripts/build-loop.sh, scripts/lib/dev-cycle-read.sh, scripts/dev-cycle.sh, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats; commit messages of 859e29e8, aaae80c6, 553a50d5, c143b929. Review iteration 2, final confirming pass (no `--loop-pass`). docs/reviews/ artifacts out of scope; override rows 265, 272, 274, 275 not re-filed.
 **Checked:** 2026-10-05
-**Total claims checked:** 54
-**Summary:** 38 verified, 13 mostly accurate, 0 stale, 1 incorrect, 2 unverifiable
-**Commit:** 553a50d5
-**Replication:** k=1 (loop pass, decision 031)
+**Total claims checked:** 44
+**Summary:** 32 verified, 10 mostly accurate, 0 stale, 0 incorrect, 2 unverifiable
+**Commit:** c143b929
+**Replication:** k=3
 
-Hallucination-pattern log read first (`docs/reviews/hallucination-patterns.md`). Three of its five entries are "a specific measured value quoted from an artifact set that does not contain it". This unit's measured values (2137/1017 commits, ~1 ms per brief, 79 ms, 399 lines) were each re-measured below. None matches the pattern: the counts and line total reproduce exactly. The 79 ms timing is environment-dependent and is marked Unverifiable, not fabricated.
-
-Execution logs (all under `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c/fact-check/`):
-- `suites-head.log`: both suites at HEAD.
-- `at-859e.log`: build-loop-read.bats at 859e29e8.
-- `probe-constraints.log`, `probe-marker.log`, `probe-locale.log`, `probe-locale-warn.log`, `probe-shared.log`, `probe-wt.log`, `probe-readonly.log`: probes.
-- `help.log`, `linecount.log`, `measure.log`.
-
-Probe scripts sit next to the logs: `env.sh`, `probe-*.sh`, `measure.sh`. Every probe built throwaway repos under `.../fact-check/p/` with the fixture's hermetic git env. Unless a log says otherwise, probes ran as `bash <script>` from the scratch dir with `LC_ALL=C.UTF-8` and exit 0.
-
-Test results at HEAD: `cd /workspace/.claude/wt-build-loop-u1c && export LC_ALL=C.UTF-8; bats test/scripts/build-loop-read.bats test/scripts/dev-cycle.bats`, run at 2026-10-05T11:46Z, exit 0. 83 of 83 pass (16 + 67). Output is in `suites-head.log`.
+Merged most-severe-wins from `code-fact-check-report-build-loop-u1c-r1.md` (44 claims), `-r2.md` (38) and `-r3.md` (43), all stamped `Commit: c143b929`. Numbering follows r1, the finest granularity any replicate used; where another replicate won the verdict, its evidence is carried (Claims 14, 20, 30, 34b, 36a, 36c). Replicate execution logs: `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/fc-r{1,2,3}/`. All three replicates ran `bats test/scripts/build-loop-read.bats` at HEAD: 16/16 ok.
 
 ---
 
-## Claim 1: "--settings  four lines from the default branch's commit ... Lines 1-3 from one line of docs/dev-cycle.md"
+## Claim 1: "Usage: scripts/build-loop.sh --settings / scripts/build-loop.sh --status BRIEF..." and the usage error "(usage: build-loop.sh --settings | --status BRIEF...)"
 
-**Location:** `scripts/build-loop.sh:10-12`
+**Location:** `scripts/build-loop.sh:6-7`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the four-line output, its order, and that lines 1-3 (policy, slots, never) come from docs/dev-cycle.md and line 4 from docs/constraints.md. Does not establish U1b's per-line rules (context).
+**Scope:** Covers the two modes the parser accepts and the usage text printed on error. It does not establish -h output beyond the lines E4/P20 printed.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 1) · r3=Verified (claim 1)
+**Replicate annotations:** none
 
-`printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE"` (`scripts/build-loop.sh:340`). The first three are set from `f=docs/dev-cycle.md` (`:186`), and `f=docs/constraints.md` (`:237`) feeds `CONSTRAINTS_LINE`. Test `:174` asserts `"${#lines[@]}" -eq 4` and the order, and passes (`suites-head.log`). `probe-readonly.log` shows the four lines in order.
+The parser at `scripts/build-loop.sh:93-99` accepts `--settings) ... [[ $# -eq 1 ]]`, `--status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage ...`, and `-h|--help`. `usage()` at :91 prints `"$1 (usage: build-loop.sh --settings | --status BRIEF...)"`. In E1, test 9's loop over `"" "--bogus" "--settings extra" "--status"` asserts exit 1, empty stdout and non-empty stderr. E4/P20 shows `--help` printing the `--status` block.
 
-**Evidence:** `scripts/build-loop.sh:186`, `scripts/build-loop.sh:237`, `scripts/build-loop.sh:340`, `test/scripts/build-loop-read.bats:174-178`, `.../fact-check/suites-head.log`, `.../fact-check/probe-readonly.log`
+**Evidence:** `scripts/build-loop.sh:6-8`, `scripts/build-loop.sh:91-99`, fc-r1/bats-read.log (E1), fc-r1/status-probe.log P20 (E4)
 
 ---
 
-## Claim 2: "A constraint is a line "H<n>: text" (hard) or "S<n>: text" (soft) at column 0, optionally after "- "; a hard one needs a "success: <observable>" line (any indent, optionally after "- ") before the next constraint, and no ID may repeat."
+## Claim 2: "--settings  four lines from the default branch's commit, never the working tree"
 
-**Location:** `scripts/build-loop.sh:27-32`
+**Location:** `scripts/build-loop.sh:10-11`
 **Type:** Behavioral
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers what CONSTRAINTS_AWK counts, the success-line rule, the repeat rule and how each awk output maps to CONSTRAINTS_LINE (aaae80c6's message repeats the same grammar). Does not establish how U5's docs will word it.
-**Legibility-target:** for-author
+**Scope:** Covers the count and order of the lines and the working-tree exclusion for docs/constraints.md (the other three lines are U1b's). It does not establish behaviour under replace refs, which is U1b's settled hardening.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 2) · r3=Verified (claim 2)
+**Replicate annotations:** none
 
-The recognising pattern is `/^(- )?[HS][0123456789]+: [^ \t]/` and the success pattern is `/^[ \t]*(- )?success: [^ \t]/` (`scripts/build-loop.sh:152`, `:160`). Both match the header. The probes (`probe-constraints.log`, 2026-10-05T11:47:20Z, exit 0) confirmed these:
-- A success line before any constraint, or after a soft one, is ignored ("success before any" gives `hard constraint H1 (line 2) has no success:`).
-- CRLF is accepted (`ok 1-hard 0-soft`), and a CRLF duplicate is caught (`listed twice (lines 1 and 3)`).
-- A tab-indented `- success:` counts.
-- A fenced constraint or fenced success line is not read (FENCE_AWK).
-- An empty, zero-byte or prose-only file gives `none-hard ... has 0 soft constraints`.
+`scripts/build-loop.sh:355` is `printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE"`. main_file reads `git cat-file blob "$MAIN_SHA:$f"` (`:128`). E1 passes test 9 (`"${#lines[@]}" -eq 4`, in order) and test 8. Test 8 writes `docs/constraints.md` only in the working tree and asserts `constraints missing`.
 
-Two imprecisions:
-- **IDs are compared as written.** `seen[id]` is keyed on the literal text (`if (bad == "" && (id in seen)) bad = "dup " id " " seen[id] " " NR`, `:155`), so `H01` and `H1` are two IDs. The probe gives `constraints ok 2-hard 0-soft` for `H01: a / success: x / H1: b / success: y`. "No ID may repeat" holds only for identical spellings.
-- **Near-miss forms are silently not constraints, never refused.** These all leave the line uncounted and can still yield `ok` from the other lines:
-  - `H1:<TAB>text`
-  - `* H1:`
-  - `-  H1:` (two spaces)
-  - `  H1:` (indented)
-  - `h1:`
-  - `1. H1:`
-  - `> H1:`
-
-  The header describes the counted shape correctly but not the silent fall-through.
-
-**Evidence:** `scripts/build-loop.sh:149-168`, `scripts/build-loop.sh:243-248`, `.../fact-check/probe-constraints.log`
+**Evidence:** `scripts/build-loop.sh:117-134`, `scripts/build-loop.sh:254-267`, `scripts/build-loop.sh:355`, `test/scripts/build-loop-read.bats:359-366`, fc-r1/bats-read.log (E1)
 
 ---
 
-## Claim 3: "docs/constraints.md, which every loop prompt carries ... Only "ok" lets the orchestrator dispatch."
+## Claim 3: "constraints ok N-hard M-soft|missing|none-hard|unreadable: WHY"
 
-**Location:** `scripts/build-loop.sh:27`, `scripts/build-loop.sh:32`
+**Location:** `scripts/build-loop.sh:29`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the four first words and the `N-hard M-soft` shape. It does not establish wording beyond the strings E1–E3 printed. Note: a file holding no constraints at all reports `none-hard ... has 0 soft constraints`, which the help does not single out.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 3) · r3=—
+**Replicate annotations:** none
+
+`:261` builds `"constraints ok $c-hard $l1-soft: $f on the default branch"`, and `:262` gives `none-hard` when `$c` is 0. `:256` gives `missing` for an absent file. `:257` and `:263-265` give `unreadable`. E1, E2 and E3 printed all four, for example `constraints ok 2-hard 1-soft: docs/constraints.md on the default branch` (test 8).
+
+**Evidence:** `scripts/build-loop.sh:254-267`, fc-r1/constraints-shapes.log, fc-r1/constraints-structure.log, fc-r1/bats-read.log
+
+---
+
+## Claim 4: "docs/constraints.md, which every loop prompt carries"
+
+**Location:** `scripts/build-loop.sh:30`
 **Type:** Architectural
 **Verdict:** Unverifiable
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers consistency with the plan only. Does not establish behaviour, since no prompt builder (`--start`/`--prompt`, U3) or dispatch step (skill, U4) exists on this branch.
+**Scope:** Covers only that the plan states this. It does not establish any loop-prompt code, because none exists in U1. Blocker: the loop prompt (`--prompt`/`--start`) is U3's work and is not in this tree.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Unverifiable · r2=Unverifiable (compound, claim 4) · r3=Unverifiable (compound, claim 5)
+**Replicate annotations:** r1+r2+r3: "depends on U3/U4 code that does not exist; matches plan :44 and :260"
 
-The plan states both:
-- "**Seeding.** Every loop prompt carries `docs/constraints.md` from main's commit." (`docs/working/plan-build-loop-handoff.md:44`)
-- "**Step 10, dispatch**: only when `--settings` prints `constraints ok`" (`:260`), and `--start` "the constraints doc must read `ok`" (`:216`).
+`docs/working/plan-build-loop-handoff.md:44` reads: "Every loop prompt carries `docs/constraints.md` from main's commit." A grep finds no `--prompt` mode in `scripts/build-loop.sh` (paraphrased; no quote is available because the claim is about code that is absent: `case "$MODE"` at :348-357 has only `status` and `settings`).
 
-No code in this unit builds a prompt or dispatches. Paraphrased — no quote available because the claim covers absence of code: grep for `--start`/`--prompt` handlers in `scripts/build-loop.sh` finds only the `--settings`/`--status` cases at `:84-90`. Checking this needs U3/U4.
-
-**Evidence:** `docs/working/plan-build-loop-handoff.md:44`, `docs/working/plan-build-loop-handoff.md:216`, `docs/working/plan-build-loop-handoff.md:260`, `scripts/build-loop.sh:84-90`
+**Evidence:** `docs/working/plan-build-loop-handoff.md:44`, `scripts/build-loop.sh:348-357`
 
 ---
 
-## Claim 4: "--status  one line per brief path, in argument order, from the default branch's commit"
+## Claim 5: "A constraint is a line "H<n>: text" (hard) or "S<n>: text" (soft) at column 0, optionally after "- ", n without a leading 0"
 
-**Location:** `scripts/build-loop.sh:36-37`
+**Location:** `scripts/build-loop.sh:30-33`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the exact-line pattern, including multi-digit IDs (H12) and the requirement for one space followed by a non-blank. It does not establish how near-miss lines are treated (Claim 8).
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 5) · r3=Verified (compound, claim 3)
+**Replicate annotations:** none
+
+`scripts/build-loop.sh:164` matches `/^(- )?[HS][123456789][0123456789]*: [^ \t]/`. In E3, `H3:` and `H12:` each with a success line gave `ok 3-hard`. In E2, `H01: x`, `S01: x`, `H2:  x` and `- H2: ` were all refused as near misses.
+
+**Evidence:** `scripts/build-loop.sh:161-183`, fc-r1/constraints-structure.log, fc-r1/constraints-shapes.log
+
+---
+
+## Claim 6: "a hard one needs a "success: <observable>" line (any indent, optionally after "- ") before the next constraint or heading" (with the code comment "a heading ends a pending one")
+
+**Location:** `scripts/build-loop.sh:33-35`, `scripts/build-loop.sh:174`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the one-line-per-argument order and that brief content comes from main's commit. Does not establish that the working tree has no effect: the lib's check_brief also probes the working-tree path.
+**Scope:** Covers the success-line pattern and the ending of a pending hard constraint by a later constraint or by a column-0 `#` line. It does not hold for every Markdown heading: setext headings and ATX headings indented 1-3 spaces do not end a pending constraint, and a non-heading `#hashtag` line does.
 **Legibility-target:** for-author
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate (claim 6) · r3=Verified (compound, claim 3)
+**Replicate annotations:** r1+r2: "Setext headings and ATX headings indented 1-3 spaces do not end a pending hard constraint; a `#hashtag` line does (fail closed)" · r3: compound Claim 3 Verified; its Scope does not establish how fenced lines count
 
-Order holds: `for a in "${ARGS[@]}"; do status_line "$a"; done` (`scripts/build-loop.sh:336`), and T28 asserts six mixed ok/skip lines in order. Working-tree content edits are ignored (T21). However, `status_line` starts with `out="$(check_brief "$a")"` (`:298`), and check_brief refuses on a working-tree path check: `if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi` (`scripts/lib/dev-cycle-read.sh:327`). In `probe-wt.log` (2026-10-05T11:49:29Z, exit 0), the committed brief reads `ok ... open review feat/a absent - - 0`. After the working-tree copy is replaced by a symlink, with main unchanged, the same brief reads `skip ...: reached through a symlink, or not a regular file`. This fails closed and is covered by "(as --check-brief)" at `:56`. Still, "from the default branch's commit" is not the whole input.
+The heading rule is `/^#/ { if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl; pend = ""; next }` (`scripts/build-loop.sh:174`), so only a line that starts with `#` at column 0 counts as a heading. E3 gave these results:
+- `'- H1: a' 'Other' '=====' '  success: b'` printed `constraints ok 1-hard 0-soft`: a success line under a setext-headed section satisfied H1.
+- `'- H1: a' '   ## Other' '  success: b'` printed the same `ok`. CommonMark treats this line as a heading.
+- `'- H1: a' '#hashtag' '  success: b'` printed `unreadable ... no success: line`. CommonMark does not treat this line as a heading (no space after `#`). The error is in the fail-closed direction.
 
-**Evidence:** `scripts/build-loop.sh:296-298`, `scripts/build-loop.sh:336`, `scripts/lib/dev-cycle-read.sh:327`, `.../fact-check/probe-wt.log`
+The success pattern at `:175` is `/^[ \t]*(- )?success: [^ \t]/`. E3 confirmed it accepts tab indent, `- success:` and `  - success:`, and refuses `> success:`, `Success:` and `success:  b`. Precise version: "before the next constraint or the next line starting with #".
+
+**Evidence:** `scripts/build-loop.sh:172-175`, fc-r1/constraints-structure.log (E3)
 
 ---
 
-## Claim 5: "STATE: open, done or dropped (dev-cycle.sh --check-brief), or new when main has no file there (then "new review - absent - - 0")"
+## Claim 7: "no ID may repeat"
 
-**Location:** `scripts/build-loop.sh:39-41`
+**Location:** `scripts/build-loop.sh:35`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers STATE from check_brief (the same function dev-cycle.sh `--check-brief` calls) and the fixed "new" line. Does not establish check_brief's own rules (context).
+**Scope:** Covers exact repeats of an ID across hard and soft constraints. It does not cover IDs that differ only by a leading 0, which are refused as near misses instead (Claim 36a).
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 7) · r3=Verified (compound, claim 3)
+**Replicate annotations:** none
 
-`read -r _ _ st _ <<<"$out"` then `if [[ "$st" == new ]]; then echo "ok $a new review - absent - - 0"; return; fi` (`scripts/build-loop.sh:300-301`). dev-cycle.sh routes `--check-brief) check_brief "$a" ;;` (`scripts/dev-cycle.sh:200`). The T8 test at `:310-311` (pass) and `probe-readonly.log` (`ok docs/working/briefs/2026-10-01-zz.md new review - absent - - 0`) confirm it.
+`:167` is `if (bad == "" && (id in seen)) bad = "dup " id " " seen[id] " " NR`. In E3, `S1: c` / `S1: d` gave `constraint S1 is listed twice (lines 3 and 4)`. In E1, test 8 asserts the H1 case.
 
-**Evidence:** `scripts/build-loop.sh:298-301`, `scripts/dev-cycle.sh:200`, `test/scripts/build-loop-read.bats:310-312`, `.../fact-check/probe-readonly.log`
+**Evidence:** `scripts/build-loop.sh:165-168`, fc-r1/constraints-structure.log, fc-r1/bats-read.log
 
 ---
 
-## Claim 6: "POLICY: self-merge only when --settings' policy is self-merge and the brief's first "Policy:" line is exactly "Policy: self-merge"; else review."
+## Claim 8: "Any other line whose letters and digits, from its first letter, start like "h1" or "s1" makes the file unreadable."
 
-**Location:** `scripts/build-loop.sh:41-43`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the stricter-of rule, that the first unfenced "Policy:" line wins, and the variants in T5. Does not establish anything beyond the lib's "exactly", which allows one trailing CR because brief_fields drops it.
-**Legibility-target:** for-orchestrator-synthesis
-
-`[[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge` (`scripts/build-loop.sh:311`). brief_fields keeps the first line per key: `if (!(k in got)) { got[k] = 1; kv[++nk] = k "\t" $0 }` (`scripts/lib/dev-cycle-read.sh:299`). In `probe-shared.log`, `Policy: review` followed by `Policy: self-merge` under settings self-merge gives `review`. T5 (`:315-330`) passes, including a malformed never line turning self-merge off.
-
-**Evidence:** `scripts/build-loop.sh:311`, `scripts/lib/dev-cycle-read.sh:298-299`, `test/scripts/build-loop-read.bats:315-330`, `.../fact-check/probe-shared.log`
-
----
-
-## Claim 7: "BRANCH: from the brief's first "Branch: NAME" line."
-
-**Location:** `scripts/build-loop.sh:43-44`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that the first unfenced line starting "Branch:" is read, and that a malformed one is a skip rather than a search for a later well-formed line. Does not establish check_branch's name rules (context).
-**Legibility-target:** for-orchestrator-synthesis
-
-`if [[ ! "${BRIEF[branch]}" =~ ^Branch:\ ([^\ ]+)$ ]]; then echo "skip $a: its first Branch: line is not exactly \"Branch: NAME\""; return; fi` (`scripts/build-loop.sh:304`). Probes (`probe-shared.log`): `Branch: feat/g` followed by `Branch: feat/other` gives `feat/g`, and a fenced `Branch: feat/fenced` is skipped in favour of the later `Branch: feat/h`.
-
-**Evidence:** `scripts/build-loop.sh:303-305`, `scripts/lib/dev-cycle-read.sh:298-299`, `.../fact-check/probe-shared.log`
-
----
-
-## Claim 8: "LOOP: absent (no such branch), working, ready, blocked or stopped, from the branch tip (SHA, with DATE its commit date as YYYY-MM-DD; "-" when absent)."
-
-**Location:** `scripts/build-loop.sh:44-47`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the five LOOP values, the SHA and the %cs date. Does not establish the "absent" case for a ref pointing at a non-commit, which check_branch also reports as absent.
-**Legibility-target:** for-orchestrator-synthesis
-
-`"absent "*) echo "ok $a $st $pol $br absent - - $disp"; return ;;` (`scripts/build-loop.sh:317`). The date comes from check_branch's `$(git log -1 --format=%cs "$sha")` (`scripts/lib/dev-cycle-read.sh:378`). T6 asserts every field for absent, working (0 ahead and 1 ahead), ready, blocked and stopped, and passes.
-
-**Evidence:** `scripts/build-loop.sh:315-330`, `scripts/lib/dev-cycle-read.sh:376-379`, `test/scripts/build-loop-read.bats:211-242`, `.../fact-check/suites-head.log`
-
----
-
-## Claim 9: "A tip is a marker only when the branch is at least one commit ahead of main and the tip is an empty commit with one parent whose subject is exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (1-120 printable ASCII characters, no blank at either end)"
-
-**Location:** `scripts/build-loop.sh:47-51`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the ahead gate, parent count, empty tree, the exact subjects and the REASON charset and length. It also covers commits with gpgsig, mergetag and encoding headers. The "alone on its first line" and subject-definition edges are verdicted in Claim 10.
-**Legibility-target:** for-orchestrator-synthesis
-
-The checks, in order:
-- The ahead gate: `if [[ "$ahead" -gt 0 ]]; then kind="$(marker_kind "$sha")"` (`scripts/build-loop.sh:322-323`).
-- Parent count: `if [[ "$np" -eq 0 ]]` / `-gt 1` (`:264-265`).
-- Empty tree: `if [[ "$tree" != "$ptree" ]]; then echo "bad it changes files"` (`:267`).
-- REASON: `${#r} -le 120 && "$r" =~ ^[!-~]([\ -~]*[!-~])?$` (`:278`).
-
-The header split `hdr="${raw%%$'\n\n'*}"` (`:258`) is safe for signed or tagged commits, because their continuation lines start with a space (a blank armor line is stored as " "). `probe-marker.log` (2026-10-05T11:47:57Z, exit 0) shows:
-- Commits with `encoding` + `gpgsig` headers, and with a `mergetag` header, read `ready`.
-- A 120-character reason is `stopped`; 121 is `skip`.
-- 119 ASCII characters plus `é` (120 characters, 121 bytes) is `skip`.
-
-T7 covers content, merge, orphan, suffixed and mis-cased subjects, and empty, ESC, bidi and non-ASCII reasons.
-
-**Evidence:** `scripts/build-loop.sh:255-280`, `scripts/build-loop.sh:321-329`, `test/scripts/build-loop-read.bats:244-279`, `.../fact-check/probe-marker.log`
-
----
-
-## Claim 10: "alone on its first line ... Any other tip is working" together with the skip reason "the tip's subject starts "handoff:" but it is not a marker"
-
-**Location:** `scripts/build-loop.sh:51-53`, `scripts/build-loop.sh:59-60`
+**Location:** `scripts/build-loop.sh:35-37`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers what "subject" and "alone" mean in code. Does not establish any spoof that reads as a marker: both mismatches below fail closed.
+**Scope:** Covers every ASCII near-miss shape the brief listed, outside code fences: each one makes the file unreadable. The claim does not hold for lines inside a code fence or for non-ASCII letters and digits; for both, the file still reads `constraints ok` with the line uncounted.
 **Legibility-target:** for-author
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate (claim 8) · r3=Mostly accurate (claim 4)
+**Replicate annotations:** r1+r2+r3: "lines inside a code fence (``` or ~~~) are skipped, so a fenced `H2: x` leaves `constraints ok`" · r1+r2+r3: "non-ASCII look-alikes (Cyrillic Н2, fullwidth Ｈ2) leave `constraints ok`" · r1: "Arabic-Indic H٢ and letter-prefixed lines (`- [x] H2:`, `a) H2:`, `Note: H2:`) also leave ok; matches the literal rule and Q-112 best effort" · r3: "superscript H² also leaves ok" · r2: "plan :204 reads the file under FENCE_AWK; fence-skipping may be intended: say 'outside a fence' and 'ASCII' in the help, or refuse"
 
-The code's "subject" is the raw first line of the message: `subj="${msg%%$'\n'*}"` and `[[ "$subj" == handoff:* ]] || { echo working; return; }` (`scripts/build-loop.sh:259-260`). "Alone" means the next line is zero-length: `if [[ "$msg" == *$'\n'* && -n "${rest%%$'\n'*}" ]]; then echo "bad its subject runs onto a second line"` (`:269`). Git's subject (`%s`) differs in two ways, both probed in `probe-marker.log`:
-- **Leading blank line.** A message `"\nhandoff: ready\n"` has git `%s` = `handoff: ready`. `--status` prints `working`, not the skip line the header promises for a tip whose subject starts "handoff:".
-- **Whitespace-only next line.** `"handoff: ready\n \nbody"` and `"handoff: ready\n\t\n"` have git `%s` = `handoff: ready`. Both give `skip ...: its subject runs onto a second line`, although git's subject ends there.
+The code is `{ s = $0; sub(/^[^a-zA-Z]*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }` and `s ~ /^[hs][0123456789]/ { if (bad == "") bad = "near " NR; next }` (`scripts/build-loop.sh:172-173`). awk runs under `env LC_ALL=C` (`:128`), so "letter" means ASCII a-z, and the rule sits behind `fence($0) { next }` (`:163`).
 
-Both fail closed (never a marker). The precise wording is "the message's first line is exactly …, and the second line, if any, is empty".
+In E2, every shape the brief listed gave `unreadable: line 3 looks like a constraint`: `* H2:`, `1. H2:`, `H2:  x`, `H2:<TAB>x`, `  H2:`, `h2:`, `**H2:**`, `### H2:`, `> H2:`, `H10 :`, `| H2: x |`, `H01:`. So did `<!-- H2: x -->`, `` `H2: x` ``, `+ H2:`, `-H2:`, `H 2:`, fullwidth colons and `~~H2~~:`.
 
-The required cases match the brief: `"handoff: ready\n"` → ready, `"handoff: ready\n\nbody"` → ready, `"handoff: ready\nmore"` → skip.
+Three kinds of line still leave `constraints ok 1-hard 0-soft`:
+- **Non-ASCII letters or digits.** E2 shows this for Cyrillic `Н2: x`, fullwidth `Ｈ2: x` and Arabic-Indic `H٢: x`. The help says "letters and digits" without "ASCII".
+- **Lines inside a code fence.** E3 shows this for ```` ``` ```` / `H2: x` / ```` ``` ```` and `~~~` / `- H2: x` / `~~~`. The help says "Any other line".
+- **Lines whose first ASCII letter is not h or s.** E8 shows this for `- [x] H2: never drop rows`, `a) H2: x`, `Note: H2: x` and `Hx2: x`. This matches the help's literal rule ("from its first letter") and the best-effort detection the user accepted in Q-112 [1]. It is listed here because the brief asks whether a hard-looking line can still vanish under `ok`, and these lines do.
 
-**Evidence:** `scripts/build-loop.sh:257-269`, `.../fact-check/probe-marker.log`
+The precise version would read: "Any other line outside a code fence whose ASCII letters and digits ...".
+
+**Evidence:** `scripts/build-loop.sh:128`, `scripts/build-loop.sh:161-175`, `scripts/lib/dev-cycle-read.sh:213-229`, fc-r1/constraints-shapes.log (E2), fc-r1/constraints-structure.log (E3), fc-r1/constraints-letterprefix.log (E8)
 
 ---
 
-## Claim 11: "DISPATCHED: the brief's "Dispatched: N" (0-99), or 0 without one."
+## Claim 9: "Only "ok" lets the orchestrator dispatch."
 
-**Location:** `scripts/build-loop.sh:53-54`
+**Location:** `scripts/build-loop.sh:37`
+**Type:** Architectural
+**Verdict:** Unverifiable
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers only agreement with the plan. It does not establish any dispatch code. Blocker: `--start` (U3) and the orchestrator skill (U4) do not exist yet.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Unverifiable · r2=Unverifiable (compound, claim 4) · r3=Unverifiable (compound, claim 5)
+**Replicate annotations:** same as Claim 4
+
+`docs/working/plan-build-loop-handoff.md:340` (T44) reads "`--start` refuses unless `ok`". Line :173 (F55) reads "`--start` refuses (T44)". No `start` mode exists in `scripts/build-loop.sh:348-357`.
+
+**Evidence:** `docs/working/plan-build-loop-handoff.md:173`, `docs/working/plan-build-loop-handoff.md:340`, `scripts/build-loop.sh:348-357`
+
+---
+
+## Claim 10: "--status  one line per brief path, in argument order, from the default branch's commit (the path must also be plain in the working tree, as --check-brief)"
+
+**Location:** `scripts/build-loop.sh:42-44`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the 0-99 regex and the default 0. Does not establish D1's cap of 4 (U3).
+**Scope:** Covers argument order, main-commit reads, and the plainness check on each argument path. Two limits apply: "plain" passes a path that is absent from the working tree (E4/P15 prints ok), and the other briefs read for F31 are never checked in the working tree (E4/P16, where a symlinked other brief still counts). The help claims neither.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 9) · r3=Verified (claim 6)
+**Replicate annotations:** r1+r2+r3: "enforced by check_brief's blocker for the argument path; other briefs counted for F31 are read from main only, which the help does not contradict" — the lite drift claim is refuted
 
-`local ... pol=review disp=0` (`scripts/build-loop.sh:297`) and `[[ "${BRIEF[dispatched]}" =~ ^Dispatched:\ (0|[123456789][0123456789]?)$ ]]` (`:307`). In T6, `Dispatched: 2` gives `2`. In T5, briefs without the line give `0`. In T8, `x`, `100`, `01`, `-1` and empty all skip. All pass.
+`status_line` begins `out="$(check_brief "$a")"` (`:312`). check_brief runs `if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"` (`scripts/lib/dev-cycle-read.sh:329`) and then reads only from main. In E4/P14, a working-tree symlink at the brief path gave `skip ...: reached through a symlink, or not a regular file`. In E1, T28 asserts six lines in argument order and T21 asserts that working-tree and branch edits are ignored. The lite-drift concern ("unenforced because shared_branches no longer calls main_entry") is refuted: the working-tree check is check_brief's blocker call. It never involved shared_branches.
 
-**Evidence:** `scripts/build-loop.sh:297`, `scripts/build-loop.sh:306-310`, `test/scripts/build-loop-read.bats:304-308`
+**Evidence:** `scripts/build-loop.sh:310-316`, `scripts/build-loop.sh:349-352`, `scripts/lib/dev-cycle-read.sh:107-117`, `scripts/lib/dev-cycle-read.sh:321-360`, fc-r1/status-probe.log P14-P16, fc-r1/bats-read.log
 
 ---
 
-## Claim 12a: "skip BRIEF: WHY — The brief cannot be read (as --check-brief), its Branch: ... line is missing or malformed, its branch name is refused (as --check-branch) ..."
+## Claim 11: "STATE: open, done or dropped (dev-cycle.sh --check-brief), or new when main has no file there (then "new review - absent - - 0")"
 
-**Location:** `scripts/build-loop.sh:56-58`
+**Location:** `scripts/build-loop.sh:46-48`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the check_brief, Branch: and check_branch skip causes. The list is otherwise complete: the remaining `skip $a: the brief is not read` (`:302`) is a brief_fields failure after check_brief succeeded, which falls under "cannot be read". The Dispatched-missing atom is Claim 12b.
+**Scope:** Covers the state source and the literal `new` line. It does not cover a brief already moved to closed/, which also reads as new; that case is settled by row 272.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 10) · r3=Verified (claim 7)
+**Replicate annotations:** none
 
-These skips appear in order in the code: `[[ "$out" == "ok "* ]] || { echo "$out"; return; }` (`scripts/build-loop.sh:299`), `"skip $a: no Branch: line on the default branch"` (`:303`), the malformed-Branch skip (`:304`), and `*) echo "skip $a: Branch: ${out#*: }"; return ;;` (`:319`). T8 passes for each one.
+`:315` is `if [[ "$st" == new ]]; then echo "ok $a new review - absent - - 0"; return; fi`. check_brief is the same lib function that dev-cycle.sh calls for `--check-brief` (`scripts/dev-cycle.sh:201` `--check-brief) check_brief "$a" ;;`). In E1, T8 asserts `ok docs/working/briefs/2026-10-01-none.md new review - absent - - 0`.
 
-**Evidence:** `scripts/build-loop.sh:298-319`, `test/scripts/build-loop-read.bats:281-313`
+**Evidence:** `scripts/build-loop.sh:312-315`, `scripts/dev-cycle.sh:201`, fc-r1/bats-read.log
 
 ---
 
-## Claim 12b: "skip BRIEF: WHY — ... its ... Dispatched: line is missing or malformed"
+## Claim 12: "POLICY: self-merge only when --settings' policy is self-merge and the brief's first "Policy:" line is exactly "Policy: self-merge"; else review."
 
-**Location:** `scripts/build-loop.sh:56-57`
+**Location:** `scripts/build-loop.sh:48-50`
 **Type:** Behavioral
-**Verdict:** Incorrect
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the "missing" half for Dispatched:. The "malformed" half is correct (Claim 11). Does not establish any code defect.
-**Legibility-target:** for-author
+**Scope:** Covers the 2x5 matrix in T5 and the malformed-never case. It does not cover a Policy: line inside a fence, which brief_fields skips.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 11) · r3=Verified (compound, claim 8)
+**Replicate annotations:** none
 
-A missing Dispatched: line is never a skip. The check runs only when the key is set: `if [[ -n "${BRIEF[dispatched]+set}" ]]; then` (`scripts/build-loop.sh:306`). Otherwise `disp=0` stands, which is what the same header says at `:53-54` ("or 0 without one"). T5 runs briefs without the line and asserts `ok $B open $want feat/a absent - - 0` (`test/scripts/build-loop-read.bats:322`), and it passes. The skip list's "Branch: or Dispatched: line is missing or malformed" therefore contradicts both the code and line 53-54. The precise version is "its Branch: line is missing or malformed, or its Dispatched: line is malformed".
+`:325` is `[[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge`. brief_fields keeps the first `Policy:` line outside a fence (`scripts/lib/dev-cycle-read.sh:300-301`). T5 passes in E1.
 
-**Defect class:** comment/doc-only. The code is correct and the header contradicts itself, but this header is the `--status` contract U4's skill will be written against. It is in the script header on the unmerged branch (introduced in aaae80c6), not in a commit message.
-
-**Evidence:** `scripts/build-loop.sh:53-57`, `scripts/build-loop.sh:306-310`, `test/scripts/build-loop-read.bats:315-323`
+**Evidence:** `scripts/build-loop.sh:325`, `scripts/lib/dev-cycle-read.sh:289-312`, fc-r1/bats-read.log
 
 ---
 
-## Claim 13: "another open brief on main names the same branch (ignoring case)"
+## Claim 13: "BRANCH: from the brief's first "Branch: NAME" line. LOOP: absent (no such branch), working, ready, blocked or stopped, from the branch tip (SHA, with DATE its commit date as YYYY-MM-DD; "-" when absent)."
 
-**Location:** `scripts/build-loop.sh:58-59`
+**Location:** `scripts/build-loop.sh:50-54`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the field sources and the absent form. It does not establish that DATE is always YYYY-MM-DD for a crafted committer line (settled by row 274).
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 12+13) · r3=Verified (claim 8+9)
+**Replicate annotations:** none
+
+`:318-319` is `[[ ! "${BRIEF[branch]}" =~ ^Branch:\ ([^\ ]+)$ ]] ... br="${BASH_REMATCH[1]}"`. `:332` is `"absent "*) echo "ok $a $st $pol $br absent - - $disp"`. `:333` reads sha, ahead and date from check_branch, which uses `git log -1 --format=%cs` (`scripts/lib/dev-cycle-read.sh:380`). T6 asserts every field for absent, working (0 ahead and ahead), ready, blocked and stopped, and passes in E1.
+
+**Evidence:** `scripts/build-loop.sh:316-345`, `scripts/lib/dev-cycle-read.sh:370-383`, fc-r1/bats-read.log
+
+---
+
+## Claim 14: "A tip is a marker only when the branch is at least one commit ahead of main and the tip is an empty commit with one parent whose subject is exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (1-120 printable ASCII characters, no blank at either end), alone on its first line; REASON is printed last. Any other tip is working."
+
+**Location:** `scripts/build-loop.sh:54-60`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers which briefs the F31 skip applies to. Does not establish F31 for `--check` (U2).
 **Legibility-target:** for-author
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 14) · r3=Mostly accurate (claim 10)
+**Replicate annotations:** r3: "'Any other tip is working' omits that a handoff:-prefixed non-marker is a skip (stated at :67-69)" · r3: "a whitespace-only second line is refused although git's subject is handoff: ready" · r2: "parent line after the committer line reads ready (git ignores it)" · r1+r2+r3: "a message starting with a blank line reads working (%B keeps it; %s would not); fails closed"
+**Scope:** Covers the ahead-count gate, empty single-parent rule, exact subjects, the REASON grammar and placement; does not hold literally for "Any other tip is working" (a "handoff:"-prefixed non-marker is a skip) or for "alone on its first line" (a whitespace-only second line is also refused).
 
-Two qualifiers are missing:
-- **Only an open brief is skipped.** The code is `if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then` (`scripts/build-loop.sh:312`). A done or dropped brief naming a branch that two open briefs share prints `ok`. T28 asserts this (`[ "${lines[3]}" = "ok $c done review feat/x absent - - 0" ]`, `test/scripts/build-loop-read.bats:354`), and `probe-shared.log` reproduces it. The literal condition "another open brief on main names the same branch" is true for that done brief, yet it is not skipped.
-- **Only briefs directly under docs/working/briefs/ are counted.** `git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/` (`:287`) lists direct children only. The `closed` tree entry it also lists fails `isbrief`. In the probe, a `closed/` brief whose Status reads `open` and an open brief naming the same `feat/y` both print `ok ... open ... feat/y`, which is two "open" STATE lines on one branch with no skip.
+Both imprecisions fail closed:
+- "Any other tip is working": `scripts/build-loop.sh:340` — `bad\ *) echo "skip $a: the tip of $br starts \"handoff:\" but is not a marker: ${kind#bad }"; return ;;`. The help states this only later (`:67-69`). Precise: "Any other tip whose subject does not start "handoff:" is working; one that does is a skip."
+- "alone on its first line": `:283-284` — `rest="${msg#"$subj"}"; rest="${rest#$'\n'}"` / `if [[ "$msg" == *$'\n'* && -n "${rest%%$'\n'*}" ]]; then echo "bad its subject runs onto a second line"`. p3.log: message `handoff: ready\n   \nbody` → `skip ...: its subject runs onto a second line`, although git's own subject is `handoff: ready` (p6.log `s=[handoff: ready]`). Precise: "...alone on its first line, with the next line (if any) empty".
 
-The precise version is "the brief is open and another open brief directly under docs/working/briefs/ on main names the same branch". The closed/-open shape is unusual, since a closed brief should be done or dropped.
+The rest holds by execution: p3.log root commit and parent-after-author object → "it has no parent"; repeated parent → "it has 2 parents"; encoding header → ready; message with no trailing newline `handoff: blocked` → blocked; T6's 120-char reason ok and 121-char reason skip; T7's 0-ahead marker at main's tip → working.
 
-**Evidence:** `scripts/build-loop.sh:284-295`, `scripts/build-loop.sh:312-314`, `test/scripts/build-loop-read.bats:342-361`, `.../fact-check/probe-shared.log`
+**Evidence:** `scripts/build-loop.sh:270-293`, `scripts/build-loop.sh:336-345`; p3.log; p6.log; bats-read.log ok 10-11
 
 ---
 
-## Claim 14: "Read-only: writes nothing."
+## Claim 15: "DISPATCHED: the brief's "Dispatched: N" (0-99), or 0 without one."
 
-**Location:** `scripts/build-loop.sh:63`
+**Location:** `scripts/build-loop.sh:60-61`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the value range and the default. It does not cover a Dispatched: line inside a fence, which brief_fields skips.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 15) · r3=Verified (claim 11)
+**Replicate annotations:** none
+
+The local default is `disp=0` (`:311`). `:321` is `=~ ^Dispatched:\ (0|[123456789][0123456789]?)$`. T6 asserts `2`. T5 and T28 assert `0` when the line is missing. T8 refuses `x`, `100`, `01`, `-1` and `Dispatched:`. All pass in E1.
+
+**Evidence:** `scripts/build-loop.sh:311`, `scripts/build-loop.sh:320-324`, fc-r1/bats-read.log
+
+---
+
+## Claim 16a: "skip BRIEF: WHY — The brief cannot be read (as --check-brief), its Branch: line is missing or malformed or its Dispatched: line malformed, its branch name is refused (as --check-branch), ... or the tip's subject (its message's first line) starts "handoff:" but it is not a marker."
+
+**Location:** `scripts/build-loop.sh:62-69`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each listed skip cause other than F31 (see 16b) and the "first line" definition of the subject. It does not claim to match git's own `%s`. A message that starts with a blank line has git subject "handoff: ready" but reads as working here, which matches the help's "first line" wording.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 16a) · r3=Verified (claim 12+14)
+**Replicate annotations:** none
+
+The code uses `[[ "$out" == "ok "* ]] || { echo "$out"; return; }` (`:313`), the Branch checks at `:317-318`, the Dispatched check at `:321-322`, `*) echo "skip $a: Branch: ${out#*: }"` (`:334`), and `bad\ *) echo "skip $a: the tip of $br starts \"handoff:\" but is not a marker: ..."` (`:340`). The subject is `msg="$(git log -1 --format=%B "$1")"; subj="${msg%%$'\n'*}"` (`:277`).
+
+In E4/P1, a raw message `\n\nhandoff: ready` makes `%B` start `\n handoff: ready`, and --status printed `working`. In E1, T8 covers every brief-side cause, including `Branch: main`, `HEAD`, `refs/heads/x`, `a..b`, `-x` and non-ASCII.
+
+**Evidence:** `scripts/build-loop.sh:310-345`, fc-r1/status-probe.log P1, fc-r1/bats-read.log
+
+---
+
+## Claim 16b: "another open brief on main, in briefs/ or closed/, names the same branch (ignoring case)" (as a skip cause)
+
+**Location:** `scripts/build-loop.sh:66-67`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the skip of an open brief when another open brief on main (briefs/ or closed/) names its branch, compared ignoring ASCII case. It does not cover done or dropped briefs: they are never skipped for this cause, even when open briefs name the same branch.
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate (claim 16b) · r3=Mostly accurate (claim 13)
+**Replicate annotations:** r1+r2+r3: "the skip applies only when the queried brief is itself open; a done/dropped brief sharing an open brief's branch prints ok (T28 asserts this)"
+
+The code is `if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]` (`scripts/build-loop.sh:327`). The skip needs the brief itself to be open.
+
+In E4/P17, done brief c (`Branch: feat/a`) printed `ok ... done review feat/a working ...` while two open briefs named feat/a. In P18, the same done brief printed `ok` while one other open brief named feat/a. Read literally, the help predicts a skip in both cases: "another open brief ... names the same branch". T28 asserts the done case prints ok (`test/scripts/build-loop-read.bats:561`), so the code is intended.
+
+Precise version: "the brief is open and another open brief on main ... names the same branch".
+
+**Evidence:** `scripts/build-loop.sh:298-309`, `scripts/build-loop.sh:326-329`, `test/scripts/build-loop-read.bats:553-561`, fc-r1/status-probe.log P17-P18
+
+---
+
+## Claim 17: "Read-only: writes nothing."
+
+**Location:** `scripts/build-loop.sh:72`
 **Type:** Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers `--status` (with an ok-working brief and a new brief) and `--settings` on a probe repo: the working tree and `.git` are unchanged by path, size, mtime and mode. Does not establish this for repos with hooks or config that make read commands write (for example a commit-graph auto-write); none was configured.
+**Scope:** Covers one run each of `--status` (two briefs) and `--settings` on a probe repo: `.git` and the working tree were unchanged. It does not establish behaviour under hooks or a git that writes on reads, such as fsmonitor or commit-graph auto-write configured by the caller.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 17) · r3=Verified (compound, claim 15)
+**Replicate annotations:** none
 
-Command: snapshot `find . -printf '%p %s %T@ %m\n' | sort | sha256sum` before and after `bash "$BL" --status "$B" docs/working/briefs/2026-10-01-zz.md; bash "$BL" --settings`. It ran in `.../fact-check/p/mark` at 2026-10-05T11:48:22Z with exit 0. Result: `before=b5a26d35…` and `after =b5a26d35…`, `SAME`. The new mode calls only `git ls-tree`, `cat-file`, `log`, `rev-list`, `show-ref` and `rev-parse` (paraphrased — no quote available because the git calls span status_line, marker_kind, shared_branches and four lib functions).
+In E4/P19, `ls -laR .git` was captured before and after the two runs and `cmp` reported `.git unchanged`. `git status --porcelain` printed nothing. The git subcommands in the new code are all reads (paraphrased; no single quote is available because they span `:276-282`, `:301`, and the lib's check_brief/check_branch: rev-list, log, cat-file, rev-parse, ls-tree, show-ref).
 
-**Evidence:** `scripts/build-loop.sh:255-331`, `.../fact-check/probe-readonly.log`
+**Evidence:** `scripts/build-loop.sh:273-309`, fc-r1/status-probe.log P19
 
 ---
 
-## Claim 15: help prints the header via `sed -n '2,67p'`
+## Claim 18: "Exit: 0 every line printed (or help); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no default branch found by name."
 
-**Location:** `scripts/build-loop.sh:87`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that lines 2-67 are exactly the comment header (line 68 is blank, 69 is `set -euo pipefail`). Does not establish future edits (override-log row on the fixed range).
-**Legibility-target:** for-orchestrator-synthesis
-
-`-h|--help) sed -n '2,67p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;` (`scripts/build-loop.sh:87`). `bash scripts/build-loop.sh --help` ran at 2026-10-05T11:49:18Z with exit 0 and printed 66 lines. The last line is `lib/dev-cycle-read.sh, or no default branch found by name.` (header `:67`), and the first non-comment line after line 1 is 68.
-
-**Evidence:** `scripts/build-loop.sh:66-69`, `scripts/build-loop.sh:87`, `.../fact-check/help.log`
-
----
-
-## Claim 16: "docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE" or "dup ID FIRST SECOND" (the first problem found)."
-
-**Location:** `scripts/build-loop.sh:146-147`
+**Location:** `scripts/build-loop.sh:75-76`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three CONSTRAINTS_AWK-specific outputs and first-problem ordering. The program can also print FENCE_AWK's `odd`/`unbalanced`, which main_file's comment (`:101-103`) documents and handles before the caller reads FILE_OUT.
+**Scope:** Covers exit 0 for --status across every probe in E4, which included skip lines, crafted objects and a non-hex parent, and exit 1 for usage errors and a missing default branch under --status and --settings. It does not cover the no-perl path, which was not run.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 18) · r3=Verified (compound, claim 15)
+**Replicate annotations:** none
 
-`if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl` comes before `if (bad == "" && (id in seen)) bad = "dup " ...` (`scripts/build-loop.sh:154-155`). The END block prints `(bad != "" ? bad : "ok " hard + 0 " " soft + 0)` (`:166`). In the probe, `H1: a / H1: b / success: x` reports the earlier problem (`hard constraint H1 (line 1) has no success:`), not the dup on line 2.
+In E4, every P-run printed `[exit 0]` except P21. In P21, after `git branch -m main trunk`, the output was `build-loop.sh needs a default branch found by name ...` with `[exit 1]`. In E1, test 9 asserts exit 1 for usage errors, a missing default branch and a path outside a git repo.
 
-**Evidence:** `scripts/build-loop.sh:146-168`, `.../fact-check/probe-constraints.log`
+**Evidence:** `scripts/build-loop.sh:91-111`, fc-r1/status-probe.log, fc-r1/bats-read.log
 
 ---
 
-## Claim 17: "Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (...), NEVER_LINE and CONSTRAINTS_LINE from main's commit. POLICY and NEVER are for the modes that judge a brief (--status, then the gate)."
+## Claim 19: "docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST SECOND" or "near LINE" (the first problem found)." (with the case arms that render them)
 
-**Location:** `scripts/build-loop.sh:179-182`
+**Location:** `scripts/build-loop.sh:158-159`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the four output forms, the rendering arms at :259-266, and the `*)` catch-all, which only `near` reaches; `odd` and `unbalanced` make main_file return 1 first. "First problem found" means first detected in line order, so a pending nosuccess is detected only at the next constraint, heading or end of file.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 19) · r3=Verified (claim 16)
+**Replicate annotations:** none
+
+The END block prints `print (bad != "" ? bad : "ok " hard + 0 " " soft + 0)` (`:181`). Each setter is guarded by `bad == ""`. `:259` is `read -r k c l1 l2 <<<"$FILE_OUT"`. The arms render `ok` (`:261-262`), `nosuccess` (`:263`), `dup` (`:264`) and `*)` with `line $c` (`:265`). main_file returns 1 for `odd\ *` and `unbalanced\ *` (`:131-132`). E1, E2 and E3 printed each rendering.
+
+**Evidence:** `scripts/build-loop.sh:117-134`, `scripts/build-loop.sh:161-183`, `scripts/build-loop.sh:254-267`, fc-r1/constraints-shapes.log, fc-r1/constraints-structure.log
+
+---
+
+## Claim 20: "Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (...), NEVER_LINE and CONSTRAINTS_LINE from main's commit. POLICY is for --status and the gate, NEVER for the gate."
+
+**Location:** `scripts/build-loop.sh:194-197`
 **Type:** Architectural
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the variables set and their readers on this branch. The second sentence is U1b context, but this unit added --status and so made it checkable.
 **Legibility-target:** for-author
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 20) · r3=Mostly accurate (claim 17)
+**Replicate annotations:** r3: "no gate exists yet; the old wording 'then the gate' marked it as later; NEVER has no reader" · r3: "the :199 SC2034 disable now also covers POLICY, which is read"
+**Scope:** Covers the variables set and POLICY's --status reader; does not establish a gate, which is planned (plan D5-D7) and not in this file, so NEVER has no reader yet.
 
-The first sentence holds: CONSTRAINTS_LINE is now set (`:239-247`). For the second, `--status` reads POLICY (`[[ "$POLICY" == self-merge && ...` at `:311`) but never NEVER. The only references are `:183`, `:188` and `:222`, all writes (paraphrased — no quote available because the claim covers absence of a reader; grep `NEVER` in scripts/build-loop.sh). NEVER is for the gate alone (U2). The precise version is "POLICY is for --status and the gate; NEVER for the gate". The SC2034 disable at `:184` ("POLICY and NEVER: see above") is now needed only for NEVER; shellcheck passes either way.
+POLICY is read at `scripts/build-loop.sh:325` (status_line). No gate exists: `grep -n 'gate\|NEVER\[' scripts/build-loop.sh` matches only this comment and `:199` (paraphrased — no quote available because the claim covers absence of code). The previous wording said "(--status, then the gate)", which marked the gate as later; the new wording reads as present. Precise: "NEVER for the planned gate (U2)". The unchanged `:199` `# shellcheck disable=SC2034  # POLICY and NEVER` now also covers POLICY, which is read.
 
-**Evidence:** `scripts/build-loop.sh:179-188`, `scripts/build-loop.sh:222`, `scripts/build-loop.sh:311`
+**Evidence:** `scripts/build-loop.sh:194-203`, `scripts/build-loop.sh:325`; `docs/working/plan-build-loop-handoff.md:15`
 
 ---
 
-## Claim 18: the `case "$k"` mapping of awk output to CONSTRAINTS_LINE (`*)` arm = "listed twice")
+## Claim 21: "The tip SHA of a brief's branch, read as a handoff marker: prints ready, blocked, "stopped REASON", working (no "handoff:" subject), or "bad WHY". The caller has checked that the branch is at least one commit ahead of main."
 
-**Location:** `scripts/build-loop.sh:242-248`
+**Location:** `scripts/build-loop.sh:270-272`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that every output shape reaching the `case` maps correctly. Does not establish anything else: `odd`/`unbalanced` and awk failure return 1 from main_file and never reach it.
+**Scope:** Covers marker_kind's five output forms and its one caller's ahead check. It does not establish the ahead count's behaviour under grafts or shallow files (settled by row 273).
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 21) · r3=Verified (claim 18)
+**Replicate annotations:** none
 
-main_file returns 1 on `odd\ *` / `unbalanced\ *` (`:119-120`) and on a failed read (`:116-117`). That leaves `ok`, `nosuccess` and `dup`, so `*)` sees only `dup`, and `read -r k c l1 l2` lines up with "dup ID FIRST SECOND". The probe shows `constraint S1 is listed twice (lines 1 and 2)` and `constraint H1 is listed twice (lines 1 and 3)` (CRLF).
+The outputs are `echo working` (`:278`), the `bad ...` lines (`:279-284`, `:292`), `echo ready` and `echo blocked` (`:286-287`) and `echo "stopped $r"` (`:291`). The only caller guards with `if [[ "$ahead" -gt 0 ]]` (`:337`); grep finds no other `marker_kind` call (paraphrased; no quote is available because the claim covers absence of other callers). E4 exercised every form.
 
-**Evidence:** `scripts/build-loop.sh:116-121`, `scripts/build-loop.sh:242-248`, `.../fact-check/probe-constraints.log`
+**Evidence:** `scripts/build-loop.sh:273-293`, `scripts/build-loop.sh:336-344`, fc-r1/status-probe.log
 
 ---
 
-## Claim 19: "The tip SHA of a brief's branch, read as a handoff marker: prints ready, blocked, "stopped REASON", working (no "handoff:" subject), or "bad WHY"."
+## Claim 22: "git parses the object: its tree, its parents and where the message starts."
 
-**Location:** `scripts/build-loop.sh:252-253`
+**Location:** `scripts/build-loop.sh:275`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the output set of marker_kind (`:255-280`, read to its end). "Subject" means the raw first line (Claim 10).
+**Scope:** Covers the parent list (rev-list --parents), the tree (rev-parse ^{tree}) and the message (log %B) as git's own parser sees them on crafted objects. The NUL check still reads the raw object (`git cat-file commit ... | tr -cd '\000'`, :279), and a non-hex parent cannot be reached at all because update-ref refuses the object.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 22+23) · r3=Verified (claim 19)
+**Replicate annotations:** none
 
-The outputs are `echo working` (`:260`), `echo ready` / `echo blocked` (`:271-272`), `echo "stopped $r"` (`:278`), and `echo "bad ..."` at `:264`, `:265`, `:267`, `:269` and `:279`. No other output exists.
+The code is `read -ra p <<<"$(git rev-list --parents -n 1 "$1")"` and `msg="$(git log -1 --format=%B "$1")"` (`:276-277`). E4 results:
+- P7 (two tree lines, then a parent): `rev-list` printed only the commit id, and --status gave `it has no parent`.
+- P5 (parent line after author): the same.
+- P3 (NUL in the message): `it holds a NUL byte`.
+- P4 (non-hex parent): `git update-ref` failed with `bad parents in commit`, so no branch can point at such an object.
 
-**Evidence:** `scripts/build-loop.sh:255-280`, `.../fact-check/probe-marker.log`
+**Evidence:** `scripts/build-loop.sh:273-284`, fc-r1/status-probe.log P3-P7
 
 ---
 
-## Claim 20: "The caller has checked that the branch is at least one commit ahead of main."
+## Claim 23: "grep in the C locale: the ranges are ASCII bytes, and no locale is switched here."
 
-**Location:** `scripts/build-loop.sh:254`
+**Location:** `scripts/build-loop.sh:290`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the absence of any shell-level locale switch in marker_kind and of any warning from it under an uninstalled caller locale. The two bash start-up warnings that remain come from bash itself and are identical for --settings.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 24) · r3=Verified (claim 20)
+**Replicate annotations:** none
+
+The code is `printf '%s\n' "$r" | LC_ALL=C grep -qxE '[!-~]([ -~]{0,118}[!-~])?'` (`:291`), a per-command environment for the external grep. In E5, under `LC_ALL=en_US.UTF-8` (not installed), HEAD's --status on a stopped marker printed two `bash: warning: setlocale` lines. A --settings run in the same session also printed two, so neither comes from marker_kind. 553a50d5's script printed a third, `build-loop.sh: line 323: warning: setlocale`, from its `local LC_ALL=C` (`old-553a50d5/scripts/build-loop.sh:277`).
+
+**Evidence:** `scripts/build-loop.sh:289-292`, fc-r1/locale.log (E5)
+
+---
+
+## Claim 24: "Lower-cased branch names that more than one open brief on main (in briefs/ or closed/) names, each between newlines: such briefs are skipped (F31). status_line computes it on first use, so no caller can skip it."
+
+**Location:** `scripts/build-loop.sh:294-296`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the set's contents and format, closed/ inclusion, main-only reading, and lazy computation before the F31 check. Lower-casing is ASCII only, through `tr`; branch names are ASCII anyway because check_branch refuses others. The set is computed once per process.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 25) · r3=Verified (claim 21)
+**Replicate annotations:** none
+
+The code lists `git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/ docs/working/briefs/closed/` (`:301`) and filters with `isbrief "${f/closed\//}"` (`:303`). It sets `SHARED_BRANCHES=$'\n'` and appends `"$b"$'\n'` for counts of 2 or more (`:307-308`). `:326` is `[[ -n "$SHARED_BRANCHES" ]] || shared_branches`, which runs before the check at `:327`.
+
+In E6, an open brief in closed/ naming feat/a gave `ok ... working` under 553a50d5 and `skip ...: another open brief` under HEAD. In E1, T28 passes, including the closed/ case and the working-tree-only case. In E4/P16, a brief on main that is a symlink in the working tree still counts, consistent with "on main".
+
+**Evidence:** `scripts/build-loop.sh:297-309`, `scripts/build-loop.sh:326-329`, `scripts/lib/dev-cycle-read.sh:430`, fc-r1/old-vs-new.log, fc-r1/status-probe.log P16, fc-r1/bats-read.log
+
+---
+
+## Claim 25: "The reader, kept in a lib so scripts/build-loop.sh can share it" / "kept apart so scripts/build-loop.sh can share it"
+
+**Location:** `scripts/dev-cycle.sh:278`, `scripts/lib/dev-cycle-read.sh:2-3`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the only caller. Does not establish future callers (U2/U3).
+**Scope:** Covers that build-loop.sh exists and sources the lib. It does not cover which lib functions each script uses.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 26) · r3=Verified (claim 22)
+**Replicate annotations:** none
 
-The only call is `if [[ "$ahead" -gt 0 ]]; then kind="$(marker_kind "$sha")"` (`scripts/build-loop.sh:322-323`), where `ahead` is check_branch's `git rev-list --count "$MAIN_SHA..$sha"` (`scripts/lib/dev-cycle-read.sh:378`). A grep for `marker_kind` finds only the definition and this call (paraphrased — no quote available because the claim covers absence of other call sites).
+`scripts/build-loop.sh:85-88` is `READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"` ... `source "$READ_LIB"`. The word "planned" is gone from both files (the E10 grep found no hit).
 
-**Evidence:** `scripts/build-loop.sh:322-323`, `scripts/lib/dev-cycle-read.sh:378`
-
----
-
-## Claim 21: "Bytes, not characters: in the C locale the ranges below are ASCII and ${#r} counts bytes (C is always installed, so setting it never warns)."
-
-**Location:** `scripts/build-loop.sh:275-277`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that `local LC_ALL=C` takes effect inside the function under a UTF-8 caller locale and that setting C does not warn. Does not establish silence on return: bash restores the caller's LC_ALL, which warns when that locale is not installed.
-**Legibility-target:** for-author
-
-`probe-locale.log` (2026-10-05T11:47:43Z, exit 0) runs a copy of the pattern under `LC_ALL=C.UTF-8`:
-- `before local: len=4` then `after local LC_ALL=C: len=5` for `caf\xc3\xa9`. The local assignment does switch `${#r}` to bytes, and the regex rejects the string.
-- After return the caller is back to `len=4`.
-
-The claim's mechanism holds. Two residues:
-- Every reason that passes `^[!-~]([\ -~]*[!-~])?$` is ASCII, so bytes and characters agree for any accepted REASON. The setting changes only how rejected strings are measured.
-- Leaving the function restores the caller's locale. When that locale is not installed, which is this sandbox's default `LC_ALL=en_US.UTF-8`, bash prints a warning. `probe-locale-warn.log` shows that a `handoff: stopped: x` tip run under `LC_ALL=en_US.UTF-8` adds `/workspace/.claude/wt-build-loop-u1c/scripts/build-loop.sh: line 323: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)` to stderr. That is 3 stderr lines against 2 for a `ready` or working tip, whose paths return before `:277`. Exit stays 0 and stdout is unchanged.
-
-"Never warns" is true of setting C but not of the function as a whole. The bats suites cannot see this because `bl_setup` exports `LC_ALL=C` (`test/lib/build-loop-fixtures.bash:14`).
-
-**Evidence:** `scripts/build-loop.sh:274-279`, `scripts/build-loop.sh:323`, `test/lib/build-loop-fixtures.bash:14`, `.../fact-check/probe-locale.log`, `.../fact-check/probe-locale-warn.log`
+**Evidence:** `scripts/build-loop.sh:82-89`, `scripts/dev-cycle.sh:278`, `scripts/lib/dev-cycle-read.sh:1-5`
 
 ---
 
-## Claim 22: "Lower-cased branch names that more than one open brief on main names, each on its own line between newlines: such briefs are skipped (F31)."
-
-**Location:** `scripts/build-loop.sh:281-282`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the list format, ASCII case folding (`lower` is `tr` A-Z to a-z), and which briefs feed the count. The "skipped" half is Claim 13.
-**Legibility-target:** for-author
-
-The format holds: `SHARED_BRANCHES=$'\n'` then `SHARED_BRANCHES+="$b"$'\n'` (`:293-294`). "Open brief on main" is narrower than it reads. A brief is counted only if all of these hold:
-- It is a direct child of `docs/working/briefs/` (`git ls-tree ... -- docs/working/briefs/` at `:287` does not recurse, and `closed` fails `isbrief`).
-- `main_entry` reports `blob`.
-- brief_fields reads it.
-- Its first Branch: line is well-formed (`:289-290`).
-
-A `closed/` brief reading `Status: open` is not counted (`probe-shared.log`), and neither is an open brief FENCE_AWK refuses. That last case is harmless, since the refused brief itself skips. The precise version is "...that more than one open, readable brief directly under docs/working/briefs/ on main names".
-
-**Evidence:** `scripts/build-loop.sh:283-295`, `scripts/lib/dev-cycle-read.sh:157`, `.../fact-check/probe-shared.log`
-
----
-
-## Claim 23: "commit_all [MSG]: stage everything and commit it on the current branch (an empty commit when nothing changed, so rewriting a file as it was still works)."
+## Claim 26: "commit_all [MSG]: stage everything and commit it on the current branch (an empty commit when nothing changed, so rewriting a file as it was still works)."
 
 **Location:** `test/lib/build-loop-fixtures.bash:21-22`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers `--allow-empty`. Does not establish anything else.
+**Verification mode:** executed
+**Scope:** Covers the --allow-empty behaviour. It does not cover hooks, which the hermetic config disables.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 27) · r3=Verified (claim 23)
+**Replicate annotations:** none
 
-`commit_all() { git add -A && git commit -q --allow-empty -m "${1:-fixture}"; }` (`test/lib/build-loop-fixtures.bash:23`). T5 re-writes `settings`/`brief a` with identical content across iterations, and it passes.
+The helper is `commit_all() { git add -A && git commit -q --allow-empty -m "${1:-fixture}"; }` (`:23`). T5 rewrites the same settings file in a loop, and passes in E1.
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:21-23`, `test/scripts/build-loop-read.bats:316-319`
+**Evidence:** `test/lib/build-loop-fixtures.bash:21-23`, `test/scripts/build-loop-read.bats:522-531`, fc-r1/bats-read.log
 
 ---
 
-## Claim 24: "constraints LINE...: docs/constraints.md holding these lines, committed."
+## Claim 27: helper comments for constraints, brief and work ("docs/constraints.md holding these lines, committed"; "docs/working/briefs/2026-10-01-SLUG.md holding a title and these lines, committed on the current branch; sets B to its path"; "BRANCH from main with one commit that changes a file")
 
-**Location:** `test/lib/build-loop-fixtures.bash:29`
+**Location:** `test/lib/build-loop-fixtures.bash:29`, `test/lib/build-loop-fixtures.bash:42-43`, `test/lib/build-loop-fixtures.bash:51`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the file content and commit. With no lines the file holds one empty line, as `settings` documents.
+**Verification mode:** executed
+**Scope:** Covers what each helper writes and commits. It does not cover failure modes such as an existing branch name passed to work.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 28+29) · r3=Verified (claim 24)
+**Replicate annotations:** none
 
-`constraints() { mkdir -p docs && printf '%s\n' "$@" > docs/constraints.md && commit_all constraints; }` (`test/lib/build-loop-fixtures.bash:30`).
+The helpers are `printf '%s\n' "$@" > docs/constraints.md && commit_all constraints` (`:30`), `printf '# Brief: %s\n\n' "$s" > "$B" && printf '%s\n' "$@" >> "$B"` (`:47`), and `git branch -q "$1" main` then `echo "$1" > "work-${1//\//-}.txt" && commit_all "work on $1"` (`:53-54`). E4 used verbatim copies of these helpers, and E1 used the originals.
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:29-30`
+**Evidence:** `test/lib/build-loop-fixtures.bash:29-55`, fc-r1/env.sh, fc-r1/bats-read.log
 
 ---
 
-## Claim 25: "brief SLUG LINE...: docs/working/briefs/2026-10-01-SLUG.md holding a title and these lines, committed on the current branch; sets B to its path."
-
-**Location:** `test/lib/build-loop-fixtures.bash:42-43`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the path, title, lines, commit and B. A blank line separates title and lines, which explains T8's "line 4" for the first argument line's successor.
-**Legibility-target:** for-orchestrator-synthesis
-
-`B="docs/working/briefs/2026-10-01-$s.md"` and `printf '# Brief: %s\n\n' "$s" > "$B" && printf '%s\n' "$@" >> "$B"`, then `commit_all "brief $s"` (`test/lib/build-loop-fixtures.bash:46-48`).
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:44-49`
-
----
-
-## Claim 26: "work BRANCH: BRANCH from main with one commit that changes a file."
-
-**Location:** `test/lib/build-loop-fixtures.bash:51`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the branch point and the one commit, which adds `work-<name>.txt`. Does not establish isolation: `commit_all`'s `git add -A` would also sweep in any uncommitted working-tree change. Every current call site has a clean tree.
-**Legibility-target:** for-orchestrator-synthesis
-
-`git branch -q "$1" main` then `git checkout -q "$1" && echo "$1" > "work-${1//\//-}.txt" && commit_all "work on $1" && git checkout -q main` (`test/lib/build-loop-fixtures.bash:53-54`).
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:52-55`
-
----
-
-## Claim 27: "tip BRANCH MESSAGE [TREE [PARENT...]]: a commit with exactly MESSAGE (no cleanup: commit-tree takes it as given) on BRANCH's tip. By default it is empty (BRANCH's own tree) with BRANCH's tip as its one parent; pass TREE and the parents ("" for none) to build anything else."
+## Claim 28: "tip BRANCH MESSAGE [TREE [PARENT...]]: a commit with MESSAGE and a newline (no cleanup: commit-tree takes it as given) on BRANCH's tip. By default it is empty (BRANCH's own tree) with BRANCH's tip as its one parent; pass TREE and the parents ("" for none) to build anything else."
 
 **Location:** `test/lib/build-loop-fixtures.bash:57-60`
 **Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers message preservation (trailing blanks, `#` lines and blank runs are kept) and the default tree and parent. It does not cover a message that holds a NUL, which printf would cut.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 30) · r3=Verified (claim 25)
+**Replicate annotations:** none
+
+The helper is `git update-ref "refs/heads/$b" "$(printf '%s\n' "$m" | git commit-tree "$t" "${p[@]}")"` (`:65`). In E9, `git cat-file commit` showed `handoff: ready ` with the trailing space, `# comment`, two blank lines and `trailing   ` followed by a single `\n`. The `""` parent is dropped by `[[ -n "$x" ]] && p+=(-p "$x")` (`:63`). T7's orphan case relies on this and passes.
+
+**Evidence:** `test/lib/build-loop-fixtures.bash:57-66`, fc-r1/tip-cleanup.log, fc-r1/bats-read.log
+
+---
+
+## Claim 29: the test names in the diff (T44, "prints its four lines in order...", T6, T7, T8, T5, T21, T28)
+
+**Location:** `test/scripts/build-loop-read.bats:159`, `test/scripts/build-loop-read.bats:189`, `test/scripts/build-loop-read.bats:412`, `test/scripts/build-loop-read.bats:445`, `test/scripts/build-loop-read.bats:488`, `test/scripts/build-loop-read.bats:522`, `test/scripts/build-loop-read.bats:539`, `test/scripts/build-loop-read.bats:549`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers that each name describes what its body asserts and that all 16 pass. It does not establish the bidi part of T7's "a bad reason is not echoed": the loop checks only `\xc3` and `[31m` (settled by row 265). The code's skip message is a constant and never echoes a subject.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 31) · r3=Verified (claim 26-28,30,33-36)
+**Replicate annotations:** none
+
+The bodies were read in full (paraphrased; no quote is available because the claim spans eight test bodies, quoted in the shared diff). Each body asserts the cases its name lists. For example, T44 asserts `missing`, `none-hard`, `ok 2-hard 1-soft` and several `unreadable` cases, and T28 asserts six lines in order plus the closed/ and working-tree cases. E1 passes 16/16.
+
+**Evidence:** `test/scripts/build-loop-read.bats:159-573`, fc-r1/bats-read.log
+
+---
+
+## Claim 30: "A ready marker's body is not read here (--marker reads blocked and stopped bodies)."
+
+**Location:** `test/scripts/build-loop-read.bats:254`
+**Type:** Architectural
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the message bytes, default tree and parent, and the TREE/parents form. Does not establish anything about marker_kind, which strips trailing newlines, so the extra byte changes no current test.
-**Legibility-target:** for-author
-
-The message is piped as `printf '%s\n' "$m" | git commit-tree "$t" "${p[@]}"` (`test/lib/build-loop-fixtures.bash:65`). commit-tree does store stdin as given: `printf 'x' | git commit-tree …` stores `x` with no newline. So the stored message is MESSAGE plus one trailing newline, not "exactly MESSAGE". The default and `""` handling hold: `[[ -n "$x" ]] && p+=(-p "$x")` (`:63`), and T7's orphan case reads `it has no parent`.
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:61-66`, `test/scripts/build-loop-read.bats:258-259`
-
----
-
-## Claim 28: "status_of BRIEF: the one --status output line for BRIEF."
-
-**Location:** `test/lib/build-loop-fixtures.bash:68`
-**Type:** Behavioral / Staleness
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the helper's own behaviour. Does not establish use: `grep -rn status_of test/` finds only its definition and comment, so it is an unused helper.
-**Legibility-target:** for-orchestrator-synthesis
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 32) · r3=Mostly accurate (claim 29)
+**Replicate annotations:** r3: "--marker is a planned U3b mode, not in the script"
+**Scope:** Covers "not read here" (a ready tip with a body reads as ready); does not hold for "--marker reads", which is a planned U3b mode not in scripts/build-loop.sh.
 
-`status_of() { printf '%s\n' "$output" | grep -m1 -E "^(ok|skip) $1[ :]" || true; }` (`test/lib/build-loop-fixtures.bash:70`). BRIEF is used as an ERE, so a `.` in a path matches any character. That is harmless for fixture paths.
+`scripts/build-loop.sh:93-99` accepts only `--settings`, `--status`, `-h|--help`. The plan: `docs/working/plan-build-loop-handoff.md:206` — "`--marker BRIEF` → `ok BRIEF SHA`, then the `blocked` or `stopped` body" and `:276` — "**U3b code** (~230): `--marker`, ...". Precise: "(the planned --marker reads ...)".
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:68-70`
+**Evidence:** `test/scripts/build-loop-read.bats:254-257`; `scripts/build-loop.sh:93-99`; `docs/working/plan-build-loop-handoff.md:206`, `docs/working/plan-build-loop-handoff.md:276`
 
 ---
 
-## Claim 29: T44 test name "--settings: docs/constraints.md from main gives ok, missing, none-hard or unreadable (T44)" and comment "Only in the working tree: still missing."
+## Claim 31: "A hand-made object with two tree lines, the parent's last: git stops at the second and sees no parent; a reader taking the last tree would say ready."
 
-**Location:** `test/scripts/build-loop-read.bats:143`, `test/scripts/build-loop-read.bats:147`
+**Location:** `test/scripts/build-loop-read.bats:467-468`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the four outcomes asserted, including a working-tree-only file reading missing. Does not establish the near-miss forms in Claim 2.
+**Scope:** Covers git's parse of this object and the earlier raw reader's answer. It does not cover other duplicated header kinds.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 32) · r3=Verified (claim 31)
+**Replicate annotations:** none
 
-The test asserts `constraints missing: no docs/constraints.md on the default branch` after `printf -- '- H1: x\n  success: y\n' > docs/constraints.md` without commit (`:148-150`), then none-hard, ok, unreadable (nosuccess, dup, refdef, symlink). It passes.
+In E4/P7, `git rev-list --parents -n 1` on the object printed only its own id (no parent), and HEAD gave `it has no parent`. In E6, 553a50d5's script, which read the raw object, printed `ok ... feat/a ready ff2098949ce6...`.
 
-**Evidence:** `test/scripts/build-loop-read.bats:143-172`, `.../fact-check/suites-head.log`
+**Evidence:** `test/scripts/build-loop-read.bats:467-472`, fc-r1/status-probe.log P7, fc-r1/old-vs-new.log
 
 ---
 
-## Claim 30: "--settings prints its four lines in order and exits 0; usage errors and a missing default branch exit 1"
+## Claim 32: the other in-test comments ("Only in the working tree: still missing", "A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1])", "A marker at main's tip with the branch 0 commits ahead is main's", "So is a branch that is a symbolic ref to main", "Not landed on main: new", "A malformed Self-merge never: line turns it off", "An open brief left in closed/ counts too", "An open brief only in the working tree does not count")
 
-**Location:** `test/scripts/build-loop-read.bats:174`
+**Location:** `test/scripts/build-loop-read.bats:363`, `test/scripts/build-loop-read.bats:387`, `test/scripts/build-loop-read.bats:478`, `test/scripts/build-loop-read.bats:482`, `test/scripts/build-loop-read.bats:516`, `test/scripts/build-loop-read.bats:532`, `test/scripts/build-loop-read.bats:564`, `test/scripts/build-loop-read.bats:569`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the asserted cases (`""`, `--bogus`, `--settings extra`, bare `--status`). Does not establish `--status --settings`, which is no longer a usage error (Claim 50).
+**Scope:** Covers that each comment matches the assertion that follows it and that the assertion passes. The "never skipped" comment holds only for the ten ASCII shapes the loop lists (see Claim 8 for the shapes that still read ok).
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 33) · r3=Verified (claim 26,32,33,36)
+**Replicate annotations:** none
 
-`for args in "" "--bogus" "--settings extra" "--status"; do` with `[ "$status" -eq 1 ] && [ -z "$output" ]` (`:179-182`). Bare `--status` hits `usage "--status needs at least one brief path"` (`scripts/build-loop.sh:86`). The test passes.
+Each comment sits directly above an assertion that encodes it (paraphrased; no quote is available because there are eight separate sites, each quoted in the shared diff). All pass in E1.
 
-**Evidence:** `test/scripts/build-loop-read.bats:174-190`, `scripts/build-loop.sh:86`
+**Evidence:** `test/scripts/build-loop-read.bats:363-572`, fc-r1/bats-read.log
 
 ---
 
-## Claim 31: "A ready marker's body is not read here (--marker reads blocked and stopped bodies)."
+## Claim 33: 859e29e8 message: "Failing tests for the rest of U1: --settings' fourth line ... (T44), and --status BRIEF..." plus its T5-T8/T21/T28 bullets and the Notes
 
-**Location:** `test/scripts/build-loop-read.bats:238`
+**Location:** `859e29e8 (commit message)`
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the claim that the new tests failed at 859e29e8, with the T-bullets matching the test bodies. The "without echoing" bidi sub-claim is settled by row 265. T7's name changed in c143b929.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Mostly accurate (compound, claim 34) · r3=Verified (claim 37)
+**Replicate annotations:** none
+
+In E7, against `git archive 859e29e8`, tests 8, 9 and 11-16 (the new and changed tests) were `not ok`. Test 4 also failed there, but it reads the repo's own docs and the archive is not a git repo, so that failure is not the unit's (paraphrased; no quote is available because the cause was inferred from the test's name, "on this repo's own docs/dev-cycle.md"). The Notes ("a skip line, not a sixth LOOP value (plan T7's 'unreadable')"; `new review - absent - - 0`) match `docs/working/plan-build-loop-handoff.md:324` and `scripts/build-loop.sh:315`.
+
+**Evidence:** fc-r1/bats-859e29e8.log, `docs/working/plan-build-loop-handoff.md:324`, `scripts/build-loop.sh:315`
+
+---
+
+## Claim 34a: aaae80c6 message: what was built (fourth line, --status output forms, the lib called in-process with no dev-cycle.sh subprocess, the "--status --settings" usage case dropped, commit_all allowing an empty commit, real briefs having no Branch: line yet)
+
+**Location:** `aaae80c6 (commit message)`
 **Type:** Behavioral / Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers `--status` reading a ready tip with a body as `ready`, and the plan's `--marker` contract. Does not establish `--marker` code, which does not exist yet (U3).
+**Scope:** Covers the listed items. It does not cover the marker-definition sentence, which was not true at aaae80c6 for a two-tree crafted object; that is history, fixed and stated in c143b929's A1, and is the A11 class settled by row 265. The show-ref wording is row 265 and the 79 ms is row 275.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Mostly accurate (compound, claim 34) · r3=Verified (claim 38)
+**Replicate annotations:** none
 
-The plan says "`--marker BRIEF` → `ok BRIEF SHA`, then the `blocked` or `stopped` body" (`docs/working/plan-build-loop-handoff.md:206`). The test builds `printf 'handoff: ready\n\nAll green.'` and asserts `ok $B open review feat/a ready` (`:239-241`), and passes. The probe `ready + blank + body` reads `ready`.
+`git diff 859e29e8 aaae80c6 -- test/scripts/build-loop-read.bats` shows `-    for args in "" "--bogus" "--settings extra" "--status" "--status --settings"; do` replaced by `+    for args in "" "--bogus" "--settings extra" "--status"; do`. build-loop.sh mentions dev-cycle.sh only in comments (lines 46, 71 and 82 in the grep), never as a command. In E10, the three briefs at aaae80c6 have 0 `^Branch:` lines each.
 
-**Evidence:** `test/scripts/build-loop-read.bats:238-241`, `docs/working/plan-build-loop-handoff.md:206`, `.../fact-check/probe-marker.log`
+**Evidence:** `scripts/build-loop.sh:82-88`, fc-r1/static-counts.log
 
 ---
 
-## Claim 32: T7 test name "spoofed markers read as unreadable or working, and a bad reason is not echoed (T7)"
+## Claim 34b: aaae80c6 message: "check_brief's `git log -1 -G'^Status: '` costs about 1 ms per brief on this repo"
 
-**Location:** `test/scripts/build-loop-read.bats:244`
-**Type:** Behavioral
+**Location:** `859e29e8`, `aaae80c6` (commit messages)
+**Type:** Behavioral / Performance
 **Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers what the test asserts. "Unreadable" is plan T7's word (`docs/working/plan-build-loop-handoff.md:324`), not an output.
-**Legibility-target:** for-author
-
-Spoofed tips produce a skip line, not a LOOP value named "unreadable": `check "skip $B: $n: it changes files" content`, where `n='the tip of feat/a starts "handoff:" but is not a marker'` (`:248`, `:255`). The precise name is "spoofed markers are a 'not a marker' skip, or working". Commit 859e29e8's Notes record the mapping ("plan T7's 'unreadable'").
-
-**Evidence:** `test/scripts/build-loop-read.bats:244-267`, `docs/working/plan-build-loop-handoff.md:324`
-
----
-
-## Claim 33: "Not a marker at all: an ordinary commit, even one that mentions a marker."
-
-**Location:** `test/scripts/build-loop-read.bats:268`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a subject not starting "handoff:". Does not establish anything else.
-**Legibility-target:** for-orchestrator-synthesis
-
-`tip feat/a 'wip: before handoff: ready'` then `check "ok $B open review feat/a working "` (`:269-270`). Code: `[[ "$subj" == handoff:* ]] || { echo working; return; }` (`scripts/build-loop.sh:260`). The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:268-270`, `scripts/build-loop.sh:260`
-
----
-
-## Claim 34: "A marker at main's tip with the branch 0 commits ahead is main's, not the loop's."
-
-**Location:** `test/scripts/build-loop-read.bats:271`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the ahead=0 gate. Does not establish anything else.
-**Legibility-target:** for-orchestrator-synthesis
-
-`tip main 'handoff: ready' && git branch -q -f feat/a main`, asserting `working $(git rev-parse main)` (`:272-274`). Code: `if [[ "$ahead" -gt 0 ]]` (`scripts/build-loop.sh:322`). The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:271-274`, `scripts/build-loop.sh:321-322`
-
----
-
-## Claim 35: "So is a branch that is a symbolic ref to main."
-
-**Location:** `test/scripts/build-loop-read.bats:275`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers `refs/heads/alias` → `refs/heads/main`. show-ref resolves it to main's commit, which is 0 ahead. Does not establish symrefs to other branches.
-**Legibility-target:** for-orchestrator-synthesis
-
-`git symbolic-ref refs/heads/alias refs/heads/main` and the assertion `ok $B open review alias working ` (`:276-278`). The name check `[[ "$a" == "$MAIN" ]]` (`scripts/lib/dev-cycle-read.sh:374`) does not catch `alias`, so the 0-ahead gate is what makes it working. The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:275-278`, `scripts/lib/dev-cycle-read.sh:374-378`
-
----
-
-## Claim 36: "Not landed on main: new, with nothing else to read."
-
-**Location:** `test/scripts/build-loop-read.bats:309`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the new line. Does not establish anything else.
-**Legibility-target:** for-orchestrator-synthesis
-
-The test asserts `"ok docs/working/briefs/2026-10-01-none.md new review - absent - - 0"` (`:311`). Code: `scripts/build-loop.sh:301`. It passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:309-312`, `scripts/build-loop.sh:301`
-
----
-
-## Claim 37: "A malformed Self-merge never: line turns it off."
-
-**Location:** `test/scripts/build-loop-read.bats:325`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers `--status` POLICY under a malformed never line. Does not establish anything else.
-**Legibility-target:** for-orchestrator-synthesis
-
-`settings 'Build-loop policy: self-merge' 'Self-merge never: ../x'` gives `ok $B open review feat/a absent - - 0` (`:326-329`). In read_settings, `if [[ "$v" == self-merge && -z "$never_ok" ]]` leaves `POLICY=review` (`scripts/build-loop.sh:228-229`). The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:325-329`, `scripts/build-loop.sh:228-230`
-
----
-
-## Claim 38: T21 test name "--status reads main's commit: working-tree and branch edits to a brief's lines are ignored (T21)"
-
-**Location:** `test/scripts/build-loop-read.bats:332`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers content edits to Status/Branch/Policy/Dispatched on a branch and in the working tree. Does not establish working-tree replacement of the file by a symlink, which does change the output (Claim 4).
-**Legibility-target:** for-orchestrator-synthesis
-
-The branch edit commits `Status: done / Branch: feat/z / Policy: self-merge / Dispatched: 0` on feat/a. The working-tree edit writes `Status: dropped / Branch: feat/y ...`. The output still reads `ok $B open review feat/a working ... 1` (`:336-339`). The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:332-340`, `.../fact-check/probe-wt.log`
-
----
-
-## Claim 39: T28 test name "two open briefs naming one branch both skip; many briefs keep their order" and comment "An open brief only in the working tree does not count."
-
-**Location:** `test/scripts/build-loop-read.bats:342`, `test/scripts/build-loop-read.bats:357`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers case-insensitive sharing among open briefs directly under briefs/, order across six mixed lines, and that a working-tree-only brief is not counted. The closed/ residue is in Claim 22.
-**Legibility-target:** for-orchestrator-synthesis
-
-`feat/x` and `Feat/X` both skip (`:352`, `:355`). The order is asserted line by line (`:351-356`). The working-tree file `2026-10-01-wt.md` naming `feat/d` leaves `d` as `ok` (`:358-360`), because shared_branches lists `$MAIN_SHA`'s tree (`scripts/build-loop.sh:287`). The test passes.
-
-**Evidence:** `test/scripts/build-loop-read.bats:342-361`, `scripts/build-loop.sh:287`
-
----
-
-## Claim 40: 859e29e8 message, "Failing tests for the rest of U1"
-
-**Location:** commit `859e29e8` (message body, line 3)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that every test the commit adds or changes fails at 859e29e8, and that the tests it does not touch still pass. Does not establish why each one fails, beyond the missing mode or line.
-**Legibility-target:** for-orchestrator-synthesis
-
-Command: `git archive 859e29e8 | tar -x -C .../fact-check/at-859e && cd .../at-859e && LC_ALL=C.UTF-8 bats test/scripts/build-loop-read.bats`, run at 2026-10-05T11:46Z with exit 1. Tests 8 (T44), 9 (four lines) and 11-16 (T6, T7, T8, T5, T21, T28) are `not ok`. Tests 1-7 and 10 are `ok`.
-
-**Evidence:** `test/scripts/build-loop-read.bats:143`, `.../fact-check/at-859e.log`
-
----
-
-## Claim 41: 859e29e8 message, the T-descriptions (T6, T7 "skip as "not a marker" without echoing the reason", T8, T5, T21, T28 "order kept across mixed ok and skip lines")
-
-**Location:** commit `859e29e8` (message body, T6-T28 bullets)
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers each bullet against the test bodies at HEAD (859e29e8's tests differ only by the dropped `--status --settings` case and the `feat/a^{tree}` quoting).
-**Legibility-target:** for-author
-
-Every listed case is present:
-- T6: absent, working at 0 ahead and with ordinary commits, ready, blocked, and stopped at 120 and 121.
-- T7: content, merge, orphan, suffixed and mis-cased subjects, empty/ESC/bidi/non-ASCII reasons, a two-line subject, a marker at main's tip, and a symref.
-- T8, T5, T21 and T28 as described.
-
-One overstatement: "without echoing the reason" is asserted only for two byte patterns, `[[ "$output" != *$'\xc3'* && "$output" != *'[31m'* ]]` (`test/scripts/build-loop-read.bats:264`). The bidi reason `x\xe2\x80\xaey` is not checked for echo. The code never echoes any reason (the `bad` texts are constant, `scripts/build-loop.sh:264-279`), so behaviour matches, but the test does not show it for that case.
-
-**Evidence:** `test/scripts/build-loop-read.bats:211-361`, `test/scripts/build-loop-read.bats:260-265`, `scripts/build-loop.sh:264-279`
-
----
-
-## Claim 42: aaae80c6 message, "check_branch for the tip, ahead count and date (the name reaches git only through show-ref --verify)"
-
-**Location:** commit `aaae80c6` (message body, paragraph 2)
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers every git invocation that receives the brief's branch name. Does not establish exploitability, which NAMECHARS bounds.
-**Legibility-target:** for-author
-
-As a ref lookup, only `git show-ref --verify --hash "refs/heads/$a"` sees the name (`scripts/lib/dev-cycle-read.sh:376`). Later calls use `$sha`. But the name also reaches git twice in validation: `git check-ref-format "refs/heads/$a"` and `git check-ref-format --branch "$a"` (`:372`). The second form expands `@{-N}`-style syntax; NAMECHARS excludes `@{}` (`:371`), so this is harmless. The precise version is "reaches git only through check-ref-format and show-ref --verify". This is in an unmerged commit message (lib code is context).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:371-378`
-
----
-
-## Claim 43: aaae80c6 message, "POLICY is the stricter of --settings' policy and the brief's Policy: line."
-
-**Location:** commit `aaae80c6` (message body, paragraph 2)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** As in Claim 6.
-**Legibility-target:** for-orchestrator-synthesis
-
-`[[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge` (`scripts/build-loop.sh:311`). T5 passes for all ten combinations.
-
-**Evidence:** `scripts/build-loop.sh:311`, `test/scripts/build-loop-read.bats:315-324`
-
----
-
-## Claim 44: aaae80c6 message, "LOOP reads the tip as a marker only when ... an exact subject, alone on its first line; a "handoff:" tip that breaks a rule is a skip that names the rule and never echoes the subject."
-
-**Location:** commit `aaae80c6` (message body, paragraph 2)
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the marker rule and the never-echo property. The "subject" mismatch is the same as Claim 10.
-**Legibility-target:** for-author
-
-Never-echo holds: the skip is `"skip $a: the tip of $br starts \"handoff:\" but is not a marker: ${kind#bad }"` (`scripts/build-loop.sh:325`), and every `bad` text is constant (`:264-279`). "A 'handoff:' tip that breaks a rule is a skip" is not quite right. A message with a leading blank line has git subject `handoff: ready` but reads `working`, and a whitespace-only second line is called "runs onto a second line" (`probe-marker.log`). Both fail closed. This is in an unmerged commit message.
-
-**Evidence:** `scripts/build-loop.sh:257-269`, `scripts/build-loop.sh:325`, `.../fact-check/probe-marker.log`
-
----
-
-## Claim 45: aaae80c6 message, "Two open briefs on main naming one branch (ignoring case) both skip (F31)."
-
-**Location:** commit `aaae80c6` (message body, paragraph 2)
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers briefs directly under docs/working/briefs/ (true), and a closed/ brief reading open (not counted).
-**Legibility-target:** for-author
-
-The claim is true for open briefs under `docs/working/briefs/` (T28 passes). It is false for an open `closed/` brief plus an open brief on the same branch: both print `ok ... open ... feat/y` (`probe-shared.log`), because `git ls-tree ... -- docs/working/briefs/` (`scripts/build-loop.sh:287`) does not recurse. This is in an unmerged commit message. See Claims 13 and 22.
-
-**Evidence:** `scripts/build-loop.sh:287-291`, `.../fact-check/probe-shared.log`
-
----
-
-## Claim 46: aaae80c6 message, "The lib is called in-process (no dev-cycle.sh subprocess), so the import walk's per-process cache question does not arise here."
-
-**Location:** commit `aaae80c6` (message body, paragraph 3)
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that the lib is sourced, not run as dev-cycle.sh. check_brief, check_branch and marker_kind still run in `$(...)` subshells (forks of this process). Does not establish anything about the walk, which `--status` never calls: no `imported_names` or `IMPORTED` reference in scripts/build-loop.sh.
-**Legibility-target:** for-orchestrator-synthesis
-
-The lib is loaded with `source "$READ_LIB"` (`scripts/build-loop.sh:79`) and called as `out="$(check_brief "$a")"` (`:298`). A grep for `imported_names\|IMPORTED` in scripts/build-loop.sh returns nothing (paraphrased — no quote available because the claim covers absence of code).
-
-**Evidence:** `scripts/build-loop.sh:79`, `scripts/build-loop.sh:298`, `scripts/lib/dev-cycle-read.sh:426-432`
-
----
-
-## Claim 47a: aaae80c6 message, "check_brief's git log -1 -G'^Status: ' costs about 1 ms per brief on this repo (2137 commits, 1017 first-parent): the walk stops at the commit that added or last changed the Status line, so its cost tracks the brief's age, not the repo's."
-
-**Location:** commit `aaae80c6` (message body, "Measured" paragraph)
-**Type:** Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the repo counts on main (f6357ea1), the per-call cost, and the early-stop mechanism. "Age" here means first-parent commits since the last Status-line change.
-**Legibility-target:** for-orchestrator-synthesis
-
-Command: `bash .../fact-check/measure.sh` (cwd the worktree), run at 2026-10-05T11:49:04Z with exit 0. It printed `commits 2137 first-parent 1017` for main. Each real brief costs `git log -G avg 1 ms`, stops at `cac2ba0c`, and walks 4 first-parent commits, the same as a bare `git rev-parse` (1 ms). A full no-match walk costs 6 ms and an old file 8 ms, which confirms the early stop. The call is at `scripts/lib/dev-cycle-read.sh:355`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:355-356`, `.../fact-check/measure.log`
-
----
-
-## Claim 47b: aaae80c6 message, "--status over the 3 real briefs: 79 ms."
-
-**Location:** commit `aaae80c6` (message body, "Measured" paragraph)
-**Type:** Performance
-**Verdict:** Unverifiable
 **Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers one re-measurement under concurrent review load. Does not establish the original environment's timing.
-**Legibility-target:** for-orchestrator-synthesis
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Unverifiable · r2=Mostly accurate (compound, claim 34) · r3=—
+**Replicate annotations:** r1: "measured ~1.4 ms on top of git start-up, load-dependent" · r2: "measured 2-3 ms wall per brief; row 275's rationale likely applies"
+**Scope:** Covers the listed behavioural claims (all hold at HEAD) and re-times the `-G` walk; does not re-check the two claims settled by override row 265 or the 79 ms figure (row 275).
 
-The same `measure.sh` run gives `109 ms`, `112 ms` and `112 ms` for `bash scripts/build-loop.sh --status <3 briefs>`. Other reviews ran concurrently. Wall time is environment-dependent; the mechanism claim (47a) holds.
+Holds: the bats bodies match 859e29e8's list; build-loop.sh never runs dev-cycle.sh (paraphrased — no quote available because the claim covers absence of code: its only `dev-cycle.sh` mentions are comments at `scripts/build-loop.sh:46`, `:71`, `:82`); the usage loop at `test/scripts/build-loop-read.bats:195` is `"" "--bogus" "--settings extra" "--status"`; `--status` on the three real briefs prints `skip ...: no Branch: line on the default branch` for each (`$FC/logs/real-briefs.log`). Imprecise: the per-brief `git log -1 --first-parent ... -G'^Status: '` measured 2-3 ms wall time per brief including process start (`$FC/logs/glog-timing.log`, main at 2143 commits, 1023 first-parent), not "about 1 ms". History-only and load-dependent; row 275's rationale ("timing varies with load") likely applies.
 
-**Evidence:** `scripts/build-loop.sh:333-337`, `.../fact-check/measure.log`
-
----
-
-## Claim 48: aaae80c6 message, "The real briefs have no Branch: line yet, so --status skips them until the cycle writes machine lines (U4)."
-
-**Location:** commit `aaae80c6` (message body, Notes)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three briefs on main at f6357ea1. Does not establish anything about U4.
-**Legibility-target:** for-orchestrator-synthesis
-
-`measure.log` shows `skip docs/working/briefs/2026-10-02-build-loop-handoff.md: no Branch: line on the default branch`, and the same for the other two. The message comes from `scripts/build-loop.sh:303`.
-
-**Evidence:** `scripts/build-loop.sh:303`, `.../fact-check/measure.log`
+**Evidence:** `$FC/logs/real-briefs.log`, `$FC/logs/glog-timing.log`, `test/scripts/build-loop-read.bats:195`, `scripts/build-loop.sh:46`
 
 ---
 
-## Claim 49: aaae80c6 message, "The fixtures' commit_all allows an empty commit, so re-writing a file unchanged no longer fails a test."
+## Claim 34c: aaae80c6 message: "(2137 commits, 1017 first-parent)"
 
-**Location:** commit `aaae80c6` (message body, Notes)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** As Claim 23. `git diff 859e29e8 aaae80c6 -- test/lib/` shows exactly this change.
-**Legibility-target:** for-orchestrator-synthesis
-
-`commit_all() { git add -A && git commit -q --allow-empty -m "${1:-fixture}"; }` (`test/lib/build-loop-fixtures.bash:23`).
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:23`
-
----
-
-## Claim 50: aaae80c6 message, "The "--status --settings" usage case is dropped from the test: a path argument is data, refused per argument as dev-cycle.sh does."
-
-**Location:** commit `aaae80c6` (message body, Notes)
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the test change and the runtime result. The usage loop still lists bare `"--status"`, which is a different case (no path) and still exits 1.
-**Legibility-target:** for-orchestrator-synthesis
-
-`git diff 859e29e8 aaae80c6 -- test/` changes `"--status" "--status --settings"; do` to `"--status"; do`, now at `test/scripts/build-loop-read.bats:179`. A probe of `build-loop.sh --status --settings` prints `skip --settings: not an allowed path form` with exit 0, via check_brief's pathform skip (`scripts/lib/dev-cycle-read.sh:323`).
-
-**Evidence:** `test/scripts/build-loop-read.bats:179`, `scripts/lib/dev-cycle-read.sh:323`
-
----
-
-## Claim 51: 553a50d5 message, "U1c stays at 399 changed code lines against U1b."
-
-**Location:** commit `553a50d5` (message body)
+**Location:** `aaae80c6 (commit message)`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers pr-prep step 1a's count with BASE=feat/build-loop-u1b (tip 1d79ffef). Does not establish whether that BASE is the right one, which the stack description says it is.
+**Scope:** Covers the counts at the default branch the branch was cut from (f6357ea1, the merge base with main). At aaae80c6 itself the counts are 2143/1023.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Mostly accurate (compound, claim 34) · r3=Verified (claim 38)
+**Replicate annotations:** none
 
-Command: `BASE=feat/build-loop-u1b; git diff --numstat "$BASE"...553a50d5 -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'` (the rule at `workflows/pr-prep.md:91`). It ran in the worktree at 2026-10-05T11:48:47Z with exit 0 and printed `399`. The numstat is 164+8 + 36+2 + 186+3.
+In E10, `f6357ea1 2137 1017` and `aaae80c6 2143 1023`.
 
-**Evidence:** `workflows/pr-prep.md:86-92`, `.../fact-check/linecount.log`
+**Evidence:** fc-r1/static-counts.log
 
 ---
 
-## Claim 52: 553a50d5 message, "this says four lines, three of them from docs/dev-cycle.md"
+## Claim 35: 553a50d5 message: "this says four lines, three of them from docs/dev-cycle.md. U1c stays at 399 changed code lines against U1b."
 
-**Location:** commit `553a50d5` (message body)
-**Type:** Reference
+**Location:** `553a50d5 (commit message)`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the header text after the commit. The behaviour is in Claim 1.
+**Verification mode:** executed
+**Scope:** Covers the help change and the count against the U1b tip of that time (1d79ffef, the merge base). It does not cover the count against today's U1b tip.
 **Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (claim 35) · r3=Verified (claim 39)
+**Replicate annotations:** none
 
-`#   --settings  four lines from the default branch's commit, never the working` / `#             tree (a build loop can write any working tree). Lines 1-3 from` (`scripts/build-loop.sh:10-11`).
+In E10, `git diff --numstat feat/build-loop-u1b...553a50d5 -- scripts test` gives 164+8, 36+2 and 186+3, which sum to 399 (python3). The help at 553a50d5 reads "four lines ... Lines 1-3 from one line of docs/dev-cycle.md", the same as HEAD's `scripts/build-loop.sh:10-12`.
 
-**Evidence:** `scripts/build-loop.sh:10-12`
+**Evidence:** fc-r1/static-counts.log, `scripts/build-loop.sh:10-12`
+
+---
+
+## Claim 36a: c143b929 R1: "a line whose letters and digits, from its first letter, start like "h1" or "s1" but is not an exact constraint line makes docs/constraints.md unreadable (it was skipped while --settings said ok). IDs have no leading 0, so H1 and H01 cannot both count"
+
+**Location:** commit c143b929
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 36a) · r3=Mostly accurate (claim 40)
+**Replicate annotations:** r3: "same ASCII and fence gap as Claim 8" · r1+r2: H01 and the near-miss refusal verified by execution
+**Scope:** Covers every ASCII shape; does not hold for the Cyrillic-H shape that R1 itself listed, nor for fenced lines (same residue as Claim 4).
+
+p1.log: `Н2: x` (Cyrillic) and `Ｈ2: x` (fullwidth) still give `constraints ok 1-hard 0-soft`; the rule is ASCII letters and digits (`scripts/build-loop.sh:172` — `sub(/^[^a-zA-Z]*/, "", s)` under `LC_ALL=C`). The other R1 sub-claims hold: "IDs have no leading 0, so H1 and H01 cannot both count" (p1.log `H01: x` → unreadable) and "a heading ends a pending hard constraint" (p2.log `heading-pend` → nosuccess).
+
+**Evidence:** `scripts/build-loop.sh:164-175`; p1.log; p2.log
+
+---
+
+## Claim 36b: c143b929 R1: "a heading ends a pending hard constraint, so a success: line under another section does not satisfy it."
+
+**Location:** `c143b929 (commit message)`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers ATX headings at column 0 (`## Other`): fixed, as stated. It does not cover setext headings or headings indented 1-3 spaces, where a success: line under the other section still satisfies the constraint.
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate (claim 36b) · r3=Verified (compound, claim 40)
+**Replicate annotations:** r1+r2: same `^#`-only heading gap as Claim 6
+
+In E6, `'- H1: a' '## Other' '  success: b'` gave `ok` under 553a50d5 and `unreadable ... no success: line` under HEAD. In E3, `Other` / `=====` and `   ## Other` before the success line both still gave `ok 1-hard`. The rule is `/^#/` (`scripts/build-loop.sh:174`). Precise version: "a line starting with # ends a pending hard constraint".
+
+**Evidence:** `scripts/build-loop.sh:174`, fc-r1/old-vs-new.log, fc-r1/constraints-structure.log
+
+---
+
+## Claim 36c: c143b929 A1: "marker_kind lets git parse the commit (rev-list --parents, rev-parse ^{tree}, log %B) instead of reading the raw object, and refuses a NUL byte; a hand-made object with two tree lines is now a skip, not ready."
+
+**Location:** commit c143b929
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 36a) · r3=Mostly accurate (claim 41)
+**Replicate annotations:** r3: "the raw object is still read by git cat-file commit for the NUL check (:279)" · r1+r2: two-tree object → "it has no parent" skip (the reason text names no parent, not two trees)
+**Scope:** Covers the parse moving to git and the two-tree skip; "instead of reading the raw object" is imprecise, since the raw object is still read for the NUL check.
+
+`scripts/build-loop.sh:279` — `if [[ "$(git cat-file commit "$1" | tr -cd '\000' | wc -c)" -gt 0 ]]` reads the raw object. Precise: "lets git parse the commit ...; reads the raw object only to refuse a NUL byte". The two-tree skip passed in T7 (`:287`).
+
+**Evidence:** `scripts/build-loop.sh:273-284`; bats-read.log ok 11; p3.log
+
+---
+
+## Claim 36d: c143b929 A4/A5: "an open brief left in closed/ counts for F31, and status_line computes the shared-branch set on first use, so no caller skips it."
+
+**Location:** `c143b929 (commit message)`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same as Claim 24.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 36a) · r3=Verified (claim 42)
+**Replicate annotations:** none
+
+In E6, the closed/ brief changed `ok` (553a50d5) to `skip ...: another open brief` (HEAD). `:326` is `[[ -n "$SHARED_BRANCHES" ]] || shared_branches`.
+
+**Evidence:** `scripts/build-loop.sh:326`, fc-r1/old-vs-new.log
+
+---
+
+## Claim 36e: c143b929 A8: "the stopped-reason check runs grep in the C locale instead of switching the shell's locale (which warned on restore)."
+
+**Location:** `c143b929 (commit message)`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same as Claim 23.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 36a) · r3=Verified (claim 42)
+**Replicate annotations:** none
+
+E5 shows the old `local LC_ALL=C` printing `line 323: warning: setlocale` and HEAD printing no such line.
+
+**Evidence:** fc-r1/locale.log
+
+---
+
+## Claim 36f: c143b929 remaining items: wording fixes ("planned" dropped from the lib and dev-cycle.sh; T7 renamed; "the unused status_of helper removed"), "T5 sets "Self-merge never: none", which self-merge now needs (Q-112)", "Override-log rows: A11, C1-C6, C8, C10-C13", "426 changed code lines against U1b"
+
+**Location:** `c143b929 (commit message)`
+**Type:** Configuration / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each listed item. It does not re-audit the content of the override rows, which are settled.
+**Legibility-target:** for-orchestrator-synthesis
+**Replicate verdicts:** r1=Verified · r2=Verified (compound, claim 36a) · r3=Verified (claim 42+43)
+**Replicate annotations:** none
+
+The item-by-item evidence:
+- **status_of:** it existed at 553a50d5 (`old-553a50d5/test/lib/build-loop-fixtures.bash:70` `status_of() { ... }`), had no caller there (grep outside the fixtures file found nothing), and has no hit at HEAD (E10).
+- **T7 rename:** `git diff 553a50d5 c143b929` shows only T7 renamed, to "spoofed markers are skips or read as working ...".
+- **T5:** `settings "Build-loop policy: $s" "" "Self-merge never: none"` is at `test/scripts/build-loop-read.bats:525`. read_settings requires `never_ok` for self-merge (`scripts/build-loop.sh:245-246`).
+- **Override rows:** docs/reviews/override-log.md rows 265-275 carry A11, C1, C2/C4, C3, C5, C6, C8, C10, C11, C12 and C13.
+- **426:** in E10, numstat over scripts and test sums to 170+8+1+1+2+2+32+2+205+3 = 426 (python3).
+
+**Evidence:** `scripts/build-loop.sh:245-246`, `test/scripts/build-loop-read.bats:525`, `docs/reviews/override-log.md:265-275`, fc-r1/static-counts.log
+
+---
+
+## Submitted Claims
+
+## Claim 45a: "For the crafted tip objects tested, marker_kind reads parents, tree ... as git does: duplicate-parent, two-tree, orphan, merge, non-empty, NUL ... `handoff:` tips are skips"
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/build-loop.sh:273-293`
+**Type:** Behavioral / Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the six structural cases (two parent lines with the same SHA, two tree lines, no parent line, two distinct parents, a tree differing from the parent's, a NUL byte in the subject or in the body) on a branch one commit ahead of main, each with a `handoff: ready` subject; does not establish behavior under grafts or a shallow repo (rev-list honours both), under a repo-local `i18n.logOutputEncoding`, or for tips whose subject does not start `handoff:` (those return `working` before any structural check).
+
+Read the whole of `marker_kind` (:273-293) and its one caller's use (:337-344). Parents come from git, not from parsing the object:
+
+```bash
+# scripts/build-loop.sh:276-282
+  read -ra p <<<"$(git rev-list --parents -n 1 "$1")"
+  msg="$(git log -1 --format=%B "$1")"; subj="${msg%%$'\n'*}"
+  [[ "$subj" == handoff:* ]] || { echo working; return; }
+  if [[ "$(git cat-file commit "$1" | tr -cd '\000' | wc -c)" -gt 0 ]]; then echo "bad it holds a NUL byte"; return; fi
+  if [[ ${#p[@]} -eq 1 ]]; then echo "bad it has no parent"; return; fi
+  if [[ ${#p[@]} -gt 2 ]]; then echo "bad it has $(( ${#p[@]} - 1 )) parents"; return; fi
+  if [[ "$(git rev-parse --verify "$1^{tree}")" != "$(git rev-parse --verify "${p[1]}^{tree}")" ]]; then echo "bad it changes files"; return; fi
+```
+(excerpt ends :282; enclosing marker_kind() continues to :293 — read)
+
+Executed results (from `probe45.log`): duplicate parent: `git rev-list --parents` printed the parent twice and `--status` gave `skip B: ... it has 2 parents`; two-tree: rev-list printed no parent (git stops at the second tree line), `skip ... it has no parent`; orphan: `skip ... it has no parent`; merge: `skip ... it has 2 parents`; non-empty (main's tree on base): `skip ... it changes files`; NUL in body and NUL inside the subject: both `skip ... it holds a NUL byte`. In every case the parent count the script reports equals what `git rev-list --parents` printed for the same object.
+
+**Evidence:** `scripts/build-loop.sh:273-293`, `scripts/build-loop.sh:337-344`; command `timeout 300 bash probe45.sh > probe45.log 2>&1`, cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted`, exit 0, 2026-10-05T17:10:47Z; output `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45.log`; script `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45.sh`
+
+---
+
+## Claim 45b: "... UTF-7 and Latin-1 encoded `handoff:` tips are skips"
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/build-loop.sh:277`, `scripts/build-loop.sh:285-292`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers objects with an `encoding UTF-7`, `encoding ISO-8859-1` or unknown `encoding` header under git 2.39.5 with no i18n config; does not establish behavior with a repo-local `i18n.logOutputEncoding`, other git versions (whether UTF-7 is decoded), or encodings that put NUL bytes in the raw object.
+
+The subject is the first line of `git log -1 --format=%B` (:277), so it is git's re-encoded message, and an encoding header alone does not make a tip a skip. Only a tip whose re-encoded subject is not exactly a marker subject is a skip. Precise version: "an encoded `handoff:` tip is a skip when the subject git prints (after re-encoding) is not exactly `handoff: ready`, `handoff: blocked` or `handoff: stopped: <1-120 printable ASCII>`; an encoding header over an ASCII subject reads as that marker."
+
+Executed results (`probe45.log`):
+- Skips: Latin-1 `handoff: stopped: caf\351` (git printed `caf\303\251`, UTF-8 é); Latin-1 `handoff:\240ready` (git printed `\302\240`, a no-break space); UTF-7 header with raw `handoff:+ACA-ready` (git printed it raw, not as a space).
+- Not skips: UTF-7 header + `handoff: ready` → `ok ... ready`; ISO-8859-1 header + `handoff: ready` → `ok ... ready`; `encoding NOSUCH` + `handoff: ready` → `ok ... ready`; UTF-7 header + `handoff: stopped: a+AOk-b` → `ok ... stopped ... a+AOk-b`. The system iconv does decode `a+AOk-b` to `aéb` (`probe45b.log`), but git 2.39.5 printed the raw bytes, and the script took git's reading.
+
+So for every case the script agrees with what git prints (the "as git does" part holds); the conclusion "encoded tips are skips" holds only for the non-exact ones.
+
+**Evidence:** `scripts/build-loop.sh:277`, `scripts/build-loop.sh:285-292`; command `timeout 300 bash probe45.sh > probe45.log 2>&1`, cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted`, exit 0, 2026-10-05T17:10:47Z; outputs `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45.log`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45b.log`
+
+---
+
+## Claim 45c: "marker_kind reads ... subject as git does: ... a leading-blank message reads `working`"
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/build-loop.sh:277-278`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers raw messages that start with one or more blank or whitespace-only lines before `handoff: ready`; establishes that the outcome is `working` (true, fail-safe) but that git's own subject for these objects is `handoff: ready`, so "reads the subject as git does" is refuted for this case; does not establish how the orchestrator or `--marker` treat such tips.
+
+The outcome part is true: `--status` printed `ok B open review feat/a working <sha> 1970-01-01 0` for raw messages `\nhandoff: ready`, `\n\nhandoff: ready` and ` \nhandoff: ready`. The mechanism part is not. The script takes the first line of the raw body:
+
+```bash
+# scripts/build-loop.sh:277-278
+  msg="$(git log -1 --format=%B "$1")"; subj="${msg%%$'\n'*}"
+  [[ "$subj" == handoff:* ]] || { echo working; return; }
+```
+(excerpt ends :278; enclosing marker_kind() continues to :293 — read)
+
+`%B` keeps the leading blank line (`od -c` of `%B`: `\n h a n d o f f : r e a d y \n`), so `subj` is empty and the tip reads `working`. But git's own subject skips leading blank and whitespace-only lines: `git log --format=%s` and `git log --oneline` both print `handoff: ready` for the same objects (`probe45.log`, `probe45b.log`: `oneline: 56d8dd4 handoff: ready`). The script's reading matches its own help text ("the tip's subject (its message's first line)", :67-68). It does not match git's subject. The error is fail-safe: the tip is never taken as a marker, so nothing is dispatched or merged on it. The cost is that a tip `git log --oneline` shows as `handoff: ready` is reported as `working`, not as a `skip` for a spoofed marker, so the help text's skip rule for "starts handoff: but is not a marker" (:67-69) does not fire for it. The fix belongs in the claim's wording: "a message whose first raw line is blank reads `working` even though git's `%s` shows `handoff: ...`".
+
+**Evidence:** `scripts/build-loop.sh:277-278`, `scripts/build-loop.sh:62-69`; command `timeout 300 bash probe45.sh > probe45.log 2>&1`, cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted`, exit 0, 2026-10-05T17:10:47Z, plus the `%B`/`--oneline` check saved to `probe45b.log` (exit 0, 2026-10-05T17:11Z); outputs `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45.log`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe45b.log`
+
+---
+
+## Claim 46: "An open brief stored under docs/working/briefs/closed/ that names the same branch (case-folded) as an open brief in briefs/ makes the latter skip, and status_line builds the shared set itself on first use."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/build-loop.sh:298-309`, `scripts/build-loop.sh:326-329`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers brief-form files directly in `docs/working/briefs/closed/` on main's commit with `Status: open` and a `Branch:` name differing only in ASCII case; does not establish counting of closed/ files in subdirectories or with non-brief names (both are ignored), non-ASCII case folding (`lower` maps A-Z only), or that the set is used before a brief passes check_brief, the new-state return and the Branch:/Dispatched: checks (:312-324), which run first.
+
+The set is built from main's tree, and the closed/ prefix is stripped before the name check:
+
+```bash
+# scripts/build-loop.sh:301-305
+  list="$(git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/ docs/working/briefs/closed/)"
+  while IFS= read -r f; do
+    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
+    [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
+    b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
+```
+(excerpt ends :305; enclosing shared_branches() continues to :309 — read)
+
+`status_line` fills it on first use, and the status mode never calls `shared_branches` itself:
+
+```bash
+# scripts/build-loop.sh:326-329
+  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
+  if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
+    echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
+  fi
+```
+
+`shared_branches` always sets the variable to at least `$'\n'` (:307), so it runs once per process. The `brief_fields` calls inside it overwrite the global `BRIEF` and `BASH_REMATCH`. `status_line` has already copied `br` (:319), `disp` (:323) and `pol` (:325) before :326 and reads neither global afterwards, so the overwrite has no effect.
+
+Executed results (`probe46.log`): baseline `ok ... feat/d absent`. With `closed/2026-10-01-old.md` = `Status: open` / `Branch: FEAT/D` on main, `--status d e closed-old` printed `skip d: another open brief ...`, then `ok e ...`, then `skip closed-old: ...`, so the shared set was built inside status_line within one run. With the closed/ brief `Status: done`: `ok`. With it on main but deleted from the working tree: still `skip` (main's commit is read). Renamed to `2026-10-01-Old.md` (not brief form): `ok`. Moved to `closed/sub/`: `ok`.
+
+**Evidence:** `scripts/build-loop.sh:297-309`, `scripts/build-loop.sh:310-346`, `scripts/build-loop.sh:348-352`, `scripts/lib/dev-cycle-read.sh:157`, `scripts/lib/dev-cycle-read.sh:430`; command `timeout 200 bash probe46.sh > probe46.log 2>&1`, cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted`, exit 0, 2026-10-05T17:11:48Z; output `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe46.log`; script `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe46.sh`
+
+---
+
+## Claim 47: "The STOPPED reason printed on a --status line is limited to 1-120 printable ASCII bytes with no blank at either end, checked in the C locale."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/build-loop.sh:289-292`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the reason as `git log %B` prints it (after git's re-encoding) and as it reaches the scrubbed `--status` output, under caller locales C and C.UTF-8; does not establish how consumers split a reason containing inner spaces, or the reason's relation to the raw object bytes when a repo-local `i18n.logOutputEncoding` is set.
+
+```bash
+# scripts/build-loop.sh:289-292
+  r="${subj#handoff: stopped: }"
+  # grep in the C locale: the ranges are ASCII bytes, and no locale is switched here.
+  if [[ "$subj" == "handoff: stopped: "* ]] && printf '%s\n' "$r" | LC_ALL=C grep -qxE '[!-~]([ -~]{0,118}[!-~])?'; then echo "stopped $r"
+  else echo 'bad its subject is not exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (REASON: 1 to 120 printable ASCII characters, no blank at either end)'; fi
+```
+(:293 closes marker_kind — read)
+
+`r` holds no newline (`subj` is cut at the first one, :277), so the whole-line `-x` match covers all of it. `LC_ALL=C` makes `[!-~]` bytes 0x21-0x7E and `[ -~]` bytes 0x20-0x7E. The caller prints `reason=" ${kind#stopped }"` (:341) as the last field (:345).
+
+Executed results (`probe47.log`, both caller locales identical): accepted, with the printed reason measured: `x` (1), `!` (1), `~` (1), `a b` (3), 119 r's (119), 120 r's (120). Skipped: 121 bytes; 119 r's plus a trailing space; leading space; trailing space; a lone space; inner tab; trailing tab; trailing CR; DEL; ESC; UTF-8 é; a Latin-1 byte 0xE9; UTF-8 no-break space; fullwidth `a`.
+
+**Evidence:** `scripts/build-loop.sh:277`, `scripts/build-loop.sh:289-293`, `scripts/build-loop.sh:338-345`; command `LC_ALL=C timeout 400 bash probe47.sh > probe47.log 2>&1` (the script runs the CLI under LC_ALL=C and LC_ALL=C.UTF-8 per case), cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted`, exit 0, 2026-10-05T17:12:17Z; output `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe47.log`; script `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/submitted/probe47.sh`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 12b** (`scripts/build-loop.sh:56-57`): the skip list says a *missing* Dispatched: line is a skip. Code (`:306`) and the same header (`:53-54`) give 0. It should read "its Branch: line is missing or malformed, or its Dispatched: line is malformed". This is a doc-only defect in the `--status` contract text on the unmerged branch.
-
-### Stale
-- none
+- **Claim 45c** (`scripts/build-loop.sh:277-278`): marker_kind does not read the subject as git does when the raw message starts with a blank or whitespace-only line. git's `%s`/`--oneline` show `handoff: ready`, but the script reads the empty first line of `%B` and reports `working`. The result is fail-safe, but such a tip is never reported as a spoofed-marker skip.
 
 ### Mostly Accurate
-- **Claim 2** (`scripts/build-loop.sh:27-32`): IDs are compared as written (`H01` ≠ `H1`), and near-miss shapes (`* H1:`, tab after colon, indented, lowercase, `1. H1:`, `> H1:`) are silently not constraints.
-- **Claim 4** (`scripts/build-loop.sh:36-37`): "from the default branch's commit" omits check_brief's working-tree symlink check. A working-tree symlink at the brief path makes it skip.
-- **Claim 10** (`scripts/build-loop.sh:51-53, 59-60`): "subject" is the raw first message line. A leading blank line reads working (not a skip), and a whitespace-only second line skips as "runs onto a second line". Both fail closed.
-- **Claim 13** (`scripts/build-loop.sh:58-59`): the F31 skip applies only when the brief itself is open, and counts only briefs directly under docs/working/briefs/.
-- **Claim 17** (`scripts/build-loop.sh:179-182`): --status reads POLICY but not NEVER. NEVER is for the gate only.
-- **Claim 21** (`scripts/build-loop.sh:275-277`): `local LC_ALL=C` works (bytes), but on return bash restores an uninstalled caller locale with a stderr warning (`build-loop.sh: line 323: warning: setlocale…`) for stopped/bad-subject tips.
-- **Claim 22** (`scripts/build-loop.sh:281-282`): "open brief on main" means open, readable and directly under docs/working/briefs/ with a well-formed Branch: line.
-- **Claim 27** (`test/lib/build-loop-fixtures.bash:57-60`): `tip` stores MESSAGE plus a trailing newline, not exactly MESSAGE.
-- **Claim 32** (`test/scripts/build-loop-read.bats:244`): spoofs read as a "not a marker" skip, not "unreadable".
-- **Claim 41** (commit 859e29e8): the "without echoing the reason" assertion covers the é and ESC cases, not bidi.
-- **Claim 42** (commit aaae80c6): the name also reaches `git check-ref-format` (twice), not only show-ref --verify.
-- **Claim 44** (commit aaae80c6): same subject-definition gap as Claim 10.
-- **Claim 45** (commit aaae80c6): a closed/ brief reading open is not counted for F31.
+- **Claim 45b** (`scripts/build-loop.sh:277`, `:285-292`): encoded tips are skips only when git's re-encoded subject is not exact. A UTF-7, Latin-1 or unknown encoding header over an ASCII `handoff: ready` subject reads `ready`, and UTF-7 `handoff: stopped: a+AOk-b` reads `stopped`.
+
+---
+
+## Claims Requiring Attention
+
+### Incorrect
+None.
+
+### Stale
+None.
+
+### Mostly Accurate
+- Claim 8 (`scripts/build-loop.sh:35-37`): the near-miss rule covers ASCII letters and digits outside code fences only. A fenced `H2:` line or a look-alike ID (Cyrillic Н2, fullwidth Ｈ2, H², H٢) still leaves `constraints ok` with the line uncounted. All three replicates.
+- Claim 6 (`:33-35`, `:174`) and Claim 36b (c143b929): "heading" means a line starting `#` at column 0; Setext and indented ATX headings do not end a pending hard constraint. r1, r2.
+- Claim 16b (`:66-67`): the shared-branch skip applies only when the queried brief is open. All three.
+- Claim 14 (`:54-60`): "Any other tip is working" omits the handoff:-prefixed skip; "alone on its first line" omits the whitespace-only second line refusal. r3.
+- Claim 20 (`:194-197`): "NEVER for the gate" reads as if the gate exists; it is planned. r3.
+- Claim 30 (`test/scripts/build-loop-read.bats:254`): `--marker` is a planned U3b mode. r3.
+- Claim 36a (c143b929 R1 bullet): same gap as Claim 8. r3.
+- Claim 36c (c143b929 A1 bullet): the raw object is still read for the NUL check. r3.
+- Claim 34b (aaae80c6): "about 1 ms per brief" measured 1.4 to 3 ms, load-dependent (covered by override row 275's rationale). r2.
+
+### Submitted claims (Stage 2.5)
+- Claim 45c (security-reviewer endorsement, `scripts/build-loop.sh:277-278`): Incorrect (executed). A message whose first raw line is blank reads `working` (fail-safe), but not "as git does": git's %s gives `handoff: ready`. Code and help (":67-68 its message's first line") agree; only the endorsement is wrong.
+- Claim 45b: Mostly accurate (an encoding header over an ASCII subject reads ready; the script agrees with what git prints).
 
 ### Unverifiable
-- **Claim 3** (`scripts/build-loop.sh:27, 32`): the prompt seeding and the ok-only dispatch need U3/U4 code. Both are consistent with the plan.
-- **Claim 47b** (commit aaae80c6): 79 ms not reproduced. This run measured 109-112 ms under concurrent load, which is environment-dependent.
+- Claims 4 and 9 (`:30`, `:37`): "every loop prompt carries" and "Only ok lets the orchestrator dispatch" depend on U3/U4 code; both match the plan (override row 275 covers the U3/U4 claim class).
+
+---
+
+## Escalations
+
+- `scripts/build-loop.sh:35-37`, `:161-175` (Claim 8) — r1, r2, r3 → security-reviewer, api-consistency-reviewer, orchestrator: a hard constraint inside a code fence, or with a look-alike ID, still yields `constraints ok N-hard` with that line uncounted. Q-112 [1] accepts best effort and asks for a report exactly when a hard constraint can be silently dropped under `ok`. Decide whether fence-skipping is intended (plan `:204` reads the file "under FENCE_AWK") and say "outside a fence" and "ASCII" in the help, or refuse those lines.
+
+---
+
+## Verdict stability
+
+- Total clusters: 44 (r1's granularity; compound verdicts recorded per sub-claim row).
+- All reporting replicates agreed: 32.
+- Disagreed: 12 — Claim 6 (r1=MA, r2=MA, r3=V compound); 14 (V, V, MA); 20 (V, V, MA); 30 (V, V compound, MA); 33, 34a, 34c (V, MA compound, V: r2's compound MA was driven by the 1 ms sub-claim); 34b (U, MA compound, —); 36a (V, V compound, MA); 36b (MA, MA, V compound); 36c (V, V compound, MA).
+- Agreement rate: 32/44 = 72.7%. No disagreement crossed a blocking boundary (no replicate assigned Incorrect or Stale).
+
+---
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): Your report saved at the path given in your task tail, structured per your skill, with every finding carrying a verbatim Evidence quote at a `path:line` in this worktree.
-- Answered: yes — 54 claim atoms verdicted, every executable guarantee executed, with logs in the scratch dir.
-- Out of scope: the lib's own rules (check_brief, check_branch, FENCE_AWK), which are context and were cited only where this unit relies on them; U1b's --settings lines 1-3.
-- Escalate:
-  - api-consistency-reviewer / security-reviewer: `scripts/build-loop.sh:152` and `:160`. A hard constraint written in a near-miss shape (`* H1:`, `H1:<TAB>`, indented, `1. H1:`, `> H1:`, lowercase) is dropped silently rather than refused. A file whose other lines are well-formed still reads `constraints ok`, which is the line that gates dispatch (plan `:260`), so a mis-bulleted hard constraint disappears from the gate's view without a WHY.
-  - api-consistency-reviewer: `scripts/build-loop.sh:56-57`. The `--status` skip contract misstates the Dispatched:-missing case (Claim 12b); U4 binds to this text.
-  - architecture-review / api-consistency-reviewer: `scripts/build-loop.sh:287`. F31 counting ignores `docs/working/briefs/closed/`, although `--status` accepts closed/ paths and reports their STATE.
-  - performance-reviewer (informational): `scripts/build-loop.sh:277`. Under an uninstalled caller locale, each stopped or bad-subject tip adds a setlocale warning to stderr on function return.
-- Questions I would have asked: whether a `closed/` brief can legitimately read `Status: open` (if not, Claims 13/22/45 shrink to wording).
-- Decisions I made: I split the Dispatched atom out of the skip-list sentence (12a/12b) because the halves earn different verdicts. I verdicted the 79 ms figure Unverifiable, not Incorrect, because wall time under concurrent review load cannot refute it. One probe (`printf 'x' | git commit-tree …`, run to confirm commit-tree stores the message as given) wrote a single dangling loose commit object into the shared repository's object store, with no ref and no working-tree change. It is unreachable and will be pruned by gc.
+- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: c143b929` first line.
+- Answered: yes (merged from three substantive replicates).
+- Out of scope: docs/reviews/ artifacts; claims settled by override rows 265, 272, 274, 275.
+- Escalate: Claim 8's fence and look-alike residue (see Escalations).
+- Decisions I made: r2 and r3 wrote their Goal-Alignment Notes in a non-canonical form; their escalation content was lifted into the Escalations section by substance.
