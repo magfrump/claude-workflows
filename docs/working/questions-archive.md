@@ -104,6 +104,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
 | [Q-114](#q-114--build-loop-u1c-size-waiver) | U1c of the build-loop handoff (`feat/build-loop-u1c`, the constraints line and `--status`) is 426 changed c... | 2026-10-05 |
 | [Q-115](#q-115--build-loop-u1b-r5) | U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useRepla... | 2026-10-05 |
+| [Q-116](#q-116--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
+| [Q-116](#q-116--digest-scan-working-dd-triggers) | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
 <!-- index:end -->
 
 ## Answered
@@ -1934,5 +1936,39 @@ U1b's fourth review pass found R5: the replace-ref guard does not beat a caller'
 | **[1] fix + scoped 5th pass** | Apply the GIT_CONFIG_PARAMETERS fix and the wording fixes; a fifth pass over the fix commits only. | None. | About a third of a full pass. |
 | **[2] fix + land without re-review** | Fix, test, fix-drift, health check, land. | None. | An unreviewed fix lands. |
 | **[3] narrow the claim, land** | The comment says the caller's environment is trusted; the route goes to U3b's --state. | None. | The guard covers repo config only until U3b. |
+
+
+### Q-116 · build-loop-u1c-r1-and-size
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** ANSWERED
+
+U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` silently emptied the F31 duplicate-branch check. How should U1c finish, and may the fix and its test extend the size waiver?
+
+**Answer (2026-10-05, in chat):** "Fix + scoped 4th pass (Recommended)", then "Extend to ~450 (Recommended)"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] fix + scoped 4th pass** | `--no-color`, fail closed on any git grep exit but 0 or 1, a colour test; a fourth pass over the fix commit only. | None. | A fraction of a full pass. |
+| **[2] fix + full 4th pass** | The same fixes, then a full panel. | None. | ~1.3M tokens. |
+| **[3] fix + land without re-review** | Fix, test, fix-drift, health check, land. | None. | An unreviewed fix lands. |
+
+Size: the fix and its test take U1c to 448 changed code lines; the waiver (Q-114, ~430) is extended to ~450.
+
+### Q-116 · digest-scan-working-dd-triggers
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
+
+Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit triggers" heading at any level, or only note that it does not?
+
+- **Why it's yours:** it sets what counts as a decision for the cycle. A tentative DD that never became a record would gain standing triggers, which is a scope call, not a bug.
+- **Read:** `docs/working/digest-missed-log-triggers.md` ("Related gap") · `scripts/dev-cycle.sh` section 2 · `skills/dev-cycle/SKILL.md` step 2
+- **Evidence:** threadwork's `docs/working/dd-time-and-ritual.md` has a `### Revisit triggers` section in a DD that never became a decision record; the digest reads only `docs/decisions/NNN-*.md` (H2 `## Revisit triggers`) and `docs/decisions/log.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Note only** (interim, chosen) | Section 2's header and the skill say working-doc triggers are not scanned. Nothing else changes. | None. | A trigger kept only in a DD stays unseen unless the cycle runner reads the DD by hand. |
+| **[2] Scan `docs/working/dd-*.md`** | The digest also prints every "Revisit triggers" section (any heading level) from `docs/working/dd-*.md`, marked as from a working doc. | Slightly longer digests; triggers from abandoned DDs to judge each cycle. | Dead DDs add noise every cycle until they are archived or deleted. |
+
+- **Blocks:** nothing.
+- **Interim:** [1]. The header clause landed on `fix/digest-log-layouts` with the date-first log fix.
+- **If the answer differs:** [2] is a small section-2 addition plus a bats test.
 
 
