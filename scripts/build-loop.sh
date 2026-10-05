@@ -103,8 +103,9 @@ cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules
 ROOT_REAL="$(pwd -P)"
 # Read main's own objects: a replace ref could swap in any settings blob.
-# core.useReplaceRefs in the repo's config would override the variable: add a
-# command-line config pair after any the caller passed.
+# core.useReplaceRefs in the repo's config would override the variable, so a
+# config-count pair turns it off. The caller's own environment is trusted: its
+# `git -c` or a zero-padded GIT_CONFIG_COUNT can still win (U3b's --state).
 cfg="${GIT_CONFIG_COUNT:-0}"; export "GIT_CONFIG_KEY_$cfg=core.useReplaceRefs" "GIT_CONFIG_VALUE_$cfg=false" GIT_CONFIG_COUNT=$((cfg + 1))
 export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1
 resolve_main || true

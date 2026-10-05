@@ -1,10 +1,19 @@
-Commit: 722884c7
+Commit: 4aa2e98e
 Loop-pass short-circuit: used at c8435580
 # Code Review Rubric
 
-**Scope:** `main...feat/build-loop-u1a` (full branch: d6426e3e, c8435580, 2da477b7, 78703f22, 722884c7; 4 code files, 304+/56- outside `docs/reviews/`), iteration 3, final confirming full-panel pass (no `--loop-pass`, k=3) | **Reviewed:** 2026-10-05 | **Status: 🔴 DOES NOT PASS** — 1 red item(s) unresolved
+**Scope:** `main...feat/build-loop-u1a` (full branch: d6426e3e, c8435580, 2da477b7, 78703f22, 722884c7, 515d7809 (docs/reviews only), 4aa2e98e; 4 code files, 322+/58- outside `docs/`). This is iteration 4 of 4, the final confirming full-panel pass (no `--loop-pass`, k=3). | **Reviewed:** 2026-10-05 | **Status: 🟡 CONDITIONAL PASS** — 4 amber item(s) awaiting resolution or justification
 
-Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r3.md`, 55 claims; Stage 2.5's `code-fact-check-submitted-claims-build-loop-u1a.md` appended as claims 56-63), `security-reviewer-review-2026-10-05-build-loop-u1a.md`, `performance-reviewer-review-2026-10-05-build-loop-u1a.md`, `api-consistency-reviewer-review-2026-10-05-build-loop-u1a.md`, `architecture-review-review-2026-10-05-build-loop-u1a.md`, all `Commit: 722884c7`. bats `test/scripts/dev-cycle.bats` 67/67 at 722884c7 with TMPDIR unset. Under a TMPDIR with a `.`-led component (`/home/node/.claude/...`), test 21 fails because git refuses the ref name. That test is outside the diff. Delivery mode: inline-diff-only via a shared file (diff 35 KB, within budget; enclosing files ~169 KB, over). Deviations, as in iterations 1-2: agents read their skill files and the shared block from disk instead of having them pasted, and a sub-agent did the mechanical k=3 merge under the skill's merge rules. Fact-Check Gate: a high-confidence Incorrect existed (claim 6). This is the requested full-panel terminal pass, so it continued. The format gate `test/skills/code-fact-check-format.bats` passes 25/25 on the merged report.
+Reports: `code-fact-check-report-build-loop-u1a.md` is the k=3 merge of `-r1/-r2/-r3.md` (29, 40 and 32 claims). It has 49 claim sections in 39 clusters, with verdict agreement 46/49 = 93.9%. Stage 2.5's `code-fact-check-submitted-claims-build-loop-u1a.md` is appended as claims 40-56. The other reports are `security-reviewer-review-2026-10-05-build-loop-u1a.md`, `performance-reviewer-review-2026-10-05-build-loop-u1a.md`, `api-consistency-reviewer-review-2026-10-05-build-loop-u1a.md` and `architecture-review-review-2026-10-05-build-loop-u1a.md`. Every report is stamped `Commit: 4aa2e98e`.
+
+The orchestrator ran `bats test/scripts/dev-cycle.bats` at 4aa2e98e and got 68/68, with LC_ALL=C.UTF-8 and TMPDIR unset. All three replicates and the Stage 2.5 agent re-ran it and also got 68/68. The format gate `REPORT_PATH=… bats test/skills/code-fact-check-format.bats` passes 25/25 on the merged report.
+
+Delivery mode was inline-diff-only through a shared file (`$S/shared/preamble.md` plus a 36 KB `diff.patch`), because the enclosing files are over budget. The deviations are the same as in iterations 1-3:
+- Agents read their skill files and the shared block from disk; they were not pasted into the prompts.
+- A sub-agent did the mechanical k=3 merge under the skill's merge rules.
+- Each agent also had its own scratch dir, so prompts differ in that path as well as in the output path.
+
+There was no Fact-Check Gate pause, because no claim was a high-confidence Incorrect.
 
 ---
 
@@ -12,9 +21,11 @@ Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r
 
 | # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|---|---|
-| R1 | (iteration 1) brief_fields captured awk's output through `$(...)`, which drops NUL bytes | Correctness / input handling | Incorrect (high), behavioral, executed | Fact-check | `scripts/lib/dev-cycle-read.sh` FENCE_AWK | for-author | — | ✅ Resolved at 2da477b7 (re-confirmed: FC claims on FENCE_AWK Verified, A6 probes refuse NUL inside a fence too) |
-| R2 | (iteration 2) A failed `git cat-file` was swallowed by both main readers: check_answer fell through to the archive (`keep Q-1`), brief_fields returned 0 with no keys | Security / error handling | security Medium · architecture Coupling · api Minor (escalated, executed) | security F2 + architecture F1 + api F1 | `scripts/lib/dev-cycle-read.sh:559-560`, `:295-302` | for-author | Rows 215, 216 | ✅ Resolved at 78703f22. Executed by all three FC replicates, security, architecture, api, and Stage 2.5 claim 57. Deleting questions.md's or the archive's blob gives `skip Q-1: docs/working/questions.md could not be read from the default branch`, with no fall-through. Deleting a brief's blob gives `rc=1 BRIEF_ODD=error`, and check_brief prints `skip …: the brief could not be read from the default branch`. Test 67 fails against 2da477b7 on all three assertions, and mutants with either read check removed fail it. Under `set -euo pipefail` only; the residue outside that contract is A17. |
-| R3 | **New (regression from 78703f22's C1 fix).** `--help` cuts off the header's last line. `-h\|--help) sed -n '2,80p' "$0"` was not moved when C1 added a help line, and the header now ends at :81. Help stops mid-sentence at "…no perl or lib/dev-cycle-read.sh, or no". That drops the Exit line's no-default-branch clause (which this branch extended to `--check-answer`) and "Printed repo text is data." main (`2,77p`) and 2da477b7 printed the whole header. No bats test covers `--help`. Fix: `2,81p`, or end the range at the first non-comment line as `scripts/run-tests.sh:153` does. A test asserting the last header line appears in `--help` would stop this recurring. **Convergence:** fact-check (k=3 unanimous) + api-consistency F1 | Correctness / CLI contract | Incorrect (high), behavioral, executed · api-consistency Minor | Fact-check claim 6 (r1+r2+r3) + api-consistency-reviewer F1 | `scripts/dev-cycle.sh:111` | for-author | — | 🔴 Unresolved. Orchestrator re-ran `bash scripts/dev-cycle.sh --help \| tail -2` and confirmed the output ends at "…or no". |
+| R1 | (iteration 1) brief_fields captured awk's output through `$(...)`, which drops NUL bytes | Correctness / input handling | Incorrect (high), behavioral, executed | Fact-check | `scripts/lib/dev-cycle-read.sh` FENCE_AWK | for-author | — | ✅ Resolved at 2da477b7 |
+| R2 | (iteration 2) A failed `git cat-file` was swallowed by both main readers | Security / error handling | security Medium · architecture Coupling · api Minor (escalated, executed) | security F2 + architecture F1 + api F1 | `scripts/lib/dev-cycle-read.sh:559-560`, `:295-302` | for-author | Rows 215, 216 | ✅ Resolved at 78703f22. Its pipefail residue was A17, resolved at 4aa2e98e. |
+| R3 | (iteration 3) `--help` stopped at `2,80p`, one line short of the header's end at :81 | Correctness / CLI contract | Incorrect (high), behavioral, executed · api Minor | Fact-check claim 6 + api F1 | `scripts/dev-cycle.sh:112` | for-author | — | ✅ **Resolved at 4aa2e98e.** The fix is `sed -n '2,/^[^#]/{/^#/p}'`. Orchestrator check: `diff <(sed -n '2,81p' scripts/dev-cycle.sh \| sed 's/^# \{0,1\}//') <(bash scripts/dev-cycle.sh --help)` gives no diff. The new test 68 ("--help prints the whole header, through its last line") fails on mutants with `2,80p` and `2,77p` (FC r1, r2 and r3, executed; Stage 2.5 claims 45 and 55). The comment's precision residue is A21. Its BSD-sed portability is C18. |
+
+No new red items this pass.
 
 ---
 
@@ -22,24 +33,16 @@ Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r
 
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
-| A1 | (iteration 1) NUL bytes dropped from BRIEF values | Security | Unrouted-Escalation | fact-check escalation | for-author | — | ✅ Resolved at 2da477b7 | — |
-| A2 | (iteration 1) main_entry printed `absent` when ls-tree failed | Security / API | Unrouted-Escalation | fact-check escalation | for-author | Row 208 | ✅ Resolved at 2da477b7 | — |
-| A3 | (iteration 1) main_entry's ls-tree lists each named directory's children | Performance | Unrouted-Escalation | fact-check escalation | for-author | Row 220 | ✅ Resolved (Won't-Fix, row 220) | — |
-| A4 | (iteration 2) test 63's `skipped=0` assertion could not fail (`test/scripts/dev-cycle.bats:1160`) | Tests | Incorrect (high) on a test comment | Fact-check | for-author | Row 217 | ✅ Resolved at 78703f22. The call now runs with ROOT_REAL set at the top level. Main's reader gives `skipped=1` on the fixture, and SKIPPED-appending mutants of both HEAD's and 2da477b7's lib fail test 63 (r1, r2, r3 executed). | — |
-| A5 | (iteration 2) Lib header named both callers' suites with one caller (`scripts/lib/dev-cycle-read.sh:10-12`) | Docs | Mostly accurate | Fact-check | for-author | Row 197 | ✅ Resolved at 78703f22 ("once that second caller lands"; build-loop.sh absent, k=3 Verified) | — |
-| A6 | (iteration 2) FENCE_AWK header put NUL/CR/BOM under "outside a fence" (`:170-178`) | Docs | Mostly accurate | Fact-check | for-author | — | ✅ Resolved at 78703f22. Executed: CR and NUL inside a fence give `odd 3 cr` / `odd 3 nul`. `<`, `<!--` and link-reference lines inside a fence are read. | — |
-| A7 | (iteration 2) brief_fields "line as stored" omitted the dropped CR (`:277-287`) | Docs | Mostly accurate | Fact-check | for-author | — | ✅ Resolved at 78703f22 (executed: trailing CR dropped, embedded tab kept) | — |
-| A8 | (iteration 2) SKILL.md "once step 1 has archived an entry" (`skills/dev-cycle/SKILL.md:292-293`) | Docs | Mostly accurate | Fact-check | for-author | — | ✅ Resolved at 78703f22. The new wording leaves a residue, A14. | — |
-| A9 | (iteration 2) Test 65 "written from the skill's template", fixture lacked Motive (`test/scripts/dev-cycle.bats:1195`) | Tests / docs | Mostly accurate | Fact-check | for-author | Row 221 | ✅ Resolved at 78703f22 (renamed "shaped like"; fixture has every template section, k=3) | — |
-| A10 | (iteration 2) c8435580's Notes: a working-tree-only answer reads `open` | Docs (commit message) | Mostly accurate | Fact-check | for-author | Row 222 | ✅ Resolved (Won't-Fix, override row 222) | Row exists (`docs/reviews/override-log.md:222`). |
-| A11 | (iteration 2) 2da477b7's "every reader skips" a NUL file; questions.sh's readers do not | Docs / consistency | Mostly accurate | Fact-check · architecture I5 | for-author | Row 223 | ✅ Resolved (Won't-Fix, override row 223) | Row 223 carries the revisit trigger (a decision reading questions.sh output as an answer). |
-| A12 | (iteration 2) main_entry kept the LAST ls-tree line per path while `cat-file SHA:path` reads the FIRST; a duplicate-entry tree read a symlink's target as `keep Q-1` | Security | Medium | security-reviewer F1 | for-author | Row 208 (different failure) | ✅ Resolved at 78703f22. A name listed twice gives `error`. Executed by security (8 shapes: every leaf mode pairing, `working` duplicated, a `working/questions.md` entry name colliding), by FC r1-r3 (`docs` tree+blob both orders, two `working` trees), and Stage 2.5 claim 56. A mutant without dup detection fails test 67's last assertion. | — |
-| A13 | (iteration 2) brief_fields left its preconditions to callers; an empty MAIN_SHA read the index's copy | Architecture | Coupling | architecture-review F1 | for-author | Row 215 | ✅ Resolved at 78703f22. These now all return 1 with `BRIEF_ODD=error` and no keys set: no main by name, empty MAIN_SHA, a pathform refusal, absent, notfile, notdir, symlink, and an unreadable blob. Executed by architecture, FC k=3 and Stage 2.5 claim 59. | — |
-| A14 | **New.** SKILL.md "(it reads `open`, or no such entry)" is incomplete. If an archive move is made only in the working tree and main already has the answer, it reads main's answer (`drop Q-1` / `keep Q-1`, executed). Re-answering an already-ANSWERED entry reads the old answer. A working-tree answer to an entry that main marks ANSWERED with no answer line reads `unrecognized`. All of these fail safe, because what is read is main's state. Suggested: "(it reads what main's copy says: usually `open`, or no such entry)" (`skills/dev-cycle/SKILL.md:292-295`) | Docs | Mostly accurate (k=3 unanimous, executed) | Fact-check claim 28 | for-author | Row 222 covers c8435580's Notes, not this text | 🟡 Open | — |
-| A15 | **New.** The `--check-answer` help says "an answer only in the working tree reads open, or no such entry", but the same case can read `unrecognized` (executed) (`scripts/dev-cycle.sh:56-59`) | Docs | Mostly accurate (r1; r2, r3 Verified) | Fact-check claim 2 | for-author | Row 222 (same wording, different artifact) | 🟡 Open | — |
-| A16 | **New (in an edited hunk; omission predates the branch).** The `--check-answer` skip-reason list leaves out "not a question ID". The "entry with this heading in both files" skip is covered only loosely by "a duplicate heading" (`scripts/dev-cycle.sh:60-71`) | Docs | Mostly accurate (r2; r1, r3 Verified) | Fact-check claim 3 | for-author | — | 🟡 Open | — |
-| A17 | **New (convergence, escalated 🟢 → 🟡).** R2's skip, and brief_fields' `\|\| { BRIEF_ODD=error; return 1; }`, fire only under `pipefail`. Under `set -eu` alone, a deleted questions.md blob still gives `keep Q-1` from the archive, and brief_fields returns 0 with no keys. This is the only precondition brief_fields does not check itself. The lib header's caller contract requires `-euo pipefail` and dev-cycle.sh sets it at `:83`, so nothing hits it today. U3's `--approved` will consume check_answer. Fix (security and architecture agree, executed on bash 5.2): put `local -; set -o pipefail` at the top of check_answer and brief_fields; the caller's options are restored on return. Corroboration is executed evidence (FC r1/r2/r3, security F1, architecture F1 `nopipefail rc0 keys=0 odd=[]`) (`scripts/lib/dev-cycle-read.sh:295-302`, `:559-560`) | Security / architecture | security Informational · architecture Minor (escalated, executed) | security-reviewer F1 + architecture-review F1 + fact-check annotations (R2 residue) | for-author | Rows 215, 216 (U3 must check main_by_name; positive-line acceptance) | 🟡 Open | Architecture says it may land with U1b. A qualifying note needs a TODO or override row naming U1b/U3 as the trigger. |
-| A18 | **New.** 78703f22's R2 bullet: "check_answer fell through to the archive and answered `keep`" held only inside `out="$(check_answer …)"`. Through dev-cycle.sh, 2da477b7 exited 128 instead. Its fix sentence carries r1's compound verdict. History only (`git show 78703f22`) | Docs (commit message) | Mostly accurate (claims 44, 45) | Fact-check | for-author | Row 222 precedent (Notes line on an unmerged branch) | 🟡 Open | Fixable only by rewriting unmerged history, or by an override row like row 222. |
+| A1–A13 | (iterations 1–2) see iteration-3 rubric at 515d7809 | — | — | — | for-author | Rows 197, 208, 215, 217, 220–223 | ✅ Resolved (unchanged; re-confirmed by the k=3 claims at 4aa2e98e) | — |
+| A14 | (iteration 3) SKILL.md "(it reads `open`, or no such entry)" was incomplete | Docs | Mostly accurate | Fact-check claim 28 (iteration 3) | for-author | — | ✅ **Resolved at 4aa2e98e.** The text now reads "it reads what main's copy says, usually `open` or no such entry" (`skills/dev-cycle/SKILL.md:293-295`). FC claim 38a, k=3: Verified. | — |
+| A15 | (iteration 3) The `--check-answer` help's outcome set left out `unrecognized` and main's old answer | Docs | Mostly accurate | Fact-check claim 2 (iteration 3) | for-author | Row 222 | ✅ **Resolved at 4aa2e98e** for the outcome set ("it reads what main's copy says"; FC claim 2a Verified). The residue in the same sentence, "until committed", is new row A20. | — |
+| A16 | (iteration 3) The skip list left out "not a question ID" and named "both files" loosely | Docs | Mostly accurate | Fact-check claim 3 (iteration 3) | for-author | — | ✅ **Resolved at 4aa2e98e.** Stage 2.5 claim 47 (executed, enumeration) found 12 skip echo lines and 7 refusal reasons in check_answer. All 18 skips reachable through dev-cycle.sh map to a help phrase. The one skip left out, "no default branch found by name", cannot be reached through the CLI, which exits 1 first (`scripts/dev-cycle.sh:193-194`). | — |
+| A17 | (iteration 3) The read checks in check_answer and brief_fields fired only under the caller's `pipefail` | Security / architecture | security Informational · architecture Minor (escalated, executed) | security F1 + architecture F1 (iteration 3) | for-author | Rows 215, 216 | ✅ **Resolved at 4aa2e98e** (bash 5.2.15). The fix is `local - …; set -o pipefail` at `scripts/lib/dev-cycle-read.sh:292` and `:548`. Executed by FC r1, r2 and r3, by security, and by Stage 2.5 claims 40, 41 and 48: with the caller's options set to none, `-eu`, `-euo pipefail` or `+e +u`, a missing blob gives a skip or `BRIEF_ODD=error`, and an awk failure on its own does too. The caller's options are restored after a normal return and after an early `return 1`. Mutants without `local -` or without pipefail in either function fail test 67. Without the fix, check_answer reads `keep Q-1` from the archive. Residue: the bash-version floor, C17. | — |
+| A18 | (iteration 3) 78703f22's R2 bullet overstates where the fall-through happened (history only) | Docs (commit message) | Mostly accurate | Fact-check claims 44, 45 (iteration 3) | for-author | **Row 232** | ✅ Covered by override row 232 (Won't-Fix). FC claim 39 (Verified): rows 232-238 exist as 4aa2e98e says. | Row 232 |
+| A19 | **New.** The test title "--check-brief and --check-branch need a default branch found by name; the others do not" is stale. This branch made `--check-answer` need one too (`scripts/dev-cycle.sh:193`; tested at `test/scripts/dev-cycle.bats:1153`). The body still holds, because it checks only `--check-path` for "the others". Fix: "--check-brief, --check-branch and --check-answer need …; --check-path does not", or add `--check-answer` to the loop at `:770` (`test/scripts/dev-cycle.bats:767`). **Convergence:** fact-check + api-consistency F5 + architecture F4 | Tests / docs | Stale (r2, single-replicate detection, executed) · api Informational · architecture Informational | Fact-check claim 22 + api-consistency F5 + architecture-review F4 | for-author | — (not in the log) | 🟡 Open | — |
+| A20 | **New (residue of A15's fix).** The `--check-answer` help says a working-tree answer is not seen "until committed". It has to land on the default branch: T34 shows an answer committed only on another branch still reads `open`. SKILL.md:294's "until it lands" is right. Fix: "until it lands on the default branch" (`scripts/dev-cycle.sh:59`). **Convergence:** fact-check (r1, r2 and r3) + api-consistency F1 | Docs / CLI contract | Mostly accurate (k=3) · api Minor | Fact-check claim 2b + api-consistency F1 | for-author | Row 222 covers c8435580's Notes, not this text | 🟡 Open | — |
+| A21 | **New.** The comment "The header, up to the first line that is not a comment" is imprecise. `2,/^[^#]/` ends at the first *non-empty* line that does not start with `#`. An empty line inside the header is skipped silently, so a comment block after it would print as help. An indented `#` line also ends the range. Today's header has none of these, so the output is exact (claim 45). Fix: reword the comment ("…the first non-empty line not starting with #"), or have test 68 also assert that the first non-help line is excluded (`scripts/dev-cycle.sh:111`) | Docs | Mostly accurate (r1, r2 and r3 on 6a; executed sed probes) | Fact-check claim 6a | for-author | — | 🟡 Open | — |
+| A22 | **New.** main_entry's comment "The caller has checked main_by_name and the path's form" is half stale. main_entry checks main_by_name itself (`:261`), and brief_fields calls it without checking first. Only pathform is the caller's job. Fix: name only the pathform precondition (`scripts/lib/dev-cycle-read.sh:256-257`). **Convergence:** fact-check (k=3) + api-consistency F4 + architecture F1 (its comment half; the code half is C16) | Docs | Mostly accurate (k=3) · api Informational · architecture Minor | Fact-check claim 13 + api-consistency F4 + architecture-review F1 | for-author | — | 🟡 Open | — |
 
 ---
 
@@ -47,21 +50,20 @@ Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r
 
 | # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|
-| C1 | --check-answer help omitted the unreadable-tree skip | api-consistency (iteration 2) F2 | Minor | for-author | — | Fixed at 78703f22 (its edit caused R3) |
-| C2 | `"\0"` in FENCE_AWK assumes an awk whose strings hold NUL | api F3 / FC 11b | Informational | for-author | Row 224 | Won't-Fix (row 224) |
-| C3 | Copied main_entry case blocks per caller | architecture F2 | Minor | for-author | Row 225 | Deferred (row 225) |
-| C4 | BRIEF holds whole lines in one global slot | architecture F3 | Informational | for-author | Row 226 | Won't-Fix (row 226) |
-| C5 | check_answer reads main while the skill writes answers to the working tree until U4 | architecture F4 | Informational | for-orchestrator-synthesis | Row 227 | Deferred (row 227) |
-| C6 | Both questions files re-read per ID | performance F1 | Informational | for-orchestrator-synthesis | Row 228 | Won't-Fix (row 228) |
-| C7 | check_brief ~2 ms more per brief (iteration-2 delta) | performance F2 | Informational | for-orchestrator-synthesis | Row 229 | Won't-Fix (row 229) |
-| C8 | Untested main_entry bypass candidates (gitlink, quotePath, `./x`) | security | Informational | for-author | Row 230 | Deferred (row 230). Security now tested the gitlink: `notfile` at the file, `notdir docs/working` above it. |
-| C9 | ls-tree's `fatal:` reached stderr unscrubbed | Fact-check (iteration 2) | Informational | for-author | — | Partly fixed at 78703f22: ls-tree stderr is dropped, but cat-file's `fatal:` line still reaches stderr on an unreadable blob (claim 57 residue) |
-| C10 | architecture-review's security glob misses `security-reviewer-review-*.md` | architecture F6 | Informational | for-orchestrator-synthesis | Row 231 | Deferred (row 231) |
-| C11 | **New.** check_brief now classifies each brief twice: its own pathform + `main_entry == blob`, then brief_fields repeats both (A13's fix). That is 2 `git ls-tree` per brief instead of 1. 50 calls take 850-889 ms against 626-637 ms at 2da477b7, ~17 ms vs ~11 ms per brief on main. Not covered by row 229, which measured the iteration-2 delta. Option: an unguarded internal parser that check_brief calls directly, if U1c's `--status` needs the time (`scripts/lib/dev-cycle-read.sh:292`, `:330-338`) | performance-reviewer F1 (+ Stage 2.5 claim 62c, executed) | Informational | for-orchestrator-synthesis | Row 201 (U1c `--status` measurement), row 229 | 🟢 Open |
-| C12 | **New.** brief_fields reports absent, notfile/notdir and an unreadable blob all as the single word `error`. A consumer that must tell "new on main" from a refusal, or name the reason, has to call main_entry first, as check_brief does. Contract note for U1c's `--status`/`--start` (`scripts/lib/dev-cycle-read.sh:292`, `:330-338`) | architecture-review F2 | Informational | for-author | Row 215 | 🟢 Open |
-| C13 | **New.** The readers follow `refs/replace`. A replace ref on questions.md's blob makes check_answer return `keep Q-1` while main's blob says OPEN; `GIT_NO_REPLACE_OBJECTS=1` gives `open Q-1`. The plan already covers this in F25/F51/T42 (`--state` refuses `refs/replace/`), and U3's T35/T42 should include the case (`scripts/lib/dev-cycle-read.sh:263`, `:295`, `:559`) | security-reviewer F2 (executed) | Informational | for-author | — | 🟢 Open |
-| C14 | **New (mechanism floor).** A `docs` tree holding an entry literally named `working/…` (slash in the name) with no `working` tree makes main_entry answer `absent` while `git cat-file SHA:path` reads it as a blob. check_answer then fails closed, but check_brief prints `ok … new` for such a brief path. The tree fails `git fsck` (`scripts/lib/dev-cycle-read.sh:258-274`) | Stage 2.5 claim 56 residue (executed) | Informational | for-author | Row 208 (different failure) | 🟢 Open |
-| C15 | 78703f22 Notes ("routed R2, A12 and A13 to you: judgment") and 722884c7 Notes ("Run on a code-only commit object") cannot be checked from the repo. The committed iteration-2 rubric tags those rows `for-author` | Fact-check claims 53, 55 | Unverifiable | for-orchestrator-synthesis | — | 🟢 Open |
+| C1 | --check-answer help omitted the unreadable-tree skip | api (iteration 2) | Minor | for-author | — | Fixed at 78703f22 |
+| C2–C8, C10 | See iteration-3 rubric | various | Minor / Informational | — | Rows 224–231 | Won't-Fix / Deferred per rows |
+| C9 | cat-file's `fatal:` reaches stderr unscrubbed in the lib | Fact-check (iteration 2) | Informational | for-author | **Row 238** | ✅ Covered by row 238 |
+| C11 | check_brief runs ls-tree twice per brief | performance (iteration 3) | Informational | for-orchestrator-synthesis | **Row 233** | ✅ Covered by row 233. Re-measured: unchanged at 4aa2e98e (Stage 2.5 claim 43) |
+| C12 | brief_fields reports every refusal as one `error` | architecture (iteration 3) | Informational | for-author | **Row 234** | ✅ Covered by row 234 |
+| C13 | The readers follow `refs/replace` | security (iteration 3) | Informational | for-author | **Row 235** | ✅ Covered by row 235 (not re-raised by security) |
+| C14 | A tree entry named with a slash reads `absent` | Stage 2.5 (iteration 3) | Informational | for-author | **Row 236** | ✅ Covered by row 236 |
+| C15 | Two commit-Notes claims cannot be checked from the repo | Fact-check (iteration 3) | Unverifiable | for-orchestrator-synthesis | **Row 237** | ✅ Covered by row 237 |
+| C16 | **New (mechanism floor).** main_entry relies on its callers to run `pathform`. A path that skips it and holds a character ls-tree quotes (`a"b.md`, `d"x/q.md`, probed) gets `absent`, which is the permissive answer: check_brief prints `ok … new`, and check_answer moves on to the other file. No current caller skips pathform: check_brief checks it first, and check_answer uses constant paths. U1c's `main_file` and U2's floor function will call main_entry directly. Fix: `pathform "$1" \|\| { echo error; return; }` beside `:261` (`scripts/lib/dev-cycle-read.sh:256-263`) | architecture-review F1 | Minor | for-author | Row 230 (test coverage, not where the check lives) | 🟢 Open |
+| C17 | **New (convergence).** No minimum bash version is stated. `local -` needs bash 4.4 or later. On 4.4–5.0 it may not restore pipefail on return; 5.1's CHANGES altered that restore. This is unverified (FC claim 15b is Unverifiable, and only bash 5.2 is in the sandbox). Either way the read check stays safe: below 4.4 a `set -e` caller stops before any read, and on 4.4–5.0 pipefail could only leak to a caller that already sets it. Fix: "Needs bash 4.4 or later" in the lib header (`scripts/lib/dev-cycle-read.sh:292`, `:548`) | FC claim 15b (r2) + escalation E2 + security F1 + api F3 + architecture F3 | Unverifiable · Informational ×3 | for-author | — | 🟢 Open |
+| C18 | **New.** BSD/macOS sed may reject `{/^#/p}` without a `;` before `}`. This is untested (no BSD sed here). `scripts/run-tests.sh:153` uses the same form, and `scripts/health-check.sh:136,175` use `p;}`. `{/^#/p;}` gives identical output on GNU sed (`scripts/dev-cycle.sh:112`) | FC escalation E1 + api-consistency F2 | Informational (Low confidence) | for-author | — | 🟢 Open |
+| C19 | **New.** The lib header still says "The caller sets -euo pipefail" and does not mention that brief_fields and check_answer now set it themselves. This does not contradict the contract (`scripts/lib/dev-cycle-read.sh:12-13`) | architecture-review F2 | Informational | for-author | — | 🟢 Open |
+| C20 | **New.** The list of modes that need a default branch found by name is written out at several sites (help, Exit line, `:193`, the test title). A19 is one copy that has already drifted (`scripts/dev-cycle.sh:193`) | architecture-review F4 | Informational | for-author | — | 🟢 Open |
+| C21 | **New (narrowed endorsement).** Architecture's G4, "dev-cycle.sh → lib → git and awk", is Mostly accurate. The lib also runs perl, grep, tr and realpath; only the new functions are limited to git and awk | Stage 2.5 claim 54 | Mostly accurate (submitted claim) | for-orchestrator-synthesis | — | 🟢 Open (no ✅ row made from it) |
 
 ---
 
@@ -69,16 +71,13 @@ Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r
 
 | Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
 |---|---|---|---|---|
-| `feat/build-loop-u0c` / 2026-10-05 (row 206) | check_answer reads questions.md from the working tree (F28) | 🟢 → Defer to U1 | U1 moves it to main | Discharged (Stage 2.5 claims 58, 61 executed). |
-| `feat/build-loop-u0c` / 2026-10-05 (row 216) | check_answer print-only; U1 should accept only a positive line | 🟢 → Defer to U1 | Header names the safe capture pattern | Inherited; positive-line part is U3's. A17 is the pipefail precondition of the same capture pattern. |
-| `feat/build-loop-u0c` / 2026-10-05 (row 217) | check_answer appends to SKIPPED | 🟢 → Defer to U1 | U1 rewrites it | Discharged in code and test (A4 resolved; claim 61 executed). |
-| `feat/build-loop-u0a` / 2026-10-05 (rows 196, 197) | Lib from build-loop.sh's side; both-suites note | 🟢 → Defer to U1 | U1's test unit | 197 discharged (A5); 196 still U1b's. |
-| `feat/build-loop-u0b` / 2026-10-05 (row 201) | check_brief's `git log -G` walk per brief | 🟢 → Defer | Measure in U1c `--status` | Inherited; C11 adds the double ls-tree to that measurement. |
-| `feat/build-loop-u0b` / 2026-10-05 (row 208) | main_by_name for a MAIN_SHA from another repo | 🟢 → Won't-Fix | No two-repo caller | Inherited; C14 is a different failure. |
-| `feat/build-loop-u0b` / 2026-10-05 (rows 213, 215) | need_root fork; three guard channels | 🟢 → Won't-Fix / Defer | Recorded for U3 | Inherited; A17 and C12 extend row 215 without contradicting it. |
-| `feat/build-loop-u1a` / 2026-10-05 (rows 220, 221) | ls-tree lists children; T34 build-loop.sh side | 🟡 → Won't-Fix; 🟢 → Defer | Measured; U3 | Inherited, not re-raised. |
-| `feat/build-loop-u1a` / 2026-10-05 (rows 222, 223) | c8435580 Notes; "every reader skips" | 🟡 → Won't-Fix | Fail closed; display only | Inherited (A10, A11 closed). A14/A15 are the same outcome set in other text and are not covered. A18 is a sibling commit-message case. |
-| `feat/build-loop-u1a` / 2026-10-05 (rows 224-231) | C2-C8, C10 | 🟢 → Won't-Fix / Defer | See rows | Inherited, not re-raised. Row 229 departs only for the new delta (C11). |
+| `feat/build-loop-u0b`, `-u0c` / 2026-10-05 (rows 201, 206, 208, 213, 215–217) | check_brief walk; check_answer from the working tree; main_by_name; need_root; guard channels; print-only; SKIPPED | various | see rows | Inherited. Rows 206 and 217 are discharged (Stage 2.5 claims 42 and 51). C16 is a different failure from row 208. |
+| `feat/build-loop-u0a` / 2026-10-05 (rows 196, 197) | Lib from build-loop.sh's side | 🟢 → Defer to U1 | U1's test unit | 197 is discharged; 196 is still U1b's. |
+| `feat/build-loop-u1a` / 2026-10-05 (rows 220–231) | iteration 1–2 items | 🟡/🟢 → Won't-Fix / Defer | see rows | Inherited, not re-raised. Performance cited 220, 228 and 229. C16 touches row 230's subject (test coverage) but is about where the check lives. |
+| `feat/build-loop-u1a` / 2026-10-05 (row 232) | 78703f22 R2 bullet (A18) | 🟡 → Won't-Fix | History only | Inherited. A18 is closed. |
+| `feat/build-loop-u1a` / 2026-10-05 (rows 233–238) | iteration 3 C11–C15, C9 residue | 🟢 → Won't-Fix / Defer | see rows | Inherited. These close C9 and C11–C15. Security, architecture and performance cited them and did not re-raise them. |
+
+No override row covers A19–A22 or C16–C21.
 
 ---
 
@@ -86,25 +85,26 @@ Reports: `code-fact-check-report-build-loop-u1a.md` (merged k=3 from `-r1/-r2/-r
 
 | Item | Verdict | Evidence | Source | Legibility-target |
 |---|---|---|---|---|
-| Under `set -euo pipefail`, an unreadable questions.md or archive blob is a skip in check_answer (no fall-through), and an unreadable brief blob gives brief_fields rc 1 with `BRIEF_ODD=error` | ✅ Confirmed (pipefail callers only; see A17) | `scripts/lib/dev-cycle-read.sh:559-560`: `\|\| { echo "skip $a: $f could not be read from the default branch"; return; }`. FC claim 57 (executed) and k=3 R2 probes | Fact-check (submitted by security) | for-orchestrator-synthesis |
-| main_entry answers `error` for every duplicate-name tree probed (leaf in each mode pairing and order, `docs` as tree+blob, `working` duplicated), and both callers skip on it | ✅ Confirmed (shapes probed; git 2.39.5; see C14) | `scripts/lib/dev-cycle-read.sh:264-269`: `[[ -z "${m[$path]+set}" ]] \|\| dup=1` … `[[ -z "$dup" ]] \|\| { echo error; return; }`. FC claim 56 (executed), security F1 probes | Fact-check (submitted by security) | for-orchestrator-synthesis |
-| check_answer opens no working-tree path: its reads are `main_entry "$f"` and `git cat-file blob "$MAIN_SHA:$f"` over a two-element constant list (excludes `refs/replace`, C13) | ✅ Confirmed | `scripts/lib/dev-cycle-read.sh:559`: `r="$(git cat-file blob "$MAIN_SHA:$f" \| …`. FC claim 58 (executed), claim 61 (executed: no need_root/skipped) | Fact-check (submitted by security, architecture) | for-orchestrator-synthesis |
-| brief_fields checks its own preconditions (main by name, MAIN_SHA, pathform, main_entry == blob) and sets no key on refusal | ✅ Confirmed | `scripts/lib/dev-cycle-read.sh:292`: `if ! pathform "$1" \|\| [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi`. FC claim 59 (executed) | Fact-check (submitted by architecture) | for-orchestrator-synthesis |
-| check_brief and brief_fields agree on both T31 fixtures | ✅ Confirmed (two fixtures) | `test/scripts/dev-cycle.bats:1195`, `:1210`. FC claim 60b (executed) | Fact-check (submitted by architecture) | for-orchestrator-synthesis |
+| check_answer prints a skip when main's questions.md blob cannot be read, whatever options the caller set (none, `-eu`, `-euo pipefail`, `+e +u`, `-e -o pipefail -o noglob`), and leaves the caller's options unchanged | ✅ Confirmed (bash 5.2.15 only; see C17) | `scripts/lib/dev-cycle-read.sh:548`: `local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields`. FC claims 40, 48 (executed); mutants fail test 67 | Fact-check (submitted by security, api) | for-orchestrator-synthesis |
+| brief_fields returns 1 with `BRIEF_ODD=error` and no keys when cat-file fails or awk fails on its own, under `-eu` | ✅ Confirmed (bash 5.2.15) | `scripts/lib/dev-cycle-read.sh:292`: `local - out l; set -o pipefail`. FC claim 41 (executed, PATH-shim awk) | Fact-check (submitted by security) | for-orchestrator-synthesis |
+| `--help` prints exactly header lines 2–81, and test 68 fails when the range is cut short | ✅ Confirmed (current header, GNU sed 4.9; see A21, C18) | `scripts/dev-cycle.sh:112`: `-h\|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" \| sed 's/^# \{0,1\}//'; exit 0 ;;`. FC claims 45, 55 (executed); orchestrator diff vs `2,81p` empty | Fact-check (submitted by api, architecture) | for-orchestrator-synthesis |
+| The `--check-answer` help's skip list names every skip check_answer can print through dev-cycle.sh | ✅ Confirmed (enumeration: 12 echo lines / 7 reasons, 18 reachable skips produced) | `scripts/dev-cycle.sh:63`: `#             <reason>" when it cannot be read (not a question ID, no such`. FC claim 47 (executed) | Fact-check (submitted by api) | for-orchestrator-synthesis |
+| check_answer reads only main_entry's ls-tree and `git cat-file blob "$MAIN_SHA:$f"` for the two fixed files. A broken working tree changes no answer | ✅ Confirmed (git-call level, via a logging shim; refs/replace is row 235) | `scripts/lib/dev-cycle-read.sh:561`: `r="$(git cat-file blob "$MAIN_SHA:$f" \| env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \`. FC claims 42, 51 (executed) | Fact-check (submitted by security, architecture) | for-orchestrator-synthesis |
+| Iteration 4 adds no git calls and changes no output: the same call counts and byte-identical output as 722884c7 | ✅ Confirmed (fixture shape measured) | FC claim 43 (executed; 30 alternating runs, medians within 1%) | Fact-check (submitted by performance) | for-orchestrator-synthesis |
 
-(Narrowed or dropped by the cross-check: claim 60a "check_brief reads a brief only through brief_fields" is Mostly accurate. The commit field comes from `git log -G'^Status: '`, which matches fenced lines, documented at `:354`. Claim 62a's "within 5%" is Mostly accurate: 5.2-6.7% slower with no isolated cause. Claim 62c's "2 ls-tree, 1 cat-file, 1 log" holds only for briefs answering `ok`. None of these became a ✅ row.)
+(The cross-check narrowed or dropped these: G4 (claim 54, Mostly accurate) is C21, not a ✅ row. G2's "one parser" holds for the status value only, since check_brief's `git log -G` is a separate fence-blind lookup, so it is not a ✅ row. Each row above was checked against the merged report and the r1–r3 replicates, and no observation contradicts any of them. Claim 6a's empty-line behaviour is consistent with the `--help` row, because that row is scoped to the current header.)
 
 ---
 
 ## ⚠️ Unverified Findings
 
-All findings' evidence resolved.
+All findings' evidence resolved: every cited line was re-read at 4aa2e98e, including `scripts/dev-cycle.sh:59,111-112,193`, `scripts/lib/dev-cycle-read.sh:12-13,256-263,292,548` and `test/scripts/dev-cycle.bats:767`.
 
 ---
 
 ## ⏭️ Skipped Core Critics
 
-All core critics ran; no skips applied. (architecture-review auto-selected and ran; no other contextual critic selected: the diff has test changes, ≤10 files and ≤500 code lines, no manifests or UI.)
+All core critics ran; no skips applied. architecture-review was auto-selected and ran. No other contextual critic was selected: the diff has test changes, ≤10 code files, ≤500 code lines, and no manifests or UI.
 
 ---
 
@@ -112,9 +112,10 @@ All core critics ran; no skips applied. (architecture-review auto-selected and r
 
 | Cluster | File / lines | Fragments | Disposition |
 |---|---|---|---|
-| 1 | `scripts/dev-cycle.sh:111` (+ header `:56-81`) | FC claim 6, api-consistency F1, FC claims 2, 3 | distinct defects: claim 6 and api F1 state the same root and fix (convergence on R3); A15/A16 are help wording, separate from the range. |
-| 2 | `scripts/lib/dev-cycle-read.sh:292-302`, `:330-338`, `:559-560` | security F1, architecture F1/F2, performance F1, FC R2 annotations, claim 57 | distinct defects: the pipefail precondition is stated whole by security F1 and architecture F1 (convergence on A17). C11 (double classification) and C12 (single error word) are separate effects of A13's fix. |
-| 3 | `skills/dev-cycle/SKILL.md:292-295` (+ `scripts/dev-cycle.sh:56-59`) | FC claims 28, 2 | distinct defects: the same outcome-set gap in two artifacts (A14, A15), each with its own fix text. |
+| 1 | `scripts/lib/dev-cycle-read.sh:254-263` | FC claim 13, api F4, architecture F1 | Distinct defects. The stale comment (A22) and the unenforced pathform (C16) each state their own mechanism and fix. The three sources converge on A22. |
+| 2 | `scripts/lib/dev-cycle-read.sh:292`, `:548` | FC 15b + E2, security F1, api F3, architecture F3, Stage 2.5 claims 40/41/48 residues | Distinct defects. All sources state the same bash-floor gap, which converges on C17. No unstated root. |
+| 3 | `scripts/dev-cycle.sh:111-112` | FC 6a + E1, api F2 | Distinct defects: the comment's precision (A21) and BSD sed grammar (C18). |
+| 4 | `scripts/dev-cycle.sh:56-75`, `:193`; `test/scripts/dev-cycle.bats:767` | FC 2b, FC 22, api F1, api F5, architecture F4 | Distinct defects. "Until committed" (A20) and the stale title (A19) are separate texts. C20 names the duplication behind A19 and states it in full. |
 
 ---
 
@@ -124,26 +125,16 @@ carry a qualifying author note (a discoverable TODO or a concrete revisit trigge
 
 ---
 
-## Iteration-4 gate decision (2026-10-05): escalate
-
-Decision: `escalate`. The unit has no natural split: the open red is a one-line regression from iteration 2's help-text fix, and the ambers are wording plus one contract hardening. Splitting interleaved commits would also force U1b and U1c to re-base. Filed as Q-111 (`you: judgment`); U1a does not land until it is answered. U1b and U1c keep running their own loops in the meantime.
-
-## Iterations (3 completed)
+## Iterations (4 completed; bound 4 of 4, granted by Q-111 [1])
 1. `--loop-pass`, short-circuited at the fact-check: 1 red (NUL bytes dropped by `$(...)`). Fixed in 2da477b7.
-2. Full panel at 2da477b7: 1 red (a failed `cat-file` ignored) and ambers A4–A13. Fixed in 78703f22 and 722884c7, with rows for A10, A11, C2–C8 and C10.
-3. Full panel at 722884c7: 1 new red (R3) and ambers A14–A18. Every iteration-2 item is resolved by execution.
+2. Full panel at 2da477b7: 1 red (a failed `cat-file` ignored) and ambers A4–A13. Fixed in 78703f22 and 722884c7.
+3. Full panel at 722884c7: 1 red (R3, a regression from iteration 2's help fix) and ambers A14–A18. The gate escalated and became Q-111.
+4. Final confirming full panel at 4aa2e98e: R3 and A14–A17 resolved by execution, and A18 covered by row 232. 0 new red. 4 new ambers (A19–A22), all comment, help or test-title wording. Each is a one-line text edit, and none changes behaviour.
 
-## Remaining Must Fix
-- R3 `scripts/dev-cycle.sh:111`: `--help` prints `2,80p`, but the header now ends at line 81, so help stops mid-sentence. Fix: `2,81p`, or end the range at the first non-comment line, plus a test that help ends with the header's last line.
+No `Loop closed at` marker: this pass is not clean (4 open ambers).
 
 ## Remaining Must Address
-- A14 `skills/dev-cycle/SKILL.md:292-295` and A15 `scripts/dev-cycle.sh:56-59`: "reads `open`, or no such entry" leaves out other outcomes (main's old answer, `unrecognized`). Suggested wording: "reads what main's copy says".
-- A16 `scripts/dev-cycle.sh:60-71`: the skip-reason list leaves out "not a question ID" and names "entry in both files" loosely.
-- A17 `scripts/lib/dev-cycle-read.sh` check_answer and brief_fields: the read checks work only under `pipefail`. Fix: `local -; set -o pipefail` in each function.
-- A18: commit 78703f22's R2 bullet overstates where the fall-through happened. History only.
-
-## Convergence diagnosis (one sentence)
-The loop converges. Each iteration's red was smaller than the last, and iteration 3's red is a regression introduced by a one-line documentation fix, not a structural problem.
-
-## Recommended action (ship-with-issues / split-PR / pause for redesign)
-Neither ship-with-issues nor a split. Authorize one more iteration: fix R3 and A14–A17 (about 10 lines plus a help test), add a row for A18, then run one full confirmation pass.
+- A19 `test/scripts/dev-cycle.bats:767`: stale test title (add `--check-answer`).
+- A20 `scripts/dev-cycle.sh:59`: "until committed" should read "until it lands on the default branch".
+- A21 `scripts/dev-cycle.sh:111`: the comment should say "first non-empty line not starting with #".
+- A22 `scripts/lib/dev-cycle-read.sh:256-257`: drop "main_by_name" from the caller's preconditions.

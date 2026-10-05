@@ -1,161 +1,94 @@
-Commit: 1d79ffef
+Commit: 2e711a7b
 
-# Architecture Review — feat/build-loop-u1b (review-fix loop iteration 3, final)
+# Architecture Review — feat/build-loop-u1b (review-fix loop iteration 4, final confirming pass)
 
-**Scope:** `feat/build-loop-u1a...feat/build-loop-u1b` (merge-base 722884c7): `scripts/build-loop.sh` (new, 186 lines), `test/lib/build-loop-fixtures.bash` (new), `test/scripts/build-loop-read.bats` (new); enclosing context `scripts/lib/dev-cycle-read.sh` and `scripts/dev-cycle.sh` at HEAD (unchanged by this unit)
+**Scope:** `feat/build-loop-u1a...feat/build-loop-u1b` at 2e711a7b: `scripts/build-loop.sh` (new, 195 lines), `test/lib/build-loop-fixtures.bash` (new), `test/scripts/build-loop-read.bats` (new), 417 lines in all. Enclosing context, unchanged by this unit: `scripts/lib/dev-cycle-read.sh`, `scripts/dev-cycle.sh`, and plan `docs/working/plan-build-loop-handoff.md` rev 4.
 **Date:** 2026-10-05
-**Based on:** `docs/reviews/code-fact-check-report-build-loop-u1b.md` (Stage 1, k=3 merged, at 1d79ffef); plan `docs/working/plan-build-loop-handoff.md` rev 4 ("Script interface", D5); `docs/reviews/override-log.md` rows dated 2026-10-05
+**Based on:** the Stage-1 code-fact-check summary (k=3, `docs/reviews/code-fact-check-report-build-loop-u1b-r{1,2,3}.md`, all at Commit 2e711a7b), the iteration-4 fix diff (1d79ffef..2e711a7b), and the rows dated 2026-10-05 in `docs/reviews/override-log.md` (the settled filter).
 
-Trigger categories: module structure (yes: a new script module and a new test fixture library), public APIs (yes: the `--settings` output contract and the globals `POLICY`, `NEVER` and `main_file` that U1c/U2 consume), data models (yes: the three-line settings format and `NEVER`'s shape), cross-cutting concerns (yes, newly at this commit: `GIT_NO_REPLACE_OBJECTS=1` is a process-wide git setting that governs how the shared lib reads main).
+Trigger categories: module structure applies (a new CLI module and a new test fixture library). Public APIs apply (the `--settings` three-line contract, and the globals `POLICY`, `NEVER` and `main_file` that U1c and U2 will consume). Data models apply (the settings line formats and `NEVER`'s shape). Cross-cutting concerns apply (the process-wide git environment: `GIT_LITERAL_PATHSPECS`, `GIT_NO_REPLACE_OBJECTS` and, new at this commit, a `GIT_CONFIG_COUNT` pair).
 
-Trust-boundary cross-reference: the scan pattern `security-review-*.md` matches only older files; the newest by date, `docs/reviews/security-review-2026-10-02-digest-pass38.md` (Commit: `90364c73`), predates this diff, so its boundaries may be stale. This unit's own security review is `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1b.md` (Commit: `0ae7d801`). It falls outside the scan pattern (a known tooling gap, settled as override row 234), but it is read here because its `B3` (`[git refs: origin/HEAD symref, refs/heads/*, refs/replace/*] → [resolve_main / main_by_name (lib), git cat-file] → [MAIN_SHA "the default branch's commit"]`) is where M1 below sits. That review predates 1d79ffef, so the boundary may be stale.
+Trust-boundary cross-reference: the scan pattern `security-review-*.md` does not match this unit's security review. That tooling gap is settled as override row 234. The unit's own review, `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1b.md`, is read anyway because its `B3` (git refs → `resolve_main`/`main_by_name`, `git cat-file` → `MAIN_SHA`) is where I1 below sits. That review predates 2e711a7b, so the boundary may be stale.
 
 ## Dependency Map
 
-- `scripts/build-loop.sh` → `scripts/lib/dev-cycle-read.sh`: one way only, sourced from `$SCRIPT_DIR` (:43-46). It consumes `scrub_reexec`, `resolve_main`, `main_by_name`, `MAIN_SHA`, `main_entry`, `FENCE_AWK` (and its awk globals `odd`, `oddwhy`, `infence`, `fline`), `oddwhy` and `NAMECHARS`. It gives the lib `ROOT_REAL` (:61) and, as of 1d79ffef, the environment `GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1` (:63), which every lib git read inherits.
-- `scripts/dev-cycle.sh` → the same lib (the other caller). It exports `GIT_LITERAL_PATHSPECS=1` (dev-cycle.sh:125) but not `GIT_NO_REPLACE_OBJECTS`.
-- In code, the lib does not depend on build-loop.sh. Its header names its callers only in prose.
-- The interface that build-loop.sh hands to its own later modes (U1c `--status`, U2 gate): `read_settings` sets `POLICY` (the effective policy, already folded with the never line's validity), `NEVER` (an array of checked entries as written), and the `*_LINE` strings. `main_file FILE AWK` sets `FILE_OUT`/`FILE_WHY` and is the generic "file on main under FENCE_AWK" reader that U1c's constraints line will reuse.
-- `test/scripts/build-loop-read.bats` → `test/lib/build-loop-fixtures.bash` → `scripts/build-loop.sh`, run as a subprocess only. No test sources the script or the lib.
+- `scripts/build-loop.sh` → `scripts/lib/dev-cycle-read.sh` is one way only. The lib is sourced from `$SCRIPT_DIR` (:47-50). The script consumes `scrub_reexec`, `resolve_main`, `main_by_name`, `MAIN_SHA`, `main_entry`, `FENCE_AWK` (and its awk globals), `oddwhy` and `NAMECHARS`. It gives the lib `ROOT_REAL` (:65) and, through the process environment exported at :69-70, `GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1` plus the config pair `core.useReplaceRefs=false`. Every git process that the lib or the script starts after :70 inherits all three.
+- **Where the iteration-4 environment change does and does not reach (the question asked).** The export runs in the scrubbed child, because `scrub_reexec` (:51) re-execs the script before :69. So neither the outer scrub pipeline nor the caller (the orchestrator's shell) is changed: a process cannot write its parent's environment. Inside the child the export does reach every subprocess: git (intended), awk, perl and `env`, none of which read `GIT_CONFIG_*`. It will also reach whatever later modes start, including the plan's write modes (`--start`'s `git worktree add` and lock at plan :39, and the gate's merge). For those modes the setting is wanted too, since each one acts on main's own objects. The lib does not set or read these variables (grep: no `GIT_CONFIG` or `NO_REPLACE` in `scripts/lib/`).
+- `scripts/dev-cycle.sh` → the same lib. It still exports only `GIT_LITERAL_PATHSPECS=1`. That difference between the two callers is settled by override row 259 (Defer to U3b). Its premise is unchanged at 2e711a7b.
+- Inside the module, `read_settings` now reads the never line before the policy line (:148-171), and the policy arm reads `never_ok` (:176). The ordering is a local data dependency within one function, and the comment at :148 names it.
+- `test/scripts/build-loop-read.bats` → `test/lib/build-loop-fixtures.bash` → `scripts/build-loop.sh` runs the script as a subprocess only. No test sources the script or the lib.
 
-The direction is correct. A volatile CLI depends on the stable shared reader, with no cycle and no layer violation.
+The direction is correct: a thin CLI depends on the stable shared reader. There is no cycle and no layer violation.
 
 ## Findings
 
-#### M1. The replace-ref guard sits in one caller, so the lib's "reads the default branch's commit" now holds for build-loop.sh but not for dev-cycle.sh
+#### I1. The replace-ref guard has become a two-mechanism inline line in the caller. When U3b moves it toward the lib (row 259), it should become one named lib function that states its caller-environment assumption, not a copied line.
 
-**Severity:** Minor
-**Location:** `scripts/build-loop.sh:62-63`; `scripts/lib/dev-cycle-read.sh:12-14`, `:29-32`; `scripts/dev-cycle.sh:125`
+**Severity:** Informational
+**Location:** `scripts/build-loop.sh:66-70`. Related: `docs/working/plan-build-loop-handoff.md:78`; override row 259.
 **Move:** 3 (module boundary), 7 (coupling surface)
-**Confidence:** High (behaviour, executed); Medium (severity, which depends on how the dev-cycle skill uses `--check-answer`/`--check-brief` before U3/U4)
+**Confidence:** Medium
 **Legibility-target:** for-orchestrator-synthesis
 
-Evidence, `scripts/build-loop.sh:62-63`:
+Evidence, `scripts/build-loop.sh:66-70` (excerpt ends :70; the module top level continues to `main_by_name` at :72, which was read):
 ```
 # Read main's own objects: a replace ref could swap in any settings blob.
+# core.useReplaceRefs in the repo's config would override the variable: add a
+# command-line config pair after any the caller passed.
+cfg="${GIT_CONFIG_COUNT:-0}"; export "GIT_CONFIG_KEY_$cfg=core.useReplaceRefs" "GIT_CONFIG_VALUE_$cfg=false" GIT_CONFIG_COUNT=$((cfg + 1))
 export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1
 ```
-`scripts/dev-cycle.sh:125`:
+Plan :78, which covers the gate's own replace-ref handling:
 ```
-TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
-```
-The lib header's list of caller obligations (`scripts/lib/dev-cycle-read.sh:12-14`) and its input contract (`:29-32`):
-```
-# once that second caller lands. The
-# caller sets -euo pipefail,
-# cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-...
-# Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
-# read the default branch's commit, never the working tree (check_brief also
+  - It runs only after `GIT_NO_REPLACE_OBJECTS=1 git for-each-ref refs/replace/` prints nothing and `info/grafts` is absent (F38).
 ```
 
-A6's fix is correct for build-loop.sh. It puts a cross-cutting property of the lib's main readers (main_entry, brief_fields, check_brief and check_answer all read objects at `MAIN_SHA`) into one caller's environment. The lib does not state that property as a caller obligation, and the other caller does not meet it. Executed in a scratch repo: main's `docs/working/questions.md` held an OPEN `Q-001`, and `git replace` swapped in a blob that reads ANSWERED with `Q-001: [1]`. `scripts/dev-cycle.sh --check-answer Q-001` then prints `keep Q-001`. With `GIT_NO_REPLACE_OBJECTS=1` it prints `open Q-001`. The same probe against `build-loop.sh --settings` reads main's own blob (`policy review set`). The consequence is structural: whether the lib's reads mean "main's commit" depends on which script sourced it. Any later caller (or a lib function U2 moves out of build-loop.sh) must rediscover the rule. The plan's own gate path (U3's `--approved` → `check_answer`) runs inside build-loop.sh and is covered. The exposure is the dev-cycle.sh entry points that exist today.
+Iteration 4 put the guard at the right layer for this unit: the process boundary of the one script whose every mode reads main. It does not leak to callers, and it does not change the lib's code-level contract (see the Dependency Map). Three structural points remain for the next owner.
 
-**Security implication:** this is `B3` from `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1b.md` (Commit: `0ae7d801`; that security review predates this diff, so the boundary may be stale). Moving the guard into the lib extends B3's protection to dev-cycle.sh's readers. Whether the dev-cycle.sh exposure matters is security-reviewer's call, not this review's.
+1. **It is no longer a one-line export.** "Ignore replace refs" now spans two cooperating mechanisms, the env var and an appended `GIT_CONFIG_COUNT` pair. The pair has arithmetic on a caller-supplied value. Row 259 defers a guard for dev-cycle.sh's lib readers to U3b. If that deferral is honoured by copying :69-70 into dev-cycle.sh or into the lib, the copy also carries the caller-environment cases that Stage 1 executed. In those cases `GIT_CONFIG_PARAMETERS`/`git -c` wins over the pair, and an octal or non-numeric `GIT_CONFIG_COUNT` misplaces the pair or aborts. Escalation E1 sends these to security-reviewer, and this review does not judge them.
+2. **The plan has a second strategy for the same concern.** U3b's gate refuses replace refs before it reads (plan :78), while U1b ignores them. Both are reasonable. Once both exist, though, "which objects does build-loop.sh read" is answered in two places, with different failure shapes: refusing fails visibly, ignoring fails silently.
+3. **The trust assumption is undeclared.** Nothing at the module boundary says whether the caller's git environment is trusted. The lib does state this for its own variable: "DEV_CYCLE_SCRUBBED ... an environment choice, not something repo text can do" (lib :73-74). The comment at :67-68 says "after any the caller passed", and Stage 1 found that false for `GIT_CONFIG_PARAMETERS`.
 
-**Recommendation:** Put the guard where the readers live. Either the lib exports `GIT_NO_REPLACE_OBJECTS=1` when it is sourced (beside its other top-level variables; one line), or the header's caller obligations name it and dev-cycle.sh:125 adds it. If neither fits the line cap, an override row deferring it to U1c (the next unit to touch the lib header, per row 242), with the dev-cycle.sh exposure stated, keeps the gap visible.
+Row 259's premise (dev-cycle.sh's readers have no guard) still holds, so this finding does not re-raise it. It adds a "how" to that row's revisit, for when U3b acts.
 
-#### I1. `NEVER=()` means "none", "malformed" or "not read" alike; consumers are safe only through an unstated POLICY invariant
+**Recommendation:** No U1b code change is required on architecture grounds. When U3b acts on row 259, add a single lib function, for example `main_objects_only`, that both scripts call, holding the env var, the config pair and a one-line statement of whether the caller's environment is trusted. Have the gate's refusal (plan :78) sit beside it, so the two strategies are documented together. The comment wording at :67-68 is a fact-check/E1 matter, settled by whatever security-reviewer decides.
 
-**Severity:** Informational
-**Location:** `scripts/build-loop.sh:122-125`, `:130`, `:163-164`, `:170-171`
-**Move:** 3 (module boundary), 5 (interface segregation)
-**Confidence:** Medium
-**Legibility-target:** for-author
+## Iteration-4 focus items (status at 2e711a7b)
 
-Evidence, `scripts/build-loop.sh:122-124`:
-```
-# Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (an array of the checked globs,
-# each as written, a trailing / kept) and NEVER_LINE from main's commit. POLICY
-# and NEVER are for the modes that judge a brief (--status, then the gate).
-```
-and `:170-171` (excerpt ends :171; the enclosing `read_settings()` continues to :179, read):
-```
-      if [[ "$v" == self-merge && -z "$never_ok" ]]; then
-        POLICY_LINE="policy review unset: line ${first[policy]} reads self-merge, but the Self-merge never: line is malformed, so self-merge is off"
-```
+- **The never_ok coupling between the never and policy readers is sound and correctly located.** `never_ok` now starts empty (:135) and is set only on the two valid arms, `none` (:172) and set (:173). The duplicate arm (:153), the malformed arms (:171), the no-line arm (:152) and the unread-file branch (:139-143) all leave it empty, so `POLICY=self-merge` (:181) implies an exact, single, valid never line. Stage 1 killed mutants that drop `never_ok=""` and set it on the duplicate arm. The cross-key decision has one home, in `read_settings`, and is published through `POLICY` (the effective policy). Consumers never re-derive it from `POLICY_LINE` text. The order dependency (never before policy) is local, and the comment at :148 names it. If U1c splits `read_settings` (iteration-3 I2, row 262), the never reader must stay ahead of the policy decision. The present comment carries that requirement. Iteration-3 I1 (an empty `NEVER` is ambiguous) is settled by row 260, and Q-112 has now made its premise true by construction: under self-merge, an empty `NEVER` means "none". There is no finding.
+- **The GIT_CONFIG_COUNT mutation at module top level does not leak to callers, and the layer is right for this unit.** See the Dependency Map. It reaches the lib's git calls (intended) and all later modes' subprocesses (also wanted, since they act on main). The residual concerns, which are reuse shape, the two strategies and the trust statement, are I1 above.
+- **Help printing is fixed, and row 239's premise has changed.** `sed -n '2,/^[^#]/{/^#/p}'` (:57) prints the header up to `set -euo pipefail`. Executed: 37 lines, ending at "or no default branch found by name." It no longer goes stale when the header grows. dev-cycle.sh:112 now uses the same idiom, so the two CLIs share one help convention. That is two copies of a one-liner, and it does not warrant a lib helper. Override row 239 ("--help prints a fixed line range", Won't-Fix) is now stale because the issue is resolved, as fact-check r3 also noted. The orchestrator may annotate the row. This review raises no finding. The `-h` test gap stays settled under row 249.
 
-`NEVER` comes out empty in three cases: no never line, a malformed line, and a file that was not read. Only `NEVER_LINE`'s text tells them apart. The design is still safe, because a malformed or unread line can never leave `POLICY=self-merge` (:130, :170-171), and the S rules that read `NEVER` apply only under self-merge. But that guarantee lives in `read_settings`'s control flow. The interface comment that U2's author will read does not state it. A U2 gate that read `NEVER` without first requiring `POLICY == self-merge` (for example, reporting never-listed paths under review) would treat "malformed" as "nothing denied".
+## Iteration-3 items in my domain
 
-**Recommendation:** Add one clause to :122-124: "NEVER is empty unless the line is set; a malformed or unread line leaves POLICY review, so read NEVER only when POLICY is self-merge." No code change.
-
-#### I2. `read_settings` couples parsing, the policy decision and the printed WHY text; U1c's constraints line should not extend it
-
-**Severity:** Informational
-**Location:** `scripts/build-loop.sh:127-179`
-**Move:** 2 (responsibility boundaries)
-**Confidence:** Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-Evidence, `scripts/build-loop.sh:127-132` (excerpt ends :132; the enclosing `read_settings()` continues to :179, read):
-```
-read_settings() {
-  local f=docs/dev-cycle.md where l k c l1 l2 nx t v g i why never_ok=1 parts=()
-  local -A cnt=() first=() second=() next=() text=() seen=()
-  POLICY=review; NEVER=()
-  where="of $f on the default branch"
-  if ! main_file "$f" "$SETTINGS_AWK"; then
-```
-
-At 53 lines, `read_settings` computes machine state (`POLICY`, `NEVER`) together with the presentation strings for all three keys, and it couples the policy and never decisions through `never_ok`. That is fine for one file. The plan's interface adds a fourth `--settings` line, `constraints ok N-hard M-soft|missing|none-hard|unreadable` (plan :204, T44), read from a different file. `main_file`'s `FILE_OUT`/`FILE_WHY` seam (:67-88) already makes a separate `read_constraints` cheap.
-
-**Recommendation:** In U1c, add constraints as its own reader over `main_file`, called from the `settings` mode arm (:181-185), rather than as a fourth branch inside `read_settings`.
-
-#### I3. The plan still describes never entries as "pathform globs", which U2 would apply wrongly
-
-**Severity:** Informational
-**Location:** `docs/working/plan-build-loop-handoff.md:74` (outside this diff); `scripts/build-loop.sh:112-113`
-**Move:** 3 (module boundary)
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
-Evidence, plan `:74`:
-```
-  - **Per project.** `docs/dev-cycle.md` may add `Self-merge never: GLOB …` (pathform globs, one line, read from main's commit). A malformed line turns self-merge off for that repo (`--settings` says why).
-```
-`scripts/build-loop.sh:112-113`:
-```
-# A never entry: pathform's rule, but a .git* part (.github/) is allowed, since
-# the list only adds refusals and must not turn self-merge off by naming one.
-```
-
-`NEVER` reaches U2 already checked by `globform`, which differs from `pathform` on purpose. If U2's author follows the plan text and re-validates the entries with `pathform … glob`, `.github/` fails, and the gate would refuse or mishandle a list that `--settings` reported as `set`. The array shape from A8 removes any need to re-validate, but the plan points the wrong way. Override row 238 (C4) defers moving globform into the lib, and this finding does not re-raise that. It is about the plan's description of the rule.
-
-**Recommendation:** When U2 is briefed, change "pathform globs" at plan :74 to "globs checked by --settings (pathform's form, .git* parts allowed); U2 uses NEVER as given".
-
-## Iteration-2 items in my domain (status at 1d79ffef)
-
-- **A7 (main_file error arm and lib copy): error arm fixed; the copy is deferred by a settled row.** `:79` now maps `error)` to "the default branch's tree could not be read for $f", `:82-83` names a failed blob read, and the comment at `:67-69` lists both. `main_file` is still the third copy of the lib's main_entry → cat-file → FENCE_AWK → `odd`/`unbalanced` protocol, and it still reads the lib's awk globals (`infence` is not named in FENCE_AWK's comment). That part is settled by u1a's case-block row (override row 228, Defer, revisit trigger U2's floor function), so it is not re-raised here. Row 228's premise ("U1c's main_file is the third") still holds. The error and failed-read arms are untested (fact-check E4), which belongs to test-strategy.
-- **A8 (NEVER shape): fixed.** Executed: `declare -a NEVER=([0]="a/" [1]="h*/x?.md" [2]=".github/")`. It is an array of checked entries, split with `read -ra` (never globbed), kept as written with the trailing `/`. The comparison rule (trailing `/` ignored) is documented at `:20-21` and `:122-123`. Residuals: I1 (an empty NEVER is ambiguous; one comment clause) and I3 (plan :74).
-- **C3 (reset): fixed.** `:130` resets `POLICY=review; NEVER=()`, and every branch sets all three `*_LINE`. Executed: a second `read_settings` call after main changed to a malformed never line gives `POLICY="review"`, `NEVER=()`. A second call still needs a fresh `resolve_main` for a moved main, which is the lib's documented contract.
-- **R2 (helper fix): fixed.** `test/scripts/build-loop-read.bats:81` and `:130` are now `settings_like …; settings_like …` (separate commands). Mutations on scratch copies: a bogus left operand at `:81` fails T4, a bogus left operand at `:130` fails T45, and `globform` → `pathform … glob` (the A4 regression) fails T45 at `:130`. No remaining `settings_* … && settings_*` chains. The other `A && B || { …; return 1; }` lines cover failure through their `||`. Full suite: 9/9 pass.
+- M1 (replace guard in one caller) is settled as row 259 (Defer to U3b), and its premise is unchanged. I1 above adds the shape the deferred fix should take.
+- I1 (NEVER ambiguity) is settled as row 260, and Q-112 makes it hold by construction.
+- I2 (U1c's constraints as its own reader) is settled as row 262 (Defer to U1c).
+- I3 (plan :74 "pathform globs") is settled as row 261 (Defer to U5).
 
 ## What Looks Good
 
-- **One-way dependency, self-contained sourcing.** build-loop.sh sources the lib from its own directory. The lib has no code dependency back on it, and the planted-lib test guards this.
-- **`main_file` is a good seam.** It is generic over the awk program and returns state (`FILE_OUT`/`FILE_WHY`) rather than printing, so U1c's constraints reader can reuse it unchanged.
-- **Fail-closed coupling is explicit and located in one place.** A malformed never line turns self-merge off at `:170-171`, and a file that was not read gives `never malformed`. Both are in the reader, so no consumer has to re-derive them.
-- **`NEVER` as a validated array.** It removes the re-split and glob-expansion hazard that A8 named, and the decision of what counts as an allowed entry stays with the reader.
-- **Read and print are separate.** `read_settings` only sets globals, and the mode arm prints them. `--status` and the gate can call it without output.
-- **Tests go through the public CLI only.** The fixture library is a proper seam for the `build-loop-*.bats` family: `settings`, `settings_is` and `settings_like` will serve U1c's constraints tests as they are, and since 1d79ffef each helper call fails the test on its own.
+- **The fail-closed cross-key rule is in one place.** Self-merge requires a valid never line. That is decided once, in the reader, and exposed as `POLICY`. Neither U1c's `--status` nor U2's gate has to reconstruct it.
+- **Process-boundary placement of the git environment.** The guard runs after `scrub_reexec` and before any lib read, so it covers every lib call in this script without the lib knowing about it, and it cannot affect the caller.
+- **The one-way dependency and self-contained sourcing are intact.** The planted-lib test still guards them.
+- **`main_file` stays a generic seam** (`FILE_OUT`/`FILE_WHY`), ready for U1c's constraints reader.
+- **Read and print stay separate.** `read_settings` only sets globals, and the mode arm prints them.
+- **The fixture library is a clean seam for the `build-loop-*.bats` family.** Tests reach the module only through its CLI.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| M1 | `GIT_NO_REPLACE_OBJECTS` lives in one caller; dev-cycle.sh's lib readers still honour replace refs (executed: `--check-answer` reads `keep` from a replaced blob); the lib header omits the obligation | Minor | `scripts/build-loop.sh:62-63`, `scripts/lib/dev-cycle-read.sh:12-14,29-32`, `scripts/dev-cycle.sh:125` | High (behaviour) / Medium (severity) |
-| I1 | An empty `NEVER` means none, malformed or unread alike; safe only through the unstated "malformed → POLICY review" invariant | Informational | `scripts/build-loop.sh:122-125` | Medium |
-| I2 | `read_settings` mixes parse, decision and WHY text; add U1c's constraints line as its own reader | Informational | `scripts/build-loop.sh:127-179` | Medium |
-| I3 | Plan :74 still says "pathform globs" for never entries; U2 following it would refuse `.github/` | Informational | `docs/working/plan-build-loop-handoff.md:74` | High |
+| I1 | The replace-ref guard is now env var plus config pair with caller-value arithmetic, inline in the caller. When row 259's U3b revisit acts, make it one lib function stating the caller-env trust assumption, beside the gate's refuse-replace-refs check (plan :78), not a copied line | Informational | `scripts/build-loop.sh:66-70` | Medium |
 
 ## Overall Assessment
 
-U1b keeps the system's structure sound, and 1d79ffef closes every iteration-2 item in this domain that was not settled: A7's error arm, A8's array, C3's reset and the R2 helper fix, each confirmed by execution. There are no Structural or Coupling findings. The dependency runs one way from a thin CLI to the shared reader, and the interface for U1c and U2 (`POLICY`, `NEVER`, `main_file`) is in usable shape. The single most important structural point is M1, which is new at this commit. The replace-ref guard was added to the caller rather than to the module that owns "read main's commit", so the lib's contract now differs between its two callers. It is a one-line fix in place, or a deferral row. The three Informational items are comment- or plan-level notes for U1c and U2.
+At 2e711a7b, U1b keeps the system's structure sound, and iteration 4 adds no Structural, Coupling or Minor findings. The `never_ok` coupling ties the two keys through one local variable, in a fixed order inside one function, and publishes the result as `POLICY`. That is the right place for a fail-closed cross-key rule. The `GIT_CONFIG_COUNT` mutation is confined to the scrubbed child process, so it cannot leak to callers. It applies to every git read in the script, which is the intended scope. The help fix removes the stale-range problem from both CLIs. The single structural note, I1, concerns the future: the replace-ref guard has grown into two mechanisms that read caller-supplied values. When row 259's deferral is acted on, it should become one named lib function with a stated trust assumption rather than a copied line. Whether the caller-environment bypasses matter now is E1, owned by security-reviewer.
 
 ## Goal-Alignment Note
 
-- **Success criterion (restated verbatim):** "A markdown report saved to docs/reviews/architecture-review-review-2026-10-05-build-loop-u1b.md, structured per the architecture-review skill."
-- **Answered:** Yes. It covers the module boundaries between build-loop.sh and the lib (M1, A7 status, Dependency Map), the interface U1c/U2 consume (`POLICY`/`NEVER`: I1, I3, A8, C3; `main_file`: I2, A7) and the test fixture structure (R2 status, What Looks Good). Every finding carries Severity, Location, verbatim Evidence, Confidence and a Legibility-target. Settled rows were respected: main_file's protocol copy (row 228), globform's copy (row 238, C4), help range (C5), fixture env (C6), copy models (C7), the lib header's "planned" wording (C8) and many() (C9) are not re-raised. Row 228's premise still holds.
-- **Out of scope:** Whether dev-cycle.sh's replace-ref exposure in M1 is exploitable belongs to security-reviewer (B3). Letter-bearing markup hiding a key copy (fact-check E1/E3) belongs to security/orchestrator. Test 9's main-vs-HEAD gap and the untested A6/A7 arms (E2/E4) belong to test-strategy.
-- **Escalate:** M1 goes to the orchestrator and security-reviewer. Decide between the lib-level fix now (one line) and a deferral row to U1c that names the dev-cycle.sh exposure. I2 and I3 go to the orchestrator as U1c/U2 brief inputs, not U1b blockers.
-- **Questions / Decisions:** Should `GIT_NO_REPLACE_OBJECTS=1` move into the lib (covering both callers) in U1b, or in U1c alongside the lib-header update that row 242 already defers? Recommended: the lib, now, if one line fits the cap; otherwise U1c with an override row.
+- **Success criterion (restated verbatim):** "A report saved at the output path named in your tail, structured per your skill, covering the full unit diff at 2e711a7b."
+- **Answered:** Yes. The report is saved at `docs/reviews/architecture-review-review-2026-10-05-build-loop-u1b.md` with `Commit: 2e711a7b`. It covers all three code files in the unit diff (Dependency Map, I1, the focus items, What Looks Good), with emphasis on the three iteration-4 focus areas: the never_ok coupling, the GIT_CONFIG_COUNT mutation and help printing. The finding carries Severity, Location, verbatim Evidence (with a truncation marker), Confidence and a Legibility-target. The settled rows (234, 238, 239, 241, 242, 243, 249, 256, 259, 260, 261, 262, 263, and Q-112/Q-113) are respected. Row 259's premise is unchanged. Row 239's premise has changed, and the issue is resolved, not re-raised.
+- **Out of scope:** Several items belong to security-reviewer (E1) and api-consistency (E2): whether the caller's environment is trusted; the `GIT_CONFIG_PARAMETERS`, octal and invalid `GIT_CONFIG_COUNT` cases; and the comment wording at :67-68 and the "Not inside a git repository" message. Comment-accuracy residues (:16-17, :99-100) belong to fact-check.
+- **Escalate:** I1 goes to the orchestrator as an input for U3b's row-259 revisit. It is not a U1b blocker.
+- **Questions / Decisions:** None for U1b.

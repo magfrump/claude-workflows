@@ -1,121 +1,206 @@
-Commit: 722884c7
+Commit: 4aa2e98e
 
-# Architecture Review — feat/build-loop-u1a (review-fix iteration 3, final confirming pass)
+# Architecture Review — feat/build-loop-u1a (U1a, review iteration 4 of 4, final confirming pass)
 
-**Scope:** `git diff main...feat/build-loop-u1a -- . ':!docs/reviews'` (d6426e3e, c8435580, 2da477b7, 78703f22, 722884c7) over `scripts/lib/dev-cycle-read.sh`, `scripts/dev-cycle.sh`, `skills/dev-cycle/SKILL.md`, `test/scripts/dev-cycle.bats`; enclosing units `main_entry` (:258-274), `brief_fields` (:289-310), `check_brief` (:319-358), `check_answer` (:545-573) and the lib header (:1-32) read whole at 722884c7.
+**Scope:** `git diff main...feat/build-loop-u1a` (scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats)
 **Date:** 2026-10-05
-**Based on:** Stage-1 merged fact-check (k=3, replicates `docs/reviews/code-fact-check-report-build-loop-u1a-r1/-r2/-r3.md`, all Commit 722884c7); plan `docs/working/plan-build-loop-handoff.md` rev 4 (D8, Approach, Script interface, step 3); override-log rows dated 2026-10-05 (`docs/reviews/override-log.md:196-231`).
+**Based on:** Stage-1 merged fact-check (k=3 at 4aa2e98e, `docs/reviews/code-fact-check-report-build-loop-u1a-r{1,2,3}.md`); security review `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1a.md` (Commit: `722884c7`; it predates this diff's fix commit, so its boundaries may be stale)
 
-**Scope check:** in scope. Public APIs: lib functions `main_entry` and `brief_fields`, globals `BRIEF` / `BRIEF_ODD`, `check_answer`'s input moved from the working tree to main's commit. Data models: `main_entry`'s word protocol (`blob|absent|notfile|notdir PART|error`) and `BRIEF_ODD`'s (`odd N WHY|unbalanced N|error`), which U1b/U1c consumers (`--settings`, `--status`, later `--start`/`--prompt`/`--approved`) code against.
+**Scope check:** in scope. The diff adds two public lib functions (`main_entry`, `brief_fields`), a new global (`BRIEF`, `BRIEF_ODD`), and changes `check_answer`'s input contract from working tree to default-branch commit (trigger categories 2 and 3).
 
-**Trust-boundary cross-reference:** active. The skill's glob `docs/reviews/security-review-*.md` misses this initiative's file (settled tooling gap, override row :231 / C10). I used the boundary map of `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1a.md` as committed at 78703f22 (Commit: `2da477b7` — security review predates this diff's HEAD; boundary may be stale; the file is being rewritten concurrently). Relevant labels: `B2 (new): [tree entries under MAIN_SHA] → [main_entry] → [verdict]`, `B3 (moved): [blob bytes at MAIN_SHA:path] → [git cat-file | FENCE_AWK (+ANSWER_AWK)] → [BRIEF[...] / check_answer result line]`, `B5 (new): [git process exit status / object-store integrity] → [$(...) assignment under the caller's set -e/pipefail] → [caller's skip-or-answer decision]`.
-
-**Settled, not re-raised:** C3 (row :225, main_entry case block copied per caller), C4 (row :226, BRIEF whole lines in one global), C5 (row :227, reader on main while the skill writes the working tree until U4), row :223 (questions.sh NUL divergence, my iteration-2 F5), C10 (row :231, security glob), row :215 (guards' three channels, U3). No revisit trigger has fired: no U1c/U2/U4 code is in this diff.
-
-## Iteration-2 F1 status (A13: brief_fields preconditions + signal)
-
-**Fixed at 722884c7, confirmed by execution** (scratch repo, `set -euo pipefail`, lib sourced from the worktree). `brief_fields` now runs `pathform` and `main_entry` itself (`:292`, which also covers `main_by_name` through `main_entry`'s first line `:261`) and turns a failed read into `BRIEF_ODD=error; return 1` (`:302`). Probe output, each call inside `if brief_fields …`:
-
-```
-before-resolve rc1 keys=0 odd=[error]
-absent rc1 keys=0 odd=[error]
-symlink rc1 keys=0 odd=[error]
-badform rc1 keys=0 odd=[error]
-good rc0 keys=2 odd=[]
-deleted-blob rc1 keys=0 odd=[error]
-bare call rc=1 odd=[error]
-empty-sha rc1 keys=0 odd=[error]
-```
-
-The iteration-2 probe that printed `rc0 keys=0 odd=[]` for a path not on main now prints `rc1 … odd=[error]`; the bare call no longer kills the shell with git's 128; empty `MAIN_SHA` (the index-read case in A13) is refused. `check_brief` maps `BRIEF_ODD` in one case block (`:338-345`). The one residue is the pipefail dependency below (Finding 1), which is a property of the caller contract, not of the F1 fix.
-
-Suite: `bats test/scripts/dev-cycle.bats` with `TMPDIR` set to my scratch dir: 66/67, only test 21 failing (the orchestrator's known `.`-leading-TMPDIR artefact, not a finding).
+**Trust-boundary scan:** `ls docs/reviews/security-review-*.md` matches only older, unrelated reviews (the glob gap is covered by override row 231). I used the u1a security review's map by hand. Finding 1 sits on `B2` (main_entry) and `B6` (argument form) from `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1a.md` (Commit: `722884c7`). That review predates this diff's fix commit, so the boundary may be stale.
 
 ## Dependency Map
 
-- `scripts/dev-cycle.sh` → sources `scripts/lib/dev-cycle-read.sh` from its own `SCRIPT_DIR` (unchanged direction). Its change: `--check-answer` joins `--check-brief`/`--check-branch` behind the `main_by_name` gate (`scripts/dev-cycle.sh:192`).
-- Inside the lib, one layer sits between git and every main-reading check:
-  - `main_entry` → `main_by_name`, `MAIN_SHA`, one `git ls-tree -t --full-tree`.
-  - `brief_fields` → `pathform`, `main_entry`, `git cat-file`, `FENCE_AWK`; writes `BRIEF`, `BRIEF_ODD`.
-  - `check_brief` → `need_root`, `main_by_name`, `pathform`, `isbrief`, `blocker` (working tree), `main_entry`, `brief_fields`, `git log`.
-  - `check_answer` → `main_by_name`, `main_entry`, `git cat-file`, `FENCE_AWK + ANSWER_AWK`; no longer `need_root`/`skipped`/`SKIPPED`/`ROOT_REAL`.
-- Planned consumers (U1b/U1c/U3, not in this diff; absence not flagged): build-loop.sh calls `main_entry`, `brief_fields`, `check_brief`, `check_answer` in-process (plan :194).
-- Direction is sound: entry scripts depend on the lib; the lib depends only on git, awk and the caller's shell options; no lib function depends on a caller; no cycle.
+- `scripts/dev-cycle.sh` → `scripts/lib/dev-cycle-read.sh` (sourced from its own directory) → `git`, `awk`. The lib depends on nothing in the repo it reads. Nothing in the lib calls back into dev-cycle.sh, and nothing references build-loop.sh except comments.
+- Inside the lib, the diff adds one layer of shared readers under the existing checks. The direction is acyclic:
+  - `check_brief` → `main_entry`, `brief_fields`
+  - `brief_fields` → `pathform`, `main_entry`, `FENCE_AWK`
+  - `check_answer` → `main_by_name`, `main_entry`, `FENCE_AWK` + `ANSWER_AWK`
+  - `main_entry` → `main_by_name`, `MAIN_SHA` (set by `resolve_main`)
+- `check_answer` loses its dependency on the working-tree plain-file layer (`skipped`/`need_root`/`ROOT_REAL`/`SKIPPED`), so it now depends only on git objects. Override rows 216 and 217 asked for this.
+- Later units couple to this surface as follows:
+  - U1b's `--settings` and U1c's constraints and `main_file` will read through `brief_fields` and `main_entry`.
+  - U3's `--approved` will capture `check_answer`'s one-line answer.
+  - U2's floor function is the expected fourth caller of `main_entry`'s result words (override row 225).
 
 ## Findings
 
-#### 1. The lib's failed-read signal still depends on the caller's `pipefail`, now the only precondition `brief_fields` does not check itself
+#### 1. main_entry relies on callers to check the path form, and an unchecked path fails open as `absent`
 
 **Severity:** Minor
-**Location:** `scripts/lib/dev-cycle-read.sh:295-302` (brief_fields; excerpt ends :302, enclosing `brief_fields()` continues to :310 — read), `:559-560` (check_answer; enclosing `check_answer()` continues to :573 — read); contract stated at `:13`
-**Move:** 3 (module boundary), 7 (coupling surface)
-**Confidence:** High (executed)
-**Legibility-target:** for-author
-
+**Location:** `scripts/lib/dev-cycle-read.sh:256-263`
+**Move:** 3 (module boundary), 6 (precondition placement)
+**Confidence:** High (probed)
 **Evidence:**
 ```
-  out="$(git cat-file blob "$MAIN_SHA:$1" | env LC_ALL=C awk "$FENCE_AWK"'
-...
-    || { BRIEF_ODD=error; return 1; }
+256	# paths from the top level, whatever the current directory). The caller has checked
+257	# main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
+258	main_entry() {
+259	  local p="" rest="$1" out mode path dup="" want=()
+260	  local -A m=()
+261	  main_by_name || { echo error; return; }
+262	  while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
+263	  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
 ```
-```
-    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \
-      || { echo "skip $a: $f could not be read from the default branch"; return; }
-```
-```
-# caller sets -euo pipefail,
-```
+(truncated: the rest of the function, :264-274, parses `out` into `m` and answers `absent` when the `m` key is missing, at :271 and :273)
 
-F1's fix moved every other precondition (`main_by_name`, `pathform`, `main_entry == blob`) inside `brief_fields`, so its safety no longer lives in its callers, except this one: the `||` arms fire only when the pipeline's status is `cat-file`'s, which requires `pipefail` in the shell that calls the function. Probe, same deleted-blob repo, `set -eu` without pipefail: `if brief_fields …` printed `nopipefail rc0 keys=0 odd=[]` — the iteration-2 symptom (a missing brief reads as "no machine lines"). Stage-1 replicates found the same for `check_answer` (`keep Q-1` on a deleted questions.md blob). The header states the contract and dev-cycle.sh honours it (`set -euo pipefail`), so nothing ships broken; the structural point is that this sits on `B5` from `docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1a.md` (Commit: `2da477b7` — security review predates this diff; boundary may be stale), whose transition point is literally "the caller's set -e/pipefail", and U1b/U1c add callers (build-loop.sh, its bats tests that source the lib with ad-hoc `bash -c` preambles) that each have to get it right. Not a merge blocker for U1a.
+**The problem:**
+- The comment states two caller preconditions. The function enforces one of them itself (:261, `main_by_name`), so half of the comment is stale (fact-check: Mostly accurate).
+- The other precondition, `pathform`, is left to the caller, and breaking it fails open. I committed `a"b.md` and `d"x/q.md` to a scratch repo, then ran `main_entry` on each with no `pathform` check. Both answered `absent`: ls-tree prints a quoted name, so the `m` lookup misses.
+- No live caller is affected:
+  - `check_brief` (:325) and `brief_fields` (:294) run `pathform` first.
+  - `check_answer` passes constant paths.
+- The planned new callers (U1c's `main_file`, U2's floor function) each have to remember the precondition. `absent` is the answer that callers turn into a permissive result: `check_brief` prints `ok … new`, and `check_answer` moves on to the other file.
 
-**Recommendation:** Make the two readers self-sufficient with a function-scoped option: `local -; set -o pipefail` as the first line of `brief_fields` and `check_answer` (bash ≥ 4.4; probed on 5.2: the option is caught inside and restored for the caller). Alternatively, leave it and have U1b's first build-loop.sh test source the lib under `set -eu` only and assert the skip. Either can land with U1b.
-**Security implication:** this moves `B5`'s enforcement point from the caller's shell options into the lib; it does not relocate the boundary's source or destination. Defer the choice to security-reviewer if it prefers the caller-side contract.
+This is related to override row 230 (C8, untested bypass candidates, deferred with "./x fails pathform before any read"), but it is not the same issue. Row 230 settles test coverage. This finding is about where the precondition lives.
 
-#### 2. `brief_fields`' single `error` word folds absent, not-a-file and unreadable together, so a consumer that needs "new" or a reason still calls `main_entry` first
+**Security implication:** none. The recommendation duplicates the `B6` check at the `B2` entry rather than moving either one.
+
+**Recommendation:**
+- Add `pathform "$1" || { echo error; return; }` next to :261, so `main_entry` fails closed on its own input as it already does for `main_by_name`.
+- Rewrite :256-257 to say that `main_entry` checks both preconditions itself. `brief_fields`' own `pathform` call can then go, or stay as a harmless duplicate.
+
+**Legibility-target:** the comment at `scripts/lib/dev-cycle-read.sh:256-257` (the stated precondition contract of a public lib function).
+
+#### 2. The lib header's environment contract does not mention the functions that now set their own pipefail
 
 **Severity:** Informational
-**Location:** `scripts/lib/dev-cycle-read.sh:292`; caller pattern at `:330-338`
-**Move:** 3 (module boundary — data shape)
+**Location:** `scripts/lib/dev-cycle-read.sh:12-13`, `:290-292`, `:548`
+**Move:** 3 (module boundary: the contract between the lib and its callers)
 **Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-
 **Evidence:**
 ```
-  if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
+12	# once that second caller lands. The
+13	# caller sets -euo pipefail,
 ```
 ```
-  e="$(main_entry "$a")"
-  case "$e" in
-    absent) echo "ok $a new"; return ;;
+290	  # pipefail for this function only (local -), so a failed read is caught
+291	  # whatever the caller set.
+292	  local - out l; set -o pipefail
+```
+```
+548	  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
 ```
 
-The fix took the narrower form of my iteration-2 recommendation (one `error` word rather than passing `main_entry`'s answer through). That is safe — every non-blob outcome refuses — and it keeps `BRIEF_ODD`'s vocabulary at three words. The cost is that a consumer which must distinguish "brief not on main yet" (`--status`'s `new` state, `--start`'s "open on main") or name *why* it was refused calls `main_entry` before `brief_fields`, as `check_brief` does, and the path is classified twice (two `ls-tree` processes per brief; cost owned by rows :220/:229). This is a contract note for U1c, not a defect: consumers that route through `check_brief` inherit the distinction for free.
+**The problem:**
+- Fact-check escalated this question: does the change contradict the header's contract? No.
+  - The change is defence in depth, and it points the right way: the two readers whose `$(a | b) || skip` guards decide fail-closed now depend less on caller state.
+  - Every other lib function still assumes the caller's `-euo pipefail` (for example the `imported_names` walk). So the header's rule stays true as a requirement.
+- What is missing is the exception. A reader of the header alone would not know which functions are self-protecting. A future reader that adds a pipeline-guarded read could copy either convention.
 
-**Recommendation:** None for U1a. If U1c's `--start`/`--status` call `brief_fields` directly and need the reason, pass `main_entry`'s word through as `BRIEF_ODD="entry WORD"` then; otherwise keep the three-word vocabulary.
+**Recommendation:**
+- After "The caller sets -euo pipefail," add one clause: "brief_fields and check_answer also set pipefail for their own body (local -), since their read guards depend on it."
+- This also gives U1b, U1c and U2 readers one stated pattern to follow.
+
+**Legibility-target:** the lib header, `scripts/lib/dev-cycle-read.sh:12-13`.
+
+#### 3. The lib states no minimum bash version, and `local -` raises the implicit one
+
+**Severity:** Informational
+**Location:** `scripts/lib/dev-cycle-read.sh:292`, `:548` (and `:288`, `declare -gA`)
+**Move:** 1 (dependency on the runtime)
+**Confidence:** Medium. Restore behaviour before 5.1 is not verified here; only bash 5.2.15 is installed.
+**Evidence:**
+```
+288	declare -gA BRIEF=(); BRIEF_ODD=""
+292	  local - out l; set -o pipefail
+548	  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
+```
+
+**The problem:** The lib now depends on three bash-version behaviours:
+
+| Feature | Bash needed | Source |
+|---|---|---|
+| `declare -g` | 4.2 or later | already present before this diff |
+| `local -` | 4.4 or later | added by this diff |
+| `local -` restoring `pipefail`, which has no single-letter flag | possibly 5.1 or later | installed CHANGES (5.1-beta, item i): "Several changes to how `local -' restores the values of options and $SHELLOPTS" |
+
+**Impact by version:**
+- On bash 4.4 to 5.0 the worst case is that pipefail leaks into the caller. Under the header's own contract the caller has already set pipefail, so a conforming caller is unaffected.
+- Before 4.4, `local -` is an error. Under `set -e` that stops the caller, which fails closed.
+- So the runtime risk is low. The structural gap is that the runtime dependency is undocumented, and the macOS default bash (3.2) already cannot run the lib.
+
+The fact-check summary escalated this point (r1-r3).
+
+**Recommendation:**
+- State "bash 4.4 or later" in the lib header beside the sourcing rule.
+- Optionally, add a cheap `BASH_VERSINFO` guard in the scripts that source the lib, so an old bash fails with a message instead of a `local` error.
+
+**Legibility-target:** the lib header, `scripts/lib/dev-cycle-read.sh:8-13`.
+
+#### 4. The list of check modes that need a default branch found by name is kept in several places, and one copy has already drifted
+
+**Severity:** Informational
+**Location:** `scripts/dev-cycle.sh:72-73`, `:81`, `:189-193`; `scripts/lib/dev-cycle-read.sh:22-23`, `:242-243`; `test/scripts/dev-cycle.bats:767`
+**Move:** 8 (extension points)
+**Confidence:** High
+**Evidence:**
+```
+scripts/dev-cycle.sh:193	if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then
+test/scripts/dev-cycle.bats:767	@test "--check-brief and --check-branch need a default branch found by name; the others do not" {
+```
+
+**The problem:**
+- Adding `--check-answer` to the set meant editing the condition at :193 plus prose copies in two help lines, a code comment and two lib-header sentences.
+- The test title at bats:767 was missed, and it now states the opposite of the behaviour (fact-check r2: Stale). The behaviour itself is tested at bats:1153.
+- Each new main-reading mode (U1c's `--status`, U3's modes) repeats this edit. This is a small extension point that grows by modification.
+
+**Recommendation:**
+- Now: rename the bats:767 title. For example, "--check-brief, --check-branch and --check-answer need a default branch found by name; --check-path does not". Optionally add `--check-answer` to its loop.
+- Later, if the list keeps growing: keep the set in one shell variable or `case` in dev-cycle.sh. The help text then names "the modes that read the default branch" rather than listing them.
+
+**Legibility-target:** the test title at `test/scripts/dev-cycle.bats:767`.
+
+## Settled, not re-raised (override log)
+
+- Row 225: `check_brief` and `check_answer` duplicate the `main_entry` result-word `case`.
+- Row 226: `BRIEF` keeps whole lines in a global.
+- Row 227: `check_answer` reads main while the skill records answers in the working tree until U4. SKILL.md now says this.
+- Row 233: `check_brief` calls `ls-tree` twice.
+- Row 234: `brief_fields` collapses absent, notfile and unreadable into `error`.
+- Row 230: untested `main_entry` bypass candidates. Finding 1 is about where the precondition lives, not test coverage.
+- Row 215: three guard channels; U3 must check `main_by_name`.
+- Row 216: `check_answer` as merge authorisation. This branch adds `main_by_name`; the "positive line only" half belongs to U3's caller.
 
 ## What Looks Good
 
-Positive assertions below are submitted as claims for code-fact-check, not self-certified.
+Each row below makes a positive claim (route: code-fact-check).
 
-- `brief_fields` now owns its preconditions and gives every non-success outcome a return-1 signal with a `BRIEF_ODD` word, so U1b consumers call one function rather than copying `check_brief`'s guard block (iteration-2 F1 / A13 resolved). `route: code-fact-check` — `scripts/lib/dev-cycle-read.sh:289-310`.
-- `main_entry` treats a tree listing a name twice as `error` rather than picking one copy (A12), keeping "what the check saw" and "what git reads" from diverging behind the B2 boundary. `route: code-fact-check` — `scripts/lib/dev-cycle-read.sh:264-269`.
-- `check_answer`'s failed read is a skip, not a fall-through to the archive (R2), so the two-file search can no longer answer from the wrong file. `route: code-fact-check` — `scripts/lib/dev-cycle-read.sh:558-560`.
-- One brief parser: `check_brief` reads Status through `brief_fields`, and the template test pins both to the same answer (T31). `route: code-fact-check` — `scripts/lib/dev-cycle-read.sh:338-349`; `test/scripts/dev-cycle.bats` "a brief shaped like the skill's template parses".
-- `check_answer` shed `need_root`/`skipped`/`SKIPPED`, discharging rows :206, :216, :217. `route: code-fact-check` — `scripts/lib/dev-cycle-read.sh:539-573`.
+| # | Claim | Evidence |
+|---|---|---|
+| G1 | `check_answer` no longer depends on the working-tree plain-file layer: no `need_root`, no `ROOT_REAL`, nothing added to `SKIPPED`. Override rows 216 and 217 are discharged in structure, not just in prose. | `scripts/lib/dev-cycle-read.sh:547-575`; bats test "check_answer reads git only" at `test/scripts/dev-cycle.bats:1160` |
+| G2 | A brief now has one parser. `brief_fields` is the only reader of machine lines, and `check_brief` uses its `status` instead of keeping its own awk. U1b and U1c add keys without adding parsers. | `scripts/lib/dev-cycle-read.sh:289-312`, `:340-351` |
+| G3 | `main_entry` puts the "regular file under plain directories on main" rule in one function that fails closed (`error`) on a missing default branch, an ls-tree failure or a duplicate tree name. The three readers share it instead of each running `ls-tree \| cut`. | `scripts/lib/dev-cycle-read.sh:258-274` |
+| G4 | Dependency direction is unchanged. dev-cycle.sh depends on the lib, and the lib depends only on git and awk. The diff adds no reverse or circular dependency and no reference to build-loop.sh beyond comments. | `scripts/lib/dev-cycle-read.sh` (no `source`, no call to scripts/) |
+| G5 | `--help` is derived from the header and no longer from a fixed line range. The header is now the single source, and a bats test pins its last line. | `scripts/dev-cycle.sh:111-112`; `test/scripts/dev-cycle.bats:1276-1280` |
+| G6 | The lib's sourced-surface test lists the new public names (`main_entry`, `brief_fields`, `BRIEF`, `BRIEF_ODD`), so the public surface is registered where U1b's suite will also look. | `test/scripts/dev-cycle.bats:1032`, `:1036` |
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | Failed-read signal of `brief_fields`/`check_answer` depends on caller's `pipefail` (B5) | Minor | `scripts/lib/dev-cycle-read.sh:295-302`, `:559-560` | High |
-| 2 | `brief_fields`' `error` folds absent/notfile/unreadable; "new" needs a prior `main_entry` | Informational | `scripts/lib/dev-cycle-read.sh:292`, `:330-338` | High |
+| 1 | main_entry relies on callers to check the path form, and an unchecked path fails open as `absent`; its stated precondition is half stale | Minor | `scripts/lib/dev-cycle-read.sh:256-263` | High |
+| 2 | The header's "caller sets -euo pipefail" does not mention the two self-protecting readers | Informational | `scripts/lib/dev-cycle-read.sh:12-13` | High |
+| 3 | No minimum bash version is stated; `local -` needs 4.4, and restoring pipefail possibly needs 5.1 | Informational | `scripts/lib/dev-cycle-read.sh:292,548` | Medium |
+| 4 | The needs-main mode list is copied in several places; the test title at bats:767 is stale | Informational | `scripts/dev-cycle.sh:193`; `test/scripts/dev-cycle.bats:767` | High |
 
 ## Overall Assessment
 
-The change maintains and improves the lib's structure: dependency direction is correct, `check_answer` sheds its working-tree dependencies, and `main_entry`/`brief_fields` form one layer between git and every main-reading check, with one brief parser. Iteration-2's only Coupling finding (F1/A13) is fixed and confirmed by execution. No Structural or Coupling finding remains; the two new items are Minor/Informational (rubric 🟢 Consider) and both are contract notes for U1b/U1c rather than defects in U1a. Architecturally, the branch is clean to merge; the most useful follow-up is making the readers' failed-read signal independent of the caller's `pipefail` (Finding 1) before build-loop.sh adds callers. No disagreement with the security review's boundary placement.
+The branch improves the lib's structure:
+- one brief parser
+- one fail-closed tree classifier
+- an answer reader that depends only on git objects
+
+Dependencies still point one way. The iteration-4 fixes (`local -` + pipefail, and help derived from the header) add nothing structural that is wrong. Their only cost is the two documentation gaps in findings 2 and 3.
+
+Nothing here is Structural or Coupling. Everything can be fixed in place in a few lines.
+
+The most important item is finding 1. `main_entry` is the primitive that U1c and U2 will call directly, and today its one unenforced precondition fails toward `absent`. A one-line `pathform` guard inside the function closes that before the next caller arrives.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to /workspace/.claude/wt-build-loop-u1a/docs/reviews/architecture-review-review-2026-10-05-build-loop-u1a.md (overwrite the iteration-2 one), first line `Commit: 722884c7`, structured per the architecture-review skill, every finding with Severity, Location, verbatim Evidence, Confidence and Legibility-target, ending with the canonical Goal-Alignment Note.
-- Answered: architecture review of `main...feat/build-loop-u1a` at 722884c7 (scope check in scope; dependency map; 2 findings: 1 Minor, 1 Informational; no Structural/Coupling); iteration-2 F1 confirmed fixed by an executed probe; positive claims routed to code-fact-check; bats 66/67 with only the known test 21.
-- Out of scope: the `--help` range regression (`scripts/dev-cycle.sh:111`, fact-check Incorrect, owned by the orchestrator's must-fix list, not structural); SKILL.md wording residue (fact-check Mostly accurate); settled rows :215, :220, :223, :225-:231; U1b/U1c consumers' absence.
-- Escalate: Finding 1 to the orchestrator and security-reviewer as a B5 enforcement-point choice (lib-local `local -; set -o pipefail` vs the caller contract), non-blocking for U1a; Finding 2 to the U1c brief as a contract note.
+- Success criterion (restated verbatim): A markdown report saved to docs/reviews/architecture-review-review-2026-10-05-build-loop-u1a.md, structured per the architecture-review skill, first line `Commit: 4aa2e98e`.
+- Answered: yes
+- Out of scope: the BSD sed `{/^#/p}` portability of the help address (api-consistency or orchestrator); the "until committed" help wording at `scripts/dev-cycle.sh:59` (fact-check, wording); the security review's own staleness (Commit `722884c7`).
+- Escalate: finding 1 to the orchestrator as the one actionable item before U1c builds on `main_entry`. Fact-check's bash-version question (finding 3) is unresolved without a bash 4.4 to 5.0 binary.
+- Decisions I made: I filed finding 1 although it touches row 230's subject, because row 230 settles test coverage and its rationale assumes callers run pathform, which is the dependency finding 1 questions. I used the u1a security review found by hand, because the skill's glob misses it (row 231).
