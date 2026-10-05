@@ -114,7 +114,7 @@ C1–C4 were asked on 2026-10-03 and not answered. Revision 3 proceeds on the de
 3. Bring revision 3 to you for approval. RPI's plan gate still applies to this session's own work: the v2 "no plan gate" is for dispatched loops.
 
 ## Task status
-- **Lifecycle**: paused
+- **Lifecycle**: superseded by plan revision 3 (2026-10-04); read `docs/working/checkpoint-build-loop-handoff.md` first
 - **Last commit**: the commit that adds this file (`git log -1 --oneline` on `feat/build-loop-handoff`)
 - **Verify command**: `git -C /workspace/.claude/wt-build-loop-handoff ls-files docs/working/handoff-build-loop-handoff.md`
 - **Expected result**: `docs/working/handoff-build-loop-handoff.md`

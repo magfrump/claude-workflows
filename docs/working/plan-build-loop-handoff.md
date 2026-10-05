@@ -1,149 +1,270 @@
-# Plan: build-loop handoff
+# Plan: build-loop handoff (revision 3)
 
-- **Goal**: The dev cycle can hand a build brief to an autonomous build loop and later collect its result, with the state and checks in a small tested script (`scripts/build-loop.sh`) rather than in prose.
-- **Project state**: delivers the build-loop handoff (script, tests, skill/doc changes) · roadmap In flight item, split out of `feat/dev-cycle`; Q-103 waits on it · not blocked (cite: docs/working/briefs/2026-10-02-build-loop-handoff.md)
-- **Task status**: paused (revision 2 is partly superseded: the 2026-10-03 conversation replaced D1–D4 and the In flight lifecycle with the v2 orchestrator flow. Read `docs/working/handoff-build-loop-handoff.md` first. The gate sections, D5, D7, F1–F31 and the tests, still apply.)
+- **Goal**: The dev cycle runs as an orchestrator loop. It dispatches build briefs to autonomous build loops, collects their results, and merges what the gate allows. The state and the merge checks live in a small tested script (`scripts/build-loop.sh`) rather than in prose.
+- **Project state**: delivers the build-loop handoff (script, lib, tests, skill and doc changes) · roadmap In flight item; Q-103 waits on it · blocked on approval of this revision (cite: docs/working/briefs/2026-10-02-build-loop-handoff.md, docs/working/handoff-build-loop-handoff.md)
+- **Task status**: awaiting approval (revision 3, 2026-10-04)
 
 Research: docs/working/research-build-loop-handoff.md
-Plan-time reviews: `docs/reviews/pre-mortem-build-loop-handoff.md`, `docs/reviews/architecture-review-build-loop-handoff.md`, `docs/reviews/test-strategy-build-loop-handoff.md`
+Design conversation (2026-10-02/03, your 12 answers): docs/working/handoff-build-loop-handoff.md
+Plan-time reviews: `docs/reviews/pre-mortem-build-loop-handoff.md` (rev 2), `docs/reviews/pre-mortem-build-loop-handoff-rev3.md` (this revision: 5 narratives, 3 reproduced experiments, F38–F53), `docs/reviews/architecture-review-build-loop-handoff.md`, `docs/reviews/test-strategy-build-loop-handoff.md`
+
+## What changed from revision 2
+
+| Kept | Changed | Dropped |
+|---|---|---|
+| D5 allowlist gate over the `check_fix` floor; D7 merge-tree → diff-tree rules → commit-tree → CAS, hardened git; the lib extraction; F1–F31; `--status`, `--check`, `--merge`, `--start`, `--prompt` | Who starts loops (the orchestrator, D1); markers (`ready`, `blocked`, `stopped`; D3); who runs the gate (the orchestrator, from main's commit, D6); review handoff (a PR, else one merge entry; D4); answers read from main's commit (D8); slots (D9); the orchestrator's own isolation (D13) | You start each loop; plan approval in loops; early keep-or-drop entries; the 14-day idle timer; the user-run merge command; the bless prerequisite for the gate; the brief's "the user reads each brief" criterion (you overrode it on 2026-10-03; recorded as a decision-log row, D10) |
+
+Two places where this revision departs from the handoff's v2 flow, both for safety:
+
+1. **The orchestrator runs the gate, not the loop.** The handoff had the loop run `--merge` under self-merge. Whoever runs the gate chooses which bytes run, and a loop can run a copy it has edited (rev 2 pre-mortem, narrative 3). The loop still runs `--check` itself as an advisory dry run. Self-merge stays hands-off: the orchestrator merges as soon as the loop reports `ready`.
+2. **Step order: collect, then write briefs, then land, then dispatch.** The v2 flowchart has dispatch (7) before land (9). Loops read their brief from main's commit, so a brief must land before its loop starts. Collecting first also frees slots before they are filled.
 
 ## What the gate can and cannot do (read first)
 
-Loops run as the user's own uid, with a shell, in worktrees that share `/workspace/.git`. No script can contain a loop that turns hostile with its shell: it could run plain `git merge`, write `/workspace`'s working tree, or plant `.git` state. What this script does is make the **honest path** safe and checkable. Content reaches main only through a gate that decides from main's committed state and the exact merge result, and the gate never runs code the loop could have changed. The residual families (F11, F19, F28) are stated plainly in Q-103, so the policy choice is made knowing them.
+Loops run as your uid, with a shell, in worktrees that share `/workspace/.git`. No script can contain a loop that turns hostile with its shell. It could run plain `git merge` or `git push`, write any working tree under `/workspace`, or plant `.git` state. What this design does is make the **honest path** safe and checkable, and make the commonest honest slip, a git command run in the wrong directory, fail loudly instead of landing (D13).
 
-## Decisions for the user to confirm at approval
+Content reaches main only through a gate that decides from main's committed state and the exact merge result, and that gate never runs bytes a loop could have changed (D6). Each iteration checks that main moved only by the orchestrator's own merges, the gate's merges and answer-only commits (D13). With no human reading briefs (D10), the gate and your review of `ready` work are the checks on what lands. The residual families are stated plainly in Q-103, so the policy choice is made knowing them.
 
-- **D1. The cycle does not spawn loops.** `build-loop.sh --start <brief>` checks the brief and creates the branch and worktree from main's commit, then prints the loop's prompt. `--prompt <brief>` re-prints it for an existing branch (a resume, a stop, a needed main merge). The user starts each session, and that start is the user's reading of the brief. Why: the brief requires a human read; headless subscription runs and Agent-tool worktree isolation are broken here (memory); scheduling is out of scope.
-- **D2. Plan approval stays in the loop.** The prompt says a brief is not plan approval. A loop needs an explicit "approve plan" message from the user in its session. Without one, it ends at its plan with the marker `handoff: plan`, and the user approves later in a resumed session (`--prompt`). Resuming alone is not approval.
-- **D3. Markers are answered through the existing keep-or-drop entry, filed early.** When a branch tip is a marker (`ready`, `plan`, `stopped: <reason>`), the cycle files the keep-or-drop `you: judgment` entry at once instead of after 14 idle days. It does so only when the marker's commit date is later than the brief's last `Kept:` date (none: its own date), so a `keep` is not re-asked until a new marker. The entry text depends on the marker. A `ready` entry offers only **[1] keep** (waiting for my review) and **[2] drop**, with the merge command; there is no "done" (merging is what marks it done). A `plan` entry names the plan path and the `--prompt` command. A `stopped` entry gives the reason. The answers are read by the existing `--check-answer`/`Asked:`/`Applied:` path, so there is no new answer grammar.
-- **D4. The approved merge is a command the user runs**: `~/.claude/scripts/build-loop.sh --merge <brief> --expect <full-sha>`. Running it is the approval, and `--expect` pins the reviewed tip. Under `self-merge`, the loop runs the same installed command.
-- **D5. The self-merge gate is an allowlist.** A path may change only if the brief's `Paths:` lists it or it is one of the loop's own files. A denylist floor equal to dev-cycle.sh's `check_fix` predicate (plus code directories, dotfiles and root-level non-`.md` files) applies to `Paths:` entries and changed paths as defense in depth (FP-033, FP-041, FP-056).
-- **D6. The gate runs only from outside the repo it judges.** `--check` and `--merge` refuse when the script's own real path is inside any worktree of the target repo. In claude-workflows that means the blessed image copy at `/opt/claude-workflows/scripts` (`~/.claude/scripts`). A loop that edits `scripts/build-loop.sh` on its branch therefore never runs its own gate. **Consequence:** the handoff works in this repo only after the image is rebuilt and blessed with U3 (Q-083 flow). Until then, briefs stay user-started as today.
-- **D7. Merges are computed, not checked out.** `git merge-tree --write-tree MAIN TIP` (git ≥ 2.38; this host has 2.39.5) gives the exact result tree R. Every rule runs on `diff-tree -r --no-renames --raw -z MAIN R`. Then `commit-tree R -p MAIN -p TIP` makes the commit, and main moves by a compare-and-swap. No ancestry requirement, so a cycle landing on main between the review and the merge does not block it (pre-mortem L1). All git calls go through `install.sh`'s hardened pattern: `--no-optional-locks`, `-c core.hooksPath=/dev/null`, `-c core.fsmonitor=false`, `GIT_NO_REPLACE_OBJECTS=1`, and a state gate that refuses local `filter.*`/`include*`/`core.fsmonitor`/`hook.*`/`merge.*.driver`/`diff.*` keys, a non-empty `info/attributes` and any `refs/replace/`.
+## Decisions for you to confirm at approval
+
+- **D1. The orchestrator starts loops.** For each brief that has landed, it runs `build-loop.sh --start BRIEF`. That creates the branch and a worktree at `.claude/wt-<stem>` from main's commit, locks the worktree (`git worktree lock --reason "<session> <UTC time>"`), increments the brief's `Dispatched:` count, and prints the loop prompt. The orchestrator then launches a background subagent (Agent tool, no isolation; memory `agent-worktrees-stall-and-stale-base`) with that prompt.
+  - Loops live as long as the orchestrator session. After a restart, a branch with no marker is re-dispatched with `--prompt BRIEF`, which refuses a worktree still locked by a live session unless `--steal` is given and the tip is over 2 hours old.
+  - A live loop with no new commit across 4 consecutive fallback wakeups (about 2 hours) is stopped (TaskStop) and marked `stopped: stalled`.
+  - `Dispatched:` caps a brief at 4 dispatches in total (`--start` plus `--prompt`), whatever its commits, after which it is `stopped: dispatch cap`. The count lives on the brief, read from main, so a restart does not reset it (F45).
+- **D2. Loops run RPI with no plan-approval gate.** A question a loop cannot settle from the repo ends it with a `handoff: blocked` marker that carries the questions. The task is deferred and its slot freed. It never waits.
+- **D3. Three markers**, each an empty single-parent commit at the branch tip, at least one commit ahead of main:
+  - `handoff: ready`: pr-prep's review-fix loop is clean, and the final change sets the brief's Status line to `done`.
+  - `handoff: blocked`: the body holds the questions as **plain prose plus an options table**. There are no `**Needs:**`, `**Status:**`, `**Answer…`, `Q-NNN:` or heading lines; the orchestrator adds all of those (F41).
+  - `handoff: stopped: REASON`: a stop condition was hit (adding a dependency, a symlink, an edit the rules forbid, or a refused `--check` it cannot fix within `Paths:`).
+- **D4. Collect results** (skill step 7), per brief, by `--status`:
+  - `done` on main → Done (today's check 1, unchanged).
+  - `ready` with the stricter policy `self-merge` → the orchestrator runs the gate (D6) with `--merge --expect TIP`. If it refuses, the item falls through to review, with the refusal quoted in the entry.
+  - `ready` under `review` → where `docs/dev-cycle.md` says `Review handoff: pull request`, push the branch and open a draft PR. Only the orchestrator does this, never the loop or the script. Otherwise it files one merge entry, `### Q-NNN · merge-<stem>-<first 12 of TIP>`. The entry body is `--check`'s output: the full 40-hex TIP, every changed path, and each S-rule refusal flagged (for example "changes CLAUDE.md") (F48). The options are **[1] merge**, **[2] drop** and **[3] changes needed** (your note goes back to the loop).
+    - Answer [1] → `--merge BRIEF --expect TIP --approved Q-NNN`. The script checks, on main's commit, that Q-NNN is ANSWERED with option 1 and that its slug names this brief and TIP's prefix.
+    - A change to the gate's own files (`scripts/{build-loop,dev-cycle,questions}.sh`, `scripts/lib/`, `skills/dev-cycle/`) gets its own slug, `merge-gate-…`. Plain `--approved` refuses such a change (F52).
+    - Answer [3] → re-dispatch with the note.
+  - `blocked` → `--marker BRIEF` prints the body with every line prefixed `> ` (F41). The orchestrator files each question as an entry with its own header and the quoted body, writes `Asked: Q-NNN@MARKER-SHA, …` on the brief, and frees the slot. Once every Asked ID is answered (D8), the brief goes back in the queue on its existing branch, and the loop is re-dispatched with `--prompt` plus the answers.
+  - `stopped` → one entry with **[1] re-dispatch** and **[2] drop**, quoting the reason.
+  - An entry is filed once per marker SHA (`Asked: …@SHA`), so a marker is never re-asked (rev 2's L2). Dispatch waits until the land that recorded it is on main (D13).
+- **D5. The self-merge gate is an allowlist** (unchanged). A path may change only if the brief's `Paths:` lists it, or it is one of the loop's own files keyed on the full brief stem. The `check_fix` denylist floor, plus code directories, dotfiles and root-level non-`.md` files, applies to `Paths:` entries and changed paths as defense in depth.
+- **D6. The gate runs from main's commit, run by the orchestrator, through a hardened snippet.** The snippet is inline in the installed SKILL.md, which is the root-owned image copy. It never trusts a file the uid can write:
+  - It runs only after `GIT_NO_REPLACE_OBJECTS=1 git for-each-ref refs/replace/` prints nothing and `info/grafts` is absent (F38).
+  - It extracts `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh` and `scripts/lib/dev-cycle-read.sh` from `MAIN_SHA` with `GIT_NO_REPLACE_OBJECTS=1 git --no-optional-locks -c core.hooksPath=/dev/null cat-file blob`. They go into a fresh `mktemp -d` with the same `scripts/` and `scripts/lib/` layout (F40).
+  - It checks each file's `hash-object` against its `ls-tree MAIN_SHA` id immediately before running it.
+  - It uses main's copy only when main's first-parent root commit is claude-workflows' (`640cf007…`, written into the snippet). In any other repo it runs `/opt/claude-workflows/scripts/build-loop.sh` by absolute path, after checking that the file and its directory are root-owned and not writable by the uid. It never goes through the uid-owned `~/.claude/scripts` symlink (F39).
+  - The digest runs the same way, so in this repo the orchestrator never runs working-tree scripts (F34).
+  - A loop's own `--check` runs are advisory and never move main.
+- **D7. Merges are computed, not checked out** (unchanged), with one fix: "clean" means no tracked changes, and the merge refuses only when an untracked file collides with a path the merge adds (F50). The steps are: `merge-tree --write-tree MAIN TIP`, every rule on `diff-tree -r --no-renames --raw -z MAIN R`, then `commit-tree R -p MAIN -p TIP` with a `Build-loop-gate: <stem>` trailer, and a CAS on main. All git calls are hardened, with the state gate from `install.sh`. When main is checked out in a worktree, that worktree must be on main, clean, and not mid rebase, bisect or merge; then a hardened `merge --ff-only` runs.
+- **D8. Answers that unblock autonomous work are read from main's commit.** `--check-answer` reads `MAIN_SHA:docs/working/questions{,-archive}.md`, not the working tree, because a loop can write any working tree under `/workspace` (F28). An answer reaches main in one of two ways:
+  - you commit it yourself;
+  - you tell the orchestrator in its session, and it commits that answer.
+
+  The orchestrator never commits an answer it did not receive from you in-session. `--cycle-diff` enforces this (D13). The wait message lists working-tree-only answers as "not applied: tell me, or commit it yourself"; it never offers to commit them (F42).
+- **D9. Slots cap the running loops.** `Build-loop slots: N` (1–9) in `docs/dev-cycle.md`; anything else, or no line, means 3. Only a live dispatched loop holds a slot. A `blocked`, `ready`-awaiting-review or `stopped` item holds none (C2 default).
+- **D10. Briefs are not read by you before dispatch, and loops have no plan gate.** You overrode the brief's criterion on 2026-10-03 ("the point is to work through all threads until they are blocked on questions"). The brief asks for this decision as a questions entry. It is recorded instead as decision-log row 70, quoting your answers 1, 5, 8 and 9, because you made it in conversation. If you want an entry anyway, U5 files it pre-answered.
+- **D11. The orchestrator is the only writer of `questions.md`** (C1 default). Loops carry questions in their `blocked` marker. `--marker` refuses a body line that starts (after blanks, `>` and list markers) with `#`, `**Needs:**`, `**Status:**`, `**Answer` or `Q-` and a digit. It scrubs controls and bidi, caps the body at 100 lines of 300 bytes, and prefixes every line with `> `. Both questions readers anchor at column 0, so a quoted line can never be read as a header or an answer (reproduced as E2/E3 in the rev 3 pre-mortem).
+- **D12. The cycle is a loop** (C3 default). You start it once with `/loop /dev-cycle`, self-paced. Each iteration is one full cycle (every trigger checked every time; your 2026-10-01 comment). After dispatch the iteration ends:
+  - If any loop is running, the next iteration starts when one finishes (the background agent's notification), with a 1800 s fallback wakeup.
+  - If every thread is blocked on you, a cheap check runs every 1200–1800 s. It runs a full cycle only when main's tip moved, an Asked ID was answered, or you wrote; otherwise it is a no-op wakeup.
+  - The cost per iteration is C5, asked in U5 with this as its interim (F53).
+- **D13. The orchestrator isolates itself and checks main.**
+  - **Where it runs.** The orchestrator session's working directory is `$TMPDIR/dev-cycle-orchestrator/`, which is not a git checkout. Every git or script call names its checkout (`git -C`, `cd X &&`). A loop subagent's shell starts in the orchestrator's directory before every call, so a loop's forgotten `cd` fails with "not a git repository" instead of committing to main (F43).
+  - **Its own worktree.** Each iteration works in a fresh worktree, `.claude/wt-dev-cycle-<date>-<HHMM>`, on `chore/dev-cycle-<date>-<HHMM>` from `MAIN_SHA` (F49). The digest reads the roadmap, idea log, triggers and questions from `MAIN_SHA` (F42, F21).
+  - **Start of each iteration.**
+    - `build-loop.sh --state` refuses planted `.git` state before any porcelain git runs (F51).
+    - `build-loop.sh --main-log SINCE`, where SINCE is the last record's `Main at:` SHA, classifies each first-parent commit on main as `gate`, `chore`, `answers` or `other`. `gate` is a commit-tree merge with the trailer. `chore` is a merge of a `chore/dev-cycle-*` branch the record names. `answers` is a non-merge commit whose diff touches only answer and Status lines in the questions files.
+    - Any `other` stops dispatch and files one `you: judgment` entry naming the commit (F43). This is the minimal part of roadmap item (d), moved into this unit.
+  - **Before the chore commit**, `build-loop.sh --cycle-diff --answered Q-…` compares the staged files with `MAIN_SHA`. It refuses a change to an existing entry's header or answer lines whose ID is not in `--answered` (answers you gave in-session), and a roadmap or idea-log line removed or edited other than by the cycle's own documented moves (F42).
+  - **Dispatch** happens only after `git merge-base --is-ancestor <chore tip> main` confirms the land. A failed land is retried before the next iteration's step 7, so `Asked:` state is never re-derived from a main that lacks it (F49).
+- **D14. Loops and the orchestrator share the machine.** The quiesce in step 1, and pr-prep's quiesce before its gate, cover only subagents this task started, and never stop or reap a process this task did not start (by PID). `scripts/health-check.sh` takes a `flock` on `$(git rev-parse --git-common-dir)/health-check.lock`, so the orchestrator's gate and each loop's gate run one at a time (F46; decision-log row 61). The loop prompt allows subagents only for research and review, each with scratch dir `<scratchpad>/<brief stem>/`. It forbids build loops, background agents, schedules, pushes and publishing (F47, F35).
+
+C4 (merged-branch deletion) belongs to separate roadmap item (a), not this unit.
 
 ## Bypass-family pre-mortem (before any code)
 
-Assume the handoff shipped and an autonomous loop landed something the user never reviewed. "N" marks a rule that applies under both policies; "S" marks a self-merge-only rule. Rows F25–F31, L1–L3 and the re-marks come from `docs/reviews/pre-mortem-build-loop-handoff.md`.
+Assume the handoff shipped and an autonomous loop landed something you never reviewed. "N" marks a rule that applies under both policies, "S" a self-merge-only rule. Rows F1–F31 and L1–L3 carry over from revision 2 (`docs/reviews/pre-mortem-build-loop-handoff.md`). Rows F32–F37 were this revision's first draft; F38–F53 and the re-marks come from `docs/reviews/pre-mortem-build-loop-handoff-rev3.md`.
 
 | # | Family | Covered? | Guard (tests) |
 |---|---|---|---|
 | F1 | Policy text variants (interim suffix, case, spaces, two lines, fence, HTML comment, BOM) | covered | Exactly one unfenced line, byte-exact after one trailing CR; FENCE_AWK refusal → review (T1–T3) |
 | F2 | Policy raised on the loop's branch (settings or brief `Policy:`) | covered | Read from main's commit only; stricter of main and brief; both files N-denied (T4, T5, T14) |
 | F3 | Policy lowered after a loop started | covered | Re-read at merge; stricter wins (T5) |
-| F4 | Root-level scripts (`install.sh`, `Makefile`) | covered | S-allowlist; denylist refuses root non-`.md` even if listed (T10) |
+| F4 | Root-level scripts (`install.sh`, `Makefile`) | covered | S-allowlist; the floor refuses root non-`.md` even if listed (T10) |
 | F5 | Dotfiles and dot-directories (`.gitattributes`, `.gitmodules`, `.claude/`, `.github/`) | covered | Any `.`-prefixed component denied (T10) |
 | F6 | Renames out of a denied directory | covered | `--no-renames`; the D side refuses (T11) |
 | F7 | Symlinks: added or type-changed | covered | Old and new mode of each raw entry ∈ {100644, absent} (T12) |
-| F8 | Mode-only change, gitlink | covered (with F25's state gate) | Same mode rule; `diff-tree` with `--ignore-submodules=none` (T12, T26) |
+| F8 | Mode-only change, gitlink | covered (with F25) | Same mode rule; plumbing `diff-tree` with `diff.ignoreSubmodules=none` (T12, T26) |
 | F9 | Instruction-file basenames in allowed dirs | covered | `INSTRUCTION_FILE`, any case, any dir (T10) |
-| F10 | Files later runs read as rules or truth (`docs/decisions/`, `docs/thoughts/`, `docs/human-author/`, other loops' `docs/working/` files) | covered (widened) | Denylist floor = `check_fix`'s predicate, except the loop's own files keyed on the **full brief stem** (date included) (T10) |
+| F10 | Files later runs read as rules or truth | covered | Floor = `check_fix`'s predicate; own files keyed on the full brief stem (T10) |
 | F11 | Files an instruction file `@`-imports | **partly** | The floor reuses `check_fix`'s import walk (its known-issues A2/A3 remain). Listed in Q-103 |
-| F12 | Cycle-owned files: questions, archive, roadmap, `dev-cycle.md`, idea log, `cycles/`, any other brief **including a new one**, `briefs/closed/` | covered | N-denied via the lib's `writable()` plus `docs/dev-cycle.md`; added briefs too (T14) |
+| F12 | Cycle-owned files, any other brief including a new one, `briefs/closed/` | covered | N-denied via the lib's `writable()` plus `docs/dev-cycle.md` (T14) |
 | F13 | Own brief edited beyond its Status line | covered | Merge-result blob = main's blob with the first unfenced `Status: open` → `Status: done` (T15) |
-| F14 | Diff base differs from what lands | covered | Rules run on MAIN→R, the exact merge result (D7); conflict → refuse (T16) |
-| F15 | Tip moved after review; `--expect` given a name | covered | `--expect` must be 40/64-hex and equal `show-ref --verify` of the branch (T17) |
+| F14 | Diff base differs from what lands | covered | Rules run on MAIN→R (D7); conflict → refuse (T16) |
+| F15 | Tip moved after review; `--expect` given a name | covered | `--expect` is 40/64-hex and equals `show-ref --verify` of the branch (T17) |
 | F16 | A closed brief's live loop merges | covered | Brief must read `open` on main at merge time (T18) |
 | F17 | Non-ASCII, quoted or odd names | covered | `pathform` on every changed path; refuse without echoing (T13) |
 | F18 | Case folding | covered | Lower-cased comparison (T10, T14) |
-| F19 | The loop merges or pushes with plain git | **not covered** | Prompt (T19); no `push` in the script (T20); the next cycle's spot-check. Listed in Q-103 |
-| F20 | Marker spoofing | covered | Empty, single-parent tip, ≥ 1 commit ahead, exact subject, reason charset (T6, T7) |
-| F21 | Brief or plan text injection | partly | Evidence line in the prompt (T19); brief read from main's commit (T21); D1 human read; D2 plan approval |
-| F22 | The merge disturbs a shared checkout | covered | D7: nothing checked out. If main is checked out in a worktree, see F29 (T22, T23) |
-| F23 | Review artifacts as a write channel | covered (narrowed) | S: only *added* `docs/reviews/*` whose name contains the full brief stem (T10) |
-| F24 | Gitignored working docs | covered (no bypass) | Only the diff lands (T9) |
-| F25 | Shared `.git` state: config, hooks, attributes, replace refs, `diff.ignoreSubmodules` | covered for the gate's own git calls | D7 hardening and state gate (T26). A planted state the gate refuses blocks merges until the user cleans it |
-| F26 | The loop edits the gate | covered | D6: refuse to judge from inside the target repo (T27) |
+| F19 | The loop merges, pushes or commits to main with plain git | **partly** (was: not covered) | D13 makes the honest slip fail (no checkout in the orchestrator's directory) and detects any non-orchestrator commit on main at the next iteration (`--main-log`, T39). A deliberate `git push` or a commit disguised as `answers` is not caught. Listed in Q-103 as reachable by an honest loop without D13 |
+| F20 | Marker spoofing | covered | Empty, single-parent tip, ≥ 1 commit ahead, exact subject, reason charset, body rules (T6, T7, T32) |
+| F21 | Brief or plan text injection, with no human read of briefs (D10) | **partly** | Briefs are written from main's commit (D13 digest reads) and read from main's commit (T21); the evidence line in every prompt (T19). Under self-merge the allowlist bounds what lands; under review you read the result. What a steered loop *does* outside git is bounded only by the sandbox. Listed in Q-103 |
+| F22 | The merge disturbs a shared checkout | covered | D7: nothing checked out; see F29, F50 (T22, T23) |
+| F23 | Review artifacts as a write channel | covered | S: only *added* `docs/reviews/*` whose name contains the full brief stem (T10) |
+| F24 | Gitignored working docs | covered | Only the diff lands (T9) |
+| F25 | Shared `.git` state: config, hooks, attributes, replace refs | covered for the gate's git calls | D7 hardening and state gate (T26). The orchestrator's own git: F51 |
+| F26 | The loop edits the gate | covered (with F38–F40) | D6: only the orchestrator's run of the hardened snippet can move main (T27, T33, T36, T37) |
 | F27 | Slug collision between briefs | covered | Own files keyed on the full brief stem (T10) |
-| F28 | Forged answers or roadmap edits in `/workspace`'s working tree | **not covered** | Same-uid shell; listed in Q-103. Mitigation in U4: the cycle records `git status --porcelain` for its own files before reading answers and reports unexplained changes |
-| F29 | Main checked out, under rebase or bisect, or switched mid-merge | partly | Not checked out anywhere → CAS `update-ref`. Checked out in W → W must be clean, `symbolic-ref HEAD` = main, no `rebase-*`/`BISECT_START`/`MERGE_HEAD` in any worktree; then `git -C W merge --ff-only NEW` (hardened) and verify `refs/heads/main` = NEW. Residual: W switches branch in the instant between the check and the ff, and the ff advances a branch that sat exactly at main's old tip. Recorded, not hidden (T22, T23) |
+| F28 | Forged answers or roadmap edits in a working tree | covered (with F42) | D8 reads answers from main's commit (T34). D13: the orchestrator reads from main and `--cycle-diff` stops it from committing edits it did not make (T38). A forged commit on main is F19 |
+| F29 | Main checked out, under rebase or bisect, or switched mid-merge | partly | As revision 2 (T22, T23); residual recorded |
 | F30 | The loop adds a new brief | covered | F12 (T14) |
 | F31 | Two open briefs name the same branch | covered | `--status`/`--check` skip both (T28) |
 | L1 | Cycle commits on main break review merges | covered | D7 drops the ancestry rule (T16) |
-| L2 | Keep-or-drop reuse: done-without-merge, re-filing | covered | D3: `ready` entries have no done; the date rule stops re-filing |
+| L2 | Entries re-filed or answered against a stale marker | covered | D4: entries keyed `Q-NNN@SHA`; dispatch only after the land (F49); merge entries pin TIP, checked by `--approved` (T35) |
 | L3 | No way to re-prompt an existing branch | covered | `--prompt` (T24) |
+| F32 | Loop-authored question text reaches `questions.md` | covered (by F41) | See F41 |
+| F33 | A forged "[1] merge" answer makes a review merge skip the S rules | covered (with F42) | `--approved` reads main's commit and the slug (T35); the orchestrator cannot launder the answer (T38); gate files need a `merge-gate-` entry (F52). A forged commit on main is F19 |
+| F34 | The orchestrator runs scripts a loop can write | covered (with F38–F40) | D6 (T33, T36) |
+| F35 | A loop uses the orchestrator's other tools (push, publish, spawn build loops, schedule) | **not covered** | The prompt forbids each (T19); the subagent shares the orchestrator's permission mode. Same trust as F19. Listed in Q-103 |
+| F36 | A stuck loop is re-dispatched forever | covered (by F44, F45) | Dispatch cap on the brief; the stall rule |
+| F37 | Two orchestrators at once | partly | Worktree lock (F44) and atomic `worktree add -b` stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it at land time. Listed in Q-103 |
+| F38 | D6 extraction honours `refs/replace` (E1, reproduced) | covered | The snippet refuses replace refs and grafts and compares hashes (T36) |
+| F39 | D6 copy choice by file existence; the installed copy reached through the uid-writable `~/.claude/scripts` | covered | Root-commit identity; `/opt/...` by absolute path with an ownership check (T37) |
+| F40 | D6 copy layout (`lib/`, `questions.sh` fallback) | covered | Same layout; `questions.sh` extracted too (T33) |
+| F41 | Loop body in entry grammar: the first-vs-last `**Needs:**` split, planted answer lines, headings (E2, E3, reproduced) | covered | D3 body grammar; `--marker` refuses grammar lines and `> `-prefixes every line (T32, T34) |
+| F42 | The orchestrator launders working-tree edits into its own commit | covered | D13: own worktree, digest reads from main, `--cycle-diff --answered` (T38) |
+| F43 | Loop commands run in the orchestrator's directory (the shell starts there each call) | covered | D13: orchestrator directory outside any checkout; `--main-log` (T39) |
+| F44 | Two agents in one worktree after re-dispatch; a live but stalled loop holds its slot | covered | Worktree lock; `--prompt` refuses a locked worktree without `--steal` (T40); the stall rule (D1) |
+| F45 | The resume count is not persisted | covered | `Dispatched:` on the brief, read from main; `--prompt` refuses at 4 (T41) |
+| F46 | Quiesce rules vs live loops; concurrent test gates | covered | D14: quiesce scoped to own subagents; `flock` in `health-check.sh` (T43) |
+| F47 | The prompt forbids the subagents pr-prep needs; loops share the scratchpad | covered | D14 prompt wording (T19) |
+| F48 | A merge entry asks [1] without showing the diff | covered | D4 entry body is `--check`'s output with the full TIP (T35). The slug pins 48 bits; a loop that grinds a prefix collision is F19-level |
+| F49 | Many iterations a day; state lost when a land fails | covered | `-<HHMM>` branch names; dispatch only after the land; retry a pending land first (D13) |
+| F50 | "Clean" vs `/workspace`'s untracked files | covered | D7: tracked changes only; an untracked collision refuses (T23) |
+| F51 | The orchestrator's own porcelain git runs planted `.git` state | covered | `--state` at the start of each iteration (T42) |
+| F52 | A review merge changes the gate itself | covered | `merge-gate-` slug required (T35); the release entry lists `scripts/` commits since the last release |
+| F53 | Cost per iteration | a decision | C5 (U5) |
 
-**Not covered: F19, F28. Partly covered: F11, F21, F29.** None of them blocks self-merge mechanically. All are listed in Q-103 when it is re-routed (step 10), with the statement above about what the gate can and cannot do.
+**Not covered: F35. Partly: F11, F19, F21, F29, F37.** None of them blocks self-merge mechanically. Each is a way around the gate by a loop that already has a shell and the session's tools, not a hole in the gate's own rules. All are listed in Q-103 when it is re-routed (step 13), together with "what the gate can and cannot do". The policy stays `review` until you answer it.
 
 ## Approach
 
-U0 extracts dev-cycle.sh's reader into `scripts/lib/dev-cycle-read.sh`. The lib holds:
+U0 extracts dev-cycle.sh's reader into `scripts/lib/dev-cycle-read.sh`, as revision 2 described:
 
-- `scrub` and the re-exec wrapper;
-- `pathform`, `FENCE_AWK`/`oddwhy`, `INSTRUCTION_FILE` and the import walk;
-- `writable`, `isbrief`, `check_fix`'s predicate;
-- default-branch resolution as a function that returns instead of exiting;
-- `check_brief`/`check_branch`, operating on a `MAIN`/`MAIN_SHA` the caller sets;
-- one `brief_fields` reader that returns Status, Branch, Policy and Paths in one pass, so the brief has one parser (architecture finding 1).
+- `scrub` and its re-exec wrapper;
+- `pathform`, FENCE_AWK and `oddwhy`, `INSTRUCTION_FILE` and the import walk;
+- `writable`, `isbrief` and `check_fix`'s predicate;
+- default-branch resolution, which returns instead of exiting;
+- `check_brief`, `check_branch` and `check_answer`;
+- `brief_fields`.
 
-Both scripts source the lib from their own `SCRIPT_DIR` and never from the target repo; a missing lib means exit 1. `build-loop.sh` resolves `MAIN_SHA` once and calls the lib directly, with no subprocess, so there is one view of main (architecture finding 3). Output follows dev-cycle.sh's check-mode conventions:
+Both scripts source the lib from their own `SCRIPT_DIR`, so the copy D6 extracts is self-contained. `build-loop.sh` resolves `MAIN_SHA` once and calls the lib directly, with no subprocess. Output follows dev-cycle.sh's check-mode conventions:
 
 - `skip X: why` means unreadable; `refuse X: why` is a verdict;
-- `-` marks a field that does not apply;
-- `--check` ends with one summary line per brief;
-- the read modes (`--policy`, `--status`, `--check`) exit 0 when every argument was answered;
-- the writing modes (`--start`, `--prompt`, `--merge`) exit 2 on any refusal;
+- read modes exit 0 when every argument was answered;
+- writing modes exit 2 on any refusal;
 - usage errors exit 1.
 
 ## Script interface (`scripts/build-loop.sh`)
 
-- `--policy` → `policy self-merge|review set|unset: <why>` from main's `docs/dev-cycle.md`.
-- `--status BRIEF…` → `ok BRIEF STATE POLICY BRANCH LOOP SHA DATE [REASON]`. LOOP is `absent | working | plan | ready | stopped`.
-- `--start BRIEF [--dir DIR]` → the brief must be `open` with `Branch:` absent. Runs `worktree add -b BRANCH DIR MAIN_SHA` (default `.claude/wt-<stem>`; DIR must be new and pass pathform, or be absolute). Prints the prompt. On failure, nothing is left behind.
-- `--prompt BRIEF` → the brief must be `open` with its branch present. Prints the prompt; adds a worktree only if the branch has none.
-- `--check BRIEF… [--expect SHA]` and `--merge BRIEF --expect SHA` → D6, D7, the N rules, and the S rules when the stricter policy is self-merge.
-- Prompt content: the evidence line; the brief path and main's commit (`git show COMMIT:PATH`); the resolved policy; the marker rules; "never push; never write the questions files, the roadmap, `docs/dev-cycle.md` or any other brief; in your own brief change only the Status line, open→done, in your final change"; "a brief is not plan approval: get an explicit approve-plan message or end with `handoff: plan`"; "run the gate only as `~/.claude/scripts/build-loop.sh`".
-- Brief machine lines (written by the cycle; read by `brief_fields` from main's commit; first unfenced line of each):
+Read modes:
+- `--settings` → `policy self-merge|review set|unset: WHY` and `slots N set|default: WHY`, from main's `docs/dev-cycle.md`.
+- `--status BRIEF…` → `ok BRIEF STATE POLICY BRANCH LOOP SHA DATE DISPATCHED [REASON]`, where LOOP is `absent | working | ready | blocked | stopped`.
+- `--marker BRIEF` → `ok BRIEF SHA`, then the `blocked` or `stopped` body under D11's rules; otherwise `skip`.
+- `--state` → `ok`, or `refuse KEY` for each planted `.git` state the gate refuses (exit 2).
+- `--main-log SINCE` → one `gate|chore|answers|other SHA SUBJECT` line per first-parent commit after SINCE.
+- `--cycle-diff [--answered Q-…]` → `ok`, or `refuse PATH: why` (exit 2); run in the orchestrator's worktree against `MAIN_SHA`.
+
+Gate:
+- `--check BRIEF… [--expect SHA]` → D7, the N rules, and the S rules when the stricter policy is self-merge. Advisory when a loop runs it.
+- `--merge BRIEF --expect SHA [--approved Q-NNN]` → as `--check`, then commit-tree and CAS. Without `--approved`, the stricter policy must be self-merge and the S rules apply. With it, only the N rules apply; Q-NNN must read option 1 on main's commit with slug `merge-STEM-SHA12`, or `merge-gate-STEM-SHA12` when the result touches the gate's own files.
+
+Dispatch:
+- `--start BRIEF [--dir DIR]` → the brief must be `open` on main, with a `Branch:` that does not exist yet. Runs `worktree add -b BRANCH DIR MAIN_SHA`, locks the worktree, and prints the prompt. On failure, nothing is left behind.
+- `--prompt BRIEF [--steal]` → the brief must be `open`, with its branch present and `Dispatched:` under 4. Prints the prompt; adds a worktree only if the branch has none; refuses a locked worktree unless `--steal` and the tip is over 2 hours old.
+- `--start` and `--prompt` print `dispatched N` for the orchestrator to write as `Dispatched: N` on the brief in its next chore commit. The script writes no file on main.
+
+Other details:
+- `--check-answer` moves into the lib and reads main's commit (D8). dev-cycle.sh keeps its flag.
+- Prompt content:
+  - the evidence line;
+  - "your worktree is ABS-PATH: start every command with `cd ABS-PATH &&`; your shell starts outside any checkout";
+  - the brief path and main's commit (`git show COMMIT:PATH`);
+  - the resolved policy;
+  - the three markers, when to use each, and the blocked-body grammar;
+  - "subagents only for research and review, each with scratch dir SCRATCH/STEM/; never start build loops, background agents or schedules; never push, merge, open a PR or publish";
+  - "never write the questions files, the roadmap, `docs/dev-cycle.md` or any other brief";
+  - "in your own brief, change only the Status line, open→done, in your final change";
+  - "run RPI with no plan-approval gate: questions go in a `blocked` marker";
+  - "`--check` is advisory; the orchestrator's run decides".
+- Brief machine lines (the orchestrator writes them; `brief_fields` reads the first unfenced line of each from main's commit):
   - `Branch: NAME` (required);
-  - `Policy: self-merge|review` (else review);
-  - `Paths: P…` (space-separated pathform entries; a trailing `/` means a directory and matches at a component boundary; empty or absent means none; a malformed or duplicate entry → no self-merge).
-- Own files of a brief with stem `YYYY-MM-DD-slug`:
-  - `docs/working/{research,plan,checkpoint,handoff,test-strategy}-YYYY-MM-DD-slug.md`;
-  - added `docs/reviews/*YYYY-MM-DD-slug*.md`;
-  - its own Status line.
+  - `Policy: self-merge|review` (anything else is review);
+  - `Paths: P…` (a malformed or duplicate entry means no self-merge);
+  - `Asked: Q-NNN@SHA, …` (D4);
+  - `Dispatched: N` (D1).
+
+## Skill changes (`skills/dev-cycle/SKILL.md`)
+
+The flow becomes:
+
+```
+start: --state, --main-log → 0 digest (from main) → 1 health → { 2 triggers | 3 questions | 4 spot-check | 4b audit check }
+  → 5 brainstorm → 6 roadmap → 7 collect results → 8 briefs into free slots → 9 record, --cycle-diff, land (pr-prep, no gate)
+  → 10 dispatch (after the land is verified) → wait or go again (D12)
+```
+
+- **Rules** gain D13's isolation (the orchestrator's directory, its worktree, `git -C`), D6's snippet, D11, and D14's quiesce scope. "This skill does not read the policy" is removed.
+- **Step 1** quiesce covers only this iteration's subagents (D14).
+- **Step 6, In flight**: check 1 (done/dropped → Done/Ideas, `git mv` to `closed/`) is kept. Checks 2–3 (keep-or-drop, 14 days) are removed; step 7 replaces them.
+- **Step 7, collect**: D4, through D6's snippet.
+- **Step 8, briefs**: as today's "Build briefs", plus the machine lines, with `Paths:` only when the stricter policy and the floor allow it. Only free slots are filled (D9), and briefs whose questions are all answered come first.
+- **Step 9, close**: today's step 7, plus `Main at:` and the SHAs of the merges this iteration made, a line per dispatched, collected and merged brief, and `--cycle-diff` before the commit. pr-prep runs with no approval gate (your answer 7).
+- **Step 10, dispatch**: D1; then the wait or go-again rule (D12). The final message lists new `you: judgment` IDs, merge entries or PRs, and working-tree-only answers.
+- `workflows/pr-prep.md:333`: the quiesce covers subagents this task started; the reap is by PID only (D14).
+- The "does not run yet" and "not built yet" wording is removed throughout.
 
 ## Steps
 
-Stacked review units (log row 62, ~400 changed code lines outside `docs/`; moved lines count twice). **U0** = step 1, **U1** = steps 2–3, **U2** = steps 4–5, **U3** = steps 6–7, **U4** = steps 8–10. If U0 measures over 400, it splits into U0a (`scrub`, `pathform`, FENCE_AWK, `writable`) and U0b (`check_brief`, `check_branch`, the import walk, default-branch resolution) before its review starts.
+Stacked review units (log row 62: about 400 changed code lines outside `docs/`; moved lines count twice). Tests come first in each unit.
 
-1. **Extract the lib** (U0, ~260 moved). Behaviour unchanged apart from the default-branch function returning. Also add T25 (the 53 existing tests stay green), T29 (sourcing the lib defines functions and runs nothing), T30 (a missing lib → exit 1). Commit `refactor:`.
-2. **U1 tests**: T1–T8, T21, T28 in `test/scripts/build-loop-read.bats` with `test/lib/build-loop-fixtures.bash`. They fail. Commit `test:`.
-3. **`brief_fields` in the lib, plus `build-loop.sh --policy` and `--status`** (~200). `check_brief` uses `brief_fields` (T31: they agree on Status; a brief made from SKILL's template parses). Commit `feat:`.
+1. **U0, extract the lib** (~260 lines moved; U0a/U0b if it measures over 400). Behaviour unchanged. Tests: T25 (53 green), T29, T30. Commit `refactor:`.
+2. **U1 tests**: T1–T8, T21, T28, T32, T34, T42 in `test/scripts/build-loop-read.bats`, with `test/lib/build-loop-fixtures.bash`. Commit `test:`.
+3. **U1 code** (~260): `brief_fields`, `--settings`, `--status`, `--marker`, `--state`, and `check_answer` reading main's commit. The dev-cycle.bats answer tests are updated to commit their fixtures. Commit `feat:`.
 4. **U2 tests**: T9–T18, T20, T26, T27 in `build-loop-check.bats`. Commit `test:`.
-5. **`--check`** (~200): D6, the state gate, merge-tree, the N and S rules, `--expect`. Commit `feat:`.
-6. **U3 tests**: T19, T22–T24 in `build-loop-merge.bats`. Commit `test:`.
-7. **`--start`, `--prompt`, `--merge`** (~150). Commit `feat:`.
-8. **Skill (U4)** (~120 lines in `skills/`):
-   - Briefs gain the three machine lines, and the cycle writes `Paths:` only when the policy and floor allow.
-   - In flight check 3 takes the branch from `Branch:` and files the early keep-or-drop entry on a marker (D3), using `--status`.
-   - Step 1 records unexplained working-tree changes to the cycle's own files (F28 mitigation).
-   - Close step: the final message gives each new brief's `--start` command and each marker's command.
-   - Remove "does not run yet" and "This skill does not read it".
-9. **Docs (U4)**:
-   - `docs/dev-cycle.md` drops "not built yet".
-   - `workflows/codebase-onboarding.md:453` drops "a planned unit".
-   - Decision log row 70 (D1–D7, and what the gate cannot do).
-   - The seed's Status line → "superseded by row 70".
-   - Research gotcha corrected: the installed copy is the image's, not the repo.
-10. **Questions and brief (U4)**:
-    - Re-route Q-103 to `you: judgment`, listing F11, F19, F21, F28 and F29, the D6 bless prerequisite and "what the gate cannot do".
-    - Add one `you: terminal` entry: rebuild and bless the image once U3 has landed.
-    - Set this brief's Status to `done` in U4's merge.
+5. **U2 code** (~200): `--check`, the state gate, merge-tree, the N and S rules, `--expect`. Commit `feat:`.
+6. **U3 tests**: T19, T22–T24, T35, T40, T41 in `build-loop-merge.bats`. Commit `test:`.
+7. **U3 code** (~230): `--start`, `--prompt` (lock, steal, dispatch cap), `--merge`, `--approved` (with the `merge-gate-` rule). Commit `feat:`.
+8. **U3b tests**: T33, T36–T39, T43 in `build-loop-orchestrator.bats`. T33, T36 and T37 test the D6 snippet, which U3b ships as `test/lib/d6-snippet.bash`, a byte copy of the SKILL.md block; a test asserts the two match. Commit `test:`.
+9. **U3b code** (~220): `--main-log`, `--cycle-diff`, the `flock` in `scripts/health-check.sh`. Commit `feat:`.
+10. **U4, skill and pr-prep** (~260 lines in `skills/` and `workflows/`): the flow, Rules, step 1, steps 6–10, the D6 snippet, and pr-prep's quiesce line. Commit `feat:`.
+11. **U5, settings and docs**:
+    - `docs/dev-cycle.md` describes the handoff as built: the policy, slots and `Review handoff:` lines; "not built yet" is removed.
+    - `workflows/codebase-onboarding.md:453` drops "a planned unit".
+    - Decision-log row 70 (D1–D14, what the gate cannot do, your override as D10).
+    - The seed's Status line → "superseded by log row 70".
+    - Research gotcha corrected.
+12. **U5, roadmap and questions**:
+    - Roadmap items from your answers: (a) merged-branch deletion (needs C4), (b) the audit dimension menu, (c) brainstorm hard constraints. Plus (d) the rest of "build-loop audit": re-running the N/S rules over past gate merges.
+    - `you: judgment` entries for C1–C3 (defaults as Interim), C4 under item (a), and C5 (the cost per iteration: a full cycle on every loop finish, or a light pass of steps 7, 8 and 10 in between).
+    - One `you: terminal` release entry: rebuild and bless, so the image's dev-cycle skill carries this unit. The gate does not need it (D6), but the installed skill does.
+13. **U5, Q-103 and brief**: re-route Q-103 to `you: judgment`, listing F11, F19, F21, F29, F35 and F37 and "what the gate can and cannot do". Set this brief's Status to `done` in U5's merge.
 
 ## Implementation order
 
-`1 → 2 → 3 → 4 → 5 → 6 → 7 → [8, 9, 10]`. Sequential through step 7: each unit stacks on the previous one and its review-fix loop.
+`1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → [11, 12, 13]`. Sequential: each unit stacks on the previous one and lands through its own review-fix loop.
 
 ## Size estimate
 
-- `scripts/build-loop.sh` ~420.
-- `scripts/lib/dev-cycle-read.sh` ~320.
+- `scripts/build-loop.sh` ~650.
+- `scripts/lib/dev-cycle-read.sh` ~340.
 - `dev-cycle.sh` ~880 → ~600.
-- Tests: three bats files of ~200 each, plus a fixtures helper of ~80.
-- Units: U0 ~520 changed (moves), so probably U0a/U0b; U1 ~380; U2 ~420 (tight: if over, T26/T27 move to U3); U3 ~300; U4 ~150.
+- `health-check.sh` +5.
+- Tests: four bats files of ~220 each, plus fixtures of ~110.
+- SKILL.md: net about +90.
+- Units: U0 ~520 changed as moves (probably U0a/U0b); U1 ~430 (tight: `--state` moves to U3b if over); U2 ~420; U3 ~410; U3b ~400; U4 ~260; U5 ~140.
 
 ## Estimated context cost
 
-Research ~150k (done, including three plan reviews). Implementation ~250k across five units. Review ~200k (five review-fix loops). One fresh session per unit, each loading `docs/working/checkpoint-build-loop-handoff.md`.
+Research is done (~150k, plus this revision ~200k with its pre-mortem). Implementation ~330k across seven units. Review ~280k (seven review-fix loops). One fresh session per unit, each loading the checkpoint.
 
 ## Actual context cost (post-implementation)
 
@@ -151,72 +272,64 @@ __
 
 ## Test specification
 
-From `docs/reviews/test-strategy-build-loop-handoff.md` (gaps G1–G20; the T-ids it closes are noted). The hermetic throwaway-repo setup is the same as `test/scripts/dev-cycle.bats`. On failure, each test prints the script's whole output and `git log --oneline --graph --all`.
+The hermetic throwaway-repo setup is the same as `test/scripts/dev-cycle.bats`. On failure, each test prints the script's whole output and `git log --oneline --graph --all`. T1–T31 are as in revision 2 (`git show 3a005378:docs/working/plan-build-loop-handoff.md`), with these changes:
 
 | T | Case | Expected | Level |
 |---|---|---|---|
-| T1 | Policy exact `self-merge`/`review`, each with a trailing CR | that value, `set` | unit |
-| T2 | Variants: interim suffix, case, trailing space, two lines, none, a one-line `<!-- -->` holding the line | review + why | unit |
-| T3 | Policy line in a fence; open `<!--`; BOM; settings file missing, a symlink, a directory or only in the working tree; real `docs/dev-cycle.md` (G7, G19) | review | unit |
-| T4 | Working tree self-merge vs commit review, and vice versa | the commit wins | unit |
-| T5 | Stricter-of: all four combinations, and a brief without `Policy:`; `--check` reads machine lines from main (G15) | review unless both say self-merge | unit |
-| T6 | Loop states absent/working/plan/ready/stopped; every field asserted; reason at 120 and 121 chars (G18) | as listed | unit |
-| T7 | Spoofed markers: with content, a merge commit, suffixed subject, control/bidi in the reason, an orphan commit, a marker at main's tip with 0 ahead (G5) | working / `unreadable` | unit |
-| T8 | A brief FENCE_AWK refuses; no `Branch:`; `Branch: main`/`HEAD`/bad name (G4) | skip + why | unit |
-| T9 | Self-merge: `Paths:` changes, own research/plan/checkpoint files, an added `docs/reviews/x-<stem>.md`, own Status line | ok | integration |
-| T10 | One refusal per path: outside `Paths:`; `Paths:` naming each code dir, `install.sh`, `.gitattributes`, `docs/.x`, `docs/CLAUDE.md`, `docs/sub/SKILL.md`, `docs/decisions/001-x.md`, `docs/thoughts/x.md`, an `@`-imported doc, `Hooks/x`; `Paths: docs/` touching another stem's checkout and an added review for another stem; a modified review; `Paths:` component boundaries `docs/a` vs `docs/ab.md` and duplicate or malformed entries (G10, G11) | refuse + rule | integration |
-| T11 | Rename `hooks/x` → `docs/x` (listed) | refuse | integration |
-| T12 | Symlink added; file → symlink; exec bit; gitlink | refuse (mode) | integration |
-| T13 | Non-ASCII, space, newline path | refuse, no raw echo | integration |
-| T14 | Review policy too: each cycle-owned file, another brief, an **added** brief, `closed/x`, `Docs/Roadmap.md`; and a normal change under review passes (G9) | refuse / ok | integration |
-| T15 | Own brief: Status only (ok); `Paths:` changed; → dropped; moved to `closed/` | as listed | integration |
-| T16 | Main gains a cycle commit after the tip: still ok, and main's own changes are not judged; a conflict → refuse | as listed | integration |
-| T17 | `--expect` stale, a short SHA, a branch name, `HEAD`, missing | refuse / usage | integration |
-| T18 | Brief `dropped`/`done`/`new` on main | refuse | integration |
-| T19 | `--start`: the prompt holds every required line; worktree HEAD = MAIN_SHA; default dir; `--dir` rules (G8) | as listed | integration |
-| T20 | No `push` in `build-loop.sh` or the lib (static) | none | unit |
-| T21 | Working-tree edits to a brief's machine lines are ignored by `--start`/`--status`/`--check` | the commit wins | integration |
-| T22 | `--merge` with main not checked out: commit parents (MAIN, TIP), CAS; a `git` PATH wrapper moves main between check and update → refuse, main untouched (G17); a repeat merge of a merged tip → refuse (G13) | as listed | integration |
-| T23 | Main checked out clean in W → ff and verified; W dirty; W on another branch; any worktree mid-rebase of main or bisecting → refuse | as listed | integration |
-| T24 | `--start` with brief not open or branch existing → refuse, nothing left behind; `--prompt` on an existing branch | as listed | integration |
-| T25 | All 53 dev-cycle.bats tests after the extraction | pass | characterization |
-| T26 | Planted state: hooks (a marker file must not appear), `core.fsmonitor`, a local filter, `info/attributes`, `refs/replace/`, `diff.ignoreSubmodules=all` hiding a gitlink | hooks inert; the rest refuse | integration |
-| T27 | Gate run from a copy inside the target repo's worktree | refuse | integration |
-| T28 | Two open briefs with one `Branch:`; several briefs in one `--status` call map in order (G6) | skip both; order kept | unit |
-| T29–T31 | Lib sourcing is inert; missing lib → exit 1 (G16); `brief_fields` agrees with `check_brief`; run from a subdirectory or linked worktree (G20) | as listed | unit |
+| T1–T3 | As rev 2, via `--settings`; plus `Build-loop slots:` 0, 10, `3 `, two lines, in a fence | policy as rev 2; slots default 3 + why | unit |
+| T6 | Loop states absent/working/ready/blocked/stopped; every field asserted, `DISPATCHED` included; reason at 120 and 121 chars | as listed | unit |
+| T7 | Spoofed markers: with content, a merge commit, a suffixed subject (`handoff: blocked!`), control/bidi in the reason, an orphan commit, a marker at main's tip with 0 ahead | working / `unreadable` | unit |
+| T19 | `--start`: the prompt holds every required line (the `cd ABS-PATH &&` rule, the scratch-dir line with the stem, no blanket "never start agents", "no plan-approval gate", "`--check` is advisory"); worktree HEAD = MAIN_SHA; worktree locked; `dispatched 1`; default dir; `--dir` rules | as listed | integration |
+| T23 | As rev 2, plus: an untracked unrelated file in W → merge; an untracked file at a path the merge adds → refuse | as listed | integration |
+| T27 | A gate copy with a patched rule, run from the loop's worktree, prints ok; the D6 snippet's copy refuses the same tip | refuse from main's copy | integration |
+| T32 | `--marker`: a plain 3-question body → printed, every line `> `-prefixed; E2's body, E3's line, `### Q-001 · x`, `Q-1: [1]` → skip; 101 lines or a 301-byte line → capped with a note; control/bidi scrubbed; an open fence → skip; a `ready` marker → skip | as listed | unit |
+| T33 | The D6 snippet: extracts the four files into `$T/scripts/{,lib/}`; the copy sources its own lib and `questions.sh`; a working-tree edit has no effect; the SKILL.md block and `test/lib/d6-snippet.bash` are byte-equal | as listed | integration |
+| T34 | `--check-answer` (both scripts): an answer only in the working tree → `open`; committed on main → read; committed only on another branch → `open`; the E2 fixture with the body quoted by `--marker` → option 2, and `questions.sh open` omits the ID | as listed | unit |
+| T35 | `--merge --approved`: Q-NNN answered [1] with a matching slug → merges with N rules only; answered [2]/[3]/open; a slug naming another brief or an older TIP; an answer only in the working tree; a gate path under a plain `merge-` slug → refuse, under `merge-gate-` → ok | as listed | integration |
+| T36 | A blob replace ref, and separately a commit replace ref, on main's `build-loop.sh`; `info/grafts` present → the snippet refuses before running anything | refuse | integration |
+| T37 | A non-claude-workflows fixture repo with `scripts/build-loop.sh` on main → the snippet picks the `/opt` path (stubbed), not main's; a uid-owned stub dir → refuse | as listed | integration |
+| T38 | `--cycle-diff`: a planted ANSWERED flip on an entry not in `--answered` → refuse; the same with the ID listed → ok; an appended entry → ok; a roadmap line edited outside the cycle's moves → refuse | as listed | integration |
+| T39 | `--main-log`: a gate merge, a chore merge, an answers-only commit, and a non-merge commit touching `docs/x.md` → classified `gate`, `chore`, `answers`, `other`; an `answers`-shaped commit that also changes an options table → `other`. A bare `git rev-parse` from a non-checkout directory fails | as listed | integration |
+| T40 | `--prompt` on a locked worktree → refuse; `--steal` with a tip under 2 h → refuse; over 2 h → ok and relocked | as listed | integration |
+| T41 | A brief with `Dispatched: 4` → `--prompt` refuses; `Dispatched: 3` → ok, prints `dispatched 4` | as listed | integration |
+| T42 | `--state`: `core.fsmonitor`, a local filter, a hook key, `refs/replace/`, `info/attributes` → refuse each, exit 2; a clean repo → ok | as listed | unit |
+| T43 | Two concurrent `health-check.sh` runs (stubbed suites) serialize on the lock | second starts after first ends | integration |
 
-Deferred (G3): `build-loop.sh` output is scrubbed through the shared `scrub`. T7 asserts that the reason is not echoed raw, and no separate scrub test is added.
+Dropped from revision 2: none of the T-ids. T19 and T24 now test the orchestrator's commands rather than your own.
 
 ## Failure modes considered
 
 | Failure mode | Guard |
 |---|---|
-| The extraction changes dev-cycle.sh's behaviour | U0 is its own unit; T25 characterization; T29, T30 |
-| A self-merge lands a denied path through an unlisted family | The allowlist is primary (D5); F1–F31; the plan-time pre-mortem output |
-| A review merge can never complete after a cycle lands | D7 (merge-tree, no ancestry); T16 |
-| The merge lands on the wrong branch | D7 plus F29 checks; T22, T23; residual recorded |
-| The gate runs the loop's own code | D6; T27 |
-| The docs describe a design the script lacks | U4 lands last; code-fact-check runs in its review loop |
+| The extraction changes dev-cycle.sh's behaviour | U0 is its own unit; T25, T29, T30 |
+| A self-merge lands a denied path through an unlisted family | The allowlist is primary (D5); F1–F53 |
+| A review merge can never complete after a cycle lands | D7; T16 |
+| The gate runs a loop's bytes | D6 snippet; T27, T33, T36, T37 |
+| An honest loop commits to main from the wrong directory | D13; T39 |
+| The user's answer is read as something else | D3 body grammar, D11 quoting; T32, T34 |
+| A loop waits on you | D2: `blocked` marker, slot freed |
+| The orchestrator spends without bound | D9 slots; D1 dispatch cap and stall rule; D12 no-op wakeups; C5 |
+| The docs describe a design the script lacks | U4–U5 land last; code-fact-check runs in their review loop |
 
-- `/pre-mortem`: triggered (a trust-boundary gate on what autonomous loops may merge). Output: `docs/reviews/pre-mortem-build-loop-handoff.md`; folded in as F25–F31, L1–L3, D6, D7.
-- `/architecture-review`: triggered (`scripts/`, `test/`, `skills/`, `workflows/`, `docs/`). Output: `docs/reviews/architecture-review-build-loop-handoff.md`; folded in as the lib scope, one brief parser, no subprocess, CLI conventions and test layout.
+- `/pre-mortem`: run twice. Revision 2's output is `docs/reviews/pre-mortem-build-loop-handoff.md`. This revision's is `docs/reviews/pre-mortem-build-loop-handoff-rev3.md`: 5 narratives, 3 reproduced experiments (E1 replace refs, E2 an answer read as the wrong option, E3 an entry archived out of sight), folded in as D13, D14, the D6 hardening, the D3/D11 body rules and F38–F53.
+- `/architecture-review`: revision 2's still holds for the lib and script. The orchestrator flow and the new modes are reviewed in U3b's and U4's review-fix loops.
 
 ## Risks
 
-- **D6 means nothing works here until a re-bless.** Accepted: it is the only guard against F26 that doesn't trust the loop.
-- **U0 moves ~260 lines of code that took 38 review passes.** It is pure movement plus one function boundary, under the 53 tests.
-- **The state gate (F25) can refuse merges** when a legitimate local config sets a `diff.*` or `merge.*` key. The refusal names the key.
-- **F19 and F28 rest on same-uid trust**, stated in Q-103.
-- **Existing briefs have no machine lines.** They stay user-started, as today.
-- **macOS is not tested.** dev-cycle.sh is already GNU-only.
-- Deferred coverage (test-strategy "What NOT to test"): concurrency beyond the injected CAS race, and multi-host setups.
+- **The design grew.** Revision 3 adds about 230 lines of script (U3b) to close what the pre-mortem reproduced. The alternative was to leave the policy at `review` forever and file F41–F43 in Q-103. F41 (answers misread) and F43 (an honest commit to main) bite under `review` too, so they could not just be listed.
+- **The image lags main.** The installed skill (`~/.claude/skills`) is the image copy, so the orchestrator loop runs in this repo only after a release (step 12). The gate itself does not wait (D6).
+- **Subagent loops die with the orchestrator session.** D1 re-dispatches them; the cost is one resumed RPI session per restart, capped by `Dispatched:`.
+- **D8 adds a step for you:** an answer typed into the working tree counts only once you commit it or tell the orchestrator. The wait message lists such answers.
+- **The state gate (F25, F51) can refuse** when a legitimate local config sets a `diff.*` or `merge.*` key. The refusal names the key.
+- **F35 rests on same-uid trust**, stated in Q-103.
+- **macOS is not tested.** dev-cycle.sh is already GNU-only, and `flock` is util-linux.
 
 ## Rollback
 
-1. Each unit lands as its own `--no-ff` merge on main (U0[a/b], U1–U4). Revert in reverse order: `git revert -m 1 <U4> <U3> <U2> <U1> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
-2. Set Q-103 back to `Needs: deferred` with its old Deferred line, delete the bless `you: terminal` entry, and run `scripts/questions.sh index`.
-3. If the image was re-blessed with `build-loop.sh`, re-bless from the reverted main so `/opt/claude-workflows/scripts` no longer ships it (Q-083 flow). Until then, the installed gate stays callable, but no brief has a `Branch:` line the reverted skill would write.
-4. A bad self-merge: first commit `Build-loop policy: review` on main, which binds running loops (the stricter value wins). Then `git revert -m 1 <that merge>` and set its brief to `Status: dropped`.
-5. Worktrees from `--start`: `git worktree remove .claude/wt-<stem>`. Branch deletion is the user's call.
+1. Each unit lands as its own `--no-ff` merge on main. Revert in reverse order: `git revert -m 1 <U5> <U4> <U3b> <U3> <U2> <U1> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
+2. Set Q-103 back to `deferred` with its old Deferred line, remove the C1–C5 and release entries, and run `scripts/questions.sh index`.
+3. Stop a running orchestrator: end the `/loop` (or the session). Its subagent loops stop with it, and their branches and locked worktrees stay for inspection (`git worktree unlock` before removing).
+4. A bad self-merge: commit `Build-loop policy: review` on main first. That binds running loops, because the stricter value wins and the gate re-reads it at merge time. Then `git revert -m 1 <that merge>` and set its brief to `Status: dropped`.
+5. Worktrees from `--start`: `git worktree unlock` then `git worktree remove .claude/wt-<stem>`. Branch deletion is your call (roadmap item (a)).
 
 Irreversible part: none in git. A self-merged doc that a later session already read can't be un-read. The allowlist and the floor keep such changes away from files that later runs follow.
