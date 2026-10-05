@@ -55,13 +55,13 @@
 #             otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
-#             branch's commit (an answer only in the working tree reads open,
-#             or no such entry, until it is committed there): keep, drop, done,
+#             branch's commit (an answer only in the working tree is not seen:
+#             it reads what main's copy says, until committed): keep, drop, done,
 #             open (not marked ANSWERED yet) or unrecognized (answered, but no
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
-#             <reason>" when it cannot be read (no such entry, a duplicate
-#             heading, a code fence never closed or not in plain column-0
+#             <reason>" when it cannot be read (not a question ID, no such
+#             entry, a heading twice in one file or in both files, a code fence never closed or not in plain column-0
 #             form, a line starting (after blanks) with < other than a
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
 #             a line starting like a link reference definition (behind any >
@@ -108,7 +108,8 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,80p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # The header, up to the first line that is not a comment (no fixed range to go stale).
+    -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done

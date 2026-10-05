@@ -287,7 +287,9 @@ main_entry() {
 # values. Call it in the caller's own shell: it sets globals.
 declare -gA BRIEF=(); BRIEF_ODD=""
 brief_fields() {
-  local out l
+  # pipefail for this function only (local -), so a failed read is caught
+  # whatever the caller set.
+  local - out l; set -o pipefail
   BRIEF=(); BRIEF_ODD=""
   if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
   # The whole blob is read (no early exit: SIGPIPE under pipefail).
@@ -543,7 +545,7 @@ END {
 # plain directories there is not read (main_entry). It reads only git objects,
 # so it needs no ROOT_REAL and adds nothing to SKIPPED.
 check_answer() {
-  local a="$1" f e r hit="" where="" n why
+  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   for f in docs/working/questions.md docs/working/questions-archive.md; do

@@ -1,128 +1,81 @@
-Commit: 2da477b7
+Commit: 722884c7
 
-# API Consistency Review: feat/build-loop-u1a (iteration 2)
+# API Consistency Review: feat/build-loop-u1a (iteration 3, final confirming pass)
 
-**Scope:** `git diff main...feat/build-loop-u1a` over scripts/lib/dev-cycle-read.sh, scripts/dev-cycle.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats (HEAD 2da477b7)
+**Scope:** `git diff main...feat/build-loop-u1a -- . ':!docs/reviews'` over scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats (HEAD 722884c7)
 **Date:** 2026-10-05
-**Based on:** Stage-1 merged fact-check summary (k=3), docs/reviews/code-fact-check-report-build-loop-u1a.md
+**Based on:** Stage-1 merged fact-check summary (k=3; docs/reviews/code-fact-check-report-build-loop-u1a-r1/-r2/-r3.md, all Commit 722884c7)
 
 ## Baseline Conventions
 
-Surveyed on main and the branch: `check_brief`, `check_branch`, `check_answer`, `blocker`, `skipped`, `oddwhy`, `resolve_main`/`main_by_name`, `imported_names` (scripts/lib/dev-cycle-read.sh), and dev-cycle.sh's `--check-*` help block (:20-80).
+These are unchanged from iteration 2, and I re-checked them at 722884c7:
 
-- **Function names:** lower snake_case. A `main_` prefix marks default-branch helpers (`main_by_name`). Plural nouns name readers that collect data (`imported_names`). `check_*` names the per-argument answerers.
-- **Output vocabulary:** one line per answer. Positive answers start with `ok` or a state word, and refusals with `skip <arg>: <reason>`. Internal tokens are short, lowercase and name the condition, with an optional argument: FENCE_AWK END prints `odd N WHY` / `unbalanced N`, ANSWER_AWK prints `dup` / `quoted N` / `open` / `unrecognized`, and check_branch prints `absent <name>`.
-- **Globals:** UPPERCASE, in base plus `_SUFFIX` pairs (`SKIPPED`/`SKIP_AT`, `IMPORTED`/`IMPORTED_DONE`, `MAIN`/`MAIN_SHA`/`MAIN_BY_NAME`). Bash 4 associative arrays are already in use (`declare -A last_date` at scripts/dev-cycle.sh:277, `declare -gA` at scripts/lib/si-morning-summary.sh:1226).
-- **oddwhy reasons:** short lowercase codes (`fence`, `comment`, `refdef`, `cr`, `bom`) mapped to a "holds/starts/opens …" clause.
-- **Error handling:** a lib function that cannot judge an input prints a `skip` line. It never exits non-zero for a per-argument condition. The CLI exits 1 only for usage errors or a missing default branch, and the skill (SKILL.md:100-101) records a non-zero check and stops the step.
-- **Platform baseline:** the lib already depends on GNU coreutils `realpath -e` (:96, :99) and `realpath -ms --relative-to` (:441), and on bash ≥4. The only awk-dialect comment in the code targets mawk (scripts/dev-cycle.sh:443: "mawk, Debian's default awk, lacks them"). README documents no supported platform for dev-cycle.sh.
+- Lib functions are lower snake_case. The `main_` prefix marks helpers that work on the default branch (`main_by_name`, `main_entry`). `check_*` names are the per-argument answerers.
+- Each argument gets one output line. A positive answer starts with `ok` or a state word. A refusal is `skip <arg>: <reason>`. Internal tokens are short lowercase condition words (`odd N WHY`, `unbalanced N`, `dup`, `absent`, `error`).
+- Globals are UPPERCASE base/suffix pairs (`SKIPPED`/`SKIP_AT`, `BRIEF`/`BRIEF_ODD`).
+- The CLI `--help` prints the script's leading comment block. Main's convention is that the `sed -n '2,Np'` range ends exactly at the last comment line: main ends at line 77 and its first non-comment line is 78. A sibling avoids the hand-kept number by stopping at the first blank line (`scripts/run-tests.sh:153`: `sed -n '2,/^$/{ ... }'`).
 
 ## Name-Pattern Audit
 
+This iteration adds no new public names; the fix commits since 2da477b7 only change wording and behaviour. Iteration 2's audit still holds:
+
 | New name | Category | Closest existing | Precedent path | Verdict |
 |---|---|---|---|---|
-| `main_entry` | function | `main_by_name`, `resolve_main`, `blocker` | scripts/lib/dev-cycle-read.sh:246, :376, :107 | Consistent: `main_` prefix for default-branch helpers; answers on stdout like `blocker` |
-| `blob` / `absent` / `notfile` / `notdir PART` | output tokens | `absent <name>` (check_branch), `odd N WHY`, `quoted N` | scripts/lib/dev-cycle-read.sh:368, FENCE_AWK END, ANSWER_AWK END | Consistent: `absent` reuses check_branch's word; `notdir PART` follows the token-plus-argument shape |
-| `error` (main_entry) | output token | `dup`, `unbalanced`, `odd` | scripts/lib/dev-cycle-read.sh FENCE_AWK/ANSWER_AWK END blocks | New category: the first token for "git failed" (all others name a property of the input). Acceptable; both callers map it to a distinct skip line |
-| `brief_fields` | function | `imported_names`, `check_brief`, `oddwhy` | scripts/lib/dev-cycle-read.sh:418, :309 | Consistent: plural noun for a collecting reader, as `imported_names` |
-| `BRIEF` / `BRIEF_ODD` | globals | `SKIPPED`/`SKIP_AT`, `IMPORTED`/`IMPORTED_DONE` | scripts/lib/dev-cycle-read.sh:125, :415 | Consistent: base plus `_SUFFIX` pair; `declare -gA` as si-morning-summary.sh:1226 |
-| `BRIEF[status]` … `BRIEF[dispatched]` (values are the whole line, key prefix included) | fields | check_brief's old `st` held `Status: open` whole, stripped by `${st#Status: }` | main:scripts/lib/dev-cycle-read.sh check_brief | Consistent with the old whole-line capture; U1b consumers must strip the prefix themselves (documented: "The callers judge the values") |
-| `nul` → "holds a NUL byte" | oddwhy reason | `cr` → "holds a carriage return that does not end it", `bom` | scripts/lib/dev-cycle-read.sh:236-238 | Consistent |
-| check_brief `skip …: PART is not a directory on the default branch` / `…: the default branch's tree could not be read` | skip lines | `skip $a: not a regular file on the default branch` | scripts/lib/dev-cycle-read.sh:326 | Consistent: same "on the default branch" phrasing; no "so the brief is not read" suffix, as the sibling lines have none |
-| check_answer `…, so $f is not read` (notdir, error) vs `…, so no entry in it is read` (notfile) | skip lines | main's `$SKIP_AT is not a plain file or directory, so $f is not read`; `…, so no entry in $f is read` (odd/unbalanced/quoted) | main:scripts/lib/dev-cycle-read.sh check_answer; scripts/lib/dev-cycle-read.sh:551-553 | Consistent: each suffix has a precedent (path-blocked lines vs content-refused lines) |
-| `--check-answer` needs a default branch found by name (exit 1) | CLI contract | `--check-brief`, `--check-branch` | scripts/dev-cycle.sh:187-193 | Consistent: same gate, same stderr message, help and Exit line updated |
+| `main_entry` | function | `main_by_name`, `resolve_main`, `blocker` | scripts/lib/dev-cycle-read.sh:246, :107 | Consistent |
+| `blob`/`absent`/`notfile`/`notdir PART`/`error` | output tokens | `absent <name>` (check_branch), `odd N WHY`, `dup` | scripts/lib/dev-cycle-read.sh FENCE_AWK/ANSWER_AWK END | Consistent (`error` was the first token for a failed git read; brief_fields now reuses it) |
+| `brief_fields` | function | `imported_names`, `check_brief` | scripts/lib/dev-cycle-read.sh | Consistent |
+| `BRIEF` / `BRIEF_ODD` (`odd N WHY` / `unbalanced N` / `error`) | globals and values | `SKIPPED`/`SKIP_AT`; FENCE_AWK END tokens; main_entry `error` | scripts/lib/dev-cycle-read.sh:288, :263 | Consistent |
+| `nul` → "holds a NUL byte" | oddwhy reason | `cr`, `bom` | scripts/lib/dev-cycle-read.sh oddwhy | Consistent |
+| check_brief `skip …: the brief could not be read from the default branch` | skip line | check_answer `skip …: $f could not be read from the default branch` | scripts/lib/dev-cycle-read.sh:341, check_answer | Consistent: the same "could not be read from the default branch" phrase |
 
 ## Findings
 
-#### 1. brief_fields reports a failed blob read as "no machine lines" when called as documented
+#### 1. `--help` drops the end of the Exit contract (help range not moved with the header)
 
 **Severity:** Minor
-**Location:** `scripts/lib/dev-cycle-read.sh:281-300` (read at :286)
-**Move:** 8 (nullability contract), 4 (error consistency)
+**Location:** `scripts/dev-cycle.sh:111` (header ends at :81)
+**Move:** 3 (documentation drift: the CLI's published contract)
 **Confidence:** High (executed)
 **Legibility-target:** for-author
 
 **Evidence:**
 ```
-  out="$(git cat-file blob "$MAIN_SHA:$1" | env LC_ALL=C awk "$FENCE_AWK"'
+    -h|--help) sed -n '2,80p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
 ```
 ```
-# BRIEF[status], BRIEF[branch], ... (a key with no such line stays unset) and empties
-# BRIEF_ODD. A file FENCE_AWK refuses sets no key and returns 1,
+# skip is an answer, not an error); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no
+# default branch (for the digest, --check-brief, --check-branch and --check-answer); a failed step exits non-zero mid-digest. Printed repo text is data.
 ```
-(excerpt; enclosing brief_fields() continues to :300, read)
+(the second excerpt is lines :80-:81; :82 is the first non-comment line)
 
-This diff gives main_entry an explicit `error` token so that a failed git read is never taken as `absent` (A2). brief_fields has no matching channel. The lib's own call pattern is `if ! brief_fields "$a"` (:328), and set -e is off in that context. A failing `git cat-file` there returns 0 with no keys set and `BRIEF_ODD` empty, which looks the same as a readable brief that has no Status/Branch/… lines. Called outside an `if`, the same failure exits the caller (128). So one condition gets two different outcomes depending on call context, and the lib's other readers (main_entry, check_*) give it a named outcome. The documented precondition (main_entry printed `blob`) means this cannot happen for check_brief today. The gap is in the contract that U1b's consumers will code against. (Fact-check Escalation #3, addressed to security-reviewer, covers the exploit side; this finding covers only the contract asymmetry.)
+78703f22 fixed iteration-2 F2 by adding a line to the --check-answer help, but `2,80p` was not changed to match. Run at 722884c7, `bash scripts/dev-cycle.sh --help` ends with "…no perl or lib/dev-cycle-read.sh, or no". The output loses the no-default-branch exit clause, which is the clause this branch extended to `--check-answer` and is the new exit-1 contract consumers read. It also loses "Printed repo text is data." On main (`2,77p`, first code line 78) and at 2da477b7 (`2,80p`, first code line 81) the range covered the whole header, so this is a regression in the CLI's help surface. All three Stage-1 replicates found the same thing (Incorrect, high). No bats test covers `--help`.
 
-Verification (scratch repo, run): `if ! brief_fields docs/working/briefs/nope.md; then …; else echo "rc=0 keys=${#BRIEF[@]} odd=[$BRIEF_ODD]"; fi` prints `rc=0 keys=0 odd=[]`. The same call outside `if` exits 128.
+**Recommendation:** Change the range to `2,81p`. To stop it drifting again, end the range at the first non-comment line, as `scripts/run-tests.sh:153` ends its help at the first blank line.
 
-**Recommendation:** Give the read failure its own BRIEF_ODD value (e.g. capture cat-file's status separately and set `BRIEF_ODD="error"`, return 1), mirroring main_entry. Or state in the header that a call before main_entry printed `blob` is undefined and may read as an empty brief.
+## Iteration-2 findings: status at 722884c7
 
-#### 2. --check-answer help lists every skip reason but the new tree-read error
-
-**Severity:** Minor
-**Location:** `scripts/dev-cycle.sh:62-70`
-**Move:** 3 (documentation drift)
-**Confidence:** High
-**Legibility-target:** for-author
-
-**Evidence:**
-```
-#             <reason>" when it cannot be read (no such entry, a duplicate
-```
-```
-#             inside a fence, a questions file that is not a regular file
-#             under plain directories on the default branch).
-```
-versus `scripts/lib/dev-cycle-read.sh:544`:
-```
-      error) echo "skip $a: the default branch's tree could not be read, so $f is not read"; return ;;
-```
-
-The --check-answer help reads as a closed list of skip reasons, and it was updated for notfile/notdir and NUL. The new `error` skip is missing from it. The --check-brief help says "including …", so its list is open, and check_brief's new `notdir`/`error` lines are covered there. Consumers treat any skip as a skip (SKILL.md:303-305), so no caller breaks. The help is the published contract for the CLI, though.
-
-**Recommendation:** Append "or a tree on the default branch that could not be read" to the --check-answer list (and consider naming it in --check-brief's for symmetry).
-
-#### 3. `"\0"` in FENCE_AWK assumes an awk whose strings can hold NUL (Escalation #1)
-
-**Severity:** Informational
-**Location:** `scripts/lib/dev-cycle-read.sh:216`
-**Move:** 1 (baseline: platform contract), 4 (error consistency of the skip line)
-**Confidence:** Medium (mawk behaviour executed by Stage 1; the behaviour of other awks is reasoned from source, not run: gawk, busybox and one-true-awk are not installed here, and /usr/bin/nawk resolves to mawk)
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:**
-```
-  if (index(l, "\0")) { refuse("nul"); return 1 }  # $(...) drops NUL, so a printed line would not be the line read
-```
-
-Is the lib expected to run under other awks? Nothing in the repo says so. README and install.sh document no supported platform for dev-cycle.sh. The lib already requires GNU `realpath -e` (:96, :99) and `realpath -ms --relative-to` (:441), which stock macOS/BSD lacks, so it does not run on the platforms where a C-string awk (BWK/one-true-awk on macOS, busybox) is the default. The one dialect the code is written against is mawk (dev-cycle.sh:443). gawk keeps `"\0"` as one byte. So on every platform the lib can run on today, the check behaves as Stage 1 verified.
-
-The residual risk is how the failure shows up, not that it fails. In an awk where `"\0"` lexes to `""`, `index(l, "")` is non-zero for every non-empty line (BWK's sindex returns 1). Every brief and questions file would then be refused with `line N holds a NUL byte`. That fails closed, as Stage 1 says, but the skip line misstates the cause, and nothing else in the lib makes the user look at the awk.
-
-**Recommendation:** Optional. Add a one-time BEGIN self-check (e.g. `if (length("\0") != 1)` → refuse every file with a distinct oddwhy code such as `awk`, "cannot be read by this awk (no NUL support)"), or at least extend the :216 comment to name the mawk/gawk assumption, as dev-cycle.sh:443 does for intervals. No change is needed for current platforms.
+- **F1, brief_fields gave no signal on a failed read: fixed (executed).** In a scratch repo under `set -euo pipefail`, I moved the brief's blob out of the object store and ran `if ! brief_fields "$b"`. It printed `rc=1 keys=0 odd=[error]`. An absent path, a pathform-refused path and `MAIN_BY_NAME=` each also give `BRIEF_ODD=error` with return 1, and the header comment at :282-286 documents this. A caller that needs to tell "absent" from "unreadable" calls main_entry first, as check_brief does at :330-337. The lib's caller contract requires pipefail, and the Stage-1 caveat (under `set -eu` alone the failure is lost) falls under that contract (lib header).
+- **F2, the --check-answer help omitted the tree-read error: fixed.** Lines :70-71 now read "…or a default branch whose tree or file could not be read)". But the fix moved the header end to :81, which the help range does not reach. That is Finding 1 above.
+- **F3, awk `"\0"` portability: settled.** The override-log row at :224 is Won't-Fix ("Fails closed; mawk … and gawk both read "\0" as one NUL byte"). I have no new evidence, so I am not re-raising it.
 
 ## What Looks Good
 
-- Every new name follows the lib's existing patterns (audit above): `main_` prefix, a plural noun for the collecting reader, `BRIEF`/`BRIEF_ODD` as a base/suffix global pair, and the `nul` oddwhy code with its "holds a …" message.
-- main_entry's `error` vs `absent` split carries the A2 fix through to both callers with distinct skip lines. Stage 1 verified this by execution (Claim set "A2 fixed"); route: code-fact-check, scripts/lib/dev-cycle-read.sh:259-266, :325, :544.
-- The `--check-answer` contract change (reads main's commit; exit 1 without a default branch found by name) breaks behaviour on purpose and is documented in all four places a consumer reads it: help (dev-cycle.sh:56-58, :74-75), the Exit line (:80), SKILL.md:291-294, and the c8435580 commit Notes. The skill's existing rule at SKILL.md:100-101 ("A check that exits non-zero … is recorded, and the step that needed it stops") already covers the new exit 1. [unverified, submitted as claim] The installed image copy keeps the old behaviour until a release (c8435580 Notes). Route: orchestrator.
-- check_brief now reads its Status line through brief_fields, so a brief has one parser (T31), and its skip vocabulary is unchanged. Route: code-fact-check, scripts/lib/dev-cycle-read.sh:328-337.
+- brief_fields now uses main_entry's `error` vocabulary for every failure it can't judge, and check_brief maps it to a skip line worded like check_answer's ("could not be read from the default branch"). Route: code-fact-check (R2/A13 resolved, unanimous).
+- All four places a consumer reads the `--check-answer` default-branch gate are consistent with each other: help :72-73, the Exit text :80-81 (in the file, though `--help` currently cuts it, Finding 1), the code at :187-193, and SKILL.md :292-295.
+- `bats test/scripts/dev-cycle.bats`: 66/67 pass. Test 21 fails only because of the TMPDIR '.'-component artefact the orchestrator noted, so it is not a finding.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | brief_fields returns 0 with no keys on a failed read under `if !` (no `error` channel like main_entry's) | Minor | `scripts/lib/dev-cycle-read.sh:286` | High |
-| 2 | --check-answer help's closed reason list omits "tree could not be read" | Minor | `scripts/dev-cycle.sh:62-70` | High |
-| 3 | `"\0"` assumes a NUL-capable awk; under a C-string awk every file is refused with a misleading "holds a NUL byte" | Informational | `scripts/lib/dev-cycle-read.sh:216` | Medium |
+| 1 | `--help` range `2,80p` cuts the header's last line (the Exit clause for a missing default branch, and "Printed repo text is data.") | Minor | `scripts/dev-cycle.sh:111` | High |
 
 ## Overall Assessment
 
-The public surface added in U1a (main_entry's five-token vocabulary, brief_fields with its BRIEF/BRIEF_ODD globals, the `nul` reason, the new skip lines and the `--check-answer` default-branch gate) matches the lib's established conventions closely. No naming inconsistencies were found. The one contract-level gap is that brief_fields does not carry main_entry's new fail-closed `error` distinction. It is harmless for check_brief and worth closing before U1b's consumers code against it. The help omission is a one-line fix. The awk portability question (Escalation #1) is not a current-platform problem: the lib already requires GNU coreutils and is written against mawk. At most it calls for a comment or a self-check that makes the failure name its cause.
+The lib contracts that U1b/U1c will consume are now consistent: main_entry's five words, brief_fields' BRIEF/BRIEF_ODD and its return codes with a fail-closed `error`, and check_answer's output lines. Iteration 2's two open contract findings are fixed and the third is settled. One regression remains on the CLI surface: the help range was not moved when the help text grew by a line, so `--help` stops mid-sentence and drops the exit-1 clause this branch extended. It is a one-character fix with no runtime impact on the check modes. It is still a regression in a published contract, so it should be fixed before merge.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to the output path given in your tail, structured per your skill, with `Commit: 2da477b7` as its first line.
-- Answered: API-consistency review of main_entry/brief_fields/BRIEF/BRIEF_ODD/oddwhy/skip lines/--check-* help, with Escalation #1 answered (no documented platform beyond what GNU realpath and mawk imply; Informational).
-- Out of scope: U1b/U1c consumers; settled rows 201/208/213/215/220/221 (not re-raised); Escalations #2 (test), #3 (security side; contract side is finding 1), #4 (digest readers).
-- Escalate: none beyond routing finding 1 alongside Escalation #3 to the orchestrator so the security and contract views are reconciled once.
+- Success criterion (restated verbatim): A markdown report saved to /workspace/.claude/wt-build-loop-u1a/docs/reviews/api-consistency-reviewer-review-2026-10-05-build-loop-u1a.md (overwrite the iteration-2 one), first line `Commit: 722884c7`, structured per the api-consistency-reviewer skill, every finding with Severity, Location, verbatim Evidence, Confidence and Legibility-target, ending with the canonical Goal-Alignment Note.
+- Answered: the API-consistency review at 722884c7. The status of iteration-2 F1/F2/F3 was confirmed by execution (F1 and F2 fixed, F3 settled by row :224). One new Minor finding (the `--help` truncation), which agrees with Stage 1's Incorrect claim.
+- Out of scope: U1b/U1c consumers; override-log rows :220-231, which were not re-raised; security and performance aspects; the bats test 21 TMPDIR artefact.
+- Escalate: Finding 1 is a regression in a published contract (Minor, one-line fix). The orchestrator decides whether it holds the merge.
