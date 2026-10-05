@@ -1028,7 +1028,7 @@ EOF
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
-                 oddwhy check_brief check_branch resolve_main; do
+                 oddwhy check_brief check_branch resolve_main main_by_name; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         [[ -n "$FENCE_AWK" ]] || echo "no FENCE_AWK"
@@ -1074,9 +1074,21 @@ closed" ] || { echo "$output"; return 1; }
     git branch -m main trunk
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
         resolve_main && echo "$MAIN ${MAIN_SHA:0:7} by-name=${MAIN_BY_NAME:-no}"
-        cd "$2"; resolve_main || echo "none: [$MAIN] [$MAIN_SHA]"' _ \
+        cd "$2"; resolve_main || echo "none $?: [$MAIN] [$MAIN_SHA]"' _ \
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR"
     [ "$status" -eq 0 ] || { echo "$output"; echo "$stderr"; return 1; }
     [ "$output" = "trunk $(git rev-parse --short=7 HEAD) by-name=no
-none: [] []" ] || { echo "$output"; return 1; }
+none 1: [] []" ] || { echo "$output"; return 1; }
+}
+
+@test "check_brief and check_branch skip, not answer, without a default branch found by name" {
+    mkdir -p docs/working/briefs && printf 'Status: open\n' > docs/working/briefs/2026-10-02-a-b.md
+    git add -A && git commit -qm brief && git branch -m main feature-x
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        check_brief docs/working/briefs/2026-10-02-a-b.md; check_branch f1
+        resolve_main; check_brief docs/working/briefs/2026-10-02-a-b.md; check_branch f1' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 0 ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ "$(grep -c 'no default branch found by name' <<< "$output")" -eq 4 ] && [[ "$output" != *"ok "* ]] \
+        || { echo "$output"; return 1; }
 }

@@ -14,9 +14,10 @@
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # Call the exiting checks in the caller's shell, not inside $(...) or
 # `local x="$(...)"`, where an exit ends only the subshell. skipped records each
-# blocked input in SKIPPED and SKIP_AT. It runs resolve_main before check_brief
-# or check_branch. Every script that calls scrub_reexec shares its
-# DEV_CYCLE_SCRUBBED marker.
+# blocked input in SKIPPED and SKIP_AT. It calls resolve_main once per process
+# (a second call re-reads main); check_brief and check_branch skip every
+# argument unless main was found by name. Every script that calls scrub_reexec
+# shares its DEV_CYCLE_SCRUBBED marker.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -168,7 +169,7 @@ writable() {
 # CDATA section or declaration opened mid-line) are not modelled, so text
 # CommonMark would hide inside them is read as text. Whoever can write such a
 # shape can write the answer or Status line itself; no real file has one.
-# shellcheck disable=SC2016,SC2034  # awk code, not shell: $0 must stay literal; used by the scripts that source this
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 FENCE_AWK='
 function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
 function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
@@ -223,6 +224,11 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
   esac
 }
+# The default branch, set by resolve_main (below). check_brief and check_branch
+# read its commit, so they answer only when it was found by name, never for the
+# current branch's fallback or before resolve_main has succeeded.
+MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""
+main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # A brief's state, read only from the default branch's commit (never the
 # working tree): its first line outside a ``` or ~~~ fence that starts with
 # "Status:", which must be exactly "Status: open|done|dropped". A brief
@@ -232,6 +238,7 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # never holds a slot).
 check_brief() {
   local a="$1" st c n why
+  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master)"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
@@ -273,9 +280,11 @@ check_brief() {
 # fresh branch or one merged with a merge commit; a squash-merged branch keeps
 # its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
 # time zone (as the committer set it: a future date is possible).
-# The default branch is refused (the check modes that read it need it found by name).
+# The default branch is refused, and so is every name when there is no default
+# branch found by name (main_by_name).
 check_branch() {
   local a="$1" sha
+  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master)"; return; fi
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
   elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
     || [[ "$a" == HEAD || "$a" == refs/* ]]; then echo "skip $a: not a valid branch name"
