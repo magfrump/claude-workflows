@@ -18,12 +18,16 @@ bl_setup() {
     git init -q -b main && git commit -q --allow-empty -m initial
 }
 
-# commit_all [MSG]: stage everything and commit it on the current branch.
-commit_all() { git add -A && git commit -qm "${1:-fixture}"; }
+# commit_all [MSG]: stage everything and commit it on the current branch (an
+# empty commit when nothing changed, so rewriting a file as it was still works).
+commit_all() { git add -A && git commit -q --allow-empty -m "${1:-fixture}"; }
 
 # settings LINE...: docs/dev-cycle.md holding these lines (printf %s\n each),
 # committed. With no lines the file holds one empty line.
 settings() { mkdir -p docs && printf '%s\n' "$@" > docs/dev-cycle.md && commit_all settings; }
+
+# constraints LINE...: docs/constraints.md holding these lines, committed.
+constraints() { mkdir -p docs && printf '%s\n' "$@" > docs/constraints.md && commit_all constraints; }
 
 # settings_is KEY WANT / settings_like KEY PREFIX: run --settings; its KEY line
 # must equal WANT, or start with PREFIX. On a mismatch, print the whole output.
@@ -34,3 +38,29 @@ settings_like() { run --separate-stderr bash "$BL" --settings; [[ "$(line "$1")"
 # line KEY: the --settings output line that starts with KEY.
 # shellcheck disable=SC2154  # bats sets $output in the calling test
 line() { printf '%s\n' "$output" | grep -m1 "^$1 " || true; }
+
+# brief SLUG LINE...: docs/working/briefs/2026-10-01-SLUG.md holding a title and
+# these lines, committed on the current branch; sets B to its path.
+brief() {
+    local s="$1"; shift
+    B="docs/working/briefs/2026-10-01-$s.md"
+    mkdir -p docs/working/briefs && printf '# Brief: %s\n\n' "$s" > "$B" && printf '%s\n' "$@" >> "$B"
+    commit_all "brief $s"
+}
+
+# work BRANCH: BRANCH from main with one commit that changes a file.
+work() {
+    git branch -q "$1" main
+    git checkout -q "$1" && echo "$1" > "work-${1//\//-}.txt" && commit_all "work on $1" && git checkout -q main
+}
+
+# tip BRANCH MESSAGE [TREE [PARENT...]]: a commit with MESSAGE and a newline
+# (no cleanup: commit-tree takes it as given) on BRANCH's tip. By default it is
+# empty (BRANCH's own tree) with BRANCH's tip as its one parent; pass TREE and
+# the parents ("" for none) to build anything else.
+tip() {
+    local b="$1" m="$2" t p=() x
+    if [[ $# -ge 3 ]]; then t="$3"; shift 3; for x in "$@"; do [[ -n "$x" ]] && p+=(-p "$x"); done
+    else t="$(git rev-parse "$b^{tree}")"; p=(-p "$(git rev-parse "$b")"); fi
+    git update-ref "refs/heads/$b" "$(printf '%s\n' "$m" | git commit-tree "$t" "${p[@]}")"
+}

@@ -1,6 +1,6 @@
 #!/bin/bash
-# The dev cycle's reader, used by scripts/dev-cycle.sh and kept apart so the
-# planned scripts/build-loop.sh can share it: the output scrub, the plain-file
+# The dev cycle's reader, used by scripts/dev-cycle.sh and kept apart so
+# scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
 # readers refuse (FENCE_AWK), the brief, branch and answer checks, the
 # instruction-file import walk, and the default branch.

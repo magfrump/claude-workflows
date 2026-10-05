@@ -84,7 +84,7 @@ set -euo pipefail
 
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: relative paths work
-# The reader, kept in a lib so the planned scripts/build-loop.sh can share it,
+# The reader, kept in a lib so scripts/build-loop.sh can share it,
 # from this script's own directory: the scrub, the file and path rules,
 # FENCE_AWK, the brief, branch and answer checks, the instruction-file import
 # walk, and the default branch.

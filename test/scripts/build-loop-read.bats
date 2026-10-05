@@ -148,10 +148,51 @@ setup() { bl_setup; }
     settings_like never "never workflows/ set:"
 }
 
-@test "--settings prints its three lines in order and exits 0; usage errors and a missing default branch exit 1" {
+@test "--settings: docs/constraints.md from main gives ok, missing, none-hard or unreadable (T44)" {
+    settings 'Build-loop policy: review'
     run --separate-stderr bash "$BL" --settings
-    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 3 ] || { echo "$output"; return 1; }
-    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * ]] \
+    [ "$(line constraints)" = "constraints missing: no docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
+    # Only in the working tree: still missing.
+    printf -- '- H1: x\n  success: y\n' > docs/constraints.md
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints missing: no docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
+    constraints '# Constraints' '' '- S1: prefer small diffs' 'S2: keep prose plain'
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints none-hard: docs/constraints.md on the default branch has 2 soft constraint(s) and no hard one (H1: with a success: line)" ] \
+        || { echo "$output"; return 1; }
+    constraints '# Constraints' '- H1: never lose a row' '  success: the reconciliation query in test/x.bats shows equal counts' \
+        '- S1: prefer small diffs' 'H2: no new dependency' '- success: package.json is unchanged in the merge'
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints ok 2-hard 1-soft: docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
+    constraints '- H1: never lose a row' '- S1: small' '  success: a test'
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
+    constraints '- H1: a' '  success: b' '- H1: c' '  success: d'
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)" ] || { echo "$output"; return 1; }
+    constraints '- H1: a' '  success: b' '[x]: http://e.invalid'
+    run --separate-stderr bash "$BL" --settings
+    [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md starts like a link reference definition"*", so the file is not read" ]] \
+        || { echo "$output"; return 1; }
+    # A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1]).
+    for c in '- [x] H2: x' '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do
+        constraints '- H1: a' '  success: b' "$c"; run --separate-stderr bash "$BL" --settings
+        [ "$(line constraints)" = 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)' ] \
+            || { echo "[$c] $output"; return 1; }
+    done
+    constraints '- S1: a' '- H1: b'; run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
+    constraints '- H1: a' '## Other' '  success: b'; run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
+    git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
+    run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
+}
+
+@test "--settings prints its four lines in order and exits 0; usage errors and a missing default branch exit 1" {
+    run --separate-stderr bash "$BL" --settings
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 4 ] || { echo "$output"; return 1; }
+    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * ]] \
         || { echo "$output"; return 1; }
     for args in "" "--bogus" "--settings extra" "--status"; do
         # shellcheck disable=SC2086  # split the argument list on purpose
@@ -183,4 +224,177 @@ setup() { bl_setup; }
         run --separate-stderr bash -c 'cd "$1" && bash "$2" --settings' _ "$d" "$BL"
         [[ "$(line policy)" == "policy self-merge set:"* ]] || { echo "[$d] $output $stderr"; return 1; }
     done
+}
+
+@test "--status: each loop state with every field (T6)" {
+    settings 'Build-loop policy: review'
+    brief a 'Status: open' 'Branch: feat/a' 'Dispatched: 2'
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B open review feat/a absent - - 2" ] || { echo "$output $stderr"; return 1; }
+    git branch -q feat/a main
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "ok $B open review feat/a working $(git rev-parse feat/a) $(git log -1 --format=%cs feat/a) 2" ] || { echo "$output"; return 1; }
+    git branch -q -D feat/a && work feat/a
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "ok $B open review feat/a working $(git rev-parse feat/a) $(git log -1 --format=%cs feat/a) 2" ] || { echo "$output"; return 1; }
+    for m in ready blocked; do
+        git branch -q -f feat/a feat/a~0 && tip feat/a "handoff: $m" && t="$(git rev-parse feat/a)"
+        run --separate-stderr bash "$BL" --status "$B"
+        [ "$output" = "ok $B open review feat/a $m $t $(git log -1 --format=%cs "$t") 2" ] || { echo "$output"; return 1; }
+        git update-ref refs/heads/feat/a feat/a~1
+    done
+    r120="$(printf 'r%.0s' $(seq 120))"
+    tip feat/a "handoff: stopped: $r120" && t="$(git rev-parse feat/a)"
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "ok $B open review feat/a stopped $t $(git log -1 --format=%cs "$t") 2 $r120" ] || { echo "$output"; return 1; }
+    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: new dependency (left-pad)"
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review feat/a stopped "*" 2 new dependency (left-pad)" ]] || { echo "$output"; return 1; }
+    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: ${r120}r"
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "skip $B: the tip of feat/a starts \"handoff:\" but is not a marker: its subject is not exactly"* ]] || { echo "$output"; return 1; }
+    # A ready marker's body is not read here (the planned --marker reads blocked and stopped bodies).
+    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "$(printf 'handoff: ready\n\nAll green.')"
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review feat/a ready "* ]] || { echo "$output"; return 1; }
+}
+
+@test "--status: spoofed markers are skips or read as working, and a bad reason is not echoed (T7)" {
+    settings 'Build-loop policy: review'
+    brief a 'Status: open' 'Branch: feat/a'
+    work feat/a && base="$(git rev-parse feat/a)"
+    n='the tip of feat/a starts "handoff:" but is not a marker'
+    check() {
+        run --separate-stderr bash "$BL" --status "$B"
+        [[ "$output" == "$1"* ]] || { echo "[$2] $output"; return 1; }
+        git update-ref refs/heads/feat/a "$base"
+    }
+    git checkout -q feat/a && echo more > more.txt && commit_all 'handoff: ready' && git checkout -q main
+    check "skip $B: $n: it changes files" content
+    tip feat/a 'handoff: ready' "$(git rev-parse "feat/a^{tree}")" "$base" "$(git rev-parse main)"
+    check "skip $B: $n: it has 2 parents" merge
+    tip feat/a 'handoff: ready' "$(git rev-parse "feat/a^{tree}")" ""
+    check "skip $B: $n: it has no parent" orphan
+    for s in 'handoff: blocked!' 'handoff: ready ' 'handoff:ready' 'handoff: stopped: ' 'handoff: stopped:  x' 'handoff: Ready' \
+             $'handoff: stopped: a\x1b[31mb' $'handoff: stopped: caf\xc3\xa9' $'handoff: stopped: x\xe2\x80\xaey'; do
+        tip feat/a "$s"
+        check "skip $B: $n: its subject is not exactly" "$s"
+        [[ "$output" != *$'\xc3'* && "$output" != *'[31m'* ]] || { echo "echoed: $output"; return 1; }
+    done
+    # A hand-made object with two tree lines, the parent's last: git stops at the
+    # second and sees no parent; a reader taking the last tree would say ready.
+    o="$(printf 'tree %s\ntree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n' \
+        "$(git rev-parse "main^{tree}")" "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
+    git update-ref refs/heads/feat/a "$o"
+    check "skip $B: $n: it has no parent" two-trees
+    tip feat/a "$(printf 'handoff: ready\nmore subject')"
+    check "skip $B: $n: its subject runs onto a second line" two-line
+    # Not a marker at all: an ordinary commit, even one that mentions a marker.
+    tip feat/a 'wip: before handoff: ready'
+    check "ok $B open review feat/a working " ordinary
+    # A marker at main's tip with the branch 0 commits ahead is main's, not the loop's.
+    tip main 'handoff: ready' && git branch -q -f feat/a main
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review feat/a working $(git rev-parse main) "* ]] || { echo "$output"; return 1; }
+    # So is a branch that is a symbolic ref to main.
+    brief b 'Status: open' 'Branch: alias' && tip main 'handoff: ready' && git symbolic-ref refs/heads/alias refs/heads/main
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review alias working "* ]] || { echo "$output"; return 1; }
+}
+
+@test "--status: a brief it cannot read, or whose Branch or Dispatched line is wrong, is a skip with why (T8)" {
+    local f=$'\x60\x60\x60'
+    settings 'Build-loop policy: review'
+    brief a 'Status: open' "  $f" 'Branch: feat/a'
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "skip $B: line 4 is a fence-like line that is not a plain column-0 fence, so the brief is not read" ] || { echo "$output"; return 1; }
+    brief b 'Status: open'
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "skip $B: no Branch: line on the default branch" ] || { echo "$output"; return 1; }
+    for v in 'Branch:' 'Branch:  feat/x' 'Branch: feat/x ' 'Branch: a b' 'Branch:feat/x'; do
+        brief c 'Status: open' "$v"
+        run --separate-stderr bash "$BL" --status "$B"
+        [ "$output" = "skip $B: its first Branch: line is not exactly \"Branch: NAME\"" ] || { echo "[$v] $output"; return 1; }
+    done
+    brief d 'Status: open' 'Branch: main'
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "skip $B: Branch: the default branch" ] || { echo "$output"; return 1; }
+    for v in HEAD refs/heads/x 'a..b' '-x' $'caf\xc3\xa9'; do
+        brief e 'Status: open' "Branch: $v"
+        run --separate-stderr bash "$BL" --status "$B"
+        [[ "$output" == "skip $B: Branch: not a"*" branch name" ]] || { echo "[$v] $output"; return 1; }
+        [[ "$output" != *$'\xc3'* ]] || { echo "echoed: $output"; return 1; }
+    done
+    for v in 'Dispatched: x' 'Dispatched: 100' 'Dispatched: 01' 'Dispatched: -1' 'Dispatched:'; do
+        brief g 'Status: open' 'Branch: feat/g' "$v"
+        run --separate-stderr bash "$BL" --status "$B"
+        [ "$output" = "skip $B: its first Dispatched: line is not exactly \"Dispatched: N\" with N from 0 to 99" ] || { echo "[$v] $output"; return 1; }
+    done
+    # Not landed on main: new, with nothing else to read.
+    run --separate-stderr bash "$BL" --status docs/working/briefs/2026-10-01-none.md docs/roadmap.md
+    [ "${lines[0]}" = "ok docs/working/briefs/2026-10-01-none.md new review - absent - - 0" ] \
+        && [[ "${lines[1]}" == "skip docs/roadmap.md: not a build brief"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--status: the policy is the stricter of main's settings and the brief's Policy line (T5)" {
+    for s in self-merge review; do
+        for p in 'Policy: self-merge' 'Policy: review' 'Policy: Self-merge' 'Policy: self-merge ' ''; do
+            settings "Build-loop policy: $s" "" "Self-merge never: none"
+            brief a 'Status: open' 'Branch: feat/a' ${p:+"$p"}
+            run --separate-stderr bash "$BL" --status "$B"
+            want=review; [[ "$s" == self-merge && "$p" == 'Policy: self-merge' ]] && want=self-merge
+            [ "$output" = "ok $B open $want feat/a absent - - 0" ] || { echo "[$s|$p] $output"; return 1; }
+        done
+    done
+    # A malformed Self-merge never: line turns it off.
+    settings 'Build-loop policy: self-merge' 'Self-merge never: ../x'
+    brief a 'Status: open' 'Branch: feat/a' 'Policy: self-merge'
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "ok $B open review feat/a absent - - 0" ] || { echo "$output"; return 1; }
+}
+
+@test "--status reads main's commit: working-tree and branch edits to a brief's lines are ignored (T21)" {
+    settings 'Build-loop policy: self-merge'
+    brief a 'Status: open' 'Branch: feat/a' 'Policy: review' 'Dispatched: 1'
+    work feat/a
+    git checkout -q feat/a && printf '# x\nStatus: done\nBranch: feat/z\nPolicy: self-merge\nDispatched: 0\n' > "$B" && commit_all edit && git checkout -q main
+    printf '# x\nStatus: dropped\nBranch: feat/y\nPolicy: self-merge\nDispatched: 0\n' > "$B"
+    run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review feat/a working $(git rev-parse feat/a) "*" 1" ]] || { echo "$output"; return 1; }
+}
+
+@test "--status: two open briefs naming one branch both skip; many briefs keep their order (T28)" {
+    settings 'Build-loop policy: review'
+    brief a 'Status: open' 'Branch: feat/x' && a="$B"
+    brief b 'Status: open' 'Branch: Feat/X' && b="$B"
+    brief c 'Status: done' 'Branch: feat/x' && c="$B"
+    brief d 'Status: open' 'Branch: feat/d' && d="$B"
+    brief e 'Status: dropped' 'Branch: feat/e' && e="$B"
+    run --separate-stderr bash "$BL" --status "$d" "$a" docs/x.md "$c" "$b" "$e"
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 6 ] || { echo "$output"; return 1; }
+    [ "${lines[0]}" = "ok $d open review feat/d absent - - 0" ] || { echo "$output"; return 1; }
+    [ "${lines[1]}" = "skip $a: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
+    [[ "${lines[2]}" == "skip docs/x.md: not a build brief"* ]] || { echo "$output"; return 1; }
+    [ "${lines[3]}" = "ok $c done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
+    [ "${lines[4]}" = "skip $b: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
+    [ "${lines[5]}" = "ok $e dropped review feat/e absent - - 0" ] || { echo "$output"; return 1; }
+    # Colour config on, or a git grep that fails, never empties the check: the first
+    # still finds the pair, the second skips every open brief.
+    git config color.ui always && git config color.grep always
+    run --separate-stderr bash "$BL" --status "$a"
+    [ "$output" = "skip $a: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
+    git config grep.patternType bogus
+    run --separate-stderr bash "$BL" --status "$d" "$c"
+    [ "${lines[0]}" = "skip $d: the open briefs on the default branch could not be listed (git grep failed)" ] \
+        && [[ "${lines[1]}" == "ok $c done "* ]] || { echo "$output"; return 1; }
+    git config --unset grep.patternType && git config --unset color.ui && git config --unset color.grep
+    # An open brief left in closed/ counts too.
+    mkdir -p docs/working/briefs/closed && printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/closed/2026-10-01-old.md && commit_all closed
+    run --separate-stderr bash "$BL" --status "$d"
+    [[ "$output" == "skip $d: another open brief"* ]] || { echo "$output"; return 1; }
+    git rm -q docs/working/briefs/closed/2026-10-01-old.md && commit_all reopen
+    # An open brief only in the working tree does not count.
+    printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/2026-10-01-wt.md
+    run --separate-stderr bash "$BL" --status "$d"
+    [ "$output" = "ok $d open review feat/d absent - - 0" ] || { echo "$output"; return 1; }
 }
