@@ -1019,3 +1019,26 @@ EOF
     [[ "$output" == *"skip docs/deep.md: an instruction file imports"* && "$output" == *"skip docs/ign.md: an instruction file imports"* \
        && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
 }
+
+@test "sourcing the reader lib defines its functions and runs nothing" {
+    # Stub git and perl ahead of the real ones: sourcing must call neither. LC_ALL=C
+    # keeps a host locale warning out of stderr.
+    S="$BATS_TEST_TMPDIR/stubs"; mkdir -p "$S"
+    for b in git perl; do printf '#!/bin/sh\necho "%s" >> "%s/called"\n' "$b" "$S" > "$S/$b"; chmod +x "$S/$b"; done
+    cd "$BATS_TEST_TMPDIR"
+    run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
+        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable; do
+            declare -F "$f" >/dev/null || echo "missing $f"
+        done
+        echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
+}
+
+@test "a copy of dev-cycle.sh without its lib exits 1 and names the lib" {
+    mkdir -p "$BATS_TEST_TMPDIR/bare"
+    cp "$DC" "$BATS_TEST_TMPDIR/bare/dev-cycle.sh"
+    run --separate-stderr bash "$BATS_TEST_TMPDIR/bare/dev-cycle.sh" --check-path README.md
+    [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] || { echo "$stderr"; return 1; }
+}
