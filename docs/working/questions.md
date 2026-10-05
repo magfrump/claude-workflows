@@ -136,6 +136,7 @@ How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that l
 | **[2] strict grammar, any mention counts** | Any line whose letters contain a key anywhere counts as a copy and unsets that setting. | Prose in `docs/dev-cycle.md` must never mention a key at all; the file's current line 18 already does, so it would read as unset. | Doc edits silently turn self-merge off; the reader still misses a key split by a link. |
 | **[3] a machine block** | Settings live only in one fenced block (` ```build-loop `) with a strict line grammar; text outside it is ignored. | Re-write the settings in `docs/dev-cycle.md`, and in onboarding's template, as that block. | A larger change across U1b, U5's docs and onboarding; it delays U1 by about one unit. |
 
+- **Also decides:** the same rule for `docs/constraints.md` (U1c's review, R1). There, a hard constraint written in a near-miss shape (`* H2:`, `**H2:**`, an indented or table line, `H10 :`) is skipped silently, and `--settings` still prints `constraints ok`. Under [1], any line whose letters and digits start like `H<n>` or `S<n>` but is not exact makes the file `unreadable`, and IDs compare as numbers.
 - **Blocks:** landing U1b, and U1c, which stacks on it. (U1a waits on Q-111.)
 - **Interim:** no fix work on U1b. Its other ambers (A16 `core.useReplaceRefs`, A18–A23 tests and wording) wait for this answer so they land in one iteration. Nothing reaches main.
 - **If the answer differs:** [2] or [3] replace the key matcher (about 30 lines) and rework the T2/T45 tests.
