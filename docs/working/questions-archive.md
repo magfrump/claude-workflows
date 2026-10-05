@@ -103,6 +103,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
 | [Q-114](#q-114--build-loop-u1c-size-waiver) | U1c of the build-loop handoff (`feat/build-loop-u1c`, the constraints line and `--status`) is 426 changed c... | 2026-10-05 |
+| [Q-115](#q-115--build-loop-u1b-r5) | U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useRepla... | 2026-10-05 |
 <!-- index:end -->
 
 ## Answered
@@ -1919,5 +1920,19 @@ U1c of the build-loop handoff (`feat/build-loop-u1c`, the constraints line and `
 | **[1] waive to ~430** | Keep U1c whole; record the waiver in its merge message. | None. | A slightly larger review unit. |
 | **[2] split U1c** | The constraints line as its own unit before `--status`. | None now. | About one more review cycle. |
 | **[3] trim harder** | Folded tests, shorter help. | None. | Less clear help and tests. |
+
+
+### Q-115 · build-loop-u1b-r5
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** ANSWERED
+
+U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useReplaceRefs=true`. Fix it and run a scoped fifth pass, fix it and land without re-review, or narrow the claim and land?
+
+**Answer (2026-10-05, in chat):** "Narrow the claim, land"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] fix + scoped 5th pass** | Apply the GIT_CONFIG_PARAMETERS fix and the wording fixes; a fifth pass over the fix commits only. | None. | About a third of a full pass. |
+| **[2] fix + land without re-review** | Fix, test, fix-drift, health check, land. | None. | An unreviewed fix lands. |
+| **[3] narrow the claim, land** | The comment says the caller's environment is trusted; the route goes to U3b's --state. | None. | The guard covers repo config only until U3b. |
 
 
