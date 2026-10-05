@@ -67,7 +67,8 @@
 #             a line starting like a link reference definition (behind any >
 #             and list markers too), a stray carriage return, a NUL byte, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not a regular file
-#             under plain directories on the default branch).
+#             under plain directories on the default branch, or a default
+#             branch whose tree or file could not be read).
 #   --check-brief, --check-branch and --check-answer need a default branch
 #   found by name (origin/HEAD, main or master): they read its commit.
 #

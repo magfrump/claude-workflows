@@ -7,9 +7,9 @@
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
-# of scripts/ with its lib/ is self-contained. A change here runs under both
-# callers' suites (test/scripts/dev-cycle.bats, and build-loop.sh's suites
-# under test/scripts/ as they land). The
+# of scripts/ with its lib/ is self-contained. A change here must pass
+# test/scripts/dev-cycle.bats, and build-loop.sh's suites under test/scripts/
+# once that second caller lands. The
 # caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
 # calling any file check. inrepo, dirok, skipped, check_brief and
@@ -170,10 +170,10 @@ writable() {
 # a line that starts (after spaces or tabs) with < (an HTML block can hold a
 # fence line; only a complete one-line <!-- comment --> is read), one that
 # opens an HTML comment it does not close, a line starting like a link
-# reference definition (after any > and list markers), a
-# carriage return inside a line (CommonMark ends a line there), a NUL byte
-# (a caller reading the output through $(...) would lose it), or a
-# byte-order mark on line 1: fence() records the first one's line number in
+# reference definition (after any > and list markers); and anywhere in the
+# file, fenced or not, a carriage return inside a line (CommonMark ends a line
+# there), a NUL byte (a caller reading the output through $(...) would lose
+# it), or a byte-order mark on line 1: fence() records the first one's line number in
 # `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
 # still open at the end is recorded in `fline` (its opening line) and refuses
 # the file too.
@@ -249,17 +249,24 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # above it is a symlink: prints "blob" (a regular file, mode 100644 or 100755),
 # "absent", "notfile" (the path is some other kind of entry), "notdir PART"
 # (PART, a directory above the path, is stored as something else) or "error"
-# (no default branch found by name, or ls-tree failed: never read as absent). One ls-tree
+# (no default branch found by name, ls-tree failed, or the tree lists a name
+# twice; git's own reads would take the first copy, which may not be the one a
+# check saw, so this answers error instead; never read as absent). One ls-tree
 # call lists the path and every directory above it (-t: trees too; --full-tree:
 # paths from the top level, whatever the current directory). The caller has checked
 # main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
 main_entry() {
-  local p="" rest="$1" out mode path want=()
+  local p="" rest="$1" out mode path dup="" want=()
   local -A m=()
   main_by_name || { echo error; return; }
   while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
-  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1")" || { echo error; return; }
-  while IFS=$'\t' read -r mode path; do [[ -n "$path" ]] && m["$path"]="${mode%% *}"; done <<<"$out"
+  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
+  while IFS=$'\t' read -r mode path; do
+    [[ -n "$path" ]] || continue
+    [[ -z "${m[$path]+set}" ]] || dup=1
+    m["$path"]="${mode%% *}"
+  done <<<"$out"
+  [[ -z "$dup" ]] || { echo error; return; }
   for p in "${want[@]}"; do
     case "${m[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "notdir $p"; return ;; esac
   done
@@ -270,17 +277,19 @@ main_entry() {
 # line outside a fence (FENCE_AWK) that starts "Status:", "Branch:", "Policy:",
 # "Paths:", "Asked:" or "Dispatched:", whole, after one trailing CR is dropped.
 # Sets BRIEF[status], BRIEF[branch], BRIEF[policy], BRIEF[paths], BRIEF[asked]
-# and BRIEF[dispatched] (a key with no such line stays unset) and empties
-# BRIEF_ODD. A file FENCE_AWK refuses sets no key and returns 1, with BRIEF_ODD
-# "odd N WHY" (line N; WHY for oddwhy) or "unbalanced N" (the fence opened at
-# line N never closes; a NUL byte is refused too, so each value is the line as
-# stored). The callers judge the values. The caller has checked
-# main_by_name and that the path is a blob on main (main_entry), and calls it in
-# its own shell: it sets globals.
+# and BRIEF[dispatched] (a key with no such line stays unset), each the line as
+# stored but for that CR (FENCE_AWK refuses a NUL byte, which $(...) would
+# drop), and empties BRIEF_ODD. Otherwise it sets no key and returns 1, with
+# BRIEF_ODD "odd N WHY" (FENCE_AWK refused line N; WHY for oddwhy),
+# "unbalanced N" (the fence opened at line N never closes) or "error" (no
+# default branch found by name, a path pathform refuses, any main_entry answer
+# but blob, its error included, or the blob could not be read). The callers judge the
+# values. Call it in the caller's own shell: it sets globals.
 declare -gA BRIEF=(); BRIEF_ODD=""
 brief_fields() {
   local out l
   BRIEF=(); BRIEF_ODD=""
+  if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
   # The whole blob is read (no early exit: SIGPIPE under pipefail).
   # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
   out="$(git cat-file blob "$MAIN_SHA:$1" | env LC_ALL=C awk "$FENCE_AWK"'
@@ -289,7 +298,8 @@ brief_fields() {
     match($0, /^(Status|Branch|Policy|Paths|Asked|Dispatched):/) {
       k = tolower(substr($0, 1, RLENGTH - 1)); if (!(k in got)) { got[k] = 1; kv[++nk] = k "\t" $0 }
     }
-    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else for (i = 1; i <= nk; i++) print kv[i] }')"
+    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else for (i = 1; i <= nk; i++) print kv[i] }')" \
+    || { BRIEF_ODD=error; return 1; }
   while IFS= read -r l; do
     case "$l" in
       '') ;;
@@ -328,6 +338,7 @@ check_brief() {
   if ! brief_fields "$a"; then
     case "$BRIEF_ODD" in
       odd\ *) read -r _ n why <<<"$BRIEF_ODD"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read" ;;
+      error) echo "skip $a: the brief could not be read from the default branch" ;;
       *) echo "skip $a: the code fence opened at line ${BRIEF_ODD#unbalanced } is never closed, so the brief is not read" ;;
     esac
     return
@@ -544,7 +555,9 @@ check_answer() {
       error) echo "skip $a: the default branch's tree could not be read, so $f is not read"; return ;;
       *) echo "skip $a: $f is not a regular file on the default branch, so no entry in it is read"; return ;;
     esac
-    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")"
+    # A failed read is a skip, never a fall-through to the other file.
+    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \
+      || { echo "skip $a: $f could not be read from the default branch"; return; }
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
     case "$r" in
