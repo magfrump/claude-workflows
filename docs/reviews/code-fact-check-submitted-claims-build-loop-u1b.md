@@ -1,41 +1,46 @@
-**Commit:** 0ae7d801
+**Commit:** 1d79ffef
 
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u1b (unit `feat/build-loop-u1a...feat/build-loop-u1b`)
-**Scope:** Submitted claims only (security-reviewer x2, performance-reviewer x1) about `scripts/build-loop.sh`; no fresh harvesting (Stage 1 covered the diff)
+**Scope:** Submitted claims only (security-reviewer x2) about `scripts/build-loop.sh` at 1d79ffef, review iteration 3; no fresh harvesting (Stage 1 covered the diff)
 **Checked:** 2026-10-05
-**Total claims checked:** 3 (split into 5 atoms: 42, 43a, 43b, 44a, 44b)
-**Summary:** 3 verified, 0 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
+**Total claims checked:** 2 (Claims 46-47, continuing the merged report's numbering)
+**Summary:** 2 verified, 0 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
-Line numbers below are those of `scripts/build-loop.sh` at 0ae7d801 (192 lines). The submitted locations were given in diff-hunk numbering; the mapping is: claim 1's `:150-183` is the file's `:113-185` (main_file through read_settings), claim 2's `:157` is the file's `:157`, and claim 3's `:194-198` does not exist (the file ends at `:192`); the call site is `:187-191`.
+Line numbers below are those of `scripts/build-loop.sh` at 1d79ffef (186 lines). The submitted locations are in file numbering already: `:143` is `many()`, `:177` is the last slots branch, `:100` is SETTINGS_AWK's next-line test, `:152` is the "followed by a non-blank line" branch and `:170-171` is the self-merge-off branch of the policy line.
 
-Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) consulted: no submitted claim matches a logged fabrication pattern, and no claim below is a fabrication (43b is a wrong edge case, not an invented symbol), so the log is not updated.
+Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`): no verdict here is Incorrect, so the log is not updated.
 
-Executed-probe provenance (shared by claims 42 and 43):
-- Commands: `timeout 120 bash probe.sh > probe-out.txt 2>&1` (started 2026-10-05T11:29:09Z, exit 0) and `timeout 60 bash probe2.sh > probe2-out.txt 2>&1` (started 2026-10-05T11:29:21Z, exit 0).
-- Working directory: `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/` (each probe builds a throwaway repo, `repo/` or `repo2/`, inside it, under a hermetic git environment, and runs the worktree's `scripts/build-loop.sh --settings` with `DEV_CYCLE_SCRUBBED=1` so the output is what read_settings built, before the scrub).
-- Scripts and captured output: `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/probe.sh`, `probe-out.txt`, `probe2.sh`, `probe2-out.txt`. Every `--settings` run in them exited 0.
+Executed-probe provenance (shared by both claims):
+- Commands: `timeout 120 bash probe.sh > probe-out.txt 2>&1` (exit 2, from the script's last line `ls /tmp/pwn`, which found no such file: the `$(...)` payloads ran nothing) and `timeout 120 bash probe2.sh > probe2-out.txt 2>&1` (exit 0); a mutation run in `mut/` (below); and `bats test/scripts/build-loop-read.bats` in the worktree (9/9 ok).
+- Working directory: `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/`. Each probe builds a throwaway repo (`repo/`, `repo2/`) there under a hermetic git environment (`GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`, `HOME` in the scratch dir, `LC_ALL=C`), commits `docs/dev-cycle.md` on `main`, and runs the worktree's `scripts/build-loop.sh --settings` with `DEV_CYCLE_SCRUBBED=1`, so the captured output is what read_settings built, before the scrub. Output is shown through `cat -A` in probe-out.txt, so any control byte would show as `^[`, `^I` and the like.
+- Every `--settings` run in both probes exited 0 and wrote nothing to stderr.
 
 ---
 
 ## Submitted Claims
 
-## Claim 42: "Policy and slots lines print no repo text besides line numbers; the never line prints the value only after every entry passed globform (NAMECHARS plus `*` `?`)."
+## Claim 46: "The policy and slots lines print no repo text besides line numbers, and the never line prints its value only after every entry passes globform."
 
 **Submitted by:** security-reviewer
-**Legibility-target:** security-reviewer (the trust-boundary row for `--settings` output: what repo-controlled bytes can reach stdout)
-**Location:** `scripts/build-loop.sh:113-185`
+**Legibility-target:** security-reviewer (the trust-boundary row for `--settings` output: which repo-controlled bytes can reach stdout)
+**Location:** `scripts/build-loop.sh:143-177`; `test/scripts/build-loop-read.bats:117-118` (T45 no-echo assertion)
 **Type:** Invariant / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers every assignment to POLICY_LINE, SLOTS_LINE and NEVER_LINE in read_settings (`:135-185`), including `many()`, the FILE_WHY strings set by main_file (`:113-129`) and the lib's `oddwhy`, on the raw pre-scrub output; does not establish anything about POLICY/NEVER as later modes will consume them (U1c/U2), does not cover stderr text from git or awk failures, and does not claim the printed globs are safe for a consumer that expands them with a shell (the line holds literal `*` and `?`).
+**Scope:** Covers every assignment to POLICY_LINE, SLOTS_LINE and NEVER_LINE in read_settings (`:127-179`), `many()`, main_file's FILE_WHY strings (`:71-88`) and the lib's `oddwhy`, on the raw pre-scrub output, for the hostile payloads listed below; also confirms by mutation that the T45 assertion at `:117-118` fails when a malformed never entry is echoed. Does not establish anything about how later modes (U1c/U2) consume POLICY/NEVER, does not cover stderr from a git or awk failure, and does not claim the printed globs are safe for a consumer that expands them with a shell (the set line holds literal `*` and `?`). "Line numbers" is read loosely: the policy set line also prints the regex capture `self-merge`/`review` and the slots set line the captured digit 1-9; both are fixed alternatives, not free repo text.
 
-Policy and slots lines. Every value that is not a fixed string is a line number or a regex capture of a fixed alternative:
+Policy and slots lines. Every value that is not a fixed string is a line number from awk's `NR` or a capture of a fixed alternative:
 
 ```bash
-# scripts/build-loop.sh:177-183
+# scripts/build-loop.sh:166-177
+    if [[ -z "${cnt[policy]-}" ]]; then POLICY_LINE='policy review unset: no line starts "Build-loop policy:"'
+    elif [[ "${cnt[policy]}" -gt 1 ]]; then POLICY_LINE="policy review unset: $(many 'Build-loop policy:' policy)"
+    elif [[ "${text[policy]}" =~ ^Build-loop\ policy:\ (self-merge|review)$ ]]; then
+      v="${BASH_REMATCH[1]}"
+      if [[ "$v" == self-merge && -z "$never_ok" ]]; then
         POLICY_LINE="policy review unset: line ${first[policy]} reads self-merge, but the Self-merge never: line is malformed, so self-merge is off"
       else POLICY="$v"; POLICY_LINE="policy $v set: line ${first[policy]} $where"; fi
     else POLICY_LINE="policy review unset: line ${first[policy]} is not exactly \"Build-loop policy: self-merge\" or \"Build-loop policy: review\""; fi
@@ -44,149 +49,82 @@ Policy and slots lines. Every value that is not a fixed string is a line number 
     elif [[ "${text[slots]}" =~ ^Build-loop\ slots:\ ([123456789])$ ]]; then SLOTS_LINE="slots ${BASH_REMATCH[1]} set: line ${first[slots]} $where"
     else SLOTS_LINE="slots 3 default: line ${first[slots]} is not exactly \"Build-loop slots: N\" with N from 1 to 9"; fi
 ```
-(excerpt starts :177 inside the policy branch begun at `:172`; enclosing read_settings() runs `:135-185` — read)
+(excerpt ends :177; enclosing read_settings() continues to :179 (closing `fi` and `}`) — read; the values flow to the `printf` at `:184`, their first and only use)
 
-`$v` on the policy line is `BASH_REMATCH[1]` of `^Build-loop\ policy:\ (self-merge|review)$` (`:174-175`), so only those two words; `first[...]`/`second[...]` come from awk's `NR` (`l1[k] = NR` and `l2[k] = NR`, SETTINGS_AWK `:111`); `many()` prints only those two numbers and its fixed key argument (`:150`). `$where` is `"of $f on the default branch"` with the constant `f=docs/dev-cycle.md` (`:136-138`). The key `k` read back at `:147` is one of the three literals awk assigns (`k = "policy"`, `"slots"`, `"never"`, SETTINGS_AWK `:108-110`).
+`first[...]`/`second[...]` are awk's `NR` (`l1[k] = NR`, `l2[k] = NR`, `:105`), parsed from the part of each record before its first tab (`read -r k c l1 l2 nx <<<"${l%%$'\t'*}"`, `:140`); that prefix is built entirely by the END block (`print k " " c[k] " " l1[k] ...`), so it holds no repo bytes. `many()` prints only those numbers and its fixed key argument (`:143`). `$where` is built from the constant `f=docs/dev-cycle.md` (`:128`, `:131`). When the file is not read, FILE_WHY holds only fixed prose, the constant path, a line number and `oddwhy`'s fixed reason (main_file `:84-87`, lib `oddwhy`); SETTINGS_AWK's END prints `odd`/`unbalanced` records only from `odd`, `oddwhy` (fixed `refuse()` arguments) and `fline`.
 
-When the file is not read, the three lines carry FILE_WHY:
+Never line. `$v` reaches NEVER_LINE only on the set branch:
 
 ```bash
-# scripts/build-loop.sh:117-128
-  e="$(main_entry "$f")"
-  case "$e" in
-    blob) ;;
-    absent) FILE_WHY=absent; return 1 ;;
-    notdir\ *) FILE_WHY="${e#notdir } is not a directory on the default branch"; return 1 ;;
-    *) FILE_WHY="$f is not a regular file on the default branch"; return 1 ;;
-  esac
-  FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")"
-  case "$FILE_OUT" in
-    odd\ *) read -r _ n why <<<"$FILE_OUT"; FILE_WHY="line $n of $f $(oddwhy "$why"), so the file is not read"; return 1 ;;
-    unbalanced\ *) FILE_WHY="the code fence opened at line ${FILE_OUT#unbalanced } of $f is never closed, so the file is not read"; return 1 ;;
-  esac
+# scripts/build-loop.sh:150-164
+      if [[ "$t" != "Self-merge never: "* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then
+        why='is not exactly "Self-merge never: GLOB ..." with single spaces'
+      elif [[ "${next[never]}" != 1 ]]; then why="is followed by a non-blank line (Markdown would join it as more globs)"
+      else
+        i=0
+        IFS=' ' read -ra parts <<<"$v"  # not a bare $v: the shell would expand * and ? against files
+        for g in "${parts[@]}"; do
+          i=$((i + 1))
+          if ! globform "${g%/}"; then why="lists entry $i, which is not an allowed glob form"; break; fi
+          if [[ -n "${seen[${g%/}]-}" ]]; then why="lists entry $i twice"; break; fi
+          seen[${g%/}]=1
+        done
+      fi
+      if [[ -n "$why" ]]; then NEVER_LINE="never malformed: line ${first[never]} $why"; never_ok=""
+      else NEVER=("${parts[@]}"); NEVER_LINE="never $v set: line ${first[never]} $where"; fi
 ```
-(excerpt ends :128; enclosing main_file() continues to :129 — read)
+(excerpt starts inside the never `else` arm opened at `:147`; enclosing read_settings() runs `:127-179` — read)
 
-The `notdir` PART is a prefix of the script's own constant path (main_entry builds `want` from `$1` only: `while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; ...` at `scripts/lib/dev-cycle-read.sh:260`), so it can only be `docs`. `n` is awk's `NR`/`fline`, and `why` is one of FENCE_AWK's fixed `refuse()` arguments, mapped to fixed prose by `oddwhy` (`scripts/lib/dev-cycle-read.sh:231-241`). SETTINGS_AWK's body prints nothing; its END prints only `"odd " odd " " oddwhy`, `"unbalanced " fline`, or the per-key records (`:113-117`), so no repo line reaches FILE_OUT's `odd`/`unbalanced` forms.
+The `=~` test makes `$v` exactly the single-space join of non-space runs, and `read -ra` with `IFS=' '` splits on exactly those spaces, so `parts` covers every byte of `$v` but the separators. Each `${g%/}` must pass globform (`:114-121`, NAMECHARS plus `*` `?`, not starting `/` or `-`, no empty, `.` or `..` part), so the printed value is NAMECHARS, `*`, `?`, `/` and single spaces. The malformed branch prints only `line N` and fixed `why` text with the entry index `i`.
 
-Never line. NEVER_LINE carries `$v` only at `:170`, which is reached only when `why` stayed empty, i.e. the line passed the exact-prefix, no-tab/VT/FF/CR and single-space checks (`:157`) and every `${g%/}` passed globform and the duplicate check (`:161-167`). globform's first test is `[[ "$1" =~ ^[*?$NAMECHARS]+$ && "$1" != /* && "$1" != -* ]] || return 1` (`:124`), with `NAMECHARS='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-'` (`scripts/lib/dev-cycle-read.sh:139`). The only bytes not checked by globform are a stripped trailing `/` (itself a NAMECHARS byte) and the single separating spaces, so the printed value is NAMECHARS, `*`, `?` and space only.
+Executed (probe-out.txt, 21 cases). Payloads: ESC/OSC sequences (`\e[31m`, `\e]0;title\a`, `\e[2J`) in the policy, slots and never values; `$(touch /tmp/pwn)` and backticks in policy and never; non-ASCII (Arabic-Indic digit for slots, `caf\xc3\xa9`, U+202E in never); a 6000-byte policy line and never line (valid, and with a trailing ESC); duplicate keys whose second copy holds ESC (`**build loop policy** \e x`); three hostile slots copies; near-miss keys (`Build loop policy: self-merge`, `BUILD_LOOP_SLOTS=5`, `Self merge never - x/`, `Buildlooppolicy:self-merge`); `a[b] c\d` and a tab separator in never; files refused by FENCE_AWK (a `<div>\e[31m` line, a mid-line CR followed by ESC, an indented fence with ESC). Results: every policy/slots line was a fixed reason with line numbers only (e.g. `policy review unset: line 1 is not exactly ...`, `slots 3 default: more than one line starts "Build-loop slots:" (lines 1 and 2)`); every hostile never value gave `never malformed: line 2 lists entry 1, which is not an allowed glob form` or the single-spaces reason; refused files printed only `line 2 of docs/dev-cycle.md <oddwhy reason>, so the file is not read` on all three lines. `cat -A` showed no `^[` or other control byte in any output, and `/tmp/pwn` was not created. Accepted values printed verbatim and only NAMECHARS/`*`/`?`: `never * ? */*.sh set: ...`, `never .github/ x/* set: ...`, and the 6000-`a` entry whole (pre-scrub; the scrub's 4096-byte cut of such a line is settled as C2).
 
-Executed (probe-out.txt, probe2-out.txt): `Build-loop policy: self-merge EVIL\033[31m$(id)` and `Build-loop slots: 4 EVIL` printed `policy review unset: line 1 is not exactly ...` and `slots 3 default: line 2 is not exactly ...`; duplicate hostile keys printed only `(lines 1 and 2)` / `(lines 3 and 4)`; `Self-merge never: a/ $(touch PWNED) b`, `a/ EVIL\033[2J`, `a/ caf\xc3\xa9 \xe2\x80\xae (U+202E)`, `a @`, `a //` and a NBSP separator all printed `never malformed: line 2 lists entry N, which is not an allowed glob form` (or the single-spaces reason) with no entry text; no `PWNED` file was created. HTML, refdef, unbalanced-fence (`` ```EVIL8 ``) and NUL files printed only the fixed oddwhy reasons with line numbers; a `docs` symlink to `EVIL$(id)` printed `docs is not a directory on the default branch`. No raw output contained ESC, VT, FF, CR or TAB. Accepted globs printed verbatim: `never * ?/ **/x .github/ set: ...`. The associative-array subscripts `seen[*]` behaved as a literal key: `* a` and `a b *` were accepted, `* *` and `* a *` were refused as `lists entry N twice`.
+Mutation (`submitted/mut/`, copies only): changing `:163` to `NEVER_LINE="never malformed: line ${first[never]} $why [$v]"` makes T45 fail at `test/scripts/build-loop-read.bats:118` with `echoed a malformed entry: ... never malformed: line 2 lists entry 1, which is not an allowed glob form [../x]`, so the cited no-echo assertion is live for the never line. (Echoing on the policy/slots lines would be caught by the exact-string `settings_is` checks of T2 and the slots test instead.)
 
-Residue noted, not a claim failure: main_entry's `error` result (ls-tree failed) falls into main_file's `*)` arm and is reported as `docs/dev-cycle.md is not a regular file on the default branch` (`:122`), a mislabel of a fixed string, not repo text, and it still turns self-merge off (`never malformed`, `:143`).
-
-**Evidence:** `scripts/build-loop.sh:113-129`, `scripts/build-loop.sh:101-117`, `scripts/build-loop.sh:122-129`, `scripts/build-loop.sh:135-185`, `scripts/lib/dev-cycle-read.sh:139`, `scripts/lib/dev-cycle-read.sh:231-241`, `scripts/lib/dev-cycle-read.sh:256-267`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/probe-out.txt`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/probe2-out.txt`
+**Evidence:** `scripts/build-loop.sh:71-88`, `scripts/build-loop.sh:96-111`, `scripts/build-loop.sh:114-121`, `scripts/build-loop.sh:127-179`, `scripts/build-loop.sh:181-186`, `scripts/lib/dev-cycle-read.sh:139`, `scripts/lib/dev-cycle-read.sh:231-241`, `test/scripts/build-loop-read.bats:117-118`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/probe.sh`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/probe-out.txt`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/mut/`
 
 ---
 
-## Claim 43a: "A tab, VT [or] FF ... in the never value makes the line malformed and turns self-merge off (R1/A1)."
+## Claim 47: "A never line followed by a non-blank, non-fence line is malformed and turns self-merge off."
 
 **Submitted by:** security-reviewer
-**Legibility-target:** security-reviewer (R1/A1 closure: blanks other than a single space in `Self-merge never:`)
-**Location:** `scripts/build-loop.sh:157`
+**Legibility-target:** security-reviewer (A5 closure: a never line Markdown would continue on the next line must not be read short)
+**Location:** `scripts/build-loop.sh:100`, `:152`, `:170-171`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers TAB, VT and FF anywhere in the value (interior, trailing, and TAB leading/mixed per the suite's T45 cases), each making NEVER_LINE `never malformed` and the policy line `policy review unset ... so self-merge is off`; does not establish behavior for other Unicode blanks beyond NBSP (those fail globform instead, as one probe showed for NBSP) and does not cover CR (Claim 43b).
-
-```bash
-# scripts/build-loop.sh:155-158
-      t="${text[never]}"; v="${t#Self-merge never: }"; why=""
-      # Single spaces only: a tab or other blank would split differently in a later reader.
-      if [[ "$t" != "Self-merge never: "* || "$v" == *[$'\t\v\f\r']* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then
-        why='is not exactly "Self-merge never: GLOB ..." with single spaces'
-```
-(excerpt ends :158; enclosing read_settings() continues to :185 — read)
-
-A non-empty `why` sets `never_ok=""` (`:169`), and `never_ok` empty turns a `self-merge` policy into `policy review unset` (`:176-177`). Executed (probe-out.txt): `a\tb`, `a\vb`, `a\v`, `a\fb`, `a\f` each printed `never malformed: line 2 is not exactly "Self-merge never: GLOB ..." with single spaces` and `policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off`.
-
-**Evidence:** `scripts/build-loop.sh:155-158`, `scripts/build-loop.sh:169-177`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/probe-out.txt` (cases c2-tab, c2-vt, c2-vt-trail, c2-ff, c2-ff-trail)
-
----
-
-## Claim 43b: "A ... CR in the never value makes the line malformed and turns self-merge off (R1/A1)."
-
-**Submitted by:** security-reviewer
-**Legibility-target:** security-reviewer (R1/A1 closure; whether `:157`'s `\r` test is a live guard)
-**Location:** `scripts/build-loop.sh:157`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a single trailing CR (accepted: line set), a CR inside the line or two trailing CRs (file refused by FENCE_AWK, so self-merge off by the not-read path); does not establish any security impact, which is nil: the case where the claim fails is a CRLF line ending that is dropped before any check, leaving no CR in the value.
-
-A single trailing CR never reaches `:157`: SETTINGS_AWK drops it before the line is recorded, and the stored text has no CR.
+**Scope:** Covers the line after the first never copy outside a fence: text, an indented line, a list item, a heading, a one-line HTML comment, another key line, a form feed (all malformed), and a blank, whitespace-only, CRLF-blank line or EOF (all set); fence lines after the never line; and the self-merge-off consequence on the policy line. Does not establish a matching rule for the policy or slots lines (there is none; see below), and does not judge whether the rule matches CommonMark beyond failing closed.
 
 ```awk
-# scripts/build-loop.sh:101-102 (SETTINGS_AWK)
+# scripts/build-loop.sh:97-106 (SETTINGS_AWK)
 { sub(/\r$/, "") }
 fence($0) { next }
+{
+  if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }
+  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
+  if (index(s, "buildlooppolicy") == 1) k = "policy"
+  else if (index(s, "buildloopslots") == 1) k = "slots"
+  else if (index(s, "selfmergenever") == 1) k = "never"
+  if (k != "") { c[k]++; if (c[k] == 1) { l1[k] = NR; t[k] = $0; nx[k] = 1; pk = k } else if (c[k] == 2) l2[k] = NR }
+}
 ```
-(excerpt ends :102; enclosing SETTINGS_AWK string continues to :117 — read)
+(excerpt ends :106; the SETTINGS_AWK string continues to :111 (END block, which prints `nx[k]` as the NEXT field) — read)
 
-Any other CR is refused by FENCE_AWK's `if (index(l, "\r")) { refuse("cr"); return 1 }` (`scripts/lib/dev-cycle-read.sh:215`), so the whole file is not read and the never line is `never malformed: line N of docs/dev-cycle.md holds a carriage return that does not end it, so the file is not read` (main_file `:126`, read_settings `:143`). Therefore the `\r` member of `[$'\t\v\f\r']` at `:157` is unreachable, and "a CR makes the line malformed" is false for the one CR that survives: executed (probe-out.txt, case c2-cr-trail), `Self-merge never: a\r` printed `never a set: line 2 of docs/dev-cycle.md on the default branch` with `policy self-merge set`. Cases c2-cr-mid (`a\rb`) and c2-crcr-trail (`a\r\r`) printed the file-refused reason on all three lines, with policy `review unset`: self-merge off, but by the file-not-read mechanism, not by `:157`.
+`nx[never]` starts at 1 (blank-or-EOF) and is overwritten by the next record that is not consumed by `fence($0) { next }`; `next[never] != 1` gives the malformed reason at `:152`, `never_ok=""` at `:163`, and `:170-171` turns a `self-merge` policy into `policy review unset ... so self-merge is off`. Lines that `fence()` refuses (open comment, raw HTML, refdef, CR, NUL) make the whole file unread, which is `never malformed` by the not-read path (`:136`).
 
-A precise version: "A tab, VT or FF in the never value makes the line malformed; a CR inside the line makes the whole file unread (FENCE_AWK), which also turns self-merge off; one trailing CR is dropped."
+Executed (probe2-out.txt). Malformed with `policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off`: next line `b/`, `    b/`, `- b/`, `# H`, `<!-- note -->`, `\f`, `Build-loop slots: 4`, and the policy line itself (`Self-merge never: a/` then `Build-loop policy: self-merge` gives `never malformed: line 1 is followed by a non-blank line ...` and `policy review unset: line 2 reads self-merge ...`). Set (`never a/ set`, `policy self-merge set`): next line empty, spaces-and-tab only, `\r` alone, or EOF. Fence cases: a fenced block right after the never line is skipped, so the next unfenced line decides: block then blank or EOF is set; block then `b/` is malformed (backtick and tilde fences alike). An open comment after the never line refuses the file (`line 3 ... opens an HTML comment ...`, all three lines; policy review unset). With `Build-loop policy: review`, a continued never line is still `never malformed` and policy stays `review set`, so "turns self-merge off" is vacuous there, as expected.
 
-**Evidence:** `scripts/build-loop.sh:101-102`, `scripts/build-loop.sh:126`, `scripts/build-loop.sh:141-143`, `scripts/build-loop.sh:157`, `scripts/lib/dev-cycle-read.sh:213-216`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/submitted/probe-out.txt` (cases c2-cr-mid, c2-cr-trail, c2-crcr-trail)
+Observation for the critic (not a verdict input; the claim asserts nothing about it): the next-line rule is applied only to the never line. `Build-loop policy: self-merge` followed by `except on Fridays` prints `policy self-merge set: line 1 ...`, and `Build-loop slots: 4` followed by `more` prints `slots 4 set`, though Markdown would render each as one longer paragraph. `nx[k]` is computed for every key (`:100`, `:105`) but read only for `never` (`:152`). Whether that asymmetry matters is the critic's call; the header (`:13-17`) documents "exactly" for policy and slots, which holds line by line.
 
----
-
-## Claim 44a: "read_settings is called once per --settings run"
-
-**Submitted by:** performance-reviewer
-**Legibility-target:** performance-reviewer (per-run cost: one ls-tree, one cat-file and one awk pass over docs/dev-cycle.md)
-**Location:** `scripts/build-loop.sh:187-191` (submitted as `:194-198`, which is past the file's last line, `:192`)
-**Type:** Architectural / Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the call count in build-loop.sh at 0ae7d801 (one call, in the only mode); does not establish the cost of the re-exec under scrub_reexec (`:89`), which runs the whole script body twice as processes but read_settings only in the child, and does not cover future modes.
-
-```bash
-# scripts/build-loop.sh:187-192
-case "$MODE" in
-  settings)
-    read_settings
-    printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE"
-    ;;
-esac
-```
-
-A repo-wide grep finds one definition and one call (paraphrased — no quote available because the claim covers absence of other call sites: `grep -rn read_settings` over `*.sh`, `*.bats`, `*.bash` returns `scripts/build-loop.sh:135` (definition) and `:189` (call), plus the unrelated `read_settings_rules` in `hooks/auto-approve-allowed-commands.sh`). The outer process returns from `scrub_reexec` only in the child (`scripts/lib/dev-cycle-read.sh:77-80`: the parent `exit`s after the pipeline), so the call runs once per invocation.
-
-**Evidence:** `scripts/build-loop.sh:89`, `scripts/build-loop.sh:135`, `scripts/build-loop.sh:187-192`, `scripts/lib/dev-cycle-read.sh:76-81`
-
----
-
-## Claim 44b: "U1c/U2 will call it once per process as well."
-
-**Submitted by:** performance-reviewer
-**Legibility-target:** performance-reviewer (whether the per-run cost bound carries to --status / --check)
-**Location:** `scripts/build-loop.sh:130-133` (the comment naming the future consumers); U1c and U2 code does not exist yet
-**Type:** Architectural
-**Verdict:** Unverifiable
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers what the code and plan at 0ae7d801 say about future callers; does not establish how U1c (`--status BRIEF…`) or U2 (`--check`/`--merge`) will call read_settings, and does not establish that a second in-process call would be correct (see below).
-
-The code only says the globals are meant for later modes: `# Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (the globs, or empty) and / NEVER_LINE from main's commit. POLICY and NEVER are / for the modes that judge a brief (--status, then the gate).` (`scripts/build-loop.sh:130-132`). The plan specifies `--status BRIEF…` (several briefs in one process) and `--check BRIEF… [--expect SHA]` (`docs/working/plan-build-loop-handoff.md:205`, `:214`), which makes once-per-process the natural design, but nothing written fixes it. Needed to verify: U1c's and U2's code.
-
-Relevant to the claim's premise: read_settings does not reset POLICY or NEVER on entry. They are initialized once at file scope, `POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=""; NEVER_LINE=""` (`scripts/build-loop.sh:133`), and set only on success, `else NEVER="$v"; ...` (`:170`) and `else POLICY="$v"; ...` (`:178`). So a second call in one process whose read fails or finds a malformed line would leave the first call's POLICY and NEVER in place while the *_LINE strings report review/malformed. Once-per-process is therefore a correctness precondition for U1c/U2, not only a performance property.
-
-**Evidence:** `scripts/build-loop.sh:130-133`, `scripts/build-loop.sh:135-185`, `docs/working/plan-build-loop-handoff.md:203-215`
+**Evidence:** `scripts/build-loop.sh:96-111`, `scripts/build-loop.sh:136`, `scripts/build-loop.sh:147-164`, `scripts/build-loop.sh:168-173`, `scripts/lib/dev-cycle-read.sh:186-229` (FENCE_AWK `fence()`), `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/probe2.sh`, `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/submitted/probe2-out.txt`
 
 ---
 
 ## Claims Requiring Attention
 
-### Incorrect
-- **Claim 43b** (`scripts/build-loop.sh:157`): a single trailing CR is dropped by SETTINGS_AWK (`:101`) and the line is accepted (`never a set`); any other CR makes FENCE_AWK refuse the whole file. The `\r` in `:157`'s blank test is unreachable; no security impact.
-
-### Unverifiable
-- **Claim 44b** (`scripts/build-loop.sh:130-133`): U1c/U2 are not written. Note for them: read_settings does not reset POLICY/NEVER on entry (`:133`, `:170`, `:178`), so a second call in one process could keep stale values.
+None: both submitted claims are Verified. One observation is attached to Claim 47 for the critic: the policy and slots lines have no next-line rule, so a continued `Build-loop policy: self-merge` paragraph still reads `self-merge set`.
 
 ## Goal-Alignment Note
 
-The user's goal is a full code review of U1b before it lands. These verdicts clear the security-reviewer's output-boundary endorsement (42) on executed hostile inputs, and its R1/A1 closure for tab/VT/FF (43a). The one Incorrect (43b) is about an edge case, not a hole: R1/A1's fail-closed property holds for every CR that reaches the value, but via FENCE_AWK rather than `:157`, so the endorsement should cite that path. The performance claim's present-tense half holds (44a). Its future half (44b) is unverifiable now, and it surfaced a constraint for U1c/U2 to record: no repeated read_settings call per process unless POLICY and NEVER are reset on entry. No finding here blocks U1b.
+The user's goal is a final confirming review of U1b before local merge. Both security-reviewer endorsements hold on executed hostile inputs: `--settings` prints no free repo text on the policy and slots lines and prints never entries only after globform (46, with the T45 no-echo assertion shown live by mutation), and a never line continued by a non-blank line fails closed (47). Neither verdict blocks the merge. The one item for the orchestrator to weigh is Claim 47's observation, that policy and slots lines are not checked for a continuation line; it is outside the submitted claims and settled-decision list as far as this pass can tell, so the rubric should judge its severity.

@@ -12,11 +12,11 @@ setup() { bl_setup; }
 
 @test "--settings: an exact policy line is set, a trailing CR included (T1)" {
     for v in self-merge review; do
-        settings '# Settings' '' "Build-loop policy: $v"
+        settings '# Settings' '' "Build-loop policy: $v" '' 'Self-merge never: none'
         run --separate-stderr bash "$BL" --settings
         [ "$status" -eq 0 ] && [ "$(line policy)" = "policy $v set: line 3 of docs/dev-cycle.md on the default branch" ] \
             || { echo "$output $stderr"; return 1; }
-        printf 'Build-loop policy: %s\r\n' "$v" > docs/dev-cycle.md && commit_all cr
+        printf 'Build-loop policy: %s\r\n\nSelf-merge never: none\n' "$v" > docs/dev-cycle.md && commit_all cr
         settings_is policy "policy $v set: line 1 of docs/dev-cycle.md on the default branch"
     done
 }
@@ -77,8 +77,11 @@ setup() { bl_setup; }
 
 @test "--settings reads main's commit: the working tree and other branches never decide (T4)" {
     settings 'Build-loop policy: review'
-    printf 'Build-loop policy: self-merge\nBuild-loop slots: 7\n' > docs/dev-cycle.md
+    printf 'Build-loop policy: self-merge\nBuild-loop slots: 7\n\nSelf-merge never: none\n' > docs/dev-cycle.md
     settings_like policy "policy review set:"; settings_like slots "slots 3 default:"
+    # A replace ref for main's blob, even with core.useReplaceRefs set, is not followed.
+    git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w docs/dev-cycle.md)" && git config core.useReplaceRefs true
+    settings_like policy "policy review set:"; git replace -d "$(git rev-parse main:docs/dev-cycle.md)"
     # Committed on a checked-out loop branch: HEAD is not main.
     git checkout -q -b loop && commit_all raise
     settings_like policy "policy review set:"
@@ -107,19 +110,24 @@ setup() { bl_setup; }
         && [[ "$(line policy)" == "policy self-merge set:"* ]] || { echo "$output"; return 1; }
     settings 'Build-loop policy: self-merge'
     settings_is never 'never none: no line starts "Self-merge never:"'
+    no='policy review unset: line 1 reads self-merge, but there is no valid Self-merge never: line ("Self-merge never: none" for an empty list), so self-merge is off'
+    settings_is policy "$no"
+    settings 'Build-loop policy: self-merge' 'Self-merge never: none'
+    settings_is never "never none: line 2 of docs/dev-cycle.md on the default branch lists none"; settings_like policy "policy self-merge set:"
+    # A never list hidden in markup turns self-merge off rather than being skipped.
+    settings 'Build-loop policy: self-merge' '- [x] Self-merge never: b/'; settings_is policy "$no"
     for v in 'Self-merge never:' 'Self-merge never: ' 'Self-merge never: a  b' 'Self-merge never: ../x' 'Self-merge never: a/../b' \
              'Self-merge never: /etc' 'Self-merge never: -x' 'Self-merge never: a b a' 'Self-merge never: a a/' $'Self-merge never: caf\xc3\xa9/' \
              $'Self-merge never: a\tb' $'Self-merge never: \ta' $'Self-merge never: a\t' $'Self-merge never: a \tb' 'Self-merge never: a ./b'; do
         settings 'Build-loop policy: self-merge' "$v"
         settings_like never "never malformed: line 2 "
-        [ "$(line policy)" = "policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off" ] \
-            || { echo "[$v] $output"; return 1; }
+        [ "$(line policy)" = "$no" ] || { echo "[$v] $output"; return 1; }
         [[ "$output" != *$'\xc3'* && "$output" != *../x* && "$output" != */etc* && "$output" != *-x* && "$output" != *./b* && "$output" != *$'\t'* ]] \
             || { echo "echoed a malformed entry: $output"; return 1; }
     done
     settings 'Build-loop policy: self-merge' 'Self-merge never: a/' '  self-merge never: b/'
-    settings_is never 'never malformed: more than one line starts "Self-merge never:" (lines 2 and 3)'
-    # Copies in markup, a table, a link or with a misplaced colon count as second lines too.
+    settings_is never 'never malformed: more than one line starts "Self-merge never:" (lines 2 and 3)'; settings_is policy "$no"
+    # Copies in some markup, a table, a link label or with a misplaced colon count as second lines too.
     for c in '**Self-merge never:** b/' '**Self-merge never**: b/' '## Self-merge never: b/' '_self-merge never: b/_' \
              '`Self-merge never: b/`' '| Self-merge never: | b/ |' '[Self-merge never](x): b/' 'Self-merge never : b/'; do
         settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$c"
@@ -128,9 +136,9 @@ setup() { bl_setup; }
     # A part starting .git is allowed: the list only adds refusals.
     settings 'Build-loop policy: self-merge' 'Self-merge never: .github/ .gitignore'
     settings_like never "never .github/ .gitignore set:"; settings_like policy "policy self-merge set:"
-    # A never line Markdown would continue on the next line is malformed.
+    # A never line the next unfenced line may continue is malformed.
     settings 'Build-loop policy: self-merge' 'Self-merge never: a/' 'b/'
-    settings_is never 'never malformed: line 2 is followed by a non-blank line (Markdown would join it as more globs)'
+    settings_is never 'never malformed: line 2 is followed by a non-blank line outside a fence (it may continue the list)'
     settings 'Self-merge never: a/' '' 'Build-loop policy: self-merge'
     settings_like never "never a/ set:"
     # Raised only on a loop's branch or in the working tree: ignored.
@@ -198,9 +206,9 @@ setup() { bl_setup; }
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] \
         || { echo "$output $stderr"; return 1; }
     # From a subdirectory and from a linked worktree, it reads the same main.
-    settings 'Build-loop policy: self-merge'
+    settings 'Build-loop policy: self-merge' 'Self-merge never: none'
     git worktree add -q -b wt "$BATS_TEST_TMPDIR/wt" main && mkdir -p sub
-    for d in . "$BATS_TEST_TMPDIR/wt"; do printf 'Build-loop policy: review\n' > "$d/docs/dev-cycle.md"; done
+    for d in . "$BATS_TEST_TMPDIR/wt"; do printf 'Build-loop policy: review\n' > "$d/docs/dev-cycle.md"; done; git -C "$BATS_TEST_TMPDIR/wt" commit -qam wt
     for d in sub "$BATS_TEST_TMPDIR/wt"; do
         # shellcheck disable=SC2016  # $1 and $2 belong to the inner shell
         run --separate-stderr bash -c 'cd "$1" && bash "$2" --settings' _ "$d" "$BL"
@@ -315,7 +323,7 @@ setup() { bl_setup; }
 @test "--status: the policy is the stricter of main's settings and the brief's Policy line (T5)" {
     for s in self-merge review; do
         for p in 'Policy: self-merge' 'Policy: review' 'Policy: Self-merge' 'Policy: self-merge ' ''; do
-            settings "Build-loop policy: $s"
+            settings "Build-loop policy: $s" "" "Self-merge never: none"
             brief a 'Status: open' 'Branch: feat/a' ${p:+"$p"}
             run --separate-stderr bash "$BL" --status "$B"
             want=review; [[ "$s" == self-merge && "$p" == 'Policy: self-merge' ]] && want=self-merge

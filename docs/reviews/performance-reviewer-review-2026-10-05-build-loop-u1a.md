@@ -1,107 +1,99 @@
-Commit: 2da477b7
+Commit: 722884c7
 
-# Performance Review — feat/build-loop-u1a (U1a, review-fix iteration 2)
+# Performance Review — feat/build-loop-u1a (U1a, review-fix iteration 3, final confirming pass)
 
-**Scope:** `git diff main...feat/build-loop-u1a` (scripts/lib/dev-cycle-read.sh, scripts/dev-cycle.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats)
+**Scope:** `git diff main...feat/build-loop-u1a -- . ':!docs/reviews'` (scripts/lib/dev-cycle-read.sh, scripts/dev-cycle.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats)
 **Date:** 2026-10-05
-**Based on:** Stage-1 merged fact-check summary (`/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i2/shared/fc-summary.md`; full report `docs/reviews/code-fact-check-report-build-loop-u1a.md`)
+**Based on:** Stage-1 merged fact-check summary (k=3; `docs/reviews/code-fact-check-report-build-loop-u1a-r1/-r2/-r3.md`, all at 722884c7)
 
 ## Data Flow and Hot Paths
 
-The changed code is the shared reader lib's check modes, invoked from `scripts/dev-cycle.sh`'s check-mode loop (`for a in "${CHECK_ARGS[@]}"`, dev-cycle.sh:195-205), once per argument and once per dev-cycle step. That is a **cold path**: a CLI run a few times per dev cycle, which the user starts by hand. There is no request handler or high-frequency loop.
+The changed code is the shared reader lib's check modes. `scripts/dev-cycle.sh`'s check-mode loop calls them once per argument, a few times per dev cycle, and the user starts those runs by hand. That is a **cold path**. There is no request handler or high-frequency loop. The future U1b/U1c consumers (build-loop.sh `--status`, constraints line) are not part of this diff.
 
-- `check_answer` (dev-cycle-read.sh:534-560) now, for each question ID and for each of the two files, runs `main_entry` (one `git ls-tree -t --full-tree` in a `$(...)` subshell), then `git cat-file blob | awk` over the whole blob. On this repo's main the blobs are questions.md 32,991 B and questions-archive.md 188,668 B.
-- `check_brief` (:309-) replaces its old `ls-tree | cut` with `main_entry`, and replaces its inline awk with `brief_fields` (:281-300). That is one `cat-file | awk` pass over the brief plus a bash loop over at most 6 output lines.
-- `FENCE_AWK` gains one `index(l, "\0")` per input line (:216).
-- `main_entry`'s ls-tree lists each named directory's children (docs/ 11 entries, docs/working/ 37 entries on main). This is settled as Won't-Fix (override row 220), and the review does not re-raise it.
+These are the changes since iteration 2 (2da477b7..722884c7, code lines only):
 
-I measured both readers in my scratch dir: main's reader came from `git show main:scripts/{dev-cycle.sh,lib/dev-cycle-read.sh}`, and the branch's reader ran at 2da477b7, both against this repo's main (mawk, `LC_ALL=C.UTF-8`, wall-clock `time`):
+- `main_entry` (dev-cycle-read.sh:258-274): stderr is now dropped, and a `dup` check costs one assoc-array membership test per ls-tree line. Each lookup stays at one `git ls-tree` process over about 49 lines. The extra cost is negligible.
+- `brief_fields` (:289-310): checks its own preconditions (A13), `pathform "$1"` and `[[ "$(main_entry "$1")" != blob ]]`. check_brief has already run both on the same path (:323 and :330), so **each check_brief now runs `git ls-tree` twice**.
+- `check_answer` (:545-574) and `brief_fields`: a `|| { …; return; }` arm on the `cat-file | awk` pipeline. This adds no work.
 
-| Run | main's reader | branch reader |
-|---|---|---|
-| `--check-answer` × 20 archived IDs | 0.242 s | 0.230 s |
-| `--check-answer Q-001` (×3) | 0.024–0.025 s | 0.024–0.025 s |
-| `--check-brief` × 3 briefs on main (×2) | 0.043–0.044 s | 0.049–0.050 s |
+I measured in my scratch dir. Each reader came from `git show <rev>:scripts/{dev-cycle.sh,lib/dev-cycle-read.sh}` and was sourced in-process against this repo's main (f6357ea1), with mawk, `LC_ALL=C.UTF-8`, and wall clock from `date +%s%N`. The brief was `docs/working/briefs/2026-10-02-build-loop-handoff.md`.
 
-Outputs were byte-identical for the brief run. The answer run differs in content only by design, because it now reads main instead of the working tree.
+| Measurement | main's reader | 2da477b7 | 722884c7 |
+|---|---|---|---|
+| git subcommands per `check_brief` (PATH shim) | cat-file 1, log 1, ls-tree 1 | cat-file 1, log 1, ls-tree 1 | cat-file 1, log 1, **ls-tree 2** |
+| `check_brief` × 50 in one process (3 rounds) | 533 / 539 / 580 ms | 626 / 630 / 637 ms | 850 / 886 / 889 ms |
+| `check_answer` × 20 archived IDs (3 rounds) | — | 237 / 238 / 243 ms | 238 / 246 / 249 ms |
+| `--check-brief` 3 briefs, output md5 | 572dbe66… | 572dbe66… | 572dbe66… |
+| `check_answer` 20 IDs, output md5 | — | cce42cc2… | cce42cc2… |
+
+Isolated in the same harness: `x="$(main_entry …)"` takes about 3.3 ms per call (163 to 169 ms per 50, with one 639 ms outlier round), and `brief_fields` takes about 5.2 ms per call (255 to 266 ms per 50).
 
 ## Findings
 
-#### check_answer re-lists and re-reads both questions files for every ID
+#### check_brief runs main_entry (one `git ls-tree` fork) twice per brief since A13's precondition check in brief_fields
 
 **Severity:** Informational
-**Location:** `scripts/lib/dev-cycle-read.sh:538-547`
+**Location:** `scripts/lib/dev-cycle-read.sh:292` (brief_fields), called from `:338` after check_brief's own `:330`
 **Move:** Count the hidden multiplications
-**Classification:** Macro (O(IDs × archive bytes); the per-ID re-read predates this diff) / Cold path (a dev-cycle CLI check mode, run about once per cycle with a handful of IDs)
-**Confidence:** High
-**Baseline:** 0.230 s wall clock for `--check-answer` over 20 IDs against this repo's main (archive 188,668 B), measured in the reviewer's scratch dir on 2026-10-05; main's working-tree reader took 0.242 s for the same IDs.
-**Evidence:**
-```
-  for f in docs/working/questions.md docs/working/questions-archive.md; do
-    e="$(main_entry "$f")"
-...
-    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")"
-```
-(excerpt ends at :547; the enclosing check_answer() continues to :560, which I read)
-
-**Legibility-target:** for-orchestrator-synthesis
-
-Each ID now costs 2 `ls-tree` and 2 `cat-file` forks, plus 2 full awk passes over about 222 KB. The two files and `MAIN_SHA` are the same for every ID in one invocation. Before this diff the reader already scanned the whole file once per ID, so the asymptotic shape is unchanged, and the measured total is flat (no regression). The archive grows without a bound (it is append-only), so the cost per ID grows with it, and per-call cost scales linearly with archive size × IDs. At today's scale this is about 11 ms per ID, which does not matter on a cold path. This is a forward note only. It would matter if a U1b/U1c consumer called `check_answer` per poll or per brief in a loop. That consumer is not part of this diff, and this report does not flag its absence.
-
-**Recommendation:** No change is needed for U1a. If a later consumer calls this in a loop, resolve `main_entry` and the blob once per file per invocation (outside the per-ID loop), or pass all IDs to one awk pass. Re-measure against the 0.230 s / 20-ID baseline above.
-
-#### check_brief pays about 2 ms more per brief for main_entry's subshell and brief_fields' bash loop
-
-**Severity:** Informational
-**Location:** `scripts/lib/dev-cycle-read.sh:320`, `:286-299`
-**Move:** Find the work that moved to the wrong place
-**Classification:** Micro (one extra `$(...)` subshell plus a ≤6-iteration read loop per brief) / Cold path (a `--check-brief` CLI run once per cycle)
-**Confidence:** Medium (wall-clock noise at the millisecond scale)
-**Baseline:** 0.049–0.050 s for `--check-brief` over the 3 briefs on main, against 0.043–0.044 s for main's reader, measured in the reviewer's scratch dir on 2026-10-05.
+**Classification:** Micro (one redundant fork plus subshell per brief, constant per call) / Cold path (a `--check-brief` CLI run about once per cycle over a handful of briefs; U1c's `--status` will call it once per brief)
+**Confidence:** High. The PATH-shim count is exact. The timing comes from 3 rounds of 50.
+**Baseline:** 17.0 to 17.8 ms per `check_brief` at 722884c7, against 12.5 to 12.7 ms at 2da477b7 and 10.7 to 11.6 ms on main's reader. These are in-process loops of 50 against this repo's main, measured in the reviewer's scratch dir on 2026-10-05.
 **Evidence:**
 ```
   e="$(main_entry "$a")"
 ```
+(check_brief :330)
 ```
-  while IFS= read -r l; do
+  if ! brief_fields "$a"; then
 ```
-(the second excerpt ends at :293; the enclosing brief_fields() continues to :300, which I read)
+(check_brief :338; check_brief() continues to :350, and I read it)
+```
+  if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
+```
+(brief_fields :292; brief_fields() continues to :310, and I read it)
 
 **Legibility-target:** for-orchestrator-synthesis
 
-The process count per brief is unchanged: one `ls-tree` and one `cat-file | awk`. The increase comes from the bash subshell and the assoc-array loop. A difference of 6 ms on 3 briefs, in a command run once per cycle, is below any threshold that matters. I recorded it so the next pass has a number to compare against.
+check_brief already checks `main_by_name`, `pathform` and `main_entry == blob` before it calls brief_fields. brief_fields then repeats `pathform` and a full `main_entry`, which is a second `$(...)` subshell, a second `git ls-tree -t --full-tree` and a second parse of about 49 lines. The tree is the same at the same `MAIN_SHA`, so the second answer cannot differ. The shim count confirms 2 ls-tree calls per brief, against 1 at 2da477b7 and on main. The measured cost is about +5 ms per brief over iteration 2 and about +6.5 ms over main (about 60%). Most of that is the second ls-tree, which costs about 3.3 ms per call in isolation. Override row 229 (C7, "~2 ms more per brief") settled the iteration-2 delta. This doubled call is new since then (the A13 fix), so that row does not cover it. The cost stays linear in briefs, with a handful of briefs per cycle, so it does not matter today. It would add up only if U1c's `--status`, or a polling loop, ran check_brief for many briefs on every tick.
 
-**Recommendation:** None. This is a coverage note.
+**Recommendation:** You can keep this as it is (Won't-Fix is reasonable, because A13's self-contained preconditions are a deliberate safety contract). If U1c measures `--status` and wants the 3 ms back, split out an unguarded internal reader, such as `_brief_parse`. brief_fields would call it after its own checks, and check_brief would call it directly after its `main_entry == blob` arm. Re-measure against the 17 ms per brief baseline above.
 
 ## Escalations received
 
 None of the Stage-1 escalations is addressed to the performance critic:
 
-- Escalation 1 (portability of `"\0"`) is a correctness concern. If `"\0"` were empty, the check would refuse every line, which is fail-closed. The CPU cost of the check is the same either way.
-- Escalation 3 belongs to security-reviewer.
-- Escalations 2 and 4 belong to the orchestrator and test-strategy.
+- The `--help` range (`sed -n '2,80p'`) is a correctness or doc regression with no runtime cost.
+- The pipefail dependency of the R2 fix is a correctness or caller-contract issue.
+- main_entry's corruption modes are a correctness issue.
 
-I found nothing that contradicts override rows 201, 208, 213, 215, 220 or 221.
+Settled rows that I did not re-raise:
+
+- **201** (check_brief's `git log -G` walk grows with history): the walk is unchanged in this diff. Its revisit trigger is U1's `--status`, which this diff does not contain.
+- **213** (need_root fork per brief).
+- **220** (`ls-tree -t` lists the children of named directories): still one process per lookup, about 49 entries.
+- **C6/228** (each ID re-reads both questions files): measured flat, 237 to 249 ms per 20 IDs at both 2da477b7 and 722884c7.
+- **C7/229**: see Finding 1, which covers the new delta only.
+
+I found no new evidence against any of these rows.
 
 ## Endorsements
 
-- brief_fields keeps check_brief's parse at one `git cat-file blob | awk` pass per brief with no early exit, the same pipeline shape as the inline awk it replaces. `[read: scripts/lib/dev-cycle-read.sh:286-292]`
-- The NUL refusal adds one `index()` per input line inside `fence()`, which is a constant cost per line. `[read: scripts/lib/dev-cycle-read.sh:216]`
-- Claim: on this repo's main, the branch's `--check-answer` (20 IDs) and `--check-brief` (3 briefs) run within ±15% of main's reader's wall clock, with identical check_brief output. `[unverified — submitted as claim]` (route: code-fact-check; probe: run both readers as described under Data Flow)
+- At 722884c7, main_entry's duplicate-name check adds one assoc-array membership test per ls-tree output line inside the existing read loop. It adds no extra process and no second pass over `$out`. `[read: scripts/lib/dev-cycle-read.sh:258-274]`
+- The R2 fixes (`|| { …; return; }` on the `git cat-file | awk` pipelines in check_answer :562-563 and brief_fields :295-302) add no process and no extra read. The pipeline is unchanged and only its exit status is now consulted. `[read: scripts/lib/dev-cycle-read.sh:295-302, :562-563]`
+- Claim: on this repo's main at f6357ea1, `check_answer` over 20 archived IDs runs within 5% of 2da477b7's wall clock (237–243 ms vs 238–249 ms) with byte-identical output. `check_brief` at 722884c7 issues exactly 2 `git ls-tree`, 1 `cat-file` and 1 `log` per brief whose main entry is a blob. `[unverified — submitted as claim]` (route: code-fact-check. Probe: a PATH shim on git that logs `$1`, plus the in-process 50× loops described under Data Flow.)
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | check_answer re-lists and re-reads both questions files per ID (forward note for loop consumers) | Informational | `scripts/lib/dev-cycle-read.sh:538-547` | High |
-| 2 | check_brief about 2 ms more per brief (subshell + read loop) | Informational | `scripts/lib/dev-cycle-read.sh:320`, `:286-299` | Medium |
+| 1 | check_brief runs main_entry (git ls-tree) twice per brief since brief_fields gained its own preconditions | Informational | `scripts/lib/dev-cycle-read.sh:292` (via `:330`, `:338`) | High |
 
 ## Overall Assessment
 
-This diff carries no meaningful performance risk. Every changed path is a cold CLI check mode. Reading answers from main instead of the working tree took 0.230 s for 20 IDs, against 0.242 s for main's reader, and check_brief gained about 2 ms per brief. The one structural shape worth remembering is check_answer's O(IDs × archive size) re-read with per-ID git forks. It predates this diff and is harmless at today's 189 KB archive. It becomes relevant only if a U1b/U1c consumer calls it in a polling loop. The ls-tree directory listing cost is settled (row 220). No profiling is needed before merge.
+This change carries no meaningful performance risk. Every changed path is a cold CLI check mode. The iteration-3 fixes are free except one: A13's precondition check in brief_fields makes check_brief look up main's tree twice. That costs about 5 ms more per brief than iteration 2 and about 6.5 ms more than main (17 ms per brief against 11 ms). With a handful of briefs per cycle the cost is negligible, and a later unguarded helper can remove it without weakening A13. check_answer stays level with iteration 2, and its output is unchanged. Nothing needs to be fixed before merge. The one item to carry forward is to measure U1c's `--status`, which calls check_brief per brief (row 201's trigger), against the 17 ms per brief baseline.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to the output path given in your tail, structured per your skill, with `Commit: 2da477b7` as its first line.
-- Answered: performance review of the full `main...feat/build-loop-u1a` diff at 2da477b7, with measured baselines comparing main's reader and the branch reader; two Informational findings, no blocking issues.
-- Out of scope: correctness or portability of `"\0"` (escalation 1), test-strength issues (escalation 2), the set -e behavior of brief_fields (escalation 3, security), the digest's questions readers (escalation 4), and U1b/U1c consumers.
-- Escalate: none. Finding 1 is a forward note for whoever writes U1c's `--status`, in case it calls check_answer per poll.
+- Success criterion (restated verbatim): A markdown report saved to /workspace/.claude/wt-build-loop-u1a/docs/reviews/performance-reviewer-review-2026-10-05-build-loop-u1a.md (overwrite the iteration-2 one), first line `Commit: 722884c7`, structured per the performance-reviewer skill, every finding with Severity, Location, verbatim Evidence, Confidence and Legibility-target, ending with the canonical Goal-Alignment Note.
+- Answered: performance review of the full `main...feat/build-loop-u1a` diff at 722884c7, with measured baselines across main's reader, 2da477b7 and 722884c7, including the brief_fields/check_brief double main_entry that the orchestrator asked about. It has one Informational finding and nothing blocking.
+- Out of scope: the `--help` sed range regression (correctness, fact-check), the pipefail caller contract, main_entry corruption modes, U1b/U1c consumers, and the bats suite result (not run by this critic).
+- Escalate: none. Finding 1 is a forward note for whoever measures U1c's `--status` (row 201's trigger).
