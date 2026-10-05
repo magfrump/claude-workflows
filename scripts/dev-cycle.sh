@@ -303,40 +303,58 @@ done
 if inrepo docs/decisions/log.md; then
   # Two log layouts are read. Numbered (this repo's): | N | date | ... |, named
   # "log row N (date)". Date-first (no number column): | YYYY-MM-DD | ... |,
-  # named "log row L<line in log.md> (date)" so a cycle record has a stable
-  # handle. Any other table row (a header, an explanatory table) is not a
-  # decision. awk emits one US-separated record per data row that mentions
-  # revisiting, then "S" with the count of data rows and of other body rows
-  # (separators and header rows, the row just above a separator, excluded).
-  # US (\037) rather than a tab: `read` would collapse an empty tab field.
+  # named "log row L<line in log.md> (date)". An L-number is a handle for this
+  # cycle only: it moves when lines above the row change. Other table rows (a
+  # header, an explanatory table) are not decisions, except that a row in a
+  # table that has data rows, mentioning revisiting with a first cell in
+  # neither shape (`| **2** |`, `| 2026/01/03 |`), prints as "log row L<line>
+  # (first cell not parsed)" rather than being dropped. awk emits one
+  # US-separated record per printed row, then "S" with the count of data rows
+  # and of other body rows (separators and header rows, the row just above a
+  # separator, excluded). US (\037) rather than a tab: `read` would collapse an
+  # empty tab field. A CR is stripped first, so CRLF logs parse alike.
   log_data=0 log_other=0
   while IFS=$'\037' read -r kind n d row; do
     if [[ "$kind" == S ]]; then log_data="$n" log_other="$d"; continue; fi
     found=1
     # The whole clause to the cell's end; prefer a capitalised "Revisit" (the
     # trigger sentence) over an earlier "revisit-trigger verdicts" mention.
-    text="$(grep -oE 'Revisit[^|]*' <<< "$row" | head -1 || true)"
-    [[ -n "$text" ]] || text="$(grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
+    # LC_ALL=C: an invalid UTF-8 byte must not end the match early.
+    text="$(env LC_ALL=C grep -oE 'Revisit[^|]*' <<< "$row" | head -1 || true)"
+    [[ -n "$text" ]] || text="$(env LC_ALL=C grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
     echo "- log row $n ($d): > $text"
   done < <(LC_ALL=C awk -F'|' '
     function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
-    /^\|[|: \t-]*-[|: \t-]*$/ { if (prev_other) other--; prev_other = 0; next }
-    /^\|/ {
-      c1 = trim($2); prev_other = 0
-      if (c1 ~ /^[0-9]+$/) { data++; label = c1; d = $3; gsub(/ /, "", d) }
-      else if (c1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) { data++; label = "L" NR; d = c1 }
-      else { other++; prev_other = 1; next }
-      if (tolower($0) ~ /revisit/) print "R\037" label "\037" d "\037" $0
-      next
+    { sub(/\r$/, "") }
+    !/^\|/ { prev_other = 0; intable = 0; next }
+    !intable { intable = 1; tbl++ }
+    /^\|[|: \t-]*-[|: \t-]*$/ {
+      if (prev_other) { other--; if (nu && uline[nu] == NR - 1) nu-- }
+      prev_other = 0; next
     }
-    { prev_other = 0 }
-    END { print "S\037" data + 0 "\037" other + 0 }' docs/decisions/log.md)
+    {
+      c1 = trim($2); prev_other = 0
+      if (c1 ~ /^[0-9]+$/) { label = c1; d = $3; gsub(/[ \t]/, "", d) }
+      else if (c1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) { label = "L" NR; d = c1 }
+      else {
+        other++; prev_other = 1
+        if (tolower($0) ~ /revisit/) { nu++; uline[nu] = NR; utbl[nu] = tbl; urow[nu] = $0 }
+        next
+      }
+      data++; tdata[tbl]++
+      if (tolower($0) ~ /revisit/) print "R\037" label "\037" d "\037" $0
+    }
+    END {
+      for (i = 1; i <= nu; i++)
+        if (tdata[utbl[i]]) print "U\037L" uline[i] "\037first cell not parsed\037" urow[i]
+      print "S\037" data + 0 "\037" other + 0
+    }' docs/decisions/log.md)
   # Never a silent zero: table rows that parse as neither layout mean the log
   # was not read, not that it holds no triggers.
   if [[ "$log_data" -eq 0 && "$log_other" -gt 0 ]]; then
     found=1
     echo
-    echo "**Decision log rows are not in a recognized format** (first cell neither a row number nor a YYYY-MM-DD date); its revisit triggers were NOT checked. Read docs/decisions/log.md by hand."
+    echo "**Decision log revisit triggers were NOT checked** — its rows are in neither recognized layout (first cell a row number, or a YYYY-MM-DD date). Read docs/decisions/log.md by hand."
   fi
 else
   skipped docs/decisions/log.md || true
