@@ -1027,9 +1027,11 @@ EOF
     for b in git perl; do printf '#!/bin/sh\necho "%s" >> "%s/called"\n' "$b" "$S" > "$S/$b"; chmod +x "$S/$b"; done
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
-        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root; do
+        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
+                 oddwhy check_brief check_branch resolve_main; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
+        [[ -n "$FENCE_AWK" ]] || echo "no FENCE_AWK"
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
@@ -1066,4 +1068,15 @@ closed" ] || { echo "$output"; return 1; }
         inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"not a repository's top level"* ]] \
         || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "resolve_main returns instead of exiting: the current branch when no main, 1 outside a repo" {
+    git branch -m main trunk
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        resolve_main && echo "$MAIN ${MAIN_SHA:0:7} by-name=${MAIN_BY_NAME:-no}"
+        cd "$2"; resolve_main || echo "none: [$MAIN] [$MAIN_SHA]"' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR"
+    [ "$status" -eq 0 ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ "$output" = "trunk $(git rev-parse --short=7 HEAD) by-name=no
+none: [] []" ] || { echo "$output"; return 1; }
 }

@@ -81,7 +81,8 @@ set -euo pipefail
 command -v perl >/dev/null || { echo "dev-cycle.sh needs perl (to scrub its output)" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # before the cd: relative paths work
 # The reader, kept in a lib so the planned scripts/build-loop.sh can share it,
-# from this script's own directory: the scrub and the file and path rules.
+# from this script's own directory: the scrub, the file and path rules,
+# FENCE_AWK, the brief and branch checks, and the default branch.
 READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 [[ -f "$READ_LIB" ]] || { echo "dev-cycle.sh needs $READ_LIB" >&2; exit 1; }
 # shellcheck source=lib/dev-cycle-read.sh
@@ -155,146 +156,6 @@ check_write() {
   elif ! writable "$a"; then echo "skip $a: not one of the dev cycle's own files"
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
-}
-# Code fences, read only in their plain form, so that every fence this reads is
-# read the way CommonMark reads it: a line starting at column 0 with 3 or more `
-# or ~ opens one (a ` fence's info string holds no `), and only a column-0 line
-# of the same character, at least as long and followed by nothing but spaces or
-# tabs, closes it. Any other fence-like line (indented, after a list marker, or
-# a column-0 line that neither opens nor, inside a fence, is plain content) is
-# ambiguous, and so is anything this reader does not model: outside a fence,
-# a line that starts (after spaces or tabs) with < (an HTML block can hold a
-# fence line; only a complete one-line <!-- comment --> is read), one that
-# opens an HTML comment it does not close, a line starting like a link
-# reference definition (after any > and list markers), a
-# carriage return inside a line (CommonMark ends a line there), or a
-# byte-order mark on line 1: fence() records the first one's line number in
-# `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
-# still open at the end is recorded in `fline` (its opening line) and refuses
-# the file too.
-# Accepted limit (decision log 69): inline constructs that span lines (an open
-# tag attribute, link title, code span, emphasis, or a processing instruction,
-# CDATA section or declaration opened mid-line) are not modelled, so text
-# CommonMark would hide inside them is read as text. Whoever can write such a
-# shape can write the answer or Status line itself; no real file has one.
-# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
-FENCE_AWK='
-function run(l, ch,   n) { n = 0; while (substr(l, n + 1, 1) == ch) n++; return n }
-function fenceish(l) { return l ~ /^[ \t]*(([-*+]|[0123456789]+[.)])[ \t]+)?(```|~~~)/ }
-function rawhtml(l) { return l ~ /^[ \t]*</ && !(l ~ /^[ \t]*<!--/ && index(l, "-->")) }
-function opencomment(l,   n, p) {  # the last <!-- on the line has no --> after it
-  n = split(l, p, /<!--/)  # one linear pass; <!-- cannot overlap itself
-  return n > 1 && !index(p[n], "-->")
-}
-function refdef(l) {  # also behind any number of blockquote and list markers
-  # One anchored match strips every leading blank, > and list marker (a loop of
-  # sub() calls rebuilt the line per marker: quadratic on a line of markers).
-  if (match(l, /^([ \t>]|[-*+][ \t]|[0123456789]+[.)][ \t])*/)) l = substr(l, RLENGTH + 1)
-  # Any line starting [ that holds ]: or never closes its [ with an unescaped ]
-  # (a label that continues on the next line) counts; escapes are dropped first.
-  if (substr(l, 1, 1) != "[") return 0
-  gsub(/\\./, "", l)
-  return index(l, "]:") || !index(l, "]")
-}
-function refuse(why) { if (!odd) { odd = NR; oddwhy = why } }
-function opens(l,   ch, n) {
-  ch = substr(l, 1, 1)
-  if (ch != "`" && ch != "~") return 0
-  n = run(l, ch); if (n < 3) return 0
-  if (ch == "`" && index(substr(l, n + 1), "`")) return 0
-  fch = ch; flen = n; return 1
-}
-function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) ~ /^[ \t]*$/ }
-function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
-  if (odd) return 1   # the file is already refused: nothing after it is read
-  if (index(l, "\r")) { refuse("cr"); return 1 }
-  if (NR == 1 && substr(l, 1, 3) == "\357\273\277") { refuse("bom"); return 1 }
-  if (infence) {
-    if (closes(l)) infence = 0
-    else if (fenceish(l) && substr(l, 1, 1) != "`" && substr(l, 1, 1) != "~") refuse("fence")
-    return 1
-  }
-  if (opens(l)) { infence = 1; fline = NR; return 1 }
-  if (fenceish(l)) { refuse("fence"); return 1 }
-  if (rawhtml(l)) { refuse("html"); return 1 }
-  if (opencomment(l)) { refuse("comment"); return 1 }
-  if (refdef(l)) { refuse("refdef"); return 1 }
-  return 0
-}
-'
-oddwhy() {  # the reason fence() refused a file, for a skip line
-  case "$1" in
-    html) echo "starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)" ;;
-    comment) echo "opens an HTML comment that does not close on the same line" ;;
-    refdef) echo "starts like a link reference definition (its label or title can span lines)" ;;
-    cr) echo "holds a carriage return that does not end it" ;;
-    bom) echo "starts with a byte-order mark" ;;
-    *) echo "is a fence-like line that is not a plain column-0 fence" ;;
-  esac
-}
-# A brief's state, read only from the default branch's commit (never the
-# working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". A brief
-# FENCE_AWK refuses (see its comment for every reason) is not read at all. "new" when the
-# default branch has no file at that path (not landed yet, or moved to
-# closed/). A closed/ path is read the same way (its state, for In flight; it
-# never holds a slot).
-check_brief() {
-  local a="$1" st c n why
-  if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
-  if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
-    echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
-  fi
-  if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
-  # Only a regular file counts: a symlink's blob is its target text, not a
-  # brief, and a gitlink or tree is not a brief either.
-  case "$(git ls-tree "$MAIN_SHA" -- "$a" | cut -c1-6)" in
-    '') echo "ok $a new"; return ;;
-    100644|100755) ;;
-    *) echo "skip $a: not a regular file on the default branch"; return ;;
-  esac
-  # The whole blob is read (no early exit, which would kill git cat-file with
-  # SIGPIPE under pipefail); fenced lines are skipped (FENCE_AWK).
-  # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
-  st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk "$FENCE_AWK"'
-    { sub(/\r$/, "") }
-    fence($0) { next }
-    !seen && /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) st = $0 }
-    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else if (st != "") print st }')"
-  case "$st" in
-    odd\ *) read -r _ n why <<<"$st"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read"; return ;;
-    unbalanced\ *) echo "skip $a: the code fence opened at line ${st#unbalanced } is never closed, so the brief is not read"; return ;;
-    '') echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return ;;
-  esac
-  # The default branch's own commit (first-parent history, a merge diffed
-  # against its first parent) that last added or removed a line starting
-  # "Status: " in this file: a merge commit for merged work, the branch's own
-  # commit after a fast-forward; never a later Asked:/Kept: edit. Any such line
-  # counts (a quoted one, or a move into closed/, which adds the file whole).
-  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s -G'^Status: ' "$MAIN_SHA" -- "$a")"
-  [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
-  echo "ok $a ${st#Status: } $c"
-}
-# A brief's branch reaches git only as the commit show-ref finds at exactly
-# refs/heads/<name>: never as an option, and never as a tag of the same name
-# (git's own name lookup falls back to refs/tags/refs/heads/<name>). The last
-# fields are the branch's commits not on the default branch (0: none, as for a
-# fresh branch or one merged with a merge commit; a squash-merged branch keeps
-# its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
-# time zone (as the committer set it: a future date is possible).
-# The default branch is refused (the check modes that read it need it found by name).
-check_branch() {
-  local a="$1" sha
-  if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
-  elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
-    || [[ "$a" == HEAD || "$a" == refs/* ]]; then echo "skip $a: not a valid branch name"
-  elif [[ "$a" == "$MAIN" ]]; then echo "skip $a: the default branch"
-  else
-    sha="$(git show-ref --verify --hash "refs/heads/$a" 2>/dev/null || true)"
-    [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
-    if [[ -n "$sha" ]]; then echo "ok $a $sha $(git rev-list --count "$MAIN_SHA..$sha") $(git log -1 --format=%cs "$sha")"
-    else echo "absent $a"; fi
-  fi
 }
 # An in-cycle fix edits documentation only: a tracked .md file under docs/,
 # outside the cycle's own files, working/, human-author/ (the user's), reviews/
@@ -464,29 +325,7 @@ check_answer() {
   if [[ -n "$hit" ]]; then echo "$hit $a"
   else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md"; fi
 }
-# Pass git only a hash for the default branch: origin/HEAD comes from the remote,
-# and a branch named `--output=<path>` would reach `git log` as an option.
-MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""
-candidates=()
-origin_head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)"
-[[ -n "$origin_head" ]] && candidates+=("${origin_head#origin/}")
-candidates+=(main master)
-for c in "${candidates[@]}"; do
-  [[ "$c" == -* ]] && continue
-  # show-ref --verify takes only the exact ref, so a tag named refs/heads/<c>
-  # cannot stand in for a missing branch (rev-parse would accept it).
-  sha="$(git show-ref --verify --hash "refs/heads/$c" 2>/dev/null || true)"
-  [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
-  if [[ -n "$sha" ]]; then MAIN="$c"; MAIN_SHA="$sha"; MAIN_BY_NAME=1; break; fi
-done
-if [[ -z "$MAIN_SHA" ]]; then
-  # A repo on some other branch name: use the current branch.
-  cur="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
-  if [[ -n "$cur" && "$cur" != -* ]]; then
-    MAIN="$cur"; MAIN_SHA="$(git rev-parse --verify --quiet HEAD 2>/dev/null || true)"
-  fi
-fi
-[[ -n "$MAIN_SHA" || -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
+resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 # The check modes run here. --check-brief and --check-branch read the default
 # branch's commit, so they need one found by name (origin/HEAD, main or
 # master), not the current branch; the other modes do not use it.
