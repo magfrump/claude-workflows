@@ -158,7 +158,7 @@ setup() { bl_setup; }
     [ "$(line constraints)" = "constraints missing: no docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
     constraints '# Constraints' '' '- S1: prefer small diffs' 'S2: keep prose plain'
     run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints none-hard: docs/constraints.md on the default branch has 2 soft constraints and no hard one (H1: with a success: line)" ] \
+    [ "$(line constraints)" = "constraints none-hard: docs/constraints.md on the default branch has 2 soft constraint(s) and no hard one (H1: with a success: line)" ] \
         || { echo "$output"; return 1; }
     constraints '# Constraints' '- H1: never lose a row' '  success: the reconciliation query in test/x.bats shows equal counts' \
         '- S1: prefer small diffs' 'H2: no new dependency' '- success: package.json is unchanged in the merge'
@@ -175,11 +175,13 @@ setup() { bl_setup; }
     [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md starts like a link reference definition"*", so the file is not read" ]] \
         || { echo "$output"; return 1; }
     # A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1]).
-    for c in '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do
+    for c in '- [x] H2: x' '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do
         constraints '- H1: a' '  success: b' "$c"; run --separate-stderr bash "$BL" --settings
         [ "$(line constraints)" = 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)' ] \
             || { echo "[$c] $output"; return 1; }
     done
+    constraints '- S1: a' '- H1: b'; run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
     constraints '- H1: a' '## Other' '  success: b'; run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
     git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
@@ -251,7 +253,7 @@ setup() { bl_setup; }
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: ${r120}r"
     run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "skip $B: the tip of feat/a starts \"handoff:\" but is not a marker: its subject is not exactly"* ]] || { echo "$output"; return 1; }
-    # A ready marker's body is not read here (--marker reads blocked and stopped bodies).
+    # A ready marker's body is not read here (the planned --marker reads blocked and stopped bodies).
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "$(printf 'handoff: ready\n\nAll green.')"
     run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "ok $B open review feat/a ready "* ]] || { echo "$output"; return 1; }

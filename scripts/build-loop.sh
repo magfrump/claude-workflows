@@ -32,9 +32,10 @@
 #                 (soft) at column 0, optionally after "- ", n without a
 #                 leading 0; a hard one needs a "success: <observable>" line
 #                 (any indent, optionally after "- ") before the next
-#                 constraint or heading, and no ID may repeat. Any other line
-#                 whose letters and digits, from its first letter, start like
-#                 "h1" or "s1" makes the file unreadable. Only "ok" lets the orchestrator dispatch.
+#                 constraint or "#" heading; no ID repeats; fences are skipped.
+#                 A line starting like "h1"/"s1" in letters and digits (after
+#                 marks and a task box) but not exact makes the file unreadable
+#                 (best effort). Only "ok" lets the orchestrator dispatch.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a task box, a tag)
@@ -56,15 +57,16 @@
 #                 one parent whose subject is exactly "handoff: ready",
 #                 "handoff: blocked" or "handoff: stopped: REASON" (1-120
 #                 printable ASCII characters, no blank at either end), alone
-#                 on its first line; REASON is printed last. Any other tip is
+#                 on its first line (a second line, if any, empty); REASON is
+#                 printed last. A tip whose subject does not start "handoff:" is
 #                 working. DISPATCHED: the brief's "Dispatched: N" (0-99), or
 #                 0 without one.
 #             skip BRIEF: WHY
 #                 The brief cannot be read (as --check-brief), its Branch:
 #                 line is missing or malformed or its Dispatched: line
 #                 malformed, its branch name is refused (as --check-branch),
-#                 another open brief on main, in briefs/ or closed/, names the
-#                 same branch (ignoring case), or the tip's subject (its
+#                 for an open brief, another open brief on main (in briefs/ or
+#                 closed/) names the same branch (ignoring case), or the tip's subject (its
 #                 message's first line) starts "handoff:" but it is not a
 #                 marker.
 #
@@ -170,7 +172,7 @@ fence($0) { next }
   if (substr(id, 1, 1) == "H") { hard++; pend = id; pendl = NR } else { soft++; pend = "" }
   next
 }
-{ s = $0; sub(/^[^a-zA-Z]*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }
+{ s = $0; sub(/^([^a-zA-Z]|\[[ xX]\])*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }
 s ~ /^[hs][0123456789]/ { if (bad == "") bad = "near " NR; next }  # looks like an ID but is not exact
 /^#/ { if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl; pend = ""; next }  # a heading ends a pending one
 /^[ \t]*(- )?success: [^ \t]/ { pend = "" }
@@ -195,7 +197,7 @@ globform() {
 # Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (an array of the checked globs,
 # each as written, a trailing / kept), NEVER_LINE and CONSTRAINTS_LINE from
 # main's commit. POLICY
-# is for --status and the gate, NEVER for the gate.
+# is for --status and the planned gate, NEVER for the gate.
 POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""
 # shellcheck disable=SC2034  # POLICY and NEVER: see above
 read_settings() {
@@ -260,7 +262,7 @@ read_settings() {
     read -r k c l1 l2 <<<"$FILE_OUT"
     case "$k" in
       ok) if [[ "$c" -gt 0 ]]; then CONSTRAINTS_LINE="constraints ok $c-hard $l1-soft: $f on the default branch"
-          else CONSTRAINTS_LINE="constraints none-hard: $f on the default branch has $l1 soft constraints and no hard one (H1: with a success: line)"; fi ;;
+          else CONSTRAINTS_LINE="constraints none-hard: $f on the default branch has $l1 soft constraint(s) and no hard one (H1: with a success: line)"; fi ;;
       nosuccess) CONSTRAINTS_LINE="constraints unreadable: hard constraint $c (line $l1) has no success: line before the next constraint or heading" ;;
       dup) CONSTRAINTS_LINE="constraints unreadable: constraint $c is listed twice (lines $l1 and $l2)" ;;
       *) CONSTRAINTS_LINE="constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
@@ -299,8 +301,11 @@ SHARED_BRANCHES=""
 shared_branches() {
   local f list b
   local -A n=()
-  list="$(git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/ docs/working/briefs/closed/)"
+  # One git grep finds the files with a "Status: open" line (a superset: fences
+  # are not modelled); brief_fields then reads only those.
+  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"
   while IFS= read -r f; do
+    f="${f#"$MAIN_SHA":}"
     if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
     [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
     b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
@@ -310,6 +315,7 @@ shared_branches() {
 }
 status_line() {
   local a="$1" out st br sha ahead date loop kind reason="" pol=review disp=0
+  [[ -n "$SHARED_BRANCHES" ]] || shared_branches  # first: it reads other briefs into BRIEF
   out="$(check_brief "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
   read -r _ _ st _ <<<"$out"
@@ -324,7 +330,6 @@ status_line() {
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
-  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
   if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
     echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi
