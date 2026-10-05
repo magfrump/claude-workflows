@@ -8,8 +8,6 @@ bl_setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # shellcheck disable=SC2034  # read by the suites that load this file
     BL="$REPO_ROOT/scripts/build-loop.sh"
-    # shellcheck disable=SC2034  # read by the suites that load this file
-    LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
@@ -24,7 +22,7 @@ bl_setup() {
 commit_all() { git add -A && git commit -qm "${1:-fixture}"; }
 
 # settings LINE...: docs/dev-cycle.md holding these lines (printf %s\n each),
-# committed. Pass no lines for an empty file.
+# committed. With no lines the file holds one empty line.
 settings() { mkdir -p docs && printf '%s\n' "$@" > docs/dev-cycle.md && commit_all settings; }
 
 # settings_is KEY WANT / settings_like KEY PREFIX: run --settings; its KEY line
