@@ -1019,3 +1019,51 @@ EOF
     [[ "$output" == *"skip docs/deep.md: an instruction file imports"* && "$output" == *"skip docs/ign.md: an instruction file imports"* \
        && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
 }
+
+@test "sourcing the reader lib defines its functions and calls neither git nor perl" {
+    # Stub git and perl ahead of the real ones: sourcing must call neither. LC_ALL=C
+    # keeps a host locale warning out of stderr.
+    S="$BATS_TEST_TMPDIR/stubs"; mkdir -p "$S"
+    for b in git perl; do printf '#!/bin/sh\necho "%s" >> "%s/called"\n' "$b" "$S" > "$S/$b"; chmod +x "$S/$b"; done
+    cd "$BATS_TEST_TMPDIR"
+    run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
+        for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root; do
+            declare -F "$f" >/dev/null || echo "missing $f"
+        done
+        echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
+}
+
+@test "a copy of dev-cycle.sh without its lib exits 1 and names the lib" {
+    mkdir -p "$BATS_TEST_TMPDIR/bare"
+    cp "$DC" "$BATS_TEST_TMPDIR/bare/dev-cycle.sh"
+    run --separate-stderr bash "$BATS_TEST_TMPDIR/bare/dev-cycle.sh" --check-path README.md
+    [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$output"; echo "$stderr"; return 1; }
+    [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "the lib's file checks stop, not pass, when ROOT_REAL is unset, not the current directory, or not the top level" {
+    mkdir -p real && echo x > real/f.md && ln -s real linkdir && ln -s real/f.md link.md
+    for check in "inrepo link.md" "dirok linkdir" "skipped link.md"; do
+        run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; $2 $3; echo "passed: $2"' _ \
+            "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" $check
+        [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$check: $status $output"; return 1; }
+        [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$stderr"; return 1; }
+    done
+    # set -u: without the guards' ${ROOT_REAL:-} the comparison would abort, not close.
+    run env LC_ALL=C bash -c 'set -u; source "$1"; rawfile real/f.md || echo closed; plaindir real || echo closed' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "closed
+closed" ] || { echo "$output"; return 1; }
+    # A root that is not the current directory stops the checks as well.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; cd real
+        inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not the current directory"* ]] \
+        || { echo "$status $output $stderr"; return 1; }
+    # So does a subdirectory named as the root: paths would resolve below it.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; cd real; ROOT_REAL="$(pwd -P)"
+        inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"not a repository's top level"* ]] \
+        || { echo "$status $output $stderr"; return 1; }
+}
