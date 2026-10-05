@@ -1,37 +1,368 @@
-Commit: 722884c7
+Commit: 4aa2e98e
 
 # Code Fact-Check Report
 
-**Repository:** claude-workflows (`/workspace/.claude/wt-build-loop-u1a`, branch `feat/build-loop-u1a`, HEAD 722884c7, base `main` f6357ea1 = merge-base)
-**Scope:** Stage-2.5 submitted-claims pass only (iteration 3, final confirming pass): the eight critic endorsements in the review's `submitted/claims.md` (Claims 56-63), checked against `scripts/lib/dev-cycle-read.sh` and `test/scripts/dev-cycle.bats` at 722884c7, with 2da477b7 materialised for comparison. No harvested claims (numbering continues the main report's).
+**Repository:** claude-workflows (`/workspace/.claude/wt-build-loop-u1a`, branch `feat/build-loop-u1a`, HEAD 4aa2e98e, base `main` f6357ea1 = merge-base)
+**Scope:** Stage-2.5 submitted-claims pass only (iteration 4, final confirming pass): the 17 critic endorsements in the review's `shared/submitted.md` (S1-S3, P1-P2, A1-A6, G1-G6 → Claims 40-56 in listed order), checked against `scripts/dev-cycle.sh`, `scripts/lib/dev-cycle-read.sh` and `test/scripts/dev-cycle.bats` at 4aa2e98e, with 722884c7's `scripts/` materialised for P1. No harvested claims (numbering continues the main report's).
 **Checked:** 2026-10-05
-**Total claims checked:** 11 (8 submitted claims; Claim 60 split into 60a/60b and Claim 62 into 62a/62b/62c on verdict divergence)
-**Summary:** 8 verified, 3 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
+**Total claims checked:** 17
+**Summary:** 16 verified, 1 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
-I read the hallucination-pattern log (`docs/reviews/hallucination-patterns.md`, 5 entries) first. No claim below matches a logged pattern. Claim 62a misses a numeric bound by about a point, which is not a fabricated count.
+I read the hallucination-pattern log (`docs/reviews/hallucination-patterns.md`, 5 entries) first. Claim 50 (a test count) belongs to the logged class "a specific measured value quoted from an artifact set". It was checked by running the suite and holds (68 of 68). No other claim resembles a logged pattern.
 
-Environment for every executed claim: Linux (WSL2), GNU bash 5.2.15, git 2.39.5, `awk` = mawk 1.3.4 20200120 (gawk is not installed), `LC_ALL=C.UTF-8`. Captured output is in the scratch dir `/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i3/submitted/` (abbreviated `$S` below), not in the repo: this pass may write no repo file other than this report. Every probe repo was built with `git init` inside `$S`. The worktree's repo was only read. 2da477b7's and 722884c7's `scripts/` were extracted with `git archive <rev> scripts | tar -x -C $S/perf/{old,new}`.
+Environment for every executed claim: Linux (WSL2), GNU bash 5.2.15, git 2.39.5, `awk` = mawk 1.3.4 20200120 (gawk is not installed), GNU sed 4.9. bats ran with `LC_ALL=C.UTF-8` and TMPDIR unset. Probe repos were built with `git init` inside the scratch dir `/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i4/submitted/` (abbreviated `$S`), and all captured output is there, not in the repo: this pass may write no repo file other than this report. The worktree's repo was only read. I extracted 722884c7's and 4aa2e98e's `scripts/` with `git archive <rev> scripts | tar -x -C $S/perf/{old,new}`. Each probe script is saved next to its output (`probe.sh` beside `probe.out`). The worktree's only uncommitted changes are under `docs/reviews/`. No code file differs from 4aa2e98e.
 
-Full bats run: `TMPDIR=$S/bats bats test/scripts/dev-cycle.bats`, cwd `/workspace/.claude/wt-build-loop-u1a`, started 2026-10-05T11:51:59Z, exit 1. 66 of 67 tests pass. The one failure is test 21, the known failure under a TMPDIR with a `.`-leading component, which the orchestrator said to ignore. Output: `$S/bats/bats-full.out`.
+Full bats run: `bats test/scripts/dev-cycle.bats`, cwd `/workspace/.claude/wt-build-loop-u1a`, 2026-10-05T16:46:44Z to 16:47:01Z, exit 0. All 68 tests pass. Output: `$S/bats/bats-full.out`.
 
 ---
 
 ## Submitted Claims
 
-## Claim 56: "At 722884c7, main_entry answers `error` for every duplicate-entry tree probed (leaf and parent directories, symlink/regular in both orders, two regular, 100644+100755, `working` as symlink/tree both orders and two trees, a `working/questions.md` entry name inside docs colliding with the real path), and both callers (check_brief, check_answer) turn `error` into a skip."
+## Claim 40: "check_answer prints a skip line ("could not be read from the default branch") when main's questions.md blob cannot be read, under caller options -euo pipefail, -eu, and +e +u, and leaves the caller's pipefail setting as it found it."
 
 **Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:264-269`, `scripts/lib/dev-cycle-read.sh:335`, `scripts/lib/dev-cycle-read.sh:555`
-**Type:** Invariant / Error-handling
+**Location:** `scripts/lib/dev-cycle-read.sh:548`, `scripts/lib/dev-cycle-read.sh:561-562`
+**Type:** Error-handling / Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers every duplicate shape the claim lists, rebuilt as raw tree objects (`hash-object -t tree --literally`, entry order kept as written), for `docs/working/questions.md` and a brief path, plus a two-`docs` top-level duplicate: each gives `main_entry` = `error`, `check_answer` → `skip … the default branch's tree could not be read`, and `check_brief` → `skip … the default branch's tree could not be read`. It does not establish four things. (1) A slash-named entry with no colliding real path is not caught: a `docs` tree holding only an entry named `working/questions.md` makes `main_entry` answer `absent`, while `git ls-tree`/`git cat-file` resolve that path to a blob, so check_answer reports "no such entry" and check_brief reports `ok … new`. This is not a duplicate and is fsck-invalid, but it is a tree shape git can read and main_entry calls absent. (2) Duplicates in `questions-archive.md`'s own leaf entry were not probed; only the shared parents were. (3) Case-variant or Unicode-variant names were not probed. (4) git versions other than 2.39.5 were not tested.
+**Scope:** Covers a deleted loose object for `docs/working/questions.md` while the archive holds a conflicting ANSWERED entry (a fall-through would print `keep Q-1`), under the caller option sets `-euo pipefail`, `-eu`, `+e +u` and `-e -o pipefail -o noglob`. In each, the skip line prints, there is no fall-through, and `$-` plus the pipefail state match before and after, early-return paths included. It does not establish five things: behaviour on bash older than 5.2 (`local -` semantics; see Claim 48), a packed or truncated object, a read that fails after awk has already printed an answer, git's own `fatal:` line on stderr (it reaches the caller unscrubbed when the lib is used directly; override row 238), or the archive's own unreadable blob.
 
-The duplicate check sits in the one loop over ls-tree's output:
+The function makes pipefail local, and the read's failure branch returns:
 
 ```bash
-# scripts/lib/dev-cycle-read.sh:264-269
+# scripts/lib/dev-cycle-read.sh:548
+  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
+# scripts/lib/dev-cycle-read.sh:560-562
+    # A failed read is a skip, never a fall-through to the other file.
+    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \
+      || { echo "skip $a: $f could not be read from the default branch"; return; }
+```
+(excerpt ends :562; enclosing check_answer() continues to :575 — read)
+
+Probe: `./probe.sh /workspace/.claude/wt-build-loop-u1a/scripts/lib/dev-cycle-read.sh`, cwd `$S/opts`, 2026-10-05T16:48:13Z, exit 0. Controls: `drop Q-1` with the blobs intact, and `keep Q-1` with the archive alone. After the blob is deleted, every option set prints `skip Q-1: docs/working/questions.md could not be read from the default branch`. The state lines `before:`/`after check_answer:` are identical in each, for example `[ehuBc set +o pipefail]` both times under `-eu`, and `[hBc set +o pipefail]` both times under `+e +u`. Mutant (`$S/opts/mutant-nopipefail.sh`, `set -o pipefail` removed from both functions), same probe at 16:48:24Z: under `-eu` it prints `keep Q-1`, which is the fall-through. The function's own pipefail is load-bearing.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:547-575`, `$S/opts/probe.sh`, `$S/opts/probe.out`, `$S/opts/mutant.out`
+
+---
+
+## Claim 41: "brief_fields returns 1 with BRIEF_ODD=error when cat-file fails or awk alone fails, under -eu."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:292`, `scripts/lib/dev-cycle-read.sh:297-304`
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers two failures: a deleted brief blob, and an `awk` that exits 2 after draining stdin (a PATH shim, which `env LC_ALL=C awk` resolves) with the blob intact. Under `-eu`, and also under `-euo pipefail` and `+e +u`, brief_fields returns 1 with `BRIEF_ODD=error` and 0 keys. It does not establish an awk that crashes after printing partial key lines, nor bash versions other than 5.2.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:292-294
+  local - out l; set -o pipefail
+  BRIEF=(); BRIEF_ODD=""
+  if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
+# scripts/lib/dev-cycle-read.sh:303-304
+    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else for (i = 1; i <= nk; i++) print kv[i] }')" \
+    || { BRIEF_ODD=error; return 1; }
+```
+(excerpt ends :304; enclosing brief_fields() continues to :312 — read; the `while read` loop at :305-311 runs only on success)
+
+Runs. (1) The deleted blob, in `$S/opts/probe.sh` (2026-10-05T16:48:13Z, exit 0): `brief_fields rc=1 odd=[error] keys=0` under all four option sets. (2) The awk shim, run inline from cwd `$S/opts/repo2` with `PATH="$S/opts/shim:$PATH"` at 16:48:24Z: `-eu: brief_fields rc=1 odd=[error] keys=0`, and the same line for `-euo pipefail` and `+e +u`.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:289-312`, `$S/opts/probe.out`, `$S/opts/awkfail.out`, `$S/opts/shim/awk`
+
+---
+
+## Claim 42: "check_answer reads only main_entry and `git cat-file blob "$MAIN_SHA:$f"` over a two-item constant list; a working-tree-only answer reads open (test 60, T34)."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:547-575`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers every git argv check_answer issues for two IDs (logged by a git PATH shim): `ls-tree -t --full-tree <sha> -- docs docs/working <file>` (main_entry) and `cat-file blob <sha>:<file>`, for the two constant files only. It also covers the working-tree independence case: a working-tree-only ANSWERED entry reads `open`, and still does after the working-tree questions.md is made unreadable (mode 000) and the archive is replaced by a dangling symlink. awk gets no file operand. It does not establish syscall-level absence of file opens (no strace in the sandbox), nor anything about git's own repository discovery, which uses the current directory.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:551-552
+  for f in docs/working/questions.md docs/working/questions-archive.md; do
+    e="$(main_entry "$f")"
+```
+(excerpt ends :552; enclosing check_answer() continues to :575 — read; the only other external command is the `git cat-file blob … | env LC_ALL=C awk …` pipeline at :561, which passes awk no file name)
+
+Probe: `./probe.sh`, cwd `$S/s3`, 2026-10-05T16:51:00Z, exit 0. Output: `open Q-1`, `open Q-2`, then exactly 8 logged argv lines, alternating `git ls-tree -t --full-tree <sha> -- docs docs/working docs/working/questions{,-archive}.md` and `git cat-file blob <sha>:docs/working/questions{,-archive}.md`. After the working tree was broken, the output was again `open Q-1`, `open Q-2`. Bats test 60 (T34) passed in the full run.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:547-575`, `scripts/lib/dev-cycle-read.sh:258-274`, `test/scripts/dev-cycle.bats:1118-1135`, `$S/s3/probe.sh`, `$S/s3/probe.out`, `$S/bats/bats-full.out`
+
+---
+
+## Claim 43: "4aa2e98e's check_brief and check_answer run within noise of 722884c7, with identical git call counts (check_brief: cat-file 1, log 1, ls-tree 2; check_answer: cat-file 2, ls-tree 2) and byte-identical output."
+
+**Submitted by:** performance-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:321-360`, `scripts/lib/dev-cycle-read.sh:547-575`
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers a fixture with both questions files present (20 answered and 20 open entries), and a brief whose Status line was committed. The counts are per call after resolve_main, for an `ok … open` brief and for IDs that answer, read open and are absent. Output was compared over 41 IDs and four brief arguments. Timing came from 30 alternating runs per side. It does not establish the counts in other shapes. With an absent archive check_answer issues 1 cat-file. A brief that skips before brief_fields issues no cat-file. The `:358` fallback issues 2 logs. Other machines or loads were not measured.
+
+The two revisions differ in code only by `local -` and `set -o pipefail` at `:292` and `:548` (paraphrased — no quote available because this summarises `git diff 722884c7 4aa2e98e -- scripts/lib/dev-cycle-read.sh`, a 6-line diff, reproduced above in my run log rather than in the source).
+
+Counts: an inline loop sourced each revision's lib with a logging git shim (`$S/perf/shim/git`), cwd `$S/perf/repo`, about 16:48Z. Both revisions give `1 cat-file, 1 log, 2 ls-tree` for check_brief and `2 cat-file, 2 ls-tree` for `check_answer Q-5|Q-25|Q-99`, with identical answer lines. Timing and bytes: `../timing.sh $S`, cwd `$S/perf/repo`, 2026-10-05T16:49:11Z, exit 0. It printed `byte-identical` (cmp of 41-line answer output and 4-line brief output). Medians, old vs new: `--check-answer` with 41 IDs 312.9 vs 315.0 ms (+0.7%); `--check-brief` × 5 73.5 vs 74.2 ms (+0.9%). Minima differ by under 2%.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:289-360`, `scripts/lib/dev-cycle-read.sh:547-575`, `$S/perf/counts.out`, `$S/perf/timing.sh`, `$S/perf/timing.out`, `$S/perf/timing.raw`, `$S/perf/ans.old`, `$S/perf/ans.new`
+
+---
+
+## Claim 44: "The `2,/^[^#]/` help range costs the same as `2,80p` (sed reads the whole 471-line file both times); --help takes ~8 ms."
+
+**Submitted by:** performance-reviewer
+**Location:** `scripts/dev-cycle.sh:112`
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers GNU sed 4.9. Neither program stops reading early: the script plus a 10 MB tail was piped in, and the producer exited 0 for both, while the control `2,80p;80q` got SIGPIPE (141). The file has 471 lines. Wall time of the whole `--help` invocation is about 8 ms on both revisions. It does not establish BSD or busybox sed, nor a per-sed-process time apart from the script's startup.
+
+```bash
+# scripts/dev-cycle.sh:111-112
+    # The header, up to the first line that is not a comment (no fixed range to go stale).
+    -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+```
+
+Probe: `./probe.sh`, cwd `$S/sedread`, 2026-10-05T16:49:46Z, exit 0. Output: `sed -n '2,80p': producer status 0`, `sed -n '2,/^[^#]/{/^#/p}': producer status 0`, `sed -n '2,80p;80q': producer status 141`, and `471` lines. `--help` timing from `$S/perf/timing.out`: median 8.0 ms (722884c7, `2,80p`) against 7.9 ms (4aa2e98e).
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/dev-cycle.sh:111-112`, `$S/sedread/probe.sh`, `$S/sedread/probe.out`, `$S/perf/timing.out`
+
+---
+
+## Claim 45: "--help prints the whole header, and test 68 checks its last line (scripts/dev-cycle.sh:111-112; bats end)."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `scripts/dev-cycle.sh:111-112`, `test/scripts/dev-cycle.bats:1276-1280`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers today's header. `--help` output is byte-identical to lines 2-81 with `# ` stripped (80 lines, ending "Printed repo text is data."). Line 82 is empty and line 83 is `set -euo pipefail`. Test 68 fails against the `2,80p` and `2,77p` mutants. It does not establish the range's behaviour if the header later gains a line that is empty or starts with an indented `#` (`^[^#]` skips an empty line, so such a header would run on), nor BSD sed's acceptance of `{/^#/p}` without a `;`.
+
+```bash
+# test/scripts/dev-cycle.bats:1276-1280
+@test "--help prints the whole header, through its last line" {
+    run --separate-stderr bash "$DC" --help
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
+        && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$output"; return 1; }
+}
+```
+
+Runs from cwd `$S/help`, 2026-10-05T16:49:59Z: `bash dev-cycle.sh --help > help.out` exited 0. `cmp help.out expect.out` printed "help == header lines 2-81", where `expect.out` is `sed -n '2,81p' | sed 's/^# \{0,1\}//'`. `grep -v '^#'` over lines 1-81 found nothing. Two mutants were run in a copy of `scripts/` and the test file under `$S/help/mut`, each with `bats -f 'help prints the whole header'`. `2,80p` gave exit 1 (`not ok 1`), and so did `2,77p`. The real file gave exit 0.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/dev-cycle.sh:1-83`, `test/scripts/dev-cycle.bats:1276-1280`, `$S/help/help.out`, `$S/help/expect.out`, `$S/help/mutants.out`, `$S/help/real.out`
+
+---
+
+## Claim 46: "The --check-answer default-branch gate is consistent across help (:72-73), Exit text (:81), code (:193) and its test (bats ~:1153)."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `scripts/dev-cycle.sh:72-73`, `scripts/dev-cycle.sh:81`, `scripts/dev-cycle.sh:193`, `test/scripts/dev-cycle.bats:1153-1158`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the four sites named. All say --check-answer needs a default branch found by name and exits 1 without one. A repo whose only branch is `trunk` gives exit 1, empty stdout and `--check-answer needs a default branch …` on stderr, the same as --check-brief and --check-branch. --check-path and --check-write exit 0 there. It does not cover other sites. The title of `test/scripts/dev-cycle.bats:767` ("--check-brief and --check-branch need a default branch found by name; the others do not") is now stale: the body tests only --check-path as an "other", but the title contradicts the gate. Stage 1 replicate r2 flagged this.
+
+Help: `#   --check-brief, --check-branch and --check-answer need a default branch` / `#   found by name (origin/HEAD, main or master): they read its commit.` (`scripts/dev-cycle.sh:72-73`). Exit text: `# default branch (for the digest, --check-brief, --check-branch and --check-answer)` (`scripts/dev-cycle.sh:81`). Code: `if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then` (`scripts/dev-cycle.sh:193`), followed by `exit 1` at `:194`. Test: `[ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"needs a default branch"* ]]` (`test/scripts/dev-cycle.bats:1157`).
+
+Probe: `./probe.sh`, cwd `$S/gate`, 2026-10-05T16:50:10Z, exit 0. For example: `--check-answer Q-1 -> exit 1 stdout=[] stderr=[--check-answer needs a default branch (origin/HEAD, main or master); found none]`. After the branch is renamed to `main`, it gives `exit 0 [keep Q-1]`.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/dev-cycle.sh:72-81`, `scripts/dev-cycle.sh:188-195`, `test/scripts/dev-cycle.bats:767-778`, `test/scripts/dev-cycle.bats:1153-1158`, `$S/gate/probe.sh`, `$S/gate/probe.out`
+
+---
+
+## Claim 47: "The --check-answer skip list in the help names every skip reason check_answer can print through dev-cycle.sh."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `scripts/dev-cycle.sh:62-71`, `scripts/lib/dev-cycle-read.sh:547-575`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the full enumeration. check_answer has 13 echo lines; 12 are skips. The `odd` line carries 7 oddwhy reasons, from the `refuse("…")` calls: bom, comment, cr, fence (twice), html, nul, refdef. Each of the 18 distinct reachable skips was produced through `dev-cycle.sh --check-answer` and maps to a phrase in the help. The one unmapped skip ("no default branch found by name …", `:550`) is unreachable through dev-cycle.sh, because `:193-194` exits 1 first (Claim 46). It does not establish the wording's precision for each reason (the help paraphrases), nor reasons reachable only when the lib is called directly.
+
+The enumeration, by grepping `echo` in `:547-575` (paraphrased — no quote available because it covers 13 lines; the full list is in my run log and every line's output is quoted in `$S/skips/probe.out`): not a question ID (:549); no default branch (:550); notdir, error and notfile (:556-558); cat-file failure (:562); dup (:564); odd, unbalanced and quoted (:566-568); both files (:570); the answer itself (:573); no such entry (:574).
+
+Mapping to the help at `scripts/dev-cycle.sh:63-71` ("not a question ID, no such entry, a heading twice in one file or in both files, a code fence never closed or not in plain column-0 form, a line starting (after blanks) with < …, a line leaving a <!-- open, … link reference definition …, a stray carriage return, a NUL byte, a byte-order mark on line 1, a question heading inside a fence, a questions file that is not a regular file under plain directories on the default branch, or a default branch whose tree or file could not be read"):
+
+| Probe case | Printed skip (abridged) | Help phrase |
+|---|---|---|
+| notid | not a question ID | not a question ID |
+| noentry | no such entry … on the default branch | no such entry |
+| dup / both | more than one entry … / in both … | a heading twice in one file or in both files |
+| unbalanced / fence | fence … never closed / fence-like line not plain column-0 | code fence never closed or not in plain column-0 form |
+| html / comment / refdef | starts with < / opens an HTML comment / link reference definition | the three matching phrases |
+| cr / nul / bom | carriage return / NUL byte / byte-order mark | stray carriage return / NUL byte / byte-order mark on line 1 |
+| quoted | question heading inside a code fence | a question heading inside a fence |
+| notfile / notdir | not a regular file / docs/working is not a directory | not a regular file under plain directories |
+| treeerror / lstreefail / unreadable | tree could not be read / file could not be read | default branch whose tree or file could not be read |
+
+Probe: `./probe.sh`, cwd `$S/skips`, 2026-10-05T16:50:36Z, exit 0. There are 18 cases, each in a fresh repo. "treeerror" uses a tree listing questions.md twice, built with `git mktree`. "lstreefail" deletes the root tree object, and "unreadable" deletes the blob.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/dev-cycle.sh:56-73`, `scripts/dev-cycle.sh:193-194`, `scripts/lib/dev-cycle-read.sh:213-241`, `scripts/lib/dev-cycle-read.sh:534-575`, `$S/skips/probe.sh`, `$S/skips/probe.out`
+
+---
+
+## Claim 48: "check_answer and brief_fields set pipefail themselves and restore the caller's options on return (bash 5.2); test 67 asserts "caller unchanged"."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:292`, `scripts/lib/dev-cycle-read.sh:548`, `test/scripts/dev-cycle.bats:1261-1266`
+**Type:** Behavioral / Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers bash 5.2.15. `$-` and the pipefail state are unchanged after both functions under four caller option sets, including after early returns (`check_answer bogus`, `brief_fields ../x`, an absent ID). Test 67 fails under each of four mutants: `local -` dropped from either function, or `set -o pipefail` dropped from either. It does not establish bash 4.4-5.0, where `local -` saves only single-letter options and pipefail is a `-o` option, so its restore there is unverified (stage 1 r2). No minimum bash version is stated in the repo. It does not establish options other than those probed either.
+
+```bash
+# test/scripts/dev-cycle.bats:1261-1266
+    # The same without the caller's pipefail: each function sets its own.
+    run --separate-stderr env LC_ALL=C bash -c 'set -eu; source "$1"; ROOT_REAL="$(pwd -P)"; resolve_main
+        check_answer Q-1; brief_fields "$2" || echo "refused [$BRIEF_ODD]"; [[ -o pipefail ]] || echo "caller unchanged"' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$b"
+    [ "$output" = "skip Q-1: docs/working/questions.md could not be read from the default branch
+refused [error]
+caller unchanged" ] || { echo "$output $stderr"; return 1; }
+```
+(excerpt ends :1266; enclosing test continues to :1274 — read)
+
+Runs. (1) `$S/opts/probe.sh` (Claim 40), 2026-10-05T16:48:13Z: `after early returns: […] same=yes` for all four option sets. (2) Mutants of test 67 under cwd `$S/t67`, 2026-10-05T16:50:47Z, each run with `bats -f 'an unreadable blob or a tree naming a file twice'`. nolocal-brief, nolocal-answer, nopipefail-answer and nopipefail-brief each gave exit 1, `not ok 1`. nopipefail-answer printed `keep Q-1`, the fall-through.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:289-312`, `scripts/lib/dev-cycle-read.sh:547-575`, `test/scripts/dev-cycle.bats:1245-1274`, `$S/opts/probe.out`, `$S/t67/mutants.out`
+
+---
+
+## Claim 49: "check_brief (:343) and check_answer (:562) use the same "could not be read from the default branch" wording."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:343`, `scripts/lib/dev-cycle-read.sh:562`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the trailing phrase of the two unreadable-blob skip lines. Their subjects differ by design ("the brief" against the file path). It does not establish that the other skip lines in the two functions match each other. For example, check_brief's `error` line has no ", so … is not read" tail, while check_answer's has one.
+
+`error) echo "skip $a: the brief could not be read from the default branch" ;;` (`scripts/lib/dev-cycle-read.sh:343`) and `|| { echo "skip $a: $f could not be read from the default branch"; return; }` (`scripts/lib/dev-cycle-read.sh:562`). Observed output: `skip Q-1: docs/working/questions.md could not be read from the default branch` (`$S/opts/probe.out`). Test 67 asserts `skip $b: the brief could not be read from the default branch`, and it passed in the full run.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:340-347`, `scripts/lib/dev-cycle-read.sh:560-562`, `test/scripts/dev-cycle.bats:1257-1259`, `$S/opts/probe.out`, `$S/bats/bats-full.out`
+
+---
+
+## Claim 50: "bats test/scripts/dev-cycle.bats passes 68/68 at 4aa2e98e."
+
+**Submitted by:** api-consistency-reviewer
+**Location:** `test/scripts/dev-cycle.bats:1`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers this sandbox (bash 5.2.15, git 2.39.5, mawk, `LC_ALL=C.UTF-8`, TMPDIR unset) at 4aa2e98e's code files. It does not establish a dotted TMPDIR (test 21 is known to fail there, outside this diff), gawk or other awks, or other git versions.
+
+Run: `bats test/scripts/dev-cycle.bats`, cwd `/workspace/.claude/wt-build-loop-u1a`, 2026-10-05T16:46:44Z, exit 0. 68 lines start `ok` and none `not ok`. The last line is `ok 68 --help prints the whole header, through its last line`.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `test/scripts/dev-cycle.bats:1-1280`, `$S/bats/bats-full.out`, `$S/bats/start`
+
+---
+
+## Claim 51: "check_answer no longer depends on the working tree: no need_root, no ROOT_REAL, nothing added to SKIPPED (lib:547-575; bats:1160)."
+
+**Submitted by:** architecture-review
+**Location:** `scripts/lib/dev-cycle-read.sh:547-575`, `test/scripts/dev-cycle.bats:1160-1175`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers check_answer and every lib function it reaches (main_by_name, main_entry, oddwhy). None references ROOT_REAL, SKIPPED, SKIP_AT, need_root, skipped, rawfile, plaindir, blocker, inrepo, dirok or a `[[ -f/-e/-d` test. Test 63 passes: with ROOT_REAL unset, from `docs/`, a symlinked archive leaves `skipped=0`. Claim 42 shows a broken working tree does not change an answer. It does not establish independence from the current directory for git's own repository discovery: the caller must still be inside the repo, and `--full-tree` makes paths independent of the subdirectory.
+
+The removed working-tree reads are visible in the diff: `-    if skipped "$f"; then …` and `-    [[ -f "$f" ]] || continue` (paraphrased — no quote available because those lines no longer exist in the file at HEAD; they are in the diff hunk `@@ -462,13 +538,28 @@` of `shared/diff.patch`).
+
+Runs: `./enum.sh` (cwd `$S/g1`, about 16:51Z, exit 0) printed `check_answer (547,575): 0 working-tree references`, and the same for main_entry (258,274), main_by_name (246) and oddwhy (231,241). Bats test 63 passed in the full run.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:231-274`, `scripts/lib/dev-cycle-read.sh:547-575`, `test/scripts/dev-cycle.bats:1160-1175`, `$S/g1/enum.sh`, `$S/g1/enum.out`, `$S/bats/bats-full.out`
+
+---
+
+## Claim 52: "A brief has one parser: check_brief takes its status from brief_fields (lib:289-312, 340-351)."
+
+**Submitted by:** architecture-review
+**Location:** `scripts/lib/dev-cycle-read.sh:289-312`, `scripts/lib/dev-cycle-read.sh:340-351`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the brief's field values in `scripts/dev-cycle.sh` and the lib. The only reader of a brief's content is brief_fields' awk, check_brief's status is `BRIEF[status]`, and dev-cycle.sh touches `docs/working/briefs` only through `skipdir` (`:463`). It does not establish two things. First, check_brief's commit lookup `git log … -G'^Status: '` (`:357`) is a separate, deliberately fence-blind line match over the brief's history, documented at `:352-356` (iteration 3 Claim 60a, Mostly accurate, made the same point against a broader wording). Second, it does not cover the skill's prose instructions for reading briefs.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:340-351
+  if ! brief_fields "$a"; then
+    case "$BRIEF_ODD" in
+      odd\ *) read -r _ n why <<<"$BRIEF_ODD"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read" ;;
+      error) echo "skip $a: the brief could not be read from the default branch" ;;
+      *) echo "skip $a: the code fence opened at line ${BRIEF_ODD#unbalanced } is never closed, so the brief is not read" ;;
+    esac
+    return
+  fi
+  st="${BRIEF[status]-}"
+  if [[ ! "$st" =~ ^Status:\ (open|done|dropped)$ ]]; then
+    echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return
+  fi
+```
+(excerpt ends :351; enclosing check_brief() continues to :360 — read: the git log lookup and the `ok` line)
+
+A grep of `scripts/dev-cycle.sh` and the lib for `Status:|Branch:|Asked:|Policy:|Paths:|Dispatched:|briefs/` in non-comment lines finds only `isbrief`/`writable` path regexes, check_brief's `:349-359`, brief_fields, and ANSWER_AWK's unrelated `**Status:**` (paraphrased — no quote available because this summarises a grep's output, recorded in my session, not a source span). Tests 65 and 66 (check_brief and brief_fields agree, T31) passed.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:289-360`, `scripts/dev-cycle.sh:463`, `test/scripts/dev-cycle.bats:1195-1243`, override-log row 226
+
+---
+
+## Claim 53: "main_entry is the one function for "regular file under plain directories on main" and answers error on no default branch, an ls-tree failure, or a name listed twice (lib:258-274)."
+
+**Submitted by:** architecture-review
+**Location:** `scripts/lib/dev-cycle-read.sh:258-274`
+**Type:** Architectural / Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers `scripts/dev-cycle.sh` and the lib. The enumeration of `ls-tree|cat-file|git show|rev-parse …:` shows one ls-tree (in main_entry) and two `cat-file blob "$MAIN_SHA:…"` reads (brief_fields :297, check_answer :561), each gated on main_entry answering `blob`. The other `cat-file` (`dev-cycle.sh:296`) is a pre-existing `-e "HEAD:$f"` existence check for a decision record's date, which reads HEAD, not main. All six error triggers probed answer `error`: before resolve_main, the current-branch fallback (MAIN_BY_NAME empty), a branch named only `trunk`, a bad MAIN_SHA, a deleted root tree object, and a name listed twice (symlink+regular, and regular+regular). It does not cover the error list as exhaustive. A slash-named tree entry with no real path reads `absent`, not `error` (override row 236). It does not cover scripts outside these two files either.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:261-269
+  main_by_name || { echo error; return; }
+  while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
+  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
   while IFS=$'\t' read -r mode path; do
     [[ -n "$path" ]] || continue
     [[ -z "${m[$path]+set}" ]] || dup=1
@@ -41,266 +372,73 @@ The duplicate check sits in the one loop over ls-tree's output:
 ```
 (excerpt ends :269; enclosing main_entry() continues to :274 — read)
 
-Both callers map `error` to a skip and return: `error) echo "skip $a: the default branch's tree could not be read"; return ;;` (`scripts/lib/dev-cycle-read.sh:335`, check_brief) and `error) echo "skip $a: the default branch's tree could not be read, so $f is not read"; return ;;` (`scripts/lib/dev-cycle-read.sh:555`, check_answer).
-
-Probe: `./probe.sh $S/dup/repo` (cwd `$S/dup`, `TMPDIR=$S/dup`), started 2026-10-05T11:50:47Z, exit 0. For each tree it prints ls-tree, both `main_entry` answers, and the `--check-answer Q-1` and `--check-brief` lines. Results: the control (no duplicate) gives `blob`/`keep Q-1`/`ok … open`. Every listed duplicate shape gives `error` and both skips. Brief-leaf duplicates give `error` for the brief and leave questions.md's `blob` untouched. The residue case "slash-name entry only (no working tree)" gives `absent`, and a separate run (same cwd, 11:50 UTC) confirmed `git cat-file -t main:docs/working/questions.md` → `blob`.
+Probe: `./probe.sh`, cwd `$S/g3`, 2026-10-05T16:51:53Z, exit 0. It printed `before resolve_main: error`, `control: blob / absent path: absent / tree: notfile`, `current-branch fallback (MAIN_BY_NAME empty): error`, `bad sha: error`, `only branch trunk (…by name=[]): error`, `root tree object deleted: error`, and both `questions.md listed twice …: error`.
 
 **Legibility-target:** for-orchestrator-synthesis
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `scripts/lib/dev-cycle-read.sh:330-337`, `scripts/lib/dev-cycle-read.sh:549-557`, `$S/dup/probe.sh`, `$S/dup/probe.out`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:247-274`, `scripts/lib/dev-cycle-read.sh:294-297`, `scripts/lib/dev-cycle-read.sh:552-561`, `scripts/dev-cycle.sh:296`, `$S/g3/probe.sh`, `$S/g3/probe.out`
 
 ---
 
-## Claim 57: "Under `set -euo pipefail`, a blob that main_entry calls `blob` but cat-file cannot read is a skip in check_answer (no fall-through to the archive) and `BRIEF_ODD=error`, rc 1, in brief_fields."
-
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:295-302`, `scripts/lib/dev-cycle-read.sh:559-560`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers two failure modes under `set -euo pipefail`: a deleted loose object and a truncated (corrupt zlib) loose object, for questions.md (archive holds a conflicting ANSWERED entry) and a brief. In each, check_answer prints `skip Q-1: docs/working/questions.md could not be read from the default branch`, brief_fields returns 1 with no keys and `BRIEF_ODD=error`, and check_brief prints `skip … the brief could not be read from the default branch`. It does not establish four things: behaviour when the caller has not set `pipefail` (the `||` then sees only awk's status); a failure in a packed object; a read that fails only after awk has consumed a valid prefix whose answer it would print; or that git's own `fatal:` stderr line reaches the user scrubbed. Those lines go to the caller's stderr as written.
-
-The read and its failure branch:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:558-560
-    # A failed read is a skip, never a fall-through to the other file.
-    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \
-      || { echo "skip $a: $f could not be read from the default branch"; return; }
-```
-(excerpt ends :560; enclosing check_answer() continues to :573 — read)
-
-In brief_fields the pipeline closes with `')" \` and `|| { BRIEF_ODD=error; return 1; }` (`scripts/lib/dev-cycle-read.sh:301-302`), after `BRIEF=(); BRIEF_ODD=""` at `:291`, so no key is set.
-
-Probe: `./probe.sh $S/unread/repo-<mode> <mode>` for mode `delete` and `corrupt` (cwd `$S/unread`, `TMPDIR=$S/unread`), started 2026-10-05T11:51:19Z, exit 0 for both. In both modes, `main_entry` = `blob / blob`, then `check_answer: skip Q-1: docs/working/questions.md could not be read from the default branch`, `brief_fields rc=1 keys=0 odd=[error]`, `check_brief: skip … the brief could not be read from the default branch`, and the script reached its last line. Bats test 67 ("an unreadable blob … is a skip") passed in the full run.
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:289-310`, `scripts/lib/dev-cycle-read.sh:545-573`, `$S/unread/probe.sh`, `$S/unread/probe.out`, `$S/bats/bats-full.out`
-
----
-
-## Claim 58: "check_answer opens no working-tree path: its only reads are `main_entry "$f"` and `git cat-file blob "$MAIN_SHA:$f"`, with `f` from a two-element constant list." (scope excludes refs/replace substitution)
-
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:549-560`
-**Type:** Invariant / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers check_answer and the helpers it calls (`main_by_name`, `main_entry`, `oddwhy`). Their only external reads are `git ls-tree … "$MAIN_SHA"` and `git cat-file blob "$MAIN_SHA:$f"`, with `f` drawn from the literal list. Executed: answers are unchanged and nothing blocks when both working-tree questions files are FIFOs under a `chmod 000` `docs/`, run from the top level and from a subdirectory. It does not establish what git itself reads to find the repository: `.git` discovery in the cwd and its parents, config, `GIT_DIR`/`GIT_*` environment overrides, alternates, and the excluded `refs/replace`. It also does not establish working-tree reads by other functions the same process runs, such as dev-cycle.sh's own setup.
-
-The loop's list and its two git reads:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:549-550
-  for f in docs/working/questions.md docs/working/questions-archive.md; do
-    e="$(main_entry "$f")"
-```
-(excerpt ends :550; enclosing check_answer() continues to :573 — read)
-
-The read itself is `r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk …)"` (`scripts/lib/dev-cycle-read.sh:559`). main_entry's only external command is `out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)"` (`scripts/lib/dev-cycle-read.sh:263`). The rest of check_answer (`:561-572`) is shell string tests and `echo`s on `$r` (paraphrased — no quote available because the claim covers the absence of any other read, i.e. no file operand or redirection from a path in those lines, which a 12-line quote would only restate).
-
-Probe: `./probe.sh $S/nowt/repo` (cwd `$S/nowt`, `TMPDIR=$S/nowt`), started 2026-10-05T11:57:10Z, exit 0, with a 20 s `timeout` around each run that would have fired on a FIFO open. The output was `drop Q-1`, `keep Q-2`, `skip Q-3: no such entry …` from both `.` and `sub/`.
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:246`, `scripts/lib/dev-cycle-read.sh:258-274`, `scripts/lib/dev-cycle-read.sh:545-573`, `$S/nowt/probe.sh`, `$S/nowt/probe.out`
-
----
-
-## Claim 59: "brief_fields owns its preconditions: with no default branch by name, an empty MAIN_SHA, a path pathform refuses, or any main_entry answer but blob, it returns 1 with BRIEF_ODD=error and sets no key."
+## Claim 54: "Dependencies point one way: dev-cycle.sh -> lib -> git and awk; build-loop.sh appears only in comments."
 
 **Submitted by:** architecture-review
-**Location:** `scripts/lib/dev-cycle-read.sh:289-310`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers 17 refused cases, each started with `BRIEF` and `BRIEF_ODD` pre-set: no resolve_main (empty MAIN_SHA); MAIN_BY_NAME=1 with an empty MAIN_SHA; the current-branch fallback (MAIN_BY_NAME empty); eight pathform-refused paths (`../`, leading `/`, leading `-`, `.git/`, `./` component, a space, the empty string, `.GIT`); `absent`; `notfile` (a symlink, a tree); `notdir` (a symlinked directory, a file used as a directory); and `error` (a bad MAIN_SHA). Each returns 1 with `keys=0` and `BRIEF_ODD=[error]`. The control case returns 0. It does not establish four things. brief_fields does not check that the path is a brief (`isbrief`): any pathform-valid blob, such as `x.md`, is parsed. A MAIN_SHA set by hand to a non-default commit with MAIN_BY_NAME=1 is not detected. A caller that calls it bare under `set -e`, outside `if` or `||`, exits on the return 1. The unreadable-blob precondition is covered by Claim 57, not this one.
-
-The guard is the function's first statement after the reset:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:290-292
-  local out l
-  BRIEF=(); BRIEF_ODD=""
-  if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi
-```
-(excerpt ends :292; enclosing brief_fields() continues to :310 — read)
-
-An empty MAIN_SHA or a missing MAIN_BY_NAME reaches `error` through `main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }` (`scripts/lib/dev-cycle-read.sh:246`) and `main_by_name || { echo error; return; }` (`:261`).
-
-Probe: `./probe.sh $S/pre/repo` (cwd `$S/pre`, `TMPDIR=$S/pre`), started 2026-10-05T11:57:10Z, exit 0. All 17 refused cases printed `rc=1 keys=0 odd=[error]`, and the control printed `rc=0 keys=2 odd=[] status=[Status: open]`.
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:140-149`, `scripts/lib/dev-cycle-read.sh:246`, `scripts/lib/dev-cycle-read.sh:258-274`, `scripts/lib/dev-cycle-read.sh:289-310`, `$S/pre/probe.sh`, `$S/pre/probe.out`
-
----
-
-## Claim 60a: "check_brief reads a brief only through brief_fields (one brief parser)"
-
-**Submitted by:** architecture-review
-**Location:** `scripts/lib/dev-cycle-read.sh:338-349`
+**Location:** `scripts/dev-cycle.sh:91-95`, `scripts/lib/dev-cycle-read.sh:1-575`
 **Type:** Architectural
 **Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers check_brief's parsed values. The Status value is taken only from `BRIEF[status]` after `brief_fields`, and check_brief has no awk or cat-file of its own. It does not establish that brief_fields is the only reader of the brief's content. The commit field comes from `git log -G'^Status: '` over the brief's history, which matches any added or removed `Status: ` line, fenced lines included and outside FENCE_AWK. The precise wording is "check_brief takes every parsed value from brief_fields; only its commit lookup matches brief text separately (git log -G)".
-
-The value path holds:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:338, :346-347
-  if ! brief_fields "$a"; then
-  st="${BRIEF[status]-}"
-  if [[ ! "$st" =~ ^Status:\ (open|done|dropped)$ ]]; then
-```
-(excerpt ends :347; enclosing check_brief() continues to :358 — read)
-
-But the same function then matches the brief's text a second way:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:354-356
-  # counts (a quoted one, or a move into closed/, which adds the file whole).
-  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s -G'^Status: ' "$MAIN_SHA" -- "$a")"
-  [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
-```
-(excerpt ends :356; enclosing check_brief() continues to :358 — read)
-
-The comment at `:354` documents this ("Any such line counts (a quoted one …)"), so the behaviour is intended. Only the claim's "only" is too broad.
-
-Probe: `./probe.sh $S/onepar/repo` (cwd `$S/onepar`, `TMPDIR=$S/onepar`), started 2026-10-05T11:57:10Z, exit 0. One commit lands a brief with `Status: open`, and a later commit appends a fenced `Status: done`. brief_fields gives `status=[Status: open]`, and check_brief prints `ok … open <fenced-quote commit>`, not the landing commit.
-
-**Legibility-target:** for-author
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:319-358`, `$S/onepar/probe.sh`, `$S/onepar/probe.out`
-
----
-
-## Claim 60b: "its output agrees with brief_fields on the template-shaped fixture" (T31 tests)
-
-**Submitted by:** architecture-review
-**Location:** `test/scripts/dev-cycle.bats` ("a brief shaped like the skill's template parses: check_brief and brief_fields agree (T31)", "brief_fields reads each machine line's first unfenced copy from main in one pass; check_brief agrees (T31)")
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the two T31 fixtures: the template-shaped brief, with a fenced `Status: done` under Out of scope, and the multi-key brief, with a fenced block, a CRLF Status line, and later duplicate keys. On both, `brief_fields` gives `Status: open` and check_brief prints `ok <path> open …`. It does not establish agreement on briefs outside these fixtures, or under gawk. It also does not establish that the U1b/U1c consumers will read BRIEF[] the way check_brief does.
-
-The template test asserts `[ "${lines[0]}" = "[Status: open] [unset]" ] && [[ "${lines[1]}" == "ok $b open "* ]]`. The second test asserts `status=[Status: open]` … `[[ "${lines[6]}" == "ok $b open "* ]]` (quoted from the diff hunk at `test/scripts/dev-cycle.bats`, tests 65 and 66 of the run).
-
-Run: the full bats command in the header (exit 1 from test 21 only). The output shows `ok 65 a brief shaped like the skill's template parses: check_brief and brief_fields agree (T31)` and `ok 66 brief_fields reads each machine line's first unfenced copy from main in one pass; check_brief agrees (T31)`.
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `test/scripts/dev-cycle.bats:1195-1243`, `$S/bats/bats-full.out`
-
----
-
-## Claim 61: "check_answer no longer calls need_root or skipped (no ROOT_REAL dependency, SKIPPED untouched)."
-
-**Submitted by:** architecture-review
-**Location:** `scripts/lib/dev-cycle-read.sh:539-573`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers check_answer and its callees (`main_by_name`, `main_entry`, `oddwhy`, the awk programs). None calls `need_root` or `skipped` or reads `ROOT_REAL`/`SKIPPED`. Bats test 63 runs check_answer with ROOT_REAL unset and from a subdirectory, with `skipped=0`, and the Claim 58 probe also ran it without ROOT_REAL from `sub/`. It does not establish that dev-cycle.sh's `--check-answer` path no longer requires a root. The script still cds and sets ROOT_REAL itself, and that was not re-read for this claim. It also does not establish that a future build-loop.sh caller could drop its own root setup.
-
-A text search of the three functions' bodies for `need_root|skipped|ROOT_REAL|SKIPPED` returned nothing (paraphrased — no quote available because the claim covers the absence of code: `awk '/^check_answer\(\)|^main_entry\(\)|^main_by_name\(\)/,/^}/' scripts/lib/dev-cycle-read.sh | grep -n 'need_root\|skipped\|ROOT_REAL\|SKIPPED'` printed no lines). The function's own comment says so: `# … It reads only git objects,` / `# so it needs no ROOT_REAL and adds nothing to SKIPPED.` (`scripts/lib/dev-cycle-read.sh:543-544`). The 2da477b7→main diff removed `if skipped "$f"; then …` and `[[ -f "$f" ]] || continue` (the `-` lines of the diff's check_answer hunk).
-
-Run: the full bats run (header) shows `ok 63 check_answer reads git only: no ROOT_REAL needed, SKIPPED untouched, skip without main by name`.
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:539-573`, `scripts/lib/dev-cycle-read.sh:246-274`, `$S/bats/bats-full.out`, `$S/nowt/probe.out`
-
----
-
-## Claim 62a: "On this repo's main (f6357ea1), check_answer over 20 archived IDs runs within 5% of 2da477b7's wall clock"
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:545-573`
-**Type:** Performance
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers 20 archived IDs (Q-001 to Q-010, Q-012 to Q-018 but not Q-011 or Q-019, and Q-020 to Q-022, as listed in bench.sh) on main f6357ea1, on this machine, measured two ways with alternating order. At the script level, `dev-cycle.sh --check-answer`, 4×15 and 8×20 runs: the median is 5.2% and 6.7% slower and the minimum 6.5% and 5.7% slower. At the function level, `check_answer` sourced in-process, 8×100 calls: the median is 5.5% slower and the minimum 6.5% slower. A same-code A/A run gave a median of −2.2% and a minimum of −1.5%. The overhead is small, about 12 ms per 20-ID call, but it sits consistently just above the claimed 5%, not within it. It does not establish the cause of the slowdown: the 2da477b7→722884c7 lib diff adds no process (Claim 63), and the gap was not isolated. It also does not establish timing on another machine or under gawk.
-
-The only code difference on this path is main_entry's duplicate check and `2>/dev/null` (`scripts/lib/dev-cycle-read.sh:263-269`, quoted under Claim 56) and the `|| { echo "skip …"; return; }` on the read (`:559-560`, quoted under Claim 57).
-
-Runs (cwd `$S/perf`, `TMPDIR=$S/perf/tmp`, exit 0 for each): `./bench.sh $S/perf 15`, 2026-10-05T11:53:16Z → `bench.out`. `./bench.sh $S/perf 20 8`, 11:53:54Z → `bench2.out`. `./micro.sh $S/perf`, 11:55:34Z → `micro.out`. The A/A run `./micro.sh $S/perf/aa`, 11:56:03Z → `micro-aa.out`. The ratios were computed with python3 (`statistics.mean/median`, `min`).
-
-**Legibility-target:** for-author
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `scripts/lib/dev-cycle-read.sh:545-573`, `$S/perf/bench.sh`, `$S/perf/bench.out`, `$S/perf/bench2.out`, `$S/perf/micro.sh`, `$S/perf/micro.out`, `$S/perf/micro-aa.out`
-
----
-
-## Claim 62b: "with byte-identical output"
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:545-573`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers `dev-cycle.sh --check-answer` over the 20 IDs on main f6357ea1: 2da477b7's and 722884c7's outputs are byte-identical (`cmp`, 20 lines, all `unrecognized Q-NNN`, since archived entries are not keep-or-drop answers). It does not establish identical output for IDs that resolve to keep/drop/done/open, for questions.md entries, or for any duplicate-tree or unreadable-blob case, where the two revisions are meant to differ.
-
-Run: inside `./bench.sh` (see 62a), which printed `outputs byte-identical (20 lines)`. The outputs are in `$S/perf/out-old.txt` and `$S/perf/out-new.txt`. The output starts `unrecognized Q-001` (quoted from `out-new.txt` line 1).
-
-**Legibility-target:** for-orchestrator-synthesis
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:545-573`, `$S/perf/out-old.txt`, `$S/perf/out-new.txt`, `$S/perf/bench2.out`
-
----
-
-## Claim 62c: "check_brief at 722884c7 issues exactly 2 `git ls-tree`, 1 `cat-file` and 1 `log` per brief whose main entry is a blob."
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:319-358`
-**Type:** Performance
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the count on briefs that answer `ok`: the repo's three real briefs on main each issue 2 `ls-tree`, 1 `cat-file` and 1 `log`, counted with a PATH git shim. It does not establish the count for every blob brief. A blob brief that FENCE_AWK refuses, or whose Status line is not exact, issues 2 ls-tree, 1 cat-file and 0 log. An `ok` brief whose Status line `-G` cannot see (for example, a root-commit brief under `log.showRoot=false`) issues 2 log through the `:356` fallback. The precise version is "2 ls-tree and 1 cat-file per blob brief, plus 1 log (2 when -G finds nothing) when it answers ok".
-
-The two ls-tree calls are main_entry from check_brief (`e="$(main_entry "$a")"`, `scripts/lib/dev-cycle-read.sh:330`) and again from brief_fields (`[[ "$(main_entry "$1")" != blob ]]`, `:292`). The logs are at `:355-356` (quoted under Claim 60a), and both follow the Status check at `:347-349`, which returns first on a bad line.
-
-Runs (cwd `$S/count`, `TMPDIR=$S/count`, exit 0): `./count.sh $S/count`, 2026-10-05T11:56:36Z → `count.out`, which shows `1 cat-file; 1 log; 2 ls-tree` for each of the three real briefs. `./count2.sh $S/count`, 11:56:50Z → `count2.out`, which shows `1 cat-file; 2 ls-tree` for the odd and bad-Status blobs, and `1 cat-file; 2 log; 2 ls-tree` for the ok brief under `log.showRoot=false`.
-
-**Legibility-target:** for-author
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:289-310`, `scripts/lib/dev-cycle-read.sh:319-358`, `$S/count/count.sh`, `$S/count/count.out`, `$S/count/count2.sh`, `$S/count/count2.out`
-
----
-
-## Claim 63: "main_entry's duplicate-name check adds no process and no second pass (one assoc-array membership test per ls-tree line in the existing loop)."
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:258-274`
-**Type:** Performance
-**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the 2da477b7→722884c7 change to main_entry. The check is one `[[ -z "${m[$path]+set}" ]]` builtin test per line inside the pre-existing `while read` loop, plus one `[[ -z "$dup" ]]` after it, with no new command substitution or external command. The same `git ls-tree` remains main_entry's only process, which the Claim 62c git-shim count confirms: one ls-tree per main_entry call. It does not establish zero wall-clock cost. Claim 62a measured the whole check_answer path about 6% slower without isolating why, and the change also adds a `2>/dev/null` on the ls-tree.
+**Scope:** The direction holds. No dev-cycle.sh function (need, skipdir, skipnote, exact, matches, check_path, check_write, check_fix, trig) is used in the lib, and the lib names no script except in comments. The `build-loop.sh` mentions in the four code files are the comments `scripts/lib/dev-cycle-read.sh:3`, `:11` and `scripts/dev-cycle.sh:87`. The lib's outgoing edge list is incomplete for the lib as a whole: besides git and awk it runs perl (`scrub`), grep, tr, realpath and pwd. The functions this diff adds (main_entry, brief_fields, check_answer) use only git, awk and env. Two things are not established: the runtime callback `scrub_reexec` (`bash "$self"`, which re-runs a caller-supplied script path), and the scripts outside these files.
 
-The before and after loops, from `git diff 2da477b7 722884c7 -- scripts/lib/dev-cycle-read.sh`:
+The precise version: "dev-cycle.sh → lib → git, awk, perl, grep, tr, realpath (the new functions: git and awk only)". The lib's re-exec of its caller is `{ DEV_CYCLE_SCRUBBED=1 bash "$self" "$@" 2>&1 1>&3 3>&- | scrub >&2; } 3>&1 | scrub` (`scripts/lib/dev-cycle-read.sh:79`). The extra commands appear as `env -u PERL_UNICODE -u PERL5OPT -u PERLIO LC_ALL=C perl -C0 -ne '` (`:50`), `r="$(realpath -e -- "$1" 2>/dev/null)"` (`:93`), `lower() { printf '%s' "$1" | tr …` (`:430`) and `| env LC_ALL=C grep -zaiE …` (`:446`). The command count from a grep of non-comment lines was awk 2, git 14, grep 2, perl 1, pwd 1, realpath 3, tr 2 (paraphrased — no quote available because this is a tally over the whole file, recorded in my session).
 
-```bash
-# 2da477b7 scripts/lib/dev-cycle-read.sh:262
-  while IFS=$'\t' read -r mode path; do [[ -n "$path" ]] && m["$path"]="${mode%% *}"; done <<<"$out"
-# 722884c7 scripts/lib/dev-cycle-read.sh:264-269 (quoted in full under Claim 56)
-```
+**Legibility-target:** for-author
 
-The only other changed line in the function is `out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)"` (`scripts/lib/dev-cycle-read.sh:263`), which runs the same single ls-tree.
+**Evidence:** `scripts/lib/dev-cycle-read.sh:3`, `scripts/lib/dev-cycle-read.sh:11`, `scripts/lib/dev-cycle-read.sh:48-80`, `scripts/lib/dev-cycle-read.sh:93-96`, `scripts/lib/dev-cycle-read.sh:430-458`, `scripts/dev-cycle.sh:87-95`
+
+---
+
+## Claim 55: "--help is taken from the header and a test pins its last line (dev-cycle.sh:111-112; bats:1276-1280)."
+
+**Submitted by:** architecture-review
+**Location:** `scripts/dev-cycle.sh:111-112`, `test/scripts/dev-cycle.bats:1276-1280`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** The same evidence as Claim 45. The output is byte-identical to header lines 2-81, and test 68 fails against the `2,80p` and `2,77p` mutants. It does not establish the range's behaviour for a future header with an empty or indented-`#` line, nor BSD sed.
+
+`-h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;` (`scripts/dev-cycle.sh:112`), and the test's `[[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]]` (`test/scripts/dev-cycle.bats:1279`). Runs: see Claim 45 (cwd `$S/help`, 2026-10-05T16:49:59Z).
 
 **Legibility-target:** for-orchestrator-synthesis
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `$S/count/count.out`
+**Evidence:** `scripts/dev-cycle.sh:111-112`, `test/scripts/dev-cycle.bats:1276-1280`, `$S/help/help.out`, `$S/help/mutants.out`
+
+---
+
+## Claim 56: "The test of the lib's sourced names lists main_entry, brief_fields, BRIEF and BRIEF_ODD (bats:1032, 1036)."
+
+**Submitted by:** architecture-review
+**Location:** `test/scripts/dev-cycle.bats:1032`, `test/scripts/dev-cycle.bats:1036`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the two lines and the test's power to fail. Test 54, "sourcing the reader lib defines its functions and calls neither git nor perl", fails with `missing main_entry`, `missing brief_fields` and `unset BRIEF_ODD` against the three corresponding mutants. It does not establish detection of an undeclared `BRIEF` alone (not mutated), nor that the test checks `BRIEF`'s associative type (`declare -p` passes for any declared variable).
+
+```bash
+# test/scripts/dev-cycle.bats:1032
+                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer; do
+# test/scripts/dev-cycle.bats:1036
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+```
+(excerpt ends :1036; enclosing test continues to :1040 — read)
+
+Mutants: a copy of `scripts/` and the test under `$S/g6/mut`, cwd `$S/g6`, 2026-10-05T16:52:24Z, each run with `bats -f 'sourcing the reader lib defines its functions and calls neither git nor perl'`. Renaming `main_entry()` gave exit 1 with `# missing main_entry`. Renaming `brief_fields()` gave exit 1 with `# missing brief_fields`. Dropping `BRIEF_ODD=""` from `:288` gave exit 1 with `# unset BRIEF_ODD`.
+
+**Legibility-target:** for-orchestrator-synthesis
+
+**Evidence:** `test/scripts/dev-cycle.bats:1024-1040`, `scripts/lib/dev-cycle-read.sh:288`, `$S/g6/mutants.out`, `$S/g6/main_entry.out`, `$S/g6/brief_fields.out`, `$S/g6/BRIEF_ODD.out`
 
 ---
 
@@ -313,21 +451,19 @@ The only other changed line in the function is `out="$(git ls-tree -t --full-tre
 (none)
 
 ### Mostly Accurate
-- **Claim 60a** (`scripts/lib/dev-cycle-read.sh:338-356`): every parsed value comes from brief_fields, but the commit lookup's `git log -G'^Status: '` also matches the brief's text, fenced lines included. Say "every parsed value via brief_fields; the commit lookup matches separately".
-- **Claim 62a** (`scripts/lib/dev-cycle-read.sh:545-573`): measured 5.2–6.7% slower (median/min) against an A/A noise level of about 2%. Say "within about 7%", or "about 12 ms per 20-ID call".
-- **Claim 62c** (`scripts/lib/dev-cycle-read.sh:319-358`): 1 log holds only for briefs that answer ok. Blob briefs that skip issue 0, and the `:356` fallback can issue 2.
+- **Claim 54** (`scripts/lib/dev-cycle-read.sh:48-80, 430-458`): the direction is right, but the lib also runs perl, grep, tr and realpath, not only git and awk. Say "dev-cycle.sh → lib → git, awk, perl, grep, tr, realpath; the new functions use git and awk only".
 
 ### Unverifiable
 (none)
 
 ## Legibility notes
 
-- A residue outside every submitted claim, from Claim 56: a `docs` tree entry literally named `working/questions.md`, with no `working` tree, reads as `absent` in main_entry while git resolves the path to a blob. check_answer then fails closed (no entry). check_brief prints `ok … new` for such a brief path. Such a tree needs `hash-object --literally` and fails fsck.
-- Claims 56-63 were checked under mawk only. gawk is not installed.
+- The residues named in the Scope fields are already known. `local -` before bash 5.1 (Claims 40, 41, 48) and BSD sed (Claims 45, 55) were escalated by stage 1. The stale bats:767 title (Claim 46) was flagged by stage-1 r2. The slash-named tree entry (Claim 53) is override row 236. The unscrubbed `fatal:` line (Claim 40) is override row 238.
+- All claims were checked under mawk and GNU sed only.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to /workspace/.claude/wt-build-loop-u1a/docs/reviews/code-fact-check-submitted-claims-build-loop-u1a.md (overwrite the iteration-2 one), first line `Commit: 722884c7`, with a `## Submitted Claims` section of Claims 56-63 per the code-fact-check format, ending with the canonical Goal-Alignment Note.
-- Answered: yes. All 8 submitted claims have verdicts (11 entries after splits: 8 Verified, 3 Mostly accurate, 0 Incorrect). Every entry but Claim 63 rests on executed probes in scratch repos or the bats run.
-- Out of scope: no fresh claim harvesting, and hallucination-patterns.md was not updated (as instructed). Bats test 21 fails under the dotted TMPDIR and was ignored per the orchestrator note. gawk and other git versions were not run.
-- Escalate: nothing merge-blocking. Optionally, the author could tighten the three Mostly-accurate endorsements' wording. The slash-named-entry `absent` residue (Claim 56 Scope) could go to a security critic if the orchestrator wants it judged; it is fsck-invalid and fails closed for check_answer.
-- Decisions I made: I split Claims 60 and 62 on verdict divergence. I judged the ~6% versus 5% gap as Mostly accurate rather than Incorrect, because the conclusion that the overhead is negligible holds and only the bound is off. I verdicted Claim 63 statically, because a git-shim comparison of old and new main_entry was blocked by a sandbox removal check, and Claim 62c's shim count covers the new side.
+- Success criterion (restated verbatim): A report saved to docs/reviews/code-fact-check-submitted-claims-build-loop-u1a.md, first line `Commit: 4aa2e98e`, with a `## Submitted Claims` section, claims numbered from 40.
+- Answered: yes. All 17 submitted claims (S1-S3, P1-P2, A1-A6, G1-G6 → 40-56) have verdicts: 16 Verified and 1 Mostly accurate (Claim 54). 15 rest on executed probes, mutants or the bats run. The universally quantified claims (47, 51, 53, 54) show their enumerations.
+- Out of scope: there was no fresh harvesting from the diff, and `docs/reviews/hallucination-patterns.md` was not updated (no Incorrect verdict). bash below 5.2, BSD sed, gawk and other git versions were not run.
+- Escalate: nothing merge-blocking. Claim 54's dependency list could be tightened in the architecture critique. The bats:767 test title (Claim 46 Scope) is stale and still unaddressed.
+- Decisions I made: I verdicted G2 (Claim 52) Verified rather than Mostly accurate, because it claims only that the status comes from brief_fields. The git log -G history match is named in its Scope as the residue that made iteration 3's broader Claim 60a Mostly accurate. I judged G4 (Claim 54) on the lib as a whole, the natural reading of "lib -> git and awk", which made it Mostly accurate.
