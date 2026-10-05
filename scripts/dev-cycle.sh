@@ -39,7 +39,7 @@
 #             form, a line starting (after blanks) with < other than a
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
 #             a line starting like a link reference definition (behind any >
-#             and list markers too), a stray carriage return, or a byte-order mark on line 1.
+#             and list markers too), a stray carriage return, a NUL byte, or a byte-order mark on line 1.
 #   --check-branch  "ok <name> <commit> <n> <YYYY-MM-DD>" for a brief's branch
 #             that exists (n: its commits not on the default branch; the date
 #             of its tip commit), "absent <name>" for
@@ -55,8 +55,8 @@
 #             otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
-#             branch's commit (an answer only in the working tree reads open
-#             until it is committed there): keep, drop, done,
+#             branch's commit (an answer only in the working tree reads open,
+#             or no such entry, until it is committed there): keep, drop, done,
 #             open (not marked ANSWERED yet) or unrecognized (answered, but no
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
@@ -65,7 +65,7 @@
 #             form, a line starting (after blanks) with < other than a
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
 #             a line starting like a link reference definition (behind any >
-#             and list markers too), a stray carriage return, a byte-order mark on line 1, a question heading
+#             and list markers too), a stray carriage return, a NUL byte, a byte-order mark on line 1, a question heading
 #             inside a fence, a questions file that is not a regular file
 #             under plain directories on the default branch).
 #   --check-brief, --check-branch and --check-answer need a default branch
