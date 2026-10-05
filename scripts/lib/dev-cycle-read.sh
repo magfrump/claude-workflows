@@ -347,8 +347,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # byte but a letter or digit (so user@host is not one); it ends at a blank, \, #,
 # a backtick, ( ) [ or ], and loses trailing punctuation and emphasis marks
 # (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
-# Over-reading (a code span) only over-refuses. Computed once per process and
-# repo root (IMPORTED_DONE holds the root it was computed for).
+# Over-reading (a code span) only over-refuses. One result is cached, for the
+# root in IMPORTED_DONE; a call for another ROOT_REAL recomputes it.
 IMPORTED=$'\n'; IMPORTED_DONE=""
 IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
