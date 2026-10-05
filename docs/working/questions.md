@@ -32,6 +32,7 @@ The index below is generated — edit entries, not the table.
 | [Q-116](#q-116--digest-scan-working-dd-triggers) | you: judgment | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
+| [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
@@ -49,6 +50,49 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-117 · verify-egress-resolve-time-ipset
+**Needs:** you: terminal · **Opened:** 2026-10-05 · **Status:** OPEN
+
+Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117: pass`, or paste the container block's output.
+
+- **Why it's yours:** the rebuild runs on the host, and the sandbox can't run iptables or dnsmasq. The branch's 105 bats tests only cover how the config and rules are put together.
+- **Read:** `docs/working/egress-android-build.md` (Correction section, on the branch) · `docs/decisions/038-sni-resolve-time-ipset.md` · `docs/reviews/security-review-2026-10-05-egress-sni-resolve-time-ipset.md`
+- **What it proves:** four dnsmasq/kernel behaviours the fix assumes but nobody has observed: the ipset add lands before the reply goes out; matching is by query name, so addresses behind a CNAME are added; re-adding refreshes the 1 h timeout; CAP_NET_ADMIN survives dnsmasq dropping to its user. The firewall's own boot check covers the first and last. The rotation wait below covers the CNAME case, which is the real bug: before the fix, every fetch after Google moved the pool failed with `Errno 113`.
+
+Two blocks, because they run in different shells. Edit the two `/path/to/...` lines first.
+
+```bash
+# --- HOST: install the branch's devcontainer config, then rebuild herald's container ---
+cd /path/to/claude-workflows        # EDIT: your host checkout of this repo
+git worktree add --detach ../cw-egress-verify fix/egress-dnsmasq-ipset   # --detach: the branch is checked out in an agent worktree
+(cd ../cw-egress-verify && ./devcontainer-config/install.sh)              # read the diff (it is the rebuild gate), answer y
+HERALD=/path/to/herald              # EDIT: the herald repo
+cc-isolated --probe-only "$HERALD" && cc-isolated "$HERALD"
+```
+
+```bash
+# --- CONTAINER: in the rebuilt herald session's shell. Takes up to ~45 min (waits for a pool rotation). ---
+U=https://dl.google.com/dl/android/maven2/com/android/application/com.android.application.gradle.plugin/8.7.3/com.android.application.gradle.plugin-8.7.3.pom
+L=/run/cc-sni-proxy/proxy.log
+echo "firewall marker: $(cat /run/cc-firewall/complete 2>&1)"
+echo "dnsmasq instances (expect 2): $(pgrep -u dnsmasq dnsmasq | wc -l)"
+echo "fetch 1 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
+first=$(grep -oE 'ALLOW sni=dl\.google\.com -> [0-9.]+' "$L" | tail -1 | awk '{print $4}')
+echo "first ALLOW address: ${first:-NONE}"
+echo "waiting for the pool to drop $first (polls every 30 s, gives up after 45 min)..."
+for i in $(seq 1 90); do getent ahostsv4 dl.google.com | awk '{print $1}' | grep -qxF "$first" || break; sleep 30; done
+echo "pool now: $(getent ahostsv4 dl.google.com | awk '{print $1}' | sort -u | tr '\n' ' ')"
+echo "fetch 2 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
+echo "FAIL lines for dl.google.com (expect 0): $(grep -c 'FAIL sni=dl\.google\.com' "$L")"
+grep -E 'sni=dl\.google\.com' "$L" | tail -5
+```
+
+**Pass** = 2 instances, both fetches 200, 0 FAIL lines, and "pool now" no longer lists the first ALLOW address. If the loop gave up with the address still listed, the pool didn't rotate; run the container block again later.
+
+- **Blocks:** merging `fix/egress-dnsmasq-ipset`; herald's Android build.
+- **Interim:** branch unmerged. Herald works around it by restarting its container (the firewall re-resolves at startup) and building straight away. Separately, herald should set `buildToolsVersion = "35.0.0"`.
+- **If it fails:** paste the output. To put the host back on main's config, run `./devcontainer-config/install.sh` from your main checkout. Either way, finish with `git worktree remove ../cw-egress-verify`.
 
 ### Q-116 · digest-scan-working-dd-triggers
 **Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
