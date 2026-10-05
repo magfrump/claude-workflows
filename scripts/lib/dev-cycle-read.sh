@@ -2,8 +2,8 @@
 # The dev cycle's reader, used by scripts/dev-cycle.sh and kept apart so the
 # planned scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
-# readers refuse (FENCE_AWK), the brief and branch checks, and the default
-# branch.
+# readers refuse (FENCE_AWK), the brief, branch and answer checks, the
+# instruction-file import walk, and the default branch.
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
@@ -328,4 +328,151 @@ resolve_main() {
     fi
   fi
   [[ -n "$MAIN_SHA" ]]
+}
+# Instruction-file basenames, lower-cased: CLAUDE.md, CLAUDE.local.md,
+# AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
+# written inline, the hermeticity lint reads the alternation as a command.)
+INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz0123456789_-]+)?\.md$|^skill\.md$'
+# Paths, lower-cased, that instruction files pull in with an @ import (Claude
+# Code's "@path" syntax), followed transitively: such a file is read as
+# instructions, so an in-cycle fix never edits it. The walk starts at every
+# instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
+# gitignored), resolves each @path against the importing file's directory as
+# Claude Code does (~/ and absolute paths lead outside the repo and are not
+# followed), and reads each plain file it reaches once. A token may follow any
+# byte but a letter or digit (so user@host is not one); it ends at a blank, \, #,
+# a backtick, ( ) [ or ], and loses trailing punctuation and emphasis marks
+# (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
+# Over-reading (a code span) only over-refuses. Computed once.
+IMPORTED=$'\n'; IMPORTED_DONE=""
+IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
+lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+imported_names() {
+  local f t d p seen=$'\n' queue=()
+  [[ -n "$IMPORTED_DONE" ]] && return; IMPORTED_DONE=1
+  while IFS= read -r -d '' f; do
+    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
+    [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
+    seen+="$f"$'\n'; queue+=("$f")
+  # One grep keeps only instruction-file basenames before the loop forks lower
+  # and inrepo per path (forking for every tracked file took seconds). It
+  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.
+  # LC_ALL=C makes -i ASCII-only. --others without --exclude-standard already
+  # lists ignored files, so one untracked listing covers both.
+  done < <({ git ls-files -z
+             GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; } \
+           | env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true)
+  while [[ ${#queue[@]} -gt 0 ]]; do
+    f="${queue[0]}"; queue=("${queue[@]:1}")
+    if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
+    while IFS= read -r t; do
+      t="${t#*@}"
+      while [[ "$t" == *[.,\;:!?*_~] ]]; do t="${t%?}"; done
+      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
+      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$t" 2>/dev/null)" || continue
+      [[ "$p" != ..* ]] || continue
+      IMPORTED+="$(lower "$p")"$'\n'
+      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
+    done < <(env LC_ALL=C grep -oE "$IMPORT_RE" -- "$f" || true)
+  done
+}
+# The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
+# drop, done, open, unrecognized, dup (the heading appears more than once),
+# "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
+# the line, WHY the oddwhy reason), or nothing when the file has no such entry. A trailing CR is dropped.
+# Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
+# read. Each of these makes the whole file a skip for every ID, naming the line
+# and the reason: anything FENCE_AWK refuses (see its comment), a fence still
+# open at the end, or a "### Q-NNN " heading inside a fence (questions.sh
+# archive splits entries at such a line, which is how stray fences arise; one
+# stray fence line flips everything after it, and two can balance again). No
+# real questions file has any of them.
+# An entry is answered only when its header line (the first line starting
+# "**Needs:**", as questions.sh writes it) has a " · "-separated field that is
+# "**Status:** ANSWERED" once blanks around the field are trimmed (the last
+# Status field counts, as in questions.sh); any other entry is open, whatever its body says: the answer is
+# read only after it has been recorded. The answer is the first line in the
+# entry, outside fences, that starts, after an optional "- ", with "Q-NNN:" or a
+# bold "**Answer:", "**Answer (" or "**Answered" label (any case); the
+# recorder's line is that one (the questions protocol records the user's answer
+# there), and a note above it would be read first. Its text starts after the
+# label: at ":**" when the label alone is bold, else at the first ": ", and then
+# ends at the bold's close if it opened inside the bold. Only the text's leading
+# token decides: [1], 1 or keep; [2], 2 or drop; [3], 3 or done (a word must be
+# followed by the end, punctuation or a dash). Anything else, including a hedge
+# or a bracket further in, is unrecognized, and the user is asked again.
+# shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
+ANSWER_AWK='
+function option(span,   s, w, r, t) {
+  s = tolower(span); sub(/^[ \t*]+/, "", s)
+  if (substr(s, 1, 3) == "[1]") return "keep"
+  if (substr(s, 1, 3) == "[2]") return "drop"
+  if (substr(s, 1, 3) == "[3]") return "done"
+  if (!match(s, /^(1|2|3|keep|drop|done)/)) return "unrecognized"
+  w = substr(s, 1, RLENGTH); r = substr(s, RLENGTH + 1); t = r; sub(/^[ \t]+/, "", t)
+  if (!(r == "" || r ~ /^[.,;:!)*]/ || (t != r && (t == "" || substr(t, 1, 1) == "-" \
+      || substr(t, 1, 3) == "\342\200\224" || substr(t, 1, 3) == "\342\200\223"))))
+    return "unrecognized"
+  if (w == "1" || w == "keep") return "keep"
+  if (w == "2" || w == "drop") return "drop"
+  return "done"
+}
+function heading(l,   h) {
+  if (substr(l, 1, 4) != "### ") return 0
+  h = substr(l, 5)
+  return h == id || index(h, id " ") == 1 || index(h, id "\t") == 1
+}
+{ sub(/\r$/, "") }
+infence && /^### Q-[0123456789]+ / { if (!qline) qline = NR; inside = 0 }
+fence($0) { next }
+heading($0) { count++; inside = (count == 1); header = 0; next }
+/^(#|##|###) / { inside = 0; next }
+!inside { next }
+!header && /^\*\*Needs:\*\*/ {
+  header = 1; v = ""; n = split($0, fld, " · ")
+  for (i = 1; i <= n; i++) { f = fld[i]; sub(/^[ \t]+/, "", f); if (substr(f, 1, 12) == "**Status:** ") v = substr(f, 13) }
+  sub(/[ \t]+$/, "", v); answered = (v == "ANSWERED")
+  next
+}
+!done {
+  line = $0; sub(/^- /, "", line)
+  if (index(line, id ":") == 1) { result = option(substr(line, length(id) + 2)); done = 1; next }
+  low = tolower(line)
+  if (low !~ /^\*\*answer(:|ed| \()/) next
+  rest = substr(line, 3)
+  if ((c = index(rest, ":**")) > 0 && (c < (d = index(rest, ": ")) || !d)) {
+    rest = substr(rest, c + 3)
+  } else if ((c = index(rest, ": ")) > 0) {
+    e = index(rest, "**"); inbold = !(e > 0 && e < c)   # is the bold of the label still open at ": "?
+    rest = substr(rest, c + 2)
+    if (inbold && (e = index(rest, "**")) > 0) rest = substr(rest, 1, e - 1)
+  } else next
+  result = option(rest); done = 1
+}
+END {
+  if (odd) print "odd " odd " " oddwhy
+  else if (infence) print "unbalanced " fline
+  else if (qline) print "quoted " qline
+  else if (count > 1) print "dup"
+  else if (count) print (!answered ? "open" : done ? result : "unrecognized")
+}'
+check_answer() {
+  local a="$1" f r hit="" where="" n why
+  if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
+  for f in docs/working/questions.md docs/working/questions-archive.md; do
+    if skipped "$f"; then echo "skip $a: $SKIP_AT is not a plain file or directory, so $f is not read"; return; fi
+    [[ -f "$f" ]] || continue
+    r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
+    [[ -n "$r" ]] || continue
+    if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
+    case "$r" in
+      odd\ *) read -r _ n why <<<"$r"; echo "skip $a: line $n of $f $(oddwhy "$why"), so no entry in $f is read"; return ;;
+      unbalanced\ *) echo "skip $a: the code fence opened at line ${r#unbalanced } of $f is never closed, so no entry in $f is read"; return ;;
+      quoted\ *) echo "skip $a: line ${r#quoted } of $f is a question heading inside a code fence (questions.sh archive splits entries there), so no entry in $f is read"; return ;;
+    esac
+    if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
+    hit="$r"; where="$f"
+  done
+  if [[ -n "$hit" ]]; then echo "$hit $a"
+  else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md"; fi
 }
