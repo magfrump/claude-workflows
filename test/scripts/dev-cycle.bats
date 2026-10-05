@@ -1043,7 +1043,7 @@ EOF
     [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] || { echo "$stderr"; return 1; }
 }
 
-@test "the lib's file checks stop, not pass, when the caller has not set ROOT_REAL" {
+@test "the lib's file checks stop, not pass, when ROOT_REAL is unset or not the current directory" {
     mkdir -p real && echo x > real/f.md && ln -s real linkdir && ln -s real/f.md link.md
     for check in "inrepo link.md" "dirok linkdir" "skipped link.md"; do
         run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; $2 $3; echo "passed: $2"' _ \
@@ -1051,8 +1051,14 @@ EOF
         [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "$check: $status $output"; return 1; }
         [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$stderr"; return 1; }
     done
-    run env LC_ALL=C bash -c 'source "$1"; rawfile real/f.md || echo closed; plaindir real || echo closed' _ \
+    # set -u: without the guards' ${ROOT_REAL:-} the comparison would abort, not close.
+    run env LC_ALL=C bash -c 'set -u; source "$1"; rawfile real/f.md || echo closed; plaindir real || echo closed' _ \
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$output" = "closed
 closed" ] || { echo "$output"; return 1; }
+    # A root that is not the current directory stops the checks as well.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; cd real
+        inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not the current directory"* ]] \
+        || { echo "$status $output $stderr"; return 1; }
 }
