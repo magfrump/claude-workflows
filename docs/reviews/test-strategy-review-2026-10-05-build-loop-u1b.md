@@ -1,127 +1,110 @@
-Commit: 1d79ffef
+Commit: 2e711a7b
 
-# Test Strategy: build-loop U1b (`scripts/build-loop.sh --settings`), iteration 3
+# Test Strategy: feat/build-loop-u1b, iteration 4 of 4 (final confirming pass)
 
-**Scope:** `test/scripts/build-loop-read.bats`, `test/lib/build-loop-fixtures.bash` against `scripts/build-loop.sh --settings` (`feat/build-loop-u1a...feat/build-loop-u1b`, HEAD 1d79ffef)
-**Reviewed:** 2026-10-05 (review-fix loop iteration 3, the final confirming pass)
-**Budget:** the unit is at the 400-line cap, so each fix below gives its net line cost. All but one cost 0 lines.
-
-## Method
-
-Every mutant ran on a copy in `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/test-strategy/` (`base/` plus one directory per mutant, made by `mut.sh`). Each copy also holds `docs/dev-cycle.md`, which test 4 reads from `$REPO_ROOT`. bats ran with `LC_ALL=C.UTF-8`. The unmodified suite passes 9/9. The proposed fixes went into `fixed.bats`, which I ran against the base and against every mutant.
-
-| Mutant | Change (on a copy) | Suite at 1d79ffef | Suite with fixes G1–G3 (`fixed.bats`) |
-|---|---|---|---|
-| mA15 | `:82` `git cat-file blob "HEAD:$f"` (reads HEAD, not main) | killed: test 5 `:84`, test 7 `:140`; **test 9 passes** | adds test 9 `:177` (the worktree run) |
-| mA15b | `MAIN_SHA="$(git rev-parse HEAD)"` after `:64` | killed: test 5 `:84`, test 7 `:140`; test 9 passes | adds test 9 `:177` |
-| mR2wt | `:82` `cat "$f"` (reads the working tree) | killed: test 5 `:81`, test 7 `:140`, test 9 `:176` | same |
-| mR2 | `:158` `pathform "${g%/}" glob` (A4 regression) | killed: test 7 `:130` | same |
-| tR2a / tR2b | bogus first operand at test `:81` / `:130` | killed: test 5 / test 7 | — |
-| mC13 | `:163` appends the tabs from `$v` to the malformed reason | killed: test 7 `:118` | same |
-| **mDupOpen** | `:146` drops `never_ok=""` | **survives 9/9** | killed: test 7 `:122` |
-| **mNoReplace** | `:63` drops `GIT_NO_REPLACE_OBJECTS=1` | **survives 9/9** | killed: test 5 `:88` |
-| mErrAbsent | `:79` `error) FILE_WHY=absent` | survives 9/9 | survives (G4, deferred) |
-| mReadFail | `:83` `\|\| { FILE_WHY=...; return 1; }` → `\|\| true` | survives 9/9 | survives (G4, deferred) |
-
-I read `main_file` (`:71-88`) and `read_settings` (`:127-179`) whole, plus the lib's `main_entry` and `resolve_main`. Only `resolve_main` sets `MAIN_SHA`. `never_ok` is set only at `:128` and cleared at `:146` and `:163`. It is read only at `:170`.
+**Scope:** `feat/build-loop-u1a...2e711a7b`: scripts/build-loop.sh, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats (override-log rows are context)
+**Reviewed:** 2026-10-05
+**Method:** a copy of scripts/, test/ and docs/dev-cycle.md under the scratch dir; each mutant is one perl substitution on build-loop.sh, followed by a full `bats test/scripts/build-loop-read.bats` run (LC_ALL=C.UTF-8, TMPDIR in scratch). The base copy passes 9/9. Behaviour probes ran in a scratch repo against the base and mutant copies. No process was left running.
 
 ## Test Conventions
 
-- bats ≥ 1.5 (`run --separate-stderr`). Each test gets a hermetic throwaway repo from `bl_setup` (`test/lib/build-loop-fixtures.bash:7-19`).
-- `settings LINE...` commits `docs/dev-cycle.md`. `settings_is` and `settings_like KEY WANT` run `--settings` and assert one line. `line KEY` greps one key's line.
-- At 1d79ffef every multi-assertion line uses `;` or `[ … ] && [ … ] || { …; return 1; }`. No bare non-final `&&` is left: R2 is fixed (see below).
+- bats ≥1.5, `@category fast`, one throwaway repo per test via `bl_setup` (test/lib/build-loop-fixtures.bash). There is a hermetic git env (GIT_CONFIG_GLOBAL=/dev/null, NOSYSTEM), and `LC_ALL=C` is pinned.
+- Helpers: `settings LINE...` commits docs/dev-cycle.md. `settings_is KEY WANT` asserts one exact output line, and `settings_like KEY PREFIX` asserts a prefix. Both print the whole output on a mismatch.
+- The tests are table-driven `for v in ...` loops, each with exact WHY strings. New cases should go into the existing T4 (test 5) and T45 (test 7) blocks, not into new files.
+
+## Iteration-3 items: closure verified by mutation
+
+| Item | Mutant | Result |
+|---|---|---|
+| **A18**: a duplicate never line turns policy off | `never_ok=1` set on the `cnt[never] -gt 1` arm (`:153`) | **Killed.** Test 7 fails at bats `:129` (`settings_is policy "$no"`); its output shows `policy self-merge set` next to `never malformed: more than one line`. Closed. |
+| **A19**: the worktree commits its own change | `$MAIN_SHA:$f` → `HEAD:$f` in main_file | **Killed** by tests 5, 7 and 9. With only test 9 run (`-f 'sources the lib'`), it fails at `:184` on the `wt` iteration: `policy review set`. Closed: test 9 now kills this mutant by itself. |
+| **C3**: the replace guard is tested, including core.useReplaceRefs | the whole `cfg=...` guard line deleted | **Killed** (test 5). |
+| C3 (variant) | `GIT_CONFIG_COUNT=$cfg` (the guard pair is exported, not counted) | **Killed** (test 5). |
+| policy-without-never WHY | `[[ "$v" == self-merge && -z "$never_ok" ]]` → `[[ -z "$never_ok" ]]` (review would also go unset) | **Killed** (test 5, `:79` `settings_like policy "policy review set:"`). |
+| next-line check | `nx[k] = 1` → `nx[k] = 0` at the first copy (end of file counts as non-blank) | **Killed** (tests 1, 5, 7, 9). |
+| sole hidden never line (A17) | n/a. The `- [x] Self-merge never: b/` shape takes the same path as an absent never line, and treating absent as `never_ok=1` is killed by bats `:113-114`. | Covered by bats `:118` (`settings_is policy "$no"`). Closed. |
 
 ## Untested Paths Touched by the Change
 
-- **G1** — `scripts/build-loop.sh:146` — when two never lines exist, `never_ok=""` must turn a `Build-loop policy: self-merge` line off. The duplicate cases at `test/scripts/build-loop-read.bats:120-127` assert only the never line. Not covered: mDupOpen passes 9/9 and prints `policy self-merge set:` with a malformed never line, which fails open.
-- **G2** — `scripts/build-loop.sh:63` — `GIT_NO_REPLACE_OBJECTS=1`, the guard against a `refs/replace` ref that swaps main's settings blob (A6, escalation E4). Not covered: mNoReplace passes 9/9.
-- **G3** — `test/scripts/build-loop-read.bats:170-177` — the linked-worktree run. The worktree's HEAD (`wt`) is still main's commit, so test 9 cannot tell main from the worktree's HEAD (E2). Partially covered: the working-tree half is fixed (mR2wt kills test 9). The HEAD half is open (mA15 passes test 9). T4 and T45 still kill the HEAD mutant.
-- **G4** — `scripts/build-loop.sh:79` and `:82-83` — main_file's `error` arm (main_entry reports a duplicate-name tree or a failed ls-tree) and its failed-read arm (`git cat-file` fails). Not covered (E4): mErrAbsent and mReadFail both pass 9/9. Both stay fail-closed for policy. Under each mutant, a missing blob printed `policy review unset` and `never none: no line starts …` instead of `never malformed: docs/dev-cycle.md could not be read …`.
-- **G5** — `scripts/build-loop.sh:101-105` and the copy list at `test/scripts/build-loop-read.bats:123-124` — a copy behind letter-bearing markup is hidden (`- [x] Self-merge never: b/`). I executed it: lines `Build-loop policy: self-merge`, `Self-merge never: a/`, blank, `- [x] Self-merge never: b/` print `policy self-merge set` and `never a/ set`. Not covered, and the code is wrong. Escalation E1 owns the code decision; this entry only records the regression pin.
+- **G1**: `scripts/build-loop.sh:69`. The guard appends its pair *after a caller's GIT_CONFIG_COUNT pairs*. The arm where the caller already passes `GIT_CONFIG_COUNT≥1` (in particular a caller pair `core.useReplaceRefs=true`) is not covered. Test 5 runs only with GIT_CONFIG_COUNT unset.
+- **G2**: `scripts/build-loop.sh:107` together with the lib's `fence()` (dev-cycle-read.sh:213-226). The "next line *outside a fence*" rule is untested in both directions: (a) a fenced block right after the never line followed by a non-blank line, which must stay malformed; (b) a fenced block followed by a blank line or the end of file, which must stay set. Only the plain adjacent `b/` case (bats `:140-141`) is covered.
+- **G3**: `scripts/build-loop.sh:107`, `/^[ \t]*$/`. A whitespace-only line after the never line counts as blank. Untested.
+- **G4**: `scripts/build-loop.sh:66-69`, caller-environment shapes that the guard does not neutralise: `GIT_CONFIG_PARAMETERS` / `git -c core.useReplaceRefs=true`, and a non-decimal `GIT_CONFIG_COUNT`. Untested, because whether they should be guarded is escalation E1 (security), not settled. This is a conditional gap.
+
+Not re-raised (settled): `-h` is not asserted (row 246, G11). Its premise is unchanged by the range-free sed: build-loop-read.bats still never calls `-h`, so any mutant of the `-h` arm survives, as the row already accepts. The equivalent second `none` arm at `:160` and the redundant `GIT_NO_REPLACE_OBJECTS=1` are fact-check survivors, not test gaps.
+
+## Findings
+
+### G1: no test passes a caller GIT_CONFIG_COUNT, so a guard that skips or clobbers the caller's pairs survives
+
+- **Severity:** medium
+- **Location:** scripts/build-loop.sh:66-69; test/scripts/build-loop-read.bats:83-85 (test 5)
+- **Evidence (verbatim):** `cfg="${GIT_CONFIG_COUNT:-0}"; export "GIT_CONFIG_KEY_$cfg=core.useReplaceRefs" "GIT_CONFIG_VALUE_$cfg=false" GIT_CONFIG_COUNT=$((cfg + 1))` (excerpt ends `:69`; the guard block continues to `:72` (`export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1`, resolve_main, main_by_name), all read). The comment at `:67-68` says "add a command-line config pair after any the caller passed".
+- **Mutant:** `[[ -n "${GIT_CONFIG_COUNT-}" ]] || export GIT_CONFIG_KEY_0=core.useReplaceRefs GIT_CONFIG_VALUE_0=false GIT_CONFIG_COUNT=1`, a plausible "don't touch the caller's config" refactor. **Survives the suite (0 failed).** In a probe repo with a replace ref swapping main's `Build-loop policy: review` blob for a self-merge one, called with `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.useReplaceRefs GIT_CONFIG_VALUE_0=true`: the base prints `policy review set: line 1 ...`; the mutant prints `policy self-merge set: line 1 ...`. The mutant raises the policy.
+- **Test case** (add to test 5 after `:84`, while the replace ref and core.useReplaceRefs are in place): `run --separate-stderr env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.useReplaceRefs GIT_CONFIG_VALUE_0=true bash "$BL" --settings; [[ "$(line policy)" == "policy review set:"* ]]`. A second line can check that a caller pair is kept: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.abbrev GIT_CONFIG_VALUE_0=12` still exits 0 with `policy review set`.
+- **Confidence:** high (executed)
+- **Legibility-target:** test 5's comment `:82` should say "even with core.useReplaceRefs set in the repo or by a caller's GIT_CONFIG_COUNT pair".
+
+### G2: the "outside a fence" part of the next-line rule is untested, and a mutant that drops a continued list survives and raises self-merge
+
+- **Severity:** medium
+- **Location:** scripts/build-loop.sh:105-108 (SETTINGS_AWK; `fence()` at dev-cycle-read.sh:213-226 returns 1 for fence lines and fenced content); test/scripts/build-loop-read.bats:139-143
+- **Evidence (verbatim):** `fence($0) { next }` / `if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }` (excerpt ends `:107`; SETTINGS_AWK continues to `:116`, its END block, which prints `nx[k]`; the value reaches `next[never]` at `:149` and the check at `:157`, all read).
+- **Mutant A (raise direction):** `fence($0) { next }` → `fence($0) { pk = ""; next }`. **Survives (0 failed).** Probe input: `Build-loop policy: self-merge` / `Self-merge never: a/` / a fenced block (```` ``` ````, `x`, ```` ``` ````) / `b/`. The base gives `never malformed: line 2 is followed by a non-blank line outside a fence` and `policy review unset`. The mutant gives `never a/ set` and `policy self-merge set`, so the continued `b/` is silently dropped and self-merge goes on.
+- **Mutant B (fail-closed direction):** the `pk` update moved above `fence($0) { next }`, so a fence line counts as the next line. **Survives (0 failed).** With the same input minus `b/`: the base gives `never a/ set`, the mutant `never malformed`.
+- **Test case** (add to test 7 after `:141`, with `f=$'\x60\x60\x60'`): `settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$f" x "$f" 'b/'; settings_like never 'never malformed: line 2 is followed by a non-blank line outside a fence'; settings_is policy "$no"` (kills A). Then `settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$f" x "$f"; settings_like never "never a/ set:"` (kills B).
+- **Confidence:** high (executed)
+- **Legibility-target:** the T45 comment `:139` ("the next unfenced line may continue") can then name both cases.
+
+### G3: a whitespace-only next line counts as blank, but no test asserts it
+
+- **Severity:** low (the mutant fails closed)
+- **Location:** scripts/build-loop.sh:107
+- **Evidence (verbatim):** `nx[pk] = ($0 ~ /^[ \t]*$/)`
+- **Mutant:** `/^[ \t]*$/` → `/^$/`. **Survives.** On the input `Self-merge never: a/` / `   ` / `z`, the base gives `never a/ set`; the mutant gives `never malformed`. A mutant that loosens the check instead (e.g. `/^[ \t]*/`, which treats any line as blank) would lose the self-merge-off case. That case is already killed by `:140-141`.
+- **Test case:** `settings 'Build-loop policy: self-merge' 'Self-merge never: a/' '   '; settings_like never "never a/ set:"`.
+- **Confidence:** high (executed)
+- **Legibility-target:** the header `:22` says "blank"; the test would show that whitespace-only lines count.
+
+### G4 (conditional on E1): caller-environment shapes the guard does not neutralise
+
+- **Severity:** low as a test gap (the defect question belongs to security-reviewer, E1)
+- **Location:** scripts/build-loop.sh:66-69
+- **Evidence (executed on the base, same probe repo and replace ref):** `GIT_CONFIG_PARAMETERS="'core.usereplacerefs'='true'"` gives `policy self-merge set: line 1 ...`. This is a bypass, matching fact-check r1-r3. `GIT_CONFIG_COUNT=010` and `GIT_CONFIG_COUNT=08` both gave `Not inside a git repository`, exit 1: in my probe git's own `rev-parse` (`:62`) fails before the guard line runs, which fails closed with the wrong reason (E2). Fact-check r3 saw exit 0 for `08` under a different setup; I did not reproduce it.
+- **Test case:** if E1 decides the caller's environment is untrusted and the guard is extended (e.g. `unset GIT_CONFIG_PARAMETERS`, or refusing a non-decimal COUNT), add to test 5: `run env GIT_CONFIG_PARAMETERS="'core.usereplacerefs'='true'" bash "$BL" --settings` → `policy review set`; and `GIT_CONFIG_COUNT=08` → exit 1 (or `policy review`), never `policy self-merge set`. If E1 decides the caller is trusted, no test is needed, and the comment `:67-68` should say "after any GIT_CONFIG_COUNT pair". There is no mutant to run today: the base already fails the first case.
+- **Confidence:** high for the executed outputs; the gap itself depends on E1.
+- **Legibility-target:** the guard comment `:66-68`.
 
 ## Recommended Tests
 
-#### Duplicate never lines turn self-merge off
+#### Caller GIT_CONFIG_COUNT pair does not undo the replace guard
+**Closes gaps:** G1 · **Type:** integration (bats, real git) · **Priority:** high · **File:** test/scripts/build-loop-read.bats, test 5
+**Key cases:** a caller pair `core.useReplaceRefs=true` plus a replace ref gives `policy review set`; a caller pair for an unrelated key gives exit 0 with `policy review set`.
+**Setup needed:** none beyond test 5's existing replace ref (run before the `git replace -d` at `:84`).
 
-**Closes gaps:** G1
-**Type:** integration (CLI contract)
-**Priority:** high
-**File:** `test/scripts/build-loop-read.bats:121` (0 net lines: append to the line)
-**What it verifies:** the policy line is the fail-closed message when the never line is malformed because it has a second copy.
-**Key cases:**
-- `:121` → `settings_is never 'never malformed: more than one line starts "Self-merge never:" (lines 2 and 3)'; settings_like policy "policy review unset: line 1 reads self-merge"`. The base passes. mDupOpen fails test 7 at that line.
-- Optional, also 0 lines: add the same `settings_like policy` assertion inside the `:125-126` copy loop.
+#### The never line's next-line rule across a fence
+**Closes gaps:** G2, G3 · **Type:** integration · **Priority:** medium · **File:** build-loop-read.bats, test 7 after `:141`
+**Key cases:** a fenced block then `b/` gives malformed and policy `$no`; a fenced block then the end of file gives `never a/ set`; a whitespace-only line gives `never a/ set`.
 
-**Setup needed:** none.
-
-- **Location:** `scripts/build-loop.sh:146`
-- **Evidence:** `elif [[ "${cnt[never]}" -gt 1 ]]; then NEVER_LINE="never malformed: $(many 'Self-merge never:' never)"; never_ok=""`
-- **Confidence:** high (mutant executed, and the fix executed against it)
-- **Legibility-target:** whoever next edits read_settings' never branch (U1c, U2). The T45 title promises "turns self-merge off" for every malformed shape, but only the single-line shapes pin it.
-
-#### A replace ref cannot change main's settings
-
-**Closes gaps:** G2
-**Type:** integration
-**Priority:** medium
-**File:** `test/scripts/build-loop-read.bats`, after `:87` (+1 line, or 0 net if appended to `:87`, which makes a long line)
-**What it verifies:** `--settings` reads main's own blob even when `refs/replace` names a substitute.
-**Key cases:**
-- `git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(printf 'Build-loop slots: 9\n' | git hash-object -w --stdin)"; settings_like slots "slots 7 set:"`. The base passes 9/9. mNoReplace fails test 5 at this line.
-- Do not put the replace ahead of the test's checkout or merge. I tried it at `:79`, and git then saw the replaced blob as local changes, so `git merge -q loop` aborted.
-
-**Setup needed:** none. This line comes last in T4, after main holds `slots 7`.
-
-- **Location:** `scripts/build-loop.sh:62-63`
-- **Evidence:** `# Read main's own objects: a replace ref could swap in any settings blob.` / `export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1`. Executed in a scratch repo: with a replace ref pointing at `Build-loop policy: self-merge\nBuild-loop slots: 9`, mNoReplace printed `policy self-merge set` and `slots 9 set`. The base printed main's real lines.
-- **Confidence:** high
-- **Legibility-target:** U3b and the gate authors, who must keep the same guard. A loop shares the repo's refs, so it can plant a replace ref.
-
-#### The linked worktree's own HEAD differs from main
-
-**Closes gaps:** G3
-**Type:** integration
-**Priority:** low
-**File:** `test/scripts/build-loop-read.bats:172` (0 net lines: append to the line)
-**What it verifies:** from a linked worktree whose branch has committed a different policy, `--settings` still reads main.
-**Key cases:**
-- `:172` → `…; done; git -C "$BATS_TEST_TMPDIR/wt" commit -qam lower`. The base passes. mA15 and mA15b now also fail test 9 at `:177`.
-
-**Setup needed:** none.
-
-- **Location:** `test/scripts/build-loop-read.bats:171-172`
-- **Evidence:** `git worktree add -q -b wt "$BATS_TEST_TMPDIR/wt" main && mkdir -p sub` / `for d in . "$BATS_TEST_TMPDIR/wt"; do printf 'Build-loop policy: review\n' > "$d/docs/dev-cycle.md"; done`. Test 9 passes under mA15.
-- **Confidence:** high
-- **Legibility-target:** the reader of test 9's comment "it reads the same main". **Answer to E2:** this is a low test gap, not amber. The behaviour it would catch (reading HEAD) is already killed by T4 (`:84`) and T45 (`:140`), so what is left is that test 9's comment promises more than test 9 alone checks. The fix costs 0 lines.
+#### Caller env bypasses (only if E1 rules them in scope)
+**Closes gaps:** G4 · **Priority:** low · **File:** test 5 · **Key cases:** as listed in G4.
 
 ## What NOT to Test
 
-- **G4 (main_file's error and failed-read arms), deferred.** Both mutants keep `POLICY=review` and change only the never line's word (`none` instead of `malformed`) and its reason. Pinning the failed-read arm would cost +1 line: delete the blob's loose object after `settings`, then `settings_is never "never malformed: docs/dev-cycle.md could not be read from the default branch"`. I executed that repro by hand. Pinning the `error` arm needs a hand-built tree with a duplicate name, which costs more than the arm's risk. Revisit when U2's gate first reads `NEVER_LINE`'s word: at that point `none` would let a gate skip the refusals. Suggested override-log row: Defer, trigger U2.
-- The `POLICY=review; NEVER=()` reset at `:130` (C3) and the `NEVER` array's contents (A8). No mode at this commit reads either in-process, so neither can be observed through the CLI. Test them with U1c's `--status`.
-- C14–C17 (reason strings for "not an allowed glob form" and "twice", review policy with a malformed never line, slots for an absent or unread file, `-h`) are settled as Defer, so they are not re-raised here.
-
-## Iteration-2 items in my domain
-
-| Item | Status at 1d79ffef | Evidence (mutant executed) |
-|---|---|---|
-| R2 (dead `&&` operands at old `:80`, `:126`) | ✅ Resolved | Now `;` at `:81` and `:130`. tR2a (bogus first operand at `:81`) kills test 5. tR2b (`:130`) kills test 7. mR2 (the A4 regression) kills test 7 at `:130`. |
-| A15 (no test told main from HEAD) | ✅ Resolved | mA15 (`HEAD:$f`) and mA15b (`MAIN_SHA` = HEAD) kill test 5 at `:84` (HEAD on `loop`) and test 7 at `:140`. |
-| A14 (subdir/worktree test could not tell what it read) | 🟡 Half resolved | Working-tree half: mR2wt kills test 9 at `:176`. Worktree-HEAD half: mA15 passes test 9 (G3, low, 0-line fix). |
-| C13 (no-echo check missed tabs) | ✅ Resolved | `:117` now checks `*$'\t'*`. mC13 (echo the tabs in the reason) kills test 7 at `:118`. |
+- `-h` output: settled, row 246. dev-cycle.bats has a header-boundary test that build-loop.sh could copy in U1c.
+- Hidden-markup shapes beyond the one at `:118` (task boxes, tags, entities): accepted (row 256, Q-112). They cannot raise the policy, because self-merge needs the exact never line.
+- Dropping only `GIT_NO_REPLACE_OBJECTS=1`: equivalent while the config pair stands.
 
 ## Coverage Gaps Beyond Current Scope
 
-**1.** E1 (security-reviewer or orchestrator): letter-bearing markup in front of a key hides a second copy. When the code is fixed, add `'- [x] Self-merge never: b/'` to the `:123-124` list and `'- [x] Build-loop policy: review'` to `:33-34` (0 lines). Both fail at 1d79ffef.
-
-**2.** Fact-check caveat on Claim 39: a prose line in the real `docs/dev-cycle.md` that starts "Self-merge never …" or "Build-loop slots …" is caught only for the policy key by test 4. This is U5's concern, when that file is rewritten.
+**1.** U1c's constraints reader will reuse main_file and the guard. G1's caller-env test belongs in a shared helper once a second mode reads main.
 
 ## Summary
 
-At 1d79ffef the iteration-2 test defects R2, A15 and C13 are fixed, and mutants confirm each fix. A14 is half fixed. The highest-value addition is G1: a 0-line assertion that a second never line turns self-merge off. Removing `never_ok=""` at `:146` passes the whole suite and leaves self-merge on, the one fail-open regression the suite cannot see. G2, the replace-ref guard (E4), costs one line and pins a defence a loop could otherwise silently lose. G3 answers E2 as a low, 0-line gap, because T4 and T45 already catch a HEAD reader. G4 (main_file's error arms) stays fail-closed for policy and is best deferred to U2. If the cap allows only 0-net fixes, take G1 and G3 now, and take G2 by appending it to `:87`.
+The iteration-3 test items are closed: A18 (duplicate never → policy off) and A19 (HEAD:$f, killed by test 9 alone) are killed by mutation, as are C3 (the guard line deleted, or exported without being counted) and the policy-without-never WHY. 2e711a7b introduces two medium gaps where a mutant survives in the direction that raises self-merge. G1: a guard that skips when the caller passes GIT_CONFIG_COUNT reads a replaced blob, `policy self-merge set`. G2: clearing the pending key on a fence line drops a list continued after a fence, again `policy self-merge set`. Each needs one or two lines in existing tests 5 and 7. G3 is a low fail-closed survivor. G4 waits on security's E1 ruling about GIT_CONFIG_PARAMETERS, which bypasses the guard on the base today.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to docs/reviews/test-strategy-review-2026-10-05-build-loop-u1b.md, structured per the test-strategy skill.
-- Answered: yes. Gaps G1–G5 come with executed mutants, and the fixes for G1–G3 were verified against the base and against their mutants. E2 is answered (G3, low, 0 lines) and so is E4 (G2 medium; G4 low, deferred). R2, A14, A15 and C13 are re-checked by mutant.
-- Out of scope: E1's code fix (security reviewer or orchestrator; only its 0-line test pin is noted). Settled C14–C17. U1c's modes.
-- Escalate: G1. A fail-open regression (self-merge stays on when there are two never lines) is invisible to the suite, and the fix costs 0 lines; it is for the author before merge. G4 needs a Defer row (trigger U2) if it is not fixed.
-- Decisions I made: I rated G1 high, not medium. The code is correct today, but the mutant is a one-token fail-open on the unit's central safety property, and the fix is free. I placed G2's replace ref at the end of T4, because placing it earlier broke the test's merge.
+
+Success criterion (verbatim): "A report saved at the output path named in your tail, structured per your skill, covering the full unit diff at 2e711a7b."
+
+This report is saved at docs/reviews/test-strategy-review-2026-10-05-build-loop-u1b.md, with `Commit: 2e711a7b` as its first line. It follows the skill's structure (conventions, gap list, recommended tests, what not to test, beyond scope, summary). It covers all three code files of the unit diff and the specific asks: A18, A19 and C3 verified by mutation; the new gaps named with mutants and results; settled rows 246 and 260 not re-raised.
