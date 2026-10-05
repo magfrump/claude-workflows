@@ -123,7 +123,7 @@ Assume the handoff shipped and an autonomous loop landed something you never rev
 | F8 | Mode-only change, gitlink | covered (with F25) | Modes ∈ {100644, 100755, absent}: the exec bit is allowed (rev 4); gitlinks refuse; plumbing `diff-tree` with `diff.ignoreSubmodules=none` (T12, T26) |
 | F9 | Instruction-file basenames in allowed dirs | covered | Floor item 1: `INSTRUCTION_FILE`, any case, any dir, including under `skills/` (T10) |
 | F10 | Files later runs read as rules or truth | covered (re-checked, rev 4) | Floor item 4 keeps the docs `check_fix` denied (`docs/decisions/`, `docs/thoughts/`, `docs/human-author/`, other briefs' working docs, cycle files); own files keyed on the full brief stem. The rest of `check_fix`'s code-directory denials are gone (T10) |
-| F11 | Files an instruction file `@`-imports | **partly** | Floor item 1 reuses `check_fix`'s import walk (its known-issues A2/A3 remain). Listed in Q-103 |
+| F11 | Files an instruction file `@`-imports | **partly** | Floor item 1 reuses `check_fix`'s import walk (its known-issues A2/A3 remain). The walk reads the working tree, so the gate runs it in a worktree at `MAIN_SHA` or through a commit-reading variant (amendment 2026-10-05). Listed in Q-103 |
 | F12 | Cycle-owned files, any other brief including a new one, `briefs/closed/` | covered | N-denied via the lib's `writable()` plus `docs/dev-cycle.md` (T14) |
 | F13 | Own brief edited beyond its Status line | covered | Merge-result blob = main's blob with the first unfenced `Status: open` → `Status: done` (T15) |
 | F14 | Diff base differs from what lands | covered | Rules run on MAIN→R (D7); conflict → refuse (T16) |
@@ -184,10 +184,12 @@ U0 extracts dev-cycle.sh's reader into `scripts/lib/dev-cycle-read.sh`, as revis
 
 - `scrub` and its re-exec wrapper;
 - `pathform`, FENCE_AWK and `oddwhy`, `INSTRUCTION_FILE` and the import walk;
-- `writable`, `isbrief` and `check_fix`'s predicate;
+- `writable` and `isbrief` (`check_fix`'s predicate stays in dev-cycle.sh: amended 2026-10-05, see below);
 - default-branch resolution, which returns instead of exiting;
 - `check_brief`, `check_branch` and `check_answer`;
-- `brief_fields`.
+- `brief_fields` (built in U1, step 3, not moved in U0).
+
+**Amendment (2026-10-05, U0 review).** `check_fix` is an allowlist of docs an in-cycle fix may edit; D5's floor is a denylist over any path, and the two differ (`working/`, `reviews/`, `thoughts/`, `constraints.md`). Moving the predicate in U0 would mean splitting `check_fix`, which a pure move cannot do, and building a policy switch for a caller that does not exist yet. The predicate therefore stays in dev-cycle.sh; it is not extracted later either. U2 instead writes the floor as its own lib function from the shared pieces already in the lib (`INSTRUCTION_FILE`, the import walk, `writable`) plus a dot-component test that also refuses a leading-dot top-level path such as `.envrc` (`check_fix`'s `*/.*` test misses it, harmlessly there because such a path also fails `^docs/`), adds an `isimported` predicate so neither caller reads the walk's cache format, and either shares one read-as-truth list with `check_fix` or files the difference as a `you: judgment` entry. The import walk reads the working tree at `ROOT_REAL`, so the gate must run it in a worktree checked out at `MAIN_SHA` or use a commit-reading variant; F11's row above and step 13's Q-103 text now carry this precondition. The gate's worktree must have no untracked instruction files of its own, and the gate cds to its top level (need_root refuses anything else). The walk also starts from the checkout's untracked and ignored instruction files (`CLAUDE.local.md`), which a clean worktree or a commit-reading variant lacks; U2 either adds the orchestrator checkout's local instruction files to the gate's start set or records the gap in F11, and tests it. Floor item 1 makes the gate a second user of the walk's refusal set (boundary B2 in the pass-38 security review), so the walk's known gaps (F11 "partly") become gate gaps too; U2's architecture and security review confirms that rather than inheriting it. Source: `docs/reviews/architecture-review-review-2026-10-04-build-loop-u0c.md`. U0 also split into three units (U0a/U0b/U0c), not two: moved lines count twice under the 400-line cap.
 
 Both scripts source the lib from their own `SCRIPT_DIR`, so the copy D6 extracts is self-contained. `build-loop.sh` resolves `MAIN_SHA` once and calls the lib directly, with no subprocess. Output follows dev-cycle.sh's check-mode conventions:
 
@@ -285,7 +287,7 @@ Stacked review units (log row 62: about 400 changed code lines outside `docs/`; 
     - `you: judgment` entries for C1–C3 (defaults as Interim), C4 under item (a), C5 filed as ANSWERED with your in-session answer, and one for `Self-merge never: workflows/` in this repo (keep or drop).
     - One `you: judgment` entry: this repo has no `docs/constraints.md`, so dispatch stays off here until you write it (D2).
     - One `you: terminal` release entry: rebuild and bless, so the image's dev-cycle skill carries this unit. The gate does not need it (D6), but the installed skill does. Release entries list every commit and changed path since the image's `.manifest` commit, flagging self-merged ones (F58); the skill's close step says so for future releases.
-13. **U5, Q-103 and brief**: re-route Q-103 to `you: judgment`, listing F11, F19, F21, F29, F35, F37, F58 and F59 and "what the gate can and cannot do". Set this brief's Status to `done` in U5's merge.
+13. **U5, Q-103 and brief**: re-route Q-103 to `you: judgment`, listing F11 (with its `MAIN_SHA` precondition for the import walk), F19, F21, F29, F35, F37, F58 and F59 and "what the gate can and cannot do". Set this brief's Status to `done` in U5's merge.
 
 ## Implementation order
 
@@ -369,7 +371,7 @@ Dropped from revision 2: none of the T-ids. T19 and T24 now test the orchestrato
 
 ## Rollback
 
-1. Each unit lands as its own `--no-ff` merge on main. Revert in reverse order: `git revert -m 1 <U5> <U4> <U3c> <U3b> <U3> <U2> <U1> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
+1. Each unit lands as its own `--no-ff` merge on main. Revert in reverse order: `git revert -m 1 <U5> <U4> <U3c> <U3b> <U3> <U2> <U1> <U0c> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
 2. Set Q-103 back to `deferred` with its old Deferred line, remove the C1–C5 and release entries, and run `scripts/questions.sh index`.
 3. Stop a running orchestrator: end the `/loop` (or the session). Its subagent loops stop with it, and their branches and locked worktrees stay for inspection (`git worktree unlock` before removing).
 4. A bad self-merge: commit `Build-loop policy: review` on main first. That binds running loops, because the stricter value wins and the gate re-reads it at merge time. Then `git revert -m 1 <that merge>` and set its brief to `Status: dropped`.
