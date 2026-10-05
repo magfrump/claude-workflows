@@ -1,5 +1,5 @@
 # Checkpoint: build-loop handoff
-Date: 2026-10-04 (revision 4)
+Date: 2026-10-05 (revision 4; U0 landed)
 Branch: feat/build-loop-handoff (worktree `/workspace/.claude/wt-build-loop-handoff`)
 Research: docs/working/research-build-loop-handoff.md
 Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved)
@@ -8,7 +8,15 @@ Design conversation: docs/working/handoff-build-loop-handoff.md
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0(a/b) → U1 → U2 → U3 → U3b → U3c → U4 → U5.
-- **Blocked on**: nothing. You approved D1–D14 in a walk-through on 2026-10-04; revision 4 folds in the changes. Next: U0.
+- **Blocked on**: nothing. You approved D1–D14 in a walk-through on 2026-10-04; revision 4 folds in the changes.
+- **U0 landed 2026-10-05** as three stacked units, each through its own review-fix loop (3 iterations, final pass k=3 with the full critic panel): U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726` (merges on main). Rubrics: `docs/reviews/code-review-rubric-2026-10-04-feat-build-loop-u0{a,b,c}.md`. Next: **U1**, on a new branch from main (the old `feat/build-loop-handoff` worktree is stale).
+
+## U0 outcome (read before U1)
+- The lib (`scripts/lib/dev-cycle-read.sh`) holds: `scrub`, `scrub_reexec`, the plain-file rules (`rawfile`, `plaindir`, `blocker`, `inrepo`, `dirok`, `skipped`), `need_root`, `pathform`, `isbrief`, `writable`, FENCE_AWK/`oddwhy`, `main_by_name`, `check_brief`, `check_branch`, `resolve_main`, INSTRUCTION_FILE and the import walk (`lower`, `imported_names`), ANSWER_AWK/`check_answer`. `check_path`, `check_write` and `check_fix` stay in dev-cycle.sh.
+- Its header is the caller contract: cd to the top level and set `ROOT_REAL="$(pwd -P)"`; `need_root` exits 1 otherwise; call `resolve_main` once and rely on `main_by_name`, not its return code; capture `check_*` output as plain `out="$(...)"` under `set -e` and treat any line that is not a positive answer as a refusal; print it through `scrub`.
+- **Plan amendment (Approach, 2026-10-05):** `check_fix`'s predicate is not extracted; U2 writes D5's floor as its own lib function (leading-dot-aware dot test, an `isimported` predicate, and a stated import start set for the gate: a clean worktree at `MAIN_SHA` plus, or a recorded gap for, the checkout's untracked instruction files). F11's row and step 13 carry the precondition.
+- **Deferred to later units** (override-log rows dated 2026-10-05, `feat/build-loop-u0*`): U1 — test sourcing the lib from build-loop.sh's side, `check_answer` rewrite (positive-line only, `main_by_name`, drop its SKIPPED side effect), measure `check_brief`'s `git log -G` per brief, call the lib in-process; U2 — the floor function, `isimported`, an unguarded inner helper for the walk; U3 — `--merge` checks `main_by_name`; U3b — D6 hash-checks the lib too.
+- Tests: `test/scripts/dev-cycle.bats` has 59 (main's 53 plus T29, T30 and four guard tests). Test 21 fails when TMPDIR has a `.`-prefixed component (pre-existing, environmental).
 
 ## Key findings
 - Brief state has one reader: `check_brief` reads main's commit, never the working tree [observed]. `brief_fields` sits beside it in the lib.
