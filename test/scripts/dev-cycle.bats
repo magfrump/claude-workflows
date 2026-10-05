@@ -1257,6 +1257,13 @@ status=[Status: open] branch=[unset] odd=[]" ] || { echo "$output $stderr"; retu
     [ "$output" = "skip Q-1: docs/working/questions.md could not be read from the default branch" ] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-brief "$b"
     [ "$output" = "skip $b: the brief could not be read from the default branch" ] || { echo "$output"; return 1; }
+    # The same without the caller's pipefail: each function sets its own.
+    run --separate-stderr env LC_ALL=C bash -c 'set -eu; source "$1"; ROOT_REAL="$(pwd -P)"; resolve_main
+        check_answer Q-1; brief_fields "$2" || echo "refused [$BRIEF_ODD]"; [[ -o pipefail ]] || echo "caller unchanged"' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$b"
+    [ "$output" = "skip Q-1: docs/working/questions.md could not be read from the default branch
+refused [error]
+caller unchanged" ] || { echo "$output $stderr"; return 1; }
     # A tree that lists questions.md twice (a symlink first, which git reads): error.
     l="$(printf 'x' | git hash-object -w --stdin)" && q="$(e 1 | git hash-object -w --stdin)"
     w="$(printf '120000 blob %s\tquestions.md\n100644 blob %s\tquestions.md\n' "$l" "$q" | git mktree)"
@@ -1264,4 +1271,10 @@ status=[Status: open] branch=[unset] odd=[]" ] || { echo "$output $stderr"; retu
     git update-ref refs/heads/main "$(git commit-tree "$t" -p HEAD -m dup)"
     run --separate-stderr bash "$DC" --check-answer Q-1
     [ "$output" = "skip Q-1: the default branch's tree could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
+}
+
+@test "--help prints the whole header, through its last line" {
+    run --separate-stderr bash "$DC" --help
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
+        && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$output"; return 1; }
 }

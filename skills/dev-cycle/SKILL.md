@@ -291,8 +291,8 @@ docs/working/questions.md.
      `--check-answer` with the IDs not yet on its `Applied:` line (IDs separated by ", "),
      and take its lines in ascending ID order; it reads `questions.md` and
      `questions-archive.md` from the default branch's commit, so an answer, or an archive
-     move, made only in the working tree is not seen until it lands (it reads `open`, or no
-     such entry). `open` is not answered yet (or the answer
+     move, made only in the working tree is not seen until it lands (it reads what main's
+     copy says, usually `open` or no such entry). `open` is not answered yet (or the answer
      is not recorded: an entry is read only once its header says ANSWERED): leave the ID,
      and list it in the final message with its brief, so a reply written in
      place gets recorded.
