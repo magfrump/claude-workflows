@@ -290,7 +290,8 @@ docs/working/questions.md.
      `Asked:` line (check 3 below writes them; no other question counts). Run
      `--check-answer` with the IDs not yet on its `Applied:` line (IDs separated by ", "),
      and take its lines in ascending ID order; it reads `questions.md` and, once step 1 has
-     archived an entry, `questions-archive.md`. `open` is not answered yet (or the answer
+     archived an entry, `questions-archive.md`, both from the default branch's commit (an
+     answer recorded only in the working tree reads `open` until it lands). `open` is not answered yet (or the answer
      is not recorded: an entry is read only once its header says ANSWERED): leave the ID,
      and list it in the final message with its brief, so a reply written in
      place gets recorded.

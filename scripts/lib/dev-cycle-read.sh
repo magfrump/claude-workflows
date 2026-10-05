@@ -7,25 +7,28 @@
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
-# of scripts/ with its lib/ is self-contained. The caller sets -euo pipefail,
+# of scripts/ with its lib/ is self-contained. A change here runs under both
+# callers' suites (test/scripts/dev-cycle.bats and build-loop-read.bats). The
+# caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check. inrepo, dirok, skipped, check_brief, check_answer and
+# calling any file check. inrepo, dirok, skipped, check_brief and
 # the import walk (imported_names) exit 1 (need_root) unless ROOT_REAL is set,
 # is the current directory and is a repository's top level; while ROOT_REAL is
 # unset, rawfile, plaindir and blocker read nothing as plain. Call the exiting
 # checks in the caller's shell, not inside $(...) or `local x="$(...)"`, where
 # an exit ends only the subshell. skipped records each blocked input in SKIPPED
 # and SKIP_AT. The caller runs resolve_main once per process (a second call
-# re-reads main); check_brief and check_branch skip every argument unless it
-# returned 0 with main found by name. check_brief, check_branch and
-# check_answer answer with one printed line per argument that can echo repo
-# text: print it through scrub, read it as `out="$(check_brief ...)"` under
+# re-reads main); check_brief, check_branch and check_answer skip every
+# argument unless it returned 0 with main found by name. check_brief,
+# check_branch and check_answer answer with one printed line per argument that
+# can echo repo text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
-# Inputs: check_brief and check_branch read the default branch's commit
-# (check_brief also refuses a brief path that is not plain in the working
-# tree); check_answer and imported_names read the working tree at ROOT_REAL.
+# Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
+# read the default branch's commit, never the working tree (check_brief also
+# refuses a brief path that is not plain in the working tree, which the cycle
+# writes); imported_names reads the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -237,15 +240,67 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # current branch's fallback or before resolve_main has succeeded.
 MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""
 main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
+# How a path is stored in the default branch's commit, so that a file read from
+# it is never a symlink's target text, a gitlink or a tree, and no directory
+# above it is a symlink: prints "blob" (a regular file, mode 100644 or 100755),
+# "absent", "notfile" (the path is some other kind of entry) or "notdir PART"
+# (PART, a directory above the path, is stored as something else). One ls-tree
+# call lists the path and every directory above it (-t: trees too; --full-tree:
+# paths from the top level, whatever the current directory). The caller has checked
+# main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
+main_entry() {
+  local p="" rest="$1" out mode path want=()
+  local -A m=()
+  while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
+  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1")"
+  while IFS=$'\t' read -r mode path; do [[ -n "$path" ]] && m["$path"]="${mode%% *}"; done <<<"$out"
+  for p in "${want[@]}"; do
+    case "${m[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "notdir $p"; return ;; esac
+  done
+  case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac
+}
+# A brief's machine lines, read in one pass from the default branch's commit
+# (never the working tree), so a brief has one parser: for each key, the first
+# line outside a fence (FENCE_AWK) that starts "Status:", "Branch:", "Policy:",
+# "Paths:", "Asked:" or "Dispatched:", whole, after one trailing CR is dropped.
+# Sets BRIEF[status], BRIEF[branch], BRIEF[policy], BRIEF[paths], BRIEF[asked]
+# and BRIEF[dispatched] (a key with no such line stays unset) and empties
+# BRIEF_ODD. A file FENCE_AWK refuses sets no key and returns 1, with BRIEF_ODD
+# "odd N WHY" (line N; WHY for oddwhy) or "unbalanced N" (the fence opened at
+# line N never closes). The callers judge the values. The caller has checked
+# main_by_name and that the path is a blob on main (main_entry), and calls it in
+# its own shell: it sets globals.
+declare -gA BRIEF=(); BRIEF_ODD=""
+brief_fields() {
+  local out l
+  BRIEF=(); BRIEF_ODD=""
+  # The whole blob is read (no early exit: SIGPIPE under pipefail).
+  # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+  out="$(git cat-file blob "$MAIN_SHA:$1" | env LC_ALL=C awk "$FENCE_AWK"'
+    { sub(/\r$/, "") }
+    fence($0) { next }
+    match($0, /^(Status|Branch|Policy|Paths|Asked|Dispatched):/) {
+      k = tolower(substr($0, 1, RLENGTH - 1)); if (!(k in got)) { got[k] = 1; kv[++nk] = k "\t" $0 }
+    }
+    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else for (i = 1; i <= nk; i++) print kv[i] }')"
+  while IFS= read -r l; do
+    case "$l" in
+      '') ;;
+      odd\ *|unbalanced\ *) BRIEF=(); BRIEF_ODD="$l"; return 1 ;;
+      *) BRIEF["${l%%$'\t'*}"]="${l#*$'\t'}" ;;
+    esac
+  done <<<"$out"
+}
 # A brief's state, read only from the default branch's commit (never the
-# working tree): its first line outside a ``` or ~~~ fence that starts with
-# "Status:", which must be exactly "Status: open|done|dropped". A brief
-# FENCE_AWK refuses (see its comment for every reason) is not read at all. "new" when the
+# working tree): its Status line from brief_fields, which must be exactly
+# "Status: open|done|dropped". A brief FENCE_AWK refuses (see its comment for
+# every reason) is not read at all, and neither is one stored as anything but a
+# regular file under plain directories (main_entry). "new" when the
 # default branch has no file at that path (not landed yet, or moved to
 # closed/). A closed/ path is read the same way (its state, for In flight; it
 # never holds a slot).
 check_brief() {
-  local a="$1" st c n why
+  local a="$1" st c e n why
   need_root
   if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
@@ -255,24 +310,24 @@ check_brief() {
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
   # Only a regular file counts: a symlink's blob is its target text, not a
   # brief, and a gitlink or tree is not a brief either.
-  case "$(git ls-tree "$MAIN_SHA" -- "$a" | cut -c1-6)" in
-    '') echo "ok $a new"; return ;;
-    100644|100755) ;;
+  e="$(main_entry "$a")"
+  case "$e" in
+    absent) echo "ok $a new"; return ;;
+    blob) ;;
+    notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch"; return ;;
     *) echo "skip $a: not a regular file on the default branch"; return ;;
   esac
-  # The whole blob is read (no early exit, which would kill git cat-file with
-  # SIGPIPE under pipefail); fenced lines are skipped (FENCE_AWK).
-  # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
-  st="$(git cat-file blob "$MAIN_SHA:$a" | env LC_ALL=C awk "$FENCE_AWK"'
-    { sub(/\r$/, "") }
-    fence($0) { next }
-    !seen && /^Status:/ { seen = 1; if ($0 ~ /^Status: (open|done|dropped)$/) st = $0 }
-    END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else if (st != "") print st }')"
-  case "$st" in
-    odd\ *) read -r _ n why <<<"$st"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read"; return ;;
-    unbalanced\ *) echo "skip $a: the code fence opened at line ${st#unbalanced } is never closed, so the brief is not read"; return ;;
-    '') echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return ;;
-  esac
+  if ! brief_fields "$a"; then
+    case "$BRIEF_ODD" in
+      odd\ *) read -r _ n why <<<"$BRIEF_ODD"; echo "skip $a: line $n $(oddwhy "$why"), so the brief is not read" ;;
+      *) echo "skip $a: the code fence opened at line ${BRIEF_ODD#unbalanced } is never closed, so the brief is not read" ;;
+    esac
+    return
+  fi
+  st="${BRIEF[status]-}"
+  if [[ ! "$st" =~ ^Status:\ (open|done|dropped)$ ]]; then
+    echo "skip $a: its first Status: line is not exactly Status: open, done or dropped"; return
+  fi
   # The default branch's own commit (first-parent history, a merge diffed
   # against its first parent) that last added or removed a line starting
   # "Status: " in this file: a merge commit for merged work, the branch's own
@@ -462,13 +517,25 @@ END {
   else if (count > 1) print "dup"
   else if (count) print (!answered ? "open" : done ? result : "unrecognized")
 }'
+# One answer, from docs/working/questions.md and questions-archive.md on the
+# default branch's commit, never the working tree: an answer that unblocks
+# autonomous work must have reached main (plan D8), because a build loop can
+# write any working tree. A file stored as anything but a regular file under
+# plain directories there is not read (main_entry). It reads only git objects,
+# so it needs no ROOT_REAL and adds nothing to SKIPPED.
 check_answer() {
-  local a="$1" f r hit="" where="" n why
+  local a="$1" f e r hit="" where="" n why
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
+  if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   for f in docs/working/questions.md docs/working/questions-archive.md; do
-    if skipped "$f"; then echo "skip $a: $SKIP_AT is not a plain file or directory, so $f is not read"; return; fi
-    [[ -f "$f" ]] || continue
-    r="$(env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK" "$f")"
+    e="$(main_entry "$f")"
+    case "$e" in
+      absent) continue ;;
+      blob) ;;
+      notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch, so $f is not read"; return ;;
+      *) echo "skip $a: $f is not a regular file on the default branch, so no entry in it is read"; return ;;
+    esac
+    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")"
     [[ -n "$r" ]] || continue
     if [[ "$r" == dup ]]; then echo "skip $a: more than one entry with this heading in $f"; return; fi
     case "$r" in
@@ -480,5 +547,5 @@ check_answer() {
     hit="$r"; where="$f"
   done
   if [[ -n "$hit" ]]; then echo "$hit $a"
-  else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md"; fi
+  else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md on the default branch"; fi
 }

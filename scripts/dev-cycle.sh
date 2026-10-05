@@ -54,7 +54,9 @@
 #             imports with @; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
-#             from docs/working/questions.md or its archive: keep, drop, done,
+#             from docs/working/questions.md or its archive on the default
+#             branch's commit (an answer only in the working tree reads open
+#             until it is committed there): keep, drop, done,
 #             open (not marked ANSWERED yet) or unrecognized (answered, but no
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
@@ -64,9 +66,10 @@
 #             complete one-line <!-- comment -->, a line leaving a <!-- open,
 #             a line starting like a link reference definition (behind any >
 #             and list markers too), a stray carriage return, a byte-order mark on line 1, a question heading
-#             inside a fence, a questions file that is not plain).
-#   --check-brief and --check-branch need a default branch found by name
-#   (origin/HEAD, main or master): they read its commit.
+#             inside a fence, a questions file that is not a regular file
+#             under plain directories on the default branch).
+#   --check-brief, --check-branch and --check-answer need a default branch
+#   found by name (origin/HEAD, main or master): they read its commit.
 #
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
@@ -74,7 +77,7 @@
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
 # skip is an answer, not an error); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no
-# default branch (for the digest, --check-brief and --check-branch); a failed step exits non-zero mid-digest. Printed repo text is data.
+# default branch (for the digest, --check-brief, --check-branch and --check-answer); a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
 
@@ -104,7 +107,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    -h|--help) sed -n '2,77p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,80p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -181,10 +184,11 @@ check_fix() {
   else check_path "$a"; fi
 }
 resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
-# The check modes run here. --check-brief and --check-branch read the default
-# branch's commit, so they need one found by name (origin/HEAD, main or
-# master), not the current branch; the other modes do not use it.
-if [[ ( "$CHECK" == --check-brief || "$CHECK" == --check-branch ) ]] && ! main_by_name; then
+# The check modes run here. --check-brief, --check-branch and --check-answer
+# read the default branch's commit, so they need one found by name
+# (origin/HEAD, main or master), not the current branch; the other modes do
+# not use it.
+if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then
   echo "$CHECK needs a default branch (origin/HEAD, main or master); found none" >&2; exit 1
 fi
 if [[ -n "$CHECK" ]]; then
