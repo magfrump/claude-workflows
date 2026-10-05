@@ -9,15 +9,15 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. The caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check. inrepo, dirok and skipped exit 1 (need_root) unless
-# ROOT_REAL is set, is the current directory and is a repository's top level;
-# while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
-# Call the exiting checks in the caller's shell, not inside $(...) or
-# `local x="$(...)"`, where an exit ends only the subshell. skipped records each
-# blocked input in SKIPPED and SKIP_AT. It calls resolve_main once per process
-# (a second call re-reads main); check_brief and check_branch skip every
-# argument unless main was found by name. Every script that calls scrub_reexec
-# shares its DEV_CYCLE_SCRUBBED marker.
+# calling any file check. inrepo, dirok, skipped and check_brief exit 1
+# (need_root) unless ROOT_REAL is set, is the current directory and is a
+# repository's top level; while ROOT_REAL is unset, rawfile, plaindir and
+# blocker read nothing as plain. Call the exiting checks in the caller's shell,
+# not inside $(...) or `local x="$(...)"`, where an exit ends only the subshell.
+# skipped records each blocked input in SKIPPED and SKIP_AT. The caller runs
+# resolve_main once per process (a second call re-reads main); check_brief and
+# check_branch skip every argument unless it returned 0 with main found by name.
+# Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -238,7 +238,8 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # never holds a slot).
 check_brief() {
   local a="$1" st c n why
-  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master)"; return; fi
+  need_root
+  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
@@ -284,7 +285,7 @@ check_brief() {
 # branch found by name (main_by_name).
 check_branch() {
   local a="$1" sha
-  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master)"; return; fi
+  if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
   elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
     || [[ "$a" == HEAD || "$a" == refs/* ]]; then echo "skip $a: not a valid branch name"
@@ -301,7 +302,6 @@ check_branch() {
 # when MAIN_SHA is empty. Pass git only a hash for the default branch: origin/HEAD
 # comes from the remote, and a branch named `--output=<path>` would reach
 # `git log` as an option.
-# shellcheck disable=SC2034  # MAIN_BY_NAME is read by the scripts that source this
 resolve_main() {
   local c sha cur origin_head candidates=()
   MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""

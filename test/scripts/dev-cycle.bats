@@ -1091,4 +1091,9 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     [ "$status" -eq 0 ] || { echo "$output"; echo "$stderr"; return 1; }
     [ "$(grep -c 'no default branch found by name' <<< "$output")" -eq 4 ] && [[ "$output" != *"ok "* ]] \
         || { echo "$output"; return 1; }
+    # With main found by name but no ROOT_REAL, check_brief stops rather than skipping as a symlink.
+    git branch -m feature-x main
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
+        check_brief docs/working/briefs/2026-10-02-a-b.md; echo passed' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
 }

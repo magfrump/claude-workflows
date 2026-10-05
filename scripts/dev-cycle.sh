@@ -329,7 +329,7 @@ resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch 
 # The check modes run here. --check-brief and --check-branch read the default
 # branch's commit, so they need one found by name (origin/HEAD, main or
 # master), not the current branch; the other modes do not use it.
-if [[ ( "$CHECK" == --check-brief || "$CHECK" == --check-branch ) && -z "$MAIN_BY_NAME" ]]; then
+if [[ ( "$CHECK" == --check-brief || "$CHECK" == --check-branch ) ]] && ! main_by_name; then
   echo "$CHECK needs a default branch (origin/HEAD, main or master); found none" >&2; exit 1
 fi
 if [[ -n "$CHECK" ]]; then
