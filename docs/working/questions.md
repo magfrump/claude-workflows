@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-104](#q-104--unit-growth-during-review) | you: judgment | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
 | [Q-105](#q-105--devcontainer-breakage-definition) | you: judgment | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | you: judgment | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
+| [Q-116](#q-116--digest-scan-working-dd-triggers) | you: judgment | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -92,6 +93,24 @@ grep -E 'sni=dl\.google\.com' "$L" | tail -5
 - **Blocks:** merging `fix/egress-dnsmasq-ipset`; herald's Android build.
 - **Interim:** branch unmerged. Herald works around it by restarting its container (the firewall re-resolves at startup) and building straight away. Separately, herald should set `buildToolsVersion = "35.0.0"`.
 - **If it fails:** paste the output. To put the host back on main's config, run `./devcontainer-config/install.sh` from your main checkout. Either way, finish with `git worktree remove ../cw-egress-verify`.
+
+### Q-116 · digest-scan-working-dd-triggers
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
+
+Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit triggers" heading at any level, or only note that it does not?
+
+- **Why it's yours:** it sets what counts as a decision for the cycle. A tentative DD that never became a record would gain standing triggers, which is a scope call, not a bug.
+- **Read:** `docs/working/digest-missed-log-triggers.md` ("Related gap") · `scripts/dev-cycle.sh` section 2 · `skills/dev-cycle/SKILL.md` step 2
+- **Evidence:** threadwork's `docs/working/dd-time-and-ritual.md` has a `### Revisit triggers` section in a DD that never became a decision record; the digest reads only `docs/decisions/NNN-*.md` (H2 `## Revisit triggers`) and `docs/decisions/log.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Note only** (interim, chosen) | Section 2's header and the skill say working-doc triggers are not scanned. Nothing else changes. | None. | A trigger kept only in a DD stays unseen unless the cycle runner reads the DD by hand. |
+| **[2] Scan `docs/working/dd-*.md`** | The digest also prints every "Revisit triggers" section (any heading level) from `docs/working/dd-*.md`, marked as from a working doc. | Slightly longer digests; triggers from abandoned DDs to judge each cycle. | Dead DDs add noise every cycle until they are archived or deleted. |
+
+- **Blocks:** nothing.
+- **Interim:** [1]. The header clause landed on `fix/digest-log-layouts` with the date-first log fix.
+- **If the answer differs:** [2] is a small section-2 addition plus a bats test.
 
 ### Q-104 · unit-growth-during-review
 **Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
