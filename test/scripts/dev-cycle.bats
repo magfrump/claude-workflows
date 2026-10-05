@@ -1043,7 +1043,7 @@ EOF
     [[ "$stderr" == *"needs $BATS_TEST_TMPDIR/bare/lib/dev-cycle-read.sh"* ]] || { echo "$stderr"; return 1; }
 }
 
-@test "the lib's file checks stop, not pass, when ROOT_REAL is unset or not the current directory" {
+@test "the lib's file checks stop, not pass, when ROOT_REAL is unset, not the current directory, or not the top level" {
     mkdir -p real && echo x > real/f.md && ln -s real linkdir && ln -s real/f.md link.md
     for check in "inrepo link.md" "dirok linkdir" "skipped link.md"; do
         run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; $2 $3; echo "passed: $2"' _ \
@@ -1060,5 +1060,10 @@ closed" ] || { echo "$output"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; cd real
         inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not the current directory"* ]] \
+        || { echo "$status $output $stderr"; return 1; }
+    # So does a subdirectory named as the root: paths would resolve below it.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; cd real; ROOT_REAL="$(pwd -P)"
+        inrepo f.md; echo "passed"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"not a repository's top level"* ]] \
         || { echo "$status $output $stderr"; return 1; }
 }

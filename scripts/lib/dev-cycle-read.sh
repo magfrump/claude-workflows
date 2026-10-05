@@ -7,12 +7,13 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. The caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check. inrepo, dirok and skipped exit 1 (need_root) when
-# ROOT_REAL is unset or is not the current directory; rawfile, plaindir and
-# blocker then read nothing as plain. Call the exiting checks in the caller's
-# shell, not inside $(...) or `local x="$(...)"`, where an exit ends only the
-# subshell. Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED
-# marker.
+# calling any file check. inrepo, dirok and skipped exit 1 (need_root) unless
+# ROOT_REAL is set, is the current directory and is a repository's top level;
+# while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
+# Call the exiting checks in the caller's shell, not inside $(...) or
+# `local x="$(...)"`, where an exit ends only the subshell. skipped records each
+# blocked input in SKIPPED and SKIP_AT. Every script that calls scrub_reexec
+# shares its DEV_CYCLE_SCRUBBED marker.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -66,13 +67,15 @@ scrub_reexec() {
 # repo root plus the path as given, so a committed symlink (to the file or to a
 # parent directory, pointing outside the checkout or into .git) is never read.
 # With no ROOT_REAL nothing is plain (fail closed); need_root makes the callers
-# below stop instead, outside the command substitution where blocker runs (set
-# -u fires there, but its error, like an exit, ends only the subshell). A
-# ROOT_REAL that is not the current directory stops them too: the checks read
-# relative paths, so a stale root would compare one tree's files with another.
+# below stop instead, outside the command substitution where blocker runs (an
+# exit there would end only the subshell). The checks read paths relative to
+# the current directory, so need_root also stops them when ROOT_REAL is not the
+# current directory (a stale root compares one tree's files with another) or
+# not a repository's top level (from a subdirectory, docs/x names sub/docs/x).
 need_root() {
   [[ -n "${ROOT_REAL:-}" ]] || { echo "dev-cycle-read.sh: ROOT_REAL is not set; the caller sets it before any file check" >&2; exit 1; }
   [[ "$ROOT_REAL" == "$(pwd -P)" ]] || { echo "dev-cycle-read.sh: ROOT_REAL is not the current directory; the caller cds to the root it names" >&2; exit 1; }
+  [[ -e .git ]] || { echo "dev-cycle-read.sh: ROOT_REAL is not a repository's top level; the caller cds there" >&2; exit 1; }
 }
 rawfile() { local r; [[ -n "${ROOT_REAL:-}" && -f "$1" ]] && r="$(realpath -e -- "$1" 2>/dev/null)" && [[ "$r" == "$ROOT_REAL/$1" ]]; }
 # A directory dev-cycle.sh's digest globs in must be plain too, or the glob would list
