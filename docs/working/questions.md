@@ -30,6 +30,7 @@ The index below is generated — edit entries, not the table.
 | [Q-105](#q-105--devcontainer-breakage-definition) | you: judgment | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | you: judgment | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | you: judgment | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
+| [Q-112](#q-112--build-loop-settings-copy-rule) | you: judgment | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
@@ -120,6 +121,24 @@ Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but 
 
 - **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
 - **Interim:** the lines stay stale. Neither one changes behavior.
+
+### Q-112 · build-loop-settings-copy-rule
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
+
+How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line but is not exact (`- [x] Self-merge never: b/`, `<b>Build-loop policy</b>: review`, a link inside the key)?
+
+- **Why it's yours:** U1b's review loop hit its 3-iteration cap, and the same finding fired twice: each fix narrowed which markup hides a copy, but none closed it, because the reader does not model Markdown inline syntax. The cap gate needs your decision (`escalate`), and the choice sets how the settings file must be written.
+- **Read:** the escalation at the end of `docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1b.md` on `feat/build-loop-u1b` (R4, A17). Only an exact line ever sets a value, so a hidden copy can never raise the policy. The risk is the reverse: a never list you wrote in markup is ignored, and self-merge stays on without it.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] best effort, never line required (recommended)** | Keep today's copy detection, but say "best effort" rather than "cannot hide". Self-merge also needs an exact `Self-merge never:` line (`Self-merge never: none` for an empty list), so a never list hidden in markup turns self-merge off instead of being skipped. | One more line in `docs/dev-cycle.md` if you ever choose self-merge. | A hidden extra copy next to an exact line is ignored; the exact line you can see governs. |
+| **[2] strict grammar, any mention counts** | Any line whose letters contain a key anywhere counts as a copy and unsets that setting. | Prose in `docs/dev-cycle.md` must never mention a key at all; the file's current line 18 already does, so it would read as unset. | Doc edits silently turn self-merge off; the reader still misses a key split by a link. |
+| **[3] a machine block** | Settings live only in one fenced block (` ```build-loop `) with a strict line grammar; text outside it is ignored. | Re-write the settings in `docs/dev-cycle.md`, and in onboarding's template, as that block. | A larger change across U1b, U5's docs and onboarding; it delays U1 by about one unit. |
+
+- **Blocks:** landing U1b, and U1c, which stacks on it. (U1a waits on Q-111.)
+- **Interim:** no fix work on U1b. Its other ambers (A16 `core.useReplaceRefs`, A18–A23 tests and wording) wait for this answer so they land in one iteration. Nothing reaches main.
+- **If the answer differs:** [2] or [3] replace the key matcher (about 30 lines) and rework the T2/T45 tests.
 
 ### Q-111 · build-loop-u1a-iteration-4
 **Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
