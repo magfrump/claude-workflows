@@ -58,8 +58,8 @@
 #                 "handoff: blocked" or "handoff: stopped: REASON" (1-120
 #                 printable ASCII characters, no blank at either end), alone
 #                 on its first line (a second line, if any, empty); REASON is
-#                 printed last. A tip whose subject does not start "handoff:" is
-#                 working. DISPATCHED: the brief's "Dispatched: N" (0-99), or
+#                 printed last. A tip on a branch level with main, or whose
+#                 subject does not start "handoff:", is working. DISPATCHED: the brief's "Dispatched: N" (0-99), or
 #                 0 without one.
 #             skip BRIEF: WHY
 #                 The brief cannot be read (as --check-brief), its Branch:
@@ -199,7 +199,7 @@ globform() {
 # main's commit. POLICY
 # is for --status and the planned gate, NEVER for the gate.
 POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""
-# shellcheck disable=SC2034  # POLICY and NEVER: see above
+# shellcheck disable=SC2034  # NEVER: for the planned gate
 read_settings() {
   local f=docs/dev-cycle.md where l k c l1 l2 nx t v g i why never_ok="" parts=()
   local -A cnt=() first=() second=() next=() text=() seen=()
@@ -263,7 +263,7 @@ read_settings() {
     case "$k" in
       ok) if [[ "$c" -gt 0 ]]; then CONSTRAINTS_LINE="constraints ok $c-hard $l1-soft: $f on the default branch"
           else CONSTRAINTS_LINE="constraints none-hard: $f on the default branch has $l1 soft constraint(s) and no hard one (H1: with a success: line)"; fi ;;
-      nosuccess) CONSTRAINTS_LINE="constraints unreadable: hard constraint $c (line $l1) has no success: line before the next constraint or heading" ;;
+      nosuccess) CONSTRAINTS_LINE="constraints unreadable: hard constraint $c (line $l1) has no success: line before the next constraint or \"#\" heading" ;;
       dup) CONSTRAINTS_LINE="constraints unreadable: constraint $c is listed twice (lines $l1 and $l2)" ;;
       *) CONSTRAINTS_LINE="constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
     esac
@@ -299,14 +299,16 @@ marker_kind() {
 # status_line computes it on first use, so no caller can skip it.
 SHARED_BRANCHES=""
 shared_branches() {
-  local f list b
-  local -A n=()
+  local f list b rc=0
+  local -A n=() BRIEF=()  # a local BRIEF: the caller's stays as it was
   # One git grep finds the files with a "Status: open" line (a superset: fences
-  # are not modelled); brief_fields then reads only those.
-  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"
+  # are not modelled); brief_fields then reads only those. Exit 1 is "none";
+  # any other failure fails closed (SHARED_BRANCHES=error: every open brief skips).
+  list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
+  if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
   while IFS= read -r f; do
     f="${f#"$MAIN_SHA":}"
-    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
+    if ! isbrief "${f/#docs\/working\/briefs\/closed\//docs/working/briefs/}" || ! brief_fields "$f"; then continue; fi
     [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
     b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
   done <<<"$list"
@@ -315,7 +317,7 @@ shared_branches() {
 }
 status_line() {
   local a="$1" out st br sha ahead date loop kind reason="" pol=review disp=0
-  [[ -n "$SHARED_BRANCHES" ]] || shared_branches  # first: it reads other briefs into BRIEF
+  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
   out="$(check_brief "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
   read -r _ _ st _ <<<"$out"
@@ -330,6 +332,7 @@ status_line() {
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
+  if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed (git grep failed)"; return; fi
   if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
     echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi

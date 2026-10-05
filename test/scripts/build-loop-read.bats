@@ -166,7 +166,7 @@ setup() { bl_setup; }
     [ "$(line constraints)" = "constraints ok 2-hard 1-soft: docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
     constraints '- H1: never lose a row' '- S1: small' '  success: a test'
     run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
     constraints '- H1: a' '  success: b' '- H1: c' '  success: d'
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)" ] || { echo "$output"; return 1; }
@@ -181,9 +181,9 @@ setup() { bl_setup; }
             || { echo "[$c] $output"; return 1; }
     done
     constraints '- S1: a' '- H1: b'; run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
     constraints '- H1: a' '## Other' '  success: b'; run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
     git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
@@ -378,6 +378,16 @@ setup() { bl_setup; }
     [ "${lines[3]}" = "ok $c done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
     [ "${lines[4]}" = "skip $b: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
     [ "${lines[5]}" = "ok $e dropped review feat/e absent - - 0" ] || { echo "$output"; return 1; }
+    # Colour config on, or a git grep that fails, never empties the check: the first
+    # still finds the pair, the second skips every open brief.
+    git config color.ui always && git config color.grep always
+    run --separate-stderr bash "$BL" --status "$a"
+    [ "$output" = "skip $a: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
+    git config grep.patternType bogus
+    run --separate-stderr bash "$BL" --status "$d" "$c"
+    [ "${lines[0]}" = "skip $d: the open briefs on the default branch could not be listed (git grep failed)" ] \
+        && [[ "${lines[1]}" == "ok $c done "* ]] || { echo "$output"; return 1; }
+    git config --unset grep.patternType && git config --unset color.ui && git config --unset color.grep
     # An open brief left in closed/ counts too.
     mkdir -p docs/working/briefs/closed && printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/closed/2026-10-01-old.md && commit_all closed
     run --separate-stderr bash "$BL" --status "$d"
