@@ -9,19 +9,23 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. The caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check. inrepo, dirok, skipped and check_brief exit 1
-# (need_root) unless ROOT_REAL is set, is the current directory and is a
-# repository's top level; while ROOT_REAL is unset, rawfile, plaindir and
-# blocker read nothing as plain. Call the exiting checks in the caller's shell,
-# not inside $(...) or `local x="$(...)"`, where an exit ends only the subshell.
-# skipped records each blocked input in SKIPPED and SKIP_AT. The caller runs
-# resolve_main once per process (a second call re-reads main); check_brief and
-# check_branch skip every argument unless it returned 0 with main found by name.
-# Both answer with one printed line per argument that can echo repo text: print
-# it through scrub, read it as `out="$(check_brief ...)"` under set -e (which
-# stops when need_root exits; `if out=...` and `< <(...)` would carry on), and
-# treat any line that does not start with ok as a refusal. Every script that
-# calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
+# calling any file check. inrepo, dirok, skipped, check_brief, check_answer and
+# the import walk (imported_names) exit 1 (need_root) unless ROOT_REAL is set,
+# is the current directory and is a repository's top level; while ROOT_REAL is
+# unset, rawfile, plaindir and blocker read nothing as plain. Call the exiting
+# checks in the caller's shell, not inside $(...) or `local x="$(...)"`, where
+# an exit ends only the subshell. skipped records each blocked input in SKIPPED
+# and SKIP_AT. The caller runs resolve_main once per process (a second call
+# re-reads main); check_brief and check_branch skip every argument unless it
+# returned 0 with main found by name. check_brief, check_branch and
+# check_answer answer with one printed line per argument that can echo repo
+# text: print it through scrub, read it as `out="$(check_brief ...)"` under
+# set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
+# carry on), and treat any line that is not a positive answer as a refusal.
+# Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
+# Inputs: check_brief and check_branch read the default branch's commit
+# (check_brief also refuses a brief path that is not plain in the working
+# tree); check_answer and imported_names read the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -343,13 +347,15 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # byte but a letter or digit (so user@host is not one); it ends at a blank, \, #,
 # a backtick, ( ) [ or ], and loses trailing punctuation and emphasis marks
 # (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
-# Over-reading (a code span) only over-refuses. Computed once.
+# Over-reading (a code span) only over-refuses. Computed once per process and
+# repo root (IMPORTED_DONE holds the root it was computed for).
 IMPORTED=$'\n'; IMPORTED_DONE=""
 IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 imported_names() {
   local f t d p seen=$'\n' queue=()
-  [[ -n "$IMPORTED_DONE" ]] && return; IMPORTED_DONE=1
+  need_root
+  [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && return; IMPORTED_DONE="$ROOT_REAL"; IMPORTED=$'\n'
   while IFS= read -r -d '' f; do
     if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue

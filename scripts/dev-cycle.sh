@@ -112,7 +112,7 @@ done
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
-# shellcheck disable=SC2034  # read by the lib's file rules
+# shellcheck disable=SC2034  # read by the lib's file rules and import walk
 ROOT_REAL="$(pwd -P)"
 skipdir() { skipped "$1" dir; }
 skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (section 8)."; }

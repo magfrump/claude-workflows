@@ -184,10 +184,12 @@ U0 extracts dev-cycle.sh's reader into `scripts/lib/dev-cycle-read.sh`, as revis
 
 - `scrub` and its re-exec wrapper;
 - `pathform`, FENCE_AWK and `oddwhy`, `INSTRUCTION_FILE` and the import walk;
-- `writable`, `isbrief` and `check_fix`'s predicate;
+- `writable` and `isbrief` (`check_fix`'s predicate stays in dev-cycle.sh: amended 2026-10-05, see below);
 - default-branch resolution, which returns instead of exiting;
 - `check_brief`, `check_branch` and `check_answer`;
 - `brief_fields`.
+
+**Amendment (2026-10-05, U0 review).** `check_fix` is an allowlist of docs an in-cycle fix may edit; D5's floor is a denylist over any path, and the two differ (`working/`, `reviews/`, `thoughts/`, `constraints.md`, top-level dotfiles). Moving the predicate in U0 would mean splitting `check_fix`, which a pure move cannot do, and building a policy switch for a caller that does not exist yet. U2 instead writes the floor as its own lib function from the shared pieces already in the lib (`INSTRUCTION_FILE`, the import walk, `writable`), adds an `isimported` predicate so neither caller reads the walk's cache format, and either shares one read-as-truth list with `check_fix` or files the difference as a `you: judgment` entry. The import walk reads the working tree at `ROOT_REAL`, so the gate must run it in a worktree checked out at `MAIN_SHA` or use a commit-reading variant (F11's Q-103 text says so). Source: `docs/reviews/architecture-review-review-2026-10-04-build-loop-u0c.md`. U0 also split into three units (U0a/U0b/U0c), not two: moved lines count twice under the 400-line cap.
 
 Both scripts source the lib from their own `SCRIPT_DIR`, so the copy D6 extracts is self-contained. `build-loop.sh` resolves `MAIN_SHA` once and calls the lib directly, with no subprocess. Output follows dev-cycle.sh's check-mode conventions:
 

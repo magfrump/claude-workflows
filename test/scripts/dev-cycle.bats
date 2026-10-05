@@ -1032,6 +1032,7 @@ EOF
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
@@ -1096,4 +1097,19 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
         check_brief docs/working/briefs/2026-10-02-a-b.md; echo passed' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "the import walk stops without ROOT_REAL and recomputes for another repo root" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; imported_names; echo walked' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$output"; echo "$stderr"; return 1; }
+    mkdir -p docs && echo 'See @docs/a.md' > CLAUDE.md && echo x > docs/a.md
+    make_repo "$BATS_TEST_TMPDIR/other" main
+    ( cd "$BATS_TEST_TMPDIR/other" && echo 'See @docs/b.md' > CLAUDE.md && mkdir docs && echo x > docs/b.md )
+    run env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo
+        cd "$2"; ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo' _ \
+        "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR/other"
+    [ "$output" = " docs/a.md 
+ docs/b.md " ] || { echo "[$output]"; return 1; }
 }
