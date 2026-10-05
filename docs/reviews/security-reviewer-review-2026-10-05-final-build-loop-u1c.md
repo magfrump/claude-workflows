@@ -1,166 +1,149 @@
-Commit: c143b929
+Commit: 4dc84ce4
 
-# Security Review — feat/build-loop-u1c, final confirming pass (iteration 2)
+# Security Review — feat/build-loop-u1c, final confirming pass (iteration 3)
 
-**Scope:** `git diff feat/build-loop-u1b...feat/build-loop-u1c` at c143b929 (scripts/build-loop.sh, scripts/lib/dev-cycle-read.sh header, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats)
+**Scope:** `git diff main...feat/build-loop-u1c` at 4dc84ce4 (scripts/build-loop.sh, scripts/lib/dev-cycle-read.sh header, scripts/dev-cycle.sh comment, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats); focus on fix commit 4dc84ce4 (X1 git grep in shared_branches, A12 task-box fold)
 **Date:** 2026-10-05
-**Based on:** docs/reviews/code-fact-check-report-build-loop-u1c.md (Stage-1 merged, k=3), Escalation on Claim 8; iteration-1 rubric at 553a50d5; fix commit c143b929
-**Threat model:** a build loop can write any branch and working tree but not main; `--settings`/`--status` output gates dispatch and (later) self-merge.
-
-All probes ran in throwaway repos under `/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/security/` against `bash scripts/build-loop.sh` from this worktree. `bats test/scripts/build-loop-read.bats`: 16/16 pass at HEAD.
+**Based on:** docs/reviews/code-fact-check-report-build-loop-u1c.md (merged k=3, Stage 1), its escalations to this critic; override-log rows dated 2026-10-05 (196–296)
 
 ## Trust Boundary Map
 
 ```
-B1: [loop-written branch tip (refs/heads/<Branch:>)] → [check_branch show-ref --verify; marker_kind via git's own parse] → [--status LOOP field (ready|blocked|stopped|working|skip)]
-B2: [docs/constraints.md on main's commit]          → [main_file + FENCE_AWK + CONSTRAINTS_AWK]                       → [--settings "constraints ok|missing|none-hard|unreadable" (dispatch gate)]
-B3: [brief files on main (briefs/ and briefs/closed/)] → [brief_fields / shared_branches (F31)]                        → [--status ok/skip per brief]
-B4: [argument path + working tree]                  → [check_brief pathform/isbrief/blocker]                          → [main-commit read of the brief]
+B1:       [docs/constraints.md blob on main]          → [FENCE_AWK + CONSTRAINTS_AWK :164-186] → [CONSTRAINTS_LINE "ok N-hard": the planned dispatch condition]
+B2:       [brief blobs on main, briefs/ and closed/]  → [git grep :306 → isbrief → brief_fields] → [SHARED_BRANCHES → F31 skip :333]
+B3 (new): [git config: repo .git/config (shared with loop worktrees), ~/.gitconfig, caller env]
+                                                       → [git grep's own option parsing :306, `|| true`] → [the B2 candidate list]
+B4:       [loop branch tip commit]                    → [check_branch, marker_kind :276-296]     → [LOOP field: ready/blocked/stopped/working]
+B5:       [--status BRIEF... arguments]               → [check_brief (pathform, isbrief, blocker, main_entry)] → [the queried brief's fields]
 ```
 
 | Label | Source | Mutability | Trust classification (per sink) |
 |---|---|---|---|
-| S1 | Branch tip commit object (tree, parents, message, encoding header) | request-time (any loop can write) | UNTRUSTED for the LOOP verdict and printed REASON; the loop is entitled to write a marker, so "ready" itself is not an escalation, but divergence from git's parse is |
-| S2 | docs/constraints.md blob on main | runtime-mutable by the owner only (F54: N-denied for loops; read from main's commit) | trusted author, UNTRUSTED as to shape (owner mistakes must fail closed per Q-112 [1]) |
-| S3 | Brief blobs on main (Status/Branch/Policy/Dispatched) | owner-written | trusted author; shape-checked before use as a git ref name |
-| S4 | Repo object store / .git (shared by every worktree) | writable by any process with the uid | outside this unit's model (rows 252, 273); noted only where a read failure fails open |
-| S5 | CLI argument BRIEF paths | request-time (orchestrator) | pathform + blocker before any read |
+| S1 | docs/constraints.md on main | runtime-mutable (any commit landing on main) | UNTRUSTED toward the dispatch-condition sink (count and success-line rule); its text is prompt content, not exec |
+| S2 | brief blobs on main | runtime-mutable | UNTRUSTED toward branch-name, policy and F31 sinks |
+| S3 | repo `.git/config` | runtime-mutable, writable by any loop (worktrees share `/workspace/.git`, plan line 33) | UNTRUSTED toward any read that decides a guard; the script already treats it so for core.useReplaceRefs (`:107-111`) |
+| S4 | `~/.gitconfig` | uid-writable (loops run as the user's uid), and the user's honest config | UNTRUSTED toward guard-deciding reads; an honest value such as `color.ui=always` must not change a guard |
+| S5 | caller environment (`GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT`, `GIT_*_PATHSPECS`) | deploy-time for the orchestrator's process | trusted (rows 276, 280; Q-115) |
+| S6 | loop branch tip commit objects | request-time (loop-written) | UNTRUSTED (all sinks) |
+| S7 | --status argument paths | orchestrator-supplied | untrusted for path sinks; gated by check_brief |
 
-What enters: loop-controlled commit objects (S1) and owner-written repo files read only from main's commit (S2, S3). The diff's trust assumption is that main's files are owner-authored and that every shape the readers cannot classify fails closed; iteration 1's fixes move the marker parse to git (B1) and widen the constraint refusal (B2). The residue below is all on B2/B3's fail-closed promise.
-
-## Iteration-1 fixes: do they hold?
-
-- **A1 (marker read through git)** — holds. `marker_kind` (`scripts/build-loop.sh:273-293`) takes parents from `git rev-list --parents -n 1`, the tree from `rev-parse ^{tree}`, the message from `git log -1 --format=%B`, and counts NUL bytes in the raw object. Executed: duplicate `parent` lines → "it has 2 parents"; two-tree object → "it has no parent" (T7); `encoding UTF-7` with `handoff: +AHI-eady` → skip; `encoding ISO-8859-1` `stopped: café` → skip; message starting with a blank line → `working`; whitespace-only second line → skip; `encoding UTF-16` and a stray `gpgsig` header with the plain subject → `ready` (raw and git's reading agree). No regression found.
-- **R1 (near-miss constraint lines)** — narrowed, not closed: see Finding 1 (shapes that still drop a hard constraint under `ok`) and Finding 2 (help text).
-- **A4/A5 (closed/ counts; set computed on first use)** — holds for readable briefs (executed: an open brief in closed/ naming the same branch makes the briefs/ one skip; `status_line` calls `shared_branches` at `:326`; it only clobbers `BRIEF` after the last `BRIEF` read at `:325`). Residue in Finding 3 (Informational).
-- **A8 (C-locale grep)** — holds: `LC_ALL=C grep -qxE` at `:291`; the non-ASCII reasons in T7 and my latin1/UTF-7 probes skip.
+What crosses: main's committed text (S1, S2) decides the constraints line and the F31 set; loop-written commits (S6) decide the LOOP field; and, new in 4dc84ce4, git's config (S3/S4) now decides whether the F31 candidate list is read at all, because `git grep`'s output format is config-driven and its failure is swallowed. The diff's assumption is that `git grep -l` output is a plain path list whenever it exits; that assumption does not hold under S3/S4.
 
 ## Findings
 
-#### 1. A hard constraint behind a checked task box, a letter or roman list marker, or a leading word is still uncounted while the line reads `constraints ok`
+#### 1. F31's shared-branch skip turns off silently under `color.ui`/`color.grep=always` or any `git grep` error, so two open briefs naming one branch both read `ok` (with different policies)
 
 **Severity:** Medium
-**Location:** `scripts/build-loop.sh:172-173` (near-miss rule), `:164` (exact form)
-**Boundary:** B2
-**Move:** 11 (enumerate bypasses for every guardrail), 3 (error path)
-**Confidence:** High (mechanism, executed); impact Medium
-**Legibility-target:** for-orchestrator-synthesis
-
-Evidence (`scripts/build-loop.sh:172-173`):
-```
-{ s = $0; sub(/^[^a-zA-Z]*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }
-s ~ /^[hs][0123456789]/ { if (bad == "") bad = "near " NR; next }  # looks like an ID but is not exact
-```
-
-The near-miss rule starts at the line's first ASCII letter, so any marker that contains a letter hides the ID. Executed with `- H1: a` / `  success: b` / then the third line below, each printed `constraints ok 1-hard 0-soft`: `- [x] H2: never push`, `- [X] H2: c`, `a. H2: never push`, `i. H2: x`, `Hard H2: never push`, `**Hard:** H2: never push`, `Note - H2: x`. The unchecked box `- [ ] H2: c` is refused (unreadable), so ticking a box in a constraints checklist turns a refused line into a silently uncounted one. This is the exact report trigger Q-112 [1] names ("a hard constraint can still be silently dropped while the line reads `constraints ok`"), and the help (`:35-37`) describes the first-letter rule accurately, so it is a design residue, not a doc error. Impact: the dropped line is still quoted whole in every loop prompt (plan :227), so the loop sees the text; what is lost is the gate's guarantee that every hard constraint carries a `success:` line and the count the orchestrator reports. No loop can author the file (F54), so the trigger is an owner's ordinary Markdown, not an attacker; I keep Medium under the floor rule because the mechanism is concrete and the environment (an owner writing a GFM checklist) is the normal one. Override-log: no row covers this (row 256 covers settings-key copies, whose premise "only an exact line ever sets a value" does not transfer: here an uncounted line removes a check rather than failing to set a value).
-
-**Recommendation:** Strip a leading task box (`[ ]`, `[x]`, `[X]`) and a short list label (`[a-zA-Z]{1,4}[.)]`) before folding, or apply the near-miss test to any `[hs]<digit>` token preceded by a non-alphanumeric within the line's first few words; Q-112 accepts the extra false positives. Add `- [x] H2:` and `a. H2:` to T44's near-miss loop.
-
-#### 2. The constraints help states the near-miss and heading rules more broadly than the code applies them (fences, non-ASCII look-alikes, Setext and indented headings)
-
-**Severity:** Low
-**Location:** `scripts/build-loop.sh:33-37` (help), `:163`, `:172`, `:174`
-**Boundary:** B2
-**Move:** 2 (implicit sanitization assumption), 11
+**Location:** `scripts/build-loop.sh:306` (enclosing `shared_branches()` :301-315, consumed at `status_line()` :318 and :333)
+**Boundary:** B3 → B2
+**Move:** #3 (error path), #11 (guardrail bypass), #1 (runtime-mutable ⇒ compromise-reachable)
 **Confidence:** High (executed)
 **Legibility-target:** for-author
 
-Evidence (`scripts/build-loop.sh:33-37`):
+**Evidence** (verbatim):
 ```
-#                 leading 0; a hard one needs a "success: <observable>" line
-#                 (any indent, optionally after "- ") before the next
-#                 constraint or heading, and no ID may repeat. Any other line
-#                 whose letters and digits, from its first letter, start like
-#                 "h1" or "s1" makes the file unreadable. Only "ok" lets the orchestrator dispatch.
+   306	  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"
+   307	  while IFS= read -r f; do
+   308	    f="${f#"$MAIN_SHA":}"
+   309	    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
 ```
-and (`:174`):
-```
-/^#/ { if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl; pend = ""; next }  # a heading ends a pending one
-```
+(excerpt ends :309; enclosing `shared_branches()` continues to :315 — read: the set is built only from names that pass `isbrief`, and `SHARED_BRANCHES=$'\n'` is set unconditionally at :313, so an empty list yields an empty-but-computed set that `status_line` :318 never recomputes.)
 
-Executed, each printed `constraints ok 1-hard 0-soft`: a fenced block holding `H2: never push`; Cyrillic `Н2:`, fullwidth `Ｈ2:`, `H²:`, and `&#72;2:` (renders as `H2:`). And `- H1: ...` followed by a Setext heading (`Other section` / `---`) or an indented ATX heading (`  ## Other`) and then `- success: unrelated` printed `ok`, so a success line from another section satisfies H1. The help says "Any other line" and "letters and digits" (no "outside a fence", no "ASCII") and "heading" (only column-0 `#` counts). Fence-skipping is intended (plan :204, "read under FENCE_AWK"), and the look-alikes are Q-112's accepted best effort, so this is the second Q-112 trigger (the help misdescribes the rule), not a code defect. Escalated Claim 8: my severity is Low for the fence/look-alike part, because the fenced or look-alike line is still carried verbatim to the loop and no loop can write the file; the fix is wording.
+With colour forced, `git grep -l` prints `ESC[35mSHA:docs/...` (verified with `od -c`), so the `${f#"$MAIN_SHA":}` strip fails, `isbrief` refuses every name, and the set is empty. When `git grep` exits 128 (a malformed `grep.threads`, `color.ui=bogus`), `|| true` turns the failure into the same empty set; git's `fatal:` goes to stderr, but stdout carries `ok` lines and the exit is 0, which the header (:77) defines as "every line printed". Probe (fixture: two open briefs on main, `Branch: feat/x`, one with `Policy: self-merge`, settings policy self-merge):
 
-**Recommendation:** Say "outside a code fence", "ASCII letters and digits (best effort)", and "a heading (a line starting #)" in the help; optionally treat a Setext underline (`^(=+|-+)[ \t]*$` after a non-blank line) as a heading.
+| Config | Result |
+|---|---|
+| default | both `skip …: another open brief … names the same branch` |
+| repo `color.ui=always` | `ok …a.md open self-merge feat/x …` and `ok …b.md open review feat/x …` |
+| repo `color.grep=always` | same two `ok` lines |
+| **global** `~/.gitconfig` `[color] ui = always` (GIT_CONFIG_GLOBAL unset) | same two `ok` lines |
+| repo `grep.threads=-1` or `=abc` | `fatal:` on stderr; same two `ok` lines, exit 0 |
+| repo `color.ui=bogus` | `fatal:` ×5 on stderr; same two `ok` lines |
 
-#### 3. shared_branches treats a brief it cannot read as not open, so F31 fails open when another brief's blob or tree cannot be read
+Impact: F31 (plan row 146, "covered", T28) exists so that one branch is never dispatched or judged under two briefs. When it turns off, the probe shows the same branch reported under brief a with `self-merge` and under brief b with `review`; whatever the loop leaves on `feat/x` is then eligible for the more permissive policy of whichever brief the orchestrator picks — a policy-laundering path the guard was written to close. Who controls the trigger: (i) the user's own honest global config — `color.ui=always` is a documented, not-rare setting, and this is the "honest path" the plan (line 33) promises to make safe; (ii) any loop, since loops run as the uid and share `/workspace/.git/config`. The trust model in rows 276/280/281 trusts the caller's *environment* (`git -c`, `GIT_CONFIG_COUNT`), not repo or global config files — the script's own comment at :108 treats repo config as hostile for exactly this reason — so those rows do not cover this; the premise differs. Planned `--state` (T42: `core.fsmonitor`, filters, hooks, `refs/replace/`, `info/attributes`) lists no `color.*` or `grep.*` key and does not read `~/.gitconfig` at all, so F51 does not close it either. Not High: F31 needs two open briefs naming one branch on main (itself an authoring slip), and U1c's `--status` is read by a gate that is still planned (U3/U4). Floor rule applies: a named mechanism in a reachable (honest) environment.
+
+**Recommendation:** Pass `--no-color` to this `git grep` (verified: it beats `color.ui`/`color.grep=always`), and replace `|| true` with an explicit exit check — 0 → list, 1 → no open brief, anything else → F31 unknown, so every open brief skips with a WHY (e.g. "open briefs on the default branch could not be compared"). Add a T28 case with `git config color.ui always` and one with `grep.threads=-1` (the suite sets `GIT_CONFIG_GLOBAL=/dev/null`, so neither shape is reachable from today's tests).
+
+#### 2. No other config- or environment-dependent bypass of the git grep was found; one further fail-closed effect noted
 
 **Severity:** Informational
-**Location:** `scripts/build-loop.sh:301-303`
-**Boundary:** B3 (S4)
-**Move:** 3 (error path)
-**Confidence:** High (executed); reachability depends on S4
-**Legibility-target:** for-author
+**Location:** `scripts/build-loop.sh:306`, `:112`
+**Boundary:** B3
+**Move:** #11
+**Confidence:** High (executed)
+**Legibility-target:** for-orchestrator-synthesis
 
-Evidence (`scripts/build-loop.sh:301-304`, remainder of the function `:305-309` builds the set):
+**Evidence** (verbatim):
 ```
-  list="$(git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/ docs/working/briefs/closed/)"
-  while IFS= read -r f; do
-    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
-    [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
+   112	export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1
 ```
+Every candidate below was run against the two-brief fixture (results in the bypass table). Only `color.ui`, `color.grep` (=always) and any config value that makes `git grep` exit 128 change the F31 set; all are Finding 1. `GIT_GLOB_PATHSPECS=1` or `GIT_ICASE_PATHSPECS=1` from the caller conflict with the exported literal setting, so *every* git read fails and both briefs skip with "the tree of the default branch could not be read" — fail-closed, and caller env is trusted anyway (row 276). A missing blob for an unrelated brief makes `git grep` print `error:` and still exit 0 with the other matches (per-file, row 293's family).
 
-Executed: two open briefs name `feat/x` (one in briefs/, one in closed/); before damage the queried one skips. After deleting the closed/ brief's loose blob, `--status` prints `ok … open review feat/x absent - - 0`, exit 0 (stderr carries cat-file's `fatal:`). Deleting the closed/ tree object instead exits 1 with no line (fails closed). A brief FENCE_AWK refuses is also not counted, which is harmless (that brief is itself a skip). Only `BRIEF_ODD=error` is the fail-open case, and reaching it needs write access to the shared object store, which is outside this unit's model (rows 252/273 class). Not a regression of A4/A5; it is the residue of A5's "fail closed" intent.
+**Recommendation:** None beyond Finding 1.
 
-**Recommendation:** When `brief_fields` returns 1 with `BRIEF_ODD == error` inside `shared_branches`, mark the set unusable (e.g. a sentinel that makes every open brief skip with "the default branch's briefs could not all be read").
+### Task-box fold at `:175` (Q-112 [1], row 290) — no finding
+
+```
+   175	{ s = $0; sub(/^([^a-zA-Z]|\[[ xX]\])*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }
+```
+Executed against `--settings` with `- H1: a` / `  success: b` plus one probe line: `- [x]  H2:`, `- [X] h2:`, `# H2:`, four-space-indented `H2:`, `H 2:`, `\H2:`, `[H2](#h):`, `<!-- H2: -->`, BOM-prefixed `H2:` and `H2 x` all read `unreadable` (fail-closed). Still `ok 1-hard`: `- [x ] H2:`, `- [ x] H2:`, `- [y] H2:`, `- (x) H2:`, `x H2:`. Every residue shape puts a letter before the ID — the letter-prefix family row 290 names (`Hard H2:`, `a. H2:`) — and none of them is a GFM task box (GFM accepts only `[ ]`, `[x]`, `[X]`), so they render as literal text. I judge them covered by row 290 under Q-112 [1], not a new shape (agreeing with fact-check r1/r2). `<b>H2</b>:` is refused earlier by FENCE_AWK. The fold's side effect — ordinary lines like `- [x] S3 bucket moved` now read unreadable — is availability only and fails closed.
 
 ## Untested bypass candidates
 
-- Repo config that changes `git log --format=%B` output (`log.showSignature`, `i18n.logOutputEncoding`) — not tested; needs write access to the shared `.git/config`, where the loop could do worse (core.fsmonitor); plan D6/U3b own config hygiene.
-- `refs/heads/<Branch:>` as a symref to another loop's branch (not main) — row 247/209 class; not re-tested here.
+- **`log.showSignature=true` with a GPG-signed marker tip** (`marker_kind` :280, `git log -1 --format=%B`): no gpg in the sandbox. Expected direction is fail-closed (extra lines before the subject read as `working`), not verified.
+- **A marker commit with an `encoding` header** (git log re-encodes `%B` to UTF-8): not built. A loop can write an honest `handoff: ready` anyway, so no escalation is apparent; listed for completeness.
+- **`core.fsmonitor` / hooks during the tree grep**: not exercised; a tree-ish grep should not touch the index or run hooks, and T42 owns planted state.
 
 ## Endorsement Claims
 
-- **Claim:** For the crafted tip objects tested, `marker_kind` reads parents, tree and subject as git does: duplicate-parent, two-tree, orphan, merge, non-empty, NUL, UTF-7 and Latin-1 encoded `handoff:` tips are skips, and a leading-blank message reads `working`.
-  **Location:** `scripts/build-loop.sh:273-293`
+- **Claim:** With repo config `grep.patternType=fixed|perl`, `grep.extendedRegexp=false`, `grep.fullName=true`, `grep.lineNumber=true`, `grep.column=true`, `core.bigFileThreshold=1`, `core.quotePath=true`, `submodule.recurse=true`, `grep.fallbackToNoIndex=true`, `color.grep.filename=red` or `core.attributesFile=/nonexistent`, the two-brief fixture still prints both F31 skips.
+  **Location:** `scripts/build-loop.sh:306`
   **Evidence:** executed
-  **Verified:** T7 plus nine `hash-object --literally` probes in scratch repo `m1`.
-  **Not verified:** how U3b's `--marker` and the D7 gate read the same tip (separate code, not yet written).
+  **Verified:** each key set in the fixture's `.git/config` in turn, `--status` run on both briefs, git 2.39.5
+  **Not verified:** the same keys set in `~/.gitconfig` or `/etc/gitconfig` (same parser, untested), and newer git versions
   **route: code-fact-check**
-- **Claim:** An open brief stored under `docs/working/briefs/closed/` that names the same branch (case-folded) as an open brief in `briefs/` makes the latter skip, and `status_line` builds the shared set itself on first use.
-  **Location:** `scripts/build-loop.sh:298-309`, `:326-329`
+- **Claim:** A `diff=x` textconv or a `binary -text` attribute in `.git/info/attributes` for `*.md` leaves the F31 result unchanged (`git grep` without `--textconv` reads raw blobs).
+  **Location:** `scripts/build-loop.sh:306`
   **Evidence:** executed
-  **Verified:** T28 and probe repo `f1` (before damage).
-  **Not verified:** a brief whose blob cannot be read (Finding 3).
+  **Verified:** both attribute files planted, `--status` printed both skips
+  **Not verified:** a `.gitattributes` committed on main itself
   **route: code-fact-check**
-- **Claim:** The STOPPED reason printed on a `--status` line is limited to 1-120 printable ASCII bytes with no blank at either end, checked in the C locale.
-  **Location:** `scripts/build-loop.sh:289-292`
+- **Claim:** Under repo `color.ui=always`, the --status line for a marked branch carries no ESC byte and reads `ready`; among the --status git calls, only the `git grep` at `:306` was colour-sensitive in the probe.
+  **Location:** `scripts/build-loop.sh:276-296`, `:336-351`
   **Evidence:** executed
-  **Verified:** T6/T7 (escape, UTF-8, bidi, 121 chars) and Latin-1/UTF-7 encoded probes.
-  **Not verified:** the scrub's handling downstream of this line in the orchestrator.
+  **Verified:** one-brief fixture with a `handoff: ready` tip, `od -c` of the output line (0 ESC bytes)
+  **Not verified:** check_brief's `git log -G` path under `color.diff=always` (its `--format=%H` output was not inspected separately)
   **route: code-fact-check**
 
 ## Primitive sweep
 
-Primitive: git invocation with repo-derived arguments (ref/revision injection)
-| Call site | Source | Guard | Disposition |
-|---|---|---|---|
-| `scripts/lib/dev-cycle-read.sh:378` `show-ref --verify refs/heads/$a` | S3 Branch: name | NAMECHARS, no leading `-`, check-ref-format, not HEAD/refs/*, not main | cleared |
-| `scripts/build-loop.sh:276-282` rev-list/log/cat-file/rev-parse `$1`, `${p[1]}` | S1 tip SHA | 40-hex from show-ref + `^{commit}`; parent from git's own parse | cleared |
-| `scripts/build-loop.sh:301` `ls-tree $MAIN_SHA -- …` | code constants | GIT_LITERAL_PATHSPECS | cleared |
-| `scripts/build-loop.sh:128` `cat-file blob $MAIN_SHA:$f` | code constant paths | main_entry blob check | cleared |
-| `scripts/lib/dev-cycle-read.sh:297` brief_fields `cat-file blob $MAIN_SHA:$1` | S5 / ls-tree names | pathform + main_entry | cleared |
+Primitive: git subprocess whose output decides a guard (config-sensitive parse)
 
-Primitive: bash arithmetic / associative subscripts on repo text
 | Call site | Source | Guard | Disposition |
 |---|---|---|---|
-| `scripts/build-loop.sh:305` `n[$b]=$(( ${n[$b]-0} + 1 ))` | S3 Branch: value | value expanded once as a key; arithmetic sees only stored counts | cleared |
-| `scripts/build-loop.sh:308` `[[ "${n[$b]}" -lt 2 ]]` | own counts | numeric values only | cleared |
-| `scripts/build-loop.sh:337` `[[ "$ahead" -gt 0 ]]` | rev-list --count output | git-produced integer | cleared |
+| `scripts/build-loop.sh:306` `git grep -l` | S2 content, S3/S4 config | none against colour or error (`|| true`) | Finding 1 |
+| `scripts/build-loop.sh:279` `git rev-list --parents -n 1` | S6 | SHA from show-ref | cleared — plain output under color.ui=always (probe) |
+| `scripts/build-loop.sh:280` `git log -1 --format=%B` | S6 | SHA | cleared for colour (probe); signature/encoding listed as untested |
+| `scripts/build-loop.sh:282` `git cat-file commit` | S6 | SHA | cleared — plumbing, no colour |
+| `scripts/build-loop.sh:285` `git rev-parse --verify` | S6 | SHA | cleared — plumbing |
+| `scripts/build-loop.sh:131` `git cat-file blob` (main_file) | S1 | main_entry blob check | cleared — plumbing |
+| lib `check_branch` show-ref / rev-list / `log --format=%cs` | S2 branch name | NAMECHARS + check-ref-format | cleared — `ready` line printed plain under color.ui=always; DATE content is row 274 |
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Hard constraint behind `- [x]`, `a.`, `i.` or a leading word is uncounted under `constraints ok` | Medium | B2 | `scripts/build-loop.sh:172-173` | High |
-| 2 | Help omits "outside a fence", ASCII-only, and column-0-`#`-only headings | Low | B2 | `scripts/build-loop.sh:33-37`, `:174` | High |
-| 3 | shared_branches skips an unreadable brief, so F31 fails open on object damage | Informational | B3 | `scripts/build-loop.sh:301-303` | High |
+| 1 | F31 fails open under forced colour (repo or global config) or a git grep error; both briefs print `ok`, one self-merge | Medium | B3→B2 | `scripts/build-loop.sh:306` | High |
+| 2 | No other config/env bypass of the git grep; GIT_GLOB/ICASE pathspecs fail closed | Informational | B3 | `scripts/build-loop.sh:306`, `:112` | High |
 
 ## Overall Assessment
 
-The iteration-1 security fixes hold: marker parsing now goes through git and every crafted object I built either reads as git reads it or skips, the closed/ scope and first-use computation of the shared-branch set work, and no regression turned up in the probes or the 16 tests. The remaining issue is R1's residue: the near-miss rule anchors on the first ASCII letter, so a ticked task box or a letter-labelled list item still leaves a hard constraint uncounted while the gate line reads `ok` (Finding 1). That is the case Q-112 [1] asked to be reported, and it can be fixed in place with a small marker-strip plus two test cases. Findings 2 and 3 are wording and hardening. No findings within the other code paths read; endorsement claims pending execution verification by code-fact-check.
+4dc84ce4's X1 fix trades a per-brief read for one `git grep`, and in doing so moves the F31 guard onto a porcelain output format that the user's or a loop's git config controls, with errors swallowed by `|| true`. The result is a guard that turns off silently in an honest environment (`color.ui=always` in `~/.gitconfig`) and reports two `ok` lines with different policies for one branch. The fix is in place and small: `--no-color` plus an exit-code check that fails closed (every open brief skips) on anything but 0 or 1, with a T28 case for each. This is not covered by rows 276/280/281 (they trust the caller's environment, not config files) or by the planned T42 key list. The task-box fold at `:175` behaves as Q-112 [1] and row 290 describe; its residue is the letter-prefix family. Apart from Finding 1, there are no findings within the code paths read; endorsement claims are pending execution verification.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: c143b929` first line.
-- Answered: security design review of the U1c unit diff at c143b929; R1/A1/A4/A5/A8 fixes checked by execution; escalated Claim 8 weighed against Q-112 [1] (fence and look-alike residue: Low, help wording; checked-box/letter-label residue: Medium, silent drop under `ok`); override-log filter applied (no settled row re-filed; row 256's premise judged not to transfer to Finding 1).
-- Out of scope: U2/U3b gate, `--marker`, `--start` and D6 snippet behaviour; review-artifact docs; repo config and object-store tampering beyond noting Finding 3.
-- Escalate: Finding 1 to the orchestrator: whether the Q-112 [1] residue (ticked task box / letter list labels) is fixed now or recorded as an accepted best-effort shape in the help and the override log.
+- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: 4dc84ce4` first line.
+- Answered: yes — escalation assessed with executed probes, other git-grep bypasses enumerated, task-box fold placed against row 290
+- Out of scope: the planned U3/U4 gate's own use of --status; marker encoding/signature shapes (listed as untested)
+- Escalate: Finding 1 to the orchestrator for tiering — it is a fail-open of a "covered" F-row, reachable from an honest global config, and no override row covers it; also suggest adding `color.*`/`grep.*` keys and `~/.gitconfig` to U3b's `--state` scope (T42)
+- Questions I would have asked: none
+- Decisions I made: treated repo and global git config as untrusted (S3/S4), distinct from the caller environment that rows 276/280 trust, following the script's own comment at :107-111; judged the `[x ]`/`[y]`/`(x)` residue as row 290's letter-prefix family

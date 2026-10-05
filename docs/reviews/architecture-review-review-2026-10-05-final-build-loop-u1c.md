@@ -1,119 +1,141 @@
-Commit: c143b929
+Commit: 4dc84ce4
 
-# Architecture Review — feat/build-loop-u1c, final pass (iteration 2)
+# Architecture Review — feat/build-loop-u1c, final confirming pass (iteration 3)
 
-**Scope:** `git diff feat/build-loop-u1b...feat/build-loop-u1c` at c143b929: `scripts/build-loop.sh` and its use of `scripts/lib/dev-cycle-read.sh`
+**Scope:** `git diff main...feat/build-loop-u1c -- . ":!docs/reviews"` at 4dc84ce4. The focus is `scripts/build-loop.sh:297-352` (`shared_branches`, `status_line`) and how it uses `scripts/lib/dev-cycle-read.sh`.
 **Date:** 2026-10-05
-**Based on:** Stage-1 merged code-fact-check (`docs/reviews/code-fact-check-report-build-loop-u1c.md`: 32 Verified, 10 Mostly accurate, 0 Stale, 0 Incorrect); iteration-1 rubric `docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1c.md` (A4, A5); fix diff c143b929.
+**Based on:** the Stage-1 merged code-fact-check (`docs/reviews/code-fact-check-report-build-loop-u1c.md`, Claim 20b Incorrect, Claim 22 Verified), the iteration-2 rubric (`docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1c.md`: A14, A15, X1), and override rows 229 and 292.
 
-Scope check: in scope. The diff adds a public mode (`--status`), a fourth `--settings` output line, and line formats that U2-U4 parse (trigger categories 2 and 3).
+Scope check: in scope. The diff adds a public mode (`--status`), a fourth `--settings` line, and line formats that U2-U4 parse (trigger categories 2 and 3).
 
-Trust-boundary cross-reference: no-op. No file matches `docs/reviews/security-review-*.md`; the security critic's files are named `security-reviewer-review-*`. No finding below moves a trust-boundary crossing.
+Trust-boundary cross-reference: active. `docs/reviews/security-review-*.md` matches. The most recent by name is `docs/reviews/security-review-2026-10-02-digest-pass38.md` (Commit: `90364c73`). Its `B5` reads "[default-branch tree entry at a brief path] → [check_brief() ls-tree mode gate] → [brief Status read / slot decision]". F1 below sits on `B5`. The security review predates this diff, so the boundary may be stale. No recommendation here moves the crossing. Each one routes reads back through the gate that `B5` already names.
 
 ## Dependency Map
 
-- `scripts/build-loop.sh` sources `scripts/lib/dev-cycle-read.sh` from its own directory. It uses `resolve_main`/`main_by_name`, `main_entry`, `FENCE_AWK`/`oddwhy`, `brief_fields` (the global `BRIEF`), `check_brief`, `check_branch`, `isbrief`, `lower` and `NAMECHARS`. `scripts/dev-cycle.sh` sources the same lib. Dependencies point one way, script to lib. The lib does not know build-loop.sh exists, apart from two comment lines.
-- Inside build-loop.sh, the `status` mode calls `read_settings`, which sets `POLICY`. It then calls `status_line` once per argument. `status_line` calls `check_brief`, then `brief_fields`, then (since c143b929) `shared_branches` on its first use, then `check_branch`, then `marker_kind`.
-- `shared_branches` calls `isbrief` and `brief_fields` for every brief on main. Both it and `status_line` write the lib's one global `BRIEF` array, which is where the new coupling in F1 comes from.
-- Downstream contracts: `ok BRIEF STATE POLICY BRANCH LOOP SHA DATE DISPATCHED [REASON]` and `skip BRIEF: WHY` for U4's skill, and the `constraints …` line for the orchestrator. Plan rev 4 also says U2's `--check` must do the F31 skip (plan `:146`) and read `BRIEF[paths]` for the gate.
+- `scripts/build-loop.sh` sources the lib and depends only in that direction. It uses `main_entry`, `brief_fields` (the global `BRIEF`), `check_brief`, `check_branch`, `isbrief`, `lower`, `FENCE_AWK` and `oddwhy`. The lib's only change is two comment lines.
+- `status` mode: `read_settings` → `status_line` for each argument. At 4dc84ce4 `status_line` runs `shared_branches` first (`:318`). It then runs `check_brief` in a subshell, then `brief_fields "$a"` (`:323`), then `check_branch`, then `marker_kind`.
+- `shared_branches` (`:301-315`) now has two read paths into main's tree. The first is new: `git grep -l` over `docs/working/briefs/` at `$MAIN_SHA`, recursive, whose output it parses as `SHA:path`. The second is the lib's (`isbrief` on a `closed/`-stripped name, then `brief_fields`, which calls `main_entry` and `cat-file`). Every other main read in the script goes through `main_entry` (`main_file`, `check_brief`, `brief_fields`).
+- Downstream: U2's `--check` must also do the F31 skip (plan `:146`, "`--status`/`--check` skip both") and must read `BRIEF[paths]`/`BRIEF[policy]` for the gate.
 
-## Prior findings: status at c143b929
+## Prior findings: status at 4dc84ce4
 
-- **A5 (SHARED_BRANCHES fail-open default): resolved for `--status`, but the fix adds the coupling in F1.** `status_line:326` runs `[[ -n "$SHARED_BRANCHES" ]] || shared_branches`. `shared_branches` always leaves at least `$'\n'` in the variable (`:307`), so the guard works as a "computed" flag, and a mode can no longer skip F31 by forgetting a top-level call. The variable is still global and still reads as "nothing shared" when empty, so a new caller that matches against it directly (U2's `--check`, which also needs F31) still fails open. Only callers that go through `status_line` are protected. F1's recommendation covers both problems.
-- **A4 (closed/ briefs not counted; no single brief-path predicate): the behaviour is resolved; the predicate is not.** `:301` now lists `briefs/` and `briefs/closed/`, and `:303` accepts a `closed/` entry with `isbrief "${f/closed\//}"`. T28 now covers an open brief left in `closed/`. I traced the substitution and it is sound: `ls-tree` without `-r` lists only direct children, and a slug cannot contain `/`, so stripping the first `closed/` matches only the `closed/` directory part. But the lib still has no `closed/` predicate. The rule "a brief path, optionally under `closed/`" now has three spellings (F2).
+- **A14 (lazy `shared_branches` overwrites `BRIEF` mid-judgement): resolved for `status_line`.** The guard now runs before the queried brief is read. An instrumented copy, run with `--status a a` on a repo with briefs `a` (`feat/a`) and `z` (`feat/z`), printed:
+  ```
+  PROBE after-guard: Branch: feat/z
+  PROBE after-own: Branch: feat/a
+  PROBE after-guard: Branch: feat/a
+  ok docs/working/briefs/2026-10-01-a.md open review feat/a absent - - 0
+  PROBE after-own: Branch: feat/a
+  ```
+  Every read of `BRIEF` in `status_line` sees the queried brief, which matches FC Claim 22. The first line shows the clobber still happens. It has moved to a point where nothing reads `BRIEF`. See F3 for what that leaves U2.
+- **X1 (one batch read into a local map, before `status_line`'s own `brief_fields`): half done.** The performance half is done: `git grep` narrows the candidates, and FC Claim 28 measures ~0.1 s at 500 closed briefs. The coupling half was answered by reordering the calls, not by a local map. `shared_branches` still writes the global `BRIEF`.
+- **A5 residue (a direct reader of `SHARED_BRANCHES` sees "nothing shared"): unchanged.** See F3.
 
 ## Findings
 
-#### F1. The lazy `shared_branches` call overwrites `BRIEF` in the middle of `status_line`, but only on the first call
+#### F1. `shared_branches` enumerates main's briefs through a second, unhardened read path: `git grep` and a parse of its output format
 
 **Severity:** Coupling
-**Location:** `scripts/build-loop.sh:316-326` (with `:298-309`)
-**Move:** 7 (coupling surface; temporal coupling via shared global state)
+**Location:** `scripts/build-loop.sh:304-309`
+**Move:** 3 (module boundary: the lib owns "read a file from main's commit"), 7 (coupling to another tool's output format)
 **Confidence:** High
-**Legibility-target:** the author of U2's `--check` (the next function that judges a brief, does F31 and reads `BRIEF`)
+**Legibility-target:** for-author
 
 **Evidence:**
 ```
-   316	  brief_fields "$a" || { echo "skip $a: the brief is not read"; return; }
-   317	  if [[ -z "${BRIEF[branch]+set}" ]]; then echo "skip $a: no Branch: line on the default branch"; return; fi
-   ...
-   325	  [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
-   326	  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
-   (remainder :327-346 reads only br, st, pol, disp and local values, not BRIEF)
+   304	  # One git grep finds the files with a "Status: open" line (a superset: fences
+   305	  # are not modelled); brief_fields then reads only those.
+   306	  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"
+   307	  while IFS= read -r f; do
+   308	    f="${f#"$MAIN_SHA":}"
+   309	    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
+   (excerpt ends :309; enclosing shared_branches() continues to :315 — read: it counts names and builds SHARED_BRANCHES)
 ```
+lib `:258-263` (`main_entry`), the read path every other main read takes:
 ```
-   302	  while IFS= read -r f; do
-   303	    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
-```
-Probe: a copy of the script under the scratch dir, instrumented to print `BRIEF` right after `:326`, run with `--status a.md a.md` on a repo whose main holds briefs `a` (`Branch: feat/a`, `Policy: self-merge`) and `z` (`Branch: feat/z`):
-```
-PROBE after-shared: BRIEF[branch]=Branch: feat/z BRIEF[policy]=unset
-ok docs/working/briefs/2026-10-01-a.md open review feat/a absent - - 0
-PROBE after-shared: BRIEF[branch]=Branch: feat/a BRIEF[policy]=Policy: self-merge
-ok docs/working/briefs/2026-10-01-a.md open review feat/a absent - - 0
+main_entry() {
+  ...
+  main_by_name || { echo error; return; }
+  ...
+  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
 ```
 
-Before c143b929, the mode ran `read_settings; shared_branches` once before the loop, so `BRIEF` always held the brief that `status_line` had just parsed. With the A5 fix, `shared_branches` runs inside `status_line`, after `brief_fields "$a"`. On the first call only, it leaves `BRIEF` holding the last brief in the `ls-tree` listing. Today's output is correct because nothing after `:326` reads `BRIEF`. But whether a read of `BRIEF` placed after that line is correct now depends on whether this is the first brief in the argument list, and the tests would catch that only if the first brief listed and the last brief on main differ in the field read. The plan has U2's `--check` doing F31 and then reading `BRIEF[paths]` and `BRIEF[policy]` for the gate. If it copies this order, the gate would judge brief A's diff against brief Z's `Paths:` on the first brief of a run. Override row 229 settled "BRIEF holds whole lines in one global array" as a convention. Its premise did not cover a call that overwrites `BRIEF` between a caller's parse and its reads, and c143b929 introduced that, so this is not a re-file of row 229.
+Before 4dc84ce4, the script read main's tree only through the lib. `main_entry` turns a failed `ls-tree` into `error`, refuses duplicate names, and refuses symlinks, gitlinks and non-directories above a path. `brief_fields` is the single parser of a brief's lines. F31 now also depends on three things outside the lib. First, a second definition of "open" (the grep regex), which must stay a superset of `brief_fields`' "first `Status:` line outside a fence, CR dropped". Second, `git grep`'s `<tree-ish>:<path>` output form, which the `${f#"$MAIN_SHA":}` strip assumes. Third, `git grep` being clean under the caller's config. FC Claim 20b shows the third assumption fails. I reproduced it: with `color.ui always` in the repo config, two open briefs naming `feat/a` print `ok` instead of `skip`, and the `|| true` makes a git failure look the same as "no open briefs". Because enumeration happens before the lib's checks, anything the enumeration drops never reaches the lib. Each of these drifts makes F31 fail open, and the lib cannot catch them. Changing the lib's brief parser, such as a new CR or fence rule, now also needs a matching edit to a regex in another file, or F31 silently stops counting some briefs. This sits on `B5` from `docs/reviews/security-review-2026-10-02-digest-pass38.md` (Commit: `90364c73`; that security review predates this diff, so the boundary may be stale). Its "ls-tree mode gate" is no longer the only way into main's brief entries. Security-reviewer owns the exploitability of the colour case. This finding is about where the read lives.
 
-**Recommendation:** Hide the shared-branch state behind a predicate such as `branch_shared NAME`, which computes on first use and is what every caller asks. Then a caller cannot read the fail-open empty value (the rest of A5). Also make sure nothing reads `BRIEF` after the call can clobber it: either call the predicate before `brief_fields "$a"` (move the guard above `:316`), or have `shared_branches` collect its fields without writing `BRIEF`. Add a one-line comment on `shared_branches` saying it overwrites `BRIEF`.
+**Recommendation:** Put the enumeration in the lib, next to `main_entry`. One option is a `main_brief_candidates` that runs `git -c color.grep=false grep --no-color -l --full-name …`, treats an exit other than 0 or 1 as an error (fail closed: the caller skips every open brief), and returns paths only. Another is `git ls-tree --name-only` of `briefs/` and `briefs/closed/` (non-recursive, as before), with the grep kept only as a filter. Either way the client stops parsing git's output format, and the superset rule sits beside `brief_fields`, the parser it must match. Add one comment there saying the regex must stay a superset of `brief_fields`' Status rule.
 
-#### F2. The "brief path, optionally under closed/" rule now has three spellings
+#### F2. Row 292's premise changed: the recursive `git grep` makes the `closed/` substitution disagree with `check_brief`
 
 **Severity:** Minor
-**Location:** `scripts/build-loop.sh:303`; `scripts/lib/dev-cycle-read.sh:157`, `:161`, `:326`
-**Move:** 3 (module boundary: a rule the lib owns, re-encoded by a client)
+**Location:** `scripts/build-loop.sh:306`, `:309`; lib `:157`, `:326`
+**Move:** 3 (one rule, several spellings that are no longer equivalent)
 **Confidence:** High
-**Legibility-target:** whoever next changes the brief naming rule (slug alphabet, date form, or a third directory)
+**Legibility-target:** for-orchestrator-synthesis (row 292 is Defer to U2; this says its premise moved)
 
 **Evidence:**
 ```
-lib:157  isbrief() { [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; }
-lib:161      || "$1" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]] || isbrief "$1"
+   306	  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"
+   309	    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
 lib:326  if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
-bl:303       if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
 ```
-Iteration-1 A4 asked for one predicate in the lib. c143b929 fixed the bug, but it did so by adding a third form, and this one is a string trick in the client script. It works only because of an unstated fact about the caller's input (`ls-tree` lists direct children only). A reader has to work out that "strip `closed/`, then `isbrief`" equals the inline regexes at lib `:161`/`:326`. A change to one spelling (say, allowing uppercase slugs, or adding `briefs/parked/`) silently diverges from the others. The divergence fails toward a skip in `check_brief`, but toward not counting a brief in `shared_branches`, which is the fail-open direction for F31.
+Row 292 deferred "the closed/ path rule is spelled three ways" as a duplication of one rule. The `${f/closed\//}` spelling matched check_brief's regex only because c143b929's `ls-tree` listed direct children of `briefs/` and `briefs/closed/`. I noted that dependency in iteration 2's F2. `git grep` over the `docs/working/briefs/` pathspec recurses, so that condition no longer holds. Stripping the first `closed/` from `docs/working/briefs/2026-10-0closed/1-x.md` yields a valid brief name. Probe P1 (scratch repo `p1`): brief `a` names `feat/a`, and a file at `docs/working/briefs/2026-10-0closed/1-x.md` holds `Status: open` / `Branch: feat/a`:
+```
+4dc84ce4:  skip docs/working/briefs/2026-10-01-a.md: another open brief on the default branch names the same branch (compared ignoring case)
+           skip docs/working/briefs/2026-10-0closed/1-x.md: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)
+c143b929:  ok docs/working/briefs/2026-10-01-a.md open review feat/a absent - - 0
+```
+`check_brief` says the file is not a brief, but F31 counts it. The error fails closed (an extra skip), and the path is contrived, so the impact is low. It is still the drift row 292 predicted: the spellings now encode different rules, and that came from changing the enumerator, not the predicate.
 
-**Recommendation:** Add `isbrief_any` (or `isbrief "$1" closed`) to the lib, holding the one regex with `(closed/)?`, and use it at lib `:161`, lib `:326` and build-loop `:303`. That is a three-line change, and it closes A4 as originally filed.
+**Recommendation:** Same as iteration 2's F2. Add one lib predicate for "a brief path, optionally under `closed/`" with the regex `^docs/working/briefs/(closed/)?DATE-SLUG\.md$`, and use it at lib `:161`, lib `:326` and build-loop `:309`. The orchestrator should update row 292's rationale to say the spellings now differ in behaviour, or bring the predicate forward from U2 into U1d.
 
-#### F3. `shared_branches` skips briefs it cannot read, so F31 does not count them
+#### F3. The `BRIEF` clobber is resolved by call order, a convention U2's `--check` must copy; `SHARED_BRANCHES` stays a fail-open global
 
-**Severity:** Informational
-**Location:** `scripts/build-loop.sh:303`
-**Move:** 2 (responsibility boundary: what F31 promises versus what the counter sees)
-**Confidence:** Medium
-**Legibility-target:** U2 author; help-text reader of `:66`
+**Severity:** Minor
+**Location:** `scripts/build-loop.sh:297-303`, `:318`, `:333`
+**Move:** 7 (temporal coupling through shared global state)
+**Confidence:** High
+**Legibility-target:** for-author (U2's `--check`); for-orchestrator-synthesis (whether A14 closes)
 
 **Evidence:**
 ```
-   303	    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
-   304	    [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
+   297	# Lower-cased branch names that more than one open brief on main (in briefs/ or
+   298	# closed/) names, each between newlines: such briefs are skipped (F31).
+   299	# status_line computes it on first use, so no caller can skip it.
+   300	SHARED_BRANCHES=""
+   301	shared_branches() {
+   302	  local f list b
+   303	  local -A n=()
+   318	  [[ -n "$SHARED_BRANCHES" ]] || shared_branches  # first: it reads other briefs into BRIEF
+   333	  if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
 ```
-An open brief that FENCE_AWK refuses, or whose `Branch:` line is not exact, is not counted. A readable brief that names the same branch therefore prints `ok`. This is harmless in U1: the unreadable brief is itself a skip, so it cannot be dispatched. It becomes a design decision once a brief can be fixed on main while its loop is running. I am recording it so U2's `--check` makes the choice explicitly instead of inheriting it. The help at `:66` ("another open brief … names the same branch") does not say "readable".
+The question for this pass was whether the coupling is gone or only moved. It moved. `status_line` is correct, as P2 shows. But `shared_branches` still overwrites the global `BRIEF` ("after-guard: Branch: feat/z"), and only the comment at `:318` keeps a caller from reading `BRIEF` after it. U2's `--check` is planned to do F31 and then read `BRIEF[paths]`. It is safe if it calls `status_line`, or if it copies `:318` as its first line. It is wrong on the first brief of a run if it puts the guard after its own `brief_fields`, and nothing would fail loudly. A test catches that only when the first argument and the last open brief on main differ in the field read. The `:299` comment ("no caller can skip it") holds only for callers that go through `status_line`. A direct `[[ $SHARED_BRANCHES == *…* ]]` before any computation still reads "nothing shared". Row 229 (BRIEF global, Won't-Fix) covers the convention of a global `BRIEF`. It does not cover a helper that writes `BRIEF` for a brief its caller is not judging. The iteration-2 rubric made that distinction, and it still applies.
 
-**Recommendation:** None needed for U1. In U2, decide whether F31 means "readable open briefs", and say so in the help.
+The fix is one line. I checked it with a probe copy: adding `BRIEF=()` to `shared_branches`' `local -A` line (`local -A n=() BRIEF=()`) shadows the global. Bash's dynamic scoping makes `brief_fields`' writes land in the local. After the guard the global read `unset`, and F31 still skipped both briefs naming `feat/a` (scratch repo `p3`). The ordering rule then disappears.
+
+**Recommendation:** Add `BRIEF=()` to the `local -A` declaration in `shared_branches`, with a comment ("shadows the lib's global: brief_fields writes here"). The call order then stops mattering, which finishes X1's coupling half. Separately, either expose `branch_shared NAME` (computes on first use) instead of the raw variable, or reword `:299` to "callers ask through status_line". If U1c is not changed again, record "U2's `--check` runs the F31 computation before its own `brief_fields`" as a U2 precondition in the plan or the override log.
 
 ## What Looks Good
 
-- The dependency direction stays clean. build-loop.sh adds no lib edits beyond comments, and every new reader (`main_file`, `marker_kind`, `shared_branches`) is built from lib primitives instead of copying them.
-- `marker_kind` now lets git parse the commit object (`rev-list --parents`, `log --format=%B`, `rev-parse ^{tree}`) instead of a hand parser, which removes an object-format coupling (A1). The two-tree-lines test pins this down.
-- `main_file` gives `read_settings` one shape, "a file on main through FENCE_AWK plus a program", for both `docs/dev-cycle.md` and `docs/constraints.md`. That is the right extension point for the next settings-like file.
-- The output contracts are positional, documented in the help, and kept even for `new` (`new review - absent - - 0`), so U4's parser has one shape per line kind.
+- Moving the guard to the top of `status_line` gives the right answer on every path. `check_brief` runs in a subshell, so the only `BRIEF` writer after the guard is `brief_fields "$a"` itself (P2; FC Claim 22). `route: code-fact-check`
+- The candidates from `git grep` are still re-read through `brief_fields`, so `main_entry`'s mode and directory gate still decides what a brief is. The grep only prefilters. F1 is about what the prefilter can drop, not what it can admit.
+- Dependencies still point one way, script to lib. `main_file` remains the single "file on main through `FENCE_AWK` plus a program" shape for both settings files.
+- The F31 set is computed once per run whatever the argument order, and the output contracts (`ok …`/`skip …: WHY`) are unchanged for U4's parser.
 
 ## Summary Table
 
 | # | Finding | Severity | Location | Confidence |
 |---|---------|----------|----------|------------|
-| 1 | Lazy `shared_branches` overwrites `BRIEF` mid-`status_line` on the first call only; `SHARED_BRANCHES` is still a fail-open global for non-`status_line` callers | Coupling | `scripts/build-loop.sh:316-326` | High |
-| 2 | Brief-path rule spelled three ways (`${f/closed\//}` trick plus two inline regexes); A4's predicate not added | Minor | `scripts/build-loop.sh:303`, lib `:161`, `:326` | High |
-| 3 | Unreadable open briefs are not counted for F31 | Informational | `scripts/build-loop.sh:303` | Medium |
+| 1 | `shared_branches` enumerates main's briefs through `git grep` and an output-format parse, outside the lib's `main_entry` path. A second "open" rule; fails open under colour or a git error (FC 20b); sits on `B5` | Coupling | `scripts/build-loop.sh:304-309` | High |
+| 2 | Row 292's premise changed: recursive grep plus `${f/closed\//}` counts a path `check_brief` calls "not a build brief" (P1, fails closed) | Minor | `scripts/build-loop.sh:306,309`; lib `:326` | High |
+| 3 | A14 fixed by call order only. `shared_branches` still clobbers `BRIEF`; U2's `--check` must copy `:318`; `SHARED_BRANCHES` still a fail-open global. One-line fix: `local -A … BRIEF=()` | Minor | `scripts/build-loop.sh:297-303,318,333` | High |
 
 ## Overall Assessment
 
-U1c keeps the structure sound. Dependencies run one way into the lib, the new mode reuses the lib's readers, and the output contracts are explicit. c143b929 resolves A4 and A5 as behaviour: `closed/` briefs count, and `--status` can no longer skip F31. Neither is resolved as structure. The fix moves the `shared_branches` call into `status_line`, after the caller's own `brief_fields`, which adds a first-call-only overwrite of the global `BRIEF` (F1). Nothing reads `BRIEF` after that point today, so nothing is wrong now. It matters because U2's `--check` must do F31 and then read `BRIEF[paths]`. Both items can be fixed in place in a few lines: a `branch_shared` predicate called before `brief_fields`, and one `(closed/)?` predicate in the lib. F1 is the most important concern, and it is best fixed now or recorded as a U2 precondition.
+4dc84ce4 fixes A14's observable problem: `status_line` always judges the brief it was asked about. It also fixes A15's cost. The coupling has moved rather than gone. F31's correctness now depends on a call order written down only in a comment (F3), and on a second read path into main that the lib does not own (F1). The second is the structural concern that matters most. Until now, every read of main's tree in this script went through `main_entry`'s hardened gate (`B5`), and the brief format had one parser. The new `git grep` prefilter adds a second definition of "open brief", a parse of git's output format, and sensitivity to the caller's config, and each of these can make F31 fail open with no message. FC 20b shows one way it already does. All three findings can be fixed in place with small changes: move or harden the enumeration in the lib, add one brief-path predicate, and shadow `BRIEF` in `shared_branches`. None of them needs restructuring. If U1c merges as it is, F3's precondition should be recorded for U2, and row 292's rationale updated.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: c143b929` first line.
-- Answered: whether A5 and A4 are resolved at c143b929 (resolved as behaviour, not as structure), and whether the fix added coupling (yes, F1: the lazy call overwrites `BRIEF`, shown by an instrumented probe); F2 and F3 cover the rest.
-- Out of scope: correctness, security and performance of `marker_kind`/`CONSTRAINTS_AWK` (other critics); the Claim 8 fence/look-alike constraint escalation (security and api critics, plus the orchestrator under Q-112); the performance of `shared_branches` (override rows 266 and 267); a machine-readable CONSTRAINTS value (row 270); the main_entry case-block copies (row 228).
-- Escalate: F1 to the orchestrator. Fix it in U1c, or record it as a U2 precondition ("call the F31 predicate before `brief_fields`, or never read `BRIEF` after it"), because U2's `--check` is the first caller that reads `BRIEF` after the F31 check.
+- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: 4dc84ce4` first line.
+- Answered: yes. A14 is resolved for `status_line` by call order, but the order dependence remains for U2 (F3, with a probe-verified one-line fix). `git grep` is a second read path outside the lib (F1). Row 292's premise changed (F2, probe P1). Row 229 still covers the global-BRIEF convention, not the helper clobber.
+- Out of scope: the exploitability and tiering of the colour/exit-128 fail-open (security-reviewer; FC 20b escalation); the bracketed-prefix constraint residue (row 290 / orchestrator); performance of the new path (FC Claim 28).
+- Escalate: FC 20b and F1 share a root, the read path outside the lib. Fixing the colour bug in place without moving the enumeration leaves F1. Ask the orchestrator to update row 292's rationale, and to record F3's U2 precondition if U1c is not amended.
+- Decisions I made: F2 is Minor, not Coupling, because it fails closed and needs a contrived path. I treated row 229 as still settled for the global convention and did not re-file it.

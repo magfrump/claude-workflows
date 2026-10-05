@@ -1,116 +1,194 @@
-Commit: c143b929
+Commit: 4dc84ce4
 
-# Test Strategy: build-loop U1c, final confirming pass (iteration 2)
+# Test Strategy: U1c build-loop --settings constraints line and --status (final confirming pass, iteration 3)
 
-**Scope:** `git diff feat/build-loop-u1b...feat/build-loop-u1c` (scripts/build-loop.sh `--settings` constraints line and `--status`, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats), with focus on what fix commit c143b929 changed, plus override row 246's deferred U1b gaps (G7, G8, G9, G11).
+**Scope:** `test/scripts/build-loop-read.bats` and `test/lib/build-loop-fixtures.bash` against `scripts/build-loop.sh` at 4dc84ce4, focused on what 4dc84ce4 changed: the task-box fold (`:175`), the F31 `git grep` candidate set (`:306-308`), the `status_line` ordering (`:318`), and the new END-nosuccess T44 case (`bats:183`).
 **Reviewed:** 2026-10-05
-**Method:** I ran the suite at HEAD (`LC_ALL=C.UTF-8 bats test/scripts/build-loop-read.bats`, 16/16 ok). I then ran 15 single-line mutants of scripts/build-loop.sh against a copy of the suite and probed the real script in throwaway repos built with the fixtures. Scratch: /home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i2/test-strategy/.
+**Method:** I ran 15 mutants of `scripts/build-loop.sh` against copies of `scripts/` and `test/` in my scratch dir (`/home/node/.claude/jobs/989f3e5a/tmp/review-u1c-i3/test-strategy/`), then wrote probe tests and ran them against HEAD and against the surviving mutants. Test 4 (T3, G19) reads the real repo's `docs/dev-cycle.md` through REPO_ROOT, so it fails in every copy. I ignored it when scoring the mutants.
 
 ## Test Conventions
 
-- bats ≥ 1.5 with `run --separate-stderr`. Each test builds a hermetic repo through `bl_setup`, which exports `LC_ALL=C`, a null global git config and a fixed identity.
-- Fixture helpers: `settings`, `constraints`, `brief`, `work`, `tip` (commit-tree, so a test can control parents and the tree), and `line KEY`. Hand-made objects are built with `git hash-object -t commit --literally` (the T7 two-tree case).
-- Style: one `@test` per plan T-id. Variant tables are loops over inputs with one expected line. Every assertion prints `$output` when it fails.
-- Budget: the unit is at 426 lines against the waived cap of about 430 (Q-114), so I rank every gap below by value per line added.
+- **Framework and fixture:** bats 1.5+, with `run --separate-stderr bash "$BL" ...`. Each test builds a throwaway repo in `bl_setup` (`test/lib/build-loop-fixtures.bash`).
+  - The repo gets a hermetic git environment: `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`, `LC_ALL=C`.
+  - Helpers: `settings`, `constraints`, `brief` (sets `B`), `work`, `tip`, and `line` / `settings_is` / `settings_like`.
+- **Test style:** each test is a contract test named with the plan's T-number. Within a test, cases run in sequence, often as a table loop like `for c in ...`. A failing case prints `$output` and returns 1.
+- **Caller config is invisible:** because of `GIT_CONFIG_GLOBAL=/dev/null`, the caller's global config never reaches a test. Repo-local `git config` in the fixture repo still reaches the script, and so do `GIT_CONFIG_COUNT`/`KEY`/`VALUE` env vars. I confirmed both by probe.
+- **Literal pathspecs:** `build-loop.sh:112` exports `GIT_LITERAL_PATHSPECS=1`, so pathspec magic such as `:!closed/` in the script is inert. My first closed/ mutant was invalid for this reason, and I replaced it with a `--max-depth 0` mutant.
+
+### Mutation results (4dc84ce4's fixes)
+
+| Mutant | Change | Result | Killed by |
+|---|---|---|---|
+| M1 | task-box fold reverted to `sub(/^[^a-zA-Z]*/, "", s)` (`:175`) | killed | T44 (`bats:178`, `- [x] H2: x`) |
+| M2 | END `nosuccess` check deleted (`:183`) | killed | T44 (`bats:183`) |
+| M3c | `shared_branches` call deleted (`:318`) | killed | T28 |
+| M3a | call moved to after `brief_fields "$a"` (the harmful order) | **survived** | none (G4) |
+| M3b | call moved back to c143b929's position (after `pol=`) | survived, equivalent | nothing reads BRIEF after that point, so A14 was latent at c143b929 |
+| M4 | grep pattern `'^Status: open$'` (`\r?` dropped) | **survived** | none (G5) |
+| M5 | `\|\| true` dropped | **survived** | none (G3) |
+| M6 | `f="${f#"$MAIN_SHA":}"` deleted | killed | T28 |
+| M7b | `git grep --max-depth 0` (closed/ not searched) | killed | T28 (`bats:382`) |
+| M8 | `git -c color.grep=always grep` inside the script | killed | T28 |
+| M9 | `Status: open` filter in `shared_branches` removed | survived | row 291 (G4 of iteration 2), deferred to U1d, so not re-filed |
+| M10 | `isbrief "$f"` (closed/ not stripped) | killed | T28 |
+| M11 | shared threshold `-lt 3` | killed | T28 |
+
+The four fixes named in the task are covered as follows:
+
+- **Task-box fold (M1):** covered.
+- **END-nosuccess case (M2):** covered. This agrees with Stage-1 Claim 25.
+- **git-grep candidate set:** the set itself is covered (M6, M7b, M8, M10, M11). Its CR arm (M4) and its no-match arm (M5) are not.
+- **status_line ordering:** the presence of the call is covered (M3c). Its position is not (M3a).
 
 ## Untested Paths Touched by the Change
 
-Mutation results. Five mutants survived the suite: removing the open-status filter in `shared_branches`, the END `nosuccess` check, the `success:` text requirement, the NUL check, and the 1-character stopped reason. Four of these matter. Three more survivors are equivalent or untestable here (see What NOT to Test). Seven mutants were killed: lazy shared-set, `st == open` guard, soft count, `- ` before `success:`, the near-miss leading-strip, the `- `-prefix regex, and case-folding.
+- **G1** — scripts/build-loop.sh:306 — `git grep -l` under the caller's colour config (`color.ui=always` or `color.grep=always`, in repo config, global config or `GIT_CONFIG_COUNT` env) — not covered. The tests set `GIT_CONFIG_GLOBAL=/dev/null`, and no test sets repo config.
+  - At HEAD the probe failed: with `git config color.ui always` in the fixture repo, two open briefs on `feat/x` print `ok docs/working/briefs/2026-10-01-a.md open review feat/x absent - - 0`.
+  - The env form fails the same way: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=color.ui GIT_CONFIG_VALUE_0=always`.
+  - This is the Stage-1 Claim 20b regression. The fail-open is a code finding. The test gap is mine.
+  - Severity: high (an F31 dispatch guard fails open, silently). Confidence: high (probed). Legibility-target: for-author.
+  - **Evidence** (`:306`): `  list="$(git grep -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/ || true)"`
+- **G2** — scripts/build-loop.sh:306 — `|| true` on a git grep that fails with exit 128 — not covered.
+  - Probe: with `git config grep.patternType bogus`, stderr shows `fatal: bad grep.patterntype argument: bogus`, the exit is 0, and the result is the same fail-open `ok` for a shared branch.
+  - Severity: medium. Confidence: high (probed). Legibility-target: for-author.
+  - **Evidence:** same line as G1.
+- **G3** — scripts/build-loop.sh:306 — the no-match arm (git grep exits 1 when main has no open brief at all) — not covered. Every `--status` test has at least one open brief on main before its first run.
+  - With M5 (`|| true` dropped), `--status` prints nothing and exits 1 in a repo with no open brief on main. That would break the first `new` brief in a fresh repo, and the suite stays green.
+  - The probe confirmed that HEAD is right (`ok ... done review feat/x absent - - 0`) and that M5 breaks it.
+  - Severity: medium (only a refactor can break it, but it is the arm most likely to be "cleaned up" while fixing G2). Confidence: high. Legibility-target: for-author.
+- **G4** — scripts/build-loop.sh:318 — `shared_branches` runs before `brief_fields "$a"` (A14's fix) — partially covered.
+  - The call's presence is pinned (M3c killed). Its position is not. M3a (the call after `brief_fields "$a"`) survives because every first `--status` argument in the suite is the lexically last open candidate. The last brief `shared_branches` reads is then the queried one, so the clobbered BRIEF looks the same.
+  - Probe: with a second open brief `z` (`Dispatched: 7`) after the queried `a`, M3a prints `feat/z`'s fields for `a`.
+  - Severity: medium (silent wrong answer: the wrong branch, policy or Dispatched for a brief). Confidence: high. Legibility-target: for-author.
+  - **Evidence** (`:318`): `  [[ -n "$SHARED_BRANCHES" ]] || shared_branches  # first: it reads other briefs into BRIEF`
+- **G5** — scripts/build-loop.sh:306 — the `\r?` arm of the grep pattern (an open brief with CRLF line endings) — not covered.
+  - M4 survives. The probe showed that `brief_fields` reads a CRLF brief as `Status: open`, so at HEAD it counts for F31. Under M4 grep never selects it, and F31 fails open for that pair.
+  - Severity: low. Confidence: high. Legibility-target: for-author.
 
-- **G1** — scripts/build-loop.sh:177-181 — a hard constraint pending at end of file (last constraint, no `success:` line after it) goes through the END branch `if (bad == "" && pend != "") bad = "nosuccess ..."` — not covered. Every existing nosuccess case is triggered mid-file, by a following S line (bats:167) or a heading (bats:183). If the END check is deleted, the suite stays green and `- S1: a` / `- H1: b` reads `constraints ok 1-hard 1-soft`. That is a silent `ok` for a hard constraint with no success line, the case Q-112 asks to hear about.
-  ```
-    else {
-      if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl
-      print (bad != "" ? bad : "ok " hard + 0 " " soft + 0)
-    }
-  ```
-  Severity: high · Confidence: high (mutant run plus direct probe) · Legibility-target: a reviewer reading T44 should see that the END path is exercised.
+These gaps are covered by override rows and I have not re-filed them:
 
-- **G2** — scripts/build-loop.sh:279 — the `bad it holds a NUL byte` refusal in `marker_kind` — not covered. When the check is removed, the suite stays green. A probe then showed that a commit `handoff: ready\n\0x` (and a body-NUL variant) reads `ok ... ready`: `git log --format=%B` truncates at the NUL, so the hidden bytes go unseen. The A1/A2 fix in c143b929 claims this guard, and nothing pins it.
-  ```
-    if [[ "$(git cat-file commit "$1" | tr -cd '\000' | wc -c)" -gt 0 ]]; then echo "bad it holds a NUL byte"; return; fi
-  ```
-  Severity: medium · Confidence: high (mutant run plus probe output `ok ... feat/a ready 5ae0af2f... 1970-01-01 0`) · Legibility-target: T7 should list NUL among the spoof shapes.
+- **Row 291:** NUL refusal; F31 open-only filter (M9 survives, as recorded).
+- **Rows 246/295:** U1b's G7–G11.
 
-- **G3** — scripts/build-loop.sh:175 — a bare `success:` (or `success: ` with only blanks) must not satisfy a hard constraint. Only the `[^ \t]` after `success: ` enforces this — not covered. A mutant that accepts `/success:/` survives and then reads `- H1: a` / `  success:` as `ok 1-hard`.
-  ```
-  /^[ \t]*(- )?success: [^ \t]/ { pend = "" }
-  ```
-  Severity: medium · Confidence: high · Legibility-target: the help's "success: <observable>" should have a failing example.
-
-- **G4** — scripts/build-loop.sh:304 — the F31 shared set counts only `Status: open` briefs — partially covered. The `st == open` guard on the queried brief is covered (its mutant was killed at bats:364). The filter on the *other* briefs is not: in T28 the only non-open brief that shares a branch (c, `done`, feat/x) shares it with two open briefs that skip anyway. If the filter is removed, the suite stays green, and then an open brief is skipped whenever a done or dropped brief once used its branch name. That fails closed, but it would quietly stop a loop from being dispatched.
-  ```
-      [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
-  ```
-  Severity: medium · Confidence: high · Legibility-target: T28 should show "a done brief on the same branch does not block".
-
-- **G5** — scripts/build-loop.sh:291 — the lower bound of a stopped REASON (1 character, the `(...)?` arm) — not covered. Tests use 120, 121 and a multi-word reason. A mutant that needs 2 or more characters survives. It fails closed: a valid `handoff: stopped: x` would be skipped. Severity: low · Confidence: high · Legibility-target: T6 boundary.
-
-- **G6** — scripts/build-loop.sh:321 — `Dispatched: 99` (upper accepted bound) and an explicit `Dispatched: 0` — not covered. Only 1 and 2 are accepted in tests, and 100, 01, -1, x and empty are rejected. Severity: low · Confidence: medium (I did not mutate this one; read from the regex `^Dispatched:\ (0|[123456789][0123456789]?)$`).
-
-- **G7** — scripts/build-loop.sh:163, :35-37 — a constraint line inside a code fence (``` / `H2: hidden` / ```) is skipped, and the file reads `constraints ok 1-hard` (probe). This behaviour has no test either way. Its outcome waits on the Stage-1 escalation (Claim 8), so a test should pin whichever rule the orchestrator settles. Severity: low (as a test gap; the design question belongs to Claim 8) · Confidence: high.
-
-Override row 246 (U1b G7, G8, G9, G11), re-checked at c143b929. All four are **still open**, and U1c's edits to build-loop-read.bats did not touch them:
-- **G8 (U1b G7)** — scripts/build-loop.sh:232-233 — the `lists entry N, which is not an allowed glob form` and `lists entry N twice` reasons. bats:123 asserts only the prefix `settings_like never "never malformed: line 2 "`, so swapping the two reasons would pass. Severity: low.
-- **G9 (U1b G8)** — scripts/build-loop.sh:243-247 — `Build-loop policy: review` with a malformed never line should read `policy review set:`. No test pairs the two; bats:81 has review with no never line at all. Severity: low.
-- **G10 (U1b G9)** — scripts/build-loop.sh:207 — `slots 3 default: <why>` for an absent or unread file. bats:57-58 and :48-49 assert policy and never, not slots. Severity: low.
-- **G11 (U1b G11)** — scripts/build-loop.sh:96 — `-h`/`--help`. No test runs it. The help is now 75 lines and includes the `--status` section (probe), which is what the orchestrator reads. Severity: low.
+Iteration 2's C19 (G5–G7: the 1-character reason, `Dispatched: 99` / `0`, and the fenced `H2:` pin) is still open in the rubric with no override row. Its premise has not changed.
 
 ## Recommended Tests
 
-Ranked by value per line. Gaps G1-G4 cost **+4 lines and 2 edited lines** (426 → 430, at the waived cap). I verified the patch: the patched suite passes on HEAD, and each of the four mutants (open-filter, end-nosuccess, success-text, nul) now fails exactly one test.
+All four tests below were applied together in `prop/` in my scratch dir, a copy of the suite with these edits and nothing else.
 
-#### T44: a hard constraint left pending at the end, with a bare success: line
-**Closes gaps:** G1, G3 · **Type:** unit · **Priority:** high · **File:** test/scripts/build-loop-read.bats, after line 184
-**What it verifies:** the END check refuses a trailing hard constraint, and a `success:` line with no text does not satisfy it.
-**Key cases:** `'- S1: a' '- H1: b' '  success:'` gives `constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or heading`.
-```
-    constraints '- S1: a' '- H1: b' '  success:'; run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
-```
+- **With `--no-color` added to `:306`:** all 15 tests that can run in a copy pass.
+- **At HEAD's script:** T28 fails on the colour line, which shows the regression.
+- **Under M3a (with `--no-color`):** T28 fails.
+- **Under M5:** T8 fails.
+
+Together the four edits are a net +4 lines (one line moved). G2 and G5 below would add about 5 more.
+
+#### Forced colour in T28 (the smallest test for the colour regression)
+
+**Closes gaps:** G1
+**Type:** integration
+**Priority:** high
+**File:** test/scripts/build-loop-read.bats, T28 (`:366`), as its second line
+**What it verifies:** F31's file list does not depend on the caller's colour config.
+**Key cases:**
+- Add `git config color.ui always  # the caller's config: F31's file list must not carry colour` right after `settings 'Build-loop policy: review'`. Every existing T28 assertion then runs under forced colour.
+- At HEAD, `lines[1]` reads `ok docs/working/briefs/2026-10-01-d.md ...` instead of the expected skip, so the test fails. After the fix (`git grep --no-color` or `-c color.grep=false`) it passes.
+
+**Setup needed:** none. Repo-local config bypasses `GIT_CONFIG_GLOBAL=/dev/null`, so no fixture change is needed. With `--no-color` applied I also ran the whole suite with `color.ui`, `color.grep` and `color.diff` set to `always` in `bl_setup`: nothing else in the script is colour-sensitive.
+
+#### A queried brief that is not the last F31 candidate
+
+**Closes gaps:** G4
+**Type:** integration
+**Priority:** medium
+**File:** test/scripts/build-loop-read.bats, end of T28
+**What it verifies:** BRIEF holds the queried brief when other open briefs sort after it.
+**Key cases:**
+- Append these lines to T28:
+  ```
+  # The queried brief is not the last one F31 reads (BRIEF is read after the set).
+  rm docs/working/briefs/2026-10-01-wt.md && brief z 'Status: open' 'Branch: feat/z' 'Dispatched: 7' && run --separate-stderr bash "$BL" --status "$d"
+  [ "$output" = "ok $d open review feat/d absent - - 0" ] || { echo "$output"; return 1; }
+  ```
+  The `rm` is needed because `commit_all` runs `git add -A`, which would otherwise commit the working-tree-only `wt.md` (another open `feat/d`).
+- Under M3a the output carries `feat/z ... 7`, and the test fails.
+
 **Setup needed:** none.
 
-#### T7: a marker holding a NUL byte is a skip
-**Closes gaps:** G2 · **Type:** unit · **Priority:** high · **File:** test/scripts/build-loop-read.bats, after line 287 (reuses `base`, `n` and `check`)
-**What it verifies:** a NUL after the subject, which `%B` would hide, is refused.
-```
-    o="$(printf 'tree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n\0x\n' "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
-    git update-ref refs/heads/feat/a "$o" && check "skip $B: $n: it holds a NUL byte" nul
-```
+#### No open brief on main (git grep exits 1)
+
+**Closes gaps:** G3
+**Type:** integration
+**Priority:** medium
+**File:** test/scripts/build-loop-read.bats, T8 (`:305`)
+**What it verifies:** `--status` works when main has no open brief at all, which is the first brief in a fresh repo.
+**Key cases:**
+- Move the existing "Not landed on main" block (`bats:333-336`) up to just after T8's `settings` line, and add ", and no open brief on main" to its comment. This adds no lines.
+- Under M5, T8 fails at the moved block (no output, exit 1).
+
 **Setup needed:** none.
 
-#### T28: a dropped brief on the same branch does not block an open one (zero added lines)
-**Closes gaps:** G4 · **Type:** unit · **Priority:** medium · **File:** test/scripts/build-loop-read.bats:370 and :378
-**What it verifies:** only open briefs count toward F31.
-**Key cases:** change brief e to `'Branch: feat/d'` and its expected line to `ok $e dropped review feat/d absent - - 0`. `lines[0]` (d, open, feat/d) must still be `ok`. The later closed/ case still skips d, because two open briefs then name feat/d.
+#### git grep failure is not a silent empty set
 
-#### Folds that cost no new lines (optional)
-**Closes gaps:** G5, G6 · **Priority:** low.
-- G6: change T6's `'Dispatched: 2'` (bats:229) to `'Dispatched: 99'` and its trailing ` 2` expectations to ` 99`.
-- G5: change T6's `new dependency (left-pad)` reason to one character, or add `'handoff: stopped: x'` as an accepted case wherever a line is freed.
+**Closes gaps:** G2
+**Type:** integration
+**Priority:** medium. The assertion depends on the fix the orchestrator picks.
+**File:** test/scripts/build-loop-read.bats, T28
+**What it verifies:** a git grep error (exit other than 0/1) does not read as "no shared branches".
+**Key cases:**
+- Run `git config grep.patternType bogus`, then `--status "$a"`, where `a` and `b` share `feat/x`.
+- Assert that the output is not `ok $a ...`. If the fix makes it an error, also assert a non-zero exit or a skip line.
+- Remove the config afterwards (`git config --unset grep.patternType`).
 
-#### Row 246 gaps (G8-G11): keep deferred
-**Closes gaps:** none now · **Priority:** low. Each one needs 2 or more new lines: G8 two `settings_is` lines, G9 one pair, G10 one `settings_is` beside bats:57, G11 a two-line `-h` assertion. All of them are wording or fail-closed paths. With the unit at the cap after G1-G4, their value is below G1-G4's. I suggest updating row 246's revisit trigger to "U2's tests".
+**Setup needed:** none. At HEAD this run prints `ok` with exit 0 (probed).
+
+#### CRLF open brief counts for F31
+
+**Closes gaps:** G5
+**Type:** integration
+**Priority:** low
+**File:** test/scripts/build-loop-read.bats, T28
+**What it verifies:** the `\r?` in the grep pattern selects an open brief written with CRLF line endings.
+**Key cases:**
+- Write a CRLF brief with `printf '# Brief: b\r\n\r\nStatus: open\r\nBranch: feat/x\r\n' > docs/working/briefs/2026-10-01-crlf.md && commit_all crlf` next to an LF open brief on `feat/x`.
+- The LF brief's line must be the skip. Under M4 it reads `ok`.
+
+**Setup needed:** none.
 
 ## What NOT to Test
 
-- **The `LC_ALL=C` on the reason grep (A8, :290-291).** `bl_setup` exports `LC_ALL=C`, so the suite cannot see the difference. My probe of the mutant without it, under C.UTF-8 (the only UTF-8 locale installed), refused `café`, U+202E and a bare 0xE9 byte just as HEAD does. A test would need a locale the sandbox does not have.
-- **The heading's `pend = ""` (:174) and `if (!(id in seen))` (:168).** These are equivalent mutants. `bad` is already set whenever `pend` is non-empty at a heading, and the first dup is reported before `seen` could be overwritten.
-- **`status_line`'s `brief_fields ... || skip "the brief is not read"` (:316).** It is reachable only through a race after `check_brief` succeeded.
-- **CRLF constraint files.** The ID and success regexes match with or without the `\r` strip (probe: CRLF reads `ok 1-hard`).
-- **A message that starts with a blank line (reads `working`) and a whitespace-only second line (refused, per probe).** Both fail closed, and the fact-check already documents them.
+- **M3b (the call at c143b929's position):** this mutant is equivalent at HEAD, because nothing reads BRIEF after `pol=` is set. The G4 test pins the harmful order, which is enough. A test against the old position would be pinning an implementation detail.
+- **The fold's new false positives** (`- [x] S3 bucket moved` now reads unreadable; Stage-1 Claim 4): this is fail-closed and inside Q-112's best-effort rule. A test would freeze an incidental shape.
+- **Bracketed non-task-box shapes** (`- [x ] H2:`, `- [y] H2:`, `- (x) H2:`): these are the Stage-1 escalation and the orchestrator places them against row 290. A test should wait for that ruling.
+- **The caller's global `~/.gitconfig`:** the repo-local config test reaches the same code path. Changing `bl_setup`'s hermetic `GIT_CONFIG_GLOBAL` would cost every suite its isolation for no extra coverage.
 
 ## Coverage Gaps Beyond Current Scope
 
-**1.** `--status` on a `docs/working/briefs/closed/` path is accepted by `check_brief` and then read through status_line. No test runs `--status` on a closed/ path. That is U2/U3 territory, where closed briefs feed In flight.
-**2.** An open brief that main cannot read (FENCE_AWK refuses it) does not count toward F31. A readable brief naming the same branch then proceeds as unique. This looks intended, but nothing documents or pins it.
+**1.** Row 291's NUL refusal and F31 open-only filter (M9 still survives), deferred to U1d.
+
+**2.** Rows 246/295: U1b's G7–G11, deferred to U1d.
+
+**3.** Iteration 2's C19 (1-character stopped reason, `Dispatched: 99` / explicit `0`, fenced `H2:` pin). It has no override row. If U1c lands without them, they should go to U1d alongside rows 246/291/295, and the orchestrator should give them a row.
+
+**4.** Which unit each new gap belongs to:
+- **U1c:** G1, G3 and G4. They test code that 4dc84ce4 itself introduced or moved, G1 is a live fail-open regression from c143b929, and each costs 0–3 lines.
+- **U1c or U1d:** G2, depending on the fix shape.
+- **U1d:** G5, if the ~430-line cap (Q-114) must hold.
 
 ## Summary
 
-The highest-value addition is the two-line T44 case `'- S1: a' '- H1: b' '  success:'`. It closes the one way the suite would let a regression print `constraints ok` for a hard constraint with no success line (G1), and in the same run it catches a bare `success:` being accepted (G3). Next come the NUL-marker case (G2), which pins the A1 guard that c143b929 added, and a zero-line edit to T28 that pins F31's open-only counting (G4). Together these need 4 new lines, which brings the unit to the waived cap of about 430. Override row 246's four gaps are still open, and I recommend keeping them deferred. The residual risk is the fenced-constraint behaviour (G7), which needs a decision on Claim 8 before a test can pin it.
+The highest-value test is the single line `git config color.ui always` at the top of T28. It turns the Stage-1 colour regression (Claim 20b) from invisible to red, because repo-local config reaches the script despite `GIT_CONFIG_GLOBAL=/dev/null`.
+
+Mutation runs confirm that 4dc84ce4's task-box fold and END-nosuccess case are pinned by T44, and that the git-grep candidate set is pinned by T28 except for its CR arm and its `|| true` arms.
+
+The ordering fix (A14) is only half pinned: deleting the call is caught, but moving it after `brief_fields "$a"` is not. One appended T28 case closes that.
+
+A residual risk remains after these tests: the `|| true` fail-open (G2) also needs a code fix, and its test assertion waits on which fix the orchestrator chooses. Proposed G1+G3+G4 cost a net +4 lines, inside the spirit of the Q-114 waiver.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): "A markdown report saved at the output path your task names, structured per your skill, with a `Commit: c143b929` first line."
-- Answered: (1) Row 246's G7/G8/G9/G11 re-checked at c143b929: all still open (listed as G8-G11 here). (2) Gaps in U1c's own tests for the c143b929 behaviour: END nosuccess (G1), the NUL marker (G2), a bare `success:` (G3) and the F31 open-only filter (G4), each found by a surviving mutant and each closed by a patch I verified. The plan's T5-T8, T21, T28 and T44 (settings part) cases are all present. The gaps are below the plan's case lists. Ranked under the 430-line cap: +4 lines for G1-G4.
-- Out of scope: whether fenced or look-alike constraint lines should be refused (Claim 8 escalation, Q-112). The `--start`/`--check`/`--marker` parts of T5, T21 and T44 (U2/U3).
-- Escalate: G1 to the orchestrator, as the only test gap behind which a regression would yield a silent `constraints ok` for a hard constraint with no success line (Q-112's report condition, applied to tests rather than to code).
+- Success criterion (restated verbatim): A markdown report saved at the output path your task names, structured per your skill, with a `Commit: 4dc84ce4` first line.
+- Answered: yes
+- Out of scope: the code fix for the colour and exit-128 fail-open, which belongs to the fact-check and security channel; re-filing rows 246/291/295; the bracketed-prefix residue (Stage-1 escalation, row 290's call).
+- Escalate: G1 is a test gap for a live, unanimously confirmed fail-open (Claim 20b). The orchestrator should pair the `--no-color` and exit-code fix with the T28 colour line in the same fix commit. C19 (G5–G7 of iteration 2) has no override row; give it one (likely Defer to U1d).
+- Questions I would have asked: should a git grep exit of 128 be a per-brief skip, or an exit-1 run error? The G2 assertion depends on the answer.
+- Decisions I made: I treated test 4's failure in scratch copies as an environment artefact (it reads REPO_ROOT's `docs/dev-cycle.md`) and did not score it. I replaced the invalid `:!closed/` mutant (inert under `GIT_LITERAL_PATHSPECS=1`) with `--max-depth 0`.
