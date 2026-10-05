@@ -810,10 +810,10 @@ EOF
     [[ "$output" == "ok docs/working/briefs/2026-01-01-a.md open "* ]] || { echo "$output"; return 1; }
 }
 
-@test "--check-brief and --check-branch need a default branch found by name; the others do not" {
+@test "--check-brief, --check-branch and --check-answer need a default branch found by name; the others do not" {
     echo r > README.md && git add README.md && git commit -qm readme
     git checkout -q -b trunk && git branch -q -D main
-    for m in --check-branch --check-brief; do
+    for m in --check-branch --check-brief --check-answer; do
         run --separate-stderr bash "$DC" "$m" feat/x
         [ "$status" -eq 1 ]
         # shellcheck disable=SC2154  # bats sets $stderr under --separate-stderr
@@ -1323,4 +1323,13 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     run --separate-stderr bash "$DC" --help
     [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
         && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$output"; return 1; }
+}
+
+@test "main_entry refuses a path pathform refuses, before any read (U1d)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
+        for p in "a\"b.md" "../x" "-x" "docs//x.md"; do main_entry "$p"; done' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "error
+error
+error
+error" ] || { echo "$output $stderr"; return 1; }
 }

@@ -385,7 +385,7 @@ setup() { bl_setup; }
     [ "$output" = "skip $a: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
     git config grep.patternType bogus
     run --separate-stderr bash "$BL" --status "$d" "$c"
-    [ "${lines[0]}" = "skip $d: the open briefs on the default branch could not be listed (git grep failed)" ] \
+    [ "${lines[0]}" = "skip $d: the open briefs on the default branch could not be listed" ] \
         && [[ "${lines[1]}" == "ok $c done "* ]] || { echo "$output"; return 1; }
     git config --unset grep.patternType && git config --unset color.ui && git config --unset color.grep
     # An open brief left in closed/ counts too.
@@ -397,4 +397,66 @@ setup() { bl_setup; }
     printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/2026-10-01-wt.md
     run --separate-stderr bash "$BL" --status "$d"
     [ "$output" = "ok $d open review feat/d absent - - 0" ] || { echo "$output"; return 1; }
+}
+
+@test "--settings: deferred cases: reasons, review with a malformed never line, the next-line rule, an absent file, a caller's config (U1d)" {
+    local f=$'\x60\x60\x60'
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a ../b'
+    settings_is never "never malformed: line 2 lists entry 2, which is not an allowed glob form"
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a b a'
+    settings_is never "never malformed: line 2 lists entry 3 twice"
+    # Under review a malformed never line leaves the policy as written.
+    settings 'Build-loop policy: review' 'Self-merge never: ../x'
+    settings_is policy "policy review set: line 1 of docs/dev-cycle.md on the default branch"
+    # The next line outside a fence decides; a whitespace-only line is blank.
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$f" 'x' "$f" ''
+    settings_like never "never a/ set:"
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$f" 'x' "$f" 'b/'
+    settings_like never "never malformed: line 2 is followed by a non-blank line"
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a/' '   '
+    settings_like never "never a/ set:"
+    git rm -q docs/dev-cycle.md && commit_all rm
+    settings_is slots "slots 3 default: no docs/dev-cycle.md on the default branch"
+    # A caller's own GIT_CONFIG_COUNT pairs stay, and the guard still applies after them.
+    settings 'Build-loop policy: review' '' 'Self-merge never: none'
+    printf 'Build-loop policy: self-merge\n\nSelf-merge never: none\n' > x.md
+    git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w x.md)" && git config core.useReplaceRefs true
+    run --separate-stderr env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller bash "$BL" --settings
+    [[ "$(line policy)" == "policy review set:"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "build-loop.sh --help prints the whole header, through its last line (U1d)" {
+    run --separate-stderr bash "$BL" --help
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "The build-loop handoff's state and checks"* ]] \
+        && [[ "${lines[${#lines[@]}-1]}" == *"or no default branch found by name." ]] || { echo "$output"; return 1; }
+}
+
+@test "--status: deferred cases: NUL, F31's open-only filter, no open brief, CRLF, BRIEF kept, an unanchored closed (U1d)" {
+    settings 'Build-loop policy: review'
+    # No open brief on main at all (git grep exits 1): a done brief reads normally.
+    brief d 'Status: done' 'Branch: feat/x' && d="$B"
+    run --separate-stderr bash "$BL" --status "$d"
+    [ "$output" = "ok $d done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
+    # A done brief sharing an open brief's branch does not make the open one skip.
+    brief o 'Status: open' 'Branch: feat/x' 'Dispatched: 2' && o="$B"
+    run --separate-stderr bash "$BL" --status "$o"
+    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
+    # Another open brief (CRLF line endings) on the same branch counts; the queried
+    # brief keeps its own Dispatched value whatever F31 read.
+    brief p 'Status: open' 'Branch: feat/x' 'Dispatched: 3' && printf 'Status: open\r\nBranch: feat/x\r\n' > "$B" && commit_all crlf
+    run --separate-stderr bash "$BL" --status "$o"
+    [[ "$output" == "skip $o: another open brief"* ]] || { echo "$output"; return 1; }
+    git rm -q "$B" && commit_all rm-p
+    # A directory whose name merely contains "closed" is not closed/.
+    mkdir -p docs/working/briefs/2026-10-0closed && printf 'Status: open\nBranch: feat/x\n' > docs/working/briefs/2026-10-0closed/1-x.md && commit_all odd-dir
+    run --separate-stderr bash "$BL" --status "$o"
+    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
+    # Another open brief on another branch, read by F31 after o, leaves o's fields alone.
+    brief q 'Status: open' 'Branch: feat/q' 'Dispatched: 3'
+    run --separate-stderr bash "$BL" --status "$o"
+    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
+    # A NUL byte refuses the brief, naming the line.
+    brief n 'Status: open' $'Branch: feat/\x01n' && printf 'Status: open\nBranch: feat/n\0x\n' > "$B" && commit_all nul
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$output" = "skip $B: line 2 holds a NUL byte, so the brief is not read" ] || { echo "$output"; return 1; }
 }

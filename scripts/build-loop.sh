@@ -14,8 +14,8 @@
 #             policy self-merge|review set|unset: WHY
 #                 Set only by "Build-loop policy: self-merge" or "...: review",
 #                 exactly (one trailing CR dropped); else review. Self-merge
-#                 also needs a valid never line, so a list hidden in markup
-#                 turns it off rather than being skipped.
+#                 also needs a valid never line, so a never list hidden in
+#                 markup, with no exact never line beside it, turns it off.
 #             slots N set|default: WHY
 #                 Loops at once: "Build-loop slots: N", N from 1 to 9; else 3.
 #             never GLOB... set|none|malformed: WHY
@@ -59,16 +59,17 @@
 #                 printable ASCII characters, no blank at either end), alone
 #                 on its first line (a second line, if any, empty); REASON is
 #                 printed last. A tip on a branch level with main, or whose
-#                 subject does not start "handoff:", is working. DISPATCHED: the brief's "Dispatched: N" (0-99), or
-#                 0 without one.
+#                 subject does not start "handoff:", is working. DISPATCHED:
+#                 the brief's "Dispatched: N" (0-99), or 0 without one.
 #             skip BRIEF: WHY
 #                 The brief cannot be read (as --check-brief), its Branch:
 #                 line is missing or malformed or its Dispatched: line
 #                 malformed, its branch name is refused (as --check-branch),
 #                 for an open brief, another open brief on main (in briefs/ or
-#                 closed/) names the same branch (ignoring case), or the tip's subject (its
-#                 message's first line) starts "handoff:" but it is not a
-#                 marker.
+#                 closed/) names the same branch (ignoring case) or the open
+#                 briefs on main could not be listed, or on a branch ahead of
+#                 main the tip's subject (its message's first line) starts
+#                 "handoff:" but it is not a marker.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Read-only: writes nothing.
@@ -95,7 +96,7 @@ MODE=""; ARGS=()
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
-  -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;  # the header, to its first non-comment line
+  -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;  # the header, to the first non-empty line not starting with #
   '') usage "no mode given" ;;
   *) usage "Unknown option: $1" ;;
 esac
@@ -138,8 +139,9 @@ main_file() {
 
 # One pass over docs/dev-cycle.md: per key, how many lines start with it once
 # everything but letters is dropped and case folded (best effort: most markup,
-# a BOM or a misplaced colon cannot hide a copy), the first two line numbers, whether
-# the line after the first is blank (NEXT 1) or not, and the first line whole:
+# a BOM or a misplaced colon cannot hide a copy), the first two line numbers,
+# whether the next line outside a fence after the first is blank or the end of
+# the file (NEXT 1) or not, and the first line whole:
 # "KEY COUNT FIRST SECOND NEXT<TAB>LINE".
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 SETTINGS_AWK='
@@ -303,7 +305,8 @@ shared_branches() {
   local -A n=() BRIEF=()  # a local BRIEF: the caller's stays as it was
   # One git grep finds the files with a "Status: open" line (a superset: fences
   # are not modelled); brief_fields then reads only those. Exit 1 is "none";
-  # any other failure fails closed (SHARED_BRANCHES=error: every open brief skips).
+  # an exit above 1 fails closed (SHARED_BRANCHES=error: every open brief
+  # skips). A brief git grep cannot read is not counted (row 293).
   list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
   if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
   while IFS= read -r f; do
@@ -332,7 +335,7 @@ status_line() {
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
-  if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed (git grep failed)"; return; fi
+  if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed"; return; fi
   if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
     echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi

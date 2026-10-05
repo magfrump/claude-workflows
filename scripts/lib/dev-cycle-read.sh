@@ -10,7 +10,8 @@
 # of scripts/ with its lib/ is self-contained. A change here must pass
 # test/scripts/dev-cycle.bats, and build-loop.sh's suites under test/scripts/
 # once that second caller lands. The
-# caller sets -euo pipefail,
+# caller sets -euo pipefail (check_answer and brief_fields also set pipefail
+# for themselves),
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
 # calling any file check. inrepo, dirok, skipped, check_brief and
 # the import walk (imported_names) exit 1 (need_root) unless ROOT_REAL is set,
@@ -253,12 +254,13 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # twice; git's own reads would take the first copy, which may not be the one a
 # check saw, so this answers error instead; never read as absent). One ls-tree
 # call lists the path and every directory above it (-t: trees too; --full-tree:
-# paths from the top level, whatever the current directory). The caller has checked
-# main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
+# paths from the top level, whatever the current directory). It checks
+# main_by_name and the path's form itself (pathform, so ls-tree prints it
+# unquoted): either failing is error.
 main_entry() {
   local p="" rest="$1" out mode path dup="" want=()
   local -A m=()
-  main_by_name || { echo error; return; }
+  if ! main_by_name || ! pathform "$1"; then echo error; return; fi
   while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
   out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
   while IFS=$'\t' read -r mode path; do
