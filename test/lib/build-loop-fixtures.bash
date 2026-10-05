@@ -20,8 +20,9 @@ bl_setup() {
     git init -q -b main && git commit -q --allow-empty -m initial
 }
 
-# commit_all [MSG]: stage everything and commit it on the current branch.
-commit_all() { git add -A && git commit -qm "${1:-fixture}"; }
+# commit_all [MSG]: stage everything and commit it on the current branch (an
+# empty commit when nothing changed, so rewriting a file as it was still works).
+commit_all() { git add -A && git commit -q --allow-empty -m "${1:-fixture}"; }
 
 # settings LINE...: docs/dev-cycle.md holding these lines (printf %s\n each),
 # committed. Pass no lines for an empty file.

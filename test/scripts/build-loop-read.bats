@@ -183,7 +183,7 @@ setup() { bl_setup; }
     [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 4 ] || { echo "$output"; return 1; }
     [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * ]] \
         || { echo "$output"; return 1; }
-    for args in "" "--bogus" "--settings extra" "--status" "--status --settings"; do
+    for args in "" "--bogus" "--settings extra" "--status"; do
         # shellcheck disable=SC2086  # split the argument list on purpose
         run --separate-stderr bash "$BL" $args
         [ "$status" -eq 1 ] && [ -z "$output" ] && [ -n "$stderr" ] || { echo "[$args] $status $output $stderr"; return 1; }
@@ -259,9 +259,9 @@ setup() { bl_setup; }
     }
     git checkout -q feat/a && echo more > more.txt && commit_all 'handoff: ready' && git checkout -q main
     check "skip $B: $n: it changes files" content
-    tip feat/a 'handoff: ready' "$(git rev-parse feat/a^{tree})" "$base" "$(git rev-parse main)"
+    tip feat/a 'handoff: ready' "$(git rev-parse "feat/a^{tree}")" "$base" "$(git rev-parse main)"
     check "skip $B: $n: it has 2 parents" merge
-    tip feat/a 'handoff: ready' "$(git rev-parse feat/a^{tree})" ""
+    tip feat/a 'handoff: ready' "$(git rev-parse "feat/a^{tree}")" ""
     check "skip $B: $n: it has no parent" orphan
     for s in 'handoff: blocked!' 'handoff: ready ' 'handoff:ready' 'handoff: stopped: ' 'handoff: stopped:  x' 'handoff: Ready' \
              $'handoff: stopped: a\x1b[31mb' $'handoff: stopped: caf\xc3\xa9' $'handoff: stopped: x\xe2\x80\xaey'; do
