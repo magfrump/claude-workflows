@@ -29,12 +29,8 @@
 #             starts with the key (any case) after any blanks, >, list
 #             markers, # * _ ` ~ and byte-order marks, so a quoted, bold,
 #             heading or indented copy is a second line, not a hidden one. A
-#             file the reader cannot trust (a fence never closed or not in
-#             plain column-0 form; outside a fence, a line starting with <
-#             other than a one-line <!-- comment -->, an open <!--, a line
-#             like a link reference definition; anywhere, a stray CR or a NUL
-#             byte, or a byte-order mark on line 1; see FENCE_AWK in the lib)
-#             is not read at all.
+#             file the lib's FENCE_AWK refuses (its comment lists each shape)
+#             is not read at all, and the line printed says why.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Read-only: writes nothing.
@@ -61,7 +57,7 @@ usage() { echo "$1 (usage: build-loop.sh --settings)" >&2; exit 1; }
 MODE=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
-  -h|--help) sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n '2,41p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
   *) usage "unknown option: $1" ;;
 esac
