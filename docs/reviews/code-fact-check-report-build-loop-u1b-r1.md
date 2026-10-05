@@ -1,654 +1,644 @@
-**Commit:** 0ae7d801
+**Commit:** 1d79ffef
 
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u1b (branch feat/build-loop-u1b)
-**Scope:** unit diff feat/build-loop-u1a...feat/build-loop-u1b: scripts/build-loop.sh, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats, and commit messages 0797ed32, 224dd52d, 30676e57, 0ae7d801 (replicate r1 of 3)
+**Scope:** `feat/build-loop-u1a...feat/build-loop-u1b` at 1d79ffef: comments, test titles/comments and commit messages in scripts/build-loop.sh, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats, plus commit 1d79ffef's message (earlier commits' claims re-verdicted only where HEAD changed the code they describe). Review iteration 3, replicate r1.
 **Checked:** 2026-10-05
-**Total claims checked:** 38
-**Summary:** 34 verified, 1 mostly accurate, 0 stale, 3 incorrect, 0 unverifiable
+**Total claims checked:** 33 (31 numbered, two split into a/b)
+**Summary:** 25 verified, 5 mostly accurate, 0 stale, 3 incorrect, 0 unverifiable
 
-Execution provenance (all runs; cwd and logs as listed; scratch dir `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i2/fc-r1/`, abbreviated `$S`):
+Execution provenance: every executed claim ran with cwd `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/fc-r1` (scratch; throwaway repos under `repos/`) or `/workspace/.claude/wt-build-loop-u1b` for the baseline only, between 2026-10-05T11:42Z and 11:50Z. Captured output (all in the scratch dir `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/fc-r1/`, since this run may write only this report in the worktree):
+- `baseline.log`: `bats test/scripts/build-loop-read.bats` in the worktree, `LC_ALL=C.UTF-8`, exit 0, 9/9 ok (11:42:51Z).
+- `probes.log`: `./probe.sh NAME LINE...` (builds `repos/NAME` with `docs/dev-cycle.md` = the lines, commits it on main, runs `bash scripts/build-loop.sh --settings`), exit 0 (11:48Z).
+- `replace-and-errors.log`: `bash replace-and-errors.sh` (replace refs, deleted objects, gitlink, absent file, scrub, -h, printf), exit 0 (11:48:05Z).
+- `c3.log`: a copy `c3/bl.sh` whose settings arm presets `POLICY=self-merge; NEVER=(zz)` and calls read_settings twice with `declare -p` (11:49Z).
+- `mut-{pathform,head,worktree,nonext}.log`: full copies of scripts/, test/, docs/ under `mut-NAME/`, one perl mutation of `scripts/build-loop.sh`, then `bats test/scripts/build-loop-read.bats` there, each exit 1 (11:45:41Z).
 
-- E1 suites: `cd /workspace/.claude/wt-build-loop-u1b && export LC_ALL=C.UTF-8 && bats test/scripts/build-loop-read.bats test/scripts/dev-cycle.bats`, exit 0, 2026-10-05T11:09:03Z, 75/75 ok (9 + 66). Log: `$S/bats.log`.
-- E2 behaviour probes: throwaway repo `$S/p1/r` (hermetic git env, LC_ALL=C), one commit per case and `bash scripts/build-loop.sh --settings`, all rc 0, about 2026-10-05T11:10Z. Logs: `$S/probe1.log` (never-line and hidden-copy shapes), `$S/probe2.log` (duplicate globs, `printf '%s\n'` with no arguments, read-only check, a preset DEV_CYCLE_SCRUBBED, the -h range).
-- E3 mutations, made on copies of scripts/ and test/ under `$S/m1`..`$S/m6` (never in the worktree): `bats -f 'T45'` (or `T4`), 2026-10-05T11:11:24Z and 11:12:25Z, bats 1.8.2. Logs: `$S/mutation.log` (m1 drops `IFS=' '`, m2 drops the tab/VT/FF/CR test, m3 drops both), `$S/mutation-and.log` (m4, m5) and `$S/mutation-m6.log` (m6).
-
-Hallucination-pattern log (docs/reviews/hallucination-patterns.md) checked. Claim 38, an executed result stated in a commit message that does not reproduce, closely resembles the logged "claimed test tally / suite outcome" entries (commit 59ca38f "All 85 tests", commit 37c5ea9 "mode1-equiv 33"). This replicate writes nothing outside its report, so the log was not updated.
+Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`): the logged class "specific measured value quoted from an artifact set that does not contain it" was checked against the "400 changed code lines" claim (Claim 29); it does not recur.
 
 ---
 
-## Claim 1: "It is set only when exactly one line, outside code fences, starts "Build-loop policy:" and reads exactly "Build-loop policy: self-merge" or "Build-loop policy: review" (one trailing CR is dropped)."
+## Claim 1: "--settings three lines from the default branch's commit, never the working tree ... Each comes from one line of docs/dev-cycle.md; a second copy, or a file the lib's FENCE_AWK refuses, leaves the default (WHY says which)"
 
-**Location:** `scripts/build-loop.sh:12-15`
+**Location:** `scripts/build-loop.sh:9-12`
 **Type:** Behavioral
-**Legibility-target:** header contract (the reader of `-h` / the orchestrator skill)
-**Verdict:** Verified
+**Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the count (exactly one counted line), the exact-text match and the single trailing CR. It does not establish what "starts" means beyond the counting rule (Claim 6), and it relies on FENCE_AWK for "outside code fences".
+**Legibility-target:** for-author
+**Scope:** Covers the default-on-copy/refusal behaviour of all three lines; does not establish the never line's grammar (Claim 2).
 
-`SETTINGS_AWK` drops one trailing CR before `fence()` runs (`{ sub(/\r$/, "") }`, `scripts/build-loop.sh:102`), and FENCE_AWK refuses any CR left in the line (`if (index(l, "\r")) { refuse("cr"); return 1 }`, lib `:215`). So one trailing CR is dropped, and a second one refuses the file. The exactness check is `elif [[ "${text[policy]}" =~ ^Build-loop\ policy:\ (self-merge|review)$ ]]` (`scripts/build-loop.sh:174`), and a count above 1 gives `policy review unset: $(many ...)` (`:173`). T1 (the CR case) and T2 (the variants, the duplicates and the prose mentions) pass in E1.
+True for policy (`review unset`) and slots (`3 default`). For the never line the default is `none`, but a second copy or a refused/unread file prints `malformed` (self-merge off), not the default:
 
-**Evidence:** `scripts/build-loop.sh:102-111`, `scripts/build-loop.sh:172-179`, `scripts/lib/dev-cycle-read.sh:213-229`, `test/scripts/build-loop-read.bats:13-40`, `$S/bats.log`
+```bash
+# scripts/build-loop.sh:146
+    elif [[ "${cnt[never]}" -gt 1 ]]; then NEVER_LINE="never malformed: $(many 'Self-merge never:' never)"; never_ok=""
+# scripts/build-loop.sh:136
+    if [[ "$FILE_WHY" == absent ]]; then NEVER_LINE="never none: $why"; else NEVER_LINE="never malformed: $why"; fi
+```
+
+Executed: two `Self-merge never:` lines print `never malformed: more than one line starts "Self-merge never:" (lines 1 and 3)`; a deleted blob prints `never malformed: docs/dev-cycle.md could not be read from the default branch`. The behaviour fails closed and `:23-24` ("Malformed (or a file not read) turns self-merge off") covers the unread file. Nothing covers the second copy. Precise version: "...leaves the default (the never line reads malformed)".
+
+**Evidence:** `scripts/build-loop.sh:9-12`, `:132-136`, `:144-146`; probes.log (`### duplicate never`), replace-and-errors.log (`## blob object deleted`)
 
 ---
 
-## Claim 2: "Any other case, or a malformed never line, means review."
+## Claim 2: never grammar — "single spaces, then a blank line or the end. A glob uses letters, digits, . _ - / * ? (a trailing / ignored when comparing), has no empty, . or .. part, does not start with / or -, and is listed once. Malformed (or a file not read) turns self-merge off."
 
-**Location:** `scripts/build-loop.sh:16`
+**Location:** `scripts/build-loop.sh:18-24`
 **Type:** Behavioral / Invariant
-**Legibility-target:** header contract
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers every branch of read_settings that sets POLICY_LINE: POLICY starts as review and is set to self-merge on only one branch. It does not establish how later modes (--status, the gate in U1c and later) consume POLICY.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the character set, part rules, duplicate detection (including bash-special subscripts `*` and `?` in the `seen` associative array), the blank-line/EOF rule and turning self-merge off; does not establish what "the line after" is when fence() skips it (Claim 9) or how later modes match these globs.
 
-`POLICY=review` (`:133`), and the only assignment of another value is `else POLICY="$v"` (`:178`), reached only when `[[ "$v" == self-merge && -z "$never_ok" ]]` (`:176`) is false. The never_ok flag is cleared on a duplicate never line (`:153`) and on a malformed one (`:169`). The file-not-read branch (`:139-143`) never touches POLICY. In E2, `a\vb`, `a\fb`, NBSP, lower-case `self-merge never:`, `a//` and `/` each print `policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off` (`$S/probe1.log`).
+Duplicate detection is a per-key lookup even for `*`: `seen[${g%/}]` with `g='*'` is a key lookup, not `${seen[*]}`:
 
-**Evidence:** `scripts/build-loop.sh:133-185`, `$S/probe1.log`, `test/scripts/build-loop-read.bats:107-113`
+```bash
+# scripts/build-loop.sh:156-160
+        for g in "${parts[@]}"; do
+          i=$((i + 1))
+          if ! globform "${g%/}"; then why="lists entry $i, which is not an allowed glob form"; break; fi
+          if [[ -n "${seen[${g%/}]-}" ]]; then why="lists entry $i twice"; break; fi
+          seen[${g%/}]=1
+```
+(excerpt ends :160; enclosing read_settings() continues to :179 — read)
 
----
+Executed: `a/ *` and `* a/` → `set`; `* *`, `? ?` and `a a/` → `lists entry 2 twice`; `a a//` → entry 2 is not an allowed glob form (one trailing `/` stripped, the rest gives an empty part). The never line at EOF, followed by a whitespace-only line, or (CRLF file) by `\r\n` → `set`. Followed by `b/` → malformed. With `Build-loop policy: self-merge`, every malformed case prints `policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off` (T45 loop, baseline ok 7).
 
-## Claim 3: "How many build loops may run at once: one line "Build-loop slots: N" with N from 1 to 9, else 3."
-
-**Location:** `scripts/build-loop.sh:17-19`
-**Type:** Behavioral / Configuration
-**Legibility-target:** header contract
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the regex, the duplicate rule and the default of 3. It does not establish how many loops any caller actually runs (no consumer exists in U1b).
-
-`elif [[ "${text[slots]}" =~ ^Build-loop\ slots:\ ([123456789])$ ]]` (`:182`), and every other branch prints `slots 3 default` (`:180-183`). The slots test (0, 10, a trailing space, 05, three, a duplicate, fenced) passes in E1.
-
-**Evidence:** `scripts/build-loop.sh:180-183`, `test/scripts/build-loop-read.bats:87-98`, `$S/bats.log`
+**Evidence:** `scripts/build-loop.sh:148-165`, `:170-172`; probes.log (`### Self-merge never: ...`, `### never at EOF`, `### never then whitespace-only line`); baseline.log
 
 ---
 
-## Claim 4: "Self-merge never: GLOB ..." (single spaces, no tab; each glob uses letters, digits, . _ - / * ?, with an optional trailing /; no empty, . or .. part, not starting / or -; none twice, a trailing / ignored)."
+## Claim 3a: "A line counts as a copy when its letters alone, case folded, start with the key's ("buildlooppolicy")"
 
-**Location:** `scripts/build-loop.sh:20-25`
+**Location:** `scripts/build-loop.sh:25-26`
 **Type:** Behavioral
-**Legibility-target:** header contract
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each listed grammar rule as implemented at `:155-167` and in globform. It does not establish that the header is complete: the code is also stricter than stated (VT, FF and CR are refused as well as tab, and the prefix must be exactly `Self-merge never: ` in that case even though counting is case-blind). A part `.git` is accepted (Claim 16).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the matching rule as implemented, ASCII letters only (awk runs under `env LC_ALL=C`, so a non-ASCII letter's bytes are dropped like punctuation); does not establish that every rendered copy is caught (Claim 3b).
 
-The code checks `[[ "$t" != "Self-merge never: "* || "$v" == *[$'\t\v\f\r']* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]` (`:157`), splits with `IFS=' ' read -ra parts` (`:161`), calls `globform "${g%/}"` (`:164`) and checks `seen[${g%/}]` (`:165-166`). globform's character class is `^[*?$NAMECHARS]+$` (`:124`), where NAMECHARS is `abc…XYZ0123456789._/-` (lib `:139`). E2 results: `a/ b/*`, `x a*`, `*`, `* a` and `a *` are set; `a* a*`, `a? a?/` and `* *` print "lists entry 2 twice"; `a//` and `/` print "not an allowed glob form" (`$S/probe1.log`, `$S/probe2.log`). An earlier worry, that an entry `*` would collide with the associative array's `[*]` all-elements subscript, is refuted: `a *` and `* a` are both set, and only `* *` is a duplicate.
+```awk
+# scripts/build-loop.sh:101-104
+  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
+  if (index(s, "buildlooppolicy") == 1) k = "policy"
+  else if (index(s, "buildloopslots") == 1) k = "slots"
+  else if (index(s, "selfmergenever") == 1) k = "never"
+```
 
-**Evidence:** `scripts/build-loop.sh:118-129`, `scripts/build-loop.sh:155-170`, `scripts/lib/dev-cycle-read.sh:139`, `$S/probe1.log`, `$S/probe2.log`
+Executed: `- [ ]`, `1. `, `> > `, table cell, `Build-loop 2 policy`, NBSP-joined, mid-file BOM, one-line `<!-- -->` comment and `**Build-loop policy**: review` second lines all print `more than one line starts "Build-loop policy:"`. `Build-loop pólicy` (non-ASCII ó dropped → `buildloopplicy`) is not counted, as the rule says.
+
+**Evidence:** `scripts/build-loop.sh:82` (`env LC_ALL=C awk`), `:101-105`; probes.log
 
 ---
 
-## Claim 5: "A malformed line, or a settings file that is not read, turns self-merge off."
+## Claim 3b: "so markup, a table or a misplaced colon cannot hide one"
 
 **Location:** `scripts/build-loop.sh:26-27`
 **Type:** Behavioral / Invariant
-**Legibility-target:** header contract
-**Verdict:** Verified
+**Verdict:** Incorrect
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers both triggers on --settings' POLICY and POLICY_LINE. It does not establish the effect in later modes that read NEVER or POLICY.
+**Legibility-target:** for-author
+**Scope:** Covers markup that adds letters before or inside the key; does not establish the tables and misplaced-colon parts (true, Claim 3a) or entity/zero-width copies (settled C19).
 
-On the not-read branch (`if ! main_file "$f" "$SETTINGS_AWK"; then`, `:139`), POLICY keeps its initial `review` and the branch prints `policy review unset: $why` (`:141`). A malformed line clears never_ok (`:169`), which blocks self-merge (`:176-177`). T3 asserts that an open-comment file gives both `policy review unset: …` and `never malformed: …` (`build-loop-read.bats:46-49`), and it passes in E1.
+The letters-only rule keeps any letters that markup adds, so markup carrying letters ahead of or inside the key hides the copy. Executed, with `Build-loop policy: self-merge` on line 1 and each of these on line 2, the output stays `policy self-merge set: line 1 ...` (the copy is not counted):
+- `- [x] Build-loop policy: review` and `- [X] ...` (GFM checked task item: letters `xbuildloop...`)
+- `Build-loop <span>policy</span>: review` (inline HTML not at line start, so FENCE_AWK's rawhtml does not refuse it: letters `buildloopspanpolicy...`)
+- `[Build-loop](x) policy: review` (a link that wraps only part of the key: letters `buildloopxpolicy`)
 
-**Evidence:** `scripts/build-loop.sh:139-143`, `scripts/build-loop.sh:169-178`, `test/scripts/build-loop-read.bats:46-49`
+Never-line copies behave the same way. `[Self-merge](u) never: b/` and `- [x] Self-merge never: b/` after `Self-merge never: a/` leave `never a/ set:`, with no "more than one line". Each of these renders as the key. A Cyrillic-В homoglyph copy is also hidden; that is closer to C19's class. Override-log row C19 (line 248) settled only "an HTML entity or zero-width characters", on the premise that "such a copy does not render as the key either". That premise does not hold for these three shapes. Whether that row stretches to cover them is the orchestrator's call. Fails open only to the extent C19 describes: a hidden copy cannot raise the policy, but a contradicting rendered copy goes uncounted.
+
+**Evidence:** `scripts/build-loop.sh:25-27`, `:101-105`; lib `FENCE_AWK` rawhtml (shared.md lib :189); probes.log (`### second line: - [x] ...`, `<span>`, `[Build-loop](x)`, `### never second line: ...`); docs/reviews/override-log.md:248
 
 ---
 
-## Claim 6: "A line outside a fence counts as a settings line when it starts with the key (any case) after any blanks, >, list markers, # * _ ` ~ and byte-order marks, so a quoted, bold, heading or indented copy is a second line, not a hidden one."
+## Claim 4: "Acts on $PWD's git repo, like dev-cycle.sh ... Read-only: writes nothing. Output passes through the lib's scrub (but for the start-up errors about perl and the lib); printed repo text is data."
 
-**Location:** `scripts/build-loop.sh:28-31`
+**Location:** `scripts/build-loop.sh:29-32`
 **Type:** Behavioral
-**Legibility-target:** header contract
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the stated strip set and the four named shapes (quoted, bold, heading, indented), plus numbered lists, tabs, `~~` and a trailing-blank variant. It does NOT establish that every Markdown shape rendering as the key is counted. These stay uncounted, so they are hidden copies (E2): a GFM task item `- [ ] Build-loop policy: self-merge`, link text `[Build-loop policy: self-merge](x)`, a leading NBSP, a backslash-escaped heading `\# Build-loop policy: …`, an entity `&#66;uild-loop policy: …` and a table row `| Build-loop policy: … |`.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the scrub ordering (perl/lib checks at `:38`, `:44` precede `scrub_reexec` at `:47`) and that only read-only git plumbing is called; does not establish scrub's own coverage limits (lib header :45-47).
 
-The strip is `match(s, /^([ \t>#*_`~]|[-+][ \t]|[0123456789]+[.)][ \t]|\357\273\277)*/)`, and the key test follows `tolower(s)` (`:106-110`). In E2, `1. `, two tabs, four spaces, `~~…~~` and the bold/heading/emphasis/code-span copies (T2, T45) each count as a second line. The six shapes listed in Scope do not: each prints `policy review set` for a file whose rendered second line reads self-merge (`$S/probe1.log`). The header's four named shapes are all correct. The residue is outside the claim as worded, but it is the answer to "is anything that renders as the key still uncounted?": yes.
+`command -v perl ... exit 1` (`:38`) and `[[ -f "$READ_LIB" ]] || ... exit 1` (`:44`) run before `scrub_reexec "${BASH_SOURCE[0]}" "$@"` (`:47`). Executed: a usage argument holding ESC (`--bo\x1bgus`) reaches stderr as `Unknown option: --bogus` with the ESC removed. The git calls are `rev-parse`, `show-ref`, `symbolic-ref`, `ls-tree` and `cat-file` (paraphrased — no quote available because the calls span build-loop.sh `:58-65`, `:82` and lib `main_entry`/`resolve_main`). None of them writes.
 
-**Evidence:** `scripts/build-loop.sh:101-117`, `test/scripts/build-loop-read.bats:33-36`, `test/scripts/build-loop-read.bats:119-123`, `$S/probe1.log`
+**Evidence:** `scripts/build-loop.sh:38-47`, `:58-65`, `:82`; replace-and-errors.log (`## ESC in usage arg`)
 
 ---
 
-## Claim 7: "A file the lib's FENCE_AWK refuses (its comment lists each shape) is not read at all, and the line printed says why."
+## Claim 5: "Exit: 0 every line printed (or help); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no default branch found by name."
 
-**Location:** `scripts/build-loop.sh:31-33`
+**Location:** `scripts/build-loop.sh:33-34`
 **Type:** Behavioral
-**Legibility-target:** header contract
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the odd and unbalanced outputs and the reason text on all three lines. It does not establish that FENCE_AWK's comment is itself complete (lib, not in this unit).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers -h (exit 0, 33 lines = file lines 2-34, ending at the Exit line), usage, not-a-repo, renamed default branch and missing lib, plus every unread-file case exiting 0 with three lines; does not establish exit codes under signals or perl failure mid-run.
 
-`odd\ *) … FILE_WHY="line $n of $f $(oddwhy "$why"), so the file is not read"; return 1` and `unbalanced\ *) …` (`:91-92`). The read_settings not-read branch puts `$why` in all three lines (`:141-143`). In E2, `<b>…</b>` prints the html reason on policy, slots and never (`$S/probe1.log`). T3 covers the comment, BOM and unbalanced reasons.
+`-h|--help) sed -n '2,34p' "$0" | ...; exit 0` (`:53`). Executed: `-h` exits 0 and prints 33 lines. A deleted blob, a deleted tree, a gitlink and an absent file each exit 0 with three lines. Baseline tests 8 and 9 (exit 1 cases) pass.
 
-**Evidence:** `scripts/build-loop.sh:89-93`, `scripts/build-loop.sh:139-143`, `$S/probe1.log`, `test/scripts/build-loop-read.bats:42-67`
-
----
-
-## Claim 8: "Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch found by name (origin/HEAD, main or master)."
-
-**Location:** `scripts/build-loop.sh:35-36`
-**Type:** Behavioral
-**Legibility-target:** header contract
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers rev-parse from $PWD (including a subdirectory and a linked worktree) and the main_by_name gate. It does not establish the origin/HEAD path (no test has a remote; resolve_main is lib code, read).
-
-`ROOT="$(git rev-parse --show-toplevel …)"`, then `cd "$ROOT"` (`:65-66`), and `main_by_name || { echo "build-loop.sh needs a default branch found by name …"; exit 1; }` (`:71`). The test that renames main to trunk passes (`build-loop-read.bats:144-146`), as do the subdirectory and worktree runs (`:160-167`).
-
-**Evidence:** `scripts/build-loop.sh:65-71`, `scripts/lib/dev-cycle-read.sh:376-398`, `test/scripts/build-loop-read.bats:144-167`
+**Evidence:** `scripts/build-loop.sh:49-56`, `:58`, `:65`; replace-and-errors.log; baseline.log (ok 8, ok 9)
 
 ---
 
-## Claim 9: "Read-only: writes nothing."
+## Claim 6: "Read main's own objects: a replace ref could swap in any settings blob." (`export ... GIT_NO_REPLACE_OBJECTS=1`)
 
-**Location:** `scripts/build-loop.sh:36`
-**Type:** Invariant
-**Legibility-target:** header contract
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the --settings and -h paths: every git call is a read (rev-parse, symbolic-ref, show-ref, ls-tree, cat-file). It does not establish behaviour under a git configured with hooks or an fsmonitor that write (the hermetic env disables global config).
-
-The git calls in the script and the lib functions it reaches are paraphrased — no quote available because they span `:65-89` and lib `resolve_main`/`main_entry`: rev-parse, symbolic-ref, show-ref, ls-tree and cat-file. None writes. In E2, an `ls -la --time-style=full-iso .git | md5sum` before and after a run matched (`0978effa…` both times), and `git status --porcelain` was empty (`$S/probe2.log`).
-
-**Evidence:** `scripts/build-loop.sh:65-89`, `scripts/lib/dev-cycle-read.sh:256-267`, `$S/probe2.log`
-
----
-
-## Claim 10: "Output passes through the lib's scrub (all but the two start-up errors before it, about perl and the lib, which carry no repo text); printed repo text is data."
-
-**Location:** `scripts/build-loop.sh:37-39`
-**Type:** Behavioral
-**Legibility-target:** header contract
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the default invocation: the two echo-and-exit lines at `:45` and `:51` are the only output before `scrub_reexec` at `:54`. It does not establish scrubbing when the caller's environment already sets DEV_CYCLE_SCRUBBED (lib-documented: then no scrub runs, as E2 confirmed by running with it preset), or shell-level errors from `cd`/`source` before `:54`.
-
-The script's order is `command -v perl … exit 1` (`:45`), `[[ -f "$READ_LIB" ]] || { echo …; exit 1; }` (`:51`), then `scrub_reexec "${BASH_SOURCE[0]}" "$@"` (`:54`). The lib's `[[ -z "${DEV_CYCLE_SCRUBBED:-}" ]] || return 0` (lib `:77`) is the bypass named in Scope.
-
-**Evidence:** `scripts/build-loop.sh:45-54`, `scripts/lib/dev-cycle-read.sh:76-81`, `$S/probe2.log`
-
----
-
-## Claim 11: "Exit: 0 every line printed; 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no default branch found by name."
-
-**Location:** `scripts/build-loop.sh:40-41`
-**Type:** Behavioral
-**Legibility-target:** header contract
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each listed exit path. It does not establish behaviour on a corrupt object store (main_entry `error` is reported as "not a regular file", rc 0; see Claim 14), and -h's exit 0 is not in the list.
-
-The `exit 1` sites are `:45`, `:51`, `:56`, `:65` and `:71`. The script's last statement is the `printf` at `:190`. The usage, trunk, non-repo and bare-copy cases pass in E1 (`build-loop-read.bats:134-158`).
-
-**Evidence:** `scripts/build-loop.sh:45-71`, `scripts/build-loop.sh:187-192`, `test/scripts/build-loop-read.bats:134-158`
-
----
-
-## Claim 12: "The reader shared with dev-cycle.sh, from this script's own directory (never the target repo's scripts/lib/), so a copy of scripts/ with its lib/ is self-contained."
-
-**Location:** `scripts/build-loop.sh:46-50`
-**Type:** Architectural
-**Legibility-target:** maintainers of build-loop.sh
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the path computed from BASH_SOURCE before the cd, and the planted-lib test. It does not establish integrity of the sourced lib (D6 hash check deferred to U3b, per the override log).
-
-The code is `SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"` then `READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"` (`:46-50`). The G16 test (planted `echo PLANTED`, then a bare copy that exits 1) passes.
-
-**Evidence:** `scripts/build-loop.sh:46-54`, `test/scripts/build-loop-read.bats:152-158`
-
----
-
-## Claim 13: help prints `sed -n '2,41p'`, i.e. the whole header
-
-**Location:** `scripts/build-loop.sh:60`
-**Type:** Configuration
-**Legibility-target:** -h reader
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that lines 2-41 are exactly the comment header (line 42 blank, line 43 `set -euo pipefail`). It does not establish that the range is guarded against future header edits (it is hard-coded).
-
-`-h|--help) sed -n '2,41p' "$0" | …` (`:60`). Line 41 is `# lib/dev-cycle-read.sh, or no default branch found by name.` In E2, the output of `-h` starts "The build-loop handoff's state…" and ends "…or no default branch found by name." (`$S/probe2.log`).
-
-**Evidence:** `scripts/build-loop.sh:1-43`, `$S/probe2.log`
-
----
-
-## Claim 14: "A file on main for the readers below: sets FILE_WHY and returns 1 when it is absent ("absent"), stored as anything but a regular file under plain directories, or refused by FENCE_AWK; otherwise FILE_OUT holds what the awk program $2 printed over it"
-
-**Location:** `scripts/build-loop.sh:73-77`
+**Location:** `scripts/build-loop.sh:62-63`
 **Type:** Behavioral / Error-handling
-**Legibility-target:** maintainers (U1c adds callers of main_file)
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers replace refs on main's blob, root tree and commit for `--settings`; does not establish a test pinning it (no bats test covers replace refs) or behaviour under `GIT_REPLACE_REF_BASE`/grafts.
+
+Executed: main's file reads `review` and branch `alt`'s reads `self-merge`. With `git replace` of main's blob, of `main^{tree}`, or of the main commit by alt's, plain `git cat-file blob main:docs/dev-cycle.md` returns `self-merge`. The script prints `policy review set:` in all three cases. A copy with ` GIT_NO_REPLACE_OBJECTS=1` deleted (`bl-norepl.sh`) prints `policy self-merge set:` in all three, so the export is what stops the swap.
+
+**Evidence:** `scripts/build-loop.sh:63`; replace-and-errors.log (`## replace blob|tree|commit`)
+
+---
+
+## Claim 7: main_file — "FILE_OUT is what awk program $2 (after FENCE_AWK) printed over it; or it returns 1 with FILE_WHY "absent" or why it was not read (main_entry, a failed read, or FENCE_AWK's "odd N WHY" / "unbalanced N")."
+
+**Location:** `scripts/build-loop.sh:67-69`
+**Type:** Behavioral / Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers every arm (absent, notdir, error, notfile, failed cat-file, odd, unbalanced) and that each reaches the printed lines; does not establish main_entry's duplicate-name `error` branch (not built).
+
+```bash
+# scripts/build-loop.sh:77-83
+    absent) FILE_WHY=absent; return 1 ;;
+    notdir\ *) FILE_WHY="${e#notdir } is not a directory on the default branch"; return 1 ;;
+    error) FILE_WHY="the default branch's tree could not be read for $f"; return 1 ;;
+    *) FILE_WHY="$f is not a regular file on the default branch"; return 1 ;;
+  esac
+  FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")" \
+    || { FILE_WHY="$f could not be read from the default branch"; return 1; }
+```
+(excerpt ends :83; enclosing main_file() continues to :88 — read)
+
+Executed (main_entry's `error` comes from a missing tree object, which makes `ls-tree` fail): `the default branch's tree could not be read for docs/dev-cycle.md`. Missing blob object: `docs/dev-cycle.md could not be read from the default branch` (pipefail carries cat-file's failure out of `$(...)`). Gitlink: `is not a regular file`. Absent: `no docs/dev-cycle.md on the default branch`. odd/unbalanced/notdir/symlink/directory: T3 (baseline ok 3).
+
+**Evidence:** `scripts/build-loop.sh:71-88`; replace-and-errors.log; baseline.log (ok 3)
+
+---
+
+## Claim 8: SETTINGS_AWK — "per key, how many lines start with it once everything but letters is dropped and case folded (so markup, blanks, a BOM or a misplaced colon cannot hide a copy)"
+
+**Location:** `scripts/build-loop.sh:90-92`
+**Type:** Behavioral / Invariant
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the "markup cannot hide a copy" parenthetical, the same defect as Claim 3b; does not re-verdict the count/line-number fields, which match `:105`, `:110` (Verified).
+
+The rule is as stated (Claim 3a). The parenthetical's "markup ... cannot hide a copy" is refuted by the same executed probes as Claim 3b: a GFM `[x]` task box, mid-line inline HTML and a link wrapping part of the key all hide a copy. Blanks, a mid-file BOM and a misplaced colon do not hide one (probes.log, T45 `'Self-merge never : b/'`).
+
+**Evidence:** `scripts/build-loop.sh:90-94`, `:101-105`; probes.log
+
+---
+
+## Claim 9: "whether the line after the first is blank (NEXT 1) or not"
+
+**Location:** `scripts/build-loop.sh:92-93`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the blob, absent, notdir and odd/unbalanced paths. It does not establish the wording on main_entry's `error` result (ls-tree failed), which the comment does not list.
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers what NEXT records when the next physical line is skipped by `fence($0) { next }`, at EOF, and for whitespace-only/CRLF lines; does not establish CommonMark paragraph rules beyond the probed shapes.
 
-The case is `blob) ;; absent) … notdir\ *) … *) FILE_WHY="$f is not a regular file on the default branch"; return 1 ;;` (`:83-88`). main_entry prints `error` when ls-tree fails (lib `:261`: `|| { echo error; return; }`). That falls into `*)` and is reported as "is not a regular file". The return value fails closed, but the comment's three cases leave out a fourth, and its message names the wrong cause. A precise version would add "or its tree cannot be read (reported as not a regular file)". Reachability is low: main_by_name has already succeeded, so this takes a corrupt or unreadable object store.
+```awk
+# scripts/build-loop.sh:97-100
+{ sub(/\r$/, "") }
+fence($0) { next }
+{
+  if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }
+```
+(excerpt ends :100; enclosing SETTINGS_AWK continues to :111 — read)
 
-**Evidence:** `scripts/build-loop.sh:79-94`, `scripts/lib/dev-cycle-read.sh:256-267`
+NEXT is decided by the next line that fence() does not skip. If there is none, the `nx[k] = 1` default at `:105` makes EOF count as blank. When the never line is followed directly by a code fence, the fence lines are skipped. The line after the closing fence then decides. Executed: `Self-merge never: a/` + fence + `''` → `never a/ set`. The same with `b/` after the fence → `never malformed: line 1 is followed by a non-blank line (Markdown would join it as more globs)`. A following one-line `<!-- c -->` → the same malformed WHY. In both malformed cases the printed rationale is false: a fence or an HTML comment block interrupts the paragraph, so Markdown joins nothing. Fails closed. Precise version: "whether the next line FENCE_AWK reads (the end counts) is blank".
+
+**Evidence:** `scripts/build-loop.sh:97-111`, `:152`; probes.log (`### never then fence ...`, `### never then one-line comment`)
 
 ---
 
-## Claim 15: "One pass over docs/dev-cycle.md: per key, how many lines start with it (after blanks, >, list markers, heading and emphasis marks (# * _ ` ~) and a BOM, any case), the first two line numbers and the first line whole: "KEY COUNT FIRST SECOND<TAB>LINE"."
+## Claim 10: globform — "pathform's rule, but a .git* part (.github/) is allowed, since the list only adds refusals"
 
-**Location:** `scripts/build-loop.sh:96-99`
+**Location:** `scripts/build-loop.sh:112-113`
 **Type:** Behavioral
-**Legibility-target:** maintainers of SETTINGS_AWK
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers that every listed prefix strips (spaces, tabs, `>`, `-`/`+`/`*` markers, `N.`/`N)` markers, `# * _ ` ~`, and one or more BOMs) and the output format. It does not establish that unlisted shapes that render as the key are counted (task list `[ ]`, link brackets, NBSP, `\`-escapes, entities, `|`: see Claim 6), and "a BOM" understates the code, which strips any number.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the difference from lib `pathform` (the `[.][gG][iI][tT]*` part test dropped, `*?` always allowed); does not establish how later modes match the globs.
 
-The END rule is `print k " " c[k] " " l1[k] " " (k in l2 ? l2[k] : 0) "\t" t[k]` (`:116`), and the parser is `read -r k c l1 l2 <<<"${l%%$'\t'*}"; … text[$k]="${l#*$'\t'}"` (`:147-148`). The `t[k] = $0` stored is the CR-stripped original line, not the stripped `s` (`:111`). So the exactness checks at `:157`, `:174` and `:182` see the raw line, and a counted copy with a prefix fails them (fail closed). Under mawk the octal BOM escape matches mid-file (T2's BOM case passes).
+`[[ -n "$c" && "$c" != "." && "$c" != ".." ]] || return 1` (`:119`). Lib pathform also has `&& "$c" != [.][gG][iI][tT]*` (lib :147). Executed mutant `pathform` (`globform "${g%/}"` → `pathform "${g%/}" glob`) fails T45 at bats `:130` (`never .github/ .gitignore set:`).
 
-**Evidence:** `scripts/build-loop.sh:101-117`, `scripts/build-loop.sh:145-149`, `$S/probe1.log`, `$S/bats.log`
+**Evidence:** `scripts/build-loop.sh:114-121`; mut-pathform.log
 
 ---
 
-## Claim 16: "A Self-merge never: entry: pathform's characters and glob marks, not starting / or -, no empty, . or .. part. Unlike pathform it allows a part starting .git (.github/, .gitignore): the list only adds refusals, so naming one must not make the line malformed and turn self-merge off."
+## Claim 11: "Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (an array of the checked globs, each as written, a trailing / kept) and NEVER_LINE from main's commit." + reset `POLICY=review; NEVER=()` (C3)
 
-**Location:** `scripts/build-loop.sh:118-121`
-**Type:** Behavioral
-**Legibility-target:** maintainers of globform
+**Location:** `scripts/build-loop.sh:122-124`, `:130`
+**Type:** Behavioral / Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the comparison with pathform and that `.github/`/`.gitignore` are now accepted. It does not establish how a later reader (the U3 gate) matches these globs. Note that `.git/` itself and `.GIT` are also accepted (E2: `never .git/ .GIT set`), which is consistent with "allows a part starting .git" and harmless under the comment's own premise (an extra refusal), but that premise, "the list only adds refusals", is a property of the future gate, not checked here.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the array shape, the trailing `/` being kept, and the reset across a second call; does not establish the forward reference to --status/the gate (U1c/U2, not in this diff).
 
-pathform's part test is `[[ -n "$c" && "$c" != "." && "$c" != ".." && "$c" != [.][gG][iI][tT]* ]]` (lib `:147`). globform's is `[[ -n "$c" && "$c" != "." && "$c" != ".." ]]` (`:127`), and its character test reuses `^[*?$NAMECHARS]+$` (`:124`, the same set as pathform's glob mode, lib `:142`). The T45 `.github/ .gitignore` case passes (E1), and E2 shows `.git/ .GIT` set.
+`else NEVER=("${parts[@]}"); NEVER_LINE="never $v set: ..."` (`:164`). The three *_LINE variables are assigned on every path (`:134`, `:136`, `:145-165`, `:166-177`). Executed: in `c3/bl.sh`, with `POLICY=self-merge; NEVER=(zz)` preset, read_settings on an absent file gives `POLICY="review"` and `NEVER=()`, the same on a second call. On `Self-merge never: a/ b/` it gives `NEVER=([0]="a/" [1]="b/")`.
 
-**Evidence:** `scripts/build-loop.sh:122-129`, `scripts/lib/dev-cycle-read.sh:140-149`, `$S/probe1.log`
-
----
-
-## Claim 17: "Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (the globs, or empty) and NEVER_LINE from main's commit. POLICY and NEVER are for the modes that judge a brief (--status, then the gate)."
-
-**Location:** `scripts/build-loop.sh:130-132`
-**Type:** Behavioral / Architectural
-**Legibility-target:** maintainers (U1c consumers)
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers which globals read_settings assigns, and that NEVER is set only to the validated value. It does not establish the forward reference: --status and the gate do not exist yet (U1c and later), and nothing in this diff reads POLICY or NEVER.
-
-The globals are set at `:141-143` (POLICY_LINE, SLOTS_LINE, NEVER_LINE), `NEVER="$v"` (`:170`, only when `why` is empty) and `POLICY="$v"` (`:178`). NEVER holds the raw `$v`, the exact string validated entry by entry (with trailing slashes kept), so the stored value matches what was validated. read_settings also defines the helper `many` (`:150`) as a global function, which the comment does not mention (not a claim).
-
-**Evidence:** `scripts/build-loop.sh:133-185`
+**Evidence:** `scripts/build-loop.sh:125-179`; c3.log
 
 ---
 
-## Claim 18: "An absent file sets nothing; one that is not read turns self-merge off."
+## Claim 12: "An absent file sets nothing; one that is not read turns self-merge off."
 
-**Location:** `scripts/build-loop.sh:142`
+**Location:** `scripts/build-loop.sh:135`
 **Type:** Behavioral
-**Legibility-target:** maintainers
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the never line on the two not-read branches. It does not establish anything beyond --settings.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the never line's `none` vs `malformed` choice; does not establish that a reader honours "malformed" (later modes).
 
-`if [[ "$FILE_WHY" == absent ]]; then NEVER_LINE="never none: $why"; else NEVER_LINE="never malformed: $why"; fi` (`:143`). T3 asserts `never none: no docs/dev-cycle.md on the default branch` and the open-comment `never malformed:` line, and both pass.
+Executed: absent → `never none: no docs/dev-cycle.md on the default branch`. Missing blob, missing tree and gitlink → `never malformed: ...`. POLICY stays `review` in all of them (`:130`).
 
-**Evidence:** `scripts/build-loop.sh:139-143`, `test/scripts/build-loop-read.bats:46-49`, `test/scripts/build-loop-read.bats:55-57`
+**Evidence:** `scripts/build-loop.sh:132-136`; replace-and-errors.log
 
 ---
 
-## Claim 19: "Single spaces only: a tab or other blank would split differently in a later reader." (with the test `*[$'\t\v\f\r']*`)
+## Claim 13: "Self-merge never: first, because a malformed line turns self-merge off."
 
-**Location:** `scripts/build-loop.sh:156-157`
+**Location:** `scripts/build-loop.sh:144`
 **Type:** Behavioral
-**Legibility-target:** maintainers
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers tab, VT and FF (all executed) and the single-space regex. It does not establish anything about CR: the CR branch is unreachable, because SETTINGS_AWK strips one trailing CR and FENCE_AWK refuses any other. Non-ASCII blanks (NBSP) pass this check but are refused by globform.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the ordering dependency (`never_ok` is set before the policy arm reads it); does not establish slots' independence (true by reading `:174-177`).
 
-In E2, `a\vb` and `a\fb` print `is not exactly "Self-merge never: GLOB ..." with single spaces`, and `a\xc2\xa0b` prints `lists entry 1, which is not an allowed glob form` (`$S/probe1.log`). T45's five tab cases pass (E1).
+`if [[ "$v" == self-merge && -z "$never_ok" ]]; then POLICY_LINE="policy review unset: ... so self-merge is off"` (`:170-171`) reads `never_ok`, which `:146`/`:163` clear. Executed: each malformed case in T45 and probes.log prints that policy line.
 
-**Evidence:** `scripts/build-loop.sh:155-158`, `scripts/build-loop.sh:102`, `scripts/lib/dev-cycle-read.sh:215`, `$S/probe1.log`
-
----
-
-## Claim 20: "not a bare $v: the shell would expand * and ? against files"
-
-**Location:** `scripts/build-loop.sh:161`
-**Type:** Behavioral
-**Legibility-target:** maintainers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the unquoted-expansion hazard: noglob is not set anywhere in the script or the lib (grep for `set -f`/`noglob` finds nothing), and the cwd is the repo root after `cd "$ROOT"`. It does not establish behaviour of `read -ra` on backslashes (`-r` is given, and backslash is not in the allowed set anyway).
-
-The line is `IFS=' ' read -ra parts <<<"$v"` (`:161`). Here-string words are not pathname-expanded, so the comment's contrast with `for g in $v` (which would glob) holds.
-
-**Evidence:** `scripts/build-loop.sh:161-167`
+**Evidence:** `scripts/build-loop.sh:144-172`; probes.log; baseline.log (ok 7)
 
 ---
 
-## Claim 21: "a" and "a/" count as the same entry for "none twice" (header ":25 a trailing / ignored"; code `seen[${g%/}]`)
+## Claim 14: "Split on single spaces only; globform then refuses any other blank in an entry." / "not a bare $v: the shell would expand * and ? against files"
 
-**Location:** `scripts/build-loop.sh:165-166`
+**Location:** `scripts/build-loop.sh:149`, `:155`
 **Type:** Behavioral
-**Legibility-target:** header contract / maintainers
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers one trailing slash (`a`/`a/`, `a?`/`a?/`) and the glob-character keys `*`, `a*`. It does not establish equivalence of other spellings (`a` vs `./a` is refused outright, and `a` vs `a//` is refused as an empty part).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers tabs (left inside an entry by `IFS=' '` and refused by globform's character class) and the no-glob-expansion read; does not establish VT/FF (globform's class excludes them too, by reading).
 
-The code is `if [[ -n "${seen[${g%/}]-}" ]]; then why="lists entry $i twice"; break; fi; seen[${g%/}]=1`. T45's `a a/` case passes. In E2, `a? a?/`, `a* a*` and `* *` give "entry 2 twice", while `a *` and `* a` are set (`$S/probe2.log`, `$S/probe1.log`).
+`IFS=' ' read -ra parts <<<"$v"` (`:155`) does not expand globs. Glob characters reach `parts` as written (`a/ *` → `never a/ * set`). The T45 tab cases (`a\tb`, `\ta`, `a\t`, `a \tb`) are malformed and not echoed (baseline ok 7). The bare-`$v` statement is standard bash pathname expansion (paraphrased — no quote available because it describes code that is not there, an unquoted expansion).
 
-**Evidence:** `scripts/build-loop.sh:162-167`, `$S/probe1.log`, `$S/probe2.log`
+**Evidence:** `scripts/build-loop.sh:149-161`; probes.log; baseline.log
 
 ---
 
-## Claim 22: "a throwaway repo under $BATS_TEST_TMPDIR with a main branch, the same hermetic git environment as test/scripts/dev-cycle.bats"
+## Claim 15: "a throwaway repo under $BATS_TEST_TMPDIR with a main branch, the same hermetic git environment as test/scripts/dev-cycle.bats"
 
 **Location:** `test/lib/build-loop-fixtures.bash:2-4`
 **Type:** Architectural
-**Legibility-target:** test maintainers
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the git env exports. It does not establish identical locale: the fixture adds `LC_ALL=C`, which dev-cycle.bats' setup does not set.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the git variables and HOME; does not establish identity of other setup (the fixture also sets `LC_ALL=C`; C6 settled).
 
-The fixture exports `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`, the author and committer pairs and `HOME="$BATS_TEST_TMPDIR/home" LC_ALL=C` (`build-loop-fixtures.bash:13-16`). dev-cycle.bats' setup exports the same git variables and HOME (`test/scripts/dev-cycle.bats:11-15`).
+Fixture `:11-14` exports `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`, the author/committer `t`/`t@example.invalid` and `HOME="$BATS_TEST_TMPDIR/home"`. `test/scripts/dev-cycle.bats:11-15` exports the same values.
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:7-21`, `test/scripts/dev-cycle.bats:8-20`
+**Evidence:** `test/lib/build-loop-fixtures.bash:7-19`; `test/scripts/dev-cycle.bats:8-18`
 
 ---
 
-## Claim 23: "settings LINE...: docs/dev-cycle.md holding these lines (printf %s\n each), committed. Pass no lines for an empty file."
+## Claim 16: "settings LINE...: ... With no lines the file holds one empty line."
 
-**Location:** `test/lib/build-loop-fixtures.bash:26-28`
+**Location:** `test/lib/build-loop-fixtures.bash:24-25`
 **Type:** Behavioral
-**Legibility-target:** test maintainers
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers `printf '%s\n'` with no arguments; does not establish that any test calls `settings` with no arguments.
+
+Executed `printf '%s\n' | od -c` → `0000000  \n`, one newline. `settings() { mkdir -p docs && printf '%s\n' "$@" > docs/dev-cycle.md && commit_all settings; }` (`:26`).
+
+**Evidence:** `test/lib/build-loop-fixtures.bash:26`; replace-and-errors.log (`## printf`)
+
+---
+
+## Claim 17: "settings_is KEY WANT / settings_like KEY PREFIX: run --settings; its KEY line must equal WANT, or start with PREFIX. On a mismatch, print the whole output." / "line KEY: the --settings output line that starts with KEY."
+
+**Location:** `test/lib/build-loop-fixtures.bash:28-29`, `:34`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the helpers' comparison and failure print; does not establish a status check (neither helper asserts `$status`).
+
+`settings_is() { run --separate-stderr bash "$BL" --settings; [ "$(line "$1")" = "$2" ] || { echo "want: $2"; echo "$output $stderr"; return 1; }; }` (`:31`). `settings_like` uses `== "$2"*` (`:32`). `line() { printf '%s\n' "$output" | grep -m1 "^$1 " || true; }` (`:36`) returns the first line starting with `KEY `.
+
+**Evidence:** `test/lib/build-loop-fixtures.bash:28-36`
+
+---
+
+## Claim 18: test titles T1, T2, T3, T3/G19, slots, usage/exit and lib-source describe what they assert
+
+**Location:** `test/scripts/build-loop-read.bats:13`, `:24`, `:43`, `:70`, `:90`, `:143`, `:161`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that each test passes and its assertions match its title; does not establish the subdirectory/worktree part of `:161`'s test (Claim 23) or gaps settled as C14-C17.
+
+All 9 pass (baseline). The `pathform`, `HEAD`, `worktree` and `nonext` mutants each fail at least one test whose title names the mutated property (mut-*.log). Test 4 on the real `docs/dev-cycle.md` prints `policy review unset: line 7 is not exactly ...` (`Build-loop policy: review (interim; Q-103)`).
+
+**Evidence:** baseline.log; mut-*.log; `docs/dev-cycle.md:7`
+
+---
+
+## Claim 19: T4 title "the working tree and other branches never decide" and "Committed on a checked-out loop branch: HEAD is not main."
+
+**Location:** `test/scripts/build-loop-read.bats:78`, `:82`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that T4 tells main from both HEAD and the working tree; does not establish that the `lower` branch step (uncommitted, so equal to main) adds a further check.
+
+Mutant `HEAD` (`"$MAIN_SHA:$f"` → `"HEAD:$f"`) fails T4 at bats `:84` (`settings_like policy "policy review set:"`). Mutant `worktree` (`git cat-file blob ... |` → `cat "$f" |`) fails T4 too.
+
+**Evidence:** `test/scripts/build-loop-read.bats:78-88`; mut-head.log; mut-worktree.log
+
+---
+
+## Claim 20: "Copies in markup, a table, a link or with a misplaced colon count as second lines too."
+
+**Location:** `test/scripts/build-loop-read.bats:122`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the eight shapes in the loop at `:123-124` (all counted, baseline ok 7); does not establish the general statement for links or markup.
+
+The listed shapes are all counted. As a general statement it misses the shapes in Claim 3b: `[Self-merge](u) never: b/` (a link wrapping part of the key) and `- [x] Self-merge never: b/` are not counted (probes.log). Precise version: "These copies in markup, ... count as second lines".
+
+**Evidence:** `test/scripts/build-loop-read.bats:122-127`; probes.log (`### never second line`)
+
+---
+
+## Claim 21: "A part starting .git is allowed: the list only adds refusals." / "A never line Markdown would continue on the next line is malformed." / "Raised only on a loop's branch or in the working tree: ignored."
+
+**Location:** `test/scripts/build-loop-read.bats:128`, `:131`, `:136`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that each section discriminates its property under a mutant; does not establish the fence-in-between NEXT case (Claim 9).
+
+Mutant `pathform` fails at `:130`. Mutant `nonext` (the `next[never]` arm replaced by `elif false`) fails T45. Mutants `HEAD` and `worktree` fail at `:140` (`never workflows/ set:`): HEAD is the `loop` branch, with a malformed never line, and the working tree has none.
+
+**Evidence:** `test/scripts/build-loop-read.bats:128-140`; mut-pathform.log; mut-nonext.log; mut-head.log; mut-worktree.log
+
+---
+
+## Claim 22: "The lib it sources (scripts/lib/dev-cycle-read.sh) is also tested from dev-cycle.sh's side, in test/scripts/dev-cycle.bats." / "this repo is untouched"
+
+**Location:** `test/scripts/build-loop-read.bats:3-6`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the reference and that tests cd into `$BATS_TEST_TMPDIR/repo`; does not establish dev-cycle.bats's coverage depth.
+
+`test/scripts/dev-cycle.bats:1037` sources `"$REPO_ROOT/scripts/lib/dev-cycle-read.sh"`. `bl_setup` does `R="$BATS_TEST_TMPDIR/repo"; mkdir -p "$R" && cd "$R" || return 1` (fixture `:16-17`).
+
+**Evidence:** `test/scripts/dev-cycle.bats:1037`; `test/lib/build-loop-fixtures.bash:16-18`
+
+---
+
+## Claim 23: "From a subdirectory and from a linked worktree, it reads the same main."
+
+**Location:** `test/scripts/build-loop-read.bats:169`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers telling main apart from the working tree in both runs; does not establish telling main apart from the checked-out HEAD (in a subdirectory or a linked worktree).
+
+```bash
+# test/scripts/build-loop-read.bats:170-172
+    settings 'Build-loop policy: self-merge'
+    git worktree add -q -b wt "$BATS_TEST_TMPDIR/wt" main && mkdir -p sub
+    for d in . "$BATS_TEST_TMPDIR/wt"; do printf 'Build-loop policy: review\n' > "$d/docs/dev-cycle.md"; done
+```
+(excerpt ends :172; enclosing @test continues to :178 — read)
+
+In both runs HEAD equals main's commit: the main checkout is on `main`, and `wt` is created at `main`. Only the uncommitted working tree differs. The `worktree` mutant fails this test (mut-worktree.log: not ok 9). The `HEAD` mutant passes it (mut-head.log: ok 9). So the test shows the script does not read the working tree. It does not show it reads main rather than the worktree's HEAD. T4 and T45 cover HEAD, but not from a subdirectory or a linked worktree.
+
+**Evidence:** `test/scripts/build-loop-read.bats:161-178`; mut-head.log; mut-worktree.log
+
+---
+
+## Claim 24: 1d79ffef R2 — "`settings_like A && settings_like B` never failed the test when A failed ... The checks are separate commands now; a mutation back to pathform fails T45."
+
+**Location:** commit 1d79ffef message (R2); `test/scripts/build-loop-read.bats:81`, `:87`, `:130`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers every `settings_is`/`settings_like` call (none in an `&&`/`||` list) and the other assertions (all `[...] && [...] || { ...; return 1; }`, which fail); does not establish setup steps, where a non-final `&&` part (e.g. `:86` `git merge -q loop && ...`) can still fail silently. In every case examined, a later assertion would then fail.
+
+`grep -E 'settings_(is|like)' ... | grep -E '&&|\|\|'` finds nothing. Pairs on one line use `;`: `:81`, `:87`, `:130`. Mutant `pathform` fails T45 at `:130`.
+
+**Evidence:** `test/scripts/build-loop-read.bats:17`, `:81`, `:87`, `:117`, `:130`, `:146`, `:167`; mut-pathform.log
+
+---
+
+## Claim 25: 1d79ffef R3/A5 — "copies with markup closing before the colon, a table cell, a link or "Self-merge never :" were hidden. A line now counts as a copy when its letters alone, case folded, start with the key's, so any of them is a second line"
+
+**Location:** commit 1d79ffef message (R3/A5)
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-author
+**Scope:** Covers the four named categories; does not establish markup in general (Claim 3b).
+
+`**Build-loop policy**: review` (T2), `| Self-merge never: | b/ |`, `[Self-merge never](x): b/` and `Self-merge never : b/` (T45) are all counted (baseline). "Any ... link" is too broad: `[Self-merge](u) never: b/` and `[Build-loop](x) policy: review`, links that close inside the key, stay hidden (probes.log). Precise version: "a link around the whole key".
+
+**Evidence:** probes.log; baseline.log (ok 2, ok 7)
+
+---
+
+## Claim 26: 1d79ffef — "A never line followed by a non-blank line is malformed (Markdown would join the next line as more globs)."
+
+**Location:** commit 1d79ffef message (R3/A5)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers a following plain text line; does not establish the rationale for a following fence or HTML comment line (Claim 9).
+
+`elif [[ "${next[never]}" != 1 ]]; then why="is followed by a non-blank line ..."` (`:152`). T45 `:132` passes; the `nonext` mutant fails T45.
+
+**Evidence:** `scripts/build-loop.sh:152`; mut-nonext.log
+
+---
+
+## Claim 27: 1d79ffef A6, A7, A8, C3, C13, A11-A13 — "GIT_NO_REPLACE_OBJECTS=1 ...", "main_file names main_entry's error and a failed blob read", "NEVER is an array of the checked entries", "read_settings resets POLICY and NEVER", "the no-echo check covers tabs", "fixture and header comments; Exit names help; "Unknown option" as in the sibling scripts"
+
+**Location:** commit 1d79ffef message
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers each named change as present and working at HEAD; does not establish A13's T45 comment wording beyond Claim 20.
+
+A6: Claim 6. A7: Claim 7. A8 and C3: Claim 11. C13: `"$output" != *$'\t'*` (bats `:117`). A11: Claim 16. A12: Claim 5. "Unknown option": `*) usage "Unknown option: $1" ;;` (`:55`), matching `scripts/dev-cycle.sh:112` `echo "Unknown option: $1"`.
+
+**Evidence:** `scripts/build-loop.sh:55`, `:63`, `:79`, `:130`, `:164`; `scripts/dev-cycle.sh:112`; `test/scripts/build-loop-read.bats:117`; logs above
+
+---
+
+## Claim 28a: 1d79ffef A14/A15 — "T4 and T45 now have a working tree and a checked-out branch that differ from main; a mutant reading HEAD fails them."
+
+**Location:** commit 1d79ffef message (A14/A15)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers T4 and T45; does not establish the subdirectory/worktree runs (Claim 28b).
+
+Executed: the `HEAD` mutant fails T4 (`:84`) and T45 (`:140`).
+
+**Evidence:** mut-head.log (`date -u` 11:45:41Z; cwd `fc-r1/mut-head`; `bats test/scripts/build-loop-read.bats`; exit 1)
+
+---
+
+## Claim 28b: 1d79ffef A14/A15 — "the subdirectory and worktree runs ... now have a working tree and a checked-out branch that differ from main; a mutant reading HEAD fails them."
+
+**Location:** commit 1d79ffef message (A14/A15); `test/scripts/build-loop-read.bats:169-177`
+**Type:** Behavioral
 **Verdict:** Incorrect
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the no-argument case of `settings`. It does not establish any current caller relying on it: no test calls `settings` with no arguments, so no assertion is affected today.
+**Legibility-target:** for-author
+**Scope:** Covers the subdirectory and linked-worktree runs in test 9; does not establish anything about T4/T45 (Claim 28a).
 
-`settings() { mkdir -p docs && printf '%s\n' "$@" > docs/dev-cycle.md && commit_all settings; }`. With no arguments, `printf '%s\n'` still applies its format once, so the file holds one newline (one empty line), not zero bytes. E2: `printf '%s\n' | od -c` gives `\n` with size 1 (`$S/probe2.log`). A test written to this comment for an "empty file" case would actually test a one-blank-line file.
+In test 9 the checked-out branch does not differ from main. The subdirectory run is in the main checkout on `main`. The worktree run is on `wt`, created at `main` with nothing committed (`git worktree add -q -b wt "$BATS_TEST_TMPDIR/wt" main`, `:171`). The `HEAD` mutant passes test 9 (mut-head.log: `ok 9`). Only the working tree differs, and the `worktree` mutant does fail it. A14's "could not tell main from ... worktree HEAD" is still open for these runs. The overall suite does catch a HEAD-reading mutant, through T4/T45.
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:28`, `$S/probe2.log`
-
----
-
-## Claim 24: "settings_is KEY WANT / settings_like KEY PREFIX: run --settings; its KEY line must equal WANT, or start with PREFIX. On a mismatch, print the whole output."
-
-**Location:** `test/lib/build-loop-fixtures.bash:30-34`
-**Type:** Behavioral
-**Legibility-target:** test maintainers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the helpers' own behaviour (return 1 and print output plus stderr on a mismatch, as m5 and m6 show). It does not establish that a call site enforces the return value: see Claim 37 for `A && B` call sites where A's failure is swallowed. The helpers do not check `$status`.
-
-The helpers are `settings_is() { run --separate-stderr bash "$BL" --settings; [ "$(line "$1")" = "$2" ] || { echo "want: $2"; echo "$output $stderr"; return 1; }; }`, and settings_like is the same with a prefix match. The m5/m6 logs show the "want:" and output dump.
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:33-38`, `$S/mutation-and.log`, `$S/mutation-m6.log`
+**Evidence:** `test/scripts/build-loop-read.bats:169-177`; mut-head.log; mut-worktree.log
 
 ---
 
-## Claim 25: "Each test builds a throwaway repo under $BATS_TEST_TMPDIR (test/lib/build-loop-fixtures.bash); this repo is untouched."
+## Claim 29: 1d79ffef — "The unit is 400 changed code lines"
 
-**Location:** `test/scripts/build-loop-read.bats:3-5`
-**Type:** Invariant
-**Legibility-target:** test maintainers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that setup cds into `$BATS_TEST_TMPDIR/repo` before any write, and that every write path in the suite is relative or under BATS_TEST_TMPDIR. It does not establish isolation when BATS_TEST_TMPDIR is unset (bats always sets it).
-
-`R="$BATS_TEST_TMPDIR/repo"; mkdir -p "$R" && cd "$R" || return 1` (fixtures `:18-19`). The worktree's `git status --short` showed only pre-existing untracked files before and after E1.
-
-**Evidence:** `test/lib/build-loop-fixtures.bash:18-20`, `test/scripts/build-loop-read.bats:152-167`
-
----
-
-## Claim 26: "# Missing, a symlink, a directory, and a file only in the working tree."
-
-**Location:** `test/scripts/build-loop-read.bats:54`
-**Type:** Behavioral
-**Legibility-target:** test maintainers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the four cases named. It does not mention a fifth case the block also asserts (`docs` itself a symlink: "docs is not a directory on the default branch", `:62-64`); that is an omission from the list, not a contradiction.
-
-The block runs `git rm …` (missing), `ln -s ../real.md docs/dev-cycle.md` (symlink), `mkdir -p docs/dev-cycle.md` (directory), `ln -s real-docs docs` (parent symlink), and finally a working-tree-only file. It passes in E1.
-
-**Evidence:** `test/scripts/build-loop-read.bats:54-66`, `$S/bats.log`
-
----
-
-## Claim 27: no-echo assertion: malformed entries are never echoed (A3)
-
-**Location:** `test/scripts/build-loop-read.bats:114-115`
-**Type:** Behavioral
-**Legibility-target:** test maintainers / reviewers of A3
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers `\xc3`, `../x`, `/etc`, `-x` and `./b` across all 15 malformed values (the substrings do not occur in any fixed message text, checked against `:153-183`). It does not establish no-echo for values not containing one of those five substrings (e.g. `a  b`, `a b a`); the code never echoes `$v` on the malformed path (`:169`), so this holds statically.
-
-The assertion is `[[ "$output" != *$'\xc3'* && "$output" != *../x* && "$output" != */etc* && "$output" != *-x* && "$output" != *./b* ]]`, and it passes in E1.
-
-**Evidence:** `test/scripts/build-loop-read.bats:107-116`, `scripts/build-loop.sh:169`
-
----
-
-## Claim 28: T45 comments: "Bold, heading and emphasis copies count as second lines too." / "A part starting .git is allowed: the list only adds refusals." / "Raised only on a loop's branch or in the working tree: ignored."
-
-**Location:** `test/scripts/build-loop-read.bats:119`, `test/scripts/build-loop-read.bats:124`, `test/scripts/build-loop-read.bats:127`
-**Type:** Behavioral
-**Legibility-target:** test maintainers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the loop at `:120-123` (also a code-span copy) and the `:128-131` branch/working-tree case. It does not establish that the `.github/` assertion at `:126` is enforced: its first operand is not (Claim 37).
-
-The `.github` comment's assertion is at `:126`. Its first operand (`never .github/ .gitignore set:`) is swallowed on failure (m4), while the second operand (the policy) is enforced (m5).
-
-**Evidence:** `test/scripts/build-loop-read.bats:119-131`, `$S/mutation-and.log`
-
----
-
-## Claim 29: "# From a subdirectory and from a linked worktree, it reads the same main."
-
-**Location:** `test/scripts/build-loop-read.bats:160`
-**Type:** Behavioral
-**Legibility-target:** test maintainers (G20)
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that from both places the script runs and reports main's policy. It does not establish that the source is main rather than the local working tree or HEAD: the worktree branch `wt` is created at main and `sub` is in main's own checkout, so all three hold the same content and the assertion cannot tell them apart. T4 (`:77-85`) is what pins main-only reading.
-
-The test does `git worktree add -q -b wt "$BATS_TEST_TMPDIR/wt" main && mkdir -p sub`, then asserts `policy self-merge set:` from each place (`:162-167`), and passes in E1.
-
-**Evidence:** `test/scripts/build-loop-read.bats:160-167`
-
----
-
-## Claim 30: 0797ed32 body: the tests cover the policy line (exact, one line, CR, variants, fences, comments, BOM, not plain on main or only in the working tree, this repo's real file), slots, Self-merge never: (malformed turns self-merge off; never echoed), usage and exit codes, G16, and G20 from a subdirectory and a linked worktree.
-
-**Location:** commit 0797ed32
-**Type:** Reference
-**Legibility-target:** git history readers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that each listed area has a test at HEAD that passes. It does not re-check the 0797ed32 tree itself (the tests were since refactored by 0ae7d801).
-
-Each item maps to a test at HEAD: T1-T3 (`:13-67`), G19 (`:69-75`), T4 (`:77-85`), slots (`:87-98`), T45 (`:100-132`), usage (`:134-150`) and G16/G20 (`:152-167`). All pass in E1.
-
-**Evidence:** `test/scripts/build-loop-read.bats:13-168`, `$S/bats.log`
-
----
-
-## Claim 31: 224dd52d Notes: "A policy of self-merge with a malformed never line prints "policy review unset", so the policy line always shows the policy in force."
-
-**Location:** commit 224dd52d
-**Type:** Behavioral
-**Legibility-target:** git history readers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers --settings' printed line versus the POLICY variable (they agree on every branch). It does not establish the commit's "byte-exact" wording (settled Won't-Fix in the override log, not re-raised).
-
-`POLICY_LINE="policy review unset: line ${first[policy]} reads self-merge, but the Self-merge never: line is malformed, so self-merge is off"` (`:177`), with POLICY left at review. T45 asserts this for 15 malformed values (E1), and E2 shows the same output for VT, FF, NBSP and other cases.
-
-**Evidence:** `scripts/build-loop.sh:176-178`, `test/scripts/build-loop-read.bats:110-113`, `$S/probe1.log`
-
----
-
-## Claim 32: 30676e57 R1/A1: "A tab, VT, FF or CR in the value is now malformed, and the split uses IFS=' '."
-
-**Location:** commit 30676e57
-**Type:** Behavioral
-**Legibility-target:** git history readers / review-loop record
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers tab, VT and FF (executed) and the `IFS=' '` split being present. It does not establish that CR is reachable (it is not; see Claim 19).
-
-Both changes are present at HEAD (`:157`, `:161`) and were present at 30676e57 (`git show 30676e57:scripts/build-loop.sh`, lines 161 and 165). E2 results for VT and FF: malformed.
-
-**Evidence:** `scripts/build-loop.sh:157-161`, `$S/probe1.log`
-
----
-
-## Claim 33: 30676e57 A2: "The key strip now also drops # * _ ` ~ and BOMs, so such a copy is a second line (policy unset, never malformed)."
-
-**Location:** commit 30676e57
-**Type:** Behavioral
-**Legibility-target:** git history readers / review-loop record
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers bold, heading, emphasis, code-span and mid-file BOM copies for policy and never. It does not establish coverage of other rendered-key shapes (Claim 6's residue).
-
-The strip regex at `:106` includes `#*_`~` and `\357\273\277`. T2's loop (`:33-36`) and T45's loop (`:120-123`) pass.
-
-**Evidence:** `scripts/build-loop.sh:106`, `test/scripts/build-loop-read.bats:33-36`, `test/scripts/build-loop-read.bats:120-123`
-
----
-
-## Claim 34: 30676e57 A3, A4, "a" vs "a/", and header bullet ("Usage lists -h; the reader rules say which apply outside a fence and that the BOM refusal is line 1 only; the scrub note names the two start-up errors before it.")
-
-**Location:** commit 30676e57
-**Type:** Behavioral / Reference
-**Legibility-target:** git history readers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each bullet at the 30676e57 tree, and A3/A4/a-vs-a/ at HEAD. It does not cover the header's reader-rule list at HEAD: 0ae7d801 replaced it with a pointer to FENCE_AWK, as that commit states. This is superseded, not stale.
-
-`git show 30676e57:scripts/build-loop.sh` lines 31-37 carry the list with "outside a fence … anywhere, a stray CR or a NUL byte, or a byte-order mark on line 1". Usage lists `-h | --help` (`:7`). A3 is Claim 27, A4 is Claim 16 and a-vs-a/ is Claim 21.
-
-**Evidence:** `scripts/build-loop.sh:6-7`, `scripts/build-loop.sh:37-39`, `test/scripts/build-loop-read.bats:114-115`, `test/scripts/build-loop-read.bats:124-126`
-
----
-
-## Claim 35: 30676e57 Notes: "The wider key strip fails closed: a prose line starting "**Build-loop policy:**" now unsets the policy."
-
-**Location:** commit 30676e57
-**Type:** Behavioral / Invariant
-**Legibility-target:** git history readers
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that widening the strip can only add counted lines, and a counted line can only move policy to unset or never to malformed. It does not establish the converse (shapes still uncounted, Claim 6), which fails open in the sense that a rendered second copy is ignored.
-
-More counted lines can only trigger the `-gt 1` branches (`:153`, `:173`, `:181`). A lone counted prefixed line fails the exact-text tests on the raw `t[k]` (Claim 15). T2's bold case passes.
-
-**Evidence:** `scripts/build-loop.sh:111`, `scripts/build-loop.sh:152-183`, `test/scripts/build-loop-read.bats:33-36`
-
----
-
-## Claim 36: 0ae7d801: "U1b is 398 lines."
-
-**Location:** commit 0ae7d801
+**Location:** commit 1d79ffef message
 **Type:** Configuration
-**Legibility-target:** pr-prep size gate
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the code files' insertions in the unit diff. It does not count docs/reviews/ records.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers scripts/ and test/ in the three-dot diff; does not establish pr-prep's own counting rule beyond that.
 
-`git diff --stat feat/build-loop-u1a...feat/build-loop-u1b -- scripts test` prints `3 files changed, 398 insertions(+)` (192 + 38 + 168).
+`git diff --numstat feat/build-loop-u1a...HEAD -- scripts test` → `186 0 scripts/build-loop.sh`, `36 0 test/lib/build-loop-fixtures.bash`, `178 0 test/scripts/build-loop-read.bats`. 186 + 36 + 178 = 400. Checked against the logged pattern class "specific measured value quoted from an artifact set that does not contain it": not a recurrence.
 
-**Evidence:** `scripts/build-loop.sh:1-192`, `test/lib/build-loop-fixtures.bash:1-38`, `test/scripts/build-loop-read.bats:1-168`
-
----
-
-## Claim 37: 0ae7d801: "No assertion was dropped"
-
-**Location:** commit 0ae7d801; `test/scripts/build-loop-read.bats:80`, `test/scripts/build-loop-read.bats:126`
-**Type:** Behavioral
-**Legibility-target:** git history readers / reviewers relying on test coverage
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers enforcement of every assertion the refactor rewrote. Textually every assertion is still present; the defect is that two are no longer enforced. It does not establish whether other `&&`-joined helper calls exist in later units.
-
-Before the refactor, each pair was one guarded test, for example `[[ "$(line policy)" == "policy review set:"* && "$(line slots)" == "slots 3 default:"* ]] || { echo "$output"; return 1; }` (from `git diff 30676e57 0ae7d801`). After it, the pair is `settings_like policy "policy review set:" && settings_like slots "slots 3 default:"` (`build-loop-read.bats:80`) and `settings_like never "never .github/ .gitignore set:" && settings_like policy "policy self-merge set:"` (`:126`). Under bash's errexit rules, a failing command on the left of `&&` does not stop the shell, and neither line is the last in its test. So a wrong first operand is silently ignored.
-
-The m4 mutation changes the first operands to `policy WRONG set:` and `never WRONG set:`, and both T4 and T45 still report `ok`. The m5 mutation, which changes the second operand at `:126`, is caught. The m6 mutation, which changes the first operand at `:84` (the last line of T4), is caught. Effect: T4's working-tree check (`:80`, "a self-merge policy in the working tree does not decide") and T45's `.github/` acceptance check (A4's regression test) no longer fail when they should. T4's `:82` and the slots operand at `:80` still partly cover the first.
-
-**Evidence:** `test/scripts/build-loop-read.bats:77-85`, `test/scripts/build-loop-read.bats:124-126`, `test/lib/build-loop-fixtures.bash:33-34`, `$S/mutation-and.log`, `$S/mutation-m6.log`
+**Evidence:** command run in /workspace/.claude/wt-build-loop-u1b, exit 0, 11:42Z (output reproduced above)
 
 ---
 
-## Claim 38: 0ae7d801: "A mutation check: without the IFS=' ' split, T45 fails on the tab cases; the explicit tab test is a second guard (globform also refuses a tab inside an entry)."
+## Claim 30: 1d79ffef — "Override-log rows for A9/A10 and C1, C2, C4-C11, C14-C19." / "Also merges feat/build-loop-u1a's iteration-2 fixes first."
 
-**Location:** commit 0ae7d801
+**Location:** commit 1d79ffef message
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers each code having a u1b row in docs/reviews/override-log.md and the merge order; does not re-judge the rows. Note C19's premise (Claim 3b).
+
+grep of u1b rows: one each for A9, A10, C1, C2, C4-C11, C17, C18, C19. C14-C17 share row `:246` ("C14-C17"). `git log` shows merge 93f09654 directly before 1d79ffef. The commit adds 14 lines to override-log.md (`git show --stat`).
+
+**Evidence:** `docs/reviews/override-log.md:235`, `:245`, `:246`, `:248`
+
+---
+
+## Claim 31: 1d79ffef Notes — "the letters-only match can unset the policy for a prose line that starts with the key's words (docs/dev-cycle.md has none; T3's real-file test would catch one)"
+
+**Location:** commit 1d79ffef message (Notes)
 **Type:** Behavioral
-**Legibility-target:** git history readers / reviewers deciding whether both guards are needed
-**Verdict:** Incorrect
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three mutations on the HEAD tree (and the same two guards existed at 30676e57, so the claim was never true of any committed tree). It does not establish what an uncommitted intermediate state the author tested may have held. Matches the logged pattern of commit messages claiming test outcomes that do not reproduce.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the policy key; does not establish detection of a prose line starting "Build-loop slots" or "Self-merge never" (test 4 asserts only the policy line, and under review policy a malformed never line changes nothing it checks).
 
-Results: m1 (only `IFS=' '` removed, `read -ra parts <<<"$v"`) gives T45 `ok`. m2 (only the `*[$'\t\v\f\r']*` test removed) gives T45 `ok`. m3 (both removed) gives T45 `not ok`, at `:111` with `never a	b set:` (`$S/mutation.log`). Without the IFS split, T45 still passes, because the explicit `\t\v\f\r` test at `:157` refuses every tab case before the split. Each guard alone is sufficient, and T45 fails only when both are gone. The parenthetical is accurate: with `IFS=' '`, `a<TAB>b` is one entry and globform refuses it (m2). But the headline mutation result is refuted, and so is the framing that IFS is primary and the tab test secondary: neither guard is pinned by a test on its own.
+Executed --settings on a repo holding HEAD's `docs/dev-cycle.md`: `policy review unset: line 7 is not exactly ...`, `slots 3 default: no line starts ...`, `never none: no line starts ...`, so there is one policy line and no slots/never lines. Test 4 (`:74`) requires `policy review unset: line *' is not exactly ...'`. A second prose policy line would print `more than one line starts` and fail it.
 
-**Evidence:** `scripts/build-loop.sh:157-164`, `test/scripts/build-loop-read.bats:107-113`, `$S/mutation.log`
+**Evidence:** `test/scripts/build-loop-read.bats:70-76`; `docs/dev-cycle.md:7`; executed in `fc-r1/repos/real`, exit 0, 11:47Z
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 23** (`test/lib/build-loop-fixtures.bash:27`): "Pass no lines for an empty file". `printf '%s\n'` with no arguments writes one newline, so the file has one blank line. No caller uses it today.
-- **Claim 37** (commit 0ae7d801; `test/scripts/build-loop-read.bats:80`, `:126`): "No assertion was dropped". Two first operands of `settings_like … && settings_like …` are no longer enforced: T4's working-tree policy check and T45's `.github/ .gitignore set` check. The m4 mutation passes.
-- **Claim 38** (commit 0ae7d801): "without the IFS=' ' split, T45 fails on the tab cases". It does not: T45 passes with either guard removed and fails only with both removed.
+- **Claim 3b** (`scripts/build-loop.sh:26-27`), and the same text in **Claim 8** (`scripts/build-loop.sh:90-92`): "markup ... cannot hide a copy" is false for markup that carries letters. `- [x]` task items, mid-line inline HTML (`Build-loop <span>policy</span>:`) and a link closing inside the key (`[Build-loop](x) policy:`) all hide a copy that renders as the key. The comment should be narrowed, or the orchestrator should decide whether C19's Won't-Fix covers these shapes (its "does not render as the key" premise does not hold for them).
+- **Claim 28b** (commit 1d79ffef, A14/A15; `test/scripts/build-loop-read.bats:169-177`): the subdirectory/worktree runs do not have a checked-out branch that differs from main, and a HEAD-reading mutant passes test 9. Only T4/T45 catch it.
 
 ### Stale
-- (none)
+- None.
 
 ### Mostly Accurate
-- **Claim 14** (`scripts/build-loop.sh:73-77`): main_file's comment omits main_entry's `error` result (ls-tree failed). That case returns 1 but is reported as "is not a regular file on the default branch".
+- **Claim 1** (`scripts/build-loop.sh:9-12`): "a second copy ... leaves the default" does not hold for the never line, which reads `malformed`, not the default `none`.
+- **Claim 9** (`scripts/build-loop.sh:92-93`): NEXT is the next line FENCE_AWK does not skip (EOF counts as blank). A following fence or one-line HTML comment makes it malformed with a false "Markdown would join it" WHY. This fails closed.
+- **Claim 20** (`test/scripts/build-loop-read.bats:122`): true for the listed shapes, not for links or markup in general.
+- **Claim 23** (`test/scripts/build-loop-read.bats:169`): tells main from the working tree, not from the worktree's or subdirectory's HEAD.
+- **Claim 25** (commit 1d79ffef R3/A5): "any ... link is a second line" holds only for a link around the whole key.
 
 ### Unverifiable
-- (none)
+- None.
 
-Notable residues on Verified claims (not defects in the claims as worded):
-- **Claim 6/15** (`scripts/build-loop.sh:28-31`, `:96-99`): rendered copies of a key that stay uncounted, so they are hidden: a GFM task item `- [ ] Key:`, link text `[Key: …](x)`, a leading NBSP, `\# Key:`, the entity `&#66;uild-loop policy:` and a table row `| Key: |`.
-- **Claim 16** (`:118-121`): `.git/` and `.GIT` are accepted as never entries.
-- **Claim 29** (`build-loop-read.bats:160`): the subdirectory and worktree runs cannot tell main from the working tree.
+---
 
 ## Goal-Alignment Note
 
-The goal is a full code review of U1b before it lands. The script's behavioural claims (header contract, fail-closed policy, never-line grammar, scrub, exit codes, read-only) all hold under execution. Two results are most relevant to landing. First, the 0ae7d801 refactor that brought U1b under the 400-line cap left two assertions unenforced (Claim 37), one of them the A4 regression test that iteration 1's fix relies on. Second, the commit's mutation evidence for the tab fix does not reproduce (Claim 38): neither tab guard is pinned by a test on its own. Both are test-suite and commit-record problems, not script defects. Fixing Claim 37 (for example `settings_like A; settings_like B` on separate lines, or `|| return 1` per call) would not grow the line count. The counting rule's residual hidden shapes (Claim 6) are outside the header's wording, and are for the security and API critics to weigh.
+**Success criterion (verbatim):** A markdown report saved to the path below, structured per the code-fact-check skill.
+
+**Answered:** Yes. 33 claims, verdicted at HEAD 1d79ffef: 25 Verified, 5 Mostly accurate, 3 Incorrect (3b and 8 are the same defect at two locations), with most verdicts executed (throwaway repos, replace refs, deleted objects, four mutants run against full copies of the suite). Brief items 1-11 are each covered: copy rule (3a/3b/8), never grammar and `*`/`?` subscripts (2), NEXT (9), replace refs (6), FILE_WHY arms including a real `error` (7), NEVER/reset (11), comments at :135/:149/:155/:112 (10, 12, 14), scrub/Exit (4, 5), commit claims (24-31), fixture (15-17) and test titles/comments (18-23).
+
+**Out of scope:** Code quality and design choices recorded in 1d79ffef's Notes (letters-only matching, blank-after rule, array NEVER) were not judged as choices. Settled override-log rows were not re-raised; C19's premise is noted under Claim 3b only. u1a's merged fixes were not reviewed. No tests or code were edited.
+
+**Escalate:** Claim 3b/8 is a fail-to-detect gap in the copy rule that the header and commit message advertise as closed. It is adjacent to settled C19 but covers different shapes (task box, inline HTML, partial link) where C19's rationale does not hold. Whether this is amber or folds into C19 is the orchestrator's decision. Claim 28b is a commit-message and test-coverage claim; the A14 gap for HEAD inside a linked worktree remains, though T4/T45 catch a HEAD reader in general.
+
+**Questions/Decisions:** None.

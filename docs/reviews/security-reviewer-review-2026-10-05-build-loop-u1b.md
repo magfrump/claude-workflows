@@ -1,211 +1,218 @@
-Commit: 0ae7d801
+Commit: 1d79ffef
 
-# Security Review — feat/build-loop-u1b (review-fix iteration 2)
+# Security Review — feat/build-loop-u1b (review-fix iteration 3, final)
 
-**Scope:** `feat/build-loop-u1a...feat/build-loop-u1b`: `scripts/build-loop.sh` (`--settings`), `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-read.bats`; the enclosing `scripts/lib/dev-cycle-read.sh` read for context (unchanged)
+**Scope:** `feat/build-loop-u1a...feat/build-loop-u1b` at 1d79ffef: `scripts/build-loop.sh` (`--settings`), `test/lib/build-loop-fixtures.bash`, `test/scripts/build-loop-read.bats`; `scripts/lib/dev-cycle-read.sh` read for context (unchanged)
 **Date:** 2026-10-05
-**Based on:** Stage-1 merged fact-check `docs/reviews/code-fact-check-report-build-loop-u1b.md` (escalations E1, E3 addressed here); plan `docs/working/plan-build-loop-handoff.md` D5, D6, F12, F56
-**Probes:** all run in a scratch dir outside the worktree against throwaway repos (`git init -b main`, hermetic git env, `bash scripts/build-loop.sh --settings`); outputs quoted below.
+**Based on:** Stage-1 merged fact-check `docs/reviews/code-fact-check-report-build-loop-u1b.md` at 1d79ffef (escalations E1 and E3 are answered here); plan `docs/working/plan-build-loop-handoff.md` D5, D6, F38, F56; override-log rows C18 and C19
+**Probes:** run in `/home/node/.claude/jobs/989f3e5a/tmp/review-u1b-i3/security/` against throwaway repos (`git init -b main`, hermetic git env, `bash scripts/build-loop.sh --settings`), git 2.39.5. `bats test/scripts/build-loop-read.bats` passes 9/9 at 1d79ffef.
 
 ## Trust Boundary Map
 
 ```
-B1: [docs/dev-cycle.md blob on MAIN_SHA]          → [FENCE_AWK + SETTINGS_AWK key count (build-loop.sh:101-117)] → [POLICY / SLOTS / NEVER]
-B2: [Self-merge never: line text]                 → [single-space check + globform (build-loop.sh:155-170)]      → [NEVER, consumed by U2's gate]
-B3: [git refs: origin/HEAD symref, refs/heads/*, refs/replace/*] → [resolve_main / main_by_name (lib), git cat-file] → [MAIN_SHA "the default branch's commit"]
-B4: [repo text reaching stdout/stderr]            → [scrub_reexec / scrub (lib:76-81)]                             → [orchestrator transcript]
+B1: [docs/dev-cycle.md blob on MAIN_SHA]   → [FENCE_AWK + SETTINGS_AWK letters-only key count (build-loop.sh:96-111)] → [POLICY / SLOTS / NEVER]
+B2: [Self-merge never: line text]          → [single-space check + next-line check + globform (build-loop.sh:148-164)] → [NEVER array, consumed by U2's gate]
+B3: [git refs and repo config: origin/HEAD, refs/heads/*, refs/replace/*, .git/config core.useReplaceRefs] → [resolve_main / main_by_name (lib), GIT_NO_REPLACE_OBJECTS (build-loop.sh:63)] → [MAIN_SHA, "the default branch's commit"]
+B4: [repo text reaching stdout/stderr]     → [scrub_reexec / scrub (lib:48-81)] → [orchestrator transcript]
 ```
 
 ```
-S1: docs/dev-cycle.md on main      — runtime-mutable (user / orchestrator commits; N-denied to loops, plan F12/F56)
-                                      — UNTRUSTED for printing (B4); trusted-as-intent for policy, but its
-                                        *parse* must fail closed on ambiguity
-S2: local git refs (origin/HEAD, refs/heads/*, refs/replace/*) — runtime-mutable by any process with the uid,
-                                      including a build loop (the plan treats loop-written refs as in-model: F38)
-                                      — UNTRUSTED for "which commit is main" (B3)
-S3: environment (DEV_CYCLE_SCRUBBED, GIT_*) — caller-controlled — trusted (orchestrator sets it; settled/documented)
-S4: code constants (SETTINGS_AWK, NAMECHARS, key strings) — code-constant — trusted
+S1: docs/dev-cycle.md on main   — runtime-mutable (the user's or orchestrator's commits; N-denied to
+                                   loops by the floor, plan F12/F56, so a loop reaches it only through a
+                                   human-merged review-mode change)
+                                — UNTRUSTED for printing (B4); trusted as the author's intent for the
+                                   policy, but its parse must fail closed wherever the rendered file and
+                                   the parsed value can disagree (B1, B2)
+S2: local refs and .git/config (origin/HEAD, refs/heads/*, refs/replace/*, core.useReplaceRefs)
+                                — runtime-mutable by any process with the uid, a build loop included
+                                   (in-model: plan F38, override row C18)
+                                — UNTRUSTED for "which commit and which blob is main" (B3)
+S3: caller environment (DEV_CYCLE_SCRUBBED, GIT_*, LC_ALL) — set by the orchestrator — trusted (documented)
+S4: code constants (SETTINGS_AWK, NAMECHARS, the key strings) — code-constant — trusted
 ```
 
-Repo text enters only through S1 and is printed only after validation (NEVER globs) or not at all (policy/slots print fixed strings plus line numbers). The security property the unit claims is: settings come from main's commit, never a loop-writable source, and an ambiguous or malformed setting fails toward `review` / self-merge off. Findings 1–2 are where the *parse* fails open on ambiguity; Finding 3 and the settled-row note are where "main's commit" is decided by loop-writable refs.
+Repo text enters only through S1 and is printed only after validation (the never globs) or not at all (policy and slots print fixed text plus line numbers). The unit's security claims are: settings come from main's own objects, never a loop-writable source (B3), and any ambiguity in the file fails toward review, or toward self-merge off (B1, B2). Finding 1 is a B3 gap in the replace-ref guard added by 1d79ffef. Finding 2 is a B1/B2 fail-open that remains after the letters-only match. Finding 3 is the E1 second-copy shape, which is a legibility gap.
 
 ## Findings
 
-#### 1. A wrapped or near-miss `Self-merge never:` line silently drops protections while `policy self-merge` stays set
+#### 1. A repo-config `core.useReplaceRefs=true` overrides `GIT_NO_REPLACE_OBJECTS=1`, so the A6 replace-ref guard can be bypassed by anyone who can write `.git/`
 
 **Severity:** Medium
-**Location:** `scripts/build-loop.sh:152`, `scripts/build-loop.sh:106-110`
-**Boundary:** B1, B2
-**Move:** 3 (error path), 11 (guardrail bypasses)
-**Confidence:** High (reproduced); likelihood depends on how the line is written (operator, not attacker — S1 is N-denied to loops)
-**Legibility-target:** for-author
+**Location:** `scripts/build-loop.sh:62-63`
+**Boundary:** B3
+**Move:** 11 (guardrail bypass), 1
+**Confidence:** High that the mechanism works on git 2.39.5 (reproduced). Medium on reach: the same actor can already retarget origin/HEAD (C18, deferred to U3b), and git ≥2.42's replace-refs refactor may let the environment variable win (not verified here).
+**Legibility-target:** for-orchestrator-synthesis
 
-Evidence (`:152`; excerpt ends inside read_settings(), which continues to :185 — read):
+Evidence (`:62-63`):
+```
+# Read main's own objects: a replace ref could swap in any settings blob.
+export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1
+```
+
+On git 2.39, `GIT_NO_REPLACE_OBJECTS` is applied when git sets up its environment, and the repo config is read after that. `core.useReplaceRefs` in `.git/config` therefore turns replacement back on. I reproduced it in a throwaway repo. Main's blob reads `Build-loop policy: review`, and `git replace <blob> <blob reading self-merge>` is in place:
+
+| Repo config | `--settings` policy line |
+|---|---|
+| none | `policy review set: line 1 of docs/dev-cycle.md on the default branch` (the guard works) |
+| `git config core.useReplaceRefs true` | `policy self-merge set: line 1 of docs/dev-cycle.md on the default branch` |
+
+The same happens with a commit replace (main's commit replaced by a loop commit) once the config line is set. Raw git confirms it: `GIT_NO_REPLACE_OBJECTS=1 git cat-file blob HEAD:docs/dev-cycle.md` and `git --no-replace-objects cat-file ...` both print the replacement. Two forms do print main's own blob: `git -c core.useReplaceRefs=false cat-file ...` and `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.useReplaceRefs GIT_CONFIG_VALUE_0=false` with the environment variable. The comment at `:62` therefore claims more than the code delivers, and the printed "on the default branch" is false in this state. The impact is the same as iteration 2's Finding 3: on the dispatch and collect paths, a forged policy, slots value or never list routes items and sizes slots. The gate is less exposed, because D6's snippet refuses any `refs/replace/` entry by existence (plan :78, T36), so the config does not affect it. This is not a new class of actor. A uid that can write `.git/config` can also retarget origin/HEAD, and C18 already defers that to U3b's `--state`. What is new is that the A6 fix is bypassable, so the iteration-2 item cannot be closed as resolved.
+
+**Recommendation:** Pin the setting at command-line config precedence for every git call the script and its lib make. One option is `export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.useReplaceRefs GIT_CONFIG_VALUE_0=false` beside `:63`, which I verified reads `review`; note that it overwrites any GIT_CONFIG_COUNT the caller set. Another is to refuse to run when `git for-each-ref refs/replace/` prints anything, as D6 does. Either way, fix the comment at `:62` to match. If the orchestrator would rather not spend lines at the 400 cap, log it as an extension of C18 (same actor, same revisit trigger: U3b's `--state` already refuses `refs/replace/`, plan T42), with this probe as evidence.
+
+#### 2. A sole `Self-merge never:` line whose key letters are changed (homoglyph, entity, checked task box, mid-line HTML, link inside the key) reads `never none`, and self-merge stays on
+
+**Severity:** Medium
+**Location:** `scripts/build-loop.sh:101-104`, `scripts/build-loop.sh:145`
+**Boundary:** B1, B2
+**Move:** 11, 3 (fail direction)
+**Confidence:** High on the mechanism (reproduced). Low on likelihood: the shape has to reach main's `docs/dev-cycle.md`, which loops cannot self-merge (F56), so it needs the author's own edit or a human-approved review-mode change.
+**Legibility-target:** for-orchestrator-synthesis
+
+Evidence (`:101-104`; excerpt ends inside SETTINGS_AWK's main rule, which continues to :106, read):
+```
+  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
+  if (index(s, "buildlooppolicy") == 1) k = "policy"
+  else if (index(s, "buildloopslots") == 1) k = "slots"
+  else if (index(s, "selfmergenever") == 1) k = "never"
+```
+Evidence (`:145`; excerpt ends inside read_settings(), which continues to :179, read):
 ```
     if [[ -z "${cnt[never]-}" ]]; then NEVER_LINE='never none: no line starts "Self-merge never:"'
 ```
-Evidence (`:106-110`; excerpt ends inside SETTINGS_AWK's main rule, which continues to :112 — read):
-```
-  if (match(s, /^([ \t>#*_`~]|[-+][ \t]|[0123456789]+[.)][ \t]|\357\273\277)*/)) s = substr(s, RLENGTH + 1)
-  s = tolower(s); k = ""
-  if (index(s, "build-loop policy:") == 1) k = "policy"
-  else if (index(s, "build-loop slots:") == 1) k = "slots"
-  else if (index(s, "self-merge never:") == 1) k = "never"
-```
 
-The never list is the per-project extension of D5's floor; the header (`:26-27`) promises that a malformed line turns self-merge off. But only an exact key prefix is recognised, and anything else is classed as *absence* (`never none`), not malformed. Reproduced, each with `Build-loop policy: self-merge` on line 1:
+For the never key, absence is the permissive state: `never_ok` stays 1, and `Build-loop policy: self-merge` is honoured with no never list. The letters-only match fixed every iteration-2 near-miss shape (see "Iteration-2 items" below). It cannot catch a shape that adds letters before the key, adds letters inside it, or replaces a key letter with something that is not ASCII. Each of these probes has `Build-loop policy: self-merge` on line 1 and the shown line 2 as the only never line. Each renders as, or reads to a person as, `Self-merge never: workflows/`:
 
-| Line(s) as written | Rendered meaning | Output |
-|---|---|---|
-| `Self-merge never: docs/` + next line `scripts/` (hard wrap; docs/dev-cycle.md is hard-wrapped prose) | one paragraph: never docs/ scripts/ | `never docs/ set` — `scripts/` dropped, `policy self-merge set` |
-| `**Self-merge never**: docs/ scripts/` | bold key | `never none`, `policy self-merge set` |
-| `Self-merge never : docs/`, `Self-merge-never: docs/`, `Self-merge<NBSP>never: docs/` | the same setting to a reader | `never none`, `policy self-merge set` |
-| `- [ ] Self-merge never: docs/`, `\| Self-merge never: docs/ \|`, `[Self-merge never: docs/](x)`, `\# Self-merge never: docs/` | task item / table / link / escaped heading | `never none`, `policy self-merge set` |
+| Line 2 | `--settings` |
+|---|---|
+| `Self-merge nev` + U+0435 (Cyrillic е) + `r: workflows/` | `never none`, `policy self-merge set` |
+| `Self-merge n&#101;ver: workflows/` | `never none`, `policy self-merge set` |
+| `- [x] Self-merge never: workflows/` (also `[X]`) | `never none`, `policy self-merge set` |
+| `Self-<b>merge</b> never: workflows/` | `never none`, `policy self-merge set` |
+| `[Self-merge](x) never: workflows/` | `never none`, `policy self-merge set` |
 
-The wrap case is the realistic one: a never list long enough to pass the 100-column wrap that this file's prose already uses (`docs/dev-cycle.md:4-5`) loses every glob after the first physical line, and the output reports `set` with no hint. In this repo the interim list is `Self-merge never: workflows/` (D5), whose purpose is exactly the take-effect-on-merge paths; a dropped entry lets U2's gate self-merge them. The fail direction is open (fewer refusals), contradicting the header's fail-closed promise.
+These shapes fail closed: a zero-width space or U+2011 inside the key, `Self-merge *never*:`, `**n**ever`, `<br>` after the key, `&#45;` for the hyphen, `- [ ]`, `1.`, a table cell, an indented code block and a wrap (all `never malformed`, self-merge off).
 
-**Recommendation:** Treat a non-blank, non-fence line directly after the never line (a paragraph continuation) as making the line malformed. Recognise the key after removing every non-letter from the stripped prefix (`selfmergenever`, `buildlooppolicy`, `buildloopslots` at the start of the letters-only form), so bold-outside-colon, spacing, hyphen, NBSP, `\#`, `[ ]`, `|` and `[` variants are counted and the line becomes a second/inexact line (fail closed). Add the wrap and `**Self-merge never**:` rows to T45.
+Concrete failure mode: in this repo the interim list is `Self-merge never: workflows/` (D5), which protects exactly the paths that take effect on merge. A review-mode loop change to `docs/dev-cycle.md` that swaps one `e` for U+0435 is a near-invisible diff. Once a human merges it, the list is gone and self-merge is still on. The only trace is the output's `never none` line. A careless `- [x]` on the line has the same effect. The floor and the `Paths:` allowlist still apply, so the damage is bounded to `workflows/`-class paths a brief lists.
 
-#### 2. E1: a bold copy with the colon outside the markup is hidden, so an exact `self-merge` line wins over a visible `review`
+**E1/E3 judgment and the C19 premise:** C19's Won't-Fix rests on "the hidden copy cannot raise the policy" and "only an exact line sets anything". That holds for the policy and slots keys: a hidden sole policy line reads `policy review unset` (probe: Cyrillic о in `policy`), which fails closed. It does not hold for the never key, where nothing is the permissive setting, so hiding the line lowers protection without any exact line. C19's other premise, "does not render as the key", does not hold for a homoglyph or a `- [x]` item, which do render as the key. C19's zero-width half has also changed for the better: a zero-width character inside a key is now counted and reads `malformed` (probe), so only the entity half of C19 is still hidden. My severity for the exposure: Medium on the never key (floor rule: a reproduced mechanism, and a human-merged review change is a reachable path), and Low on the policy and slots keys (Finding 3).
+
+**Recommendation:** The orchestrator decides between two fixes. (a) The design-level close: under `Build-loop policy: self-merge`, require a never line, so `never none` also turns self-merge off. Hiding the only never line could then only fail closed, whatever the shape. It costs one line per self-merge repo, and this repo's interim `workflows/` line is already planned for U5. (b) The minimal close for E1's markup shapes: before the letters pass, drop `<...>` tags, a leading `[x]` or `[X]` box, and `](...)` link destinations. That leaves the homoglyph and entity shapes as a C19 extension with the premise corrected for the never key. Don't use a "contains" match, which would count prose mentions of the key that U5's rewrite of `docs/dev-cycle.md` will add, and turn self-merge off.
+
+#### 3. E1: a hidden second copy is ignored, so the exact first line wins over a rendered `- [x]` / inline-HTML / homoglyph copy; the header says markup "cannot hide one"
 
 **Severity:** Low
-**Location:** `scripts/build-loop.sh:28-31`, `scripts/build-loop.sh:106-108`
+**Location:** `scripts/build-loop.sh:25-27`, `scripts/build-loop.sh:90-92`, `scripts/build-loop.sh:105`
 **Boundary:** B1
 **Move:** 11
 **Confidence:** High (reproduced)
 **Legibility-target:** for-author
 
-Evidence (`:28-31`):
+Evidence (`:25-27`):
 ```
-#             A line outside a fence counts as a settings line when it
-#             starts with the key (any case) after any blanks, >, list
-#             markers, # * _ ` ~ and byte-order marks, so a quoted, bold,
-#             heading or indented copy is a second line, not a hidden one. A
+#             A line counts as a copy when its letters alone, case folded,
+#             start with the key's ("buildlooppolicy"), so markup, a table or
+#             a misplaced colon cannot hide one.
 ```
-Probe: `Build-loop policy: self-merge` + `**Build-loop policy**: review` → `policy self-merge set: line 1`. Same for the E3 shapes (task item, table cell, link text, leading NBSP, `\#`, `&#66;uild-loop policy:`, double space) — see the Untested/Tested bypass list below.
+Probes: `Build-loop policy: self-merge` followed by `- [x] Build-loop policy: review` gives `policy self-merge set: line 1` with no "more than one line" warning. `Self-merge never: a/`, a blank line, then `- [x] Self-merge never: workflows/` gives `never a/ set`, so a reader of the rendered file believes `workflows/` is protected and it is not. The winning line is exact and sits on main, so only main's author can produce the state. That makes this an operator-legibility gap rather than an attacker path, which is why it is rated Low, consistent with iteration 2's Finding 2. The header and the `:91-92` comment state the guarantee categorically (fact-check Claims 8 and 14, Incorrect).
 
-Threat-model reading: the hidden line can only fail to *lower* the policy; it never raises it. Raising requires the exact `Build-loop policy: self-merge` line on main, and `docs/dev-cycle.md` is N-denied to loops under both policies (plan F12, F56), so only the user or the orchestrator commits it. E1 is therefore an operator-confusion / legibility gap, not an attacker path: a person reading the rendered file sees two policy lines and may trust the bold `review`, while the script reads self-merge with no "more than one line" warning. The A2 fix (30676e57) closed the colon-inside shapes (`**Build-loop policy:** review`, tested at `test/scripts/build-loop-read.bats:33`) but the header claims all bold copies. Rated Low, not Medium: the mechanism needs the user to have written the self-merge line themselves; no reachable actor can produce it.
+**Recommendation:** Option (b) in Finding 2 also closes this. If neither fix lands in U1b, narrow the two comments to the shapes that are counted ("markup that adds no letters before or inside the key").
 
-**Recommendation:** The letters-only key match from Finding 1 closes E1 and most of E3 in the same change. If not adopted in U1b, narrow the header to "bold with the colon inside the bold" and file the residual shapes.
+## Iteration-2 items in my domain (status at 1d79ffef, verified by running)
 
-#### 3. `--settings` honours `refs/replace`, so a replace ref written by any uid process changes the policy read "from the default branch's commit"
+| Item | Status | Evidence |
+|---|---|---|
+| R3 (copy with markup closing before the colon was hidden) | **Resolved** | `Build-loop policy: self-merge` + `**Build-loop policy**: review` gives `policy review unset: more than one line starts "Build-loop policy:" (lines 1 and 2)`. T2 covers it (`build-loop-read.bats:33-37`). |
+| A5 (wrapped never line dropped; near-miss keys absent, not malformed) | **Resolved for the iteration-2 shapes; residual open as Finding 2** | Every one of these gives `never malformed`, self-merge off: wrap (`a/` then `  b/`), setext `===`, `**Self-merge never**: docs/ scripts/`, `Self-merge never :`, `Self-merge-never:`, NBSP in the key, `\#`, `- [ ]`, table cell, `[Self-merge never](x):`. The letter-changing shapes in Finding 2 still read `never none`. |
+| A6 (`--settings` honoured refs/replace) | **Partly resolved; bypass open as Finding 1** | With no repo config, both the blob replace and the commit replace read `policy review set`. With `core.useReplaceRefs=true` in `.git/config`, both read `policy self-merge set`. No test pins the guard (fact-check E4). |
+| C18 (origin/HEAD symref to a loop branch is read as the default) | **Covered by override row C18 (Defer U3b); premise still holds** | `git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/loop` gives `policy self-merge set ... on the default branch`. So does pointing it at `refs/heads/loop` directly. Not re-raised. Finding 1 belongs to the same actor class and can join this row's revisit trigger. |
 
-**Severity:** Medium
-**Location:** `scripts/build-loop.sh:69`, `scripts/build-loop.sh:89`
-**Boundary:** B3
-**Move:** 1 (trust boundaries), 12
-**Confidence:** Medium (reproduced; impact is bounded once U2/U3b's D6 snippet refuses replace refs before running the gate, but not on paths outside that snippet)
-**Legibility-target:** for-orchestrator-synthesis
-
-Evidence:
-```
-export GIT_LITERAL_PATHSPECS=1
-```
-```
-  FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")"
-```
-Probe: main's blob reads `Build-loop policy: review`; after `git replace <blob> <blob reading self-merge>` the output is `policy self-merge set: line 1 of docs/dev-cycle.md on the default branch`; with `GIT_NO_REPLACE_OBJECTS=1` it is `policy review set`. The plan treats exactly this capability as in-model (F38, pre-mortem rev 3 experiment E1) but guards it only inside D6's gate snippet. `--settings` (and U1c's `--status`) also run on the dispatch and collect paths, where a forged policy/slots/never value routes items and sizes slots, and the printed line falsely says "on the default branch".
-
-**Recommendation:** Add `export GIT_NO_REPLACE_OBJECTS=1` beside `GIT_LITERAL_PATHSPECS` at `:69` (one line; the lib's readers inherit it). This makes the script's own claim true independently of D6.
-
-#### 4. NEVER is a space-joined glob string for U2; an unquoted expansion there would glob against the checkout
-
-**Severity:** Informational
-**Location:** `scripts/build-loop.sh:161`, `scripts/build-loop.sh:170`
-**Boundary:** B2
-**Move:** 2 (implicit sanitization assumption)
-**Confidence:** Medium (depends on U2 code not yet written)
-**Legibility-target:** for-orchestrator-synthesis
-
-Evidence:
-```
-        IFS=' ' read -ra parts <<<"$v"  # not a bare $v: the shell would expand * and ? against files
-```
-```
-      else NEVER="$v"; NEVER_LINE="never $v set: line ${first[never]} $where"; fi
-```
-U1b avoids pathname expansion itself, but hands U2 a string holding `*` and `?`. A gate that writes `for g in $NEVER` expands `hooks/*.sh` against the working directory, which a loop can populate (or that matches nothing and passes the literal) — the refusal set would then depend on loop-writable state. The R1/A1 tab fix guarantees single-space separation, so splitting is deterministic; expansion is the remaining hazard.
-
-**Recommendation:** Expose NEVER to U2 as an array (or document at `:130-132` that consumers must split with `read -ra` and match through git `:(glob)` only). Carry this into U2's brief.
-
-### Settled-row premise note (override-log row 209, not a new finding)
-
-Row 209 (`feat/build-loop-u0b`, 2026-10-05) deferred "origin/HEAD naming a branch a loop created locally is an untested candidate for resolve_main" to U2/U3. Two premises have shifted:
-- It is no longer untested. Probe: main reads `review`; branch `loop` reads `self-merge` and `slots: 9`; after `git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/loop` (no remote configured) `--settings` prints `policy self-merge set: line 1 of docs/dev-cycle.md on the default branch` and `slots 9 set`.
-- U1b is the first caller that reads *policy* through it (`scripts/build-loop.sh:70-71`), so the reach is no longer only dev-cycle.sh's digest.
-
-A uid that can write refs could also move `refs/heads/main` outright, so the durable fix is at the orchestrator (pin the MAIN_SHA it recorded, or check origin/HEAD resolves to `refs/remotes/origin/<name>` whose name is main/master), as U2/U3 planned. I recommend the orchestrator decide whether the revisit trigger moves up to U1c's `--status`, which judges briefs with POLICY.
+A8 (NEVER as an array) is resolved at `:164`: `NEVER=("${parts[@]}")` hands U2 checked entries with no shell expansion. Iteration 2's Finding 4 is closed.
 
 ## Move 11: guardrail bypass candidates
 
-Guardrail: SETTINGS_AWK key count (B1). Tested (each with an exact `Build-loop policy: self-merge` or relevant exact line):
-- `**Build-loop policy**: review` → hidden (Finding 2).
-- `**Self-merge never**: …`, `Self-merge never : …`, `Self-merge-never: …`, NBSP in key, `- [ ] …`, `| … |`, `[…](x)`, `\# …` → hidden, `never none` (Finding 1).
-- Hard-wrapped continuation of the never line → dropped (Finding 1).
-- `Self-merge never:` then next line `docs/` → malformed, self-merge off (fails closed).
-- `Build-loop policy:` then next line `self-merge` → `not exactly`, review (fails closed).
-- Setext underline `====` under the exact policy line → still self-merge (same text, renders as heading; not a bypass).
+Guardrail: the SETTINGS_AWK key count (B1). All of these were tested by probe:
+- Sole never line: Cyrillic е, `&#101;`, `- [x]`, `- [X]`, `Self-<b>merge</b>`, `[Self-merge](x) never` stay hidden (Finding 2). Zero-width, U+2011, NBSP, `*never*`, `**n**ever`, `<br>`, `&#45;`, `- [ ]`, `1.`, `|…|`, `[…](x):`, ` :`, `-never`, `\#`, indented code, wrap and setext all fail closed.
+- Second copy: `- [x]` copies of the policy and never keys stay hidden (Finding 3). R3's bold shape is counted.
+- Sole policy line with a homoglyph gives `unset`, which fails closed.
+- Prose `Note: Self-merge never: workflows/` reads `never none`. It is not a key line: it renders as prose.
 
-Guardrail: never-line form (B2). Tested via T45's rows and code read: tab, VT/FF/CR, double space, `../`, `/`, `-`, non-ASCII, duplicates all malformed; NBSP inside a value fails globform (NAMECHARS has no high bytes). R1/A1 fix holds.
+Guardrail: the replace-ref guard (B3). The blob and commit replace are refused without the config. `core.useReplaceRefs=true` bypasses the guard (Finding 1), and so does `--no-replace-objects` in the raw check.
+
+Guardrail: the never-line form (B2). T45's rows (tab, double space, `..`, `/`, `-`, non-ASCII, duplicate, `./`) pass in the 9/9 bats run.
 
 Untested bypass candidates:
-- `&#66;uild-loop policy: review` and zero-width characters in the key (E3) — not run; the letters-only match in Finding 1 would not catch entities, so they would stay hidden. Reason: same class as Finding 2, no new consequence.
-- A `Self-merge never:` line inside a Markdown list item that continues across lines with indentation — not run; expected same as the wrap row.
+- An exact key line inside a multi-line inline construct (a link title, a code span or an open tag attribute spanning lines). Not run: it is the lib's accepted limit (decision log 69, settled for U1a), and only main's author can write it.
+- The precedence of `GIT_NO_REPLACE_OBJECTS` over `core.useReplaceRefs` on git ≥2.42. Not run: only git 2.39.5 is installed in the sandbox.
+- Caller-set `GIT_DIR`, `GIT_CONFIG_*` and similar environment variables. Not run: S3 is trusted (set by the orchestrator).
 
 ## Endorsement Claims
 
-- **Claim:** Policy and slots lines print no repo text besides line numbers; the never line prints the value only after every entry passed globform (NAMECHARS plus `*` `?`).
-  **Location:** `scripts/build-loop.sh:150-183`
-  **Evidence:** read-static
-  **Verified:** every assignment to POLICY_LINE, SLOTS_LINE and NEVER_LINE in read_settings (`:139-185`); T45 no-echo row at `test/scripts/build-loop-read.bats:115`.
-  **Not verified:** the `many()` and `oddwhy` strings print only numbers and fixed text — read, not executed with hostile line numbers (awk NR is numeric).
+- **Claim:** The policy and slots lines print no repo text besides line numbers. The never line prints the value only after every entry has passed globform (NAMECHARS plus `*` `?`, with single spaces).
+  **Location:** `scripts/build-loop.sh:143-177`
+  **Evidence:** read-static, plus the T45 no-echo assertion executed (`build-loop-read.bats:117-118`, passing)
+  **Verified:** every assignment to POLICY_LINE, SLOTS_LINE and NEVER_LINE in read_settings, read in full, and T45's malformed rows.
+  **Not verified:** that `many()`'s line numbers are numeric for any input. They come from awk's NR, which was read, not fuzzed.
   **route: code-fact-check**
-- **Claim:** A tab, VT, FF or CR in the never value makes the line malformed and turns self-merge off (R1/A1).
-  **Location:** `scripts/build-loop.sh:157`
-  **Evidence:** executed (T45 rows `a\tb`, `\ta`, `a\t`, `a \tb` pass at 0ae7d801 per the fact-check; probe rows above)
-  **Verified:** the explicit character class at `:157` and the T45 rows.
-  **Not verified:** that either guard alone is pinned (fact-check Claim 39: neither is tested in isolation).
+- **Claim:** A never line followed by a non-blank, non-fence line (a wrap, an indented continuation, a setext underline) is malformed and turns self-merge off (A5 wrap).
+  **Location:** `scripts/build-loop.sh:100`, `scripts/build-loop.sh:152`
+  **Evidence:** executed (probes `wrap` and `setext`; T45 `build-loop-read.bats:132-133`)
+  **Verified:** both probes print `never malformed: line 2 is followed by a non-blank line`, together with `policy review unset`.
+  **Not verified:** a continuation that starts after a fenced block that follows the never line. I read the awk logic (`fence($0) { next }` runs before the NEXT update), but did not run it.
   **route: code-fact-check**
-- **Claim:** The working tree and non-default branches do not change `--settings` output while refs are unmodified.
-  **Location:** `scripts/build-loop.sh:89`, `test/scripts/build-loop-read.bats:77-85`
-  **Evidence:** executed (T4)
-  **Verified:** T4's last assertion; probes "before" rows.
-  **Not verified:** loop-written refs (Finding 3, settled-row note) — this claim is scoped to unmodified refs.
+- **Claim:** When refs and `.git/config` are not modified, the working tree, the current branch and a linked worktree do not change `--settings` output.
+  **Location:** `scripts/build-loop.sh:63-65`, `test/scripts/build-loop-read.bats:78-88`, `:169-178`
+  **Evidence:** executed (T4 and test 9 pass)
+  **Verified:** the T4 and test-9 assertions.
+  **Not verified:** loop-written refs or config (Finding 1, C18). This claim is scoped to unmodified refs and config.
 
 ## Primitive sweep
 
-Primitive: git object read from MAIN_SHA (the trust source)
+Primitive: a git object read meant as "main's own object" (the trust source)
 | Call site | Source | Guard | Disposition |
 |---|---|---|---|
-| `scripts/build-loop.sh:89` `git cat-file blob` | S1 via S2 | main_entry blob check; no GIT_NO_REPLACE_OBJECTS | Finding 3 |
-| `scripts/lib/dev-cycle-read.sh:261` `git ls-tree` (via main_entry, `:82`) | S2 | fixed path; same replace exposure | Finding 3 (same fix) |
-| `scripts/lib/dev-cycle-read.sh:379-389` resolve_main (via `:70`) | S2 | `-*` skip, show-ref --verify | settled row 209 — premise note |
+| `scripts/build-loop.sh:82` `git cat-file blob "$MAIN_SHA:$f"` | S1 via S2 | main_entry blob check; GIT_NO_REPLACE_OBJECTS (`:63`) | Finding 1 (config override) |
+| `scripts/lib/dev-cycle-read.sh:263` `git ls-tree` (main_entry, via `:74`) | S2 | the same environment variable | Finding 1 (same fix) |
+| `scripts/lib/dev-cycle-read.sh:387-409` resolve_main (via `:64`) | S2 | `-*` skip, `show-ref --verify`; `rev-parse ^{commit}` under the same environment variable | C18 (settled, premise holds); commit replace is covered by Finding 1 |
 
 Primitive: shell glob expansion of repo text
 | Call site | Source | Guard | Disposition |
 |---|---|---|---|
-| `scripts/build-loop.sh:161` `read -ra parts <<<"$v"` | S1 | here-string, no expansion | cleared |
-| `scripts/build-loop.sh:170` `NEVER="$v"` handed to U2 | S1 | none yet (consumer unwritten) | Finding 4 |
+| `scripts/build-loop.sh:155` `IFS=' ' read -ra parts <<<"$v"` | S1 | here-string, no expansion | cleared |
+| `scripts/build-loop.sh:164` `NEVER=("${parts[@]}")` | S1 | quoted array, entries passed globform | cleared (A8 resolved) |
 
-Primitive: `sed -n '2,41p' "$0"` (`:60`, help) — S4 constant path, no repo text: cleared.
+Primitive: `sed -n '2,34p' "$0"` (help, `:53`). Its path is the S4 script itself and it reads no repo text: cleared.
 
 ## Summary Table
 
 | # | Finding | Severity | Boundary | Location | Confidence |
 |---|---------|----------|----------|----------|------------|
-| 1 | Wrapped / near-miss never line drops protections; self-merge stays set | Medium | B1, B2 | `scripts/build-loop.sh:152` | High |
-| 3 | refs/replace changes the policy read from "main's commit" | Medium | B3 | `scripts/build-loop.sh:69` | Medium |
-| 2 | E1: colon-outside bold copy hidden; exact self-merge wins | Low | B1 | `scripts/build-loop.sh:28-31` | High |
-| 4 | NEVER handed to U2 as a glob string | Informational | B2 | `scripts/build-loop.sh:170` | Medium |
+| 1 | `core.useReplaceRefs=true` overrides `GIT_NO_REPLACE_OBJECTS`; the A6 guard is bypassable | Medium | B3 | `scripts/build-loop.sh:62-63` | High (git 2.39.5) / Medium reach |
+| 2 | A sole never line hidden by a homoglyph, an entity, `- [x]`, inline HTML or a link inside the key reads `never none`; self-merge stays on | Medium | B1, B2 | `scripts/build-loop.sh:101-104`, `:145` | High mechanism / Low likelihood |
+| 3 | E1: a hidden second copy is ignored; the header says markup "cannot hide one" | Low | B1 | `scripts/build-loop.sh:25-27`, `:90-92` | High |
 
 ## Overall Assessment
 
-The iteration-1 fixes hold: R1/A1 (tabs) is closed, A2 closes the colon-inside markup shapes, and A4's `.git*` allowance only adds refusals. No HALT pattern. The remaining issues are fixable in place and small: one line (`GIT_NO_REPLACE_OBJECTS=1`) for Finding 3, and a letters-only key match plus a continuation-line rule for Findings 1–2, which converts the remaining hidden shapes from fail-open to fail-closed. The single most important item is Finding 1's wrap case, because it is the shape a normal edit to this repo's hard-wrapped settings file produces and it weakens the per-project floor silently. No findings beyond these within the code paths read; endorsement claims pending execution verification.
+1d79ffef closes most of what iteration 2 raised in my domain. R3 and A8 are resolved, and so is every iteration-2 A5 shape, the wrap included. No HALT pattern. Two Medium items remain, and each fixes in place or routes to an existing row:
+
+- **Finding 1:** the A6 guard is defeated by one repo-config line. Same actor as C18, so the fix can be one exported config pair or a C18 extension.
+- **Finding 2:** for the never key, hiding the only line is fail-open. C19's "cannot raise the policy" premise does not cover that.
+
+Neither suggests an architectural problem. The most important item is Finding 2, because it is the last way an edit that renders as the protective line can silently disable it. Option (a), requiring a never line under self-merge, closes every shape at once. The orchestrator may instead file the residual as a corrected-premise C19 extension. There are no further findings in the code paths read. The first two endorsement claims are pending execution verification.
 
 ## Goal-Alignment Note
 
-- **Success criterion (verbatim):** a markdown report saved to /workspace/.claude/wt-build-loop-u1b/docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1b.md, structured per the security-reviewer skill.
-- **Answered:** E1 (Finding 2: legibility gap, Low — only the user/orchestrator can write the exact self-merge line, F12/F56) and E3 (Findings 1–2: the same uncounted shapes matter more on the never line, where absence fails open — Medium); iteration 1's R1/A1/A2 weighed (hold, with A2 narrower than the header says); new: refs/replace exposure (Finding 3).
-- **Out of scope:** E2 (test `&&` enforcement; test-strategy's) — security note only: the A4 regression it unguards fails closed, so its loss is availability, not exposure. U1c (`--status`, constraints line) and U2's gate code.
-- **Escalate:** settled row 209's premise no longer holds (origin/HEAD retarget is now reproduced and reaches the policy reader) — orchestrator to decide whether to move its revisit trigger from U2/U3 to U1c.
-- **Decisions:** Finding 2 rated Low under the floor rule because no reachable actor can author the winning exact line (S1 N-denied to loops); Finding 1 rated Medium because a single ordinary edit (rewrap) produces it.
+- **Success criterion (verbatim):** A markdown report saved to docs/reviews/security-reviewer-review-2026-10-05-build-loop-u1b.md, structured per the security-reviewer skill.
+- **Answered:**
+  - Security design review of U1b at 1d79ffef, with 3 findings (2 Medium, 1 Low).
+  - E1: the second-copy shapes are Low, an operator-legibility gap (Finding 3). The sole-line shapes on the never key are Medium (Finding 2).
+  - E3: a homoglyph is the same exposure as Finding 2. It is Medium on the never key and fails closed on policy and slots.
+  - Status of R3, A5, A6 and C18, each verified by probe.
+- **Out of scope:** E2 and E4 (test gaps; test-strategy's). U1c (`--status`, the constraints line) and U2's gate code, apart from noting that D6's existence check is unaffected by Finding 1.
+- **Escalate:**
+  - The C19 premise ("the hidden copy cannot raise the policy") does not hold for the never key, where absence is the permissive state. Its zero-width half no longer applies, because such a copy is now counted.
+  - A6 cannot be closed as resolved while `core.useReplaceRefs` overrides the guard. The orchestrator decides between a fix and a C18 extension.
+- **Decisions:**
+  - Finding 2 is rated Medium under the floor rule: the mechanism is reproduced, and a human-merged review-mode change is a reachable path. Likelihood went to Confidence.
+  - Finding 3 is kept at Low, as in iteration 2, because the winning exact line needs main's author.
