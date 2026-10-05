@@ -101,6 +101,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
+| [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
 <!-- index:end -->
 
 ## Answered
@@ -1889,5 +1890,19 @@ U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines re
 - **Blocks:** landing U1a, and so U1b and U1c, which stack on it.
 - **Interim:** U1a waits (no fix work on its branch). U1b and U1c continue their own review loops; nothing reaches main.
 - **If the answer differs:** [2] means re-cutting the U1a branch, plus a re-base of U1b and U1c.
+
+
+### Q-113 · build-loop-u1b-size-waiver
+**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** ANSWERED
+
+U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code lines after the Q-112 fixes, over the 400-line review cap. Waive, split, or trim?
+
+**Answer (2026-10-05, in chat):** "Waive to ~420 (Recommended)"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] waive to ~420** | Keep U1b whole; record the waiver in its merge message. | None. | A slightly larger review unit. |
+| **[2] split U1b** | A policy/slots unit and a never-line unit, U1c re-based. | None now. | ~1M tokens and conflict work. |
+| **[3] trim harder** | Terser help, folded tests. | None. | Less clear help and tests. |
 
 
