@@ -33,9 +33,11 @@ setup() { bl_setup; }
     settings 'Build-loop policy: self-merge' '' '> Build-loop policy: self-merge'
     run --separate-stderr bash "$BL" --settings
     [ "$(line policy)" = 'policy review unset: more than one line starts "Build-loop policy:" (lines 1 and 3)' ] || { echo "$output"; return 1; }
-    settings 'Build-loop policy: self-merge' '- Build-loop policy: review'
-    run --separate-stderr bash "$BL" --settings
-    [ "$(line policy)" = 'policy review unset: more than one line starts "Build-loop policy:" (lines 1 and 2)' ] || { echo "$output"; return 1; }
+    for c in '- Build-loop policy: review' '**Build-loop policy:** review' '# Build-loop policy: review' $'\xef\xbb\xbfBuild-loop policy: review'; do
+        settings 'Build-loop policy: self-merge' "$c"
+        run --separate-stderr bash "$BL" --settings
+        [ "$(line policy)" = 'policy review unset: more than one line starts "Build-loop policy:" (lines 1 and 2)' ] || { echo "[$c] $output"; return 1; }
+    done
     # shellcheck disable=SC2016  # literal backticks in the prose line
     settings '# none here' 'The policy is `Build-loop policy: self-merge` in prose.' '<!-- Build-loop policy: self-merge -->'
     run --separate-stderr bash "$BL" --settings
@@ -128,17 +130,29 @@ setup() { bl_setup; }
     run --separate-stderr bash "$BL" --settings
     [ "$(line never)" = 'never none: no line starts "Self-merge never:"' ] || { echo "$output"; return 1; }
     for v in 'Self-merge never:' 'Self-merge never: ' 'Self-merge never: a  b' 'Self-merge never: ../x' 'Self-merge never: a/../b' \
-             'Self-merge never: /etc' 'Self-merge never: .git/x' 'Self-merge never: a b a' $'Self-merge never: caf\xc3\xa9/'; do
+             'Self-merge never: /etc' 'Self-merge never: -x' 'Self-merge never: a b a' 'Self-merge never: a a/' $'Self-merge never: caf\xc3\xa9/' \
+             $'Self-merge never: a\tb' $'Self-merge never: \ta' $'Self-merge never: a\t' $'Self-merge never: a \tb' 'Self-merge never: a ./b'; do
         settings 'Build-loop policy: self-merge' "$v"
         run --separate-stderr bash "$BL" --settings
         [[ "$(line never)" == "never malformed: line 2 "* ]] || { echo "[$v] $output"; return 1; }
         [ "$(line policy)" = "policy review unset: line 1 reads self-merge, but the Self-merge never: line is malformed, so self-merge is off" ] \
             || { echo "[$v] $output"; return 1; }
-        [[ "$output" != *$'\xc3'* ]] || { echo "echoed a malformed entry: $output"; return 1; }
+        [[ "$output" != *$'\xc3'* && "$output" != *../x* && "$output" != */etc* && "$output" != *-x* && "$output" != *./b* ]] \
+            || { echo "echoed a malformed entry: $output"; return 1; }
     done
     settings 'Build-loop policy: self-merge' 'Self-merge never: a/' '  self-merge never: b/'
     run --separate-stderr bash "$BL" --settings
     [ "$(line never)" = 'never malformed: more than one line starts "Self-merge never:" (lines 2 and 3)' ] || { echo "$output"; return 1; }
+    # Bold, heading and emphasis copies count as second lines too.
+    for c in '**Self-merge never:** b/' '## Self-merge never: b/' '_self-merge never: b/_' '`Self-merge never: b/`'; do
+        settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$c"
+        run --separate-stderr bash "$BL" --settings
+        [[ "$(line never)" == 'never malformed: more than one line starts "Self-merge never:"'* ]] || { echo "[$c] $output"; return 1; }
+    done
+    # A part starting .git is allowed: the list only adds refusals.
+    settings 'Build-loop policy: self-merge' 'Self-merge never: .github/ .gitignore'
+    run --separate-stderr bash "$BL" --settings
+    [[ "$(line never)" == "never .github/ .gitignore set:"* && "$(line policy)" == "policy self-merge set:"* ]] || { echo "$output"; return 1; }
     # Raised only on a loop's branch or in the working tree: ignored.
     settings 'Build-loop policy: self-merge' 'Self-merge never: workflows/'
     git checkout -q -b loop && printf 'Build-loop policy: self-merge\nSelf-merge never: x/ ../y\n' > docs/dev-cycle.md && commit_all loop

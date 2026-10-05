@@ -4,6 +4,7 @@
 # loop's result, or merges it (docs/working/plan-build-loop-handoff.md).
 #
 # Usage: scripts/build-loop.sh --settings
+#        scripts/build-loop.sh -h | --help
 #
 #   --settings  three lines, from the default branch's commit (never the
 #             working tree, which a build loop can write):
@@ -18,23 +19,28 @@
 #                 "Build-loop slots: N" with N from 1 to 9, else 3.
 #             never GLOB... set|none|malformed: WHY
 #                 Paths self-merge never lands, as one line
-#                 "Self-merge never: GLOB ..." (single spaces; each glob uses
-#                 letters, digits, . _ - / * ?, with an optional trailing /;
-#                 no . or .. part, no .git, not starting / or -; none twice).
+#                 "Self-merge never: GLOB ..." (single spaces, no tab; each
+#                 glob uses letters, digits, . _ - / * ?, with an optional
+#                 trailing /; no empty, . or .. part, not starting / or -;
+#                 none twice, a trailing / ignored).
 #                 A malformed line, or a settings file that is not read,
 #                 turns self-merge off.
-#             A line counts as a settings line when it starts with the key
-#             (any case) after any blanks, > and list markers, so a quoted or
-#             indented copy is a second line, not a hidden one. A file the
-#             reader cannot trust (a fence never closed or not in plain
-#             column-0 form, a line starting with < other than a one-line
-#             <!-- comment -->, an open <!--, a line like a link reference
-#             definition, a stray CR, a byte-order mark; see FENCE_AWK in the
-#             lib) is not read at all.
+#             A line outside a fence counts as a settings line when it
+#             starts with the key (any case) after any blanks, >, list
+#             markers, # * _ ` ~ and byte-order marks, so a quoted, bold,
+#             heading or indented copy is a second line, not a hidden one. A
+#             file the reader cannot trust (a fence never closed or not in
+#             plain column-0 form; outside a fence, a line starting with <
+#             other than a one-line <!-- comment -->, an open <!--, a line
+#             like a link reference definition; anywhere, a stray CR or a NUL
+#             byte, or a byte-order mark on line 1; see FENCE_AWK in the lib)
+#             is not read at all.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Read-only: writes nothing.
-# Output passes through the lib's scrub; printed repo text is data.
+# Output passes through the lib's scrub (all but the two start-up errors
+# before it, about perl and the lib, which carry no repo text); printed repo
+# text is data.
 # Exit: 0 every line printed; 1 bad usage, not a git repo, no perl or
 # lib/dev-cycle-read.sh, or no default branch found by name.
 
@@ -55,7 +61,7 @@ usage() { echo "$1 (usage: build-loop.sh --settings)" >&2; exit 1; }
 MODE=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
-  -h|--help) sed -n '2,39p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
   *) usage "unknown option: $1" ;;
 esac
@@ -92,7 +98,8 @@ main_file() {
 }
 
 # One pass over docs/dev-cycle.md: per key, how many lines start with it (after
-# blanks, > and list markers, any case), the first two line numbers and the
+# blanks, >, list markers, heading and emphasis marks (# * _ ` ~) and a BOM, any
+# case), the first two line numbers and the
 # first line whole: "KEY COUNT FIRST SECOND<TAB>LINE".
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 SETTINGS_AWK='
@@ -100,7 +107,7 @@ SETTINGS_AWK='
 fence($0) { next }
 {
   s = $0
-  if (match(s, /^([ \t>]|[-*+][ \t]|[0123456789]+[.)][ \t])*/)) s = substr(s, RLENGTH + 1)
+  if (match(s, /^([ \t>#*_`~]|[-+][ \t]|[0123456789]+[.)][ \t]|\357\273\277)*/)) s = substr(s, RLENGTH + 1)
   s = tolower(s); k = ""
   if (index(s, "build-loop policy:") == 1) k = "policy"
   else if (index(s, "build-loop slots:") == 1) k = "slots"
@@ -112,6 +119,18 @@ END {
   else if (infence) print "unbalanced " fline
   else for (k in c) print k " " c[k] " " l1[k] " " (k in l2 ? l2[k] : 0) "\t" t[k]
 }'
+# A Self-merge never: entry: pathform's characters and glob marks, not starting
+# / or -, no empty, . or .. part. Unlike pathform it allows a part starting .git
+# (.github/, .gitignore): the list only adds refusals, so naming one must not
+# make the line malformed and turn self-merge off.
+globform() {
+  local rest="$1/" c
+  [[ "$1" =~ ^[*?$NAMECHARS]+$ && "$1" != /* && "$1" != -* ]] || return 1
+  while [[ -n "$rest" ]]; do
+    c="${rest%%/*}"; rest="${rest#*/}"
+    [[ -n "$c" && "$c" != "." && "$c" != ".." ]] || return 1
+  done
+}
 # Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (the globs, or empty) and
 # NEVER_LINE from main's commit. POLICY and NEVER are
 # for the modes that judge a brief (--status, then the gate).
@@ -138,16 +157,17 @@ read_settings() {
     elif [[ "${cnt[never]}" -gt 1 ]]; then NEVER_LINE="never malformed: $(many 'Self-merge never:' never)"; never_ok=""
     else
       t="${text[never]}"; v="${t#Self-merge never: }"; why=""
-      if [[ "$t" != "Self-merge never: "* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then
+      # Single spaces only: a tab or other blank would split differently in a later reader.
+      if [[ "$t" != "Self-merge never: "* || "$v" == *[$'\t\v\f\r']* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then
         why='is not exactly "Self-merge never: GLOB ..." with single spaces'
       else
         i=0
-        read -ra parts <<<"$v"  # not a bare $v: the shell would expand * and ? against files
+        IFS=' ' read -ra parts <<<"$v"  # not a bare $v: the shell would expand * and ? against files
         for g in "${parts[@]}"; do
           i=$((i + 1))
-          if ! pathform "${g%/}" glob; then why="lists entry $i, which is not an allowed glob form"; break; fi
-          if [[ -n "${seen[$g]-}" ]]; then why="lists entry $i twice"; break; fi
-          seen[$g]=1
+          if ! globform "${g%/}"; then why="lists entry $i, which is not an allowed glob form"; break; fi
+          if [[ -n "${seen[${g%/}]-}" ]]; then why="lists entry $i twice"; break; fi
+          seen[${g%/}]=1
         done
       fi
       if [[ -n "$why" ]]; then NEVER_LINE="never malformed: line ${first[never]} $why"; never_ok=""
