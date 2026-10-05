@@ -260,7 +260,7 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full: each decision record's \`## Revisit triggers\` section and each decision-log row that mentions revisiting (a trigger written elsewhere in a record is not found; an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full: each decision record's \`## Revisit triggers\` section and each decision-log row that mentions revisiting, numbered or date-first (a trigger written elsewhere in a record, or in a docs/working/ design doc such as dd-*.md, is not found; an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 n_before_triggers=${#SKIPPED[@]}
@@ -301,16 +301,43 @@ for f in "${decisions_glob[@]}"; do
   trig < "$f" | sed 's/^/> /'
 done
 if inrepo docs/decisions/log.md; then
-  while IFS= read -r row; do
+  # Two log layouts are read. Numbered (this repo's): | N | date | ... |, named
+  # "log row N (date)". Date-first (no number column): | YYYY-MM-DD | ... |,
+  # named "log row L<line in log.md> (date)" so a cycle record has a stable
+  # handle. Any other table row (a header, an explanatory table) is not a
+  # decision. awk emits one US-separated record per data row that mentions
+  # revisiting, then "S" with the count of data rows and of other body rows
+  # (separators and header rows, the row just above a separator, excluded).
+  # US (\037) rather than a tab: `read` would collapse an empty tab field.
+  log_data=0 log_other=0
+  while IFS=$'\037' read -r kind n d row; do
+    if [[ "$kind" == S ]]; then log_data="$n" log_other="$d"; continue; fi
     found=1
-    n="$(awk -F'|' '{ gsub(/ /, "", $2); print $2 }' <<< "$row")"
-    d="$(awk -F'|' '{ gsub(/ /, "", $3); print $3 }' <<< "$row")"
     # The whole clause to the cell's end; prefer a capitalised "Revisit" (the
     # trigger sentence) over an earlier "revisit-trigger verdicts" mention.
     text="$(grep -oE 'Revisit[^|]*' <<< "$row" | head -1 || true)"
     [[ -n "$text" ]] || text="$(grep -oiE 'revisit[^|]*' <<< "$row" | head -1 || true)"
     echo "- log row $n ($d): > $text"
-  done < <(grep -E '^\| [0-9]+ \|' docs/decisions/log.md | grep -i 'revisit' || true)
+  done < <(LC_ALL=C awk -F'|' '
+    function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+    /^\|[|: \t-]*-[|: \t-]*$/ { if (prev_other) other--; prev_other = 0; next }
+    /^\|/ {
+      c1 = trim($2); prev_other = 0
+      if (c1 ~ /^[0-9]+$/) { data++; label = c1; d = $3; gsub(/ /, "", d) }
+      else if (c1 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) { data++; label = "L" NR; d = c1 }
+      else { other++; prev_other = 1; next }
+      if (tolower($0) ~ /revisit/) print "R\037" label "\037" d "\037" $0
+      next
+    }
+    { prev_other = 0 }
+    END { print "S\037" data + 0 "\037" other + 0 }' docs/decisions/log.md)
+  # Never a silent zero: table rows that parse as neither layout mean the log
+  # was not read, not that it holds no triggers.
+  if [[ "$log_data" -eq 0 && "$log_other" -gt 0 ]]; then
+    found=1
+    echo
+    echo "**Decision log rows are not in a recognized format** (first cell neither a row number nor a YYYY-MM-DD date); its revisit triggers were NOT checked. Read docs/decisions/log.md by hand."
+  fi
 else
   skipped docs/decisions/log.md || true
 fi
