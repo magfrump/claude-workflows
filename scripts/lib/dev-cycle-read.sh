@@ -8,7 +8,8 @@
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here runs under both
-# callers' suites (test/scripts/dev-cycle.bats and build-loop-read.bats). The
+# callers' suites (test/scripts/dev-cycle.bats, and build-loop.sh's suites
+# under test/scripts/ as they land). The
 # caller sets -euo pipefail,
 # cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
 # calling any file check. inrepo, dirok, skipped, check_brief and
@@ -170,7 +171,8 @@ writable() {
 # fence line; only a complete one-line <!-- comment --> is read), one that
 # opens an HTML comment it does not close, a line starting like a link
 # reference definition (after any > and list markers), a
-# carriage return inside a line (CommonMark ends a line there), or a
+# carriage return inside a line (CommonMark ends a line there), a NUL byte
+# (a caller reading the output through $(...) would lose it), or a
 # byte-order mark on line 1: fence() records the first one's line number in
 # `odd` (and why in `oddwhy`), and the caller refuses the whole file. A fence
 # still open at the end is recorded in `fline` (its opening line) and refuses
@@ -211,6 +213,7 @@ function closes(l,   n) { n = run(l, fch); return n >= flen && substr(l, n + 1) 
 function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
   if (odd) return 1   # the file is already refused: nothing after it is read
   if (index(l, "\r")) { refuse("cr"); return 1 }
+  if (index(l, "\0")) { refuse("nul"); return 1 }  # $(...) drops NUL, so a printed line would not be the line read
   if (NR == 1 && substr(l, 1, 3) == "\357\273\277") { refuse("bom"); return 1 }
   if (infence) {
     if (closes(l)) infence = 0
@@ -231,28 +234,31 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
     comment) echo "opens an HTML comment that does not close on the same line" ;;
     refdef) echo "starts like a link reference definition (its label or title can span lines)" ;;
     cr) echo "holds a carriage return that does not end it" ;;
+    nul) echo "holds a NUL byte" ;;
     bom) echo "starts with a byte-order mark" ;;
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
   esac
 }
-# The default branch, set by resolve_main (below). check_brief and check_branch
-# read its commit, so they answer only when it was found by name, never for the
+# The default branch, set by resolve_main (below). check_brief, check_branch
+# and check_answer read its commit, so they answer only when it was found by name, never for the
 # current branch's fallback or before resolve_main has succeeded.
 MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""
 main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # How a path is stored in the default branch's commit, so that a file read from
 # it is never a symlink's target text, a gitlink or a tree, and no directory
 # above it is a symlink: prints "blob" (a regular file, mode 100644 or 100755),
-# "absent", "notfile" (the path is some other kind of entry) or "notdir PART"
-# (PART, a directory above the path, is stored as something else). One ls-tree
+# "absent", "notfile" (the path is some other kind of entry), "notdir PART"
+# (PART, a directory above the path, is stored as something else) or "error"
+# (no default branch found by name, or ls-tree failed: never read as absent). One ls-tree
 # call lists the path and every directory above it (-t: trees too; --full-tree:
 # paths from the top level, whatever the current directory). The caller has checked
 # main_by_name and the path's form (pathform, so ls-tree prints it unquoted).
 main_entry() {
   local p="" rest="$1" out mode path want=()
   local -A m=()
+  main_by_name || { echo error; return; }
   while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
-  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1")"
+  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1")" || { echo error; return; }
   while IFS=$'\t' read -r mode path; do [[ -n "$path" ]] && m["$path"]="${mode%% *}"; done <<<"$out"
   for p in "${want[@]}"; do
     case "${m[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "notdir $p"; return ;; esac
@@ -267,7 +273,8 @@ main_entry() {
 # and BRIEF[dispatched] (a key with no such line stays unset) and empties
 # BRIEF_ODD. A file FENCE_AWK refuses sets no key and returns 1, with BRIEF_ODD
 # "odd N WHY" (line N; WHY for oddwhy) or "unbalanced N" (the fence opened at
-# line N never closes). The callers judge the values. The caller has checked
+# line N never closes; a NUL byte is refused too, so each value is the line as
+# stored). The callers judge the values. The caller has checked
 # main_by_name and that the path is a blob on main (main_entry), and calls it in
 # its own shell: it sets globals.
 declare -gA BRIEF=(); BRIEF_ODD=""
@@ -315,6 +322,7 @@ check_brief() {
     absent) echo "ok $a new"; return ;;
     blob) ;;
     notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch"; return ;;
+    error) echo "skip $a: the default branch's tree could not be read"; return ;;
     *) echo "skip $a: not a regular file on the default branch"; return ;;
   esac
   if ! brief_fields "$a"; then
@@ -533,6 +541,7 @@ check_answer() {
       absent) continue ;;
       blob) ;;
       notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch, so $f is not read"; return ;;
+      error) echo "skip $a: the default branch's tree could not be read, so $f is not read"; return ;;
       *) echo "skip $a: $f is not a regular file on the default branch, so no entry in it is read"; return ;;
     esac
     r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")"

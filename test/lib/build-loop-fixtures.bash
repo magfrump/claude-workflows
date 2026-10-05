@@ -31,6 +31,12 @@ settings() { mkdir -p docs && printf '%s\n' "$@" > docs/dev-cycle.md && commit_a
 # constraints LINE...: docs/constraints.md holding these lines, committed.
 constraints() { mkdir -p docs && printf '%s\n' "$@" > docs/constraints.md && commit_all constraints; }
 
+# settings_is KEY WANT / settings_like KEY PREFIX: run --settings; its KEY line
+# must equal WANT, or start with PREFIX. On a mismatch, print the whole output.
+# shellcheck disable=SC2154  # bats' run sets $output and $stderr
+settings_is() { run --separate-stderr bash "$BL" --settings; [ "$(line "$1")" = "$2" ] || { echo "want: $2"; echo "$output $stderr"; return 1; }; }
+settings_like() { run --separate-stderr bash "$BL" --settings; [[ "$(line "$1")" == "$2"* ]] || { echo "want: $2..."; echo "$output $stderr"; return 1; }; }
+
 # line KEY: the --settings output line that starts with KEY.
 # shellcheck disable=SC2154  # bats sets $output in the calling test
 line() { printf '%s\n' "$output" | grep -m1 "^$1 " || true; }
