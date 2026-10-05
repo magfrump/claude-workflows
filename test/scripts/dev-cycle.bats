@@ -62,6 +62,52 @@ make_repo() {
     [[ "$output" == *"log row 9 (2026-01-01): > Revisit if gizmos appear"*" end. "* ]]
 }
 
+@test "a date-first decision log's revisit row is named by its line number" {
+    # threadwork's layout: no number column, so the row is named L<line>.
+    mkdir -p docs/decisions
+    printf '# Decision log\n\n| date | decision | rationale | confidence |\n|---|---|---|---|\n| 2026-07-01 | Use W | Because. | high |\n| 2026-07-09 | Use X | Because. Revisit when Y happens. | medium |\n' > docs/decisions/log.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    sec="$(sed -n '/## 2. Revisit/,/## 3/p' <<< "$output")"
+    [[ "$sec" == *"- log row L6 (2026-07-09): > Revisit when Y happens."* ]] || { echo "$sec"; return 1; }
+    [[ "$sec" != *"No revisit triggers recorded."* && "$sec" != *"NOT checked"* ]] || { echo "$sec"; return 1; }
+}
+
+@test "a decision log in neither layout is reported as not checked, not as empty" {
+    mkdir -p docs/decisions
+    printf '| id | decision | note |\n|---|---|---|\n| D-1 | Use X | Revisit when Y happens. |\n' > docs/decisions/log.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    sec="$(sed -n '/## 2. Revisit/,/## 3/p' <<< "$output")"
+    [[ "$sec" == *"**Decision log revisit triggers were NOT checked** — its rows are in neither recognized layout"* ]] || { echo "$sec"; return 1; }
+    [[ "$sec" != *"No revisit triggers recorded."* ]] || { echo "$sec"; return 1; }
+}
+
+@test "an unparsed revisit row beside parsed ones prints; an explanatory table's does not" {
+    mkdir -p docs/decisions
+    # Line 1-3: an explanatory table with "revisiting" and no data rows (stays
+    # silent). Lines 5-8: a numbered table whose header mentions revisit (a
+    # header, not a row) and whose row 2 has a bold first cell.
+    printf '| | log | record |\n|---|---|---|\n| **When** | never | worth revisiting |\n\n| # | date | revisit note |\n|---|---|---|\n| 1 | 2026-01-01 | Use A. |\n| **2** | 2026-01-02 | Revisit if B. |\n' > docs/decisions/log.md
+    run --separate-stderr bash "$DC"
+    [ "$status" -eq 0 ]
+    sec="$(sed -n '/## 2. Revisit/,/## 3/p' <<< "$output")"
+    [[ "$sec" == *"- log row L8 (first cell not parsed): > Revisit if B."* ]] || { echo "$sec"; return 1; }
+    [[ "$sec" != *"L3"* && "$sec" != *"L5"* && "$sec" != *"No revisit triggers recorded."* ]] || { echo "$sec"; return 1; }
+}
+
+@test "a CRLF decision log parses like an LF one" {
+    mkdir -p docs/decisions
+    printf '| date | decision | rationale |\r\n|---|---|---|\r\n' > docs/decisions/log.md
+    run --separate-stderr bash "$DC"
+    sec="$(sed -n '/## 2. Revisit/,/## 3/p' <<< "$output")"
+    [[ "$sec" == *"No revisit triggers recorded."* && "$sec" != *"NOT checked"* ]] || { echo "$sec"; return 1; }
+    printf '| 2026-07-09 | Use X | Revisit when Y. |\r\n' >> docs/decisions/log.md
+    run --separate-stderr bash "$DC"
+    sec="$(sed -n '/## 2. Revisit/,/## 3/p' <<< "$output")"
+    [[ "$sec" == *"- log row L3 (2026-07-09): > Revisit when Y. "* ]] || { echo "$sec" | od -c | tail -5; return 1; }
+}
+
 @test "after a cycle record, every trigger still prints in full and nothing is carried" {
     mkdir -p docs/decisions docs/working/cycles
     printf '# 001\n\n## Revisit triggers\nif old thing.\n' > docs/decisions/001-old.md
