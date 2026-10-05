@@ -1,5 +1,5 @@
 # Checkpoint: build-loop handoff
-Date: 2026-10-05 (revision 4; U0 landed)
+Date: 2026-10-05 (revision 5; U1 built as U1a/U1b/U1c, waiting on Q-111 and Q-112)
 Branch: feat/build-loop-handoff (worktree `/workspace/.claude/wt-build-loop-handoff`)
 Research: docs/working/research-build-loop-handoff.md
 Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved)
@@ -8,10 +8,42 @@ Design conversation: docs/working/handoff-build-loop-handoff.md
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0(a/b) → U1 → U2 → U3 → U3b → U3c → U4 → U5.
-- **Blocked on**: nothing. You approved D1–D14 in a walk-through on 2026-10-04; revision 4 folds in the changes.
+- **Blocked on**: Q-111 (U1a iteration 4) and Q-112 (the settings copy rule) since 2026-10-05; see "U1 state".
 - **U0 landed 2026-10-05** as three stacked units, each through its own review-fix loop (3 iterations, final pass k=3 with the full critic panel): U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726` (merges on main). Rubrics: `docs/reviews/code-review-rubric-2026-10-04-feat-build-loop-u0{a,b,c}.md`. Next: **U1**, on a new branch from main (the old `feat/build-loop-handoff` worktree is stale).
 
-## U0 outcome (read before U1)
+## U1 state (read first)
+U1 is built as three stacked branches, each in its own worktree, none merged:
+
+| Unit | Branch / worktree | Code lines | Review loop | Waiting on |
+|---|---|---|---|---|
+| U1a: lib `main_entry`, `brief_fields`, `check_answer` from main (D8), NUL refusal in FENCE_AWK | `feat/build-loop-u1a`, `.claude/wt-build-loop-u1a` | 360 | 3 iterations; cap gate **escalate** | **Q-111** (authorize iteration 4: fix R3, the `--help` sed range in dev-cycle.sh, and ambers A14–A18) |
+| U1b: `build-loop.sh --settings` (policy, slots, never) | `feat/build-loop-u1b`, `.claude/wt-build-loop-u1b` | 400 | 3 iterations; cap gate **escalate** (the same finding fired twice) | **Q-112** (the copy rule for look-alike settings lines), then A16–A23 |
+| U1c: the constraints line and `--status` | `feat/build-loop-u1c`, `.claude/wt-build-loop-u1c` | 399 | iteration 1 done: R1 (near-miss constraint lines, decided by Q-112), A1–A11, C1–C15; no fixes yet | Q-112, then U1b's merge |
+
+- Each rubric (`docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1{a,b,c}.md` on its branch) ends with the open items. U1a's and U1b's end with the escalation template.
+- **Next session:** read the answers to Q-111 and Q-112.
+  - Q-111 [1]: fix U1a, run one full pass, land U1a. Then merge it into U1b and U1c.
+  - Q-112 [1]: in U1b, add "best effort" wording and make self-merge require an exact `Self-merge never:` line (`none` for an empty list). Fix A16 (`core.useReplaceRefs` overrides `GIT_NO_REPLACE_OBJECTS`: pass `-c core.useReplaceRefs=false` or `GIT_CONFIG_COUNT`) and A18–A23, then one full pass. U1b is at the 400-line cap, so expect to trim or split.
+  - U1c (2 iterations left):
+    - fix R1 per Q-112;
+    - A1: read the marker through git (`rev-parse SHA^{tree}`, `rev-list --parents -n1`) and refuse a NUL byte;
+    - A4: count open briefs in `closed/` for F31;
+    - A5: make `shared_branches` lazy or fail closed;
+    - A3/A6–A11 wording;
+    - C14: the unused `status_of`.
+- Merging a lower unit into an upper one conflicts in `scripts/build-loop.sh`. Resolve by taking the lower unit's file and re-applying the upper unit's blocks (help, constraints awk and reader, `--status` code), then re-measure. Re-worded lines count twice against the cap.
+- Choices taken in /away mode, all fail-closed (recorded in commit Notes):
+  - an `error` outcome from main_entry and brief_fields that every caller skips;
+  - letters-only key matching;
+  - a never line must end at a blank line;
+  - `GIT_NO_REPLACE_OBJECTS=1`;
+  - NEVER as an array;
+  - a `handoff:` tip that breaks a marker rule is a skip line, not a LOOP value;
+  - the constraints grammar (`H<n>:`/`S<n>:`, a hard one followed by `success:`).
+- Measured for override-log row 201: `check_brief`'s `git log -G` costs about 1 ms per brief on this repo. `--status` over 3 briefs takes about 80 ms. The U1c review found `shared_branches` quadratic in brief count (1.3 s at 100 briefs; C1, asks for a new decision on row 220).
+- Tests: dev-cycle.bats 67, build-loop-read.bats 16 (at U1c). Test 21 in dev-cycle.bats fails when TMPDIR has a `.`-led part.
+
+## U0 outcome
 - The lib (`scripts/lib/dev-cycle-read.sh`) holds: `scrub`, `scrub_reexec`, the plain-file rules (`rawfile`, `plaindir`, `blocker`, `inrepo`, `dirok`, `skipped`), `need_root`, `pathform`, `isbrief`, `writable`, FENCE_AWK/`oddwhy`, `main_by_name`, `check_brief`, `check_branch`, `resolve_main`, INSTRUCTION_FILE and the import walk (`lower`, `imported_names`), ANSWER_AWK/`check_answer`. `check_path`, `check_write` and `check_fix` stay in dev-cycle.sh.
 - Its header is the caller contract: cd to the top level and set `ROOT_REAL="$(pwd -P)"`; `need_root` exits 1 otherwise; call `resolve_main` once and rely on `main_by_name`, not its return code; capture `check_*` output as plain `out="$(...)"` under `set -e` and treat any line that is not a positive answer as a refusal; print it through `scrub`.
 - **Plan amendment (Approach, 2026-10-05):** `check_fix`'s predicate is not extracted; U2 writes D5's floor as its own lib function (leading-dot-aware dot test, an `isimported` predicate, and a stated import start set for the gate: a clean worktree at `MAIN_SHA` plus, or a recorded gap for, the checkout's untracked instruction files). F11's row and step 13 carry the precondition.

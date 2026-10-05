@@ -1,945 +1,727 @@
-Commit: 722884c7
+Commit: 4aa2e98e
 
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u1a (claude-workflows, branch feat/build-loop-u1a)
-**Scope:** `git diff main...feat/build-loop-u1a -- . ':!docs/reviews'` at 722884c7: scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, skills/dev-cycle/SKILL.md and test/scripts/dev-cycle.bats, plus the bodies of `git log main..feat/build-loop-u1a` (d6426e3e, c8435580, 2da477b7, 78703f22, 722884c7). This is replicate fc2 of the final confirming pass (iteration 3).
+**Scope:** `git diff main...feat/build-loop-u1a`, code files only (scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, skills/dev-cycle/SKILL.md, test/scripts/dev-cycle.bats; docs/reviews/ excluded as review artifacts), plus commit bodies of 4aa2e98e and c8435580's check_brief claim. Replicate r2 of the iteration-4 final confirming pass, at 4aa2e98e.
 **Checked:** 2026-10-05
-**Total claims checked:** 47
-**Summary:** 43 verified, 2 mostly accurate, 0 stale, 1 incorrect, 1 unverifiable
+**Total claims checked:** 40
+**Summary:** 35 verified, 3 mostly accurate, 1 stale, 0 incorrect, 1 unverifiable
 
-I read the hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) first. No claim matches a logged pattern, and this run found no new fabrication (see the end of the report).
+I read `docs/reviews/hallucination-patterns.md` first (8 logged patterns). No claim below matches a logged pattern, and no new fabrication was found.
 
-Execution logs: every log is under `/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i3/fc2/logs/` (abbreviated `$L/` below). Probes ran in throwaway repos under `/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i3/fc2/` (`$S/`), with `GIT_CONFIG_GLOBAL=/dev/null` and HOME set inside the scratch dir. Old revisions were materialised with `git archive <rev> scripts test | tar -x -C $S/old/<rev>`. Tools: git 2.39.5, mawk 1.3.4.
+Execution environment: GNU bash 5.2.15, GNU sed 4.9, mawk 1.3.4, bats at /usr/bin/bats, `LC_ALL=C.UTF-8`, TMPDIR unset. All execution ran in the scratch dir `/home/node/.claude/jobs/989f3e5a/tmp/review-u1a-i4/fc-r2/` (abbreviated `$FC` below) or ran the worktree's bats suite, which builds its fixtures under `$BATS_TEST_TMPDIR`. Captured output is in `$FC/logs/`. Runs:
 
-**Suite run.** Command: `TMPDIR=$S bats test/scripts/dev-cycle.bats`, with `LC_ALL=C.UTF-8` set, run from cwd /workspace/.claude/wt-build-loop-u1a at 2026-10-05T11:32:50Z. It exited 1 with 66 of 67 passing. The one failure is test 21 ("an origin/HEAD naming an option-like branch"), and the cause is the environment: git refuses `refs/heads/--output=$TMPDIR/...` because the scratch path has a `/.claude` component. The orchestrator confirmed it passes with TMPDIR unset. Test 21 is outside this diff and is not a finding. Output: `$L/bats-head.txt`.
+| Run | Command (cwd) | Exit | Time (UTC) | Log |
+|---|---|---|---|---|
+| E1 | `bats test/scripts/dev-cycle.bats` (worktree) | 0 (68/68 ok) | 2026-10-05T16:32:36Z | `$FC/logs/E1-bats-full.log` |
+| E2 | `bash scripts/dev-cycle.sh --help`, compared with `sed -n '2,81p'` of the script; `sed -n '2,/^[^#]/{/^#/p}'` on probe inputs p1-p4 (`$FC`) | 0 | 2026-10-05T16:32:59Z, 16:34:43Z | `$FC/logs/E2-help.log`, `$FC/logs/E2-sed-probes.log` |
+| E3 | `bats -f 'prints the whole header'` against mutants with `sed -n '2,80p'` (m80) and `'2,77p'` (m77) (`$FC/m80`, `$FC/m77`) | 1, 1 | 2026-10-05T16:33:19Z | `$FC/logs/E3-m80.log`, `$FC/logs/E3-m77.log` |
+| E4 | `bats -f 'unreadable blob'` against mutants without `set -o pipefail` in check_answer (mpf_ans) or brief_fields (mpf_bf) | 1, 1 | 2026-10-05T16:33:19Z | `$FC/logs/E4-mpf_ans.log`, `$FC/logs/E4-mpf_bf.log` |
+| E5 | `bats -f 'unreadable blob'` against a mutant with `local` in place of `local -` in both functions (mnl) | 1 | 2026-10-05T16:33:35Z | `$FC/logs/E5-mnl.log` |
+| E6 | `bash $FC/probe.sh <lib> none|eu|euo` in a fixture repo with two blobs deleted (`$FC/e6/r`) | 0 | 2026-10-05T16:33:45Z | `$FC/logs/E6-local-dash.log` |
+| E7 | duplicate-name tree built with `git mktree`; `git ls-tree -t --full-tree`, `git cat-file -p`, `main_entry` (`$FC/e7/r`) | 0 | 2026-10-05T16:33:53Z | `$FC/logs/E7-dup-tree.log` |
+| E8 | `--check-brief` with main's dev-cycle.sh and with the branch's, in a fixture where docs/working/briefs is a symlink on main (`$FC/e8/r`) | 0 | 2026-10-05T16:34:06Z | `$FC/logs/E8-notdir.log` |
+
+Override-log filter: rows 220-238 (all dated 2026-10-05, `feat/build-loop-u1a`) were read. Where a claim touches one, the row is noted.
 
 ---
 
-## Claim 1: "--check-brief ... skip ... a stray carriage return, a NUL byte, or a byte-order mark on line 1"
+## Claim 1: "a stray carriage return, a NUL byte, or a byte-order mark on line 1" (--check-brief skip reasons)
 
 **Location:** `scripts/dev-cycle.sh:42`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the NUL refusal reaching --check-brief through FENCE_AWK as a skip that names the line; does not establish NUL handling under awks other than mawk (override row 224).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers a NUL-holding brief committed on main being skipped by `--check-brief`. It does not establish NUL handling in the digest's own readers (settled by override row 223, A11).
 
-Test 64 asserts `"skip $b: line 2 holds a NUL byte, so the brief is not read"` (`test/scripts/dev-cycle.bats:1183`), and it passed in the suite run. The refusal comes from `if (index(l, "\0")) { refuse("nul"); return 1 }` (`scripts/lib/dev-cycle-read.sh:216`).
+FENCE_AWK's `fence()` refuses a NUL line: `if (index(l, "\0")) { refuse("nul"); return 1 }` (`scripts/lib/dev-cycle-read.sh:216`), and check_brief maps the `odd` result to `skip $a: line $n $(oddwhy "$why"), so the brief is not read` (`scripts/lib/dev-cycle-read.sh:342`). Test 64 asserts `skip $b: line 2 holds a NUL byte, so the brief is not read` (`test/scripts/dev-cycle.bats:1183`) and passed in E1.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:216`, `test/scripts/dev-cycle.bats:1177-1193`, `$L/bats-head.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:213-229`, `scripts/lib/dev-cycle-read.sh:340-347`, `test/scripts/dev-cycle.bats:1177-1193`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 2: "--check-answer ... read from docs/working/questions.md or its archive on the default branch's commit (an answer only in the working tree reads open, or no such entry, until it is committed there)"
+## Claim 2: "an answer only in the working tree is not seen: it reads what main's copy says, until committed"
 
-**Location:** `scripts/dev-cycle.sh:56-58`
-**Type:** Behavioral
-**Verification mode:** executed
-**Verdict:** Verified
-**Confidence:** High
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers two cases: an answer written in the working tree to an entry that is OPEN on main (reads `open`), and an entry that exists only in the working tree (reads no such entry). It does not cover re-answering an entry that is already ANSWERED on main, which reads main's older answer.
-
-Command: `bash $S/old/722884c7/scripts/dev-cycle.sh --check-answer Q-1 Q-2 Q-3`, run from cwd `$S/p5` at 2026-10-05T11:37:07Z, exit 0. Main holds Q-1 ANSWERED [1] and Q-2 OPEN. The working tree answers Q-2, adds Q-3, and moves Q-1 to the archive. Output: `keep Q-1`, `open Q-2`, `skip Q-3: no such entry ... on the default branch`. The reads come from `git cat-file blob "$MAIN_SHA:$f"` (`scripts/lib/dev-cycle-read.sh:559`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:549-572`, `$L/wt-only-outcomes.txt`
-
----
-
-## Claim 3: --check-answer's skip-reason list ("no such entry, a duplicate heading, ... a NUL byte, ... a questions file that is not a regular file under plain directories on the default branch, or a default branch whose tree or file could not be read")
-
-**Location:** `scripts/dev-cycle.sh:61-70`
+**Location:** `scripts/dev-cycle.sh:57-59`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the working-tree-only case and the "reads main's copy" mechanism; does not establish that committing alone is enough, which it is not unless the commit is on the default branch.
 **Legibility-target:** for-author
-**Scope:** Covers every skip message check_answer can print through `--check-answer`. It does not establish the wording of any message beyond whether the list names its cause.
 
-Every message this branch adds is in the list: NUL, not a regular file, notdir ("under plain directories"), and the unreadable tree or file. Two reasons are missing:
-- **`skip abc: not a question ID (Q- and digits)`** (`scripts/lib/dev-cycle-read.sh:547`) is not listed. This gap is inherited from main.
-- **The two-files case** (`skip Q-4: an entry with this heading in both ... and ...`, `:568`) is covered only loosely by "a duplicate heading".
+Both readers take main's blob, not the working tree: `r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk ...` (`scripts/lib/dev-cycle-read.sh:561`). The T34 test shows the "until committed" qualifier is too loose. A commit on another branch still reads `open`:
 
-Both messages were printed by the probe run (`$L/probe2.txt`, "normal answers" block). The probe command was `TMPDIR=$S bash $S/probe2.sh`, cwd `$S`, at 2026-10-05T11:35:39Z, exit 0. The "no default branch" message cannot be reached through dev-cycle.sh, which exits 1 at `:191-192`. A precise version would add "an argument that is not a question ID" and "an entry in both files".
+```bash
+# test/scripts/dev-cycle.bats:1126-1129
+    # Committed only on another branch: still open.
+    git checkout -q -b side && git commit -qam answer && git checkout -q main
+    [ "$(git show main:docs/working/questions.md | grep -c ANSWERED)" -eq 0 ]
+    run --separate-stderr bash "$DC" --check-answer Q-1
+```
 
-**Evidence:** `scripts/dev-cycle.sh:61-70`, `scripts/lib/dev-cycle-read.sh:547-572`, `$L/probe2.txt`
+The answer is seen only after `git merge -q side` (`:1132`). The test passed in E1. A more precise wording is "until it lands on the default branch", which matches SKILL.md's "until it lands" (`skills/dev-cycle/SKILL.md:294`). The same help sentence opens with "on the default branch's commit", so the mechanism is stated correctly; only the closing qualifier is loose.
+
+**Evidence:** `scripts/dev-cycle.sh:56-59`, `scripts/lib/dev-cycle-read.sh:551-562`, `test/scripts/dev-cycle.bats:1118-1135`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 4: "--check-brief, --check-branch and --check-answer need a default branch found by name (origin/HEAD, main or master): they read its commit."
+## Claim 3: --check-answer's outcome set "keep, drop, done, open (not marked ANSWERED yet) or unrecognized (answered, but no answer line was found, ...)"
 
-**Location:** `scripts/dev-cycle.sh:71-72`
+**Location:** `scripts/dev-cycle.sh:59-62`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the set of positive words ANSWER_AWK can print; does not re-check the pre-existing "does not start with one of the options" wording (unchanged context, not in this diff).
+**Legibility-target:** for-orchestrator-synthesis
+
+`else if (count) print (!answered ? "open" : done ? result : "unrecognized")` (`scripts/lib/dev-cycle-read.sh:539`). `result` comes from `option()`, which returns only `keep`, `drop`, `done` or `unrecognized` (`scripts/lib/dev-cycle-read.sh:490-500`). check_answer echoes it as `echo "$hit $a"` (`:573`).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:487-540`, `scripts/lib/dev-cycle-read.sh:573`
+
+---
+
+## Claim 4: the skip-reason list "(not a question ID, no such entry, a heading twice in one file or in both files, a code fence never closed ..., a NUL byte, ..., a question heading inside a fence, a questions file that is not a regular file under plain directories on the default branch, or a default branch whose tree or file could not be read)"
+
+**Location:** `scripts/dev-cycle.sh:62-71`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers every `echo "skip ..."` in check_answer that dev-cycle.sh can reach; does not cover the "no default branch found by name" skip (`:550`), which dev-cycle.sh cannot reach because it exits 1 first (`scripts/dev-cycle.sh:193-195`).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the exit-1 guard for the three modes. It does not cover the other check modes, which do not read main (Claim 7).
 
-The guard reads `if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then` (`scripts/dev-cycle.sh:191`). Test 62 ("--check-answer needs a default branch found by name") asserts status 1 and passed in the suite run.
+I mapped each echo in check_answer to the list: `not a question ID (Q- and digits)` (`:549`), `notdir` gives "is not a directory on the default branch" (`:556`), `error` gives "the default branch's tree could not be read" (`:557`), other entry types give "is not a regular file on the default branch" (`:558`), and a failed cat-file gives "could not be read from the default branch" (`:562`). `dup` gives "more than one entry with this heading in $f" (`:564`). `odd` covers fence, html, comment, refdef, cr, nul and bom through `oddwhy` (`:231-241`, `:566`). The other arms are `unbalanced` (`:567`), `quoted` (`:568`), "an entry with this heading in both" (`:570`) and "no such entry" (`:574`). Each reason is in the help list. Tests 61-67 assert several of these strings and passed in E1.
 
-**Evidence:** `scripts/dev-cycle.sh:191-193`, `test/scripts/dev-cycle.bats:1153-1158`, `$L/bats-head.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:547-575`, `scripts/lib/dev-cycle-read.sh:231-241`, `scripts/dev-cycle.sh:62-71`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 5: "Exit: ... 1 ... or no default branch (for the digest, --check-brief, --check-branch and --check-answer)"
+## Claim 5: "--check-brief, --check-branch and --check-answer need a default branch found by name (origin/HEAD, main or master): they read its commit."
+
+**Location:** `scripts/dev-cycle.sh:72-73` (also the comment at `:189-192`)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the exit-1 gate for the three modes; does not establish behavior when origin/HEAD names a branch that starts with `-` (resolve_main skips it, `scripts/lib/dev-cycle-read.sh:396`).
+**Legibility-target:** for-orchestrator-synthesis
+
+`if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then` (`scripts/dev-cycle.sh:193`). Test "--check-answer needs a default branch found by name" (`test/scripts/dev-cycle.bats:1153-1158`) asserts status 1, empty stdout and "needs a default branch" on stderr. It passed in E1.
+
+**Evidence:** `scripts/dev-cycle.sh:188-195`, `test/scripts/dev-cycle.bats:1153-1158`, `$FC/logs/E1-bats-full.log`
+
+---
+
+## Claim 6: "Exit: ... 1 ... or no default branch (for the digest, --check-brief, --check-branch and --check-answer)"
 
 **Location:** `scripts/dev-cycle.sh:79-81`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the no-default-branch exit for the digest (`:188`) and the three check modes (`:193-195`); does not re-verify the other exit-1 causes (unchanged).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the exit code. It does not establish that `--help` shows this line (see Claim 6).
 
-The behaviour is the same guard as in Claim 4 (`scripts/dev-cycle.sh:191-192`, `exit 1`), checked by test 62.
+`resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch ..." >&2; exit 1; }` (`scripts/dev-cycle.sh:188`) handles the digest, and `:193-195` handles the three modes, including --check-answer as Claim 5 showed.
 
-**Evidence:** `scripts/dev-cycle.sh:79-81`, `:191-192`, `$L/bats-head.txt`
+**Evidence:** `scripts/dev-cycle.sh:188-195`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 6: `-h|--help) sed -n '2,80p' "$0"` prints the usage header (the header comment is the help text)
+## Claim 7a: "The header, up to the first line that is not a comment"
 
-**Location:** `scripts/dev-cycle.sh:111`
+**Location:** `scripts/dev-cycle.sh:111-112`
 **Type:** Behavioral
-**Verdict:** Incorrect
+**Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the GNU sed semantics of `2,/^[^#]/{/^#/p}`; does not establish BSD/macOS sed acceptance of `{/^#/p}` without a `;` before `}` (not testable here; the comment makes no portability claim).
 **Legibility-target:** for-author
-**Scope:** Covers the help range against the header's last line at 722884c7. It does not establish whether any caller parses the help output.
 
-The header comment now ends at line 81 (`# default branch (for the digest, --check-brief, --check-branch and --check-answer); a failed step exits non-zero mid-digest. Printed repo text is data.`). The help prints only lines 2-80, so `--help` stops in mid-sentence:
-
+```bash
+# scripts/dev-cycle.sh:111-112
+    # The header, up to the first line that is not a comment (no fixed range to go stale).
+    -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
 ```
-skip is an answer, not an error); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no
-```
 
-Command: `LC_ALL=C bash scripts/dev-cycle.sh --help`, cwd /workspace/.claude/wt-build-loop-u1a, at 2026-10-05T11:33Z, exit 0. Output: `$L/help-head.txt`.
+The range ends at the first line that matches `^[^#]`, meaning a line that has a first character other than `#`. That differs from "the first line that is not a comment" in three ways, each shown in E2's probes:
+- An empty line is not a comment, but it does not end the range. Probe p1 (`# a`, `#`, empty, `# b`, `X`) prints `# a`, `#`, `# b`.
+- An indented ` #` line ends the range (p4 prints only `# a`).
+- A non-comment line 2 does not end the range, because sed tests addr2 only after the addr1 line. Probe p2 prints the comments that follow it.
 
-How the range drifted (`$L/help-range.txt`):
+None of these cases occurs in the real file. The header has no blank line; line 82 is blank and line 83 is `set -euo pipefail`. A more precise comment would say "up to the first non-empty line that does not start with #".
 
-| Revision | Last header line | Help range |
-|---|---|---|
-| main | 77 | `2,77p` |
-| 2da477b7 | 80 | `2,80p` |
-| 78703f22 | 81 | `2,80p` |
-| 722884c7 | 81 | `2,80p` |
-
-78703f22's C1 edit wrapped the --check-answer list onto one more line (`+# under plain directories on the default branch, or a default` / `+# branch whose tree or file could not be read).`) without moving the range. This is a regression against main, where the whole header printed. No test covers `--help`: grepping `test/scripts/dev-cycle.bats` for "help" finds nothing. The fix is `sed -n '2,81p'`. A range computed from the header's end would also stop this recurring.
-
-**Evidence:** `scripts/dev-cycle.sh:79-81`, `scripts/dev-cycle.sh:111`, `$L/help-head.txt`, `$L/help-range.txt`
+**Evidence:** `scripts/dev-cycle.sh:1-83`, `scripts/dev-cycle.sh:111-112`, `$FC/logs/E2-sed-probes.log`
 
 ---
 
-## Claim 7: "--check-brief, --check-branch and --check-answer read the default branch's commit ... the other modes do not use it."
+## Claim 7b: --help prints the whole header, through "Printed repo text is data." ("no fixed range to go stale")
 
-**Location:** `scripts/dev-cycle.sh:188-191`
-**Type:** Architectural
+**Location:** `scripts/dev-cycle.sh:111-112`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
+**Verification mode:** executed
+**Scope:** Covers the help output at 4aa2e98e matching header lines 2-81 exactly, and staying correct if comment lines are added; does not establish behavior if a blank line or indented `#` line is later added inside the header (Claim 7a).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers check_path, check_write and check_fix in dev-cycle.sh. It does not cover the digest, which uses MAIN separately.
 
-No reference to MAIN, main_entry or check_answer exists between `scripts/dev-cycle.sh:120` and `:188`, where check_path, check_write and check_fix are defined (paraphrased: no quote is possible because the claim is an absence; the grep returned no match).
+E2: `--help` printed 80 lines, byte-identical to `sed -n '2,81p' scripts/dev-cycle.sh | sed 's/^# \{0,1\}//'` (`cmp` reported identical). The last line ends `... Printed repo text is data.` (`scripts/dev-cycle.sh:81`). This fixes R3. At 722884c7 the script used `sed -n '2,80p'` with the header ending at :81 (see Claim 33).
 
-**Evidence:** `scripts/dev-cycle.sh:120-188`
+**Evidence:** `scripts/dev-cycle.sh:2-81`, `$FC/logs/E2-help.log`, `$FC/logs/E2-sed-probes.log`
 
 ---
 
 ## Claim 8: "A change here must pass test/scripts/dev-cycle.bats, and build-loop.sh's suites under test/scripts/ once that second caller lands."
 
 **Location:** `scripts/lib/dev-cycle-read.sh:10-12`
-**Type:** Architectural
+**Type:** Reference / Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers that the named suite exists and passes and that build-loop.sh does not exist yet; does not establish any future suite.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers two facts: there is no second caller yet, and the named suite passes at HEAD (66/67, with test 21 failing only because of the environment). It does not establish anything about future suites.
 
-`ls scripts/build-loop.sh` reports "No such file or directory". The suite run is in `$L/bats-head.txt`.
+`ls scripts/build-loop.sh` reports "No such file or directory" (paraphrased — no quote available because the claim covers absence of a file). E1 shows `test/scripts/dev-cycle.bats` passing 68 of 68.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:10-12`, `$L/bats-head.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:10-12`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 9: caller contract — "The caller sets -euo pipefail ... inrepo, dirok, skipped, check_brief and the import walk (imported_names) exit 1 (need_root)" (check_answer removed from the list)
+## Claim 9: caller contract: "The caller sets -euo pipefail ... inrepo, dirok, skipped, check_brief and the import walk (imported_names) exit 1 (need_root) unless ROOT_REAL is set"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:12-17`
-**Type:** Invariant
+**Location:** `scripts/lib/dev-cycle-read.sh:12-20`
+**Type:** Architectural / Invariant
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
+**Verification mode:** static
+**Scope:** Covers the need_root call sites and the removal of check_answer from that list; does not establish that every future caller sets -euo pipefail. brief_fields and check_answer now set pipefail themselves (Claim 17a), so the contract is stricter than those two functions need.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the following:
-- check_answer, main_entry and brief_fields no longer call need_root.
-- dev-cycle.sh sets pipefail.
-- The R2 read-failure detection depends on pipefail.
 
-It does not establish behaviour for a future caller that skips pipefail.
+The need_root call sites are: `inrepo() { need_root; ...` (`:121`), `dirok() { need_root; ...` (`:124`), `skipped() { need_root; ...` (`:125`), `need_root` in check_brief (`:323`) and `need_root` in the import walk (`:433`). check_answer has no need_root call (`:547-575`). The only caller sets `set -euo pipefail` (`scripts/dev-cycle.sh:83`).
 
-- **dev-cycle.sh sets the option.** `set -euo pipefail` is at `scripts/dev-cycle.sh:83`.
-- **check_answer needs no ROOT_REAL.** Test 63 calls check_answer without ROOT_REAL and passes.
-- **The R2 detection depends on pipefail.** With the blob deleted, `brief_fields` returns `rc1 [error]` under `set -euo pipefail` but `rc0 keys=0` under `set -eu` (`$L/probe2.txt`, "missing blob" lines; command `TMPDIR=$S bash $S/probe2.sh`, cwd `$S`, 2026-10-05T11:35:39Z, exit 0).
-
-The R2 fix therefore holds only under the stated contract.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:12-17`, `:295-302`, `:559-560`, `scripts/dev-cycle.sh:83`, `$L/probe2.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:91-125`, `scripts/lib/dev-cycle-read.sh:321-323`, `scripts/lib/dev-cycle-read.sh:433`, `scripts/dev-cycle.sh:83`
 
 ---
 
-## Claim 10: "check_brief, check_branch and check_answer skip every argument unless it returned 0 with main found by name"
+## Claim 10: "check_brief, check_branch and check_answer skip every argument unless it returned 0 with main found by name" (and ":242-244 ... answer only when it was found by name")
 
-**Location:** `scripts/lib/dev-cycle-read.sh:21-23`
+**Location:** `scripts/lib/dev-cycle-read.sh:21-23`, `scripts/lib/dev-cycle-read.sh:242-244`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the main_by_name guard in all three functions; does not establish behavior if a caller sets MAIN_SHA/MAIN_BY_NAME by hand.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers each function's first guard. It does not cover a MAIN_SHA from another repo (settled by override row 208).
 
-The guard is `if ! main_by_name; then echo "skip $a: no default branch found by name ...` (`:548`, and likewise `:322` and `:370`). Test 63's first expected line is that skip, printed before resolve_main runs, and the test passed.
+Each function opens with the same guard: `if ! main_by_name; then echo "skip ...: no default branch found by name ...` (check_brief `:324`, check_branch `:372`, check_answer `:550`). Test 62 calls `check_answer Q-1` before `resolve_main` and asserts the first output line `skip Q-1: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run` (`test/scripts/dev-cycle.bats:1171`). It passed in E1.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:322`, `:370`, `:548`, `test/scripts/dev-cycle.bats:1167-1174`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:245-246`, `scripts/lib/dev-cycle-read.sh:324`, `:372`, `:550`, `test/scripts/dev-cycle.bats:1160-1175`
 
 ---
 
-## Claim 11: "Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields read the default branch's commit, never the working tree (check_brief also refuses a brief path that is not plain in the working tree, which the cycle writes)"
+## Claim 11: "Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields read the default branch's commit, never the working tree (check_brief also refuses a brief path that is not plain in the working tree ...)"
 
 **Location:** `scripts/lib/dev-cycle-read.sh:29-32`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the content reads (ls-tree and cat-file against `$MAIN_SHA`) and check_brief's working-tree blocker; does not establish isolation from repo config or refs/replace (override row 235).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers "never the working tree" for all five functions. It does not cover check_branch's reads, which also take `refs/heads/<name>` and not only main's commit.
 
-- **The working tree is never read.** The reads go through `git ls-tree ... "$MAIN_SHA"` (`:263`) and `git cat-file blob "$MAIN_SHA:$f"` (`:295`, `:559`). Test 66 writes `Status: dropped` into the working tree after committing, and still reads `status=[Status: open]` (passed).
-- **The working-tree check stays in check_brief.** `if [[ -n "$(blocker "$a" file)" ]]` is at `:327`.
+The reads are `git ls-tree -t --full-tree "$MAIN_SHA"` (`:263`), `git cat-file blob "$MAIN_SHA:$1"` (`:297`) and `git cat-file blob "$MAIN_SHA:$f"` (`:561`). check_brief's working-tree check is `blocker "$a" file` (`:329`). In tests 63 and 66 the working-tree copy differs from main's and is ignored (`test/scripts/dev-cycle.bats:1141-1144`, `:1219-1220`). Both passed in E1.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:263`, `:295`, `:327`, `:559`, `test/scripts/dev-cycle.bats:1219-1228`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:258-312`, `:329`, `:547-575`, `test/scripts/dev-cycle.bats:1137-1151`, `:1210-1243`
 
 ---
 
-## Claim 12: FENCE_AWK — "and anywhere in the file, fenced or not, a carriage return inside a line ..., a NUL byte ..., or a byte-order mark on line 1" (others only outside a fence)
+## Claim 12: FENCE_AWK: "and anywhere in the file, fenced or not, a carriage return inside a line ..., a NUL byte (a caller reading the output through $(...) would lose it), or a byte-order mark on line 1"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:173-176`
+**Location:** `scripts/lib/dev-cycle-read.sh:173-176` (also `:216`)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the order of checks in `fence()` (CR, NUL and BOM before the `infence` branch) under mawk; does not establish NUL handling under one-true-awk or busybox (override row 224).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers CR and NUL inside a fence being refused, and html, comment and refdef shapes inside a fence being read. The BOM check applies only to line 1, which cannot be inside a fence. It does not establish awk implementations other than mawk (settled by override row 224, C2).
 
-The CR, NUL and BOM checks run before `if (infence)` (`:215-218`). Probe results (`$L/probe2.txt`, FENCE_AWK block; same command and run as Claim 9):
+```awk
+# scripts/lib/dev-cycle-read.sh:213-218
+function fence(l) {  # 1: a fence line or fenced content (not text); 0: ordinary text
+  if (odd) return 1   # the file is already refused: nothing after it is read
+  if (index(l, "\r")) { refuse("cr"); return 1 }
+  if (index(l, "\0")) { refuse("nul"); return 1 }  # $(...) drops NUL, so a printed line would not be the line read
+  if (NR == 1 && substr(l, 1, 3) == "\357\273\277") { refuse("bom"); return 1 }
+  if (infence) {
+```
+(excerpt ends :218; enclosing fence() continues to :229 — read)
 
-| Line inside a fence | Result |
-|---|---|
-| CR | `skip Q-1: line 5 ... holds a carriage return` |
-| NUL | `skip Q-1: line 5 ... holds a NUL byte` |
-| `<div>` | `keep Q-1` |
-| `<!-- open` | `keep Q-1` |
-| `[a]: b` | `keep Q-1` |
+Both callers run `fence($0)` on every line (`:299`, `:509`). Test 64 refuses a NUL brief and a NUL questions file (passed in E1).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:213-229`, `$L/probe2.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:163-230`, `test/scripts/dev-cycle.bats:1177-1193`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 13: "$(...) drops NUL, so a printed line would not be the line read"
+## Claim 13: main_entry prints "blob", "absent", "notfile", "notdir PART" or "error" (no default branch found by name, ls-tree failed, or the tree lists a name twice ...; never read as absent)
 
-**Location:** `scripts/lib/dev-cycle-read.sh:216`
+**Location:** `scripts/lib/dev-cycle-read.sh:247-254`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers all five result words and the three error causes; does not establish handling of a tree entry whose name holds a slash (override row 236).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the reason for the refusal and the refusal itself. It does not establish anything about readers outside the lib.
 
-Test 64 commits `Status: op\0en` and expects `refused [odd 2 nul] 0` from brief_fields. It passed. Bash's `$(...)` dropping NUL is the behaviour R1 recorded at c8435580 (iteration 1).
+Each result word has its own line: `main_by_name || { echo error; return; }` (`:261`), `|| { echo error; return; }` after ls-tree (`:263`), `[[ -z "$dup" ]] || { echo error; return; }` (`:269`), `echo "notdir $p"` (`:271`), and `case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac` (`:273`). E7 builds a tree that lists questions.md twice: main_entry prints `error`. Test 64 prints `error` for main_entry without resolve_main and for a bogus MAIN_SHA. E8 shows `notdir`.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:216`, `test/scripts/dev-cycle.bats:1177-1193`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `$FC/logs/E7-dup-tree.log`, `$FC/logs/E8-notdir.log`, `test/scripts/dev-cycle.bats:1187-1192`
 
 ---
 
-## Claim 14: "check_brief, check_branch and check_answer read its commit, so they answer only when it was found by name"
+## Claim 14: "One ls-tree call lists the path and every directory above it (-t: trees too; --full-tree: paths from the top level, whatever the current directory)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:242-244`
-**Type:** Behavioral
+**Location:** `scripts/lib/dev-cycle-read.sh:254-256`
+**Type:** Performance / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the single ls-tree invocation and its output; does not establish its cost on large directories (override row 220).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** The same guard as Claim 10, with the same residue.
 
-The guards are at `:322`, `:370` and `:548`. Tests 41 and 62 passed.
+`out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)"` (`:263`) is the only git call in main_entry. E7's ls-tree output lists `docs`, `docs/working` and both `docs/working/questions.md` entries. Test 62 runs check_answer from `docs/` (`cd docs; check_answer Q-1`, `test/scripts/dev-cycle.bats:1168`) and gets the same answer.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:242-246`, `$L/bats-head.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `$FC/logs/E7-dup-tree.log`, `test/scripts/dev-cycle.bats:1160-1175`
 
 ---
 
-## Claim 15: main_entry prints "blob" (100644/100755), "absent", "notfile", "notdir PART" or "error"
-
-**Location:** `scripts/lib/dev-cycle-read.sh:247-251`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers each output word. It does not cover gitlinks by execution (notfile by the case's `*` arm; override row 230, C8).
-
-The classifying lines are `case "${m[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "notdir $p"; return ;; esac` and `case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac` (`:270-273`). The probe and tests reach each word:
-
-| Output | Reached by |
-|---|---|
-| `blob` | `$L/probe1.txt` (d) |
-| `absent` | brief_fields on an absent path (`$L/probe2.txt`) |
-| `notfile` | test 61 symlink |
-| `notdir docs/working` | test 61 |
-| `error` | test 64 and `$L/probe1.txt` |
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:258-274`, `$L/probe1.txt`, `$L/probe2.txt`
-
----
-
-## Claim 16: "error (... or the tree lists a name twice; git's own reads would take the first copy, which may not be the one a check saw, so this answers error instead; never read as absent)"
-
-**Location:** `scripts/lib/dev-cycle-read.sh:252-254`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers three things: git taking the first copy for `cat-file blob SHA:path`, duplicate detection at the leaf, and duplicate detection at every parent component. It does not establish how other git reads (`git show`, `git log -- path`) resolve duplicates.
-
-Command: `TMPDIR=$S bash $S/probe1.sh`, cwd `$S`, at 2026-10-05T11:35:11Z, exit 0. mktree keeps the order it is given (ls-tree shows it), and in all four orders `cat-file` returned the first entry: blob1 then blob2 gives [1], blob2 then blob1 gives [2], symlink then blob gives `x`, and blob then symlink gives the blob. Each case printed `main_entry: error`.
-
-Duplicates at a parent component are detected too, because the `-t` listing repeats every path under a duplicated directory. All three parent cases print `error`:
-- `docs` listed twice as a tree (b)
-- `docs` as a blob and a tree (b2)
-- two `working` trees (b3)
-
-The detecting line is `[[ -z "${m[$path]+set}" ]] || dup=1` (`:266`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:262-269`, `$L/probe1.txt`
-
----
-
-## Claim 17: "One ls-tree call lists the path and every directory above it (-t: trees too; --full-tree: paths from the top level, whatever the current directory)", with ls-tree's stderr dropped and a failed ls-tree reading as error
-
-**Location:** `scripts/lib/dev-cycle-read.sh:252-257`, `:263`
-**Type:** Behavioral / Error-handling
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the following:
-- one call
-- parents listed
-- `--full-tree` working from a subdirectory
-- a missing subtree object giving exit 1 and `error`
-
-It does not establish two things: (1) that no corruption mode makes ls-tree exit 0 with a partial listing; only a missing tree object was probed. (2) That the listing holds only those entries: it also lists the named directories' children (`docs/a.md`, `docs/other`, `docs/working/z.md`; settled by override row 220, A3).
-
-The call is `out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }` (`:263`). Probe results (`$L/probe1.txt`):
-- **(c)** With the `docs/working` tree object deleted, ls-tree printed `error: Could not read ...`, exit 1, and main_entry printed `error`.
-- **(d)** Run from `docs/`, main_entry printed `blob`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:263`, `$L/probe1.txt`
-
----
-
-## Claim 18: "The caller has checked main_by_name and the path's form (pathform, so ls-tree prints it unquoted)."
+## Claim 15: "The caller has checked main_by_name and the path's form (pathform, so ls-tree prints it unquoted)."
 
 **Location:** `scripts/lib/dev-cycle-read.sh:256-257`
-**Type:** Architectural
-**Verdict:** Verified
+**Type:** Invariant
+**Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers all three in-repo callers. It does not establish anything about future callers, although main_entry checks main_by_name itself anyway (`:261`).
+**Scope:** Covers the three in-lib callers (check_brief, brief_fields, check_answer) and main_entry's own guard; does not establish future callers (U1b/U1c).
+**Legibility-target:** for-author
 
-- **brief_fields** runs `if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]` (`:292`).
-- **check_brief** calls pathform (`:323`) before `e="$(main_entry "$a")"` (`:330`).
-- **check_answer** passes constant paths after `main_by_name` (`:548-550`).
+main_entry checks main_by_name itself: `main_by_name || { echo error; return; }` (`:261`). One caller does not check it first. brief_fields runs `if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1; fi` (`:294`) with no main_by_name test, so it relies on main_entry's guard. The path-form half holds: check_brief runs pathform at `:325`, brief_fields at `:294`, and check_answer passes only the two constant paths (`:551`). A more precise comment: "The caller has checked the path's form (pathform ...); without a default branch found by name main_entry answers error itself."
 
-pathform allows only `[a-zA-Z0-9._/-]` (`:139-143`), which core.quotePath never quotes.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:139-149`, `:261`, `:292`, `:323`, `:330`, `:548-550`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:256-261`, `:294`, `:324-325`, `:550-552`
 
 ---
 
-## Claim 19: brief_fields — "for each key, the first line outside a fence (FENCE_AWK) that starts "Status:", ... "Dispatched:", whole, after one trailing CR is dropped ... (a key with no such line stays unset), each the line as stored but for that CR"
+## Claim 16: brief_fields contract: first unfenced line per key "whole, after one trailing CR is dropped"; "a key with no such line stays unset"; "Otherwise it sets no key and returns 1, with BRIEF_ODD "odd N WHY" ..., "unbalanced N" ... or "error" (... any main_entry answer but blob, its error included, or the blob could not be read)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:275-282`
+**Location:** `scripts/lib/dev-cycle-read.sh:275-287`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers every documented return path; does not establish how callers judge the values (by design, "The callers judge the values").
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers first-copy selection, fenced copies being skipped, the CR being dropped, and absent keys staying unset. It does not establish that values are judged anywhere; the callers judge them.
 
-The awk keeps only the first copy of each key: `if (!(k in got)) { got[k] = 1; kv[++nk] = k "\t" $0 }` (`:299`). The shell side stores `BRIEF["${l%%$'\t'*}"]="${l#*$'\t'}"` (`:307`). Test 66 passed with three cases:
-- the fenced `Status: done` is skipped
-- `Status: open\r` reads `[Status: open]`
-- the later `Branch: second` is ignored
+`BRIEF=(); BRIEF_ODD=""` (`:293`), then the error return at `:294` and the read-failure return `|| { BRIEF_ODD=error; return 1; }` (`:304`). An `odd`/`unbalanced` line resets with `BRIEF=(); BRIEF_ODD="$l"; return 1` (`:308`). On success the function ends with the while loop, whose status is 0. Test 66 asserts every key, the CR drop (`Status: open\r` read as `Status: open`), the `odd 2 fence` and `unbalanced 2` results, and absent keys left unset. Test 67 asserts `refused [error]` for a deleted blob. Both passed in E1.
 
-Test 65's `[unset]` branch also passed.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:289-310`, `test/scripts/dev-cycle.bats:1210-1243`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:288-312`, `test/scripts/dev-cycle.bats:1210-1243`, `:1245-1266`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 20: brief_fields "Otherwise it sets no key and returns 1, with BRIEF_ODD "odd N WHY" ..., "unbalanced N" ... or "error" (no default branch found by name, a path pathform refuses, any main_entry answer but blob, its error included, or the blob could not be read)"
+## Claim 17a: "pipefail for this function only (local -), so a failed read is caught whatever the caller set" (brief_fields; check_answer "as brief_fields")
 
-**Location:** `scripts/lib/dev-cycle-read.sh:282-287`
-**Type:** Behavioral / Error-handling
+**Location:** `scripts/lib/dev-cycle-read.sh:290-292`, `scripts/lib/dev-cycle-read.sh:548`
+**Type:** Error-handling / Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers bash 5.2.15: the read failure is caught with no caller options, with `set -eu`, and with `set -euo pipefail`, and the caller's options, including pipefail, are restored after a normal return, after an early `return 1`, and after `set -f`/`set +u` inside a `local -` function; does not establish bash 4.4-5.0 (Claim 17b).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers every listed error source and the cleared BRIEF. The "blob could not be read" source holds under pipefail only (Claim 9).
 
-`$L/probe2.txt` ("brief_fields error sources"; same command and run as Claim 9) gives `rc1 [error] 0` for each of these:
-- no resolve_main (empty MAIN_SHA)
-- `MAIN_BY_NAME` cleared
-- `../x`
-- an absent path
-- a tree (notfile)
-- `a.md/x` (notdir)
-- a deleted blob
+`local - out l; set -o pipefail` (`:292`) and `local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields` (`:548`). In E6, under all three caller settings, check_answer printed `skip Q-1: docs/working/questions.md could not be read from the default branch` and brief_fields printed `refused [error]`. After each call, including brief_fields' early `return 1` on a bad path, `$-` and `pipefail` were unchanged (e.g. `after-check_answer: opts=[ehuB] pipefail=off`). A probe function that ran `local -; set -o pipefail; set -f; set +u; return 1` also left noglob off and `u` set.
 
-A good call followed by an error call leaves `0 keys [error]`. The odd and unbalanced outcomes are covered by test 66 (`refused [odd 2 fence] 0`, `refused [unbalanced 2] 0`).
+The guard depends on the pipefail. With it removed from check_answer (mutant mpf_ans, E4), the read falls through to the archive and answers `keep Q-1`. With it removed from brief_fields (mpf_bf), brief_fields returns 0 with no keys. With `local -` replaced by `local` (mnl, E5), the caller's pipefail stays on and the test fails at "caller unchanged".
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:289-310`, `$L/probe2.txt`, `test/scripts/dev-cycle.bats:1230-1243`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:289-312`, `:547-562`, `$FC/logs/E6-local-dash.log`, `$FC/logs/E4-mpf_ans.log`, `$FC/logs/E4-mpf_bf.log`, `$FC/logs/E5-mnl.log`
 
 ---
 
-## Claim 21: "Call it in the caller's own shell: it sets globals."
+## Claim 17b: the same claim ("for this function only"; 4aa2e98e: "the caller's options come back on return") on bash 4.4-5.0
 
-**Location:** `scripts/lib/dev-cycle-read.sh:287`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
+**Location:** `scripts/lib/dev-cycle-read.sh:290-292`, `scripts/lib/dev-cycle-read.sh:548`
+**Type:** Invariant
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** Covers what bash's own release notes say about `local -` before 5.1; does not establish actual behavior on 4.4/5.0 (no such bash in the sandbox), and does not apply to bash 5.1+ (Claim 17a).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers BRIEF_ODD being lost when brief_fields runs in `$(...)`. It does not cover other subshell forms.
 
-The probe prints `parent sees [] / sub said: in-sub error` (`$L/probe2.txt`).
+Bash's NEWS for 4.4 (`/usr/share/doc/bash/NEWS.gz:601-603`) says: "The `local' builtin takes a new argument: `-', which will cause it to save and the single-letter shell options and restore their previous values at function return." pipefail has no single-letter form. CHANGES for bash-5.1-alpha (`/usr/share/doc/bash/CHANGES.gz:647-648`) says: "i. Several changes to how `local -' restores the values of options and $SHELLOPTS." So on 4.4/5.0 the function-local pipefail may leak to a caller that had it off. This would not weaken the read check itself. Bash older than 4.4 rejects `local -`, but the lib already needs 4.2+ for `declare -gA` (`:288`). No minimum bash version is stated for these scripts: the only repo hits are in `hooks/auto-approve-allowed-commands.sh:436` and `:710` (paraphrased — no quote available because the claim covers the absence of a version statement for dev-cycle; `rg` over the repo, excluding docs/reviews and docs/working). Verifying this needs a bash 4.4 or 5.0 binary.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:288-291`, `$L/probe2.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:288-292`, `/usr/share/doc/bash/NEWS.gz:601-603`, `/usr/share/doc/bash/CHANGES.gz:647-648`
 
 ---
 
-## Claim 22: "The whole blob is read (no early exit: SIGPIPE under pipefail)."
+## Claim 18: "The whole blob is read (no early exit: SIGPIPE under pipefail)."
 
-**Location:** `scripts/lib/dev-cycle-read.sh:293`
+**Location:** `scripts/lib/dev-cycle-read.sh:295`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
+**Scope:** Covers the absence of `exit` in brief_fields' awk program and FENCE_AWK; does not measure SIGPIPE behavior.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the brief_fields awk program having no `exit`. It does not cover the SIGPIPE timing on large blobs (see test 43 for check_brief's large-brief read).
 
-The awk program's rules are `{ sub(/\r$/, "") }`, `fence($0) { next }`, the `match(...)` rule and `END {...}` (`:296-301`). None of them calls `exit`.
+The awk program has rules `{ sub(/\r$/, "") }`, `fence($0) { next }`, a `match(...)` rule and `END { ... }` (`:298-303`). FENCE_AWK (`:186-230`) holds only functions. Neither contains `exit` (paraphrased — no quote available because the claim covers absence of code; read in full).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:295-302`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:186-230`, `:297-304`
 
 ---
 
-## Claim 23: check_brief — "its Status line from brief_fields ... neither is one stored as anything but a regular file under plain directories (main_entry). "new" when the default branch has no file at that path"
+## Claim 19: check_brief: "its Status line from brief_fields ... neither is one stored as anything but a regular file under plain directories (main_entry)"; c8435580: "check_brief also skips a brief whose directory is not a directory on main (before, ls-tree printed nothing and it read as "new")"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:311-318`
+**Location:** `scripts/lib/dev-cycle-read.sh:313-320` (commit c8435580 body)
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the symlinked-parent-directory case before and after the change, and the Status read through brief_fields; does not re-test gitlinks (override row 230).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the absent, notdir, non-blob, odd and status outcomes. It does not cover the commit lookup at `:355-357`, which is pre-existing.
 
-The probe on a symlinked `briefs` directory on main prints `skip ...: docs/working/briefs is not a directory on the default branch` at HEAD, where main's lib printed `ok ... new` (`$L/probe2.txt`, last block). Tests 38, 43 and 65-67 passed.
+E8 put a symlinked `docs/working/briefs` on main and a plain copy in the working tree. Main's dev-cycle.sh printed `ok docs/working/briefs/2026-01-01-a.md new`, while the branch's printed `skip docs/working/briefs/2026-01-01-a.md: docs/working/briefs is not a directory on the default branch`. The code is `notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch"; return ;;` (`:336`) and `st="${BRIEF[status]-}"` (`:348`).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:319-358`, `$L/probe2.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:321-360`, `$FC/logs/E8-notdir.log`
 
 ---
 
-## Claim 24: check_brief's `error)` arm: "skip $a: the brief could not be read from the default branch"
+## Claim 20: check_answer "reads only git objects, so it needs no ROOT_REAL and adds nothing to SKIPPED"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:341`
+**Location:** `scripts/lib/dev-cycle-read.sh:541-546`
+**Type:** Architectural / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers check_answer's own body, which has no need_root, skipped, or working-tree file test; does not establish that git itself reads no working-tree state (config, alternates).
+**Legibility-target:** for-orchestrator-synthesis
+
+check_answer's body calls only `main_entry` and `git cat-file blob "$MAIN_SHA:$f"` (`:552`, `:561`). It has no `need_root` or `skipped` call (paraphrased — no quote available because the claim covers absence of calls; body `:547-575` read in full). Test 62 runs with ROOT_REAL set at the top level and a symlinked archive, then unset in `docs/`. It asserts `skipped=0` and the same skip line both times, and passed in E1.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:547-575`, `test/scripts/dev-cycle.bats:1160-1175`
+
+---
+
+## Claim 21: "A failed read is a skip, never a fall-through to the other file."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:560`
 **Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers a missing questions.md blob with an answering archive present, under any caller options on bash 5.2; does not establish a partially readable blob (truncated object).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers reachability and wording. brief_fields' other error sources are caught before this arm:
-- pathform at `:323`
-- main_by_name at `:322`
-- a non-blob at `:330-337`
 
-So only a failed `git cat-file`, or a tree changing between the two ls-tree calls, reaches the arm, and the wording fits both.
+`r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk ...)" || { echo "skip $a: $f could not be read from the default branch"; return; }` (`:561-562`). Test 67 asserts that skip with a `[1]` answer in the archive, and passed in E1. Without the function's pipefail (E4 mpf_ans) the same input answers `keep Q-1`, which is the fall-through the comment rules out.
 
-Probe3 at HEAD prints `A2 check-brief: skip ...: the brief could not be read from the default branch` (`$L/probe3.txt`). Command: `TMPDIR=$S bash $S/probe3.sh`, cwd `$S`, at 2026-10-05T11:36:05Z, exit 0. Test 67 asserts the same line and passed.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:322-345`, `$L/probe3.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:560-563`, `test/scripts/dev-cycle.bats:1245-1257`, `$FC/logs/E4-mpf_ans.log`
 
 ---
 
-## Claim 25: check_answer — "never the working tree: an answer that unblocks autonomous work must have reached main (plan D8) ... It reads only git objects, so it needs no ROOT_REAL and adds nothing to SKIPPED."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:539-544`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers no ROOT_REAL, no SKIPPED and no working-tree read. It does not verify the plan's D8 text.
-
-- **HEAD passes test 63.** The test expects `skipped=0`.
-- **A mutant that calls `skipped "$f"` fails it.** The mutant (`$S/mut-skip`, line 550 `if [[ -n "${ROOT_REAL:-}" ]]; then skipped "$f" || true; fi  # MUTANT`) fails test 63 with `skipped=1` (`$L/bats-mutants.txt`). Command: `TMPDIR=$S bats -f '...' $S/mut-skip/test/scripts/dev-cycle.bats`, cwd `$S/mut-skip`, at 2026-10-05T11:36:18Z, exit 1.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:545-573`, `$L/bats-mutants.txt`
-
----
-
-## Claim 26: "A failed read is a skip, never a fall-through to the other file."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:558-560`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers a missing questions.md blob, a missing archive blob, and the normal outcomes being unchanged against main. It holds only under pipefail (Claim 9).
-
-**HEAD** (`$L/probe2.txt`):
-- questions.md blob missing → `skip Q-1: docs/working/questions.md could not be read from the default branch`
-- archive blob missing → `skip Q-1: docs/working/questions-archive.md could not be read ...`
-
-**2da477b7 for comparison:**
-- Through dev-cycle.sh (errexit on), both cases printed nothing and exited 128.
-- Through `out="$(check_answer Q-1)"` (`$L/probe3.txt`), 2da477b7 gives `out=[keep Q-1]`, the R2 fall-through. HEAD gives the skip.
-
-**Normal outcomes match main's lib.** Both libs print the same lines for open, drop, dup in one file, both files, keep from the archive, no such entry and a non-ID. The only difference is the new "on the default branch" suffix.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:549-573`, `$L/probe2.txt`, `$L/probe3.txt`
-
----
-
-## Claim 27: "it reads `questions.md` and `questions-archive.md` from the default branch's commit, so an answer, or an archive move, made only in the working tree is not seen until it lands (it reads `open`, or no such entry)"
+## Claim 22: "it reads `questions.md` and `questions-archive.md` from the default branch's commit, so an answer, or an archive move, made only in the working tree is not seen until it lands (it reads what main's copy says, usually `open` or no such entry)"
 
 **Location:** `skills/dev-cycle/SKILL.md:292-295`
 **Type:** Behavioral
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Legibility-target:** for-author
-**Scope:** Covers the outcome set for working-tree-only answers and archive moves. It does not establish the In-flight step's handling of the outcomes.
+**Scope:** Covers the read source and the two usual outcomes; "usually" hedges the others (main's older answer, `unrecognized`, a skip), which A14 asked to be acknowledged. It does not establish each of those outcomes by test.
+**Legibility-target:** for-orchestrator-synthesis
 
-"Not seen until it lands" holds. The parenthetical, however, is not the complete set of outcomes. Take an archive move made only in the working tree, for an entry whose answer already landed in main's questions.md. That reads main's answer (`keep Q-1` in `$L/wt-only-outcomes.txt`), not `open` or no such entry. Re-answering an entry that is already ANSWERED on main likewise reads the old answer. Both outcomes are harmless: the answer read is main's.
+Test 63 (T34) asserts `open Q-1` for a working-tree-only answer and for a branch-only commit, and `drop Q-1` once merged into main. An entry absent on main falls to `skip $a: no such entry ... on the default branch` (`scripts/lib/dev-cycle-read.sh:574`).
 
-A precise version: "(it reads main's state: `open`, no such entry, or the answer already on main)".
-
-**Evidence:** `skills/dev-cycle/SKILL.md:292-295`, `$L/wt-only-outcomes.txt`
+**Evidence:** `skills/dev-cycle/SKILL.md:289-298`, `test/scripts/dev-cycle.bats:1118-1135`, `scripts/lib/dev-cycle-read.sh:573-574`
 
 ---
 
-## Claim 28: "A questions.md that is not plain is reported, not passed over to the archive."
+## Claim 23: "A questions.md that is not plain is reported, not passed over to the archive."
 
 **Location:** `test/scripts/dev-cycle.bats:650`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the committed-symlink case in the test; the assertion is a prefix match (`*`), so it does not pin the rest of the line.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the symlinked questions.md committed on main. It does not cover the working-tree-only symlink, which is no longer read.
 
-Test 34 expects the prefix `"skip Q-100: docs/working/questions.md is not a regular file on the default branch"` (`:653`), and it passed.
+The archive written at `:642` holds Q-100. After `git add -A && git commit -qm link` (`:652`) the test asserts `skip Q-100: docs/working/questions.md is not a regular file on the default branch"*` (`:654`), not an archive answer. It passed in E1.
 
-**Evidence:** `test/scripts/dev-cycle.bats:649-654`, `$L/bats-head.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:625-655`, `scripts/lib/dev-cycle-read.sh:558`
 
 ---
 
-## Claim 29: T34 test comments — "Answered only in the working tree: still open", "Committed only on another branch: still open", "A working tree with no questions file at all reads main's."
+## Claim 24: test title "--check-brief and --check-branch need a default branch found by name; the others do not"
 
-**Location:** `test/scripts/dev-cycle.bats:1122`, `:1126`, `:1131`
+**Location:** `test/scripts/dev-cycle.bats:767`
+**Type:** Staleness
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the title against the gate at 4aa2e98e; the test body checks only --check-path for "the others", so its assertions still hold.
+**Legibility-target:** for-author
+
+This branch adds --check-answer to the modes that need a default branch: `if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then` (`scripts/dev-cycle.sh:193`). Test "--check-answer needs a default branch found by name" (`test/scripts/dev-cycle.bats:1153`) asserts exit 1, and it passed in E1. So "the others do not" is no longer true of --check-answer. The title is unchanged context in a file this branch edits, and it is not in the override log. A precise title: "--check-brief, --check-branch and --check-answer need a default branch found by name; --check-path does not". Optionally `--check-answer` could join the loop at `:770`.
+
+**Evidence:** `test/scripts/dev-cycle.bats:767-778`, `test/scripts/dev-cycle.bats:1153-1158`, `scripts/dev-cycle.sh:193`
+
+---
+
+## Claim 25: T34 test: "--check-answer reads main's commit: a working-tree or branch-only answer is open" and its comments (":1122 Answered only in the working tree: still open"; ":1126 Committed only on another branch: still open"; ":1131 A working tree with no questions file at all reads main's.")
+
+**Location:** `test/scripts/dev-cycle.bats:1118-1135`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the title and comments against the assertions; does not cover build-loop.sh's T34 side (override row 221).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the three assertions of test 59. It does not cover build-loop.sh (deferred; override row 221).
 
-Test 59 passed (`$L/bats-head.txt`). Its three assertions print `open Q-1`, `open Q-1` and then `drop Q-1` after the merge.
+The assertions are `[ "$output" = "open Q-1" ]` (`:1125`, `:1130`) and, after `git merge -q side && rm docs/working/questions.md`, `[ "$output" = "drop Q-1" ]` (`:1134`). They match each comment, and the test passed in E1.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1118-1135`
+**Evidence:** `test/scripts/dev-cycle.bats:1118-1135`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 30: "The working tree holds a plain file now; main's symlink still decides." / "A symlinked directory above it is named as the blocking part."
+## Claim 26: test "--check-answer refuses a questions file or directory that is not plain on main, whatever the working tree holds" and comments at :1141, :1146
 
-**Location:** `test/scripts/dev-cycle.bats:1141`, `:1146`
+**Location:** `test/scripts/dev-cycle.bats:1137-1151`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers a symlinked file and a symlinked parent directory on main; does not cover a gitlink.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers test 60's two assertions. It does not cover a gitlink.
 
-Test 60 passed. The expected lines are the notfile and notdir messages from `scripts/lib/dev-cycle-read.sh:554` and `:556`.
+The test asserts `skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read` with a plain working-tree file present (`:1144`). It then asserts `skip Q-1: docs/working is not a directory on the default branch, so docs/working/questions.md is not read` (`:1149`). It passed in E1.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1137-1151`, `$L/bats-head.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1137-1151`, `scripts/lib/dev-cycle-read.sh:556-558`
 
 ---
 
-## Claim 31: "A symlinked archive on main (and in the working tree): with ROOT_REAL set at the top level, the old working-tree reader added it to SKIPPED."
+## Claim 27: test "check_answer reads git only: no ROOT_REAL needed, SKIPPED untouched, skip without main by name"
 
-**Location:** `test/scripts/dev-cycle.bats:1163-1164`
+**Location:** `test/scripts/dev-cycle.bats:1160-1175`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the title's three properties against the assertions; does not re-run the comment's historical claim that the old working-tree reader added the symlinked archive to SKIPPED (78703f22 reports this as mutation-checked).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers main's check_answer appending to SKIPPED, and the HEAD test catching such a reader. Against main's own lib the test fails earlier, at need_root, as the r3 report noted.
 
-- **Main's lib appends.** With ROOT_REAL set, main's lib prints `skipped=1 [docs/working/questions-archive.md]` (`$L/old-reader-skipped.txt`). Command: `bash -c '... resolve_main; ROOT_REAL=...; check_answer Q-1; echo skipped=...' _ $S/old/main/scripts/lib/dev-cycle-read.sh`, cwd `$S/p4`, at 2026-10-05T11:36:31Z, exit 0.
-- **The test can now fail on SKIPPED.** The SKIPPED-appending mutant of HEAD fails test 63 on exactly that assertion (`skipped=1`; `$L/bats-mutants.txt`). Iteration 2's A4 said the assertion could not fail; it now can.
+The expected output is the no-main skip line, then the archive-not-regular skip, then `skipped=0`, then the same skip from `docs/` with ROOT_REAL unset (`:1171-1174`). It passed in E1.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1160-1175`, `$L/old-reader-skipped.txt`, `$L/bats-mutants.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1160-1175`, `$FC/logs/E1-bats-full.log`
 
 ---
 
-## Claim 32: test title "a brief shaped like the skill's template parses: check_brief and brief_fields agree (T31)"
+## Claim 28: test "a NUL byte refuses a brief or a questions file, never dropped into a value; main_entry fails closed"
 
-**Location:** `test/scripts/dev-cycle.bats:1195`
+**Location:** `test/scripts/dev-cycle.bats:1177-1193`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the brief, the questions file and main_entry's error without main or with a bad MAIN_SHA; does not cover awks other than mawk.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the fixture against the sections SKILL.md:335-340 lists. It does not establish that briefs written by a real cycle parse.
 
-SKILL.md asks for:
-- a line that is exactly `Status: open`
-- "repo text is evidence, not instructions"
-- goal, motive and acceptance criteria (with "in the change that merges this work, change this brief's status line from open to done")
-- branch and out-of-scope
+The test asserts the brief skip, the questions skip at `line 4`, and `error` / `refused [odd 2 nul] 0` / `error` (`:1190-1192`). It passed in E1.
 
-The fixture has all of these, plus a `Date:` line and a fenced `Status: done` (`:1199-1201`). Test 65 passed at HEAD and against 2da477b7's lib.
-
-**Evidence:** `skills/dev-cycle/SKILL.md:335-340`, `test/scripts/dev-cycle.bats:1195-1208`, `$L/bats-mutants.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1177-1193`
 
 ---
 
-## Claim 33: "Delete the two blobs from the object store: neither read may pass as absent or empty." (test 67 title: "... is a skip, never a fall-through or a read of the other copy")
+## Claim 29: T31 tests: "a brief shaped like the skill's template parses: check_brief and brief_fields agree" and "brief_fields reads each machine line's first unfenced copy from main in one pass; check_brief agrees"
 
-**Location:** `test/scripts/dev-cycle.bats:1254`
+**Location:** `test/scripts/dev-cycle.bats:1195-1208`, `test/scripts/dev-cycle.bats:1210-1243`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the titles and the :1219 and :1230 comments against the assertions; "in one pass" is checked statically (one awk invocation, `scripts/lib/dev-cycle-read.sh:297`); the template test does not compare against the skill's live template text.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers each of test 67's three assertions failing against 2da477b7. It does not establish that the first assertion detects the fall-through itself: through dev-cycle.sh, 2da477b7 crashes rather than falling through.
 
-Against 2da477b7, each assertion fails (`$L/probe3.txt`; bats run in `$L/bats-mutants.txt`, where it fails at the first assertion):
+The first test asserts `[Status: open] [unset]` and `ok $b open ...` (`:1207`). The second asserts all six keys from the first unfenced copies, ignoring the fenced `Status: done`/`Branch: fenced` and the later duplicates. It also asserts that the working-tree overwrite is ignored, and the `odd`/`unbalanced` refusals (`:1226-1242`). Both passed in E1.
 
-| Assertion | 2da477b7 result | Mechanism |
-|---|---|---|
-| A1 (`--check-answer`) | empty output, exit 128 | errexit kills dev-cycle.sh on the failed cat-file assignment; the fall-through to `keep` shows only under `$(...)`, see Claim 26 |
-| A2 (`--check-brief`) | `its first Status: line is not exactly ...` | the wrong reason |
-| A3 (dup tree) | `no such entry ...` | — |
-
-HEAD passes all three.
-
-**Evidence:** `test/scripts/dev-cycle.bats:1245-1267`, `$L/probe3.txt`, `$L/bats-mutants.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1195-1243`, `scripts/lib/dev-cycle-read.sh:297-303`
 
 ---
 
-## Claim 34: "A tree that lists questions.md twice (a symlink first, which git reads): error."
+## Claim 30: test 67 "an unreadable blob or a tree naming a file twice is a skip, never a fall-through or a read of the other copy"; ":1254 Delete the two blobs ...: neither read may pass as absent or empty"; ":1260 The same without the caller's pipefail: each function sets its own."
 
-**Location:** `test/scripts/dev-cycle.bats:1260`
+**Location:** `test/scripts/dev-cycle.bats:1245-1266`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers whether the assertions can fail: three mutants make the test fail; does not cover a caller with no options at all inside the test (E6 covers that outside the suite).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers git reading the symlink copy, and the expected message coming from duplicate detection. It does not cover blob-then-symlink in the test; probe1 (a4) covers that order.
 
-- **Git reads the symlink copy.** probe1 (a3) shows `cat-file` returns `x`, the symlink text.
-- **The message comes from duplicate detection.** In probe3, ls-tree on the dup tree exits 0. A mutant with the duplicate check removed (`$S/mut-nodup`, `: nodup` in place of `:269`) prints `skip Q-1: no such entry ...`: it takes the last line (blob), then reads the first copy (the symlink text). HEAD prints `the default branch's tree could not be read`.
+The test passed in E1. Mutants that drop `set -o pipefail` from check_answer (E4 mpf_ans: output `keep Q-1`) or from brief_fields (E4 mpf_bf: no `refused [error]`) each fail at `:1266`. So does one that drops `local -` (E5 mnl: no `caller unchanged`). The `set -eu`-only block (`:1261`) therefore exercises both functions' own pipefail and the restore.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1260-1266`, `scripts/lib/dev-cycle-read.sh:266-269`, `$L/probe1.txt`, `$L/probe3.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1245-1274`, `$FC/logs/E4-mpf_ans.log`, `$FC/logs/E4-mpf_bf.log`, `$FC/logs/E5-mnl.log`
 
 ---
 
-## Claim 35: d6426e3e — "Failing tests for U1a ...; check_answer needs no ROOT_REAL and leaves SKIPPED alone; brief_fields reads ... The symlinked-questions case now commits its symlink."
+## Claim 31: "A tree that lists questions.md twice (a symlink first, which git reads): error."
 
-**Location:** commit d6426e3e
-**Type:** Reference
+**Location:** `test/scripts/dev-cycle.bats:1267`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers git 2.x's `git mktree` accepting the duplicate, cat-file reading the first (symlink) entry, and the error coming from main_entry's dup detection rather than a failed ls-tree; does not establish fsck behavior.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the commit's tests failing against its own lib, and the commit changing tests only. It does not cover passing tests in other filters.
 
-d6426e3e changes only `test/scripts/dev-cycle.bats`, and `git diff --stat main d6426e3e -- scripts` is empty. Command: `TMPDIR=$S bats -f 'check-answer|check_answer|brief_fields' test/scripts/dev-cycle.bats`, cwd `$S/old/d6426e3e`, at 2026-10-05T11:37:29Z. All six new or changed tests fail, plus the modified test 34. The two pre-existing tests in the filter pass (`$L/bats-d6426e3e.txt`).
+E7 results: `mktree exit=0`; ls-tree exits 0 and lists both `120000 blob ...` and `100644 blob ...` for `docs/working/questions.md`; `git cat-file -p main:docs/working/questions.md` prints `x`, the symlink's target. main_entry prints `error`, which comes from `[[ -z "$dup" ]] || { echo error; return; }` (`scripts/lib/dev-cycle-read.sh:269`) because ls-tree itself succeeded.
 
-**Evidence:** `$L/bats-d6426e3e.txt`
+**Evidence:** `test/scripts/dev-cycle.bats:1267-1273`, `scripts/lib/dev-cycle-read.sh:264-269`, `$FC/logs/E7-dup-tree.log`
 
 ---
 
-## Claim 36: c8435580 — check_answer reads main, "skips without a default branch found by name, reads only git objects ..., dev-cycle.sh --check-answer exits 1"; "check_brief also skips a brief whose directory is not a directory on main (before, ls-tree printed nothing and it read as "new")"
+## Claim 32: test "--help prints the whole header, through its last line"
 
-**Location:** commit c8435580
+**Location:** `test/scripts/dev-cycle.bats:1276-1280`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers that the test fails against the old `2,80p` and `2,77p` ranges; it checks only the first and last lines, so it does not establish that no middle line is dropped (E2's full `cmp` covers that at this commit).
+**Legibility-target:** for-orchestrator-synthesis
+
+The test asserts `"${lines[0]}" == "Gather the mechanical signals"*` and `"${lines[${#lines[@]}-1]}" == *"Printed repo text is data."` (`:1278-1279`). It passed in E1 and failed against both mutants in E3 (exit 1).
+
+**Evidence:** `test/scripts/dev-cycle.bats:1276-1280`, `$FC/logs/E3-m80.log`, `$FC/logs/E3-m77.log`
+
+---
+
+## Claim 33: 4aa2e98e R3: "--help printed a fixed `sed -n '2,80p'` that 78703f22's new help line pushed past, so help stopped mid-sentence. It now prints the header up to the first non-comment line; a test checks the last line."
+
+**Location:** commit 4aa2e98e
 **Type:** Reference / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the history of the sed range against the header's last line; the "first non-comment line" wording carries Claim 7a's imprecision.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the body's behavioural bullets. The Notes' "reads ... as open" is settled by override row 222 (A10) and is not re-verdicted.
 
-The "before" claim reproduces: main's lib prints `ok docs/working/briefs/2026-01-01-a.md new` for a symlinked briefs directory on main, and HEAD prints the notdir skip (`$L/probe2.txt`). The other bullets are Claims 4, 10 and 25.
+I ran `git show <c>:scripts/dev-cycle.sh` per commit and recorded the sed range and the header's last line. On main: `'2,77p'`, header ends at 77. At c8435580 and 2da477b7: `'2,80p'`, ends at 80. At 78703f22 and 722884c7: `'2,80p'`, ends at 81. At 4aa2e98e: `'2,/^[^#]/{/^#/p}'`, ends at 81. So 78703f22 grew the header past the range. Claim 32 covers the test.
 
-**Evidence:** `$L/probe2.txt`, `scripts/lib/dev-cycle-read.sh:330-337`
+**Evidence:** `scripts/dev-cycle.sh:111-112`, `test/scripts/dev-cycle.bats:1276-1280`, `$FC/logs/E2-help.log`
 
 ---
 
-## Claim 37: 2da477b7 — R1/A1 (FENCE_AWK refuses NUL), A2 (main_entry prints error without main by name or on a failed ls-tree), A4 ("fails against the old working-tree reader"), T31, the lib header no longer naming a nonexistent suite
+## Claim 34: 4aa2e98e A17: "check_answer and brief_fields set pipefail for themselves (`local -; set -o pipefail`), so a failed `git cat-file` is caught whatever the caller set; the caller's options come back on return. Tested under `set -eu` alone, and a mutant without it fails."
 
-**Location:** commit 2da477b7
-**Type:** Reference
+**Location:** commit 4aa2e98e
+**Type:** Behavioral / Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers bash 5.2 (Claim 17a) and the test and mutant statements; the "caller's options come back" residue on bash 4.4-5.0 is Claim 17b. The literal `local -; set -o pipefail` is shorthand: the code is `local - out l; set -o pipefail` and `local - a=... ; set -o pipefail`.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers each bullet at its own commit. "every reader skips" is settled by override row 223 (A11).
 
-- **A4.** HEAD's test 63 fails against main's lib (`$L/bats-mutants.txt`, libmain).
-- **A2.** See Claims 15 and 17.
-- **R1.** See Claims 12 and 13.
-- **Lib header.** 2da477b7's header reads "callers' suites (test/scripts/dev-cycle.bats, and build-loop.sh's suites under test/scripts/ as they land)", where c8435580 named `build-loop-read.bats`.
+The test runs `bash -c 'set -eu; ...'` (`test/scripts/dev-cycle.bats:1261`). The no-pipefail mutants fail it (E4), as does the no-`local -` mutant (E5).
 
-**Evidence:** `$L/bats-mutants.txt`, `$L/probe1.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:292`, `:548`, `test/scripts/dev-cycle.bats:1260-1266`, `$FC/logs/E4-mpf_ans.log`, `$FC/logs/E4-mpf_bf.log`, `$FC/logs/E5-mnl.log`, `$FC/logs/E6-local-dash.log`
 
 ---
 
-## Claim 38: 78703f22 R2 — "check_answer fell through to the archive and answered `keep` from it; brief_fields returned 0 with no keys. Both now test the read"
+## Claim 35: 4aa2e98e A14/A15: "the help and SKILL.md say a working-tree-only answer reads what main's copy says (usually open or no such entry)"
 
-**Location:** commit 78703f22
-**Type:** Reference / Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the behaviour under the lib's documented `out="$(check_answer ...)"` capture. Through dev-cycle.sh, 2da477b7 exited 128 instead (errexit).
-
-- **check_answer.** 2da477b7 gives `out=[keep Q-1]` (`$L/probe3.txt`).
-- **brief_fields.** Without the read test it returns rc0 with 0 keys (`$L/probe2.txt`, pipefail OFF, which mirrors the `if !` context).
-
-**Evidence:** `$L/probe2.txt`, `$L/probe3.txt`
-
----
-
-## Claim 39: 78703f22 A12/C9 — "main_entry kept the last ls-tree line ... while git's reads take the first, so a symlink listed before a blob read as blob. A name listed twice is now "error". ls-tree's own stderr is dropped (C9)."
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers git's first-copy behaviour, the last-line behaviour, the error on duplicates, and the `2>/dev/null`. It does not cover other git commands.
-
-See Claims 16 and 34. The mutant without the duplicate check prints the read through the symlink. The stderr redirect is in `... "$1" 2>/dev/null)"` (`scripts/lib/dev-cycle-read.sh:263`).
-
-**Evidence:** `$L/probe1.txt`, `$L/probe3.txt`, `scripts/lib/dev-cycle-read.sh:263`
-
----
-
-## Claim 40: 78703f22 A13 — "brief_fields checks its own preconditions (main by name, pathform, a blob on main), so a later caller cannot read the index's copy through an empty MAIN_SHA."
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the empty-MAIN_SHA path returning error before any `git cat-file blob ":path"` (the index's stage-0 copy). It does not cover a stale MAIN_SHA.
-
-With no resolve_main, the probe prints `rc1 [error] 0` (`$L/probe2.txt`). The guard runs first: `if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]` (`:292`), and main_entry starts with `main_by_name || { echo error; return; }` (`:261`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:261`, `:292`, `$L/probe2.txt`
-
----
-
-## Claim 41: 78703f22 A4 — "the SKIPPED test now calls check_answer with ROOT_REAL set at the top level and a symlinked archive on main, so a reader that adds to SKIPPED fails it (checked by mutation)"
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the mutation that was re-run here. It does not reproduce the author's own mutation.
-
-The independent mutant fails test 63 on `skipped=1` (Claim 31).
-
-**Evidence:** `$L/bats-mutants.txt`
-
----
-
-## Claim 42: 78703f22 A5-A8 — "the second caller does not exist yet; CR, NUL and BOM refusals apply anywhere; brief_fields' values are the line but its trailing CR; archive moves count only once landed"
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers each reworded comment's substance. Claim 27 covers the SKILL.md parenthetical's completeness.
-
-See Claims 8, 12, 19 and 27. "Count only once landed" holds; the parenthetical's outcome list is what is incomplete.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:10-12`, `:173-176`, `:279-282`, `skills/dev-cycle/SKILL.md:292-295`
-
----
-
-## Claim 43: 78703f22 A9 — "the template test brief gains its Motive section and is named "shaped like" the template"
-
-**Location:** commit 78703f22
+**Location:** commit 4aa2e98e
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
+**Scope:** Covers both files saying "what main's copy says"; the parenthetical appears only in SKILL.md (the help says "until committed" instead, see Claim 2).
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the fixture and the title. Claim 32 covers whether the sections are complete.
 
-The fixture holds `## Motive\n\nRoadmap Next, NAME.` (`test/scripts/dev-cycle.bats:1200`), and the title reads "a brief shaped like the skill's template" (`:1195`).
+The help says `it reads what main's copy says, until committed` (`scripts/dev-cycle.sh:59`). SKILL.md says `(it reads what main's copy says, usually `open` or no such entry)` (`skills/dev-cycle/SKILL.md:294-295`).
 
-**Evidence:** `test/scripts/dev-cycle.bats:1195-1201`
+**Evidence:** `scripts/dev-cycle.sh:56-59`, `skills/dev-cycle/SKILL.md:292-295`
 
 ---
 
-## Claim 44: 78703f22 C1 — "--check-answer's help names the unreadable-tree skip."
+## Claim 36: 4aa2e98e A16: "--check-answer's skip list names "not a question ID" and a heading in both files."
 
-**Location:** commit 78703f22
+**Location:** commit 4aa2e98e
 **Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the two named additions; completeness of the whole list is Claim 4.
+**Legibility-target:** for-orchestrator-synthesis
+
+`<reason>" when it cannot be read (not a question ID, no such` and `entry, a heading twice in one file or in both files, ...` (`scripts/dev-cycle.sh:63-64`).
+
+**Evidence:** `scripts/dev-cycle.sh:62-71`
+
+---
+
+## Claim 37: 4aa2e98e "Override-log rows: A18 and iteration 3's C9 residue, C11-C15."
+
+**Location:** commit 4aa2e98e
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers that the rows exist and were added in this commit; does not judge the rows' dispositions (settled).
+**Legibility-target:** for-orchestrator-synthesis
+
+`git show 4aa2e98e --stat` lists `docs/reviews/override-log.md | 7 +++++++`. The rows are `docs/reviews/override-log.md:232` (A18), `:233` (C11), `:234` (C12), `:235` (C13), `:236` (C14), `:237` (C15) and `:238` (C9 residue), each tagged with its ID in the row text.
+
+**Evidence:** `docs/reviews/override-log.md:232-238`
+
+---
+
+## Claim 38: c8435580: "dev-cycle.sh --check-answer exits 1 without such a branch, like --check-brief and --check-branch"
+
+**Location:** commit c8435580
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
+**Scope:** Covers the exit code and stderr; same evidence as Claim 5.
 **Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the new help line appearing in `--help`. It does not cover the side effect: the added line pushed the Exit line out of the help range (Claim 6, Incorrect).
 
-`--help` prints "under plain directories on the default branch, or a default branch whose tree or file could not be read)." (`$L/help-head.txt`).
+`echo "$CHECK needs a default branch (origin/HEAD, main or master); found none" >&2; exit 1` (`scripts/dev-cycle.sh:194`). The test at `test/scripts/dev-cycle.bats:1153-1158` passed in E1.
 
-**Evidence:** `scripts/dev-cycle.sh:68-70`, `$L/help-head.txt`
-
----
-
-## Claim 45: 78703f22 — "Override-log rows for A10, A11, C2-C8 and C10."
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the rows' existence. It does not cover their reasons, which are settled.
-
-`docs/reviews/override-log.md` rows dated 2026-10-05 for `feat/build-loop-u1a`:
-
-| Row | Item |
-|---|---|
-| 222 | A10 |
-| 223 | A11 |
-| 224 | C2 |
-| 225 | C3 |
-| 226 | C4 |
-| 227 | C5 |
-| 228 | C6 |
-| 229 | C7 |
-| 230 | C8 |
-| 231 | C10 |
-
-(paraphrased: no quote is given because these are table rows, cited by line.)
-
-**Evidence:** `docs/reviews/override-log.md:222-231`
-
----
-
-## Claim 46: 78703f22 Notes — "The reviewer routed R2, A12 and A13 to "you: judgment" because they set the contract U1b/U1c code against"
-
-**Location:** commit 78703f22
-**Type:** Reference
-**Verdict:** Unverifiable
-**Confidence:** Low
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the committed rubric only. It does not establish what the iteration-2 orchestrator's chat report said.
-
-The committed rubric (`docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1a.md`, at both 2da477b7 and 78703f22) has no "you: judgment" string. Its R2, A12 and A13 rows say `for-author`. Verifying the claim needs the iteration-2 orchestrator transcript.
-
-**Evidence:** `docs/reviews/code-review-rubric-2026-10-05-feat-build-loop-u1a.md:16`, `:35-36`
-
----
-
-## Claim 47: 722884c7 — "found the duplicate-name comment read as if the lib followed git's first-copy rule, and brief_fields' error list left out main_entry's error. Comments only."
-
-**Location:** commit 722884c7
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Legibility-target:** for-orchestrator-synthesis
-**Scope:** Covers the diff being comment-only and the before/after wording. It does not cover the lite check's run.
-
-`git show 722884c7` changes only `#` lines in `scripts/lib/dev-cycle-read.sh`:
-
-| | Before | After |
-|---|---|---|
-| Duplicate-name comment | `-# twice, which git's own reads resolve to the first copy: never read as absent)` | `+# twice; git's own reads would take the first copy, which may not be the one a check saw, so this answers error instead` |
-| brief_fields error list | `-# ... no regular file there on main by main_entry, ...` | `+# ... any main_entry answer but blob, its error included, ...` |
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:252-254`, `:284-286`
+**Evidence:** `scripts/dev-cycle.sh:193-195`, `test/scripts/dev-cycle.bats:1153-1158`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 6** (`scripts/dev-cycle.sh:111`): the help range `sed -n '2,80p'` stops one line short of the header's end (line 81). `--help` ends mid-sentence ("... or no") and drops the Exit line's no-default-branch clause. This is a regression from main, introduced by 78703f22's C1 wrap, and no test covers `--help`. Fix: `'2,81p'`.
+(none)
+
+### Stale
+- **Claim 24** (`test/scripts/dev-cycle.bats:767`): the test title says modes other than --check-brief/--check-branch do not need a default branch found by name, but --check-answer now does (`scripts/dev-cycle.sh:193`). Rename the title, or add --check-answer to its loop.
 
 ### Mostly Accurate
-- **Claim 3** (`scripts/dev-cycle.sh:61-70`): --check-answer's skip list omits "not a question ID" (inherited from main), and covers "an entry in both files" only as "a duplicate heading".
-- **Claim 27** (`skills/dev-cycle/SKILL.md:292-295`): "(it reads `open`, or no such entry)" is incomplete. An archive move made only in the working tree for an entry already answered on main reads main's answer (e.g. `keep`).
+- **Claim 2** (`scripts/dev-cycle.sh:59`): "until committed" should be "until it lands on the default branch". A commit on another branch still reads open (T34).
+- **Claim 7a** (`scripts/dev-cycle.sh:111`): the range ends at the first non-empty line not starting with `#`. An empty line does not end it, and an indented `#` does. Harmless for the current header.
+- **Claim 15** (`scripts/lib/dev-cycle-read.sh:256-257`): main_entry checks main_by_name itself, and brief_fields does not check it before calling. The comment should say only the path form is the caller's job.
 
 ### Unverifiable
-- **Claim 46** (commit 78703f22 Notes): the "you: judgment" routing is not in the committed rubric. Verifying it needs the iteration-2 orchestrator report.
+- **Claim 17b** (`scripts/lib/dev-cycle-read.sh:292`, `:548`): whether `local -` restores pipefail on bash 4.4-5.0. Bash 4.4 NEWS says it saves only single-letter options, and 5.1 changed it. Checking needs a 4.4/5.0 bash. No minimum bash version is stated for these scripts.
 
-## Iteration-2 items
-
-| Item | Status | Executed evidence |
-|---|---|---|
-| R2 | **Resolved** | Both readers test the read. HEAD skips with questions.md's blob or the archive's blob missing, where 2da477b7 gave `keep Q-1` under `$(...)`. brief_fields returns `rc1 [error]`. Only under pipefail, which is the stated contract (Claims 9, 26, 38). |
-| A4 | **Resolved** | A SKIPPED-appending mutant fails test 63 on `skipped=1` (Claims 31, 41). |
-| A5 | **Resolved** | The header says the second caller's suites apply "once that second caller lands", and `scripts/build-loop.sh` is absent (Claim 8). |
-| A6 | **Resolved** | CR and NUL inside a fence are refused, while html, comment and refdef inside a fence are read. The header now places CR, NUL and BOM "anywhere ... fenced or not" (Claim 12). |
-| A7 | **Resolved** | "the line as stored but for that CR"; test 66 reads `Status: open\r` as `[Status: open]` (Claim 19). |
-| A8 | **Resolved, residue** | "once step 1 has archived" is gone. The new parenthetical's outcome list is incomplete (Claim 27, Mostly accurate). |
-| A9 | **Resolved** | The fixture has every section SKILL.md:335-340 lists, Motive included, and the title is "shaped like" (Claims 32, 43). |
-| A12 | **Resolved** | Duplicates at the leaf and at every parent component print `error`. Git reads the first copy. Test 67's dup case is produced by duplicate detection; the no-dup mutant prints `no such entry` (Claims 16, 34). |
-| A13 | **Resolved** | Empty MAIN_SHA, cleared MAIN_BY_NAME, pathform refusal, absent, notfile and notdir each give `rc1 [error] 0` (Claims 20, 40). |
-| A10, A11 | **Rows exist** | `docs/reviews/override-log.md:222`, `:223`. |
-
-A new item not in iteration 2 is Claim 6 (the help range), introduced by the C1 fix.
-
-## Hallucination-pattern candidates
-
-None. Claim 6 is a range that went stale, not a fabricated symbol. Claim 46 is an unsourced process claim. Neither qualifies for the log. As instructed, the log was not edited.
+Hallucination-pattern log: no Incorrect verdicts, so nothing to append.
 
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A markdown report saved to /workspace/.claude/wt-build-loop-u1a/docs/reviews/code-fact-check-report-build-loop-u1a-r2.md (overwrite the stale one there), first line `Commit: 722884c7`, structured per the code-fact-check skill, every claim tagged with Legibility-target (Incorrect/Stale/Mostly Accurate → for-author; Verified/Unverifiable → for-orchestrator-synthesis), a `## Iteration-2 items` section (brief item 11), and the canonical Goal-Alignment Note at the end.
-- Answered: yes. 47 claims were checked, most by execution. Every fc-brief item (1-11) is covered, and all nine iteration-2 items are resolved with executed evidence.
-- Out of scope: bats test 21, which fails only because the scratch TMPDIR contains `/.claude` (confirmed by the orchestrator). Settled override-log rows (220-231) were not re-raised.
-- Escalate: Claim 6. `scripts/dev-cycle.sh:111` `sed -n '2,80p'` cuts the help's last line (line 81). This is a regression from main introduced by 78703f22, with no test, and it is a one-character fix plus ideally a `--help` test. It is a new for-author item that keeps this from being a clean pass unless the orchestrator rates it below amber. Claims 3 and 27 are wording-only Mostly accurate.
-- Decisions I made: I counted the help-range truncation as a claim (the header comment is the help text). I treated c8435580's Notes and 2da477b7's "every reader skips" as settled by rows 222 and 223, and did not re-verdict them.
+- Success criterion (restated verbatim): A code-fact-check report saved to docs/reviews/code-fact-check-report-build-loop-u1a-r2.md, structured per the code-fact-check skill, first line `Commit: 4aa2e98e`.
+- Answered: yes
+- Out of scope: BSD/macOS sed acceptance of `{/^#/p}` and bash 4.4/5.0 `local -` behavior (no such binaries in the sandbox); claims in 2da477b7/78703f22/722884c7 bodies already verdicted by earlier iterations were not re-run beyond what overlaps the claims above.
+- Escalate: to the orchestrator/rubric synthesis: Claim 24, a stale test title that is new to this pass and not in the override log. To api-consistency-reviewer or the orchestrator: whether a minimum bash version (5.1+ for `local -` restoring pipefail, per Claim 17b) should be stated for scripts/lib/dev-cycle-read.sh. That is a portability/contract question, not a correctness defect in the read check.
+- Decisions I made: Split the help sed comment into 7a (mechanism, Mostly accurate) and 7b (outcome, Verified), and split the `local -` claim into 17a (bash 5.2, executed, Verified) and 17b (older bash, Unverifiable). Captured execution logs under my scratch dir, not docs/reviews/execution-logs/, so that no tracked file but this report changes.

@@ -1270,7 +1270,7 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     d="$(printf '040000 tree %s\tworking\n' "$w" | git mktree)" && t="$(printf '040000 tree %s\tdocs\n' "$d" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p HEAD -m dup)"
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: the default branch's tree could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
+    [ "$output" = "skip Q-1: the tree of the default branch could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
 }
 
 @test "--help prints the whole header, through its last line" {

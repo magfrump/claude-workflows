@@ -334,7 +334,7 @@ check_brief() {
     absent) echo "ok $a new"; return ;;
     blob) ;;
     notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch"; return ;;
-    error) echo "skip $a: the default branch's tree could not be read"; return ;;
+    error) echo "skip $a: the tree of the default branch could not be read"; return ;;
     *) echo "skip $a: not a regular file on the default branch"; return ;;
   esac
   if ! brief_fields "$a"; then
@@ -554,7 +554,7 @@ check_answer() {
       absent) continue ;;
       blob) ;;
       notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch, so $f is not read"; return ;;
-      error) echo "skip $a: the default branch's tree could not be read, so $f is not read"; return ;;
+      error) echo "skip $a: the tree of the default branch could not be read, so $f is not read"; return ;;
       *) echo "skip $a: $f is not a regular file on the default branch, so no entry in it is read"; return ;;
     esac
     # A failed read is a skip, never a fall-through to the other file.
