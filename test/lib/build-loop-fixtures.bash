@@ -54,8 +54,8 @@ work() {
     git checkout -q "$1" && echo "$1" > "work-${1//\//-}.txt" && commit_all "work on $1" && git checkout -q main
 }
 
-# tip BRANCH MESSAGE [TREE [PARENT...]]: a commit with exactly MESSAGE (no
-# cleanup: commit-tree takes it as given) on BRANCH's tip. By default it is
+# tip BRANCH MESSAGE [TREE [PARENT...]]: a commit with MESSAGE and a newline
+# (no cleanup: commit-tree takes it as given) on BRANCH's tip. By default it is
 # empty (BRANCH's own tree) with BRANCH's tip as its one parent; pass TREE and
 # the parents ("" for none) to build anything else.
 tip() {
@@ -64,7 +64,3 @@ tip() {
     else t="$(git rev-parse "$b^{tree}")"; p=(-p "$(git rev-parse "$b")"); fi
     git update-ref "refs/heads/$b" "$(printf '%s\n' "$m" | git commit-tree "$t" "${p[@]}")"
 }
-
-# status_of BRIEF: the one --status output line for BRIEF.
-# shellcheck disable=SC2154  # bats sets $output in the calling test
-status_of() { printf '%s\n' "$output" | grep -m1 -E "^(ok|skip) $1[ :]" || true; }

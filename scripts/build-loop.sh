@@ -29,16 +29,19 @@
 #             constraints ok N-hard M-soft|missing|none-hard|unreadable: WHY
 #                 docs/constraints.md, which every loop prompt carries. A
 #                 constraint is a line "H<n>: text" (hard) or "S<n>: text"
-#                 (soft) at column 0, optionally after "- "; a hard one needs
-#                 a "success: <observable>" line (any indent, optionally
-#                 after "- ") before the next constraint, and no ID may
-#                 repeat. Only "ok" lets the orchestrator dispatch.
+#                 (soft) at column 0, optionally after "- ", n without a
+#                 leading 0; a hard one needs a "success: <observable>" line
+#                 (any indent, optionally after "- ") before the next
+#                 constraint or heading, and no ID may repeat. Any other line
+#                 whose letters and digits, from its first letter, start like
+#                 "h1" or "s1" makes the file unreadable. Only "ok" lets the orchestrator dispatch.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a task box, a tag)
 #             can still hide a copy; only an exact line ever sets a value.
 #   --status  one line per brief path, in argument order, from the default
-#             branch's commit:
+#             branch's commit (the path must also be plain in the working
+#             tree, as --check-brief):
 #             ok BRIEF STATE POLICY BRANCH LOOP SHA DATE DISPATCHED [REASON]
 #                 STATE: open, done or dropped (dev-cycle.sh --check-brief), or
 #                 new when main has no file there (then "new review - absent
@@ -57,11 +60,13 @@
 #                 working. DISPATCHED: the brief's "Dispatched: N" (0-99), or
 #                 0 without one.
 #             skip BRIEF: WHY
-#                 The brief cannot be read (as --check-brief), its Branch: or
-#                 Dispatched: line is missing or malformed, its branch name is
-#                 refused (as --check-branch), another open brief on main
-#                 names the same branch (ignoring case), or the tip's subject
-#                 starts "handoff:" but it is not a marker.
+#                 The brief cannot be read (as --check-brief), its Branch:
+#                 line is missing or malformed or its Dispatched: line
+#                 malformed, its branch name is refused (as --check-branch),
+#                 another open brief on main, in briefs/ or closed/, names the
+#                 same branch (ignoring case), or the tip's subject (its
+#                 message's first line) starts "handoff:" but it is not a
+#                 marker.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Read-only: writes nothing.
@@ -150,13 +155,13 @@ END {
   else if (infence) print "unbalanced " fline
   else for (k in c) print k " " c[k] " " l1[k] " " (k in l2 ? l2[k] : 0) " " nx[k] "\t" t[k]
 }'
-# docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE" or "dup ID FIRST
-# SECOND" (the first problem found).
+# docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST
+# SECOND" or "near LINE" (the first problem found).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 CONSTRAINTS_AWK='
 { sub(/\r$/, "") }
 fence($0) { next }
-/^(- )?[HS][0123456789]+: [^ \t]/ {
+/^(- )?[HS][123456789][0123456789]*: [^ \t]/ {
   id = $0; sub(/^- /, "", id); sub(/:.*/, "", id)
   if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl
   if (bad == "" && (id in seen)) bad = "dup " id " " seen[id] " " NR
@@ -164,6 +169,9 @@ fence($0) { next }
   if (substr(id, 1, 1) == "H") { hard++; pend = id; pendl = NR } else { soft++; pend = "" }
   next
 }
+{ s = $0; sub(/^[^a-zA-Z]*/, "", s); s = tolower(s); gsub(/[^a-z0123456789]/, "", s) }
+s ~ /^[hs][0123456789]/ { if (bad == "") bad = "near " NR; next }  # looks like an ID but is not exact
+/^#/ { if (bad == "" && pend != "") bad = "nosuccess " pend " " pendl; pend = ""; next }  # a heading ends a pending one
 /^[ \t]*(- )?success: [^ \t]/ { pend = "" }
 END {
   if (odd) print "odd " odd " " oddwhy
@@ -186,7 +194,7 @@ globform() {
 # Sets POLICY, POLICY_LINE, SLOTS_LINE, NEVER (an array of the checked globs,
 # each as written, a trailing / kept), NEVER_LINE and CONSTRAINTS_LINE from
 # main's commit. POLICY
-# and NEVER are for the modes that judge a brief (--status, then the gate).
+# is for --status and the gate, NEVER for the gate.
 POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""
 # shellcheck disable=SC2034  # POLICY and NEVER: see above
 read_settings() {
@@ -252,8 +260,9 @@ read_settings() {
     case "$k" in
       ok) if [[ "$c" -gt 0 ]]; then CONSTRAINTS_LINE="constraints ok $c-hard $l1-soft: $f on the default branch"
           else CONSTRAINTS_LINE="constraints none-hard: $f on the default branch has $l1 soft constraints and no hard one (H1: with a success: line)"; fi ;;
-      nosuccess) CONSTRAINTS_LINE="constraints unreadable: hard constraint $c (line $l1) has no success: line before the next constraint" ;;
-      *) CONSTRAINTS_LINE="constraints unreadable: constraint $c is listed twice (lines $l1 and $l2)" ;;
+      nosuccess) CONSTRAINTS_LINE="constraints unreadable: hard constraint $c (line $l1) has no success: line before the next constraint or heading" ;;
+      dup) CONSTRAINTS_LINE="constraints unreadable: constraint $c is listed twice (lines $l1 and $l2)" ;;
+      *) CONSTRAINTS_LINE="constraints unreadable: line $c looks like a constraint but is not exactly \"H<n>: text\" or \"S<n>: text\" (optionally after \"- \", n without a leading 0)" ;;
     esac
   fi
 }
@@ -262,18 +271,15 @@ read_settings() {
 # blocked, "stopped REASON", working (no "handoff:" subject), or "bad WHY".
 # The caller has checked that the branch is at least one commit ahead of main.
 marker_kind() {
-  local raw hdr msg subj rest l np=0 parent="" tree="" ptree r
-  raw="$(git cat-file commit "$1")"
-  hdr="${raw%%$'\n\n'*}"; msg=""; [[ "$raw" != *$'\n\n'* ]] || msg="${raw#*$'\n\n'}"
-  subj="${msg%%$'\n'*}"
+  local msg subj rest p r
+  # git parses the object: its tree, its parents and where the message starts.
+  read -ra p <<<"$(git rev-list --parents -n 1 "$1")"
+  msg="$(git log -1 --format=%B "$1")"; subj="${msg%%$'\n'*}"
   [[ "$subj" == handoff:* ]] || { echo working; return; }
-  while IFS= read -r l; do
-    case "$l" in "tree "*) tree="${l#tree }" ;; "parent "*) np=$((np + 1)); parent="${l#parent }" ;; esac
-  done <<<"$hdr"
-  if [[ "$np" -eq 0 ]]; then echo "bad it has no parent"; return; fi
-  if [[ "$np" -gt 1 ]]; then echo "bad it has $np parents"; return; fi
-  ptree="$(git rev-parse --verify --quiet "$parent^{tree}" || true)"
-  if [[ "$tree" != "$ptree" ]]; then echo "bad it changes files"; return; fi
+  if [[ "$(git cat-file commit "$1" | tr -cd '\000' | wc -c)" -gt 0 ]]; then echo "bad it holds a NUL byte"; return; fi
+  if [[ ${#p[@]} -eq 1 ]]; then echo "bad it has no parent"; return; fi
+  if [[ ${#p[@]} -gt 2 ]]; then echo "bad it has $(( ${#p[@]} - 1 )) parents"; return; fi
+  if [[ "$(git rev-parse --verify "$1^{tree}")" != "$(git rev-parse --verify "${p[1]}^{tree}")" ]]; then echo "bad it changes files"; return; fi
   rest="${msg#"$subj"}"; rest="${rest#$'\n'}"
   if [[ "$msg" == *$'\n'* && -n "${rest%%$'\n'*}" ]]; then echo "bad its subject runs onto a second line"; return; fi
   case "$subj" in
@@ -281,21 +287,20 @@ marker_kind() {
     "handoff: blocked") echo blocked; return ;;
   esac
   r="${subj#handoff: stopped: }"
-  # Bytes, not characters: in the C locale the ranges below are ASCII and ${#r}
-  # counts bytes (C is always installed, so setting it never warns).
-  local LC_ALL=C
-  if [[ "$subj" == "handoff: stopped: "* && ${#r} -le 120 && "$r" =~ ^[!-~]([\ -~]*[!-~])?$ ]]; then echo "stopped $r"
+  # grep in the C locale: the ranges are ASCII bytes, and no locale is switched here.
+  if [[ "$subj" == "handoff: stopped: "* ]] && printf '%s\n' "$r" | LC_ALL=C grep -qxE '[!-~]([ -~]{0,118}[!-~])?'; then echo "stopped $r"
   else echo 'bad its subject is not exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (REASON: 1 to 120 printable ASCII characters, no blank at either end)'; fi
 }
-# Lower-cased branch names that more than one open brief on main names, each
-# on its own line between newlines: such briefs are skipped (F31).
+# Lower-cased branch names that more than one open brief on main (in briefs/ or
+# closed/) names, each between newlines: such briefs are skipped (F31).
+# status_line computes it on first use, so no caller can skip it.
 SHARED_BRANCHES=""
 shared_branches() {
   local f list b
   local -A n=()
-  list="$(git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/)"
+  list="$(git ls-tree --full-tree --name-only "$MAIN_SHA" -- docs/working/briefs/ docs/working/briefs/closed/)"
   while IFS= read -r f; do
-    if ! isbrief "$f" || [[ "$(main_entry "$f")" != blob ]] || ! brief_fields "$f"; then continue; fi
+    if ! isbrief "${f/closed\//}" || ! brief_fields "$f"; then continue; fi
     [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
     b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
   done <<<"$list"
@@ -318,6 +323,7 @@ status_line() {
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
+  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
   if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
     echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi
@@ -341,7 +347,7 @@ status_line() {
 
 case "$MODE" in
   status)
-    read_settings; shared_branches
+    read_settings
     for a in "${ARGS[@]}"; do status_line "$a"; done
     ;;
   settings)

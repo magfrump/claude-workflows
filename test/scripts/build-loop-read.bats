@@ -166,7 +166,7 @@ setup() { bl_setup; }
     [ "$(line constraints)" = "constraints ok 2-hard 1-soft: docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
     constraints '- H1: never lose a row' '- S1: small' '  success: a test'
     run --separate-stderr bash "$BL" --settings
-    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint" ] || { echo "$output"; return 1; }
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
     constraints '- H1: a' '  success: b' '- H1: c' '  success: d'
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)" ] || { echo "$output"; return 1; }
@@ -174,6 +174,14 @@ setup() { bl_setup; }
     run --separate-stderr bash "$BL" --settings
     [[ "$(line constraints)" == "constraints unreadable: line 3 of docs/constraints.md starts like a link reference definition"*", so the file is not read" ]] \
         || { echo "$output"; return 1; }
+    # A line that looks like a constraint ID but is not exact: unreadable, never skipped (Q-112 [1]).
+    for c in '* H2: x' '1. H2: x' $'H2:\tx' '  H2: x' 'h2: x' '**H2:** x' '> H2: x' 'H10 : x' '| H2 | x |' 'H01: x'; do
+        constraints '- H1: a' '  success: b' "$c"; run --separate-stderr bash "$BL" --settings
+        [ "$(line constraints)" = 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)' ] \
+            || { echo "[$c] $output"; return 1; }
+    done
+    constraints '- H1: a' '## Other' '  success: b'; run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or heading" ] || { echo "$output"; return 1; }
     git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
@@ -249,7 +257,7 @@ setup() { bl_setup; }
     [[ "$output" == "ok $B open review feat/a ready "* ]] || { echo "$output"; return 1; }
 }
 
-@test "--status: spoofed markers read as unreadable or working, and a bad reason is not echoed (T7)" {
+@test "--status: spoofed markers are skips or read as working, and a bad reason is not echoed (T7)" {
     settings 'Build-loop policy: review'
     brief a 'Status: open' 'Branch: feat/a'
     work feat/a && base="$(git rev-parse feat/a)"
@@ -271,6 +279,12 @@ setup() { bl_setup; }
         check "skip $B: $n: its subject is not exactly" "$s"
         [[ "$output" != *$'\xc3'* && "$output" != *'[31m'* ]] || { echo "echoed: $output"; return 1; }
     done
+    # A hand-made object with two tree lines, the parent's last: git stops at the
+    # second and sees no parent; a reader taking the last tree would say ready.
+    o="$(printf 'tree %s\ntree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n' \
+        "$(git rev-parse "main^{tree}")" "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
+    git update-ref refs/heads/feat/a "$o"
+    check "skip $B: $n: it has no parent" two-trees
     tip feat/a "$(printf 'handoff: ready\nmore subject')"
     check "skip $B: $n: its subject runs onto a second line" two-line
     # Not a marker at all: an ordinary commit, even one that mentions a marker.
@@ -362,6 +376,11 @@ setup() { bl_setup; }
     [ "${lines[3]}" = "ok $c done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
     [ "${lines[4]}" = "skip $b: another open brief on the default branch names the same branch (compared ignoring case)" ] || { echo "$output"; return 1; }
     [ "${lines[5]}" = "ok $e dropped review feat/e absent - - 0" ] || { echo "$output"; return 1; }
+    # An open brief left in closed/ counts too.
+    mkdir -p docs/working/briefs/closed && printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/closed/2026-10-01-old.md && commit_all closed
+    run --separate-stderr bash "$BL" --status "$d"
+    [[ "$output" == "skip $d: another open brief"* ]] || { echo "$output"; return 1; }
+    git rm -q docs/working/briefs/closed/2026-10-01-old.md && commit_all reopen
     # An open brief only in the working tree does not count.
     printf 'Status: open\nBranch: feat/d\n' > docs/working/briefs/2026-10-01-wt.md
     run --separate-stderr bash "$BL" --status "$d"
