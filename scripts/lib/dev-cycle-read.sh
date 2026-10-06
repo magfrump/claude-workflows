@@ -463,9 +463,9 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # under one fail the walk, so isimported main answers imported for every path.
 # Not covered (known issue A5): start files under a symlinked directory (on
 # main or in the checkout: neither listing enters one) or in a submodule or an
-# untracked nested repo (neither listing enters one either), an import path
-# through a directory main stores as a symlink when the checkout does not have
-# that link, other names that one file has on a case-insensitive checkout, and
+# untracked nested repo (neither listing enters one either), an @ token's path
+# (link text is checked above) through a directory main stores as a symlink
+# when the checkout does not have that link, other names that one file has on a case-insensitive checkout, and
 # absolute imports. IMPORTED_MAIN reads "error" until a walk succeeds; the result is
 # cached for the commit and root in IMPORTED_MAIN_DONE. isimported asks either
 # walk.
