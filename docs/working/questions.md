@@ -390,4 +390,4 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 - **Blocks:** nothing; U2a1 lands, U2a2 proceeds under [1].
 - **Interim:** [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`.
 - **Update 2026-10-06:** under [1], U2a2 (the floor plus the walk, 400 code lines before U2a1's carried rows) was split again, then once more at its review's iteration 2 (fixes and tests put it near 480 lines): U2a2 is the shared token parser and `isimported tree`, U2a3 the commit-reading walk, U2a4 the floor. No new judgment: the same refuse-what-is-not-modelled walk, in smaller units. Under [3], U2a3 is the unit replaced.
-- **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a2's walk.
+- **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
