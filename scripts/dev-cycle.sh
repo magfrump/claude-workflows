@@ -174,12 +174,11 @@ check_fix() {
   # Compared lower-cased: on a case-insensitive filesystem docs/Working/ is docs/working/.
   lp="$(printf '%s' "$a" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
   low="${lp##*/}"
-  imported_names
   if writable "$a" || writable "$lp"; then echo "skip $a: one of the cycle's own files (use --check-write)"
   elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
     || "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
-  elif [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]]; then
+  elif isimported tree "$lp"; then
     echo "skip $a: an instruction file imports it with @ (directly or through another import), so it is read as instructions; file it instead"
   else check_path "$a"; fi
 }

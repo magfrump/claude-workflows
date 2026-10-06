@@ -3,7 +3,7 @@
 # scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
 # readers refuse (FENCE_AWK), the brief, branch and answer checks, the
-# instruction-file import walk, and the default branch.
+# instruction-file import walks, and the default branch.
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
@@ -12,7 +12,7 @@
 # The caller sets -euo pipefail (check_answer and brief_fields also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
-# check_brief and the import walk (imported_names) exit 1 (need_root) unless
+# check_brief, isimported and the import walks exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # Call the exiting checks in the caller's shell, not inside $(...) or
@@ -29,7 +29,9 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes); imported_names reads the working tree at ROOT_REAL.
+# writes), and so does main_imports (it also reads the checkout's untracked
+# start files and imported files main lacks, which can only add imports);
+# imported_names reads the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -118,7 +120,9 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
 # use rawfile directly: their directory has already passed dirok.)
-inrepo() { need_root; [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
+inrepo() { need_root; inrepo_here "$1"; }
+# inrepo for a caller that has run need_root itself (a walk, per path).
+inrepo_here() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
 # The same for a directory the digest globs in: the walk first, so nothing is
 # looked up through a non-plain parent.
 dirok() { need_root; [[ -z "$(blocker "$1" dir)" && -d "$1" ]]; }
@@ -445,38 +449,145 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
 # Over-reading (a code span) only over-refuses. One result is cached, for the
 # root in IMPORTED_DONE; a call for another ROOT_REAL recomputes it.
-IMPORTED=$'\n'; IMPORTED_DONE=""
+# main_imports walks the default branch's commit instead, for the gate: it starts
+# at every instruction file stored there (and every .md under .claude/rules/,
+# which Claude Code also loads), plus the checkout's untracked ones, and
+# follows an import into the file main stores at that path, whatever its name;
+# a symlink there is followed to the path its text names. A target main does
+# not have is read from the checkout when it is a plain file there. It refuses
+# what it does not model, as FENCE_AWK does: a doubled name, a name holding a
+# newline (in main's tree or the untracked list) and symlink text that is
+# empty, absolute or holds a newline fail the walk, so isimported main answers
+# imported for every path. Not covered (known issue A5): a path through a
+# symlinked directory, other names that one file has on a case-insensitive
+# checkout, absolute imports, and a symlinked untracked start file. Its result
+# is cached for the commit and root in IMPORTED_MAIN_DONE. isimported asks
+# either walk.
+IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=$'\n'; IMPORTED_MAIN_DONE=""
+# UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
+# U+2000-200A, U+2028/2029, U+202F, U+205F and U+3000.
+UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x80\x82' $'\xe2\x80\x83' $'\xe2\x80\x84'
+  $'\xe2\x80\x85' $'\xe2\x80\x86' $'\xe2\x80\x87' $'\xe2\x80\x88' $'\xe2\x80\x89' $'\xe2\x80\x8a' $'\xe2\x80\xa8'
+  $'\xe2\x80\xa9' $'\xe2\x80\xaf' $'\xe2\x81\x9f' $'\xe3\x80\x80')
 IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+# The import targets in the text on stdin, for a file in directory $1 ("" at
+# the top level): one repo-relative path per line, case kept.
+import_targets() {
+  local t p u
+  while IFS= read -r t; do
+    t="${t#*@}"
+    for u in "${UNI_SPACES[@]}"; do t="${t%%"$u"*}"; done
+    while [[ "$t" == *[.,\;:!?*_~] ]]; do t="${t%?}"; done
+    [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
+    p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$t" 2>/dev/null)" || continue
+    [[ "$p" != .. && "$p" != ../* ]] || continue
+    printf '%s\n' "$p"
+  done < <(env LC_ALL=C grep -aoE "$IMPORT_RE" || true)
+}
+# Instruction-file names among NUL-separated paths on stdin: one grep, before
+# the tree walk forks lower and a plain check per path (forking for every tracked
+# file took seconds). It matches INSTRUCTION_FILE's names; the walk's own test
+# stays the authority. LC_ALL=C makes -i ASCII-only.
+instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true; }
+# The checkout's untracked and ignored .md files, NUL-separated: --others
+# without --exclude-standard already lists ignored files.
+untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
 imported_names() {
-  local f t d p seen=$'\n' queue=()
+  local f d p seen=$'\n' queue=()
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && return; IMPORTED_DONE="$ROOT_REAL"; IMPORTED=$'\n'
   while IFS= read -r -d '' f; do
-    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
+    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
-  # One grep keeps only instruction-file basenames before the loop forks lower
-  # and inrepo per path (forking for every tracked file took seconds). It
-  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.
-  # LC_ALL=C makes -i ASCII-only. --others without --exclude-standard already
-  # lists ignored files, so one untracked listing covers both.
-  done < <({ git ls-files -z
-             GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; } \
-           | env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true)
+  done < <({ git ls-files -z; untracked_md; } | instruction_names)
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    while IFS= read -r t; do
-      t="${t#*@}"
-      while [[ "$t" == *[.,\;:!?*_~] ]]; do t="${t%?}"; done
-      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
-      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$t" 2>/dev/null)" || continue
-      [[ "$p" != ..* ]] || continue
+    while IFS= read -r p; do
       IMPORTED+="$(lower "$p")"$'\n'
-      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
-    done < <(env LC_ALL=C grep -oE "$IMPORT_RE" -- "$f" || true)
+      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
+    done < <(import_targets "$d" < "$f")
   done
+}
+# The main walk; returns 1, with IMPORTED_MAIN set to "error", when the
+# commit's tree cannot be listed whole, the listing holds a name twice (git
+# would read the first copy, whatever its mode), a name holds a newline, a blob
+# cannot be read, or symlink text it follows is absolute or holds a newline, so
+# a caller refuses rather than reading a partial list. The listings stay
+# NUL-separated as git writes them, each with its exit status after the last
+# NUL. Queue items are "m:PATH" (main's entry) or "t:PATH" (the checkout's).
+main_imports() {
+  local - rec f d p src i out queue=() recs=() cand=() low=(); set -o pipefail  # as brief_fields
+  local -A ent=() seen=()
+  need_root
+  [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
+  IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $ROOT_REAL"
+  main_by_name || return 1
+  mapfile -d '' recs < <(git ls-tree -r -z --full-tree "$MAIN_SHA"; printf 'rc=%s' "$?")
+  [[ "${recs[-1]}" == rc=0 ]] || return 1
+  unset 'recs[-1]'
+  for rec in "${recs[@]}"; do
+    [[ "$rec" =~ ^([01234567]{6})\ [abcdefghijklmnopqrstuvwxyz]+\ [0123456789abcdef]{40,64}$'\t'(.+)$ ]] || return 1
+    f="${BASH_REMATCH[2]}"
+    [[ -z "${ent[$f]+set}" && "$f" != *$'\n'* ]] || return 1
+    ent[$f]="${BASH_REMATCH[1]}"
+    [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
+  done
+  mapfile -d '' recs < <(untracked_md; printf 'rc=%s' "$?")
+  [[ "${recs[-1]}" == rc=0 ]] || return 1
+  unset 'recs[-1]'
+  for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; cand+=("t:$f"); done
+  # One tr lower-cases every candidate (lower would fork per path).
+  [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
+  for i in "${!cand[@]}"; do
+    f="${low[i]:2}"
+    if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md ]]; then
+      seen[${cand[i]:2}]=1; queue+=("${cand[i]}")
+    fi
+  done
+  IMPORTED_MAIN=$'\n'
+  while [[ ${#queue[@]} -gt 0 ]]; do
+    src="${queue[0]:0:1}"; f="${queue[0]:2}"; queue=("${queue[@]:1}")
+    if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
+    if [[ "$src" == t ]]; then inrepo_here "$f" || continue; out="$(import_targets "$d" < "$f")"
+    else
+      case "${ent[$f]}" in
+        100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+        120000)  # a symlink: its text names the file read, as one more import
+          # The x keeps trailing newlines, which $(...) would drop.
+          if ! out="$(git cat-file blob "$MAIN_SHA:$f"; printf x)"; then IMPORTED_MAIN=error; return 1; fi
+          out="${out%x}"
+          if [[ -z "$out" || "$out" == *$'\n'* || "$out" == /* ]]; then IMPORTED_MAIN=error; return 1; fi
+          out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || continue
+          [[ "$out" != .. && "$out" != ../* ]] || continue ;;
+        *) continue ;;
+      esac
+    fi
+    while IFS= read -r p; do
+      [[ -n "$p" ]] || continue
+      IMPORTED_MAIN+="$(lower "$p")"$'\n'
+      [[ -z "${seen[$p]+set}" ]] || continue
+      seen[$p]=1
+      if [[ -n "${ent[$p]+set}" ]]; then queue+=("m:$p"); else queue+=("t:$p"); fi
+    done <<<"$out"
+  done
+}
+# Whether path $2 (any case) is imported, by the walk $1 names: tree or main.
+# A failed main walk, or a walk name that is neither, answers imported (0), so
+# a caller testing it with `if` refuses; a caller that words a failed walk
+# runs main_imports first. Run it in the caller's shell: the walk exits
+# through need_root and caches its result.
+isimported() {
+  local lp
+  need_root
+  lp="$(lower "$2")"
+  case "$1" in
+    main) main_imports || return 0; [[ "$IMPORTED_MAIN" == *$'\n'"$lp"$'\n'* ]] ;;
+    tree) imported_names; [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]] ;;
+    *) return 0 ;;
+  esac
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),

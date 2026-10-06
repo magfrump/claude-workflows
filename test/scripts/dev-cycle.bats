@@ -1083,11 +1083,11 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why; do
+                 isclosed entry_why isimported inrepo_here main_imports import_targets instruction_names untracked_md; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
-        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
-        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }
