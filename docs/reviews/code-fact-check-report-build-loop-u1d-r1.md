@@ -1,466 +1,840 @@
-Commit: 83cdb005
+Commit: ab71bce5
 
 # Code Fact-Check Report
 
-**Repository:** /workspace (worktree /workspace/.claude/wt-build-loop-u1d, branch feat/build-loop-u1d)
-**Scope:** `git diff main...HEAD` (one commit, 83cdb005): scripts/build-loop.sh, scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, test/scripts/build-loop-read.bats, test/scripts/dev-cycle.bats, and the commit message. Replicate r1 of k=3.
-**Checked:** 2026-10-06
-**Total claims checked:** 19
-**Summary:** 13 verified, 6 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
+**Repository:** /workspace/.claude/wt-build-loop-u1d (branch `feat/build-loop-u1d`)
+**Scope:** `git diff main...HEAD -- scripts test` (scripts/build-loop.sh, scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, test/scripts/build-loop-read.bats, test/scripts/dev-cycle.bats) and the commit messages of 83cdb005, 6c83af2a and 07c354c5. Final confirming pass, replicate 1 of k=3.
+**Checked:** 2026-10-06 (UTC; 2026-10-05 local)
+**Total claims checked:** 53
+**Summary:** 50 verified, 3 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
-Execution provenance (applies to every `executed` claim below). Working directory for suites and mutants: a scratch copy of the worktree's `scripts/`, `test/` and `docs/dev-cycle.md` at `/tmp/claude-1000/-workspace/57e599b8-f769-48da-96c7-3a02f99f2a8d/scratchpad/review-u1d/fc1/base` (mutants in sibling `m-<id>/` copies). Probe repos live under the same `fc1/` directory and run the worktree's own unmodified scripts. Logs: `fc1/logs/`. Baseline at 83cdb005: `bats test/scripts/build-loop-read.bats` 19/19 pass (exit 0) and `bats test/scripts/dev-cycle.bats` 73/73 pass (exit 0) (`fc1/logs/mutant-a-blr.txt` is a surviving mutant whose run equals the baseline; `fc1/logs/baseline-dc.txt`). The very first baseline run of build-loop-read.bats (04:30:41Z) failed only T3/G19, because the copy lacked `docs/dev-cycle.md`; that file was then copied in. Mutant runs: 04:33:02Z (a-d), 04:35:04Z (f-w), about 04:36Z (p, p2), 04:37:50Z (dev-cycle.bats: m, l, n). Mutant diffs: `fc1/logs/mutant-diffs-build-loop.txt` and `fc1/logs/mutant-diffs-lib-dc.txt`. Per-mutant results: `fc1/logs/mutant-summary.txt`.
+Hallucination-pattern log (`docs/reviews/hallucination-patterns.md`) read first. No claim here matches a logged pattern. The closest class is the logged "test-count claims" (commit 37c5ea9's "mode1-equiv 33"), so every count below was recomputed: 118, 151, 19 and 73 all hold. No Incorrect verdict was issued, so the log needs no new entry. It was also left untouched because this pass may write only its report.
 
-Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`, 5 entries). No claim here resembles a logged pattern, and none asserts a fabricated symbol.
+## Execution provenance (shared by the executed claims)
 
----
+All scratch work is under `S=/tmp/claude-1000/-workspace/57e599b8-f769-48da-96c7-3a02f99f2a8d/scratchpad/review-u1d/f-fc1`. `$S/base` is a copy of the worktree's `scripts/`, `test/scripts/`, `test/lib/` and `docs/dev-cycle.md` at ab71bce5. Each mutant is a fresh copy of `$S/base` under `$S/m/<NAME>`, edited by `$S/mut2.sh NAME BATSFILE FILTER FILE 'PERL-EXPR' [...]`, and the bats run happens in that copy. The exact edit is captured in `$S/logs/<NAME>.diff`, and the bats output in `$S/logs/<NAME>.txt`. The summary of every run, with its start timestamp and bats exit code, is in `$S/logs/mutants-summary.txt`.
 
-## Claim 1: "Self-merge also needs a valid never line, so a never list hidden in markup, with no exact never line beside it, turns it off."
+| Run | Command (cwd) | Exit | Time (UTC) | Output |
+|---|---|---|---|---|
+| B0 | `bats test/scripts/build-loop-read.bats test/scripts/dev-cycle.bats` (`$S/base`) | 0, 92/92 | 05:21:26 | `$S/logs/baseline.txt` |
+| B1 | `bats test/scripts/build-loop-read.bats test/scripts/dev-cycle.bats test/fixture-hermeticity.bats` (worktree) | 0, 94/94 | 05:32:30 | `$S/logs/worktree-suites.txt` |
+| P1 | `bash $S/p1` inline loop: `build-loop.sh --settings` over five markup copies × with or without a valid line (`$S/p1/r`) | 0 | 05:22:14 | `$S/logs/p1-never.txt` |
+| P2 | `bash run.sh`, `bash run2.sh` (`$S/p2`): skip-list probes | 0 | ~05:23 | `$S/logs/p2-skip.txt` |
+| P3 | `bash run.sh` (`$S/p3`): corrupt and missing brief objects | 0 | ~05:24 | `$S/logs/p3-shared.txt` |
+| P4 | `bash run.sh` (`$S/p4`): main_entry and brief_fields with no resolve_main, a fallback main, refused forms | 0 | ~05:24 | `$S/logs/p4-main-entry.txt` |
+| P5 | `bash -c 'source lib; ... brief_fields; check_answer; set -o'` (`$S/p4/r`): pipefail scope | 0 | ~05:33 | `$S/logs/p4-pipefail.txt` |
+| H | `bash scripts/{build-loop,dev-cycle}.sh {-h,--help}` (worktree) | 0 ×4 | ~05:33 | `$S/logs/help-out.txt` |
+| SC | `shellcheck -x scripts/build-loop.sh scripts/dev-cycle.sh scripts/lib/dev-cycle-read.sh`; `shellcheck test/lib/build-loop-fixtures.bash` (worktree) | 0; 0 | 05:32:21 | `$S/logs/shellcheck.txt` |
+| C83 | 83cdb005's tree via `git archive`, mutants M13b and M14b, `bats test/scripts/build-loop-read.bats` (`$S/c83m`) | 1 each | ~05:35 | `$S/logs/c83-mutants.txt` |
+| M1-M24 | `$S/mut2.sh <NAME> ...` (`$S/m/<NAME>`) | per row below | 05:25:43-05:33:55 | `$S/logs/<NAME>.{txt,diff}` |
 
-**Location:** `scripts/build-loop.sh:16-18`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers what read_settings does for a hidden never copy with and without an exact never line beside it (bold, task-box and fenced copies). Does not establish that adding an exact line beside a hidden copy keeps self-merge on, which the qualifier implies: that holds only when the letters check misses the copy.
+Mutant results. "Fails at" is the test-file line of the first failing assertion, at ab71bce5's line numbers.
 
-The literal statement holds. A hidden list on its own always leaves POLICY at review. A copy the letters check detects (bold) is counted and is not exact. A copy it misses (a task box) leaves no never line at all:
-
-```awk
-# scripts/build-loop.sh:155-156
-  else if (index(s, "selfmergenever") == 1) k = "never"
-  if (k != "") { c[k]++; if (c[k] == 1) { l1[k] = NR; t[k] = $0; nx[k] = 1; pk = k } else if (c[k] == 2) l2[k] = NR }
-```
-```bash
-# scripts/build-loop.sh:223-224, 250-251 (excerpt ends :251; enclosing read_settings() continues to :273 — read)
-    if [[ -z "${cnt[never]-}" ]]; then NEVER_LINE='never none: no line starts "Self-merge never:"'
-    elif [[ "${cnt[never]}" -gt 1 ]]; then NEVER_LINE="never malformed: $(many 'Self-merge never:' never)"
-...
-      if [[ "$v" == self-merge && -z "$never_ok" ]]; then
-        POLICY_LINE="policy review unset: line ${first[policy]} reads self-merge, ...
-```
-
-The qualifier "with no exact never line beside it" suggests that an exact line beside the hidden copy keeps self-merge on. The probes split on whether the letters check detects the copy (`fc1/logs/p12-settings-probes.txt`):
-- h1, `**Self-merge never:** a/` alone: `never malformed ... not exactly`, so policy is review.
-- h2, the same bold copy plus an exact `Self-merge never: a/`: `never malformed: more than one line starts "Self-merge never:" (lines 3 and 5)`, so policy is review. The exact line does not rescue it.
-- h3, `- [x] Self-merge never: a/` plus an exact line: `policy self-merge set`, `never a/ set: line 5`. The task-box copy is skipped.
-- h5, a bold copy inside a fence plus an exact line: `policy self-merge set`.
-
-So the sentence holds as written. Its implied contrast holds only for copies the letters check misses. The header's own "a second copy ... gives review, 3 and malformed" (`scripts/build-loop.sh:12-13`) covers h2. A precise version: "a never list hidden in markup turns it off, unless markup that adds letters (or a fence) hides it from the copy check and an exact never line stands beside it."
-
-Command: `fc1/p12/run.sh <label> <lines...>` (fresh repo per case, then `bash /workspace/.claude/wt-build-loop-u1d/scripts/build-loop.sh --settings`). Cwd: `fc1/p12`. Exit 0 for each case. Run at about 04:31Z.
-
-**Evidence:** `scripts/build-loop.sh:12-13`, `scripts/build-loop.sh:147-162`, `scripts/build-loop.sh:205-253`, `fc1/logs/p12-settings-probes.txt`
-
----
-
-## Claim 2: help skip list: "...names the same branch (ignoring case) or the open briefs on main could not be listed, or on a branch ahead of main the tip's subject (its message's first line) starts "handoff:" but it is not a marker."
-
-**Location:** `scripts/build-loop.sh:68-72`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the "could not be listed" skip (open briefs only) and the marker skip's limit to branches with ahead > 0, including tips that are level with main or behind it. Does not establish the wording of the unchanged context line 61 ("a branch level with main"), which also covers branches behind main.
-
-The listing failure skips only open briefs, which is where the help places it ("for an open brief, ..."):
-
-```bash
-# scripts/build-loop.sh:338
-  if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed"; return; fi
-```
-
-marker_kind runs only when the branch is ahead, and only a `bad` kind skips:
-
-```bash
-# scripts/build-loop.sh:348-357 (excerpt ends :357; enclosing status_line() continues to :358 — read)
-  loop=working
-  if [[ "$ahead" -gt 0 ]]; then
-    kind="$(marker_kind "$sha")"
-    case "$kind" in
-      bad\ *) echo "skip $a: the tip of $br starts \"handoff:\" but is not a marker: ${kind#bad }"; return ;;
-```
-
-marker_kind returns `working` unless the subject starts `handoff:` (`scripts/build-loop.sh:283`: `[[ "$subj" == handoff:* ]] || { echo working; return; }`). Probe (`fc1/logs/p3-marker-ahead.txt`): feat/x and feat/y sit on a main ancestor whose subject is `handoff: junk` (0 ahead, behind main), and both print `ok ... working`. feat/z is one commit ahead with tip `handoff: junk2`, and it prints `skip ...: the tip of feat/z starts "handoff:" but is not a marker: ...`. Command: `bash .../scripts/build-loop.sh --status docs/working/briefs/2026-10-01-{x,y,z}.md`. Cwd: `fc1/p3/r`. Exit 0. Run at about 04:39Z.
-
-**Evidence:** `scripts/build-loop.sh:278-298`, `scripts/build-loop.sh:321-358`, `fc1/logs/p3-marker-ahead.txt`
+| Mutant | Edit | Result |
+|---|---|---|
+| M1 | delete marker_kind's NUL line (`build-loop.sh:288`) | T7 fails at :301 (`[nul] ok ... ready`) |
+| M2 | M1 plus `--literally` broken in T7's NUL fixture | T7 fails at :299 (hash-object exit 129) |
+| M2b | fixture broken only | T7 fails at :299 |
+| M3 | drop `"${BRIEF[status]-}" == "Status: open" &&` (`:320`) | U1d --status fails at :462 |
+| M4 | `cfg=0` (`:116`) | U1d --status fails at :478; U1d --settings passes |
+| M4b | guard not exported when the caller set a count | U1d --settings fails at :438 |
+| M5 | unread-file SLOTS_LINE uses the absent text | T3 fails at :55 |
+| M5b | SLOTS_LINE is `$FILE_WHY` | U1d --settings fails at :431 |
+| M6 | blank test `/^ *$/` (no tab) | U1d --settings fails at :429 |
+| M7 | bare `success:` accepted | T44 fails at :186 |
+| M8 | CONSTRAINTS_AWK's `fence($0) { next }` removed | T44 fails at :178 (earlier step) |
+| M8b | fenced `H<n>:` lines not skipped | T44 fails at :190 |
+| M9 | REASON needs 2+ characters | T6 fails at :259 |
+| M10 | Dispatched max 9 | U1d --status fails at :462 |
+| M11 | Dispatched 0 refused | U1d --status fails at :455 |
+| M12 | git grep pattern without `\r?` | U1d --status fails at :466 |
+| M13a | only the `#` anchor dropped | suite passes (equivalent: the full prefix cannot occur later in a listed path that isbrief accepts) |
+| M13b | revert to `${f/closed\//}` (13380172's predecessor) | U1d --status fails at :471 |
+| M14a | local `BRIEF=()` dropped only | suite passes (deferred, override row "unobservable") |
+| M14b | M14a plus shared_branches called after brief_fields | T28 :397 and U1d --status :475 fail |
+| M14c | call moved only | suite passes |
+| M15 | FENCE_AWK's NUL refusal removed | U1d --status fails at :482 |
+| M16 | main_entry guard reverted to `main_by_name ||` | dev-cycle.bats :1333-1336 fails (`absent error absent absent`) |
+| M17 | `--check-answer` dropped from dev-cycle.sh:193 | dev-cycle.bats :818 fails (and pre-existing :1203) |
+| M18a-c | build-loop.sh help from line 3 / ends at `# Exit` / only `--help` | build-loop help test fails |
+| M18d-f | same for dev-cycle.sh (ends at `#   --check-answer`) | dev-cycle help test fails |
+| M19 | malformed never line turns review off as well | T4 :82 and U1d --settings :422 fail |
+| M20 | `rc -gt 0` fails closed on exit 1 | suite passes (the :452 comment says so) |
+| M21 | fence lines count as the never line's next line | U1d --settings fails at :425 |
+| M22 | M13b plus the :469 fixture's `mkdir` failing | U1d --status passes |
+| M23 | M12 plus the :464 fixture's CRLF `printf` failing | U1d --status passes |
+| M24 | a checked task box counted as a never copy | suite passes (Won't-Fix row, "ignored" arm) |
 
 ---
 
-## Claim 3: "# the header, to the first non-empty line not starting with #"
+## Claim 1: "Self-merge also needs one valid never line. A never list in markup the copy count sees (bold, a list marker, an unchecked task box) counts as a copy, so self-merge is off; one it misses (a checked task box, a fence) is ignored, so self-merge rests on the valid line alone."
 
-**Location:** `scripts/build-loop.sh:99`
+**Location:** `scripts/build-loop.sh:17-21`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers GNU sed's `2,/^[^#]/{/^#/p}` on this file and on synthetic headers with empty and space-only lines. Does not establish BSD sed behaviour (out of scope per row 286).
+**Scope:** Covers all ten probe cells under policy self-merge: bold, `- `, `- [ ]`, `- [x]` and a fenced copy, each with and without a valid `Self-merge never: none` line. Does not establish other markup shapes (`- [X]`, a tag) beyond the help's own "best effort" caveat at :42-45, and does not establish that the ignored arm is pinned by a test (M24 survives, an existing Won't-Fix row).
 
-`/^[^#]/` needs one character that is not `#`, so an empty line cannot end the range. A space-only line can, and it counts as non-empty. Inside the range only `#` lines print. Results (`fc1/logs/p4-sed-range.txt`):
-- build-loop.sh: the first empty line after line 1 is 80, and the first non-empty non-`#` line is 81 (`set -euo pipefail`). The last printed line is `# lib/dev-cycle-read.sh, or no default branch found by name.` (line 79).
-- Synthetic `#!x / # a / (empty) / # b / " " / # c / z`: prints `# a`, `# b`. The empty line did not end the range; the space-only line did.
+P1 shows the following. With a valid line, the bold, `- ` and `- [ ]` copies each print `never malformed: more than one line starts "Self-merge never:" (lines 3 and 5)` with policy `review unset`. The `- [x]` and fenced copies print `never none: line 3 ... lists none` with `policy self-merge set`. Without a valid line, every cell reads `policy review unset: ... there is no valid Self-merge never: line`. The mechanism is the copy key, which keeps letters only: `s = tolower($0); gsub(/[^a-z]/, "", s)` (`scripts/build-loop.sh:156`). A checked box therefore starts `xselfmergenever` and is not counted, and `fence($0) { next }` (`:153`) skips fenced lines. Policy needs `never_ok` (`:254`: `if [[ "$v" == self-merge && -z "$never_ok" ]]`).
 
-Command: `sed -n '2,/^[^#]/{/^#/p}' <file>`. Cwd: `fc1/p4`. Exit 0. Run at about 04:39Z.
-
-**Evidence:** `scripts/build-loop.sh:79-81`, `scripts/build-loop.sh:99`, `fc1/logs/p4-sed-range.txt`
+**Evidence:** `scripts/build-loop.sh:151-166`, `scripts/build-loop.sh:226-257`, `$S/logs/p1-never.txt`
 
 ---
 
-## Claim 4: "whether the next line outside a fence after the first is blank or the end of the file (NEXT 1) or not"
+## Claim 2: "A tip on a branch level with main, or whose subject does not start "handoff:", is working."
 
-**Location:** `scripts/build-loop.sh:143-145`
+**Location:** `scripts/build-loop.sh:64-65`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers fence lines and fenced content being skipped, EOF giving 1, and space/tab-only lines counting as blank. Does not establish that other whitespace counts as blank: a line holding only a vertical tab (or form feed) is non-blank, and so is a one-line `<!-- comment -->`.
+**Scope:** Covers a level branch whose tip subject is `handoff: bogus`, and an ahead branch with an ordinary subject (T7's "ordinary" step). Does not itself name a branch behind main. That case is also `working` (P2), and the claim is covered by :58-59's "a marker only when the branch is at least one commit ahead".
 
-```awk
-# scripts/build-loop.sh:148-151 (excerpt ends :151; enclosing SETTINGS_AWK continues to :162 — read)
-{ sub(/\r$/, "") }
-fence($0) { next }
-{
-  if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }
-```
+`loop=working; if [[ "$ahead" -gt 0 ]]; then kind="$(marker_kind "$sha")"` (`scripts/build-loop.sh:353-355`), and marker_kind starts with `[[ "$subj" == handoff:* ]] || { echo working; return; }` (`:287`). In P2, an open brief on `feat/o` with a tip at main's `handoff: bogus` commit prints `ok ... feat/o working <sha> ...`. It prints the same after main moves one commit past it.
 
-`nx[k] = 1` is set when the first copy is seen (`:156`) and is overwritten only by the next line that gets past `fence($0) { next }`. So the end of the file leaves 1, and fence delimiters and fenced lines are never "the next line". Probes (`fc1/logs/p12-settings-probes.txt`):
-- n1, the never line last in the file: `never a/ set`.
-- n3, followed by an empty fence pair and nothing else: `set`.
-- n2, followed by an empty fence pair and then `x`: `malformed: ... followed by a non-blank line`.
-- n4, followed by a tab and a space: `set`.
-- n5, followed by `\v`: `malformed`.
-- n6, followed by `<!-- c -->`: `malformed`.
-
-A fence still open at EOF refuses the whole file (`:160`), so it never reaches NEXT.
-
-**Evidence:** `scripts/build-loop.sh:147-162`, `scripts/lib/dev-cycle-read.sh:214-230`, `fc1/logs/p12-settings-probes.txt`
+**Evidence:** `scripts/build-loop.sh:282-302`, `scripts/build-loop.sh:347-362`, `$S/logs/p2-skip.txt`
 
 ---
 
-## Claim 5: "Exit 1 is "none"; an exit above 1 fails closed (SHARED_BRANCHES=error: every open brief skips). A brief git grep cannot read is not counted (row 293)."
+## Claim 3: "DISPATCHED: the brief's "Dispatched: N" (0-99), or 0 without one."
 
-**Location:** `scripts/build-loop.sh:307-309`
-**Type:** Error-handling / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers git grep 2.39.5's exit status for a missing blob (0, or 1 when nothing else matches) and for a config error (128), and status_line's handling of each. Does not establish other fatal git grep paths, or exit codes on other git versions.
-
-```bash
-# scripts/build-loop.sh:310-311 (excerpt ends :311; enclosing shared_branches() continues to :320 — read)
-  list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
-  if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
-```
-
-Probe (`fc1/logs/p5-gitgrep-exit.txt`):
-- A blob deleted from the object store: git grep prints `error: '...b.md': unable to read ...`, still lists the other file, and exits 0. With no other match it exits 1.
-- `-c grep.patternType=bogus`: `fatal: bad grep.patterntype argument`, exit 128.
-
-So a brief git grep cannot read is left out of the list, and only a fatal error fails closed.
-
-Row 293 (`docs/reviews/override-log.md:293`) reads: "An unreadable open brief is not counted for F31 ... Won't-Fix | The unreadable brief skips in its own --status line". Its premise also holds for the git grep case. Probe `fc1/logs/p5b-missing-blob-status.txt`: two open briefs name feat/a and b's blob is missing. Brief a prints `ok ... open review feat/a absent - - 0` (b is not counted), and b prints `skip ...: the brief could not be read from the default branch`. Commands: as logged. Cwd: `fc1/p5/r` and `fc1/p5b/r`. Exit 0. Run at about 04:32Z and again at about 04:39Z.
-
-**Evidence:** `scripts/build-loop.sh:303-320`, `docs/reviews/override-log.md:293`, `fc1/logs/p5-gitgrep-exit.txt`, `fc1/logs/p5b-missing-blob-status.txt`
-
----
-
-## Claim 6: "(an answer only in the working tree is not seen: it reads what main's copy says until it lands there)"
-
-**Location:** `scripts/dev-cycle.sh:58-59`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers check_answer reading only the default branch's blobs. Does not establish which branch "main" names when origin/HEAD or master is the default (the help's "default branch's commit" two lines up covers that).
-
-```bash
-# scripts/lib/dev-cycle-read.sh:563 (excerpt ends :563; enclosing check_answer() continues to :577 — read)
-    r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \
-```
-
-MAIN_SHA is the commit resolve_main found (`scripts/lib/dev-cycle-read.sh:401-403`). No working-tree read exists in check_answer (paraphrased — no quote available because the claim covers the absence of a read: lines 549-577 call only main_entry and `git cat-file blob`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:549-577`, `scripts/lib/dev-cycle-read.sh:391-413`
-
----
-
-## Claim 7: "# The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale)."
-
-**Location:** `scripts/dev-cycle.sh:106`
+**Location:** `scripts/build-loop.sh:65-66`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the same sed command on dev-cycle.sh (the first empty line is 82, the range ends at 83). Does not establish BSD sed behaviour.
+**Scope:** Covers the range bounds 0 and 99 and the default. Does not establish other malformed spellings (owned by T8).
 
-```bash
-# scripts/dev-cycle.sh:107
-    -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-```
+`local ... disp=0` and `[[ "${BRIEF[dispatched]}" =~ ^Dispatched:\ (0|[123456789][0123456789]?)$ ]]` (`scripts/build-loop.sh:327,338`). M10 (max 9) and M11 (0 refused) each fail the U1d --status test.
 
-The probe (`fc1/logs/p4-sed-range.txt`) finds the first empty line after line 1 at 82 and the first non-empty non-`#` line at 83. The last printed line is line 81, `# default branch (for the digest, ...). Printed repo text is data.`. The existing test at `test/scripts/dev-cycle.bats` ("...Printed repo text is data.") passes in the baseline. The semantics are the same as in Claim 3.
-
-**Evidence:** `scripts/dev-cycle.sh:81-83`, `scripts/dev-cycle.sh:106-107`, `fc1/logs/p4-sed-range.txt`
+**Evidence:** `scripts/build-loop.sh:337-341`, `$S/logs/M10-disp99.txt`, `$S/logs/M11-disp0.txt`
 
 ---
 
-## Claim 8: "The caller sets -euo pipefail (check_answer and brief_fields also set pipefail for themselves),"
+## Claim 4: "on a branch ahead of main the tip's subject (its message's first line) starts "handoff:" but it is not a marker"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:12-14`
+**Location:** `scripts/build-loop.sh:71-72`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the claim that the marker skip applies to any brief state (done and dropped probed) and only when `ahead > 0`. Does not establish anything about git log failures under a broken config (deferred override row, 2026-10-06).
+
+The marker check has no state test: `if [[ "$ahead" -gt 0 ]]; then kind="$(marker_kind "$sha")"; case "$kind" in bad\ *) echo "skip $a: ..."` (`scripts/build-loop.sh:354-357`). In P2 (run2), a done brief whose branch is one commit ahead with `handoff: bogus-d` and a dropped brief with a 2-parent `handoff: ready` both print `skip ...: the tip of ... starts "handoff:" but is not a marker: ...`.
+
+**Evidence:** `scripts/build-loop.sh:347-362`, `$S/logs/p2-skip.txt`
+
+---
+
+## Claim 5: "or, for an open brief only, another open brief on main (in briefs/ or closed/) names the same branch (ignoring case) or the open briefs on main could not be listed."
+
+**Location:** `scripts/build-loop.sh:72-75`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the claim that both skips are gated on `st == open`, and that a done brief sharing the branch, or queried while git grep fails, reads `ok`. Does not establish DATE under a broken config (P2 shows it empty under `grep.patternType bogus`, a deferred 2026-10-06 row).
+
+`if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then ...` and `if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]` (`scripts/build-loop.sh:343-344`). In P2, a done brief on the same branch as an open one prints `ok ... done ...`. Under `GIT_CONFIG_COUNT=1 grep.patternType=bogus`, the done brief prints `ok` and the open brief prints `skip ...: the open briefs on the default branch could not be listed`.
+
+**Evidence:** `scripts/build-loop.sh:326-346`, `$S/logs/p2-skip.txt`
+
+---
+
+## Claim 6: "The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale)."
+
+**Location:** `scripts/build-loop.sh:102`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the sed range `2,/^[^#]/` (an empty line cannot match `^[^#]`, so it does not end the range) and the output for this file. Does not establish anything about a header that contains blank lines (none exists; they would be skipped by `{/^#/p}` without ending the range).
+
+`-h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;` (`scripts/build-loop.sh:103`). Run H prints 81 lines for both `-h` and `--help`: line 2 (`The build-loop handoff's state ...`) through line 82 (`lib/dev-cycle-read.sh, or no default branch found by name.`). Line 83 is empty and line 84 is `set -euo pipefail`.
+
+**Evidence:** `scripts/build-loop.sh:82-84,102-103`, `$S/logs/help-out.txt`
+
+---
+
+## Claim 7: "whether the next line outside a fence after the first is blank or the end of the file (NEXT 1) or not"
+
+**Location:** `scripts/build-loop.sh:147-149`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers fence skipping, end of file (`nx[k] = 1` at first sight) and whitespace-only lines (space or tab) as blank. Does not establish CR handling beyond the `sub(/\r$/, "")` at :152.
+
+`fence($0) { next }` precedes `if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }`, and the first sight sets `nx[k] = 1; pk = k` (`scripts/build-loop.sh:153-160`). M21 (fence lines counted as next) fails the U1d --settings test at :425. M6 (tab not blank) fails it at :429.
+
+**Evidence:** `scripts/build-loop.sh:151-166`, `$S/logs/M21-nextline-fence.txt`, `$S/logs/M6-tab.txt`
+
+---
+
+## Claim 8: "an exit above 1, a corrupt object's included, fails closed (SHARED_BRANCHES=error: every open brief skips). A brief whose object is missing (git grep warns, exits 0 or 1) is not counted (row 293)."
+
+**Location:** `scripts/build-loop.sh:311-314`
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers loose-object corruption (bad zlib, and a hash mismatch) and a deleted loose object, on git 2.39.5. Does not establish packed-object corruption, or other git versions' exit codes. "(row 293)" is checked: override-log line 293 is "An unreadable open brief is not counted for F31".
+
+`list="$(git grep ...)" || rc=$?; if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi` (`scripts/build-loop.sh:315-316`). In P3, both corrupt cases give `git grep rc=128` and the queried open brief prints `skip ...: could not be listed`. The missing object gives `error: ... unable to read` with rc=0 when another brief matches, or rc=1 when none does. The queried brief then reads `ok ... open review feat/o absent`, so the missing brief was not counted although it named the same branch.
+
+**Evidence:** `scripts/build-loop.sh:307-325`, `docs/reviews/override-log.md:293`, `$S/logs/p3-shared.txt`
+
+---
+
+## Claim 9: "it reads what main's copy says until it lands there"
+
+**Location:** `scripts/dev-cycle.sh:59`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers every `pipefail` occurrence in the lib, and both callers setting `-euo pipefail`. Does not establish behaviour under a caller that omits the flags.
+**Scope:** Covers check_answer's only read path, a blob of `$MAIN_SHA`. Does not establish anything about how an answer lands on main (outside this code).
 
-```bash
-# scripts/lib/dev-cycle-read.sh:294
-  local - out l; set -o pipefail
-# scripts/lib/dev-cycle-read.sh:550
-  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
-```
+`r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk ...)"` (`scripts/lib/dev-cycle-read.sh:565`), with `main_entry "$f"` the only other lookup (`:556`). check_answer touches no working-tree file (paraphrased — no quote available because the claim covers absence of code: no `cat`, `-f` or working-tree read appears in `check_answer`, `scripts/lib/dev-cycle-read.sh:551-579`).
 
-`rg -n pipefail` over the lib finds only these two `set` calls, plus comments at :13, :72, :292 and :297. No other function sets it, so the list is complete. `local -` restores the options on return, which matches "for themselves". Both callers set the flags: `scripts/dev-cycle.sh:83` and `scripts/build-loop.sh:81` read `set -euo pipefail`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:12-14`, `scripts/lib/dev-cycle-read.sh:291-314`, `scripts/lib/dev-cycle-read.sh:549-577`, `scripts/build-loop.sh:81`, `scripts/dev-cycle.sh:83`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:545-579`
 
 ---
 
-## Claim 9: "It checks main_by_name and the path's form itself (pathform, so ls-tree prints it unquoted): either failing is error." (with the PR intent: no behaviour change for any caller)
+## Claim 10: "The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale)."
 
-**Location:** `scripts/lib/dev-cycle-read.sh:257-259`, `scripts/lib/dev-cycle-read.sh:263`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the guard and every caller of main_entry in scripts/ (brief_fields, check_brief, check_answer, build-loop.sh's main_file; dev-cycle.sh has none), and shows that no caller's output changes. Does not establish that the comment's earlier list of error causes (`:252-255`: "no default branch found by name, ls-tree failed, or the tree lists a name twice") names the pathform cause; it does not.
-
-```bash
-# scripts/lib/dev-cycle-read.sh:263
-  if ! main_by_name || ! pathform "$1"; then echo error; return; fi
-```
-
-The callers:
-- brief_fields checks pathform before main_entry: `if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]` (`:296`).
-- check_brief refuses at `:327` (`if ! pathform "$a"; then echo "skip ...: not an allowed path form"`) before main_entry at `:334`.
-- check_answer passes only `docs/working/questions.md` and `docs/working/questions-archive.md` (`:553`).
-- main_file is called only with `docs/dev-cycle.md` and `docs/constraints.md` (`scripts/build-loop.sh:206,259`).
-
-`pathform` accepts all four fixed names (executed: `ok` for each, cwd the worktree, exit 0, about 04:40Z). `rg "main_entry"` outside docs/ finds no other caller. So the guard's new `error` cannot fire for any current caller, and no caller maps it differently.
-
-Mutant m (the guard reverted to `main_by_name || {...}`) makes `dev-cycle.bats` test 73 print `absent / error / absent / absent` instead of four `error`s (`fc1/logs/mutant-m-dc.txt`, exit 1). So the guard is what produces `error` for three of the four paths.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:248-276`, `:296`, `:323-341`, `:553-554`, `scripts/build-loop.sh:121-138`, `fc1/logs/mutant-m-dc.txt`
-
----
-
-## Claim 10: test "--settings: deferred cases: reasons, review with a malformed never line, the next-line rule, an absent file, a caller's config (U1d)" and its comments ("Under review a malformed never line leaves the policy as written", "The next line outside a fence decides; a whitespace-only line is blank", "A caller's own GIT_CONFIG_COUNT pairs stay, and the guard still applies after them")
-
-**Location:** `test/scripts/build-loop-read.bats:402-426`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers which mutants this test kills. Does not establish that "the caller's own pairs stay": the test never reads them back.
-
-Mutants and results (`fc1/logs/mutant-summary.txt`; build-loop-read.bats; cwd `fc1/m-<id>`; 04:35:04Z):
-- v (a malformed never line turns review off too): test 17 fails (exit 1).
-- t (blank is `/^$/`): test 17 fails.
-- u (the next-line update moved ahead of `fence($0) { next }`): test 17 fails.
-- j (`GIT_CONFIG_COUNT=1` instead of `cfg + 1`, so the guard pair is dropped when a caller passes a count): only test 17 fails.
-- f (the guard line deleted): tests 5 and 17 fail.
-- i (`cfg=0`, so the guard overwrites the caller's KEY_0/VALUE_0): **survives** (exit 0).
-
-The test only checks `policy review set` after the caller's pair:
-
-```bash
-# test/scripts/build-loop-read.bats:424-425
-    run --separate-stderr env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller bash "$BL" --settings
-    [[ "$(line policy)" == "policy review set:"* ]] || { echo "$output $stderr"; return 1; }
-```
-
-So "pairs stay" is true of the code (`scripts/build-loop.sh:112` writes at index `$cfg` only), but this test does not assert it. "An absent file" checks the slots line for an absent file only; see Claim 17 for the unread case.
-
-**Evidence:** `test/scripts/build-loop-read.bats:402-426`, `scripts/build-loop.sh:108-113`, `fc1/logs/mutant-diffs-build-loop.txt`, `fc1/logs/mutant-summary.txt`, `fc1/logs/mutant-i-blr.txt`, `fc1/logs/mutant-j-blr.txt`
-
----
-
-## Claim 11: test "build-loop.sh --help prints the whole header, through its last line (U1d)"
-
-**Location:** `test/scripts/build-loop-read.bats:428-432`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the assertions: exit 0, the first line, and the last line. Does not establish "the whole header": no middle line is checked, and a range that stops at the first empty line gives identical output, because this header holds no empty line.
-
-```bash
-# test/scripts/build-loop-read.bats:430-431
-    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "The build-loop handoff's state and checks"* ]] \
-        && [[ "${lines[${#lines[@]}-1]}" == *"or no default branch found by name." ]] || { echo "$output"; return 1; }
-```
-
-The test fails on a range that stops early or late, which is the A27 regression. It would pass for output that drops middle lines (paraphrased — no quote available because this is a statement about which lines the assertion does not reference). A precise title: "...prints the header from its first line through its last".
-
-**Evidence:** `test/scripts/build-loop-read.bats:428-432`, `scripts/build-loop.sh:2-79`
-
----
-
-## Claim 12: test "--status: deferred cases: NUL, F31's open-only filter, no open brief, CRLF, BRIEF kept, an unanchored closed (U1d)" and its step comments
-
-**Location:** `test/scripts/build-loop-read.bats:434-462`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers which steps kill which mutants. Does not establish the CRLF step comment's second half at that step, either single layer of the open-only filter, or the exit-1 branch as distinct from the error branch.
-
-Kills (`fc1/logs/mutant-summary.txt`):
-- b (BRIEF dropped from the local and the call moved after `brief_fields "$a"`): fails at `:457` with `ok ... feat/q absent - - 3`.
-- d (`${f/closed\//}` restored): fails at `:453` with `skip ...: another open brief`.
-- q (git grep without `\r?`): fails at `:443`, the CRLF step.
-- p2 (both open filters removed): fails at `:443`.
-
-Gaps:
-1. The CRLF step's comment says "the queried brief keeps its own Dispatched value whatever F31 read". At that step the queried brief is skipped, and the assertion is only `[[ "$output" == "skip $o: another open brief"* ]]` (`:448`). Brief p's `Dispatched: 3` is overwritten by `printf 'Status: open\r\nBranch: feat/x\r\n' > "$B"` (`:446`), so no Dispatched value is in play there. The property is asserted later, at the "read by F31 after o" step (`:455-457`).
-2. "F31's open-only filter" is two layers: git grep's `'^Status: open'` and `[[ "${BRIEF[status]-}" == "Status: open" && ...` (`scripts/build-loop.sh:315`). The step kills only the mutant that removes both (p2). Mutant o (line 315's status test removed) and mutant p (git grep's pattern widened to `'^Status: '`) each survive the suite. A brief whose first Status line is `done` and a later one `open` would reach line 315 untested.
-3. "No open brief on main at all (git grep exits 1)" (`:436`). Mutant r (`rc -gt 0`, so exit 1 becomes error) survives. That is output-equivalent: exit 1 means no queried brief is open on main, and the error skip applies only to open briefs (`scripts/build-loop.sh:338`). So the step exercises the path, but no --status output can distinguish the regression.
-
-Mutant w (the `#` anchor removed but the full `docs/working/briefs/closed/` prefix kept) also survives. It differs from the code only for a path holding that prefix below its start.
-
-**Evidence:** `test/scripts/build-loop-read.bats:434-462`, `scripts/build-loop.sh:303-320`, `scripts/build-loop.sh:338`, `fc1/logs/mutant-b-blr.txt`, `fc1/logs/mutant-d-blr.txt`, `fc1/logs/mutant-o-blr.txt`, `fc1/logs/mutant-p-blr.txt`, `fc1/logs/mutant-p2-blr.txt`, `fc1/logs/mutant-q-blr.txt`, `fc1/logs/mutant-r-blr.txt`, `fc1/logs/mutant-w-blr.txt`
-
----
-
-## Claim 13: test "--check-brief, --check-branch and --check-answer need a default branch found by name; the others do not" (loop extended to `--check-answer feat/x`)
-
-**Location:** `test/scripts/dev-cycle.bats:813-822`
+**Location:** `scripts/dev-cycle.sh:111`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the `--check-answer` iteration failing for the script-level default-branch guard. Does not establish anything about check_answer's own `main_by_name` skip, which this argument never reaches: with the guard gone, the ID check at `:551` answers first.
+**Scope:** Covers dev-cycle.sh's identical sed and its output. Does not establish anything beyond that file.
 
-```bash
-# scripts/dev-cycle.sh:193-194
-if [[ "$CHECK" == --check-brief || "$CHECK" == --check-branch || "$CHECK" == --check-answer ]] && ! main_by_name; then
-  echo "$CHECK needs a default branch (origin/HEAD, main or master); found none" >&2; exit 1
-```
+`-h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | ...` (`scripts/dev-cycle.sh:112`). Run H prints 80 lines (2-81) for both flags. The first line is `Gather the mechanical signals ...`, the last ends `Printed repo text is data.`, and the first non-empty non-`#` line is 83 (`set -euo pipefail`). The comment text is now identical to build-loop.sh:102 (6c83af2a C7, 07c354c5 C15).
 
-Mutant n (`--check-answer` dropped from that guard) makes test 45 fail at `[ "$status" -eq 1 ]` (`:818`). Test 66 also fails (`fc1/logs/mutant-n-dc.txt`, exit 1, 04:37:50Z). So the iteration fails for the default-branch reason. Without the guard, `feat/x` gets check_answer's `skip feat/x: not a question ID` with exit 0, which fails the status assertion. The pre-existing test 66 already covered the same guard.
-
-**Evidence:** `test/scripts/dev-cycle.bats:813-822`, `scripts/dev-cycle.sh:188-207`, `scripts/lib/dev-cycle-read.sh:549-552`, `fc1/logs/mutant-n-dc.txt`
+**Evidence:** `scripts/dev-cycle.sh:111-112`, `$S/logs/help-out.txt`
 
 ---
 
-## Claim 14: test "main_entry refuses a path pathform refuses, before any read (U1d)"
+## Claim 11: "caller sets -euo pipefail (check_answer and brief_fields also set pipefail for themselves)"
 
-**Location:** `test/scripts/dev-cycle.bats:1328-1335`
+**Location:** `scripts/lib/dev-cycle-read.sh:13-14`
 **Type:** Behavioral
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the four paths answering `error`. Does not establish "before any read": a mutant that runs ls-tree first and checks pathform afterwards passes.
+**Scope:** Covers the claim that exactly these two functions set pipefail, scoped by `local -`. Does not establish callers' own settings.
 
-The code does refuse before any read (`scripts/lib/dev-cycle-read.sh:263` precedes the ls-tree at `:265`). But the test asserts only the four `error` lines. Mutant l moves the pathform check to after the ls-tree and the dup check (`pathform "$1" || { echo error; return; }` inserted after `:271`). It **survives** dev-cycle.bats (exit 0, `fc1/logs/mutant-l-dc.txt`). Mutant m (no pathform check at all) fails this test (Claim 9). A precise title: "main_entry answers error for a path pathform refuses".
+`local - out l; set -o pipefail` (`:296`) and `local - a="$1" ... ; set -o pipefail  # as brief_fields` (`:552`) are the only `set -o pipefail` lines in the lib (rg). In P5, run with pipefail off, the shell's `pipefail off` holds after each call returns.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1328-1335`, `scripts/lib/dev-cycle-read.sh:260-276`, `fc1/logs/mutant-diffs-lib-dc.txt`, `fc1/logs/mutant-l-dc.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:293-296,551-552`, `$S/logs/p4-pipefail.txt`
 
 ---
 
-## Claim 15: commit message, Code: "main_entry checks the path's form itself (pathform) as well as main_by_name; either failing is error (U1a C16)." / "--status' "could not be listed" skip drops "(git grep failed)", matching the other reasons (U1c C38)."
+## Claim 12: "check_brief, check_branch and check_answer skip every argument unless it returned 0 with main found by name (main_entry and brief_fields answer error)."
 
-**Location:** commit 83cdb005 message; `scripts/lib/dev-cycle-read.sh:263`; `scripts/build-loop.sh:338`
+**Location:** `scripts/lib/dev-cycle-read.sh:23-25`
 **Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers no resolve_main and the current-branch fallback (`trunk`). "Answer error" for brief_fields means `BRIEF_ODD=error`, return 1 and no key set, not a printed line. Does not establish anything about check_* output beyond their main_by_name guards (pre-existing).
+
+In P4, before resolve_main: `main_entry=error`, `brief_fields rc=1 BRIEF_ODD=error keys=0`. On the `trunk` fallback (`MAIN=trunk BY_NAME=[]`) the result is the same. Code: `if ! main_by_name || ! pathform "$1"; then echo error; return; fi` (`:265`) and `[[ "$(main_entry "$1")" != blob ]]; then BRIEF_ODD=error; return 1` (`:298`).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:262-265,293-298`, `$S/logs/p4-main-entry.txt`
+
+---
+
+## Claim 13: "check_brief, check_branch, check_answer, main_entry and brief_fields read its commit, so they answer only when it was found by name, never for the current branch's fallback or before resolve_main has succeeded (main_entry and brief_fields answer error)."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:244-247`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Same evidence as Claim 12, plus check_brief's (`:328`), check_branch's (`:376`) and check_answer's (`:554`) `main_by_name` guards, read in full. Does not establish build-loop.sh's own exit on no main (`:119`, unchanged).
+
+`if ! main_by_name; then echo "skip ...: no default branch found by name ..."` appears in check_brief (`:328`), check_branch (`:376`) and check_answer (`:554`). main_entry and brief_fields as in Claim 12.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:325-337,374-391,551-556`, `$S/logs/p4-main-entry.txt`
+
+---
+
+## Claim 14: ""error" (no default branch found by name, a path pathform refuses, ls-tree failed, or the tree lists a name twice ...). It runs main_by_name and pathform itself, before any read (pathform also means ls-tree prints the name unquoted)."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:255-261`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the guard's position (`:265`, before the ls-tree at `:267`) and eight refused forms (`a"b.md`, `../x`, `-x`, `docs//x.md`, a trailing `/`, `.git/config`, `docs/.GIT/x`, `a b`). Does not establish the separate wording of the `error` word (deferred `badform` row).
+
+The guard `if ! main_by_name || ! pathform "$1"; then echo error; return; fi` comes before `out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- ...)"` (`:265-267`). In P4 all eight forms print `error` with main found by name, and a valid path prints `blob`. M16 (the pre-U1d guard) answers `absent error absent absent` for the test's four paths.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:250-282`, `$S/logs/p4-main-entry.txt`, `$S/logs/M16-guard-revert.txt`
+
+---
+
+## Claim 15: "Behaviour changes are intended only in two places: main_entry answers error for a path pathform refuses, and the --status "could not be listed" skip loses "(git grep failed)"" (no caller's output changes beyond these)
+
+**Location:** `scripts/lib/dev-cycle-read.sh:265`
+**Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers both code changes and the updated T28 assertion. Does not establish behaviour beyond Claim 9's caller analysis.
+**Scope:** Covers every main_entry call site in scripts/ (four) and the one changed echo. Does not establish behaviour for a caller added later (U2's floor, deferred row).
 
-The diff changes `main_by_name || { echo error; return; }` to `if ! main_by_name || ! pathform "$1"; then echo error; return; fi`. It also changes `...could not be listed (git grep failed)"` to `...could not be listed"` (`scripts/build-loop.sh:338`). T28's expected line was updated to match (`test/scripts/build-loop-read.bats:388`: `"skip $d: the open briefs on the default branch could not be listed"`). No other skip reason in status_line names a mechanism in parentheses except "(compared ignoring case)" (`:340`), which names a rule rather than a mechanism.
+`rg -n main_entry scripts test` finds exactly four calls. (1) build-loop.sh's main_file `e="$(main_entry "$f")"` (`scripts/build-loop.sh:128`), called only with `docs/dev-cycle.md` and `docs/constraints.md` (`:210,263`), both of which pathform accepts. (2) brief_fields `if ! pathform "$1" || [[ "$(main_entry "$1")" != blob ]]` (`lib:298`), where pathform already short-circuits. (3) check_brief, where `if ! pathform "$a"; then echo "skip ...: not an allowed path form"; return; fi` (`lib:331`) runs before `e="$(main_entry "$a")"` (`lib:336`). (4) check_answer `for f in docs/working/questions.md docs/working/questions-archive.md; do e="$(main_entry "$f")"` (`lib:555-556`), constant paths that pathform accepts. dev-cycle.sh has no direct call (rg). No caller can therefore reach the new arm. The only other output change is `echo "skip $a: the open briefs on the default branch could not be listed"` (`scripts/build-loop.sh:343`). B1 passes 94/94.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:263`, `scripts/build-loop.sh:321-358`, `test/scripts/build-loop-read.bats:385-390`
+**Evidence:** `scripts/build-loop.sh:125-142,343`, `scripts/lib/dev-cycle-read.sh:293-298,325-337,551-557`, `$S/logs/worktree-suites.txt`
 
 ---
 
-## Claim 16: commit message, Wording bullets (U1a A19-A22, C19; U1b A25-A27; U1c A24, A25, C37: "the help is re-wrapped"; "the F31 comment says an exit above 1 fails closed")
+## Claim 16: T3's added step asserts the slots line for a file that is not read
+
+**Location:** `test/scripts/build-loop-read.bats:55`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the unbalanced-fence reason reaching SLOTS_LINE. Does not cover the other unread reasons (shared code path `:215-216`).
+
+`[ "$(line slots)" = "slots 3 default: the code fence opened at line 1 of docs/dev-cycle.md is never closed, so the file is not read" ]` (`:55`). M5 (SLOTS_LINE always "no docs/dev-cycle.md") fails T3 at :55.
+
+**Evidence:** `test/scripts/build-loop-read.bats:53-55`, `scripts/build-loop.sh:214-218`, `$S/logs/M5-slots-unread.txt`
+
+---
+
+## Claim 17: "A never list the copy count misses (a checked task box) is skipped; with no exact never line beside it, self-merge is off."
+
+**Location:** `test/scripts/build-loop-read.bats:118-119`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the code behaviour the comment states (P1: `- [x]` alone → `never none: no line starts`, policy off). Does not establish that the step tells "skipped" from "counted and malformed": it asserts only the policy line, and M24 (box counted) passes. This is the existing Won't-Fix row for the "ignored" arm, so it is not re-filed.
+
+`settings 'Build-loop policy: self-merge' '- [x] Self-merge never: b/'; settings_is policy "$no"` (`:120`). P1's `valid=no [- [x] ...]` cell prints `never none: no line starts "Self-merge never:"` and policy `review unset`.
+
+**Evidence:** `test/scripts/build-loop-read.bats:118-120`, `$S/logs/p1-never.txt`, `$S/logs/M24-checkedbox-counted.txt`
+
+---
+
+## Claim 18: A bare "success:" line does not satisfy a hard constraint (6c83af2a C9)
+
+**Location:** `test/scripts/build-loop-read.bats:185-186`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the `success: [^ \t]` requirement. Does not cover a `success:` followed only by blanks (same regex, not run).
+
+`constraints '- S1: a' '- H1: b' '  success:'` expects `nosuccess` (`:185-186`). Code: `/^[ \t]*(- )?success: [^ \t]/ { pend = "" }` (`scripts/build-loop.sh:184`). M7 fails at :186.
+
+**Evidence:** `test/scripts/build-loop-read.bats:185-186`, `$S/logs/M7-bare-success.txt`
+
+---
+
+## Claim 19: A fenced H2 is skipped, so constraints are ok (6c83af2a C9)
+
+**Location:** `test/scripts/build-loop-read.bats:189-190`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers a fenced `H<n>:` line. Does not establish that this step is the first to catch total removal of the fence skip: M8 fails earlier, at :178.
+
+M8b, which counts fenced `H<n>:` lines only, fails at :190 (`constraints ok 1-hard 0-soft` expected).
+
+**Evidence:** `test/scripts/build-loop-read.bats:189-190`, `scripts/build-loop.sh:170-192`, `$S/logs/M8b-fenced-Hline-counts.txt`, `$S/logs/M8-fenced-H2.txt`
+
+---
+
+## Claim 20: A 1-character stopped reason is read (6c83af2a C9)
+
+**Location:** `test/scripts/build-loop-read.bats:257-259`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the optional group in `[!-~]([ -~]{0,118}[!-~])?`. Does not cover the 120 bound (existing `${r120}` steps).
+
+M9 (2+ characters required) fails at :259 with `skip ... not a marker`.
+
+**Evidence:** `test/scripts/build-loop-read.bats:257-259`, `scripts/build-loop.sh:300`, `$S/logs/M9-1char.txt`
+
+---
+
+## Claim 21: "A marker whose message body holds a NUL byte (one commit ahead, same tree)." Its fixture, update-ref and check are separate lines, so a broken fixture fails T7
+
+**Location:** `test/scripts/build-loop-read.bats:297-301`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the deleted NUL check (M1), a broken fixture together with the deleted check (M2), and a broken fixture alone (M2b). Does not establish any NUL position other than the body.
+
+The fixture is built with `tree <base tree>` and `parent <base>`, so it is the same tree and one commit ahead (`:298`). M1 fails at :301 with `[nul] ok ... ready`. M2 and M2b fail at :299: `git hash-object ... --literallyX` exits 129 and set -e stops the test.
+
+**Evidence:** `test/scripts/build-loop-read.bats:269-301`, `scripts/build-loop.sh:288`, `$S/logs/M1-nulcheck.txt`, `$S/logs/M2-nul+fixture.txt`, `$S/logs/M2b-fixture-only.txt`
+
+---
+
+## Claim 22: U1d --settings title: "reasons, review with a malformed never line, the next-line rule, an absent file, a caller's config"; ":420 Under review a malformed never line leaves the policy as written."
+
+**Location:** `test/scripts/build-loop-read.bats:414,420`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each title item through a failing mutant (M19, M21, M6, M5b, M4b). The two reason strings are checked statically against `scripts/build-loop.sh:241-242`. Does not establish anything beyond the asserted lines.
+
+`why="lists entry $i, which is not an allowed glob form"` and `why="lists entry $i twice"` (`scripts/build-loop.sh:241-242`) match the expected strings at :417 and :419. M19 (malformed never turns review off) fails at :422.
+
+**Evidence:** `test/scripts/build-loop-read.bats:414-422`, `$S/logs/M19-review-malformed.txt`
+
+---
+
+## Claim 23: "The next line outside a fence decides; a whitespace-only line is blank."
+
+**Location:** `test/scripts/build-loop-read.bats:423`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers both fence halves (blank after the fence, so set; `b/` after the fence, so malformed) and the ` \t ` line. Does not cover CRLF blanks.
+
+M21 fails at :425 and M6 (no tab) fails at :429.
+
+**Evidence:** `test/scripts/build-loop-read.bats:423-429`, `$S/logs/M21-nextline-fence.txt`, `$S/logs/M6-tab.txt`
+
+---
+
+## Claim 24: The absent file's slots line
+
+**Location:** `test/scripts/build-loop-read.bats:430-431`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers `why="no $f on the default branch"` reaching SLOTS_LINE. Does not cover anything else.
+
+M5b (`SLOTS_LINE="slots 3 default: $FILE_WHY"`) fails at :431.
+
+**Evidence:** `test/scripts/build-loop-read.bats:430-431`, `scripts/build-loop.sh:215-216`, `$S/logs/M5b-slots-absent.txt`
+
+---
+
+## Claim 25: "A caller's own GIT_CONFIG_COUNT does not stop the guard (that the caller's pairs still reach git is asserted in the --status deferred-cases test)."
+
+**Location:** `test/scripts/build-loop-read.bats:432-433`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the split exactly: M4b (no guard when the caller set a count) fails this test at :438. M4 (`cfg=0`, which overwrites the caller's pair) passes this test and fails the --status test at :478. Does not establish the zero-padded or `git -c` routes the code comment at `scripts/build-loop.sh:114-115` mentions.
+
+`cfg="${GIT_CONFIG_COUNT:-0}"; export "GIT_CONFIG_KEY_$cfg=core.useReplaceRefs" "GIT_CONFIG_VALUE_$cfg=false" GIT_CONFIG_COUNT=$((cfg + 1))` (`scripts/build-loop.sh:116`).
+
+**Evidence:** `test/scripts/build-loop-read.bats:432-438,476-478`, `$S/logs/M4-cfg0.txt`, `$S/logs/M4b-caller-stops-guard.txt`
+
+---
+
+## Claim 26: "build-loop.sh -h and --help print the header from its first line through its last (U1d)"
+
+**Location:** `test/scripts/build-loop-read.bats:441-447`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the first and last lines and both flags. Does not assert the middle lines (a dropped middle line would pass).
+
+M18a (from line 3), M18b (ends at `# Exit`) and M18c (`-h` removed) each fail. Run H confirms that `lines[0]` and the last line match the asserted prefix and suffix.
+
+**Evidence:** `test/scripts/build-loop-read.bats:441-447`, `$S/logs/M18a-bl-help-start3.txt`, `$S/logs/M18b-bl-help-stopExit.txt`, `$S/logs/M18c-bl-help-onlylong.txt`
+
+---
+
+## Claim 27: "No open brief on main at all (git grep exits 1): a done brief reads normally. (A done brief never reads F31's answer, so this cannot tell exit 1 from a failure.)"
+
+**Location:** `test/scripts/build-loop-read.bats:451-452`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the comment's own admission: M20 (`rc -gt 0` fails closed) passes the whole suite. Does not establish that exit 1 is pinned anywhere (it is not).
+
+At this step the only brief is done, so git grep lists nothing (exit 1). shared_branches still runs (`[[ -n "$SHARED_BRANCHES" ]] || shared_branches`, `scripts/build-loop.sh:328`), but both readers of its answer are gated on `st == open` (`:343-344`), which supports "never reads F31's answer (F31 still runs)" (07c354c5 A13).
+
+**Evidence:** `test/scripts/build-loop-read.bats:449-455`, `scripts/build-loop.sh:326-346`, `$S/logs/M20-rc-gt0.txt`
+
+---
+
+## Claim 28: "A done brief sharing an open brief's branch does not make the open one skip, even with a later "Status: open" line that git grep lists (F31's own filter)."
+
+**Location:** `test/scripts/build-loop-read.bats:456-457`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers F31's `BRIEF[status] == "Status: open"` term. Does not establish anything else about the loop's filters.
+
+M3 fails at :462 with `skip ...: another open brief`.
+
+**Evidence:** `test/scripts/build-loop-read.bats:456-462`, `scripts/build-loop.sh:320`, `$S/logs/M3-f31-filter.txt`
+
+---
+
+## Claim 29: Dispatched 0 and 99 (6c83af2a C9)
+
+**Location:** `test/scripts/build-loop-read.bats:453,460`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claim 3.
+
+M11 fails at :455 and M10 fails at :462.
+
+**Evidence:** `$S/logs/M10-disp99.txt`, `$S/logs/M11-disp0.txt`
+
+---
+
+## Claim 30: "Another open brief (CRLF line endings) on the same branch counts."
+
+**Location:** `test/scripts/build-loop-read.bats:463-466`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers git grep's `\r?` arm (M12 fails at :466). Does not establish that a fixture failure is caught: the step is still `brief p ... && printf '...\r\n...' > "$B" && commit_all crlf`, and with the `printf` failing plus M12, the test passes (M23), because brief p's LF copy counts instead. See Claim 50.
+
+**Evidence:** `test/scripts/build-loop-read.bats:463-466`, `scripts/build-loop.sh:315`, `$S/logs/M12-crlf.txt`, `$S/logs/M23-crlf-fixturefail+nocrlf.txt`
+
+---
+
+## Claim 31: "A directory whose name merely contains "closed" is not closed/."
+
+**Location:** `test/scripts/build-loop-read.bats:468-471`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the revert to `${f/closed\//}` (M13b fails at :471). Does not catch dropping only the `#` (M13a passes, a behaviour-equivalent mutant for listed paths). The step is a `mkdir && printf && commit_all` chain, and with `mkdir` failing plus M13b it passes (M22). See Claim 50.
+
+`isbrief "${f/#docs\/working\/briefs\/closed\//docs/working/briefs/}"` (`scripts/build-loop.sh:319`). The dir `2026-10-0closed` + `1-x.md` becomes `2026-10-01-x.md` under the unanchored strip, which isbrief accepts.
+
+**Evidence:** `test/scripts/build-loop-read.bats:468-471`, `$S/logs/M13b-strip-closed.txt`, `$S/logs/M13a-drop-hash.txt`, `$S/logs/M22-closeddir-fixturefail+unanchor.txt`
+
+---
+
+## Claim 32: "Another open brief on another branch, read by F31 after o, leaves o's fields alone."
+
+**Location:** `test/scripts/build-loop-read.bats:472-475`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the observable property: o's own fields after F31 has read q. M14b (no local BRIEF and the call moved after brief_fields) fails at :475 with `feat/q ... 3`. Does not pin the local `BRIEF=()` alone (M14a passes), which is the deferred 2026-10-06 row.
+
+**Evidence:** `test/scripts/build-loop-read.bats:472-475`, `scripts/build-loop.sh:309,328,333`, `$S/logs/M14a-nolocalBRIEF.txt`, `$S/logs/M14b-nolocal+move.txt`, `$S/logs/M14c-move-only.txt`
+
+---
+
+## Claim 33: "A caller's own GIT_CONFIG_COUNT pair still reaches git beside the guard pair."
+
+**Location:** `test/scripts/build-loop-read.bats:476-478`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claim 25 (M4 fails at :478).
+
+**Evidence:** `$S/logs/M4-cfg0.txt`
+
+---
+
+## Claim 34: "A NUL byte refuses the brief, naming the line."
+
+**Location:** `test/scripts/build-loop-read.bats:479-482`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers FENCE_AWK's NUL refusal through --status. Does not establish anything new about marker NULs (Claim 21).
+
+M15 (the refusal removed) fails at :482. The output becomes `ok ... feat/nx ...`, with the NUL dropped into the value.
+
+**Evidence:** `test/scripts/build-loop-read.bats:479-482`, `scripts/lib/dev-cycle-read.sh:218`, `$S/logs/M15-fence-nul.txt`
+
+---
+
+## Claim 35: "--check-brief, --check-branch and --check-answer need a default branch found by name; the others do not"
+
+**Location:** `test/scripts/dev-cycle.bats:813-821`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers dev-cycle.sh's gate at :193 for all three modes. "The others do not" is shown by --check-path only.
+
+M17 (`--check-answer` dropped from `if [[ "$CHECK" == --check-brief || ... || "$CHECK" == --check-answer ]] && ! main_by_name`) fails at :818.
+
+**Evidence:** `scripts/dev-cycle.sh:193`, `$S/logs/M17-checkanswer-gate.txt`
+
+---
+
+## Claim 36: "-h and --help print the header from its first line through its last"
+
+**Location:** `test/scripts/dev-cycle.bats:1322-1328`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claim 26, for dev-cycle.sh.
+
+M18d, M18e and M18f each fail.
+
+**Evidence:** `$S/logs/M18d-dc-help-start3.txt`, `$S/logs/M18e-dc-help-stopExit.txt`, `$S/logs/M18f-dc-help-onlylong.txt`
+
+---
+
+## Claim 37: "main_entry answers error for a path pathform refuses (U1d)"
+
+**Location:** `test/scripts/dev-cycle.bats:1330-1337`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the four forms the test passes. `../x` already answered error before U1d, while the other three did not. Does not establish `.git` parts (P4 covers those outside the suite).
+
+M16 fails (`absent error absent absent`).
+
+**Evidence:** `$S/logs/M16-guard-revert.txt`
+
+---
+
+## Claim 38: 83cdb005 Code: "main_entry checks the path's form itself (pathform) as well as main_by_name; either failing is error (U1a C16). --status' "could not be listed" skip drops "(git grep failed)""
+
+**Location:** `scripts/lib/dev-cycle-read.sh:265`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claims 14-15. `rg 'git grep failed'` outside docs/reviews finds no remaining copy.
+
+**Evidence:** `scripts/build-loop.sh:343`, `$S/logs/p4-main-entry.txt`
+
+---
+
+## Claim 39: 83cdb005 Wording bullets (U1a A19-A22, C19; U1b A25-A27; U1c A24, A25, C37)
+
+**Location:** `scripts/build-loop.sh:14-75`
+**Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers each bullet against 83cdb005's own text (`git show 83cdb005:scripts/build-loop.sh`: "with no exact never line beside it, turns it off") and the HEAD text it led to. The never-line wording was later rewritten (6c83af2a A3, 07c354c5 A12); the phrase survives in the test comment at :118-119.
+
+**Evidence:** `scripts/dev-cycle.sh:59,111`, `scripts/lib/dev-cycle-read.sh:13-14,252-261`, `scripts/build-loop.sh:71-75,147-149,311-314`
+
+---
+
+## Claim 40: 83cdb005 "Tests (U1b C10-C12, U1c C17, C18, C26, C28, C39, and U1a C16)"
 
 **Location:** commit 83cdb005 message
 **Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each bullet against the diff hunk it names. Does not establish that each new wording is accurate; Claims 1-8 verdict that.
-
-Each bullet maps to a hunk:
-- A19, test title and loop: `dev-cycle.bats:813,816`.
-- A20, "until it lands there": `dev-cycle.sh:59`.
-- A21 and A27, the help ranges: `dev-cycle.sh:106`, `build-loop.sh:99`.
-- A22, the main_entry comment: `lib:257-259`.
-- C19, the pipefail note: `lib:13-14`.
-- A25, the never rule: `build-loop.sh:17-18`.
-- A26, the NEXT comment: `build-loop.sh:143-145`.
-- A24 and C37, the skip list: `build-loop.sh:68-72`.
-- U1c A25: `build-loop.sh:308`.
-
-For "re-wrapped", `awk 'NR<=80 && length($0)>80'` over build-loop.sh's header prints nothing (exit 0, cwd the worktree, about 04:40Z). Before the change, line 62 ran to 115 columns per row 26's text. The four added lines over 80 columns are all code or comment lines outside the header block.
-
-**Evidence:** `scripts/build-loop.sh:2-79`, the diff in the shared context
-
----
-
-## Claim 17: commit message, Tests: "(U1b C10-C12, U1c C17, C18, C26, C28, C39, and U1a C16)" ... "the slots line for an absent file; a caller's own GIT_CONFIG_COUNT pairs with a replace ref; ... --status with no open brief on main; a done brief sharing an open brief's branch; a CRLF open brief counting for F31; ..."
-
-**Location:** commit 83cdb005 message
-**Type:** Reference / Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers that every named case is present and which of them fail on a regression. Does not establish row 246's "unread" half (C26), which the message lists as resolved.
+**Verification mode:** static
+**Scope:** True of the branch at HEAD. At 83cdb005 itself, U1c C17 (marker_kind's commit-NUL check) and C18 (F31's own filter) were not reached: iteration-1 rubric rows A11 and A1, fixed in 6c83af2a. Not a new finding.
 
-Every named case appears in the new tests. Most fail on a regression (Claims 10, 12-14). The residues:
-- (a) Row 246 (C26's parent) asks for "the slots line for an absent or unread file". Only the absent case is asserted (`test/scripts/build-loop-read.bats:419`: `settings_is slots "slots 3 default: no docs/dev-cycle.md on the default branch"`). Mutant k changes the slots line only for a file that was not read (`[[ "$FILE_WHY" == absent ]] && SLOTS_LINE=... || SLOTS_LINE="slots 9 set: x"`), and it survives the whole suite (`fc1/logs/mutant-k-blr.txt`, exit 0). The bullet's own words ("for an absent file") are accurate, but listing C26 as resolved overstates.
-- (b) The caller-pair case does not assert that the caller's pairs survive (mutant i survives; Claim 10).
-- (c) "no open brief on main" cannot fail on a regression of the exit-1 branch, because the regression is output-equivalent (Claim 12, gap 3).
-- (d) "a done brief sharing an open brief's branch" kills only the removal of both filter layers (Claim 12, gap 2).
+`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u1d.md:68` (A11: "`marker_kind`'s commit-NUL check ... can be deleted with the suite green") and `:58` (A1: "git grep never lists that brief"). At HEAD, M1 and M3 fail the suite.
 
-**Evidence:** `test/scripts/build-loop-read.bats:402-462`, `test/scripts/dev-cycle.bats:1328-1335`, `docs/reviews/override-log.md:246`, `fc1/logs/mutant-summary.txt`, `fc1/logs/mutant-k-blr.txt`
+**Evidence:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u1d.md:58,68`, `$S/logs/M1-nulcheck.txt`, `$S/logs/M3-f31-filter.txt`
 
 ---
 
-## Claim 18: commit message: "Mutants that drop the local BRIEF (moving the call), or un-anchor the closed/ prefix, fail the new --status test."
+## Claim 41: 83cdb005 "Mutants that drop the local BRIEF (moving the call), or un-anchor the closed/ prefix, fail the new --status test."
 
 **Location:** commit 83cdb005 message
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the drop-plus-move mutant and the C39-defined un-anchor mutant (`${f/closed\//}`). Does not establish that either change alone is killed: dropping the local without moving the call, or moving the call without dropping the local, survives the suite, as does removing only the `#` anchor while keeping the full prefix.
+**Scope:** Covers M14b and M13b, the pre-13380172 `${f/closed\//}`, run on 83cdb005's own tree (C83) and on HEAD. Does not cover a mutant that drops only `#` (M13a, equivalent).
 
-Command: `bats test/scripts/build-loop-read.bats`, cwd `fc1/m-<id>`, 04:33:02Z.
-- Mutant b (local `BRIEF=()` removed and `[[ -n "$SHARED_BRANCHES" ]] || shared_branches` moved after `brief_fields "$a"`): exit 1. Test 19 fails at `:457`, and T28 (test 16) also fails.
-- Mutant d (`isbrief "${f/closed\//}"`, the pre-13380172 form per `git log -L314`): exit 1. Test 19 fails at `:453`.
-- Mutant a (drop only): exit 0.
-- Mutant c (move only): exit 0.
-- Mutant w (`${f/docs\/working\/briefs\/closed\//...}` without `#`): exit 0.
+C83: `M13b@83cdb005: not ok 19 --status: deferred cases ...` and `M14b@83cdb005: not ok 16 ... not ok 19 ...`.
 
-The parenthetical "(moving the call)" correctly signals that the drop alone is not detected. That drop is inert while the call stays first in status_line (`scripts/build-loop.sh:323`).
-
-**Evidence:** `fc1/logs/mutant-diffs-build-loop.txt`, `fc1/logs/mutant-a-blr.txt`, `fc1/logs/mutant-b-blr.txt`, `fc1/logs/mutant-c-blr.txt`, `fc1/logs/mutant-d-blr.txt`, `fc1/logs/mutant-w-blr.txt`, `scripts/build-loop.sh:303-328`
+**Evidence:** `$S/logs/c83-mutants.txt`, `$S/logs/M13b-strip-closed.txt`, `$S/logs/M14b-nolocal+move.txt`
 
 ---
 
-## Claim 19: commit message: "Notes: 118 changed code lines."
+## Claim 42: 83cdb005 "118 changed code lines."
 
 **Location:** commit 83cdb005 message
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers pr-prep step 1a's count against main. Does not establish any other counting rule.
+**Scope:** Measured with pr-prep step 1a's command (`git diff --numstat BASE...C -- ':(top)' ':(top,exclude)docs/'`, both columns summed).
 
-Command: `git diff --numstat main...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'`, cwd `/workspace/.claude/wt-build-loop-u1d`, exit 0, about 04:40Z. Output `118`, from 15+12, 2+2, 6+4, 63+1 and 11+2 (`fc1/logs/linecount.txt`). The command is quoted from `workflows/pr-prep.md:91`.
+Results: 83cdb005 gives 118, 6c83af2a gives 151, 07c354c5 gives 180, and HEAD ab71bce5 against main gives 180 (the merge adds 0). HEAD's 180 is under the 400 cap.
 
-**Evidence:** `workflows/pr-prep.md:86-91`, `fc1/logs/linecount.txt`
+**Evidence:** `workflows/pr-prep.md:86-92`
+
+---
+
+## Claim 43: 6c83af2a "A11/G1: T7 commits a marker whose body holds a NUL ... deleting marker_kind's NUL check now fails T7 (row 291 C17 closed)."
+
+**Location:** commit 6c83af2a message
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** The row reference is checked: override-log line 291 is "The NUL refusal and F31's open-only filter are untested in build-loop-read.bats (... iteration 2 C17, C18)", and C17 is identified as marker_kind's check by rubric A11. "Closed" means the gap is covered; the append-only row itself still reads Defer.
+
+M1 fails T7.
+
+**Evidence:** `docs/reviews/override-log.md:291`, `$S/logs/M1-nulcheck.txt`
+
+---
+
+## Claim 44: 6c83af2a "A1/G2: brief d gets a later "Status: open" line ... dropping that filter now fails the U1d test (row 291 C18 closed)."
+
+**Location:** commit 6c83af2a message
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claim 28.
+
+**Evidence:** `$S/logs/M3-f31-filter.txt`
+
+---
+
+## Claim 45: 6c83af2a A6, A7/A10, C9 test bullets
+
+**Location:** commit 6c83af2a message
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** A6 is Claim 33. A7/A10 are Claims 16, 23 and 26 (at 6c83af2a the build-loop help test already looped `-h --help`). C9 is Claims 18-20 and 29.
+
+**Evidence:** see the cited claims
+
+---
+
+## Claim 46: 6c83af2a Wording bullets A3, A4, A5, C1, C8, C7, "A2, A8, A9, A7: test comments and titles say only what they assert"
+
+**Location:** commit 6c83af2a message
+**Type:** Reference / Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** A4, A5, C1 and C8 hold at 6c83af2a and at HEAD. Three bullets were inexact at 6c83af2a and are exact only at HEAD, so this is history only. (1) A3's text listed "a task box" among the copies the count misses, but an unchecked box is counted (P1). Fixed by 07c354c5 A12. (2) C7's build-loop comment was a trailing `# the header: from line 2 ...` without "(no fixed range to go stale)". Fixed by 07c354c5 C15. (3) "Say only what they assert": iteration 2 then found "never consults F31" and the :118 comment. Fixed by 07c354c5 A13 and C14. At HEAD, the residues are only the dispositioned ones (Claims 17 and 32).
+
+`git show 6c83af2a:scripts/build-loop.sh` line 18-19: `(bold, a list marker) is a second copy and turns self-merge off; one it misses (a task box, a fence) is ignored`.
+
+**Evidence:** `scripts/build-loop.sh:17-21,102`, `$S/logs/p1-never.txt`
+
+---
+
+## Claim 47: 6c83af2a Notes: "151 changed code lines (cap 400). Tests: build-loop-read 19, dev-cycle 73, hermeticity lint green; shellcheck clean." Also the claim that mutants were checked by hand.
+
+**Location:** commit 6c83af2a message
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** The counts come from `grep -c '^@test'` at 6c83af2a (19 and 73) and from step 1a (151). The hermeticity and shellcheck results were re-run at HEAD, not at 6c83af2a. The shellcheck scope is the project's (`.sh`/`.bash`, health-check step 6). A `.bats` run shows one pre-existing SC2016 info at build-loop-read.bats:134 (from 1d79ffef, not this branch).
+
+**Evidence:** `$S/logs/worktree-suites.txt`, `$S/logs/shellcheck.txt`, `scripts/health-check.sh:34`
+
+---
+
+## Claim 48: 07c354c5 A12, A13, C14, C15, C16, C17
+
+**Location:** commit 07c354c5 message
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** A12 is Claim 1, A13 is Claim 27, C14 is Claim 17 (line 118 is correct), C15 is Claims 6 and 10, C16 is Claim 36, and C17 is Claims 12-13.
+
+**Evidence:** see the cited claims
+
+---
+
+## Claim 49: 07c354c5 C13: "T7's NUL-marker step is no longer one && chain, so a fixture that fails to build fails the test instead of skipping its check (security F1; checked: with --literally broken and the NUL check deleted, T7 now fails)."
+
+**Location:** commit 07c354c5 message
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** As Claim 21 (M2, M2b).
+
+**Evidence:** `$S/logs/M2-nul+fixture.txt`, `$S/logs/M2b-fixture-only.txt`
+
+---
+
+## Claim 50: 07c354c5 C13: "The two other new && chains are split too."
+
+**Location:** commit 07c354c5 message
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Two chains were split: :257-258's `... && run` (the `update-ref && tip` pair remains) and :458-459's `printf && commit_all`. The sentence reads as if no new `&&` chain remains, but the U1d diff still adds fixture chains at :430, :436, :453, :460, :464, :467, :469 and :480. Two of these carry the same hazard as the one split at :458: a non-last command failing lets the check that follows pass on the wrong fixture. Demonstrated: M22 (the :469 `mkdir` fails, plus the closed/ regression) and M23 (the :464 `printf` fails, plus the CRLF regression) both pass. The probability is low, because the failing commands are `mkdir` and `printf` into the bats temp dir.
+
+`brief p ... && printf 'Status: open\r\nBranch: feat/x\r\n' > "$B" && commit_all crlf` (`test/scripts/build-loop-read.bats:464`) and `mkdir -p docs/working/briefs/2026-10-0closed && printf ... && commit_all odd-dir` (`:469`).
+
+**Evidence:** `test/scripts/build-loop-read.bats:430,436,453,460,464,467,469,480`, `$S/logs/M22-closeddir-fixturefail+unanchor.txt`, `$S/logs/M23-crlf-fixturefail+nocrlf.txt`
+
+---
+
+## Claim 51: 07c354c5 Notes: "build-loop-read 19, dev-cycle 73, hermeticity lint green; shellcheck clean."
+
+**Location:** commit 07c354c5 message
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** 19 and 73 are from `grep -c '^@test'` at 07c354c5. The test run and shellcheck were run at HEAD (B1 94/94, SC exit 0). The merge ab71bce5 changes no code under scripts/ or test/ (`git diff 07c354c5 ab71bce5 --stat -- scripts test` is empty).
+
+**Evidence:** `$S/logs/worktree-suites.txt`, `$S/logs/shellcheck.txt`
+
+---
+
+## Claim 52: Shared-context "94/94 pass at 07c354c5"
+
+**Location:** test/scripts/build-loop-read.bats, test/scripts/dev-cycle.bats, test/fixture-hermeticity.bats
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Run at ab71bce5, whose scripts/ and test/ match 07c354c5.
+
+**Evidence:** `$S/logs/worktree-suites.txt`
+
+---
+
+## Claim 53: shared_branches' "(a superset: fences are not modelled); brief_fields then reads only those"
+
+**Location:** `scripts/build-loop.sh:310-311`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** Covers the claim that git grep's `^Status: open\r?$` matches fenced lines too, and that the loop calls brief_fields only for listed files. Does not establish that every non-listed file is truly not open. A brief whose first Status line is `Status: open ` (trailing blank) is not listed, but its own status is not exactly open either.
+
+The loop is `while IFS= read -r f; do ... brief_fields "$f" ... done <<<"$list"` (`scripts/build-loop.sh:317-322`).
+
+**Evidence:** `scripts/build-loop.sh:315-322`
 
 ---
 
@@ -473,22 +847,13 @@ Command: `git diff --numstat main...HEAD -- ':(top)' ':(top,exclude)docs/' | awk
 (none)
 
 ### Mostly Accurate
-- **Claim 1** (`scripts/build-loop.sh:17-18`): an exact never line beside a hidden copy that the letters check detects (bold) still gives "more than one line", so self-merge stays off. The qualifier's implied rescue holds only for task-box or fenced copies.
-- **Claim 10** (`test/scripts/build-loop-read.bats:420`): "A caller's own GIT_CONFIG_COUNT pairs stay" is not asserted. Mutant i (guard clobbers KEY_0) survives.
-- **Claim 11** (`test/scripts/build-loop-read.bats:428`): "the whole header" checks only the first and last lines.
-- **Claim 12** (`test/scripts/build-loop-read.bats:444-448`): the CRLF step's "keeps its own Dispatched value" is not asserted there (o is skipped and p has no Dispatched line). Single-layer open-filter mutants o and p survive. The exit-1 step is output-equivalent under mutant r.
-- **Claim 14** (`test/scripts/dev-cycle.bats:1328`): "before any read" is not asserted. Mutant l (pathform after ls-tree) survives.
-- **Claim 17** (commit message): C26 / row 246's "unread file" slots case is untested (mutant k survives), and items (b)-(d) above apply.
+- **Claim 50** (07c354c5 message, C13): "The two other new && chains are split too" reads as exhaustive. The U1d tests still add `&&` fixture chains, and those at `build-loop-read.bats:464` and `:469` let a regression pass if a non-last fixture command fails (M22, M23 pass). Tighten the wording (it was "two of the new chains"), or split :464 and :469 as :458-459 was. Low probability, test-strength class.
+- **Claim 40** (83cdb005 message): listed U1c C17 and C18 as tested before they were. Already dispositioned as iteration-1 A11 and A1, and true at HEAD. History only.
+- **Claim 46** (6c83af2a message): A3 ("a task box" missed), C7 (comment form) and "say only what they assert" were exact only after 07c354c5. History only.
 
 ### Unverifiable
 (none)
 
 ## Goal-Alignment Note
 
-The goal is to review and land U1d, whose intent is wording and tests for the deferred rows, plus main_entry's guard, with no other behaviour change. No comment, help text or commit claim is contradicted by the code (no Incorrect verdicts). The guard changes no caller's output (Claim 9). The two named mutants are killed (Claim 18). The remaining gaps are in test coverage, not wording. Untested are:
-- the "unread file" slots case from row 246 (C26), listed as resolved;
-- the survival of the caller's GIT_CONFIG pairs;
-- each single layer of F31's open-only filter;
-- main_entry's refuse-before-read ordering.
-
-Three test texts claim more than they assert: the CRLF step comment, and the "whole header" and "before any read" titles. Whether these warrant a fix commit or a deferral row is for the rubric stage.
+The goal is to land U1d: every claim in the branch's comments, help, test titles and commit messages exact, and every test failing on the regression it names. All code-side claims (help, lib header, MAIN and main_entry comments, the shared_branches comment, every new test step and title) verified, most by execution. Of the 36 mutant runs (plus 2 on 83cdb005's tree), every one that a step's title, comment or commit message names fails that step. The survivors are M13a (equivalent), M14a (deferred), M14c (a control: the call moved, with the local BRIEF kept), M20 (the comment says so) and M24 (Won't-Fix), plus M22 and M23, which were built to show the remaining && hazard. main_entry has four callers, all of which pre-validate the path's form or pass constants, so the guard changes no caller's output. One wording item is new: 07c354c5's "the two other new && chains are split too" overstates. Two remaining fixture chains (:464 and :469) have the same skip-on-failure shape as the split one (Mostly accurate, low severity, test-strength class). The other two Mostly-accurate items are history already dispositioned. Nothing here blocks landing. U2 follows, and the deferred `badform` word and the main_entry error-as-refusal rule stay on its rows.

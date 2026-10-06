@@ -1,7 +1,44 @@
-Commit: cc75db98
+Commit: ab71bce5
+Loop closed at ab71bce5
 # Code Review Rubric
 
-**Scope:** full branch `main...feat/build-loop-u1d` (iteration 1 at 83cdb005); iteration 2 a loop pass over `83cdb005..cc75db98` (fix 6c83af2a, scripts/ and test/) | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) open (13 fixed); final confirming pass pending
+**Scope:** full branch `main...feat/build-loop-u1d` at ab71bce5 (final confirming pass; iterations 1 at 83cdb005 and 2 at cc75db98 below); 180 changed code lines by pr-prep 1a | **Reviewed:** 2026-10-06 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation
+
+## Iteration 3 of 3: final confirming pass (Commit ab71bce5, full branch, k=3, full panel, Stage 2.5)
+
+Review converged in 3 iterations: 0 Must Fix; 13 Must Address fixed in iterations 1-2, and 2 acknowledged here with revisit triggers.
+
+Reports (all `Commit: ab71bce5`):
+- `code-fact-check-report-build-loop-u1d.md`, merged, k=3 (replicates `-r1/-r2/-r3`, 53, 38 and 34 claims). 22 claims: 16 Verified, 5 Mostly accurate, 1 Incorrect (commit history). 80% agreement. 93 mutant runs; the only survivors are already named by a comment or an override row.
+- `code-fact-check-submitted-claims-build-loop-u1d.md`: Claims 21 Verified (executed, 22 refused forms, 0 git calls) and 22 Mostly accurate.
+- `security-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 1 Low (the `:436` chain; executed), 1 Informational.
+- `performance-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 1 Informational (the suite is +0.84 s, ~2.5%, over main).
+- `api-consistency-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 3 Informational (wording residues).
+- `architecture-review-review-2026-10-06-final-build-loop-u1d.md`: no new findings; caller contract consistent.
+- `test-strategy-review-2026-10-06-final-build-loop-u1d.md`: every deferred test row closed or carried; G15-G17 (Claim 18) recommended for deferral.
+
+Tests at ab71bce5: 94/94 (build-loop-read 19, dev-cycle 73, hermeticity 2). `scripts/health-check.sh`: all checks passed.
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| A14 | Three new fixture `&&` chains (`build-loop-read.bats:436`, `:464`, `:469`) can pass on a failed fixture step. Executed for `:436`: guard deleted and `git replace` failing gives ok. 07c354c5's "two other chains are split too" left these. | Mostly accurate / Low | FC Claim 18 (3/3) + security F1 + test-strategy G15-G17. Convergence | 🟡 Acknowledged | Revisit trigger: U2's first commit that edits test/scripts/build-loop-read.bats splits each chain, and its review breaks each fixture step (override row 2026-10-06, "Three new fixture && chains"). Not edited after the cap pass (row 283 precedent). |
+| A15 | T7 comment "(one commit ahead, same tree)": it is one commit on top of base, with its tree. | Mostly accurate | FC Claim 13 (r3) | 🟡 Acknowledged | Revisit trigger: the same U2 edit of build-loop-read.bats (override row 2026-10-06, "T7's comment"). |
+| C22 | Lib header's "once that second caller lands" is stale; `build-loop.sh:44` still says "a task box"; the LOOP paragraph says "level with main" (behind main also reads working). | Informational | api F1-F3; FC Claim 2 annotation | Deferred (override row; trigger U2's first edit of the lib or the header) |
+| C23 | The main_entry test has no positive control (`main_entry x` → `absent`). | Informational | security F2 | Deferred (override row; trigger U2's first edit of dev-cycle.bats) |
+| C24 | Suite cost +0.84 s over main (~2.5%); fixed, linear. | Informational | performance F1 | Won't-Fix (no action) |
+| C25 | Submitted Claim 22: open briefs that fail earlier parsing print their own skip, not could-not-be-listed (still a refusal). | Mostly accurate | Stage 2.5 | No action (fails closed) |
+
+Immutable history: fact-check Claims 15 (Incorrect), 17 and 19 (Mostly accurate) are commit-message claims on the branch; recorded as `Accepted-immutable` override rows, not tiered.
+
+Final-pass ✅ rows (cross-checked against the merged report and all three replicates; no contradicting observation):
+- main_entry refuses every pathform-refused form before any git call: `scripts/lib/dev-cycle-read.sh:265` — "if ! main_by_name || ! pathform "$1"; then echo error; return; fi". Submitted Claim 21 (executed: 22 forms, 0 git calls, PATH shim + GIT_TRACE). Scope: C and C.UTF-8 locales (en_US.UTF-8 is not installed; it fell back to C).
+- No current caller's output changes beyond the two stated: FC Claim 9 (executed), enumerating 4 callers.
+- Every named regression fails its test: FC Claims 10-12, 14 (93 mutant runs, 3 replicates).
+- Fail-closed wording matches the code: FC Claims 3, 6 (executed).
+
+Composition check (final pass): one cluster, `build-loop-read.bats:436-469` (FC 18, security F1, test G15-G17). Disposition: distinct defects, not composed; each chain is its own instance of one stated mechanism, already in A14.
+
+Who acts: no `you: judgment` items; A14, A15, C22 and C23 are `agent` work carried to U2 by override rows.
 
 ## Iteration 2 (Commit cc75db98, loop pass, `--loop-pass` range 83cdb005..cc75db98)
 
