@@ -422,6 +422,25 @@ first_line_matching() {
   [ ! -s "$CMD_LOG" ]   # an inspection hook, like the other two
 }
 
+@test "the shipped claude-config profile admits the schema and legacy docs hosts on 443 and nothing else" {
+  echo 'claude-config' > "$CC_EGRESS_PROFILE_FILE"
+  run bash "$FW" --print-entries
+  [ "$status" -eq 0 ]
+  local admitted=$output   # saved: each `run` below overwrites $output
+  grep -qE $'^json\\.schemastore\\.org\t443$' <<<"$admitted"
+  grep -qE $'^docs\\.anthropic\\.com\t443$' <<<"$admitted"
+  grep -qE $'^docs\\.claude\\.com\t443$' <<<"$admitted"
+  # What the profile adds over base is exactly these four exact names on 443: no
+  # zone, no port suffix, and nothing base already admits (code.claude.com, GitHub).
+  : > "$CC_EGRESS_PROFILE_FILE"   # base only
+  run bash "$FW" --print-entries
+  [ "$status" -eq 0 ]
+  local added
+  added="$(comm -13 <(sort <<<"$output") <(sort <<<"$admitted"))"
+  [ "$added" = "$(printf '%s\t443\n' docs.anthropic.com docs.claude.com json.schemastore.org www.schemastore.org)" ]
+  [ ! -s "$CMD_LOG" ]   # an inspection hook, like the other two
+}
+
 @test "a malformed profile entry is a hard failure before any network read" {
   local dir="$TEST_TMPDIR/egress"
   mkdir -p "$dir"

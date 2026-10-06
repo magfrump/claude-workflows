@@ -99,6 +99,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
 | `scholar`| Literature APIs (OpenAlex, Crossref, Semantic Scholar, Unpaywall) and open-access full-text hosts (arXiv, PMC / Europe PMC, bioRxiv/medRxiv, OpenReview) | never — deliberate opt-in |
+| `claude-config` | `json.schemastore.org` (+ `www.schemastore.org`, in case it redirects there) for the settings.json `$schema`; `docs.anthropic.com`, `docs.claude.com` (legacy docs hosts whose links redirect to `code.claude.com`) | never — deliberate opt-in |
 | `vscode`| VS Code marketplace hosts | never (IDE-attach is unsupported) |
 
 Profiles compose — but `--profile` **sets** the whole grant, it does not add to it:
@@ -670,6 +671,31 @@ Failure modes worth recognizing on sight:
   2026-09-23 because its front end allows domain fronting (Q-051). Switch the require to
   a git URL. Git `require`s (what mathlib itself uses) resolve to GitHub, which every
   session already reaches.
+
+## Editing a session's own Claude Code configuration
+
+`claude-config` is for a project whose sessions read up on and edit Claude Code's own
+configuration (`settings.json`, hooks, permissions) from inside the session those
+settings govern. `base` already reaches the current docs (`code.claude.com`) and
+GitHub; this profile adds only what a config edit reaches beyond them: the
+SchemaStore host that serves the settings.json `$schema`
+(`https://json.schemastore.org/claude-code-settings.json`), so an edit can be
+validated before the harness rejects it at startup, and the legacy docs hosts
+(`docs.anthropic.com`, `docs.claude.com`), whose old links redirect to
+`code.claude.com` and otherwise fail at the first hop.
+
+Grant it when sessions in a repo routinely change Claude Code configuration; leave
+it off otherwise, since `code.claude.com` answers most questions without it. Because
+`--profile` sets the whole grant, name every profile the project already has. For
+this repo, currently registered with `llm`:
+
+```bash
+cc-isolated --register <path-to-claude-workflows> --profile llm,claude-config
+```
+
+The four names were chosen on 2026-10-06 from a sandbox with no egress and are **not
+yet verified live**. `egress/claude-config.txt` says how to confirm them, and it
+carries the same unprobed CDN/Host-header caveat as the other opt-in profiles.
 
 ## Literature search inside the container
 

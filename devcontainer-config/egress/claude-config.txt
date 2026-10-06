@@ -1,0 +1,46 @@
+# claude-config — reading up on and editing Claude Code's own configuration
+# (settings.json, hooks, permissions) from inside the session it governs.
+#
+# Grant this deliberately; it is never auto-suggested. Every repo that uses Claude
+# Code has a .claude/ directory, so its presence says nothing about whether a session
+# needs these hosts, and `suggest_profiles()` reads the repo, which is exactly the
+# authority the isolation withholds.
+#
+# WHAT `base` ALREADY COVERS — do not re-list these here: the current docs
+# (code.claude.com) and GitHub (issues, the CHANGELOG, raw files). This profile adds
+# only the hosts a config edit reaches beyond those.
+#
+# UNVERIFIED. Authored 2026-10-06 from a sandbox with no general egress, so none of
+# these names has been watched serve a request from inside a container. What WAS
+# observed in that container: json.schemastore.org and docs.anthropic.com do not
+# resolve (the resolver refuses them, as it does every unlisted name), and
+# docs.claude.com resolves but is absent from /run/cc-sni-proxy/allowlist. Confirm
+# each on the host — one `curl -sIL https://<name>/` per entry from inside a
+# `--profile ...,claude-config` container — and delete any name nothing uses.
+#
+# ACCEPTED RISK, NOT PROBED. All of these sit behind shared CDN front ends. The
+# firewall allowlists by destination IP and the SNI proxy narrows the NAME a
+# connection may open, but not the Host header inside it (android.txt's ACCEPTED RISK
+# note; questions-archive Q-045 showed fronting through Google's front end). Whether
+# these front ends route on a mismatched Host was not tested. The exposure is the
+# usual one for an opt-in profile: a compromised session gains whatever writable
+# tenants share these front ends.
+#
+# EXACT NAMES, tcp 443, no zones.
+
+# The settings.json schema. Claude Code documents
+# `"$schema": "https://json.schemastore.org/claude-code-settings.json"`; fetching it
+# lets a session validate a settings edit before the harness rejects it at startup.
+json.schemastore.org
+# Listed in case json.schemastore.org redirects here. SchemaStore has moved hosting
+# before, and WebFetch fails at a redirect hop to a non-admitted host rather than
+# reporting the redirect. Unverified which of the two actually serves the bytes;
+# drop the one that does not once observed.
+www.schemastore.org
+
+# Legacy Claude Code docs hosts. Older links (in blog posts, issues, other repos'
+# CLAUDE.md files, model memory) point at docs.anthropic.com/en/docs/claude-code/...
+# and redirect via docs.claude.com to code.claude.com. The SNI proxy rejects the first
+# hop if its host is not listed, so the redirect never reaches the admitted one.
+docs.anthropic.com
+docs.claude.com
