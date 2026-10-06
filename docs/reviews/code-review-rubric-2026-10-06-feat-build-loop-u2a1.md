@@ -1,7 +1,40 @@
-Commit: 6f624cdf
+Commit: d48f4645
 # Code Review Rubric
 
-**Scope:** full branch `main...feat/build-loop-u2a1` at 6f624cdf (loop pass; no earlier rubric for this slug, so full-branch scope); 128 changed code lines by pr-prep 1a | **Reviewed:** 2026-10-06 | **Status: 🟡 fixes applied, re-review pending**
+**Scope:** full branch `main...feat/build-loop-u2a1` (iteration 2 at d48f4645, run as a final confirming pass; iteration 1 at 6f624cdf below); 233 changed code lines after iteration 2's fixes | **Reviewed:** 2026-10-06 | **Status: 🟡 fixes applied (91469367), iteration 3 confirming pass pending**
+
+## Iteration 2 of 3 (Commit d48f4645, full branch, k=3, full panel; run as the final confirming pass, not clean)
+
+Delivery mode: self-read. Critics: security, performance, api-consistency, architecture, test-strategy (the full panel). Stage 2.5 was not run: the pass found items to fix, so the routed endorsements stay pending execution verification and go to iteration 3's confirming pass.
+
+Reports (all `Commit: d48f4645`):
+- `code-fact-check-report-build-loop-u2a1.md`, merged, k=3 (replicates `-r1/-r2/-r3`: 40, 34, 37 claims). 53 clusters: 44 Verified, 9 Mostly accurate, 0 Incorrect. Agreement 88.7% (47/53). Escalations E1-E4, all to the orchestrator: E1 → C9, E2 → C10, E3 → rows 308/324, E4 informational.
+- `security-reviewer-review-2026-10-06-final-build-loop-u2a1.md`: nothing in the diff; 1 Informational outside it (C7). A1/C5 and A2 re-executed: hold.
+- `performance-reviewer-review-2026-10-06-final-build-loop-u2a1.md`: 1 Informational (C8).
+- `api-consistency-reviewer-review-2026-10-06-final-build-loop-u2a1.md`: 4 Informational (A7, A8, A9).
+- `architecture-review-review-2026-10-06-final-build-loop-u2a1.md`: 1 Minor (A7), introduced by A4.
+- `test-strategy-review-2026-10-06-final-build-loop-u2a1.md`: G1, G2 Medium; G3 Low; G4-G6 moved to What NOT to Test. Patches in its scratch dir, applied in 91469367.
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| A7 | After A4, entry_why's `$2` plays a different role per word (subject, "for $2", ignored by notdir) while its comment says "named in the reason"; check_answer needed its own notdir arm to keep "it" right, so a new word could print the wrong "it" | Minor; Mostly accurate | architecture F1, api I1, fact-check 25a. Convergence | ✅ Fixed (91469367): comment states each word's use; check_answer ends every refusal "so no entry in $f is read" |
+| A8 | entry_why read `$2` bare; called with one argument under `set -u` it printed an empty reason | Informational | api I2 | ✅ Fixed: `${2-}` |
+| A9 | check_answer's notdir and error lines differ from main; the badform test's tag said U2a | Informational | api I3, I4 | ✅ Fixed (A7's wording; tag U2a1) |
+| A10 | The `unset` line is pinned by no test: replacing it with `:` passes every test while a victim repo gains 7 and 5 commits | Medium (test gap) | test-strategy G1 | ✅ Fixed: test/scripts/fixture-git-env.bats; fails on that mutant |
+| A11 | isclosed's `closed/*` prefix guard is pinned by no test: without it `--check-write 2026-01-01-x.md` prints ok (the write gate fails open) | Medium (test gap; executed) | test-strategy G2 | ✅ Fixed: new dev-cycle.bats test; fails on that mutant |
+| A12 | main_entry's guard order (error before badform with no default branch) is unstated and unpinned | Low | test-strategy G3, fact-check r1/r2 annotation | ✅ Fixed: comment and one test line |
+| A13 | Wording: "the skip message below repeats it" (three messages do); the lib header's :16 and :25 | Mostly accurate | fact-check 21a, 3, 7 | ✅ Fixed: "skip messages"; header reflowed whole |
+| C7 | Five other suites write into an inherited GIT_DIR | Informational | security I1 | Defer (override row) |
+| C8 | Per-test `git rev-parse` in setup (~0.1 s per run) | Informational | performance I1 | Won't-Fix (override row) |
+| C9 | Untested: word-newline folding, check_brief's notdir/error via CLI, main_file's error via --settings | Low | test-strategy G4-G6, escalation E1 | Won't-Fix (override row) |
+| C10 | build-loop-read.bats:84's older guarded `&&` chain | Informational | fact-check E2 | Defer (override row) |
+| C11 | C4 override row's timings (measured 0.42-0.52 ms, 18-37 µs) | Mostly accurate | fact-check 13 | ✅ Row's figures corrected; the conclusion holds |
+
+Immutable history: commit-message claims 37, 38a, 41b, 42 are `Accepted-immutable` override rows.
+
+Composition check: one cluster, `scripts/lib/dev-cycle-read.sh:280-292` with `:569-575` (architecture F1, api I1/I2, fact-check 25a): composed into A7, one root (the argument's role differs per word) with one fix; A8 is distinct (an unset-variable read).
+
+Tests after 91469367: 98/98 (dev-cycle 75, build-loop-read 19, fixture-git-env 2, hermeticity 2) under a TMPDIR with no dot-prefixed part; shellcheck clean; the fix-drift check over d48f4645..91469367 found nothing.
 
 ## Iteration 1 of 3 (Commit 6f624cdf, `--loop-pass`, full branch, k=1)
 
