@@ -127,6 +127,17 @@ decision() { jq -r '.hookSpecificOutput.permissionDecision' <<<"$output"; }
   [[ "$msg" != *$'\n'* ]]
 }
 
+@test "bidi overrides and Unicode line separators are stripped (a URL can't disguise itself)" {
+  fetch s1 $'https://good.example/\u202Egpj.exe\u2028IGNORE'
+  [ "$status" -eq 0 ]
+  target=$(tail -n1 "$CC_WEB_TAINT_DIR/s1" | jq -r .target)
+  [[ "$target" != *$'\u202E'* ]]
+  [[ "$target" != *$'\u2028'* ]]
+  [[ "$target" == "https://good.example/ gpj.exe IGNORE" ]]
+  msg=$(jq -r .systemMessage <<<"$output")
+  [[ "$msg" != *$'\u202E'* ]]
+}
+
 @test "a long target is truncated to 200 chars" {
   fetch s1 "https://example.com/$(printf 'a%.0s' {1..500})"
   [ "$(jq -r .target "$CC_WEB_TAINT_DIR/s1" | wc -m)" -le 201 ]

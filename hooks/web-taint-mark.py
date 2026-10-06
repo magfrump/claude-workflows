@@ -14,13 +14,17 @@ that), so it is created first and nothing after it can undo it. Then, best-effor
     the taint as it happens and can review it.
 Targets are model-chosen (possibly injection-influenced), so control characters
 (ESC/ANSI, newlines) are stripped and each is cut to MAX_TARGET chars."""
-import sys, os, re, json, pathlib, datetime
+import sys, os, re, json, pathlib, datetime, unicodedata
 TAINT_DIR = pathlib.Path(os.environ.get("CC_WEB_TAINT_DIR", "/tmp/cc-web-taint"))
 MAX_TARGET = 200
-_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f]+")   # C0 (ESC, \n, \r...), DEL, C1 (incl. CSI)
+# Stripped: Cc = C0/DEL/C1 (ESC, \n, CSI...); Cf = format chars, incl. the bidi
+# overrides (U+202E) that can make a URL read as a different one in the prompt;
+# Zl/Zp = U+2028/U+2029 line breaks.
+_STRIP_CATS = {"Cc", "Cf", "Zl", "Zp"}
 
 def clean(s, limit=MAX_TARGET):
-    s = _CTRL.sub(" ", str(s)).strip()
+    s = "".join(" " if unicodedata.category(c) in _STRIP_CATS else c for c in str(s))
+    s = re.sub(r" {2,}", " ", s).strip()
     return s if len(s) <= limit else s[:limit - 1] + "…"
 
 def target_of(tool, ti):

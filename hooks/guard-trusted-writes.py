@@ -70,7 +70,7 @@ documented, version-independent defer (avoids the headless tool_deferred semanti
 permissionDecision:"defer").
 """
 from __future__ import annotations
-import sys, os, re, json
+import sys, os, re, json, unicodedata
 from pathlib import Path
 
 TAINT_DIR = Path(os.environ.get("CC_WEB_TAINT_DIR", "/tmp/cc-web-taint"))
@@ -89,14 +89,16 @@ def defer():                      # no opinion -> normal flow (deny rules still 
 # web-taint-mark.py appends one JSON line per fetch to the marker. Taint is the
 # marker's EXISTENCE alone; this only enriches the ask text, so it reads the tail
 # leniently (bad lines skipped) and never raises. Targets are model-chosen, so
-# they are re-sanitized here too: control chars (ESC/ANSI, newlines) stripped,
+# they are re-sanitized here too: control and format chars (ESC/ANSI, newlines,
+# bidi overrides) stripped,
 # each cut to 200 chars.
 _LOG_TAIL_BYTES = 64 * 1024
 _LOG_SHOWN = 5
-_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f]+")
+_STRIP_CATS = {"Cc", "Cf", "Zl", "Zp"}   # same set as web-taint-mark.py's clean()
 
 def _clean(s, limit=200) -> str:
-    s = _CTRL.sub(" ", str(s)).strip()
+    s = "".join(" " if unicodedata.category(c) in _STRIP_CATS else c for c in str(s))
+    s = re.sub(r" {2,}", " ", s).strip()
     return s if len(s) <= limit else s[:limit - 1] + "…"
 
 def fetch_summary(marker: Path) -> str:
