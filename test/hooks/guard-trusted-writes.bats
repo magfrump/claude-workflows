@@ -71,7 +71,7 @@ assert_defer() {
 }
 
 taint() {  # mark session $1 as web-tainted via the real PostToolUse hook
-  jq -n -c --arg s "$1" '{"session_id":$s,"tool_name":"WebFetch"}' | python3 "$MARK"
+  jq -n -c --arg s "$1" '{"session_id":$s,"tool_name":"WebFetch"}' | python3 "$MARK" >/dev/null
 }
 
 # The tilde is deliberately literal: these are command TEXT the hook must

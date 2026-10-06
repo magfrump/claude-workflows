@@ -37,6 +37,8 @@ Two tiers of policy path:
           managed-settings.json. No deny rule names these, so deferring would leave
           them with no gate at all; they are SOFT instead.
           Legitimately edited. Gated to "ask" only when the session is web-tainted.
+          The ask lists the session's last few fetches from the marker's log
+          (fetch_summary(); web-taint-mark.py writes it) and names the marker path.
 
 Bash is classified by command TEXT, so it can't resolve a path, and the shell can spell
 one many ways. The global tier is therefore decided by CO-OCCURRENCE in the text:
@@ -82,6 +84,55 @@ def emit(decision, reason):
 
 def defer():                      # no opinion -> normal flow (deny rules still apply)
     sys.exit(0)
+
+# ── fetch log: name the web reads behind a taint ask ───────────────────────
+# web-taint-mark.py appends one JSON line per fetch to the marker. Taint is the
+# marker's EXISTENCE alone; this only enriches the ask text, so it reads the tail
+# leniently (bad lines skipped) and never raises. Targets are model-chosen, so
+# they are re-sanitized here too: control chars (ESC/ANSI, newlines) stripped,
+# each cut to 200 chars.
+_LOG_TAIL_BYTES = 64 * 1024
+_LOG_SHOWN = 5
+_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f]+")
+
+def _clean(s, limit=200) -> str:
+    s = _CTRL.sub(" ", str(s)).strip()
+    return s if len(s) <= limit else s[:limit - 1] + "…"
+
+def fetch_summary(marker: Path) -> str:
+    try:
+        with open(marker, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            f.seek(max(0, size - _LOG_TAIL_BYTES))
+            raw = f.read().decode("utf-8", "replace").splitlines()
+        if size > _LOG_TAIL_BYTES:
+            raw = raw[1:]                 # first line of a tail read may be partial
+        events = []
+        for ln in raw:
+            try:
+                ev = json.loads(ln)
+            except Exception:
+                continue
+            if isinstance(ev, dict):
+                events.append(ev)
+        if not events:
+            return f"\n(sources not recorded; marker: {marker})"
+        n = len(events)
+        more = "+" if size > _LOG_TAIL_BYTES else ""
+        out = [f"\nWeb content this session ({n}{more} fetches, most recent last):"]
+        for ev in events[-_LOG_SHOWN:]:
+            t = _clean(ev.get("t", ""), 40)
+            t = t[11:] if len(t) == 20 and t[10] == "T" else t   # HH:MM:SSZ
+            out.append(f"  - {t} {_clean(ev.get('tool', '?'), 80)} {_clean(ev.get('target', ''))}")
+        hidden = n - _LOG_SHOWN
+        if hidden > 0 or more:
+            out.append(f"({hidden if hidden > 0 else 0}{more} earlier not shown; full list: {marker})")
+        else:
+            out.append(f"(full list: {marker})")
+        return "\n".join(out)
+    except Exception:
+        return f"\n(sources not recorded; marker: {marker})"
 
 # ── path classification for the FILE tools ──────────────────────────────────
 HOME = Path.home()
@@ -310,7 +361,8 @@ def main():
                          "or `--body-file <file>`.")
         if tier == "soft" and tainted:
             emit("ask", "This session fetched web content and this Bash command writes to a "
-                        "trusted-policy file. Review it for injected content before allowing.")
+                        "trusted-policy file. Review it for injected content before allowing."
+                        + fetch_summary(TAINT_DIR / sid))
         defer()
 
     if tool in ("Edit", "Write", "MultiEdit"):
@@ -333,7 +385,8 @@ def main():
                          "and review it there.")
         if tier == "soft" and tainted:
             emit("ask", f"This session fetched web content and this write targets a trusted-policy "
-                        f"file ({Path(fp).name}). Review it for injected instructions before allowing.")
+                        f"file ({Path(fp).name}). Review it for injected instructions before allowing."
+                        + fetch_summary(TAINT_DIR / sid))
         defer()
 
     defer()

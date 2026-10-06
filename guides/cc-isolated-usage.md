@@ -158,7 +158,11 @@ they give you the bytes rather than a summary.
 
 **This is orthogonal to web taint.** `hooks/web-taint-mark.py` marks a session that
 has ingested web content (via either tool) so `guard-trusted-writes.py` can gate
-writes to trusted-policy files afterwards. That is a *content-provenance* control
+writes to trusted-policy files afterwards. Each fetch that sets the taint is shown
+as a `⚠ web taint:` message naming the tool and URL (or search query), and is
+logged one JSON line per fetch in the session's marker,
+`${CC_WEB_TAINT_DIR:-/tmp/cc-web-taint}/<session_id>`; the guard's review prompt
+lists the last five and points at that file for the rest. That is a *content-provenance* control
 inside the session; the egress allowlist is a *reachability* control at the network
 boundary. They compose but neither implements the other — taint does not widen or
 narrow what is reachable, and the allowlist does not care what a response says.
