@@ -1,48 +1,45 @@
 # Checkpoint: build-loop handoff
-Date: 2026-10-06 (revision 7; U1 complete: U1a-U1d landed; next U2)
-Branch: feat/build-loop-handoff (worktree `/workspace/.claude/wt-build-loop-handoff`)
+Date: 2026-10-06 (revision 8; U2a1 landed; next U2a2)
+Branch: feat/build-loop-u2a2 (worktree `/workspace/.claude/wt-build-loop-u2a2`), stacked on U2a1's first commit 6f624cdf, not yet rebased
 Research: docs/working/research-build-loop-handoff.md
-Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved)
+Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved; step 5 holds the U2 split note)
 Design conversation: docs/working/handoff-build-loop-handoff.md
 
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
-- **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0(a/b) → U1 → U2 → U3 → U3b → U3c → U4 → U5.
-- **Blocked on**: nothing. Next: U2, on a new branch from main.
-- **U0 landed 2026-10-05** as three stacked units, each through its own review-fix loop (3 iterations, final pass k=3 with the full critic panel): U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726` (merges on main). Rubrics: `docs/reviews/code-review-rubric-2026-10-04-feat-build-loop-u0{a,b,c}.md`. Next: **U1**, on a new branch from main (the old `feat/build-loop-handoff` worktree is stale).
+- **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0 → U1 → U2 (U2a1 → U2a2 → U2b → U2c) → U3 → U3b → U3c → U4 → U5.
+- **Blocked on**: nothing. Next: U2a2 (rebase onto main, then its own review loop). Q-119 (the U2a split, interim [1]) is open for the user and blocks nothing.
+- U0 landed 2026-10-05 (U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726`); U1 landed 2026-10-05/06 (U1a adff525b, U1b 62830b0a, U1c 9f78df7e, U1d 4e12b03c). Rubrics: `docs/reviews/code-review-rubric-2026-10-0{4,5,6}-feat-build-loop-u*.md`.
 
-## U1 state (read first)
-U1 landed on main on 2026-10-05/06 as four units, each through its own review loop:
+## U2 state (read first)
+U2 was first built as one unit, U2a (`feat/build-loop-u2a`, not merged). It hit the 3-iteration cap: every fact-check pass found a new fail-open shape in the commit-reading import walk. It was split (Q-119, interim [1]):
 
-| Unit | Merge | What landed | Loop |
-|---|---|---|---|
-| U1a | adff525b | The lib reads answers and brief lines from main's commit (D8), with `main_entry` and `brief_fields`; FENCE_AWK refuses NUL bytes | 4 iterations (Q-111) |
-| U1b | 62830b0a | `build-loop.sh --settings`: policy, slots, never. Self-merge needs an exact never line (Q-112 [1]) | 4 iterations; R5 narrowed per Q-115; size waived (Q-113) |
-| U1c | 9f78df7e | The constraints line and `--status`: markers read through git, F31 via `git grep --no-color` | 4 iterations, the last one scoped (Q-118); size waived to ~450 |
-| U1d | 4e12b03c | U1a-U1c's deferred wording and tests; `main_entry` runs pathform itself (a refused form answers `error`) | 3 iterations, final pass k=3 full panel, loop closed; 180 lines |
+| Unit | State | What |
+|---|---|---|
+| U2a1 | **merged 1a94773c** (2026-10-06) | `main_entry` answers `badform` for a refused path form (checked after main_by_name, so with no main it is still `error`); `entry_why` words every refusal once (path optional, newlines folded); `isclosed` is the one closed/ rule; `--check-fix` refuses docs/constraints.md (row 204 closed; docs/thoughts/ stays fixable); U1d's carried rows; both suites unset `git rev-parse --local-env-vars`; new `test/scripts/fixture-git-env.bats`. Loop: 3 iterations, final pass k=3 full panel + Stage 2.5, loop closed at d07cc89c; 233 code lines. Rubric `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md`. |
+| U2a2 | branch 53a6912b, **unreviewed**, on 6f624cdf | The floor (`floor PATH STEM STATUS`, D5 items 1-4) and `main_imports`, a commit-reading import walk that refuses what it does not model (doubled names, newline names, odd symlink text); `isimported tree\|main`; check_fix uses `isimported tree`. Exactly 400 code lines against 6f624cdf. |
+| U2b, U2c | not started | Plan step 5: U2b brief enumeration into the lib (row 298) and the state gate; U2c `--check` (merge-tree, N/S rules, `Self-merge never:`). |
 
-- **U1d landed** (rubric `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u1d.md`). Every U1d-triggered override row is closed or re-pointed to U2/U3b by a 2026-10-06 row.
-- **Then U2** (plan step 4–5): `--check`, the state gate, merge-tree, and the N/S rules over the rev 4 floor and `Self-merge never:`. Carry these in:
-  - the U2 triggers in the override log: C18/R5 (replace refs and origin/HEAD) are U3b's `--state`; A21 moves brief enumeration into the lib; globform goes into the lib; the closed/ path rule gets one spelling; isimported;
-  - the plan amendment on the import walk at MAIN_SHA;
-  - U1d's 2026-10-06 override rows:
-    - `main_entry`'s `error` now also means a refused path form (dotfiles such as `.gitattributes` and `.github/x.yml` read `error`), so give it its own word (`badform`) or run pathform first, beside row 228's shared mapping. The floor must treat `error` as a refusal, never `continue`.
-    - check_branch and marker_kind ignore `git log` failures under a broken config (locals, refuse on failure, a `log.date bogus` test).
-    - The per-path ls-tree cost.
-    - The local `BRIEF` alone is unobservable.
-  - On U2's first edit of `test/scripts/build-loop-read.bats`: split the three fixture `&&` chains (`:436`, `:464`, `:469`; a checked patch is in the U1d final test-strategy report) and fix T7's "one commit ahead" comment.
-  - On the first edit of the lib, the header or dev-cycle.bats:
-    - the lib header's stale "once that second caller lands";
-    - `build-loop.sh:44`'s "a task box";
-    - "not ahead of main" in the LOOP paragraph;
-    - a positive control for the main_entry test.
-  - `bl_setup` does not clear GIT_DIR (with U2's build-loop-check.bats).
-- **Gotchas found in U1:**
-  - The hermeticity lint misreads an apostrophe inside double quotes as a quote. Keep skip messages free of `'`, or the full gate fails (`test/fixture-hermeticity.bats`).
-  - Changing a line that is already on main counts twice against the 400-line cap.
-  - `questions.sh archive` matches entries by ID, so take `next-id` from fresh main (memory `questions-id-collision-concurrent-sessions`).
-- Tests on main: dev-cycle.bats 73, build-loop-read.bats 19.
-- Stale worktrees of merged branches remain (`.claude/wt-build-loop-u1{a,b,c,d}`, `.claude/wt-build-loop-handoff`). Removing them, and deleting the merged branches, is the user's call.
+**Next steps for U2a2:**
+1. Rebase onto main (expect conflicts in `scripts/lib/dev-cycle-read.sh` and `test/scripts/dev-cycle.bats`, where U2a1's fixes changed entry_why, check_answer's endings and the header).
+2. Apply the rows U2a1 carried to it (all dated 2026-10-06, `feat/build-loop-u2a1`):
+   - C12 (Must Address): `test/scripts/fixture-git-env.bats` lacks the unset in its own setup and does not check the victim's index. Apply `g1-g2-fixture-git-env.patch` from the Appendix of `docs/reviews/test-strategy-review-2026-10-06-i3-build-loop-u2a1.md`.
+   - C13: entry_why's one-argument test (`g3-entry-why-one-arg.patch`, same Appendix), and its comment's "" case for error and the default arm.
+   - C14: plan:125 (F10 wrongly lists docs/thoughts/ as check_fix-denied) and :273's count.
+   - C1/C3/row 308: the floor runs its own rules before main_entry and refuses the whole change on any word but blob/absent (a `.gitattributes` test); the shared subset of check_fix and the floor (constraints.md, decisions/, human-author/) goes in one lib predicate.
+   - C16: when any of row 327's suites is edited, add `pin_hermetic_git` to `test/lib/hermetic-env.bash` and call it from every suite.
+3. Size: U2a2 is already 400 lines. With the carried rows it will be over the cap, so split it (in /away mode without asking; record the split in questions.md). A natural seam is the carried test/wording rows plus `isimported` as one unit, and the floor plus `main_imports` as the next.
+4. Then U2b and U2c as in plan step 5, carrying the older U2 triggers: C18/R5 (replace refs, origin/HEAD) are U3b's `--state`; A21 brief enumeration into the lib; globform into the lib; check_branch and marker_kind ignoring `git log` failures under a broken config (row 307); the per-path ls-tree cost (rows 220, 310).
+
+**Gotchas found in U1-U2a1:**
+- The hermeticity lint misreads an apostrophe inside double quotes as a quote. Keep skip messages free of `'`, or the full gate fails (`test/fixture-hermeticity.bats`).
+- Changing a line that is already on main counts twice against the 400-line cap.
+- `questions.sh archive` matches entries by ID, so take `next-id` from fresh main (memory `questions-id-collision-concurrent-sessions`).
+- dev-cycle.bats test 25 fails whenever TMPDIR has a dot-prefixed component, such as the job scratch path under `~/.claude`. Run the suites with `TMPDIR=$(mktemp -d /tmp/<tag>-XXXX)`.
+- Review agents: tell each to write only its own report and to use its own scratch dir. A merge agent can put a "Claims Requiring Attention (summary)" heading near the top of the merged report; append Stage 2.5 claims after the last claim, not before the first such heading.
+
+- Tests on main: dev-cycle.bats 75, build-loop-read.bats 19, fixture-git-env.bats 2 (98 with hermeticity).
+- Stale worktrees of merged branches remain (`.claude/wt-build-loop-u1{a,b,c,d}`, `.claude/wt-build-loop-u2a1`, `.claude/wt-build-loop-handoff`), plus the superseded `.claude/wt-build-loop-u2a` (its branch holds the U2a review history and is not to be merged). Removing them, and deleting merged branches, is the user's call.
 
 ## U0 outcome
 - The lib (`scripts/lib/dev-cycle-read.sh`) holds: `scrub`, `scrub_reexec`, the plain-file rules (`rawfile`, `plaindir`, `blocker`, `inrepo`, `dirok`, `skipped`), `need_root`, `pathform`, `isbrief`, `writable`, FENCE_AWK/`oddwhy`, `main_by_name`, `check_brief`, `check_branch`, `resolve_main`, INSTRUCTION_FILE and the import walk (`lower`, `imported_names`), ANSWER_AWK/`check_answer`. `check_path`, `check_write` and `check_fix` stay in dev-cycle.sh.
