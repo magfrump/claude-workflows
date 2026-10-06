@@ -1339,7 +1339,8 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
         for w in "notdir docs/w" notfile badform error odd; do entry_why "$w" docs/w/q.md; entry_why "$w" ""; done
         entry_why badform "a
-ok b"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+ok b"
+        entry_why error' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$output" = "docs/w is not a directory on the default branch
 docs/w is not a directory on the default branch
 docs/w/q.md is not a regular file on the default branch
@@ -1350,7 +1351,8 @@ the tree of the default branch could not be read for docs/w/q.md
 the tree of the default branch could not be read
 the default branch answered odd for docs/w/q.md
 the default branch answered odd
-a ok b is not an allowed path form" ] || { echo "$output $stderr"; return 1; }
+a ok b is not an allowed path form
+the tree of the default branch could not be read" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)" {

@@ -283,9 +283,10 @@ main_entry() {
   case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac
 }
 # Why main_entry's word $1 is not a file to read, for a skip line. $2 is the
-# path asked about, or "" when the skip line already names it: notfile and
-# badform make it the subject ("$2 is not ..."; no subject when ""), error and
-# any other word end "for $2", and notdir names only the directory above it.
+# path asked about, or "" (or no $2) when the skip line already names it:
+# notfile and badform make it the subject ("$2 is not ..."; no subject when
+# ""), error and any other word end "for $2" unless it is "", and notdir names
+# only the directory above it.
 # A newline in either becomes a space, so the reason stays one line.
 entry_why() {
   local w="${1//$'\n'/ }" p="${2-}"
