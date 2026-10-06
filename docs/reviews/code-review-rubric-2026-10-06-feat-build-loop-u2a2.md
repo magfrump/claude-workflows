@@ -14,19 +14,19 @@ Reports (all `Commit: 7f295cdb`): `code-fact-check-report-build-loop-u2a2-i2.md`
 
 | # | Finding | Severity | Source | Unit | Status |
 |---|---|---|---|---|---|
-| B1 | U+FEFF ends Claude Code's token (JS `\s`) but not the walk's; `docs/bom.md` passes pathform (U2a F2's fix was incomplete) | Medium | security F1 (executed against the 2.1.292 regex) | U2a2 | Fix |
+| B1 | U+FEFF ends Claude Code's token (JS `\s`) but not the walk's; `docs/bom.md` passes pathform (U2a F2's fix was incomplete) | Medium | security F1 (executed against the 2.1.292 regex) | U2a2 | ✅ Fixed (split commit) |
 | B2 | `.claude/rules/` below the top level is not a start (`"$f" == .claude/rules/*.md`) | Medium | security F2 (executed) | U2a3 | Fix there |
 | B3 | The checkout-file read at lib:561 has no failure guard (under `if` the walk continues and drops the file's imports); `tr` at :549 unchecked | Coupling / Inconsistent High / Informational | architecture F1, api F1, security F3, fact-check i2 E2. Convergence | U2a3 | Fix there |
 | B4 | The narrowed "not covered" list (lib:463-466, known-issues A5, plan F11) omits start files under a symlinked directory present in the checkout | Incorrect (doc) | fact-check i2 Claims 2b, 9, 10, E1; api F4 | U2a3 | Fix there |
-| B5 | Tests pass for the wrong reason (test 2's name check, test 6's walk result); no cycle fixture; six guards unprotected | Medium / Low-medium | test-strategy F1-F4 | U2a3 (the tree-walk cycle half: U2a2) | Fix (Appendix A) |
+| B5 | Tests pass for the wrong reason (test 2's name check, test 6's walk result); no cycle fixture; six guards unprotected | Medium / Low-medium | test-strategy F1-F4 | U2a3 (the tree-walk cycle half: U2a2) | Tree-walk cycle: ✅ fixed (test 1; timeout in imps); the rest carried to U2a3 |
 | B6 | main_imports checks every tree record in bash (~0.4 s here; ~2.1 s at 30k entries) where U2a filtered with one grep | Low | performance F1 | U2a3 | Decide there |
-| B7 | The queue pop is O(q²) and each edge forks `lower` before the seen check | Informational | performance F2, F3 | U2a2 | Won't-Fix (row 346's rework) |
+| B7 | The queue pop is O(q²) and each edge forks `lower` before the seen check | Informational | performance F2, F3 | U2a2 | Won't-Fix (override row) |
 | B8 | `IMPORTED_MAIN=$'\n'` initially reads as a walk that succeeded | Minor | api F2 | U2a3 | Fix there |
-| B9 | The token rules are described on the tree walk, not on the shared `import_targets`; the shared-parser contract (gate grammar fixes change --check-fix) is unstated | Minor / Informational | api F3, architecture F4 | U2a2 | Fix |
-| B10 | The header omits `inrepo_here` (no need_root guard) and main_imports' resolve_main precondition | Minor | architecture F3 | U2a2 (inrepo_here); U2a3 (main) | Fix |
+| B9 | The token rules are described on the tree walk, not on the shared `import_targets`; the shared-parser contract (gate grammar fixes change --check-fix) is unstated | Minor / Informational | api F3, architecture F4 | U2a2 | ✅ Fixed (split commit) |
+| B10 | The header omits `inrepo_here` (no need_root guard) and main_imports' resolve_main precondition | Minor | architecture F3 | U2a2 (inrepo_here); U2a3 (main) | ✅ Fixed here (inrepo_here); main half carried to U2a3 |
 | B11 | The gate's verdict depends on more checkout state (targets main lacks, checkout symlinks) than plan F11 and the U2b bullet name | Informational | architecture F2 | U2a3 | Fix there (plan) |
 | B12 | A main symlink whose text leaves the repo (`../shared/AGENTS.md`) is skipped and the walk succeeds; Claude Code would load it | Open question | test-strategy | U2a3 | Fix there (fail closed) |
-| B13 | Claude Code keeps trailing punctuation (`@docs/style.md.` reads `docs/style.md.`); the walk records only the stripped name. New evidence on the settled `feat/build-loop-u2a` backslash/trailing-`_` row | Evidence on a settled row | security | U2a2 | Fix (record the unstripped token too; fails closed) |
+| B13 | Claude Code keeps trailing punctuation (`@docs/style.md.` reads `docs/style.md.`); the walk records only the stripped name. New evidence on the settled `feat/build-loop-u2a` backslash/trailing-`_` row | Evidence on a settled row | security | U2a2 | ✅ Fixed (split commit) |
 | B14 | Untested bypass candidates (.claude/commands and agents references, non-.md under .claude/rules, HTML escaping, a name stored as both tree and blob, `[`/`]` in a token) | Informational | security | U2a3 | Carry to U2a3's review |
 
 Considered overrides: the `feat/build-loop-u2a` and `feat/build-loop-u2a1` rows dated 2026-10-06 (A5 gaps, per-blob cost, walk naming, start-file rule in both walks); critics did not re-file them. B13 reopens the backslash/trailing-`_` row's premise with executed evidence.
