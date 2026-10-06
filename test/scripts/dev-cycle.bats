@@ -1013,13 +1013,17 @@ EOF
 @test "--check-fix refuses files an instruction file imports, and compares paths ignoring case" {
     mkdir -p docs/Working docs/guides
     printf 'Rules: see @docs/conventions.md and @README.md\n' > GEMINI.md
-    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md; do echo x > "$f"; done
+    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md docs/Constraints.md docs/thoughts/t.md; do
+        [[ "$f" != */* ]] || mkdir -p "${f%/*}"; echo x > "$f"
+    done
     git add -A && git commit -qm docs
-    run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md
+    run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md \
+        docs/Constraints.md docs/thoughts/t.md
     [ "$status" -eq 0 ]
+    # docs/constraints.md is the user's (plan D2); docs/thoughts/ stays a living doc the cycle may fix.
     for want in "skip docs/conventions.md: an instruction file imports" "skip README.md: an instruction file imports" \
                 "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
-                "ok docs/notes.md"; do
+                "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }
@@ -1032,7 +1036,7 @@ EOF
     git add -A && git commit -qm s
     rm docs/working/briefs/2026-01-01-s.md && printf 'Status: done\n' > docs/working/briefs/2026-01-01-s.md
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-s.md
-    [[ "$output" == "skip docs/working/briefs/2026-01-01-s.md: not a regular file on the default branch" ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip docs/working/briefs/2026-01-01-s.md: docs/working/briefs/2026-01-01-s.md is not a regular file on the default branch" ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
     [[ "$output" == *"drop Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
 }
@@ -1075,7 +1079,8 @@ EOF
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
-                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer; do
+                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
+                 isclosed entry_why; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
@@ -1187,7 +1192,7 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     # The working tree holds a plain file now; main's symlink still decides.
     rm docs/working/questions.md && cp real/q.md docs/working/questions.md
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read" ] \
+    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so docs/working/questions.md is not read" ] \
         || { echo "$output"; return 1; }
     # A symlinked directory above it is named as the blocking part.
     git rm -rq --cached docs/working && rm -rf docs/working && ln -s real docs/working && git add -A && git commit -qm dirlink
@@ -1215,9 +1220,9 @@ none 1: [] []" ] || { echo "$output"; return 1; }
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [ "$output" = "skip Q-1: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so docs/working/questions-archive.md is not read
 skipped=0
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read" ] || { echo "$output"; return 1; }
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so docs/working/questions-archive.md is not read" ] || { echo "$output"; return 1; }
 }
 
 @test "a NUL byte refuses a brief or a questions file, never dropped into a value; main_entry fails closed" {
@@ -1327,11 +1332,14 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "main_entry answers error for a path pathform refuses (U1d)" {
+@test "main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a)" {
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
-        for p in "a\"b.md" "../x" "-x" "docs//x.md"; do main_entry "$p"; done' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
-    [ "$output" = "error
-error
-error
-error" ] || { echo "$output $stderr"; return 1; }
+        for p in x "a\"b.md" "../x" "-x" "docs//x.md" .gitattributes .github/x.yml; do main_entry "$p"; done' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "absent
+badform
+badform
+badform
+badform
+badform
+badform" ] || { echo "$output $stderr"; return 1; }
 }

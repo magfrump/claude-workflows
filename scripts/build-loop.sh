@@ -41,8 +41,9 @@
 #                 (best effort). Only "ok" lets the orchestrator dispatch.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
-#             ("buildlooppolicy"). Markup that adds letters (a task box, a tag)
-#             can still hide a copy; only an exact line ever sets a value.
+#             ("buildlooppolicy"). Markup that adds letters (a checked task
+#             box, a tag) can still hide a copy; only an exact line ever sets
+#             a value.
 #   --status  one line per brief path, in argument order, from the default
 #             branch's commit (the path must also be plain in the working
 #             tree, as --check-brief):
@@ -61,7 +62,7 @@
 #                 "handoff: blocked" or "handoff: stopped: REASON" (1-120
 #                 printable ASCII characters, no blank at either end), alone
 #                 on its first line (a second line, if any, empty); REASON is
-#                 printed last. A tip on a branch level with main, or whose
+#                 printed last. A tip on a branch not ahead of main, or whose
 #                 subject does not start "handoff:", is working. DISPATCHED:
 #                 the brief's "Dispatched: N" (0-99), or 0 without one.
 #             skip BRIEF: WHY
@@ -129,9 +130,7 @@ main_file() {
   case "$e" in
     blob) ;;
     absent) FILE_WHY=absent; return 1 ;;
-    notdir\ *) FILE_WHY="${e#notdir } is not a directory on the default branch"; return 1 ;;
-    error) FILE_WHY="the default branch's tree could not be read for $f"; return 1 ;;
-    *) FILE_WHY="$f is not a regular file on the default branch"; return 1 ;;
+    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
   esac
   FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")" \
     || { FILE_WHY="$f could not be read from the default branch"; return 1; }
@@ -316,7 +315,7 @@ shared_branches() {
   if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
   while IFS= read -r f; do
     f="${f#"$MAIN_SHA":}"
-    if ! isbrief "${f/#docs\/working\/briefs\/closed\//docs/working/briefs/}" || ! brief_fields "$f"; then continue; fi
+    if ! { isbrief "$f" || isclosed "$f"; } || ! brief_fields "$f"; then continue; fi
     [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
     b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
   done <<<"$list"
