@@ -1,0 +1,23 @@
+### c-d07cc89c: bats test/scripts/fixture-git-env.bats
+1..2
+ok 1 dev-cycle.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+ok 2 build-loop-read.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+exit=0
+### m59a: bats test/scripts/fixture-git-env.bats
+1..2
+not ok 1 dev-cycle.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+# (from function `victim_unchanged' in file test/scripts/fixture-git-env.bats, line 19,
+#  in test file test/scripts/fixture-git-env.bats, line 26)
+#   `victim_unchanged' failed
+# 1..0
+ok 2 build-loop-read.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+exit=1
+### m59b: bats test/scripts/fixture-git-env.bats
+1..2
+ok 1 dev-cycle.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+not ok 2 build-loop-read.bats fixtures stay out of an inherited GIT_DIR (U2a1)
+# (from function `victim_unchanged' in file test/scripts/fixture-git-env.bats, line 19,
+#  in test file test/scripts/fixture-git-env.bats, line 31)
+#   `victim_unchanged' failed
+# 1..0
+exit=1

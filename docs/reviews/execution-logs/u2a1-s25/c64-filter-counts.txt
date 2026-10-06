@@ -1,0 +1,19 @@
+$ bats --count -f "^prints all eight sections" test/scripts/dev-cycle.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1
+exit=0
+$ bats --count -f "exact policy line is set" test/scripts/build-loop-read.bats
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1
+exit=0
+$ grep matching @test names
+40:@test "prints all eight sections in a repo with no docs" {
+13:@test "--settings: an exact policy line is set, a trailing CR included (T1)" {

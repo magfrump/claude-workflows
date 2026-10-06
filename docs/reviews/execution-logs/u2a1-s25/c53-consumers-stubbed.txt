@@ -1,0 +1,49 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== word [blob]
+fatal: path 'docs/working/briefs/2026-01-01-c.md' exists on disk, but not in 'eef7cad795d80d7dcfbc47db6c7a797be6f1ab50'
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: the brief could not be read from the default branch
+fatal: path 'docs/working/questions-archive.md' does not exist in 'eef7cad795d80d7dcfbc47db6c7a797be6f1ab50'
+check_answer: skip Q-1: docs/working/questions-archive.md could not be read from the default branch
+main_file: rc=0 (read) FILE_WHY=[]
+fatal: path 'docs/working/briefs/2026-01-01-c.md' exists on disk, but not in 'eef7cad795d80d7dcfbc47db6c7a797be6f1ab50'
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [absent]
+check_brief:  ok docs/working/briefs/2026-01-01-c.md new
+check_answer: skip Q-1: no such entry in docs/working/questions.md or questions-archive.md on the default branch
+main_file: rc=1 FILE_WHY=[absent]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [badform]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: not an allowed path form
+check_answer: skip Q-1: docs/working/questions.md is not an allowed path form, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[docs/working/questions.md is not an allowed path form]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [notfile]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: not a regular file on the default branch
+check_answer: skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[docs/working/questions.md is not a regular file on the default branch]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [notdir docs/working]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: docs/working is not a directory on the default branch
+check_answer: skip Q-1: docs/working is not a directory on the default branch, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[docs/working is not a directory on the default branch]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [error]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: the tree of the default branch could not be read
+check_answer: skip Q-1: the tree of the default branch could not be read for docs/working/questions.md, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[the tree of the default branch could not be read for docs/working/questions.md]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [odd]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: the default branch answered odd
+check_answer: skip Q-1: the default branch answered odd for docs/working/questions.md, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[the default branch answered odd for docs/working/questions.md]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word []
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: the default branch answered 
+check_answer: skip Q-1: the default branch answered  for docs/working/questions.md, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[the default branch answered  for docs/working/questions.md]
+brief_fields: rc=1 BRIEF_ODD=[error]
+== word [weird word]
+check_brief:  skip docs/working/briefs/2026-01-01-c.md: the default branch answered weird word
+check_answer: skip Q-1: the default branch answered weird word for docs/working/questions.md, so no entry in docs/working/questions.md is read
+main_file: rc=1 FILE_WHY=[the default branch answered weird word for docs/working/questions.md]
+brief_fields: rc=1 BRIEF_ODD=[error]

@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+.gitattributes -> badform; git calls: 0
+../x -> badform; git calls: 0
+docs//x.md -> badform; git calls: 0
+-x -> badform; git calls: 0
+.github/x.yml -> badform; git calls: 0
+docs/working/briefs/2026-01-01-c.md -> absent; git calls: 1
+   git ls-tree -t --full-tree eef7cad795d80d7dcfbc47db6c7a797be6f1ab50 -- docs docs/working docs/working/briefs docs/working/briefs/2026-01-01-c.md

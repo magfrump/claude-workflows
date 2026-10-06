@@ -1,0 +1,10 @@
+### M1 diff
+158c158
+< isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
+---
+> isclosed() { isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
+### M2 diff
+266d265
+<   if ! main_by_name; then echo error; return; fi
+267a267
+>   if ! main_by_name; then echo error; return; fi

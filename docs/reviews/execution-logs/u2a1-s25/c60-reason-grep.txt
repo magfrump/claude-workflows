@@ -1,0 +1,42 @@
+### git grep -n -F 'is not a directory on the default branch' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/lib/dev-cycle-read.sh:290:    notdir\ *) echo "${w#notdir } is not a directory on the default branch" ;;
+exit=0
+### git grep -n -F 'not a regular file on the default branch' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/lib/dev-cycle-read.sh:291:    notfile) echo "${p:+$p is }not a regular file on the default branch" ;;
+exit=0
+### git grep -n -F 'not an allowed path form' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/dev-cycle.sh:146:  if ! pathform "$a" glob; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
+d07cc89c:scripts/dev-cycle.sh:152:    if ! pathform "$m"; then echo "skip ${m//$'\n'/ }: not an allowed path form"
+d07cc89c:scripts/dev-cycle.sh:162:  if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"
+d07cc89c:scripts/dev-cycle.sh:173:  if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
+d07cc89c:scripts/lib/dev-cycle-read.sh:292:    badform) echo "${p:+$p is }not an allowed path form" ;;
+d07cc89c:scripts/lib/dev-cycle-read.sh:347:  if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
+exit=0
+### git grep -n -F 'tree of the default branch could not be read' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/lib/dev-cycle-read.sh:293:    error) echo "the tree of the default branch could not be read${p:+ for $p}" ;;
+exit=0
+### git grep -n -F 'default branch answered' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/lib/dev-cycle-read.sh:294:    *) echo "the default branch answered $w${p:+ for $p}" ;;
+exit=0
+### git grep -n -F 'entry_why' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:docs/working/plan-build-loop-handoff.md:274:   - **U2a1**: `main_entry`'s `badform` word with one shared reason mapping, `entry_why` (rows 228, 306); one spelling of the closed/ rule, `isclosed` (row 292); `check_fix` also refuses `docs/constraints.md` (row 204: the user writes it, D2; `docs/thoughts/` stays fixable in-cycle as a living doc, so `check_fix` and the floor differ there on purpose); U1d's carried wording and fixture rows.
+d07cc89c:scripts/build-loop.sh:133:    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
+d07cc89c:scripts/lib/dev-cycle-read.sh:260:# the name unquoted). entry_why words the refusals. One ls-tree call lists the
+d07cc89c:scripts/lib/dev-cycle-read.sh:286:entry_why() {
+d07cc89c:scripts/lib/dev-cycle-read.sh:358:    *) echo "skip $a: $(entry_why "$e" "")"; return ;;
+d07cc89c:scripts/lib/dev-cycle-read.sh:576:      *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"; return ;;
+exit=0
+### git grep -n -F 'FILE_WHY' d07cc89c -- . ':!test/' ':!docs/reviews/'
+d07cc89c:scripts/build-loop.sh:123:# it; or it returns 1 with FILE_WHY "absent" or why it was not read (main_entry,
+d07cc89c:scripts/build-loop.sh:125:FILE_OUT=""; FILE_WHY=""
+d07cc89c:scripts/build-loop.sh:128:  FILE_OUT=""; FILE_WHY=""
+d07cc89c:scripts/build-loop.sh:132:    absent) FILE_WHY=absent; return 1 ;;
+d07cc89c:scripts/build-loop.sh:133:    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
+d07cc89c:scripts/build-loop.sh:136:    || { FILE_WHY="$f could not be read from the default branch"; return 1; }
+d07cc89c:scripts/build-loop.sh:138:    odd\ *) read -r _ n why <<<"$FILE_OUT"; FILE_WHY="line $n of $f $(oddwhy "$why"), so the file is not read"; return 1 ;;
+d07cc89c:scripts/build-loop.sh:139:    unbalanced\ *) FILE_WHY="the code fence opened at line ${FILE_OUT#unbalanced } of $f is never closed, so the file is not read"; return 1 ;;
+d07cc89c:scripts/build-loop.sh:214:    [[ "$FILE_WHY" == absent ]] && why="no $f on the default branch" || why="$FILE_WHY"
+d07cc89c:scripts/build-loop.sh:217:    if [[ "$FILE_WHY" == absent ]]; then NEVER_LINE="never none: $why"; else NEVER_LINE="never malformed: $why"; fi
+d07cc89c:scripts/build-loop.sh:264:    if [[ "$FILE_WHY" == absent ]]; then CONSTRAINTS_LINE="constraints missing: no $f on the default branch"
+d07cc89c:scripts/build-loop.sh:265:    else CONSTRAINTS_LINE="constraints unreadable: $FILE_WHY"; fi
+exit=0

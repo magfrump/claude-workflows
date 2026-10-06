@@ -1,0 +1,12 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+docs/working/briefs/closed/../2026-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed//2026-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/closed/2026-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/sub/2026-01-01-x.md isclosed=refuse writable=refuse
+$'docs/working/briefs/closed/2026-01-01-x.md\n' isclosed=refuse writable=refuse
+docs/working/briefs/Closed/2026-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/2026-01-01-X.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/2026-01-01-x.md/ isclosed=refuse writable=refuse
+./docs/working/briefs/closed/2026-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/26-01-01-x.md isclosed=refuse writable=refuse
+docs/working/briefs/closed/2026-01-01-x.md isclosed=accept writable=accept

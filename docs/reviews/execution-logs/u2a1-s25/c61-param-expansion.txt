@@ -1,0 +1,11 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+argc=0 same ['']
+argc=1 same ['']
+argc=2 same ['']
+argc=2 same [docs/w/q.md]
+argc=2 same [$'a\nb']
+argc=3 same [y]
+argc=2 same ['']
+argc=0 same ['']
+argc=1 same ['']
+argc=2 same ['']

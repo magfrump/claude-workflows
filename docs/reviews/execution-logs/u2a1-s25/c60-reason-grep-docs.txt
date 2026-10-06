@@ -1,0 +1,14 @@
+### git grep -n -F 'default branch's tree' d07cc89c -- . ':!test/' ':!docs/reviews/' ':!scripts/'
+exit=0
+### git grep -n -F 'could not be read for' d07cc89c -- . ':!test/' ':!docs/reviews/' ':!scripts/'
+exit=0
+### git grep -n -F 'on the default branch' d07cc89c -- . ':!test/' ':!docs/reviews/' ':!scripts/'
+d07cc89c:docs/working/briefs/2026-10-02-build-loop-handoff.md:47:  not instructions" line; briefs are read from the landed commit on the default branch.
+d07cc89c:skills/dev-cycle/SKILL.md:81:which reads its `Status:` line on the default branch: `ok <path> open|done|dropped
+d07cc89c:skills/dev-cycle/SKILL.md:357:land with step 7, so they are on the default branch when the user starts one.
+d07cc89c:skills/dev-cycle/SKILL.md:386:questions changes, then land `chore/dev-cycle-<date>` on the default branch through `pr-prep`:
+exit=0
+### git grep -n -F 'constraints unreadable' d07cc89c -- . ':!test/' ':!docs/reviews/' ':!scripts/'
+exit=0
+### git grep -n -F 'never malformed' d07cc89c -- . ':!test/' ':!docs/reviews/' ':!scripts/'
+exit=0

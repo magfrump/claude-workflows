@@ -1,673 +1,698 @@
-Commit: d48f4645
+Commit: d07cc89c
 
 # Code Fact-Check Report
 
 **Repository:** /workspace (worktree /workspace/.claude/wt-build-loop-u2a1, branch feat/build-loop-u2a1)
-**Scope:** branch diff `git diff main...HEAD` (main 900c47d0 .. d48f4645, commits 6f624cdf, 706e0499, d48f4645): scripts/lib/dev-cycle-read.sh, scripts/build-loop.sh, scripts/dev-cycle.sh, skills/dev-cycle/SKILL.md, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats, test/scripts/dev-cycle.bats, docs/working/plan-build-loop-handoff.md, docs/working/questions.md (Q-119), the rubric and the five new override-log rows, and the three commit messages. Other docs/reviews/*.md artifacts were skipped as instructed.
-**Replication:** replicate r3 of k=3 (final confirming pass)
+**Scope:** branch diff `git diff main...HEAD` (main 900c47d0 .. d07cc89c): scripts/build-loop.sh, scripts/dev-cycle.sh, scripts/lib/dev-cycle-read.sh, skills/dev-cycle/SKILL.md, test/lib/build-loop-fixtures.bash, test/scripts/build-loop-read.bats, test/scripts/dev-cycle.bats, test/scripts/fixture-git-env.bats, docs/working/plan-build-loop-handoff.md (U2 split note), docs/working/questions.md (Q-119), the rubric's iteration-2 section, the 2026-10-06 `feat/build-loop-u2a1` rows of docs/reviews/override-log.md, and the messages of 91469367 and d07cc89c. Earlier commits' message claims (settled by Accepted-immutable rows) and other docs/reviews/*.md artifacts were skipped as instructed.
+**Replication:** replicate r3 of three (iteration 3, final confirming pass)
 **Checked:** 2026-10-06
-**Total claims checked:** 37 (Claims 1-35, 36a, 36b)
-**Summary:** 32 verified, 5 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
+**Total claims checked:** 39
+**Summary:** 36 verified, 3 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
-Hallucination-pattern log read (`docs/reviews/hallucination-patterns.md`, 5 patterns). The relevant one is the per-suite test-count pattern ("All 85 tests ... but the suites hold 97", "mode1-equiv 33 ... holds 25"). Every test count in scope was re-counted by running the suite (Claims 7, 34, 36). None of them matches the pattern.
+Execution provenance. Every executed claim ran with `S=/home/node/.claude/jobs/814a541d/tmp/review-u2a1-i3/fc3`, `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`, and each command under `timeout`. Mutants ran only on `$S/copy`, a `git archive d07cc89c` export (restored with `git checkout -- .` after each mutant). Suite runs used `TMPDIR=$(mktemp -d /tmp/u2a1i3-XXXX)` (deleted after; a cleanup script file). Captured output is in `$S/logs/` (named per claim below). Runs took place 2026-10-06T16:47Z-16:56Z, all from cwd `/workspace/.claude/wt-build-loop-u2a1` unless the claim names `$S/copy` or `$S`. No process was left running; victim repos (`$S/fix/`) were deleted. No tracked file was modified except this report.
 
-## Execution provenance
-
-All runs went against a `git archive` export of HEAD d48f4645 at `S=/home/node/.claude/jobs/814a541d/tmp/review-u2a1-final/fc3/wt` (no repo files were touched). Raw output is in `$S/../logs/` (absolute: `/home/node/.claude/jobs/814a541d/tmp/review-u2a1-final/fc3/logs/`). Mutants ran on separate copies under `fc3/mut-*`, which were removed after each run. Git fixtures used `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`. Every process ran under `timeout`.
-
-| ID | Command (cwd `fc3/wt` unless noted) | Exit | UTC time | Log |
-|---|---|---|---|---|
-| E1 | `TMPDIR=$(mktemp -d /tmp/u2a1fc-XXXX) bats test/scripts/dev-cycle.bats` (temp dir deleted after) | 0, 74/74 ok | 16:18:33 | logs/dev-cycle.log |
-| E2 | `bats test/scripts/build-loop-read.bats` | 0, 19/19 ok | 16:18:57 | logs/build-loop-read.log |
-| E3 | `bats test/fixture-hermeticity.bats`; `shellcheck scripts/build-loop.sh scripts/dev-cycle.sh scripts/lib/dev-cycle-read.sh test/lib/build-loop-fixtures.bash` | 0 (2/2 ok); 0 | ~16:19 | logs/fixture-hermeticity.log |
-| E4 | `git diff --numstat main...HEAD -- ':(top)' ':(top,exclude)docs/' \| awk '{n+=$1+$2} END{print n}'` (cwd the worktree), then the same for `main 6f624cdf` | 0: 165; 128 | ~16:19 | (inline: 165 / 128) |
-| E5 | victim repo (`main`, 1 commit) and then `GIT_DIR=$victim/.git bats test/scripts/dev-cycle.bats test/scripts/build-loop-read.bats` | 0, 93 ok; victim still has 1 commit and only refs/heads/main | 16:19:56 | logs/victim-head.log |
-| E6 | the same with both `unset $(git rev-parse --local-env-vars)` lines deleted (copy `mut1`) | 1; victim grows to 81, then 153 commits, with branches f1-f3, loop, lower, trunk | ~16:20 | logs/victim-mut-dc.log, logs/victim-mut-bl.log |
-| E7 | victim (`trunk`, 1 commit), then `GIT_DIR=… bats -f 'check-fix refuses files an instruction file imports' test/scripts/dev-cycle.bats` on `mut1` and on `wt` | mut1: 1, victim 3 commits plus `f1`; wt: 0, victim 1 commit | ~16:21 | logs/victim-filter-mut1.log, logs/victim-filter-wt.log |
-| E8 | `fc3/probe1.sh` (isclosed against the three old spellings, 23 paths, and main_entry's words) | 0 | 16:21:21 | logs/probe1.log |
-| E9 | `fc3/probe2.sh` (counts git calls per main_entry word through a `git` function shim) | 0 | ~16:21 | logs/probe2.log |
-| E10 | `fc3/probe3.sh` (build-loop.sh --settings with docs/constraints.md stored as a symlink, under a symlinked dir, and in a tree that lists it twice) | 0 | ~16:21 | logs/probe3.log |
-| E11 | `fc3/mutants.sh` and `fc3/mutants2.sh` (12 mutants, each run on its own copy with `bats -f`) | see Claims 26, 32, 34, 35 | 16:22:31 | logs/mut-*.log |
-| E12 | `bash -c 'source lib; entry_why …'` with a newline in the word, and with empty and non-empty paths | 0 | ~16:23 | logs/entry_why-direct.log |
-| E13 | `fc3/probe4.sh` (checked and unchecked task-box copies in --settings; timings for the entry_why subshell and for isclosed) | 0 | ~16:25 | logs/probe4.log |
-| E14 | `bash scripts/questions.sh check` | 0 | ~16:24 | logs/questions-check.log |
-| E15 | `GIT_DIR=$victim GIT_CONFIG_COUNT=1 git rev-parse --local-env-vars`, then the E7 filtered run with that environment | 0; 0, victim 1 commit | ~16:25 | logs/victim-cc.log |
+Hallucination-pattern log consulted (`docs/reviews/hallucination-patterns.md`). Claims 9 and 33 (per-suite test tallies in a rubric and a commit message) are in the class of the logged patterns "All 85 tests ... pass claimed in commit 59ca38f" and "mode1-equiv 33 claimed in commit 37c5ea9". Here the counts match. No claim in this run is a fabrication.
 
 ---
 
-## Claim 1: "24 claims: 20 Verified, 3 Mostly accurate, 1 Unverifiable, 0 Incorrect" / "1 Medium, 1 Low, 2 Informational" / "2 Informational" / "3 Minor, 1 Informational" / "0 Structural, 0 Coupling, 1 Minor, 3 Informational"
+## Claim 1: "233 changed code lines after iteration 2's fixes"
 
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:11-15`
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:4`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the count with the dispatch's own formula at d07cc89c (whose code equals 91469367's: d07cc89c touches only docs/reviews/); does not establish the count under any other definition of "code line".
+
+`git diff --numstat main...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{n+=$1+$2} END{print n}'` (cwd worktree, 2026-10-06T16:47Z, exit 0) printed `233`. `git show --stat d07cc89c` lists only `docs/reviews/` files, so the figure is the same as after 91469367.
+
+**Evidence:** `$S/logs/numstat.txt`
+
+---
+
+## Claim 2: "53 clusters: 44 Verified, 9 Mostly accurate, 0 Incorrect. Agreement 88.7% (47/53)"
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:11`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the per-report tallies against each report's verdict and severity lines. It does not establish that those reports' own findings are correct.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the tally and the percentage against the merged iteration-2 report (also stated in commit d07cc89c's body: "0 Must Fix, 0 Incorrect (53 merged claims, 88.7% replicate agreement)"); does not re-derive the per-cluster agreement or re-verdict that report's claims.
 
-A count of `**Verdict:**` lines in `code-fact-check-report-build-loop-u2a1.md` gives `20 Verified`, `3 Mostly accurate` and `1 Unverifiable`. The security summary table rows are `| 1 | … | Medium |`, `| 2 | … | Low |`, `| 3 | … | Informational |` and `| 4 | … | Informational |` (`security-reviewer-review-2026-10-06-build-loop-u2a1.md:188-191`). Performance has two `Informational` rows (`performance-reviewer-…:102-103`). The api-consistency severities read `Minor, Minor, Informational, Minor`. The architecture summary table has `| 1 | … | Minor |` and then three `Informational` rows (`architecture-review-…:141-144`).
+The merged report's header reads `**Total claims checked:** 53` and `**Summary:** 44 verified, 9 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable` (`docs/reviews/code-fact-check-report-build-loop-u2a1.md:10-11`), and its tail reads `Agreement rate: 47/53 = 88.7% over all clusters` (`docs/reviews/code-fact-check-report-build-loop-u2a1.md:1135`). 47/53 = 88.68%, which rounds to 88.7%. No row of the iteration-2 table carries a Must Fix severity (paraphrased — no quote available because this is the absence of a severity across rubric rows `:20-31`).
 
-**Evidence:** `docs/reviews/code-fact-check-report-build-loop-u2a1.md`, `docs/reviews/security-reviewer-review-2026-10-06-build-loop-u2a1.md:184-191`, `docs/reviews/performance-reviewer-review-2026-10-06-build-loop-u2a1.md:98-103`, `docs/reviews/architecture-review-review-2026-10-06-build-loop-u2a1.md:137-144`
-
----
-
-## Claim 2: "rows 228, 292, 306, 314, 317-320 are Defer rows whose triggers this unit meets, and the diff addresses each"
-
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:17`
-**Type:** Reference
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers each listed row against the HEAD code: 228, 292, 306, 314, 317, 318 and 320 are fully addressed, and 319 is addressed except for its short-line residue. It does not check rows 202, 203, 233, 284, 298 or 312, which stay with later units.
-**Legibility-target:** for-author
-
-The following rows are addressed in full:
-- Row 228 (shared mapping): `entry_why` (`scripts/lib/dev-cycle-read.sh:283-292`) is called by all three former case blocks (`:354`, `:573-574`, `scripts/build-loop.sh:133`).
-- Row 292: `isclosed` at `:158`.
-- Row 306: `if ! pathform "$1"; then echo badform; return; fi` (`:266`).
-- Row 314: `unset $(git rev-parse --local-env-vars)` (`test/lib/build-loop-fixtures.bash:15`).
-- Row 317: the chains are split (Claim 32).
-- Row 318: the T7 comment (Claim 31).
-- Row 320: the `x` → `absent` control (Claim 35).
-
-Row 319 named "the lib header's 'once that second caller lands' … with short lines". The phrase is gone, but the header still has a short line at `:25` (52 chars: `# scrub, read it as \`out="$(check_brief ...)"\` under`), and the reflow added a 96-char line at `:16` (`# ROOT_REAL is set, is the current directory and is a repository's top level; while ROOT_REAL is`). Line lengths were measured with awk over the header (paraphrased, no quote available because the claim is about line lengths, not text). Precise version: "…addresses each, except row 319's short-line wrap at lib :25".
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:12-27`, `docs/reviews/override-log.md:306-320`
+**Evidence:** `docs/reviews/code-fact-check-report-build-loop-u2a1.md:10-11`, `docs/reviews/code-fact-check-report-build-loop-u2a1.md:1135`, `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:20-31`
 
 ---
 
-## Claim 3: "A1 … executed, the suite wrote 2 commits and branch f1 into a victim repo … ✅ Fixed: both setups run `unset $(git rev-parse --local-env-vars)`; checked, the victim keeps 1 commit"
+## Claim 3: "entry_why read `$2` bare; called with one argument under `set -u` it printed an empty reason"
 
 **Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:21`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers an inherited `GIT_DIR` (and the other variables that `--local-env-vars` lists) for the single test the security reviewer ran and for both whole suites. It does not establish protection from non-local variables such as `GIT_CEILING_DIRECTORIES` or `GIT_CONFIG_GLOBAL` (which setup overrides anyway).
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers d48f4645's entry_why spliced into an `echo` argument, the form check_brief and check_answer use; does not cover a bare `x="$(entry_why w)"` assignment, which under `set -e` ends the caller instead of printing anything.
 
-With the unset lines removed (E7, mut1), the filtered test left the victim at 3 commits plus `refs/heads/f1`, which is "2 commits and branch f1" exactly. At HEAD the same run left 1 commit and only `trunk`. The whole-suite runs at HEAD (E5) left the victim at 1 commit, while the mutant (E6) wrote 80 and then 152 commits into it. Both setups now carry the line: `unset $(git rev-parse --local-env-vars)` (`test/scripts/dev-cycle.bats:13`, `test/lib/build-loop-fixtures.bash:15`).
+With d48f4645's lib saved as `$S/lib-d48.sh`, `bash -c 'set -euo pipefail; source "$1"; echo "skip a: $(entry_why notfile)"; echo after'` printed `lib-d48.sh: line 284: 2: unbound variable`, then `skip a: ` (an empty reason) and `after`. The same call as `x="$(entry_why notfile)"` printed only the unbound-variable error and ended the shell.
 
-**Evidence:** `test/scripts/dev-cycle.bats:8-23`, `test/lib/build-loop-fixtures.bash:7-23`, logs/victim-filter-mut1.log, logs/victim-filter-wt.log, logs/victim-head.log, logs/victim-mut-dc.log
+**Evidence:** run inline at 2026-10-06T16:52Z, cwd `$S`, exit 0; output captured in this claim's text and reproducible from `$S/lib-d48.sh`
 
 ---
 
-## Claim 4: "A2 | `entry_why` echoed the raw path … ✅ Fixed: entry_why turns newlines into spaces; new test"
+## Claim 4: "The `unset` line is pinned by no test: replacing it with `:` passes every test while a victim repo gains 7 and 5 commits"
 
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:22`
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:23`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the newline translation of both arguments and the new test's pinning of a newline in the path. It does not establish that the test pins a newline in the word: that mutant survives (see Claim 34). The word cannot carry a newline today, because only pathform-clean paths reach `notdir PART`.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers both halves as test-strategy G1 measured them ("every test" = dev-cycle.bats and build-loop-read.bats run normally; "7 and 5" = the one test of each suite that fixture-git-env.bats now runs); does not mean the full suites pass under an inherited GIT_DIR (they do not: run whole under a victim GIT_DIR with the mutant, dev-cycle.bats fails 75/75 and build-loop-read.bats 13/19, and the victims gain 81 and 72 commits).
 
-The code: `local w="${1//$'\n'/ }" p="${2//$'\n'/ }"` (`scripts/lib/dev-cycle-read.sh:284`). Run directly (E12), `entry_why $'notdir a\nok b' x` printed `a ok b is not a directory on the default branch` on one line. The test's `entry_why badform "a\nok b"` expects `a ok b is not an allowed path form` (`test/scripts/dev-cycle.bats:1341-1353`), and the mutant that reverts both translations fails it (logs/mut-nl-word.log).
+`$S/a10b.sh` on `$S/copy` with both `unset` lines replaced by `:` printed `mutant, no GIT_DIR: exit=0 ok=94 notok=0`, then `dev-cycle single test under victim: exit=1 victim_commits=8` and `build-loop-read single test under victim: exit=0 victim_commits=6` (victims start at 1 commit: +7 and +5).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:280-292`, `test/scripts/dev-cycle.bats:1338-1354`, logs/entry_why-direct.log, logs/mut-nl-word.log
+**Evidence:** `$S/logs/a10b-summary.txt`, `$S/logs/a10b-plain.txt`, `$S/logs/a10-gitdir-only.txt` (2026-10-06T16:52Z)
 
 ---
 
-## Claim 5: "A3 … ✅ Fixed: the error arm names the path when given" / "A4 … check_brief passes ""; check_answer says 'so no entry in it is read' (in `$f` after notdir)"
+## Claim 5: "isclosed's `closed/*` prefix guard is pinned by no test: without it `--check-write 2026-01-01-x.md` prints ok (the write gate fails open)"
 
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:23-24`
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:24`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the skip line each caller prints for notdir, notfile and error. Badform is unreachable from all three callers today (check_brief runs pathform first, and the other two pass fixed paths), so it was checked only through entry_why directly.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the mutant's effect on `--check-write` and the new test's failure on it (also commit 91469367's "dropping isclosed's prefix guard made --check-write print ok for 2026-01-01-x.md"); does not cover other brief-shaped names than the three the test uses.
 
-The code:
-- `error) echo "the tree of the default branch could not be read${p:+ for $p}" ;;` (`scripts/lib/dev-cycle-read.sh:289`).
-- check_brief: `*) echo "skip $a: $(entry_why "$e" "")"; return ;;` (`:354`).
-- check_answer: `notdir\ *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"` / `*) echo "skip $a: $(entry_why "$e" "$f"), so no entry in it is read"` (`:573-574`).
+Mutant M3 rewrote `isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief ...` to `isclosed() { isbrief ...` (`scripts/lib/dev-cycle-read.sh:158`). The new test "a closed brief is a closed/ path only" then failed, printing `ok 2026-01-01-x.md` where it expects `skip 2026-01-01-x.md: not one of the dev cycle's own files`.
 
-When executed, E10 printed `constraints unreadable: the tree of the default branch could not be read for docs/constraints.md`, `… docs/constraints.md is not a regular file on the default branch` and `… docs is not a directory on the default branch`. E1's tests at `dev-cycle.bats:1198`, `:1203`, `:1327` and `:1042` assert the check_answer and check_brief lines and pass.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:339-355`, `scripts/lib/dev-cycle-read.sh:563-575`, `scripts/build-loop.sh:126-140`, logs/probe3.log, logs/dev-cycle.log
+**Evidence:** `$S/logs/mut-M3-isclosed-prefix.txt`, `$S/logs/mutants-summary.txt` (2026-10-06T16:49Z, exit 1 as expected), `test/scripts/dev-cycle.bats:1371-1380`
 
 ---
 
-## Claim 6: "A6 | Row 319 residue: short lines in the lib header (`:13`, `:25`) | … | ✅ Fixed: reflowed" (also d48f4645: "A6: the lib header's short lines reflowed (row 319's residue)")
+## Claim 6: "main_entry's guard order (error before badform with no default branch) ... Fixed: comment and one test line"
 
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:26`
-**Type:** Reference
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:25`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the comment's presence, the test line, and that the test fails when the two guards are swapped; does not cover callers, which check main_by_name themselves first.
+
+The comment says `It runs main_by_name, then pathform, itself, before any read (so with no default branch even a refused form answers error` (`scripts/lib/dev-cycle-read.sh:258-260`), and the test ends `MAIN_SHA=""; main_entry .gitattributes` expecting `error` (`test/scripts/dev-cycle.bats:1356-1369`). Mutant M4 swapped `if ! main_by_name ...` and `if ! pathform ...` (`scripts/lib/dev-cycle-read.sh:266-267`); the badform test failed.
+
+**Evidence:** `$S/logs/mut-M4-guard-order.txt`, `$S/logs/mutants-summary.txt`
+
+---
+
+## Claim 7: "Five other suites write into an inherited GIT_DIR"
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:27`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the header's line lengths at 6f624cdf and at d48f4645. It does not assess whether the wrap matters.
+**Verification mode:** executed
 **Legibility-target:** for-author
+**Scope:** Covers whether the list (here and in override row `docs/reviews/override-log.md:327`) names every suite that writes into an inherited GIT_DIR among this branch's files; does not re-execute the five suites named.
 
-At 6f624cdf, `:13` was `# pipefail for themselves),` (27 chars) and `:25` was `# with one printed line per argument that` (41 chars). At HEAD, the first is reflowed into `:12-16`, but `:25` is still short at `# scrub, read it as \`out="$(check_brief ...)"\` under` (52 chars), and `:16` now runs to 96 chars (`…is a repository's top level; while ROOT_REAL is`). Lengths were measured with awk (paraphrased, no quote available because the property is line length). Precise version: ":13 reflowed; :25 still short, and :16 now overlong".
+The list omits test/scripts/fixture-git-env.bats, added in 91469367, before this rubric section was written. Its setup does not unset the repo-local variables: it runs `git init -q -b main "$V"` and `git -C "$V" ... commit -q --allow-empty -m only` with the caller's environment (`test/scripts/fixture-git-env.bats:9-15`). Run with `GIT_DIR=$S/fix/victim2/.git` (cwd worktree, 2026-10-06T16:50Z, exit 1), both its tests failed and the victim went from 1 commit to 3. The precise version is "six other suites", or the C7 row's trigger should also cover fixture-git-env.bats's own setup.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:12-27`, `git show 6f624cdf:scripts/lib/dev-cycle-read.sh` lines 12-27
-
----
-
-## Claim 7: "Tests after the fixes: 95/95 (dev-cycle 74 …, build-loop-read 19, hermeticity 2); shellcheck clean. Size after the fixes: 165 changed code lines." (also C6: "Resolved: 95/95 with test 25 run under a TMPDIR with no dot-prefixed part")
-
-**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:38`
-**Type:** Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three suites at d48f4645 (with test 25 run under `/tmp/u2a1fc-*`), shellcheck on the four changed shell files, and the numstat count. It does not cover other suites in the repo.
-**Legibility-target:** for-orchestrator-synthesis
-
-E1 gives `ok 74 main_entry answers badform …` and no `not ok`. E2 gives 19 `ok`, and E3 gives `1..2` with both `ok`. Shellcheck exits 0. E4 prints `165`. This does not match the hallucination log's test-count pattern.
-
-**Evidence:** logs/dev-cycle.log, logs/build-loop-read.log, logs/fixture-hermeticity.log, E4 output
+**Evidence:** `$S/logs/fge-under-gitdir.txt`, `test/scripts/fixture-git-env.bats:9-15`, `docs/reviews/override-log.md:327`
 
 ---
 
-## Claim 8: "Commit 6f624cdf's Notes say 'the lib's check_fix keeps reading the IMPORTED cache'; check_fix is in scripts/dev-cycle.sh and reads the lib's cache"
-
-**Location:** `docs/reviews/override-log.md:321`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers where check_fix lives and what it reads. It does not cover U2a2's isimported, which does not exist yet.
-**Legibility-target:** for-orchestrator-synthesis
-
-`check_fix() {` is at `scripts/dev-cycle.sh:170`, and it reads `elif [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]]` (`:182`). The cache is declared in the lib: `IMPORTED=$'\n'; IMPORTED_DONE=""` (`scripts/lib/dev-cycle-read.sh:444`).
-
-**Evidence:** `scripts/dev-cycle.sh:167-184`, `scripts/lib/dev-cycle-read.sh:444-476`
-
----
-
-## Claim 9: "This row closes 204: constraints.md is refused, docs/thoughts/ stays fixable on purpose … (architecture F1, `scripts/dev-cycle.sh:181-183`)"
-
-**Location:** `docs/reviews/override-log.md:322`
-**Type:** Behavioral / Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers check_fix's answers for docs/Constraints.md and docs/thoughts/t.md, and the cited line range at 6f624cdf (where the architecture review read it; at HEAD those lines are `:179-181`). It does not establish that the floor (U2a2) will share the list.
-**Legibility-target:** for-orchestrator-synthesis
-
-The test expects `"skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"` (`test/scripts/dev-cycle.bats:1029`) and passes (E1). The mutant that removes `|| "$lp" == docs/constraints.md` fails it (logs/mut-constraints-ok.log). At 6f624cdf, `:181-183` are the `elif` condition and the skip echo.
-
-**Evidence:** `scripts/dev-cycle.sh:177-183`, `test/scripts/dev-cycle.bats:1016-1032`, logs/mut-constraints-ok.log
-
----
-
-## Claim 10: "Three call sites write `isbrief X || isclosed X` themselves (lib writable, check_brief; build-loop.sh shared_branches)"
-
-**Location:** `docs/reviews/override-log.md:323`
-**Type:** Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the call sites in scripts/ at HEAD. It does not cover U2b's planned fourth caller.
-**Legibility-target:** for-orchestrator-synthesis
-
-The three sites are `… ]] || isbrief "$1" || isclosed "$1"` (`scripts/lib/dev-cycle-read.sh:161`), `if ! isbrief "$a" && ! isclosed "$a"; then` (`:344`, the negated form) and `if ! { isbrief "$f" || isclosed "$f"; }` (`scripts/build-loop.sh:318`). `rg isclosed scripts` finds no other caller (paraphrased, no quote available because the claim covers the absence of other matches).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:158-162`, `scripts/lib/dev-cycle-read.sh:344`, `scripts/build-loop.sh:318`
-
----
-
-## Claim 11: "U2a2's floor must run its own rules … so `.github/x.yml` is refused under D5's dot rule rather than as badform … with a test that changes `.gitattributes`"
-
-**Location:** `docs/reviews/override-log.md:324`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the present-tense premise that main_entry answers badform for `.github/x.yml` and `.gitattributes`. The rest of the row is a prescription for U2a2 and is not checkable.
-**Legibility-target:** for-orchestrator-synthesis
-
-E8/E9 printed `.gitattributes -> badform, git calls: 0` and `.github/x.yml -> badform, git calls: 0`. The test pins both: `for p in x … .gitattributes .github/x.yml` (`test/scripts/dev-cycle.bats:1358`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:265-266`, logs/probe2.log
-
----
-
-## Claim 12: "entry_why adds one subshell (~0.3 ms) per refused argument, and isclosed costs ~17 µs more per brief pair in shared_branches than the old substitution"
+## Claim 8: C4 row corrected to "0.3-0.5 ms, by host" and "~17-37 µs more per brief pair"; rubric C11 "measured 0.42-0.52 ms, 18-37 µs"
 
 **Location:** `docs/reviews/override-log.md:325`
 **Type:** Performance
 **Verdict:** Verified
 **Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers the order of magnitude on this host. It does not establish the exact figure, which depends on the machine.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the order of magnitude and the Won't-Fix conclusion, re-measured on this host; does not establish exact figures, which moved with load (one run fell outside both stated ranges).
 
-E13 timed 1000 runs of `$(entry_why notfile docs/x.md)` at 0.468 s, against 0.011 s for direct calls, so about 0.46 ms per subshell here. It timed 5000 pairs of the old substitution at 0.211 s and of `isbrief || isclosed` at 0.300 s, so about 18 µs more per pair. The callers' refusal arms all return straight after the reason, as quoted in Claim 5.
+`timeout 200 env LC_ALL=C bash $S/perf.sh scripts/lib/dev-cycle-read.sh` (2026-10-06T16:51Z, exit 0) printed `entry_why subshell: 408.5 us/call` and `568.8 us/call`, and per pair `old 44.0 us new 62.0 us` and `old 49.3 us new 55.8 us` (deltas 18.0 and 6.5 µs). These are the same order the row states, and below the ~1 ms git fork each refusal path already pays. The row's figures match the merged iteration-2 report's measured range (`~0.4-0.5 ms per entry_why subshell and ~18-37 µs per pair`, `docs/reviews/code-fact-check-report-build-loop-u2a1.md:1106`), which d07cc89c's "the C4 row's timings are corrected to the re-measured range" claims.
 
-**Evidence:** logs/probe4.log, `scripts/lib/dev-cycle-read.sh:354`, `scripts/build-loop.sh:318`
+**Evidence:** `$S/logs/perf.txt`, `docs/reviews/override-log.md:325`, `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:31`
 
 ---
 
-## Claim 13: "U2a1: main_entry's badform word with one shared reason mapping, entry_why (rows 228, 306); … isclosed (row 292); check_fix also refuses docs/constraints.md (row 204: the user writes it, D2; docs/thoughts/ stays fixable in-cycle as a living doc, so check_fix and the floor differ there on purpose)"
+## Claim 9: "Tests after 91469367: 98/98 (dev-cycle 75, build-loop-read 19, fixture-git-env 2, hermeticity 2) under a TMPDIR with no dot-prefixed part; shellcheck clean"
 
-**Location:** `docs/working/plan-build-loop-handoff.md:274`
+**Location:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:37`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the counts and pass at d07cc89c (same code as 91469367) and shellcheck over the three scripts and the fixture lib (also commit 91469367's "Tests: ... 98/98 ... shellcheck clean"); does not cover shellcheck over .bats files, which the repo does not hold to it (main's dev-cycle.bats alone has 19 findings) and where the new fixture-git-env.bats draws two info-level SC2015 notes; does not cover "the fix-drift check ... found nothing".
+
+`TMPDIR=/tmp/u2a1i3-8YRE timeout 580 bats test/scripts/dev-cycle.bats test/scripts/build-loop-read.bats test/scripts/fixture-git-env.bats test/fixture-hermeticity.bats` (2026-10-06T16:47Z) exited 0 with 98 `ok` lines and no `not ok`. `bats --count` gives 75, 19, 2 and 2. `shellcheck -x scripts/lib/dev-cycle-read.sh scripts/dev-cycle.sh scripts/build-loop.sh test/lib/build-loop-fixtures.bash` exited 0.
+
+**Evidence:** `$S/logs/suite-head.txt`, `$S/logs/shellcheck.txt`
+
+---
+
+## Claim 10: "Each test's setup now starts git once for `--local-env-vars` (~1 ms, ~0.1 s per run of both suites)"
+
+**Location:** `docs/reviews/override-log.md:328`
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the arithmetic from the setups and the performance report's measurement; does not re-time the git call on this host.
+
+Both setups run `unset $(git rev-parse --local-env-vars)` once per test (`test/scripts/dev-cycle.bats:13`, `test/lib/build-loop-fixtures.bash:15`). The performance report measured `1,068 µs/call` (`docs/reviews/performance-reviewer-review-2026-10-06-final-build-loop-u2a1.md:24`). 75 + 19 = 94 tests at ~1.07 ms is ~0.10 s.
+
+**Evidence:** `test/scripts/dev-cycle.bats:13`, `test/lib/build-loop-fixtures.bash:15`, `docs/reviews/performance-reviewer-review-2026-10-06-final-build-loop-u2a1.md:24`
+
+---
+
+## Claim 11: "Untested: entry_why's newline folding of the word argument (no caller produces such a word; the mutant survives)"
+
+**Location:** `docs/reviews/override-log.md:329`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the word-folding mutant against dev-cycle.bats; does not cover the row's other two untested items (check_brief's notdir/error through the CLI, main_file's error through --settings), which were not mutated here.
+
+Mutant M11 replaced `local w="${1//$'\n'/ }"` with `local w="$1"` (`scripts/lib/dev-cycle-read.sh:287`). dev-cycle.bats then ran 75 ok, 0 not ok (exit 0). No caller passes a word that did not come from main_entry, whose words have no newline (paraphrased — no quote available because this spans main_entry's six `echo` sites at `scripts/lib/dev-cycle-read.sh:266-279`, where only `notdir $p` carries a path, and pathform refuses a newline in that path first).
+
+**Evidence:** `$S/logs/mut-M11-word-newline.txt` (2026-10-06T16:54Z)
+
+---
+
+## Claim 12: "build-loop-read.bats:84 keeps an older `git replace ... && git config` chain ... Guarded by its own `git replace -d` at :85"
+
+**Location:** `docs/reviews/override-log.md:330`
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the unit contents against the code, plus D2 and the floor's read-as-truth list in the plan. It does not cover the U2a2, U2b or U2c bullets, which describe future work.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two cited lines; does not judge whether the chain needs splitting.
 
-D2 says "Creating the doc is your work" (`plan-build-loop-handoff.md:50`). The floor's item 4 lists "`docs/constraints.md`, `docs/decisions/`, `docs/thoughts/`" (`:72`). check_fix refuses constraints.md and leaves thoughts/ alone (Claim 9). The code items match Claims 2, 22 and 23.
+```bash
+# test/scripts/build-loop-read.bats:84-85
+    git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w docs/dev-cycle.md)" && git config core.useReplaceRefs true
+    settings_like policy "policy review set:"; git replace -d "$(git rev-parse main:docs/dev-cycle.md)"
+```
 
-**Evidence:** `docs/working/plan-build-loop-handoff.md:43-50`, `docs/working/plan-build-loop-handoff.md:72`, `docs/working/plan-build-loop-handoff.md:273-279`
+**Evidence:** `test/scripts/build-loop-read.bats:84-85`
 
 ---
 
-## Claim 14: Q-119: "Interim: [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`"; "Blocks: nothing"
+## Claim 13: "U1 measured four units against a planned one, and U2 carries about twenty override rows"
 
-**Location:** `docs/working/questions.md:376-392`
+**Location:** `docs/working/plan-build-loop-handoff.md:273`
 **Type:** Reference
 **Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the existence of the commit and the rubric section, and the questions-doc structure check. It does not judge the split.
+**Confidence:** Medium
+**Verification mode:** static
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the unit count and the order of the row count; does not fix which filter "carries" means.
 
-`git log -1 e8f76379` gives `docs(reviews): U2a iteration 3 (final pass, k=3) and the iteration-4 gate decision: split`, and `git branch --contains` gives `feat/build-loop-u2a`. That branch's rubric has `### Iteration-4 gate decision: \`split\`` and `- **U2a1** (\`feat/build-loop-u2a1\`, from main, fresh loop)` at `:69-74`. E14 prints `✓ questions: structure valid, indexes current`.
+`git log --oneline main` names branches `feat/build-loop-u1a` through `feat/build-loop-u1d` (four units). On main's override log, 26 rows have a `Revisit trigger:` naming U2 (paraphrased — no quote available because this is a count over table rows). "About twenty" is the right order.
 
-**Evidence:** `feat/build-loop-u2a:docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a.md:69-74`, logs/questions-check.log
+**Evidence:** `docs/reviews/override-log.md` (main), `git log --oneline main`
 
 ---
 
-## Claim 15: "Markup that adds letters (a checked task box, a tag) can still hide a copy; only an exact line ever sets a value."
+## Claim 14: "Markup that adds letters (a checked task box, a tag) can still hide a copy"
 
 **Location:** `scripts/build-loop.sh:44-46`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers checked and unchecked task boxes on the policy key. It does not test tags. The `<` start is refused by FENCE_AWK, so only a tag that is not first on the line applies.
+**Verification mode:** static
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers SETTINGS_AWK's key detection; does not cover what a hidden copy does downstream.
 
-The copy count works as `s = tolower($0); gsub(/[^a-z]/, "", s)` … `index(s, "buildlooppolicy") == 1` (`scripts/build-loop.sh:154-156`). In E13, `- [x] Build-loop policy: review` above an exact self-merge line gave `policy self-merge set: line 2`, so the copy was hidden. `- [ ] …` gave `more than one line starts "Build-loop policy:" (lines 1 and 2)`, so the copy was counted. This agrees with `:18-20` ("an unchecked task box … counts as a copy … one it misses (a checked task box …) is ignored").
+```awk
+# scripts/build-loop.sh:155-156 (excerpt ends :156; SETTINGS_AWK continues to :165 — read)
+  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
+  if (index(s, "buildlooppolicy") == 1) k = "policy"
+```
 
-**Evidence:** `scripts/build-loop.sh:16-20`, `scripts/build-loop.sh:143-163`, logs/probe4.log
+An unchecked `- [ ]` adds no letters, so its line is still found; a checked `- [x]` adds `x`, so `xbuildlooppolicy` does not start with the key and the copy is hidden.
+
+**Evidence:** `scripts/build-loop.sh:150-165`
 
 ---
 
-## Claim 16: "A tip on a branch not ahead of main, or whose subject does not start 'handoff:', is working."
+## Claim 15: "A tip on a branch not ahead of main, or whose subject does not start "handoff:", is working"
 
-**Location:** `scripts/build-loop.sh:73-74`
+**Location:** `scripts/build-loop.sh:65-66`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers status_line's LOOP default and its ahead gate. It does not cover marker_kind's bad arms.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers status_line's ahead test; does not cover marker_kind's subject parsing.
 
-In status_line, `loop=working` is followed by `if [[ "$ahead" -gt 0 ]]; then kind="$(marker_kind "$sha")"` (`scripts/build-loop.sh:352-353`). `ahead` is `git rev-list --count "$MAIN_SHA..$sha"` from check_branch (`scripts/lib/dev-cycle-read.sh:396`), and that count is 0 for a branch level with main or behind it. marker_kind does `[[ "$subj" == handoff:* ]] || { echo working; return; }` (`scripts/build-loop.sh:286`).
+```bash
+# scripts/build-loop.sh:352-354 (excerpt of status_line, which runs :325-362 — read)
+  loop=working
+  if [[ "$ahead" -gt 0 ]]; then
+    kind="$(marker_kind "$sha")"
+```
 
-**Evidence:** `scripts/build-loop.sh:279-301`, `scripts/build-loop.sh:323-361`, `scripts/lib/dev-cycle-read.sh:386-399`
+Any `ahead` of 0 (level with main or behind it) keeps `working`, so "not ahead" is the exact condition.
+
+**Evidence:** `scripts/build-loop.sh:325-362`
 
 ---
 
-## Claim 17: main_file's "it returns 1 with FILE_WHY 'absent' or why it was not read (main_entry, …)", and every non-blob, non-absent word is a refusal in its consumers
+## Claim 16: main_file's refusal is entry_why's reason for every word but blob and absent, and both callers treat it as a refusal
 
-**Location:** `scripts/build-loop.sh:122-133`
-**Type:** Behavioral / Error-handling
+**Location:** `scripts/build-loop.sh:133`
+**Type:** Architectural
 **Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers main_file and its two consumers in read_settings (dev-cycle.md and constraints.md). It does not cover badform, which these fixed paths cannot reach.
-**Legibility-target:** for-orchestrator-synthesis
-
-The three arms are `blob) ;;`, `absent) FILE_WHY=absent; return 1 ;;` and `*) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;` (`:131-133`). For dev-cycle.md, any FILE_WHY other than absent gives `POLICY_LINE="policy review unset: $why"` and `NEVER_LINE="never malformed: $why"` (`:215-217`), which turns self-merge off. For constraints.md it gives `CONSTRAINTS_LINE="constraints unreadable: $FILE_WHY"` (`:265`), and the plan dispatches only on `ok`. E10 shows all three refusal lines.
-
-**Evidence:** `scripts/build-loop.sh:122-141`, `scripts/build-loop.sh:208-276`, logs/probe3.log
-
----
-
-## Claim 18: shared_branches' `isbrief "$f" || isclosed "$f"` equals the old `isbrief "${f/#docs\/working\/briefs\/closed\//docs/working/briefs/}"`
-
-**Location:** `scripts/build-loop.sh:318`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers 23 edge-case paths compared under both spellings: double closed/, a newline inside and at the end, an Arabic-Indic digit, é, an upper-case W, a trailing slash, globs, the empty string. It does not cover the files git grep happens to list.
-**Legibility-target:** for-orchestrator-synthesis
-
-E8 prints `isclosed cases: 23, differences: 0` for the old shared_branches substitution, the old writable/check_brief regex and the new predicates. `isclosed` is `[[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"` (`scripts/lib/dev-cycle-read.sh:158`), and é is refused under C, en_US.UTF-8 and C.UTF-8.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:155-162`, `scripts/build-loop.sh:305-324`, logs/probe1.log
-
----
-
-## Claim 19: --check-fix refuses "constraints.md" (header, skip message, SKILL.md), compared ignoring case; docs/thoughts/ stays ok
-
-**Location:** `scripts/dev-cycle.sh:50-54`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the three texts against check_fix's condition and the test. It does not cover the import walk.
-**Legibility-target:** for-orchestrator-synthesis
-
-The condition is `|| "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md || …` on `lp`, the lower-cased path (`scripts/dev-cycle.sh:175`, `:179-180`). The skip message lists `dev-cycle.md, constraints.md` (`:181`), and SKILL.md lists `` `docs/dev-cycle.md`, `docs/constraints.md` `` (`skills/dev-cycle/SKILL.md:74`). E1 passes the docs/Constraints.md and docs/thoughts/t.md assertions (Claim 9).
-
-**Evidence:** `scripts/dev-cycle.sh:50-54`, `scripts/dev-cycle.sh:170-184`, `skills/dev-cycle/SKILL.md:72-79`, logs/dev-cycle.log
-
----
-
-## Claim 20: "An in-cycle fix edits documentation only; the header's --check-fix paragraph is the rule, and the skip message below repeats it."
-
-**Location:** `scripts/dev-cycle.sh:167-168`
-**Type:** Reference
-**Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the header paragraph, the one exclusion-list skip message and the code's arms. It does not cover SKILL.md, which matches the header (Claim 19).
-**Legibility-target:** for-author
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers main_file and its two callers in read_settings; does not cover main_file's error reason through `--settings`, which no test drives (override row 329).
 
-The header excludes "the cycle's own files, working/, …, constraints.md, a dot-directory or dotfile, an instruction file, or a file an instruction file imports with @" (`scripts/dev-cycle.sh:50-53`). The skip message's list is "(not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files)" (`:181`), so it leaves out own files and @-imports. Each of those has its own skip line: `one of the cycle's own files (use --check-write)` (`:178`) and `an instruction file imports it with @` (`:183`). Precise version: "the skip messages below repeat it".
+```bash
+# scripts/build-loop.sh:130-134 (excerpt of main_file, which runs :126-141 — read)
+  case "$e" in
+    blob) ;;
+    absent) FILE_WHY=absent; return 1 ;;
+    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
+```
 
-**Evidence:** `scripts/dev-cycle.sh:50-54`, `scripts/dev-cycle.sh:167-184`
+read_settings turns any non-absent FILE_WHY into `NEVER_LINE="never malformed: $why"` (self-merge off) (`scripts/build-loop.sh:217`), and constraints into `CONSTRAINTS_LINE="constraints unreadable: $FILE_WHY"` (`scripts/build-loop.sh:265`). Both paths pass fixed names (`docs/dev-cycle.md`, `docs/constraints.md`), so badform cannot occur there.
+
+**Evidence:** `scripts/build-loop.sh:126-141`, `scripts/build-loop.sh:208-218`, `scripts/build-loop.sh:262-265`
 
 ---
 
-## Claim 21: "A change here must pass test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats)."
+## Claim 17: "--check-fix ... (not ... dev-cycle.md, constraints.md, ...; compared ignoring case)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:10-11`
-**Type:** Reference
+**Location:** `scripts/dev-cycle.sh:50-55`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers which suites exist and that they pass at HEAD. It does not establish any CI enforcement.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers docs/constraints.md in any case and docs/thoughts/ staying fixable; does not cover case-insensitive filesystems beyond the lower-casing.
 
-`ls test/scripts` lists `build-loop-read.bats` as the only `build-loop-*.bats`, and E1 and E2 both pass. The stale "once that second caller lands" wording is gone.
+check_fix compares the lower-cased path: `|| "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md ||` (`scripts/dev-cycle.sh:180`), with `lp` from `tr 'ABC...' 'abc...'` (`scripts/dev-cycle.sh:175`). The test passes `docs/Constraints.md` and `docs/thoughts/t.md` and expects `skip docs/Constraints.md: in-cycle fixes edit only` and `ok docs/thoughts/t.md` (`test/scripts/dev-cycle.bats:1016-1032`); it passed at HEAD and failed under mutant M7 (the `constraints.md` comparison removed).
 
-**Evidence:** `test/scripts/`, logs/dev-cycle.log, logs/build-loop-read.log
+**Evidence:** `$S/logs/suite-head.txt`, `$S/logs/mut-M7-constraints.txt`, `scripts/dev-cycle.sh:170-184`
 
 ---
 
-## Claim 22: isclosed "spells the closed/ brief path rule once" and equals writable's regex and check_brief's regex
+## Claim 18: "the header's --check-fix paragraph is the rule, and the skip messages below repeat it. constraints.md is the user's (plan D2); docs/thoughts/ stays fixable."
+
+**Location:** `scripts/dev-cycle.sh:167-169`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers agreement among the header paragraph, check_fix's three rule-bearing skip messages and SKILL.md; does not cover check_path's own skip lines (tracked, plain).
+
+The header lists `the cycle's own files, working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory or dotfile, an instruction file, or a file an instruction file imports with @` (`scripts/dev-cycle.sh:50-54`). The skip messages say `one of the cycle's own files (use --check-write)` (`:178`), `(not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md` (`:181`), and `an instruction file imports it with @` (`:183`). Together they repeat the header list. SKILL.md lists the same set, `docs/constraints.md` included (`skills/dev-cycle/SKILL.md:72-76`).
+
+**Evidence:** `scripts/dev-cycle.sh:50-55`, `scripts/dev-cycle.sh:170-185`, `skills/dev-cycle/SKILL.md:72-76`
+
+---
+
+## Claim 19: "A change here must pass test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats). ... check_brief, check_branch and check_answer skip every argument unless it returned 0 with main found by name (main_entry and brief_fields answer error)."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:10-23`
+**Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the suites the glob names and main_entry's answer with no main by name; does not cover the reflowed header's other sentences, which this diff only re-wrapped.
+
+`test/scripts/build-loop-read.bats` is the one file matching `build-loop-*.bats` (paraphrased — no quote available because this is a directory listing). With `MAIN_BY_NAME=""` or `MAIN_SHA=""`, `main_entry .gitattributes` printed `error` (probe, 2026-10-06T16:48Z), and brief_fields maps any answer but blob to `BRIEF_ODD=error` (`scripts/lib/dev-cycle-read.sh:316`).
+
+**Evidence:** `$S/logs/probe.txt`, `scripts/lib/dev-cycle-read.sh:263-279`, `scripts/lib/dev-cycle-read.sh:311-334`
+
+---
+
+## Claim 20: isclosed spells the closed/ rule once, equal to writable's regex, check_brief's regex and shared_branches' prefix substitution
 
 **Location:** `scripts/lib/dev-cycle-read.sh:158`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers equivalence with both removed regexes on the 23 paths of Claim 18. Character classes are listed one by one, so locale does not matter.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers 22 edge cases (case, double closed/, `closedx/`, empty slug, trailing newline, a leading `x/`, `//`, non-ASCII digits, `.md.md`, `.MD`, a slash in the slug) against both old spellings; does not prove equality over all strings.
 
-The old regex `^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$` was compared with `isclosed` in E8 (`old_writable_closed` and old check_brief), with 0 differences.
+```bash
+# scripts/lib/dev-cycle-read.sh:158
+isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
+```
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:155-162`, `scripts/lib/dev-cycle-read.sh:344`, logs/probe1.log
+`$S/isclosed-eq.sh` compared `isclosed` with the old regex `^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$` (writable's and check_brief's, identical in the diff), and `isbrief X || isclosed X` with the old `isbrief "${f/#docs\/working\/briefs\/closed\//docs/working/briefs/}"`. It printed `cases=22 diffs=0` (exit 0, 2026-10-06T16:48Z).
+
+**Evidence:** `$S/logs/isclosed-eq.txt`, `scripts/build-loop.sh:318`, `scripts/lib/dev-cycle-read.sh:159-162`, `scripts/lib/dev-cycle-read.sh:348`
 
 ---
 
-## Claim 23: main_entry prints … "badform" (a path pathform refuses: a .git* part such as .gitattributes, say) or "error" (no default branch found by name, ls-tree failed, or the tree lists a name twice …)
+## Claim 21: main_entry prints "blob", "absent", "notfile", "notdir PART", "badform" (a path pathform refuses) or "error" (no default branch found by name, ls-tree failed, or a name listed twice); badform needs no git call
 
-**Location:** `scripts/lib/dev-cycle-read.sh:252-256`
+**Location:** `scripts/lib/dev-cycle-read.sh:247-256`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers every return path of main_entry (`:262-279`). With no main found by name, a badform path answers `error`, because main_by_name runs first. The comment does not say otherwise.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the word set and badform's zero git calls on seven refused forms; does not cover ls-tree failure, exercised by existing tests.
 
-The returns are:
 ```bash
-# scripts/lib/dev-cycle-read.sh:265-268
+# scripts/lib/dev-cycle-read.sh:266-267 (excerpt of main_entry, which runs :263-279 — read)
   if ! main_by_name; then echo error; return; fi
   if ! pathform "$1"; then echo badform; return; fi
-  while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
-  out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
 ```
-(excerpt ends :268; enclosing main_entry() continues to :279, read: the dup check `[[ -z "$dup" ]] || { echo error; return; }` is at :274.) In E8, `.gitattributes`, `.github/x.yml`, `../x`, `a b`, `a\nb` and `docs//x.md` all give `badform`, and with `MAIN_BY_NAME=""`, `.gitattributes` gives `error`.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:248-279`, logs/probe1.log
+With a git shim counting calls on PATH, `.gitattributes`, `.github/x.yml`, `a"b`, `../x`, `-x`, `docs//x` and `.GIT/x` each printed `badform` with `git calls: 0`; the control `docs/f.md` printed `blob` with 1 call. The remaining arms print `absent`, `notdir $p`, `error` (dup) and `blob`/`notfile` (`scripts/lib/dev-cycle-read.sh:268-278`).
+
+**Evidence:** `$S/logs/probe.txt` (2026-10-06T16:48Z, exit 0), `scripts/lib/dev-cycle-read.sh:263-279`
 
 ---
 
-## Claim 24: "Only blob reads the file, and only absent means there is none: every other word is a refusal." Every caller treats a non-blob, non-absent word as a refusal
+## Claim 22: "Only blob reads the file, and only absent means there is none: every other word is a refusal."
 
 **Location:** `scripts/lib/dev-cycle-read.sh:256-257`
-**Type:** Invariant
+**Type:** Architectural / Invariant
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers all four direct callers (check_brief, check_answer, brief_fields, main_file) and the indirect ones (status_line through check_brief and brief_fields, shared_branches through brief_fields). It does not establish fail-closed behaviour for F31's duplicate-branch count. There, a brief that is refused is not counted (`continue`), as recorded in rows 293 and 308, which predate this unit.
+**Verification mode:** static
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers every caller of main_entry (check_brief, check_answer, brief_fields, build-loop.sh main_file, and shared_branches and status_line through brief_fields and check_brief); does not cover a future caller such as U2a2's floor.
 
-The callers handle the words as follows:
-- check_brief: `absent) echo "ok $a new"` / `blob) ;;` / `*) echo "skip …"; return` (`:352-354`).
-- check_answer: `absent) continue` / `blob) ;;` / `notdir\ *)` and `*)` both print a skip and return (`:570-574`).
-- brief_fields: `[[ "$(main_entry "$1")" != blob ]]` gives `BRIEF_ODD=error; return 1` (`:312`).
-- main_file: the arms quoted in Claim 17.
-- status_line: `[[ "$out" == "ok "* ]] || { echo "$out"; return; }` (`scripts/build-loop.sh:329`).
-- shared_branches: `|| ! brief_fields "$f"; then continue` (`scripts/build-loop.sh:318`).
+check_brief: `absent) echo "ok $a new"; return ;; blob) ;; *) echo "skip $a: $(entry_why "$e" "")"; return ;;` (`scripts/lib/dev-cycle-read.sh:355-359`). check_answer: `absent) continue ;; blob) ;; *) echo "skip $a: ... so no entry in $f is read"; return ;;` (`:573-577`). brief_fields: `[[ "$(main_entry "$1")" != blob ]]` → `BRIEF_ODD=error; return 1` (`:316`), so absent is a refusal there too (it needs a file). main_file: Claim 16. shared_branches skips any brief brief_fields refuses (`scripts/build-loop.sh:318`), and status_line echoes any non-`ok` check_brief line (`scripts/build-loop.sh:328-329`).
 
-The test with an `odd` word (E12, `dev-cycle.bats:1351-1352`) shows that an unknown word gets the default arm's wording. No arm anywhere maps a word other than blob to a read.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:307-330`, `scripts/lib/dev-cycle-read.sh:339-376`, `scripts/lib/dev-cycle-read.sh:563-591`, `scripts/build-loop.sh:122-141`, `scripts/build-loop.sh:305-361`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:311-334`, `scripts/lib/dev-cycle-read.sh:343-376`, `scripts/lib/dev-cycle-read.sh:567-591`, `scripts/build-loop.sh:126-141`, `scripts/build-loop.sh:306-332`
 
 ---
 
-## Claim 25: "It runs main_by_name and pathform itself, before any read (pathform also means ls-tree prints the name unquoted)": badform is answered before any git call
+## Claim 23: "It runs main_by_name, then pathform, itself, before any read (so with no default branch even a refused form answers error ...)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:257-259`
+**Location:** `scripts/lib/dev-cycle-read.sh:257-260`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the number of git invocations per word, counted with a `git` function shim. It does not cover git calls made by resolve_main earlier in the process.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the order and its observable result; does not cover pathform's "ls-tree prints the name unquoted" clause, unchanged by this diff.
 
-E9 counts 0 git calls for each of `.gitattributes`, `.github/x.yml`, `../x` and `a\nb` (badform), and 1 for each of `x` and `docs/x.md` (absent). main_by_name is a variable test: `main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }` (`:247`).
+The guards are in that order (`scripts/lib/dev-cycle-read.sh:266-267`, quoted in Claim 21). With `MAIN_BY_NAME=""` and with `MAIN_SHA=""`, `main_entry .gitattributes` printed `error` both times. Mutant M4 (guards swapped) failed the badform test.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:247`, `scripts/lib/dev-cycle-read.sh:262-268`, logs/probe2.log
+**Evidence:** `$S/logs/probe.txt`, `$S/logs/mut-M4-guard-order.txt`
 
 ---
 
-## Claim 26: "$2 is the path, named in the reason; pass "" when the skip line already names it."
+## Claim 24a: "$2 is the path asked about, or "" when the skip line already names it: notfile and badform make it the subject ("$2 is not ..."; no subject when ""), ... and notdir names only the directory above it."
 
-**Location:** `scripts/lib/dev-cycle-read.sh:280-281`
+**Location:** `scripts/lib/dev-cycle-read.sh:281-284`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the notfile, badform and notdir arms with and without a path; does not cover the error/default arms' "" case (Claim 24b).
+
+```bash
+# scripts/lib/dev-cycle-read.sh:286-296 (all of entry_why)
+entry_why() {
+  local w="${1//$'\n'/ }" p="${2-}"
+  p="${p//$'\n'/ }"
+  case "$w" in
+    notdir\ *) echo "${w#notdir } is not a directory on the default branch" ;;
+    notfile) echo "${p:+$p is }not a regular file on the default branch" ;;
+    badform) echo "${p:+$p is }not an allowed path form" ;;
+    error) echo "the tree of the default branch could not be read${p:+ for $p}" ;;
+    *) echo "the default branch answered $w${p:+ for $p}" ;;
+  esac
+}
+```
+
+The entry_why test pins all ten outputs (`test/scripts/dev-cycle.bats:1338-1354`) and passed at HEAD; mutant M9 (notfile's subject made unconditional) failed it.
+
+**Evidence:** `$S/logs/suite-head.txt`, `$S/logs/mut-M9-entry_why-subject.txt`
+
+---
+
+## Claim 24b: "error and any other word end "for $2""
+
+**Location:** `scripts/lib/dev-cycle-read.sh:283-284`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers all five arms of entry_why with an empty and a non-empty `$2`. It does not cover callers.
 **Legibility-target:** for-author
+**Scope:** Covers the error and default arms; does not affect any caller's output (check_brief's "" error line is the pre-branch wording).
 
-The notfile, badform, error and default arms name `$2` when it is non-empty: `${p:+$p is }`, `${p:+ for $p}` (`:287-290`). The notdir arm ignores it: `notdir\ *) echo "${w#notdir } is not a directory on the default branch" ;;` (`:286`). E12 and the test (`dev-cycle.bats:1343-1344`) print the same line with and without a path. check_answer's comment at `:572` documents this. Precise version: "…named in the reason, except after notdir, which names the directory instead". The `empty-path` mutant (`notfile) echo "$p is …`) fails the new test (logs/mut-empty-path.log).
+With `$2` empty these arms drop the "for" clause too: `${p:+ for $p}` (`scripts/lib/dev-cycle-read.sh:293-294`), so `entry_why error ""` prints `the tree of the default branch could not be read` (`test/scripts/dev-cycle.bats:1350`). The comment states the "" case only for notfile and badform ("no subject when \"\""). A precise version: "error and any other word end "for $2" (nothing when \"\")".
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:280-292`, `test/scripts/dev-cycle.bats:1338-1354`, logs/mut-empty-path.log
+**Evidence:** `scripts/lib/dev-cycle-read.sh:281-296`, `test/scripts/dev-cycle.bats:1349-1350`
 
 ---
 
-## Claim 27: "A newline in either becomes a space, so the reason stays one line."
+## Claim 25: "A newline in either becomes a space, so the reason stays one line."
 
-**Location:** `scripts/lib/dev-cycle-read.sh:281-282`
+**Location:** `scripts/lib/dev-cycle-read.sh:285`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers newlines in `$1` and `$2`. It does not cover other control characters, which scrub removes at output.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers both arguments' folding by code and the path's folding by test; does not establish that the word's folding is pinned by a test (it is not: Claim 11).
 
-The code is `local w="${1//$'\n'/ }" p="${2//$'\n'/ }"` (`:284`). E12: `entry_why $'odd\nok' ""` gives `the default branch answered odd ok`, and `entry_why $'notdir a\nok b' x` gives `a ok b is not a directory …`, each on one line.
+Both expansions fold: `local w="${1//$'\n'/ }"` and `p="${p//$'\n'/ }"` (`scripts/lib/dev-cycle-read.sh:287-288`). The test's `entry_why badform "a\nok b"` expects `a ok b is not an allowed path form` (`test/scripts/dev-cycle.bats:1340-1354`); mutant M6 (path folding removed) failed it.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:283-292`, logs/entry_why-direct.log
+**Evidence:** `$S/logs/mut-M6-path-newline.txt`, `$S/logs/mut-M11-word-newline.txt`
 
 ---
 
-## Claim 28: `# "it" is $f, except after notdir, whose reason names a directory above it.` and the resulting check_answer lines
+## Claim 26: entry_why reads `${2-}`, so a one-argument call works under `set -u`
 
-**Location:** `scripts/lib/dev-cycle-read.sh:572`
+**Location:** `scripts/lib/dev-cycle-read.sh:287`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the notdir, notfile and error lines. Badform and unknown words are unreachable here, because the paths are fixed.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers one-argument calls for all five word kinds under `set -euo pipefail`; does not cover callers, which all pass two arguments.
 
-E1 passes these expectations:
-- `skip Q-1: docs/working is not a directory on the default branch, so no entry in docs/working/questions.md is read` (`dev-cycle.bats:1203`).
-- `skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read` (`:1198`).
-- `skip Q-1: the tree of the default branch could not be read for docs/working/questions.md, so no entry in it is read` (`:1327`).
+Under `set -euo pipefail`, `entry_why notfile` / `badform` / `error` / `"notdir docs"` / `odd` printed `[not a regular file on the default branch]`, `[not an allowed path form]`, `[the tree of the default branch could not be read]`, `[docs is not a directory on the default branch]`, `[the default branch answered odd]`, with no unbound-variable error.
 
-The mutant that changes the notdir tail fails the check-answer tests (logs/mut-check-answer-wording.log).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:563-575`, `test/scripts/dev-cycle.bats:1190-1206`, `test/scripts/dev-cycle.bats:1320-1328`, logs/mut-check-answer-wording.log
+**Evidence:** `$S/logs/probe.txt` (2026-10-06T16:48Z, exit 0)
 
 ---
 
-## Claim 29: no doc, help text, SKILL.md or test still quotes a skip wording that is no longer printed
+## Claim 27: check_brief's wording is unchanged by entry_why "" and check_answer ends every main_entry refusal "so no entry in $f is read"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:283-292`
+**Location:** `scripts/lib/dev-cycle-read.sh:358`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers check_brief's notdir/notfile/error lines against main's text and check_answer's single refusal arm at `:576`; does not cover check_brief's badform arm, which its own pathform check (`:347`) makes unreachable.
+
+check_brief now prints `skip $a: $(entry_why "$e" "")` (`:358`). With "", the notdir, notfile and error arms give `X is not a directory on the default branch`, `not a regular file on the default branch` and `the tree of the default branch could not be read`, which are main's three lines word for word (paraphrased — no quote available because main's lines are the removed `-` lines of the diff hunk at `scripts/lib/dev-cycle-read.sh:337-345`). check_answer's one arm is `*) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"; return ;;` (`:576`). The tests at `test/scripts/dev-cycle.bats:1198`, `:1203`, `:1226-1228` and `:1327` pin the exact lines; mutant M8 (arm ending changed back to "so $f is not read") failed test 9.
+
+**Evidence:** `$S/logs/mut-M8-answer-ending.txt`, `scripts/lib/dev-cycle-read.sh:343-376`, `scripts/lib/dev-cycle-read.sh:567-591`
+
+---
+
+## Claim 28: No doc, help text, SKILL.md or test still quotes a main_entry refusal wording no longer printed
+
+**Location:** `scripts/lib/dev-cycle-read.sh:281`
 **Type:** Staleness
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the removed wordings "the default branch's tree could not be read", "…, so <file> is not read" from check_answer, and "could not be read, so". The search excluded docs/reviews, archive and runs. It does not cover wordings that review artifacts quote.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers scripts/, skills/, test/, docs/dev-cycle.md and the plan; does not cover docs/reviews/ artifacts, which quote old wordings as history.
 
-`rg "default branch's tree|so docs/working/questions.md is not read|could not be read, so"` outside docs/reviews, archive and runs found no hits (paraphrased, no quote available because the claim covers the absence of matches). The remaining "is not read" matches are other, unchanged messages (`build-loop.sh:138-139`, `lib:358-360`). The dev-cycle.sh --check-answer header ("a default branch whose tree or file could not be read", `scripts/dev-cycle.sh:67-68`) still describes the new lines.
+`rg` for `default branch's tree could not be read`, `no entry in it is read`, `questions.md is not read"` and `so $f is not read` outside docs/reviews/ and archive/ found no hit in a refusal context (paraphrased — no quote available because the claim is an absence of matches). The remaining "is not read" hits (`test/scripts/dev-cycle.bats:196,237,267`) are the digest's own messages, not check_answer's.
 
-**Evidence:** `scripts/dev-cycle.sh:55-68`, `scripts/build-loop.sh:136-139`, `scripts/lib/dev-cycle-read.sh:356-361`
+**Evidence:** `scripts/build-loop.sh:136-139`, `test/scripts/dev-cycle.bats:196`, `test/scripts/dev-cycle.bats:1327`
 
 ---
 
-## Claim 30: "the same hermetic git environment as test/scripts/dev-cycle.bats" and "git lists every such repo-local variable itself (GIT_CONFIG_PARAMETERS too)"
+## Claim 29: "An inherited GIT_DIR (a run from a git hook, say) would send every fixture command to that repo ...; git lists every such repo-local variable itself (GIT_CONFIG_PARAMETERS too)."
 
-**Location:** `test/lib/build-loop-fixtures.bash:2-4`
-**Type:** Invariant
+**Location:** `test/lib/build-loop-fixtures.bash:11-15`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the git-related environment of both setups and what git 2.39.5 lists. bl_setup also sets `LC_ALL=C`, which dev-cycle.bats does not. That is not a git variable. The scope does not establish behaviour with other git versions.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers git 2.39.5's list and the effect of removing the unset (Claim 4); does not cover other git versions' lists.
 
-Both setups run `unset $(git rev-parse --local-env-vars)` and then `export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1`, the same author and committer variables, and a HOME under the temp dir (`dev-cycle.bats:13-19`, `build-loop-fixtures.bash:15-20`). `git rev-parse --local-env-vars` prints 16 names, among them `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT`, `GIT_DIR` and `GIT_INDEX_FILE`. It works with a bogus `GIT_DIR` and with a broken `GIT_CONFIG_COUNT=1` (E15: rc 0, victim untouched). No suite relies on an inherited one: `GIT_CONFIG_COUNT` appears only per command as `run --separate-stderr env GIT_CONFIG_COUNT=1 …` (`build-loop-read.bats:438`, `:483`).
+`git rev-parse --local-env-vars` printed `GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_CONFIG GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT GIT_OBJECT_DIRECTORY GIT_DIR GIT_WORK_TREE GIT_IMPLICIT_WORK_TREE GIT_GRAFT_FILE GIT_INDEX_FILE GIT_NO_REPLACE_OBJECTS GIT_REPLACE_REF_BASE GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX GIT_SHALLOW_FILE GIT_COMMON_DIR` (cwd `$S`, outside a repo, exit 0). The same unset is at `test/scripts/dev-cycle.bats:13`, which makes the fixture file's header "the same hermetic git environment as test/scripts/dev-cycle.bats" (`:3`) true.
 
-**Evidence:** `test/lib/build-loop-fixtures.bash:1-23`, `test/scripts/dev-cycle.bats:8-23`, `test/scripts/build-loop-read.bats:432-440`, logs/victim-head.log, logs/victim-cc.log
+**Evidence:** `test/lib/build-loop-fixtures.bash:1-24`, `test/scripts/dev-cycle.bats:8-22`, `$S/logs/a10b-summary.txt`
 
 ---
 
-## Claim 31: "# A marker whose message body holds a NUL byte (one commit on top of base, with its tree)."
+## Claim 30: "A marker whose message body holds a NUL byte (one commit on top of base, with its tree)."
 
-**Location:** `test/scripts/build-loop-read.bats:297`
+**Location:** `test/scripts/build-loop-read.bats:264`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the fixture object the comment describes. It does not cover marker_kind's verdict on it.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the fixture's tree and parent; does not cover the assertion that follows.
 
-The fixture is `printf 'tree %s\nparent %s\n…' "$(git rev-parse "$base^{tree}")" "$base"` (`:298`): its parent is base and its tree is base's tree.
+```bash
+# test/scripts/build-loop-read.bats:265-266 (excerpt; the test continues past :268 — read)
+    o="$(printf 'tree %s\nparent %s\n...handoff: ready\n\n\0x\n' "$(git rev-parse "$base^{tree}")" "$base" \
+        | git hash-object -t commit --literally -w --stdin)"
+```
 
-**Evidence:** `test/scripts/build-loop-read.bats:297-300`
+Tree is base's tree and the one parent is base.
+
+**Evidence:** `test/scripts/build-loop-read.bats:264-270`
 
 ---
 
-## Claim 32: the three fixture `&&` chains are split (with a standalone `git replace -d`), so a failed fixture step fails the test
+## Claim 31: Each new or changed dev-cycle.bats test fails when the behaviour it pins is reverted
 
-**Location:** `test/scripts/build-loop-read.bats:436-440`
+**Location:** `test/scripts/dev-cycle.bats:1338`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three chains named in row 317 (`:436`, `:466-468`, `:473-475` at HEAD). It does not cover the older chain at `:84`, `git replace … && git config core.useReplaceRefs true`, which row 317 did not name.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers mutants M3-M10 (prefix guard, guard order, badform→error, path folding, constraints.md, check_answer ending, notfile subject, writable without isclosed); does not cover the word-folding mutant M11, which survives (Claim 11, an accepted Won't-Fix).
 
-With each split step made to fail on its own copy, the target test fails:
-- `replace-fails` (the replace given a zero object id): `not ok 10 … (in test file …, line 436)`.
-- `crlf-fails` and `odddir-fails` (each printf redirected into a missing directory): 1 failing each.
+`$S/mutants.sh` (cwd `$S/copy`, 2026-10-06T16:49Z) printed for each: M3, M4, M5, M6, M7, M9 `0 ok, 1 not ok`; M8 `10 ok, 1 not ok` (test 9, `--check-answer refuses a questions file or directory that is not plain on main`); M10 `74 ok, 1 not ok` (test 40, closed briefs). M1/M2: Claim 32.
 
-The standalone `git replace -d "$(git rev-parse main:docs/dev-cycle.md)"` (`:440`) also fails the test when no replacement was made (`replace-fails-chain`: 1 failing).
-
-**Evidence:** `test/scripts/build-loop-read.bats:430-441`, `test/scripts/build-loop-read.bats:465-476`, logs/mut-replace-fails.log, logs/mut-crlf-fails.log, logs/mut-odddir-fails.log, logs/mut-replace-fails-chain.log
+**Evidence:** `$S/logs/mutants-summary.txt`, `$S/logs/mut-M*.txt`
 
 ---
 
-## Claim 33: "# As bl_setup: an inherited GIT_DIR would send fixture commits to that repo."
+## Claim 32: "One test of each suite runs here with both pointed at a victim repo."; both fail when the unset lines are replaced by `:`
 
-**Location:** `test/scripts/dev-cycle.bats:11-13`
+**Location:** `test/scripts/fixture-git-env.bats:3-6`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers dev-cycle.bats with and without the line. It does not cover suites outside these two.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the filters, the pass at HEAD and both mutants (also commit 91469367's "both fail with the unset lines replaced by `:`"); does not cover the suite's own hermeticity (Claim 7).
 
-Without the line (E6/E7), the victim receives fixture commits and branches. With it (E5/E7), the victim keeps 1 commit. See Claim 3.
+`bats --count -f '^prints all eight sections' test/scripts/dev-cycle.bats` and `bats --count -f 'exact policy line is set' test/scripts/build-loop-read.bats` each printed `1`; the only matching tests are `test/scripts/dev-cycle.bats:40` and `test/scripts/build-loop-read.bats:13`. Both tests passed at HEAD. Mutant M1 (dev-cycle.bats unset → `:`) failed test 1, whose inner run failed (`not ok 1 prints all eight sections`, status check at `:19`); mutant M2 (bl_setup unset → `:`) failed test 2 on the victim check, with the victim's log showing the fixture's `cr`, `settings`, `initial` commits.
 
-**Evidence:** `test/scripts/dev-cycle.bats:8-23`, logs/victim-filter-mut1.log, logs/victim-head.log
+**Evidence:** `$S/logs/mut-M1-unset-devcycle.txt`, `$S/logs/mut-M2-unset-bl.txt`, `$S/logs/suite-head.txt`
 
 ---
 
-## Claim 34: the new entry_why test pins "each main_entry refusal on one line, naming the path only when given"
+## Claim 33: test/scripts/fixture-git-env.bats is picked up by the runner as `@category fast` and scanned by the hermeticity lint
 
-**Location:** `test/scripts/dev-cycle.bats:1338-1354`
-**Type:** Behavioral
+**Location:** `test/scripts/fixture-git-env.bats:2`
+**Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers newlines in the path and the empty-path wording of all five arms. It does not pin the translation of a newline in the word (`$1`): the `nl-word-only` mutant `local w="$1"` passes, because no input word holds a newline. That input is unreachable from main_entry, whose words come from paths that pathform has cleared.
 **Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers run-tests.sh `--fast`/`--slow` selection and the lint's file count; does not cover a full `run-tests.sh --all` run.
 
-The mutant results are `nl-word: bats exit 1 (1 failing)`, `empty-path: bats exit 1 (1 failing)` and `nl-word-only: bats exit 0 (0 failing)`.
+In `$S/copy`, `scripts/run-tests.sh --fast test/scripts/fixture-git-env.bats` (2026-10-06T16:55Z) exited 0 with `ok 1` and `ok 2`; `--slow` on the same file printed `No test files matched category: slow`. run-tests.sh discovers files with `find "$TEST_DIR" -name '*.bats'` (`scripts/run-tests.sh:213`). `scripts/hermeticity-lint --root . --json` reported `"bash": 127`, and `rg --files test -g '*.bats' | wc -l` is 127, so every suite, this one included, was scanned, with `"findings": []`.
 
-**Evidence:** `test/scripts/dev-cycle.bats:1338-1354`, logs/mut-nl-word.log, logs/mut-empty-path.log, logs/mut-nl-word-only.log
+**Evidence:** `$S/logs/run-tests-fge.txt`, `$S/logs/run-tests-fge-slow.txt`, `scripts/run-tests.sh:195-213`
 
 ---
 
-## Claim 35: "main_entry answers badform for a path pathform refuses, absent for a plain missing one" (the x → absent positive control)
+## Claim 34: "entry_why's comment states each word's use of $2 ..., and reads it as ${2-} like the lib's other optional arguments"
 
-**Location:** `test/scripts/dev-cycle.bats:1356-1366`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers three reversions: badform reverted to error, every path answered badform, and the fixture's `resolve_main` dropped. It does not cover a mutant that reorders main_by_name and pathform.
-**Legibility-target:** for-orchestrator-synthesis
-
-`badform-to-error`, `all-badform` (`if true; then echo badform`) and `no-main-error` (`resolve_main` removed) each fail the test, with 1 failing each (E11).
-
-**Evidence:** `test/scripts/dev-cycle.bats:1356-1366`, logs/mut-badform-to-error.log, logs/mut-all-badform.log, logs/mut-no-main-error.log
-
----
-
-## Claim 36a: commit messages: 6f624cdf ("Tests: dev-cycle.bats 73, build-loop-read.bats 19, hermeticity 2 pass. 128 changed code lines."; the carried rows 314, 317-320), 706e0499 ("0 Must Fix; 1 Medium …, 1 Low, 4 Minor … Four declined findings get override rows (C1-C4), and row 204 is closed by C1's row"), d48f4645 (A1-A5 and "Tests: dev-cycle.bats 74 …, build-loop-read.bats 19, hermeticity 2 … shellcheck clean. 165 changed code lines against main"; "checked: 1 commit before and after")
-
-**Location:** `git log main..HEAD` (commits 6f624cdf, 706e0499, d48f4645)
-**Type:** Reference / Configuration
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the test counts (from `^@test` at each commit, and from running them at HEAD), the line counts, the severity tallies against the rubric, and A1-A5 against the code. A6 is Claim 6, and the Notes line is Claim 36b. 6f624cdf's own Notes line is already logged as Accepted-immutable (Claim 8).
-**Legibility-target:** for-orchestrator-synthesis
-
-The `@test` counts are `6f624cdf dc=73 bl=19 fh=2` and `d48f4645 dc=74 bl=19 fh=2`. E4 gives 128 (main..6f624cdf) and 165 (main...HEAD). At 6f624cdf, bl_setup has `unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES` (row 314). The rubric rows A3, A4, A5 and C1 are the 4 Minor; A1 is Medium and A2 is Low (`rubric:21-27`). The diff adds override rows `:321-325`: one Accepted-immutable plus C1-C4. "1 commit before and after" is reproduced in E7 and E5.
-
-**Evidence:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:19-38`, `docs/reviews/override-log.md:321-325`, E4 output, logs/victim-filter-wt.log
-
----
-
-## Claim 36b: d48f4645 Notes: "the old, pre-U2a1 sentences come back except where a path is now named"
-
-**Location:** `git show d48f4645` (commit message, Notes line)
+**Location:** commit 91469367 (message body)
 **Type:** Reference
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers each skip sentence at main against HEAD for check_brief, check_answer and main_file. It does not cover sentences that never went through main_entry.
-**Legibility-target:** for-author
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the "like the lib's other optional arguments" comparison; does not affect behaviour (both forms are set -u safe and default to "").
 
-check_brief's three sentences match main's exactly, and so does check_answer's notfile line. Three others changed even though main's version already named the path:
-- check_answer notdir: main had `…, so $f is not read` (removed line in `git diff main...HEAD -- scripts/lib/dev-cycle-read.sh`), and HEAD has `…, so no entry in $f is read` (`:573`). The test expectation at `dev-cycle.bats:1203` changed to match.
-- check_answer error: main had `the tree of the default branch could not be read, so $f is not read`, and HEAD has `…could not be read for $f, so no entry in it is read`.
-- main_file error: main had `the default branch's tree could not be read for $f`, and HEAD has `the tree of the default branch could not be read for $f`.
+The lib's other optional positional arguments read `${2:-}` and `${2:-file}`: `[[ "${2:-}" == glob ]]` (`scripts/lib/dev-cycle-read.sh:142`) and `blocker "$1" "${2:-file}"` (`scripts/lib/dev-cycle-read.sh:125`). entry_why's `p="${2-}"` (`:287`) is the only `${N-}` positional read. The `-` form matches the lib's associative-array reads (`${m[$1]-}`, `${BRIEF[status]-}`), not its optional arguments. Commit message: immutable history.
 
-Precise version: "check_brief's and the notfile sentences come back; the notdir and error sentences take the shared wording".
+**Evidence:** `scripts/lib/dev-cycle-read.sh:125`, `scripts/lib/dev-cycle-read.sh:142`, `scripts/lib/dev-cycle-read.sh:287`
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:563-575`, `scripts/build-loop.sh:129-133`, `test/scripts/dev-cycle.bats:1203`
+---
+
+## Claim 35: "the G1 suite runs bats inside bats (about 2 s)"
+
+**Location:** commit 91469367 (message body, Notes)
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the order of magnitude; does not fix the host-dependent figure.
+
+`time timeout 120 bats test/scripts/fixture-git-env.bats` gave `real 0m0.964s` here (2026-10-06T16:55Z, exit 0): about a second, under the stated ~2 s and the same order.
+
+**Evidence:** run inline, cwd worktree, output in this claim's text
+
+---
+
+## Claim 36: "Four declined findings get override rows (C7-C10); the C4 row's timings are corrected to the re-measured range."
+
+**Location:** commit d07cc89c (message body)
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the rows' existence and decisions; does not re-verdict each row (Claims 7, 8, 10, 11, 12).
+
+Rows `docs/reviews/override-log.md:327-330` are C7 (Defer), C8 (Won't-Fix), C9 (Won't-Fix) and C10 (Defer), matching the rubric's statuses (`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:27-30`). The C4 row now reads `0.3-0.5 ms, by host` and `~17-37 µs` with `figures re-measured in iteration 2` (`:325`).
+
+**Evidence:** `docs/reviews/override-log.md:325-330`, `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:27-31`
+
+---
+
+## Claim 37: "The merge kept claims 21b and 41a Verified where a replicate's compound verdict blamed only the sibling part (decision 033), as the merged report records."
+
+**Location:** commit d07cc89c (message body, Notes)
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the merged report's record of it; does not re-verdict claims 21b and 41a.
+
+The merged report says `Claims 21b and 41a disagree only through a sibling's compound verdict` (`docs/reviews/code-fact-check-report-build-loop-u2a1.md:1135`).
+
+**Evidence:** `docs/reviews/code-fact-check-report-build-loop-u2a1.md:1135`
+
+---
+
+## Claim 38: "found an iteration-1 regression in wording (A7: entry_why's path argument), two Medium test gaps (A10, A11; executed)"
+
+**Location:** commit d07cc89c (message body)
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the commit's summary against the rubric rows; the gaps themselves are Claims 4 and 5.
+
+The rubric rows read `| A7 | After A4, entry_why's `$2` plays a different role per word` (Minor), `| A10 | ... | Medium (test gap) |` and `| A11 | ... | Medium (test gap; executed) |` (`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:20,23,24`).
+
+**Evidence:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:20-24`
 
 ---
 
@@ -680,18 +705,19 @@ Precise version: "check_brief's and the notfile sentences come back; the notdir 
 (none)
 
 ### Mostly Accurate
-- **Claim 2** (`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:17`): "the diff addresses each" holds for every row except row 319's short-line residue (lib header `:25` is still 52 chars).
-- **Claim 6** (`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:26`, also d48f4645's A6): "reflowed" is partial. `:13` is fixed, but `:25` is still short and `:16` now runs to 96 chars.
-- **Claim 20** (`scripts/dev-cycle.sh:167-168`): "the skip message below repeats it". The exclusion-list message leaves out own files and @-imports, each of which has its own skip line, so it should read "the skip messages below".
-- **Claim 26** (`scripts/lib/dev-cycle-read.sh:280-281`): "$2 is the path, named in the reason". The notdir arm ignores `$2` and names the directory.
-- **Claim 36b** (d48f4645 Notes): "the old sentences come back except where a path is now named". check_answer's notdir and error sentences and main_file's error sentence are reworded, though main's versions already named the path.
+- **Claim 7** (`docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a1.md:27`, also `docs/reviews/override-log.md:327`): "five other suites" leaves out the new test/scripts/fixture-git-env.bats, whose own setup writes 2 commits into an inherited GIT_DIR (executed: victim 1 to 3). Name it, or extend C7's trigger to it.
+- **Claim 24b** (`scripts/lib/dev-cycle-read.sh:283-284`): error and the default arm also drop "for" when `$2` is ""; the comment states the "" case only for notfile and badform.
+- **Claim 34** (commit 91469367): `${2-}` is not "like the lib's other optional arguments", which read `${2:-}`/`${2:-file}`; the behaviour is the same. Immutable history.
 
 ### Unverifiable
 (none)
 
+## Escalations
+- E1 (informational, for the orchestrator): test/scripts/fixture-git-env.bats, the suite that pins the setups' `unset`, does not unset the repo-local variables in its own setup (`:9-15`). Run under an inherited GIT_DIR it fails both tests and commits into that repo (Claim 7). This is the C7 class (Defer), not a regression of this unit's code; adding the same `unset` line to its setup would close it.
+
 ## Goal-Alignment Note
-- Success criterion (restated verbatim): A code-fact-check report saved at the replicate path named below (inside the worktree), structured per the code-fact-check skill, with `Commit: d48f4645` as its first line.
-- Answered: yes. All nine focus areas were checked, mostly by execution (suites, victim GIT_DIR, 12 mutants, probes).
-- Out of scope: review artifacts other than the rubric and the new override rows; U2a2/U2b/U2c prescriptions in the override rows (not checkable yet).
-- Escalate: nothing blocking. All five non-Verified claims are wording-only. The unpinned word-newline arm of entry_why (Claim 34) is unreachable today.
-- Decisions I made: numbered row 319's residue twice, once as the rubric's "addresses each" (Claim 2) and once as A6's "reflowed" (Claim 6), because they are separate statements. Counted the older unsplit `:84` chain as outside row 317 rather than as a defect.
+- Success criterion (restated verbatim): A code-fact-check report saved at the replicate path named below (inside the worktree), structured per the code-fact-check skill, with `Commit: d07cc89c` as its first line.
+- Answered: yes. All nine focus areas are verdicted, and the behavioural ones were executed: suites (98/98), the numstat count, the isclosed equivalence (22 cases), badform's git-call count, the guard order, one-argument entry_why, 11 mutants, A10's victim counts, the runner and lint pickup, and the new suite under an inherited GIT_DIR.
+- Out of scope: earlier commits' message claims (Accepted-immutable rows); docs/reviews/*.md artifacts other than the rubric's iteration-2 section and the new override rows; U2a2/U2b/U2c plan bullets.
+- Escalate: E1 (informational). Nothing blocking; 0 Incorrect.
+- Decisions I made: graded the C4 and "about 2 s" timings Verified on order of magnitude, though single runs fell outside the stated ranges, because both are marked approximate and the conclusions hold. Read the rubric's A10 "passes every test" as test-strategy G1 measured it (the normal suite run) and stated the residue in its Scope.
