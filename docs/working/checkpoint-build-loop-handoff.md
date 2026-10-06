@@ -35,7 +35,7 @@ Also merged on the user's request after U2a2 (2026-10-06): `feat/web-taint-fetch
 - `questions.sh archive` matches entries by ID, so take `next-id` from fresh main (memory `questions-id-collision-concurrent-sessions`).
 - dev-cycle.bats test 25 fails whenever TMPDIR has a dot-prefixed component, such as the job scratch path under `~/.claude`. Run the suites with `TMPDIR=$(mktemp -d /tmp/<tag>-XXXX)`.
 - Review agents: tell each to write only its own report and to use its own scratch dir, with a prefix no other agent's cleanup glob matches (a replicate's `rm -rf /tmp/<shared-prefix>-*` can delete a sibling's TMPDIR).
-- A literal backtick in lib code (even escaped in a `[[ ]]` pattern) makes the hermeticity lint read the rest of the file as a command substitution; write it `$'\\x60'`.
+- A literal backtick in lib code (even escaped in a `[[ ]]` pattern) makes the hermeticity lint read the rest of the file as a command substitution; write it `$'\`'`.
 - Under pipefail, `a | grep` reports grep's "no match" (1) and hides a failure of `a`; split the steps when the status matters.
 - A comment line that starts with "Claude" can trip the hermeticity lint (it reads the first word as a command).
 - Review agents: A merge agent can put a "Claims Requiring Attention (summary)" heading near the top of the merged report; append Stage 2.5 claims after the last claim, not before the first such heading.
