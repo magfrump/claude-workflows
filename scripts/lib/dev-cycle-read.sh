@@ -12,7 +12,7 @@
 # The caller sets -euo pipefail (check_answer and brief_fields also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
-# check_brief and the import walk (imported_names) exit 1 (need_root) unless
+# check_brief, isimported and the walk (imported_names) exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # Call the exiting checks in the caller's shell, not inside $(...) or
@@ -118,7 +118,10 @@ blocker() {  # $1 path, $2 "file" or "dir"; prints the blocking part, or nothing
 # A fixed-name input is read only when no part of its path blocks it; the walk
 # runs first, so nothing is looked up through a non-plain parent. (Glob items
 # use rawfile directly: their directory has already passed dirok.)
-inrepo() { need_root; [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
+inrepo() { need_root; inrepo_here "$1"; }
+# inrepo for a caller that has run need_root itself (a walk, per path); it has
+# no need_root of its own.
+inrepo_here() { [[ -z "$(blocker "$1" file)" && -f "$1" ]]; }
 # The same for a directory the digest globs in: the walk first, so nothing is
 # looked up through a non-plain parent.
 dirok() { need_root; [[ -z "$(blocker "$1" dir)" && -d "$1" ]]; }
@@ -279,9 +282,10 @@ main_entry() {
   case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac
 }
 # Why main_entry's word $1 is not a file to read, for a skip line. $2 is the
-# path asked about, or "" when the skip line already names it: notfile and
-# badform make it the subject ("$2 is not ..."; no subject when ""), error and
-# any other word end "for $2", and notdir names only the directory above it.
+# path asked about, or "" (or no $2) when the skip line already names it:
+# notfile and badform make it the subject ("$2 is not ..."; no subject when
+# ""), error and any other word end "for $2" unless it is "", and notdir names
+# only the directory above it.
 # A newline in either becomes a space, so the reason stays one line.
 entry_why() {
   local w="${1//$'\n'/ }" p="${2-}"
@@ -439,44 +443,82 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
 # gitignored), resolves each @path against the importing file's directory as
 # Claude Code does (~/ and absolute paths lead outside the repo and are not
-# followed), and reads each plain file it reaches once. A token may follow any
-# byte but a letter or digit (so user@host is not one); it ends at a blank, \, #,
-# a backtick, ( ) [ or ], and loses trailing punctuation and emphasis marks
-# (*, _, ~), so @docs/my_notes.md and **@docs/x.md** both read whole.
-# Over-reading (a code span) only over-refuses. One result is cached, for the
-# root in IMPORTED_DONE; a call for another ROOT_REAL recomputes it.
+# followed), and reads each plain file it reaches once (import_targets has the
+# token rules). One result is cached, for the root in IMPORTED_DONE; a call for
+# another ROOT_REAL recomputes it.
 IMPORTED=$'\n'; IMPORTED_DONE=""
+# UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
+# U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
+# token ends at JavaScript's \s, which includes U+FEFF).
+UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x80\x82' $'\xe2\x80\x83' $'\xe2\x80\x84'
+  $'\xe2\x80\x85' $'\xe2\x80\x86' $'\xe2\x80\x87' $'\xe2\x80\x88' $'\xe2\x80\x89' $'\xe2\x80\x8a' $'\xe2\x80\xa8'
+  $'\xe2\x80\xa9' $'\xe2\x80\xaf' $'\xe2\x81\x9f' $'\xe3\x80\x80' $'\xef\xbb\xbf')
 IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+# The import targets in the text on stdin, for a file in directory $1 ("" at
+# the top level): one repo-relative path per line, case kept. Every import walk
+# shares these rules, so a change here changes --check-fix too. A token may
+# follow any byte but a letter or digit (so user@host is not one); it ends at a
+# blank, a UNI_SPACES space, \, #, a backtick, ( ) [ or ]. grep -a reads text
+# holding a NUL. Claude Code keeps trailing punctuation (@x.md. reads x.md.),
+# while Markdown emphasis (**@docs/x.md**) may hide its marks, so a token
+# ending in . , ; : ! ? * _ or ~ yields both its whole and its stripped name.
+# Over-reading (a code span) only over-refuses. ~/ and absolute paths, and
+# paths leaving the repo (.. or ../, not a ..x name), are dropped.
+import_targets() {
+  local t v p u
+  while IFS= read -r t; do
+    t="${t#*@}"
+    for u in "${UNI_SPACES[@]}"; do t="${t%%"$u"*}"; done
+    v="$t"; while [[ "$v" == *[.,\;:!?*_~] ]]; do v="${v%?}"; done
+    for t in "$t" "$v"; do
+      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
+      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$t" 2>/dev/null)" || continue
+      [[ "$p" != .. && "$p" != ../* ]] || continue
+      printf '%s\n' "$p"
+      [[ "$v" != "$t" ]] || break
+    done
+  done < <(env LC_ALL=C grep -aoE "$IMPORT_RE" || true)
+}
+# Instruction-file names among NUL-separated paths on stdin: one grep, before
+# the tree walk forks lower and a plain check per path (forking for every tracked
+# file took seconds). It matches INSTRUCTION_FILE's names; the walk's own test
+# stays the authority. LC_ALL=C makes -i ASCII-only.
+instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true; }
+# The checkout's untracked and ignored .md files, NUL-separated: --others
+# without --exclude-standard already lists ignored files.
+untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
 imported_names() {
-  local f t d p seen=$'\n' queue=()
+  local f d p seen=$'\n' queue=()
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && return; IMPORTED_DONE="$ROOT_REAL"; IMPORTED=$'\n'
   while IFS= read -r -d '' f; do
-    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo "$f"; then continue; fi
+    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
-  # One grep keeps only instruction-file basenames before the loop forks lower
-  # and inrepo per path (forking for every tracked file took seconds). It
-  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.
-  # LC_ALL=C makes -i ASCII-only. --others without --exclude-standard already
-  # lists ignored files, so one untracked listing covers both.
-  done < <({ git ls-files -z
-             GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; } \
-           | env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true)
+  done < <({ git ls-files -z; untracked_md; } | instruction_names)
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    while IFS= read -r t; do
-      t="${t#*@}"
-      while [[ "$t" == *[.,\;:!?*_~] ]]; do t="${t%?}"; done
-      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
-      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$t" 2>/dev/null)" || continue
-      [[ "$p" != ..* ]] || continue
+    while IFS= read -r p; do
       IMPORTED+="$(lower "$p")"$'\n'
-      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
-    done < <(env LC_ALL=C grep -oE "$IMPORT_RE" -- "$f" || true)
+      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
+    done < <(import_targets "$d" < "$f")
   done
+}
+# Whether path $2 (any case) is imported, by the walk $1 names: tree (U2a3
+# adds main, the walk over the default branch's commit). A walk name it does
+# not know answers imported (0), so a caller testing it with `if` refuses. Run
+# it in the caller's shell: the walk exits through need_root and caches its
+# result.
+isimported() {
+  local lp
+  need_root
+  lp="$(lower "$2")"
+  case "$1" in
+    tree) imported_names; [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]] ;;
+    *) return 0 ;;
+  esac
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),

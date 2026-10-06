@@ -1083,10 +1083,10 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why; do
+                 isclosed entry_why isimported inrepo_here import_targets instruction_names untracked_md; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
-        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
         for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
@@ -1339,7 +1339,8 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
         for w in "notdir docs/w" notfile badform error odd; do entry_why "$w" docs/w/q.md; entry_why "$w" ""; done
         entry_why badform "a
-ok b"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+ok b"
+        entry_why error' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$output" = "docs/w is not a directory on the default branch
 docs/w is not a directory on the default branch
 docs/w/q.md is not a regular file on the default branch
@@ -1350,7 +1351,8 @@ the tree of the default branch could not be read for docs/w/q.md
 the tree of the default branch could not be read
 the default branch answered odd for docs/w/q.md
 the default branch answered odd
-a ok b is not an allowed path form" ] || { echo "$output $stderr"; return 1; }
+a ok b is not an allowed path form
+the tree of the default branch could not be read" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)" {
