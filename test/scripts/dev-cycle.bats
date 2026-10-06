@@ -8,6 +8,9 @@ bats_require_minimum_version 1.5.0
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     DC="$REPO_ROOT/scripts/dev-cycle.sh"
+    # As bl_setup: an inherited GIT_DIR would send fixture commits to that repo.
+    # shellcheck disable=SC2046  # word splitting is wanted: one name per line
+    unset $(git rev-parse --local-env-vars)
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
@@ -1036,7 +1039,7 @@ EOF
     git add -A && git commit -qm s
     rm docs/working/briefs/2026-01-01-s.md && printf 'Status: done\n' > docs/working/briefs/2026-01-01-s.md
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/2026-01-01-s.md
-    [[ "$output" == "skip docs/working/briefs/2026-01-01-s.md: docs/working/briefs/2026-01-01-s.md is not a regular file on the default branch" ]] || { echo "$output"; return 1; }
+    [[ "$output" == "skip docs/working/briefs/2026-01-01-s.md: not a regular file on the default branch" ]] || { echo "$output"; return 1; }
     run --separate-stderr bash "$DC" --check-answer Q-1 Q-2
     [[ "$output" == *"drop Q-1"* && "$output" == *"drop Q-2"* ]] || { echo "$output"; return 1; }
 }
@@ -1192,12 +1195,12 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     # The working tree holds a plain file now; main's symlink still decides.
     rm docs/working/questions.md && cp real/q.md docs/working/questions.md
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so docs/working/questions.md is not read" ] \
+    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read" ] \
         || { echo "$output"; return 1; }
     # A symlinked directory above it is named as the blocking part.
     git rm -rq --cached docs/working && rm -rf docs/working && ln -s real docs/working && git add -A && git commit -qm dirlink
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: docs/working is not a directory on the default branch, so docs/working/questions.md is not read" ] \
+    [ "$output" = "skip Q-1: docs/working is not a directory on the default branch, so no entry in docs/working/questions.md is read" ] \
         || { echo "$output"; return 1; }
 }
 
@@ -1220,9 +1223,9 @@ none 1: [] []" ] || { echo "$output"; return 1; }
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [ "$output" = "skip Q-1: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so docs/working/questions-archive.md is not read
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read
 skipped=0
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so docs/working/questions-archive.md is not read" ] || { echo "$output"; return 1; }
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read" ] || { echo "$output"; return 1; }
 }
 
 @test "a NUL byte refuses a brief or a questions file, never dropped into a value; main_entry fails closed" {
@@ -1321,7 +1324,7 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     d="$(printf '040000 tree %s\tworking\n' "$w" | git mktree)" && t="$(printf '040000 tree %s\tdocs\n' "$d" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p HEAD -m dup)"
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: the tree of the default branch could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
+    [ "$output" = "skip Q-1: the tree of the default branch could not be read for docs/working/questions.md, so no entry in it is read" ] || { echo "$output"; return 1; }
 }
 
 @test "-h and --help print the header from its first line through its last" {
@@ -1330,6 +1333,24 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
             && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$h: $output"; return 1; }
     done
+}
+
+@test "entry_why words each main_entry refusal on one line, naming the path only when given (U2a1)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        for w in "notdir docs/w" notfile badform error odd; do entry_why "$w" docs/w/q.md; entry_why "$w" ""; done
+        entry_why badform "a
+ok b"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "docs/w is not a directory on the default branch
+docs/w is not a directory on the default branch
+docs/w/q.md is not a regular file on the default branch
+not a regular file on the default branch
+docs/w/q.md is not an allowed path form
+not an allowed path form
+the tree of the default branch could not be read for docs/w/q.md
+the tree of the default branch could not be read
+the default branch answered odd for docs/w/q.md
+the default branch answered odd
+a ok b is not an allowed path form" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a)" {

@@ -164,11 +164,9 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# An in-cycle fix edits documentation only: a tracked .md file under docs/,
-# outside the cycle's own files, working/, human-author/ (the user's), reviews/
-# and decisions/ (records), the settings file, constraints.md (the user's: plan
-# D2), any dot-directory, and any instruction file (CLAUDE.md, AGENT(S).md,
-# GEMINI.md, SKILL.md, any case); or README.md. Anything else is filed.
+# An in-cycle fix edits documentation only; the header's --check-fix paragraph
+# is the rule, and the skip message below repeats it. constraints.md is the
+# user's (plan D2); docs/thoughts/ stays fixable. Anything else is filed.
 check_fix() {
   local a="$1" low lp
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
