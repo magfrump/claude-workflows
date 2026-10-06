@@ -158,3 +158,41 @@ failed walk: imported" ] || { echo "$output $stderr"; return 1; }
     for p in docs/nb.md ..x.md docs/hid.md docs/b.md; do want "$p" imported; done
     want docs/other.md -
 }
+
+@test "main walk fails on symlink text holding a NUL, and on a checkout symlink it would read (U2a2 iteration 1 A1)" {
+    mkdir -p docs real
+    printf 'r\n' > docs/rules.md && printf 'x @docs/y.md\n' > real/x.md
+    printf 'see @docs/lt.md and @docs-link/x.md\n' > CLAUDE.md
+    ln -s real docs-link
+    commit_all base
+    # A tracked directory symlink, present in the checkout, that an import passes through.
+    imps main docs/rules.md; want walk failed
+    git rm -q docs-link && printf 'see @docs/lt.md\n' > CLAUDE.md && commit_all nolink
+    imps main docs/rules.md; want walk ok
+    # An untracked symlink at a target main lacks; then an untracked symlinked start file.
+    ln -s rules.md docs/lt.md
+    imps main docs/rules.md; want walk failed; want docs/rules.md imported
+    rm docs/lt.md && ln -s docs/rules.md CLAUDE.local.md
+    imps main docs/x.md; want walk failed
+    # An import of a plain directory reads nothing and is no failure.
+    rm CLAUDE.local.md && mkdir docs/lt.md
+    imps main docs/x.md; want walk ok; want docs/x.md -; rmdir docs/lt.md
+    # Symlink text holding a NUL: $(...) would drop it and follow another name.
+    l="$(printf 'docs/rules.md\0zzz' | git hash-object -w --stdin)"
+    t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tdocs-rules.md\n' "$l" "$(git rev-parse main:docs/rules.md)" | git mktree)"
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m nul-link)"
+    imps main docs/rules.md; want walk failed; want docs/rules.md imported
+    [ -z "$stderr" ] || { echo "$stderr"; return 1; }
+}
+
+@test "main walk returns, not exits, when main's tree or the untracked list cannot be listed (U2a2 iteration 1 A2)" {
+    mkdir -p docs && printf 'see @a.md\n' > docs/CLAUDE.md && commit_all base
+    imps main docs/a.md; want walk ok; want docs/a.md imported
+    # The docs/ tree object is missing: ls-tree -r fails part-way.
+    o="$(git rev-parse main:docs)"; rm ".git/objects/${o:0:2}/${o:2}"
+    imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/b.md imported
+    # A corrupt index: git ls-files --others fails.
+    git update-ref refs/heads/main "$(git commit-tree "$(printf '' | git mktree)" -m empty)"
+    printf 'junk' > .git/index
+    imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/b.md imported
+}

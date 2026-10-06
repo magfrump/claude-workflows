@@ -457,13 +457,14 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # a symlink there is followed to the path its text names. A target main does
 # not have is read from the checkout when it is a plain file there. It refuses
 # what it does not model, as FENCE_AWK does: a doubled name, a name holding a
-# newline (in main's tree or the untracked list) and symlink text that is
-# empty, absolute or holds a newline fail the walk, so isimported main answers
+# newline (in main's tree or the untracked list), symlink text that is empty,
+# absolute or holds a newline or a NUL, and a checkout path it would read that
+# is a symlink or lies under one fail the walk, so isimported main answers
 # imported for every path. Not covered (known issue A5): a path through a
-# symlinked directory, other names that one file has on a case-insensitive
-# checkout, absolute imports, and a symlinked untracked start file. Its result
-# is cached for the commit and root in IMPORTED_MAIN_DONE. isimported asks
-# either walk.
+# directory main stores as a symlink when the checkout does not have that link,
+# other names that one file has on a case-insensitive checkout, and absolute
+# imports. Its result is cached for the commit and root in IMPORTED_MAIN_DONE.
+# isimported asks either walk.
 IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=$'\n'; IMPORTED_MAIN_DONE=""
 # UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
 # U+2000-200A, U+2028/2029, U+202F, U+205F and U+3000.
@@ -512,13 +513,17 @@ imported_names() {
     done < <(import_targets "$d" < "$f")
   done
 }
-# The main walk; returns 1, with IMPORTED_MAIN set to "error", when the
-# commit's tree cannot be listed whole, the listing holds a name twice (git
-# would read the first copy, whatever its mode), a name holds a newline, a blob
-# cannot be read, or symlink text it follows is absolute or holds a newline, so
-# a caller refuses rather than reading a partial list. The listings stay
-# NUL-separated as git writes them, each with its exit status after the last
-# NUL. Queue items are "m:PATH" (main's entry) or "t:PATH" (the checkout's).
+# The main walk; returns 1, with IMPORTED_MAIN set to "error", when main is not
+# found by name, the commit's tree or the untracked list cannot be listed whole,
+# a tree record does not parse, the listing holds a name twice (git's lookups
+# read the first copy, a checkout keeps the last), a name holds a newline, a
+# blob cannot be read, symlink text it follows is empty, absolute or holds a
+# newline or a NUL, or a checkout path it would read exists but is not a plain
+# file (a symlink, or under one) or a plain directory, so a caller refuses
+# rather than reading a partial list. The listings stay NUL-separated as git
+# writes them, each followed by "rc=0" only when its command succeeded (the &&
+# and || keep errexit from ending the substitution early). Queue items are
+# "m:PATH" (main's entry) or "t:PATH" (the checkout's).
 main_imports() {
   local - rec f d p src i out queue=() recs=() cand=() low=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=()
@@ -526,8 +531,8 @@ main_imports() {
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $ROOT_REAL"
   main_by_name || return 1
-  mapfile -d '' recs < <(git ls-tree -r -z --full-tree "$MAIN_SHA"; printf 'rc=%s' "$?")
-  [[ "${recs[-1]}" == rc=0 ]] || return 1
+  mapfile -d '' recs < <(git ls-tree -r -z --full-tree "$MAIN_SHA" && printf rc=0 || printf rc=1)
+  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
   unset 'recs[-1]'
   for rec in "${recs[@]}"; do
     [[ "$rec" =~ ^([01234567]{6})\ [abcdefghijklmnopqrstuvwxyz]+\ [0123456789abcdef]{40,64}$'\t'(.+)$ ]] || return 1
@@ -536,8 +541,8 @@ main_imports() {
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
   done
-  mapfile -d '' recs < <(untracked_md; printf 'rc=%s' "$?")
-  [[ "${recs[-1]}" == rc=0 ]] || return 1
+  mapfile -d '' recs < <(untracked_md && printf rc=0 || printf rc=1)
+  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
   unset 'recs[-1]'
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; cand+=("t:$f"); done
   # One tr lower-cases every candidate (lower would fork per path).
@@ -552,13 +557,19 @@ main_imports() {
   while [[ ${#queue[@]} -gt 0 ]]; do
     src="${queue[0]:0:1}"; f="${queue[0]:2}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    if [[ "$src" == t ]]; then inrepo_here "$f" || continue; out="$(import_targets "$d" < "$f")"
+    if [[ "$src" == t ]]; then
+      if inrepo_here "$f"; then out="$(import_targets "$d" < "$f")"
+      elif [[ -d "$f" && ! -L "$f" && -z "$(blocker "$f" dir)" ]]; then continue  # a directory: nothing loads
+      elif [[ -e "$f" || -L "$f" ]]; then IMPORTED_MAIN=error; return 1
+      else continue; fi
     else
       case "${ent[$f]}" in
         100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
         120000)  # a symlink: its text names the file read, as one more import
-          # The x keeps trailing newlines, which $(...) would drop.
-          if ! out="$(git cat-file blob "$MAIN_SHA:$f"; printf x)"; then IMPORTED_MAIN=error; return 1; fi
+          # $(...) drops NULs, so they are counted first; the x keeps trailing
+          # newlines, which $(...) would also drop.
+          if ! i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)" || [[ "$i" -ne 0 ]] \
+             || ! out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"; then IMPORTED_MAIN=error; return 1; fi
           out="${out%x}"
           if [[ -z "$out" || "$out" == *$'\n'* || "$out" == /* ]]; then IMPORTED_MAIN=error; return 1; fi
           out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || continue
