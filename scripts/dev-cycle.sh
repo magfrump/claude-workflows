@@ -56,7 +56,7 @@
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
 #             branch's commit (an answer only in the working tree is not seen:
-#             it reads what main's copy says, until committed): keep, drop, done,
+#             it reads what main's copy says until it lands there): keep, drop, done,
 #             open (not marked ANSWERED yet) or unrecognized (answered, but no
 #             answer line was found, or the first one's text does not start
 #             with one of the options); "skip Q-NNN:
@@ -108,7 +108,7 @@ while [[ $# -gt 0 ]]; do
       CHECK="$1"; shift; CHECK_ARGS=("$@")
       [[ ${#CHECK_ARGS[@]} -gt 0 ]] || { echo "$CHECK needs at least one argument" >&2; exit 1; }
       break ;;
-    # The header, up to the first line that is not a comment (no fixed range to go stale).
+    # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
     -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac

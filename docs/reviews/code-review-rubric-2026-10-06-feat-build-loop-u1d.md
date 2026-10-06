@@ -1,0 +1,185 @@
+Commit: ab71bce5
+Loop closed at ab71bce5
+# Code Review Rubric
+
+**Scope:** full branch `main...feat/build-loop-u1d` at ab71bce5 (final confirming pass; iterations 1 at 83cdb005 and 2 at cc75db98 below); 180 changed code lines by pr-prep 1a | **Reviewed:** 2026-10-06 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation
+
+## Iteration 3 of 3: final confirming pass (Commit ab71bce5, full branch, k=3, full panel, Stage 2.5)
+
+Review converged in 3 iterations: 0 Must Fix; 13 Must Address fixed in iterations 1-2, and 2 acknowledged here with revisit triggers.
+
+Reports (all `Commit: ab71bce5`):
+- `code-fact-check-report-build-loop-u1d.md`, merged, k=3 (replicates `-r1/-r2/-r3`, 53, 38 and 34 claims). 22 claims: 16 Verified, 5 Mostly accurate, 1 Incorrect (commit history). 80% agreement. 93 mutant runs; the only survivors are already named by a comment or an override row.
+- `code-fact-check-submitted-claims-build-loop-u1d.md`: Claims 21 Verified (executed, 22 refused forms, 0 git calls) and 22 Mostly accurate.
+- `security-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 1 Low (the `:436` chain; executed), 1 Informational.
+- `performance-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 1 Informational (the suite is +0.84 s, ~2.5%, over main).
+- `api-consistency-reviewer-review-2026-10-06-final-build-loop-u1d.md`: 3 Informational (wording residues).
+- `architecture-review-review-2026-10-06-final-build-loop-u1d.md`: no new findings; caller contract consistent.
+- `test-strategy-review-2026-10-06-final-build-loop-u1d.md`: every deferred test row closed or carried; G15-G17 (Claim 18) recommended for deferral.
+
+Tests at ab71bce5: 94/94 (build-loop-read 19, dev-cycle 73, hermeticity 2). `scripts/health-check.sh`: all checks passed.
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| A14 | Three new fixture `&&` chains (`build-loop-read.bats:436`, `:464`, `:469`) can pass on a failed fixture step. Executed for `:436`: guard deleted and `git replace` failing gives ok. 07c354c5's "two other chains are split too" left these. | Mostly accurate / Low | FC Claim 18 (3/3) + security F1 + test-strategy G15-G17. Convergence | 🟡 Acknowledged | Revisit trigger: U2's first commit that edits test/scripts/build-loop-read.bats splits each chain, and its review breaks each fixture step (override row 2026-10-06, "Three new fixture && chains"). Not edited after the cap pass (row 283 precedent). |
+| A15 | T7 comment "(one commit ahead, same tree)": it is one commit on top of base, with its tree. | Mostly accurate | FC Claim 13 (r3) | 🟡 Acknowledged | Revisit trigger: the same U2 edit of build-loop-read.bats (override row 2026-10-06, "T7's comment"). |
+| C22 | Lib header's "once that second caller lands" is stale; `build-loop.sh:44` still says "a task box"; the LOOP paragraph says "level with main" (behind main also reads working). | Informational | api F1-F3; FC Claim 2 annotation | Deferred (override row; trigger U2's first edit of the lib or the header) |
+| C23 | The main_entry test has no positive control (`main_entry x` → `absent`). | Informational | security F2 | Deferred (override row; trigger U2's first edit of dev-cycle.bats) |
+| C24 | Suite cost +0.84 s over main (~2.5%); fixed, linear. | Informational | performance F1 | Won't-Fix (no action) |
+| C25 | Submitted Claim 22: open briefs that fail earlier parsing print their own skip, not could-not-be-listed (still a refusal). | Mostly accurate | Stage 2.5 | No action (fails closed) |
+
+Immutable history: fact-check Claims 15 (Incorrect), 17 and 19 (Mostly accurate) are commit-message claims on the branch; recorded as `Accepted-immutable` override rows, not tiered.
+
+Final-pass ✅ rows (cross-checked against the merged report and all three replicates; no contradicting observation):
+- main_entry refuses every pathform-refused form before any git call: `scripts/lib/dev-cycle-read.sh:265` — "if ! main_by_name || ! pathform "$1"; then echo error; return; fi". Submitted Claim 21 (executed: 22 forms, 0 git calls, PATH shim + GIT_TRACE). Scope: C and C.UTF-8 locales (en_US.UTF-8 is not installed; it fell back to C).
+- No current caller's output changes beyond the two stated: FC Claim 9 (executed), enumerating 4 callers.
+- Every named regression fails its test: FC Claims 10-12, 14 (93 mutant runs, 3 replicates).
+- Fail-closed wording matches the code: FC Claims 3, 6 (executed).
+
+Composition check (final pass): one cluster, `build-loop-read.bats:436-469` (FC 18, security F1, test G15-G17). Disposition: distinct defects, not composed; each chain is its own instance of one stated mechanism, already in A14.
+
+Who acts: no `you: judgment` items; A14, A15, C22 and C23 are `agent` work carried to U2 by override rows.
+
+## Iteration 2 (Commit cc75db98, loop pass, `--loop-pass` range 83cdb005..cc75db98)
+
+Reports (all `Commit: cc75db98`):
+- `code-fact-check-report-build-loop-u1d.md`, overwritten; k=1, loop pass. 23 claims: 21 Verified, 2 Mostly accurate (1b, 16), 0 Incorrect. All executed: 17 mutants, each failing 6c83af2a's tests and passing 83cdb005's.
+- `security-reviewer-review-2026-10-06-i2-build-loop-u1d.md`: 1 Low (T7's `&&` chain can pass without checking), 1 Informational.
+- `api-consistency-reviewer-review-2026-10-06-i2-build-loop-u1d.md`: 1 Minor (task box), 4 Informational. Iteration 1's F1, F3, F6 resolved; F4, F5 resolved with residues.
+- `test-strategy-review-2026-10-06-i2-build-loop-u1d.md`: the patch landed intact; G1-G11 closed; G13 (stale comment), G14 (recommend not testing).
+- Skipped by the Stage 1.5 gate: performance (scripts changed in comments only; test code only). Architecture was not selected: no module change. Stage 2.5 was skipped (loop pass). No short-circuit: no behavioural red.
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| A12 | `build-loop.sh:17-20`: "a task box" is missed; only a checked box is. An unchecked `- [ ]` is counted (fails closed). | Mostly accurate / Minor | FC 1b + api F1 + security F2. Convergence | ✅ Fixed (07c354c5) |
+| A13 | `build-loop-read.bats:447`: "never consults F31". F31 runs; only its answer is unused. | Mostly accurate | FC 16 | ✅ Fixed (07c354c5) |
+| C13 | T7's NUL step was one `&&` chain: a fixture failing to build skipped `check` and passed (executed). | Low | security F1 | Fixed (07c354c5; checked: broken fixture + deleted NUL check now fails T7) |
+| C14 | `build-loop-read.bats:118` comment contradicted the A3 header (a checked box is skipped). | Low | test-strategy G13 | Fixed (07c354c5) |
+| C15 | Help-range comment trailing a 152-column code line; dev-cycle.sh puts it on its own line. | Informational | api F3 | Fixed (07c354c5) |
+| C16 | dev-cycle.bats' help test said "whole header" and ran only `--help`. | Informational | api F4 | Fixed (07c354c5) |
+| C17 | The MAIN comment (`lib:244-246`) named only the check_* functions; `lib:25` was left short. | Informational | api F5 | Fixed (07c354c5) |
+| C18 | Help said "exact" never line; the printed reason says "valid". | Informational | api F2 | Fixed (07c354c5) |
+| C19 | The header's "ignored" arm is unpinned (fencecount and boxcount mutants survive, both stricter). | Low | test-strategy G14 | Won't-Fix (override row) |
+| C20 | Pre-existing, out of range: `bl_setup` does not clear an inherited `GIT_DIR`/`GIT_INDEX_FILE`; with GIT_DIR set, T7 wrote 3 fixture commits into that repo (executed). | Informational | security (out of range) | Deferred (override row) |
+| C21 | Pre-existing: check_branch ignores `rev-list --count` and `git log` failures. | Informational | security (out of range) | Deferred (same row as iteration 1 C3) |
+
+07c354c5 was reviewed by no loop pass; the final confirming pass (full branch, k=3, full panel) covers it. Size after 07c354c5: 180 changed code lines.
+
+## Iteration 1 (Commit 83cdb005, full panel, not a loop pass)
+
+Reports (all `Commit: 83cdb005`):
+- `code-fact-check-report-build-loop-u1d.md`: merged, k=3. 29 claims: 18 Verified, 9 Mostly accurate, 2 Incorrect. Claims 26-29 are the Stage 2.5 submitted claims. Replicates `-r1/-r2/-r3`. Agreement 62.5% (15/24).
+- `code-fact-check-submitted-claims-build-loop-u1d.md`: 4 claims, 4 Verified (executed).
+- `security-reviewer-review-2026-10-06-build-loop-u1d.md`: 1 Low, 2 Informational, all outside the diff or for U2.
+- `performance-reviewer-review-2026-10-06-build-loop-u1d.md`: 3 Informational (measured).
+- `api-consistency-reviewer-review-2026-10-06-build-loop-u1d.md`: 3 Minor, 3 Informational.
+- `architecture-review-review-2026-10-06-build-loop-u1d.md`: 1 Minor, 2 Informational.
+- `test-strategy-review-2026-10-06-build-loop-u1d.md`: G1-G12 and a checked patch (`.../scratchpad/review-u1d/test/proposed.diff`).
+
+Tests at 83cdb005 (orchestrator run): build-loop-read.bats 19/19, dev-cycle.bats 73/73.
+
+Delivery mode: inline-diff-only (the enclosing files total ~206 KB). Deviation, as in U1c iterations 3-4: agents read the skill file and the shared block (`.../scratchpad/review-u1d/orch/shared.md`) from disk, not pasted. Fact-Check Gate: the 2 high-confidence Incorrect verdicts are on test comments and titles (doc-class, 🟡 under tier policy T), so the run continued to Stage 2. The user is away, and the gate's Continue option loses nothing.
+
+---
+
+## 🔴 Must Fix
+
+None.
+
+---
+
+## 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | The --status U1d test title says "F31's open-only filter" and its step offers a done brief sharing o's branch, but git grep never lists that brief, so the loop's filter (`build-loop.sh:315`) is never reached. Mutant m7, with the filter removed, passes the whole suite. Fix: give brief d a later `Status: open` line (test-strategy R2). | Tests | Incorrect (high), doc-class | Fact-check Claim 17 (r2; r1/r3 Mostly accurate) + test-strategy G2 | for-author | row 291 (C18): still open | ✅ Fixed (6c83af2a) | — |
+| A2 | The CRLF step's comment says "the queried brief keeps its own Dispatched value whatever F31 read", but that step asserts a skip line, and p's Dispatched line was overwritten. The property is asserted only at `build-loop-read.bats:454-457`. | Tests | Incorrect (high), doc-class | Fact-check Claim 18 | for-author | — | ✅ Fixed (6c83af2a) | — |
+| A3 | `build-loop.sh:17-18`: "a never list hidden in markup, with no exact never line beside it, turns it off" implies an exact line rescues self-merge for any markup copy. That holds only when the markup hides the copy from the count. A counted copy (`**Self-merge never:**`) plus an exact line makes two copies, so self-merge stays off. It fails closed. | Docs | Mostly accurate / Minor | Fact-check Claim 1 (3/3) + api F4. Convergence: fact-check + api-consistency | for-author | row 278 (A25): landed as asked; the residue is the asked wording itself | ✅ Fixed (6c83af2a) | — |
+| A4 | `build-loop.sh:68-72`: adding "or the open briefs on main could not be listed" put an "or" inside the "for an open brief" clause, so the marker skip reads as open-only. The code applies it to done briefs too. Move the open-only clauses last. | Docs | Mostly accurate / Minor | Fact-check Claim 3 (r3) + api F3. Convergence | for-author | row 303 (A24, C37): landed; residue | ✅ Fixed (6c83af2a) | — |
+| A5 | `build-loop.sh:309`: "A brief git grep cannot read is not counted" holds for a missing object (warns, exits 0/1). A corrupt object exits 128 and fails closed for every open brief. Say "a brief whose object is missing". | Docs | Mostly accurate | Fact-check Claim 7 (r2) | for-author | row 303 (A25) | ✅ Fixed (6c83af2a) | — |
+| A6 | `build-loop-read.bats:420`: "A caller's own GIT_CONFIG_COUNT pairs stay" is not asserted; a mutant that overwrites the caller's pair survives. Assert it (test-strategy R6) or reword. | Tests | Mostly accurate | Fact-check Claim 14 (3/3) + test-strategy G10 | for-author | row 279 | ✅ Fixed (6c83af2a) | — |
+| A7 | `build-loop-read.bats:428`: the --help test title says "the whole header", but it checks only the first and last lines. It also never runs `-h`, which row 246 named (test-strategy G4). | Tests | Mostly accurate | Fact-check Claims 15, 24 + api F6 + test-strategy G4 | for-author | row 246 (-h): open | ✅ Fixed (6c83af2a) | — |
+| A8 | `build-loop-read.bats:436`: the "no open brief (git grep exits 1)" step cannot catch exit 1 being treated as an error. Done briefs never consult SHARED_BRANCHES, and with exit 1 there is no open brief to query, so it is unobservable through --status. Reword the comment, which already holds for "a done brief reads normally". | Tests | Mostly accurate | Fact-check Claim 16 | for-author | row 299 | ✅ Fixed (6c83af2a) | — |
+| A9 | `dev-cycle.bats:1328`: the title's "before any read" is not asserted; a mutant that checks pathform after ls-tree passes. Retitle "main_entry answers error for a path pathform refuses". | Tests | Mostly accurate | Fact-check Claim 21 (3/3) + test-strategy G11 | for-author | row 284 | ✅ Fixed (6c83af2a) | — |
+| A10 | The commit's Tests bullet counts C26 (row 246) as resolved. The slots line for an *unread* file and `-h` are still untested (a mutant on the unread slots line survives). | Tests | Mostly accurate | Fact-check Claim 24 + test-strategy G3, G4 | for-author | rows 246, 295 | ✅ Fixed (6c83af2a) | — |
+| A11 | Row 291's C17 NUL refusal is still open: `marker_kind`'s commit-NUL check (`build-loop.sh:284`) can be deleted with the suite green, and `handoff: ready\n\n\0x` then reads `ready`. The U1d NUL step tests FENCE_AWK's brief-file NUL, which dev-cycle.bats:1223 already covered. The commit's Wording/Tests bullets present row 291 as closed. | Tests | Mostly accurate (commit claim) | test-strategy G1 (Medium) + fact-check Claim 25 | for-author | row 291 (C17): still open | ✅ Fixed (6c83af2a) | — |
+
+A11's tier: test-strategy is contextual, so its G1 alone is 🟢. The row is 🟡 because the commit message claims row 291 is resolved, which is fact-check Claim 25's Mostly-accurate class.
+
+---
+
+## 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | `lib:252-255`: main_entry's list of `error` causes still names three; the pathform cause is a separate sentence. Follow brief_fields' comment pattern. | api F1; fact-check Claim 12 annotation; security F2 | Minor | for-author | row 283 (A22): landed | Fixed |
+| C2 | `error` now also means "refused path form", but callers' error arms say "could not be read" (`lib:339`, `:559`, `build-loop.sh:129`). Unreachable today; U2's floor passes changed paths (`.gitattributes`, `.github/x.yml` read `blob` on main, `error` now). Give it its own word (`badform`) or document form-first. | architecture F1; api F2; security F2 | Minor | for-author | row 228 (shared mapping, trigger U2) | Deferred |
+| C3 | Out of the diff: under a broken git config (`grep.patternType bogus`, `log.date bogus`), `git log` fails inside echo's arguments and inside `$(...)` in check_branch (`lib:382`) and marker_kind (`build-loop.sh:282`). A valid `ready` tip reads `working`, a malformed marker reads `ok … working` instead of skipping, and DATE goes missing. That breaks the header contract that a non-positive line is a refusal. Nothing moves toward merge (Low). Mechanism corrected from the fact-check escalation: `rev-list` works, `git log` fails. | security F1 (executed); fact-check escalation (r3) | Low | for-author | — | Deferred |
+| C4 | U2 must treat main_entry `error` as a refusal of that path, never `continue` past it as shared_branches does for unreadable briefs. Run pathform first with a reason that does not echo the name (F17). | security F2 | Informational | for-author | — | Deferred |
+| C5 | pathform now runs twice per brief (`lib:296`, `:327` and `:263`); +33 µs per call, wall +1.6% (noise). The `:296` check is now redundant (Claim 29 Verified, executed). `:327` must stay for its specific reason. | performance F1; architecture F2 | Informational | for-author | — | Won't-Fix |
+| C6 | U2's --check will cost ~2 ms per changed path (ls-tree + subshell). One ls-tree for all paths, if diffs get large. | performance F2 | Informational | for-author | row 220 (trigger: U2's floor per changed path) | Deferred |
+| C7 | The two scripts' help-range comments describe the same sed command in different words (`build-loop.sh:99`, `dev-cycle.sh:111`). | api F5 | Informational | for-author | — | Fixed |
+| C8 | `lib:22-24`: the resolve_main sentence names only three functions; main_entry and brief_fields also refuse without it (pre-existing). | architecture F3 | Informational | for-author | — | Fixed |
+| C9 | Test gaps G5-G9: a bare `success:` line (row 291), 1-char stopped reason, `Dispatched: 0`/`99`, fenced `H2:` (row 299's C19 trio), tab-only blank line. All in test-strategy's checked patch. | test-strategy G5-G9 | Low/Medium | for-author | rows 291, 299 | Fixed |
+| C10 | `build-loop.sh:113` `GIT_NO_REPLACE_OBJECTS=1` can be dropped with no test failing (the config pair carries the guard). | Stage 2.5 Claim 28 residue | Informational | for-author | rows 276, 281 (trigger U3b) | Deferred |
+| C11 | Dropping only the local `BRIEF=()` is unobservable through the CLI; a lib-level test belongs with U2's in-process calls. | test-strategy G12 | Low | for-orchestrator-synthesis | row 304 | Deferred |
+| C12 | The four new tests add ~0.72 s (~3% of the suite). | performance F3 | Informational | for-orchestrator-synthesis | — | Won't-Fix |
+
+---
+
+## ↩️ Considered Overrides
+
+| Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
+|---|---|---|---|---|
+| `feat/build-loop-u1b` / 2026-10-05 (row 246) | Test gaps: glob-form and "twice" reasons, review with malformed never, slots line for an absent or unread file, `-h` | 🟢 → Defer (U1c/U2) | Unit at cap | Partly closed: reasons, review and absent landed; unread slots and `-h` still open → A7, A10. |
+| `feat/build-loop-u1b` / 2026-10-05 (row 278) | Never-line, NEXT and help-range wording (A25-A27) | 🟡 → Defer (U1c next fix) | U1b loop closed | Landed as asked. The A25 wording is itself imprecise → A3. |
+| `feat/build-loop-u1b` / 2026-10-05 (row 279) | GIT_CONFIG_COUNT test, fence half, whitespace-only line | 🟢 → Defer | — | Guard half and fence half closed; "pairs stay" unasserted → A6; tab-only → C9. |
+| `feat/build-loop-u1a` / 2026-10-05 (row 283) | Test title, "until committed", help-range comment, main_entry comment (A19-A22) | 🟡 → Defer | U1a loop closed | Landed (fact-check Claims 9, 10, 12, 20). |
+| `feat/build-loop-u1a` / 2026-10-05 (row 284) | main_entry does not run pathform itself | 🟢 → Defer | — | Closed (Claims 12, 26, 27). Title overclaims "before any read" → A9. |
+| `feat/build-loop-u1a` / 2026-10-05 (row 287) | Lib header's pipefail note | 🟢 → Defer | — | Closed (Claim 11). |
+| `feat/build-loop-u1c` / 2026-10-05 (row 291) | NUL refusal and F31 open-only filter untested | 🟢 → Defer (U1d) | Size cap | **Departs: still open.** Both gaps survive mutants → A1, A11. |
+| `feat/build-loop-u1c` / 2026-10-05 (row 295) | Row 246's G7-G11 | 🟢 → Defer (U1d) | — | As row 246 → A7, A10. |
+| `feat/build-loop-u1c` / 2026-10-05 (row 297) | Re-pointing U1a/U1b deferrals to U1d | 🟡 → Defer | — | Honoured: all re-pointed items appear in 83cdb005; residues above. |
+| `feat/build-loop-u1c` / 2026-10-05 (row 299) | No open brief, CRLF arm, C19 G5-G7 | 🟢 → Defer | — | No-open-brief and CRLF landed (A8 wording residue); C19 trio still open → C9. |
+| `feat/build-loop-u1c` / 2026-10-05 (row 303) | Skip-clause wording, F31 comment, help skip list, "(git grep failed)" | 🟡 → Defer | U1c loop ended | Landed; the new clause's placement → A4; the row-293 sentence → A5. |
+| `feat/build-loop-u1c` / 2026-10-05 (row 304) | No regression tests for C29/C30 | 🟢 → Defer | — | Closed for the moved-call and closed/ mutants (Claim 22); local-only residue → C11. |
+
+---
+
+## ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| main_entry's guard changes no current caller's output | ✅ Confirmed | `scripts/lib/dev-cycle-read.sh:263` — "if ! main_by_name \|\| ! pathform "$1"; then echo error; return; fi". Enumeration `rg main_entry scripts/` → brief_fields (:296, pathform first), check_brief (:327 before :334), check_answer (fixed names), main_file (fixed names); all four fixed names pass pathform. FC Claims 12 and 26 (executed) | fact-check + security | for-orchestrator-synthesis |
+| The guard closes a fail-open for quoted names: `docs/é.md`, `docs/a*` and `:(top)…` read `absent` on main's lib and `error` at 83cdb005 | ✅ Confirmed | `scripts/lib/dev-cycle-read.sh:263`; security F2 probe (executed). Scoped to those three inputs | security | for-orchestrator-synthesis |
+| The main_entry test fails if the guard is removed | ✅ Confirmed | `test/scripts/dev-cycle.bats:1328`; FC Claim 27 (executed: `absent/error/absent/absent`) | Stage 2.5 | for-orchestrator-synthesis |
+| The GIT_CONFIG_COUNT step fails if the replace-ref config pair is lost | ✅ Confirmed | `test/scripts/build-loop-read.bats:425`; FC Claim 28 (executed, three mutants). Scope: the config pair, not line 113 (C10) | Stage 2.5 | for-orchestrator-synthesis |
+| NEXT comment matches the awk (fences, space/tab lines, EOF) | ✅ Confirmed | `scripts/build-loop.sh:143-145`; FC Claim 5 (executed, 3/3) | fact-check | for-orchestrator-synthesis |
+| Both help-range comments match the sed | ✅ Confirmed | `scripts/build-loop.sh:99`, `scripts/dev-cycle.sh:111`; FC Claims 4, 10 (executed) | fact-check | for-orchestrator-synthesis |
+
+---
+
+## ⚠️ Unverified Findings
+
+All findings' evidence resolved.
+
+---
+
+## ⏭️ Skipped Core Critics
+
+All core critics ran; no skips applied.
+
+---
+
+## 🧩 Composition check
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `scripts/build-loop.sh:16-18` | FC1, api F4 | distinct defects: not composed; both state the same mechanism completely (convergence on A3) |
+| 2 | `scripts/build-loop.sh:64-72` | FC3, api F3 | distinct defects: same as cluster 1 (A4) |
+| 3 | `scripts/lib/dev-cycle-read.sh:251-263` | FC12 annotation, api F1, api F2, arch F1, security F2 | distinct defects: the comment list (C1) and the error-word conflation (C2) each state their own mechanism and fix; security F2 is the U2 consumer rule (C4) |
+| 4 | `test/scripts/build-loop-read.bats:434-461` | FC16, FC17, FC18, FC19, test G1/G2/G12 | distinct defects: each step's gap is stated with its own mutant |
+
+---
+
+To pass review: all 🔴 items must be resolved. All 🟡 items must be either fixed or carry a qualifying author note (a discoverable TODO or a concrete revisit trigger; see "Qualifying author note" in `skills/code-review/references/rubric.md`). 🟢 items are optional.
