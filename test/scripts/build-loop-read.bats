@@ -115,7 +115,8 @@ setup() { bl_setup; }
     settings_is policy "$no"
     settings 'Build-loop policy: self-merge' 'Self-merge never: none'
     settings_is never "never none: line 2 of docs/dev-cycle.md on the default branch lists none"; settings_like policy "policy self-merge set:"
-    # A never list hidden in markup turns self-merge off rather than being skipped.
+    # A never list the copy count misses (a checked task box) is skipped; with no
+    # exact never line beside it, self-merge is off.
     settings 'Build-loop policy: self-merge' '- [x] Self-merge never: b/'; settings_is policy "$no"
     for v in 'Self-merge never:' 'Self-merge never: ' 'Self-merge never: a  b' 'Self-merge never: ../x' 'Self-merge never: a/../b' \
              'Self-merge never: /etc' 'Self-merge never: -x' 'Self-merge never: a b a' 'Self-merge never: a a/' $'Self-merge never: caf\xc3\xa9/' \
@@ -253,7 +254,8 @@ setup() { bl_setup; }
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: new dependency (left-pad)"
     run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "ok $B open review feat/a stopped "*" 2 new dependency (left-pad)" ]] || { echo "$output"; return 1; }
-    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: x" && run --separate-stderr bash "$BL" --status "$B"
+    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: x"
+    run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "ok $B open review feat/a stopped "*" 2 x" ]] || { echo "$output"; return 1; }
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: ${r120}r"
     run --separate-stderr bash "$BL" --status "$B"
@@ -292,8 +294,11 @@ setup() { bl_setup; }
         "$(git rev-parse "main^{tree}")" "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
     git update-ref refs/heads/feat/a "$o"
     check "skip $B: $n: it has no parent" two-trees
+    # A marker whose message body holds a NUL byte (one commit ahead, same tree).
     o="$(printf 'tree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n\n\0x\n' "$(git rev-parse "$base^{tree}")" "$base" \
-        | git hash-object -t commit --literally -w --stdin)" && git update-ref refs/heads/feat/a "$o" && check "skip $B: $n: it holds a NUL byte" nul
+        | git hash-object -t commit --literally -w --stdin)"
+    git update-ref refs/heads/feat/a "$o"
+    check "skip $B: $n: it holds a NUL byte" nul
     tip feat/a "$(printf 'handoff: ready\nmore subject')"
     check "skip $B: $n: its subject runs onto a second line" two-line
     # Not a marker at all: an ordinary commit, even one that mentions a marker.
@@ -444,13 +449,14 @@ setup() { bl_setup; }
 @test "--status: deferred cases: no open brief, F31's open-only filter, CRLF, an unanchored closed, BRIEF kept, a caller's config pair, a NUL in a brief (U1d)" {
     settings 'Build-loop policy: review'
     # No open brief on main at all (git grep exits 1): a done brief reads normally.
-    # (A done brief never consults F31, so this cannot tell exit 1 from a failure.)
+    # (A done brief never reads F31's answer, so this cannot tell exit 1 from a failure.)
     brief d 'Status: done' 'Branch: feat/x' 'Dispatched: 0' && d="$B"
     run --separate-stderr bash "$BL" --status "$d"
     [ "$output" = "ok $d done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
     # A done brief sharing an open brief's branch does not make the open one skip,
     # even with a later "Status: open" line that git grep lists (F31's own filter).
-    printf 'Status: done\nBranch: feat/x\nStatus: open\n' > "$d" && commit_all d-later-open
+    printf 'Status: done\nBranch: feat/x\nStatus: open\n' > "$d"
+    commit_all d-later-open
     brief o 'Status: open' 'Branch: feat/x' 'Dispatched: 99' && o="$B"
     run --separate-stderr bash "$BL" --status "$o"
     [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }

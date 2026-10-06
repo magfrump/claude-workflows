@@ -1319,10 +1319,12 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     [ "$output" = "skip Q-1: the tree of the default branch could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
 }
 
-@test "--help prints the whole header, through its last line" {
-    run --separate-stderr bash "$DC" --help
-    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
-        && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$output"; return 1; }
+@test "-h and --help print the header from its first line through its last" {
+    for h in -h --help; do
+        run --separate-stderr bash "$DC" "$h"
+        [ "$status" -eq 0 ] && [[ "${lines[0]}" == "Gather the mechanical signals"* ]] \
+            && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$h: $output"; return 1; }
+    done
 }
 
 @test "main_entry answers error for a path pathform refuses (U1d)" {

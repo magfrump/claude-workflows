@@ -22,8 +22,8 @@
 # and SKIP_AT. The caller runs resolve_main once per process (a second call
 # re-reads main); check_brief, check_branch and check_answer skip every
 # argument unless it returned 0 with main found by name (main_entry and
-# brief_fields answer error). check_brief,
-# check_branch and check_answer answer with one printed line per argument that
+# brief_fields answer error). check_brief, check_branch and check_answer answer
+# with one printed line per argument that
 # can echo repo text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
@@ -241,9 +241,10 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
   esac
 }
-# The default branch, set by resolve_main (below). check_brief, check_branch
-# and check_answer read its commit, so they answer only when it was found by name, never for the
-# current branch's fallback or before resolve_main has succeeded.
+# The default branch, set by resolve_main (below). check_brief, check_branch,
+# check_answer, main_entry and brief_fields read its commit, so they answer only
+# when it was found by name, never for the current branch's fallback or before
+# resolve_main has succeeded (main_entry and brief_fields answer error).
 MAIN=""; MAIN_SHA=""; MAIN_BY_NAME=""
 main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # How a path is stored in the default branch's commit, so that a file read from
