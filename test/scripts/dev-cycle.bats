@@ -8,6 +8,9 @@ bats_require_minimum_version 1.5.0
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     DC="$REPO_ROOT/scripts/dev-cycle.sh"
+    # As bl_setup: an inherited GIT_DIR would send fixture commits to that repo.
+    # shellcheck disable=SC2046  # word splitting is wanted: one name per line
+    unset $(git rev-parse --local-env-vars)
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
@@ -1013,13 +1016,17 @@ EOF
 @test "--check-fix refuses files an instruction file imports, and compares paths ignoring case" {
     mkdir -p docs/Working docs/guides
     printf 'Rules: see @docs/conventions.md and @README.md\n' > GEMINI.md
-    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md; do echo x > "$f"; done
+    for f in docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md docs/Constraints.md docs/thoughts/t.md; do
+        [[ "$f" != */* ]] || mkdir -p "${f%/*}"; echo x > "$f"
+    done
     git add -A && git commit -qm docs
-    run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md
+    run --separate-stderr bash "$DC" --check-fix docs/conventions.md README.md docs/guides/g.md docs/Working/notes.md docs/Dev-Cycle.md docs/notes.md \
+        docs/Constraints.md docs/thoughts/t.md
     [ "$status" -eq 0 ]
+    # docs/constraints.md is the user's (plan D2); docs/thoughts/ stays a living doc the cycle may fix.
     for want in "skip docs/conventions.md: an instruction file imports" "skip README.md: an instruction file imports" \
                 "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
-                "ok docs/notes.md"; do
+                "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }
@@ -1075,7 +1082,8 @@ EOF
     cd "$BATS_TEST_TMPDIR"
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
-                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer; do
+                 oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
+                 isclosed entry_why; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE; do [[ -n "${!v}" ]] || echo "no $v"; done
@@ -1187,12 +1195,12 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     # The working tree holds a plain file now; main's symlink still decides.
     rm docs/working/questions.md && cp real/q.md docs/working/questions.md
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in it is read" ] \
+    [ "$output" = "skip Q-1: docs/working/questions.md is not a regular file on the default branch, so no entry in docs/working/questions.md is read" ] \
         || { echo "$output"; return 1; }
     # A symlinked directory above it is named as the blocking part.
     git rm -rq --cached docs/working && rm -rf docs/working && ln -s real docs/working && git add -A && git commit -qm dirlink
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: docs/working is not a directory on the default branch, so docs/working/questions.md is not read" ] \
+    [ "$output" = "skip Q-1: docs/working is not a directory on the default branch, so no entry in docs/working/questions.md is read" ] \
         || { echo "$output"; return 1; }
 }
 
@@ -1215,9 +1223,9 @@ none 1: [] []" ] || { echo "$output"; return 1; }
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [ "$output" = "skip Q-1: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in docs/working/questions-archive.md is read
 skipped=0
-skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in it is read" ] || { echo "$output"; return 1; }
+skip Q-1: docs/working/questions-archive.md is not a regular file on the default branch, so no entry in docs/working/questions-archive.md is read" ] || { echo "$output"; return 1; }
 }
 
 @test "a NUL byte refuses a brief or a questions file, never dropped into a value; main_entry fails closed" {
@@ -1316,7 +1324,7 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     d="$(printf '040000 tree %s\tworking\n' "$w" | git mktree)" && t="$(printf '040000 tree %s\tdocs\n' "$d" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p HEAD -m dup)"
     run --separate-stderr bash "$DC" --check-answer Q-1
-    [ "$output" = "skip Q-1: the tree of the default branch could not be read, so docs/working/questions.md is not read" ] || { echo "$output"; return 1; }
+    [ "$output" = "skip Q-1: the tree of the default branch could not be read for docs/working/questions.md, so no entry in docs/working/questions.md is read" ] || { echo "$output"; return 1; }
 }
 
 @test "-h and --help print the header from its first line through its last" {
@@ -1327,11 +1335,44 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "main_entry answers error for a path pathform refuses (U1d)" {
+@test "entry_why words each main_entry refusal on one line, naming the path only when given (U2a1)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        for w in "notdir docs/w" notfile badform error odd; do entry_why "$w" docs/w/q.md; entry_why "$w" ""; done
+        entry_why badform "a
+ok b"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    [ "$output" = "docs/w is not a directory on the default branch
+docs/w is not a directory on the default branch
+docs/w/q.md is not a regular file on the default branch
+not a regular file on the default branch
+docs/w/q.md is not an allowed path form
+not an allowed path form
+the tree of the default branch could not be read for docs/w/q.md
+the tree of the default branch could not be read
+the default branch answered odd for docs/w/q.md
+the default branch answered odd
+a ok b is not an allowed path form" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)" {
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
-        for p in "a\"b.md" "../x" "-x" "docs//x.md"; do main_entry "$p"; done' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
-    [ "$output" = "error
-error
-error
+        for p in x "a\"b.md" "../x" "-x" "docs//x.md" .gitattributes .github/x.yml; do main_entry "$p"; done
+        MAIN_SHA=""; main_entry .gitattributes' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    # The last line: with no main found by name, even a refused form answers error (the header'"'"'s order).
+    [ "$output" = "absent
+badform
+badform
+badform
+badform
+badform
+badform
 error" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "a closed brief is a closed/ path only: a brief-shaped name elsewhere is neither writable nor a brief (U2a1)" {
+    run --separate-stderr bash "$DC" --check-write 2026-01-01-x.md docs/2026-01-01-x.md docs/working/briefs/closedx/2026-01-01-x.md
+    [ "$output" = "skip 2026-01-01-x.md: not one of the dev cycle's own files
+skip docs/2026-01-01-x.md: not one of the dev cycle's own files
+skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own files" ] || { echo "$output"; return 1; }
+    run --separate-stderr bash "$DC" --check-brief 2026-01-01-x.md
+    [ "$output" = "skip 2026-01-01-x.md: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)" ] || { echo "$output"; return 1; }
 }

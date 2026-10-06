@@ -294,7 +294,7 @@ setup() { bl_setup; }
         "$(git rev-parse "main^{tree}")" "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
     git update-ref refs/heads/feat/a "$o"
     check "skip $B: $n: it has no parent" two-trees
-    # A marker whose message body holds a NUL byte (one commit ahead, same tree).
+    # A marker whose message body holds a NUL byte (one commit on top of base, with its tree).
     o="$(printf 'tree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n\n\0x\n' "$(git rev-parse "$base^{tree}")" "$base" \
         | git hash-object -t commit --literally -w --stdin)"
     git update-ref refs/heads/feat/a "$o"
@@ -433,9 +433,11 @@ setup() { bl_setup; }
     # still reach git is asserted in the --status deferred-cases test).
     settings 'Build-loop policy: review' '' 'Self-merge never: none'
     printf 'Build-loop policy: self-merge\n\nSelf-merge never: none\n' > x.md
-    git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w x.md)" && git config core.useReplaceRefs true
+    git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w x.md)"
+    git config core.useReplaceRefs true
     run --separate-stderr env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller bash "$BL" --settings
     [[ "$(line policy)" == "policy review set:"* ]] || { echo "$output $stderr"; return 1; }
+    git replace -d "$(git rev-parse main:docs/dev-cycle.md)"
 }
 
 @test "build-loop.sh -h and --help print the header from its first line through its last (U1d)" {
@@ -461,12 +463,16 @@ setup() { bl_setup; }
     run --separate-stderr bash "$BL" --status "$o"
     [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }
     # Another open brief (CRLF line endings) on the same branch counts.
-    brief p 'Status: open' 'Branch: feat/x' 'Dispatched: 3' && printf 'Status: open\r\nBranch: feat/x\r\n' > "$B" && commit_all crlf
+    brief p 'Status: open' 'Branch: feat/x' 'Dispatched: 3'
+    printf 'Status: open\r\nBranch: feat/x\r\n' > "$B"
+    commit_all crlf
     run --separate-stderr bash "$BL" --status "$o"
     [[ "$output" == "skip $o: another open brief"* ]] || { echo "$output"; return 1; }
     git rm -q "$B" && commit_all rm-p
     # A directory whose name merely contains "closed" is not closed/.
-    mkdir -p docs/working/briefs/2026-10-0closed && printf 'Status: open\nBranch: feat/x\n' > docs/working/briefs/2026-10-0closed/1-x.md && commit_all odd-dir
+    mkdir -p docs/working/briefs/2026-10-0closed
+    printf 'Status: open\nBranch: feat/x\n' > docs/working/briefs/2026-10-0closed/1-x.md
+    commit_all odd-dir
     run --separate-stderr bash "$BL" --status "$o"
     [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }
     # Another open brief on another branch, read by F31 after o, leaves o's fields alone.

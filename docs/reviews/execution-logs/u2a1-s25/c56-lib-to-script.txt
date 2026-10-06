@@ -1,0 +1,42 @@
+##### d07cc89c
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+dev-cycle.sh:check_fix lib-refs=[]
+dev-cycle.sh:check_path lib-refs=[]
+dev-cycle.sh:check_write lib-refs=[]
+dev-cycle.sh:exact lib-refs=[417:    # show-ref --verify takes only the exact ref, so a tag named refs/heads/<c>]
+dev-cycle.sh:matches lib-refs=[461:  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.]
+dev-cycle.sh:need lib-refs=[]
+dev-cycle.sh:skipdir lib-refs=[]
+dev-cycle.sh:skipnote lib-refs=[]
+dev-cycle.sh:trig lib-refs=[]
+build-loop.sh:globform lib-refs=[]
+build-loop.sh:main_file lib-refs=[]
+build-loop.sh:marker_kind lib-refs=[]
+build-loop.sh:read_settings lib-refs=[]
+build-loop.sh:shared_branches lib-refs=[]
+build-loop.sh:status_line lib-refs=[]
+build-loop.sh:usage lib-refs=[]
+### lib references to script names
+none
+exit=0
+##### 900c47d0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+dev-cycle.sh:check_fix lib-refs=[]
+dev-cycle.sh:check_path lib-refs=[]
+dev-cycle.sh:check_write lib-refs=[]
+dev-cycle.sh:exact lib-refs=[401:    # show-ref --verify takes only the exact ref, so a tag named refs/heads/<c>]
+dev-cycle.sh:matches lib-refs=[445:  # matches INSTRUCTION_FILE's names; the loop's own test stays the authority.]
+dev-cycle.sh:need lib-refs=[]
+dev-cycle.sh:skipdir lib-refs=[]
+dev-cycle.sh:skipnote lib-refs=[]
+dev-cycle.sh:trig lib-refs=[]
+build-loop.sh:globform lib-refs=[]
+build-loop.sh:main_file lib-refs=[]
+build-loop.sh:marker_kind lib-refs=[]
+build-loop.sh:read_settings lib-refs=[]
+build-loop.sh:shared_branches lib-refs=[]
+build-loop.sh:status_line lib-refs=[]
+build-loop.sh:usage lib-refs=[]
+### lib references to script names
+none
+exit=0

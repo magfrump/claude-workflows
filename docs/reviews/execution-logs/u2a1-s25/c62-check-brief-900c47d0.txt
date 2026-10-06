@@ -1,0 +1,7 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+main_entry=[notdir docs/working/briefs/closed]
+skip docs/working/briefs/closed/2026-01-01-a.md: docs/working/briefs/closed is not a directory on the default branch
+main_entry=[notfile]
+skip docs/working/briefs/2026-01-01-b.md: not a regular file on the default branch
+main_entry=[error]
+skip docs/working/briefs/2026-01-01-c.md: the tree of the default branch could not be read

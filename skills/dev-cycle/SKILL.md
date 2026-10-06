@@ -71,7 +71,7 @@ files), run the same script with `--check-write '<path>'` and write only on `ok`
 only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only a file that
 `--check-fix '<path>'` prints `ok` for: a tracked `.md` file under `docs/` (not the
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
-`docs/decisions/`, `docs/dev-cycle.md`, a dot-directory or dotfile, an instruction file, or a
+`docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, a dot-directory or dotfile, an instruction file, or a
 file an instruction file imports with `@`; compared ignoring case) or
 `README.md`; anything else (a new file, code, scripts, hooks, egress lists, decision
 records, instruction files) is filed, not written. Briefs in the directory are found only

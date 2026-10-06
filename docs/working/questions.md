@@ -30,6 +30,7 @@ The index below is generated — edit entries, not the table.
 | [Q-105](#q-105--devcontainer-breakage-definition) | you: judgment | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | you: judgment | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
 | [Q-116](#q-116--digest-scan-working-dd-triggers) | you: judgment | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
+| [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -371,3 +372,21 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
 - **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
+
+### Q-119 · u2a-split-at-cap
+**Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN
+
+U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the split, and the redesign it carries, the right call?
+
+- **Why it's yours:** the split replaces "model every tree shape" with "refuse what is not modelled", which makes self-merge refuse every path in a repo holding an odd name. That trades reach for safety on a gate you will rely on.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a.md` (iterations 1-3 and the gate decision, on branch `feat/build-loop-u2a`) · plan step 5's U2 split note
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the split** | U2a1 (lib wording, `badform`, `isclosed`, constraints.md for `--check-fix`, U1d rows) lands now; U2a2 rebuilds the floor's import walk to fail closed on newline names, absolute or newline symlink text and `..` names, on a fresh 3-iteration loop. | None now. | A repo with such a name gets no self-merge until it is renamed; the refusal names the reason. |
+| **[2] Escalate instead** | Undo the split; you review the three iterations and authorize more iterations on one unit. | Reading three rubric sections. | The loop keeps finding one new shape per pass, as it did three times. |
+| **[3] Abandon the commit-reading walk** | Run the import walk in a clean worktree checked out at main's commit (the plan's other option) instead. | None now; a design change in U2b. | A checkout costs time per `--check` and touches disk the gate otherwise never writes. |
+
+- **Blocks:** nothing; U2a1 lands, U2a2 proceeds under [1].
+- **Interim:** [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`.
+- **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a2's walk.

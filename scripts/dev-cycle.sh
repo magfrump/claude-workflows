@@ -49,7 +49,7 @@
 #             refs/heads/<name>'s own, never a same-named tag's.
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
 #             file under docs/ (not the cycle's own files, working/,
-#             human-author/, reviews/, decisions/, dev-cycle.md, a dot-directory
+#             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
 #             or dotfile, an instruction file, or a file an instruction file
 #             imports with @; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise.
@@ -164,11 +164,9 @@ check_write() {
   elif [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"
   else echo "ok $a"; fi
 }
-# An in-cycle fix edits documentation only: a tracked .md file under docs/,
-# outside the cycle's own files, working/, human-author/ (the user's), reviews/
-# and decisions/ (records), the settings file, any dot-directory, and any
-# instruction file (CLAUDE.md, AGENT(S).md, GEMINI.md, SKILL.md, any case); or
-# README.md. Anything else is filed.
+# An in-cycle fix edits documentation only; the header's --check-fix paragraph
+# is the rule, and the skip messages below repeat it. constraints.md is the
+# user's (plan D2); docs/thoughts/ stays fixable. Anything else is filed.
 check_fix() {
   local a="$1" low lp
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
@@ -179,8 +177,8 @@ check_fix() {
   imported_names
   if writable "$a" || writable "$lp"; then echo "skip $a: one of the cycle's own files (use --check-write)"
   elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
-    || "$lp" == docs/dev-cycle.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
-    echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
+    || "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
+    echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
   elif [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]]; then
     echo "skip $a: an instruction file imports it with @ (directly or through another import), so it is read as instructions; file it instead"
   else check_path "$a"; fi

@@ -8,6 +8,11 @@ bl_setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # shellcheck disable=SC2034  # read by the suites that load this file
     BL="$REPO_ROOT/scripts/build-loop.sh"
+    # An inherited GIT_DIR (a run from a git hook, say) would send every
+    # fixture command to that repo instead of the throwaway one; git lists
+    # every such repo-local variable itself (GIT_CONFIG_PARAMETERS too).
+    # shellcheck disable=SC2046  # word splitting is wanted: one name per line
+    unset $(git rev-parse --local-env-vars)
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid

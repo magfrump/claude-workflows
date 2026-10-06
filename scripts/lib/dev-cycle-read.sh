@@ -8,23 +8,21 @@
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here must pass
-# test/scripts/dev-cycle.bats, and build-loop.sh's suites under test/scripts/
-# once that second caller lands. The
-# caller sets -euo pipefail (check_answer and brief_fields also set pipefail
-# for themselves),
-# cds to the repo root and sets ROOT_REAL (that root, symlinks resolved) before
-# calling any file check. inrepo, dirok, skipped, check_brief and
-# the import walk (imported_names) exit 1 (need_root) unless ROOT_REAL is set,
-# is the current directory and is a repository's top level; while ROOT_REAL is
-# unset, rawfile, plaindir and blocker read nothing as plain. Call the exiting
-# checks in the caller's shell, not inside $(...) or `local x="$(...)"`, where
-# an exit ends only the subshell. skipped records each blocked input in SKIPPED
-# and SKIP_AT. The caller runs resolve_main once per process (a second call
-# re-reads main); check_brief, check_branch and check_answer skip every
-# argument unless it returned 0 with main found by name (main_entry and
-# brief_fields answer error). check_brief, check_branch and check_answer answer
-# with one printed line per argument that
-# can echo repo text: print it through scrub, read it as `out="$(check_brief ...)"` under
+# test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats).
+# The caller sets -euo pipefail (check_answer and brief_fields also set
+# pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
+# symlinks resolved) before calling any file check. inrepo, dirok, skipped,
+# check_brief and the import walk (imported_names) exit 1 (need_root) unless
+# ROOT_REAL is set, is the current directory and is a repository's top level;
+# while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
+# Call the exiting checks in the caller's shell, not inside $(...) or
+# `local x="$(...)"`, where an exit ends only the subshell. skipped records each
+# blocked input in SKIPPED and SKIP_AT. The caller runs resolve_main once per
+# process (a second call re-reads main); check_brief, check_branch and
+# check_answer skip every argument unless it returned 0 with main found by name
+# (main_entry and brief_fields answer error). check_brief, check_branch and
+# check_answer answer with one printed line per argument that can echo repo
+# text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
@@ -157,10 +155,10 @@ pathform() {  # $1 path, $2 "glob" to allow * and ?
 DIGIT='[0123456789]'
 SLUG='[abcdefghijklmnopqrstuvwxyz0123456789-]+'
 isbrief() { [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; }
+isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
 writable() {
   [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ \
-    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ \
-    || "$1" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]] || isbrief "$1"
+    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]] || isbrief "$1" || isclosed "$1"
 }
 # Code fences, read only in their plain form, so that every fence this reads is
 # read the way CommonMark reads it: a line starting at column 0 with 3 or more `
@@ -251,18 +249,22 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # it is never a symlink's target text, a gitlink or a tree, and no directory
 # above it is a symlink: prints "blob" (a regular file, mode 100644 or 100755),
 # "absent", "notfile" (the path is some other kind of entry), "notdir PART"
-# (PART, a directory above the path, is stored as something else) or "error"
-# (no default branch found by name, a path pathform refuses, ls-tree failed, or
-# the tree lists a name twice; git's own reads would take the first copy, which
-# may not be the one a check saw, so this answers error instead; never read as
-# absent). It runs main_by_name and pathform itself, before any read (pathform
-# also means ls-tree prints the name unquoted). One ls-tree call lists the path
-# and every directory above it (-t: trees too; --full-tree: paths from the top
-# level, whatever the current directory).
+# (PART, a directory above the path, is stored as something else), "badform"
+# (a path pathform refuses: a .git* part such as .gitattributes, say) or "error"
+# (no default branch found by name, ls-tree failed, or the tree lists a name
+# twice; git's own reads would take the first copy, which may not be the one a
+# check saw, so this answers error instead). Only blob reads the file, and only
+# absent means there is none: every other word is a refusal. It runs
+# main_by_name, then pathform, itself, before any read (so with no default
+# branch even a refused form answers error; pathform also means ls-tree prints
+# the name unquoted). entry_why words the refusals. One ls-tree call lists the
+# path and every directory above it (-t: trees too; --full-tree: paths from the
+# top level, whatever the current directory).
 main_entry() {
   local p="" rest="$1" out mode path dup="" want=()
   local -A m=()
-  if ! main_by_name || ! pathform "$1"; then echo error; return; fi
+  if ! main_by_name; then echo error; return; fi
+  if ! pathform "$1"; then echo badform; return; fi
   while [[ "$rest" == */* ]]; do p="${p:+$p/}${rest%%/*}"; rest="${rest#*/}"; want+=("$p"); done
   out="$(git ls-tree -t --full-tree "$MAIN_SHA" -- "${want[@]}" "$1" 2>/dev/null)" || { echo error; return; }
   while IFS=$'\t' read -r mode path; do
@@ -275,6 +277,22 @@ main_entry() {
     case "${m[$p]-}" in '') echo absent; return ;; 040000) ;; *) echo "notdir $p"; return ;; esac
   done
   case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac
+}
+# Why main_entry's word $1 is not a file to read, for a skip line. $2 is the
+# path asked about, or "" when the skip line already names it: notfile and
+# badform make it the subject ("$2 is not ..."; no subject when ""), error and
+# any other word end "for $2", and notdir names only the directory above it.
+# A newline in either becomes a space, so the reason stays one line.
+entry_why() {
+  local w="${1//$'\n'/ }" p="${2-}"
+  p="${p//$'\n'/ }"
+  case "$w" in
+    notdir\ *) echo "${w#notdir } is not a directory on the default branch" ;;
+    notfile) echo "${p:+$p is }not a regular file on the default branch" ;;
+    badform) echo "${p:+$p is }not an allowed path form" ;;
+    error) echo "the tree of the default branch could not be read${p:+ for $p}" ;;
+    *) echo "the default branch answered $w${p:+ for $p}" ;;
+  esac
 }
 # A brief's machine lines, read in one pass from the default branch's commit
 # (never the working tree), so a brief has one parser: for each key, the first
@@ -327,7 +345,7 @@ check_brief() {
   need_root
   if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
-  if ! isbrief "$a" && [[ ! "$a" =~ ^docs/working/briefs/closed/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; then
+  if ! isbrief "$a" && ! isclosed "$a"; then
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
   fi
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
@@ -337,9 +355,7 @@ check_brief() {
   case "$e" in
     absent) echo "ok $a new"; return ;;
     blob) ;;
-    notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch"; return ;;
-    error) echo "skip $a: the tree of the default branch could not be read"; return ;;
-    *) echo "skip $a: not a regular file on the default branch"; return ;;
+    *) echo "skip $a: $(entry_why "$e" "")"; return ;;
   esac
   if ! brief_fields "$a"; then
     case "$BRIEF_ODD" in
@@ -557,9 +573,7 @@ check_answer() {
     case "$e" in
       absent) continue ;;
       blob) ;;
-      notdir\ *) echo "skip $a: ${e#notdir } is not a directory on the default branch, so $f is not read"; return ;;
-      error) echo "skip $a: the tree of the default branch could not be read, so $f is not read"; return ;;
-      *) echo "skip $a: $f is not a regular file on the default branch, so no entry in it is read"; return ;;
+      *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"; return ;;
     esac
     # A failed read is a skip, never a fall-through to the other file.
     r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \

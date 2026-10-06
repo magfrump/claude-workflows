@@ -1,0 +1,35 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+default globals: accept
+SLUG reassigned to [q]+: refuse
+isclosed () 
+{ 
+    [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"
+}
+isbrief () 
+{ 
+    [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]
+}
+entry_why () 
+{ 
+    local w="${1//'
+'/ }" p="${2-}";
+    p="${p//'
+'/ }";
+    case "$w" in 
+        notdir\ *)
+            echo "${w#notdir } is not a directory on the default branch"
+        ;;
+        notfile)
+            echo "${p:+$p is }not a regular file on the default branch"
+        ;;
+        badform)
+            echo "${p:+$p is }not an allowed path form"
+        ;;
+        error)
+            echo "the tree of the default branch could not be read${p:+ for $p}"
+        ;;
+        *)
+            echo "the default branch answered $w${p:+ for $p}"
+        ;;
+    esac
+}

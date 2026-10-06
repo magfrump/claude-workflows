@@ -1,0 +1,39 @@
+### c-d07cc89c: bats -f 'a closed brief is a closed/ path only' test/scripts/dev-cycle.bats
+1..1
+ok 1 a closed brief is a closed/ path only: a brief-shaped name elsewhere is neither writable nor a brief (U2a1)
+exit=0
+### c-d07cc89c: bats -f 'main_entry answers badform for a path pathform refuses' test/scripts/dev-cycle.bats
+1..1
+ok 1 main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)
+exit=0
+### m67a: bats -f 'a closed brief is a closed/ path only' test/scripts/dev-cycle.bats
+1..1
+not ok 1 a closed brief is a closed/ path only: a brief-shaped name elsewhere is neither writable nor a brief (U2a1)
+# (in test file test/scripts/dev-cycle.bats, line 1375)
+#   `skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own files" ] || { echo "$output"; return 1; }' failed
+# ok 2026-01-01-x.md
+# skip docs/2026-01-01-x.md: not one of the dev cycle's own files
+# skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own files
+exit=1
+### m67a: bats -f 'main_entry answers badform for a path pathform refuses' test/scripts/dev-cycle.bats
+1..1
+ok 1 main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)
+exit=0
+### m67b: bats -f 'a closed brief is a closed/ path only' test/scripts/dev-cycle.bats
+1..1
+ok 1 a closed brief is a closed/ path only: a brief-shaped name elsewhere is neither writable nor a brief (U2a1)
+exit=0
+### m67b: bats -f 'main_entry answers badform for a path pathform refuses' test/scripts/dev-cycle.bats
+1..1
+not ok 1 main_entry answers badform for a path pathform refuses, absent for a plain missing one (U1d, U2a1)
+# (in test file test/scripts/dev-cycle.bats, line 1368)
+#   `error" ] || { echo "$output $stderr"; return 1; }' failed
+# absent
+# badform
+# badform
+# badform
+# badform
+# badform
+# badform
+# badform
+exit=1
