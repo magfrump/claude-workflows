@@ -457,14 +457,16 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # not have is read from the checkout when it is a plain file there. It refuses
 # what it does not model, as FENCE_AWK does: a doubled name, a name holding a
 # newline (in main's tree or the untracked list), symlink text that is empty,
-# absolute, leaves the repo or holds a newline or a NUL, a checkout file it
+# absolute, leaves the repo, holds a newline or a NUL, or has a .. after a
+# symlink, a checkout file it
 # cannot read, and a checkout path it would read that is a symlink or lies
 # under one fail the walk, so isimported main answers imported for every path.
 # Not covered (known issue A5): start files under a symlinked directory (on
-# main or in the checkout: neither listing enters one), a path through a
-# directory main stores as a symlink when the checkout does not have that link,
-# other names that one file has on a case-insensitive checkout, and absolute
-# imports. IMPORTED_MAIN reads "error" until a walk succeeds; the result is
+# main or in the checkout: neither listing enters one) or in a submodule or an
+# untracked nested repo (neither listing enters one either), an import path
+# through a directory main stores as a symlink when the checkout does not have
+# that link, other names that one file has on a case-insensitive checkout, and
+# absolute imports. IMPORTED_MAIN reads "error" until a walk succeeds; the result is
 # cached for the commit and root in IMPORTED_MAIN_DONE. isimported asks either
 # walk.
 IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
@@ -531,8 +533,9 @@ imported_names() {
 # found by name, the commit's tree or the untracked list cannot be listed whole,
 # a tree record does not parse, the listing holds a name twice (git's lookups
 # read the first copy, a checkout keeps the last), a name holds a newline, a
-# blob or checkout file cannot be read, symlink text it follows is empty,
-# absolute, leaves the repo or holds a newline or a NUL, or a checkout path it
+# blob or checkout file cannot be read, the lower-cased start list comes back
+# short, symlink text it follows is empty, absolute, leaves the repo, holds a
+# newline or a NUL, or has a .. after a symlink, or a checkout path it
 # would read exists but is not a plain file (a symlink, or under one) or a
 # plain directory, so a caller refuses
 # rather than reading a partial list. The listings stay NUL-separated as git
@@ -540,7 +543,7 @@ imported_names() {
 # and || keep errexit from ending the substitution early). Queue items are
 # "m:PATH" (main's entry) or "t:PATH" (the checkout's).
 main_imports() {
-  local - rec f d p src i out queue=() recs=() cand=() low=(); set -o pipefail  # as brief_fields
+  local - rec f d p src i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -588,6 +591,14 @@ main_imports() {
              || ! out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"; then IMPORTED_MAIN=error; return 1; fi
           out="${out%x}"
           if [[ -z "$out" || "$out" == *$'\n'* || "$out" == /* ]]; then IMPORTED_MAIN=error; return 1; fi
+          # realpath -s reads x/.. as nothing, but the kernel follows a symlink
+          # x first: a .. after a symlink on main or in the checkout fails.
+          lk=""; p="$d"; IFS=/ read -ra parts <<<"$out"
+          for c in "${parts[@]}"; do
+            [[ "$c" != .. || -z "$lk" ]] || { IMPORTED_MAIN=error; return 1; }
+            p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${p:+$p/}$c" 2>/dev/null)" || p=..
+            [[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1
+          done
           out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
           [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
         *) continue ;;

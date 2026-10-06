@@ -264,3 +264,17 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     [ "$status" -eq 0 ] && [ "$output" = "walk: failed
 scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
 }
+
+@test "main walk fails on symlink text with a .. after a symlink, with or without that link in the checkout; a .. after a plain directory is followed (U2a3 i1 fact-check 11b)" {
+    mkdir -p deep/inner docs
+    printf 'evil @secret.md\n' > deep/evil.md && printf 'top\n' > evil.md && printf 'i\n' > deep/inner/i.md
+    printf 'see @../hid.md\n' > docs/n.md && printf 'h\n' > hid.md
+    ln -s deep/inner ld && ln -s ld/../evil.md CLAUDE.md && ln -s docs/../docs/n.md AGENTS.md
+    commit_all dotdot-link
+    # The kernel reads deep/evil.md through ld; realpath -s would read evil.md.
+    imps main deep/secret.md; want walk failed; want deep/secret.md imported
+    rm ld
+    imps main deep/secret.md; want walk failed; want deep/secret.md imported
+    rm CLAUDE.md && commit_all no-ld
+    imps main hid.md docs/n.md deep/secret.md; want walk ok; want hid.md imported; want docs/n.md imported; want deep/secret.md -
+}
