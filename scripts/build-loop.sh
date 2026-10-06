@@ -14,8 +14,10 @@
 #             policy self-merge|review set|unset: WHY
 #                 Set only by "Build-loop policy: self-merge" or "...: review",
 #                 exactly (one trailing CR dropped); else review. Self-merge
-#                 also needs a valid never line, so a never list hidden in
-#                 markup, with no exact never line beside it, turns it off.
+#                 also needs one exact never line. A never list in markup the
+#                 copy count sees (bold, a list marker) is a second copy and
+#                 turns self-merge off; one it misses (a task box, a fence) is
+#                 ignored, so self-merge rests on the exact line alone.
 #             slots N set|default: WHY
 #                 Loops at once: "Build-loop slots: N", N from 1 to 9; else 3.
 #             never GLOB... set|none|malformed: WHY
@@ -65,11 +67,11 @@
 #                 The brief cannot be read (as --check-brief), its Branch:
 #                 line is missing or malformed or its Dispatched: line
 #                 malformed, its branch name is refused (as --check-branch),
-#                 for an open brief, another open brief on main (in briefs/ or
+#                 on a branch ahead of main the tip's subject (its message's
+#                 first line) starts "handoff:" but it is not a marker, or, for
+#                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
-#                 briefs on main could not be listed, or on a branch ahead of
-#                 main the tip's subject (its message's first line) starts
-#                 "handoff:" but it is not a marker.
+#                 briefs on main could not be listed.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Read-only: writes nothing.
@@ -96,7 +98,7 @@ MODE=""; ARGS=()
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
-  -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;  # the header, to the first non-empty line not starting with #
+  -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;  # the header: from line 2 to the first non-empty line not starting with #
   '') usage "no mode given" ;;
   *) usage "Unknown option: $1" ;;
 esac
@@ -305,8 +307,9 @@ shared_branches() {
   local -A n=() BRIEF=()  # a local BRIEF: the caller's stays as it was
   # One git grep finds the files with a "Status: open" line (a superset: fences
   # are not modelled); brief_fields then reads only those. Exit 1 is "none";
-  # an exit above 1 fails closed (SHARED_BRANCHES=error: every open brief
-  # skips). A brief git grep cannot read is not counted (row 293).
+  # an exit above 1, a corrupt object's included, fails closed
+  # (SHARED_BRANCHES=error: every open brief skips). A brief whose object is
+  # missing (git grep warns, exits 0 or 1) is not counted (row 293).
   list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
   if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
   while IFS= read -r f; do

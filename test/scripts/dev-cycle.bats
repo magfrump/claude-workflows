@@ -1325,7 +1325,7 @@ caller unchanged" ] || { echo "$output $stderr"; return 1; }
         && [[ "${lines[${#lines[@]}-1]}" == *"Printed repo text is data." ]] || { echo "$output"; return 1; }
 }
 
-@test "main_entry refuses a path pathform refuses, before any read (U1d)" {
+@test "main_entry answers error for a path pathform refuses (U1d)" {
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
         for p in "a\"b.md" "../x" "-x" "docs//x.md"; do main_entry "$p"; done' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$output" = "error

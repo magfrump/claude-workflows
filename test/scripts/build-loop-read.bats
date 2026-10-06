@@ -52,6 +52,7 @@ setup() { bl_setup; }
     settings_like policy "policy review unset: line 1 of docs/dev-cycle.md starts with a byte-order mark"
     settings "$f" 'Build-loop policy: self-merge'
     settings_is policy "policy review unset: the code fence opened at line 1 of docs/dev-cycle.md is never closed, so the file is not read"
+    [ "$(line slots)" = "slots 3 default: the code fence opened at line 1 of docs/dev-cycle.md is never closed, so the file is not read" ] || { echo "$output"; return 1; }
     # Missing, a symlink, a directory, and a file only in the working tree.
     git rm -q docs/dev-cycle.md && commit_all rm
     settings_is policy "policy review unset: no docs/dev-cycle.md on the default branch"
@@ -180,10 +181,12 @@ setup() { bl_setup; }
         [ "$(line constraints)" = 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)' ] \
             || { echo "[$c] $output"; return 1; }
     done
-    constraints '- S1: a' '- H1: b'; run --separate-stderr bash "$BL" --settings
+    constraints '- S1: a' '- H1: b' '  success:'; run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 2) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
     constraints '- H1: a' '## Other' '  success: b'; run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or \"#\" heading" ] || { echo "$output"; return 1; }
+    constraints '- H1: a' '  success: b' '```' 'H2: hidden' '```'; run --separate-stderr bash "$BL" --settings
+    [ "$(line constraints)" = "constraints ok 1-hard 0-soft: docs/constraints.md on the default branch" ] || { echo "$output"; return 1; }
     git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
@@ -250,6 +253,8 @@ setup() { bl_setup; }
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: new dependency (left-pad)"
     run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "ok $B open review feat/a stopped "*" 2 new dependency (left-pad)" ]] || { echo "$output"; return 1; }
+    git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: x" && run --separate-stderr bash "$BL" --status "$B"
+    [[ "$output" == "ok $B open review feat/a stopped "*" 2 x" ]] || { echo "$output"; return 1; }
     git update-ref refs/heads/feat/a feat/a~1 && tip feat/a "handoff: stopped: ${r120}r"
     run --separate-stderr bash "$BL" --status "$B"
     [[ "$output" == "skip $B: the tip of feat/a starts \"handoff:\" but is not a marker: its subject is not exactly"* ]] || { echo "$output"; return 1; }
@@ -287,6 +292,8 @@ setup() { bl_setup; }
         "$(git rev-parse "main^{tree}")" "$(git rev-parse "$base^{tree}")" "$base" | git hash-object -t commit --literally -w --stdin)"
     git update-ref refs/heads/feat/a "$o"
     check "skip $B: $n: it has no parent" two-trees
+    o="$(printf 'tree %s\nparent %s\nauthor t <t> 0 +0000\ncommitter t <t> 0 +0000\n\nhandoff: ready\n\n\0x\n' "$(git rev-parse "$base^{tree}")" "$base" \
+        | git hash-object -t commit --literally -w --stdin)" && git update-ref refs/heads/feat/a "$o" && check "skip $B: $n: it holds a NUL byte" nul
     tip feat/a "$(printf 'handoff: ready\nmore subject')"
     check "skip $B: $n: its subject runs onto a second line" two-line
     # Not a marker at all: an ordinary commit, even one that mentions a marker.
@@ -413,11 +420,12 @@ setup() { bl_setup; }
     settings_like never "never a/ set:"
     settings 'Build-loop policy: self-merge' 'Self-merge never: a/' "$f" 'x' "$f" 'b/'
     settings_like never "never malformed: line 2 is followed by a non-blank line"
-    settings 'Build-loop policy: self-merge' 'Self-merge never: a/' '   '
+    settings 'Build-loop policy: self-merge' 'Self-merge never: a/' $' \t '
     settings_like never "never a/ set:"
     git rm -q docs/dev-cycle.md && commit_all rm
     settings_is slots "slots 3 default: no docs/dev-cycle.md on the default branch"
-    # A caller's own GIT_CONFIG_COUNT pairs stay, and the guard still applies after them.
+    # A caller's own GIT_CONFIG_COUNT does not stop the guard (that the caller's pairs
+    # still reach git is asserted in the --status deferred-cases test).
     settings 'Build-loop policy: review' '' 'Self-merge never: none'
     printf 'Build-loop policy: self-merge\n\nSelf-merge never: none\n' > x.md
     git replace "$(git rev-parse main:docs/dev-cycle.md)" "$(git hash-object -w x.md)" && git config core.useReplaceRefs true
@@ -425,24 +433,28 @@ setup() { bl_setup; }
     [[ "$(line policy)" == "policy review set:"* ]] || { echo "$output $stderr"; return 1; }
 }
 
-@test "build-loop.sh --help prints the whole header, through its last line (U1d)" {
-    run --separate-stderr bash "$BL" --help
-    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "The build-loop handoff's state and checks"* ]] \
-        && [[ "${lines[${#lines[@]}-1]}" == *"or no default branch found by name." ]] || { echo "$output"; return 1; }
+@test "build-loop.sh -h and --help print the header from its first line through its last (U1d)" {
+    for h in -h --help; do
+        run --separate-stderr bash "$BL" "$h"
+        [ "$status" -eq 0 ] && [[ "${lines[0]}" == "The build-loop handoff's state and checks"* ]] \
+            && [[ "${lines[${#lines[@]}-1]}" == *"or no default branch found by name." ]] || { echo "$h: $output"; return 1; }
+    done
 }
 
-@test "--status: deferred cases: NUL, F31's open-only filter, no open brief, CRLF, BRIEF kept, an unanchored closed (U1d)" {
+@test "--status: deferred cases: no open brief, F31's open-only filter, CRLF, an unanchored closed, BRIEF kept, a caller's config pair, a NUL in a brief (U1d)" {
     settings 'Build-loop policy: review'
     # No open brief on main at all (git grep exits 1): a done brief reads normally.
-    brief d 'Status: done' 'Branch: feat/x' && d="$B"
+    # (A done brief never consults F31, so this cannot tell exit 1 from a failure.)
+    brief d 'Status: done' 'Branch: feat/x' 'Dispatched: 0' && d="$B"
     run --separate-stderr bash "$BL" --status "$d"
     [ "$output" = "ok $d done review feat/x absent - - 0" ] || { echo "$output"; return 1; }
-    # A done brief sharing an open brief's branch does not make the open one skip.
-    brief o 'Status: open' 'Branch: feat/x' 'Dispatched: 2' && o="$B"
+    # A done brief sharing an open brief's branch does not make the open one skip,
+    # even with a later "Status: open" line that git grep lists (F31's own filter).
+    printf 'Status: done\nBranch: feat/x\nStatus: open\n' > "$d" && commit_all d-later-open
+    brief o 'Status: open' 'Branch: feat/x' 'Dispatched: 99' && o="$B"
     run --separate-stderr bash "$BL" --status "$o"
-    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
-    # Another open brief (CRLF line endings) on the same branch counts; the queried
-    # brief keeps its own Dispatched value whatever F31 read.
+    [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }
+    # Another open brief (CRLF line endings) on the same branch counts.
     brief p 'Status: open' 'Branch: feat/x' 'Dispatched: 3' && printf 'Status: open\r\nBranch: feat/x\r\n' > "$B" && commit_all crlf
     run --separate-stderr bash "$BL" --status "$o"
     [[ "$output" == "skip $o: another open brief"* ]] || { echo "$output"; return 1; }
@@ -450,11 +462,14 @@ setup() { bl_setup; }
     # A directory whose name merely contains "closed" is not closed/.
     mkdir -p docs/working/briefs/2026-10-0closed && printf 'Status: open\nBranch: feat/x\n' > docs/working/briefs/2026-10-0closed/1-x.md && commit_all odd-dir
     run --separate-stderr bash "$BL" --status "$o"
-    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
+    [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }
     # Another open brief on another branch, read by F31 after o, leaves o's fields alone.
     brief q 'Status: open' 'Branch: feat/q' 'Dispatched: 3'
     run --separate-stderr bash "$BL" --status "$o"
-    [ "$output" = "ok $o open review feat/x absent - - 2" ] || { echo "$output"; return 1; }
+    [ "$output" = "ok $o open review feat/x absent - - 99" ] || { echo "$output"; return 1; }
+    # A caller's own GIT_CONFIG_COUNT pair still reaches git beside the guard pair.
+    run --separate-stderr env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=grep.patternType GIT_CONFIG_VALUE_0=bogus bash "$BL" --status "$o"
+    [ "$output" = "skip $o: the open briefs on the default branch could not be listed" ] || { echo "$output"; return 1; }
     # A NUL byte refuses the brief, naming the line.
     brief n 'Status: open' $'Branch: feat/\x01n' && printf 'Status: open\nBranch: feat/n\0x\n' > "$B" && commit_all nul
     run --separate-stderr bash "$BL" --status "$B"

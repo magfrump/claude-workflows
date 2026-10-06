@@ -21,7 +21,8 @@
 # an exit ends only the subshell. skipped records each blocked input in SKIPPED
 # and SKIP_AT. The caller runs resolve_main once per process (a second call
 # re-reads main); check_brief, check_branch and check_answer skip every
-# argument unless it returned 0 with main found by name. check_brief,
+# argument unless it returned 0 with main found by name (main_entry and
+# brief_fields answer error). check_brief,
 # check_branch and check_answer answer with one printed line per argument that
 # can echo repo text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
@@ -250,13 +251,13 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # above it is a symlink: prints "blob" (a regular file, mode 100644 or 100755),
 # "absent", "notfile" (the path is some other kind of entry), "notdir PART"
 # (PART, a directory above the path, is stored as something else) or "error"
-# (no default branch found by name, ls-tree failed, or the tree lists a name
-# twice; git's own reads would take the first copy, which may not be the one a
-# check saw, so this answers error instead; never read as absent). One ls-tree
-# call lists the path and every directory above it (-t: trees too; --full-tree:
-# paths from the top level, whatever the current directory). It checks
-# main_by_name and the path's form itself (pathform, so ls-tree prints it
-# unquoted): either failing is error.
+# (no default branch found by name, a path pathform refuses, ls-tree failed, or
+# the tree lists a name twice; git's own reads would take the first copy, which
+# may not be the one a check saw, so this answers error instead; never read as
+# absent). It runs main_by_name and pathform itself, before any read (pathform
+# also means ls-tree prints the name unquoted). One ls-tree call lists the path
+# and every directory above it (-t: trees too; --full-tree: paths from the top
+# level, whatever the current directory).
 main_entry() {
   local p="" rest="$1" out mode path dup="" want=()
   local -A m=()
