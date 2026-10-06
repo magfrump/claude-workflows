@@ -1,8 +1,52 @@
-Commit: 7f295cdb
-Loop-pass short-circuit: used at 39ed1d53
+Commit: 7697c6e6
+Loop closed at 7697c6e6
 # Code Review Rubric
 
-**Scope:** full branch `main...feat/build-loop-u2a2` at 39ed1d53 (no prior rubric for this slug); 347 changed code lines by pr-prep 1a | **Reviewed:** 2026-10-06 | **Status: 🟡 SPLIT at iteration 2** (main_imports moves to U2a3; U2a2 keeps the shared parser and tree walk)
+**Scope:** full branch `main...feat/build-loop-u2a2` at 7697c6e6 (final confirming pass; iterations 1 at 39ed1d53 and 2 at 7f295cdb below); 166 changed code lines by pr-prep 1a | **Reviewed:** 2026-10-06 | **Status: ✅ PASSES REVIEW, with one waived tier-T red that is not a regression (D1)** — single-sample review; absence of findings is not an attestation
+
+## Iteration 3 of 3: final confirming pass (Commit 7697c6e6, full branch, k=3, full panel, Stage 2.5)
+
+Review converged in 3 iterations, split twice for size (main_imports to U2a3, then U2a3's parser hardening to U2a3b). Iteration 1's A1-A5 and iteration 2's U2a2 rows (B1, B5 tree half, B9, B10, B13) are fixed; B7 is an override row; B2-B6, B8, B10-B12 and B14 went to U2a3.
+
+Delivery mode: self-read. Critics: security, performance, api-consistency, architecture, test-strategy.
+
+Reports (all `Commit: 7697c6e6`):
+- `code-fact-check-report-build-loop-u2a2-final.md`, merged k=3 (replicates `-f-r1/-f-r2/-f-r3`: 41, 38, 30 claims), plus Stage 2.5 `code-fact-check-submitted-claims-build-loop-u2a2.md` (Claims 11-16: 4 Verified, 1 Mostly accurate, 1 Unverifiable).
+- `security-reviewer-review-2026-10-06-final-build-loop-u2a2.md`: 1 Medium, 1 Low (run against Claude Code 2.1.292's own lexer and import function).
+- `performance-reviewer-review-2026-10-06-final-build-loop-u2a2.md`: 1 Informational.
+- `api-consistency-reviewer-review-2026-10-06-final-build-loop-u2a2.md`: 2 Minor, 3 Informational.
+- `architecture-review-review-2026-10-06-final-build-loop-u2a2.md`: 0 Structural, 0 Coupling, 3 Minor, 2 Informational.
+- `test-strategy-review-2026-10-06-final-build-loop-u2a2.md`: G1-G9, checked patches A and B.
+
+Tests at 7697c6e6: 100/100 (dev-cycle 75, build-loop-read 19, build-loop-check 2, fixture-git-env 2, hermeticity 2); shellcheck clean.
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| D1 | An @ right after a UNI_SPACES character is swallowed by the grep that splits tokens (`@a.md<NBSP>@b.md` reads only a.md; --check-fix says ok for b.md); the UNI_SPACES comment says "as a blank does" | Incorrect (behavioral) → 🔴 by tier T | fact-check Claim 1 (r1, r3), E1; security, architecture F1, api 2, test-strategy G9. Convergence | Waived (override row) | Not a regression: main misses b.md too, so this unit lands no worse than main. Fixed in U2a3b (3156b995), stacked and in its own loop. |
+| D2 | Markdown ends Claude Code's token where the parser reads on (`<br>`, links, emphasis), and ( ) ] in a name end the parser's token early; the comment lists `[` | Medium; Incorrect (comment) | security final F1, fact-check Claim 2, E2 | 🟡 Acknowledged (override row) | Not a regression; fixed in U2a3b. |
+| D3 | Tree walk failures hidden by `elif` (set -e off); grep errors swallowed; ROOT_REAL unchecked | Minor / Low | architecture F2-F3, security F2, api 1 | Deferred (override row) | Fixed in U2a3b. |
+| D4 | bff4ded2's "never less" | Incorrect (commit message) | fact-check Claim 3 | Accepted-immutable | |
+| D5 | questions.md:393 stale; header omits inrepo_here; test 1's NUL case not independent; `~x` dropped; imps' forward main arm | Stale / Mostly accurate | fact-check Claims 4-7, api I-1, I-3 | Deferred (override row) | Not edited after the confirming pass. |
+| D6 | Untested guards G1-G8 | Low | test-strategy | Deferred (override row; Patch A) | |
+| D7 | Double emission's extra probes per punctuation-ended token | Informational | performance F1 | Won't-Fix (override row) | |
+| D8 | Instruction files in an untracked nested repo or submodule are not starts | Informational | security (candidate) | Deferred (override row) | U2a3's review. |
+| D9 | instruction_names duplicates INSTRUCTION_FILE (on main already) | Informational | architecture F5 | No action | |
+
+✅ Confirmed good (each backed by an executed verdict whose Scope covers the row):
+- check_fix reaches the walk only through its last arm; an early-refused path costs 17-19 ms against 438-491 ms on main. Stage 2.5 Claim 11 (executed). Scope: check_fix's arm order.
+- isimported answers imported for an unknown walk word and compares case-insensitively for tree. Stage 2.5 Claim 16 (executed probe of tree, bogus and '' against mixed-case paths). Scope: the two arms present in this unit.
+- The tree walk starts once per process and later calls hit the cache. Stage 2.5 Claim 14 (xtrace of 10 arguments). Scope: one ROOT_REAL per process.
+- UNI_SPACES holds exactly JavaScript's 19 non-ASCII \s code points. Fact-check Claim 8 (executed, all three replicates). Scope: the list, not how it is used (D1).
+- The carried rows C12 and C13 bite: unsetting only GIT_DIR in either setup fails fixture-git-env via the index cmp; `p="$2"` fails entry_why's one-argument line. test-strategy final and fact-check r1/r3 (executed mutants). Scope: those two mutants.
+
+Pending execution verification: Stage 2.5 Claim 12 (Claude Code's side of the security harness shapes; the binary read was refused).
+
+Considered overrides: rows dated 2026-10-06 for `feat/build-loop-u2a`, `-u2a1`, `-u2a2` (A5 gaps, token forms, per-blob cost, walk naming, start-file rule, C12-C16, B7, B13). No critic re-filed one; B13's premise is confirmed (security final).
+
+## 🧩 Composition check (iteration 3)
+- lib:450-482 (fact-check Claim 1, security, architecture F1, api 2, test-strategy G9): one defect, stated whole with its fix by architecture F1; no composed row.
+- lib:456-462 (fact-check Claim 2, E2, security F1): distinct defects (a comment's `[`; Markdown and ( ) ] token ends), each complete.
+- lib:494-505 (architecture F2, F3; api 1; security F2): distinct defects (elif hides walk failures; grep status; ROOT_REAL contract), each complete.
 
 ## Iteration 2 of 3 (Commit 7f295cdb, full branch for critics, fix range for fact-check, --loop-pass, k=1, full panel)
 
