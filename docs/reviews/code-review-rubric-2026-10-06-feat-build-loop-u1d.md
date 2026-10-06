@@ -1,7 +1,32 @@
-Commit: 83cdb005
+Commit: cc75db98
 # Code Review Rubric
 
-**Scope:** full branch `main...feat/build-loop-u1d` (one commit, 83cdb005; 5 files, 97+/21−, 118 changed code lines by pr-prep 1a) | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 11 amber item(s) awaiting resolution or justification
+**Scope:** full branch `main...feat/build-loop-u1d` (iteration 1 at 83cdb005); iteration 2 a loop pass over `83cdb005..cc75db98` (fix 6c83af2a, scripts/ and test/) | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) open (13 fixed); final confirming pass pending
+
+## Iteration 2 (Commit cc75db98, loop pass, `--loop-pass` range 83cdb005..cc75db98)
+
+Reports (all `Commit: cc75db98`):
+- `code-fact-check-report-build-loop-u1d.md`, overwritten; k=1, loop pass. 23 claims: 21 Verified, 2 Mostly accurate (1b, 16), 0 Incorrect. All executed: 17 mutants, each failing 6c83af2a's tests and passing 83cdb005's.
+- `security-reviewer-review-2026-10-06-i2-build-loop-u1d.md`: 1 Low (T7's `&&` chain can pass without checking), 1 Informational.
+- `api-consistency-reviewer-review-2026-10-06-i2-build-loop-u1d.md`: 1 Minor (task box), 4 Informational. Iteration 1's F1, F3, F6 resolved; F4, F5 resolved with residues.
+- `test-strategy-review-2026-10-06-i2-build-loop-u1d.md`: the patch landed intact; G1-G11 closed; G13 (stale comment), G14 (recommend not testing).
+- Skipped by the Stage 1.5 gate: performance (scripts changed in comments only; test code only). Architecture was not selected: no module change. Stage 2.5 was skipped (loop pass). No short-circuit: no behavioural red.
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| A12 | `build-loop.sh:17-20`: "a task box" is missed; only a checked box is. An unchecked `- [ ]` is counted (fails closed). | Mostly accurate / Minor | FC 1b + api F1 + security F2. Convergence | ✅ Fixed (07c354c5) |
+| A13 | `build-loop-read.bats:447`: "never consults F31". F31 runs; only its answer is unused. | Mostly accurate | FC 16 | ✅ Fixed (07c354c5) |
+| C13 | T7's NUL step was one `&&` chain: a fixture failing to build skipped `check` and passed (executed). | Low | security F1 | Fixed (07c354c5; checked: broken fixture + deleted NUL check now fails T7) |
+| C14 | `build-loop-read.bats:118` comment contradicted the A3 header (a checked box is skipped). | Low | test-strategy G13 | Fixed (07c354c5) |
+| C15 | Help-range comment trailing a 152-column code line; dev-cycle.sh puts it on its own line. | Informational | api F3 | Fixed (07c354c5) |
+| C16 | dev-cycle.bats' help test said "whole header" and ran only `--help`. | Informational | api F4 | Fixed (07c354c5) |
+| C17 | The MAIN comment (`lib:244-246`) named only the check_* functions; `lib:25` was left short. | Informational | api F5 | Fixed (07c354c5) |
+| C18 | Help said "exact" never line; the printed reason says "valid". | Informational | api F2 | Fixed (07c354c5) |
+| C19 | The header's "ignored" arm is unpinned (fencecount and boxcount mutants survive, both stricter). | Low | test-strategy G14 | Won't-Fix (override row) |
+| C20 | Pre-existing, out of range: `bl_setup` does not clear an inherited `GIT_DIR`/`GIT_INDEX_FILE`; with GIT_DIR set, T7 wrote 3 fixture commits into that repo (executed). | Informational | security (out of range) | Deferred (override row) |
+| C21 | Pre-existing: check_branch ignores `rev-list --count` and `git log` failures. | Informational | security (out of range) | Deferred (same row as iteration 1 C3) |
+
+07c354c5 was reviewed by no loop pass; the final confirming pass (full branch, k=3, full panel) covers it. Size after 07c354c5: 180 changed code lines.
 
 ## Iteration 1 (Commit 83cdb005, full panel, not a loop pass)
 
