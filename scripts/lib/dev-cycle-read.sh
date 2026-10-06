@@ -447,10 +447,12 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # gitignored), resolves each @path against the importing file's directory as
 # Claude Code does (~/ and absolute paths lead outside the repo and are not
 # followed), and reads each plain file it reaches once (import_targets has the
-# token rules). It returns 1, with IMPORTED set to "error", when a command it
-# runs fails (each call sits in an `if` or `||`, where set -e is off). One
-# result is cached, for the root in IMPORTED_DONE; a call for another ROOT_REAL
-# recomputes it.
+# token rules). It returns 1, with IMPORTED set to "error", when the start
+# listing (git ls-files, untracked_md, instruction_names), lower, a file read or
+# the parser fails (each call sits in an `if` or `||`, where set -e is off); an
+# inrepo_here that fails skips its path. One result is cached, for the root in
+# IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
+# returns 1 again.
 # main_imports walks the default branch's commit instead, for the gate: it starts
 # at every instruction file stored there (and every .md under a .claude/rules/
 # directory at any depth, which Claude Code also loads) and follows an import
@@ -489,18 +491,20 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # the top level): one repo-relative path per line, case kept. Every import walk
 # shares these rules, so a change here changes --check-fix too. A token may
 # follow any byte but a letter or digit (so user@host is not one); it ends at a
-# blank, a UNI_SPACES space included, at a backslash or at #, as the import
-# token of Claude Code does. That regex keeps brackets, parentheses, backticks
+# blank, a UNI_SPACES space included, or at a backslash, as the import token of
+# Claude Code does, and at #, where Claude Code cuts the name it captured (so a
+# token after a # is an over-read; a backslash-escaped space is known issue A5). That
+# regex keeps brackets, parentheses, backticks
 # and trailing punctuation in a name (@x.md. reads x.md.), while the Markdown
 # around a token (emphasis, a link or image, inline HTML, a code span) may end
 # it sooner, so each token yields its whole, its part before the first of
-# [ ] ( ) < ! * _, and each of those with trailing . , ; : ! ? * _ ~ ) ] or
+# [ ] ( ) < ! * _ or a backtick, and each of those with trailing . , ; : ! ? * _ ~ ) ] or
 # backticks stripped, each path once. A NUL counts as a blank. Over-reading
 # only over-refuses. ~/ and absolute paths, and paths leaving the repo (.. or
 # ../, not a ..x name), are dropped. It reads ROOT_REAL without checking it
 # (the caller has run need_root) and returns 1 when sed or grep fails.
 import_targets() {
-  local t c v w p u n toks s=(-e 's/\x0/ /g')
+  local t c v w p u n toks b=$'\x60' s=(-e 's/\x0/ /g')
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail grep's "no match" would hide a sed failure.
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
@@ -508,8 +512,8 @@ import_targets() {
   while IFS= read -r t; do
     [[ -n "$t" ]] || continue
     t="${t#*@}"; n=$'\n'
-    for c in "$t" "${t%%[][()<!*_]*}"; do
-      v="$c"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *$'\x60' ]]; do v="${v%?}"; done  # \x60: a backtick
+    for c in "$t" "${t%%[][()<!*_"$b"]*}"; do  # b: a backtick, written as \x60
+      v="$c"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
       for w in "$c" "$v"; do
         [[ -n "$w" && "$w" != \~/* && "$w" != /* ]] || continue
         p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
@@ -523,23 +527,26 @@ import_targets() {
 # the tree walk forks lower and a plain check per path (forking for every tracked
 # file took seconds). It matches INSTRUCTION_FILE's names; the walk's own test
 # stays the authority. LC_ALL=C makes -i ASCII-only.
-instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || true; }
+instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || [[ $? -eq 1 ]]; }
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 imported_names() {
-  local - f d p lp out seen=$'\n' queue=(); set -o pipefail
+  local - f d p lp out seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
-  while IFS= read -r -d '' f; do
+  # The start list ends with "rc=0" only when both listings and the name filter succeeded, as in main_imports.
+  mapfile -d '' recs < <(set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names && printf rc=0 || printf rc=1)
+  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
+  for f in "${recs[@]:0:${#recs[@]}-1}"; do
     lp="$(lower "${f##*/}")" || return 1
     if [[ ! "$lp" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
-  done < <({ git ls-files -z; untracked_md; } | instruction_names)
+  done
   IMPORTED=$'\n'
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")

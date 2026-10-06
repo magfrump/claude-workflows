@@ -25,12 +25,15 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
 
 @test "tree walk shares the token rules: Unicode spaces end a token, punctuation is read kept and stripped, a ..x name is followed, a NUL hides no import, a cycle ends (U2a2)" {
     mkdir -p docs
-    printf 'See @docs/nb.md\xc2\xa0for, @docs/bom.md\xef\xbb\xbfnow, @docs/st.md. @..x.md and @docs/a.md\0 then @docs/b.md\n' > CLAUDE.md
+    # Two NBSPs in one run: the token ends at the first. docs/z.md is imported only after the NUL;
+    # gone/ does not exist, and the path is still resolved as written.
+    printf 'See @docs/nb.md\xc2\xa0for\xc2\xa0you, @docs/bom.md\xef\xbb\xbfnow, @docs/st.md. @..x.md @gone/../docs/m.md and @docs/a.md\0 then @docs/z.md\n' > CLAUDE.md
     printf 'hid @docs/hid.md\n' > ..x.md
     printf 'back @../CLAUDE.md, @c.md and @b.md\n' > docs/c.md
     printf 'see @docs/c.md\n' > AGENTS.md
     commit_all tree
-    ps=(docs/nb.md docs/bom.md docs/st.md docs/st.md. ..x.md docs/hid.md docs/b.md docs/c.md claude.md)
+    # Docs/NB.MD and CLAUDE.md: isimported takes a path in any case.
+    ps=(docs/nb.md docs/bom.md docs/st.md docs/st.md. ..x.md docs/hid.md docs/b.md docs/c.md claude.md docs/z.md docs/m.md Docs/NB.MD CLAUDE.md)
     imps tree "${ps[@]}" docs/other.md docs/nb.md.
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     for p in "${ps[@]}"; do want "$p" imported; done
@@ -41,6 +44,27 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         if isimported bogus docs/z.md; then echo "bogus: imported"; fi' _ "$LIB"
     [ "$output" = "bogus: imported" ] || { echo "$output $stderr"; return 1; }
+    # Without ROOT_REAL it stops (need_root) for any walk name, before answering.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main
+        if isimported bogus docs/z.md; then echo "bogus: imported"; fi' _ "$LIB"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "both walks: every Unicode space JavaScript's \\s holds ends a token; SKILL.md and an untracked upper-case .MD start the walk (U2a3b)" {
+    mkdir -p docs sub
+    # U+00A0, U+1680, U+2000-200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF as UTF-8.
+    sp=('\xc2\xa0' '\xe1\x9a\x80' '\xe2\x80\x80' '\xe2\x80\x81' '\xe2\x80\x82' '\xe2\x80\x83' '\xe2\x80\x84'
+        '\xe2\x80\x85' '\xe2\x80\x86' '\xe2\x80\x87' '\xe2\x80\x88' '\xe2\x80\x89' '\xe2\x80\x8a' '\xe2\x80\xa8'
+        '\xe2\x80\xa9' '\xe2\x80\xaf' '\xe2\x81\x9f' '\xe3\x80\x80' '\xef\xbb\xbf')
+    ps=()
+    for i in "${!sp[@]}"; do printf "@../docs/u$i.md${sp[$i]}x\\n"; ps+=("docs/u$i.md"); done > sub/SKILL.md
+    commit_all spaces
+    printf 'See @k.md\n' > docs/AGENTS.MD
+    for w in tree main; do
+        imps "$w" "${ps[@]}" docs/k.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for p in "${ps[@]}" docs/k.md; do want "$p" imported; done; want docs/other.md -
+    done
 }
 
 @test "main walk: main's instruction files start it; a working-tree edit does not count; an untracked start or a checkout file at a path main lacks fails it until U2a3c (U2a2, U2a3 split)" {
@@ -310,27 +334,39 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
 
-@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown around a token, ( ) in a name, ~x (U2a3)" {
+@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped (U2a3)" {
     mkdir -p docs
-    printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md\n' > AGENTS.md
+    # \x60: a backtick (a code span that closes right after the name).
+    printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n' > AGENTS.md
     commit_all parser
-    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md)
+    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md)
     for w in tree main; do
-        imps "$w" "${ps[@]}" docs/other.md
+        imps "$w" "${ps[@]}" docs/other.md '~/x.md'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
+        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -; want '~/x.md' -
     done
 }
 
-@test "both walks fail closed when tr fails, and the parser returns 1 when it cannot read its input (U2a3)" {
+@test "both walks fail closed when tr fails or the start listing fails, and the parser returns 1 when it cannot read its input (U2a3)" {
     mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     for w in tree main; do
         PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want docs/z.md imported
     done
+    want walk failed
+    # The tree walk itself, called twice: the second call returns its cached error.
     run --separate-stderr env PATH="$BATS_TEST_TMPDIR/bin:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         if import_targets "" < docs; then echo read; else echo failed; fi
+        if imported_names; then echo walked; else echo "walk failed"; fi
         if imported_names; then echo walked; else echo "walk failed"; fi' _ "$LIB"
     [ "$output" = "failed
+walk failed
 walk failed" ] || { echo "$output $stderr"; return 1; }
+    # A corrupt index: git ls-files fails, so the tree walk has no start list.
+    printf 'junk' > .git/index
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        if imported_names; then echo walked; else echo "walk failed"; fi
+        if isimported tree docs/z.md; then echo "docs/z.md: imported"; fi' _ "$LIB"
+    [ "$output" = "walk failed
+docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 }
