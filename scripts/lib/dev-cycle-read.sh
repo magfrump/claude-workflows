@@ -13,16 +13,16 @@
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
 # check_brief and the import walk (imported_names) exit 1 (need_root) unless
-# ROOT_REAL is set, is the current directory and is a repository's top level; while ROOT_REAL is
-# unset, rawfile, plaindir and blocker read nothing as plain. Call the exiting
-# checks in the caller's shell, not inside $(...) or `local x="$(...)"`, where
-# an exit ends only the subshell. skipped records each blocked input in SKIPPED
-# and SKIP_AT. The caller runs resolve_main once per process (a second call
-# re-reads main); check_brief, check_branch and check_answer skip every
-# argument unless it returned 0 with main found by name (main_entry and
-# brief_fields answer error). check_brief, check_branch and check_answer answer
-# with one printed line per argument that can echo repo text: print it through
-# scrub, read it as `out="$(check_brief ...)"` under
+# ROOT_REAL is set, is the current directory and is a repository's top level;
+# while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
+# Call the exiting checks in the caller's shell, not inside $(...) or
+# `local x="$(...)"`, where an exit ends only the subshell. skipped records each
+# blocked input in SKIPPED and SKIP_AT. The caller runs resolve_main once per
+# process (a second call re-reads main); check_brief, check_branch and
+# check_answer skip every argument unless it returned 0 with main found by name
+# (main_entry and brief_fields answer error). check_brief, check_branch and
+# check_answer answer with one printed line per argument that can echo repo
+# text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
@@ -255,10 +255,11 @@ main_by_name() { [[ -n "$MAIN_SHA" && -n "$MAIN_BY_NAME" ]]; }
 # twice; git's own reads would take the first copy, which may not be the one a
 # check saw, so this answers error instead). Only blob reads the file, and only
 # absent means there is none: every other word is a refusal. It runs
-# main_by_name and pathform itself, before any read (pathform also means
-# ls-tree prints the name unquoted). entry_why words the refusals. One ls-tree call lists the path
-# and every directory above it (-t: trees too; --full-tree: paths from the top
-# level, whatever the current directory).
+# main_by_name, then pathform, itself, before any read (so with no default
+# branch even a refused form answers error; pathform also means ls-tree prints
+# the name unquoted). entry_why words the refusals. One ls-tree call lists the
+# path and every directory above it (-t: trees too; --full-tree: paths from the
+# top level, whatever the current directory).
 main_entry() {
   local p="" rest="$1" out mode path dup="" want=()
   local -A m=()
@@ -278,10 +279,13 @@ main_entry() {
   case "${m[$1]-}" in '') echo absent ;; 100644|100755) echo blob ;; *) echo notfile ;; esac
 }
 # Why main_entry's word $1 is not a file to read, for a skip line. $2 is the
-# path, named in the reason; pass "" when the skip line already names it. A
-# newline in either becomes a space, so the reason stays one line.
+# path asked about, or "" when the skip line already names it: notfile and
+# badform make it the subject ("$2 is not ..."; no subject when ""), error and
+# any other word end "for $2", and notdir names only the directory above it.
+# A newline in either becomes a space, so the reason stays one line.
 entry_why() {
-  local w="${1//$'\n'/ }" p="${2//$'\n'/ }"
+  local w="${1//$'\n'/ }" p="${2-}"
+  p="${p//$'\n'/ }"
   case "$w" in
     notdir\ *) echo "${w#notdir } is not a directory on the default branch" ;;
     notfile) echo "${p:+$p is }not a regular file on the default branch" ;;
@@ -569,9 +573,7 @@ check_answer() {
     case "$e" in
       absent) continue ;;
       blob) ;;
-      # "it" is $f, except after notdir, whose reason names a directory above it.
-      notdir\ *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"; return ;;
-      *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in it is read"; return ;;
+      *) echo "skip $a: $(entry_why "$e" "$f"), so no entry in $f is read"; return ;;
     esac
     # A failed read is a skip, never a fall-through to the other file.
     r="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk -v id="$a" "$FENCE_AWK$ANSWER_AWK")" \

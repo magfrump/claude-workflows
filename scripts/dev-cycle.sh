@@ -165,7 +165,7 @@ check_write() {
   else echo "ok $a"; fi
 }
 # An in-cycle fix edits documentation only; the header's --check-fix paragraph
-# is the rule, and the skip message below repeats it. constraints.md is the
+# is the rule, and the skip messages below repeat it. constraints.md is the
 # user's (plan D2); docs/thoughts/ stays fixable. Anything else is filed.
 check_fix() {
   local a="$1" low lp
