@@ -309,3 +309,28 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     t="$(printf "100644 CLAUDE.md\0$(x "$c")40000 docs\0$(x "$dt")40000 l\0$(x "$lt")120000 l\0$(x "$k")" | git hash-object -t tree -w --literally --stdin)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
+
+@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown around a token, ( ) in a name, ~x (U2a3)" {
+    mkdir -p docs
+    printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md\n' > AGENTS.md
+    commit_all parser
+    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md)
+    for w in tree main; do
+        imps "$w" "${ps[@]}" docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
+    done
+}
+
+@test "both walks fail closed when tr fails, and the parser returns 1 when it cannot read its input (U2a3)" {
+    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
+    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
+    for w in tree main; do
+        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want docs/z.md imported
+    done
+    run --separate-stderr env PATH="$BATS_TEST_TMPDIR/bin:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        if import_targets "" < docs; then echo read; else echo failed; fi
+        if imported_names; then echo walked; else echo "walk failed"; fi' _ "$LIB"
+    [ "$output" = "failed
+walk failed" ] || { echo "$output $stderr"; return 1; }
+}

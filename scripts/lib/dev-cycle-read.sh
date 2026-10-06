@@ -447,8 +447,10 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # gitignored), resolves each @path against the importing file's directory as
 # Claude Code does (~/ and absolute paths lead outside the repo and are not
 # followed), and reads each plain file it reaches once (import_targets has the
-# token rules). One result is cached, for the root in IMPORTED_DONE; a call for
-# another ROOT_REAL recomputes it.
+# token rules). It returns 1, with IMPORTED set to "error", when a command it
+# runs fails (each call sits in an `if` or `||`, where set -e is off). One
+# result is cached, for the root in IMPORTED_DONE; a call for another ROOT_REAL
+# recomputes it.
 # main_imports walks the default branch's commit instead, for the gate: it starts
 # at every instruction file stored there (and every .md under a .claude/rules/
 # directory at any depth, which Claude Code also loads) and follows an import
@@ -474,38 +476,48 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
 # isimported asks either walk.
 IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
-# UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
+# UTF-8 spaces that end an import token as a blank does (import_targets makes
+# each one a blank before it matches tokens): U+00A0, U+1680,
 # U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
 # token ends at JavaScript's \s, which includes U+FEFF).
 UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x80\x82' $'\xe2\x80\x83' $'\xe2\x80\x84'
   $'\xe2\x80\x85' $'\xe2\x80\x86' $'\xe2\x80\x87' $'\xe2\x80\x88' $'\xe2\x80\x89' $'\xe2\x80\x8a' $'\xe2\x80\xa8'
   $'\xe2\x80\xa9' $'\xe2\x80\xaf' $'\xe2\x81\x9f' $'\xe3\x80\x80' $'\xef\xbb\xbf')
-IMPORT_RE='(^|[^[:alnum:]])@[^][:space:]\\#`()]+'
+IMPORT_RE='(^|[^[:alnum:]])@[^[:space:]\\#]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 # The import targets in the text on stdin, for a file in directory $1 ("" at
 # the top level): one repo-relative path per line, case kept. Every import walk
 # shares these rules, so a change here changes --check-fix too. A token may
 # follow any byte but a letter or digit (so user@host is not one); it ends at a
-# blank, a UNI_SPACES space, \, #, a backtick, ( ) [ or ]. grep -a reads text
-# holding a NUL. Claude Code keeps trailing punctuation (@x.md. reads x.md.),
-# while Markdown emphasis (**@docs/x.md**) may hide its marks, so a token
-# ending in . , ; : ! ? * _ or ~ yields both its whole and its stripped name.
-# Over-reading (a code span) only over-refuses. ~/ and absolute paths, and
-# paths leaving the repo (.. or ../, not a ..x name), are dropped.
+# blank, a UNI_SPACES space included, at a backslash or at #, as the import
+# token of Claude Code does. That regex keeps brackets, parentheses, backticks
+# and trailing punctuation in a name (@x.md. reads x.md.), while the Markdown
+# around a token (emphasis, a link or image, inline HTML, a code span) may end
+# it sooner, so each token yields its whole, its part before the first of
+# [ ] ( ) < ! * _, and each of those with trailing . , ; : ! ? * _ ~ ) ] or
+# backticks stripped, each path once. A NUL counts as a blank. Over-reading
+# only over-refuses. ~/ and absolute paths, and paths leaving the repo (.. or
+# ../, not a ..x name), are dropped. It reads ROOT_REAL without checking it
+# (the caller has run need_root) and returns 1 when sed or grep fails.
 import_targets() {
-  local t v p u
+  local t c v w p u n toks s=(-e 's/\x0/ /g')
+  for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
+  # Two steps, not a pipe: under pipefail grep's "no match" would hide a sed failure.
+  toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
+  toks="$(env LC_ALL=C grep -aoE "$IMPORT_RE" <<<"$toks")" || [[ $? -eq 1 ]] || return 1
   while IFS= read -r t; do
-    t="${t#*@}"
-    for u in "${UNI_SPACES[@]}"; do t="${t%%"$u"*}"; done
-    v="$t"; while [[ "$v" == *[.,\;:!?*_~] ]]; do v="${v%?}"; done
-    for t in "$t" "$v"; do
-      [[ -n "$t" && "$t" != "~"* && "$t" != /* ]] || continue
-      p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$t" 2>/dev/null)" || continue
-      [[ "$p" != .. && "$p" != ../* ]] || continue
-      printf '%s\n' "$p"
-      [[ "$v" != "$t" ]] || break
+    [[ -n "$t" ]] || continue
+    t="${t#*@}"; n=$'\n'
+    for c in "$t" "${t%%[][()<!*_]*}"; do
+      v="$c"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *$'\x60' ]]; do v="${v%?}"; done  # \x60: a backtick
+      for w in "$c" "$v"; do
+        [[ -n "$w" && "$w" != \~/* && "$w" != /* ]] || continue
+        p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
+        [[ "$p" != .. && "$p" != ../* && "$n" != *$'\n'"$p"$'\n'* ]] || continue
+        n+="$p"$'\n'; printf '%s\n' "$p"
+      done
     done
-  done < <(env LC_ALL=C grep -aoE "$IMPORT_RE" || true)
+  done <<<"$toks"
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -518,21 +530,26 @@ untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,ica
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 imported_names() {
-  local f d p seen=$'\n' queue=()
+  local - f d p lp out seen=$'\n' queue=(); set -o pipefail
   need_root
-  [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && return; IMPORTED_DONE="$ROOT_REAL"; IMPORTED=$'\n'
+  [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
+  IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
   while IFS= read -r -d '' f; do
-    if [[ ! "$(lower "${f##*/}")" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
+    lp="$(lower "${f##*/}")" || return 1
+    if [[ ! "$lp" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
   done < <({ git ls-files -z; untracked_md; } | instruction_names)
+  IMPORTED=$'\n'
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
+    out="$(import_targets "$d" < "$f")" || { IMPORTED=error; return 1; }
     while IFS= read -r p; do
-      IMPORTED+="$(lower "$p")"$'\n'
+      [[ -n "$p" ]] || continue
+      lp="$(lower "$p")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
       if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
-    done < <(import_targets "$d" < "$f")
+    done <<<"$out"
   done
 }
 # The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
@@ -603,7 +620,7 @@ main_imports() {
     esac
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
-      IMPORTED_MAIN+="$(lower "$p")"$'\n'
+      i="$(lower "$p")" || { IMPORTED_MAIN=error; return 1; }; IMPORTED_MAIN+="$i"$'\n'
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
@@ -614,17 +631,17 @@ main_imports() {
   done
 }
 # Whether path $2 (any case) is imported, by the walk $1 names: tree or main.
-# A failed main walk, or a walk name that is neither, answers imported (0), so
+# A failed walk, or a walk name that is neither, answers imported (0), so
 # a caller testing it with `if` refuses; a caller that words a failed walk
 # runs main_imports first. Run it in the caller's shell: the walk exits
 # through need_root and caches its result.
 isimported() {
   local lp
   need_root
-  lp="$(lower "$2")"
+  lp="$(lower "$2")" || return 0
   case "$1" in
     main) main_imports || return 0; [[ "$IMPORTED_MAIN" == *$'\n'"$lp"$'\n'* ]] ;;
-    tree) imported_names; [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]] ;;
+    tree) imported_names || return 0; [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]] ;;
     *) return 0 ;;
   esac
 }
