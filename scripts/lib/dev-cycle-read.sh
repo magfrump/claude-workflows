@@ -501,16 +501,18 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # fences too; each prefix of the run after it, up to the first blank (a NUL or
 # a UNI_SPACES space counts as one), is a candidate name, with a
 # backslash-escaped space read as a space. A line holding <!-- is also read
-# with its closed HTML comments removed (Claude Code splices them). Each
-# candidate is made absolute (ROOT_REAL/$1/name unless it starts with /) and
-# resolved lexically, .. stopping at / as Node's path.resolve does, so a name
-# that leaves the repo and re-enters it is kept; it is kept only when it lies
-# below ROOT_REAL, and printed repo-relative. ~/ names are dropped. Known
-# exceptions: a .. after a symlinked directory (resolved lexically, as Claude
-# Code also does: row 350), and any decoding Claude Code may add (an entity, a
-# percent escape). The cost is false positives: a prefix that is itself a file
-# counts as imported.
-# It returns 1 when sed or awk fails, when ROOT_REAL is empty, or when the
+# with its closed HTML comments removed (Claude Code splices them), and text
+# holding a byte above 0x7f is also read decoded as Claude Code decodes it (an
+# invalid UTF-8 sequence becomes U+FFFD). Each candidate is trimmed of spaces,
+# made absolute (ROOT_REAL/$1/name unless it starts with /) and resolved
+# lexically, .. stopping at / as Node's path.resolve does, so a name that
+# leaves the repo and re-enters it is kept; it is kept only when it lies below
+# ROOT_REAL, and printed repo-relative. ~/ names are dropped. Known exceptions:
+# a .. after a symlinked directory, which the kernel follows through the link
+# while both Claude Code and this walk resolve it lexically (row 350), and any
+# further decoding Claude Code may add (an entity, a percent escape). The cost
+# is false positives: a prefix that is itself a file counts as imported.
+# It returns 1 when sed, python3 or awk fails, when ROOT_REAL is empty, or when the
 # candidates and comment splices run past a work bound (so a pathological file
 # fails the walk rather than stalling it).
 # Re-check the superset when Claude Code changes its import grammar
@@ -520,6 +522,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 IMPORT_AWK='
 function emit(c,   n, i, k, part, st, out) {
   work += length(c); if (work > 50000000) exit 3
+  sub(/^ +/, "", c); sub(/ +$/, "", c)  # Claude Code trims the name (an escaped space can lead it)
   if (c == "" || substr(c, 1, 2) == "~/") return
   if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   n = split(c, part, "/"); k = 0
@@ -558,11 +561,19 @@ function splice(line,   o, i, j, r) {
 BEGIN { dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2 }
 { scan($0); if (index($0, "<!--")) scan(splice($0)) }'
 import_targets() {
-  local u toks s=(-e 's/\x0/ /g')
+  local u d toks s=(-e 's/\x0/ /g') LC_ALL=C
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
   # failure, but a caller without pipefail would.
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
+  # Claude Code decodes the file as UTF-8 and turns each invalid sequence into
+  # U+FFFD, so a name can hold bytes the file does not: read that spelling too
+  # (python3's "replace" decoding matched Claude Code's byte for byte: U2a3b L2
+  # security F1). LC_ALL=C above makes the byte range a byte test.
+  if [[ "$toks" == *[$'\x80'-$'\xff']* ]]; then
+    d="$(printf '%s\n' "$toks" | python3 -I -c 'import sys; sys.stdout.buffer.write(sys.stdin.buffer.read().decode("utf-8", "replace").encode())')" || return 1
+    [[ "$d" == "$toks" ]] || toks+=$'\n'"$d"
+  fi
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
   # and a failed write would read as no imports.
   # dir and root go through the environment: awk -v would read backslash escapes in them.
@@ -600,7 +611,9 @@ imported_names() {
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    out="$(import_targets "$d" < "$f")" || { IMPORTED=error; return 1; }
+    # Claude Code skips a file over 4 MiB, so reading only its start over-reads at
+    # worst, and a huge file a prefix candidate names cannot stall the walk (L2 security F2).
+    out="$(head -c 4194305 -- "$f" | import_targets "$d")" || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.

@@ -2,24 +2,48 @@ Commit: be94c871
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
-**Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 red; 2 Medium security ambers and 8 Mostly-accurate wording ambers found at e48cf0f7, all fixed in 909de414 and its follow-up, not yet confirmed by a review pass (iteration-4 gate below)
+**Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🔴 loop 2 iteration 1 did not pass at be94c871; its fixes are committed, pending iteration 2** (loop 1 ended at the iteration-4 gate below)
 
-## Loop 2, iteration 1 of 3 (Commit be94c871, main...HEAD, --loop-pass, k=1, full panel; PAUSED by the user before triage)
+## Loop 2, iteration 1 of 3 (Commit be94c871, main...HEAD, --loop-pass, k=1, full panel)
 
-Loop 2 reviews the over-approximation redesign (be94c871) chosen at loop 1's iteration-4 gate. The user asked for a stopping point while the panel ran, so this iteration has no fixes yet. Status at pause: **🔴 DOES NOT PASS** (behavioral fact-check Incorrect: the parser is not yet a superset).
+Loop 2 reviews the over-approximation redesign (be94c871) chosen at loop 1's iteration-4 gate. The user paused the session while the panel ran; triage and fixes ran on resume (2026-10-07). Status: **🔴 DOES NOT PASS at be94c871** (behavioral fact-check Incorrect: not yet a superset; security F1). All findings below are fixed in dd51e9a7 and its follow-up, pending iteration 2.
 
-Reports (`Commit: be94c871`): `code-fact-check-report-build-loop-u2a3b-L2-i1.md` (42 claims: 27 Verified, 3 Mostly accurate, 2 Stale, 10 Incorrect); `api-consistency-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Minor, 2 Informational); `architecture-review-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Coupling, 1 Minor, 2 Informational); `test-strategy-review-2026-10-06-L2-build-loop-u2a3b.md` (F1-F5, Appendix A tests, Appendix B fix sketch). Security and performance were still running at the pause; their reports (`security-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md`, `performance-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md`) will be untracked files in the worktree until the next session commits them.
+Reports (`Commit: be94c871`): `code-fact-check-report-build-loop-u2a3b-L2-i1.md` (42 claims: 27 Verified, 3 Mostly accurate, 2 Stale, 10 Incorrect); `api-consistency-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Minor, 2 Informational); `architecture-review-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Coupling, 1 Minor, 2 Informational); `test-strategy-review-2026-10-06-L2-build-loop-u2a3b.md` (F1-F5, Appendix A tests, Appendix B fix sketch); `performance-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md` (3 Medium, 1 Low, 1 Informational); `security-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md` (re-run on resume: 1 Medium, 1 Low; harness rebuilt from the installed 2.1.292 binary, 19,000 fuzz documents, be94c871 missed 453 of 6,751 names, all F1-shaped; none with F1's fix).
 
-Findings to triage on resume (not yet tiered):
-- Behavioral (fact-check Claims 1, 10, 15, 16, 39; architecture Coupling 2; test-strategy F1): not a superset. `@../<repo>/docs/x.md` re-entry is dropped (`if (k == 0) return`), a fail-open regression from main at --check-fix; absolute spellings other than a literal ROOT_REAL prefix are dropped; mawk's `-v` escape processing mangles a dir or root holding a backslash; names over 4096 bytes that normalize short are cut. Agreed fix (architecture, tested 121/121; test-strategy Appendix B): resolve each candidate to an absolute path (root/dir/candidate, `..` clamped at /), keep it only under `root "/"`, pass dir and root through ENVIRON, drop the 4096 cap and rely on the work bound. Caveat: Appendix B drops every name when ROOT_REAL is /.
-- splice is quadratic and outside the work bound (fact-check 18b, test-strategy F3): add its copying to `work`.
-- main_imports fails the walk on prefix candidates the checkout holds as non-plain (architecture Coupling 1: `.git` in a linked worktree from `@.gitignore`; api 3: an ignored `.env` from `@.env.example`): fails closed, but U2b's fresh-worktree gate would refuse every path. Tested fix: skip `.git` and `.git/*` in main_imports; route the general prefix rule to U2a3c.
-- import_targets returns awk's 3 or 2, not 1 (api 1, fact-check 18a): `|| return 1`.
-- check_fix's skip wording claims an import for over-read names (api 2): "names it after an @ ... so it may be read as instructions", mirrored in the help text and the dev-cycle skill.
-- The superset claim is stated three ways (architecture 3; fact-check 3, 4b, 5): state it once in the code comment with its exceptions; A5 and F11 point to it; restore non-literal absolute spellings to the gaps unless the resolution fix lands.
-- Tests: test-strategy Appendix A (4 hole tests plus a --check-fix test, failing at be94c871; M21/M22 splice test; the blank-ends-a-candidate assertion); stale comments at build-loop-check.bats:341-342, :347; the over-read test's name and its two real imports (fact-check 29, test-strategy F5).
+### 🔴 Must Fix (loop 2 iteration 1)
 
-Next on resume: loop 2 iteration 1's triage and fixes from the list above (plus the security and performance reports), tests, fix-drift, then iteration 2.
+| ID | Finding | Source | Disposition |
+|---|---|---|---|
+| L2-R1 | Not a superset: `@../<repo>/docs/x.md` re-entry dropped (a fail-open regression from main at --check-fix), absolute spellings other than a literal ROOT_REAL prefix dropped, a backslash in dir/root mangled by `awk -v`, names over 4096 bytes that normalize short cut | fact-check Claims 1, 10, 15, 16, 39; architecture Coupling 2; test-strategy F1 | ✅ Fixed (dd51e9a7): candidates made absolute, `..` clamped at /, kept only below ROOT_REAL; dir and root through ENVIRON; no name cap; a root of / keeps every path, an empty root fails. Tests: Appendix A's four hole tests and its --check-fix test |
+
+### 🟡 Must Address (loop 2 iteration 1)
+
+| ID | Finding | Source | Severity | Disposition |
+|---|---|---|---|---|
+| L2-A1 | Claude Code decodes files as UTF-8 and turns invalid bytes into U+FFFD; the bytewise parser never yields that spelling (`@docs/\xff.md` reaching `docs/\xef\xbf\xbd.md`); pre-existing on main | security F1 (executed) | Medium | ✅ Fixed: text holding a byte above 0x7f is also read decoded by python3 (`decode("utf-8","replace")`, byte-identical to Claude Code's per the critic). Tests in both suites; the no-decode mutant fails. The LC_ALL=C guard's mutant survives (bash's range matches the byte under C.utf8 too): defence in depth |
+| L2-A2 | Claude Code trims the name (`name.trim()` in its resolver), so `@\ docs/x.md` loads docs/x.md | security (transcription of the resolver) | Medium | ✅ Fixed: emit trims spaces; tested; mutant fails |
+| L2-A3 | splice is quadratic and outside the work bound | fact-check 18b; performance F1; test-strategy F3 | Medium | ✅ Fixed: its copying is charged to the bound; Appendix A test; mutant fails |
+| L2-A4 | The work bound is per file; the bash side has no walk-wide limit | performance F2 | Medium | ✅ Fixed: IMPORT_OUT_MAX (4,000,000 bytes printed in all) fails either walk; tested; mutant fails |
+| L2-A5 | main_imports forks lower per candidate | performance F3 | Medium | ✅ Fixed: once per file, as the tree walk |
+| L2-A6 | A `.git` prefix candidate (from `@.gitignore`) fails the main walk in a linked worktree | architecture Coupling 1; api 3 | Coupling | ✅ Fixed: main_imports skips `.git` and `.git/*`; tested in a linked worktree; mutant fails. The general prefix-meets-checkout-file rule (an ignored `.env` beside `@.env.example`) is routed to U2a3c |
+
+### 🟢 Consider (loop 2 iteration 1)
+
+| ID | Finding | Source | Disposition |
+|---|---|---|---|
+| L2-C1 | import_targets returns awk's 3 or 2, not 1 | api 1; fact-check 18a | Fixed: `\|\| return 1`; the bound test asserts status 1 |
+| L2-C2 | --check-fix says "imports it" for names only over-read | api 2 | Fixed: "names it after an @ ... so it may be read as instructions", in the help, the skill and the tests |
+| L2-C3 | The superset claim is stated three ways | architecture 3; fact-check 3, 4b, 5 | Fixed: stated once above import_targets with its exceptions; A5 and F11 point to it; A5 records where the oracle came from |
+| L2-C4 | Stale test comments (cut marks, "one grep match"); the over-read test holds two real imports | fact-check 27, 28, 29; test-strategy F5 | Fixed: comments rewritten; escaped-space and absolute cases moved into the superset test; the over-read test records the decision |
+| L2-C5 | A large file a prefix candidate names stalls the tree walk (80 MB: 47 s) | security F2 (executed) | Fixed: the tree walk reads at most 4 MiB + 1 bytes (Claude Code skips larger files, so this only over-reads); tested with a sparse 300 MB file; mutant fails. The main walk still reads a blob whole (main's content, reviewed): deferred |
+| L2-C6 | blocker forks per directory-prefix candidate | performance F4 | Deferred (Low; a U2a3c design question) |
+| L2-C7 | scan visits every byte of @-less lines | performance F5 | Deferred (Informational) |
+
+Size: 525 changed code lines against main after the fixes (350 at be94c871), past row 62's 400-line entry cap. Q-104 was answered [2] on 2026-10-06 (re-check per iteration, growth to ~800 tolerated), so the loop continues without a split. Most of the growth is reviewer-requested tests.
+
+Verification: 133/133 (build-loop-check, dev-cycle, build-loop-read, fixture-git-env, hermeticity). `--check-fix` over 941 tracked `docs/*.md` and README.md is identical to main's output (wording aside); 3.25 s against main's 4.0 s.
+
+Next: fix-drift over the fix commits, then iteration 2 (`--loop-pass`, k=1, full panel over main...HEAD).
 
 ## Iteration-4 gate (cap reached)
 

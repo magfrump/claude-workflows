@@ -548,3 +548,22 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         timeout 10 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\" < \"\$3\" >/dev/null" _ "$1" "$ROOT_REAL" "$2"; echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/comments.txt"
     [[ "$output" == rc=* && "$output" != rc=0 && "$output" != rc=124 ]] || { echo "$output $stderr"; return 1; }
 }
+
+@test "both walks read a name as Claude Code decodes it: an invalid UTF-8 byte is U+FFFD; a leading escaped space is trimmed (U2a3b L2 security F1)" {
+    mkdir -p docs && printf 'See @docs/\xff.md and @\\ docs/lead.md\n' > AGENTS.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md
+    commit_all fffd
+    for w in tree main; do
+        imps "$w" docs/$'\xef\xbf\xbd'.md docs/c.md docs/lead.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/$'\xef\xbf\xbd'.md imported; want docs/c.md imported; want docs/lead.md imported; want docs/other.md -
+    done
+}
+
+@test "the tree walk reads only the first 4 MiB of a file a candidate names, as Claude Code skips larger files (U2a3b L2 security F2)" {
+    mkdir -p docs && printf 'See @big/x.md\n' > AGENTS.md && commit_all base
+    # An untracked sparse 300 MB file at the prefix "big": read whole, the walk stalls.
+    printf '@docs/early.md\n' > big && truncate -s 300M big
+    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        imported_names && echo ok || echo failed; isimported tree docs/early.md && echo early' _ "$LIB"
+    [ "$output" = $'ok\nearly' ] || { echo "$status $output $stderr"; return 1; }
+}

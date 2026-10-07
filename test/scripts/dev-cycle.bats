@@ -1063,6 +1063,13 @@ EOF
     [[ "$output" == "skip docs/notes.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
 }
 
+@test "--check-fix refuses a doc imported through a name Claude Code decodes with U+FFFD (U2a3b L2 security F1)" {
+    mkdir -p docs && printf 'See @docs/\xff.md\n' > CLAUDE.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md && echo x > docs/c.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/c.md
+    [[ "$output" == "skip docs/c.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
+}
+
 @test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email-shaped token is over-read (superset)" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
