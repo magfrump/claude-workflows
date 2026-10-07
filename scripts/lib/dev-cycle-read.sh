@@ -453,7 +453,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # this process's HOME, and drops paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read,
 # import_home or the parser (its comment lists why) fails, the IMPORT_OUT_MAX
-# budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
+# or IMPORT_WORK_MAX budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
 # IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
 # returns 1 again.
@@ -500,6 +500,12 @@ IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # 2 KB, /workspace's about 6 KB. A caller that changes it clears IMPORTED_DONE
 # and IMPORTED_MAIN_DONE before walking again.
 IMPORT_OUT_MAX=4000000
+# Each walk also fails once the parser's work (the candidate and comment-splice
+# characters it scans, the unit of its per-file bound of 50,000,000, about 5 s)
+# passes this in all, so N adversarial files cost one bound, not N (U2a3b
+# L2-confirm performance P2). /workspace's walks spend about 8,100 each (2026-10-07).
+# A caller that changes it clears both caches, as for IMPORT_OUT_MAX.
+IMPORT_WORK_MAX=50000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
 # U+205F, U+3000 and U+FEFF (Claude Code's token ends at JavaScript's \s).
@@ -512,7 +518,10 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and 0 when
-# not a number, so the first name fails it). Every import walk shares these
+# not a number, so the first name fails it) and IMPORT_WORK_LEFT (set by a
+# walk: what its IMPORT_WORK_MAX has left, which then also caps the per-file
+# work bound, and a last line "/N" reports the work spent; import_work reads
+# it). Every import walk shares these
 # rules, so a change here changes --check-fix too.
 # The superset claim (the one statement of it; known issue A5 and plan F11
 # point here): these rules read every name Claude Code 2.1.292 can import (its
@@ -550,7 +559,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
 function emit(c) {
-  work += length(c); if (work > 50000000) exit 3
+  work += length(c); if (work > wmax) exit 3
   # Claude Code trims the name; it rejects a name led by a space first, so
   # trimming one only over-reads.
   sub(/^ +/, "", c); sub(/ +$/, "", c)
@@ -568,7 +577,7 @@ function put(c,   n, i, k, part, st, out) {
   if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   # The resolved spelling is what costs (its length grows with the depth of
   # the importing file), so it is charged too, and each is resolved once per file.
-  work += length(c); if (work > 50000000) exit 3
+  work += length(c); if (work > wmax) exit 3
   if (c in tried) return
   tried[c] = 1
   n = split(c, part, "/"); k = 0
@@ -601,7 +610,7 @@ function scan(line,   i, j, L, ch, name) {
 function splice(line,   o, i, j, r) {
   o = ""
   while ((i = index(line, "<!--")) > 0) {
-    r = substr(line, i + 4); work += length(r); if (work > 50000000) exit 3
+    r = substr(line, i + 4); work += length(r); if (work > wmax) exit 3
     j = index(r, "-->"); if (j == 0) break
     o = o substr(line, 1, i - 1); line = substr(r, j + 3)
   }
@@ -610,8 +619,10 @@ function splice(line,   o, i, j, r) {
 BEGIN {
   dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homereal = ENVIRON["IT_HOME_REAL"]
   left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
+  wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
-{ scan($0); if (index($0, "<!--")) scan(splice($0)) }'
+{ scan($0); if (index($0, "<!--")) scan(splice($0)) }
+END { if (trail) print "/" (work + 0) }'
 # Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
 # U+10FFFF), as an awk ERE for a C-locale awk -v: it agreed with python3's
 # decoding on 20,013 cases (U2a3b L2-i2 performance F1). Only text it rejects
@@ -653,7 +664,17 @@ import_targets() {
   # backslash escapes in them. IMPORT_LEFT, set by a walk, is what its
   # IMPORT_OUT_MAX budget has left, so awk stops there rather than after.
   printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOME_REAL="$IMPORT_HOME_REAL" \
-    IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" awk "$IMPORT_AWK" || return 1
+    IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
+}
+# import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
+# printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with
+# /) from the variable OUT, and adds N to the variable TOTAL. It returns 1 when
+# the trailer is missing or TOTAL passes IMPORT_WORK_MAX.
+import_work() {
+  local -n iw_o="$1" iw_t="$2"; local iw_w="${iw_o##*/}"
+  [[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1
+  iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
+  (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -718,7 +739,7 @@ main_checkout() {
   return 1
 }
 imported_names() {
-  local - f d p lp out used=0 seen=$'\n' queue=() recs=(); set -o pipefail
+  local - f d p lp out used=0 work=0 seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
@@ -736,7 +757,8 @@ imported_names() {
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED=error; return 1; }
+    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+      && import_work out work || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -757,11 +779,12 @@ imported_names() {
 # import main lacks, a blob or checkout file cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, import_home, the parser (its comment lists why) or a
-# lower fails, or the IMPORT_OUT_MAX budget is spent; need_root exits instead.
+# lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
+# need_root exits instead.
 # Phase 2 begins when queue empties: tq's checkout files then join it, and a
 # path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 work=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=() dir=() pok=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -795,8 +818,10 @@ main_imports() {
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]-checkout}" in
-      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
         # $(...) drops NULs, so they are counted first; the x keeps trailing
         # newlines, which $(...) would also drop.

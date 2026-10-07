@@ -838,3 +838,27 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
     want walk ok; want docs/x.md imported; want docs/other.md -
 }
+
+@test "IMPORT_WORK_MAX bounds the parser's work over the whole walk, not each file; a walk that spends exactly the limit passes (U2a3b L2-confirm performance P2, U2a3c)" {
+    # Three top-level files whose text is alike but for one letter cost the parser
+    # the same work w each (its trailer reports it); the third file is in the
+    # checkout only, so phase 2 is charged too. A bound that restarted per file
+    # would pass at 3w - 1.
+    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two && printf 'see @c.md\n' > CLAUDE.md
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        out="$(printf "see @a.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
+        for m in $((3 * w - 1)) $((3 * w)); do IMPORT_WORK_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
+            imported_names && echo "$((m - 3 * w)) tree ok" || echo "$((m - 3 * w)) tree failed"; main_imports && echo "$((m - 3 * w)) main ok" || echo "$((m - 3 * w)) main failed"; done' _ "$LIB"
+    [ "$output" = $'-1 tree failed\n-1 main failed\n0 tree ok\n0 main ok' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "import_work strips the parser's work trailer and charges it; a missing trailer or a spent IMPORT_WORK_MAX fails (U2a3c)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; t=5
+        o=$'"'"'a.md\n/12'"'"'; import_work o t && echo "1 ok [$o] $t" || echo "1 failed"
+        o=/7; import_work o t && echo "2 ok [$o] $t" || echo "2 failed"
+        o=$'"'"'docs/12'"'"'; import_work o t && echo "3 ok" || echo "3 failed"
+        o=$'"'"'a.md\nb/12x'"'"'; import_work o t && echo "4 ok" || echo "4 failed"
+        IMPORT_WORK_MAX=30; o=/7; import_work o t && echo "5 ok $t" || echo "5 failed $t"
+        out="$(printf "no imports here\n" | IMPORT_WORK_LEFT=10 import_targets "")"; echo "6 [$out]"' _ "$LIB"
+    [ "$output" = $'1 ok [a.md] 17\n2 ok [] 24\n3 failed\n4 failed\n5 failed 31\n6 [/0]' ] || { echo "$output $stderr"; return 1; }
+}
