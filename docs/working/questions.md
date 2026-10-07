@@ -27,9 +27,11 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
+| [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | you: judgment | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
+| [Q-123](#q-123--host-checkout-common-dir) | you: terminal | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
@@ -295,6 +297,39 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
 - **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
+
+### Q-122 · u2a3b-confirming-pass-not-clean
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
+
+U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fixed or routed in c4b34dcf, which no review has seen: how should U2a3b land?
+
+- **Why it's yours:** Q-120 [1] said any new finding goes back to you, and the loop is past its cap.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3b.md` (section "Loop 2, confirming pass under the user's waiver", on branch `feat/build-loop-u2a3b`) · commits 10f9b6e9 (reports) and c4b34dcf (fixes)
+- **Evidence:** 0 red. The new code is a single rule in `main_imports`: the top-level `.git` is skipped only as a directory, or as a gitfile with no `@` in it (security F1). That shape reaches the walk only when the host places the main checkout at a path containing ` @name `. `main_imports` has no consumer until U2a4, and U2a3c's loop reviews the same lines again. Everything else in c4b34dcf is two tests, comments and plan routing. --check-fix is unchanged: the tree walk is untouched, and its output matched main on 957 paths at 4828727d. 151/151 pass; the old skip fails the new test.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge now** (recommended) | Health check, merge message listing c4b34dcf as unreviewed, merge ask. U2a3c then rebases above it and its loop reviews the `.git` rule with the rest of `main_imports`. | One merge ask. | A defect in the 15-line `.git` rule lands on main, where nothing consumes it until U2a4, and U2a3c's review sees it first. |
+| **[2] Delta review, then merge** | A `--loop-pass` review of 4828727d..c4b34dcf (k=1 fact-check, security, test-strategy). Clean → `Loop closed at`, merge ask. Any finding → back to you. | One merge ask later; about 0.4M tokens. | Small cost for a change whose only consumer does not exist yet. |
+| **[3] Another full confirming pass** | k=3, the full panel and Stage 2.5 over main...c4b34dcf. | One merge ask later; about 2M tokens. | Full-unit coverage again for a 15-line change, after two full passes. |
+
+- **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
+- **Interim:** nothing runs; U2a3b waits at c4b34dcf.
+- **If the answer differs:** nothing is redone; [2] and [3] only add a review before the merge ask.
+
+### Q-123 · host-checkout-common-dir
+**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** OPEN
+
+Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessions)? Paste the output of this, run on the host:
+
+```
+git -C ~/claude-workflows rev-parse --show-toplevel --git-common-dir && git -C ~/claude-workflows worktree list
+```
+
+- **Read:** `docs/reviews/architecture-review-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (finding 1) on `feat/build-loop-u2a3b` · plan step 5's U2b bullet
+- **Blocks:** nothing now; U2b's root set reads it.
+- **Interim:** U2b assumes `~/claude-workflows` is `/workspace` under its host path, an alias of ROOT_REAL, since the host worktree `/home/magfrump/cw-egress-verify` registers in `/workspace/.git`.
+- **If the answer differs:** U2b treats it as a separate checkout with its own root.
 
 ### Q-119 · u2a-split-at-cap
 **Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN
