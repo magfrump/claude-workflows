@@ -338,20 +338,23 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
 
 @test "both walks read everything Claude Code reads (a superset): an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
     mkdir -p docs
-    # \x60: a backtick (a code span that closes right after the name). A cut mark
-    # earlier in the name (my_notes) does not hide a later one; two NBSPs on a
-    # line both become blanks; an HTML block's comment splices a name (sec+ret).
+    # \x60: a backtick (a code span that closes right after the name). A name
+    # holding _ before a code span, <br> or emphasis is still read (my_notes); two
+    # NBSPs on a line both become blanks; an HTML block's comment splices a name
+    # (sec+ret); an escaped space and an absolute path inside the repo are imports.
     { printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n'
       printf 'More: @docs/my_notes.md\x60c\x60, | @docs/s_g.md<br> |, @docs/k_l.md**b**, @docs/p.md\xc2\xa0@docs/q.md\xc2\xa0@docs/r.md\n'
       printf '<!-- note --> See @docs/sec<!-- x -->ret.md\n'
-      # One grep match runs through a link or code span into the next @ (Claude Code reads both).
+      # A link or code span between two @s does not hide the second (Claude Code reads both).
       printf 'Read [@docs/la.md](u)/[@docs/lb.md](v) and @docs/ca.md\x60x\x60@docs/cb.md\n'
       # A stray <!-- in a fence earlier must not pair with a later comment.
-      printf '\x60\x60\x60html\nx<!--\n\x60\x60\x60\n<!-- n -->@docs/hid<!-- y -->den.md\n'; } > AGENTS.md
+      printf '\x60\x60\x60html\nx<!--\n\x60\x60\x60\n<!-- n -->@docs/hid<!-- y -->den.md\n'
+      printf 'See @docs/my\\ notes.md and @%s/docs/abs.md\n' "$(pwd -P)"; } > AGENTS.md
+    printf 'x\n' > 'docs/my notes.md' && printf 'x\n' > docs/abs.md
     commit_all parser
     ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md
         docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md
-        docs/la.md docs/lb.md docs/ca.md docs/cb.md docs/hidden.md)
+        docs/la.md docs/lb.md docs/ca.md docs/cb.md docs/hidden.md 'docs/my notes.md' docs/abs.md)
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md '~/x.md'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
@@ -359,24 +362,45 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "the superset over-reads, pinned: an @ in a code span or fence, after a letter, a prefix that is a file, an escaped space, an absolute path in the repo; the work bound fails the walk (U2a3b)" {
+@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file; the work bound fails the walk (U2a3b)" {
+    # These record the 2026-10-06 over-approximation decision (U2a3b iteration-4
+    # gate): Claude Code 2.1.292 reads neither docs/mail.md nor docs/pre.md. A
+    # parser that is more precise and still a superset may delete these lines on purpose.
+    # The code-span and fence cases were already read before the decision.
     mkdir -p docs
     { printf 'Code \x60@docs/span.md\x60 and user@docs/mail.md and @docs/pre.md.bak\n'
-      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'
-      printf 'See @docs/my\\ notes.md and @%s/docs/abs.md\n' "$(pwd -P)"; } > AGENTS.md
-    for f in span mail pre fence abs; do printf 'x\n' > "docs/$f.md"; done; printf 'x\n' > 'docs/my notes.md'
+      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'; } > AGENTS.md
+    for f in span mail pre fence; do printf 'x\n' > "docs/$f.md"; done
     commit_all superset
-    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md 'docs/my notes.md' docs/abs.md)
+    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md)
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
     done
-    # Seven 4200-byte runs after an @ pass the candidate-work bound: the parser returns 1.
+    # Seven 4200-byte runs after an @ pass the candidate-work bound (each prefix's
+    # length is charged; the sixth run trips it): the parser returns 1.
     for i in 1 2 3 4 5 6 7; do printf '@'; head -c 4200 /dev/zero | tr '\0' x; printf '\n'; done > "$BATS_TEST_TMPDIR/heavy.txt"
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        if import_targets "" < "$2" >/dev/null; then echo read; else echo failed; fi' _ "$LIB" "$BATS_TEST_TMPDIR/heavy.txt"
-    [ "$output" = failed ] || { echo "$output $stderr"; return 1; }
+        import_targets "" < "$2" >/dev/null && echo rc=0 || echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/heavy.txt"
+    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the main walk reads a linked worktree whose instruction file names @.gitignore: a .git prefix candidate is skipped (U2a3b L2 architecture 1)" {
+    mkdir -p notes && printf 'See @.gitignore and @notes/x.md\n' > GEMINI.md && printf 'x\n' > .gitignore && printf 'x\n' > notes/x.md
+    commit_all gitprefix
+    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt" main && cd "$BATS_TEST_TMPDIR/wt"
+    imps main notes/x.md .gitignore docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want notes/x.md imported; want .gitignore imported; want docs/other.md -
+}
+
+@test "both walks fail once the parser has printed more than IMPORT_OUT_MAX bytes in all (U2a3b L2 performance F2)" {
+    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        IMPORT_OUT_MAX=10; imported_names && echo tree ok || echo tree failed; main_imports && echo main ok || echo main failed
+        IMPORT_OUT_MAX=4000000; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; imported_names && echo tree ok || echo tree failed; main_imports && echo main ok || echo main failed' _ "$LIB"
+    [ "$output" = $'tree failed\nmain failed\ntree ok\nmain ok' ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3b)" {
@@ -449,4 +473,78 @@ walk failed
 docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # The tracked listing fails while the untracked listing works.
     PATH="$gb:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/a.md imported; want docs/z.md imported
+}
+
+# The four superset holes the L2 fact-check executed against the Claude Code 2.1.292
+# harness (Claim 1). Each FAILS at be94c871 and passes once its hole is closed; a
+# deferred hole gets `skip "<its row>"` as its first line, not a deleted assertion.
+@test "both walks read an import that leaves the repo and re-enters it through its parent (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
+    mkdir -p docs sub && n="$(basename "$(pwd -P)")"
+    printf 'See @../%s/docs/re.md\n' "$n" > AGENTS.md
+    printf 'See @../../%s/docs/sub.md\n' "$n" > sub/CLAUDE.md
+    commit_all reentry
+    for w in tree main; do
+        imps "$w" docs/re.md docs/sub.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/re.md imported; want docs/sub.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks read an absolute import into the repo however it is spelled: //root, /./root, root/../<name> (FAILS at be94c871: L2 fact-check Claim 1 class 2)" {
+    mkdir -p docs && r="$(pwd -P)"
+    printf 'See @/%s/docs/a1.md, @/.%s/docs/a2.md and @%s/../%s/docs/a3.md\n' "$r" "$r" "$r" "${r##*/}" > AGENTS.md
+    commit_all abs
+    for w in tree main; do
+        imps "$w" docs/a1.md docs/a2.md docs/a3.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for p in docs/a1.md docs/a2.md docs/a3.md; do want "$p" imported; done; want docs/other.md -
+    done
+}
+
+@test "both walks resolve an import against a directory whose name holds a backslash, taken literally (FAILS at be94c871: L2 fact-check Claim 1 class 3)" {
+    # mawk reads escape sequences in a -v value: dir a\tb became a<TAB>b.
+    d='docs/a\tb' && mkdir -p "$d" && printf 'See @z.md\n' > "$d/AGENTS.md"
+    commit_all backslash
+    for w in tree main; do
+        imps "$w" "$d/z.md" docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want "$d/z.md" imported; want docs/other.md -
+    done
+}
+
+@test "both walks read a name over 4096 bytes that resolves to a short path (FAILS at be94c871: L2 fact-check Claim 1 class 4)" {
+    mkdir -p docs
+    { printf 'See @'; for i in $(seq 2100); do printf './'; done; printf 'docs/long.md\n'; } > AGENTS.md
+    commit_all long
+    for w in tree main; do
+        imps "$w" docs/long.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/long.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks read a name an HTML comment block splices from three pieces, an @ between code spans that hold <!-- and -->, and an @./ name; a blank ends every name (U2a3b L2 test-strategy)" {
+    # Claude Code 2.1.292 (harness) reads docs/abc.md (HTML block, comments removed),
+    # docs/cs.md (text between two code spans) and docs/dot.md; it never reads "docs/a.md x".
+    mkdir -p docs
+    { printf '<!-- 0 --> @docs/a<!-- 1 -->b<!-- 2 -->c.md\n'; printf 'See \x60<!--\x60 @docs/cs.md \x60-->\x60\n'
+      printf 'See @./docs/dot.md and @docs/a.md x\n'; } > AGENTS.md
+    printf 'x\n' > 'docs/a.md x'
+    commit_all splice3
+    for w in tree main; do
+        imps "$w" docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/other.md 'docs/a.md x'
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for p in docs/abc.md docs/cs.md docs/dot.md docs/a.md; do want "$p" imported; done
+        # Precision, not superset: the false-positive cost the design states (to the first blank).
+        want docs/other.md -; want 'docs/a.md x' -
+    done
+}
+
+@test "the parser fails, not stalls, on one line of many HTML comments (FAILS at be94c871: L2 fact-check Claim 18b; about 10 s)" {
+    # 320,000 comments in one 2.24 MB line took 27 s with status 0 at be94c871: splice's
+    # copying is quadratic and outside the work bound. 124 is timeout's status, not a failure the parser chose.
+    { head -c 320000 /dev/zero | sed 's/\x0/<!---->/g'; printf '\n'; } > "$BATS_TEST_TMPDIR/comments.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        timeout 10 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\" < \"\$3\" >/dev/null" _ "$1" "$ROOT_REAL" "$2"; echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/comments.txt"
+    [[ "$output" == rc=* && "$output" != rc=0 && "$output" != rc=124 ]] || { echo "$output $stderr"; return 1; }
 }

@@ -479,6 +479,10 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
+# Each walk fails once import_targets has printed this many bytes in all: the
+# parser's own bound is per file, while the bash side's cost grows with
+# everything printed (performance L2 F2); /workspace's walks print about 2 KB.
+IMPORT_OUT_MAX=4000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
 # U+205F, U+3000 and U+FEFF (Claude Code's token ends at JavaScript's \s).
@@ -489,20 +493,26 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # The import targets in the text on stdin, for a file in directory $1 ("" at
 # the top level): one repo-relative path per line, case kept, each once. Every
 # import walk shares these rules, so a change here changes --check-fix too.
-# They read a superset of what Claude Code 2.1.292 can import (its import
-# regex and Markdown lexer: U2a2 and U2a3b security reviews), failing toward
-# "imported" rather than modelling where Markdown ends a name. Every @ in a
-# line starts a candidate, whatever precedes it and inside code spans and
+# The superset claim (the one statement of it; known issue A5 and plan F11
+# point here): these rules read every name Claude Code 2.1.292 can import (its
+# import regex and Markdown lexer: U2a2 and U2a3b security reviews), failing
+# toward "imported" rather than modelling where Markdown ends a name. Every @
+# in a line starts a candidate, whatever precedes it and inside code spans and
 # fences too; each prefix of the run after it, up to the first blank (a NUL or
-# a UNI_SPACES space counts as one) and at most 4096 bytes, is a candidate
-# name, with a backslash-escaped space read as a space. A line holding <!-- is
-# also read with its closed HTML comments removed (Claude Code splices them).
-# A candidate is resolved lexically against $1 (as realpath -ms does); ~/
-# paths, absolute paths outside ROOT_REAL and paths leaving the repo are
-# dropped, and an absolute path inside ROOT_REAL is read repo-relative. The
-# cost is false positives: a prefix that is itself a file counts as imported.
-# It returns 1 when sed or awk fails, or when the candidates run past a
-# work bound (so a pathological file fails the walk rather than stalling it).
+# a UNI_SPACES space counts as one), is a candidate name, with a
+# backslash-escaped space read as a space. A line holding <!-- is also read
+# with its closed HTML comments removed (Claude Code splices them). Each
+# candidate is made absolute (ROOT_REAL/$1/name unless it starts with /) and
+# resolved lexically, .. stopping at / as Node's path.resolve does, so a name
+# that leaves the repo and re-enters it is kept; it is kept only when it lies
+# below ROOT_REAL, and printed repo-relative. ~/ names are dropped. Known
+# exceptions: a .. after a symlinked directory (resolved lexically, as Claude
+# Code also does: row 350), and any decoding Claude Code may add (an entity, a
+# percent escape). The cost is false positives: a prefix that is itself a file
+# counts as imported.
+# It returns 1 when sed or awk fails, when ROOT_REAL is empty, or when the
+# candidates and comment splices run past a work bound (so a pathological file
+# fails the walk rather than stalling it).
 # Re-check the superset when Claude Code changes its import grammar
 # (test/agents-gemini-sync.bats holds a separate, older finder for where an
 # import starts, not these rules).
@@ -511,18 +521,16 @@ IMPORT_AWK='
 function emit(c,   n, i, k, part, st, out) {
   work += length(c); if (work > 50000000) exit 3
   if (c == "" || substr(c, 1, 2) == "~/") return
-  if (substr(c, 1, 1) == "/") {
-    if (root == "" || index(c, root "/") != 1) return
-    c = substr(c, length(root) + 2)
-  } else if (dir != "") c = dir "/" c
+  if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   n = split(c, part, "/"); k = 0
   for (i = 1; i <= n; i++) {
     if (part[i] == "" || part[i] == ".") continue
-    if (part[i] == "..") { if (k == 0) return; k--; continue }
+    if (part[i] == "..") { if (k > 0) k--; continue }
     st[++k] = part[i]
   }
-  if (k == 0) return
-  out = st[1]; for (i = 2; i <= k; i++) out = out "/" st[i]
+  out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
+  if (index(out, pre) != 1 || length(out) <= length(pre)) return
+  out = substr(out, length(pre) + 1)
   if (!(out in seen)) { seen[out] = 1; print out }
 }
 function scan(line,   i, j, L, ch, name) {
@@ -530,7 +538,7 @@ function scan(line,   i, j, L, ch, name) {
   for (i = 1; i <= L; i++) {
     if (substr(line, i, 1) != "@") continue
     name = ""
-    for (j = i + 1; j <= L && length(name) < 4096; j++) {
+    for (j = i + 1; j <= L; j++) {
       ch = substr(line, j, 1)
       if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
       else if (ch == " " || ch == "\t" || ch == "\r") break
@@ -541,11 +549,13 @@ function scan(line,   i, j, L, ch, name) {
 function splice(line,   o, i, j, r) {
   o = ""
   while ((i = index(line, "<!--")) > 0) {
-    r = substr(line, i + 4); j = index(r, "-->"); if (j == 0) break
+    r = substr(line, i + 4); work += length(r); if (work > 50000000) exit 3
+    j = index(r, "-->"); if (j == 0) break
     o = o substr(line, 1, i - 1); line = substr(r, j + 3)
   }
   return o line
 }
+BEGIN { dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2 }
 { scan($0); if (index($0, "<!--")) scan(splice($0)) }'
 import_targets() {
   local u toks s=(-e 's/\x0/ /g')
@@ -555,7 +565,8 @@ import_targets() {
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
   # and a failed write would read as no imports.
-  printf '%s\n' "$toks" | env LC_ALL=C awk -v dir="$1" -v root="$ROOT_REAL" "$IMPORT_AWK"
+  # dir and root go through the environment: awk -v would read backslash escapes in them.
+  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="$ROOT_REAL" awk "$IMPORT_AWK" || return 1
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -572,7 +583,7 @@ nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc
 # through instruction_names, failing when any of the three commands fails.
 tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names; }
 imported_names() {
-  local - f d p lp out seen=$'\n' queue=() recs=(); set -o pipefail
+  local - f d p lp out used=0 seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
@@ -591,6 +602,7 @@ imported_names() {
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     out="$(import_targets "$d" < "$f")" || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
+    (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
     lp="$(lower "$out")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
     while IFS= read -r p; do
@@ -612,7 +624,7 @@ imported_names() {
 # main stores as a symlink or gitlink or exists in the checkout as anything but
 # a plain directory below the root; need_root exits instead.
 main_imports() {
-  local - rec f d p i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=() dir=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -665,12 +677,17 @@ main_imports() {
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;
     esac
+    [[ -n "$out" ]] || continue
+    (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED_MAIN=error; return 1; }
+    # One lower per file, not per candidate, as in imported_names.
+    i="$(lower "$out")" || { IMPORTED_MAIN=error; return 1; }; IMPORTED_MAIN+="$i"$'\n'
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
-      i="$(lower "$p")" || { IMPORTED_MAIN=error; return 1; }; IMPORTED_MAIN+="$i"$'\n'
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
+      # git stores nothing at .git, so a prefix candidate there (from @.gitignore) names no file main has.
+      [[ "$p" != .git && "$p" != .git/* ]] || continue
       # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
       c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
       [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }

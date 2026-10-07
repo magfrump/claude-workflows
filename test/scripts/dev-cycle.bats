@@ -1024,7 +1024,7 @@ EOF
         docs/Constraints.md docs/thoughts/t.md
     [ "$status" -eq 0 ]
     # docs/constraints.md is the user's (plan D2); docs/thoughts/ stays a living doc the cycle may fix.
-    for want in "skip docs/conventions.md: an instruction file imports" "skip README.md: an instruction file imports" \
+    for want in "skip docs/conventions.md: an instruction file names it" "skip README.md: an instruction file names it" \
                 "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
                 "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
@@ -1056,6 +1056,13 @@ EOF
     [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
 }
 
+@test "--check-fix refuses a doc imported through the repo's parent directory, as main did (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
+    mkdir -p docs && printf 'See @../%s/docs/notes.md\n' "$(basename "$(pwd -P)")" > CLAUDE.md && echo x > docs/notes.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [[ "$output" == "skip docs/notes.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
+}
+
 @test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email-shaped token is over-read (superset)" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
@@ -1067,7 +1074,7 @@ EOF
         docs/frag.md docs/link.md docs/paren.md docs/email.md
     [ "$status" -eq 0 ]
     for f in my_notes bold em_one star frag link paren email; do
-        [[ "$output" == *"skip docs/$f.md: an instruction file imports"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
+        [[ "$output" == *"skip docs/$f.md: an instruction file names it"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
     done
 }
 
@@ -1080,7 +1087,7 @@ EOF
     printf 'See @docs/ign.md\n' > CLAUDE.local.md && echo CLAUDE.local.md >> .git/info/exclude && echo x > docs/ign.md
     git add docs/ign.md && git commit -qm ign
     run --separate-stderr bash "$DC" --check-fix docs/deep.md docs/ign.md docs/n7.md
-    [[ "$output" == *"skip docs/deep.md: an instruction file imports"* && "$output" == *"skip docs/ign.md: an instruction file imports"* \
+    [[ "$output" == *"skip docs/deep.md: an instruction file names it"* && "$output" == *"skip docs/ign.md: an instruction file names it"* \
        && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
 }
 

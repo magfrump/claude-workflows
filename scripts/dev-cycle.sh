@@ -51,7 +51,7 @@
 #             file under docs/ (not the cycle's own files, working/,
 #             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
 #             or dotfile, an instruction file, or a file an instruction file
-#             imports with @; compared ignoring case) or README.md; "skip <path>: <reason>"
+#             names after an @, read broadly; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise, and for every path when the import walk fails.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
@@ -181,7 +181,7 @@ check_fix() {
   elif ! imported_names; then
     echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
   elif isimported tree "$lp"; then
-    echo "skip $a: an instruction file imports it with @ (directly or through another import), so it is read as instructions; file it instead"
+    echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"
   else check_path "$a"; fi
 }
 resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
