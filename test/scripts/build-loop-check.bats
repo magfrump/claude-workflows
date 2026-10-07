@@ -34,10 +34,11 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     commit_all tree
     # Docs/NB.MD and CLAUDE.md: isimported takes a path in any case.
     ps=(docs/nb.md docs/bom.md docs/st.md docs/st.md. ..x.md docs/hid.md docs/b.md docs/c.md claude.md docs/z.md docs/m.md Docs/NB.MD CLAUDE.md)
-    imps tree "${ps[@]}" docs/other.md docs/nb.md.
+    imps tree "${ps[@]}" docs/other.md docs/nb.md. $'docs/nb.md\xc2\xa0for'
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     for p in "${ps[@]}"; do want "$p" imported; done
-    want docs/other.md -; want docs/nb.md. -
+    # The NBSP ends the token: no name runs on past it (precision; a superset may over-read it).
+    want docs/other.md -; want docs/nb.md. -; want $'docs/nb.md\xc2\xa0for' -
 }
 
 @test "isimported answers imported under if for a walk name it does not know (U2a2)" {
@@ -56,17 +57,21 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     sp=('\xc2\xa0' '\xe1\x9a\x80' '\xe2\x80\x80' '\xe2\x80\x81' '\xe2\x80\x82' '\xe2\x80\x83' '\xe2\x80\x84'
         '\xe2\x80\x85' '\xe2\x80\x86' '\xe2\x80\x87' '\xe2\x80\x88' '\xe2\x80\x89' '\xe2\x80\x8a' '\xe2\x80\xa8'
         '\xe2\x80\xa9' '\xe2\x80\xaf' '\xe2\x81\x9f' '\xe3\x80\x80' '\xef\xbb\xbf')
-    ps=()
-    for i in "${!sp[@]}"; do printf "@../docs/u$i.md${sp[$i]}x\\n"; ps+=("docs/u$i.md"); done > sub/SKILL.md
+    ps=() ns=()
+    for i in "${!sp[@]}"; do printf "@../docs/u$i.md${sp[$i]}x\\n"; ps+=("docs/u$i.md"); ns+=("docs/u$i.md$(printf "${sp[$i]}")x"); done > sub/SKILL.md
     commit_all spaces
-    imps main "${ps[@]}" docs/other.md
+    # ns: the names run on past each space. Neither walk reads one (precision, as the
+    # title states; a parser that is still a superset may over-read them on purpose).
+    imps main "${ps[@]}" docs/other.md "${ns[@]}"
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "main: $output $stderr"; return 1; }
     want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
+    for p in "${ns[@]}"; do want "$p" -; done
     # An untracked start: the tree walk reads it (the main walk fails closed on it until U2a3c).
     printf 'See @k.md\n' > docs/AGENTS.MD
-    imps tree "${ps[@]}" docs/k.md docs/other.md
+    imps tree "${ps[@]}" docs/k.md docs/other.md "${ns[@]}"
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "tree: $output $stderr"; return 1; }
     want walk ok; for p in "${ps[@]}" docs/k.md; do want "$p" imported; done; want docs/other.md -
+    for p in "${ns[@]}"; do want "$p" -; done
 }
 
 @test "main walk: main's instruction files start it; a working-tree edit does not count; an untracked start or a checkout file at a path main lacks fails it until U2a3c (U2a2, U2a3 split)" {
@@ -336,7 +341,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
 
-@test "both walks read everything Claude Code reads (a superset): an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
+@test "both walks read everything Claude Code reads (a superset): an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, a ~/ name outside the repo dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
     mkdir -p docs
     # \x60: a backtick (a code span that closes right after the name). A name
     # holding _ before a code span, <br> or emphasis is still read (my_notes); two
@@ -362,7 +367,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file, a name led by an escaped space; the work bound fails the walk (U2a3b)" {
+@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file, a name led by an escaped space; a run that prints past IMPORT_OUT_MAX fails the parser (U2a3b)" {
     # These record the 2026-10-06 over-approximation decision (U2a3b iteration-4
     # gate): Claude Code 2.1.292 reads none of docs/mail.md, docs/pre.md and
     # docs/lead.md (its path filter rejects a name led by a space; emit's trim
@@ -380,8 +385,9 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
     done
-    # Seven 4200-byte runs after an @ pass the candidate-work bound (each prefix's
-    # length is charged; the sixth run trips it): the parser returns 1.
+    # Seven 4200-byte runs after an @: the first run's prefixes alone print past
+    # IMPORT_OUT_MAX, so the parser returns 1 (the candidate-work bound, which
+    # prints nothing, has its own test).
     for i in 1 2 3 4 5 6 7; do printf '@'; head -c 4200 /dev/zero | tr '\0' x; printf '\n'; done > "$BATS_TEST_TMPDIR/heavy.txt"
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         import_targets "" < "$2" >/dev/null && echo rc=0 || echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/heavy.txt"
@@ -397,7 +403,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want notes/x.md imported; want .gitignore imported; want docs/other.md -
 }
 
-@test "both walks fail once the parser has printed more than IMPORT_OUT_MAX bytes in all (U2a3b L2 performance F2)" {
+@test "both walks fail once the parser has printed more than IMPORT_OUT_MAX characters in all (U2a3b L2 performance F2)" {
     mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
         IMPORT_OUT_MAX=10; imported_names && echo tree ok || echo tree failed; main_imports && echo main ok || echo main failed
@@ -482,13 +488,15 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 # deferred hole gets `skip "<its row>"` as its first line, not a deleted assertion.
 @test "both walks read an import that leaves the repo and re-enters it through its parent (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
     mkdir -p docs sub && n="$(basename "$(pwd -P)")"
-    printf 'See @../%s/docs/re.md\n' "$n" > AGENTS.md
+    # A sibling whose path is as long as the repo's: its docs/sib.md is not the repo's.
+    s="${n%?}x"; [[ "$s" != "$n" ]] || s="${n%?}y"
+    printf 'See @../%s/docs/re.md and @../%s/docs/sib.md\n' "$n" "$s" > AGENTS.md
     printf 'See @../../%s/docs/sub.md\n' "$n" > sub/CLAUDE.md
     commit_all reentry
     for w in tree main; do
-        imps "$w" docs/re.md docs/sub.md docs/other.md
+        imps "$w" docs/re.md docs/sub.md docs/other.md docs/sib.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/re.md imported; want docs/sub.md imported; want docs/other.md -
+        want walk ok; want docs/re.md imported; want docs/sub.md imported; want docs/other.md -; want docs/sib.md -
     done
 }
 
@@ -530,19 +538,20 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # docs/cs.md (text between two code spans) and docs/dot.md; it never reads "docs/a.md x".
     mkdir -p docs
     { printf '<!-- 0 --> @docs/a<!-- 1 -->b<!-- 2 -->c.md\n'; printf 'See \x60<!--\x60 @docs/cs.md \x60-->\x60\n'
-      printf 'See @./docs/dot.md and @docs/a.md x\n'; } > AGENTS.md
+      printf 'See @./docs/dot.md and @docs/a.md x, @docs/t.md\tx and @docs/r.md\r\n'; } > AGENTS.md
     printf 'x\n' > 'docs/a.md x'
     commit_all splice3
     for w in tree main; do
-        imps "$w" docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/other.md 'docs/a.md x'
+        imps "$w" docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/t.md docs/r.md docs/other.md 'docs/a.md x' $'docs/t.md\tx' $'docs/r.md\r'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for p in docs/abc.md docs/cs.md docs/dot.md docs/a.md; do want "$p" imported; done
-        # Precision, not superset: the false-positive cost the design states (to the first blank).
-        want docs/other.md -; want 'docs/a.md x' -
+        want walk ok; for p in docs/abc.md docs/cs.md docs/dot.md docs/a.md docs/t.md docs/r.md; do want "$p" imported; done
+        # Precision, not superset: the false-positive cost the design states (to the first
+        # blank; a tab and a CR are blanks too, as in JavaScript's \s).
+        want docs/other.md -; want 'docs/a.md x' -; want $'docs/t.md\tx' -; want $'docs/r.md\r' -
     done
 }
 
-@test "the parser fails, not stalls, on one line of many HTML comments (FAILS at be94c871: L2 fact-check Claim 18b; about 10 s)" {
+@test "the parser fails, not stalls, on one line of many HTML comments (FAILS at be94c871: L2 fact-check Claim 18b; a 10 s timeout)" {
     # 320,000 comments in one 2.24 MB line took 27 s with status 0 at be94c871: splice's
     # copying is quadratic and outside the work bound. 124 is timeout's status, not a failure the parser chose.
     { head -c 320000 /dev/zero | sed 's/\x0/<!---->/g'; printf '\n'; } > "$BATS_TEST_TMPDIR/comments.txt"
@@ -598,12 +607,14 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "IMPORT_OUT_MAX bounds what the whole walk prints, not each file, and a walk that prints exactly the limit passes (U2a3b L2-i2 test-strategy)" {
-    # import_targets prints 13 bytes for each file (a, a., a.m, a.md; 26 in all).
-    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two
+    # import_targets prints 13 bytes for each file (a, a., a.m, a.md; 39 in all). Three
+    # files, not two: the parser gets what is left (IMPORT_LEFT), and a budget that
+    # restarted at each file would look walk-wide until the third.
+    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && printf 'see @c.md\n' > CLAUDE.md && commit_all three
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        for m in 20 25 26; do IMPORT_OUT_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
+        for m in 20 38 39; do IMPORT_OUT_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
             imported_names && echo "$m tree ok" || echo "$m tree failed"; main_imports && echo "$m main ok" || echo "$m main failed"; done' _ "$LIB"
-    [ "$output" = $'20 tree failed\n20 main failed\n25 tree failed\n25 main failed\n26 tree ok\n26 main ok' ] || { echo "$output $stderr"; return 1; }
+    [ "$output" = $'20 tree failed\n20 main failed\n38 tree failed\n38 main failed\n39 tree ok\n39 main ok' ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "the tree walk reads a file of exactly 4 MiB to its last byte, as Claude Code loads it (U2a3b L2-i2 test-strategy)" {
@@ -657,4 +668,77 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         for n in 12 13; do printf "see @a.md\n" | IMPORT_LEFT=$n import_targets "" >/dev/null && echo "$n=0" || echo "$n=$?"; done' _ "$LIB"
     [ "$output" = $'12=1\n13=0' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the parser fails, not stalls, when one name's candidates pass its work bound though it prints nothing (U2a3b L2-final test-strategy)" {
+    # 10,100 escaped spaces after one @: every candidate trims to nothing, so the
+    # print budget (IMPORT_LEFT) never runs, while the candidates' lengths sum to
+    # about 51 million. About 0.5 s.
+    { printf 'See @'; for i in $(seq 10100); do printf '\\ '; done; printf '\n'; } > "$BATS_TEST_TMPDIR/blank.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        import_targets "" < "$2"; echo "rc=$?"' _ "$LIB" "$BATS_TEST_TMPDIR/blank.txt"
+    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the main walk skips a nested .git directory, but fails closed on a nested .git file, which Claude Code reads (U2a3b L2-final security F2, test-strategy F2)" {
+    # A nested repository's .git directory names no file: a prefix of @n/.github/x.md is skipped.
+    mkdir -p notes n && printf 'See @n/.github/x.md and @notes/x.md\n' > GEMINI.md && printf 'x\n' > notes/x.md && printf 'x\n' > n/keep
+    commit_all nested
+    mkdir n/.git
+    imps main notes/x.md n/.github/x.md docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want notes/x.md imported; want n/.github/x.md imported; want docs/other.md -
+    # A .git file (a nested worktree's gitfile, or any file so named) is a file main lacks:
+    # Claude Code follows its imports, so the walk fails rather than drop docs/e.md.
+    rmdir n/.git && printf 'see @../docs/e.md\n' > n/.git
+    imps main docs/e.md; want walk failed; want docs/e.md imported
+}
+
+@test "both walks read ~/ against the passwd entry's home when HOME is empty or unset (U2a3b L2-final test-strategy)" {
+    # Claude Code's runtime (Bun) falls back to the passwd entry for an empty HOME as
+    # for an unset one (L2-final fact-check r1 22b). A getent shim makes the repo's
+    # parent that entry's home.
+    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
+    G="$BATS_TEST_TMPDIR/getent" && mkdir -p "$G" && printf '#!/bin/sh\necho "u:x:0:0::%s:/bin/sh"\n' "$(cd .. && pwd -P)" > "$G/getent" && chmod +x "$G/getent"
+    oh="$HOME"
+    for w in tree main; do
+        HOME="" PATH="$G:$PATH" imps "$w" docs/home.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w empty: $output $stderr"; return 1; }
+        want walk ok; want docs/home.md imported; want docs/other.md -
+        unset HOME; PATH="$G:$PATH" imps "$w" docs/home.md docs/other.md; export HOME="$oh"
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w unset: $output $stderr"; return 1; }
+        want walk ok; want docs/home.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks read well-formed UTF-8 without python3, which only text holding an invalid sequence needs (U2a3b L2-final test-strategy)" {
+    mkdir -p docs && printf 'Voil\xc3\xa0: @docs/caf\xc3\xa9.md and @docs/a.md\n' > AGENTS.md && commit_all utf8
+    S="$BATS_TEST_TMPDIR/py" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/python3" && chmod +x "$S/python3"
+    for w in tree main; do
+        PATH="$S:$PATH" imps "$w" $'docs/caf\xc3\xa9.md' docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want $'docs/caf\xc3\xa9.md' imported; want docs/a.md imported; want docs/other.md -
+    done
+}
+
+@test "the tree walk fails closed on an imported file it cannot read, when the caller did not set pipefail (U2a3b L2-final test-strategy)" {
+    # As the main walk's unreadable-blob test: head fails, and the walk must not read that as no imports.
+    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && printf 'see @b.md\n' > docs/a.md && commit_all base
+    chmod 000 docs/a.md
+    run --separate-stderr env LC_ALL=C bash -c 'set -eu; source "$1"; ROOT_REAL="$(pwd -P)"
+        if imported_names; then echo "walk: ok"; else echo "walk: failed"; fi
+        if isimported tree docs/b.md; then echo "docs/b.md: imported"; fi' _ "$LIB"
+    chmod 644 docs/a.md
+    [ "$status" -eq 0 ] && [ "$output" = $'walk: failed\ndocs/b.md: imported' ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "the parser charges each resolved spelling to its work bound, so a deep file of many short names fails, not stalls (U2a3b L2-final performance F1)" {
+    # 400,000 copies of @a, from a file 50 directories down: each resolves to a path of
+    # over 150 characters, past the 50,000,000 bound in all, though the name itself is
+    # one character (performance L2-final F1 measured 22 s and success before the charge).
+    d="$(printf 'd/%.0s' $(seq 50))" && d="${d%/}"
+    { head -c 400000 /dev/zero | sed 's/\x0/@a /g'; printf '\n'; } > "$BATS_TEST_TMPDIR/many.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        timeout 60 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\$3\" < \"\$4\" >/dev/null" _ "$1" "$ROOT_REAL" "$2" "$3"; echo "rc=$?"' _ "$LIB" "$d" "$BATS_TEST_TMPDIR/many.txt"
+    [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
 }
