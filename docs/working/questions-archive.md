@@ -114,6 +114,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-121](#q-121--sessions-outside-workspace) | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
 | [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-123](#q-123--host-checkout-common-dir) | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
+| [Q-124](#q-124--cc-isolated-sandbox-build-or-accept) | Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which mea... | 2026-10-07 |
 <!-- index:end -->
 
 ## Answered
@@ -2115,5 +2116,27 @@ U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one 
 - **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
 - **Interim:** nothing runs; U2a3b waits at c4b34dcf.
 - **If the answer differs:** nothing is redone; [2] and [3] only add a review before the merge ask.
+
+
+### Q-124 · cc-isolated-sandbox-build-or-accept
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+**Answered 2026-10-07: [1] build the sandbox with a custom seccomp profile.** Filed as Q-125 (agent). Original entry:
+
+Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which means letting the container create user namespaces), or accept `permissions.deny` + the container as the boundary?
+
+- **Why it's yours:** it trades kernel attack surface and an enforcement-file change against how much a prompt-injected agent can reach (the OAuth credential), and it decides whether Q-098's allowlist can ever ship.
+- **Read:** `docs/spikes/weaker-nested-sandbox-cc-isolated.md` · Q-081 and Q-088 in the archive · decision log 53 · Q-098
+- **Evidence:** in Claude Code 2.1.293 the bwrap argv always carries `--unshare-user`; weaker mode only replaces the fresh `/proc` with a bind of the host's. Inside the container, `unshare(2)` returns EPERM for every namespace type, `CapEff` is 0, and the bounding set has no SYS_ADMIN, so a setuid bwrap does not help either.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Build the sandbox, custom seccomp** (recommended if you want Q-098) | Docker's default seccomp profile plus `CLONE_NEWUSER`/`unshare` allowed, as `--security-opt seccomp=<file>` in runArgs; `bubblewrap` + `socat` in the Dockerfile; a `sandbox` settings block (no weaker mode, `allowedDomains` matched to the egress allowlist). An RPI unit with one live host check. | Review an enforcement-file unit; one host run. | Unprivileged user namespaces widen the kernel surface reachable from the container (historically a common local-privilege-escalation path); mismatched domains make `gh`/`git` prompt. |
+| **[2] Build it with `--cap-add=SYS_ADMIN` or `seccomp=unconfined`** | Same as [1], but the runArgs change is a broad switch rather than a profile file. | Same as [1], slightly less to maintain. | Much wider kernel/container-escape surface than [1] for the same sandbox. Listed only to rule it out. |
+| **[3] Accept deny + container** | Record in decision log 53 that in cc-isolated the boundary is the container plus `permissions.deny`, permanently; Q-098 stays deferred with no trigger. | None. | A determined injection can still read `.credentials.json` through spellings the deny rule cannot see (the pinned residuals); the global allowlist never ships. |
+
+- **Blocks:** Q-098 (global allowlist waits on a sandbox).
+- **Interim:** [3] in practice, unchanged since Q-081: nothing sandboxes Bash in cc-isolated.
+- **If the answer differs:** nothing is redone; [1]/[2] start a new RPI unit.
 
 

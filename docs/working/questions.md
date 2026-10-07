@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-124](#q-124--cc-isolated-sandbox-build-or-accept) | you: judgment | Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which mea... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -40,6 +39,7 @@ The index below is generated — edit entries, not the table.
 | [Q-107](#q-107--claude-home-payload-second-consumer) | agent | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
 | [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
 | [Q-110](#q-110--health-check-not-run-undercount) | agent | In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 r... | 2026-10-02 |
+| [Q-125](#q-125--build-cc-isolated-sandbox) | agent | Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default with `unshare` and `clone`... | 2026-10-07 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
@@ -265,7 +265,7 @@ Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a 
   - `git status`, `git diff`, `git log -p` and `git show` run `core.fsmonitor`, `diff.external` and textconv drivers from repo config the agent can edit;
   - `man -l <file>` and `date -f <file>` read a file (both reproduced by the unit-A pass-2 fact-check).
   - Not on this list because the hook now refuses them whatever the rules say: bash builtins that evaluate their arguments (`read 'a[$(cmd)]'`, `test -v`, `printf -v`, `mapfile -C`, `hash -p`) and the shell constructs in decision log 64.
-- **Trigger:** Q-088 answers [1] (build the sandbox) and the sandbox denies reads of `~/.claude/.credentials.json` and writes to `~/.claude/settings*.json`. Then re-run the leak list inside it before merging any list.
+- **Trigger:** Q-125 lands (Q-124 answered [1], build the sandbox) and the sandbox denies reads of `~/.claude/.credentials.json` and writes to `~/.claude/settings*.json`. Then re-run the leak list inside it before merging any list.
 - **Interim:** no global allow list. cc-isolated sessions prompt for commands not in their project's `.claude/settings.json`.
 
 ### Q-092 · drop-hook-deny-reader
@@ -277,6 +277,16 @@ Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash de
 - **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
 - **Interim:** the reader stays. It is redundant for `allow`, not harmful.
 
+### Q-125 · build-cc-isolated-sandbox
+**Needs:** agent · **Opened:** 2026-10-07 · **Status:** OPEN
+
+Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default with `unshare` and `clone`/`clone3` `CLONE_NEWUSER` allowed without CAP_SYS_ADMIN, nothing else widened. Load it from `devcontainer.json` runArgs as `--security-opt seccomp=<file>`. Add `bubblewrap` and `socat` to the Dockerfile. Add a `sandbox` settings block with no `enableWeakerNestedSandbox`, `autoAllowBashIfSandboxed` decided explicitly, `allowedDomains` matched to the egress allowlist, and reads of `~/.claude/.credentials.json` / writes of `~/.claude/settings*.json` denied. Amend decision log 53.
+
+- **Read:** `docs/spikes/weaker-nested-sandbox-cc-isolated.md` (the RPI seed, plus "What the spike did NOT answer") · Q-081, Q-088, Q-124 in the archive · decision log 53 · Q-098's leak list
+- **Constraint:** enforcement files (Dockerfile, `devcontainer.json`, the profile, settings), so the plan's pre-mortem lists the bypass families and marks each covered or not, and the commit needs a live-verified host run: in cc-isolated, a sandboxed `cat ~/.claude/.credentials.json` is refused, Q-098's leak list is re-run inside the sandbox, and `gh`/`git push` paths do not prompt. The unit counts against the ~400-line cap (decision log 62). Keep the branch unmerged until the host run passes.
+- **Open, for the RPI research:** does bwrap work under that profile on the WSL2 6.18 kernel (and any AppArmor on the host)? The live check above settles it.
+- **Interim:** nothing sandboxes Bash in cc-isolated.
+
 ### Q-089 · host-tools-trust-category
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
 
@@ -286,25 +296,6 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
 - **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
-
-### Q-124 · cc-isolated-sandbox-build-or-accept
-**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
-
-Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which means letting the container create user namespaces), or accept `permissions.deny` + the container as the boundary?
-
-- **Why it's yours:** it trades kernel attack surface and an enforcement-file change against how much a prompt-injected agent can reach (the OAuth credential), and it decides whether Q-098's allowlist can ever ship.
-- **Read:** `docs/spikes/weaker-nested-sandbox-cc-isolated.md` · Q-081 and Q-088 in the archive · decision log 53 · Q-098
-- **Evidence:** in Claude Code 2.1.293 the bwrap argv always carries `--unshare-user`; weaker mode only replaces the fresh `/proc` with a bind of the host's. Inside the container, `unshare(2)` returns EPERM for every namespace type, `CapEff` is 0, and the bounding set has no SYS_ADMIN, so a setuid bwrap does not help either.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Build the sandbox, custom seccomp** (recommended if you want Q-098) | Docker's default seccomp profile plus `CLONE_NEWUSER`/`unshare` allowed, as `--security-opt seccomp=<file>` in runArgs; `bubblewrap` + `socat` in the Dockerfile; a `sandbox` settings block (no weaker mode, `allowedDomains` matched to the egress allowlist). An RPI unit with one live host check. | Review an enforcement-file unit; one host run. | Unprivileged user namespaces widen the kernel surface reachable from the container (historically a common local-privilege-escalation path); mismatched domains make `gh`/`git` prompt. |
-| **[2] Build it with `--cap-add=SYS_ADMIN` or `seccomp=unconfined`** | Same as [1], but the runArgs change is a broad switch rather than a profile file. | Same as [1], slightly less to maintain. | Much wider kernel/container-escape surface than [1] for the same sandbox. Listed only to rule it out. |
-| **[3] Accept deny + container** | Record in decision log 53 that in cc-isolated the boundary is the container plus `permissions.deny`, permanently; Q-098 stays deferred with no trigger. | None. | A determined injection can still read `.credentials.json` through spellings the deny rule cannot see (the pinned residuals); the global allowlist never ships. |
-
-- **Blocks:** Q-098 (global allowlist waits on a sandbox).
-- **Interim:** [3] in practice, unchanged since Q-081: nothing sandboxes Bash in cc-isolated.
-- **If the answer differs:** nothing is redone; [1]/[2] start a new RPI unit.
 
 ### Q-119 · u2a-split-at-cap
 **Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN
