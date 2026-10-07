@@ -26,10 +26,6 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
-| [Q-104](#q-104--unit-growth-during-review) | you: judgment | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
-| [Q-105](#q-105--devcontainer-breakage-definition) | you: judgment | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
-| [Q-106](#q-106--host-settings-merge-after-q049) | you: judgment | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
-| [Q-116](#q-116--digest-scan-working-dd-triggers) | you: judgment | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
@@ -94,79 +90,6 @@ grep -E 'sni=dl\.google\.com' "$L" | tail -5
 - **Blocks:** merging `fix/egress-dnsmasq-ipset`; herald's Android build.
 - **Interim:** branch unmerged. Herald works around it by restarting its container (the firewall re-resolves at startup) and building straight away. Separately, herald should set `buildToolsVersion = "35.0.0"`.
 - **If it fails:** paste the output. To put the host back on main's config, run `./devcontainer-config/install.sh` from your main checkout. Either way, finish with `git worktree remove ../cw-egress-verify`.
-
-### Q-116 · digest-scan-working-dd-triggers
-**Needs:** you: judgment · **Opened:** 2026-10-05 · **Status:** OPEN
-
-Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit triggers" heading at any level, or only note that it does not?
-
-- **Why it's yours:** it sets what counts as a decision for the cycle. A tentative DD that never became a record would gain standing triggers, which is a scope call, not a bug.
-- **Read:** `docs/working/digest-missed-log-triggers.md` ("Related gap") · `scripts/dev-cycle.sh` section 2 · `skills/dev-cycle/SKILL.md` step 2
-- **Evidence:** threadwork's `docs/working/dd-time-and-ritual.md` has a `### Revisit triggers` section in a DD that never became a decision record; the digest reads only `docs/decisions/NNN-*.md` (H2 `## Revisit triggers`) and `docs/decisions/log.md`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Note only** (interim, chosen) | Section 2's header and the skill say working-doc triggers are not scanned. Nothing else changes. | None. | A trigger kept only in a DD stays unseen unless the cycle runner reads the DD by hand. |
-| **[2] Scan `docs/working/dd-*.md`** | The digest also prints every "Revisit triggers" section (any heading level) from `docs/working/dd-*.md`, marked as from a working doc. | Slightly longer digests; triggers from abandoned DDs to judge each cycle. | Dead DDs add noise every cycle until they are archived or deleted. |
-
-- **Blocks:** nothing.
-- **Interim:** [1]. The header clause landed on `fix/digest-log-layouts` with the date-first log fix.
-- **If the answer differs:** [2] is a small section-2 addition plus a bats test.
-
-### Q-104 · unit-growth-during-review
-**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
-
-Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the cap also be re-checked inside the review-fix loop, or is growth during review accepted?
-
-- **Why it's yours:** row 62 is your rule, and both answers trade your review time against loop length.
-- **Read:** decision log row 62 · cycle record `docs/working/cycles/cycle-2026-10-02.md` (step 2) · `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md`
-- **Evidence:** the `feat/dev-cycle-digest` unit had 396 code lines outside `docs/` at its first rubric (de530691, against 4225753a). It landed at 1861 (5652d33f) after 37 review passes (pass 38 reviewed the merged result), with no re-split and no waiver entry. The other two landings since then stayed small (run-tests 254 lines, skill-invocation fix 32 lines).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Re-check per iteration** | pr-prep re-measures the unit at each loop iteration. Past 400 lines, the loop stops and the growth is split into a stacked unit (in /away mode, automatically). | None. One more check per iteration, run by the agent. | Splitting partway through review costs some re-review. |
-| **[2] Re-check, waiver past 2×** | Same as [1], but growth up to ~800 lines is tolerated. Past that, the loop stops and asks you for a waiver. | An occasional waiver question. | A 1.9× unit still gets the long-loop pattern. |
-| **[3] Accept growth** | The cap stays an entry gate only, and row 62 is amended to say so. | None. | Loops like the 38-pass dev-cycle one recur. |
-
-- **Blocks:** nothing on the roadmap.
-- **Interim:** no change. Row 62 stays as written (entry gate only).
-- **If the answer differs:** [1] or [2] is a small pr-prep / review-fix-loop change plus a log-row amendment. Filed as a roadmap item once answered.
-
-### Q-105 · devcontainer-breakage-definition
-**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
-
-Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a commit reading. Did it really fire, given that all three breakages came from this repo's own boundary changes and none came from Docker?
-
-- **Why it's yours:** the record leaves "breakage" undefined, and its response, "Revisit", reopens the choice of isolation mechanism.
-- **Read:** `docs/decisions/015-cc-process-isolation-docker-devcontainer.md` (Revisit triggers) · commits f906b50f (2026-09-09: node had no DNS or HTTPS while the boundary reported healthy), 6c35e39d (09-12: cc-isolated refused to start on every healthy container), 7c970bfe (09-19: Artifact reads failed through the resolver)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Define breakage as Docker/devcontainer-caused** | Amend 015's trigger to exclude defects introduced by this repo's own boundary changes. The trigger is then not fired. | None. | Real fragility in the boundary layer goes unwatched. Our own churn is what breaks sessions. |
-| **[2] Count it, and add a boundary-churn watch instead** | 015 stays. A new trigger on 015 counts session-breaking boundary-layer fixes per 2 weeks and asks whether the boundary design itself (not Docker) needs a rethink. | None now. A future question if it fires. | Same as [1], with a later alarm. |
-| **[3] Revisit 015** | Re-run 015's step 4 (Docker vs podman vs other). | One DD session. | Spends a decision round on a cause that wasn't Docker. |
-
-- **Blocks:** nothing.
-- **Interim:** treated as [2] for the cycle record (fired, with self-inflicted cause noted). No change to 015 until answered.
-- **If the answer differs:** an amendment to 015's trigger section, nothing else.
-
-### Q-106 · host-settings-merge-after-q049
-**Needs:** you: judgment · **Opened:** 2026-10-02 · **Status:** OPEN
-
-Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the host target" has fired. Q-049 was answered on 2026-09-23 (aa21535d, now in the archive). Should the host target of `devcontainer-config/install.sh` start merging `settings.json`, or keep the merge manual?
-
-- **Why it's yours:** it writes host-private hardening in your host `~/.claude/settings.json`, and 037 deliberately kept that manual.
-- **Read:** `docs/decisions/037-bare-host-copy-install.md` (line 37: "settings.json stays a manual merge … Q-049 is open") · Q-049 in `questions-archive.md` · `devcontainer-config/install.sh` header (line 44) · FP-161 in `docs/thoughts/failure-patterns.md`
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep manual** | 037 is amended to say the trigger was considered and declined. The installer keeps printing the reminder. | One manual merge per wiring change, as now. | Hook wiring drifts on the host when the merge is skipped. |
-| **[2] Automate via link-claude-home's provenance jq** | The host target runs the same provenance-tracked merge the container uses. TTY-gated, like the rest of the host install. | Review of one enforcement-adjacent change. | A merge bug rewrites your host hardening. The backup stamp is the recovery path. |
-| **[3] Automate dry-run only** | The installer prints the diff it would apply, and you apply it. | One paste per wiring change. | Little. It is mostly [1] with a better reminder. |
-
-- **Blocks:** nothing on the roadmap.
-- **Interim:** [1]. Nothing changes.
-- **If the answer differs:** [2] or [3] becomes a roadmap item (an RPI on `install.sh`, an enforcement file, so a pre-mortem comes first).
 
 ### Q-107 · claude-home-payload-second-consumer
 **Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
