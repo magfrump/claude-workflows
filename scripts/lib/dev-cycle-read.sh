@@ -9,7 +9,8 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here must pass
 # test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats).
-# The caller sets -euo pipefail (check_answer and brief_fields also set
+# The caller sets -euo pipefail (check_answer, brief_fields, tree_starts,
+# imported_names and main_imports also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
 # check_brief, isimported and the import walks exit 1 (need_root) unless
@@ -450,7 +451,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # followed), and reads each plain file it reaches once (import_targets has the
 # token rules). It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read or
-# the parser fails, or a start file's name holds a newline (each call sits in an `if` or `||`, where set -e is off); an
+# the parser fails, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
 # IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
 # returns 1 again.
@@ -498,51 +499,60 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # not read, known issue A5). That regex keeps brackets,
 # parentheses, backticks and trailing punctuation in a name (@x.md. reads
 # x.md.), while the Markdown around a token (emphasis, a link or image, inline
-# HTML, a code span) may end it at any later one of those marks, so each token
-# yields its whole and its part before each of [ ] ( ) < ! * _ and backtick,
-# each also with trailing . , ; : ! ? * _ ~ ) ] or backticks stripped, each path
-# once. Claude Code deletes the HTML comments of a block that opens with <!--
-# and reads what is left, so text holding <!-- is also read once more with
-# every closed comment removed. A NUL counts as a blank. Over-reading only
-# over-refuses. ~/ and absolute paths, and paths leaving the repo (.. or ../,
-# not a ..x name), are dropped. It reads ROOT_REAL without checking it (the
-# caller has run need_root) and returns 1 when sed or grep fails. The rules
-# follow Claude Code 2.1.292's import regex and Markdown lexer (U2a2 security
-# review); re-check them when Claude Code changes either
-# (test/agents-gemini-sync.bats pins another copy of the regex).
+# HTML, a code span) may end it at any later one of those marks, and the next
+# Markdown token may start a new import at an @ inside the match. So each
+# token also yields every suffix after an @ that follows a non-alphanumeric
+# byte, and each of those its whole and its part before each of [ ] ( ) < ! * _
+# and backtick, each also with trailing . , ; : ! ? * _ ~ ) ] or backticks
+# stripped, each path once per token. Claude Code deletes the closed HTML
+# comments of a block that opens with <!-- (on the line of the block's first
+# -->) and reads what is left, so every line holding <!-- is also read once
+# more with its closed comments removed and an unclosed one kept. A NUL counts
+# as a blank. Over-reading only over-refuses. ~/ and absolute paths, and paths
+# leaving the repo (.. or ../, not a ..x name), are dropped. It reads ROOT_REAL
+# without checking it (the caller has run need_root) and returns 1 when sed,
+# awk or grep fails. The rules follow Claude Code 2.1.292's import regex and
+# Markdown lexer (U2a2 and U2a3b security reviews); re-check them when Claude
+# Code changes either (test/agents-gemini-sync.bats holds a separate, older
+# finder for where an import starts, not a copy of these rules).
 import_targets() {
-  local t r v w p u n x y cs toks b=$'\x60' cut s=(-e 's/\x0/ /g')
+  local t r v w p u x y q toks b=$'\x60' cut s=(-e 's/\x0/ /g'); local -A cs n
   cut="[][()<!*_$b]"  # the cut marks as a glob bracket (b: a backtick)
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail grep's "no match" would hide a sed failure.
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
   if [[ "$toks" == *'<!--'* ]]; then
-    x="$toks"; y=""
-    while [[ "$x" == *'<!--'* ]]; do
-      y+="${x%%'<!--'*}"; x="${x#*'<!--'}"
-      if [[ "$x" == *'-->'* ]]; then x="${x#*'-->'}"; else x=""; fi
-    done
-    toks+=$'\n'"$y$x"
+    # One awk pass, linear in the text: each line holding <!-- without its closed comments.
+    # shellcheck disable=SC2016  # the $0 is awk's
+    y="$(printf '%s\n' "$toks" | env LC_ALL=C awk 'index($0, "<!--") {
+      o = ""; s = $0
+      while ((i = index(s, "<!--")) > 0) { r = substr(s, i + 4); j = index(r, "-->"); if (j == 0) break; o = o substr(s, 1, i - 1); s = substr(r, j + 3) }
+      print o s }')" || return 1
+    toks+=$'\n'"$y"
   fi
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
   # and a failed write would read as "no match".
   toks="$(printf '%s\n' "$toks" | env LC_ALL=C grep -aoE "$IMPORT_RE")" || [[ $? -eq 1 ]] || return 1
   while IFS= read -r t; do
     [[ -n "$t" ]] || continue
-    t="${t#*@}"; n=$'\n'; cs=$'\n'; r="$t"
-    # r walks back through the token's prefixes, one per cut mark.
-    while :; do
-      v="$r"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
-      for w in "$r" "$v"; do
-        [[ -n "$w" && "$w" != \~/* && "$w" != /* && "$cs" != *$'\n'"$w"$'\n'* ]] || continue
-        cs+="$w"$'\n'
-        p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
-        [[ "$p" != .. && "$p" != ../* && "$n" != *$'\n'"$p"$'\n'* ]] || continue
-        n+="$p"$'\n'; printf '%s\n' "$p"
+    # Keys carry an x prefix: a bare @ or * subscript would name the whole array.
+    t="${t#*@}"; cs=(); n=(); q=("$t"); x="$t"
+    while [[ "$x" == *[^[:alnum:]]@* ]]; do x="${x#*[^[:alnum:]]@}"; q+=("$x"); done
+    for r in "${q[@]}"; do
+      # r walks back through the suffix's prefixes, one per cut mark.
+      while :; do
+        v="$r"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
+        for w in "$r" "$v"; do
+          [[ -n "$w" && "$w" != \~/* && "$w" != /* && -z "${cs[x$w]+set}" ]] || continue
+          cs[x$w]=1
+          p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
+          [[ "$p" != .. && "$p" != ../* && -z "${n[x$p]+set}" ]] || continue
+          n[x$p]=1; printf '%s\n' "$p"
+        done
+        [[ "$r" == *$cut* ]] || break
+        # shellcheck disable=SC2295  # $cut is the glob bracket, matched as a pattern
+        r="${r%$cut*}"
       done
-      [[ "$r" == *$cut* ]] || break
-      # shellcheck disable=SC2295  # $cut is the glob bracket, matched as a pattern
-      r="${r%$cut*}"
     done
   done < <(printf '%s\n' "$toks")
 }

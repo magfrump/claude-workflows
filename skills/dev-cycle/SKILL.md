@@ -73,7 +73,7 @@ only those files. An in-cycle fix (steps 1, 3, 4, and a missing doc) edits only 
 cycle's own files, `docs/working/`, `docs/human-author/`, `docs/reviews/`,
 `docs/decisions/`, `docs/dev-cycle.md`, `docs/constraints.md`, a dot-directory or dotfile, an instruction file, or a
 file an instruction file imports with `@`; compared ignoring case) or
-`README.md`; anything else (a new file, code, scripts, hooks, egress lists, decision
+`README.md`, and refuses every path when the import walk fails; anything else (a new file, code, scripts, hooks, egress lists, decision
 records, instruction files) is filed, not written. Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state

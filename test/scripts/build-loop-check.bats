@@ -336,17 +336,22 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
 
-@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped (U2a3)" {
+@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
     mkdir -p docs
     # \x60: a backtick (a code span that closes right after the name). A cut mark
     # earlier in the name (my_notes) does not hide a later one; two NBSPs on a
     # line both become blanks; an HTML block's comment splices a name (sec+ret).
     { printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n'
       printf 'More: @docs/my_notes.md\x60c\x60, | @docs/s_g.md<br> |, @docs/k_l.md**b**, @docs/p.md\xc2\xa0@docs/q.md\xc2\xa0@docs/r.md\n'
-      printf '<!-- note --> See @docs/sec<!-- x -->ret.md\n'; } > AGENTS.md
+      printf '<!-- note --> See @docs/sec<!-- x -->ret.md\n'
+      # One grep match runs through a link or code span into the next @ (Claude Code reads both).
+      printf 'Read [@docs/la.md](u)/[@docs/lb.md](v) and @docs/ca.md\x60x\x60@docs/cb.md\n'
+      # A stray <!-- in a fence earlier must not pair with a later comment.
+      printf '\x60\x60\x60html\nx<!--\n\x60\x60\x60\n<!-- n -->@docs/hid<!-- y -->den.md\n'; } > AGENTS.md
     commit_all parser
     ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md
-        docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md)
+        docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md
+        docs/la.md docs/lb.md docs/ca.md docs/cb.md docs/hidden.md)
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md '~/x.md'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
@@ -354,7 +359,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3)" {
+@test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3b)" {
     mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     for w in tree main; do
@@ -370,10 +375,11 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     imps tree docs/z.md; want walk failed; want docs/z.md imported
     rm -r "a"$'\n'"b" b
     # The tree walk itself, called twice: the second call returns its cached error.
-    run --separate-stderr env PATH="$BATS_TEST_TMPDIR/bin:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+    # The second call runs with a working tr, so only the cache can fail it.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; p="$PATH"
         if import_targets "" < docs; then echo read; else echo failed; fi
-        if imported_names; then echo walked; else echo "walk failed"; fi
-        if imported_names; then echo walked; else echo "walk failed"; fi' _ "$LIB"
+        PATH="$2:$p"; if imported_names; then echo walked; else echo "walk failed"; fi
+        PATH="$p"; if imported_names; then echo walked; else echo "walk failed"; fi' _ "$LIB" "$BATS_TEST_TMPDIR/bin"
     [ "$output" = "failed
 walk failed
 walk failed" ] || { echo "$output $stderr"; return 1; }
@@ -390,4 +396,36 @@ walk failed" ] || { echo "$output $stderr"; return 1; }
         if isimported tree docs/z.md; then echo "docs/z.md: imported"; fi' _ "$LIB"
     [ "$output" = "walk failed
 docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the walks fail closed past the start list: a parser failure on a file read, a failed lower of an imported or asked path, a failed tracked listing alone (U2a3b)" {
+    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && printf 'x\n' > docs/a.md && commit_all base
+    tb="$BATS_TEST_TMPDIR/tb" sb="$BATS_TEST_TMPDIR/sb" gb="$BATS_TEST_TMPDIR/gb" && mkdir -p "$tb" "$sb" "$gb"
+    # A tr that fails only when its input holds "trfail", so the start names still lower;
+    # a sed that always fails; a git whose bare "ls-files -z" (the tracked half) fails.
+    t="$(command -v tr)" && printf '#!/bin/sh\nf="$(mktemp)" || exit 1\ncat > "$f"\nif grep -qa trfail "$f"; then rm -f "$f"; exit 1; fi\n%s "$@" < "$f"; r=$?; rm -f "$f"; exit $r\n' "$t" > "$tb/tr"
+    printf '#!/bin/sh\nexit 1\n' > "$sb/sed"
+    g="$(command -v git)" && printf '#!/bin/sh\n[ "$#" -eq 2 ] && [ "$1 $2" = "ls-files -z" ] && exit 128\nexec %s "$@"\n' "$g" > "$gb/git"
+    chmod +x "$tb/tr" "$sb/sed" "$gb/git"
+    # The asked path does not lower: either walk answers imported.
+    for w in tree main; do
+        PATH="$tb:$PATH" imps "$w" docs/trfail.md docs/z.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/trfail.md imported; want docs/z.md -
+    done
+    # An imported path does not lower: both walks fail (isimported's second call reads the cache).
+    printf 'see @docs/trfail.md and @docs/a.md\n' > AGENTS.md && commit_all trfail
+    for w in tree main; do
+        PATH="$tb:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/z.md imported
+    done
+    # The parser fails on a file the tree walk reads; the error stays cached.
+    run --separate-stderr env PATH="$sb:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        if imported_names; then echo walked; else echo "walk failed"; fi
+        if imported_names; then echo walked; else echo "walk failed"; fi
+        if isimported tree docs/z.md; then echo "docs/z.md: imported"; fi' _ "$LIB"
+    [ "$output" = "walk failed
+walk failed
+docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
+    # The tracked listing fails while the untracked listing works.
+    PATH="$gb:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/a.md imported; want docs/z.md imported
 }

@@ -52,7 +52,7 @@
 #             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
 #             or dotfile, an instruction file, or a file an instruction file
 #             imports with @; compared ignoring case) or README.md; "skip <path>: <reason>"
-#             otherwise.
+#             otherwise, and for every path when the import walk fails.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
 #             branch's commit (an answer only in the working tree is not seen:
