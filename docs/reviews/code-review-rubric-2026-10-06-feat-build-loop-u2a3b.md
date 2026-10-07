@@ -1,8 +1,25 @@
-Commit: e48cf0f7
+Commit: be94c871
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
 **Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 red; 2 Medium security ambers and 8 Mostly-accurate wording ambers found at e48cf0f7, all fixed in 909de414 and its follow-up, not yet confirmed by a review pass (iteration-4 gate below)
+
+## Loop 2, iteration 1 of 3 (Commit be94c871, main...HEAD, --loop-pass, k=1, full panel; PAUSED by the user before triage)
+
+Loop 2 reviews the over-approximation redesign (be94c871) chosen at loop 1's iteration-4 gate. The user asked for a stopping point while the panel ran, so this iteration has no fixes yet. Status at pause: **🔴 DOES NOT PASS** (behavioral fact-check Incorrect: the parser is not yet a superset).
+
+Reports (`Commit: be94c871`): `code-fact-check-report-build-loop-u2a3b-L2-i1.md` (42 claims: 27 Verified, 3 Mostly accurate, 2 Stale, 10 Incorrect); `api-consistency-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Minor, 2 Informational); `architecture-review-review-2026-10-06-L2-build-loop-u2a3b.md` (2 Coupling, 1 Minor, 2 Informational); `test-strategy-review-2026-10-06-L2-build-loop-u2a3b.md` (F1-F5, Appendix A tests, Appendix B fix sketch). Security and performance were still running at the pause; their reports (`security-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md`, `performance-reviewer-review-2026-10-06-L2-build-loop-u2a3b.md`) will be untracked files in the worktree until the next session commits them.
+
+Findings to triage on resume (not yet tiered):
+- Behavioral (fact-check Claims 1, 10, 15, 16, 39; architecture Coupling 2; test-strategy F1): not a superset. `@../<repo>/docs/x.md` re-entry is dropped (`if (k == 0) return`), a fail-open regression from main at --check-fix; absolute spellings other than a literal ROOT_REAL prefix are dropped; mawk's `-v` escape processing mangles a dir or root holding a backslash; names over 4096 bytes that normalize short are cut. Agreed fix (architecture, tested 121/121; test-strategy Appendix B): resolve each candidate to an absolute path (root/dir/candidate, `..` clamped at /), keep it only under `root "/"`, pass dir and root through ENVIRON, drop the 4096 cap and rely on the work bound. Caveat: Appendix B drops every name when ROOT_REAL is /.
+- splice is quadratic and outside the work bound (fact-check 18b, test-strategy F3): add its copying to `work`.
+- main_imports fails the walk on prefix candidates the checkout holds as non-plain (architecture Coupling 1: `.git` in a linked worktree from `@.gitignore`; api 3: an ignored `.env` from `@.env.example`): fails closed, but U2b's fresh-worktree gate would refuse every path. Tested fix: skip `.git` and `.git/*` in main_imports; route the general prefix rule to U2a3c.
+- import_targets returns awk's 3 or 2, not 1 (api 1, fact-check 18a): `|| return 1`.
+- check_fix's skip wording claims an import for over-read names (api 2): "names it after an @ ... so it may be read as instructions", mirrored in the help text and the dev-cycle skill.
+- The superset claim is stated three ways (architecture 3; fact-check 3, 4b, 5): state it once in the code comment with its exceptions; A5 and F11 point to it; restore non-literal absolute spellings to the gaps unless the resolution fix lands.
+- Tests: test-strategy Appendix A (4 hole tests plus a --check-fix test, failing at be94c871; M21/M22 splice test; the blank-ends-a-candidate assertion); stale comments at build-loop-check.bats:341-342, :347; the over-read test's name and its two real imports (fact-check 29, test-strategy F5).
+
+Next on resume: loop 2 iteration 1's triage and fixes from the list above (plus the security and performance reports), tests, fix-drift, then iteration 2.
 
 ## Iteration-4 gate (cap reached)
 
