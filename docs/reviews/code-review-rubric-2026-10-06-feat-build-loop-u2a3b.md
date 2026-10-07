@@ -64,6 +64,8 @@ Verification: 149/149. --check-fix over 948 paths identical to main; interleaved
 
 Iteration 3 was the last pass the cap allows and did not close clean (three contextual Medium test gaps and one Medium routed fail-open, plus Consider items), so `Loop closed at` is not written. Every finding is fixed or routed in the follow-up commit; no review pass has seen those fixes. Asked as a questions entry (options: one more confirming pass under a size waiver; split; merge with the fixes unreviewed). Recommended: one more confirming pass (k=3, full panel, Stage 2.5) under a Q-104 waiver: the fixes are local (a work charge, a narrower skip, a cache key, renames, comments, tests), the parser's behaviour on real files is unchanged (--check-fix identical), and the remaining exposure (E1) is pre-existing and routed.
 
+**Answered 2026-10-07 (Q-120 [1]):** one more confirming pass under a size waiver: the unit may pass Q-104 [2]'s ~800 lines if that pass needs a fix. A clean pass writes `Loop closed at` and goes to a merge ask; any new finding goes back to the user.
+
 ## Loop 2, iteration 2 of 3 (Commit 98e3b1df, be94c871..98e3b1df, --loop-pass, k=1, full panel)
 
 Scope: the loop-pass default range from the rubric's stamp (be94c871), labelled partial: iteration 1's fixes dd51e9a7 and 98e3b1df. Delivery mode: self-read (shared brief in the session scratchpad). The short-circuit marker (used at 1ccc8b65) is on the file, so Stage 2 ran in full with amber collected. Stage 2.5 skipped (loop pass): routed endorsements stay *pending execution verification*. Considered overrides: the U2a3 and U2a3b rows (about lines 374-420 of the override log) were given to every critic; performance F3 found that line 386's revisit trigger fired (below).
