@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-129](#q-129--u2a3c-confirm-pass-gate) | you: judgment | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -348,26 +347,3 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 
 
 
-### Q-129 · u2a3c-confirm-pass-gate
-**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
-
-U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low performance item, so by Q-128's rule it comes back to you: how should it land?
-
-- **Why it's yours:** Q-128 made any new finding on this pass yours.
-- **Read:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md`, section "Confirming pass after Q-128 [1]" (branch `feat/build-loop-u2a3c` at 83c69b48, worktree `.claude/wt-build-loop-u2a3c`)
-- **Evidence:** every replicate and critic found 4b7f2357's two code changes correct (the guard matched 21b35ebf on about 45,000 random-order calls, apart from the intended 1). The findings are:
-  - F1: a wrong reason in the rubric's own prose (already corrected in place).
-  - F2: one doc sentence in the U2b bullet that over-allows a future second caller, unreachable today.
-  - F3: four test gaps with a verified patch (68/68).
-  - G1: the queue pop is quadratic in admitted checkout files (5,000 files: 86 s vs 43 s). The same code is on main; this branch makes checkout files reach it.
-  - Wording nits.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Docs and tests, then a lite check and merge** (recommended) | Apply F2, F3's patch, the wording nits and the 60 s timeout; defer G1 with an override row (pre-existing on main, trigger U2a4 or a walk past 30 s). One k=1 fact-check plus test-strategy over that delta; clean → merge message and merge ask. No lib code changes. | One merge ask. | G1 stays until U2a4; a session with thousands of untracked imported files pays a minute or two per gate walk. |
-| **[2] Also fix G1, then a full confirming pass** | As [1], plus a three-line index pop in main_imports (code), then a full pass (k=3, full panel, about 1.6M tokens). | One merge ask later. | Another full pass for a Low, pre-existing item; it may surface more nits. |
-| **[3] Merge 83c69b48 as is** | All findings become override rows and merge-message dispositions. | One merge ask now. | F3's tests stay unwritten: an ENT-side slowdown would pass the suite. |
-
-- **Blocks:** U2a4 (the floor), then U2b and U2c.
-- **Interim:** nothing runs on U2a3c until you answer.
-- **If the answer differs:** none of the options redoes work.

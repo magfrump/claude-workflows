@@ -118,6 +118,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-126](#q-126--q125-host-probe) | - **A, the Q-125 profile:** T1 fresh `/proc` pass, T2 bind `/proc` pass, and T4 shows nothing else widened. | 2026-10-07 |
 | [Q-127](#q-127--q125-proc-fallback) | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
 | [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
+| [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 <!-- index:end -->
 
 ## Answered
@@ -2205,4 +2206,28 @@ If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), 
 - **Interim:** none chosen; nothing merges until this is answered or Q-126 makes it moot.
 - **If the answer differs:** [1]/[2] are one-line changes on U2/U1 and a re-run of the probe; [3] deletes two branches.
 
+
+### Q-129 · u2a3c-confirm-pass-gate
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low performance item, so by Q-128's rule it comes back to you: how should it land? **Answered 2026-10-07: [1].** Apply F2, F3's patch, the wording nits and the 60 s timeout; defer G1 with an override row; a k=1 fact-check plus test-strategy over that delta; clean → merge message and merge ask.
+
+- **Why it's yours:** Q-128 made any new finding on this pass yours.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md`, section "Confirming pass after Q-128 [1]" (branch `feat/build-loop-u2a3c` at 83c69b48, worktree `.claude/wt-build-loop-u2a3c`)
+- **Evidence:** every replicate and critic found 4b7f2357's two code changes correct (the guard matched 21b35ebf on about 45,000 random-order calls, apart from the intended 1). The findings are:
+  - F1: a wrong reason in the rubric's own prose (already corrected in place).
+  - F2: one doc sentence in the U2b bullet that over-allows a future second caller, unreachable today.
+  - F3: four test gaps with a verified patch (68/68).
+  - G1: the queue pop is quadratic in admitted checkout files (5,000 files: 86 s vs 43 s). The same code is on main; this branch makes checkout files reach it.
+  - Wording nits.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Docs and tests, then a lite check and merge** (recommended) | Apply F2, F3's patch, the wording nits and the 60 s timeout; defer G1 with an override row (pre-existing on main, trigger U2a4 or a walk past 30 s). One k=1 fact-check plus test-strategy over that delta; clean → merge message and merge ask. No lib code changes. | One merge ask. | G1 stays until U2a4; a session with thousands of untracked imported files pays a minute or two per gate walk. |
+| **[2] Also fix G1, then a full confirming pass** | As [1], plus a three-line index pop in main_imports (code), then a full pass (k=3, full panel, about 1.6M tokens). | One merge ask later. | Another full pass for a Low, pre-existing item; it may surface more nits. |
+| **[3] Merge 83c69b48 as is** | All findings become override rows and merge-message dispositions. | One merge ask now. | F3's tests stay unwritten: an ENT-side slowdown would pass the suite. |
+
+- **Blocks:** U2a4 (the floor), then U2b and U2c.
+- **Interim:** nothing runs on U2a3c until you answer.
+- **If the answer differs:** none of the options redoes work.
 
