@@ -28,7 +28,6 @@ The index below is generated — edit entries, not the table.
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-127](#q-127--q125-proc-fallback) | you: judgment | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
-| [Q-128](#q-128--u2a3c-final-pass-gate) | you: judgment | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -357,21 +356,3 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 - **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
 
 
-### Q-128 · u2a3c-final-pass-gate
-**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
-
-U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confirming pass (k=3, full panel, Stage 2.5) did not close clean: how should it land?
-
-- **Why it's yours:** the review cap's gate is yours by rule (Q-120 set the precedent: any finding on the final pass goes back to you).
-- **Read:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md`, section "Iteration 3 of 3" (on branch `feat/build-loop-u2a3c`, worktree `.claude/wt-build-loop-u2a3c`) · commit 4b7f2357
-- **Evidence:** 0 red. The final pass found four ambers, all fixed in 4b7f2357. (1) A performance High: main_checkout's `${MEMO@a}` type check is linear in the array, so 4,000 deep absent tokens took 44.6 s, against 0.9 s on main. It now takes 2.5 s, and a test fails on the old code. (2) A latent fail-open for a future second caller of main_checkout, unreachable through main_imports. It is now a one-line guard with a test. (3) A test that went red under a long TMPDIR. (4) A dropped "clean worktree at MAIN_SHA" duty in the U2b bullet. 4b7f2357 passed the suites (66/78/19/2, under a short and a long TMPDIR), Stage 2.5 (10 endorsements verified by execution, one rewording) and `scripts/health-check.sh`. No review pass has seen it. 288 changed code lines against main before 4b7f2357; 315 after (lib 86, tests 229), under the 400 cap.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One more confirming pass** (recommended) | Run a final pass (k=3, full panel, Stage 2.5) over 4b7f2357. Clean → merge message and merge ask; any new finding → back to you. | One merge ask later. | About 1.8M tokens spent confirming small fixes. |
-| **[2] Merge as is** | Merge 4b7f2357 with its four fixes covered by tests, Stage 2.5 and the health check only, and record the deferrals in the merge message. | One merge ask now. | A defect in the unreviewed fixes lands on main. The walk has no caller until U2a4, so the exposure is nil until then. |
-| **[3] Lite fix-drift check, then merge** | One k=1 fact-check plus security over `3a35c8b9..4b7f2357` only (the pr-prep lite path); clean → merge ask. | One merge ask after it. | Cheaper (about 0.4M), but no full-panel look at the guard's interaction with the memo. |
-
-- **Blocks:** U2a4 (the floor), then U2b and U2c.
-- **Interim:** nothing runs on U2a3c; it waits on this answer. The old tip is kept as `backup/u2a3c-pre-rebase-2b1399ab`.
-- **If the answer differs:** none of the options redoes work.

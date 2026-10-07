@@ -115,6 +115,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-123](#q-123--host-checkout-common-dir) | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 | [Q-124](#q-124--cc-isolated-sandbox-build-or-accept) | Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which mea... | 2026-10-07 |
+| [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 <!-- index:end -->
 
 ## Answered
@@ -2139,4 +2140,23 @@ Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build 
 - **Interim:** [3] in practice, unchanged since Q-081: nothing sandboxes Bash in cc-isolated.
 - **If the answer differs:** nothing is redone; [1]/[2] start a new RPI unit.
 
+
+### Q-128 · u2a3c-final-pass-gate
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confirming pass (k=3, full panel, Stage 2.5) did not close clean: how should it land? **Answered 2026-10-07: [1], one more confirming pass.** Run the final pass (k=3, full panel, Stage 2.5) over 4b7f2357; clean → merge message and merge ask; any new finding → back to the user.
+
+- **Why it's yours:** the review cap's gate is yours by rule (Q-120 set the precedent: any finding on the final pass goes back to you).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md`, section "Iteration 3 of 3" (on branch `feat/build-loop-u2a3c`, worktree `.claude/wt-build-loop-u2a3c`) · commit 4b7f2357
+- **Evidence:** 0 red. The final pass found four ambers, all fixed in 4b7f2357. (1) A performance High: main_checkout's `${MEMO@a}` type check is linear in the array, so 4,000 deep absent tokens took 44.6 s, against 0.9 s on main. It now takes 2.5 s, and a test fails on the old code. (2) A latent fail-open for a future second caller of main_checkout, unreachable through main_imports. It is now a one-line guard with a test. (3) A test that went red under a long TMPDIR. (4) A dropped "clean worktree at MAIN_SHA" duty in the U2b bullet. 4b7f2357 passed the suites (66/78/19/2, under a short and a long TMPDIR), Stage 2.5 (10 endorsements verified by execution, one rewording) and `scripts/health-check.sh`. No review pass has seen it. 288 changed code lines against main before 4b7f2357; 315 after (lib 86, tests 229), under the 400 cap.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more confirming pass** (recommended) | Run a final pass (k=3, full panel, Stage 2.5) over 4b7f2357. Clean → merge message and merge ask; any new finding → back to you. | One merge ask later. | About 1.8M tokens spent confirming small fixes. |
+| **[2] Merge as is** | Merge 4b7f2357 with its four fixes covered by tests, Stage 2.5 and the health check only, and record the deferrals in the merge message. | One merge ask now. | A defect in the unreviewed fixes lands on main. The walk has no caller until U2a4, so the exposure is nil until then. |
+| **[3] Lite fix-drift check, then merge** | One k=1 fact-check plus security over `3a35c8b9..4b7f2357` only (the pr-prep lite path); clean → merge ask. | One merge ask after it. | Cheaper (about 0.4M), but no full-panel look at the guard's interaction with the memo. |
+
+- **Blocks:** U2a4 (the floor), then U2b and U2c.
+- **Interim:** nothing runs on U2a3c; it waits on this answer. The old tip is kept as `backup/u2a3c-pre-rebase-2b1399ab`.
+- **If the answer differs:** none of the options redoes work.
 
