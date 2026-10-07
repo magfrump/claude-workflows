@@ -454,19 +454,21 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # directory at any depth, which Claude Code also loads) and follows an import
 # into the file main stores at that path, whatever its name; a symlink there is
 # followed to the path its text names. An imported path main lacks is recorded
-# and not read. It refuses what it does not model, as FENCE_AWK does: a doubled
-# name, a name holding a newline, symlink text that is empty, absolute, leaves
+# and not read. It refuses what it does not model, as FENCE_AWK does: a name
+# listed twice or as both a file and a directory, a name holding a newline,
+# symlink text that is empty, absolute, leaves
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
 # in the checkout), an imported path main lacks that lies under a directory
 # main stores as a symlink or gitlink, or that the checkout holds as anything
 # but a plain directory (the root itself included), and a start file main
-# lacks (untracked, ignored, or in the checkout's index) fail the walk, so isimported main answers imported for
-# every path. Checkout files are not walked until U2a3c, so the walk fails
+# lacks (untracked, ignored, or in the checkout's index) fail the walk, so
+# isimported main answers imported for every path. Checkout files are not walked until U2a3c, so the walk fails
 # closed on them. A start file answers imported only when an import reaches it
 # (U2a4's floor names start files by its own rules). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# absolute imports, and three shapes A5 lists as untraced against Claude Code.
+# absolute imports, checkout conversions (A5), and three shapes A5 lists as
+# untraced against Claude Code.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
@@ -513,7 +515,7 @@ instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
-# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output ended in NUL.
+# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 imported_names() {
   local f d p seen=$'\n' queue=()
@@ -535,17 +537,19 @@ imported_names() {
 }
 # The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
 # refuses rather than reading a partial list, when main is not found by name,
-# the commit's tree or the untracked list cannot be listed whole (nul_list), a
-# tree record does not parse, a name is listed twice (git's lookups read the
-# first copy) or holds a newline, the lower-cased start list comes back short,
-# a start file main lacks exists, a blob cannot be read, symlink text it
+# the commit's tree or the checkout's .md list (tracked and untracked) cannot
+# be listed whole (nul_list), a tree record does not parse or has a type but
+# blob, link or gitlink, a name is listed twice (git's lookups read the first
+# copy), is also a directory of another listed name, or holds a newline, the
+# lower-cased start list comes back short, a start file main lacks is listed
+# (even one deleted from the checkout), a blob cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, or an imported path main lacks lies under a directory
 # main stores as a symlink or gitlink or exists in the checkout as anything but
 # a plain directory below the root; need_root exits instead.
 main_imports() {
   local - rec f d p i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
-  local -A ent=() seen=()
+  local -A ent=() seen=() dir=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
@@ -557,10 +561,10 @@ main_imports() {
     [[ -z "${ent[$f]+set}" && "$f" != *$'\n'* ]] || return 1
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
-  done
-  nul_list recs untracked_md || return 1; low=("${recs[@]}")
-  nul_list recs env GIT_LITERAL_PATHSPECS=0 git ls-files -z --cached -- ':(glob,icase)**/*.md' || return 1
-  for f in "${low[@]}" "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
+  done  # then a name that is also a directory of another listed name (a crafted tree) fails:
+  for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
+  nul_list recs env GIT_LITERAL_PATHSPECS=0 git ls-files -z --cached --others -- ':(glob,icase)**/*.md' || return 1
+  for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   # One tr lower-cases every candidate (lower would fork per path).
   [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
   [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1

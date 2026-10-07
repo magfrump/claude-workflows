@@ -63,20 +63,17 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
 
 @test "main walk fails closed when an instruction blob cannot be read or main is not found by name (U2a2)" {
     printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
-    imps main docs/a.md scripts/other.sh
-    want walk ok; want docs/a.md imported; want scripts/other.sh -
+    imps main docs/a.md scripts/other.sh; want walk ok; want docs/a.md imported; want scripts/other.sh -
     # The instruction file's blob is missing from the object store.
     o="$(git rev-parse main:CLAUDE.md)"
     rm ".git/objects/${o:0:2}/${o:2}"
-    imps main scripts/other.sh
-    want walk failed; want scripts/other.sh imported
+    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
     # The blob is back: the walk reads again, so the next failure is the name alone.
     printf 'Rules: @docs/a.md\n' | git hash-object -w --stdin >/dev/null
     imps main scripts/other.sh; want walk ok; want scripts/other.sh -
     # No default branch found by name: nothing is read, every path is imported.
     git checkout -q -b trunk && git branch -q -D main
-    imps main scripts/other.sh
-    want walk failed; want scripts/other.sh imported
+    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
 }
 
 @test "main walk: a name the tree lists twice, or any name holding a newline, fails the walk (U2a2)" {
@@ -86,19 +83,16 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     d="$(printf '100644 blob %s\ta.md\n100644 blob %s\ta.md\n' "$a" "$a" | git mktree)"
     t="$(printf '100644 blob %s\tCLAUDE.md\n040000 tree %s\tdocs\n' "$(git rev-parse main:CLAUDE.md)" "$d" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup)"
-    imps main scripts/other.sh
-    want walk failed; want scripts/other.sh imported
+    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
     # A start file listed twice (a symlink first, which git reads), and a plain
     # file listed twice: each fails the walk rather than reading one copy.
     l="$(printf 'x' | git hash-object -w --stdin)" && b="$(printf '@docs/b.md\n' | git hash-object -w --stdin)"
     t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tAGENTS.md\n' "$l" "$b" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup-start)"
-    imps main docs/b.md
-    want walk failed; want docs/b.md imported
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup-start)"; git rm -qf CLAUDE.md  # no index-only start masks the refusals below
+    imps main docs/b.md; want walk failed; want docs/b.md imported
     t="$(printf '100644 blob %s\tAGENTS.md\n100644 blob %s\tz.txt\n100644 blob %s\tz.txt\n' "$a" "$a" "$a" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup-other)"
-    imps main scripts/other.sh
-    want walk failed; want scripts/other.sh imported
+    imps main scripts/other.sh; want walk failed; want scripts/other.sh imported
     # A name holding a newline is not modelled, so it fails the walk: a plain one,
     # and one shaped so each half looks like an ls-tree record (a forged symlink line).
     n="$(printf '@../docs/d.md\n' | git hash-object -w --stdin)"
@@ -108,8 +102,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     t="$({ printf '040000 tree %s\twe\nird\0' "$w"; printf '040000 tree %s\tx\n120000 blob %s\tdocs\0' "$v" "$a"; } | git mktree -z)"
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m newline)"
     [ "$(git ls-tree -r -z --name-only main | tr -cd '\0' | wc -c)" -eq 2 ]
-    imps main docs/d.md docs/p.md
-    want walk failed; want docs/d.md imported; want docs/p.md imported
+    imps main docs/d.md docs/p.md; want walk failed; want docs/d.md imported; want docs/p.md imported
 }
 
 @test "main walk follows what Claude Code loads: symlinks, any name main stores, .claude/rules/ at any depth, a token ended by a Unicode space (U2a2, U2a3)" {
@@ -141,13 +134,11 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     printf 'see @..x.md\n' > AGENTS.md
     printf 'hid @hid.md\n' > ..x.md
     commit_all dotdot
-    imps main hid.md ..x.md
-    want walk ok; want hid.md imported
+    imps main hid.md ..x.md; want walk ok; want hid.md imported
     want ..x.md imported
     # An untracked name holding a newline fails the walk.
     printf 'x\n' > "zz"$'\n'"CLAUDE.md"
-    imps main docs/x.md
-    want walk failed; want docs/x.md imported
+    imps main docs/x.md; want walk failed; want docs/x.md imported
     rm "zz"$'\n'"CLAUDE.md"
     imps main docs/x.md; want docs/x.md -
     # Symlink text with a trailing newline, an absolute one, none, or one leaving the repo: the walk fails.
@@ -164,15 +155,14 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     mkdir -p docs
     printf 'see @docs/a.md\0 and @docs/b.md\n' > AGENTS.md
     commit_all nul
-    imps main docs/b.md
-    want walk ok; want docs/b.md imported
+    imps main docs/b.md; want walk ok; want docs/b.md imported
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         o="$(git rev-parse main:AGENTS.md)"; rm ".git/objects/${o:0:2}/${o:2}"
         if isimported main docs/z.md; then echo "failed walk: imported"; fi' _ "$LIB"
     [ "$output" = "failed walk: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "main walk fails on symlink text holding a NUL, on a checkout symlink or file at a path main lacks, and on an untracked start (U2a2 iteration 1 A1)" {
+@test "main walk fails on symlink text holding a NUL, on a checkout symlink at a path main lacks, and on an untracked start (U2a2 iteration 1 A1)" {
     mkdir -p docs real
     printf 'r\n' > docs/rules.md && printf 'x @docs/y.md\n' > real/x.md
     printf 'see @docs/lt.md and @docs-link/x.md\n' > CLAUDE.md
@@ -196,7 +186,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     # Symlink text holding a NUL: $(...) would drop it and follow another name.
     l="$(printf 'docs/rules.md\0zzz' | git hash-object -w --stdin)"
     t="$(printf '120000 blob %s\tAGENTS.md\n100644 blob %s\tdocs-rules.md\n' "$l" "$(git rev-parse main:docs/rules.md)" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m nul-link)"
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m nul-link)"; git rm -qf CLAUDE.md  # no index-only start masks the NUL count
     imps main docs/rules.md; want walk failed; want docs/rules.md imported
 }
 
@@ -213,7 +203,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     # A tr that fails (docs/CLAUDE.md is a tracked start again): the lower-cased list comes back short.
     rm .git/index && commit_all again
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
-    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; rm "$BATS_TEST_TMPDIR/bin/tr" && printf '#!/bin/sh\ncase " $* " in *" --cached "*) exit 1;; esac\nexec %s "$@"\n' "$(command -v git)" > "$BATS_TEST_TMPDIR/bin/git" && chmod +x "$BATS_TEST_TMPDIR/bin/git"; PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; rm "$BATS_TEST_TMPDIR/bin/git"  # and a git whose ls-files --cached fails
     # An import list past 64 KiB with no room for a temp file is read whole (U2a3b I2-C4).
     { for i in $(seq 320); do printf '@docs/%0200d.md\n' "$i"; done; printf '@docs/last.md\n'; } > AGENTS.md && commit_all big
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
@@ -230,14 +220,13 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     mkdir -p docs
     printf 'Rules: @docs/up.md\n' > CLAUDE.MD
     commit_all upper
-    imps main docs/up.md docs/other.md
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    imps main docs/up.md docs/other.md; [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want docs/up.md imported; want docs/other.md -
     printf 'Mine: @mine.md\n' > docs/AGENTS.MD
     imps main docs/other.md; want walk failed; want docs/other.md imported
 }
 
-@test "main walk fails on a dangling checkout link at a target, a directory under a checkout link, empty link text below the top level, and a path under a gitlink (U2a3)" {
+@test "main walk fails on a dangling checkout link at a target, a directory under a checkout link, empty link text below the top level, and a path under a gitlink; a gitlink at a start name is skipped (U2a3)" {
     mkdir -p docs sub real/sub.md
     printf 'see @docs/gone.md and @lnk/sub.md\n' > CLAUDE.md
     commit_all base
@@ -250,11 +239,11 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     # Empty symlink text in sub/ would name sub/ itself, a plain directory here.
     e="$(printf '' | git hash-object -w --stdin)"
     s="$(printf '120000 blob %s\tAGENTS.md\n' "$e" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$(printf '040000 tree %s\tsub\n' "$s" | git mktree)" -p main -m empty-link)"
+    git update-ref refs/heads/main "$(git commit-tree "$(printf '040000 tree %s\tsub\n' "$s" | git mktree)" -p main -m empty-link)"; git rm -qf CLAUDE.md  # no index-only start masks the empty-text check
     imps main docs/x.md; want walk failed; want docs/x.md imported
     # An import into a path main stores as a gitlink (sub/ is an empty directory here).
     t="$(printf '100644 blob %s\tCLAUDE.md\n160000 commit %s\tsub\n' "$(printf 'see @sub/x.md\n' | git hash-object -w --stdin)" "$(git rev-parse main)" | git mktree)"
-    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"; imps main docs/x.md; want walk failed; want docs/x.md imported
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"; imps main docs/x.md; want walk failed; want docs/x.md imported; t="$(printf '160000 commit %s\tCLAUDE.md\n100644 blob %s\tAGENTS.md\n' "$(git rev-parse main)" "$(printf 'see @docs/x.md\n' | git hash-object -w --stdin)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink-start)"; imps main docs/x.md; want walk ok; want docs/x.md imported
 }
 
 @test "main walk ends on an import cycle and a self-import (U2a3)" {
@@ -312,4 +301,11 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
         git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup)"; resolve_main; w x.sh; w x.sh
         git update-ref refs/heads/main "$g"; resolve_main; w x.sh; MAIN_BY_NAME=""; w y.sh' _ "$LIB"
     [ "$status" -eq 0 ] && [ "$output" = "$(printf '%s\n' - docs/b.md x.sh x.sh - y.sh)" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "main walk fails on a name main stores as both a directory and a link (U2a3 L2 final fact-check r3 13b)" {
+    commit_all base && x() { printf '%s' "$1" | sed 's/../\\x&/g'; }; c="$(printf 'see @l/x.md\n' | git hash-object -w --stdin)"; k="$(printf docs | git hash-object -w --stdin)"
+    lt="$(printf '100644 blob %s\tx.md\n' "$(printf 'plain\n' | git hash-object -w --stdin)" | git mktree)"; dt="$(printf '100644 blob %s\tx.md\n' "$(printf '@secret.md\n' | git hash-object -w --stdin)" | git mktree)"
+    t="$(printf "100644 CLAUDE.md\0$(x "$c")40000 docs\0$(x "$dt")40000 l\0$(x "$lt")120000 l\0$(x "$k")" | git hash-object -t tree -w --literally --stdin)"
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
