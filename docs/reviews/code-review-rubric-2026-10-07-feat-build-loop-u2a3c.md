@@ -1,8 +1,8 @@
-Commit: 3a35c8b9
+Commit: 380ed01b
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2a3c` (U2a3c, main_imports' checkout phase), rebuilt on main 2026-10-07 above U2a3b (old tip `backup/u2a3c-pre-rebase-2b1399ab`; iteration 1's rubric is `code-review-rubric-2026-10-06-feat-build-loop-u2a3c.md`).
-**Status: ⚠️ FINAL PASS NOT CLEAN — findings fixed in 4b7f2357, unreviewed by a further pass; landing is the user's call (Q entry)** (no Must Fix open; single-sample review; absence of findings is not an attestation)
+**Status: ⚠️ CONFIRMING PASS (Q-128 [1]) NOT CLEAN — no red, no code defect; doc, test and one Low pre-existing perf finding; landing is the user's call (Q-129)** (single-sample review; absence of findings is not an attestation)
 
 ## Iteration 2 of 3 (Commit 21b35ebf, `--loop-pass`, k=1)
 
@@ -132,3 +132,61 @@ Q entry for the user: land 4b7f2357 as is (its fixes reviewed only by tests, Sta
 tokens (final pass): fc 3 × ~230k, merge 212k, critics 158k + 152k + 121k + 114k + 153k, Stage 2.5 ~150k ≈ 1.8M
 
 tokens: fc 215k, critics 137k + 135k + 191k + 164k + 140k ≈ 1.0M total
+
+## Confirming pass after Q-128 [1] (Commit 380ed01b, code at 4b7f2357; full branch, k=3, full panel, Stage 2.5)
+
+Scope: `main...HEAD` at 380ed01b. Delivery mode: self-read. No short-circuit (terminal pass).
+
+Reports (Commit 380ed01b):
+- `code-fact-check-report-build-loop-u2a3c.md` (merged k=3; replicates `-r1/-r2/-r3.md`): 58 clusters, 48 Verified, 8 Mostly accurate, 0 Stale, 1 Incorrect (history prose), 1 Unverifiable. Agreement 87.9% (51/58).
+- `security-reviewer-review-2026-10-07-build-loop-u2a3c-confirm.md`: 1 Informational. No fail-open; four bypass candidates executed.
+- `performance-reviewer-review-2026-10-07-build-loop-u2a3c-confirm.md`: 1 Low (P1).
+- `api-consistency-reviewer-review-2026-10-07-build-loop-u2a3c-confirm.md`: 1 Minor, 2 Informational. Nothing Breaking.
+- `architecture-review-review-2026-10-07-build-loop-u2a3c-confirm.md`: 1 Minor, 1 Informational. Nothing Structural or Coupling; the previous pass's F1 is closed.
+- `test-strategy-review-2026-10-07-build-loop-u2a3c-confirm.md`: G1-G4 with a verified patch (Appendix A, 68/68); 19 mutants; survivors only the four equivalent ones once patched.
+- `code-fact-check-submitted-claims-build-loop-u2a3c.md` (Stage 2.5): 9 claims, 8 Verified, 1 Mostly accurate (P3's "within 1.6 s of main" holds for 2-deep tokens only; 8-deep over a 50k tree: 8.9 s vs 5.4 s).
+
+4b7f2357 itself: every replicate and critic found its two code changes correct (the guard matches 21b35ebf on ~45,000 random-order calls except the intended 1; `${x[0]@a}` same answers in O(1)); every new test fails on its target.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| F1 | The rubric's D2 author note gives a wrong reason for the narrow guard: a guard refusing every PATH ENT holds would not break T1 (T1 never passes `f.md` as PATH). The narrow guard stands on architecture's grounds (same check every ancestor gets; memo order-independent) | Incorrect (history prose, doc → 🟡 under T) | fact-check 3b (r1, r2, r3) | Open: a correction line here suffices — **Correction:** D2's reason is wrong as above; the guard's reason is architecture confirm F1's. |
+| F2 | The U2b bullet allows a second caller "a PATH main lacks or stores as a blob"; at a blob PATH main_checkout answers by the checkout's shape (a checkout directory there is memoized d and admits files below it), safe only under the clean-worktree duty, which the bullet does not tie to it. Unreachable from main_imports | Minor (doc) | api-consistency 1; architecture F1; security I1; fact-check escalation (r1, r3) | Open: narrow the sentence to "a PATH main lacks", or tie it to the clean-worktree duty |
+| F3 | D1 (`${x@a}` cost) is guarded only by a 20 s timing test; a linear ENT-side check (`${mc_e@a}`) passes every test; the blob-PATH answer and the guard's answer for an absent link PATH are unpinned | test-strategy Medium | test-strategy G1-G4; fact-check escalations | Open: Appendix A's patch (tests 67, 68, rows in 65), verified 68/68 under 23- and 79-character TMPDIRs |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G1 | main_imports pops its queue by copying the array (`queue=("${queue[@]:1}")`), quadratic in admitted checkout files: 5,000 imported untracked files 85.8 s vs 42.7 s with an index pop. Present on main; this branch makes checkout files reach it | performance P1 (Low) | Open: fix (a three-line index pop) or widen the per-start override row |
+| G2 | Doc wording: F11's duty list lacks the clean-worktree duty and LC_ALL=C (inside the U2a4 deferral); A5 and the lib block comment's "or nothing" omit a path under a non-plain checkout ancestor; lib :36-38 "first and then"; :504-507 relative names only and "about 5 s" (1-4 s here); :524-529 awk reads a numeric prefix (1e3, -5, 0x10, inf, nan); D4's "test 77" is build-loop-check test 4 | fact-check 5, 14a, 15, 18, 19a, 20a, 20b, 21; api-consistency 2, 3; architecture F2 | Open (wording) |
+| G3 | Test 66's 20 s timeout: about 2-3x headroom under 3x CPU load | test-strategy F2 | Open: raise to 60 s once test 67 lands (Appendix B) |
+| G4 | Health check at 4b7f2357 not re-run by a replicate | fact-check 1b | Run by the orchestrator: passed at 4b7f2357 |
+
+### ✅ Confirmed Good (Stage 2.5, executed)
+
+| Claim | Evidence |
+|---|---|
+| The PATH guard only adds fail-closed outcomes; main's link or gitlink at PATH answers 1 before any memo write | claim 59: 15,000 calls, every difference from 3a35c8b9 is HEAD answering 1 |
+| `${x[0]@a}` gives `${x@a}`'s type answer at constant cost | claims 60, 63 |
+| An indexed ENT or MEMO with a `$(...)` subscript payload returns 1 without running it | claim 61, with a control |
+| A dirty checkout with a directory at a blob path over-reads (walk ok, names present) | claim 62 |
+| The checkout phase is linear in absent tokens; the budgets cap the cheapest shape | claims 64, 66, 67 |
+
+### ↩️ Considered Overrides
+
+Rows 439-460. The per-start cost row's "linear" premise is broken by G1 above (re-filed with a changed premise). The caller-contract-in-two-places row covers G2's F11 item. No Won't-Fix row was re-flagged.
+
+### 🧩 Composition check
+
+- U2b bullet blob-PATH clause (plan :279) and main_checkout :743, :756-761: api-consistency 1, architecture F1, security I1, fact-check escalation. Composed → F2.
+- main_checkout type check (:741) and test 66: test-strategy G1/G2, fact-check escalation. Composed → F3.
+- Queue pop (:841): performance P1 alone. G1.
+
+tokens (confirming pass): fc 3 × ~245k, merge 199k, critics 125k + 132k + 119k + 117k + 141k, Stage 2.5 ~120k ≈ 1.6M

@@ -1,184 +1,146 @@
-Commit: 4b7f2357
+Commit: 380ed01b
 
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u2a3c (feat/build-loop-u2a3c)
-**Scope:** Stage 2.5 submitted claims only (10 critic endorsements submitted at 3a35c8b9, verdicted against HEAD 4b7f2357); no harvested claims. Numbering continues the canonical merged report (ends at 64).
+**Scope:** Stage 2.5 submitted claims only (9 critic endorsements from the confirming pass at HEAD 380ed01b; the code is 4b7f2357's); no harvested claims. Numbering continues the canonical merged report (ends at 58).
 **Checked:** 2026-10-07
-**Total claims checked:** 11 (10 submitted; claim 67 split into 67a/67b)
-**Summary:** 10 verified, 0 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable
+**Total claims checked:** 9
+**Summary:** 8 verified, 1 mostly accurate, 0 stale, 0 incorrect, 0 unverifiable
 
-Execution provenance for every executed claim: scripts and captured output are in the scratch dir `/tmp/u2a3c-i2-sub-pu2e/` (logs under `logs/`; the brief forbids writing anything else in the worktree, so logs were not copied to `docs/reviews/execution-logs/`). Each probe ran against a copy of the worktree at 4b7f2357 (`/tmp/u2a3c-i2-sub-pu2e/repo`), against `git show 21b35ebf:scripts/lib/dev-cycle-read.sh` (`old-lib.sh`; its `main_checkout` extracted and renamed `main_checkout_old` in `old-mc.sh`), and against main's lib at e5d0f838 (`main-lib.sh`). Host: 16 cores, WSL2, 2026-10-07 21:03-21:11 UTC. Timing claims are verdicted on shape (who is faster, by roughly what factor), not exact seconds.
-
-Supporting suite run: `TMPDIR=<mktemp> LC_ALL=C timeout 900 bats test/scripts/build-loop-check.bats`, cwd `/tmp/u2a3c-i2-sub-pu2e/repo`, exit 0, 66/66 ok, log `/tmp/u2a3c-i2-sub-pu2e/logs/bats.log`.
+Execution provenance for every executed claim: scripts and captured output are in the scratch dir `/tmp/u2a3c-i4-sub-NsDf/` (logs under `logs/`; the brief forbids writing anything else in the worktree, so logs were not copied to `docs/reviews/execution-logs/`). Libraries probed: `head-lib.sh` = `git show 380ed01b:scripts/lib/dev-cycle-read.sh` (identical to 4b7f2357's lib), `3a35-lib.sh` = 3a35c8b9's, `main-lib.sh` = main at fd14a967; `old-mc.sh` is 3a35c8b9's `main_checkout` renamed `main_checkout_old`. Every fixture repo is built under the scratch dir with `mktemp -d` and removed after the run. Host: 16 cores, WSL2, bash 5.2.15, 2026-10-07 22:52-23:03 UTC, with other review agents running at the same time; timing claims are verdicted on shape (who is faster, by roughly what factor, linear or not), not exact seconds. Each command ran with cwd `/tmp/u2a3c-i4-sub-NsDf`.
 
 ---
 
 ## Submitted Claims
 
-## Claim 65: "For every call whose PATH has no entry in ENT, HEAD's main_checkout returns the same code as 21b35ebf's, under any call order on one MEMO."
-
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:735-762`
-**Type:** Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers random call sequences (each version on its own MEMO, shared random ENT of 8 entries with modes 100644/100755/120000/160000) over checkouts holding absent nodes, plain files, unreadable files, symlinks, FIFOs, searchable and non-searchable directories, PATH depth 1-4 over a 6-letter alphabet; does not establish depths over 4, case-variant names, ENTs that `main_imports`' own tree parse would reject, or a checkout that changes between calls.
-
-The 4b7f2357 guard is a no-op when ENT lacks PATH, since `${mc_e[$3]:-}` is then empty:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:743
-  [[ ! "${mc_e[$3]:-}" =~ ^1[26]0000$ ]] || return 1
-```
-
-The bottom-up walk stops at the nearest memoized ancestor, then checks each unmemoized ancestor's main mode before its shape (`:746-754`), so a MEMO value of 2 never hides a deeper ancestor's link mode:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:746-750
-  while [[ "$c" == */* ]]; do c="${c%/*}"; if [[ -n "${mc_m[$c]+set}" ]]; then st="${mc_m[$c]}"; break; fi; anc+=("$c"); done
-  for ((i = ${#anc[@]} - 1; i >= 0; i--)); do
-    c="${anc[i]}"
-    [[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1
-    if [[ "$st" == d ]]; then
-(excerpt ends :750; enclosing main_checkout continues to :762 — read)
-```
-
-Differential run: `for s in 1..120: LC_ALL=C timeout 60 bash diff.sh <HEAD lib> $s 60 s1`, cwd per-seed `mktemp -d`, exit 0, 2026-10-07T21:03Z. 6,602 calls, 0 differences; return codes exercised 0 (222), 1 (3,229), 2 (3,151).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:735-762`, 21b35ebf `scripts/lib/dev-cycle-read.sh:721-740`, `/tmp/u2a3c-i2-sub-pu2e/diff.sh`, `/tmp/u2a3c-i2-sub-pu2e/logs/s1.log`
-
----
-
-## Claim 66: "main_imports passes main_checkout a path only when `ent` holds no entry for it, at both call sites (start seeds; imports)."
-
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:808-883`
-**Type:** Architectural / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the only two calls of `main_checkout` in scripts/ (the bats suites call it directly as unit tests); does not establish anything about callers outside `scripts/` or future callers (the comment at `:727` states the precondition, and 4b7f2357's PATH guard is what protects them).
-
-Start seeds: only `t:` candidates reach `main_checkout`, and a `t:` candidate is added only when `ent` lacks it:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:826
-  for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
-# scripts/lib/dev-cycle-read.sh:832
-      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
-```
-
-`m:` candidates are added only from the `ls-tree` records that just set `ent[$f]` (`:819-821`). Imports:
-
-```bash
-# scripts/lib/dev-cycle-read.sh:877
-      c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p" || c=$?  # main lacks p: admitted before it is marked seen
-```
-
-`rg -n 'main_checkout\b' scripts test` finds only these two call sites in `scripts/` (paraphrased — no quote available because the claim covers absence of other callers, a grep result).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:816-833`, `scripts/lib/dev-cycle-read.sh:872-882`
-
----
-
-## Claim 67a: "With the guard now in main_checkout, its return code matches 21b35ebf's for every call, including a PATH ENT holds as a link or gitlink"
+## Claim 59: "4b7f2357's PATH guard only adds `return 1` (fail-closed) outcomes; for a PATH main stores as 120000 or 160000 it answers 1 before any memo write, so a checkout directory there is never memoized as d."
 
 **Submitted by:** security-reviewer
 **Location:** `scripts/lib/dev-cycle-read.sh:743`
 **Type:** Invariant
-**Verdict:** Incorrect
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers calls whose PATH ENT holds as 120000 or 160000; does not establish that the change is a defect (it is the documented intent of 4b7f2357), and does not reach main_imports, which never makes such a call (claim 66).
+**Scope:** Covers random call sequences on one MEMO per version over a shared random ENT (modes 100644/100755/120000/160000, 8 entries) and checkouts holding absent nodes, plain and unreadable files, symlinks, FIFOs, searchable and non-searchable directories, PATH depth 1-4; does not establish depths over 4, a checkout that changes between calls, or any caller other than `main_imports` (which never passes a PATH main stores, so the guard is unreachable from the gate today).
 
-The guard changes the return code for exactly this case. 21b35ebf never looked up PATH's own mode: it checked only ancestors in its loop, then answered by the checkout's shape (`[[ -e "$c" || -L "$c" ]] || return 2`; `rawfile` → `[[ -r ]]`; `plaindir "$c" && return 2`; 21b35ebf `:736-739`). HEAD answers 1 first:
+The guard is the second statement of the function, after the type check and before the bottom-up loop and every memo write:
 
 ```bash
-# scripts/lib/dev-cycle-read.sh:742-743
+# scripts/lib/dev-cycle-read.sh:741-746
+  set +u; [[ "${mc_e[0]@a}" == *A* && "${mc_m[0]@a}" == *A* ]] || return 1
   # Main's link or gitlink at PATH refuses before a checkout directory there is memoized as d (U2a3c final fact-check 34).
   [[ ! "${mc_e[$3]:-}" =~ ^1[26]0000$ ]] || return 1
+  # Bottom up to the nearest decided ancestor, then top down from it (U2a3c
+  # i2 performance F1: top down alone rescanned every absent ancestor).
+  while [[ "$c" == */* ]]; do c="${c%/*}"; if [[ -n "${mc_m[$c]+set}" ]]; then st="${mc_m[$c]}"; break; fi; anc+=("$c"); done
 ```
 
-Minimal run (`LC_ALL=C bash -c '...'`, cwd a scratch checkout, exit 0, 2026-10-07T21:11Z): `dl ent=120000 21b35ebf=2 HEAD=1`; `fl ent=120000 21b35ebf=0 HEAD=1`; `gd ent=160000 21b35ebf=2 HEAD=1`; `gf ent=160000 21b35ebf=0 HEAD=1`. The random differential (mode s3, 120 seeds, 7,200 calls) found 185 differences, every one at a PATH ENT holds as 120000 or 160000 (old 0 or 2, new 1). The divergence is intended: the comment at `:723` says "main's link or gitlink at PATH answers 1" and 4b7f2357's message says so. The precise claim: HEAD matches 21b35ebf everywhere except a PATH main stores as a link or gitlink, where HEAD answers 1 and 21b35ebf answered by the checkout's shape.
+The only memo writes come later, `mc_m[$c]="$st"` at `scripts/lib/dev-cycle-read.sh:754` and `[[ ! -x "$c" ]] || mc_m[$c]=d` at `scripts/lib/dev-cycle-read.sh:760`, so a 1 from line 743 leaves MEMO untouched. The guard's only effect is an early `return 1`; its downstream effect (no memo entry where 3a35c8b9 might have written d) can only make a later call re-run the per-ancestor mode check `[[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1` (`scripts/lib/dev-cycle-read.sh:749`), which again can only add 1s. The differential probe compared HEAD's and 3a35c8b9's `main_checkout` call by call: every differing return code was HEAD's 1, and every call at a PATH ENT stores as 120000/160000 returned 1 with MEMO's size unchanged (result line in `logs/s1.log`).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:719-743`, 21b35ebf `scripts/lib/dev-cycle-read.sh:721-740`, `/tmp/u2a3c-i2-sub-pu2e/logs/s3-min.log`, `/tmp/u2a3c-i2-sub-pu2e/logs/s3.log`
+Command: `timeout 110 bash s1.sh head-lib.sh old-mc.sh /tmp/u2a3c-i4-sub-NsDf 1000`, exit 0, 2026-10-07T23:00:15Z to 23:01:16Z (`logs/s1.ts`). Result: `sequences=1000 calls=15000 link_or_gitlink_PATH_calls=629 differing=853 differing_not_head1=0`, with no `LINKPATH-BAD` line (each of the 629 calls at main's link or gitlink PATH returned 1 and left MEMO's size unchanged). (Two earlier runs of the probe hung on its own fixture writing into a FIFO; they were stopped by PID and the fixture fixed. They exercised no lib code past the hang.)
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:741-761`, `/tmp/u2a3c-i4-sub-NsDf/s1.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/s1.log`, `/tmp/u2a3c-i4-sub-NsDf/logs/s1.ts`
 
 ---
 
-## Claim 67b: "a PATH ENT holds as a blob (100644/100755) still answers by the checkout's shape."
+## Claim 60: "`${mc_e[0]@a}` / `${mc_m[0]@a}` answer `A` for an empty, an unassigned-declared and a 200,000-key associative array, `a` for an indexed one and empty for a scalar or unset name, and cost does not grow with the array, on bash 5.2.15."
 
 **Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:743-761`
+**Location:** `scripts/lib/dev-cycle-read.sh:741`
+**Type:** Behavioral / Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the expansion through a nameref (as `main_checkout` uses it) under `set +u` for empty, declared-unassigned, 200,000-key, key-"0"-present associative arrays, non-empty and empty indexed arrays, a scalar and an unset name, on bash 5.2.15; does not establish other bash versions or a nameref whose target is itself a nameref.
+
+The check reads element 0's attributes, `set +u; [[ "${mc_e[0]@a}" == *A* && "${mc_m[0]@a}" == *A* ]] || return 1` (`scripts/lib/dev-cycle-read.sh:741`). The probe (`timeout 300 bash s2.sh`, exit 0, 2026-10-07T22:52:36Z, `logs/s2.log`) printed `A` for `emptyA`, `declA` (declared, never assigned), `bigA` (200,000 keys) and `withzero` (key 0 present), `a` for `idx` and the empty `idxE`, and empty for `sc` and `unsetvar`, matching `${x@a}` in every case. Key 0's presence does not matter. Per-call cost of `${r[0]@a}` was 1.98 / 2.15 / 2.22 / 2.15 µs at 0 / 1,000 / 100,000 / 200,000 keys, against 0.09 / 14.10 / 29.43 ms for `${r@a}` at 1,000 / 100,000 / 200,000 (`logs/s2.log`).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:741`, `/tmp/u2a3c-i4-sub-NsDf/s2.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/s2.log`
+
+---
+
+## Claim 61: "The ENT/MEMO type check runs before any `mc_e[...]`/`mc_m[...]` subscript, so an indexed array with an arithmetic-subscript payload in PATH returns 1 without executing it."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:741-749`
+**Type:** Invariant / Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers indexed ENT, indexed MEMO and both indexed, with PATH `x[$(touch MARKER)]`; does not establish safety for an associative ENT/MEMO (where subscripts are not arithmetic, so the question does not arise) or for payloads reaching other functions.
+
+Line 741 subscripts only the literal 0 (`"${mc_e[0]@a}"`), and the first `$3`-dependent subscript is line 743's `"${mc_e[$3]:-}"`, after the `|| return 1` (quoted under claim 59). The probe (`timeout 60 bash s3.sh head-lib.sh /tmp/u2a3c-i4-sub-NsDf`, exit 0, 2026-10-07T22:52:46Z, `logs/s3.log`) printed `rc=1 marker=absent` for all three combinations (`ient amemo`, `aent imemo`, `ient imemo`), while the control `${ient[$pay]}` printed `marker=CREATED`, showing the payload does execute when an indexed array is subscripted with it.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:741-743`, `/tmp/u2a3c-i4-sub-NsDf/s3.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/s3.log`
+
+---
+
+## Claim 62: "In a checkout where a path main stores as a blob is replaced by a directory, `main_imports` admits and walks the checkout file below it and its imports (walk ok, names present): the dirty shape over-reads rather than answering not imported."
+
+**Submitted by:** security-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:808-883`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers blob modes at PATH, which match 21b35ebf in every sampled call; does not establish depth over 4 or case variants (as claim 65).
+**Scope:** Covers main storing `x` as a 100644 blob with the checkout holding directory `x/` with both an untracked start (`x/CLAUDE.md`) and an import of main's CLAUDE.md (`x/w.md`) and their transitive imports; does not establish the case where main stores the path as 100755 or any ancestor deeper than one level, nor whether over-reading is the right policy for U2b.
 
-The guard's regex `^1[26]0000$` (`:743`) does not match 100644/100755, so the code falls through to the shape tests at `:756-761` (`rawfile` → `[[ -r "$c" ]]`; `plaindir "$c" || return 1`; `return 2`). Minimal run: `bf ent=100644 21b35ebf=0 HEAD=0`. In the s3 differential none of the 185 differences had a blob mode at PATH.
+`main_checkout` checks ancestors' main modes only for links and gitlinks, `[[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1` (`scripts/lib/dev-cycle-read.sh:749`), then decides by the checkout's shape, so a blob-mode ancestor that is a plain searchable directory in the checkout passes `plaindir` and memoizes d (`scripts/lib/dev-cycle-read.sh:750-754`). The fixture (`timeout 60 bash s4.sh head-lib.sh /tmp/u2a3c-i4-sub-NsDf`, exit 0, 2026-10-07T22:55:11Z, `logs/s4.log`) committed `x` as a blob and CLAUDE.md with `see @x/w.md`, then replaced `x` with a directory holding `x/CLAUDE.md` (`see @y.md`), `x/y.md` (`see @z.md`), `x/z.md`, `x/w.md` (`see @v.md`) and `x/v.md`. The walk printed `walk ok` and `IMPORTED_MAIN` held `x/w.md`, `x/v.md`, `x/y.md` and `x/z.md`, so both the checkout start below the blob path and main's import there were admitted and walked transitively.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:743`, `scripts/lib/dev-cycle-read.sh:755-761`, `/tmp/u2a3c-i2-sub-pu2e/logs/s3-min.log`, `/tmp/u2a3c-i2-sub-pu2e/logs/s3.log`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:749-760`, `scripts/lib/dev-cycle-read.sh:832`, `scripts/lib/dev-cycle-read.sh:877`, `/tmp/u2a3c-i4-sub-NsDf/s4.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/s4.log`
 
 ---
 
-## Claim 68: "The symlink arm compares the link blob's size against 4096 before either whole read of the blob, and a failed size read fails the walk."
+## Claim 63: "`${mc_e[0]@a}` costs about 7 µs per call whatever the array size (0 to 100,000 entries), where `${m@a}` costs 20.6 ms at 100,000; same type answer for empty, keyed, 50,000-entry, indexed, scalar and unset variables."
 
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:848-854`
-**Type:** Behavioral / Error-handling
+**Submitted by:** performance-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:741`
+**Type:** Performance / Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers a size over 4096 and a nonzero `git cat-file -s` exit; does not establish clean failure when `cat-file -s` exits 0 but prints a non-number (a git that does so is hypothetical: under the caller's `set -u` the `-le` test then aborts the caller's shell with "unbound variable", rather than returning 1 with IMPORTED_MAIN=error).
+**Scope:** Covers the shape (constant per-call cost of the element form, linear cost of the whole-array form, matching type answers) on this host; does not establish the exact microsecond figures, which depend on host and on what the measured loop includes.
 
-```bash
-# scripts/lib/dev-cycle-read.sh:849-854
-        # Link text past PATH_MAX (4096) names nothing; it fails before the two whole reads below.
-        i="$(git cat-file -s "$MAIN_SHA:$f")" && [[ "$i" -le 4096 ]] || { IMPORTED_MAIN=error; return 1; }
-        # $(...) drops NULs, so they are counted first; the x keeps trailing
-        # newlines, which $(...) would also drop.
-        if ! i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)" || [[ "$i" -ne 0 ]] \
-           || ! out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"; then IMPORTED_MAIN=error; return 1; fi
-(excerpt ends :854; enclosing 120000 arm continues to :866 — read)
-```
+Same probe as claim 60 (`logs/s2.log`): the element form cost 1.98-2.22 µs per call from 0 to 200,000 keys (flat), and the whole-array form 14.10 ms at 100,000 and 29.43 ms at 200,000 (linear), with the same type answers for every variable kind tested. The absolute figures differ from the claim's (2 µs vs 7 µs, 14.1 ms vs 20.6 ms); the shape (O(1) against O(n), a factor of thousands at 100,000) holds.
 
-Probe `bash probe-s.sh <HEAD lib> <scratch>` (cwd scratch repos, exit 0, 2026-10-07T21:03Z), caller `set -eu` without pipefail: control link walk `rc=0`; git shim failing `cat-file -s` → `rc=1 IMPORTED_MAIN=error`, with 0 `cat-file blob` reads of `CLAUDE.md` logged. Garbage-size shim → `line 850: notanumber: unbound variable` (scope residue). The over-4096 case is pinned by bats test 63 ("link text main stores longer than 4096 bytes", ok in `bats.log`), whose shim asserts the blob is never read.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:848-866`, `test/scripts/build-loop-check.bats:944-956`, `/tmp/u2a3c-i2-sub-pu2e/probe-s.sh`, `/tmp/u2a3c-i2-sub-pu2e/logs/probe-s.log`, `/tmp/u2a3c-i2-sub-pu2e/logs/bats.log`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:741`, `/tmp/u2a3c-i4-sub-NsDf/logs/s2.log`
 
 ---
 
-## Claim 69: "A read failure in either capped_read arm (unopenable checkout file, head failure, git cat-file failure, drain failure) sets IMPORTED_MAIN to error and returns 1, given main_imports' own `set -o pipefail`."
+## Claim 64: "At HEAD the checkout phase is linear in distinct absent tokens: 1.67, 3.42, 6.72 and 13.87 s for 2,000, 4,000, 8,000 and 16,000 8-deep tokens."
 
-**Submitted by:** security-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:710`, `scripts/lib/dev-cycle-read.sh:844-847`
-**Type:** Error-handling
+**Submitted by:** performance-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:735-762`, `scripts/lib/dev-cycle-read.sh:873-882`
+**Type:** Performance
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers main_imports' checkout and blob arms with a caller that has no pipefail; does not establish imported_names' arm (`:782-783`, which sets IMPORTED, not IMPORTED_MAIN) or failures of `import_targets` itself.
+**Scope:** Covers one main walk over N distinct absent 8-deep tokens (`@qI/b/c/d/e/f/g/x.md`) in a one-file main tree; does not establish other token shapes, present directories, or the cost under a large main tree (claim 65).
 
-```bash
-# scripts/lib/dev-cycle-read.sh:710
-capped_read() { head -c 4194305 || return 1; [[ "${1:-}" != drain ]] || cat > /dev/null; }
-# scripts/lib/dev-cycle-read.sh:809 (excerpt; main_imports continues to :883 — read)
-  local - rec f d p i c lk out used=0 work=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
-# scripts/lib/dev-cycle-read.sh:844-847
-      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=... import_targets "$d")" \
-          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read drain | IMPORT_LEFT=... import_targets "$d")" \
-          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
-```
+`for n in 2000 4000 8000 16000; do timeout 200 bash perf.sh absent8 head-lib.sh /tmp/u2a3c-i4-sub-NsDf $n; done` (2026-10-07T22:55:27Z, every walk `ok`, `logs/p2.log`) took 1.46, 2.90, 5.88 and 11.87 s: each doubling of N doubles the time (ratios 1.99, 2.03, 2.02), so linear, about 10% faster than the claim's figures.
 
-(`IMPORT_LEFT=...` elides the two budget assignments; paraphrased — no quote available because the full lines exceed a readable width; they are unchanged otherwise.) Probe, caller `set -eu` without pipefail, each with a passing control: checkout file made mode 000 after admission (wrapped `main_checkout`) → `rc=1 IMPORTED_MAIN=error`; `head` shim exiting 1 → `rc=1 IMPORTED_MAIN=error` in both arms; drain shim (`cat` with no args writing to /dev/null exits 1; logged that it fired) → `rc=1 IMPORTED_MAIN=error`; blob object deleted (`git cat-file` fails) → `rc=1 IMPORTED_MAIN=error`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:702-710`, `scripts/lib/dev-cycle-read.sh:808-883`, `/tmp/u2a3c-i2-sub-pu2e/probe-s.sh`, `/tmp/u2a3c-i2-sub-pu2e/logs/probe-s.log`, `/tmp/u2a3c-i2-sub-pu2e/logs/probe-s2.log`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:746-755`, `/tmp/u2a3c-i4-sub-NsDf/perf.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/p2.log`
 
 ---
 
-## Claim 70: "A deep token whose ancestors the checkout lacks costs time linear in printed bytes: 0.66 s at D=1000 against 10.83 s at 21b35ebf, and 2.49 s at D=1990."
+## Claim 65: "With a 50,000-entry main tree, HEAD's walk costs 3.52 s with 1,000 absent tokens and 5.49 s with 8,000, within 1.6 s of main's lib (3.38 and 3.94 s)."
+
+**Submitted by:** performance-reviewer
+**Location:** `scripts/lib/dev-cycle-read.sh:808-883`
+**Type:** Performance
+**Verdict:** Mostly accurate
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers 2-deep absent tokens (`@tI/x.md`, the submitting critic's fixture) and 8-deep absent tokens (claim 64's shape) over a 50,000-blob main tree; does not establish other depths or token counts, and the gap's size depends on token depth, which the claim does not state.
+
+With the critic's shape (index-only 50,000-entry tree, 2-deep tokens; `logs/p3b.log`, 2026-10-07T22:56:57Z, tree size printed as 50001): HEAD 3.30 / 5.11 s against main 3.13 / 3.73 s at 1,000 / 8,000 tokens, a gap of 0.17 / 1.38 s, which reproduces the claim. With the 8-deep tokens of claim 64 over a 50,000-file tree (`logs/p3.log`, 2026-10-07T22:55:53Z): HEAD 3.76 / 8.86 s against main 3.28 / 5.35 s, a gap of 3.5 s at 8,000 tokens, outside "within 1.6 s". The checkout phase's cost grows with each token's depth (one MEMO decision per absent ancestor, `scripts/lib/dev-cycle-read.sh:746-755`), so "within 1.6 s" holds for shallow tokens only.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:746-755`, `/tmp/u2a3c-i4-sub-NsDf/perf.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/p3.log`, `/tmp/u2a3c-i4-sub-NsDf/logs/p3b.log`
+
+---
+
+## Claim 66: "A deep absent token at D=1990 walks in 2.34 s, and 20,000 absent siblings walk in 4.59 s at HEAD, both unchanged from 3a35c8b9."
 
 **Submitted by:** performance-reviewer
 **Location:** `scripts/lib/dev-cycle-read.sh:735-762`
@@ -186,105 +148,24 @@ capped_read() { head -c 4194305 || return 1; [[ "${1:-}" != drain ]] || cat > /d
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the shape on this host (one main walk over a committed `CLAUDE.md` naming `@a/…/x.md`, no `a/` in the checkout); "linear in printed bytes" is quadratic in D, since the parser prints every prefix; does not establish other token shapes.
+**Scope:** Covers one 1990-deep absent token and 20,000 absent siblings under one directory the checkout holds, at HEAD and 3a35c8b9; does not establish deep present-directory tokens (a settled deferral) or depths near the parser's limits.
 
-`bash perf.sh deep <lib> <scratch> <D>` (cwd scratch repo, exit 0, 2026-10-07T21:05Z): HEAD 0.61 s at D=1000, 2.34 s at D=1990; 21b35ebf 10.52 s at D=1000, 59.93 s at D=1990. HEAD is about 17x faster at D=1000; HEAD's 1990/1000 ratio is 3.8, against a printed-bytes ratio of (1990/1000)^2 = 3.96, so linear in printed bytes holds. Mechanism: the bottom-up loop at `:746` stops at the first memoized ancestor (quoted under claim 65).
+`for L in head-lib.sh 3a35-lib.sh; do perf.sh deep $L ... 1990; perf.sh sibspres $L ... 20000; done` (2026-10-07T22:57:24Z, all walks `ok`, `logs/p4.log`): deep 2.26 s at HEAD vs 2.47 s at 3a35c8b9; siblings 4.66 s vs 4.13 s. Both are within about 13% of each other and of the claimed figures, so unchanged in shape.
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:746-754`, `/tmp/u2a3c-i2-sub-pu2e/perf.sh`, `/tmp/u2a3c-i2-sub-pu2e/logs/p1.log`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:741-743`, `/tmp/u2a3c-i4-sub-NsDf/perf.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/p4.log`
 
 ---
 
-## Claim 71: "The 4096-byte `git cat-file -s` check fails a 64 MiB link blob in 0.02 s, against 16.34 s at 21b35ebf, before either whole read."
+## Claim 67: "The budgets cap the cheapest-per-byte shape: 200,000 single-component absent tokens walk in 10.58 s, and 300,000 fail in 1.31 s."
 
 **Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:850`
-**Type:** Performance
+**Location:** `scripts/lib/dev-cycle-read.sh:503-512`, `scripts/lib/dev-cycle-read.sh:871`
+**Type:** Performance / Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers a 64 MiB all-`a` link blob at `CLAUDE.md` on main; does not establish other blob contents (they cannot matter at HEAD, which stops at the size).
+**Scope:** Covers tokens `@<hex>` with no extension (the critic's fixture) at 200,000 and 300,000; does not establish which budget (IMPORT_OUT_MAX or IMPORT_WORK_MAX) trips at 300,000 or the exact threshold between the two counts.
 
-`bash perf.sh biglink <lib> <scratch>` (exit 0, 2026-10-07T21:06Z; time is the walk only): HEAD `failed 0.01s`; 21b35ebf `failed 14.42s`. Both fail, HEAD about 1,000x sooner. "Before either whole read" is from claim 68 (`:850` precedes `:853-854`; bats test 63's shim logs no blob read).
+`for n in 200000 300000; do perf.sh hex head-lib.sh ... $n; done` (2026-10-07T22:57:53Z, `logs/p5.log`): 200,000 walked `ok` in 10.07 s and 300,000 `failed` in 1.45 s. An earlier run with a longer spelling (`@sI.md`, shape `single` in `perf.sh`) already failed at 200,000 in 2.18 s and at 300,000 in 2.21 s (its log was overwritten by the hex run; the figures are from the command's terminal output), consistent with the shortest spelling being the one that gets furthest before a budget trips. The budgets are `IMPORT_OUT_MAX=4000000` (`scripts/lib/dev-cycle-read.sh:503`), charged as `(( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED_MAIN=error; return 1; }` (`scripts/lib/dev-cycle-read.sh:871`), and `IMPORT_WORK_MAX=50000000` (`scripts/lib/dev-cycle-read.sh:512`).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:850-854`, `/tmp/u2a3c-i2-sub-pu2e/logs/p2.log`, `/tmp/u2a3c-i2-sub-pu2e/logs/bats.log`
-
----
-
-## Claim 72: "`capped_read drain` keeps a 512 MiB blob's walk at 0.96 s and passing, where main's lib took over 120 s."
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:710`, `scripts/lib/dev-cycle-read.sh:846`
-**Type:** Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a 512 MiB main blob (`see @r.md` then 512 MiB of `a`, no newline) at `CLAUDE.md`, absent from the checkout; does not establish the cost for blobs whose first 4 MiB are dense with @ tokens (the parser, not the drain, then dominates).
-
-`LC_ALL=C TO=150 bash perf.sh bigblob <lib> <scratch>` (exit 0, 2026-10-07T21:07Z): HEAD `ok 0.98s`; main (e5d0f838) killed by `timeout 150` at 150.36 s. Mechanism: `head -c 4194305` passes only 4 MiB + 1 to the parser and the rest goes to `cat > /dev/null` (`:710`, quoted under claim 69).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:710`, `scripts/lib/dev-cycle-read.sh:846-847`, `/tmp/u2a3c-i2-sub-pu2e/logs/p3.log`
-
----
-
-## Claim 73: "main_checkout's memo cuts the realpath forks of a D=1000 present-directory token from 2,001 (21b35ebf) to 1,001, one per prefix."
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:760`
-**Type:** Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers one main walk with `a/`×D present as plain searchable directories and `x.md` absent; the counts include one realpath outside main_checkout (1,001 = 1,000 prefixes + 1), so "one per prefix" is one per prefix plus a constant; does not establish counts for absent or mixed ancestors.
-
-```bash
-# scripts/lib/dev-cycle-read.sh:759-761
-  plaindir "$c" || return 1
-  [[ ! -x "$c" ]] || mc_m[$c]=d  # a prefix candidate's directory, which longer ones pass through
-  return 2
-```
-
-21b35ebf never memoized PATH, so the next prefix re-ran `plaindir` on it as an ancestor (21b35ebf `:732`). `bash p4.sh <lib> <scratch> <D>` with a logging `realpath` shim on PATH (exit 0, 2026-10-07T21:10Z): HEAD D=10 → 11, D=1000 → 1,001; 21b35ebf D=10 → 21, D=1000 → 2,001.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:755-761`, `/tmp/u2a3c-i2-sub-pu2e/p4.sh`, `/tmp/u2a3c-i2-sub-pu2e/logs/p4.log`
-
----
-
-## Claim 74: "`import_work` is linear in the parser's output: 0.17 s for 5.1 MB."
-
-**Submitted by:** performance-reviewer
-**Location:** `scripts/lib/dev-cycle-read.sh:678-683`
-**Type:** Performance
-**Verdict:** Verified
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers an OUT of newline-separated ~20-byte names with a `/N` trailer; does not establish the cost on other output shapes (bash's glob match `*$'\n'"/$iw_w"` and the `%/*` / `##*/` strips are shape-dependent).
-
-```bash
-# scripts/lib/dev-cycle-read.sh:678-683
-import_work() {
-  local -n iw_o="$1" iw_t="$2"; local iw_w="${iw_o##*/}"
-  [[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1
-  iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
-  (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
-}
-```
-
-Timing (`LC_ALL=C bash -c 'source <HEAD lib>; …'`, exit 0, 2026-10-07T21:10Z), each with rc=0 and the trailer stripped: 1.3 MB 0.036 s, 2.6 MB 0.074 s, 5.1 MB 0.168 s, 10.2 MB 0.369 s, which is linear.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:674-683`, `/tmp/u2a3c-i2-sub-pu2e/logs/p5.log`
-
----
-
-## Claims Requiring Attention
-
-### Incorrect
-- **Claim 67a** (`scripts/lib/dev-cycle-read.sh:743`): at a PATH main stores as a link or gitlink, HEAD answers 1 where 21b35ebf answered 0 (plain file) or 2 (directory or absent). The change is the intended effect of 4b7f2357; the endorsement should say "matches everywhere except a link/gitlink at PATH, which now refuses."
-
-### Stale
-- None.
-
-### Mostly Accurate
-- None.
-
-### Unverifiable
-- None.
+**Evidence:** `scripts/lib/dev-cycle-read.sh:503`, `scripts/lib/dev-cycle-read.sh:512`, `scripts/lib/dev-cycle-read.sh:871`, `/tmp/u2a3c-i4-sub-NsDf/perf.sh`, `/tmp/u2a3c-i4-sub-NsDf/logs/p5.log`
