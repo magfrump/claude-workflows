@@ -111,6 +111,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-118](#q-118--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
 | [Q-120](#q-120--u2a3b-iteration-4-gate) | U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close cle... | 2026-10-07 |
 | [Q-121](#q-121--sessions-outside-workspace) | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
+| [Q-123](#q-123--host-checkout-common-dir) | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 <!-- index:end -->
 
 ## Answered
@@ -2066,4 +2067,19 @@ Does any Claude Code session that might read this repo's instruction files run w
 - **Blocks:** nothing now; U2b's plan reads it.
 - **Interim:** U2b assumes `/workspace` and its `git worktree list` paths only.
 - **If the answer differs:** U2b adds those paths and homes to the reader set, or names them as an exception.
+
+### Q-123 · host-checkout-common-dir
+**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessions)? **Answered 2026-10-07: yes, the same repository.** On the host, `~/claude-workflows` is the toplevel, its common dir is `~/claude-workflows/.git`, it sits at main 8a323bd8, and its `worktree list` holds every container worktree (prunable there, since `/workspace` does not exist on the host). U2b's root set takes `/home/magfrump/claude-workflows` as the host spelling of ROOT_REAL. Paste the output of this, run on the host:
+
+```
+git -C ~/claude-workflows rev-parse --show-toplevel --git-common-dir && git -C ~/claude-workflows worktree list
+```
+
+- **Read:** `docs/reviews/architecture-review-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (finding 1) on `feat/build-loop-u2a3b` · plan step 5's U2b bullet
+- **Blocks:** nothing now; U2b's root set reads it.
+- **Interim:** U2b assumes `~/claude-workflows` is `/workspace` under its host path, an alias of ROOT_REAL, since the host worktree `/home/magfrump/cw-egress-verify` registers in `/workspace/.git`.
+- **If the answer differs:** U2b treats it as a separate checkout with its own root.
+
 

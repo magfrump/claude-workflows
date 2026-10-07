@@ -31,7 +31,6 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
-| [Q-123](#q-123--host-checkout-common-dir) | you: terminal | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | agent | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
@@ -316,20 +315,6 @@ U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one 
 - **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
 - **Interim:** nothing runs; U2a3b waits at c4b34dcf.
 - **If the answer differs:** nothing is redone; [2] and [3] only add a review before the merge ask.
-
-### Q-123 · host-checkout-common-dir
-**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** OPEN
-
-Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessions)? Paste the output of this, run on the host:
-
-```
-git -C ~/claude-workflows rev-parse --show-toplevel --git-common-dir && git -C ~/claude-workflows worktree list
-```
-
-- **Read:** `docs/reviews/architecture-review-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (finding 1) on `feat/build-loop-u2a3b` · plan step 5's U2b bullet
-- **Blocks:** nothing now; U2b's root set reads it.
-- **Interim:** U2b assumes `~/claude-workflows` is `/workspace` under its host path, an alias of ROOT_REAL, since the host worktree `/home/magfrump/cw-egress-verify` registers in `/workspace/.git`.
-- **If the answer differs:** U2b treats it as a separate checkout with its own root.
 
 ### Q-119 · u2a-split-at-cap
 **Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN
