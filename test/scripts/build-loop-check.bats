@@ -362,17 +362,19 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file; the work bound fails the walk (U2a3b)" {
+@test "the superset over-reads, pinned: an @ after a letter, a prefix that is a file, a name led by an escaped space; the work bound fails the walk (U2a3b)" {
     # These record the 2026-10-06 over-approximation decision (U2a3b iteration-4
-    # gate): Claude Code 2.1.292 reads neither docs/mail.md nor docs/pre.md. A
-    # parser that is more precise and still a superset may delete these lines on purpose.
+    # gate): Claude Code 2.1.292 reads none of docs/mail.md, docs/pre.md and
+    # docs/lead.md (its path filter rejects a name led by a space; emit's trim
+    # reads it, L2-i2 fact-check Claim 31b). A parser that is more precise and
+    # still a superset may delete these lines on purpose.
     # The code-span and fence cases were already read before the decision.
     mkdir -p docs
     { printf 'Code \x60@docs/span.md\x60 and user@docs/mail.md and @docs/pre.md.bak\n'
-      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'; } > AGENTS.md
-    for f in span mail pre fence; do printf 'x\n' > "docs/$f.md"; done
+      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'; printf 'See @\\ docs/lead.md\n'; } > AGENTS.md
+    for f in span mail pre fence lead; do printf 'x\n' > "docs/$f.md"; done
     commit_all superset
-    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md)
+    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md docs/lead.md)
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
@@ -549,13 +551,13 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     [[ "$output" == rc=* && "$output" != rc=0 && "$output" != rc=124 ]] || { echo "$output $stderr"; return 1; }
 }
 
-@test "both walks read a name as Claude Code decodes it: an invalid UTF-8 byte is U+FFFD; a leading escaped space is trimmed (U2a3b L2 security F1)" {
-    mkdir -p docs && printf 'See @docs/\xff.md and @\\ docs/lead.md\n' > AGENTS.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md
+@test "both walks read a name as Claude Code decodes it: an invalid UTF-8 byte is U+FFFD (U2a3b L2 security F1)" {
+    mkdir -p docs && printf 'See @docs/\xff.md\n' > AGENTS.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md
     commit_all fffd
     for w in tree main; do
-        imps "$w" docs/$'\xef\xbf\xbd'.md docs/c.md docs/lead.md docs/other.md
+        imps "$w" docs/$'\xef\xbf\xbd'.md docs/c.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/$'\xef\xbf\xbd'.md imported; want docs/c.md imported; want docs/lead.md imported; want docs/other.md -
+        want walk ok; want docs/$'\xef\xbf\xbd'.md imported; want docs/c.md imported; want docs/other.md -
     done
 }
 
@@ -566,4 +568,93 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         imported_names && echo ok || echo failed; isimported tree docs/early.md && echo early' _ "$LIB"
     [ "$output" = $'ok\nearly' ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "both walks fail closed when python3 fails on text holding a byte above 0x7f (U2a3b L2-i2 test-strategy)" {
+    mkdir -p docs && printf 'See @docs/\xff.md and @docs/a.md\n' > AGENTS.md && commit_all py
+    S="$BATS_TEST_TMPDIR/py" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/python3" && chmod +x "$S/python3"
+    for w in tree main; do
+        PATH="$S:$PATH" imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/a.md imported; want docs/other.md imported
+    done
+}
+
+@test "the parser keeps every path below ROOT_REAL /, and returns 1 for an empty ROOT_REAL (U2a3b L2-i2 test-strategy)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL=/
+        printf "See @/etc/x.md and @docs/a.md and @../b.md\n" | import_targets sub; echo "rc=$?"
+        ROOT_REAL=""; printf "See @docs/a.md\n" | import_targets "" >/dev/null; echo "rc=$?"' _ "$LIB"
+    for l in etc/x.md sub/docs/a.md b.md rc=0 rc=1; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
+}
+
+@test "both walks read an import whose .. runs past / and re-enters the repo, as Node's path.resolve stops at / (U2a3b L2-i2 test-strategy)" {
+    mkdir -p docs && r="$(pwd -P)"
+    { printf 'See @'; for i in $(seq 40); do printf '../'; done; printf '%s/docs/up.md\n' "${r#/}"; } > AGENTS.md
+    commit_all clamp
+    for w in tree main; do
+        imps "$w" docs/up.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/up.md imported; want docs/other.md -
+    done
+}
+
+@test "IMPORT_OUT_MAX bounds what the whole walk prints, not each file, and a walk that prints exactly the limit passes (U2a3b L2-i2 test-strategy)" {
+    # import_targets prints 13 bytes for each file (a, a., a.m, a.md; 26 in all).
+    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        for m in 20 25 26; do IMPORT_OUT_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
+            imported_names && echo "$m tree ok" || echo "$m tree failed"; main_imports && echo "$m main ok" || echo "$m main failed"; done' _ "$LIB"
+    [ "$output" = $'20 tree failed\n20 main failed\n25 tree failed\n25 main failed\n26 tree ok\n26 main ok' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the tree walk reads a file of exactly 4 MiB to its last byte, as Claude Code loads it (U2a3b L2-i2 test-strategy)" {
+    mkdir -p docs && printf 'See @big/x.md\n' > AGENTS.md && commit_all base
+    # 4194304 bytes in all, the last 14 an import with no newline after it.
+    truncate -s $((4194304 - 14)) big && printf '\n@docs/late.md' >> big && [ "$(wc -c < big)" -eq 4194304 ]
+    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        imported_names && echo ok || echo failed; isimported tree docs/late.md && echo late' _ "$LIB"
+    [ "$output" = $'ok\nlate' ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "both walks read an @~/ import into a repo under HOME, as Claude Code joins ~/ to the home directory (FAILS at 98e3b1df: L2-i2 fact-check Claim 9)" {
+    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
+    h="$(cd .. && pwd -P)"
+    for w in tree main; do
+        HOME="$h" imps "$w" docs/home.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/home.md imported; want docs/other.md -
+    done
+}
+
+@test "the main walk fails closed on an import of a file under .git, whose own imports it cannot read (U2a3b L2-i2 security F2)" {
+    # Only a bare .git component is skipped: .git/notes.md is a checkout file main lacks, so the walk fails
+    # rather than drop docs/t.md, which .git/notes.md imports.
+    mkdir -p docs && printf 'See @.git/notes.md and @sub/../.git/info/n.md\n' > CLAUDE.md && commit_all gitdir
+    printf 'see @../docs/t.md\n' > .git/notes.md
+    imps main docs/t.md docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk failed; want docs/t.md imported
+}
+
+@test "both walks read an @~/ import when HOME is a symlink to the repo's parent: its real spelling is read too (U2a3b L2-i2 security F1)" {
+    mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
+    ln -s "$(cd .. && pwd -P)" "$BATS_TEST_TMPDIR/homelink"
+    for w in tree main; do
+        HOME="$BATS_TEST_TMPDIR/homelink" imps "$w" docs/home.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/home.md imported; want docs/other.md -
+    done
+}
+
+@test "the parser fails on a ~/ name when the home is relative, and reads other names without one (U2a3b L2-i2 security F1)" {
+    run --separate-stderr env LC_ALL=C HOME=rel bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        printf "see @docs/a.md\n" | import_targets "" >/dev/null && echo plain=0 || echo "plain=$?"
+        printf "see @~/x/docs/a.md\n" | import_targets "" >/dev/null && echo tilde=0 || echo "tilde=$?"' _ "$LIB"
+    [ "$output" = $'plain=0\ntilde=1' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the parser itself stops once it has printed more than IMPORT_LEFT allows (U2a3b L2-i2 performance F2)" {
+    # see @a.md prints a, a., a.m, a.md: 13 with the newlines between them.
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        for n in 12 13; do printf "see @a.md\n" | IMPORT_LEFT=$n import_targets "" >/dev/null && echo "$n=0" || echo "$n=$?"; done' _ "$LIB"
+    [ "$output" = $'12=1\n13=0' ] || { echo "$output $stderr"; return 1; }
 }

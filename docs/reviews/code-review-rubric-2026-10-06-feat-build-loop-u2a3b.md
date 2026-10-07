@@ -1,8 +1,51 @@
-Commit: be94c871
+Commit: 98e3b1df
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
 **Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🔴 loop 2 iteration 1 did not pass at be94c871; its fixes are committed, pending iteration 2** (loop 1 ended at the iteration-4 gate below)
+
+## Loop 2, iteration 2 of 3 (Commit 98e3b1df, be94c871..98e3b1df, --loop-pass, k=1, full panel)
+
+Scope: the loop-pass default range from the rubric's stamp (be94c871), labelled partial: iteration 1's fixes dd51e9a7 and 98e3b1df. Delivery mode: self-read (shared brief in the session scratchpad). The short-circuit marker (used at 1ccc8b65) is on the file, so Stage 2 ran in full with amber collected. Stage 2.5 skipped (loop pass): routed endorsements stay *pending execution verification*. Considered overrides: the U2a3 and U2a3b rows (about lines 374-420 of the override log) were given to every critic; performance F3 found that line 386's revisit trigger fired (below).
+
+Reports (`Commit: 98e3b1df`): `code-fact-check-report-build-loop-u2a3b-L2-i2.md` (42 claims: 31 Verified, 8 Mostly accurate, 3 Incorrect); `security-reviewer-review-2026-10-07-L2i2-build-loop-u2a3b.md` (2 Medium, 1 Informational); `performance-reviewer-review-2026-10-07-L2i2-build-loop-u2a3b.md` (3 Low, 1 Informational); `api-consistency-reviewer-review-2026-10-07-L2i2-build-loop-u2a3b.md` (1 Minor, 2 Informational); `architecture-review-review-2026-10-07-L2i2-build-loop-u2a3b.md` (1 Coupling, 3 Minor, 4 Informational); `test-strategy-review-2026-10-07-L2i2-build-loop-u2a3b.md` (F1-F9, 31 mutants, Appendix A tests, Appendix B fix sketch). Status at 98e3b1df: **🟡 does not pass** (2 Medium security ambers, 1 Coupling). All are fixed or routed in the follow-up commit, pending iteration 3.
+
+### 🟡 Must Address (loop 2 iteration 2)
+
+| ID | Finding | Source | Severity | Disposition |
+|---|---|---|---|---|
+| L2-I2-A1 | `@~/<path into the repo>` is a real import (Claude Code joins ~/ to the home directory); both walks dropped every ~/ name | security F1 (executed, 13 ~/ fragments); fact-check Claim 9; test-strategy F2 | Medium | ✅ Fixed: emit joins ~/ to import_home's HOME (as Node reads it: unset or empty uses the passwd entry), also through its real path; a ~/ name with a relative home fails the parser. Tests: repo under HOME, HOME a symlink, a relative home; each mutant fails |
+| L2-I2-A2 | Skipping `.git/*` lets a file under .git, imported by an instruction file on main, hide its own imports (a regression from the refusal at be94c871) | security F2 (executed) | Medium | ✅ Fixed: only a bare `.git` component (top level or nested, architecture F3) is skipped; test-strategy's `@.git/HEAD` pass test replaced by a fail-closed test; the old-skip mutant fails |
+| L2-I2-A3 | The superset is computed against the gate's one root and home, not the reading session's: an absolute name into another checkout, or a ~/ name under another HOME, is missed | architecture F1 (executed with a gate-worktree root) | Coupling | Routed to U2b (plan step 5's U2b bullet; override row 2026-10-07); named in the superset statement's exceptions |
+
+### 🟢 Consider (loop 2 iteration 2)
+
+| ID | Finding | Source | Disposition |
+|---|---|---|---|
+| L2-I2-C1 | python3 forks for every non-ASCII file (42 of 45; none changed): +0.33 s on --check-fix | performance F1; fact-check Claim 36b | Fixed: an awk ERE for well-formed UTF-8 gates the fork (it agreed with python3 on 20,013 cases); the gate mutant fails |
+| L2-I2-C2 | A 9,990-byte `a/` run takes 10 s before the walk fails: the output bound is checked only after awk returns | performance F2 | Fixed: the walks pass IMPORT_LEFT and awk stops there (1.0 s); direct parser test; mutant fails |
+| L2-I2-C3 | Override-log line 386's revisit trigger fired: the parent-link loop is O(L × depth) (a 2,820-byte deep token: 16.6 s, succeeds) | performance F3 | Fixed: parents already checked are memoized (1.0 s); the memo mutant survives (time only; override row) |
+| L2-I2-C4 | The lib header does not name the python3 dependency | api F1; architecture F7 | Fixed: header clause |
+| L2-I2-C5 | IMPORT_OUT_MAX: whether callers may change it; "bytes" vs characters; "about 2 KB" | api F2; fact-check Claim 7; test-strategy F9 | Fixed: the comment says characters, "more than", both figures, and that a caller clears the DONE caches |
+| L2-I2-C6 | An unset ROOT_REAL aborts import_targets under set -u | api F3 | Fixed: `${ROOT_REAL:-}` |
+| L2-I2-C7 | The single statement: ~/ missing, the symlinked-directory exception is not one, the case-insensitive and external-includes residues not named; two of A5's "untraced" items are traced | fact-check Claims 9, 11, 13; architecture F4; security F3 | Fixed: the statement names the five real exceptions; A5 records the traced items |
+| L2-I2-C8 | Items routed out of iteration 1 were recorded only in the rubric | architecture F2 | Fixed: plan step 5's U2a3c and U2b bullets carry them; override rows 2026-10-07 |
+| L2-I2-C9 | Untested: python3 failure, ROOT_REAL / and empty, the .. clamp at /, a file of exactly 4 MiB, the walk-wide budget boundary; the trim test mislabelled | test-strategy F1, F3-F7 | Fixed: test-strategy Appendix A applied (its `@.git/HEAD` test inverted, above) |
+| L2-I2-C10 | The main walk reads blobs whole | architecture F5 | Deferred to U2a3c (one capped, drained reader); override row |
+| L2-I2-C11 | Commit-message figures (timing, 941 paths) | fact-check Claims 36b, 38c, 35 | Accepted-immutable (override row) |
+
+Size: 679 changed code lines against main (525 at 98e3b1df), under Q-104 [2]'s ~800 tolerance.
+
+Verification: 143/143. --check-fix over 942 paths is identical to main; 3 interleaved runs: main 2.39-2.76 s, this branch 2.63-2.77 s. The long `a/` run fails in 1.0 s; the 2,820-byte deep token succeeds in 1.0 s.
+
+### 🧩 Composition check (loop 2 iteration 2)
+
+| # | Location | Fragments | Disposition |
+|---|---|---|---|
+| 1 | lib emit (~/ branch) | security F1, fact-check Claim 9, test-strategy F2, architecture F1 | composed: one root defect, the parser resolves names against one fixed reader (one root, no home); U2a3b adds the home, U2b the root set (L2-I2-A1 with A3) |
+| 2 | main_imports .git skip | security F2, architecture F3, test-strategy F8 | distinct defects (security: the skip is too wide; architecture: too shallow); one rule fixes both |
+
+Next: iteration 3, the final confirming pass (no `--loop-pass`, k=3, full panel over main...HEAD, Stage 2.5).
 
 ## Loop 2, iteration 1 of 3 (Commit be94c871, main...HEAD, --loop-pass, k=1, full panel)
 
@@ -21,11 +64,11 @@ Reports (`Commit: be94c871`): `code-fact-check-report-build-loop-u2a3b-L2-i1.md`
 | ID | Finding | Source | Severity | Disposition |
 |---|---|---|---|---|
 | L2-A1 | Claude Code decodes files as UTF-8 and turns invalid bytes into U+FFFD; the bytewise parser never yields that spelling (`@docs/\xff.md` reaching `docs/\xef\xbf\xbd.md`); pre-existing on main | security F1 (executed) | Medium | ✅ Fixed: text holding a byte above 0x7f is also read decoded by python3 (`decode("utf-8","replace")`, byte-identical to Claude Code's per the critic). Tests in both suites; the no-decode mutant fails. The LC_ALL=C guard's mutant survives (bash's range matches the byte under C.utf8 too): defence in depth |
-| L2-A2 | Claude Code trims the name (`name.trim()` in its resolver), so `@\ docs/x.md` loads docs/x.md | security (transcription of the resolver) | Medium | ✅ Fixed: emit trims spaces; tested; mutant fails |
+| L2-A2 | ~~Claude Code trims the name, so `@\ docs/x.md` loads docs/x.md~~ Refuted at iteration 2 (fact-check Claim 31b): its name filter rejects a leading space before the resolver trims, so the trim only over-reads | security (transcription of the resolver) | ~~Medium~~ none | Kept as an over-read (harmless); test moved to the over-read test; override row 2026-10-07 |
 | L2-A3 | splice is quadratic and outside the work bound | fact-check 18b; performance F1; test-strategy F3 | Medium | ✅ Fixed: its copying is charged to the bound; Appendix A test; mutant fails |
-| L2-A4 | The work bound is per file; the bash side has no walk-wide limit | performance F2 | Medium | ✅ Fixed: IMPORT_OUT_MAX (4,000,000 bytes printed in all) fails either walk; tested; mutant fails |
+| L2-A4 | The work bound is per file; the bash side has no walk-wide limit | performance F2 | Medium | ✅ Fixed: IMPORT_OUT_MAX fails either walk. Iteration 2 (test-strategy F3): the test could not tell walk-wide from per-file; replaced by a two-file test with the exact-limit boundary, and awk now stops at the remaining budget (IMPORT_LEFT) |
 | L2-A5 | main_imports forks lower per candidate | performance F3 | Medium | ✅ Fixed: once per file, as the tree walk |
-| L2-A6 | A `.git` prefix candidate (from `@.gitignore`) fails the main walk in a linked worktree | architecture Coupling 1; api 3 | Coupling | ✅ Fixed: main_imports skips `.git` and `.git/*`; tested in a linked worktree; mutant fails. The general prefix-meets-checkout-file rule (an ignored `.env` beside `@.env.example`) is routed to U2a3c |
+| L2-A6 | A `.git` prefix candidate (from `@.gitignore`) fails the main walk in a linked worktree | architecture Coupling 1; api 3 | Coupling | ✅ Fixed at iteration 2: skipping `.git/*` hid the own imports of a file under .git (security L2-i2 F2, a regression from the refusal at be94c871); now only a bare `.git` component, at any depth, is skipped; tests for both. The general prefix-meets-checkout-file rule (an ignored `.env` beside `@.env.example`) is routed to U2a3c |
 
 ### 🟢 Consider (loop 2 iteration 1)
 

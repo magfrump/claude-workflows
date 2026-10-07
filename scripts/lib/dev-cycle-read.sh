@@ -9,6 +9,8 @@
 # sources it from its own directory (never from the repo it acts on), so a copy
 # of scripts/ with its lib/ is self-contained. A change here must pass
 # test/scripts/dev-cycle.bats and build-loop.sh's suites (build-loop-*.bats).
+# The import walks also need python3 when an instruction file holds text that
+# is not well-formed UTF-8; without it they fail closed.
 # The caller sets -euo pipefail (check_answer, brief_fields, tree_starts,
 # imported_names and main_imports also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
@@ -447,8 +449,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # instructions, so an in-cycle fix never edits it. The walk starts at every
 # instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
 # gitignored), resolves each @path against the importing file's directory as
-# Claude Code does (import_targets reads a superset of its names and drops ~/
-# and paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
+# Claude Code does (import_targets reads a superset of its names, ~/ against
+# this process's HOME, and drops paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read or
 # the parser fails, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
@@ -479,9 +481,12 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
-# Each walk fails once import_targets has printed this many bytes in all: the
-# parser's own bound is per file, while the bash side's cost grows with
-# everything printed (performance L2 F2); /workspace's walks print about 2 KB.
+# Each walk fails once import_targets has printed more than this in all
+# (characters, newlines between names counted; awk counts bytes, so it may stop
+# first): the parser's work bound is per file, while the bash side's cost grows
+# with everything printed (performance L2 F2). A fresh clone's walks print about
+# 2 KB, /workspace's about 6 KB. A caller that changes it clears IMPORTED_DONE
+# and IMPORTED_MAIN_DONE before walking again.
 IMPORT_OUT_MAX=4000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
@@ -507,23 +512,42 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # made absolute (ROOT_REAL/$1/name unless it starts with /) and resolved
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
-# ROOT_REAL, and printed repo-relative. ~/ names are dropped. Known exceptions:
-# a .. after a symlinked directory, which the kernel follows through the link
-# while both Claude Code and this walk resolve it lexically (row 350), and any
-# further decoding Claude Code may add (an entity, a percent escape). The cost
-# is false positives: a prefix that is itself a file counts as imported.
-# It returns 1 when sed, python3 or awk fails, when ROOT_REAL is empty, or when the
-# candidates and comment splices run past a work bound (so a pathological file
-# fails the walk rather than stalling it).
+# ROOT_REAL, and printed repo-relative. A ~/ name is joined to this process's
+# home (import_home), in its spelled and real forms. Known exceptions, where a
+# session reading the file can import what these rules do not yield: a session
+# whose home differs from this process's (its ~/ names), a session in another
+# checkout of the repo (an absolute name into that checkout; the gate's root
+# set is U2b's), names that differ only in case on a case-insensitive file
+# system (docs/reviews/override-log.md line 350), Claude Code's approved
+# external includes, and any further decoding it may add (an entity, a percent
+# escape). The cost is false positives: a prefix that is itself a file counts
+# as imported, and so does a
+# name led by an escaped space.
+# It returns 1 when sed, python3, awk or import_home fails, when ROOT_REAL is
+# empty, when a ~/ name appears and the home is not absolute, or when the
+# candidates and comment splices run past a work bound or print past
+# IMPORT_LEFT (so a pathological file fails the walk rather than stalling it).
 # Re-check the superset when Claude Code changes its import grammar
 # (test/agents-gemini-sync.bats holds a separate, older finder for where an
 # import starts, not these rules).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
-function emit(c,   n, i, k, part, st, out) {
+function emit(c) {
   work += length(c); if (work > 50000000) exit 3
-  sub(/^ +/, "", c); sub(/ +$/, "", c)  # Claude Code trims the name (an escaped space can lead it)
-  if (c == "" || substr(c, 1, 2) == "~/") return
+  # Claude Code trims the name; it rejects a name led by a space first, so
+  # trimming one only over-reads.
+  sub(/^ +/, "", c); sub(/ +$/, "", c)
+  if (c == "") return
+  # ~/ joins the home directory (Claude Code: path.join(os.homedir(), rest)),
+  # also spelled through its real path, since ROOT_REAL is real.
+  if (substr(c, 1, 2) == "~/") {
+    if (substr(home, 1, 1) != "/") exit 4
+    if (homer != home) put(homer "/" substr(c, 3))
+    c = home "/" substr(c, 3)
+  }
+  put(c)
+}
+function put(c,   n, i, k, part, st, out) {
   if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   n = split(c, part, "/"); k = 0
   for (i = 1; i <= n; i++) {
@@ -534,7 +558,10 @@ function emit(c,   n, i, k, part, st, out) {
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
   if (index(out, pre) != 1 || length(out) <= length(pre)) return
   out = substr(out, length(pre) + 1)
-  if (!(out in seen)) { seen[out] = 1; print out }
+  if (out in seen) return
+  # printed counts as the walks count: each name, a newline between names.
+  seen[out] = 1; printed += length(out) + 1; if (printed - 1 > left) exit 3
+  print out
 }
 function scan(line,   i, j, L, ch, name) {
   L = length(line)
@@ -558,10 +585,32 @@ function splice(line,   o, i, j, r) {
   }
   return o line
 }
-BEGIN { dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2 }
+BEGIN {
+  dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homer = ENVIRON["IT_HOMER"]
+  left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
+}
 { scan($0); if (index($0, "<!--")) scan(splice($0)) }'
+# Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
+# U+10FFFF), as an awk ERE for a C-locale awk -v: it agreed with python3's
+# decoding on 20,013 cases (U2a3b L2-i2 performance F1). Only text it rejects
+# forks python3, since well-formed text decodes to itself.
+UTF8_OK='^([\001-\177]|[\302-\337][\200-\277]|\340[\240-\277][\200-\277]|[\341-\354\356\357][\200-\277][\200-\277]|\355[\200-\237][\200-\277]|\360[\220-\277][\200-\277][\200-\277]|[\361-\363][\200-\277][\200-\277][\200-\277]|\364[\200-\217][\200-\277][\200-\277])*$'
+# import_home: IMPORT_HOME and IMPORT_HOMER (its real path) for the parser's
+# ~/ names, from HOME as Node's os.homedir reads it (unset or empty: the
+# passwd entry). A walk calls it once, so the parser's $(...) calls inherit
+# it; it recomputes only when HOME changes. A relative or empty home is kept,
+# and the parser fails on a ~/ name then.
+IMPORT_HOME=""; IMPORT_HOMER=""; IMPORT_HOME_KEY=""
+import_home() {
+  local h hr=""
+  h="${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}" || h=""
+  [[ "$IMPORT_HOME_KEY" != "x$h" ]] || return 0
+  if [[ "$h" == /* ]]; then hr="$(realpath -m -- "$h")" || return 1; fi
+  IMPORT_HOME="$h"; IMPORT_HOMER="${hr:-$h}"; IMPORT_HOME_KEY="x$h"
+}
 import_targets() {
   local u d toks s=(-e 's/\x0/ /g') LC_ALL=C
+  import_home || return 1
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
   # failure, but a caller without pipefail would.
@@ -570,14 +619,17 @@ import_targets() {
   # U+FFFD, so a name can hold bytes the file does not: read that spelling too
   # (python3's "replace" decoding matched Claude Code's byte for byte: U2a3b L2
   # security F1). LC_ALL=C above makes the byte range a byte test.
-  if [[ "$toks" == *[$'\x80'-$'\xff']* ]]; then
+  if [[ "$toks" == *[$'\x80'-$'\xff']* ]] && ! printf '%s\n' "$toks" | env LC_ALL=C awk -v ok="$UTF8_OK" '$0 !~ ok { exit 1 }'; then
     d="$(printf '%s\n' "$toks" | python3 -I -c 'import sys; sys.stdout.buffer.write(sys.stdin.buffer.read().decode("utf-8", "replace").encode())')" || return 1
     [[ "$d" == "$toks" ]] || toks+=$'\n'"$d"
   fi
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
   # and a failed write would read as no imports.
-  # dir and root go through the environment: awk -v would read backslash escapes in them.
-  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="$ROOT_REAL" awk "$IMPORT_AWK" || return 1
+  # dir, root and home go through the environment: awk -v would read
+  # backslash escapes in them. IMPORT_LEFT, set by a walk, is what its
+  # IMPORT_OUT_MAX budget has left, so awk stops there rather than after.
+  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOMER="$IMPORT_HOMER" \
+    IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" awk "$IMPORT_AWK" || return 1
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -607,13 +659,14 @@ imported_names() {
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f")
   done
+  import_home || return 1
   IMPORTED=$'\n'
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     # Claude Code skips a file over 4 MiB, so reading only its start over-reads at
     # worst, and a huge file a prefix candidate names cannot stall the walk (L2 security F2).
-    out="$(head -c 4194305 -- "$f" | import_targets "$d")" || { IMPORTED=error; return 1; }
+    out="$(head -c 4194305 -- "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -638,7 +691,7 @@ imported_names() {
 # a plain directory below the root; need_root exits instead.
 main_imports() {
   local - rec f d p i c lk out used=0 queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
-  local -A ent=() seen=() dir=()
+  local -A ent=() seen=() dir=() pok=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
@@ -664,12 +717,13 @@ main_imports() {
       seen[${cand[i]:2}]=1; queue+=("${cand[i]:2}")
     fi
   done
+  import_home || return 1
   IMPORTED_MAIN=$'\n'
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]}" in
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
         # $(...) drops NULs, so they are counted first; the x keeps trailing
         # newlines, which $(...) would also drop.
@@ -699,10 +753,13 @@ main_imports() {
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
-      # git stores nothing at .git, so a prefix candidate there (from @.gitignore) names no file main has.
-      [[ "$p" != .git && "$p" != .git/* ]] || continue
+      # A .git component itself (a prefix candidate from @.gitignore, or a nested
+      # repository's) is a checkout file or directory git never stores. Files
+      # under it are not skipped: they fail below, since main lacks them.
+      [[ "$p" != .git && "$p" != */.git ]] || continue
       # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
-      c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
+      # pok holds parents already checked: a token's prefixes share them, so the loop stops at the first.
+      c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${pok[$c]+set}" ]] || break; pok[$c]=1; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
       [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }
     done < <(printf '%s\n' "$out")
   done
