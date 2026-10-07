@@ -478,7 +478,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
 # isimported asks either walk.
-IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
+IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # UTF-8 spaces that end an import token as a blank does (import_targets makes
 # each one a blank before it matches tokens): U+00A0, U+1680,
 # U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
@@ -495,7 +495,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # blank, a UNI_SPACES space included, or at a backslash, as the import token of
 # Claude Code does, and at #, where Claude Code cuts the name it captured (so a
 # token after a # is an over-read; a name holding a backslash-escaped space is
-# not read, a gap deferred with known issue A5's). That regex keeps brackets,
+# not read, known issue A5). That regex keeps brackets,
 # parentheses, backticks and trailing punctuation in a name (@x.md. reads
 # x.md.), while the Markdown around a token (emphasis, a link or image, inline
 # HTML, a code span) may end it at any later one of those marks, so each token
@@ -557,15 +557,16 @@ instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
+# The tree walk's start candidates, NUL-separated: tracked and untracked names
+# through instruction_names, failing when any of the three commands fails.
+tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names; }
 imported_names() {
   local - f d p lp out seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
-  # The start list ends with "rc=0" only when both listings and the name filter succeeded, as in main_imports.
-  mapfile -d '' recs < <(set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names && printf rc=0 || printf rc=1)
-  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
-  for f in "${recs[@]:0:${#recs[@]}-1}"; do
+  nul_list recs tree_starts || return 1
+  for f in "${recs[@]}"; do
     # seen is newline-separated: a name holding a newline could hide another start.
     [[ "$f" != *$'\n'* ]] || return 1
     lp="$(lower "${f##*/}")" || return 1
