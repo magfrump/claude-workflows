@@ -1,4 +1,5 @@
-Commit: 1898d21c
+Commit: 0bb98f27
+Loop closed at 0bb98f27
 # Code Review Rubric
 
 ## Iteration-4 gate decision: split (user, in session, 2026-10-06)
@@ -18,7 +19,60 @@ Disposition of loop 1's open rows in the split commit:
 
 ## Loop 2 (post-split, fresh counter)
 
-**Status: ❌ iteration 2 (the intended final pass) found one behavioral red (F1) and masked tests (F2), fixed in the loop-2 iteration-2 fix commit; iteration 3 is the final confirming pass.**
+**Status: ✅ PASSES REVIEW (loop 2 closed at 0bb98f27; three Must Address acknowledged with override rows and revisit triggers)** — single-sample review; absence of findings is not an attestation
+
+Review converged in 3 iterations; 1 Must Fix resolved, 3 Must Address acknowledged.
+
+### Iteration 3 of 3: final confirming pass (Commit 0bb98f27, full branch, no --loop-pass, k=3, full panel, Stage 2.5)
+
+Delivery mode: self-read. The session was interrupted after the reports were written; on resume the test-strategy report and the Stage 2.5 report turned out complete (duplicates re-dispatched for them were aborted before writing; the reports were checked byte-identical to backups).
+
+Reports (all `Commit: 0bb98f27`): `code-fact-check-report-build-loop-u2a3-L3-final.md` (merged k=3 from `-L3-r1/-r2/-r3`: 38, 39, 40 claims; 62 rows: 53 Verified, 9 Mostly accurate, 0 Incorrect, 0 Unverifiable; agreement 56/62, 90.3%), with Stage 2.5 Claims 43-46 appended (`code-fact-check-submitted-claims-build-loop-u2a3.md`: 4 Verified, all executed); `security-reviewer-review-2026-10-06-L3-build-loop-u2a3.md` (1 Medium, 1 Informational; nothing fail-open in this unit's code); `performance-reviewer-review-2026-10-06-L3-build-loop-u2a3.md` (2 Informational); `api-consistency-reviewer-review-2026-10-06-L3-build-loop-u2a3.md` (2 Minor, 3 Informational); `architecture-review-review-2026-10-06-L3-build-loop-u2a3.md` (1 Minor, 2 Informational; 0 Structural, 0 Coupling); `test-strategy-review-2026-10-06-L3-build-loop-u2a3.md` (G1-G7, 57 mutants, zero-net patch).
+
+Tests at 0bb98f27: 115/115 across the five suites (all three replicates); 400 changed code lines.
+
+Iteration-2 verification: F1 (tree+symlink doubled name) resolved — every crafted-tree shape the replicates and security built fails closed; F2 (masked tests 5, 9, 12) resolved; F4, F5 resolved. No re-fires.
+
+#### 🔴 Must Fix
+
+None.
+
+#### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| G1 | `ident` (and attributes from `$GIT_DIR/info/attributes` or `core.attributesFile`) is a checkout conversion the walk misses: `@docs/x$Id$` checks out as `@docs/x$Id: <sha> $` (executed) | Medium / Mostly accurate | fact-check r1 14e, 15; security F1; architecture F1; api 1. Convergence | Acknowledged (override row) | Wording added to A5 (TODO(U2b): `git check-attr` over every path the walk reads, and `core.symlinks` true), F11 and the U2b bullet in the closing docs commit. Same class as the settled working-tree-encoding/filter and core.symlinks rows. |
+| G2 | Test 10's tree-listing refusal masked by an index-only start; recorded imports never mixed case in the suite; empty start list and cache reset unpinned | Mostly accurate (test) / test-strategy G1-G4 | fact-check r3 37b; test-strategy | Acknowledged (override row) | Code correct. The checked zero-net patch goes into U2a3c, which edits these tests next; trigger U2a3c's review loop. |
+| G3 | Header pointer, return-1 type wording, test 9/10 names and comments, rows saying "the U2b bullet makes the gate refuse" | Mostly accurate | fact-check 19, 25b, 36b, 39e; api 3, 5 | Acknowledged (override row) | Not edited after the confirming pass; U2a3c rewrites those comments and tests. |
+
+#### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G4 | Locale: a non-UTF-8 name on main fails the walk under a UTF-8 locale (fails closed) | fact-check r3; architecture F2; api 2 | Defer (override row); U2b bullet says LC_ALL=C |
+| G5 | Ancestor pass and merged listing cost (20 ms here; 1.4 s and 0.8 s at 200k directories) | performance F1, F2 | Defer (override row; B6 trigger) |
+| G6 | Checkout pathspec written twice | architecture F3 | Defer to U2a3c (override row) |
+| G7 | A failing `lower` adds an empty line | security F2 | No action — fixed in U2a3b (stacked) |
+
+#### ✅ Confirmed good (each backed by an executed verdict whose Scope covers the row)
+
+- A failed main walk answers imported for every path (first call, cached call, after a reset, under `set -e`). Stage 2.5 Claim 43 (executed, three failure modes, six paths). Scope: isimported's `main)` arm.
+- nul_list accepts only a zero exit whose output is empty or NUL-terminated, and empties its array otherwise. Claim 44 (executed, 11 outputs). Scope: nul_list's contract.
+- The merged `--cached --others` listing returns the same names as the earlier pair. Claim 45 (executed, 12 index and checkout shapes, git 2.39.5). Scope: that git version.
+- The ancestor pass catches every name that is also a directory of another listed name, in any order, in time linear in records plus directories. Claim 46 (executed, 400 random name sets against brute force; a crafted commit). Scope: the pass, not path-depth string cost (deferred row).
+
+#### ↩️ Considered overrides
+
+Matched and not re-filed: the deferred working-tree-encoding/filter and core.symlinks rows (G1 extends their class with new evidence and gets its own row), the git-hardening row (replace refs, GIT_INDEX_FILE, fsmonitor), the B6 cost row, the IMPORTED_MAIN_WHY row, the macOS/LFS row, and the lower-failure rows (U2a3b).
+
+#### ⏭️ Skipped Core Critics
+
+None.
+
+#### 🧩 Composition check (iteration 3)
+
+- `ident` (fact-check 14e/15, security F1, architecture F1, api 1): one gap stated whole by each; no composed row.
+- Test 10 masking (fact-check 37b, test-strategy G1): one gap; no composed row.
 
 ### Iteration 2 of 3 (Commit 1898d21c, full branch, intended final pass: no --loop-pass, k=3, full panel)
 
