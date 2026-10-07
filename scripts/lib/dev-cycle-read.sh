@@ -515,6 +515,8 @@ instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
+# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or 1 unless CMD exited 0 (&& || keep errexit off).
+nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || return 1; unset 'nl_a[-1]'; }
 imported_names() {
   local f d p seen=$'\n' queue=()
   need_root
@@ -533,20 +535,17 @@ imported_names() {
     done < <(import_targets "$d" < "$f")
   done
 }
-# The main walk; returns 1, with IMPORTED_MAIN set to "error", when main is not
-# found by name, the commit's tree or the untracked list cannot be listed whole,
-# a tree record does not parse, the listing holds a name twice (git's lookups
-# read the first copy, a checkout keeps the last), a name holds a newline, a
-# blob or checkout file cannot be read, the lower-cased start list comes back
-# short, symlink text it follows is empty, absolute, leaves the repo, holds a
-# newline or a NUL, or has a .. after a symlink, an import path main lacks lies
-# under a directory main stores as a symlink, or a checkout path it
-# would read exists but is not a plain file (a symlink, or under one) or a
-# plain directory, so a caller refuses
-# rather than reading a partial list. The listings stay NUL-separated as git
-# writes them, each followed by "rc=0" only when its command succeeded (the &&
-# and || keep errexit from ending the substitution early). Queue items are
-# "m:PATH" (main's entry) or "t:PATH" (the checkout's).
+# The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
+# refuses rather than reading a partial list, when main is not found by name,
+# the commit's tree or the untracked list cannot be listed whole (nul_list), a
+# tree record does not parse, a name is listed twice (git's lookups read the
+# first copy) or holds a newline, the lower-cased start list comes back short,
+# a blob or checkout file cannot be read, symlink text it follows is
+# empty, absolute, leaves the repo, holds a newline or a NUL, or has a .. after
+# a symlink, an import path main lacks lies under a directory main stores as a
+# symlink, or a checkout path it would read exists but is neither a plain file
+# nor a plain directory below the root (a symlink, under one, the root itself,
+# a FIFO); need_root exits instead. Queue items are "m:PATH" or "t:PATH".
 main_imports() {
   local - rec f d p src i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=()
@@ -554,9 +553,7 @@ main_imports() {
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
   main_by_name || return 1
-  mapfile -d '' recs < <(git ls-tree -r -z --full-tree "$MAIN_SHA" && printf rc=0 || printf rc=1)
-  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
-  unset 'recs[-1]'
+  nul_list recs git ls-tree -r -z --full-tree "$MAIN_SHA" || return 1
   for rec in "${recs[@]}"; do
     [[ "$rec" =~ ^([01234567]{6})\ [abcdefghijklmnopqrstuvwxyz]+\ [0123456789abcdef]{40,64}$'\t'(.+)$ ]] || return 1
     f="${BASH_REMATCH[2]}"
@@ -564,9 +561,7 @@ main_imports() {
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
   done
-  mapfile -d '' recs < <(untracked_md && printf rc=0 || printf rc=1)
-  [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
-  unset 'recs[-1]'
+  nul_list recs untracked_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; cand+=("t:$f"); done
   # One tr lower-cases every candidate (lower would fork per path).
   [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
@@ -618,7 +613,7 @@ main_imports() {
       # Main lacks p: under a directory link main stores (the checkout may lack it), fail.
       for (( c = ${#p}; c > 0; c-- )); do [[ "${p:c:1}" != / || "${ent[${p:0:c}]:-}" != 120000 ]] || { IMPORTED_MAIN=error; return 1; }; done
       queue+=("t:$p")
-    done <<<"$out"
+    done < <(printf '%s\n' "$out")
   done
 }
 # Whether path $2 (any case) is imported, by the walk $1 names: tree or main.

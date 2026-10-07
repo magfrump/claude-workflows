@@ -202,7 +202,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     imps main docs/rules.md; want walk failed; want docs/rules.md imported
 }
 
-@test "main walk returns, not exits, when main's tree or the untracked list cannot be listed (U2a2 iteration 1 A2)" {
+@test "main walk returns, not exits, when main's tree or the untracked list cannot be listed (U2a2 iteration 1 A2); reads a list past 64 KiB under ulimit -f 0" {
     mkdir -p docs && printf 'see @a.md\n' > docs/CLAUDE.md && commit_all base
     imps main docs/a.md; want walk ok; want docs/a.md imported
     # The docs/ tree object is missing: ls-tree -r fails part-way.
@@ -216,6 +216,11 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     rm .git/index
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed
+    # An import list past 64 KiB with no room for a temp file is read whole (U2a3b I2-C4).
+    { for i in $(seq 320); do printf '@docs/%0200d.md\n' "$i"; done; printf '@docs/last.md\n'; } > AGENTS.md && commit_all big
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        main_imports && isimported main docs/last.md && echo ok' _ "$LIB"
+    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "main walk: an upper-case .MD instruction file starts it, tracked or untracked (U2a3)" {
