@@ -1,0 +1,42 @@
+Q-102: [1]
+
+Q-126:
+$ cd ~/claude-workflows && git show feat/q125-cc-isolated-sandbox:docs/working/probe-q125-bwrap.sh > /tmp/probe-q125.sh && bash /tmp/probe-q125.sh 2>&1 | tee /tmp/probe-q125.out; rm -f /tmp/probe-q125.sh
+=== A
+A Unable to find image 'debian:bookworm' locally
+A bookworm: Pulling from library/debian
+A 8cb71386cfcf: Pulling fs layer
+A 7d53b04f37c0: Download complete
+A 8cb71386cfcf: Download complete
+A 8cb71386cfcf: Pull complete
+A Digest: sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858
+A Status: Downloaded newer image for debian:bookworm
+A /inner.sh: line 5: warning: command substitution: ignored null byte in input
+A INFO lsm=kernel kernel=6.18.35.2-microsoft-standard-WSL2
+A INFO bwrap=bubblewrap 0.8.0 setuid=no
+A RESULT T1-fresh-proc pass
+A RESULT T2-bind-proc pass
+A RESULT T3-weaker-mode no-leak: cat: /home/u/secret: Permission denied
+A cat: /proc/227/root/home/u/secret: Permission denied
+A RESULT T4-unshare-m-no-userns refused (good)
+A RESULT T4-root-mount refused (good)
+=== B
+B /inner.sh: line 5: warning: command substitution: ignored null byte in input
+B INFO lsm=kernel kernel=6.18.35.2-microsoft-standard-WSL2
+B INFO bwrap=bubblewrap 0.8.0 setuid=no
+B RESULT T1-fresh-proc FAIL: bwrap: No permissions to create new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.
+B RESULT T2-bind-proc FAIL: bwrap: No permissions to create new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.
+B RESULT T3-weaker-mode no-leak: bwrap: No permissions to create new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.
+B RESULT T4-unshare-m-no-userns refused (good)
+B RESULT T4-root-mount refused (good)
+=== C
+C /inner.sh: line 5: warning: command substitution: ignored null byte in input
+C INFO lsm=kernel kernel=6.18.35.2-microsoft-standard-WSL2
+C INFO bwrap=bubblewrap 0.8.0 setuid=no
+C RESULT T1-fresh-proc pass
+C RESULT T2-bind-proc pass
+C RESULT T3-weaker-mode no-leak: cat: /home/u/secret: Permission denied
+C cat: /proc/227/root/home/u/secret: Permission denied
+C RESULT T4-unshare-m-no-userns refused (good)
+C RESULT T4-root-mount refused (good)
+=== host: 6.18.35.2-microsoft-standard-WSL2; apparmor_restrict_unprivileged_userns=n/a; max_user_namespaces=96083
