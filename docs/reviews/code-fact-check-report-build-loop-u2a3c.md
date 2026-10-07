@@ -1,669 +1,1253 @@
-Commit: 21b35ebf
-
+Commit: 3a35c8b9
 # Code Fact-Check Report
 
 **Repository:** /workspace/.claude/wt-build-loop-u2a3c (branch `feat/build-loop-u2a3c`)
-**Scope:** `git diff main...HEAD` (main e5d0f838, HEAD 21b35ebf) plus the commit messages of main..HEAD (3e58eb9c, cb9723c3, 27364085, 80cc6224, 61e2e734, 21b35ebf). The iteration-1 report files under `docs/reviews/` from cb9723c3 are excluded except the new rows in `docs/reviews/override-log.md`.
+**Scope:** `git diff main...HEAD` (main e5d0f838, HEAD 3a35c8b9) plus the commit messages of main..HEAD (3e58eb9c, cb9723c3, 27364085, 80cc6224, 61e2e734, 21b35ebf, 2fbd929b, 3a35c8b9): `scripts/lib/dev-cycle-read.sh`, `test/scripts/build-loop-check.bats`, `test/scripts/dev-cycle.bats`, `docs/working/known-issues-dev-cycle.md` (A5), `docs/working/plan-build-loop-handoff.md` (F11, U2a3c, U2b), `docs/reviews/override-log.md` (rows 439-456), and the iteration-2 rubric's claims about the code. Merged from three replicates of the final confirming pass (iteration 3): `code-fact-check-report-build-loop-u2a3c-r1.md`, `-r2.md`, `-r3.md`.
 **Checked:** 2026-10-07
-**Commit:** 21b35ebf
-**Replication:** k=1 (loop pass, decision 031)
-**Total claims checked:** 34
-**Summary:** 25 verified, 2 mostly accurate, 5 stale, 0 incorrect, 2 unverifiable
+**Commit:** 3a35c8b9
+**Replication:** k=3
+**Total claims checked:** 64
+**Summary:** 41 verified, 14 mostly accurate, 2 stale, 1 incorrect, 6 unverifiable
 
-Execution provenance: every executed command ran on 2026-10-07 between 19:19Z and 19:26Z under bash 5.2.15, mawk (`/usr/bin/mawk`) and git 2.39, uid 1000 (not root, so the `-r`/`-x` probes are meaningful). Raw output is in the scratch directory `/tmp/u2a3c-i2-fc-kkjF/logs/`, because this pass may write no file in the worktree other than this report. Mutants and old trees were built with `git archive <rev> | tar -x` into `/tmp/u2a3c-i2-fc-kkjF/{tree-<rev>,mut-<name>}`, never in the worktree. Bats ran as `TMPDIR=$(mktemp -d /tmp/u2a3c-i2-fc-XXXX) LC_ALL=C timeout 900 bats <suite>`.
+Merge method: `skills/code-review/SKILL.md`, "Merging replicate verdicts (most-severe-wins)", steps 1-5. Claims were clustered by file, overlapping line range (±5) and substance, and emitted at the finest granularity any replicate used; a replicate that verdicted only a compound records that verdict on each sub-claim row marked `(compound)`. Each claim carries the most severe replicate verdict and the winning replicate's evidence; annotations are the union of every replicate's caveats. Replicate scratch directories: r1 `/tmp/u2a3c-i2-fc1-6NBv/`, r2 `/tmp/u2a3c-i2-fc2-zy90/`, r3 `/tmp/u2a3c-i2-fc3-j0eh/`. All three replicates read the hallucination-pattern log, and none matched a logged pattern; every commit-message test count was re-checked.
 
-Suites at HEAD (cwd `/workspace/.claude/wt-build-loop-u2a3c`, all exit 0): build-loop-check 57/57, build-loop-read 19/19, dev-cycle 78/78, fixture-hermeticity 2/2 (`logs/build-loop-check.txt`, `logs/build-loop-read.txt`, `logs/dev-cycle.txt`, `logs/fixture-hermeticity.txt`). Note: the shared review context says build-loop-check has 60 tests. It has 57 (`grep -c '^@test'` gives 57 at 61e2e734 and at 21b35ebf, and bats prints `1..57`). That brief is not under review here.
-
-Hallucination-pattern log: read. No claim in scope matches a logged pattern. The closest are the logged test-count patterns ("All 85 tests…", "mode1-equiv 33"). This branch's commit-message test counts were re-run and match (Claim 27).
+Suites at HEAD, as each replicate ran them: r2 and r3 report build-loop-check 63/63, dev-cycle 78/78, build-loop-read 19/19 and fixture-hermeticity 2/2, all exit 0. r1 reports build-loop-check 62/63 under a 27-character TMPDIR (test 59 fails in the full file), with the other suites exit 0 (Claim 1).
 
 ---
 
-## Claim 1: "Comment, A5 and the U2b bullet now say the caller clears IMPORTED_MAIN_DONE after any checkout change."
+## Claim 1: "Tests after fixes (2fbd929b): build-loop-check 63/63, dev-cycle 78/78, build-loop-read 19/19, fixture-hermeticity 2/2"; "shellcheck -S warning clean"
 
-**Location:** `docs/reviews/override-log.md:439`
-**Type:** Reference / Staleness
-**Verdict:** Stale
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:21`
+**Type:** Configuration / Reference
+**Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether each of the three named documents currently states the cache-clear rule. It does not establish whether any caller actually clears the key: no caller exists until U2a4/U2b.
-**Legibility-target:** docs
+**Verification mode:** executed
+**Scope:** Covers the four suites' counts and pass status at 3a35c8b9 under two TMPDIR lengths; does not establish pass status on hosts whose bats run directory is longer than this one's.
+**Replicate verdicts:** r1=Mostly accurate · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r1: "build-loop-check is 62/63 when the bats root is 56+ characters; test 59's fixed `IMPORT_WORK_MAX=1000` fails as `w` grows with ROOT_REAL" · r2: "does not cover the full health check's other sections at 61e2e734 ('only'), which were not re-run"; shellcheck SC2034 on `pok` at 61e2e734 and clean at HEAD verified · r3: does not establish the D=1950 (64 s) and 256 MiB (58 s, 2 GiB) figures, not re-measured.
 
-The lib comment holds the rule:
+The counts are right (`grep -c '^@test'`: 63, 78, 19; fixture-hermeticity 2). Running the suites with a 27-character TMPDIR (`/tmp/u2a3c-i2-fc1-bats-XXXX`), build-loop-check is **62/63** in two full runs: test 59 fails every time in the full file and passes when run alone (`-f`).
 
-```
-# scripts/lib/dev-cycle-read.sh:486-489
-# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
-# whose files it read, so a caller whose checkout may have changed (a file
-# added or edited) sets IMPORTED_MAIN_DONE="" to walk again, and a cached
-# error returns 1 again.
+Cause (executed): the test fixes the walk budget at a constant,
+
+```bash
+# test/scripts/build-loop-check.bats:907
+        IMPORT_WORK_MAX=1000; want="$(printf "%s\n" 1000 $((1000 - w)) $((1000 - 2 * w)) $((1000 - 3 * w)) | sort -n | tr "\n" " ")"
 ```
 
-Known issue A5 and the U2b bullet no longer hold it. `grep -c 'FIFO\|snapshot\|IMPORTED_MAIN_DONE' docs/working/known-issues-dev-cycle.md` gives `0`, and `grep -n IMPORTED_MAIN_DONE docs/working/plan-build-loop-handoff.md` finds nothing. At the pre-rebase tip both had it. A5 at `backup/u2a3c-pre-rebase-2b1399ab` read: `The walk's cache ignores the checkout, so a caller clears \`IMPORTED_MAIN_DONE\` after any checkout change.` Its U2b bullet read: `owes the walk three things: that checkout final before the walk, or \`IMPORTED_MAIN_DONE\` cleared (the cache key ignores the checkout); a git that prints nothing on stderr for \`ls-files\` (any stderr fails the walk closed); and the git environment the override log hands the caller (\`GIT_INDEX_FILE\`, \`GIT_WORK_TREE\`, fsmonitor, sparse checkout, \`core.ignoreCase\`, replace refs)`. The rebase resolution in 3e58eb9c kept main's A5 and U2b text ("Docs: main's A5, F11 and U2b text kept"), and that dropped these clauses. The row's mitigation ("Comment, A5 and the U2b bullet now say…") is therefore two-thirds untrue at HEAD.
+while `w` grows with ROOT_REAL's length, because `put` charges the resolved spelling:
 
-**Evidence:** `docs/reviews/override-log.md:439`, `scripts/lib/dev-cycle-read.sh:486-489`, `docs/working/known-issues-dev-cycle.md:18`, `docs/working/plan-build-loop-handoff.md:279`, `git show backup/u2a3c-pre-rebase-2b1399ab:docs/working/known-issues-dev-cycle.md` (row A5), `git show backup/u2a3c-pre-rebase-2b1399ab:docs/working/plan-build-loop-handoff.md` (U2b bullet)
-
----
-
-## Claim 2: "Listed in A5 and the block comment's not-covered list." (FIFO start unlisted by git)
-
-**Location:** `docs/reviews/override-log.md:440`
-**Type:** Reference / Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether A5 and the lib block comment list the FIFO case. It does not re-test the FIFO behaviour, which is a settled deferral.
-**Legibility-target:** docs
-
-The block comment lists it: `# F2; U2a4's shared start predicate), and a start that is not a regular file or` / `# symlink (git does not list a FIFO).` (`scripts/lib/dev-cycle-read.sh:480-481`). A5 does not: `grep -c FIFO docs/working/known-issues-dev-cycle.md` gives 0. Pre-rebase A5 had `a start file that is not a regular file or symlink (git does not list a FIFO)` in its not-covered list. The lib comment also says `Not covered (known issue` / `# A5)` (`scripts/lib/dev-cycle-read.sh:477-478`), and that pointer now names a row that lacks this item.
-
-**Evidence:** `docs/reviews/override-log.md:440`, `scripts/lib/dev-cycle-read.sh:477-484`, `docs/working/known-issues-dev-cycle.md:18`
-
----
-
-## Claim 3: "the snapshot assumption is now written in the block comment and A5."
-
-**Location:** `docs/reviews/override-log.md:441`
-**Type:** Reference / Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the presence of the TOCTOU/snapshot text in the two named documents. It does not assess the Won't-Fix rationale.
-**Legibility-target:** docs
-
-The block comment has it: `# snapshot: a file swapped between its admission and its read is not seen.` (`scripts/lib/dev-cycle-read.sh:484`). A5 does not: `grep -c snapshot` gives 0. Pre-rebase A5 had `a checkout file swapped between its admission and its read` in its not-covered list. It was lost in the same 3e58eb9c resolution as Claims 1 and 2.
-
-**Evidence:** `docs/reviews/override-log.md:441`, `scripts/lib/dev-cycle-read.sh:483-484`, `docs/working/known-issues-dev-cycle.md:18`
-
----
-
-## Claim 4: "The ordering is now commented at the record line."
-
-**Location:** `docs/reviews/override-log.md:446`
-**Type:** Reference / Staleness
-**Verdict:** Stale
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers whether a record-before-seen ordering comment exists at the record line. It does not establish whether the ordering hazard the row describes still exists. It does not: see the text below.
-**Legibility-target:** docs
-
-At HEAD the record line is a whole-output record before the per-name loop, and its comment is about cost:
-
-```
-# scripts/lib/dev-cycle-read.sh:847-848
-    # One lower per file, not per candidate, as in imported_names.
-    i="$(lower "$out")" || { IMPORTED_MAIN=error; return 1; }; IMPORTED_MAIN+="$i"$'\n'
+```awk
+# scripts/lib/dev-cycle-read.sh:581-584
+  if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
+  # The resolved spelling is what costs (its length grows with the depth of
+  # the importing file), so it is charged too, and each is resolved once per file.
+  work += length(c); if (work > wmax) exit 3
 ```
 
-Commit 3e58eb9c says U2a3c's per-candidate record and its ordering comment were dropped ("U2a3c's per-candidate record before the seen test is dropped: U2a3b already records the whole output before the loop"). The order the row worries about is now structural, because every name is recorded before any `seen` test. The row's statement about the comment and its revisit trigger ("any change to the drain loop's record/seen order") describe code that no longer exists.
+r1 measured `w` for the test's file: ROOT_REAL length 55 gives 4w = 992, length 56 gives 4w = 1008. Past 1000 the caps phase's walk fails and the `set -euo pipefail` script exits silently after "0 main ok". The fixture root is `$TMPDIR/bats-run-XXXXXX/test/<N>/repo`, so test 59 fails once TMPDIR is 27+ characters. The default `/tmp` passes; a 97-character TMPDIR fails it alone too.
 
-**Evidence:** `docs/reviews/override-log.md:446`, `scripts/lib/dev-cycle-read.sh:845-856`, commit 3e58eb9c message
+**Evidence:** `test/scripts/build-loop-check.bats:897-912`, `scripts/lib/dev-cycle-read.sh:580-600`; command `TMPDIR=$T LC_ALL=C timeout 900 bats test/scripts/build-loop-check.bats` (cwd worktree, exit 1, twice): `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check-run2.log`; `/tmp/u2a3c-i2-fc1-6NBv/logs/caps-tmpdir-length.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/work-vs-rootlen.log`; r2 `/tmp/u2a3c-i2-fc2-zy90/logs/bats-build-loop-check.txt`; r3 `/tmp/u2a3c-i2-fc3-j0eh/logs/build-loop-check.log`
 
 ---
 
-## Claim 5: Closing rows: "the test fails at 3e58eb9c"; "a no-drain mutant fails the test"; "18 realpath calls in the test's walk, against 102 unmemoized and 74 at 3e58eb9c"; "fixed a crash on an empty main tree"; "the put-join cost against its charge … is unchanged, so one bound still costs about 5 s"
+## Claim 2: Rubric B2: "D=1000: 0.62 s (main 0.50, 21b35ebf 10.67). Test with a 6 s timeout fails at 21b35ebf."
 
-**Location:** `docs/reviews/override-log.md:448-451`
-**Type:** Reference / Performance
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:32`
+**Type:** Performance
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each number and test outcome the four rows cite, re-run against archived trees and mutants. It does not establish the 5 s figure on other hardware: here it measured about 4 s.
-**Legibility-target:** docs
+**Scope:** Covers the D=1000 timings and the deep-token test failing on 21b35ebf's lib; does not establish the D=1950 (64 s) figure, which no replicate re-measured.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: kill side has only 1.8x margin (21b35ebf 11.0 s against `timeout 6`), so on a host about twice as fast the regression would survive (escalated to test-strategy) · r3: "does not establish the D=1950 (64 s) and 256 MiB (58 s, 2 GiB) figures"; would not discriminate on a host more than about 1.8x faster.
 
-The batch-tr test and the 4 MiB test fail on 3e58eb9c's lib. The empty-tree test fails on 27364085's lib with `line 699: mc_e: unbound variable`, status 1. A no-drain mutant (`capped_read() { head -c 4194305; }`) fails the 4 MiB test with `want: walk: ok`. The realpath counts are 18 at HEAD, 102 for a no-memo mutant (`mc_m[$c]=1` replaced by `:`) and 74 at 3e58eb9c. A per-file work-bound mutant passes at 3w − 1 (Claim 33). A token of 3,450 `a/` components (work 47,823,900, just under the bound) took 3.73 s, and 3,600 components hit the bound after 4.04 s.
+r1 timed `main_imports` on one `@a/…/x.md` token 1,000 deep: 21b35ebf 10,855 ms and 11,750 ms; 2fbd929b 669 ms and 670 ms; main 532 ms. With HEAD's tests and 21b35ebf's lib, "stays linear" fails; with HEAD's lib it passes. (r2: HEAD 0.66 s, 21b35ebf 11.00 s, main 0.55 s. r3: main 511/502 ms, 21b35ebf 10461/10864 ms, HEAD 658/652 ms.)
 
-Commands (cwd `/tmp/u2a3c-i2-fc-kkjF/{tree-3e58eb9c,tree-27364085,mut-*}`): `bats -f '<names>' test/scripts/build-loop-check-head.bats` (HEAD's test file copied in) and `bats -f '4 MiB \+ 1|once per walk|IMPORT_WORK_MAX bounds' test/scripts/build-loop-check.bats`. Exit codes were 1 (old trees and mutants, as expected) and 0 (HEAD). Timestamps were 19:20:10Z to 19:23:28Z.
-
-**Evidence:** `docs/reviews/override-log.md:448-451`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/head-tests-on-3e58eb9c.txt`, `head-tests-on-27364085.txt`, `mut-nodrain.txt`, `mut-nomemo.txt`, `realpath-count-head.txt`, `perfile-bound2.txt`
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/deep.sh` (cwd scratch, exit 0, 2026-10-07T20:16:27Z): `/tmp/u2a3c-i2-fc1-6NBv/logs/deep.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`; `/tmp/u2a3c-i2-fc2-zy90/logs/deep-timing.txt`; `/tmp/u2a3c-i2-fc3-j0eh/logs/deep-timing.log`
 
 ---
 
-## Claim 6: A5: "Its checkout phase (U2a3c) then walks, and only appends: the checkout's start files main lacks (untracked, ignored, or only in the index) and the imported files main lacks, when each is a plain file there; a checkout path it would walk that lies under a directory main stores as a link or gitlink or under an unsearchable directory, anything but a plain file or directory there (or nothing), an unreadable checkout file, a `..` after a checkout link in link text, and a checkout listing git warns about fail it."
+## Claim 3: Rubric B3: "Link text over 4096 bytes fails before it is read"
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:33`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the link-text test failing on 21b35ebf's lib and passing on HEAD's; does not re-measure the 256 MiB (58 s, 2 GiB) figure.
+**Replicate verdicts:** r1=Verified (compound) · r2=— · r3=— · single-replicate detection
+**Replicate annotations:** none
+
+With HEAD's tests and 21b35ebf's lib, "longer than 4096 bytes" fails; with HEAD's lib it passes (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`, `scripts/lib/dev-cycle-read.sh:841-859`
+
+---
+
+## Claim 4: Rubric B4: "One survivor fails open: a link main stores two levels below a directory the checkout lacks (M13, `continue` → `break`) passed every test … T1 … and T2 … applied. HEAD was correct; the gap was the tests."
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:34`
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers M13 as applied to 21b35ebf's lib (`[[ -z "$st" ]] || continue` → `break`). It survives 21b35ebf's own suite (57/57 ok) and fails HEAD's T2. It does not cover the other mutants named (M14, M16, M18-M20, M23).
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified · r3=Verified (compound)
+**Replicate annotations:** r1: "does not establish that T2 alone kills a fail-open mutant of HEAD's bottom-up loop (it does not)": a mutant breaking out of the top-down loop once an ancestor is absent (HEAD analog of M13) fails T1 but passes T2 (escalated to test-strategy).
+
+`logs/m13-vs-21b35ebf-suite.txt` shows 57 ok and 0 not ok. `logs/m13-vs-HEAD-T2.txt` shows `not ok 1 main walk fails on a path under a link main stores below a directory the checkout lacks…`. Unmutated, T2 passes at 21b35ebf (`logs/i2tests-at-21b35ebf.txt`), which matches "HEAD was correct" (r2).
+
+**Evidence:** `test/scripts/build-loop-check.bats:884-895`, `/tmp/u2a3c-i2-fc2-zy90/logs/m13-vs-21b35ebf-suite.txt`, `/tmp/u2a3c-i2-fc2-zy90/logs/m13-vs-HEAD-T2.txt`, `/tmp/u2a3c-i2-fc2-zy90/logs/i2tests-at-21b35ebf.txt`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants3.log`
+
+---
+
+## Claim 5: Rubric C8: "The absent-under-checkout-dir-link shape changed 2 → 1 (stricter) … Pinned by T1 (`sd/nx.md 1`)."
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:47`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers T1's row at HEAD and at 21b35ebf. It does not re-derive the "2" of main's earlier rule.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified · r3=Verified (compound)
+**Replicate annotations:** none
+
+T1 sets `ln -s sdt sd` and expects `sd/nx.md 1`, which passes at HEAD. The ancestor `sd` fails `plaindir` (`:745`), so the call returns 1 (r2). r1 and r3 confirm the row at `test/scripts/build-loop-check.bats:871`/`:874`.
+
+**Evidence:** `test/scripts/build-loop-check.bats:854-855`, `:874`, `scripts/lib/dev-cycle-read.sh:745`
+
+---
+
+## Claim 6: Rubric C9: "Gitfile 'as Claude Code does' unverifiable here … reads only add names or fail".
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-07-feat-build-loop-u2a3c.md:48`
+**Type:** Behavioral
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** static
+**Scope:** "Reads only add names or fail" is verified for the code: phase 2 only appends to IMPORTED_MAIN or returns 1. The Claude Code half stays unverifiable.
+**Replicate verdicts:** r1=— · r2=Unverifiable · r3=— · single-replicate detection
+**Replicate annotations:** none
+
+paraphrased — no quote available because the claim's open half concerns Claude Code's binary, not this repo (r2). The repo half is quoted in Claims 22 and 39.
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:832-875`
+
+---
+
+## Claim 7: Override rows 439-441, 443, 444 (U2a3c iteration 1): "Comment, A5 and the U2b bullet now say the caller clears IMPORTED_MAIN_DONE"; "A FIFO ... is never listed by `git ls-files --others`"; "the snapshot assumption is now written in the block comment and A5"; "Both callers test the code explicitly"; "its only caller"
+
+**Location:** `docs/reviews/override-log.md:439-441,443-444`
+**Type:** Reference / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each row's cited mitigation text as it stands at HEAD, the FIFO listing and the two call sites; does not establish whether Claude Code loads a FIFO (the row says untraced).
+**Replicate verdicts:** r1=Verified · r2=— · r3=— · single-replicate detection
+**Replicate annotations:** r2: rows before 448 treated as out of scope · r3: "Rows 439-447 are history and are not re-verdicted here" (Claim 52).
+
+The cache-clear text is in the lib (`# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,` `scripts/lib/dev-cycle-read.sh:487`), in A5 ("so a caller clears `IMPORTED_MAIN_DONE` after any checkout change", `docs/working/known-issues-dev-cycle.md:18`) and in the U2b bullet ("`IMPORTED_MAIN_DONE` cleared (the cache key ignores the checkout)", `docs/working/plan-build-loop-handoff.md:279`). `git ls-files -z --others` in a repo holding a FIFO `f.md`, a link `l.md` and a file `r.md` listed only `l.md` and `r.md`. Snapshot: `# snapshot: a file swapped between its admission and its read is not seen.` (`scripts/lib/dev-cycle-read.sh:485`). Both callers capture the code: `main_checkout ent pok "$f" || c=$?` then `[[ $c -ne 1 ]] || return 1` (`:825-826`) and `main_checkout ent pok "$p" || c=$?` then `[[ $c -ne 1 ]] || { IMPORTED_MAIN=error; return 1; }` (`:870-871`); `git grep` finds no other call outside the test (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:485-491,825-826,870-871`; `/tmp/u2a3c-i2-fc1-6NBv/logs/fifo-listing.log`
+
+---
+
+## Claim 8: Override row 448: "the candidates are lower-cased by lower_all under nul_list, so a tr that dies after a partial flush fails the walk; the test fails at 3e58eb9c."
+
+**Location:** `docs/reviews/override-log.md:448`
+**Type:** Behavioral / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the batch-lower path in main_imports and the N1 test's failure at 3e58eb9c. It does not establish behaviour for a `tr` that dies after a partial flush of a different shape than the test's shim, which drops 3 bytes.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified · r3=Verified
+**Replicate annotations:** r3: "does not establish the per-file `lower` calls, which still use a plain `$(...)`".
+
+```
+# scripts/lib/dev-cycle-read.sh:700
+lower_all() { local -; set -o pipefail; printf '%s\0' "$@" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+# scripts/lib/dev-cycle-read.sh:820-821
+  [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
+  [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1
+```
+The fix is `nul_list`'s `rc=0` sentinel (`:695`), which a failed `tr` under pipefail never prints. The 27364085 tests run against 3e58eb9c's lib give `not ok 2 main walk fails when the batch tr dies after a partial flush…` (r2).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:695-700`, `scripts/lib/dev-cycle-read.sh:820-821`, `test/scripts/build-loop-check.bats:800-809`, `/tmp/u2a3c-i2-fc2-zy90/logs/c27364085-vs-3e58eb9c.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/old-3e58eb9c-batch_tr_dies.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`
+
+---
+
+## Claim 9: Override row 449: "capped_read is the one reader for checkout files and main's blobs, and drains a pipe so git cat-file never dies of SIGPIPE under pipefail (a no-drain mutant fails the test)."
+
+**Location:** `docs/reviews/override-log.md:449`
+**Type:** Behavioral
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the drain's mechanism and its test. It does not establish the link-blob half, which row 454 already corrects.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Stale
+**Replicate annotations:** r1: no-drain mutant fails the 4 MiB test with `walk: failed` · r2: no-drain mutant fails both 27364085's and HEAD's 4 MiB test; "does not re-measure the 58 s / 2 GiB pre-fix figure" (row 454) · r3: no override row amends row 449's "drains a pipe".
+
+The row describes 27364085's `[[ ! -p /dev/stdin ]] || cat > /dev/null`. Since 2fbd929b, capped_read drains only when its caller passes the word `drain`, not whenever stdin is a pipe: `capped_read() { head -c 4194305 || return 1; [[ "${1:-}" != drain ]] || cat > /dev/null; }` (`scripts/lib/dev-cycle-read.sh:709`). Only the blob arm passes it (`:839`). Row 454 corrects the link-blob half, and the rubric's C1 records the mechanism change, but no override row amends row 449's "drains a pipe". The mutant claim still holds at HEAD: `capped_read drain |` → `capped_read |` is killed by the 4 MiB test (r3).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:701-709`, `scripts/lib/dev-cycle-read.sh:837-840`, `/tmp/u2a3c-i2-fc3-j0eh/logs/mutant-nodrain.log`, `/tmp/u2a3c-i2-fc2-zy90/logs/HEAD-vs-nodrain.txt`
+
+---
+
+## Claim 10: Override row 450 (and commit 80cc6224): "main_checkout memoizes the ancestors it has passed (18 realpath calls in the test's walk, against 102 unmemoized and 74 at 3e58eb9c); it also fixed a crash on an empty main tree with an untracked start"
+
+**Location:** `docs/reviews/override-log.md:450`
+**Type:** Performance / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the counts at the revisions the row names: 80cc6224 = 18, an unmemoized mutant of 80cc6224 = 102, 3e58eb9c = 74, and the empty-tree test failing at 27364085. It does not cover HEAD, which now makes 10 calls (Claim 42).
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r1+r2+r3: the 18 count is not HEAD's (10 at HEAD).
+
+The count comes from a realpath shim over the memo test's shape. It reads 74 at 3e58eb9c and 27364085, 18 at 80cc6224 and 21b35ebf, and 10 at HEAD. The unmemoized mutant replaces `then mc_m[$c]=1` with `then :` in 80cc6224's lib and reads 102. The crash fix is the guarded type check:
+```
+# scripts/lib/dev-cycle-read.sh:736
+  set +u; [[ "${mc_e@a}" == *A* && "${mc_m@a}" == *A* ]] || return 1
+```
+80cc6224's empty-tree test is `not ok` against 27364085's lib (r2; r1 and r3 record `line 699: mc_e: unbound variable`).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:733-736`, `test/scripts/build-loop-check.bats:834-840`, `/tmp/u2a3c-i2-fc2-zy90/logs/rpcount.txt`, `/tmp/u2a3c-i2-fc2-zy90/logs/rpcount-nomemo.txt`, `/tmp/u2a3c-i2-fc2-zy90/logs/c80cc6224-emptytree-vs-27364085.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/realpath-counts.log`
+
+---
+
+## Claim 11: Override row 451: "IMPORT_WORK_MAX bounds the work charged over a whole walk, so N adversarial files cost one bound … one bound still costs about 5 s"
+
+**Location:** `docs/reviews/override-log.md:451`
+**Type:** Behavioral / Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the walk-wide accumulation and the per-file mutant's behaviour against 61e2e734's test and HEAD's T3. It does not re-measure "about 5 s" per bound, and row 455 narrows the bound to charged work only.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r1: one bound of the many-component shape measured 46,301,220 charged in 3,444 ms (about 5 s at 50,000,000) · r3: per-file mutant killed by T3.
+
+```
+# scripts/lib/dev-cycle-read.sh:677-682
+import_work() {
+  local -n iw_o="$1" iw_t="$2"; local iw_w="${iw_o##*/}"
+  [[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1
+  iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
+  (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
+}
+```
+The per-file mutant passes `IMPORT_WORK_LEFT=$IMPORT_WORK_MAX`. Against 61e2e734's test it prints `-1 tree ok / -1 main ok` and the test fails; against HEAD's T3 it fails both the `-1` rows and the caps rows (r2).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:677-682`, `:775`, `:837-840`, `test/scripts/build-loop-check.bats:897-912`, `/tmp/u2a3c-i2-fc2-zy90/logs/c61e2e734-vs-perfile.txt`, `/tmp/u2a3c-i2-fc2-zy90/logs/HEAD-T3-vs-perfile.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/mutant-perfile.log`
+
+---
+
+## Claim 12: Override row 452: "the rebase resolution 3e58eb9c dropped the cache-clear rule, the FIFO start and the snapshot assumption from known issue A5 and U2b's 'owes the walk three things' clause ... Iteration 2 restored"
+
+**Location:** `docs/reviews/override-log.md:452`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers presence of the three items in A5 and the U2b clause at 2b1399ab, 3e58eb9c and HEAD; does not establish the restored wording is identical to 2b1399ab's.
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified
+**Replicate annotations:** r2: "does not establish that the restored MEMO rule is complete" (Claim 20b) · r3: accuracy of the restored text is checked in the A5/plan claims.
+
+Counts per revision (A5 row: `IMPORTED_MAIN_DONE`/`FIFO`/swap-or-snapshot; U2b bullet: "three things"): 2b1399ab 1/1/1(swapped)/1; 3e58eb9c 0/0/0/0; HEAD 1/1/1/1 (r1; r2 also 21b35ebf 0/0/0).
+
+**Evidence:** `docs/working/known-issues-dev-cycle.md:18`, `docs/working/plan-build-loop-handoff.md:279`; `git show <rev>:<file> | grep -c` (cwd worktree, exit 0; paraphrased — no captured file because the counts were printed inline and are reproduced in full here)
+
+---
+
+## Claim 13: Override row 453: "main_imports records the parser's whole output before the seen test ... Test 'a main import of an untracked start' pins it"
+
+**Location:** `docs/reviews/override-log.md:453`
+**Type:** Reference / Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the record-before-seen order and that a test pins it; does not establish a test by the quoted name.
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Verified
+**Replicate annotations:** r2: "does not establish a mutant kill for that order, which was not run" · r3: "does not establish a mutation test of a per-candidate record".
+
+The order holds: `i="$(lower "$out")" || { IMPORTED_MAIN=error; return 1; }; IMPORTED_MAIN+="$i"$'\n'` (`scripts/lib/dev-cycle-read.sh:866`) precedes the per-name loop with `[[ -z "${seen[$p]+set}" ]] || continue` (`:869`). No test is titled "a main import of an untracked start"; the pinning test is `@test "main walk reads an untracked start that a main file also imports once, through the checkout (U2a3c; override row 446)"` (`test/scripts/build-loop-check.bats:921`), whose `want docs/AGENTS.md imported` fails if the record moved after the seen test. Precise version: name that title (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:863-874`, `test/scripts/build-loop-check.bats:921-930`
+
+---
+
+## Claim 14: Override row 454: "The symlink arm fails link text over 4096 bytes (`git cat-file -s`) before reading it; test added"
+
+**Location:** `docs/reviews/override-log.md:454`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the fix and its test; does not re-measure the cited "256 MiB link blob, 58 s and 2 GiB" (not re-run: 2 GiB of memory per run).
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: a 64 MiB link blob at a start name fails the walk in 0.02 s · r3: mutant without `&& [[ "$i" -le 4096 ]]` killed.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:842-843
+        # Link text past PATH_MAX (4096) names nothing; it fails before the two whole reads below.
+        i="$(git cat-file -s "$MAIN_SHA:$f")" && [[ "$i" -le 4096 ]] || { IMPORTED_MAIN=error; return 1; }
+```
+(excerpt ends :843; enclosing `120000)` arm continues to :859 — read)
+
+The test fails on 21b35ebf's lib and passes on HEAD's (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:841-859`, `test/scripts/build-loop-check.bats:942-950`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`, `/tmp/u2a3c-i2-fc2-zy90/logs/biglink.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/mutant-nosizecap.log`
+
+---
+
+## Claim 15: Override row 455: "capped_read's drain (git inflates the whole blob, about 0.7 s per GiB) and the scan of @-less lines are uncharged, and a caller running both walks pays two bounds"
+
+**Location:** `docs/reviews/override-log.md:455`
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the drain rate on this host and which work is charged; does not establish the rate on other hosts.
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified (compound)
+**Replicate annotations:** r2 (Medium confidence): "The drain rate is host-dependent: 0.84 s per GiB measured here, against 'about 0.7'"; a 256 MiB blob drained in 0.21 s · r3: "does not establish row 455's 'about 0.7 s per GiB', which I did not measure".
+
+`git cat-file blob <1 GiB zeros> | (head -c 4194305; cat)` took 788 ms (4 ms without the drain). Work is charged only in `emit`, `put` and `splice` (`work +=` at `scripts/lib/dev-cycle-read.sh:566,584,617`); `scan` (`:601-613`) adds nothing; `work=0` is a local of each walk (`:757`, `:802`) (r1).
+
+**Evidence:** inline run (cwd mktemp repo, exit 0, 2026-10-07T20:18Z; output quoted: `1GiB drain ms=788`, `no-drain ms=4`); `scripts/lib/dev-cycle-read.sh:564-629`
+
+---
+
+## Claim 16a: Override row 456: "Each call site is one line" (the reader, parser, trailer-strip and budget chain written out three times)
+
+**Location:** `docs/reviews/override-log.md:456`
+**Type:** Architectural
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the three reader→parser→trailer→budget sites; does not assess whether they should be shared.
+**Replicate verdicts:** r1=Mostly accurate · r2=Verified (compound) · r3=—
+**Replicate annotations:** r2: "does not assess the deferral".
+
+Each site is one logical command over two physical lines, e.g. `out="$(capped_read < "$f" | IMPORT_LEFT=… import_targets "$d")" \` / `&& import_work out work || { IMPORTED=error; return 1; }` (`scripts/lib/dev-cycle-read.sh:775-776`; also `:837-838`, `:839-840`), and the budget add is a further line at each site (`:778`, `:864`). Precise version: "each call site is one statement" (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:775-778,837-840,864`
+
+---
+
+## Claim 16b: Override row 456: "main_checkout's comment now says why it differs from blocker"
+
+**Location:** `docs/reviews/override-log.md:456`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the three call sites and the comment. It does not assess the deferral.
+**Replicate verdicts:** r1=— · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** none
+
+The comment at `:730-731` reads: "unlike blocker it answers 2 below a plain file and needs a searchable directory (a second traversal on purpose)" (r2).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:730-731`, `:775-776`, `:837-840`
+
+---
+
+## Claim 17a: Known issue A5: the checkout phase's fail rules ("under a directory main stores as a link or gitlink or under an unsearchable directory, anything but a plain file or directory there (or nothing), an unreadable checkout file, a `..` after a checkout link in link text, and a checkout listing git prints any stderr for fail it; a linked worktree's `.git` file is read like any checkout file")
+
+**Location:** `docs/working/known-issues-dev-cycle.md:18`
+**Type:** Behavioral / Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each listed fail rule (tests and mutants), the .git rule and the pointer; does not establish anything about Claude Code's loading of the same shapes.
+**Replicate verdicts:** r1=Mostly accurate (compound) · r2=Verified · r3=Verified
+**Replicate annotations:** r1: its Mostly-accurate verdict rests on the pointer half (Claim 17b); it found every fail rule matching the code · r2: "does not establish the claim that Claude Code reads a gitfile" · r3: "does not establish behaviour under a non-default git environment, which the U2b clause covers"; mutants removing the mode check, the `-x` test or the readability test are each killed.
+
+Every fail rule matches `main_checkout` (`scripts/lib/dev-cycle-read.sh:742,745,751-752`), the `..`-after-link check (`[[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1`, `:856`) and `checkout_md` (`[[ -z "$e" ]]`, `:716`); the suites exercising them pass. The pointer overstates: the lib's block comment holds the cache-clear and HOME rules (`:486-491`) but not the git-environment duty (`GIT_INDEX_FILE`, fsmonitor, …), which `grep` finds nowhere in the lib; it is only in the U2b bullet (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:464-491,713-755,841-859`; `grep -n GIT_INDEX_FILE scripts/lib/dev-cycle-read.sh` (no hits); `/tmp/u2a3c-i2-fc3-j0eh/logs/mutant-nomode.log`
+
+---
+
+## Claim 17b: Known issue A5: "The walk's cache ignores the checkout, so a caller clears `IMPORTED_MAIN_DONE` after any checkout change (the lib's block comment above `IMPORTED=` holds the caller contract; the U2b bullet names what U2b owes it)."
+
+**Location:** `docs/working/known-issues-dev-cycle.md:18`
+**Type:** Architectural / Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the cache key and the lib comment's contents. It does not establish that any caller honours the contract (none exists before U2a4/U2b).
+**Replicate verdicts:** r1=Mostly accurate (compound) · r2=Verified (compound) · r3=Mostly accurate
+**Replicate annotations:** r1: "Precise version: 'the lib's block comment holds the cache rule; the U2b bullet holds all three duties'" · r2: verified the cache-clear sentence and the cache test (`- - z.sh`); "nothing in this pass covers whether any caller honours the clear".
+
+The key is `"$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"` (`scripts/lib/dev-cycle-read.sh:806-807`). The lib comment holds the cache-clear and HOME-clear duties: "so a caller whose checkout may have changed (a file added or edited) sets IMPORTED_MAIN_DONE="" to walk again ... A caller that changes HOME clears both" (`:488-491`). It does not hold the git-environment duty (GIT_INDEX_FILE, fsmonitor, sparse checkout and so on) or the `LC_ALL=C` duty. `grep -n 'GIT_INDEX_FILE\|fsmonitor\|sparse' scripts/lib/dev-cycle-read.sh` finds nothing (paraphrased — no quote available because the claim concerns text that is absent). Those duties appear only in the U2b bullet and the override log (r3).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:486-496`, `docs/working/plan-build-loop-handoff.md:279`
+
+---
+
+## Claim 17c: Known issue A5, not covered: "a start file that is not a regular file or symlink (git does not list a FIFO), a checkout file swapped between its admission and its read (the walk reads the checkout as one snapshot)"
 
 **Location:** `docs/working/known-issues-dev-cycle.md:18`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each listed admission and refusal shape against `main_checkout`, `checkout_md` and the symlink arm, through the HEAD suites and a per-shape probe. It does not establish completeness of A5's not-covered list, which lost three items in the rebase (Claims 1-3).
-**Legibility-target:** docs
+**Scope:** Covers git 2.39's listing of a FIFO named like a start. It does not establish whether Claude Code loads a FIFO.
+**Replicate verdicts:** r1=— · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r2: "does not establish the FIFO listing claim by execution in this pass (it was executed in iteration 1, P6)".
 
-Phase 2 seeding and admission:
+Command (cwd: a fresh repo under `/tmp/u2a3c-i2-fc3-j0eh/fz`, holding a `mkfifo AGENTS.md` and a plain GEMINI.md): `git ls-files -z --cached --others -- ':(glob,icase)**/*.md'`. Exit 0, 2026-10-07T20:19Z. It listed only `GEMINI.md` (r3).
 
-```
-# scripts/lib/dev-cycle-read.sh:806-808
-      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
-      [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
-      seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
-```
-
-A per-shape probe calls `main_checkout ent pok PATH` with `ent=([gl]=160000 [ml]=120000 [nd2/ml2]=120000 [mf]=100644)` under `set -euo pipefail`. It returns 0 for a plain file and for a file under a readable-or-not but searchable directory. It returns 2 for absent, under absent, under a plain file, a plain dir, and an unsearchable dir at PATH. It returns 1 for a link to a file, a link to a dir, a dangling link, a FIFO, a file under an unsearchable dir, an unreadable file, anything under a checkout dir link, and anything under main's gitlink or link (also below an absent ancestor). The `..`-after-checkout-link rule is the symlink arm's `[[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1` (`scripts/lib/dev-cycle-read.sh:837`). The stderr rule is `checkout_md` (Claim 18).
-
-Command: `/tmp/u2a3c-i2-fc-kkjF/mc-probe.sh <lib> new|old /tmp/u2a3c-i2-fc-kkjF/mcrepo`, cwd the probe repo, exit 0, 19:24Z.
-
-**Evidence:** `docs/working/known-issues-dev-cycle.md:18`, `scripts/lib/dev-cycle-read.sh:705-742,806-808,826-840`; log `/tmp/u2a3c-i2-fc-kkjF/logs/main-checkout-shapes.txt`, `logs/build-loop-check.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:483-485`, `scripts/lib/dev-cycle-read.sh:713-716`, `/tmp/u2a3c-i2-fc3-j0eh/logs/fifo-ls.log`
 
 ---
 
-## Claim 7: F11: "U2a3c adds the checkout phase: … one admission check (`main_checkout`) refuses a path under a link or gitlink main stores, under an unsearchable directory, or anything but a plain file or directory, and a checkout listing git warns about fails the walk."
+## Claim 18: F11: "one admission check (`main_checkout`) refuses a path under a link or gitlink main stores, under an unsearchable directory, or anything but a plain file or directory, and a checkout listing git prints any stderr for fails the walk; the caller contract (cache clear, empty `ls-files` stderr, the git environment) is in the U2b bullet"
 
 **Location:** `docs/working/plan-build-loop-handoff.md:126`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the F11 row's description of the checkout phase. It does not cover the row's gap list beyond what A5 holds.
-**Legibility-target:** docs
-
-This is the same mechanism as Claim 6. Both call sites of `main_checkout` are its only admission (`scripts/lib/dev-cycle-read.sh:806` for starts, `:852` for imports). Paraphrased, no quote available because the claim covers absence of code: `rg -n main_checkout` over scripts/skills/test finds no other caller outside the lib and its tests. F11 does not separately name "under a checkout directory link". That shape is refused both as an ancestor and as its own prefix candidate (Claim 32), so F11's "anything but a plain file or directory" covers it in practice.
-
-**Evidence:** `docs/working/plan-build-loop-handoff.md:126`, `scripts/lib/dev-cycle-read.sh:806,852`
-
----
-
-## Claim 8: U2a3c bullet: "Built 2026-10-07 after the rebase onto U2a3b: the fail rules as stated (a plain file main lacks is walked, only a non-plain node fails), `capped_read`, the work bound `IMPORT_WORK_MAX` …, `main_checkout`'s ancestor memo, the `.git` rule, and N1 (`lower_all` under `nul_list`)."
-
-**Location:** `docs/working/plan-build-loop-handoff.md:277`
 **Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the parenthetical fail rule and the list of items built. It does not establish the earlier, pre-existing parts of the bullet.
-**Legibility-target:** docs
-
-Each listed item exists, and its test passes at HEAD. "Only a non-plain node fails" is too narrow, though. Plain nodes also fail the walk in three cases:
-
-- an unreadable plain file: `if rawfile "$c"; then [[ -r "$c" ]]; return; fi` (`scripts/lib/dev-cycle-read.sh:737`)
-- a plain file or directory under a directory main stores as a link or gitlink: `[[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1` (`:729`)
-- a plain but unsearchable ancestor directory: `elif plaindir "$c" && [[ -x "$c" ]]; then mc_m[$c]=1` / `else return 1; fi` (`:732-733`)
-
-The probe returned 1 for `ur.md` (mode 000), `ml/x.md` (main 120000, checkout plain) and `us/x.md` (dir mode 644). A precise version: "a plain, readable file main lacks is walked; a non-plain node, an unreadable file, or a path under main's link/gitlink or an unsearchable directory fails". The bullet's earlier phrase "an unsearchable checkout directory fails the walk" holds only when a walked path lies below it. `us` named alone returns 2, and an unsearchable directory holding no `.md` draws no git warning (`logs/unsearchable-listing.txt`: only the mode-000 `u0/` warned).
-
-**Evidence:** `docs/working/plan-build-loop-handoff.md:277`, `scripts/lib/dev-cycle-read.sh:721-742`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/main-checkout-shapes.txt`, `logs/unsearchable-listing.txt`
-
----
-
-## Claim 9: U2b bullet: "It names the checkout `--check` runs from (the walk reads its untracked, ignored and index-only start files and the imported files main lacks there)"
-
-**Location:** `docs/working/plan-build-loop-handoff.md:279`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the parenthetical, which no longer says "fresh worktree". It does not establish that the bullet still records what the walk owes its caller: that text was dropped (Claim 1).
-**Legibility-target:** docs
+**Scope:** Covers the refusal list and the pointer; does not establish the omitted rule's test coverage beyond T1.
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Verified
+**Replicate annotations:** r2: "Precise version: '…or anything but a readable plain file or a plain directory'"; does not cover the U2a3c bullet, which lists the unreadable file · r3 (Verified): "does not cover the unreadable-file refusal, which F11 omits (A5 and the U2a3c bullet state it)".
 
-`checkout_md` lists `--cached --others` (`scripts/lib/dev-cycle-read.sh:710`), and candidates main lacks are tagged `t:` (`:796`). No "until U2a3c" or "fresh worktree" phrasing remains in the U2b bullet, A5 or F11. Paraphrased, no quote available because this is a grep result: `grep -n 'until U2a3c\|fresh worktree'` over these docs hits only historical U2a3 text at `plan…:276`, which describes U2a3 as built, and line 99, which is unrelated.
+All listed refusals are in `main_checkout`; the list omits its unreadable-plain-file refusal, `if rawfile "$c"; then [[ -r "$c" ]]; return; fi` (`scripts/lib/dev-cycle-read.sh:751`), which the U2a3c bullet and A5 both list. The U2b pointer is right (r1).
 
-**Evidence:** `docs/working/plan-build-loop-handoff.md:279`, `scripts/lib/dev-cycle-read.sh:706-710,796`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:732-755`, `docs/working/plan-build-loop-handoff.md:126,277,279`
 
 ---
 
-## Claim 10: Lib header: "main_imports reads main's commit first and then the working tree (the checkout's start files and imported files main lacks, which can only add imports or fail it; it needs resolve_main to have found main by name); imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL."
+## Claim 19: U2a3c bullet: "Built 2026-10-07 ...: the fail rules as stated ..., `capped_read`, the work bound `IMPORT_WORK_MAX` (reported by the parser's trailer, charged by `import_work`), `main_checkout`'s ancestor memo, the `.git` rule, and N1 (`lower_all` under `nul_list`)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:36-39`
+**Location:** `docs/working/plan-build-loop-handoff.md:277`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers read order, append-only behaviour, and the main_by_name dependency. It does not establish that `main_checkout` alone guards every checkout read: the symlink arm's `-L "$p"` probes read the checkout too.
-**Legibility-target:** code comment
-
-`main_by_name || return 1` (`:791`). Phase 2 starts only when `queue` is empty: `[[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }` (`:815`). Paraphrased, no quote available because this is an invariant inferred from the loop body: phase-2 output only appends to `IMPORTED_MAIN` (`:848`), and its only other effect is a failure return.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:33-39,786-858`
-
----
-
-## Claim 11: IMPORTED block comment: the checkout phase, its refusals ("a checkout listing git prints any stderr for"), the not-covered list ("a start that is not a regular file or symlink (git does not list a FIFO)"), "The walk reads the checkout as one snapshot", and the cache text ("never the checkout … sets IMPORTED_MAIN_DONE="" to walk again")
-
-**Location:** `scripts/lib/dev-cycle-read.sh:461-492`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the phase-2 rules, the cache key's exclusion of the checkout, and the stderr refusal. It does not verify that a FIFO is unlisted by git: that is a settled row, and only the comment's presence was checked.
-**Legibility-target:** code comment
+**Scope:** Covers each named item's presence and its test; does not establish the bullet's carried-from-U2a3b requirements text (history).
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified
+**Replicate annotations:** r2+r3: the `.git` special case is gone (`if [[ "$p" == .git ]]` is in main's lib, not HEAD's).
 
-The cache key is `[[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]]` (`:789`), which holds no checkout state. The HEAD cache test shows a checkout edit unseen until the key is cleared: expected output `- - z.sh` (`test/scripts/build-loop-check.bats:338`, passing). The refusal shapes are Claim 6.
+Each item exists (`capped_read` `:709`, `IMPORT_WORK_MAX` `:511`, trailer `END { if (trail) print "/" (work + 0) }` `:629`, `import_work` `:677-682`, `pok` `:804`, `lower_all` `:700` used as `nul_list low lower_all "${cand[@]}"` `:820`) and its tests pass; the fail-rule mutants fail their tests (r1).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:461-492,789`, `test/scripts/build-loop-check.bats:330-339`; log `/tmp/u2a3c-i2-fc-kkjF/logs/build-loop-check.txt`
-
----
-
-## Claim 12: "Each walk also fails once the parser's work (the candidate and comment-splice characters it scans, the unit of its per-file bound of 50,000,000, about 5 s) passes this in all, so N adversarial files cost one bound, not N … /workspace's walks spend about 8,100 each (2026-10-07)."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:503-508`
-**Type:** Configuration / Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the constant, its walk-wide effect, the /workspace work figure and the order of magnitude of the per-bound time. It does not establish the "5 s" exactly (about 4 s measured here), or a bound over the two walks together: each walk has its own bound.
-**Legibility-target:** code comment
-
-`IMPORT_WORK_MAX=50000000` (`:508`). Both walks pass `IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work))` and charge through `import_work out work` (`:760-761,821-824`).
-
-Measured on /workspace with the HEAD lib (`ws-measure.sh`, cwd `/workspace`, main e5d0f838, exit 0, 19:23:03Z): `tree walk: ok work=8110 secs=1.08` and `main walk: ok work=8110 secs=1.31`. The per-file bound took 3.73-4.04 s on an adversarial `a/`-chain token (Claim 5). The "candidate and comment-splice characters" wording leaves out the resolved spellings `put` charges. The comment at `:578-579` states that charge, so this is not a mismatch.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:503-508,575-580,760-761,821-824`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/ws-measure-head.txt`, `logs/perfile-bound2.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:677-755,801-876`; `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`
 
 ---
 
-## Claim 13: import_targets reads "IMPORT_WORK_LEFT (set by a walk: what its IMPORT_WORK_MAX has left, which then also caps the per-file work bound, and a last line "/N" reports the work spent; import_work reads it)"; and the parser's output is unchanged when IMPORT_WORK_LEFT is unset
+## Claim 20a: U2b bullet: U2b "owes the walk three things: that checkout final before the walk, or `IMPORTED_MAIN_DONE` cleared (the cache key ignores the checkout); a git that prints nothing on stderr for `ls-files` (any stderr fails the walk closed); and the git environment the override log hands the caller"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:521-524`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the trailer, the cap and output equality with main's parser on four real files. It does not prove equality for all inputs; the static read of `trail` covers that.
-**Legibility-target:** code comment
-
-```
-# scripts/lib/dev-cycle-read.sh:622,625
-  wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
-END { if (trail) print "/" (work + 0) }'
-```
-
-`IT_WORK="${IMPORT_WORK_LEFT:-}"` (`:666`), so unset or empty means no trailer and wmax stays 50,000,000. main's lib and HEAD's lib gave identical output md5 (`d04d98ae…`) on AGENTS.md, README.md and two docs/working files. With `IMPORT_WORK_LEFT=5` the parser printed `/42` and returned 1.
-
-Command: `bash /tmp/u2a3c-i2-fc-kkjF/parser-unchanged.sh`, cwd the worktree, exit 0, 19:22:44Z.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:517-524,618-626,664-667`; log `/tmp/u2a3c-i2-fc-kkjF/logs/parser-unchanged.txt`
-
----
-
-## Claim 14: awk runs END after `exit 3`, keeping the status (the trailer is printed and the failure still reported)
-
-**Location:** `scripts/lib/dev-cycle-read.sh:625`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers mawk 1.3 (the sandbox's awk). It does not cover gawk or busybox awk. POSIX specifies the same behaviour, but that was not run.
-**Legibility-target:** code comment
-
-`echo x | awk '{ work=7; exit 3 } END { print "/" (work+0) }'` printed `/7` with rc=3. `awk 'BEGIN { exit 2 } END { print "/end" }'` printed `/end` with rc=2. A trailer after a failure cannot pass, because `import_targets` returns 1 (`|| return 1`, `:667`) and `&& import_work` is skipped (`:761`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:625,666-667,760-761`; log `/tmp/u2a3c-i2-fc-kkjF/logs/awk-exit-end.txt` (19:22:24Z, cwd scratch)
-
----
-
-## Claim 15: "import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N", printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with /) … returns 1 when the trailer is missing or TOTAL passes IMPORT_WORK_MAX."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:669-678`
-**Type:** Behavioral / Invariant
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the no-leading-slash invariant of the parser's output and import_work's accept and reject rules. It does not cover callers other than the two walks; there are none.
-**Legibility-target:** code comment
-
-`put` builds `out` from non-empty components joined by "/", then strips `pre` (root plus "/"): `out = substr(out, length(pre) + 1)` (`:593`). It returns before printing when `length(out) <= length(pre)` (`:592`), so each printed name starts with a non-slash character. The check `[[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1` (`:675`) then accepts only a whole last line `/N`. The HEAD test "import_work strips…" passes with cases `docs/12` → failed, `a.md\nb/12x` → failed, and budget 30 → failed at 31.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:575-596,669-678`, `test/scripts/build-loop-check.bats:855-864`; log `/tmp/u2a3c-i2-fc-kkjF/logs/build-loop-check.txt`
-
----
-
-## Claim 16: "lower_all … Read it through nul_list: a tr that dies after a partial flush then fails the list rather than truncating its last name and dropping a start (U2a3b final N1)."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:692-696`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the main walk's candidate batch (`:797`). It does not cover the per-file `lower` calls, which are not batched.
-**Legibility-target:** code comment
-
-`[[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1` (`:797`). `nul_list` appends `rc=1` when the command fails (`:690`). The test "batch tr dies after a partial flush" passes at HEAD and fails on 3e58eb9c's lib (`want: walk: failed`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:690,692-696,797-798`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/head-tests-on-3e58eb9c.txt` (19:20:10Z, exit 1), `logs/build-loop-check.txt`
-
----
-
-## Claim 17: "capped_read: the first 4 MiB + 1 bytes of stdin, the one reader both walks parse, for checkout files and main's blobs alike. … From a pipe (git cat-file) it drains the rest, so the writer never dies of SIGPIPE, which pipefail would report as a failed read (U2a3b L2-C5)."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:697-703`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers every input the parser reads (`imported_names:760`, `main_imports:821` checkout arm and `:823` blob arm), pipe detection and drain, and head's exact read. It does not cover the symlink arm (`:828-829`), which reads 120000 blobs whole (twice) without a cap. That text is not parsed, so the "parse" wording holds, but the override row closing L2-C5 ("capped_read is the one reader for … main's blobs") is broader than the code.
-**Legibility-target:** code comment
-
-```
-# scripts/lib/dev-cycle-read.sh:703
-capped_read() { head -c 4194305 || return 1; [[ ! -p /dev/stdin ]] || cat > /dev/null; }
-```
-
-Probe results (cwd the worktree, 19:21:02Z, exit 0):
-
-- `[[ -p /dev/stdin ]]` is `pipe` inside `$(printf x | f | cat)` and `notpipe` for `f < file`.
-- GNU head does not over-read a pipe: `head -c 10000000 /dev/zero | { head -c 5; wc -c; }` gives 9999995.
-- capped_read returns 4194305 bytes from both a 6,000,000-byte pipe and a 6,000,000-byte file.
-- Under pipefail, a bare `head -c 4194305` after a 6 MB writer exits 141, and `capped_read` exits 0.
-- An empty pipe and `/dev/null` both give rc 0.
-
-The no-drain mutant fails the 4 MiB test (Claim 5). Paraphrased, no quote available because this is the symlink-arm residue: `i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)"` and `out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"` (`:828-829`) read the link blob in full.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:697-703,760,821-829`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/capped-read-probe.txt`, `logs/mut-nodrain.txt`
-
----
-
-## Claim 18: "checkout_md: … fails when git exits nonzero or prints anything on stderr, since an unreadable directory goes unlisted with only a warning."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:706-710`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers git 2.39's warning for a mode-000 directory and the function's status logic. It does not cover a readable but unsearchable (644) directory, which git lists without warning when it holds no `.md`, so checkout_md does not fail on it. main_checkout refuses a walked path below it.
-**Legibility-target:** code comment
-
-`checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[ -z "$e" ]]; }`. git printed `warning: could not open directory 'u0/': Permission denied` for the 000 directory and nothing for the 644 directories (`us` empty, `us2` holding a `.txt`). The HEAD test case `hid` (mode 000 holding CLAUDE.md) expects and gets `walk failed`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:706-710`, `test/scripts/build-loop-check.bats:795`; log `/tmp/u2a3c-i2-fc-kkjF/logs/unsearchable-listing.txt` (19:24:14Z, cwd `/tmp/u2a3c-i2-fc-kkjF/usrepo`)
-
----
-
-## Claim 19: main_checkout return codes: "0 for a plain checkout file to walk, 2 when nothing there loads (absent, below an absent ancestor or a plain file, or a plain directory), 1 to fail the walk: an ancestor main stores as a link or gitlink, an ancestor that is anything else but a plain searchable directory, ENT or MEMO not an associative array, or anything else at PATH."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:711-720`
-**Type:** Behavioral
+**Location:** `docs/working/plan-build-loop-handoff.md:279`
+**Type:** Architectural / Invariant
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers all 25 probed shapes plus the non-associative ENT and MEMO cases. It does not cover concurrency (settled TOCTOU row).
-**Legibility-target:** code comment
+**Scope:** Covers the three duties and the MEMO rule. It does not establish that the stated rule is complete for another caller.
+**Replicate verdicts:** r1=— · r2=Verified · r3=Mostly accurate (compound)
+**Replicate annotations:** r2 (Verified): the cache key omits the checkout (`:806-807`), `checkout_md` fails on any stderr (`:716`); "does not verify the override log's git-environment list item by item" · r3: its Mostly-accurate verdict rests on the MEMO-rule half (Claim 20b); "The three duties match the code (`scripts/lib/dev-cycle-read.sh:716`, `:806`)".
 
-Every probed shape matches the comment except the unreadable plain file. "0 for a plain checkout file" needs "readable": `if rawfile "$c"; then [[ -r "$c" ]]; return; fi` (`:737`) returns 1 for `ur.md` (mode 000), and a plain file is not naturally "anything else at PATH". The block comment above IMPORTED= says it correctly ("anything but a readable plain file", `:474`). Other results:
+The three duties match the code (`scripts/lib/dev-cycle-read.sh:716`, `:806`). The MEMO rule leaves out a third condition (Claim 20b) (r3).
 
-- non-associative ENT (`declare -a`) → 1, and non-associative MEMO → 1
-- `f.md/x` (under a plain file) → 2, and `nd/x.md` → 2
-- `nd2/ml2/x.md` (main link below an absent checkout ancestor) → 1, which confirms main's modes are checked even below an absent ancestor (`:729` precedes `:730`)
-- memo keys after the run: `d urd mf .git d/sub`, all plain searchable directories that passed the mode check
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:711-742`; log `/tmp/u2a3c-i2-fc-kkjF/logs/main-checkout-shapes.txt` (cwd `/tmp/u2a3c-i2-fc-kkjF/mcrepo`, exit 0, 19:24Z)
+**Evidence:** `scripts/lib/dev-cycle-read.sh:486-491`, `:716`, `:806-807`, `/tmp/u2a3c-i2-fc3-j0eh/logs/memo-path-ent.log`
 
 ---
 
-## Claim 20: "${x@a} on an empty array is an unbound-variable error under set -u (an empty main tree, the first call's MEMO); the body reads both through :- and +set." (with `local -; set +u`)
+## Claim 20b: U2b bullet: "A caller of `main_checkout` other than `main_imports` passes a fresh MEMO per walk and ENT (a MEMO hit skips main's mode check too)"
 
-**Location:** `scripts/lib/dev-cycle-read.sh:723-725`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers bash 5.2.15, through a nameref as used here, and the restoration of `-u` on return. It does not cover bash < 5.0.
-**Legibility-target:** code comment
-
-Under `set -u`:
-
-- `declare -A e=(); echo "${e@a}"` → `e: unbound variable`, rc 127
-- through a nameref → `r: unbound variable`
-- a non-empty array → `[A]`
-- with `set +u`, an empty associative array → `[A]`, so the type check works
-- `f(){ local -; set +u; }; f` leaves `-u` set in the caller
-
-The body reads `${mc_m[$c]+set}` (`:728`) and `${mc_e[$c]:-}` (`:729`). The probe's call `main_checkout empty empty f.md` under `set -euo pipefail` returned 0. 27364085's version died there (`line 699: mc_e: unbound variable`, Claim 5). The `set +u` is scoped to main_checkout and to `rawfile`/`plaindir`, which it calls and which read `${ROOT_REAL:-}`. Paraphrased, no quote available because this is a scope argument over three functions: nothing else runs under it.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:103,106,721-742`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/at-a-probe.txt` (19:21:07Z), `logs/main-checkout-shapes.txt`
-
----
-
-## Claim 21: main_imports block comment: returns 1 when "the commit's tree or the checkout's .md list (tracked and untracked) cannot be listed whole (nul_list, checkout_md) … the start list's lower_all fails or comes back short, main_checkout refuses a start or an import main lacks, a blob or checkout file cannot be read … or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent; need_root exits instead."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:772-783`
-**Type:** Error-handling
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers each listed failure's return path in `main_imports` (`:786-858`). "untracked" includes ignored files (git's `--others`). It does not cover need_root's exit.
-**Legibility-target:** code comment
-
-The paths are `nul_list recs checkout_md || return 1` (`:795`), `nul_list low lower_all … || return 1` and `[[ ${#low[@]} -eq ${#cand[@]} ]] || return 1` (`:797-798`), `[[ $c -ne 1 ]] || return 1` (`:807`, `:853`), the capped reads' `|| { IMPORTED_MAIN=error; return 1; }` (`:821-824`), and `(( (used += ${#out}) <= IMPORT_OUT_MAX ))` with `import_work` (`:845`, `:822`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:772-858`
-
----
-
-## Claim 22: "Phase 2 begins when queue empties: tq's checkout files then join it, and a path main lacks reads the checkout."
-
-**Location:** `scripts/lib/dev-cycle-read.sh:784-785`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the queue hand-off and arm selection. It does not claim the two phases stay strictly separate: a phase-2 file's import that main stores re-enters `queue` and is read from main before `tq` rejoins. This matches the plan's "reads a path main stores through main's arms".
-**Legibility-target:** code comment
-
-`[[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }` (`:815`), with `case "${ent[$f]-checkout}" in` / `checkout) out="$(capped_read < "$f" | …` (`:820-821`), and `if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); elif [[ $c -eq 0 ]]; then tq+=("$p"); fi` (`:855`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:813-857`
-
----
-
-## Claim 23: "main lacks p: admitted before it is marked seen" (and iteration 1's A1-A3 and the C1 fast return still in place after the rebase)
-
-**Location:** `scripts/lib/dev-cycle-read.sh:852`
+**Location:** `docs/working/plan-build-loop-handoff.md:279`
 **Type:** Invariant
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the contract another caller needs; does not establish any current caller other than main_imports (there is none).
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Mostly accurate (compound)
+**Replicate annotations:** r2: repro `ENT=([a]=120000)`, `main_checkout ENT MEMO a` then `a/f` → `path=a/f new=0 old=1`; fresh MEMO gives `new=1`; the random differential found the same divergence (`a/u/n`, ENT `a=160000`) when calls were allowed on ENT paths; "Followed as written, it can admit a file under a link main stores" · r3: repro `c/x.md new=2 old=1` with `E=([c]=120000)`; "The precise rule is 'a fresh MEMO per walk and ENT, and a PATH that ENT does not hold'".
+
+The stated duties are needed but not sufficient: such a caller must also never pass a PATH that ENT holds, because the PATH arm memoizes `d` without testing PATH's own main mode (Claim 34), and a later call through it then skips that mode. main_imports meets this by calling only when `ent` lacks the path (`[[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p"`, `scripts/lib/dev-cycle-read.sh:870`; `t:` candidates only when `ent` lacks them, `:819`). Precise version: add "and only for a path ENT does not hold" (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:732-755,819,870`; `/tmp/u2a3c-i2-fc1-6NBv/logs/memo-path-in-ent.log`, `/tmp/u2a3c-i2-fc2-zy90/logs/repro1.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/memo-path-ent.log`
+
+---
+
+## Claim 21: Lib header: "main_imports reads main's commit first and then the working tree (the checkout's start files and imported files main lacks, which can only add imports or fail it ...); imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:36-39`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers append-only recording and the read order. It does not establish the path checks that phase 1 makes in the checkout (main_checkout runs on imports main lacks during main's walk too), which can also only fail the walk.
+**Replicate verdicts:** r1=— · r2=— · r3=Verified · single-replicate detection
+**Replicate annotations:** none
+
+`IMPORTED_MAIN+="$i"$'\n'` is the only write to the result after `IMPORTED_MAIN=$'\n'` (`:831`, `:866`). Phase 2 starts only when `queue` is empty: `[[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }` (`:833`) (r3).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:831-875`
+
+---
+
+## Claim 22: Block comment: "Once main's walk is done, a second phase walks the checkout's start files main lacks (untracked, ignored or only in the index) and the imported files main lacks, when each is a plain file there, and only appends. ... a checkout path it would walk ... that lies under a directory main stores as a symlink or gitlink or under an unsearchable directory, or that the checkout holds as anything but a readable plain file, a plain directory or nothing (the root included), or a checkout listing git prints any stderr for, fail the walk"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:464-477`
+**Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the ordering at both call sites, A1 (non-associative ENT/MEMO → 1), A2 (start-path check, pinned by the `.claude/rules` link case), A3, and C1 (`[[ -e || -L ]] || return 2` before any fork). It does not establish that C1 holds for ancestors that exist: those fork `plaindir` once each, then hit the memo.
-**Legibility-target:** code comment
+**Scope:** Covers the phase ordering, append-only reads and each fail rule through the passing tests and mutants; does not give "(the root included)" a code path (the parser never yields the root: `if (index(out, pre) != 1 || length(out) <= length(pre)) return`, `:594`), so that parenthesis is inert rather than wrong.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: "'Only appends' means phase 2 never removes a recorded name; it can still fail the whole walk" · r3: "does not establish behaviour for a start under `.git` (git lists none)".
 
-The imports site is `main_checkout … || c=$?` then `[[ $c -ne 1 ]] || …` then `seen[$p]=1` (`:852-854`). The starts site has the same order (`:806-808`). C1 is `c="$3"; [[ -e "$c" || -L "$c" ]] || return 2` (`:735`), and for ancestors `if [[ ! -e "$c" && ! -L "$c" ]] || rawfile "$c"; then st=2` (`:731`), which tests before forking. A1 was probed (Claim 19). The A2 test ("main stores .claude/rules as a link…", `test/scripts/build-loop-check.bats:788-789`) passes.
+Phase 2 starts only when `queue` empties: `[[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }  # phase 2: main's walk is done` (`:833`); checkout reads only add to `IMPORTED_MAIN` (`:866`). The index-only case is covered (`md_ls --cached --others`, `:716`; test line 89, "an index-only start deleted from the checkout loads nothing") (r1).
 
-**Evidence:** `scripts/lib/dev-cycle-read.sh:731,735,806-808,852-855`, `test/scripts/build-loop-check.bats:782-799`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/build-loop-check.txt`, `logs/main-checkout-shapes.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:713-755,801-876`; `test/scripts/build-loop-check.bats:77-91,782-799`; `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check.log`
 
 ---
 
-## Claim 24: "An untracked start: the tree walk reads it (the main walk fails closed on it until U2a3c)."
+## Claim 23: "A linked worktree's .git file and files under .git are checkout files like any other"
 
-**Location:** `test/scripts/build-loop-check.bats:69`
-**Type:** Staleness
-**Verdict:** Stale
+**Location:** `scripts/lib/dev-cycle-read.sh:476-477`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the removed special case and the three tests (lines 411, 657, 700); does not establish that Claude Code reads a gitfile this way (iteration 2's C9: unverifiable here).
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r3: nothing in main_imports special-cases `.git` (paraphrased by r3 because the claim concerns absent code).
+
+main's `if [[ "$p" == .git ]]; then …` block is gone from HEAD's main_imports; `.git` now reaches `main_checkout` like any path main lacks. The gitfile test (`:411`), the under-.git test (`:657`) and the nested .git file test (`:700`) now expect `walk ok` and pass (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:867-874`; `git show main:scripts/lib/dev-cycle-read.sh`; `test/scripts/build-loop-check.bats:411-425,657-664,700-714`
+
+---
+
+## Claim 24: "the result is cached for the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout, whose files it read, so a caller whose checkout may have changed (a file added or edited) sets IMPORTED_MAIN_DONE="" to walk again"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:486-491`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the key and the clear; does not establish any caller clearing it (none exists yet).
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** none
+
+`[[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }` (`:806`). The cache test's last three answers are `- - z.sh`: stale after `CLAUDE.local.md` gains `@z.sh`, fresh after the clear; it passes (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:806-807`, `test/scripts/build-loop-check.bats:330-341`, `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check.log`
+
+---
+
+## Claim 25: "Each walk also fails once the parser's work (the candidate and comment-splice characters it scans, the unit of its per-file bound of 50,000,000, about 5 s) passes this in all"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:504-506`
+**Type:** Configuration / Performance
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers what the work counter charges; does not establish the time for shapes other than the many-component one.
+**Replicate verdicts:** r1=Mostly accurate · r2=Verified (compound) · r3=Mostly accurate
+**Replicate annotations:** r3: "does not establish the 'about 5 s' timing on this host (the iteration-2 fact-check measured 4.04 s at the bound)"; "A precise version: 'the candidate, resolved-path and comment-splice characters it charges'" · r1: the root-length dependence of the unit escalated to performance-reviewer.
+
+The unit omits the largest term: `put` also charges each candidate's resolved spelling, which includes ROOT_REAL (`work += length(c)` after `c = root "/" dir "/" c`, `:581-584`). So the same file costs more work under a longer root: for `see @a.md`, w = 228 at a 50-character root and 252 at 56. "About 5 s" holds for the adversarial many-component shape but not in general: 49,063,020 units of one long name took 62 ms (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:564-629`; `/tmp/u2a3c-i2-fc1-6NBv/logs/work-vs-rootlen.log`; inline timing (cwd worktree, exit 0, 2026-10-07T20:19Z; quoted: `n=7000 rc=0 trailer=49063020 ms=62`)
+
+---
+
+## Claim 26: "reading, draining and the scan of @-less lines are not charged ... The bound is per walk: a caller that runs both walks pays up to two."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:507-510`
+**Type:** Performance
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the test comment's parenthetical. It does not mean the test is wrong: it does not exercise the main walk on that start.
-**Legibility-target:** test comment
+**Scope:** Covers which work is charged and the per-walk counter; does not establish any caller's combined cost.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=—
+**Replicate annotations:** none
 
-U2a3c is this branch, and the main walk now reads untracked starts. The test "upper-case .MD … tracked or untracked" expects `want walk ok; want docs/mine.md imported` for an untracked `docs/AGENTS.MD` (`test/scripts/build-loop-check.bats:259-260`). This is the only remaining "until U2a3c" in the scoped code and docs: `grep -n 'until U2a3c'` over the lib, the bats files, A5 and the plan gives only this line.
+`local - f d p lp out used=0 work=0 …` (`:757`) and `local - rec f d p i c lk out used=0 work=0 …` (`:802`) give each walk its own counter; work is charged only in `emit`, `put` and `splice` (r1).
 
-**Evidence:** `test/scripts/build-loop-check.bats:69,253-261`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:564-629,757,802`
 
 ---
 
-## Claim 25: "@a/b/c/d/e/f/g/h/x.md yields about 20 prefix candidates through eight plain directories main lacks … Unmemoized, each candidate re-checks every ancestor (102 calls; 74 at 3e58eb9c); memoized, each directory once, plus each candidate's own check (18)."
+## Claim 27: "/workspace's walks spend about 8,100 each (2026-10-07)"
 
-**Location:** `test/scripts/build-loop-check.bats:821-825`
+**Location:** `scripts/lib/dev-cycle-read.sh:508`
 **Type:** Performance
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three call counts. It does not establish the "about 20 candidates" count separately.
-**Legibility-target:** test comment
+**Scope:** Covers /workspace at main e5d0f838 today; does not establish the figure for other roots (it scales with the root's length: Claim 25).
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r2: timings host-dependent (1.4 s tree, 1.9 s main measured) · r3: "The figure drifts as the checkout changes".
 
-The realpath shim counted 18 at HEAD (assertion changed to print), 102 with the no-memo mutant, and 74 with 3e58eb9c's lib.
+`import_work` wrapped to sum charges: tree walk ok, work 8,110, 1,099 ms, 128 names; main walk ok, work 8,110, 1,352 ms (r1; r2 and r3 also measured 8,110).
 
-**Evidence:** `test/scripts/build-loop-check.bats:820-833`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/realpath-count-head.txt` (19:20:43Z, exit 0), `logs/mut-nomemo.txt`, `logs/head-tests-on-3e58eb9c.txt`
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/wswork.sh` (cwd /workspace, exit 0, 2026-10-07T20:17:29Z): `/tmp/u2a3c-i2-fc1-6NBv/logs/wswork.log`; `/tmp/u2a3c-i2-fc2-zy90/logs/measure-workspace.txt`; `/tmp/u2a3c-i2-fc3-j0eh/logs/workspace-work.log`
 
 ---
 
-## Claim 26: The .git tests' titles: the walk reads a linked worktree's gitfile and a nested `.git` file "as Claude Code does"
+## Claim 28: "IMPORT_WORK_LEFT (...) Unset or empty: no trailer and only the per-file bound; not a number: 0, so the first candidate fails it"
 
-**Location:** `test/scripts/build-loop-check.bats:411,700`
-**Type:** Reference / Behavioral
+**Location:** `scripts/lib/dev-cycle-read.sh:524-528`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers unset, empty, non-numeric, partly numeric, 0 and large values; does not establish behaviour for values the walks never pass (they always pass a non-negative integer).
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Mostly accurate
+**Replicate annotations:** r2: `-5` also gives rc 1; with no `@` in the text, `abc` gives rc 0 and `/0`; "Walks always pass a computed integer, so the residue does not affect them" · r3: `5x` reads as 5; "With no candidate, `abc` succeeds and prints `/0`".
+
+Unset and empty: output `a|ab|ab.|ab.m|ab.md`, no trailer, rc 0. `abc` and `0`: rc 1 at the first candidate. But a value with leading digits is read as those digits, not 0: `12abc` gives wmax 12 and fails at work 17 (`ENVIRON["IT_WORK"] + 0`, `:626`). Precise version: "not a number: its leading number, or 0". On a failing exit awk's END still prints the trailer (`/1`), harmless since the caller fails on the status (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:623-629,670-671`; `/tmp/u2a3c-i2-fc1-6NBv/logs/work-left-values.log`, `/tmp/u2a3c-i2-fc2-zy90/logs/trailer.txt`, `/tmp/u2a3c-i2-fc3-j0eh/logs/iwl-variants.log`
+
+---
+
+## Claim 29: "import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N", printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with /) from the variable OUT, and adds N to the variable TOTAL. It returns 1 when the trailer is missing or TOTAL passes IMPORT_WORK_MAX."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:673-682`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the strip, the add and both failures; does not establish that a printed name can never start with / beyond `put`'s `out = substr(out, length(pre) + 1)` (`:595`), which removes the root and its slash.
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified
+**Replicate annotations:** r2+r3: the no-leading-`/` invariant rests on `put`'s `substr(out, length(pre) + 1)` after a non-empty component.
+
+```bash
+# scripts/lib/dev-cycle-read.sh:677-682
+import_work() {
+  local -n iw_o="$1" iw_t="$2"; local iw_w="${iw_o##*/}"
+  [[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1
+  iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
+  (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
+}
+```
+
+The test at line 842 (cases `a.md\n/12`, `/7`, `docs/12`, `b/12x`, spent budget, `/0`) passes (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:677-682`, `test/scripts/build-loop-check.bats:842-851`, `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check.log`
+
+---
+
+## Claim 30: "lower_all ...: a tr that dies after a partial flush then fails the list rather than truncating its last name and dropping a start (U2a3b final N1)"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:696-700`
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the failing tr shim; does not establish a tr that exits 0 after truncating (nothing detects that, as for any tool).
+**Replicate verdicts:** r1=Verified · r2=— · r3=— · single-replicate detection
+**Replicate annotations:** none
+
+`lower_all() { local -; set -o pipefail; printf '%s\0' "$@" | tr … ; }` under `nul_list low lower_all "${cand[@]}" || return 1` (`:820`). The shim test passes at HEAD and fails with 3e58eb9c's lib (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:695,700,820-821`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`
+
+---
+
+## Claim 31a: capped_read: "the first 4 MiB + 1 bytes of stdin, the one reader both walks parse ... With the word drain (after git cat-file) it reads the rest, so the writer never dies of SIGPIPE ... The drain is time the work bound does not charge"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:701-709`
+**Type:** Behavioral / Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the byte cap, the call sites and the drain. It does not cover link blobs, which are not parsed and are capped separately (Claim 40).
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r1: confidence Medium on its compound, owing to the /proc half · r2: "It does not test a host without /proc"; "The drained bytes never reach the parser, so nothing charges them".
+
+`head -c 4194305` is 4·1048576 + 1. `capped_read < "$f"` (`:775`, `:837`) and `git cat-file blob ... | capped_read drain` (`:839`). The 4 MiB test passes at HEAD and fails at 3e58eb9c. The no-drain mutant is killed (Claim 9) (r3).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:709`, `scripts/lib/dev-cycle-read.sh:775`, `scripts/lib/dev-cycle-read.sh:837-840`, `/tmp/u2a3c-i2-fc3-j0eh/logs/old-3e58eb9c-reads_only_the_first_4_MiB___1.log`
+
+---
+
+## Claim 31b: "an argument, not a [[ -p /dev/stdin ]] test, which needs /proc"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:706-707`
+**Type:** Behavioral
 **Verdict:** Unverifiable
 **Confidence:** Medium
 **Verification mode:** static
-**Scope:** Covers the Claude Code half only. The walk half is Verified: both tests pass at HEAD, and the probe shows `.git` (dir) → 2 and `.git/config` → 0. This does not establish Claude Code 2.1.293's (installed) or 2.1.292's handling of a gitfile.
-**Legibility-target:** test comment
+**Scope:** Covers this host's `/dev/stdin`. It does not establish bash's behaviour with /proc unmounted.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Unverifiable
+**Replicate annotations:** r1: "the /proc dependency is established only as far as `/dev/stdin -> /proc/self/fd/0` on this host (a /proc-less run was blocked: `unshare` not permitted)" · r2: "It does not test a host without /proc" · r3: escalated to security-reviewer as unexecuted; "The change is safe either way, because the argument does not depend on /proc".
 
-The walk half: `main_checkout` has no `.git` special case. Paraphrased, no quote available because this is an absence result: the removed lines 376-382 of the merge-base version are gone, and `grep -n '"\.git"\|== \.git' scripts/lib/dev-cycle-read.sh` finds none in main_imports. Re-tracing Claude Code's import reader requires extracting the bundled JS from the native binary. That extraction was blocked by this session's permission classifier. The claim rests on U2a3b's L2-confirm security F1 trace.
+`ls -l /dev/stdin` shows `/dev/stdin -> /proc/self/fd/0`. Bash's manual says it uses these files when the OS provides them and emulates them otherwise, so with /proc absent the symlink would dangle (paraphrased — no quote available because the source is the bash manual, not this repo). Execution was blocked: `unshare -rm` fails with `Operation not permitted`, and no strace is installed. Confirming this needs a mount namespace without /proc (Q-127) (r3).
 
-**Evidence:** `test/scripts/build-loop-check.bats:411-424,700-714`, `scripts/lib/dev-cycle-read.sh:721-742`; log `/tmp/u2a3c-i2-fc-kkjF/logs/main-checkout-shapes.txt`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:706-709`
 
 ---
 
-## Claim 27: Commit 3e58eb9c: "Tests: build-loop-check 51/51, build-loop-read 19/19, dev-cycle 78/78, fixture-git-env 2/2."
+## Claim 32: "Claude Code skips a file over 4 MiB"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:702-703`
+**Type:** Behavioral
+**Verdict:** Unverifiable
+**Confidence:** Low
+**Verification mode:** static
+**Scope:** Covers nothing about Claude Code's runtime. The sentence was moved unchanged from main (`git show main:scripts/lib/dev-cycle-read.sh` line 686).
+**Replicate verdicts:** r1=— · r2=— · r3=Unverifiable · single-replicate detection
+**Replicate annotations:** none
+
+Verifying it needs Claude Code 2.1.292's reader, which this pass did not probe (r3; paraphrased — no quote available because the claim concerns an external binary).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:701-704`
+
+---
+
+## Claim 33: checkout_md: "fails when git exits nonzero or prints anything on stderr, since an unreadable directory goes unlisted with only a warning"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:713-716`
+**Type:** Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the stderr capture and the corrupt-index and `chmod 000` cases; does not establish every warning git can print.
+**Replicate verdicts:** r1=Verified · r2=— · r3=— · single-replicate detection
+**Replicate annotations:** none
+
+`checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[ -z "$e" ]]; }`. The `hid` case (`chmod 000`, walk failed, `test/scripts/build-loop-check.bats:794`) and the corrupt-index case (`:242-244`) pass (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:716,818`, `test/scripts/build-loop-check.bats:227-251,782-799`
+
+---
+
+## Claim 34: MEMO "d for a plain searchable directory, 2 for one absent or a plain file (nothing below it loads), set only once its own and every higher ancestor's main mode passed. A MEMO hit skips that mode check too, so a MEMO serves one walk and one ENT."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:720-723`
+**Type:** Invariant
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the PATH arm's memo write; the invariant does hold for every ancestor entry (`:742` before `:747`) and for main_imports, which never passes a path ENT holds (`:819`, `:870`); does not establish any live fail-open (there is no other caller today).
+**Replicate verdicts:** r1=Incorrect · r2=Incorrect · r3=Mostly accurate
+**Replicate annotations:** r2: "The mechanism the comment states, 'its own … main mode passed', does not run for PATH. The conclusion holds only under main_imports' unstated precondition (PATH ∉ ENT)"; chose Incorrect over Mostly accurate for that reason; "does not establish a defect for main_imports" · r3 (Mostly accurate): "'Its own ... mode passed' holds for the PATH memo (`:753`) only through the callers' guarantee that ENT lacks PATH"; fuzz with PATH allowed in ENT (`fuzz3.sh`, seed 7, 7,500 calls) found 97 mismatches against 21b35ebf, e.g. `p=c/a old=1 new=2 ENT=([c]="120000" ...)` · r1+r2+r3: escalated (security-reviewer / api-consistency-reviewer / architecture).
+
+The PATH arm writes `d` without testing PATH's own main mode:
+
+```bash
+# scripts/lib/dev-cycle-read.sh:749-754
+  [[ "$st" == d ]] || return 2
+  c="$3"; [[ -e "$c" || -L "$c" ]] || return 2
+  if rawfile "$c"; then [[ -r "$c" ]]; return; fi
+  plaindir "$c" || return 1
+  [[ ! -x "$c" ]] || mc_m[$c]=d  # a prefix candidate's directory, which longer ones pass through
+  return 2
+```
+(excerpt ends :754; enclosing `main_checkout` ends :755 — read)
+
+Executed: ENT `[a]=120000`, checkout `a/b/c.md` a plain file. `main_checkout ENT M a` returns 2 and memoizes `[a]=d`; then `main_checkout ENT M a/b/c.md` hits that entry, never tests `a`'s mode, and returns **0** (walk it), where 21b35ebf's version returns 1. A caller following the U2b contract (fresh MEMO and ENT) but passing a main-stored path would admit a file under a link main stores. Precise version: "set only once every higher ancestor's main mode passed, and for an ancestor its own; PATH itself is memoized without its own mode, so callers pass only paths ENT lacks" (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:732-755,819,870`; `/tmp/u2a3c-i2-fc1-6NBv/e1.sh` (cwd `/tmp/u2a3c-i2-fc1-6NBv/e1/x`, exit 0, 2026-10-07T20:22:38Z): `/tmp/u2a3c-i2-fc1-6NBv/logs/memo-path-in-ent.log` (shows `old(a/b/c.md)=1`, `new(a/b/c.md)=0`, `mn=([a]="d" [a/b]="d")`); `/tmp/u2a3c-i2-fc2-zy90/logs/repro-path-memo.txt`; `/tmp/u2a3c-i2-fc3-j0eh/logs/fuzz3-seed7.log`
+
+---
+
+## Claim 35: "0 for a readable plain checkout file to walk, 2 when nothing there loads (absent, below an absent ancestor or a plain file, or a plain directory), 1 to fail the walk: an ancestor main stores as a link or gitlink, an ancestor that is anything else but a plain searchable directory, an unreadable plain file, ENT or MEMO not an associative array, or anything else at PATH"; "Callers test 1 as a refusal, never as a plain false."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:724-728`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each listed code through T1's 17-row table, the indexed-array rows and three mutants; does not establish the answer for a PATH ENT holds (Claim 34).
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified (compound)
+**Replicate annotations:** r2: "A MEMO hit skipping the check is exactly what makes Claim 20's precondition matter"; both callers test 1 (`:825-826`, `:870-872`) · r3: does not cover a PATH that ENT holds.
+
+T1 passes; mutants that drop the mode check (`:742`), drop `-r` (`:751`) or break out of the loop below an absent ancestor each fail it (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:853-882`; `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants3.log`
+
+---
+
+## Claim 36: "unlike blocker it answers 2 below a plain file and needs a searchable directory"
+
+**Location:** `scripts/lib/dev-cycle-read.sh:730-731`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the comparison with blocker's ancestor loop. It does not cover blocker's leaf rule.
+**Replicate verdicts:** r1=— · r2=— · r3=Verified · single-replicate detection
+**Replicate annotations:** none
+
+blocker prints the first existing non-plain-directory part: `plaindir "$p" || { printf '%s/' "$p"; return 0; }` (`:117-119`). It has no `-x` test, so a plain file ancestor blocks there, while main_checkout sets `st=2` (`:744`) and tests `[[ ! -x "$c" ]]` (`:745`) (r3).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:114-124`, `scripts/lib/dev-cycle-read.sh:743-746`
+
+---
+
+## Claim 37: Iteration-1 fixes A1-A3 and C1 survive the rebase and the new commits
+
+**Location:** `scripts/lib/dev-cycle-read.sh:736,750,825-827,870-872`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the associative-array check (A1), the start's own parent check (A2), admission before seen (A3) and the no-fork fast return (C1); does not re-derive iteration 1's findings.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r3: "does not cover start candidates main stores (`m:`), which skip main_checkout by design".
+
+A1: `set +u; [[ "${mc_e@a}" == *A* && "${mc_m@a}" == *A* ]] || return 1` (`:736`; T1's `ent-indexed 1`, `memo-indexed 1`). A2: start candidates go through `main_checkout ent pok "$f"` (`:825`); the mode-check mutant fails the `.claude/rules` link case (`test/scripts/build-loop-check.bats:788-789`). A3: `main_checkout` (`:870`) precedes `seen[$p]=1` (`:872`), and at starts `:825` precedes `seen[$f]=1` (`:827`). C1: `c="$3"; [[ -e "$c" || -L "$c" ]] || return 2` (`:750`) before `rawfile` forks; ancestors likewise `[[ ! -e "$c" && ! -L "$c" ]] || rawfile "$c"` (`:744`) (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:732-755,822-829,867-874`; `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`
+
+---
+
+## Claim 38: main_checkout (2fbd929b): "Bottom up to the nearest decided ancestor, then top down from it" preserves the top-down version's answers
+
+**Location:** `scripts/lib/dev-cycle-read.sh:737-748`
+**Type:** Behavioral / Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers every return code of 21b35ebf's top-down main_checkout against HEAD's, for random checkout shapes to depth 3, random ENT modes and random call orders of 8 paths to depth 4 sharing one MEMO, for paths ENT does not hold (main_imports' only use); does not cover paths ENT holds (Claim 34) or unreadable files (identical code on both sides).
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: 15,800 in-contract calls over 4 seeds, 0 divergences; "'Every result' excludes a refusal, which is not memoized"; a skip-mode-below-absent mutant fails T1 and T2 · r3: 20,975 calls over seeds 1-4, 0 mismatches; "does not cover a PATH that ENT holds".
+
+1,200 trees, 8,387 calls (rc 0: 245, 1: 3,554, 2: 4,588): zero mismatches, including the asked order (a shorter prefix memoized 2, then a longer path whose deeper ancestor main stores as a link: the memo hit stops the upward scan at the 2 ancestor and the link ancestor below it still meets `[[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1`, `:742`, which runs whatever `st` is) (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/diff.sh`, `/tmp/u2a3c-i2-fc1-6NBv/diff2.sh` (cwd scratch, exit 0, 2026-10-07T20:10:29Z): `/tmp/u2a3c-i2-fc1-6NBv/diff.out`, `/tmp/u2a3c-i2-fc1-6NBv/diff2.out`; `scripts/lib/dev-cycle-read.sh:732-755`; `/tmp/u2a3c-i2-fc2-zy90/logs/diff-contract-11.txt`; `/tmp/u2a3c-i2-fc3-j0eh/logs/fuzz-seed2.log`
+
+---
+
+## Claim 39: main_imports header: "main_checkout refuses a start or an import main lacks, a blob or checkout file cannot be read ... or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent ... Phase 2 begins when queue empties: tq's checkout files then join it, and a path main lacks reads the checkout."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:787-800`
+**Type:** Error-handling / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers each listed failure's return site; does not establish the order of reads within phase 2 (main-stored imports found in phase 2 still go to `queue` and are read through main's arms, `:873`).
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified (compound)
+**Replicate annotations:** r2: "A phase-2 file's import of a path main stores is read through main's arms in the same loop. The header's 'a path main lacks reads the checkout' implies this, and the block comment says it".
+
+Return sites: `:825-826`, `:837-840`, `:843`, `:846-849`, `:854`, `:859`, `:864`; the checkout arm is `case "${ent[$f]-checkout}" in checkout) …` (`:836-838`) (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:801-876`
+
+---
+
+## Claim 40: "Link text past PATH_MAX (4096) names nothing; it fails before the two whole reads below."
+
+**Location:** `scripts/lib/dev-cycle-read.sh:842`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the size gate's position and the 4097-byte test; does not establish behaviour at exactly 4096 bytes (allowed by `-le`, and also unresolvable since PATH_MAX counts the NUL; failing it there would be stricter, not looser).
+**Replicate verdicts:** r1=Verified · r2=Verified · r3=Verified
+**Replicate annotations:** r2: "Exactly 4096 bytes passes the check and is read, which is harmless"; 64 MiB link blob fails in 0.02 s · r3: `ln -s` of 4095 bytes succeeded, 4096 and 4097 refused; "The `-le 4096` check therefore admits one length that cannot be a link, which only over-reads"; does not cover other OSes.
+
+`i="$(git cat-file -s "$MAIN_SHA:$f")" && [[ "$i" -le 4096 ]] || { IMPORTED_MAIN=error; return 1; }` (`:843`) precedes both `git cat-file blob` reads (`:846-847`) (r1, as quoted in its Claim 7).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:841-859`, `test/scripts/build-loop-check.bats:942-950`, `/tmp/u2a3c-i2-fc3-j0eh/logs/ln-pathmax.log`
+
+---
+
+## Claim 41: The three inverted U2a3b `.git` tests: the gitfile is read "as a checkout file", an imported file under `.git` is read and followed, and a nested `.git` file is read; test titles add "as Claude Code does"
+
+**Location:** `test/scripts/build-loop-check.bats:411`, `test/scripts/build-loop-check.bats:657`, `test/scripts/build-loop-check.bats:700`
+**Type:** Behavioral / Reference
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** The lib behaviour is verified by execution: all three tests pass at HEAD and walk the gitfile, `.git/notes.md` and `n/.git`. The "as Claude Code does" half needs a trace of the installed Claude Code reader, which this pass did not run. The most severe part carries the verdict.
+**Replicate verdicts:** r1=Verified (compound) · r2=Unverifiable · r3=Verified
+**Replicate annotations:** r1: "does not establish that Claude Code reads a gitfile this way (iteration 2's C9: unverifiable here)" · r3: "It does not establish Claude Code's reading of a gitfile (rubric C9, host probe Q-126)".
+
+```
+# test/scripts/build-loop-check.bats:657-663 (whole test)
+@test "the main walk reads an imported file under .git as a checkout file and follows its imports (U2a3b L2-i2 security F2, U2a3c)" {
+    # .git/notes.md is a checkout file main lacks: phase 2 reads it, so docs/t.md, which it imports, counts.
+    mkdir -p docs && printf 'See @.git/notes.md and @sub/../.git/info/n.md\n' > CLAUDE.md && commit_all gitdir
+    printf 'see @../docs/t.md\n' > .git/notes.md
+    imps main docs/t.md docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want docs/t.md imported; want docs/other.md -
+}
+```
+main's lib held the special case (`if [[ "$p" == .git ]]`, main `:785`), and HEAD's lib has none. To verify the Claude Code half, re-trace the installed Claude Code import reader on a gitfile (Q-126's host probe) (r2).
+
+**Evidence:** `test/scripts/build-loop-check.bats:411-422`, `:657-663`, `:700-714`, `/tmp/u2a3c-i2-fc2-zy90/lib-main.sh:777-785`, `/tmp/u2a3c-i2-fc2-zy90/logs/bats-build-loop-check.txt`
+
+---
+
+## Claim 42: "Unmemoized, each candidate re-checks every ancestor (102 calls; 74 at 3e58eb9c); memoized, each directory once, plus each candidate's own check (18)."
+
+**Location:** `test/scripts/build-loop-check.bats:822-825`
+**Type:** Performance
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the count at HEAD; the 102 and 74 are right for the commits named; does not affect the test's `-le 30` bound, which still passes.
+**Replicate verdicts:** r1=Stale · r2=Stale · r3=Stale
+**Replicate annotations:** r2: "'Plus each candidate's own check (18)' now reads 10" · r3: "The comment dates from 80cc6224 (unchanged since then)"; escalated as test-text drift.
+
+At 80cc6224 the count was 18; at HEAD (2fbd929b's lib) it is **10**, because 2fbd929b also memoizes a searchable PATH directory (`:753`), so a candidate's own check is no longer repeated by longer ones. Precise version: "(10 at 2fbd929b; 18 at 80cc6224)" (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/rpcount.sh` (cwd scratch, exit 0, 2026-10-07T20:15Z): `/tmp/u2a3c-i2-fc1-6NBv/logs/rpcount.log`; `/tmp/u2a3c-i2-fc2-zy90/logs/rpcount.txt`; `/tmp/u2a3c-i2-fc3-j0eh/logs/realpath-counts.log`
+
+---
+
+## Claim 43: Test title "main_checkout answers each checkout shape: … and memoizes only plain searchable directories (U2a3c)"
+
+**Location:** `test/scripts/build-loop-check.bats:853`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers what the test asserts about MEMO; does not establish the 2 entries' contents.
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Mostly accurate
+**Replicate annotations:** r2: the MEMO holds 2-valued entries such as `nd` and `f.md`; the return-code table is verified · r3: T1 kills the nomode, nox, pathmemo-any, unreadable and skip-mode-below-2 mutants; escalated as test-text drift.
+
+MEMO also holds `2` entries (every decided ancestor, `mc_m[$c]="$st"`, `scripts/lib/dev-cycle-read.sh:747`); the test filters to `d` values: `for k in "${!M[@]}"; do [[ "${M[$k]}" != d ]] || echo "$k"; done` (`test/scripts/build-loop-check.bats:860`). Precise version: "memoizes as d only plain searchable directories" (r1).
+
+**Evidence:** `scripts/lib/dev-cycle-read.sh:747,753`, `test/scripts/build-loop-check.bats:853-882`
+
+---
+
+## Claim 44: Test "main walk fails on a path under a link main stores below a directory the checkout lacks, and walks a path under a plain file (U2a3c)"
+
+**Location:** `test/scripts/build-loop-check.bats:884-895`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers its two halves and the mode-check mutant; does not establish that it alone pins the HEAD analog of M13 (a break below an absent ancestor survives it, because the walk's shorter prefixes memoize `a` and `a/b` first, so the link ancestor is the first undecided one; T1 kills that mutant).
+**Replicate verdicts:** r1=Verified · r2=— · r3=Verified (compound)
+**Replicate annotations:** r3: T2 kills the nomode and skip-mode-below-2 mutants.
+
+Passes at HEAD; the no-mode-check mutant fails it (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:884-895`; `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants3.log`
+
+---
+
+## Claim 45: Test "each walk caps every file's parser at what IMPORT_WORK_MAX has left, in every arm, and charges every arm"; "Four top-level files alike but for one letter cost w each: two on main, two only in the checkout, so each main_imports arm runs twice"
+
+**Location:** `test/scripts/build-loop-check.bats:897-912`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers what the test checks (the -1/0 boundary relative to 4w, and the four caps) and that a per-file mutant fails it; does not establish robustness to the fixture root's length, which it lacks (Claim 1).
+**Replicate verdicts:** r1=Verified · r2=— · r3=— · single-replicate detection
+**Replicate annotations:** none
+
+Two files on main (`AGENTS.md`, `GEMINI.md`, blob arm) and two in the checkout (`CLAUDE.md`, `CLAUDE.local.md`, checkout arm); the shim logs `IT_WORK`. A mutant with no walk-wide check (import_work's comparison and awk's cap both removed) fails it (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:897-912`; `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`
+
+---
+
+## Claim 46: Test "main walk reads an untracked start that a main file also imports once, through the checkout (U2a3c; override row 446)"
+
+**Location:** `test/scripts/build-loop-check.bats:921-930`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the record and the start's checkout read, and the symlink refusal at the start; does not establish "once" by a read count.
+**Replicate verdicts:** r1=Verified · r2=— · r3=Verified (compound)
+**Replicate annotations:** r3: "For T5's 'once', the read count holds statically (`seen`) but is not asserted".
+
+Passes; `docs/x.md imported` is reachable only by reading the checkout's `docs/AGENTS.md` (main stores no such file) (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:921-930`, `/tmp/u2a3c-i2-fc1-6NBv/logs/build-loop-check.log`
+
+---
+
+## Claim 47: Deep-token test: "@a/a/.../x.md, 1,000 levels deep, none in the checkout: about 0.6 s; 21b35ebf's top-down loop rescanned every absent ancestor per prefix candidate (10.7 s)"; title "stays linear"
+
+**Location:** `test/scripts/build-loop-check.bats:932-940`
+**Type:** Performance
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers the two timings on this host and the test catching 21b35ebf. It does not establish linearity (one depth only), or the test's discrimination on a host more than about 1.8× faster, where 21b35ebf would finish under `timeout 6`.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r1: "does not establish behaviour on a host about 9x slower, where 0.67 s would pass 6 s (the test does not separate a timeout from a failure)" · r2: pass side about 9x headroom, kill side 1.8x; "on a host about twice as fast the 21b35ebf regression would finish inside the timeout and survive (escalated to test-strategy)".
+
+Timings (r3): main 511/502 ms, 21b35ebf 10461/10864 ms and 3a35c8b9 658/652 ms. The margin at HEAD is about 9× below the 6 s timeout. The mutant that stops at a `2` ancestor without mode-checking deeper ones also times out here, and it is killed by T1 and T2 as well.
+
+**Evidence:** `test/scripts/build-loop-check.bats:932-940`, `/tmp/u2a3c-i2-fc3-j0eh/logs/deep-timing.log`, `/tmp/u2a3c-i2-fc3-j0eh/logs/mutant-memo-skip-mode-below-2.log`
+
+---
+
+## Claim 48: Test title "main walk fails on link text main stores longer than 4096 bytes before reading it whole"
+
+**Location:** `test/scripts/build-loop-check.bats:942`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers what the test observes; does not establish the "before reading it whole" ordering, which no assertion observes.
+**Replicate verdicts:** r1=Mostly accurate · r2=Mostly accurate · r3=Mostly accurate
+**Replicate annotations:** r2: "A reader trusting the title would think the read cost is pinned"; a `git` shim counting `cat-file blob` calls would pin the ordering · r3: "The ordering holds statically".
+
+The test checks only `walk: failed` for 4,097 bytes and `walk: ok` for `r.md` (`:949`). It discriminates the cap (21b35ebf's lib, which reads the text, walks ok and fails the test), but a mutant that read the blob whole first and then failed on its size would pass. Precise version: "fails on link text … longer than 4096 bytes" (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:942-950`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`
+
+---
+
+## Claim 49: dev-cycle.bats function inventory gains md_ls, checkout_md, main_checkout, lower_all, capped_read, import_work
+
+**Location:** `test/scripts/dev-cycle.bats:1110`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the existence of each listed function. It does not establish inventory completeness for other files.
+**Replicate verdicts:** r1=— · r2=— · r3=Verified · single-replicate detection
+**Replicate annotations:** none
+
+Each is defined (`scripts/lib/dev-cycle-read.sh:677`, `:693`, `:700`, `:709`, `:716`, `:732`), and dev-cycle passes 78/78 (r3).
+
+**Evidence:** `test/scripts/dev-cycle.bats:1106-1113`, `/tmp/u2a3c-i2-fc3-j0eh/logs/dev-cycle.log`
+
+---
+
+## Claim 50a: Commit 3e58eb9c: "Tests: build-loop-check 51/51, build-loop-read 19/19, dev-cycle 78/78, fixture-git-env 2/2"; "its pok memo, which returns in the memo commit that follows"
 
 **Location:** commit 3e58eb9c message
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the four suites at 3e58eb9c's tree. It does not cover other suites.
-**Legibility-target:** commit message
+**Scope:** Covers the four suite results at 3e58eb9c. It does not cover suites the message does not name.
+**Replicate verdicts:** r1=Verified (compound) · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r1: "does not re-run 3e58eb9c's dev-cycle or build-loop-read suites (counts only)"; 3e58eb9c's main_imports calls `main_checkout ent "$f"` (no MEMO); 80cc6224 adds `pok`.
 
-The four suites ran in `/tmp/u2a3c-i2-fc-kkjF/tree-3e58eb9c` (git archive), all exit 0, 19:25:23Z to 19:25:49Z: 51 ok, 19 ok, 78 ok and 2 ok, with 0 not ok.
+bats over `git archive 3e58eb9c`, cwd `/tmp/u2a3c-i2-fc3-j0eh/repo-3e58`, every run exit 0: build-loop-check ok=51, build-loop-read ok=19, fixture-git-env ok=2, dev-cycle ok=78 (r3).
 
-**Evidence:** logs `/tmp/u2a3c-i2-fc-kkjF/logs/at-3e58eb9c-build-loop-check.txt`, `at-3e58eb9c-build-loop-read.txt`, `at-3e58eb9c-dev-cycle.txt`, `at-3e58eb9c-fixture-git-env.txt`
+**Evidence:** `/tmp/u2a3c-i2-fc3-j0eh/logs/at3e58-build-loop-check.log`, `/tmp/u2a3c-i2-fc3-j0eh/logs/at3e58-dev-cycle.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/blc-3e58eb9c.log`
 
 ---
 
-## Claim 28: Commit 3e58eb9c resolution bullets: the per-candidate record dropped because U2a3b records the whole output first; main_checkout replaces the inline parent-link loop and plain-directory test; the top-level `.git` special case is gone; "Three U2a3b tests that pinned the interim fail-closed rule for .git paths now expect the walk to read them"; "Docs: main's A5, F11 and U2b text kept …, with the 'until U2a3c … fails closed' sentences replaced by U2a3c's description."
+## Claim 50b: Commit 3e58eb9c: "Three U2a3b tests that pinned the interim fail-closed rule for .git paths now expect the walk to read them"; "the .git directory passes main_checkout as a plain directory, and a linked worktree's gitfile is read as a checkout file"
 
 **Location:** commit 3e58eb9c message
-**Type:** Reference / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers each bullet literally against the diff. It does not establish that keeping main's doc text lost nothing: it dropped U2a3c's cache-clear, FIFO, TOCTOU and "owes the walk" text, which the override rows still cite (Claims 1-3).
-**Legibility-target:** commit message
+**Type:** Behavioral / Reference
+**Verdict:** Unverifiable
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** The lib behaviour is verified by execution: all three tests pass at HEAD and walk the gitfile, `.git/notes.md` and `n/.git`. The "as Claude Code does" half needs a trace of the installed Claude Code reader, which this pass did not run. The most severe part carries the verdict.
+**Replicate verdicts:** r1=Verified (compound) · r2=Unverifiable (compound) · r3=Verified (compound)
+**Replicate annotations:** r1+r3: the three tests are inverted and pass · r3: Claude Code's gitfile reading is for host probe Q-126.
 
-The three inverted tests are at `test/scripts/build-loop-check.bats:411`, `:657` and `:700` (diff hunks `want walk failed` → `want walk ok`). The removed `.git` block is in `git diff main...HEAD` (the lines starting `-      if [[ "$p" == .git ]]; then`). The whole-output record is at `:848`.
+r2 verdicted this together with the three test titles (Claim 41): the lib half is verified; "as Claude Code does" for gitfiles needs a trace of the installed Claude Code reader (Q-126). paraphrased — no quote available because the evidence is the same as Claim 41's, quoted there.
 
-**Evidence:** `git diff main...HEAD -- scripts/lib/dev-cycle-read.sh test/scripts/build-loop-check.bats`, `scripts/lib/dev-cycle-read.sh:848`
+**Evidence:** `test/scripts/build-loop-check.bats:411-422`, `:657-663`, `:700-714`, `/tmp/u2a3c-i2-fc2-zy90/logs/bats-build-loop-check.txt`
 
 ---
 
-## Claim 29: Commit 3e58eb9c: "a commit-by-commit rebase conflicted twice in the same hunks"; "squash-rebase chosen over a per-commit rebase (same final tree …)"
+## Claim 51: Commit 3e58eb9c: "squash-rebase chosen over a per-commit rebase (same final tree, review reports carried in the next commit)"; "a commit-by-commit rebase conflicted twice in the same hunks"
 
 **Location:** commit 3e58eb9c message
 **Type:** Reference
 **Verdict:** Unverifiable
 **Confidence:** Low
 **Verification mode:** static
-**Scope:** Covers nothing beyond noting the claim is counterfactual. It does not establish what a per-commit rebase would have produced.
-**Legibility-target:** commit message
+**Scope:** Covers nothing about the claimed equivalence; the reports-carried half is true (cb9723c3 adds them).
+**Replicate verdicts:** r1=Unverifiable · r2=Unverifiable · r3=Unverifiable
+**Replicate annotations:** r2: the message's other resolution claims are verified ("U2a3b already records the whole output before the loop" is `:866`; main's lib `:793-794` holds the `pok` loop HEAD replaces) · r3: verifying needs a per-commit rebase of `backup/u2a3c-pre-rebase-2b1399ab` onto 581d41d8.
 
-Paraphrased, no quote available because the claim concerns a rebase run that left no artifact. Checking it would need replaying `cebfed35..2b1399ab` onto 581d41d8 with the same conflict resolutions, which this pass did not do, since it may not write to the shared repository.
+The per-commit rebase it compares against was abandoned on conflicts, so no tree exists to compare. Would need: replaying cebfed35..2b1399ab onto 581d41d8 with the same resolutions and diffing trees (r1).
 
-**Evidence:** commit 3e58eb9c message; `backup/u2a3c-pre-rebase-2b1399ab`
+**Evidence:** paraphrased — no quote available because the claim concerns a rebase result that was never committed; `scripts/lib/dev-cycle-read.sh:866`
 
 ---
 
-## Claim 30: Commit cb9723c3: reports "From 1fb62779 and 2b1399ab …, unchanged"; "override-log.md: U2a3b's rows and U2a3c's 9 rows both kept (append-only)."
+## Claim 52: Commit cb9723c3: "override-log.md: U2a3b's rows and U2a3c's 9 rows both kept (append-only)"; commit 21b35ebf closes four rows (N1, L2-C5, L2-C6, P2)
 
 **Location:** commit cb9723c3 message
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers byte equality of the eight report files with the backup tip and the count of U2a3c rows. It does not cover whether those rows are still accurate (Claims 1-4).
-**Legibility-target:** commit message
+**Verification mode:** static
+**Scope:** Covers the row counts. Rows 439-447 are history and are not re-verdicted here.
+**Replicate verdicts:** r1=— · r2=— · r3=Verified · single-replicate detection
+**Replicate annotations:** none
 
-`git diff --quiet backup/u2a3c-pre-rebase-2b1399ab cb9723c3 -- <file>` reported `same` for all eight `*u2a3c*` files under docs/reviews. `git diff main cb9723c3 -- docs/reviews/override-log.md | grep '^+|' | wc -l` gives 9. There are 0 U2a3c row differences against the backup tip. Run in the worktree at 19:25Z, exit 0. The output was inline only; the commands are deterministic over fixed commits.
+The diff appends nine U2a3c rows dated 2026-10-06 (`docs/reviews/override-log.md:439-447`), four closing rows (`:448-451`) and five iteration-2 rows (`:452-456`). It deletes no rows (paraphrased — no quote available because the claim concerns the diff's shape: `git diff main...HEAD -- docs/reviews/override-log.md` shows only `+` lines) (r3).
 
-**Evidence:** `docs/reviews/override-log.md:439-447`
+**Evidence:** `docs/reviews/override-log.md:439-456`
 
 ---
 
-## Claim 31: Commit 27364085: capped_read for checkout files and main's blobs ("main's blobs were read whole: U2a3b L2-C5"); "a bare head after git cat-file exits 141 under pipefail"; "imported_names reads through it too"; lower_all under nul_list; "both new tests fail on 3e58eb9c's lib; a mutant without the drain fails the 4 MiB test (walk failed)."
+## Claim 53: Commit 27364085: "Tests: both new tests fail on 3e58eb9c's lib; a mutant without the drain fails the 4 MiB test (walk failed)"; "imported_names reads through it too"
 
 **Location:** commit 27364085 message
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each sentence. "main's blobs" means the blobs parsed (100644/100755); 120000 link blobs are still read whole (Claim 17 residue).
-**Legibility-target:** commit message
-
-On main the blob arm was `git cat-file blob "$MAIN_SHA:$f" | IMPORT_LEFT=… import_targets` with no cap (diff `-` line at the old `:751`). The probe got 141 from a bare head. Both new tests fail at 3e58eb9c. The no-drain mutant fails with `want: walk: ok`.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:703,760,823`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/capped-read-probe.txt`, `logs/head-tests-on-3e58eb9c.txt`, `logs/mut-nodrain.txt`
-
----
-
-## Claim 32: Commit 80cc6224: "main_checkout ENT MEMO PATH walks PATH's ancestors top down once …; a plain searchable directory goes into MEMO …, so each costs one realpath per walk. A test's realpath count: 18, against 102 unmemoized and 74 at 3e58eb9c." "${x@a} on an empty associative array is an unbound-variable error under set -u: an empty main tree with an untracked start killed the caller's shell (test added; it fails at 27364085)." Notes: "an ancestor that is a plain file now returns 2 explicitly … same answer."
-
-**Location:** commit 80cc6224 message
-**Type:** Reference / Behavioral / Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers every sentence, including the plain-file-ancestor equivalence. It does not establish full equivalence with 27364085 for every shape, and the commit does not claim it. One other shape changed: an absent path under a checkout directory symlink (`ldir/nx.md`) returns 1 at HEAD and 2 at 27364085. That change is not observable through the walk, because the link itself (`ldir`) is always a prefix candidate and returns 1 in both versions.
-**Legibility-target:** commit message
-
-Shape table, HEAD vs 27364085: 24 of 25 shapes agree, and `ldir/nx.md` gives 1 vs 2. `f.md/x` gives 2 in both. The realpath counts and the empty-tree failure (`mc_e: unbound variable`, status 1, no output: the shell died) are as claimed. A "one realpath" per memoized directory holds because `rawfile` short-circuits on `-f` for a directory before forking (`scripts/lib/dev-cycle-read.sh:103`).
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:103,106,721-742`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/main-checkout-shapes.txt`, `logs/realpath-count-head.txt`, `logs/mut-nomemo.txt`, `logs/head-tests-on-27364085.txt`
-
----
-
-## Claim 33: Commit 61e2e734: the walk-wide bound, trailer and import_work; "Without IMPORT_WORK_LEFT the parser's output is unchanged"; "Measured 2026-10-07: /workspace's walks spend about 8,100 each (1.1 s tree, 1.4 s main; the main walk now passes on this developer checkout, which failed closed before U2a3c)"; "a per-file mutant passes at 3w - 1 and fails the test"; "about 6,000x this repo's real work."
-
-**Location:** commit 61e2e734 message
-**Type:** Reference / Performance
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers each figure, re-measured on /workspace at main e5d0f838 (time-varying: true as of 19:23Z). It does not cover other checkouts.
-**Legibility-target:** commit message
-
-Results:
-
-- HEAD lib: `tree walk: ok work=8110 secs=1.08` and `main walk: ok work=8110 secs=1.31`.
-- main's lib: `main walk: failed`.
-- 50,000,000 / 8,110 = 6,165.
-- Per-file mutant (each file bounded by IMPORT_WORK_MAX, total still summed so `w` is measured): output `-1 tree ok / -1 main ok / 0 tree ok / 0 main ok`, so the test fails (exit 1, 19:20:37Z).
-- Output equality: Claim 13.
-
-**Evidence:** `scripts/lib/dev-cycle-read.sh:503-508,669-678`; logs `/tmp/u2a3c-i2-fc-kkjF/logs/ws-measure-head.txt`, `logs/ws-measure-main.txt`, `logs/mut-perfile.txt`, `logs/parser-unchanged.txt`
-
----
-
-## Claim 34: Commit 21b35ebf: "close U2a3b's four rows routed to U2a3c (N1, L2-C5, L2-C6, P2); the plan's U2a3c bullet records them built"; "L2-C7 … and P2's put-join cost stay deferred on their rows."
-
-**Location:** commit 21b35ebf message
 **Type:** Reference
 **Verdict:** Verified
 **Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers both tests on 3e58eb9c's lib and the no-drain mutant (built on HEAD's explicit drain, equivalent at that site); does not cover 27364085's `-p` drain on a /proc-less host.
+**Replicate verdicts:** r1=Verified · r2=— · r3=Verified
+**Replicate annotations:** r3: "does not cover the message's 'from a pipe it drains', which described 27364085's `-p` test and was superseded in 2fbd929b"; `capped_read < "$f"` appears in imported_names (`:775`).
+
+N1 test and 4 MiB test: not ok on 3e58eb9c's lib, ok on 27364085's; no-drain mutant: `walk: failed` (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants2.log`, `scripts/lib/dev-cycle-read.sh:775`
+
+---
+
+## Claim 54: Commit 80cc6224: "A test's realpath count: 18, against 102 unmemoized and 74 at 3e58eb9c"; "an empty main tree with an untracked start killed the caller's shell (test added; it fails at 27364085)"
+
+**Location:** commit 80cc6224 message
+**Type:** Performance / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the counts and the crash at the commits named; does not establish the counts at HEAD (10: Claim 42).
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r1+r2+r3: HEAD's count is 10.
+
+Realpath shim over the test's scenario: 3e58eb9c 74, 80cc6224 18, 80cc6224 with its memo store removed 102. Empty-tree test: 27364085 fails with `line 699: mc_e: unbound variable`, 80cc6224 passes (r1, its Claim 4).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/logs/rpcount.log`, `/tmp/u2a3c-i2-fc1-6NBv/logs/mutants1.log`
+
+---
+
+## Claim 55a: Commit 61e2e734: "/workspace's walks spend about 8,100 each (1.1 s tree, 1.4 s main; the main walk now passes on this developer checkout, which failed closed before U2a3c)"; "a per-file mutant passes at 3w - 1 and fails the test"; "about 6,000x this repo's real work"; "Without IMPORT_WORK_LEFT the parser's output is unchanged"
+
+**Location:** commit 61e2e734 message
+**Type:** Performance / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each figure on this host today and the mutant against 61e2e734's own test; does not establish the timings elsewhere.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified
+**Replicate annotations:** r2: timings measured 1.4 s tree and 1.9 s main; host-dependent · r3: ran the mutant against HEAD's 4w test, not 61e2e734's test file.
+
+8,110 work each, 1,099 ms and 1,352 ms; main's lib fails the main walk on /workspace (`main-lib: failed`). 50,000,000 / 8,110 = 6,165. The per-file mutant on 61e2e734's lib with 61e2e734's test prints `-1 tree ok`, `-1 main ok` and fails; the unmutated lib passes. Unset IMPORT_WORK_LEFT prints no trailer (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/logs/wswork.log`; mutant run (cwd `/tmp/u2a3c-i2-fc1-6NBv/rt61`, 2026-10-07T20:19Z); `/tmp/u2a3c-i2-fc1-6NBv/logs/work-left-values.log`
+
+---
+
+## Claim 55b: Commit 61e2e734 Notes: "the limit equals the old per-file bound, so the whole walk costs at most what one file could"
+
+**Location:** commit 61e2e734 message
+**Type:** Performance
+**Verdict:** Mostly accurate
+**Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the four closing rows and the plan sentence. It does not cover those rows' own figures (Claim 5).
-**Legibility-target:** commit message
+**Scope:** Covers charged parser work. It does not cover uncharged work.
+**Replicate verdicts:** r1=— · r2=— · r3=Mostly accurate · single-replicate detection
+**Replicate annotations:** none
 
-The rows are at `docs/reviews/override-log.md:448-451` (`Closes U2a3b's routed N1 row`, `… L2-C5 row`, `Closes the L2-C6 half … (L2-C7 … stays deferred there)`, `Closes U2a3b's routed P2 row … the put-join cost … is unchanged`). The plan sentence `Built 2026-10-07 after the rebase onto U2a3b: …` is at `docs/working/plan-build-loop-handoff.md:277`.
+This holds for charged parser work. Reading, draining and the @-less scan are uncharged, as the lib comment states: "reading, draining and the scan of @-less lines are not charged" (`scripts/lib/dev-cycle-read.sh:507-508`). Override row 455 already narrows this (r3).
 
-**Evidence:** `docs/reviews/override-log.md:448-451`, `docs/working/plan-build-loop-handoff.md:277`
+**Evidence:** `scripts/lib/dev-cycle-read.sh:504-511`, `docs/reviews/override-log.md:455`
+
+---
+
+## Claim 56a: Commit 2fbd929b: "main_checkout walks its ancestors bottom up to the nearest decided one and memoizes every result (d or 2), and a searchable directory at PATH"; "D=1000 took 10.7 s at 21b35ebf, 0.6 s now, main 0.5 s"; "capped_read drains only when told (drain), not on [[ -p /dev/stdin ]]"; "shellcheck SC2034 on pok (passed by name) failed the health check"; "T3 replaces the work-bound test it extends"
+
+**Location:** commit 2fbd929b message
+**Type:** Performance / Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the timings, the drain change (27364085-21b35ebf used `[[ ! -p /dev/stdin ]] || cat > /dev/null`), SC2034 without the directive, and the replaced test; does not re-run the repo health check.
+**Replicate verdicts:** r1=Verified · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: "'Every result' excludes a refusal, which is not memoized"; shellcheck on 61e2e734's lib reports SC2034 `pok appears unused` and nothing else · r3: the inventory diff adds only `import_work`; the `:69` comment is fixed; "does not establish the shellcheck failure at 61e2e734, which I did not re-run".
+
+Timings: 21b35ebf 10,855/11,750 ms, 2fbd929b 669/670 ms, main 532 ms. `shellcheck -S warning` is clean at HEAD and reports `SC2034 (warning): pok appears unused` with the directive removed. No test titled "bounds the parser" remains (r1).
+
+**Evidence:** `/tmp/u2a3c-i2-fc1-6NBv/logs/deep.log`; `shellcheck -S warning scripts/lib/dev-cycle-read.sh` (cwd worktree, exit 0) and on `/tmp/u2a3c-i2-fc1-6NBv/nosc.sh` (exit 0, SC2034 printed), 2026-10-07T20:20Z; `scripts/lib/dev-cycle-read.sh:739-754`
+
+---
+
+## Claim 56b: Commit 2fbd929b: "Tests: … 63/78/19/2."
+
+**Location:** commit 2fbd929b message
+**Type:** Reference
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the counts and their pass status; does not establish that they pass on a host whose bats root is 56+ characters.
+**Replicate verdicts:** r1=Mostly accurate · r2=Verified (compound) · r3=Verified (compound)
+**Replicate annotations:** r2: `grep -c '^@test'` gives 63/19/78 at 2fbd929b and HEAD runs are 63/78/19/2 · r3: counts confirmed by running the suites.
+
+Counts are exact; build-loop-check passes only while the fixture root is under 56 characters (Claim 1). Precise version: add "with a TMPDIR under 27 characters" or fix the test's constant (r1).
+
+**Evidence:** `test/scripts/build-loop-check.bats:897-912`, `/tmp/u2a3c-i2-fc1-6NBv/logs/caps-tmpdir-length.log`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-(none)
+- **Claim 34** (`scripts/lib/dev-cycle-read.sh:720-723`): the PATH arm memoizes `d` without PATH's own main mode (`:753`); a caller passing a path ENT holds as a link then gets 0 below it (executed: 21b35ebf 1, HEAD 0). Unreachable from main_imports; tighten the comment and the U2b contract, or test the mode before memoizing. (r1=Incorrect, r2=Incorrect, r3=Mostly accurate.)
 
 ### Stale
-- **Claim 1** (`docs/reviews/override-log.md:439`): says A5 and the U2b bullet tell the caller to clear IMPORTED_MAIN_DONE. Since the 3e58eb9c rebase resolution, only the lib comment does. The U2b bullet's "owes the walk three things" (checkout final or key cleared, empty ls-files stderr, the git environment handoff) is gone too.
-- **Claim 2** (`docs/reviews/override-log.md:440`): the FIFO start is no longer listed in A5, though the lib's "Not covered (known issue A5)" points there.
-- **Claim 3** (`docs/reviews/override-log.md:441`): the snapshot/TOCTOU assumption is no longer in A5.
-- **Claim 4** (`docs/reviews/override-log.md:446`): "The ordering is now commented at the record line": the per-candidate record and its comment were dropped in 3e58eb9c, and the record is now whole-output before the loop.
-- **Claim 24** (`test/scripts/build-loop-check.bats:69`): "(the main walk fails closed on it until U2a3c)" no longer holds; the main walk reads untracked starts.
+- **Claim 9** (`docs/reviews/override-log.md:449`): the row says capped_read "drains a pipe"; since 2fbd929b it drains only when the blob arm passes `drain`. No row amends it.
+- **Claim 42** (`test/scripts/build-loop-check.bats:822-825`): the memoized realpath count is 10 at HEAD, not 18.
 
 ### Mostly Accurate
-- **Claim 8** (`docs/working/plan-build-loop-handoff.md:277`): "only a non-plain node fails" leaves out the unreadable plain file, plain paths under main's link or gitlink, and plain unsearchable ancestors.
-- **Claim 19** (`scripts/lib/dev-cycle-read.sh:711-720`): "0 for a plain checkout file" should say readable; an unreadable plain file returns 1, a case the comment's list does not name.
+- **Claim 1** (rubric:21): build-loop-check is 62/63 when the bats root is 56+ characters; test 59's fixed `IMPORT_WORK_MAX=1000` fails as `w` grows with ROOT_REAL.
+- **Claim 13** (`docs/reviews/override-log.md:453`): no test has the quoted name; cite the line-921 title.
+- **Claim 16a** (`docs/reviews/override-log.md:456`): each call site is one statement over two lines.
+- **Claim 17a** (`docs/working/known-issues-dev-cycle.md:18`): fail rules match; r1's compound verdict rests on the pointer (17b).
+- **Claim 17b** (`docs/working/known-issues-dev-cycle.md:18`): the lib's block comment holds the cache and HOME rules, not the git-environment or `LC_ALL` duties.
+- **Claim 18** (`docs/working/plan-build-loop-handoff.md:126`): F11's admission list omits the unreadable-plain-file refusal.
+- **Claim 20a** (`docs/working/plan-build-loop-handoff.md:279`): three duties match; r3's compound verdict rests on the MEMO rule (20b).
+- **Claim 20b** (`docs/working/plan-build-loop-handoff.md:279`): another main_checkout caller must also pass only paths ENT lacks.
+- **Claim 25** (`scripts/lib/dev-cycle-read.sh:504-506`): the work unit also includes each resolved spelling (root length included); "about 5 s" holds for the many-component shape only.
+- **Claim 28** (`scripts/lib/dev-cycle-read.sh:524-528`): a value with leading digits is read as that number, not 0.
+- **Claim 43** (`test/scripts/build-loop-check.bats:853`): MEMO holds 2 entries too; the test checks only the d ones.
+- **Claim 48** (`test/scripts/build-loop-check.bats:942`): the test cannot observe "before reading it whole".
+- **Claim 55b** (commit 61e2e734): "at most what one file could" holds for charged work only.
+- **Claim 56b** (commit 2fbd929b): 63/63 depends on TMPDIR length.
 
 ### Unverifiable
-- **Claim 26** (`test/scripts/build-loop-check.bats:411,700`): "as Claude Code does" for gitfiles needs a re-trace of the installed Claude Code (2.1.293) import reader. Binary extraction was blocked in this session.
-- **Claim 29** (commit 3e58eb9c): "same final tree" / "conflicted twice" needs a replay of the per-commit rebase.
+- **Claim 6** (rubric:48, C9): the Claude Code half of the gitfile claim needs the installed reader traced.
+- **Claim 31b** (`scripts/lib/dev-cycle-read.sh:706-707`): `[[ -p /dev/stdin ]]` needing /proc needs a mount namespace without /proc (Q-127).
+- **Claim 32** (`scripts/lib/dev-cycle-read.sh:702-703`): "Claude Code skips a file over 4 MiB" needs Claude Code probed.
+- **Claim 41** (`test/scripts/build-loop-check.bats:411,657,700`): "as Claude Code does" for gitfiles needs Q-126's host probe.
+- **Claim 50b** (commit 3e58eb9c): same Claude Code half as Claim 41.
+- **Claim 51** (commit 3e58eb9c): "same final tree" compares with a rebase that was never completed.
 
 ## Escalations
 
-- **architecture / api-consistency:** The rebase resolution (3e58eb9c) kept main's A5 and U2b text and dropped U2a3c's caller contract. Gone are the cache-clear rule, "a git that prints nothing on stderr for ls-files", the git-environment handoff (`GIT_INDEX_FILE`, `GIT_WORK_TREE`, fsmonitor, sparse checkout, `core.ignoreCase`, replace refs), and the FIFO and TOCTOU not-covered items. Override rows 439-441 still cite those docs as their mitigation. U2a4 and U2b, the first callers, will read A5 and the U2b bullet, not the override log. Compare `git show backup/u2a3c-pre-rebase-2b1399ab:docs/working/plan-build-loop-handoff.md` (U2b bullet) and the same commit's A5 row.
-- **performance:** The symlink arm (`scripts/lib/dev-cycle-read.sh:828-829`) still reads a 120000 blob whole, twice, into a bash variable, with no cap. A crafted link blob of many MB costs memory and time before it fails on newline, absolute path or E2BIG. The L2-C5 closing row (override-log:449) says capped_read is the one reader for "main's blobs", which is broader than the code. Separately, IMPORT_WORK_MAX is per walk: a gate that runs both walks spends up to two bounds (about 8 s measured here).
-- **security:** Phase 2 now reads any checkout file under `.git/` that an import names (for example `.git/config`, packs, the index; capped at 4 MiB + 1 and work-bounded). Only parsed names leave the walk, so I found no disclosure path, but the gate's answer now depends on `.git/` internals a writer can influence (`.git/info/*.md` and similar). The `ldir/nx.md` shape changed from 2 to 1 (Claim 32): stricter, and masked by the prefix candidate, but untested directly.
-- **test-strategy:** `test/scripts/dev-cycle.bats:1110`'s function inventory adds `md_ls checkout_md main_checkout lower_all capped_read` but not `import_work`. The stale comment at `build-loop-check.bats:69` should be fixed. Override row 446's revisit trigger names an order that is now structural; no test covers a main import of a path that is also an untracked start. Optionally, pin the plan's "unsearchable directory named alone answers 2" and the 644-directory no-warning case (Claim 18 scope). Finally, the shared review context's "60 tests" for build-loop-check is wrong: there are 57.
+- **`scripts/lib/dev-cycle-read.sh:753`** (also `:719-723`, plan `docs/working/plan-build-loop-handoff.md:279`) — raised by r1, r2, r3 — addressee: **security-reviewer / api-consistency-reviewer** (r1, r2), **architecture-review / api-consistency-reviewer** (r3). main_checkout memoizes PATH as `d` without checking `ENT[PATH]`; a caller passing a path main stores as a link or gitlink, with a plain directory in the checkout, makes later calls below it skip the link refusal (r1/r2 repro: 0 where 21b35ebf gives 1; r3 repro: 2 where 21b35ebf gives 1). main_imports is safe (both call sites guard on `ent`, `:819`/`:825`, `:870`). The U2b contract and the comment do not state the precondition; fix by stating it, or by making `:753` conditional on `[[ -z "${mc_e[$3]+set}" ]]` (r2) / returning 1 when `mc_e[$3]` is a link or gitlink (r3).
+- **`test/scripts/build-loop-check.bats:897-912`** (test 59) — raised by r1 — addressee: **test-strategy**. Fixed `IMPORT_WORK_MAX=1000` against `4w` passes 1000 at a 56-character fixture root; fails in the full file with a 27-character TMPDIR (alone at 97), silently. Derive the cap from `w` (e.g. `10 * w`).
+- **`test/scripts/build-loop-check.bats:932-940`** (deep-token `timeout 6`) — raised by r2, r3 — addressee: **test-strategy**. Kill-side margin is about 1.8x (21b35ebf 10.5-11.0 s); on a host about twice as fast the O(D³) regression would pass. Suggested: a relative bound, larger D (r2), or a host-independent call-count shim (r3).
+- **`test/scripts/build-loop-check.bats:942-950`** (link-text test ordering) — raised by r1, r2, r3 — addressee: **test-strategy**. The test pins the outcome, not "before reading it whole"; a read-then-reject mutant survives. A `git` shim counting `cat-file blob` calls would pin the ordering (r2).
+- **`test/scripts/build-loop-check.bats:884-895`** (T2 vs HEAD's M13 analog) — raised by r1 — addressee: **test-strategy**. T2 does not pin a break below an absent ancestor because the walk's prefixes memoize the absent ancestors first; only T1 kills it.
+- **`scripts/lib/dev-cycle-read.sh:753`** (no test pins main_checkout's PATH ∉ ENT precondition) — raised by r2 — addressee: **test-strategy**.
+- **`test/scripts/build-loop-check.bats:822-825`, `:853`** (test-text drift: the `(18)` comment, T1's "memoizes only" title) — raised by r3 — addressee: **test-strategy**.
+- **`scripts/lib/dev-cycle-read.sh:504-506`, `:581-584`** (work unit is root-length dependent) — raised by r1 — addressee: **performance-reviewer**. Each candidate is charged its resolved spelling including ROOT_REAL, so the fixed IMPORT_WORK_MAX buys less real work under a long checkout path; 8,110 at /workspace would be about 4x at a 100-character root. Not a defect at 6,000x headroom, but the comment's unit omits it.
+- **`scripts/lib/dev-cycle-read.sh:706-707`** (`/proc` rationale for `capped_read drain` unexecuted; Q-127) — raised by r3 (r1 records the same blocked `unshare` in its Claim 20 scope) — addressee: **security-reviewer**. The change is safe either way, because the argument does not depend on /proc.
+- **`test/scripts/build-loop-check.bats:411,657,700`** (Claude Code's gitfile reading; Q-126 host probe) — raised by r2 (Goal-Alignment out-of-scope item and Claim 28 prose; r3 cites the same probe in its Claim 35 scope) — addressee: **orchestrator**.
+
+## Verdict stability
+
+- **Total clusters:** 64 (sub-claim rows counted separately).
+- **Single-replicate clusters:** 12 (Claims 3, 6, 7, 21, 30, 32, 33, 36, 45, 49, 52, 55b).
+- **Agreed (all reporting replicates gave the same verdict):** 50 of 64 (including the 12 single-replicate clusters); 38 of the 52 clusters with two or more reporting replicates.
+- **Disagreed:** 14:
+  - Claim 1: r1=Mostly accurate · r2=Verified (compound) · r3=Verified (compound)
+  - Claim 9: r1=Verified (compound) · r2=Verified (compound) · r3=Stale
+  - Claim 13: r1=Mostly accurate · r2=Mostly accurate · r3=Verified
+  - Claim 16a: r1=Mostly accurate · r2=Verified (compound) · r3=—
+  - Claim 17a: r1=Mostly accurate (compound) · r2=Verified · r3=Verified
+  - Claim 17b: r1=Mostly accurate (compound) · r2=Verified (compound) · r3=Mostly accurate
+  - Claim 18: r1=Mostly accurate · r2=Mostly accurate · r3=Verified
+  - Claim 20a: r1=— · r2=Verified · r3=Mostly accurate (compound)
+  - Claim 25: r1=Mostly accurate · r2=Verified (compound) · r3=Mostly accurate
+  - Claim 31b: r1=Verified (compound) · r2=Verified (compound) · r3=Unverifiable
+  - Claim 34: r1=Incorrect · r2=Incorrect · r3=Mostly accurate
+  - Claim 41: r1=Verified (compound) · r2=Unverifiable · r3=Verified
+  - Claim 50b: r1=Verified (compound) · r2=Unverifiable (compound) · r3=Verified (compound)
+  - Claim 56b: r1=Mostly accurate · r2=Verified (compound) · r3=Verified (compound)
+- **Agreement rate:** 78.1% (50/64) over all clusters; 73.1% (38/52) over clusters with two or more reporting replicates. Below the ≥90% on ≥20 claims falsifier, so k stays at 3. Two of the 14 disagreements (17a, 20a) arise only from a compound verdict being recorded on a sibling sub-claim per step 1, where the compound replicate's own prose attributes its severity to the other sub-claim.
