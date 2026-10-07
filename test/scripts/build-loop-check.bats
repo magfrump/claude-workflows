@@ -66,7 +66,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "main: $output $stderr"; return 1; }
     want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
     for p in "${ns[@]}"; do want "$p" -; done
-    # An untracked start: the tree walk reads it (the main walk fails closed on it until U2a3c).
+    # An untracked start: the tree walk reads it (the main walk's checkout phase does too; the next test pins it).
     printf 'See @k.md\n' > docs/AGENTS.MD
     imps tree "${ps[@]}" docs/k.md docs/other.md "${ns[@]}"
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "tree: $output $stderr"; return 1; }
@@ -839,19 +839,6 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want docs/x.md imported; want docs/other.md -
 }
 
-@test "IMPORT_WORK_MAX bounds the parser's work over the whole walk, not each file; a walk that spends exactly the limit passes (U2a3b L2-confirm performance P2, U2a3c)" {
-    # Three top-level files whose text is alike but for one letter cost the parser
-    # the same work w each (its trailer reports it); the third file is in the
-    # checkout only, so phase 2 is charged too. A bound that restarted per file
-    # would pass at 3w - 1.
-    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two && printf 'see @c.md\n' > CLAUDE.md
-    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
-        out="$(printf "see @a.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
-        for m in $((3 * w - 1)) $((3 * w)); do IMPORT_WORK_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
-            imported_names && echo "$((m - 3 * w)) tree ok" || echo "$((m - 3 * w)) tree failed"; main_imports && echo "$((m - 3 * w)) main ok" || echo "$((m - 3 * w)) main failed"; done' _ "$LIB"
-    [ "$output" = $'-1 tree failed\n-1 main failed\n0 tree ok\n0 main ok' ] || { echo "$output $stderr"; return 1; }
-}
-
 @test "import_work strips the parser's work trailer and charges it; a missing trailer or a spent IMPORT_WORK_MAX fails (U2a3c)" {
     run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; t=5
         o=$'"'"'a.md\n/12'"'"'; import_work o t && echo "1 ok [$o] $t" || echo "1 failed"
@@ -861,4 +848,103 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         IMPORT_WORK_MAX=30; o=/7; import_work o t && echo "5 ok $t" || echo "5 failed $t"
         out="$(printf "no imports here\n" | IMPORT_WORK_LEFT=10 import_targets "")"; echo "6 [$out]"' _ "$LIB"
     [ "$output" = $'1 ok [a.md] 17\n2 ok [] 24\n3 failed\n4 failed\n5 failed 31\n6 [/0]' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "main_checkout answers each checkout shape: 0 for a readable plain file, 2 where nothing loads, 1 for anything it does not model, and memoizes only plain searchable directories (U2a3c)" {
+    mkdir -p d u sdt && printf 'r\n' > d/r.md && printf 'n\n' > d/n.md && printf 'f\n' > f.md && chmod 000 d/n.md && chmod 644 u
+    ln -s d/r.md sf.md && ln -s missing.md dg.md && ln -s missing dgd && ln -s sdt sd && mkfifo ff.md
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        declare -A E=([lnk]=120000 [gl]=160000 [nd2/m/l]=120000 [f.md]=100644) M=()
+        for p in d/r.md nx.md nd/x.md f.md/x.md d u d/n.md sf.md dg.md sd ff.md u/x.md sd/nx.md dgd/x.md lnk/x.md gl/x.md nd2/m/l/x.md; do
+            c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done
+        echo "memo $(for k in "${!M[@]}"; do [[ "${M[$k]}" != d ]] || echo "$k"; done | sort | tr "\n" " ")"; declare -a A=(); c=0; main_checkout A M d/r.md || c=$?; echo "ent-indexed $c"; c=0; main_checkout E A d/r.md || c=$?; echo "memo-indexed $c"' _ "$LIB"
+    chmod 755 u && chmod 644 d/n.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = "d/r.md 0
+nx.md 2
+nd/x.md 2
+f.md/x.md 2
+d 2
+u 2
+d/n.md 1
+sf.md 1
+dg.md 1
+sd 1
+ff.md 1
+u/x.md 1
+sd/nx.md 1
+dgd/x.md 1
+lnk/x.md 1
+gl/x.md 1
+nd2/m/l/x.md 1
+memo d 
+ent-indexed 1
+memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "main walk fails on a path under a link main stores below a directory the checkout lacks, and walks a path under a plain file (U2a3c)" {
+    mkdir -p a/b real docs && ln -s ../../real a/b/l && printf 'evil @../docs/s.md\n' > real/x.md && printf 'n\n' > docs/n.md
+    printf 'see @a/b/l/x.md and @docs/n.md/x.md\n' > CLAUDE.md && commit_all deep-link
+    # The checkout keeps a/b/l: the parent-link refusal.
+    imps main docs/s.md; want walk failed; want docs/s.md imported
+    # The checkout lacks a: main still stores a/b/l as a link, two levels below it, which the walk does not follow.
+    rm -r a; imps main docs/s.md; want walk failed; want docs/s.md imported
+    # A path under a plain file loads nothing and is no failure.
+    git rm -q -r a && printf 'see @docs/n.md/x.md\n' > CLAUDE.md && commit_all under-file
+    imps main docs/s.md docs/n.md; [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want docs/n.md imported; want docs/s.md -
+}
+
+@test "each walk caps every file's parser at what IMPORT_WORK_MAX has left, in every arm, and charges every arm (U2a3b L2-confirm performance P2, U2a3c)" {
+    # Four top-level files alike but for one letter cost w each: two on main, two
+    # only in the checkout, so each main_imports arm runs twice. An awk shim logs
+    # the cap each parser call is given (IT_WORK).
+    printf 'see @a.md\n' > AGENTS.md && printf 'see @b.md\n' > GEMINI.md && commit_all two && printf 'see @c.md\n' > CLAUDE.md && printf 'see @d.md\n' > CLAUDE.local.md
+    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\n[ -z "${IT_WORK+x}" ] || echo "$IT_WORK" >> "%s/cap"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v awk)" > "$BATS_TEST_TMPDIR/bin/awk" && chmod +x "$BATS_TEST_TMPDIR/bin/awk"
+    run --separate-stderr timeout 60 env LC_ALL=C PATH="$BATS_TEST_TMPDIR/bin:$PATH" C="$BATS_TEST_TMPDIR/cap" bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        out="$(printf "see @a.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
+        for m in $((4 * w - 1)) $((4 * w)); do IMPORT_WORK_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
+            imported_names && echo "$((m - 4 * w)) tree ok" || echo "$((m - 4 * w)) tree failed"; main_imports && echo "$((m - 4 * w)) main ok" || echo "$((m - 4 * w)) main failed"; done
+        IMPORT_WORK_MAX=1000; want="$(printf "%s\n" 1000 $((1000 - w)) $((1000 - 2 * w)) $((1000 - 3 * w)) | sort -n | tr "\n" " ")"
+        for k in tree main; do IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; rm -f "$C"
+            if [[ $k == tree ]]; then imported_names; else main_imports; fi
+            got="$(sort -n "$C" | tr "\n" " ")"; [[ "$got" == "$want" ]] && echo "$k caps ok" || echo "$k caps [$got] want [$want]"; done' _ "$LIB"
+    [ "$output" = $'-1 tree failed\n-1 main failed\n0 tree ok\n0 main ok\ntree caps ok\nmain caps ok' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the parser stops once its work passes IMPORT_WORK_LEFT, below its per-file bound (U2a3c)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        out="$(printf "see @abcdefgh.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
+        for l in $((w - 1)) $w; do out="$(printf "see @abcdefgh.md\n" | IMPORT_WORK_LEFT=$l import_targets "")" && echo "$((l - w)) ok" || echo "$((l - w)) failed"; done' _ "$LIB"
+    [ "$output" = $'-1 failed\n0 ok' ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "main walk reads an untracked start that a main file also imports once, through the checkout (U2a3c; override row 446)" {
+    mkdir -p docs && printf 'see @docs/AGENTS.md\n' > CLAUDE.md && commit_all base
+    printf 'see @x.md\n' > docs/AGENTS.md
+    imps main docs/AGENTS.md docs/x.md docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want docs/AGENTS.md imported; want docs/x.md imported; want docs/other.md -
+    # The same path as a checkout symlink: refused at the start, before the import meets it.
+    rm docs/AGENTS.md && printf 'see @x.md\n' > docs/real.md && ln -s real.md docs/AGENTS.md
+    imps main docs/x.md; want walk failed; want docs/x.md imported
+}
+
+@test "the checkout phase stays linear in a deep import token whose ancestors the checkout lacks (U2a3c i2 performance F1)" {
+    # @a/a/.../x.md, 1,000 levels deep, none in the checkout: about 0.6 s; 21b35ebf's
+    # top-down loop rescanned every absent ancestor per prefix candidate (10.7 s).
+    p=""; for ((i = 0; i < 1000; i++)); do p+="a/"; done
+    printf 'see @%sx.md\n' "$p" > CLAUDE.md && commit_all deep
+    run --separate-stderr timeout 6 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        main_imports && echo ok || echo failed' _ "$LIB"
+    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "main walk fails on link text main stores longer than 4096 bytes before reading it whole (U2a3c i2 performance F2)" {
+    printf 'r\n' > r.md && commit_all base
+    l="$(head -c 4097 /dev/zero | tr '\0' a | git hash-object -w --stdin)"; k="$(printf 'r.md' | git hash-object -w --stdin)"
+    for b in "$l" "$k"; do
+        t="$(printf '100644 blob %s\tr.md\n120000 blob %s\tCLAUDE.md\n' "$(git rev-parse main:r.md)" "$b" | git mktree)"
+        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m link)"; imps main r.md; echo "$output" | head -1
+    done > "$BATS_TEST_TMPDIR/got"
+    [ "$(cat "$BATS_TEST_TMPDIR/got")" = $'walk: failed\nwalk: ok' ] || { cat "$BATS_TEST_TMPDIR/got"; return 1; }
 }
