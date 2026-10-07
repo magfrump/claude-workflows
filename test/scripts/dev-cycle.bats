@@ -1024,7 +1024,7 @@ EOF
         docs/Constraints.md docs/thoughts/t.md
     [ "$status" -eq 0 ]
     # docs/constraints.md is the user's (plan D2); docs/thoughts/ stays a living doc the cycle may fix.
-    for want in "skip docs/conventions.md: an instruction file imports" "skip README.md: an instruction file imports" \
+    for want in "skip docs/conventions.md: an instruction file names it" "skip README.md: an instruction file names it" \
                 "ok docs/guides/g.md" "skip docs/Working/notes.md: in-cycle fixes edit only" "skip docs/Dev-Cycle.md: in-cycle fixes edit only" \
                 "ok docs/notes.md" "skip docs/Constraints.md: in-cycle fixes edit only" "ok docs/thoughts/t.md"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
@@ -1045,20 +1045,44 @@ EOF
 }
 
 
-@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email is not one" {
+@test "--check-fix words a failed import walk as one and refuses (U2a3b)" {
+    mkdir -p docs && printf 'Rules: see @docs/conventions.md\n' > GEMINI.md && echo x > docs/notes.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [ "$output" = "ok docs/notes.md" ] || { echo "$output $stderr"; return 1; }
+    # A corrupt index: git ls-files fails, so the walk has no start list.
+    printf 'junk' > .git/index
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "--check-fix refuses a doc imported through the repo's parent directory, as main did (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {
+    mkdir -p docs && printf 'See @../%s/docs/notes.md\n' "$(basename "$(pwd -P)")" > CLAUDE.md && echo x > docs/notes.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [[ "$output" == "skip docs/notes.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "--check-fix refuses a doc imported through a name Claude Code decodes with U+FFFD (U2a3b L2 security F1)" {
+    mkdir -p docs && printf 'See @docs/\xff.md\n' > CLAUDE.md && printf 'see @c.md\n' > docs/$'\xef\xbf\xbd'.md && echo x > docs/c.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/c.md
+    [[ "$output" == "skip docs/c.md: an instruction file names it"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email-shaped token is over-read (superset)" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
       echo 'Also @docs/frag.md#intro, [@docs/link.md](docs/link.md) and (@docs/paren.md).'
-      echo 'Mail user@docs/email.md is not an import.'; } > GEMINI.md
+      echo 'Mail user@docs/email.md is no import for Claude Code, but the superset reads it.'; } > GEMINI.md
     for f in my_notes bold em_one star frag link paren email; do echo x > "docs/$f.md"; done
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/my_notes.md docs/bold.md docs/em_one.md docs/star.md \
         docs/frag.md docs/link.md docs/paren.md docs/email.md
     [ "$status" -eq 0 ]
-    for f in my_notes bold em_one star frag link paren; do
-        [[ "$output" == *"skip docs/$f.md: an instruction file imports"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
+    for f in my_notes bold em_one star frag link paren email; do
+        [[ "$output" == *"skip docs/$f.md: an instruction file names it"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
     done
-    [[ "$output" == *"ok docs/email.md"* ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-fix finds instruction files in any case among many unrelated tracked files" {
@@ -1070,7 +1094,7 @@ EOF
     printf 'See @docs/ign.md\n' > CLAUDE.local.md && echo CLAUDE.local.md >> .git/info/exclude && echo x > docs/ign.md
     git add docs/ign.md && git commit -qm ign
     run --separate-stderr bash "$DC" --check-fix docs/deep.md docs/ign.md docs/n7.md
-    [[ "$output" == *"skip docs/deep.md: an instruction file imports"* && "$output" == *"skip docs/ign.md: an instruction file imports"* \
+    [[ "$output" == *"skip docs/deep.md: an instruction file names it"* && "$output" == *"skip docs/ign.md: an instruction file names it"* \
        && "$output" == *"ok docs/n7.md"* ]] || { echo "$output"; return 1; }
 }
 
@@ -1083,10 +1107,10 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md; do
+                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
-        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
         for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
@@ -1162,11 +1186,12 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     make_repo "$BATS_TEST_TMPDIR/other" main
     ( cd "$BATS_TEST_TMPDIR/other" && echo 'See @docs/b.md' > CLAUDE.md && mkdir docs && echo x > docs/b.md )
     run env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
-        ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo
-        cd "$2"; ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo' _ \
+        w() { for p in docs/a.md docs/b.md; do if [[ "$IMPORTED" == *$'"'"'\n'"'"'"$p"$'"'"'\n'"'"'* ]]; then printf " %s" "$p"; fi; done; echo; }
+        ROOT_REAL="$(pwd -P)"; imported_names; w
+        cd "$2"; ROOT_REAL="$(pwd -P)"; imported_names; w' _ \
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR/other"
-    [ "$output" = " docs/a.md 
- docs/b.md " ] || { echo "[$output]"; return 1; }
+    [ "$output" = " docs/a.md
+ docs/b.md" ] || { echo "[$output]"; return 1; }
 }
 
 @test "--check-answer reads main's commit: a working-tree or branch-only answer is open (T34)" {
