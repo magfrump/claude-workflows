@@ -1,10 +1,9 @@
 # Checkpoint: build-loop handoff
-Date: 2026-10-06 (revision 9; U2a2 landed; next U2a3, then U2a3b)
-Branch: feat/build-loop-u2a3 (worktree `/workspace/.claude/wt-build-loop-u2a3`, at 579ebca2) and feat/build-loop-u2a3b (worktree `/workspace/.claude/wt-build-loop-u2a3b`, at 3156b995, stacked on U2a3); neither rebased onto main 0fbf9742 yet
+Date: 2026-10-06 (revision 10; U2a3 landed at 97aa2d35 after a user-chosen split; next U2a3b, then U2a3c)
+Branch: feat/build-loop-u2a3b (worktree `/workspace/.claude/wt-build-loop-u2a3b`; two loop-pass iterations done, being rebased onto main for its final pass) and feat/build-loop-u2a3c (worktree `/workspace/.claude/wt-build-loop-u2a3c`, at cebfed35 on U2a3's 5e51b58b; review iteration 1 running against 5e51b58b; rebases above U2a3b after U2a3b lands)
 Research: docs/working/research-build-loop-handoff.md
 Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved; step 5 holds the U2 split note)
 Design conversation: docs/working/handoff-build-loop-handoff.md
-
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0 → U1 → U2 (U2a1 → U2a2 → U2b → U2c) → U3 → U3b → U3c → U4 → U5.
@@ -18,7 +17,8 @@ U2 was first built as one unit, U2a (`feat/build-loop-u2a`, not merged), which h
 |---|---|---|
 | U2a1 | **merged 1a94773c** | main_entry's badform word, entry_why, isclosed, constraints.md for --check-fix, U1d's rows. |
 | U2a2 | **merged 1ffb72d4** (2026-10-06) | The shared token parser `import_targets` (U+FEFF, a punctuation-ended token's whole and stripped name, ..x, NUL), `isimported tree` for check_fix, U2a1's carried rows C12-C14. Loop: 3 iterations (iteration 1 short-circuited at fact-check; 2 split main_imports out; 3 final, k=3, full panel, Stage 2.5); rubric `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a2.md`, loop closed at 7697c6e6. D1 (an @ after a Unicode space is swallowed, as on main) waived and fixed in U2a3b. |
-| U2a3 | branch 579ebca2, **unreviewed**, on U2a2's 7697c6e6 | `main_imports` (the commit-reading walk) and `isimported main`, with U2a2 iteration 2's rows B2-B6, B8, B10-B12 fixed (nested .claude/rules, unreadable checkout file, short tr output, link text leaving the repo, IMPORTED_MAIN starts as error, A5/F11 wording, test-strategy patch). 344 code lines against U2a2. Its pre-split history (iterations 1-2 of U2a2) is on `feat/build-loop-u2a3-src` and `feat/build-loop-u2a2-full`. |
+| U2a3 | **merged 97aa2d35** (2026-10-06) | The main-only `main_imports` walk, `isimported main`, `nul_list`. Loop 1 hit the cap with C1 (an untracked start skipped the parent-link check) open; the user chose **split** at the iteration-4 gate: checkout-side reads moved to U2a3c, and until it lands the walk fails closed on any start file main lacks (so the gate needs a fresh worktree). Loop 2: 3 iterations, closed at 0bb98f27; rubric `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3.md`. `ident` and non-tree attribute sources added to the U2b checkout-conversion refusal (TODO U2b). |
+| U2a3c | branch cebfed35, iteration 1 running | The two-phase checkout phase (main to a fixpoint, then checkout starts and imported files main lacks append only), `main_checkout` admission check on every checkout path, `checkout_md`, C3 fails closed. 140 code lines against U2a3. |
 | U2a3b | branch 3156b995, **unreviewed**, on U2a3 | Parser parity with Claude Code (Unicode spaces and NUL become blanks before the grep; Markdown cut points [ ] ( ) < ! * _; only ~/ dropped) and fail-closed walks (parser returns 1 on sed/grep failure; imported_names and main_imports fail on a failing lower). Fixes U2a2's final-pass D1-D3. 98 code lines against U2a3. |
 | U2a4, U2b, U2c | not started | U2a4: the floor (`floor`, `ownfile`, `GATE_CODE`; code on `feat/build-loop-u2a2-full`) with the shared check_fix/floor predicate (rows C1, C3, 308). Plan step 5 for U2b, U2c. |
 
