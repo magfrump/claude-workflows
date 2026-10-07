@@ -58,6 +58,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     for p in docs/wt-only.md CLAUDE.md docs/guide.md; do want "$p" -; done
     printf 'x\n' > docs/new.md; imps main docs/guide.md; want walk failed; want docs/guide.md imported; rm docs/new.md
     printf 'Mine: @docs/private.md\n' > CLAUDE.local.md; imps main docs/guide.md; want walk failed; want docs/guide.md imported
+    git add -f CLAUDE.local.md; imps main docs/guide.md; want walk failed; want docs/guide.md imported
 }
 
 @test "main walk fails closed when an instruction blob cannot be read or main is not found by name (U2a2)" {
@@ -144,10 +145,10 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     want walk ok; want hid.md imported
     want ..x.md imported
     # An untracked name holding a newline fails the walk.
-    mkdir -p .claude/rules && printf 'x\n' > ".claude/rules/zz"$'\n'"docs.md"
+    printf 'x\n' > "zz"$'\n'"CLAUDE.md"
     imps main docs/x.md
     want walk failed; want docs/x.md imported
-    rm -r .claude
+    rm "zz"$'\n'"CLAUDE.md"
     imps main docs/x.md; want docs/x.md -
     # Symlink text with a trailing newline, an absolute one, none, or one leaving the repo: the walk fails.
     for text in $'notes.md\n' /etc/hosts '' ../outside/AGENTS.md; do
@@ -171,7 +172,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     [ "$output" = "failed walk: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "main walk fails on symlink text holding a NUL, and on a checkout symlink it would read (U2a2 iteration 1 A1)" {
+@test "main walk fails on symlink text holding a NUL, on a checkout symlink or file at a path main lacks, and on an untracked start (U2a2 iteration 1 A1)" {
     mkdir -p docs real
     printf 'r\n' > docs/rules.md && printf 'x @docs/y.md\n' > real/x.md
     printf 'see @docs/lt.md and @docs-link/x.md\n' > CLAUDE.md
@@ -186,7 +187,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     imps main docs/rules.md; want walk failed; want docs/rules.md imported
     rm docs/lt.md && ln -s docs/rules.md CLAUDE.local.md
     imps main docs/x.md; want walk failed
-    # An untracked start file the walk cannot read.
+    # An untracked start file, unreadable too.
     rm CLAUDE.local.md && printf 'Mine: @docs/x.md\n' > CLAUDE.local.md && chmod 000 CLAUDE.local.md
     imps main docs/x.md; want walk failed; want docs/x.md imported
     # An import of a plain directory reads nothing and is no failure.
@@ -218,6 +219,11 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         main_imports && isimported main docs/last.md && echo ok' _ "$LIB"
     [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
+    # Link text past 64 KiB with a .. after main's link l, under ulimit -f 0: the .. check reads it whole (loop 1 C4; XFSZ ignored, so a failed temp write returns, as a full disk does).
+    x="$(for i in $(seq 270); do printf '%0250d/../' 0; done)l/../t.md"
+    t="$(printf '120000 blob %s\tAGENTS.md\n120000 blob %s\tl\n' "$(printf '%s' "$x" | git hash-object -w --stdin)" "$(printf docs | git hash-object -w --stdin)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m big-link)"; rm -r docs; git read-tree main
+    run --separate-stderr env LC_ALL=C bash -c 'trap "" XFSZ; ulimit -f 0; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"; main_imports || echo failed' _ "$LIB"
+    [ "$output" = failed ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "main walk: an upper-case .MD instruction file starts it; an untracked one fails the walk until U2a3c (U2a3)" {

@@ -29,9 +29,9 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes), and so does main_imports (it reads the checkout only to fail: an
-# untracked start file, or anything at an imported path main lacks, fails it
-# until U2a3c walks them; it needs resolve_main to have found main by name);
+# writes), and so does main_imports (it reads the checkout only to fail, until
+# U2a3c, so the gate needs a fresh worktree; the block above IMPORTED= lists
+# each case; it needs resolve_main to have found main by name);
 # imported_names reads the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -459,8 +459,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
 # in the checkout), an imported path main lacks that lies under a directory
 # main stores as a symlink or gitlink, or that the checkout holds as anything
-# but a plain directory (the root itself included), and an untracked start
-# file in the checkout fail the walk, so isimported main answers imported for
+# but a plain directory (the root itself included), and a start file main
+# lacks (untracked, ignored, or in the checkout's index) fail the walk, so isimported main answers imported for
 # every path. Checkout files are not walked until U2a3c, so the walk fails
 # closed on them. A start file answers imported only when an import reaches it
 # (U2a4's floor names start files by its own rules). Not covered (known issue
@@ -513,7 +513,7 @@ instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
-# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0.
+# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 imported_names() {
   local f d p seen=$'\n' queue=()
@@ -538,7 +538,7 @@ imported_names() {
 # the commit's tree or the untracked list cannot be listed whole (nul_list), a
 # tree record does not parse, a name is listed twice (git's lookups read the
 # first copy) or holds a newline, the lower-cased start list comes back short,
-# an untracked start file exists, a blob cannot be read, symlink text it
+# a start file main lacks exists, a blob cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, or an imported path main lacks lies under a directory
 # main stores as a symlink or gitlink or exists in the checkout as anything but
@@ -558,15 +558,16 @@ main_imports() {
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
   done
-  nul_list recs untracked_md || return 1
-  for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; cand+=("t:$f"); done
+  nul_list recs untracked_md || return 1; low=("${recs[@]}")
+  nul_list recs env GIT_LITERAL_PATHSPECS=0 git ls-files -z --cached -- ':(glob,icase)**/*.md' || return 1
+  for f in "${low[@]}" "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   # One tr lower-cases every candidate (lower would fork per path).
   [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
   [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
     if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      [[ "${cand[i]:0:1}" == m ]] || return 1  # untracked: not walked until U2a3c
+      [[ "${cand[i]:0:1}" == m ]] || return 1  # main lacks it: not walked until U2a3c
       seen[${cand[i]:2}]=1; queue+=("${cand[i]:2}")
     fi
   done
@@ -593,7 +594,8 @@ main_imports() {
         done
         out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
         [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
-      *) continue ;;
+      160000) continue ;;  # a gitlink: its files are not main's
+    *) IMPORTED_MAIN=error; return 1 ;;
     esac
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
@@ -601,7 +603,7 @@ main_imports() {
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
-      # Main lacks p: under a link or gitlink main stores, or held in the checkout, fail.
+      # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
       c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
       [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }
     done < <(printf '%s\n' "$out")
