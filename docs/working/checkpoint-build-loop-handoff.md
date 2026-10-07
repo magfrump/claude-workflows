@@ -1,13 +1,13 @@
 # Checkpoint: build-loop handoff
-Date: 2026-10-07 (revision 17; U2a3c rebased onto main, loop iterations 2-3 run; final pass not clean, fixed in 4b7f2357; Q-128 open: how it lands)
-Branch: feat/build-loop-u2a3c (worktree `/workspace/.claude/wt-build-loop-u2a3c`, at 380ed01b on main e5d0f838; old tip kept as `backup/u2a3c-pre-rebase-2b1399ab`)
+Date: 2026-10-07 (revision 18; Q-128 [1]: confirming pass run at 380ed01b, no code defect, not clean; Q-129 open: how it lands)
+Branch: feat/build-loop-u2a3c (worktree `/workspace/.claude/wt-build-loop-u2a3c`, at 83c69b48 on main e5d0f838; old tip kept as `backup/u2a3c-pre-rebase-2b1399ab`)
 Research: docs/working/research-build-loop-handoff.md
 Plan: docs/working/plan-build-loop-handoff.md (revision 4, approved; step 5 holds the U2 split note)
 Design conversation: docs/working/handoff-build-loop-handoff.md
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0 → U1 → U2 (U2a1 → U2a2 → U2b → U2c) → U3 → U3b → U3c → U4 → U5.
-- **Blocked on**: Q-128 (U2a3c's final pass found four ambers, fixed in 4b7f2357 but unreviewed: one more confirming pass [1, recommended], merge as is [2], or a lite fix-drift check [3]). Q-119 (the U2a split, interim [1]) is open and blocks nothing.
+- **Blocked on**: Q-129 (U2a3c's confirming pass after Q-128 [1]: no red, no code defect; doc/test findings and a Low pre-existing queue-pop cost. [1] docs+tests, lite check, merge (recommended); [2] also fix the queue pop, full pass; [3] merge as is). Q-119 (the U2a split, interim [1]) is open and blocks nothing.
 - U0 landed 2026-10-05 (U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726`); U1 landed 2026-10-05/06 (U1a adff525b, U1b 62830b0a, U1c 9f78df7e, U1d 4e12b03c). Rubrics: `docs/reviews/code-review-rubric-2026-10-0{4,5,6}-feat-build-loop-u*.md`.
 
 ## U2 state (read first)
@@ -24,7 +24,7 @@ U2 was first built as one unit, U2a (`feat/build-loop-u2a`, not merged), which h
 
 **Next steps:**
 1. Done 2026-10-07: U2a3c rebuilt on main, loop iterations 2 and 3 run (see the U2a3c row). The checkpoint's earlier "rebase, apply N1, run iterations 2-3" is complete.
-2. Q-128 decides how U2a3c lands. [1]: final pass over 4b7f2357 (k=3, full panel, Stage 2.5; reuse the shared-brief shape in the rubric's iteration notes), clean → merge message `docs/working/merge-msg-build-loop-u2a3c.md` and merge ask; [2]: write the merge message and ask; [3]: k=1 fact-check + security over `3a35c8b9..4b7f2357`, clean → merge ask. Merge via a temp worktree (memory: check branch before merging in the shared checkout).
+2. Q-128 answered [1]; the confirming pass ran at 380ed01b (rubric section "Confirming pass after Q-128 [1]", reports committed in 83c69b48). Q-129 now decides how U2a3c lands; Q-128's options read: [1]: final pass over 4b7f2357 (k=3, full panel, Stage 2.5; reuse the shared-brief shape in the rubric's iteration notes), clean → merge message `docs/working/merge-msg-build-loop-u2a3c.md` and merge ask; [2]: write the merge message and ask; [3]: k=1 fact-check + security over `3a35c8b9..4b7f2357`, clean → merge ask. Merge via a temp worktree (memory: check branch before merging in the shared checkout).
 3. Then U2a4 (the floor), U2b and U2c as in plan step 5, carrying the older U2 triggers: C18/R5 (replace refs, origin/HEAD) are U3b's `--state`; A21 brief enumeration into the lib; globform into the lib; check_branch and marker_kind ignoring `git log` failures under a broken config (row 307); the per-path ls-tree cost (rows 220, 310); C16 (`pin_hermetic_git`) when a row-327 suite is edited; and from U2a3c: one numbered caller-contract statement (override row, trigger U2a4); a second `main_checkout` caller owes it a fresh MEMO per walk and ENT.
 
 Also merged on the user's request after U2a2 (2026-10-06): `feat/web-taint-fetch-log` (b8807e76) and `feat/egress-claude-config` (0fbf9742; `Live-verified: no`, carried from its commit). Main at 0fbf9742 passes scripts/health-check.sh.
