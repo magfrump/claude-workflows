@@ -27,6 +27,8 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
+| [Q-120](#q-120--u2a3b-iteration-4-gate) | you: judgment | U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close cle... | 2026-10-07 |
+| [Q-121](#q-121--sessions-outside-workspace) | you: judgment | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -314,3 +316,33 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 - **Interim:** [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`.
 - **Update 2026-10-06:** under [1], U2a2 (the floor plus the walk, 400 code lines before U2a1's carried rows) was split again, then once more at its review's iteration 2 (fixes and tests put it near 480 lines): U2a2 is the shared token parser and `isimported tree`, U2a3 the commit-reading walk, U2a4 the floor. No new judgment: the same refuse-what-is-not-modelled walk, in smaller units. Under [3], U2a3 is the unit replaced.
 - **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
+
+### Q-120 · u2a3b-iteration-4-gate
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
+
+U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close clean: how should the unit land?
+
+- **Why it's yours:** the review cap's gate is yours by rule, and the unit sits at 794 changed code lines, at Q-104 [2]'s ~800 tolerance, so another pass that grows it needs your waiver.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3b.md` (section "Loop 2, iteration 3 of 3" and "Iteration-4 gate (loop 2)", on branch `feat/build-loop-u2a3b`) · commit aa379ee9
+- **Evidence:** 0 red. Open ambers at e1654266: three Medium test gaps (the parser's work bound, the walk-wide budget, the tree walk's own pipefail) and one Medium fail-open that predates this unit (instruction files outside the repo, such as a parent directory's CLAUDE.md or your memory file, are never walk starts). All fixed or routed to U2b in aa379ee9, which no review pass has seen. The superset claim held under three independent checks against Claude Code 2.1.292, and --check-fix answers match main on all 948 tracked doc paths.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more confirming pass, under a size waiver** (recommended) | Run one more final pass (k=3, full panel, Stage 2.5) over aa379ee9. Clean → merge message and merge ask. Any new finding → back to you. The waiver lets the unit pass ~800 lines if that pass needs a fix. | Granting the waiver; one merge ask later. | About 1M tokens spent confirming small fixes. |
+| **[2] Merge as is** | Merge aa379ee9 with its fixes unreviewed, and record the open dispositions in the merge message. | One merge ask now. | A defect in the unreviewed fixes lands on main. The floor (U2a4) is not built yet, so the exposure is --check-fix only. |
+| **[3] Split** | Land e1654266 plus the docs-only part of aa379ee9 as U2a3b. The code fixes (work charge, .git rule, HOME key) and their tests become a small stacked unit with its own loop. | Two merge asks. | More overhead for about 60 code lines. |
+
+- **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
+- **Interim:** nothing runs; U2a3b waits on this answer. Other build-loop units do not start until it lands.
+- **If the answer differs:** none of the options redoes work; [3] means splitting aa379ee9 into two commits.
+
+### Q-121 · sessions-outside-workspace
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
+
+Does any Claude Code session that might read this repo's instruction files run with a working directory outside `/workspace` and its worktrees (for example `/home/magfrump/claude-workflows` on the host)? Answer yes (name the paths) or no.
+
+- **Why it's yours:** only you know where you start sessions. U2b's reader model (plan step 5) needs the set of checkouts and homes that read the repo; a session elsewhere is another root, with another HOME, that the gate's walk must cover or name as an exception.
+- **Read:** `docs/reviews/architecture-review-review-2026-10-07-L2final-build-loop-u2a3b.md` (F1) on `feat/build-loop-u2a3b` · plan step 5's U2b bullet
+- **Blocks:** nothing now; U2b's plan reads it.
+- **Interim:** U2b assumes `/workspace` and its `git worktree list` paths only.
+- **If the answer differs:** U2b adds those paths and homes to the reader set, or names them as an exception.
