@@ -1,6 +1,22 @@
 Commit: cc1aa864
-Loop-pass short-circuit: used at 45ad17b0
 # Code Review Rubric
+
+## Iteration-4 gate decision: split (user, in session, 2026-10-06)
+
+Decision: **split**. The user answered the gate in session on 2026-10-06 (relayed by the coordinator; no questions.md entry, since the user answered directly). U2a3 becomes the main-only walk on this branch (no history rewrite); the checkout-side reads move to U2a3c (`feat/build-loop-u2a3c`), built as the two-phase walk and stacked above U2a3b. U2a3's loop restarts with a fresh counter (loop 2, below); loop 1's record follows it unchanged.
+
+Disposition of loop 1's open rows in the split commit:
+- C1 (untracked start skips the parent check): removed. An untracked start fails the walk until U2a3c; U2a3c's phase 2 runs the parent check on every checkout path, starts included.
+- C2 (gitlink parent): fixed. A 160000 parent fails the walk like a 120000 one.
+- C3 (unsearchable checkout directory): Defer (override row). U2a3 reads no checkout content; U2a3c fails on it.
+- C4 (here-string at the link-text split): fixed (`mapfile -d /` from a process substitution).
+- C5 (wording): fixed. Header, block comment, return-1 comment, A5, F11 and the plan bullets rewritten for the main-only walk.
+- C6: Accepted-immutable rows (unchanged).
+- C7 (parent-check tests): fixed (test 15: `want ... imported` after each failure, and a one-letter link two levels up).
+- C8 (O(L^2) parent loop): fixed (steps over `/` with `${c%/*}`).
+- C9: Won't-Fix (override row). C10 (nul_list partial array): fixed (emptied on failure). C11 (test 9 comment): fixed. C12: taken as the split (override row).
+
+## Loop 1 (pre-split), closed at the cap
 
 **Scope:** full branch `main...feat/build-loop-u2a3`; iteration 3 (final confirming pass, no `--loop-pass`, k=3, full panel) at cc1aa864, iteration 2 at 34edec56, iteration 1 at 45ad17b0; 400 changed code lines by pr-prep 1a (at the cap) | **Reviewed:** 2026-10-06 | **Status: ❌ CAP REACHED: iteration 3 ended with one behavioral red (C1) and three ambers open; iteration 4 needs a written escalate / split / abandon decision (not taken here; escalated to the caller)**
 

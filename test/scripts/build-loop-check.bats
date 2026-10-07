@@ -43,21 +43,21 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     [ "$output" = "bogus: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "main walk: main's instruction files and the checkout's untracked ones start it; a working-tree edit of a tracked one does not count (U2a2)" {
+@test "main walk: main's instruction files start it; a working-tree edit does not count; an untracked start or a checkout file at a path main lacks fails it until U2a3c (U2a2, U2a3 split)" {
     mkdir -p docs skills/x
     printf 'Rules: @docs/imported.md and @docs/new.md\n' > CLAUDE.md
     printf 'More: @deep.md.\n' > docs/imported.md
     printf 'deep\n' > docs/deep.md
     printf 'See **@ref.md**\n' > skills/x/SKILL.md
     commit_all imports
-    printf 'Mine: @docs/private.md\n' > CLAUDE.local.md
     printf 'Rules: @docs/wt-only.md\n' > CLAUDE.md
-    imps main docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md docs/private.md \
-        docs/wt-only.md CLAUDE.md docs/guide.md
+    imps main docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md docs/wt-only.md CLAUDE.md docs/guide.md
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     want walk ok
-    for p in docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md docs/private.md; do want "$p" imported; done
+    for p in docs/imported.md Docs/Imported.md docs/deep.md skills/x/ref.md docs/new.md; do want "$p" imported; done
     for p in docs/wt-only.md CLAUDE.md docs/guide.md; do want "$p" -; done
+    printf 'x\n' > docs/new.md; imps main docs/guide.md; want walk failed; want docs/guide.md imported; rm docs/new.md
+    printf 'Mine: @docs/private.md\n' > CLAUDE.local.md; imps main docs/guide.md; want walk failed; want docs/guide.md imported
 }
 
 @test "main walk fails closed when an instruction blob cannot be read or main is not found by name (U2a2)" {
@@ -111,7 +111,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     want walk failed; want docs/d.md imported; want docs/p.md imported
 }
 
-@test "main walk follows what Claude Code loads: symlinks, any name main stores, the checkout's files, .claude/rules/ at any depth, a token ended by a Unicode space (U2a2, U2a3)" {
+@test "main walk follows what Claude Code loads: symlinks, any name main stores, .claude/rules/ at any depth, a token ended by a Unicode space (U2a2, U2a3)" {
     mkdir -p docs .github .claude/rules pkg/.claude/rules
     printf 'imports @docs/b.md\n' > real.md
     ln -s real.md CLAUDE.md
@@ -126,12 +126,9 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     # An executable instruction file and import (100755), and a chain of two links on main.
     chmod +x real.md docs/a+b.md && printf 'c @c3.md\n' > docs/c2.md && ln -s docs/c1.md GEMINI.md && ln -s c2.md docs/c1.md
     commit_all walks
-    # Untracked .claude/rules starts, top level and nested; a checkout edit of a tracked import does not count.
-    printf 'U: @../../docs/u.md\n' > .claude/rules/mine.md && printf 'U: @../../u2.md\n' > pkg/.claude/rules/x.md && printf 'gone\n' > docs/a+b.md
-    # Untracked: a local instruction file importing an untracked note, which imports a tracked file.
-    printf 'Mine: @docs/local-notes.md\n' > CLAUDE.local.md
-    printf 'Notes: @t.md\n' > docs/local-notes.md
-    ps=(docs/c3.md docs/u.md pkg/u2.md real.md docs/b.md docs/g.md docs/deep.md docs/nb.md docs/target.md docs/t2.md docs/r.md docs/local-notes.md docs/t.md docs/nested.md pkg/.claude/rules/docs/bom.md)
+    # A checkout edit of a tracked import does not count.
+    printf 'gone\n' > docs/a+b.md
+    ps=(docs/c3.md real.md docs/b.md docs/g.md docs/deep.md docs/nb.md docs/target.md docs/t2.md docs/r.md docs/nested.md pkg/.claude/rules/docs/bom.md)
     imps main "${ps[@]}" docs/other.md
     want walk ok
     for p in "${ps[@]}"; do want "$p" imported; done
@@ -180,7 +177,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     printf 'see @docs/lt.md and @docs-link/x.md\n' > CLAUDE.md
     ln -s real docs-link
     commit_all base
-    # A tracked directory symlink, present in the checkout, that an import passes through.
+    # An import through a directory link main stores (the parent-link refusal).
     imps main docs/rules.md; want walk failed
     git rm -q docs-link && printf 'see @docs/lt.md\n' > CLAUDE.md && commit_all nolink
     imps main docs/rules.md; want walk ok
@@ -212,8 +209,8 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     git update-ref refs/heads/main "$(git commit-tree "$(printf '' | git mktree)" -m empty)"
     printf 'junk' > .git/index
     imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/b.md imported
-    # A tr that fails (docs/CLAUDE.md is now an untracked start): the lower-cased list comes back short.
-    rm .git/index
+    # A tr that fails (docs/CLAUDE.md is a tracked start again): the lower-cased list comes back short.
+    rm .git/index && commit_all again
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/b.md; [ "$status" -eq 0 ] || return 1; want walk failed
     # An import list past 64 KiB with no room for a temp file is read whole (U2a3b I2-C4).
@@ -223,17 +220,18 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
 }
 
-@test "main walk: an upper-case .MD instruction file starts it, tracked or untracked (U2a3)" {
+@test "main walk: an upper-case .MD instruction file starts it; an untracked one fails the walk until U2a3c (U2a3)" {
     mkdir -p docs
     printf 'Rules: @docs/up.md\n' > CLAUDE.MD
     commit_all upper
-    printf 'Mine: @mine.md\n' > docs/AGENTS.MD
-    imps main docs/up.md docs/mine.md docs/other.md
+    imps main docs/up.md docs/other.md
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
-    want walk ok; want docs/up.md imported; want docs/mine.md imported; want docs/other.md -
+    want walk ok; want docs/up.md imported; want docs/other.md -
+    printf 'Mine: @mine.md\n' > docs/AGENTS.MD
+    imps main docs/other.md; want walk failed; want docs/other.md imported
 }
 
-@test "main walk fails on a dangling checkout link at a target, a directory under a checkout link, and empty link text below the top level (U2a3)" {
+@test "main walk fails on a dangling checkout link at a target, a directory under a checkout link, empty link text below the top level, and a path under a gitlink (U2a3)" {
     mkdir -p docs sub real/sub.md
     printf 'see @docs/gone.md and @lnk/sub.md\n' > CLAUDE.md
     commit_all base
@@ -248,20 +246,20 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     s="$(printf '120000 blob %s\tAGENTS.md\n' "$e" | git mktree)"
     git update-ref refs/heads/main "$(git commit-tree "$(printf '040000 tree %s\tsub\n' "$s" | git mktree)" -p main -m empty-link)"
     imps main docs/x.md; want walk failed; want docs/x.md imported
+    # An import into a path main stores as a gitlink (sub/ is an empty directory here).
+    t="$(printf '100644 blob %s\tCLAUDE.md\n160000 commit %s\tsub\n' "$(printf 'see @sub/x.md\n' | git hash-object -w --stdin)" "$(git rev-parse main)" | git mktree)"
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"; imps main docs/x.md; want walk failed; want docs/x.md imported
 }
 
-@test "main walk ends on an import cycle, a self-import and a cycle through an untracked file (U2a3)" {
+@test "main walk ends on an import cycle and a self-import (U2a3)" {
     mkdir -p docs
     printf 'see @docs/a.md and @CLAUDE.md\n' > CLAUDE.md
     printf 'back @../CLAUDE.md, @a.md and @b.md\n' > docs/a.md
     printf 'again @a.md\n' > docs/b.md
     commit_all cycle
-    printf 'Mine: @docs/u.md\n' > CLAUDE.local.md
-    printf 'loop @../CLAUDE.local.md and @w.md\n' > docs/u.md
-    printf 'last @u.md\n' > docs/w.md
-    imps main docs/a.md docs/b.md docs/u.md docs/w.md docs/other.md
+    imps main docs/a.md docs/b.md docs/other.md
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
-    want walk ok; for p in docs/a.md docs/b.md docs/u.md docs/w.md; do want "$p" imported; done; want docs/other.md -
+    want walk ok; want docs/a.md imported; want docs/b.md imported; want docs/other.md -
 }
 
 @test "main walk fails on an unreadable blob when the caller did not set pipefail (U2a3)" {
@@ -288,8 +286,11 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
         rm CLAUDE.md && ln -s deep/inner ld
         if [ "$how" = link ]; then ln -s ld/i.md CLAUDE.md; else printf 'see @ld/i.md\n' > CLAUDE.md; fi
         commit_all "$how" && rm ld
-        imps main deep/inner/i.md; want walk failed
+        imps main deep/inner/i.md; want walk failed; want deep/inner/i.md imported
     done
+    # Two levels below a one-letter link main stores.
+    rm CLAUDE.md && ln -s deep l && printf 'see @l/inner/i.md\n' > CLAUDE.md && commit_all one-letter && rm l
+    imps main deep/inner/i.md; want walk failed; want deep/inner/i.md imported
     # A .. after a plain directory is followed; then a link only the checkout has.
     rm CLAUDE.md && ln -s ld/../evil.md CLAUDE.md && commit_all no-ld
     imps main hid.md docs/n.md deep/secret.md; want walk ok; want hid.md imported; want docs/n.md imported; want deep/secret.md -

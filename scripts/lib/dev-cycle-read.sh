@@ -29,10 +29,9 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes), and so does main_imports (it also reads the checkout's untracked
-# start files, imported files main lacks and whether a path it would read is a
-# symlink there, which can only add imports or fail it, and
-# needs resolve_main to have found main by name, or it fails);
+# writes), and so does main_imports (it reads the checkout only to fail: an
+# untracked start file, or anything at an imported path main lacks, fails it
+# until U2a3c walks them; it needs resolve_main to have found main by name);
 # imported_names reads the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -452,27 +451,26 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # another ROOT_REAL recomputes it.
 # main_imports walks the default branch's commit instead, for the gate: it starts
 # at every instruction file stored there (and every .md under a .claude/rules/
-# directory at any depth, which Claude Code also loads), plus the checkout's untracked ones, and
-# follows an import into the file main stores at that path, whatever its name;
-# a symlink there is followed to the path its text names. A target main does
-# not have is read from the checkout when it is a plain file there. It refuses
-# what it does not model, as FENCE_AWK does: a doubled name, a name holding a
-# newline (in main's tree or the untracked list), symlink text that is empty,
-# absolute, leaves the repo, holds a newline or a NUL, or has a .. after a
-# symlink, an import path main lacks under a directory main stores as a
-# symlink, a checkout file it cannot read, and a checkout path it would read
-# that is a symlink or lies under one fail the walk, so isimported main
-# answers imported for every path. A start file answers imported only when an
-# import reaches it (U2a4's floor names start files by its own rules).
-# Not covered (known issue A5): start files under a symlinked directory (on
-# main or in the checkout: neither listing enters one) or in a submodule or an
-# untracked nested repo, other names that one file has on a case-insensitive
-# checkout, absolute imports, and three shapes A5 lists as untraced against
-# Claude Code (command references, a link's own directory, a token's ..).
-# IMPORTED_MAIN reads "error" until a walk
-# succeeds; the result is cached for the commit, MAIN_BY_NAME and root in
-# IMPORTED_MAIN_DONE, so a caller whose checkout changes between calls sets
-# IMPORTED_MAIN_DONE="" to walk again. isimported asks either walk.
+# directory at any depth, which Claude Code also loads) and follows an import
+# into the file main stores at that path, whatever its name; a symlink there is
+# followed to the path its text names. An imported path main lacks is recorded
+# and not read. It refuses what it does not model, as FENCE_AWK does: a doubled
+# name, a name holding a newline, symlink text that is empty, absolute, leaves
+# the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
+# in the checkout), an imported path main lacks that lies under a directory
+# main stores as a symlink or gitlink, or that the checkout holds as anything
+# but a plain directory (the root itself included), and an untracked start
+# file in the checkout fail the walk, so isimported main answers imported for
+# every path. Checkout files are not walked until U2a3c, so the walk fails
+# closed on them. A start file answers imported only when an import reaches it
+# (U2a4's floor names start files by its own rules). Not covered (known issue
+# A5): start files under a symlinked directory or in a submodule or untracked
+# nested repo, other names one file has on a case-insensitive checkout,
+# absolute imports, and three shapes A5 lists as untraced against Claude Code.
+# IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
+# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
+# checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
+# isimported asks either walk.
 IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
 # U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
@@ -515,8 +513,8 @@ instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
-# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or 1 unless CMD exited 0 (&& || keep errexit off).
-nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || return 1; unset 'nl_a[-1]'; }
+# nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0.
+nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 imported_names() {
   local f d p seen=$'\n' queue=()
   need_root
@@ -540,14 +538,13 @@ imported_names() {
 # the commit's tree or the untracked list cannot be listed whole (nul_list), a
 # tree record does not parse, a name is listed twice (git's lookups read the
 # first copy) or holds a newline, the lower-cased start list comes back short,
-# a blob or checkout file cannot be read, symlink text it follows is
-# empty, absolute, leaves the repo, holds a newline or a NUL, or has a .. after
-# a symlink, an import path main lacks lies under a directory main stores as a
-# symlink, or a checkout path it would read exists but is neither a plain file
-# nor a plain directory below the root (a symlink, under one, the root itself,
-# a FIFO); need_root exits instead. Queue items are "m:PATH" or "t:PATH".
+# an untracked start file exists, a blob cannot be read, symlink text it
+# follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
+# a .. after a symlink, or an imported path main lacks lies under a directory
+# main stores as a symlink or gitlink or exists in the checkout as anything but
+# a plain directory below the root; need_root exits instead.
 main_imports() {
-  local - rec f d p src i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -569,50 +566,44 @@ main_imports() {
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
     if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      seen[${cand[i]:2}]=1; queue+=("${cand[i]}")
+      [[ "${cand[i]:0:1}" == m ]] || return 1  # untracked: not walked until U2a3c
+      seen[${cand[i]:2}]=1; queue+=("${cand[i]:2}")
     fi
   done
   IMPORTED_MAIN=$'\n'
   while [[ ${#queue[@]} -gt 0 ]]; do
-    src="${queue[0]:0:1}"; f="${queue[0]:2}"; queue=("${queue[@]:1}")
+    f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    if [[ "$src" == t ]]; then
-      if inrepo_here "$f"; then out="$(import_targets "$d" < "$f")" || { IMPORTED_MAIN=error; return 1; }
-      elif [[ -d "$f" && ! -L "$f" && -z "$(blocker "$f" dir)" ]]; then continue  # a directory: nothing loads
-      elif [[ -e "$f" || -L "$f" ]]; then IMPORTED_MAIN=error; return 1
-      else continue; fi
-    else
-      case "${ent[$f]}" in
-        100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
-        120000)  # a symlink: its text names the file read, as one more import
-          # $(...) drops NULs, so they are counted first; the x keeps trailing
-          # newlines, which $(...) would also drop.
-          if ! i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)" || [[ "$i" -ne 0 ]] \
-             || ! out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"; then IMPORTED_MAIN=error; return 1; fi
-          out="${out%x}"
-          if [[ -z "$out" || "$out" == *$'\n'* || "$out" == /* ]]; then IMPORTED_MAIN=error; return 1; fi
-          # realpath -s reads x/.. as nothing, but the kernel follows a symlink
-          # x first: a .. after a symlink on main or in the checkout fails.
-          lk=""; p="$d"; IFS=/ read -ra parts <<<"$out"
-          for c in "${parts[@]}"; do
-            [[ "$c" != .. || -z "$lk" ]] || { IMPORTED_MAIN=error; return 1; }
-            p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${p:+$p/}$c" 2>/dev/null)" || p=..
-            [[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1
-          done
-          out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
-          [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
-        *) continue ;;
-      esac
-    fi
+    case "${ent[$f]}" in
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+      120000)  # a symlink: its text names the file read, as one more import
+        # $(...) drops NULs, so they are counted first; the x keeps trailing
+        # newlines, which $(...) would also drop.
+        if ! i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)" || [[ "$i" -ne 0 ]] \
+           || ! out="$(git cat-file blob "$MAIN_SHA:$f" && printf x)"; then IMPORTED_MAIN=error; return 1; fi
+        out="${out%x}"
+        if [[ -z "$out" || "$out" == *$'\n'* || "$out" == /* ]]; then IMPORTED_MAIN=error; return 1; fi
+        # realpath -s reads x/.. as nothing, but the kernel follows a symlink
+        # x first: a .. after a symlink on main or in the checkout fails.
+        lk=""; p="$d"; mapfile -t -d / parts < <(printf '%s' "$out")
+        for c in "${parts[@]}"; do
+          [[ "$c" != .. || -z "$lk" ]] || { IMPORTED_MAIN=error; return 1; }
+          p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${p:+$p/}$c" 2>/dev/null)" || p=..
+          [[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1
+        done
+        out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
+        [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
+      *) continue ;;
+    esac
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
       IMPORTED_MAIN+="$(lower "$p")"$'\n'
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
-      if [[ -n "${ent[$p]+set}" ]]; then queue+=("m:$p"); continue; fi
-      # Main lacks p: under a directory link main stores (the checkout may lack it), fail.
-      for (( c = ${#p}; c > 0; c-- )); do [[ "${p:c:1}" != / || "${ent[${p:0:c}]:-}" != 120000 ]] || { IMPORTED_MAIN=error; return 1; }; done
-      queue+=("t:$p")
+      if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
+      # Main lacks p: under a link or gitlink main stores, or held in the checkout, fail.
+      c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
+      [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }
     done < <(printf '%s\n' "$out")
   done
 }
