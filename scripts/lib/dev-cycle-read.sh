@@ -475,12 +475,14 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # (U2a4's floor names start files by its own rules). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# checkout conversions (A5), and the one shape A5 lists as
-# untraced against Claude Code.
+# checkout conversions (A5), and command files (.claude/commands/*.md, whose
+# @ names Claude Code loads when the command runs: U2a3b L2-confirm security
+# F2; U2a4's shared start predicate).
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again,
-# and so does a caller that changes HOME (both caches are keyed without it).
+# and a cached error returns 1 again. A caller that changes HOME clears both
+# IMPORTED_DONE and IMPORTED_MAIN_DONE (both caches are keyed without it).
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; the reader set is U2b's).
@@ -502,8 +504,10 @@ UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 # The import targets in the text on stdin, for a file in directory $1 ("" at
 # the top level): one repo-relative path per line, case kept, each once. It
-# also reads ROOT_REAL, HOME (through import_home) and IMPORT_LEFT (what may
-# still be printed; IMPORT_OUT_MAX when unset). Every import walk shares these
+# also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
+# globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
+# (what may still be printed; IMPORT_OUT_MAX when unset or empty, and 0 when
+# not a number, so the first name fails it). Every import walk shares these
 # rules, so a change here changes --check-fix too.
 # The superset claim (the one statement of it; known issue A5 and plan F11
 # point here): these rules read every name Claude Code 2.1.292 can import (its
@@ -534,7 +538,8 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # empty, when a ~/ name appears and the home is not absolute, or when the
 # candidates and comment splices run past a work bound or print past
 # IMPORT_LEFT (so a pathological file fails the walk rather than stalling it).
-# Re-check the superset when Claude Code changes its import grammar
+# Re-check the superset when Claude Code changes its import grammar, how its
+# runtime reads an empty or unset HOME, or how it decodes invalid UTF-8
 # (test/agents-gemini-sync.bats holds a separate, older finder for where an
 # import starts, not these rules).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
@@ -611,8 +616,8 @@ UTF8_WELL_FORMED='^([\001-\177]|[\302-\337][\200-\277]|\340[\240-\277][\200-\277
 # parser's ~/ names, from HOME as Claude Code's runtime (Bun) reads it: unset
 # or empty, the passwd entry (Node would read an empty HOME as ""). A walk
 # calls it once, so the parser's $(...) calls inherit it; it recomputes only
-# when HOME itself changes (IMPORT_HOME_DONE holds the HOME it was computed
-# for). A relative home is kept, and the parser fails on a ~/ name then.
+# when HOME itself changes (IMPORT_HOME_DONE holds a key for the HOME it was
+# computed for: whether it was set, and its value). A relative home is kept, and the parser fails on a ~/ name then.
 IMPORT_HOME=""; IMPORT_HOME_REAL=""; IMPORT_HOME_DONE=""
 import_home() {
   local h hr="" key="x${HOME+set}:${HOME-}"
@@ -631,7 +636,7 @@ import_targets() {
   # Claude Code decodes the file as UTF-8 and turns each invalid sequence into
   # U+FFFD, so a name can hold bytes the file does not: read that spelling too
   # (python3's "replace" decoding matched Claude Code 2.1.292 on every sequence
-  # probed in the binary, 13 in all: U2a3b L2 security F1, L2-final fact-check).
+  # probed in the binary: U2a3b L2-final and L2-confirm fact-checks).
   # LC_ALL=C above makes the byte range a byte test.
   if [[ "$toks" == *[$'\x80'-$'\xff']* ]] && ! printf '%s\n' "$toks" | env LC_ALL=C awk -v ok="$UTF8_WELL_FORMED" '$0 !~ ok { exit 1 }'; then
     d="$(printf '%s\n' "$toks" | python3 -I -c 'import sys; sys.stdout.buffer.write(sys.stdin.buffer.read().decode("utf-8", "replace").encode())')" || return 1
@@ -769,13 +774,21 @@ main_imports() {
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
-      # The top-level .git (a prefix candidate from @.gitignore; a linked
-      # worktree's gitfile) names no file main has, and is skipped. A nested .git
-      # is not: a nested repository's .git directory passes the plain-directory
-      # check below, and a .git file is read by Claude Code like any file, so it
-      # fails below, as files under .git do when the checkout holds them (U2a3c
-      # walks them).
-      [[ "$p" != .git ]] || continue
+      # The top-level .git (a prefix candidate from @.gitignore) names no file
+      # main has, and is skipped when it is a plain directory or a linked
+      # worktree's gitfile holding no @. Claude Code reads a gitfile like any
+      # file, so one holding an @ (its gitdir path names the main checkout, which
+      # the host places) fails the walk (U2a3b L2-confirm security F1). A nested
+      # .git is not skipped: a nested repository's .git directory passes the
+      # plain-directory check below, and a .git file fails below, as files under
+      # .git do when the checkout holds them (U2a3c walks them).
+      if [[ "$p" == .git ]]; then
+        [[ -d .git && ! -L .git ]] && continue
+        if [[ -f .git && ! -L .git ]]; then
+          i="$(tr -cd @ < .git | wc -c)" && [[ "$i" -eq 0 ]] || { IMPORTED_MAIN=error; return 1; }
+          continue
+        fi
+      fi
       # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
       # pok holds parents already checked: a token's prefixes share them, so the loop stops at the first.
       c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${pok[$c]+set}" ]] || break; pok[$c]=1; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done

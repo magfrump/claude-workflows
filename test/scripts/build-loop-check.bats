@@ -403,6 +403,19 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want notes/x.md imported; want .gitignore imported; want docs/other.md -
 }
 
+@test "the main walk fails on a linked worktree whose gitfile holds an @, which Claude Code reads when an instruction file names @.git (U2a3b L2-confirm security F1)" {
+    mkdir -p docs && printf 'see @.git\n' > CLAUDE.md && printf 'x\n' > docs/x.md && commit_all gitfile
+    # The gitfile names the main checkout's path, so a checkout path holding
+    # " @docs/x.md " puts that import in it.
+    m="$BATS_TEST_TMPDIR/a @docs/x.md /m"; mkdir -p "${m%/m}" && mv "$PWD" "$m" && cd "$m"
+    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt" main && cd "$BATS_TEST_TMPDIR/wt"
+    imps main docs/x.md docs/other.md; want walk failed; want docs/x.md imported
+    # A gitfile with no @ is skipped, as before.
+    cd "$m" && git worktree remove "$BATS_TEST_TMPDIR/wt" && cd .. && mv "$m" "$BATS_TEST_TMPDIR/m2" && cd "$BATS_TEST_TMPDIR/m2"
+    git worktree add -q --detach "$BATS_TEST_TMPDIR/wt2" main && cd "$BATS_TEST_TMPDIR/wt2"
+    imps main docs/x.md docs/other.md; want walk ok; want docs/x.md -; want docs/other.md -
+}
+
 @test "both walks fail once the parser has printed more than IMPORT_OUT_MAX characters in all (U2a3b L2 performance F2)" {
     mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
@@ -680,8 +693,8 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "the main walk skips a nested .git directory, but fails closed on a nested .git file, which Claude Code reads (U2a3b L2-final security F2, test-strategy F2)" {
-    # A nested repository's .git directory names no file: a prefix of @n/.github/x.md is skipped.
+@test "the main walk passes a nested .git directory as a plain directory, but fails closed on a nested .git file, which Claude Code reads (U2a3b L2-final security F2, test-strategy F2)" {
+    # A nested repository's .git directory names no file: a prefix of @n/.github/x.md passes the plain-directory check.
     mkdir -p notes n && printf 'See @n/.github/x.md and @notes/x.md\n' > GEMINI.md && printf 'x\n' > notes/x.md && printf 'x\n' > n/keep
     commit_all nested
     mkdir n/.git
@@ -692,11 +705,13 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # Claude Code follows its imports, so the walk fails rather than drop docs/e.md.
     rmdir n/.git && printf 'see @../docs/e.md\n' > n/.git
     imps main docs/e.md; want walk failed; want docs/e.md imported
+    # The tree walk reads that file as Claude Code does, and follows its import.
+    imps tree docs/e.md docs/other.md; want walk ok; want docs/e.md imported; want docs/other.md -
 }
 
 @test "both walks read ~/ against the passwd entry's home when HOME is empty or unset (U2a3b L2-final test-strategy)" {
     # Claude Code's runtime (Bun) falls back to the passwd entry for an empty HOME as
-    # for an unset one (L2-final fact-check r1 22b). A getent shim makes the repo's
+    # for an unset one (L2-final fact-check r1 22a). A getent shim makes the repo's
     # parent that entry's home.
     mkdir -p docs && printf 'See @~/%s/docs/home.md\n' "$(basename "$(pwd -P)")" > AGENTS.md && commit_all home
     G="$BATS_TEST_TMPDIR/getent" && mkdir -p "$G" && printf '#!/bin/sh\necho "u:x:0:0::%s:/bin/sh"\n' "$(cd .. && pwd -P)" > "$G/getent" && chmod +x "$G/getent"
@@ -734,11 +749,28 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 
 @test "the parser charges each resolved spelling to its work bound, so a deep file of many short names fails, not stalls (U2a3b L2-final performance F1)" {
     # 400,000 copies of @a, from a file 50 directories down: each resolves to a path of
-    # over 150 characters, past the 50,000,000 bound in all, though the name itself is
-    # one character (performance L2-final F1 measured 22 s and success before the charge).
+    # about 135 characters under bats' temp root (more under a longer one), past the
+    # 50,000,000 bound in all, though the name itself is one character (performance
+    # L2-final F1 measured 22 s and success on a 4 MiB file of @a before the charge).
     d="$(printf 'd/%.0s' $(seq 50))" && d="${d%/}"
     { head -c 400000 /dev/zero | sed 's/\x0/@a /g'; printf '\n'; } > "$BATS_TEST_TMPDIR/many.txt"
     run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         timeout 60 bash -c "source \"\$1\"; ROOT_REAL=\"\$2\"; import_targets \"\$3\" < \"\$4\" >/dev/null" _ "$1" "$ROOT_REAL" "$2" "$3"; echo "rc=$?"' _ "$LIB" "$d" "$BATS_TEST_TMPDIR/many.txt"
     [ "$output" = rc=1 ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "the parser reads the U+FFFD spelling of each ill-formed class the UTF-8 gate must send to python3: overlongs, a surrogate, past U+10FFFF (U2a3b L2-confirm test-strategy)" {
+    # One line per call: the gate forks python3 for the whole text when any line is
+    # ill-formed, so each class must be the only one in its text to pin UTF8_WELL_FORMED's
+    # range for it. Counts are python3's "replace" decoding (one U+FFFD per maximal
+    # subpart, as WHATWG decoders also do).
+    seqs=($'\xc0\x80' $'\xc1\xbf' $'\xe0\x80\x80' $'\xed\xa0\x80' $'\xf0\x80\x80\x80' $'\xf4\x90\x80\x80') ns=(2 2 3 3 4 4)
+    for i in "${!seqs[@]}"; do printf '@d%s%s.md\n' "$i" "${seqs[$i]}"; done > "$BATS_TEST_TMPDIR/ill.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        while IFS= read -r l; do printf "%s\n" "$l" | import_targets ""; done < "$2"' _ "$LIB" "$BATS_TEST_TMPDIR/ill.txt"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $stderr"; return 1; }
+    for i in "${!seqs[@]}"; do
+        w="d$i"; for ((k = 0; k < ns[i]; k++)); do w+=$'\xef\xbf\xbd'; done
+        printf '%s\n' "$output" | grep -qxF "$w.md" || { echo "missing: $w.md"; return 1; }
+    done
 }
