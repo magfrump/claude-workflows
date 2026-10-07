@@ -109,6 +109,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-115](#q-115--build-loop-u1b-r5) | U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useRepla... | 2026-10-05 |
 | [Q-116](#q-116--digest-scan-working-dd-triggers) | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
 | [Q-118](#q-118--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
+| [Q-120](#q-120--u2a3b-iteration-4-gate) | U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close cle... | 2026-10-07 |
+| [Q-121](#q-121--sessions-outside-workspace) | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
 <!-- index:end -->
 
 ## Answered
@@ -2033,4 +2035,35 @@ Decision 037's trigger "if Q-049 is resolved → reconsider automating the setti
 - **Interim:** [1]. Nothing changes.
 - **If the answer differs:** [2] or [3] becomes a roadmap item (an RPI on `install.sh`, an enforcement file, so a pre-mortem comes first).
 
+
+### Q-120 · u2a3b-iteration-4-gate
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close clean: how should the unit land? **Answered 2026-10-07: [1], one more confirming pass under a size waiver.** Run the final pass (k=3, full panel, Stage 2.5) over aa379ee9; clean → merge message and merge ask; any new finding → back to the user. The waiver lets U2a3b pass Q-104 [2]'s ~800 lines if that pass needs a fix.
+
+- **Why it's yours:** the review cap's gate is yours by rule, and the unit sits at 794 changed code lines, at Q-104 [2]'s ~800 tolerance, so another pass that grows it needs your waiver.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3b.md` (section "Loop 2, iteration 3 of 3" and "Iteration-4 gate (loop 2)", on branch `feat/build-loop-u2a3b`) · commit aa379ee9
+- **Evidence:** 0 red. Open ambers at e1654266: three Medium test gaps (the parser's work bound, the walk-wide budget, the tree walk's own pipefail) and one Medium fail-open that predates this unit (instruction files outside the repo, such as a parent directory's CLAUDE.md or your memory file, are never walk starts). All fixed or routed to U2b in aa379ee9, which no review pass has seen. The superset claim held under three independent checks against Claude Code 2.1.292, and --check-fix answers match main on all 948 tracked doc paths.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more confirming pass, under a size waiver** (recommended) | Run one more final pass (k=3, full panel, Stage 2.5) over aa379ee9. Clean → merge message and merge ask. Any new finding → back to you. The waiver lets the unit pass ~800 lines if that pass needs a fix. | Granting the waiver; one merge ask later. | About 1M tokens spent confirming small fixes. |
+| **[2] Merge as is** | Merge aa379ee9 with its fixes unreviewed, and record the open dispositions in the merge message. | One merge ask now. | A defect in the unreviewed fixes lands on main. The floor (U2a4) is not built yet, so the exposure is --check-fix only. |
+| **[3] Split** | Land e1654266 plus the docs-only part of aa379ee9 as U2a3b. The code fixes (work charge, .git rule, HOME key) and their tests become a small stacked unit with its own loop. | Two merge asks. | More overhead for about 60 code lines. |
+
+- **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
+- **Interim:** nothing runs; U2a3b waits on this answer. Other build-loop units do not start until it lands.
+- **If the answer differs:** none of the options redoes work; [3] means splitting aa379ee9 into two commits.
+
+
+### Q-121 · sessions-outside-workspace
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+Does any Claude Code session that might read this repo's instruction files run with a working directory outside `/workspace` and its worktrees (for example `/home/magfrump/claude-workflows` on the host)? Answer yes (name the paths) or no. **Answered 2026-10-07: yes, occasionally.** Sessions normally run in cc-isolated (`/workspace` and its worktrees), but when the container image breaks the user runs one on the host directly in `~/claude-workflows` (the host HOME). Follow-up: U2b's reader model adds the host checkout `~/claude-workflows` and the host HOME's instruction files to its reader set, or names them as an exception (plan step 5's U2b bullet).
+
+- **Why it's yours:** only you know where you start sessions. U2b's reader model (plan step 5) needs the set of checkouts and homes that read the repo; a session elsewhere is another root, with another HOME, that the gate's walk must cover or name as an exception.
+- **Read:** `docs/reviews/architecture-review-review-2026-10-07-L2final-build-loop-u2a3b.md` (F1) on `feat/build-loop-u2a3b` · plan step 5's U2b bullet
+- **Blocks:** nothing now; U2b's plan reads it.
+- **Interim:** U2b assumes `/workspace` and its `git worktree list` paths only.
+- **If the answer differs:** U2b adds those paths and homes to the reader set, or names them as an exception.
 
