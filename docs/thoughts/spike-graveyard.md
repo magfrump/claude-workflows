@@ -19,3 +19,4 @@ Relevant paths: workflows/spike.md
 ---
 
 <!-- entries below, newest at the bottom -->
+2026-10-07 | Can sandbox.enableWeakerNestedSandbox sandbox Bash in cc-isolated without user namespaces? | weaker mode only swaps --proc for a /proc bind; bwrap still passes --unshare-user, and Docker default seccomp + no CAP_SYS_ADMIN refuse every namespace | spike/q088-weaker-nested-sandbox-2026-10-07

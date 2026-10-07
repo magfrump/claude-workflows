@@ -91,6 +91,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-085](#q-085--review-unit-size-budget) | What size cap should a review unit have before the review-fix loop starts (proposal A4)? Over the cap, the ... | 2026-09-27 |
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-087](#q-087--final-confirming-pass-replicates) | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
+| [Q-088](#q-088--spike-weaker-nested-sandbox) | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
 | [Q-090](#q-090--run-tests-jobs) | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
@@ -2081,5 +2082,17 @@ git -C ~/claude-workflows rev-parse --show-toplevel --git-common-dir && git -C ~
 - **Blocks:** nothing now; U2b's root set reads it.
 - **Interim:** U2b assumes `~/claude-workflows` is `/workspace` under its host path, an alias of ROOT_REAL, since the host worktree `/home/magfrump/cw-egress-verify` registers in `/workspace/.git`.
 - **If the answer differs:** U2b treats it as a separate checkout with its own root.
+
+
+### Q-088 · spike-weaker-nested-sandbox
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answered 2026-10-07: failure.** Weaker mode only swaps `--proc /proc` for a `/proc` bind; bwrap still gets `--unshare-user` and `--unshare-pid`, and cc-isolated refuses every namespace (seccomp + no CAP_SYS_ADMIN). No Dockerfile branch or host run was needed. Record: `docs/spikes/weaker-nested-sandbox-cc-isolated.md`. The [1]/[3] choice is Q-124. Original entry:
+
+Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-isolated without allowing user namespaces (Docker's default seccomp gives `unshare -Ur` → EPERM)? Success: a sandboxed Bash call in a cc-isolated container that has `bubblewrap` and `socat` but unchanged seccomp/runArgs, with a read of `~/.claude/.credentials.json` refused. Failure: bwrap still needs user namespaces, or the weaker mode drops the filesystem restriction. Then come back with [1] (build the full sandbox) or [3] (accept deny + container) as a `you: judgment` entry.
+
+- **Read:** Q-081 in the archive · the auto-approve hook header · decision log 53.
+- **Constraint:** the image has no bwrap/socat and this sandbox has no egress, so the live half needs a Dockerfile branch (an enforcement file) and one host run. Keep that branch unmerged until the spike's answer is in.
+- **Interim:** nothing sandboxes Bash in cc-isolated (Q-081's interim [3]).
 
 
