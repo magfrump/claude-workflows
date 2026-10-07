@@ -501,6 +501,9 @@ COPY init-firewall.sh /usr/local/bin/
 # needs no pip and no network at build time; root-owned and 0555 (decision log #41).
 COPY cc-sni-proxy.py /usr/local/bin/
 COPY link-claude-home.sh /usr/local/bin/
+# Claude Code managed-settings template and its renderer (Q-125); rendered below.
+COPY cc-sandbox-settings.sh /usr/local/bin/
+COPY managed-settings.json /usr/local/share/cc-sandbox/
 
 # The claude-workflows payload (skills, workflows, guides, patterns, hooks, and
 # the global CLAUDE.md). Assembled from the repo by install.sh, so it is part of
@@ -539,5 +542,28 @@ RUN chown root:root /usr/local/bin/init-firewall.sh /usr/local/bin/link-claude-h
   chmod 0444 /etc/cc-config-hash && \
   printf '%s\n' 'Defaults:node env_reset, !setenv' 'node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh ""' > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
+
+# Claude Code managed settings: the Bash sandbox (Q-125). Rendered from the
+# firewall's own parsed allowlist for THIS project's profile, so it lives in the
+# per-project tail. --print-entries exits before touching any rule. The entries
+# are captured first because /bin/sh has no pipefail: a failing firewall parse
+# must fail the build, not render an empty allowlist (which the renderer refuses
+# too). /etc/claude-code and the file are root-owned and not writable by node —
+# a node-owned parent would let the agent swap the file (FP-142).
+RUN chown root:root /usr/local/bin/cc-sandbox-settings.sh && \
+  chmod 0555 /usr/local/bin/cc-sandbox-settings.sh && \
+  chown -R root:root /usr/local/share/cc-sandbox && \
+  chmod 0555 /usr/local/share/cc-sandbox && \
+  chmod 0444 /usr/local/share/cc-sandbox/managed-settings.json && \
+  entries="$(/usr/local/bin/init-firewall.sh --print-entries)" && \
+  mkdir -p /etc/claude-code && \
+  printf '%s\n' "$entries" \
+    | /usr/local/bin/cc-sandbox-settings.sh /usr/local/share/cc-sandbox/managed-settings.json \
+    > /etc/claude-code/managed-settings.json && \
+  jq -e '.sandbox.enabled == true and (.sandbox.network.allowedDomains | length > 0)' \
+    /etc/claude-code/managed-settings.json >/dev/null && \
+  chown -R root:root /etc/claude-code && \
+  chmod 0555 /etc/claude-code && \
+  chmod 0444 /etc/claude-code/managed-settings.json
 
 USER node

@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "Claude Code MANAGED settings for cc-isolated (Q-125, decision log 53). Template only:",
+    "cc-sandbox-settings.sh fills sandbox.network.allowedDomains from the project's egress",
+    "profile and drops _comment, at BUILD time, into /etc/claude-code/managed-settings.json",
+    "(root-owned 0444). Managed settings outrank user and project settings, so unlike the",
+    "settings.json link-claude-home.sh merges, node cannot edit or override this.",
+    "enabled + failIfUnavailable: a sandbox that cannot start refuses the session rather",
+    "than silently running Bash unsandboxed (FP-058).",
+    "allowUnsandboxedCommands false: dangerouslyDisableSandbox is ignored, so nothing the",
+    "model chooses runs outside the sandbox. `!` commands and hooks still run unsandboxed.",
+    "autoAllowBashIfSandboxed false: the sandbox is a floor under the permission prompts,",
+    "not a replacement for them. Widening prompting is Q-098's decision, not this one.",
+    "allowManagedDomainsOnly + strictAllowlist: the firewall admits nothing else, so a",
+    "prompt for an unlisted host could only ever fail; deny it instead.",
+    "denyRead/denyWrite: the OAuth credential and the files that wire hooks and settings.",
+    "allowWrite: the toolchain caches the image points at (cargo, elan, npm, uv, NuGet,",
+    "dotnet, gradle), background-job scratch, and /tmp. Everything else under ~ stays",
+    "read-only to sandboxed commands."
+  ],
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "autoAllowBashIfSandboxed": false,
+    "network": {
+      "allowedDomains": [],
+      "allowManagedDomainsOnly": true,
+      "strictAllowlist": true
+    },
+    "filesystem": {
+      "denyRead": ["~/.claude/.credentials.json"],
+      "denyWrite": [
+        "~/.claude/settings.json",
+        "~/.claude/settings.local.json",
+        "~/.claude/.claude.json"
+      ],
+      "allowWrite": [
+        "~/.cargo",
+        "~/.elan",
+        "~/.npm",
+        "~/.cache",
+        "~/.nuget",
+        "~/.dotnet",
+        "~/.gradle",
+        "~/.claude/jobs",
+        "/tmp"
+      ]
+    }
+  }
+}

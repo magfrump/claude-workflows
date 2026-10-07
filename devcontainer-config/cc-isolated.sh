@@ -130,6 +130,8 @@ enforcement_files() {
   echo "devcontainer.json"
   echo "Dockerfile"
   echo "seccomp-cc-sandbox.json"
+  echo "managed-settings.json"
+  echo "cc-sandbox-settings.sh"
   echo "init-firewall.sh"
   echo "cc-sni-proxy.py"
   echo "link-claude-home.sh"
