@@ -668,6 +668,18 @@ untracked_md() { md_ls --others; }
 md_ls() { GIT_LITERAL_PATHSPECS=0 git ls-files -z "$@" -- ':(glob,icase)**/*.md'; }
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
+# lower_all ARGS...: each argument lower-cased and NUL-terminated, in one tr
+# (lower would fork per path). Read it through nul_list: a tr that dies after a
+# partial flush then fails the list rather than truncating its last name and
+# dropping a start (U2a3b final N1).
+lower_all() { local -; set -o pipefail; printf '%s\0' "$@" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+# capped_read: the first 4 MiB + 1 bytes of stdin, the one reader both walks
+# parse, for checkout files and main's blobs alike. Claude Code skips a file
+# over 4 MiB, so reading only its start over-reads at worst, and a huge file a
+# prefix candidate names cannot stall a walk (L2 security F2). From a pipe (git
+# cat-file) it drains the rest, so the writer never dies of SIGPIPE, which
+# pipefail would report as a failed read (U2a3b L2-C5).
+capped_read() { head -c 4194305 || return 1; [[ ! -p /dev/stdin ]] || cat > /dev/null; }
 # The tree walk's start candidates, NUL-separated: tracked and untracked names
 # through instruction_names, failing when any of the three commands fails.
 tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names; }
@@ -710,9 +722,7 @@ imported_names() {
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    # Claude Code skips a file over 4 MiB, so reading only its start over-reads at
-    # worst, and a huge file a prefix candidate names cannot stall the walk (L2 security F2).
-    out="$(head -c 4194305 -- "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED=error; return 1; }
+    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -729,7 +739,7 @@ imported_names() {
 # be listed whole (nul_list, checkout_md), a tree record does not parse or has a type but
 # blob, link or gitlink, a name is listed twice (git's lookups read the first
 # copy), is also a directory of another listed name, or holds a newline, the
-# lower-cased start list comes back short, main_checkout refuses a start or an
+# start list's lower_all fails or comes back short, main_checkout refuses a start or an
 # import main lacks, a blob or checkout file cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, import_home, the parser (its comment lists why) or a
@@ -754,8 +764,7 @@ main_imports() {
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
   nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
-  # One tr lower-cases every candidate (lower would fork per path).
-  [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
+  [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
   [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
@@ -772,8 +781,8 @@ main_imports() {
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]-checkout}" in
-      checkout) out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d" < "$f")" || { IMPORTED_MAIN=error; return 1; } ;;
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
         # $(...) drops NULs, so they are counted first; the x keeps trailing
         # newlines, which $(...) would also drop.

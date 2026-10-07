@@ -796,3 +796,24 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     t="$(printf '100644 blob %s\tAGENTS.md\n160000 commit %s\tsm\n' "$(git rev-parse main:AGENTS.md)" "$(git rev-parse main)" | git mktree)"; git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink)"
     mkdir sm && printf 'harmless\n' > sm/CLAUDE.md; imps main docs/q.md; want walk failed; want docs/q.md imported
 }
+
+@test "main walk fails when the batch tr dies after a partial flush, rather than truncating the last start's name (U2a3b final N1, U2a3c)" {
+    # The untracked AGENTS.md is the last candidate; a tr that drops the last
+    # three bytes ("md" and the NUL) and exits 1 would leave the count whole and
+    # the name "agents.", which is no start. Only input holding a NUL (the batch)
+    # is cut, so the per-file lower still works.
+    mkdir -p docs && printf 'x\n' > docs/keep.md && commit_all base && printf 'see @docs/x.md\n' > AGENTS.md
+    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/bash\nt="$(mktemp)"; %s "$@" > "$t"; if grep -qaP "\\\\x00" "$t"; then head -c $(( $(wc -c < "$t") - 3 )) "$t"; rm -f "$t"; exit 1; fi; cat "$t"; rm -f "$t"\n' "$(command -v tr)" > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
+    imps main docs/x.md; want walk ok; want docs/x.md imported
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main docs/x.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/x.md imported
+}
+
+@test "main walk reads only the first 4 MiB + 1 of a blob or checkout file over 4 MiB, and a blob that long does not fail the walk under pipefail (U2a3b L2-C5, U2a3c)" {
+    # Main's CLAUDE.md and the untracked AGENTS.md: 5 MiB each, an import in the first line and another past 4 MiB.
+    mkdir -p docs
+    for f in CLAUDE.md AGENTS.md; do n="${f%%.*}"; { printf 'see @docs/%s-early.md\n' "$n"; head -c $((5 * 1048576)) /dev/zero | tr '\0' x; printf '\n@docs/%s-late.md\n' "$n"; } > "$f"; done
+    git add CLAUDE.md && git commit -qm big
+    imps main docs/CLAUDE-early.md docs/AGENTS-early.md docs/CLAUDE-late.md docs/AGENTS-late.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want docs/CLAUDE-early.md imported; want docs/AGENTS-early.md imported; want docs/CLAUDE-late.md -; want docs/AGENTS-late.md -
+}
