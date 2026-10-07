@@ -165,7 +165,7 @@ None.
 | # | Finding | Source | Status |
 |---|---|---|---|
 | G1 | main_imports pops its queue by copying the array (`queue=("${queue[@]:1}")`), quadratic in admitted checkout files: 5,000 imported untracked files 85.8 s vs 42.7 s with an index pop. Present on main; this branch makes checkout files reach it | performance P1 (Low) | Open: fix (a three-line index pop) or widen the per-start override row |
-| G2 | Doc wording: F11's duty list lacks the clean-worktree duty and LC_ALL=C (inside the U2a4 deferral); A5 and the lib block comment's "or nothing" omit a path under a non-plain checkout ancestor; lib :36-38 "first and then"; :504-507 relative names only and "about 5 s" (1-4 s here); :524-529 awk reads a numeric prefix (1e3, -5, 0x10, inf, nan); D4's "test 77" is build-loop-check test 4 | fact-check 5, 14a, 15, 18, 19a, 20a, 20b, 21; api-consistency 2, 3; architecture F2 | Open (wording) |
+| G2 | Doc wording: F11's duty list lacks the clean-worktree duty and LC_ALL=C (inside the U2a4 deferral); A5 and the lib block comment's "or nothing" omit a path under a non-plain checkout ancestor; lib :36-38 "first and then"; :504-507 relative names only and "about 5 s" (1-4 s here); :524-529 awk reads a numeric prefix (1e3, -5, 0x10, inf, nan); D4's "test 77" is build-loop-check test 4 (corrected here) | fact-check 5, 14a, 15, 18, 19a, 20a, 20b, 21; api-consistency 2, 3; architecture F2 | Open (wording) |
 | G3 | Test 66's 20 s timeout: about 2-3x headroom under 3x CPU load | test-strategy F2 | Open: raise to 60 s once test 67 lands (Appendix B) |
 | G4 | Health check at 4b7f2357 not re-run by a replicate | fact-check 1b | Run by the orchestrator: passed at 4b7f2357 |
 

@@ -971,21 +971,42 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "main_checkout refuses a PATH main stores as a link or gitlink, so a plain checkout directory there never passes a path below it (U2a3c final)" {
-    # The checkout holds plain searchable directories where main stores a link and a gitlink.
+    # The checkout holds plain searchable directories where main stores a link and a gitlink;
+    # lx and gx, a link and a gitlink main stores, are absent there and answer 1 too.
     mkdir -p l g && printf 'x\n' > l/f.md && printf 'x\n' > g/f.md
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
-        declare -A E=([l]=120000 [g]=160000) M=()
-        for p in l l/f.md g g/f.md; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
-    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'l 1\nl/f.md 1\ng 1\ng/f.md 1' ] || { echo "$status $output $stderr"; return 1; }
+        declare -A E=([l]=120000 [g]=160000 [lx]=120000 [gx]=160000) M=()
+        for p in l l/f.md g g/f.md lx gx; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'l 1\nl/f.md 1\ng 1\ng/f.md 1\nlx 1\ngx 1' ] || { echo "$status $output $stderr"; return 1; }
 }
 
 @test "the checkout phase stays near linear in the number of import tokens main lacks (U2a3c final performance F1)" {
-    # 4,000 tokens @nI/a/b/c/d/x.md, none in the checkout: about 2.5 s here; at
-    # 3a35c8b9 main_checkout's ${MEMO@a} type check cost time linear in MEMO's
-    # size, which grows with the tokens (44.6 s), so this catches it on hosts up
-    # to about 2x faster than the one it was measured on.
+    # 4,000 tokens @nI/a/b/c/d/x.md, none in the checkout: about 2.5 s here (6.5 s
+    # with the CPUs oversubscribed 1.5x). A hang guard only: the ${x@a} cost class
+    # (44.6 s at 3a35c8b9) is pinned host-independently by the ratio test below.
     { printf 'see'; for ((i = 0; i < 4000; i++)); do printf ' @n%d/a/b/c/d/x.md' "$i"; done; printf '\n'; } > CLAUDE.md && commit_all many
-    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
         main_imports && echo ok || echo failed' _ "$LIB"
     [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "main_checkout's cost per call does not grow with ENT's or MEMO's size, a ratio of two timings in one process so no host is fast or slow enough to hide it (U2a3c final performance F1)" {
+    # 400 calls with ENT and MEMO of 30,000 entries each, against 400 with both
+    # empty, timed in the same shell. Constant-time type checks give a ratio near
+    # 1 (0.4-1.0 here, idle or with 24 busy loops on 16 CPUs); a check linear in
+    # either array (${x@a}, as at 3a35c8b9) gives 59-141. Best of three rounds
+    # against a bound of 10, so a stall in one round cannot fail it.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        declare -A E=() M=() BE=() BM=(); for ((i = 0; i < 30000; i++)); do BE["z$i"]=100644; BM["y$i"]=2; done
+        t() { local s=$EPOCHREALTIME e k; for ((k = 0; k < 400; k++)); do main_checkout "$1" "$2" "q$k/x.md" || true; done; e=$EPOCHREALTIME; echo $(( ${e/./} - ${s/./} )); }
+        best=""; for r in 1 2 3; do a=$(t E M); b=$(t BE BM); x=$(( b * 100 / a )); [[ -n "$best" && $best -le $x ]] || best=$x; done; echo "$best"' _ "$LIB"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" -le 1000 ] || { echo "ratio x100: $status $output $stderr"; return 1; }
+}
+
+@test "main_checkout answers a PATH main stores as a blob by the checkout's plain file there, pinned though U2b's precondition passes only paths main lacks (U2a3c final)" {
+    printf 'x\n' > b.md && printf 'x\n' > e.md
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        declare -A E=([b.md]=100644 [e.md]=100755) M=()
+        for p in b.md e.md; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'b.md 0\ne.md 0' ] || { echo "$status $output $stderr"; return 1; }
 }

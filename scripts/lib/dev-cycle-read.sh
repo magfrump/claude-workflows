@@ -33,9 +33,10 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes). main_imports reads main's commit first and then the working tree
-# (the checkout's start files and imported files main lacks, which can only
-# add imports or fail it; it needs resolve_main to have found main by name);
+# writes). main_imports walks main's commit first, listing and checking the
+# working tree as it goes, and then reads the working tree's own files (the
+# checkout's start files and imported files main lacks, which can only add
+# imports or fail it; it needs resolve_main to have found main by name);
 # imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -470,8 +471,10 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
 # in the checkout), and a checkout path it would walk (a start or an import
 # main lacks) that lies under a directory main stores as a symlink or gitlink
-# or under an unsearchable directory, or that the checkout holds as anything
-# but a readable plain file, a plain directory or nothing (the root included),
+# or under any checkout ancestor but a plain searchable directory (absent
+# ones and plain files excepted: nothing below them loads), or that the
+# checkout holds as anything but a readable plain file, a plain directory or
+# nothing (the root included),
 # or a checkout listing git prints any stderr for, fail the walk, so isimported main
 # answers imported for every path. A linked worktree's .git file and files
 # under .git are checkout files like any other. A start file answers imported only when an import reaches it
@@ -502,9 +505,9 @@ IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # and IMPORTED_MAIN_DONE before walking again.
 IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
-# characters it scans and each resolved spelling it joins, which carries
-# ROOT_REAL, so a longer root buys less; the unit of its per-file bound of
-# 50,000,000, about 5 s for a many-component name) passes this in all, so N adversarial files cost one bound of charged parser
+# characters it scans and each resolved spelling it joins, which for a
+# relative name carries ROOT_REAL, so a longer root buys less; the unit of its
+# per-file bound of 50,000,000, about 1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
@@ -522,7 +525,8 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
-# reads a number otherwise: its leading digits, or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
+# reads a number otherwise: its numeric prefix (so 1e3 is 1000 and inf no
+# bound), or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
 # walk: what its IMPORT_WORK_MAX has left, which then also caps the per-file
 # work bound, and a last line "/N" reports the work spent; import_work reads
 # it. Unset or empty: no trailer and only the per-file bound; otherwise read
