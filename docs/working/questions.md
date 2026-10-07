@@ -27,12 +27,11 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-127](#q-127--q125-proc-fallback) | you: judgment | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | you: judgment | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
-| [Q-126](#q-126--q125-host-probe) | you: terminal | Run the Q-125 feasibility probe on the host: does bwrap start, with a fresh `/proc`, in a container under t... | 2026-10-07 |
+| [Q-130](#q-130--q125-live-run) | you: terminal | Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox ch... | 2026-10-07 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
@@ -295,37 +294,28 @@ Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default
   - Two departures from the text above. The profile also allows `mount`/`umount2`/`pivot_root`, and allows `unshare`/`clone` without the NEWUSER bit, because bwrap and Claude Code's seccomp helper need them; the kernel still cap-gates all of them. The settings live in `/etc/claude-code/managed-settings.json`, not in `wiring.json`, which the agent can edit.
   - Open: a fresh `/proc` mount is probably refused under Docker's masked `/proc` paths. Q-126 tests that, Q-127 decides the fallback, and the live run is the step after Q-126. See `docs/working/plan-q125-cc-isolated-sandbox.md`.
 
-### Q-126 · q125-host-probe
+  - **Update 2026-10-07 (Q-126):** the host probe passed, so a fresh `/proc` works and Q-127 is moot. U2 has merged main (2961ca2f), so the live run installs current payload. Next is Q-130.
+
+### Q-130 · q125-live-run
 **Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** OPEN
 
-Run the Q-125 feasibility probe on the host: does bwrap start, with a fresh `/proc`, in a container under the new seccomp profile?
+Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox checks.
 
 ```
-cd ~/claude-workflows && git show feat/q125-cc-isolated-sandbox:docs/working/probe-q125-bwrap.sh > /tmp/probe-q125.sh && bash /tmp/probe-q125.sh 2>&1 | tee /tmp/probe-q125.out; rm -f /tmp/probe-q125.sh
+cd ~/claude-workflows && git worktree add --detach /tmp/q125-install feat/q125-cc-isolated-sandbox && /tmp/q125-install/devcontainer-config/install.sh; git -C ~/claude-workflows worktree remove /tmp/q125-install
+cc-isolated --probe-only ~/claude-workflows && cc-isolated ~/claude-workflows
 ```
 
-- **Read:** the script's header says what each variant (A design, B control, C `systempaths=unconfined`) and test (T1 fresh `/proc`, T2 bind `/proc`, T3 weaker-mode leak, T4 nothing else widened) means. It pulls `debian:bookworm` and apt-installs bubblewrap inside throwaway containers; it writes nothing on the host except its own temp dir.
-- **What the answer decides:** `A T1-fresh-proc pass` → the design stands; the next paste is the live run (install.sh, bless, `cc-isolated --probe-only`, then the session checks in plan step 6). `A T1 FAIL` → Q-127 picks the fallback.
-- **Blocks:** Q-125's live run and merge.
-- **Interim:** both branches stay unmerged; Bash in cc-isolated stays unsandboxed.
+Then, in that session, type: `Run bash docs/working/live-check-q125.sh with your Bash tool (not !), then run it again with --watch in the background while I /login, and paste me every RESULT line.`
 
-### Q-127 · q125-proc-fallback
-**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
-
-If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback?
-
-- **Why it's yours:** each option trades a different boundary. One weakens the credential protection Q-124 bought; one unmasks host-facing `/proc` files for container root; one gives the sandbox up.
-- **Read:** research doc Gotchas (`docs/working/research-q125-cc-isolated-sandbox.md`) · probe T2/T3/C results · decision log 53
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Weaker mode** (only if T3 shows no leak) | `enableWeakerNestedSandbox: true` in the managed settings; the container's `/proc` is bind-mounted into the sandbox. | None now. | If `/proc/<pid>/root` reaches the real `~/.claude`, the credential mask is bypassable, which is the thing the sandbox was for; Claude Code also flags the session as `sandbox_weakened`. |
-| **[2] `systempaths=unconfined`** | One more runArgs flag; Docker stops masking `/proc` paths, so the fresh mount works. | None now. | Container root (reachable only through the init-firewall sudo grant) can write `/proc/sysrq-trigger` and `/proc/sys`, which act on the host kernel. |
-| **[3] Stop at deny + container** | Abandon Q-125's branches; decision log 53 records the sandbox as infeasible here; Q-098 stays deferred. | None. | The pinned deny-rule residuals stay the boundary for the credential. |
-
-- **Blocks:** Q-125, only on the A T1 FAIL branch.
-- **Interim:** none chosen; nothing merges until this is answered or Q-126 makes it moot.
-- **If the answer differs:** [1]/[2] are one-line changes on U2/U1 and a re-run of the probe; [3] deletes two branches.
+- **Read:** `docs/working/live-check-q125.sh` (on the branch) says what C1–C10 test. It aborts before any write if the credential is readable. Plan step 6 is the spec.
+- **Before you paste:** install.sh refuses while any Claude Code process runs on the host (Q-058), so close sessions first. Say **y** to target 1 (devcontainer config) and **N** to target 2 (host `~/.claude`). Target 2 records the repo it ran from as canonical, and this one is a temp worktree that the paste deletes. The branch changes nothing there anyway.
+- **What the answer decides:**
+  - The session fails to start with `sandbox required but unavailable` → the sandbox broke on the real image. Paste that error; the rollback is install.sh from main (plan Rollback).
+  - Every RESULT is pass → pr-prep runs per unit, then U1 and U2 merge with `Live-verified: <the hash cc-isolated --list shows>`.
+  - Any FAIL → the agent fixes it on U2 and you re-run this entry.
+- **Blocks:** Q-125's merge, and Q-098.
+- **Interim:** every cc-isolated project now runs the branch's config until install.sh is re-run from main. To back out, run the same paste with `main` in place of the branch.
 
 ### Q-089 · host-tools-trust-category
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN

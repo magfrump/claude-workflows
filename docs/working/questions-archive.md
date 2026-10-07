@@ -115,6 +115,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-123](#q-123--host-checkout-common-dir) | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 | [Q-124](#q-124--cc-isolated-sandbox-build-or-accept) | Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which mea... | 2026-10-07 |
+| [Q-126](#q-126--q125-host-probe) | - **A, the Q-125 profile:** T1 fresh `/proc` pass, T2 bind `/proc` pass, and T4 shows nothing else widened. | 2026-10-07 |
+| [Q-127](#q-127--q125-proc-fallback) | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
 | [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 <!-- index:end -->
 
@@ -2159,4 +2161,48 @@ U2a3c (the checkout phase of the gate's import walk) used its three review itera
 - **Blocks:** U2a4 (the floor), then U2b and U2c.
 - **Interim:** nothing runs on U2a3c; it waits on this answer. The old tip is kept as `backup/u2a3c-pre-rebase-2b1399ab`.
 - **If the answer differs:** none of the options redoes work.
+
+### Q-126 · q125-host-probe
+**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+**Answered 2026-10-07** (`docs/human-author/answers-10-7-26.txt`), on 6.18.35.2-microsoft-standard-WSL2, no LSM, bubblewrap 0.8.0 (non-setuid):
+- **A, the Q-125 profile:** T1 fresh `/proc` pass, T2 bind `/proc` pass, and T4 shows nothing else widened.
+- **B, Docker's default profile:** T1/T2 FAIL ("No permissions to create new namespace"), as Q-088 found.
+- **C:** same as A, so `systempaths=unconfined` is not needed.
+- **T3:** "no-leak" is weak evidence (EACCES both ways), but it is moot because weaker mode is not used.
+
+The research doc's prediction that a fresh `/proc` would be refused is refuted. Original entry:
+
+Run the Q-125 feasibility probe on the host: does bwrap start, with a fresh `/proc`, in a container under the new seccomp profile?
+
+```
+cd ~/claude-workflows && git show feat/q125-cc-isolated-sandbox:docs/working/probe-q125-bwrap.sh > /tmp/probe-q125.sh && bash /tmp/probe-q125.sh 2>&1 | tee /tmp/probe-q125.out; rm -f /tmp/probe-q125.sh
+```
+
+- **Read:** the script's header says what each variant (A design, B control, C `systempaths=unconfined`) and test (T1 fresh `/proc`, T2 bind `/proc`, T3 weaker-mode leak, T4 nothing else widened) means. It pulls `debian:bookworm` and apt-installs bubblewrap inside throwaway containers; it writes nothing on the host except its own temp dir.
+- **What the answer decides:** `A T1-fresh-proc pass` → the design stands; the next paste is the live run (install.sh, bless, `cc-isolated --probe-only`, then the session checks in plan step 6). `A T1 FAIL` → Q-127 picks the fallback.
+- **Blocks:** Q-125's live run and merge.
+- **Interim:** both branches stay unmerged; Bash in cc-isolated stays unsandboxed.
+
+
+### Q-127 · q125-proc-fallback
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+**Closed 2026-10-07 as moot:** Q-126's A T1 passed, so there was nothing to fall back from. No option was chosen, and none applies. Original entry:
+
+If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback?
+
+- **Why it's yours:** each option trades a different boundary. One weakens the credential protection Q-124 bought; one unmasks host-facing `/proc` files for container root; one gives the sandbox up.
+- **Read:** research doc Gotchas (`docs/working/research-q125-cc-isolated-sandbox.md`) · probe T2/T3/C results · decision log 53
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Weaker mode** (only if T3 shows no leak) | `enableWeakerNestedSandbox: true` in the managed settings; the container's `/proc` is bind-mounted into the sandbox. | None now. | If `/proc/<pid>/root` reaches the real `~/.claude`, the credential mask is bypassable, which is the thing the sandbox was for; Claude Code also flags the session as `sandbox_weakened`. |
+| **[2] `systempaths=unconfined`** | One more runArgs flag; Docker stops masking `/proc` paths, so the fresh mount works. | None now. | Container root (reachable only through the init-firewall sudo grant) can write `/proc/sysrq-trigger` and `/proc/sys`, which act on the host kernel. |
+| **[3] Stop at deny + container** | Abandon Q-125's branches; decision log 53 records the sandbox as infeasible here; Q-098 stays deferred. | None. | The pinned deny-rule residuals stay the boundary for the credential. |
+
+- **Blocks:** Q-125, only on the A T1 FAIL branch.
+- **Interim:** none chosen; nothing merges until this is answered or Q-126 makes it moot.
+- **If the answer differs:** [1]/[2] are one-line changes on U2/U1 and a re-run of the probe; [3] deletes two branches.
+
 
