@@ -1,8 +1,74 @@
-Commit: 34edec56
+Commit: cc1aa864
 Loop-pass short-circuit: used at 45ad17b0
 # Code Review Rubric
 
-**Scope:** full branch `main...feat/build-loop-u2a3`; iteration 2 at 34edec56 (`--loop-pass --full`: iteration 1's critics never ran), iteration 1 at 45ad17b0 | **Reviewed:** 2026-10-06 | **Status: ❌ iteration 2 found one red (B1) and ambers, fixed or acknowledged in the iteration-2 fix commit; final confirming pass next**
+**Scope:** full branch `main...feat/build-loop-u2a3`; iteration 3 (final confirming pass, no `--loop-pass`, k=3, full panel) at cc1aa864, iteration 2 at 34edec56, iteration 1 at 45ad17b0; 400 changed code lines by pr-prep 1a (at the cap) | **Reviewed:** 2026-10-06 | **Status: ❌ CAP REACHED: iteration 3 ended with one behavioral red (C1) and three ambers open; iteration 4 needs a written escalate / split / abandon decision (not taken here; escalated to the caller)**
+
+## Iteration 3 of 3: final confirming pass (Commit cc1aa864, full branch, k=3, full panel)
+
+A first start of this pass at 2a3e499f was aborted before any report, because the coordinator routed three U2a3b findings here (I2-C2, I2-C3, I2-C4); they were fixed in c42f017f and the pass re-ran at cc1aa864. It stays iteration 3.
+
+Delivery mode: self-read. Fact-check Gate: one high-confidence behavioral Incorrect (C1); proceeded with critics (autonomous run; the terminal pass never short-circuits). Stage 2.5 not run: security routed 3 endorsement claims and performance 2, all **pending execution verification**; with the cap reached no ✅ rows are issued, so the stage was skipped to save a dispatch (deviation noted).
+
+Reports (all `Commit: cc1aa864`): `code-fact-check-report-build-loop-u2a3-final.md` (merged k=3 from `-f-r1/-f-r2/-f-r3`: 41, 31, 31 claims; merged 51 clusters: 30 Verified, 12 Mostly accurate, 9 Incorrect; agreement 32/51, 62.7%); `security-reviewer-review-2026-10-06-final-build-loop-u2a3.md` (2 Medium, 1 Low, 1 Informational); `performance-reviewer-review-2026-10-06-final-build-loop-u2a3.md` (1 Low, 1 Informational); `api-consistency-reviewer-review-2026-10-06-final-build-loop-u2a3.md` (1 Minor, 2 Informational); `architecture-review-review-2026-10-06-final-build-loop-u2a3.md` (0 Structural, 1 Coupling, 1 Minor, 2 Informational); `test-strategy-review-2026-10-06-final-build-loop-u2a3.md` (G1-G6, 46 mutants). Fix-drift: `lite-review-fix-drift-build-loop-u2a3-i3.txt` (its one finding declined: the root and FIFO causes go through the generic not-plain arm; confirmed by all three replicates).
+
+Tests at cc1aa864: 114/114 across the five suites (all three replicates); shellcheck clean.
+
+Iteration-2 verification: B1 (path main lacks under a main directory link) is fixed for imports but not for starts (C1, a different producer of the same shape, not a re-fire of the same location). B2's MAIN_BY_NAME half fixed. Routed I2-C2/C3/C4 fixed (C4's second here-string at :596 remains, C4 below).
+
+### 🔴 Must Fix
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| C1 | An untracked start file is marked seen before the walk (lib :571-572), and the parent-link refusal (:613-614) runs only after the seen test (:610), so a start at a path main lacks under a directory main stores as a symlink skips it. Main with `ld -> deep` and `@ld/CLAUDE.md`, checkout with `ld` a plain directory holding untracked `ld/CLAUDE.md`: walk ok, `deep/CLAUDE.md: -`; with `.claude/rules -> ../docs` on main, non-start targets (`docs/foo.md`) also answer `-`. Breaks the header's "the checkout can only add imports or fail it" | Incorrect (behavioral) / Medium / Coupling | fact-check Claims 19, 20, 24 (r2, executed); security F1 (executed, wider exposure); architecture F1; api 1; test-strategy G3. Convergence | Open (cap) | Tested fix, net 0 lines: move the parent loop into the `t:` arm on `$f` before `inrepo_here` (architecture; 16/16 in a scratch copy), or run it before the seen test guarded by `[[ -z "${ent[$p]+set}" ]]` (security). Needs a test, which does not fit the 400 cap. |
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| C2 | An import into a gitlink path reads the checkout's submodule; uninitialised (the default after `git worktree add`), `@sub/x.md` whose x.md imports `../docs/y.md` gives walk ok, `docs/y.md: -` | Medium | security F2 (executed) | Open (cap) | One-line fix: treat a 160000 parent like 120000 in the parent check (probed, suite not run). Distinct from rows 366/373 (starts inside a submodule). |
+| C3 | A target main lacks under a mode-000 checkout directory reads as absent (walk ok, imports dropped); `git ls-files --others` exits 0 with only a warning on an unreadable directory, so "listed whole" is unenforced; comments say "a checkout file it cannot read" fails | Incorrect (comment) / Low / Minor | fact-check Claim 26 (r2); security F3; architecture F2; test-strategy G4 | Open (cap) | Contract decision: fail on an unsearchable ancestor and on ls-files stderr, or narrow the claims (header, block comment, A5, F11). Only untracked checkout content is affected. |
+| C4 | A second here-string at :596 (`IFS=/ read -ra parts <<<"$out"`); link text past 64 KiB with a silently failing temp write skips the `..` check | Incorrect / Informational | fact-check Claim 34 (r1, r2; r3 too); security F4; architecture F3 | Open (cap) | Unreachable through a real symlink (4095-byte cap, executed). Fix: mapfile split or reject text over 4095 bytes. |
+| C5 | Wording: block comment, A5, F11 and the U2a3 bullet omit the root/FIFO refusal; header's checkout-input list narrower than the code; override rows :374 (lower is not the only unguarded command) and :379 (blob+tree fails only when an import reaches below it) | Mostly accurate | fact-check (r1, r3), api 3 | Open (cap) | |
+| C6 | Commit messages: e7b5d7ed ("makes the header's ... true", the isimported sentence), c42f017f (`ulimit -f 0` "read as no imports": default SIGXFSZ kills the shell) | Incorrect (commit message) | fact-check Claims 45, 46, 49 | Accepted-immutable (override rows) | 34edec56 already at row :380. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| C7 | Parent-link check only tested at the immediate parent; dropping its error reset is unpinned (mutants N33, N34, N37 survive); Appendix A (+3 lines) kills them | test-strategy G1, G2 | Open (needs 3 lines over the cap) |
+| C8 | Parent loop is O(L^2) in path length: one 64 KB `@` token costs 6-20 s (slow gate, not fail-open) | performance F1 | Open |
+| C9 | Process substitution adds ~0.3-0.6 ms per queued file | performance F2 | Fold into row 355's batching |
+| C10 | nul_list leaves partial output plus `rc=1` in the array on failure | api 2 | Open (document or clear before U2a3b reuses it) |
+| C11 | Test 9's first sub-case now trips the parent check, not the checkout-symlink arm its comment names | test-strategy G6, fact-check r1 | Open |
+| C12 | Convergence: main's side converged; every live i3 shape comes from checkout input. A two-phase walk (main alone to a fixpoint, then the checkout appending) makes "checkout only adds or fails" hold by construction, ~10-15 lines | architecture F4 | Recommendation |
+
+### Re-flagged settled decisions
+
+None re-raised by critics; security cites rows 366 and 373 as related to C2 (a distinct shape).
+
+### 🧩 Composition check (iteration 3)
+
+- lib :571-572 + :610-614 (fact-check 19/20/24, security F1, architecture F1, api 1, test-strategy G3): one defect, stated whole by each; no composed row (C1).
+- lib :580-583 + :517 (fact-check 26, security F3, architecture F2, test-strategy G4): one defect (checkout "cannot tell" read as absent), stated whole; no composed row (C3).
+- lib :614 (test-strategy G1/G2, performance F1): distinct defects (test coverage vs cost).
+
+## Iterations (3 completed)
+1. 45ad17b0: fact-check only (short-circuit): link text `..` after a directory link read lexically. Fixed.
+2. 34edec56: full panel: a path main lacks under a main directory link dropped when the checkout lacks the link; cache key; test gaps. Fixed or override rows.
+3. cc1aa864 (final, after the routed U2a3b fixes): C1-C12 above.
+
+## Remaining Must Fix
+C1.
+
+## Remaining Must Address
+C2, C3, C4, C5 (C6 is Accepted-immutable).
+
+## Convergence diagnosis (one sentence)
+The main-commit side converged after iteration 1, but each pass finds a new shape where checkout input (untracked starts, targets main lacks, unreadable or uninitialised checkout directories) slips past a check placed at one producer, and the unit sits at the 400-line cap so neither the tests nor the structural fix fit.
+
+## Recommended action (ship-with-issues / split-PR / pause for redesign)
+split-PR (recommended, pending the user's or coordinator's written decision): land the two net-zero fixes for C1 and C2 plus the C3-C5 wording here only if a waiver or split makes room for C1's test; otherwise split the checkout-side reads (untracked starts, targets main lacks) into their own stacked unit built as the architecture critic's two-phase walk, leaving U2a3 as a main-only walk. Iteration-4 gate: no option selected here (the caller asked to stop and report).
 
 ## Iteration 2 of 3 (Commit 34edec56, full branch, --loop-pass --full, k=1, full panel)
 
