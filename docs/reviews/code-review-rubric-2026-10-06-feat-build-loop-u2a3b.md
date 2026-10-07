@@ -1,8 +1,53 @@
-Commit: e1654266
+Commit: 4828727d
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
 **Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🔴 loop 2 iteration 1 did not pass at be94c871; its fixes are committed, pending iteration 2** (loop 1 ended at the iteration-4 gate below)
+
+## Loop 2, confirming pass under the user's waiver (Commit 4828727d, main...4828727d, no --loop-pass, k=3, full panel; Q-120 [1])
+
+Scope: full unit (`main...4828727d`), weighted to aa379ee9, which no earlier pass had seen. Delivery mode: self-read (shared brief and a consolidated Stage 1 summary in the session's temp dir). Stage 1: three opus replicates, merged most-severe-wins into `code-fact-check-report-build-loop-u2a3b-L2-confirm.md` (37 clusters: 30 Verified, 6 Mostly accurate, 1 Incorrect; agreement 28 of 32 multi-replicate clusters, 87.5%, so k stays 3). Fact-Check Gate: no behavioural Incorrect (the one Incorrect is a test title), so no pause. Stage 2: security, performance, api-consistency, architecture, test-strategy, parallel. Considered overrides: the U2a3 and U2a3b rows (override log line 374 to the end) were given to every critic; api N2 is new evidence against I2-C2's "Fixed (on main)" (main_imports' header said nothing of a cached error).
+
+Reports (`Commit: 4828727d`): `code-fact-check-report-build-loop-u2a3b-L2-confirm{,-r1,-r2,-r3}.md`; `security-reviewer-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (1 Medium, 1 Low); `performance-reviewer-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (1 Low, 1 Informational); `api-consistency-reviewer-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (3 Informational); `architecture-review-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (2 Minor, 2 Informational; nothing Structural or Coupling); `test-strategy-review-2026-10-07-L2confirm-build-loop-u2a3b.md` (41 mutants, 22 killed, 19 survived, all equivalent, time-only or precision-only but F1-F2; Appendix A).
+
+Status at 4828727d: **🟡 CONDITIONAL PASS: 0 red, one amber (routed) and one Low regression from main**, so `Loop closed at` is not written. By Q-120 [1] a new finding goes back to the user. The fixes are in the follow-up commit, unreviewed.
+
+### 🟡 Must Address (confirming pass)
+
+| ID | Finding | Source | Severity | Disposition |
+|---|---|---|---|---|
+| L2-C-A1 | `@` names in `.claude/commands/*.md` load when the command runs; neither walk starts at command files (pre-existing on main; A5's last untraced shape, now traced). Nothing tracked here, so no exposure | security F2 (executed against the binary) | Medium | A5 and the lib header name it as traced and uncovered; routed to U2a4's shared start predicate (plan U2a4 bullet); override row |
+
+### 🟢 Consider (confirming pass)
+
+| ID | Finding | Source | Disposition |
+|---|---|---|---|
+| L2-C-C1 | The top-level `.git` skip let a linked worktree's gitfile import pass the main walk when the main checkout's path holds ` @name ` (Claude Code reads the gitfile); main's walk failed closed on the same tree, so this is a regression from main in one host-placed shape | security F1 (executed) | Fixed: the top-level `.git` is skipped only as a plain directory or a gitfile holding no `@`; otherwise the walk fails. Test (a checkout at `a @docs/x.md /m` with a linked worktree; the old skip fails it); U2a3c reads the gitfile as a checkout file instead (plan) |
+| L2-C-C2 | A widened byte range in UTF8_WELL_FORMED fails no test (a fail-open guard) | test-strategy F1 (executed) | Fixed: Appendix A's six-class U+FFFD test |
+| L2-C-C3 | The nested `.git` test checks only the main walk | test-strategy F2 (executed) | Fixed: Appendix A's tree-walk line |
+| L2-C-C4 | Cache comment names only IMPORTED_MAIN_DONE for a HOME change; main_imports' header omits that a cached error returns 1 again | fact-check Claim 9 (executed); api N2; architecture 2 | Fixed: both caches named, the cached error stated; the cache key's reader set routed to U2b (override row) |
+| L2-C-C5 | Wording: nested `.git` test title "skips" (Incorrect); "over 150 characters" (~135); "13 in all"; "r1 22b"; import_targets' inputs (IMPORT_HOME* set in the caller's shell, IMPORT_LEFT empty or non-numeric); IMPORT_HOME_DONE "holds HOME" (a key) | fact-check Claims 29, 31, 19; r2 note; api N1, N3 | Fixed |
+| L2-C-C6 | Plan: "parent of every worktree here" omits the host-path worktree; the Q-121 host checkout is probably `/workspace` under a host path (an alias of ROOT_REAL), and the host HOME's memory file is not the `/opt` copy | fact-check Claim 4; architecture 1 | Fixed in the plan's U2b bullet; the host check is a `you: terminal` entry; override row |
+| L2-C-C7 | The one start predicate is routed only in F11, not in the U2a4 bullet; the revisit trigger names only the import grammar | architecture 3, 4 | Fixed: U2a4 bullet; lib and A5 triggers add the runtime's HOME reading and UTF-8 decoding |
+| L2-C-C8 | The work bound is per file; `put`'s join costs more than its charge: one adversarial file ~5 s and success, N files ~N × 5 s (not a regression) | performance P2 | Routed to U2a3c (walk-wide work counter); override row |
+| L2-C-C9 | The `tried` memo can hold ~140 MB on the main walk's uncapped blob, bounded by the work bound and freed per file | performance P1 | Informational; the capped blob read is already U2a3c's |
+| L2-C-C10 | aa379ee9's "200k distinct names fail in 1.8 s" is print-budget evidence, not the work charge's | fact-check Claims 32, 33 | Accepted-immutable (override row); L2-F-C2 below corrected |
+
+### ✅ Confirmed Good (confirming pass; Stage 2.5 not run, see below)
+
+Established by execution in Stage 1 (all three replicates) and the critics: 149/149 at 4828727d; the three named mutants and the per-file-budget and no-pipefail mutants fail; --check-fix byte-identical to main over 957 paths; Claude Code 2.1.292 reads `~/` against the passwd home for an empty or unset HOME, reads a nested `.git` file and follows its imports, and loads a parent directory's instruction file and the memory file into the repo; a deep 4 MiB `@a` file fails in about 0.5 s (14 s and success at e1654266); the `tried` memo and the resolved-path charge change no parser output on 1,800 differential runs against e1654266 (security); the raw-HOME key recomputes on every HOME change (security, executed); with HOME unset a walk runs getent once (performance, executed). Stage 2.5 was not run: the pass did not close clean, and the fixes change the code two endorsements describe (the `.git` skip). The routed endorsements carry to any later pass.
+
+### 🧩 Composition check (confirming pass)
+
+| # | Location | Fragments | Disposition |
+|---|---|---|---|
+| 1 | lib cache comment / walk cache keys | fact-check Claim 9, api N2, architecture 2, test-strategy F4 | composed: one cache-contract gap; comment fixed, the key's reader set routed to U2b |
+| 2 | main_imports `.git` skip | security F1, test-strategy F2, fact-check Claim 29 | distinct: a host-path regression (fixed), a tree-walk test gap (fixed), a stale title (fixed) |
+| 3 | start predicate | security F2, architecture 3 | composed: command files join the one start predicate routed to U2a4 |
+
+Size: 841 changed code lines against main with the follow-up (794 at 4828727d), past Q-104 [2]'s ~800 under the user's waiver (Q-120 [1]).
+
+Verification of the follow-up: 151/151 (build-loop-check 50, build-loop-read 19, dev-cycle 78, fixture-git-env 2, fixture-hermeticity 2); hermeticity lint 53/53; shellcheck clean; the old `.git` skip fails the new gitfile test.
 
 ## Loop 2, iteration 3 of 3: the final confirming pass (Commit e1654266, main...e1654266, no --loop-pass, k=3, full panel)
 
@@ -27,7 +72,7 @@ Status at e1654266: **🟡 CONDITIONAL PASS: 0 red, ambers open**, so `Loop clos
 | ID | Finding | Source | Disposition |
 |---|---|---|---|
 | L2-F-C1 | A nested `.git` file is skipped, though Claude Code reads it (a regular file named .git importing a repo doc); needs host control of the gate checkout | security F2 (executed) | Fixed: only the top-level .git is skipped (a nested .git directory already passes the plain-directory check, so its arm was equivalent; test-strategy's nested-worktree pass test inverted to fail closed, with the nested-directory case kept) |
-| L2-F-C2 | The work charge scales with the name, not the resolved path: a 4 MiB file of `@a` 50 directories down took 22 s (59 s densest) and succeeded | performance F1 (executed) | Fixed: put charges each resolved spelling and resolves it once per file; the same file fails in 0.6 s, 200k distinct names in 1.8 s; test; the no-charge mutant fails |
+| L2-F-C2 | The work charge scales with the name, not the resolved path: a 4 MiB file of `@a` 50 directories down took 22 s (59 s densest) and succeeded | performance F1 (executed) | Fixed: put charges each resolved spelling and resolves it once per file; the same file fails in 0.6 s (200k distinct names also fail, but on the print budget, as at e1654266: L2-confirm fact-check Claim 33); test; the no-charge mutant fails |
 | L2-F-C3 | import_home forks getent, id and cut per file when HOME is unset (its key was the computed home) | performance F3; fact-check r3 21c | Fixed: keyed on the raw HOME (set or not, and its value) |
 | L2-F-C4 | Names: IMPORT_HOMER, IMPORT_HOME_KEY, UTF8_OK | api F1, F2 | Fixed: IMPORT_HOME_REAL (IT_HOME_REAL), IMPORT_HOME_DONE, UTF8_WELL_FORMED |
 | L2-F-C5 | import_targets' inputs (ROOT_REAL, HOME, IMPORT_LEFT and its default) undocumented in one place | api F3; architecture F3 | Fixed: the function comment names them; the internal import_home call is noted for U2b to replace (plan) |
