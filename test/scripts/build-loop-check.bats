@@ -123,11 +123,15 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
     printf 'Style: @../../docs/r.md\n' > .claude/rules/style.md
     printf 'Nested: @../../../docs/nested.md and @docs/bom.md\xef\xbb\xbfnow\n' > pkg/.claude/rules/style.md
     printf 'tracked\n' > docs/t.md
+    # An executable instruction file and import (100755), and a chain of two links on main.
+    chmod +x real.md docs/a+b.md && printf 'c @c3.md\n' > docs/c2.md && ln -s docs/c1.md GEMINI.md && ln -s c2.md docs/c1.md
     commit_all walks
+    # Untracked .claude/rules starts, top level and nested; a checkout edit of a tracked import does not count.
+    printf 'U: @../../docs/u.md\n' > .claude/rules/mine.md && printf 'U: @../../u2.md\n' > pkg/.claude/rules/x.md && printf 'gone\n' > docs/a+b.md
     # Untracked: a local instruction file importing an untracked note, which imports a tracked file.
     printf 'Mine: @docs/local-notes.md\n' > CLAUDE.local.md
     printf 'Notes: @t.md\n' > docs/local-notes.md
-    ps=(real.md docs/b.md docs/g.md docs/deep.md docs/nb.md docs/target.md docs/t2.md docs/r.md docs/local-notes.md docs/t.md docs/nested.md pkg/.claude/rules/docs/bom.md)
+    ps=(docs/c3.md docs/u.md pkg/u2.md real.md docs/b.md docs/g.md docs/deep.md docs/nb.md docs/target.md docs/t2.md docs/r.md docs/local-notes.md docs/t.md docs/nested.md pkg/.claude/rules/docs/bom.md)
     imps main "${ps[@]}" docs/other.md
     want walk ok
     for p in "${ps[@]}"; do want "$p" imported; done
@@ -265,7 +269,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
 scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "main walk fails on symlink text with a .. after a symlink, with or without that link in the checkout; a .. after a plain directory is followed (U2a3 i1 fact-check 11b)" {
+@test "main walk fails on link text with a .. after a symlink on main or only in the checkout, and on a path main lacks under a link main stores (U2a3 i1 fact-check 11b, i2 security F1)" {
     mkdir -p deep/inner docs
     printf 'evil @secret.md\n' > deep/evil.md && printf 'top\n' > evil.md && printf 'i\n' > deep/inner/i.md
     printf 'see @../hid.md\n' > docs/n.md && printf 'h\n' > hid.md
@@ -273,8 +277,27 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     commit_all dotdot-link
     # The kernel reads deep/evil.md through ld; realpath -s would read evil.md.
     imps main deep/secret.md; want walk failed; want deep/secret.md imported
-    rm ld
-    imps main deep/secret.md; want walk failed; want deep/secret.md imported
-    rm CLAUDE.md && commit_all no-ld
+    rm ld; imps main deep/secret.md; want walk failed; want deep/secret.md imported
+    # Link text, then an @ token, through main's ld when the checkout lacks it.
+    for how in link token; do
+        rm CLAUDE.md && ln -s deep/inner ld
+        if [ "$how" = link ]; then ln -s ld/i.md CLAUDE.md; else printf 'see @ld/i.md\n' > CLAUDE.md; fi
+        commit_all "$how" && rm ld
+        imps main deep/inner/i.md; want walk failed
+    done
+    # A .. after a plain directory is followed; then a link only the checkout has.
+    rm CLAUDE.md && ln -s ld/../evil.md CLAUDE.md && commit_all no-ld
     imps main hid.md docs/n.md deep/secret.md; want walk ok; want hid.md imported; want docs/n.md imported; want deep/secret.md -
+    ln -s deep/inner ld; imps main deep/secret.md; want walk failed; want deep/secret.md imported
+}
+
+@test "main walk cache: a new main commit or main not found by name walks again; a failed walk stays failed (U2a3 i2 test-strategy G6, G9)" {
+    printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all one
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        w() { if isimported main "$1"; then echo "$1"; else echo -; fi; }
+        w docs/b.md; printf "Rules: @docs/b.md\n" > CLAUDE.md; git commit -qam two; resolve_main; w docs/b.md; g="$MAIN_SHA"
+        a="$(printf "x\n" | git hash-object -w --stdin)"; t="$(printf "100644 blob %s\tA.md\n100644 blob %s\tA.md\n" "$a" "$a" | git mktree)"
+        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m dup)"; resolve_main; w x.sh; w x.sh
+        git update-ref refs/heads/main "$g"; resolve_main; w x.sh; MAIN_BY_NAME=""; w y.sh' _ "$LIB"
+    [ "$status" -eq 0 ] && [ "$output" = "$(printf '%s\n' - docs/b.md x.sh x.sh - y.sh)" ] || { echo "$output $stderr"; return 1; }
 }

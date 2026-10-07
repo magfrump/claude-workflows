@@ -30,7 +30,8 @@
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
 # writes), and so does main_imports (it also reads the checkout's untracked
-# start files and imported files main lacks, which can only add imports, and
+# start files, imported files main lacks and whether a path it would read is a
+# symlink there, which can only add imports or fail it, and
 # needs resolve_main to have found main by name, or it fails);
 # imported_names reads the working tree at ROOT_REAL.
 
@@ -458,17 +459,18 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # what it does not model, as FENCE_AWK does: a doubled name, a name holding a
 # newline (in main's tree or the untracked list), symlink text that is empty,
 # absolute, leaves the repo, holds a newline or a NUL, or has a .. after a
-# symlink, a checkout file it
-# cannot read, and a checkout path it would read that is a symlink or lies
-# under one fail the walk, so isimported main answers imported for every path.
+# symlink, an import path main lacks under a directory main stores as a
+# symlink, a checkout file it cannot read, and a checkout path it would read
+# that is a symlink or lies under one fail the walk, so isimported main
+# answers imported for every path. A start file answers imported only when an
+# import reaches it (U2a4's floor names start files by its own rules).
 # Not covered (known issue A5): start files under a symlinked directory (on
 # main or in the checkout: neither listing enters one) or in a submodule or an
-# untracked nested repo (neither listing enters one either), an @ token's path
-# (link text is checked above) through a directory main stores as a symlink
-# when the checkout does not have that link, other names that one file has on a case-insensitive checkout, and
-# absolute imports. IMPORTED_MAIN reads "error" until a walk succeeds; the result is
-# cached for the commit and root in IMPORTED_MAIN_DONE. isimported asks either
-# walk.
+# untracked nested repo, other names that one file has on a case-insensitive
+# checkout, and absolute imports. IMPORTED_MAIN reads "error" until a walk
+# succeeds; the result is cached for the commit, MAIN_BY_NAME and root in
+# IMPORTED_MAIN_DONE, so a caller whose checkout changes between calls sets
+# IMPORTED_MAIN_DONE="" to walk again. isimported asks either walk.
 IMPORTED=$'\n'; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # UTF-8 spaces that end an import token, as a blank does: U+00A0, U+1680,
 # U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
@@ -535,7 +537,8 @@ imported_names() {
 # read the first copy, a checkout keeps the last), a name holds a newline, a
 # blob or checkout file cannot be read, the lower-cased start list comes back
 # short, symlink text it follows is empty, absolute, leaves the repo, holds a
-# newline or a NUL, or has a .. after a symlink, or a checkout path it
+# newline or a NUL, or has a .. after a symlink, an import path main lacks lies
+# under a directory main stores as a symlink, or a checkout path it
 # would read exists but is not a plain file (a symlink, or under one) or a
 # plain directory, so a caller refuses
 # rather than reading a partial list. The listings stay NUL-separated as git
@@ -546,8 +549,8 @@ main_imports() {
   local - rec f d p src i c lk out queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
   local -A ent=() seen=()
   need_root
-  [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
-  IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $ROOT_REAL"
+  [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
+  IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
   main_by_name || return 1
   mapfile -d '' recs < <(git ls-tree -r -z --full-tree "$MAIN_SHA" && printf rc=0 || printf rc=1)
   [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
@@ -609,7 +612,10 @@ main_imports() {
       IMPORTED_MAIN+="$(lower "$p")"$'\n'
       [[ -z "${seen[$p]+set}" ]] || continue
       seen[$p]=1
-      if [[ -n "${ent[$p]+set}" ]]; then queue+=("m:$p"); else queue+=("t:$p"); fi
+      if [[ -n "${ent[$p]+set}" ]]; then queue+=("m:$p"); continue; fi
+      # Main lacks p: under a directory link main stores (the checkout may lack it), fail.
+      for (( c = ${#p}; c > 0; c-- )); do [[ "${p:c:1}" != / || "${ent[${p:0:c}]:-}" != 120000 ]] || { IMPORTED_MAIN=error; return 1; }; done
+      queue+=("t:$p")
     done <<<"$out"
   done
 }
