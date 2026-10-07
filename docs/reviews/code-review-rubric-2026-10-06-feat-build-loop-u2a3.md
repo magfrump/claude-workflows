@@ -1,4 +1,4 @@
-Commit: cc1aa864
+Commit: 5c57d367
 # Code Review Rubric
 
 ## Iteration-4 gate decision: split (user, in session, 2026-10-06)
@@ -15,6 +15,33 @@ Disposition of loop 1's open rows in the split commit:
 - C7 (parent-check tests): fixed (test 15: `want ... imported` after each failure, and a one-letter link two levels up).
 - C8 (O(L^2) parent loop): fixed (steps over `/` with `${c%/*}`).
 - C9: Won't-Fix (override row). C10 (nul_list partial array): fixed (emptied on failure). C11 (test 9 comment): fixed. C12: taken as the split (override row).
+
+## Loop 2 (post-split, fresh counter)
+
+**Status: ❌ iteration 1 found ambers only (no red); fixed or override rows in the loop-2 iteration-1 fix commit; final confirming pass next.**
+
+### Iteration 1 of 3 (Commit 5c57d367, full branch, --loop-pass --full, k=1, full panel)
+
+Scope `--full`: a new loop on the split unit. Delivery mode: self-read. No behavioral red at fact-check, so the full panel ran (security, performance, api-consistency, architecture, test-strategy). Stage 2.5 skipped (loop pass); routed endorsements stay pending.
+
+Reports (all `Commit: 5c57d367`): `code-fact-check-report-build-loop-u2a3-L2.md` (33 claims: 20 Verified, 11 Mostly accurate, 1 Stale, 0 Incorrect, 1 Unverifiable); `security-reviewer-review-2026-10-06-L2-build-loop-u2a3.md` (1 Medium, Low confidence; 22 checkout states probed, none fail open against cc1aa864 or main alone); `performance-reviewer-review-2026-10-06-L2-build-loop-u2a3.md` (1 Low); `api-consistency-reviewer-review-2026-10-06-L2-build-loop-u2a3.md` (2 Minor, 3 Informational); `architecture-review-review-2026-10-06-L2-build-loop-u2a3.md` (3 Minor, 2 Informational; "a sound base for U2a3c"); `test-strategy-review-2026-10-06-L2-build-loop-u2a3.md` (G1-G6, checked patch). Split fix-drift: `lite-review-fix-drift-build-loop-u2a3-split.txt` (none).
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| E1 | A start file the checkout's index tracks but main lacks is neither walked nor failed (walk ok) | Medium (Low conf.) / Minor / Mostly accurate | security F1, architecture F3, test-strategy G3, fact-check Claims 7, 24. Convergence | ✅ Fixed | The walk also lists the checkout's tracked .md files; one main lacks is a start main lacks and fails the walk. Test: test 3 stages CLAUDE.local.md; mutant killed. |
+| E2 | Ignored instruction files fail the walk (35 in /workspace's own checkout); the gate needs a fresh worktree, undocumented | Minor / Informational | api 1, architecture F4, fact-check Claim 16 | ✅ Fixed (docs) | Header, A5, F11 and the U2b bullet say so; 2b22a082's D13 sentence is an Accepted-immutable row. |
+| E3 | Header :33 "anything at" (a plain directory is allowed); :604 wording; nul_list's "ended in NUL"; U2b "reads"; dev-cycle.bats inventory omits nul_list | Minor / Informational / Mostly accurate | api 2, 3, 5; fact-check | ✅ Fixed | |
+| E4 | `*) continue` silently skips an unmodelled record type | Minor | architecture F2 | ✅ Fixed | `160000) continue`, any other type fails the walk. |
+| E5 | Untracked-list newline check and the C4 here-string revert unpinned; test 7/9 names stale | Low / Stale | test-strategy G1, G2; fact-check | ✅ Fixed | test-strategy's patch (fixture `zz<LF>CLAUDE.md`; a 67 KB link under `ulimit -f 0` with XFSZ ignored), isolated from the new index check; both mutants killed. |
+| E6 | U2a3c constraints: one admission check before `seen`; one drain loop over two seedings | Minor / Informational | architecture F1, F5 | ✅ Fixed (plan's U2a3c bullet) | |
+| E7 | Parent loop O(L x depth) on deep tokens | Low | performance F1 | Defer (override row) | |
+| E8 | GIT_INDEX_FILE, fsmonitor, replace refs, sparse checkout, case-insensitive FS untested | Informational | security | Defer to U2b (override row) | |
+| E9 | `@.git` in a linked worktree now fails; C9 figure unlinked | Informational / Unverifiable | fact-check P3, Claim 33 | Won't-Fix (override row) | |
+| E10 | 2b22a082's headline and D13 sentence | Mostly accurate (commit message) | fact-check Claims 15, 16 | Accepted-immutable (override row) | |
+
+Re-flagged settled decisions: api's escalation (b) asks for a reason word: the `IMPORTED_MAIN_WHY` Defer row (trigger U2a4). No action — see override-log.
+
+Composition check: lib :561-571 (security F1, architecture F3, test-strategy G3, fact-check 7/24): one defect stated whole by each (E1); no composed row.
 
 ## Loop 1 (pre-split), closed at the cap
 
