@@ -360,6 +360,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md
         docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md
         docs/la.md docs/lb.md docs/ca.md docs/cb.md docs/hidden.md 'docs/my notes.md' docs/abs.md)
+    # shellcheck disable=SC2088  # '~/x.md' is a literal path name, not the home
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md '~/x.md'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
