@@ -817,3 +817,24 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want docs/CLAUDE-early.md imported; want docs/AGENTS-early.md imported; want docs/CLAUDE-late.md -; want docs/AGENTS-late.md -
 }
+
+@test "the checkout phase checks each directory an import passes through once per walk, not once per prefix candidate (U2a3b L2-C6, U2a3c)" {
+    # @a/b/c/d/e/f/g/h/x.md yields about 20 prefix candidates through eight plain
+    # directories main lacks; a realpath shim counts the checks. Unmemoized, each
+    # candidate re-checks every ancestor (102 calls; 74 at 3e58eb9c); memoized,
+    # each directory once, plus each candidate's own check (18).
+    mkdir -p a/b/c/d/e/f/g/h && printf 'x @y.md\n' > a/b/c/d/e/f/g/h/x.md && printf 'see @a/b/c/d/e/f/g/h/x.md\n' > CLAUDE.md && git add CLAUDE.md && git commit -qm base
+    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\necho x >> "%s/calls"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v realpath)" > "$BATS_TEST_TMPDIR/bin/realpath" && chmod +x "$BATS_TEST_TMPDIR/bin/realpath"
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main a/b/c/d/e/f/g/h/y.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    want walk ok; want a/b/c/d/e/f/g/h/y.md imported
+    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -le 30 ] || { echo "realpath calls: $n"; return 1; }
+}
+
+@test "the checkout phase walks an untracked start when main's tree is empty (U2a3c)" {
+    git update-ref refs/heads/main "$(git commit-tree "$(printf '' | git mktree)" -m empty)" && git checkout -qf main
+    mkdir -p docs && printf 'see @docs/x.md\n' > CLAUDE.md
+    imps main docs/x.md docs/other.md
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
+    want walk ok; want docs/x.md imported; want docs/other.md -
+}

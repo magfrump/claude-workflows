@@ -1107,7 +1107,7 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout; do
+                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done

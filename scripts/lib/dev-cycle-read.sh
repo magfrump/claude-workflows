@@ -687,21 +687,35 @@ tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } |
 # phase-2 seeds); fails when git exits nonzero or prints anything on stderr,
 # since an unreadable directory goes unlisted with only a warning.
 checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[ -z "$e" ]]; }
-# main_checkout ENT PATH, the one admission check for main_imports' checkout
-# phase; ENT names the associative array of main's modes by path: 0 for a
-# plain checkout file to walk, 2 when nothing there loads (absent, or a plain
-# directory), 1 to fail the walk: an ancestor main stores as a link or gitlink,
-# an unsearchable ancestor directory, ENT not an associative array, or anything
-# else. Callers test 1 as a refusal, never as a plain false. The plain-file and
-# plain-directory tests are blocker's (the digest's skip rule).
+# main_checkout ENT MEMO PATH, the one admission check for main_imports'
+# checkout phase; ENT names the associative array of main's modes by path, and
+# MEMO one of the ancestors already passed (a token's prefixes share them, so
+# each directory costs its realpath once per walk: U2a3b L2-C6). 0 for a plain
+# checkout file to walk, 2 when nothing there loads (absent, below an absent
+# ancestor or a plain file, or a plain directory), 1 to fail the walk: an
+# ancestor main stores as a link or gitlink, an ancestor that is anything else
+# but a plain searchable directory, ENT or MEMO not an associative array, or
+# anything else at PATH. Callers test 1 as a refusal, never as a plain false.
+# The plain tests are rawfile's and plaindir's, which blocker applies top down.
 main_checkout() {
-  local -n mc_e="$1"; local c="$2"
-  [[ "${mc_e@a}" == *A* ]] || return 1
-  while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ && ( ! -d "$c" || -x "$c" ) ]] || return 1; done
-  c="$2"; [[ -e "$c" || -L "$c" ]] || return 2
-  if inrepo_here "$c"; then [[ -r "$c" ]]; return; fi
-  [[ -d "$c" && ! -L "$c" && -z "$(blocker "$c" dir)" ]] || return 1
-  return 2
+  local - c="" r="$3" st=""; local -n mc_e="$1" mc_m="$2"
+  # ${x@a} on an empty array is an unbound-variable error under set -u (an
+  # empty main tree, the first call's MEMO); the body reads both through :- and +set.
+  set +u; [[ "${mc_e@a}" == *A* && "${mc_m@a}" == *A* ]] || return 1
+  while [[ "$r" == */* ]]; do
+    c="${c:+$c/}${r%%/*}"; r="${r#*/}"
+    [[ -z "${mc_m[$c]+set}" ]] || continue
+    [[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1
+    [[ -z "$st" ]] || continue  # below an absent ancestor or a file: only main's modes are left
+    if [[ ! -e "$c" && ! -L "$c" ]] || rawfile "$c"; then st=2
+    elif plaindir "$c" && [[ -x "$c" ]]; then mc_m[$c]=1
+    else return 1; fi
+  done
+  [[ -z "$st" ]] || return 2
+  c="$3"; [[ -e "$c" || -L "$c" ]] || return 2
+  if rawfile "$c"; then [[ -r "$c" ]]; return; fi
+  plaindir "$c" && return 2
+  return 1
 }
 imported_names() {
   local - f d p lp out used=0 seen=$'\n' queue=() recs=(); set -o pipefail
@@ -748,7 +762,7 @@ imported_names() {
 # path main lacks reads the checkout.
 main_imports() {
   local - rec f d p i c lk out used=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
-  local -A ent=() seen=() dir=()
+  local -A ent=() seen=() dir=() pok=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
@@ -769,7 +783,7 @@ main_imports() {
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
     if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent "$f" || c=$?
+      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
       [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
       seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
@@ -810,7 +824,7 @@ main_imports() {
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
       [[ -z "${seen[$p]+set}" ]] || continue
-      c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent "$p" || c=$?  # main lacks p: admitted before it is marked seen
+      c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p" || c=$?  # main lacks p: admitted before it is marked seen
       [[ $c -ne 1 ]] || { IMPORTED_MAIN=error; return 1; }
       seen[$p]=1
       if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); elif [[ $c -eq 0 ]]; then tq+=("$p"); fi
