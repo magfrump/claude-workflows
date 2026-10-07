@@ -11,13 +11,13 @@ load ../lib/build-loop-fixtures
 setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 
 # imps WALK PATH...: in the fixture repo with main resolved and ROOT_REAL set,
-# "walk: ok" or "walk: failed" (main_imports' return; tree always reads ok),
+# "walk: ok" or "walk: failed" (main_imports' or imported_names' return),
 # then "PATH: imported" or "PATH: -" from isimported WALK for each path.
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
         resolve_main || true; ROOT_REAL="$(pwd -P)"; w="$1"; shift
-        if [[ "$w" != main ]] || main_imports; then echo "walk: ok"; else echo "walk: failed"; fi
+        if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
 # want PATH WORD: the imps output holds exactly "PATH: WORD" (want walk ok|failed).
@@ -336,10 +336,15 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
 
 @test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped (U2a3)" {
     mkdir -p docs
-    # \x60: a backtick (a code span that closes right after the name).
-    printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n' > AGENTS.md
+    # \x60: a backtick (a code span that closes right after the name). A cut mark
+    # earlier in the name (my_notes) does not hide a later one; two NBSPs on a
+    # line both become blanks; an HTML block's comment splices a name (sec+ret).
+    { printf 'See @docs/a.md\xc2\xa0@docs/b.md, | @docs/c.md<br> |, **@docs/d.md**x, @docs/e(f).md, @~g.md and @docs/h.md\0@docs/i.md, @docs/j.md\x60x\x60 and @~/x.md\n'
+      printf 'More: @docs/my_notes.md\x60c\x60, | @docs/s_g.md<br> |, @docs/k_l.md**b**, @docs/p.md\xc2\xa0@docs/q.md\xc2\xa0@docs/r.md\n'
+      printf '<!-- note --> See @docs/sec<!-- x -->ret.md\n'; } > AGENTS.md
     commit_all parser
-    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md)
+    ps=(docs/a.md docs/b.md docs/c.md docs/d.md 'docs/e(f).md' '~g.md' docs/h.md docs/i.md docs/j.md
+        docs/my_notes.md docs/s_g.md docs/k_l.md docs/p.md docs/q.md docs/r.md docs/secret.md)
     for w in tree main; do
         imps "$w" "${ps[@]}" docs/other.md '~/x.md'
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
@@ -347,13 +352,21 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "both walks fail closed when tr fails or the start listing fails, and the parser returns 1 when it cannot read its input (U2a3)" {
+@test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3)" {
     mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && commit_all base
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     for w in tree main; do
-        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want docs/z.md imported
+        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps "$w" docs/z.md; [ "$status" -eq 0 ] || return 1; want walk failed; want docs/z.md imported
     done
-    want walk failed
+    # A grep that fails on the start listing (instruction_names, grep -z) only.
+    g="$(command -v grep)" && mkdir -p "$BATS_TEST_TMPDIR/gbin"
+    printf '#!/bin/sh\ncase "$1" in -z*) exit 2 ;; esac\nexec %s "$@"\n' "$g" > "$BATS_TEST_TMPDIR/gbin/grep" && chmod +x "$BATS_TEST_TMPDIR/gbin/grep"
+    PATH="$BATS_TEST_TMPDIR/gbin:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/z.md imported
+    imps tree docs/a.md docs/z.md; want walk ok; want docs/z.md -
+    # An untracked start under a directory whose name holds a newline: b/X.md would read as seen.
+    s=CLAUDE.md; mkdir -p "a"$'\n'"b" b && printf 'x\n' > "a"$'\n'"b/$s" && printf 'see @../docs/z.md\n' > "b/$s"
+    imps tree docs/z.md; want walk failed; want docs/z.md imported
+    rm -r "a"$'\n'"b" b
     # The tree walk itself, called twice: the second call returns its cached error.
     run --separate-stderr env PATH="$BATS_TEST_TMPDIR/bin:$PATH" LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         if import_targets "" < docs; then echo read; else echo failed; fi
@@ -362,6 +375,12 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     [ "$output" = "failed
 walk failed
 walk failed" ] || { echo "$output $stderr"; return 1; }
+    # A file past bash's here-string pipe size (64 KiB) with no room for a temp file
+    # (ulimit -f 0): the import at its end is still read.
+    { head -c 70000 /dev/zero | tr '\0' x; printf '\nsee @docs/big.md\n'; } > "$BATS_TEST_TMPDIR/big.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; ROOT_REAL="$(pwd -P)"
+        import_targets "" < "$2"' _ "$LIB" "$BATS_TEST_TMPDIR/big.txt"
+    [ "$status" -eq 0 ] && [ "$output" = docs/big.md ] || { echo "$status $output $stderr"; return 1; }
     # A corrupt index: git ls-files fails, so the tree walk has no start list.
     printf 'junk' > .git/index
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"

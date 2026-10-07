@@ -15,7 +15,8 @@
 # check_brief, isimported and the import walks exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
-# Call the exiting checks in the caller's shell, not inside $(...) or
+# imported_names and main_imports return 1 when the walk fails: call them under
+# if or ||. Call the exiting checks in the caller's shell, not inside $(...) or
 # `local x="$(...)"`, where an exit ends only the subshell. skipped records each
 # blocked input in SKIPPED and SKIP_AT. The caller runs resolve_main once per
 # process (a second call re-reads main); check_brief, check_branch and
@@ -449,7 +450,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # followed), and reads each plain file it reaches once (import_targets has the
 # token rules). It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read or
-# the parser fails (each call sits in an `if` or `||`, where set -e is off); an
+# the parser fails, or a start file's name holds a newline (each call sits in an `if` or `||`, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
 # IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
 # returns 1 again.
@@ -493,40 +494,63 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # follow any byte but a letter or digit (so user@host is not one); it ends at a
 # blank, a UNI_SPACES space included, or at a backslash, as the import token of
 # Claude Code does, and at #, where Claude Code cuts the name it captured (so a
-# token after a # is an over-read; a backslash-escaped space is known issue A5). That
-# regex keeps brackets, parentheses, backticks
-# and trailing punctuation in a name (@x.md. reads x.md.), while the Markdown
-# around a token (emphasis, a link or image, inline HTML, a code span) may end
-# it sooner, so each token yields its whole, its part before the first of
-# [ ] ( ) < ! * _ or a backtick, and each of those with trailing . , ; : ! ? * _ ~ ) ] or
-# backticks stripped, each path once. A NUL counts as a blank. Over-reading
-# only over-refuses. ~/ and absolute paths, and paths leaving the repo (.. or
-# ../, not a ..x name), are dropped. It reads ROOT_REAL without checking it
-# (the caller has run need_root) and returns 1 when sed or grep fails.
+# token after a # is an over-read; a name holding a backslash-escaped space is
+# not read, a gap deferred with known issue A5's). That regex keeps brackets,
+# parentheses, backticks and trailing punctuation in a name (@x.md. reads
+# x.md.), while the Markdown around a token (emphasis, a link or image, inline
+# HTML, a code span) may end it at any later one of those marks, so each token
+# yields its whole and its part before each of [ ] ( ) < ! * _ and backtick,
+# each also with trailing . , ; : ! ? * _ ~ ) ] or backticks stripped, each path
+# once. Claude Code deletes the HTML comments of a block that opens with <!--
+# and reads what is left, so text holding <!-- is also read once more with
+# every closed comment removed. A NUL counts as a blank. Over-reading only
+# over-refuses. ~/ and absolute paths, and paths leaving the repo (.. or ../,
+# not a ..x name), are dropped. It reads ROOT_REAL without checking it (the
+# caller has run need_root) and returns 1 when sed or grep fails. The rules
+# follow Claude Code 2.1.292's import regex and Markdown lexer (U2a2 security
+# review); re-check them when Claude Code changes either
+# (test/agents-gemini-sync.bats pins another copy of the regex).
 import_targets() {
-  local t c v w p u n toks b=$'\x60' s=(-e 's/\x0/ /g')
+  local t r v w p u n x y cs toks b=$'\x60' cut s=(-e 's/\x0/ /g')
+  cut="[][()<!*_$b]"  # the cut marks as a glob bracket (b: a backtick)
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail grep's "no match" would hide a sed failure.
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
-  toks="$(env LC_ALL=C grep -aoE "$IMPORT_RE" <<<"$toks")" || [[ $? -eq 1 ]] || return 1
+  if [[ "$toks" == *'<!--'* ]]; then
+    x="$toks"; y=""
+    while [[ "$x" == *'<!--'* ]]; do
+      y+="${x%%'<!--'*}"; x="${x#*'<!--'}"
+      if [[ "$x" == *'-->'* ]]; then x="${x#*'-->'}"; else x=""; fi
+    done
+    toks+=$'\n'"$y$x"
+  fi
+  # A pipe, not a here-string: bash writes a long here-string to a temp file,
+  # and a failed write would read as "no match".
+  toks="$(printf '%s\n' "$toks" | env LC_ALL=C grep -aoE "$IMPORT_RE")" || [[ $? -eq 1 ]] || return 1
   while IFS= read -r t; do
     [[ -n "$t" ]] || continue
-    t="${t#*@}"; n=$'\n'
-    for c in "$t" "${t%%[][()<!*_"$b"]*}"; do  # b: a backtick, written as \x60
-      v="$c"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
-      for w in "$c" "$v"; do
-        [[ -n "$w" && "$w" != \~/* && "$w" != /* ]] || continue
+    t="${t#*@}"; n=$'\n'; cs=$'\n'; r="$t"
+    # r walks back through the token's prefixes, one per cut mark.
+    while :; do
+      v="$r"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
+      for w in "$r" "$v"; do
+        [[ -n "$w" && "$w" != \~/* && "$w" != /* && "$cs" != *$'\n'"$w"$'\n'* ]] || continue
+        cs+="$w"$'\n'
         p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
         [[ "$p" != .. && "$p" != ../* && "$n" != *$'\n'"$p"$'\n'* ]] || continue
         n+="$p"$'\n'; printf '%s\n' "$p"
       done
+      [[ "$r" == *$cut* ]] || break
+      # shellcheck disable=SC2295  # $cut is the glob bracket, matched as a pattern
+      r="${r%$cut*}"
     done
-  done <<<"$toks"
+  done < <(printf '%s\n' "$toks")
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
 # file took seconds). It matches INSTRUCTION_FILE's names; the walk's own test
-# stays the authority. LC_ALL=C makes -i ASCII-only.
+# stays the authority. LC_ALL=C makes -i ASCII-only. It returns 0 when no name
+# matches and 1 when grep fails (grep's own no-match is 1).
 instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || [[ $? -eq 1 ]]; }
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
@@ -542,6 +566,8 @@ imported_names() {
   mapfile -d '' recs < <(set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names && printf rc=0 || printf rc=1)
   [[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] || return 1
   for f in "${recs[@]:0:${#recs[@]}-1}"; do
+    # seen is newline-separated: a name holding a newline could hide another start.
+    [[ "$f" != *$'\n'* ]] || return 1
     lp="$(lower "${f##*/}")" || return 1
     if [[ ! "$lp" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
@@ -556,7 +582,7 @@ imported_names() {
       [[ -n "$p" ]] || continue
       lp="$(lower "$p")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
       if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
-    done <<<"$out"
+    done < <(printf '%s\n' "$out")
   done
 }
 # The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
@@ -638,9 +664,9 @@ main_imports() {
   done
 }
 # Whether path $2 (any case) is imported, by the walk $1 names: tree or main.
-# A failed walk, or a walk name that is neither, answers imported (0), so
-# a caller testing it with `if` refuses; a caller that words a failed walk
-# runs main_imports first. Run it in the caller's shell: the walk exits
+# A failed walk, a failed lower of $2, or a walk name that is neither answers
+# imported (0), so a caller testing it with `if` refuses; a caller that words a
+# failed walk runs the walk first (imported_names or main_imports, under if). Run it in the caller's shell: the walk exits
 # through need_root and caches its result.
 isimported() {
   local lp

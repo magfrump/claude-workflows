@@ -178,6 +178,8 @@ check_fix() {
   elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
     || "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
+  elif ! imported_names; then
+    echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
   elif isimported tree "$lp"; then
     echo "skip $a: an instruction file imports it with @ (directly or through another import), so it is read as instructions; file it instead"
   else check_path "$a"; fi

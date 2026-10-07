@@ -1045,6 +1045,17 @@ EOF
 }
 
 
+@test "--check-fix words a failed import walk as one and refuses (U2a3b)" {
+    mkdir -p docs && printf 'Rules: see @docs/conventions.md\n' > GEMINI.md && echo x > docs/notes.md
+    git add -A && git commit -qm docs
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [ "$output" = "ok docs/notes.md" ] || { echo "$output $stderr"; return 1; }
+    # A corrupt index: git ls-files fails, so the walk has no start list.
+    printf 'junk' > .git/index
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md
+    [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
+}
+
 @test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email is not one" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'

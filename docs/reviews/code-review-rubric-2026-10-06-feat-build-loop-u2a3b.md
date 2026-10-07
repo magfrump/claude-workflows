@@ -1,8 +1,73 @@
-Commit: 1ccc8b65
+Commit: 7ddff454
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
-**Scope:** `--range 45ad17b0..1ccc8b65` (one commit; U2a3's commits are context only, not under review), `--loop-pass` | **Reviewed:** 2026-10-06 | **Status: 🔴 DOES NOT PASS** — 2 red item(s) found at 1ccc8b65, both fixed in the iteration-1 fix commit, pending re-review
+**Scope:** iteration 2: `--range 45ad17b0..7ddff454`, the whole unit (full-scope fallback: the critics had never seen it), `--loop-pass`; iteration 1: `45ad17b0..1ccc8b65`. U2a3's commits are context only, not under review | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 red; every iteration-2 amber is fixed in the iteration-2 fix commit or carries a revisit trigger (I2-A6), pending the final confirming pass (no `--loop-pass`, k=3, full panel)
+
+## Iteration 2 of 3 (Commit 7ddff454, range 45ad17b0..7ddff454, full unit scope, --loop-pass, k=1, full panel)
+
+Scope: full unit, not the fix-only delta `1ccc8b65..7ddff454`, because the critics were short-circuited in iteration 1 and had never seen the unit (pr-prep 3d's fallback to a full re-review). Delivery mode: self-read. The short-circuit was already used (marker above), so Stage 2 ran in full with amber collected. Stage 2.5 skipped (loop pass): routed endorsement claims in the security and performance reports stay *pending execution verification*. Prior iteration: R1 and R2 verified fixed by fact-check i2 (each failure component executed); security F1 shows R1 held only for a name with no earlier cut mark (I2-A1).
+
+Reports (all `Commit: 7ddff454`):
+- `code-fact-check-report-build-loop-u2a3b-i2.md` (k=1, opus): 25 claims, 22 Verified, 3 Mostly accurate, 0 Incorrect; escalation to test-strategy (two unpinned controls).
+- `security-reviewer-review-2026-10-06-build-loop-u2a3b.md`: 3 Medium, 1 Low (executed against Claude Code 2.1.292's extracted lexer).
+- `performance-reviewer-review-2026-10-06-build-loop-u2a3b.md`: 3 Informational (walk 478 ms to 643 ms median here).
+- `api-consistency-reviewer-review-2026-10-06-build-loop-u2a3b.md`: 1 Inconsistent, 3 Minor, 2 Informational.
+- `architecture-review-review-2026-10-06-build-loop-u2a3b.md`: 0 Structural, 1 Coupling, 2 Minor, 2 Informational.
+
+Tests at 7ddff454: 115/115. After the iteration-2 fix commit: 116/116 (five suites), shellcheck clean on the lib and dev-cycle.sh, 225 changed code lines against 45ad17b0. Mutants of each iteration-2 fix (first cut only, no comment pass, no newline check, instruction_names `|| true`, no sed g flag, here-string grep, no walk-failed reason) each fail a test.
+
+### 🟡 Must Address (iteration 2)
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| I2-A1 | `${t%%cut*}` cuts only at the first cut mark, so a name holding `_` (or ( ) [ ] ! * <) followed by a code span, `<br>`, a link or emphasis is missed by both walks (``@docs/my_notes.md`code` `` regressed from 45ad17b0); R1's fix was incomplete | Security | Medium | security F1 (executed both sides) | for-author | row 358 | ✅ Fixed: each token yields its prefix before every cut mark; candidates are deduped before realpath (also performance F1). Test: my_notes + code span, s_g + `<br>`, k_l + `**b**`. Divergence note: R1 re-fired at the same site (iteration 1's fix targeted the backtick symptom; the root was first-mark-only cutting). |
+| I2-A2 | In an HTML block opened by `<!--`, Claude Code deletes every comment and scans the rest, so `@docs/sec<!-- x -->ret.md` loads docs/secret.md, which no walk form yields (pre-existing) | Security | Medium | security F2 (executed) | for-author | — | ✅ Fixed: text holding `<!--` is read once more with every closed comment removed (an over-read elsewhere). Test: docs/secret.md. |
+| I2-A3 | The tree walk's newline-separated `seen` list: a start under `a<NL>b/` makes `b/X.md` read as seen, so its imports pass --check-fix (pre-existing; main fails closed) | Security | Medium | security F3 (executed) | for-author | — | ✅ Fixed: a start name holding a newline fails the walk. Test in the tr test. |
+| I2-A4 | A failed tree walk makes check_fix print "an instruction file imports it with @" for every path (a false reason; refusing is right); isimported's header tells only main's callers how to word a failed walk | API | Inconsistent | api-consistency 1, architecture 2 (both executed). Convergence | for-author | — | ✅ Fixed: check_fix runs imported_names under `if !` and prints "the instruction-file import walk failed"; isimported's header names both walks. Test in dev-cycle.bats. |
+| I2-A5 | Comments and names: "a backslash-escaped space is known issue A5" (A5's text does not say so); the tr test name claims both walks meet a failing listing | Docs / tests | Mostly accurate | fact-check i2 | for-author | row 350 | ✅ Fixed (comment says the gap is deferred with A5's; test renamed). |
+| I2-A6 | The parser copies Claude Code 2.1.292's grammar with no version or revisit trigger in the code, plan F11 or known issues; test/agents-gemini-sync.bats pins another copy | Architecture | Coupling | architecture 1 | for-author | — | ✅ Code half fixed (comment names the version, the source and the trigger, and points to the other copy); plan and known-issues half: Defer (override row; revisit trigger U5 or the first commit after rebase). |
+| I2-A7 | `instruction_names returns grep's error status` in 7ddff454's message: it returns 1 | Docs (commit message) | Mostly accurate | fact-check i2 | for-author | — | Accepted-immutable (override row); the function's comment states it. |
+
+### 🟢 Consider (iteration 2)
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| I2-C1 | Here-strings past ~64 KiB go to a temp file; a failed write reads as "no match" (import_targets' grep and loop, imported_names' loop) | security F4 (executed, ulimit -f 0) | Low | for-author | — | Fixed (pipe and process substitution; test with ulimit -f 0) |
+| I2-C2 | main_imports' header omits the new lower guard, the parser, the candidate tr and the cached error | api-consistency 2 | Minor | for-author | — | Deferred: routed to U2a3 (override row) |
+| I2-C3 | Three copies of the rc=0 listing check, two marker-drop styles, unstated record rules | architecture 3 | Minor | for-author | — | Deferred: routed to U2a3 (override row) |
+| I2-C4 | main_imports' own here-string (`done <<<"$out"`) has I2-C1's failure | security F4 (U2a3 code) | Low | for-author | — | Deferred: routed to U2a3 (override row) |
+| I2-C5 | IMPORTED starts as $'\n' (a successful empty walk), IMPORTED_MAIN as error | api-consistency 3 | Minor | for-author | — | Deferred (override row; the line abuts U2a3's edits) |
+| I2-C6 | inrepo_here failing skips a path in the tree walk, fails main's | architecture 4 | Informational | for-orchestrator-synthesis | row 347 | Won't-Fix (override row) |
+| I2-C7 | Two substitutions per walked file (+2 ms each) | performance F2 | Informational | for-author | rows 346, 355 | Won't-Fix (override row) |
+| I2-C8 | Whole file in a variable through a 20-expression sed (5 MB: 189 ms, 28.8 MB) | performance F3 | Informational | for-author | — | Won't-Fix (override row) |
+| I2-C9 | Every token paid 4 realpath forks, dedup only after the fork (200 plain tokens: 932 ms against 271 ms) | performance F1 | Informational | for-author | row 363 | Fixed with I2-A1 (dedup before the fork) |
+| I2-C10 | isimported's header omits the failed-lower case; instruction_names' inverted status unstated; the lib header does not say the walks return 1 and need if or \|\| | api-consistency 4, 5, 6 | Minor / Informational | for-author | — | Fixed (comments) |
+| I2-C11 | The imps helper always printed "walk: ok" for tree, so tests caught a failed tree walk only through a negative check | architecture 5 | Informational | for-author | — | Fixed (imps reports imported_names' return; the tr test asserts the tree walk fails) |
+| I2-C12 | instruction_names' error status and the sed `g` flag were unpinned (mutants survive) | fact-check i2 escalation (test-strategy) | Low | for-author | — | Fixed (grep -z shim case; p/q/r NBSP case) |
+
+### ↩️ Considered Overrides (iteration 2)
+
+Rows 346, 347, 350, 355, 358, 359, 363 (U2a, U2a2) and this loop's two iteration-1 rows matched. Inherited: 346/355/363 (batching; performance cited them, I2-C9 was filed as broader), 347 (the walks differ on purpose; I2-C6), 350 (escaped space; I2-A5). Departed: none; 358's fix was incomplete (I2-A1) and is completed.
+
+### ✅ Confirmed Good (iteration 2)
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| The start-list check returns 1 for each component failing (corrupt index, ls-files, untracked_md, grep exit 2, an unreadable start file, a failing tr), first call and cached | ✅ Confirmed | `[[ ${#recs[@]} -gt 0 && "${recs[-1]}" == rc=0 ]] \|\| return 1`; fact-check i2 focus 1 (executed) | Fact-check | for-orchestrator-synthesis |
+| No caller breaks on instruction_names' new status (only imported_names calls it) | ✅ Confirmed | `rg -n instruction_names` across scripts and tests; fact-check i2 focus 2 (enumerated) | Fact-check | for-orchestrator-synthesis |
+
+### ⏭️ Skipped Core Critics (iteration 2)
+
+All core critics ran; no skips applied.
+
+### 🧩 Composition check (iteration 2)
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | `scripts/dev-cycle.sh:181`, lib isimported | api-consistency 1, architecture 2 | distinct statements of one defect, each complete (I2-A4); no composed row |
+| 2 | lib import_targets :500-519 | security F1, F2, F4; performance F1-F3; fact-check i2 (g flag) | distinct defects (cut position, HTML comment splice, temp-file here-string, fork count, substitution cost, memory); no composed row |
+| 3 | lib imported_names start loop | security F3, architecture 3, 4; fact-check i2 focus 1 | distinct defects (newline seen list, duplicated marker check, inrepo_here asymmetry) |
 
 ## Iteration 1 of 3 (Commit 1ccc8b65, range 45ad17b0..1ccc8b65, --loop-pass, k=1)
 
