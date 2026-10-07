@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | you: judgment | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-124](#q-124--cc-isolated-sandbox-build-or-accept) | you: judgment | Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build the full sandbox (which mea... | 2026-10-07 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
@@ -306,25 +305,6 @@ Q-088's spike says weaker nested mode cannot sandbox Bash in cc-isolated. Build 
 - **Blocks:** Q-098 (global allowlist waits on a sandbox).
 - **Interim:** [3] in practice, unchanged since Q-081: nothing sandboxes Bash in cc-isolated.
 - **If the answer differs:** nothing is redone; [1]/[2] start a new RPI unit.
-
-### Q-122 · u2a3b-confirming-pass-not-clean
-**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** OPEN
-
-U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fixed or routed in c4b34dcf, which no review has seen: how should U2a3b land?
-
-- **Why it's yours:** Q-120 [1] said any new finding goes back to you, and the loop is past its cap.
-- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3b.md` (section "Loop 2, confirming pass under the user's waiver", on branch `feat/build-loop-u2a3b`) · commits 10f9b6e9 (reports) and c4b34dcf (fixes)
-- **Evidence:** 0 red. The new code is a single rule in `main_imports`: the top-level `.git` is skipped only as a directory, or as a gitfile with no `@` in it (security F1). That shape reaches the walk only when the host places the main checkout at a path containing ` @name `. `main_imports` has no consumer until U2a4, and U2a3c's loop reviews the same lines again. Everything else in c4b34dcf is two tests, comments and plan routing. --check-fix is unchanged: the tree walk is untouched, and its output matched main on 957 paths at 4828727d. 151/151 pass; the old skip fails the new test.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Merge now** (recommended) | Health check, merge message listing c4b34dcf as unreviewed, merge ask. U2a3c then rebases above it and its loop reviews the `.git` rule with the rest of `main_imports`. | One merge ask. | A defect in the 15-line `.git` rule lands on main, where nothing consumes it until U2a4, and U2a3c's review sees it first. |
-| **[2] Delta review, then merge** | A `--loop-pass` review of 4828727d..c4b34dcf (k=1 fact-check, security, test-strategy). Clean → `Loop closed at`, merge ask. Any finding → back to you. | One merge ask later; about 0.4M tokens. | Small cost for a change whose only consumer does not exist yet. |
-| **[3] Another full confirming pass** | k=3, the full panel and Stage 2.5 over main...c4b34dcf. | One merge ask later; about 2M tokens. | Full-unit coverage again for a 15-line change, after two full passes. |
-
-- **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
-- **Interim:** nothing runs; U2a3b waits at c4b34dcf.
-- **If the answer differs:** nothing is redone; [2] and [3] only add a review before the merge ask.
 
 ### Q-119 · u2a-split-at-cap
 **Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN

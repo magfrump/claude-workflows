@@ -112,6 +112,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-118](#q-118--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
 | [Q-120](#q-120--u2a3b-iteration-4-gate) | U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close cle... | 2026-10-07 |
 | [Q-121](#q-121--sessions-outside-workspace) | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
+| [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
 | [Q-123](#q-123--host-checkout-common-dir) | Is the host's `~/claude-workflows` the same repository as the container's `/workspace` (Q-121's host sessio... | 2026-10-07 |
 <!-- index:end -->
 
@@ -2094,5 +2095,25 @@ Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run 
 - **Read:** Q-081 in the archive · the auto-approve hook header · decision log 53.
 - **Constraint:** the image has no bwrap/socat and this sandbox has no egress, so the live half needs a Dockerfile branch (an enforcement file) and one host run. Keep that branch unmerged until the spike's answer is in.
 - **Interim:** nothing sandboxes Bash in cc-isolated (Q-081's interim [3]).
+
+
+### Q-122 · u2a3b-confirming-pass-not-clean
+**Needs:** you: judgment · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fixed or routed in c4b34dcf, which no review has seen: how should U2a3b land? **Answered 2026-10-07: [1], merge now.** Health check, then merge with c4b34dcf listed as unreviewed; U2a3c's loop reviews the `.git` rule with the rest of `main_imports`.
+
+- **Why it's yours:** Q-120 [1] said any new finding goes back to you, and the loop is past its cap.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a3b.md` (section "Loop 2, confirming pass under the user's waiver", on branch `feat/build-loop-u2a3b`) · commits 10f9b6e9 (reports) and c4b34dcf (fixes)
+- **Evidence:** 0 red. The new code is a single rule in `main_imports`: the top-level `.git` is skipped only as a directory, or as a gitfile with no `@` in it (security F1). That shape reaches the walk only when the host places the main checkout at a path containing ` @name `. `main_imports` has no consumer until U2a4, and U2a3c's loop reviews the same lines again. Everything else in c4b34dcf is two tests, comments and plan routing. --check-fix is unchanged: the tree walk is untouched, and its output matched main on 957 paths at 4828727d. 151/151 pass; the old skip fails the new test.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge now** (recommended) | Health check, merge message listing c4b34dcf as unreviewed, merge ask. U2a3c then rebases above it and its loop reviews the `.git` rule with the rest of `main_imports`. | One merge ask. | A defect in the 15-line `.git` rule lands on main, where nothing consumes it until U2a4, and U2a3c's review sees it first. |
+| **[2] Delta review, then merge** | A `--loop-pass` review of 4828727d..c4b34dcf (k=1 fact-check, security, test-strategy). Clean → `Loop closed at`, merge ask. Any finding → back to you. | One merge ask later; about 0.4M tokens. | Small cost for a change whose only consumer does not exist yet. |
+| **[3] Another full confirming pass** | k=3, the full panel and Stage 2.5 over main...c4b34dcf. | One merge ask later; about 2M tokens. | Full-unit coverage again for a 15-line change, after two full passes. |
+
+- **Blocks:** U2a3c (rebases above U2a3b), then U2a4 and U2b.
+- **Interim:** nothing runs; U2a3b waits at c4b34dcf.
+- **If the answer differs:** nothing is redone; [2] and [3] only add a review before the merge ask.
 
 
