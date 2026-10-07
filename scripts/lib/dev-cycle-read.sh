@@ -502,8 +502,9 @@ IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # and IMPORTED_MAIN_DONE before walking again.
 IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
-# characters it scans, the unit of its per-file bound of 50,000,000, about 5 s)
-# passes this in all, so N adversarial files cost one bound of charged parser
+# characters it scans and each resolved spelling it joins, which carries
+# ROOT_REAL, so a longer root buys less; the unit of its per-file bound of
+# 50,000,000, about 5 s for a many-component name) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
@@ -520,12 +521,12 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # the top level): one repo-relative path per line, case kept, each once. It
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
-# (what may still be printed; IMPORT_OUT_MAX when unset or empty, and 0 when
-# not a number, so the first name fails it) and IMPORT_WORK_LEFT (set by a
+# (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
+# reads a number otherwise: its leading digits, or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
 # walk: what its IMPORT_WORK_MAX has left, which then also caps the per-file
 # work bound, and a last line "/N" reports the work spent; import_work reads
-# it. Unset or empty: no trailer and only the per-file bound; not a number: 0,
-# so the first candidate fails it). Every import walk shares these
+# it. Unset or empty: no trailer and only the per-file bound; otherwise read
+# as IMPORT_LEFT is). Both walks pass numbers. Every import walk shares these
 # rules, so a change here changes --check-fix too.
 # The superset claim (the one statement of it; known issue A5 and plan F11
 # point here): these rules read every name Claude Code 2.1.292 can import (its
@@ -719,8 +720,10 @@ checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[
 # MEMO one of the ancestors already decided (a token's prefixes share them, so
 # each costs its realpath once per walk: U2a3b L2-C6): d for a plain
 # searchable directory, 2 for one absent or a plain file (nothing below it
-# loads), set only once its own and every higher ancestor's main mode passed.
+# loads), set only once its own and every higher ancestor's main mode passed
+# (PATH's own mode is checked first: main's link or gitlink at PATH answers 1).
 # A MEMO hit skips that mode check too, so a MEMO serves one walk and one ENT.
+# main_imports calls it only for paths main lacks.
 # 0 for a readable plain checkout file to walk, 2 when nothing there loads
 # (absent, below an absent ancestor or a plain file, or a plain directory), 1
 # to fail the walk: an ancestor main stores as a link or gitlink, an ancestor
@@ -733,7 +736,11 @@ main_checkout() {
   local - c="$3" i st=d anc=(); local -n mc_e="$1" mc_m="$2"
   # ${x@a} on an empty array is an unbound-variable error under set -u (an
   # empty main tree, the first call's MEMO); the body reads both through :- and +set.
-  set +u; [[ "${mc_e@a}" == *A* && "${mc_m@a}" == *A* ]] || return 1
+  # ${x[0]@a}, not ${x@a}, which costs time linear in the array's size (U2a3c
+  # final performance F1: quadratic once MEMO grows with the tokens).
+  set +u; [[ "${mc_e[0]@a}" == *A* && "${mc_m[0]@a}" == *A* ]] || return 1
+  # Main's link or gitlink at PATH refuses before a checkout directory there is memoized as d (U2a3c final fact-check 34).
+  [[ ! "${mc_e[$3]:-}" =~ ^1[26]0000$ ]] || return 1
   # Bottom up to the nearest decided ancestor, then top down from it (U2a3c
   # i2 performance F1: top down alone rescanned every absent ancestor).
   while [[ "$c" == */* ]]; do c="${c%/*}"; if [[ -n "${mc_m[$c]+set}" ]]; then st="${mc_m[$c]}"; break; fi; anc+=("$c"); done

@@ -822,13 +822,14 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # @a/b/c/d/e/f/g/h/x.md yields about 20 prefix candidates through eight plain
     # directories main lacks; a realpath shim counts the checks. Unmemoized, each
     # candidate re-checks every ancestor (102 calls; 74 at 3e58eb9c); memoized,
-    # each directory once, plus each candidate's own check (18).
+    # each directory once, plus each candidate's own check (10 at 2fbd929b; 18
+    # without its memo of a prefix candidate's own directory).
     mkdir -p a/b/c/d/e/f/g/h && printf 'x @y.md\n' > a/b/c/d/e/f/g/h/x.md && printf 'see @a/b/c/d/e/f/g/h/x.md\n' > CLAUDE.md && git add CLAUDE.md && git commit -qm base
     mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\necho x >> "%s/calls"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v realpath)" > "$BATS_TEST_TMPDIR/bin/realpath" && chmod +x "$BATS_TEST_TMPDIR/bin/realpath"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main a/b/c/d/e/f/g/h/y.md
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     want walk ok; want a/b/c/d/e/f/g/h/y.md imported
-    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -le 30 ] || { echo "realpath calls: $n"; return 1; }
+    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -le 14 ] || { echo "realpath calls: $n"; return 1; }
 }
 
 @test "the checkout phase walks an untracked start when main's tree is empty (U2a3c)" {
@@ -850,14 +851,14 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     [ "$output" = $'1 ok [a.md] 17\n2 ok [] 24\n3 failed\n4 failed\n5 failed 31\n6 [/0]' ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "main_checkout answers each checkout shape: 0 for a readable plain file, 2 where nothing loads, 1 for anything it does not model, and memoizes only plain searchable directories (U2a3c)" {
+@test "main_checkout answers each checkout shape: 0 for a readable plain file, 2 where nothing loads, 1 for anything it does not model, and memoizes plain searchable directories as d and absent or plain-file ancestors as 2 (U2a3c)" {
     mkdir -p d u sdt && printf 'r\n' > d/r.md && printf 'n\n' > d/n.md && printf 'f\n' > f.md && chmod 000 d/n.md && chmod 644 u
     ln -s d/r.md sf.md && ln -s missing.md dg.md && ln -s missing dgd && ln -s sdt sd && mkfifo ff.md
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
         declare -A E=([lnk]=120000 [gl]=160000 [nd2/m/l]=120000 [f.md]=100644) M=()
         for p in d/r.md nx.md nd/x.md f.md/x.md d u d/n.md sf.md dg.md sd ff.md u/x.md sd/nx.md dgd/x.md lnk/x.md gl/x.md nd2/m/l/x.md; do
             c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done
-        echo "memo $(for k in "${!M[@]}"; do [[ "${M[$k]}" != d ]] || echo "$k"; done | sort | tr "\n" " ")"; declare -a A=(); c=0; main_checkout A M d/r.md || c=$?; echo "ent-indexed $c"; c=0; main_checkout E A d/r.md || c=$?; echo "memo-indexed $c"' _ "$LIB"
+        echo "memo $(for k in "${!M[@]}"; do echo "$k=${M[$k]}"; done | sort | tr "\n" " ")"; declare -a A=(); c=0; main_checkout A M d/r.md || c=$?; echo "ent-indexed $c"; c=0; main_checkout E A d/r.md || c=$?; echo "memo-indexed $c"' _ "$LIB"
     chmod 755 u && chmod 644 d/n.md
     [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = "d/r.md 0
 nx.md 2
@@ -876,7 +877,7 @@ dgd/x.md 1
 lnk/x.md 1
 gl/x.md 1
 nd2/m/l/x.md 1
-memo d 
+memo d=d f.md=2 nd2/m=2 nd2=2 nd=2 
 ent-indexed 1
 memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
 }
@@ -904,7 +905,8 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         out="$(printf "see @a.md\n" | IMPORT_WORK_LEFT=1000000 import_targets "")"; w=0; import_work out w
         for m in $((4 * w - 1)) $((4 * w)); do IMPORT_WORK_MAX=$m; IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""
             imported_names && echo "$((m - 4 * w)) tree ok" || echo "$((m - 4 * w)) tree failed"; main_imports && echo "$((m - 4 * w)) main ok" || echo "$((m - 4 * w)) main failed"; done
-        IMPORT_WORK_MAX=1000; want="$(printf "%s\n" 1000 $((1000 - w)) $((1000 - 2 * w)) $((1000 - 3 * w)) | sort -n | tr "\n" " ")"
+        # The caps derive from w: each candidate is charged its resolved spelling, so w grows with the fixture root.
+        m=$((10 * w)); IMPORT_WORK_MAX=$m; want="$(printf "%s\n" $m $((m - w)) $((m - 2 * w)) $((m - 3 * w)) | sort -n | tr "\n" " ")"
         for k in tree main; do IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; rm -f "$C"
             if [[ $k == tree ]]; then imported_names; else main_imports; fi
             got="$(sort -n "$C" | tr "\n" " ")"; [[ "$got" == "$want" ]] && echo "$k caps ok" || echo "$k caps [$got] want [$want]"; done' _ "$LIB"
@@ -942,9 +944,48 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
 @test "main walk fails on link text main stores longer than 4096 bytes before reading it whole (U2a3c i2 performance F2)" {
     printf 'r\n' > r.md && commit_all base
     l="$(head -c 4097 /dev/zero | tr '\0' a | git hash-object -w --stdin)"; k="$(printf 'r.md' | git hash-object -w --stdin)"
+    # A git shim logs each `git cat-file blob` object name: the long link must fail with no read of its blob.
+    mkdir -p "$BATS_TEST_TMPDIR/bin" && printf '#!/bin/sh\n[ "$1 $2" != "cat-file blob" ] || echo "$3" >> "%s/blobs"\nexec %s "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v git)" > "$BATS_TEST_TMPDIR/bin/git" && chmod +x "$BATS_TEST_TMPDIR/bin/git"
     for b in "$l" "$k"; do
         t="$(printf '100644 blob %s\tr.md\n120000 blob %s\tCLAUDE.md\n' "$(git rev-parse main:r.md)" "$b" | git mktree)"
-        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m link)"; imps main r.md; echo "$output" | head -1
+        git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m link)"; rm -f "$BATS_TEST_TMPDIR/blobs"
+        PATH="$BATS_TEST_TMPDIR/bin:$PATH" imps main r.md; echo "$output" | head -1
+        if grep -q ':CLAUDE\.md$' "$BATS_TEST_TMPDIR/blobs" 2>/dev/null; then echo "link blob read"; else echo "link blob unread"; fi
     done > "$BATS_TEST_TMPDIR/got"
-    [ "$(cat "$BATS_TEST_TMPDIR/got")" = $'walk: failed\nwalk: ok' ] || { cat "$BATS_TEST_TMPDIR/got"; return 1; }
+    [ "$(cat "$BATS_TEST_TMPDIR/got")" = $'walk: failed\nlink blob unread\nwalk: ok\nlink blob read' ] || { cat "$BATS_TEST_TMPDIR/got"; return 1; }
+}
+
+@test "main_checkout's work over a deep token's prefix candidates grows linearly with depth, counted, not timed (U2a3c i2 performance F1)" {
+    # xtrace counts the commands main_checkout runs for every prefix of a token
+    # 100 and 400 levels deep, none in the checkout. Linear work gives a ratio of
+    # about 4 (4.0 at 3a35c8b9); 21b35ebf's top-down rescan of every absent
+    # ancestor gives about 16 (15.6). A count, so no host is fast enough to hide it.
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; t="$2"
+        for n in 100 400; do unset E M; declare -A E=() M=(); p=""
+            exec 3> "$t"; BASH_XTRACEFD=3; set -x
+            for ((i = 0; i < n; i++)); do p+="a/"; main_checkout E M "${p%/}" || true; main_checkout E M "${p}x.md" || true; done
+            set +x; exec 3>&-; echo "$(wc -l < "$t")"; done' _ "$LIB" "$BATS_TEST_TMPDIR/xtrace"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
+    a="$(sed -n 1p <<< "$output")"; b="$(sed -n 2p <<< "$output")"
+    [ "$a" -gt 0 ] && [ "$b" -le $((6 * a)) ] || { echo "commands at 100: $a, at 400: $b"; return 1; }
+}
+
+@test "main_checkout refuses a PATH main stores as a link or gitlink, so a plain checkout directory there never passes a path below it (U2a3c final)" {
+    # The checkout holds plain searchable directories where main stores a link and a gitlink.
+    mkdir -p l g && printf 'x\n' > l/f.md && printf 'x\n' > g/f.md
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        declare -A E=([l]=120000 [g]=160000) M=()
+        for p in l l/f.md g g/f.md; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'l 1\nl/f.md 1\ng 1\ng/f.md 1' ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "the checkout phase stays near linear in the number of import tokens main lacks (U2a3c final performance F1)" {
+    # 4,000 tokens @nI/a/b/c/d/x.md, none in the checkout: about 2.5 s here; at
+    # 3a35c8b9 main_checkout's ${MEMO@a} type check cost time linear in MEMO's
+    # size, which grows with the tokens (44.6 s), so this catches it on hosts up
+    # to about 2x faster than the one it was measured on.
+    { printf 'see'; for ((i = 0; i < 4000; i++)); do printf ' @n%d/a/b/c/d/x.md' "$i"; done; printf '\n'; } > CLAUDE.md && commit_all many
+    run --separate-stderr timeout 20 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main || true; ROOT_REAL="$(pwd -P)"
+        main_imports && echo ok || echo failed' _ "$LIB"
+    [ "$output" = ok ] || { echo "$status $output $stderr"; return 1; }
 }
