@@ -1,4 +1,4 @@
-Commit: 5c57d367
+Commit: 1898d21c
 # Code Review Rubric
 
 ## Iteration-4 gate decision: split (user, in session, 2026-10-06)
@@ -18,7 +18,25 @@ Disposition of loop 1's open rows in the split commit:
 
 ## Loop 2 (post-split, fresh counter)
 
-**Status: ❌ iteration 1 found ambers only (no red); fixed or override rows in the loop-2 iteration-1 fix commit; final confirming pass next.**
+**Status: ❌ iteration 2 (the intended final pass) found one behavioral red (F1) and masked tests (F2), fixed in the loop-2 iteration-2 fix commit; iteration 3 is the final confirming pass.**
+
+### Iteration 2 of 3 (Commit 1898d21c, full branch, intended final pass: no --loop-pass, k=3, full panel)
+
+Not clean, so it becomes a fix iteration and iteration 3 is the final confirming pass. Delivery mode: self-read. Fact-Check Gate: one behavioral Incorrect (F1 below); proceeded with critics (autonomous run). Stage 2.5 not run (the pass was not clean; routed endorsements stay pending for iteration 3).
+
+Reports (all `Commit: 1898d21c`): `code-fact-check-report-build-loop-u2a3-L2-final.md` (merged k=3 from `-L2f-r1/-r2/-r3`: 38, 37, 38 claims; 56 rows: 40 Verified, 8 Mostly accurate, 7 Incorrect, 1 Unverifiable; agreement 37/51, 72.5%); `security-reviewer-review-2026-10-06-L2f-build-loop-u2a3.md` (3 Medium); `performance-reviewer-review-2026-10-06-L2f-build-loop-u2a3.md` (2 Informational); `api-consistency-reviewer-review-2026-10-06-L2f-build-loop-u2a3.md` (2 Minor, 3 Informational); `architecture-review-review-2026-10-06-L2f-build-loop-u2a3.md` (1 Minor, 2 Informational); `test-strategy-review-2026-10-06-L2f-build-loop-u2a3.md` (G1-G7, zero-net patch). Iteration-1 verification: E1-E6 resolved; no re-fires.
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| F1 | A name main stores as both a tree and a symlink (tree first, crafted non-canonical tree) passed the doubled-name check: walk ok while a checkout writes the link and Claude Code reads its target's imports. Not a regression (same at cc1aa864) | Incorrect (behavioral) → 🔴 / Medium | fact-check 13b (r3, executed); security F1; architecture F1; api 1. Convergence | ✅ Fixed | Memoised ancestor pass after the record loop (performance's A'); test builds the tree with `hash-object --literally`; mutant killed. Override row supersedes the blob+tree row's scope. |
+| F2 | Three refusals masked since dfeeb85d's index listing (newline in a tree name, NUL in link text, empty link text): tests 5, 9, 12 left a stale CLAUDE.md in the index | Incorrect (tests) | fact-check 24, 26a, 28a; test-strategy G1-G3; architecture F3 | ✅ Fixed | `git rm -qf CLAUDE.md` after those rebuilds (test-strategy's patch); each mutant killed by its own test. |
+| F3 | `working-tree-encoding`/`filter` attributes, and `core.symlinks=false`, make checked-out bytes differ from the blob read | Medium | security F2, F3 (executed on git's side) | Defer (override rows) | A5, F11 and the U2b bullet (the gate refuses such a checkout). |
+| F4 | Wording: A5 "a link in link text"; return-1 comment (listing failures, record types, deleted index entries); nul_list "empty or ended in NUL"; U2b bullet; test 9's name; block comment "a doubled name" | Incorrect / Mostly accurate (comments, docs) | fact-check 9c and others; api 2-5 | ✅ Fixed | |
+| F5 | The gitlink arm and a failing `ls-files --cached` were unpinned | Low | test-strategy G4, G6 | ✅ Fixed | gitlink at a start name; a git shim failing `--cached`. The two listings are now one `--cached --others` call (architecture F2). |
+| F6 | dfeeb85d's message | Incorrect (commit message) | fact-check 31d, 31e | Accepted-immutable (override row) | |
+| F7 | Listing cost; untested macOS normalisation, LFS; `*)` unreachable; C3 row qualifier | Informational | performance F1, security, test-strategy G7, fact-check | Defer / Won't-Fix (override rows) | |
+
+Composition check: lib :553-560 (fact-check 13b, security F1, architecture F1, api 1): one defect stated whole by each; no composed row. Tests 5/9/12 (fact-check 24/26a/28a, test-strategy G1-G3, architecture F3): one defect; no composed row.
 
 ### Iteration 1 of 3 (Commit 5c57d367, full branch, --loop-pass --full, k=1, full panel)
 
