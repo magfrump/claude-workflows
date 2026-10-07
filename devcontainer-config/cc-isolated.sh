@@ -129,6 +129,7 @@ enforcement_files() {
   cfg="$(config_dir)"
   echo "devcontainer.json"
   echo "Dockerfile"
+  echo "seccomp-cc-sandbox.json"
   echo "init-firewall.sh"
   echo "cc-sni-proxy.py"
   echo "link-claude-home.sh"

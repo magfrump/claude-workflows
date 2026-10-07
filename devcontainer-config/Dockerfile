@@ -375,6 +375,18 @@ RUN case "$(dpkg --print-architecture)" in \
     chown -R root:root /opt/dotnet && \
     /opt/dotnet/dotnet --version
 
+# Claude Code's Bash sandbox dependencies (Q-125). On Linux the sandbox wraps
+# each Bash call in bubblewrap and bridges its network namespace to Claude
+# Code's filtering proxy with socat; without either, sandbox.failIfUnavailable in
+# Claude Code's managed settings (/etc/claude-code) refuses to start a session.
+# bwrap here is the plain, non-setuid Debian build: it gets its namespaces from
+# the user-namespace allowance in seccomp-cc-sandbox.json, not from privilege.
+# A layer of its own, below the big toolchains, so adding it rebuilt nothing above.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bubblewrap \
+    socat \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Set up non-root user
 USER node
 
