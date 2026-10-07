@@ -367,7 +367,8 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     done
     # A grep that fails on the start listing (instruction_names, grep -z) only.
     g="$(command -v grep)" && mkdir -p "$BATS_TEST_TMPDIR/gbin"
-    printf '#!/bin/sh\ncase "$1" in -z*) exit 2 ;; esac\nexec %s "$@"\n' "$g" > "$BATS_TEST_TMPDIR/gbin/grep" && chmod +x "$BATS_TEST_TMPDIR/gbin/grep"
+    # The shim drains its input first, so the writer never sees a closed pipe (a race that hid a mutant).
+    printf '#!/bin/sh\ncase "$1" in -z*) cat >/dev/null; exit 2 ;; esac\nexec %s "$@"\n' "$g" > "$BATS_TEST_TMPDIR/gbin/grep" && chmod +x "$BATS_TEST_TMPDIR/gbin/grep"
     PATH="$BATS_TEST_TMPDIR/gbin:$PATH" imps tree docs/a.md docs/z.md; want walk failed; want docs/z.md imported
     imps tree docs/a.md docs/z.md; want walk ok; want docs/z.md -
     # An untracked start under a directory whose name holds a newline: b/X.md would read as seen.

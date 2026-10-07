@@ -1,8 +1,76 @@
-Commit: 7ddff454
+Commit: e48cf0f7
 Loop-pass short-circuit: used at 1ccc8b65
 # Code Review Rubric
 
-**Scope:** iteration 2: `--range 45ad17b0..7ddff454`, the whole unit (full-scope fallback: the critics had never seen it), `--loop-pass`; iteration 1: `45ad17b0..1ccc8b65`. U2a3's commits are context only, not under review | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 red; every iteration-2 amber is fixed in the iteration-2 fix commit or carries a revisit trigger (I2-A6), pending the final confirming pass (no `--loop-pass`, k=3, full panel)
+**Scope:** iteration 3 (final confirming pass): `main...HEAD` at e48cf0f7 after the rebase onto main f6fdda68, no `--loop-pass`, k=3, full panel plus test-strategy, Stage 2.5; iteration 2: `45ad17b0..7ddff454` (full unit); iteration 1: `45ad17b0..1ccc8b65` | **Reviewed:** 2026-10-06 | **Status: 🟡 CONDITIONAL PASS** — 0 red; 2 Medium security ambers and 8 Mostly-accurate wording ambers found at e48cf0f7, all fixed in 909de414 and its follow-up, not yet confirmed by a review pass (iteration-4 gate below)
+
+## Iteration-4 gate (cap reached)
+
+Iteration 3 was the last pass the cap allows, and it did not close clean: it found ambers (security F1 and F2, both fail-open; F1 regresses from main), so `Loop closed at` is not written. Its fixes are committed (909de414 plus the shim fix), tests are 120/120, and fix-drift found nothing, but no review pass has seen them. Decision: **pending** (to be recorded by the coordinator or user as `escalate`, `split` or `abandon`). Recommended: **escalate**, authorizing one more confirming pass (no `--loop-pass`, k=3, full panel, Stage 2.5) over `main...HEAD`: the fixes are local to import_targets and the tests, the unit is 286 code lines against main (inside the cap), and each fix follows a critic's tested candidate.
+
+## Iteration 3 of 3: final confirming pass (Commit e48cf0f7, main...HEAD, k=3, full panel, Stage 2.5)
+
+Rebase: onto main f6fdda68 (U2a3 merged at 97aa2d35 after its split). The lib merged without conflicts (fact-check replayed it); tests and the override log were resolved by keeping both sides. Post-rebase commit e48cf0f7 adopted nul_list (tree_starts), set IMPORTED=error, wrote the grammar trigger into A5 and F11, and closed the three rows routed to U2a3 (fixed there in c42f017f), I2-C5 and I2-A6's second half. The rebase changed little code, so no extra loop-pass iteration was run.
+
+Delivery mode: self-read. Reports (all `Commit: e48cf0f7`):
+- `code-fact-check-report-build-loop-u2a3b-final.md`: merged k=3 (replicates `-final-r1/-r2/-r3`: 36, 40, 45 claims) into 51 claims, 43 Verified, 8 Mostly accurate, 0 Incorrect; agreement 46/51 (90.2%); plus Stage 2.5 (`code-fact-check-submitted-claims-build-loop-u2a3b.md`, Claims 52-66b: 15 Verified, 1 Mostly accurate, all executed).
+- `security-reviewer-review-2026-10-06-final-build-loop-u2a3b.md`: 2 Medium, 1 Low (context). Fuzz: about 15,000 documents against Claude Code 2.1.292's extracted lexer; main misses about half of its names, e48cf0f7 about 1%.
+- `performance-reviewer-review-2026-10-06-final-build-loop-u2a3b.md`: 2 Low.
+- `api-consistency-reviewer-review-2026-10-06-final-build-loop-u2a3b.md`: 2 Minor, 2 Informational.
+- `architecture-review-review-2026-10-06-final-build-loop-u2a3b.md`: 0 Structural, 0 Coupling, 1 Minor, 2 Informational.
+- `test-strategy-review-2026-10-06-final-build-loop-u2a3b.md`: G1-G7 (28 mutants, 14 survived, 5 equivalent), checked patch.
+
+Tests at e48cf0f7: 119/119. After the iteration-3 fixes: 120/120 (five suites), shellcheck clean, 286 changed code lines against main. Fix-drift (on a code-only commit object, since the reports exceed the script's diff limit): no findings.
+
+### 🟡 Must Address (iteration 3)
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| F3-A1 | One grep match runs through a link, code span, `<br>`, emphasis, autolink or image into a second @, so the second import is never read (`[@docs/a.md](u)/[@docs/b.md](v)`, `` @a`x`@b ``); the link and code-span shapes regress from main, in both walks (executed end to end) | Security | Medium | security F1; Stage 2.5 Claim 52 (35 F1-class misses in the corpus) | for-author | — | Fixed in 909de414, pending confirmation: each token also yields every suffix after an @ that follows a non-alphanumeric byte; tests la/lb, ca/cb; the no-suffix mutant fails | Divergence note: the third finding at import_targets' token rules (R1, I2-A1, now F3-A1); each widened the read set, and this one closes the swallowed-@ class the fuzzer found |
+| F3-A2 | The comment splice paired comments across the whole file, so a stray earlier `<!--` (in a fence, a code span, text) shifted it and the spliced name followed an alphanumeric byte; an unclosed comment's tail was dropped | Security | Medium | security F2 (executed) | for-author | — | Fixed in 909de414, pending confirmation: per-line splice in one awk pass, unclosed comment kept; test docs/hidden.md; the no-copy mutant fails | |
+| F3-A3 | Wording: the splice sentence, "test/agents-gemini-sync.bats pins another copy of the regex" (code and A5), the U2a2-only citation, "each call sits in an if or \|\|", two "(U2a3)" test tags, the cached-error test that cannot tell a cache from a recompute | Docs / tests | Mostly accurate | fact-check Claims 2, 3, 8, 19, 25, 26, 39, 41 | for-author | — | Fixed (comments, A5, tags; the test-strategy patch runs the second call with the real tr) | |
+| F3-A4 | The grep shim exits without reading its input, so instruction_names' status mutant (M26) survives about 1 run in 3 under load | Tests | Mostly accurate | Stage 2.5 Claim 66b (executed, 200 runs) | for-author | — | Fixed: the shim drains its input; the mutant fails 5 of 5 | |
+
+### 🟢 Consider (iteration 3)
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| F3-C1 | The HTML pass's `${x#*'<!--'}` is quadratic: dev-cycle SKILL.md 2 ms to 105 ms per walk; 200 KB 10.3 s | performance F1 | Low | for-author | override-log lines 412-413 | Fixed (one awk pass: 200 KB with an unclosed comment 28 ms) |
+| F3-C2 | Per-token dedup strings make work cubic in cut marks (1,000 marks 29.8 s) | performance F2 | Low | for-author | row 363 | Fixed (associative arrays, x-prefixed keys: 2.35 s); residue Won't-Fix (override row) |
+| F3-C3 | The walk's read/parser-failure arm, both lower guards, isimported's lower, the cached error and tree_starts' && are untested (mutants M01, M08-M13, M19 survive; M08/M09 fail open) | test-strategy G1-G6 (High/Medium/Low); fact-check escalations E1, E2; supersedes the C1 Defer row's "fails earlier" reason | High / Medium / Low | for-author | C1 row (iteration 1) | Fixed (checked patch; Stage 2.5 Claims 64-65) |
+| F3-C4 | Root change within one process keeps a stale list (M03) | test-strategy G7 | Low | for-author | — | Won't-Fix (override row) |
+| F3-C5 | dev-cycle.sh's --check-fix paragraph and the dev-cycle skill omit the walk-failed refusal; tree_starts missing from dev-cycle.bats' inventory; the header's pipefail list | api-consistency 1, 2, 3 | Minor / Informational | for-author | — | Fixed |
+| F3-C6 | Raw reads of IMPORTED see "not imported" | api-consistency 4 | Informational | for-orchestrator-synthesis | — | Won't-Fix (override row) |
+| F3-C7 | The grammar trigger is not where the digest reads; U2a4's predicate should own walk-then-isimported | architecture 1, 3 | Minor / Informational | for-author | I2-A6 rows | Deferred (override rows: U5, U2a4) |
+| F3-C8 | main_imports' batch lower checks only the record count (a truncated last name drops a start) | security N1 (U2a3 code, context) | Low | for-author | — | Deferred: routed to U2a3c (override row) |
+| F3-C9 | With a failing tr, --check-fix exits 1 with no output before the walk-failed wording (check_fix's own lower) | fact-check escalation E3; security disposition | Low | for-orchestrator-synthesis | — | Won't-Fix (override row; fails closed) |
+| F3-C10 | A mutant dropping an unclosed comment's tail from the splice copy survives | iteration-3 fix mutants | Low | for-author | — | Won't-Fix (override row; only names holding <!--, which pathform refuses) |
+
+### ↩️ Considered Overrides (iteration 3)
+
+Rows 346, 347, 350, 355, 363 (U2a, U2a2), the U2a3b iteration-2 rows on per-file substitution and sed cost (override-log lines 412-413 at e48cf0f7) and this unit's rows dated 2026-10-06 matched. Inherited without re-flagging: 350 (the escaped space is the only fuzz miss left after the fixes), 346/355/363 and lines 412-413 (performance cited them and filed only the new quadratic and cubic costs), 347. Departed: the iteration-1 C1 Defer row's reason ("a failing tr fails earlier") is superseded by test-strategy's marker-tr shim (F3-C3); the routed-to-U2a3 rows are closed by main's c42f017f.
+
+### ✅ Confirmed Good (iteration 3)
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| imported_names returns 1 with IMPORTED=error, cached, for a failing ls-files, untracked_md, grep -z, tr, sed, parser grep, unreadable file and newline start name | ✅ Confirmed | `nul_list recs tree_starts \|\| return 1`; merged fact-check (all three replicates executed); Stage 2.5 Claim 55 (executed) | Fact-check | for-orchestrator-synthesis |
+| check_fix prints the walk-failed reason, before isimported, for every failure kind except a failing tr (F3-C9) | ✅ Confirmed | `elif ! imported_names; then`; Stage 2.5 Claim 60 (executed) | Fact-check | for-orchestrator-synthesis |
+| At e48cf0f7 the parser's misses against Claude Code 2.1.292 in the 9-seed corpus are F1-class (35) and escaped-space (9) only; with the F1/F2 candidates only escaped-space remains | ✅ Confirmed (at e48cf0f7 and the critic's candidate, not the committed awk variant) | Stage 2.5 Claims 52, 53 (executed) | Fact-check | for-orchestrator-synthesis |
+
+Pending execution verification: none routed; 909de414's awk splice has not been run through the security fuzz corpus (only the handcrafted cases and the suites).
+
+### ⏭️ Skipped Core Critics (iteration 3)
+
+All core critics ran; no skips applied.
+
+### 🧩 Composition check (iteration 3)
+
+| Cluster | File / lines | Fragments | Disposition |
+|---|---|---|---|
+| 1 | lib import_targets :519-526 | security F2, performance F1, fact-check Claim 19 | distinct defects (misaligned splice; quadratic cost; wording), one rewrite fixes all three |
+| 2 | lib import_targets :529-547 | security F1, performance F2, fact-check Claims 10, 54 | distinct defects (swallowed @; cubic dedup) |
+| 3 | lib imported_names :566-584, build-loop-check :357-378 | test-strategy G1, G2, G5, G6, fact-check Claims 8, 41, Stage 2.5 66b | distinct test gaps, each complete |
 
 ## Iteration 2 of 3 (Commit 7ddff454, range 45ad17b0..7ddff454, full unit scope, --loop-pass, k=1, full panel)
 
