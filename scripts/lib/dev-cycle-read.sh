@@ -33,10 +33,10 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes), and so does main_imports (it reads the checkout only to fail, until
-# U2a3c, so the gate needs a fresh worktree; the block above IMPORTED= lists
-# each case; it needs resolve_main to have found main by name);
-# imported_names reads the working tree at ROOT_REAL.
+# writes). main_imports reads main's commit first and then the working tree
+# (the checkout's start files and imported files main lacks, which can only
+# add imports or fail it; it needs resolve_main to have found main by name);
+# imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -461,27 +461,32 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # at every instruction file stored there (and every .md under a .claude/rules/
 # directory at any depth, which Claude Code also loads) and follows an import
 # into the file main stores at that path, whatever its name; a symlink there is
-# followed to the path its text names. An imported path main lacks is recorded
-# and not read. It refuses what it does not model, as FENCE_AWK does: a name
+# followed to the path its text names. Once main's walk is done, a second phase
+# walks the checkout's start files main lacks (untracked, ignored or only in
+# the index) and the imported files main lacks, when each is a plain file
+# there, and only appends. It refuses what it does not model, as FENCE_AWK does: a name
 # listed twice or as both a file and a directory, a name holding a newline,
 # symlink text that is empty, absolute, leaves
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
-# in the checkout), an imported path main lacks that lies under a directory
-# main stores as a symlink or gitlink, or that the checkout holds as anything
-# but a plain directory (the root itself included), and a start file main
-# lacks (untracked, ignored, or in the checkout's index) fail the walk, so
-# isimported main answers imported for every path. Checkout files are not walked until U2a3c, so the walk fails
-# closed on them. A start file answers imported only when an import reaches it
+# in the checkout), and a checkout path it would walk (a start or an import
+# main lacks) that lies under a directory main stores as a symlink or gitlink
+# or under an unsearchable directory, or that the checkout holds as anything
+# but a readable plain file, a plain directory or nothing (the root included),
+# or a checkout listing git prints any stderr for, fail the walk, so isimported main
+# answers imported for every path. A start file answers imported only when an import reaches it
 # (U2a4's floor names start files by its own rules). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# checkout conversions (A5), and command files (.claude/commands/*.md, whose
+# checkout conversions (A5), command files (.claude/commands/*.md, whose
 # @ names Claude Code loads when the command runs: U2a3b L2-confirm security
-# F2; U2a4's shared start predicate).
+# F2; U2a4's shared start predicate), and a start that is not a regular file or
+# symlink (git does not list a FIFO). The walk reads the checkout as one
+# snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
-# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
-# checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again,
-# and a cached error returns 1 again. A caller that changes HOME clears both
+# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
+# whose files it read, so a caller whose checkout may have changed (a file
+# added or edited) sets IMPORTED_MAIN_DONE="" to walk again, and a cached
+# error returns 1 again. A caller that changes HOME clears both
 # IMPORTED_DONE and IMPORTED_MAIN_DONE (both caches are keyed without it).
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
@@ -658,12 +663,34 @@ import_targets() {
 instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || [[ $? -eq 1 ]]; }
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
-untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
+untracked_md() { md_ls --others; }
+# md_ls ARGS...: git ls-files -z ARGS over the checkout's .md files, any case (the one pathspec).
+md_ls() { GIT_LITERAL_PATHSPECS=0 git ls-files -z "$@" -- ':(glob,icase)**/*.md'; }
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
 # The tree walk's start candidates, NUL-separated: tracked and untracked names
 # through instruction_names, failing when any of the three commands fails.
 tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names; }
+# The checkout's .md files, tracked, untracked and ignored, NUL-separated (main_imports'
+# phase-2 seeds); fails when git exits nonzero or prints anything on stderr,
+# since an unreadable directory goes unlisted with only a warning.
+checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[ -z "$e" ]]; }
+# main_checkout ENT PATH, the one admission check for main_imports' checkout
+# phase; ENT names the associative array of main's modes by path: 0 for a
+# plain checkout file to walk, 2 when nothing there loads (absent, or a plain
+# directory), 1 to fail the walk: an ancestor main stores as a link or gitlink,
+# an unsearchable ancestor directory, ENT not an associative array, or anything
+# else. Callers test 1 as a refusal, never as a plain false. The plain-file and
+# plain-directory tests are blocker's (the digest's skip rule).
+main_checkout() {
+  local -n mc_e="$1"; local c="$2"
+  [[ "${mc_e@a}" == *A* ]] || return 1
+  while [[ "$c" == */* ]]; do c="${c%/*}"; [[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ && ( ! -d "$c" || -x "$c" ) ]] || return 1; done
+  c="$2"; [[ -e "$c" || -L "$c" ]] || return 2
+  if inrepo_here "$c"; then [[ -r "$c" ]]; return; fi
+  [[ -d "$c" && ! -L "$c" && -z "$(blocker "$c" dir)" ]] || return 1
+  return 2
+}
 imported_names() {
   local - f d p lp out used=0 seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
@@ -699,20 +726,19 @@ imported_names() {
 # The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
 # refuses rather than reading a partial list, when main is not found by name,
 # the commit's tree or the checkout's .md list (tracked and untracked) cannot
-# be listed whole (nul_list), a tree record does not parse or has a type but
+# be listed whole (nul_list, checkout_md), a tree record does not parse or has a type but
 # blob, link or gitlink, a name is listed twice (git's lookups read the first
 # copy), is also a directory of another listed name, or holds a newline, the
-# lower-cased start list comes back short, a start file main lacks is listed
-# (even one deleted from the checkout), a blob cannot be read, symlink text it
+# lower-cased start list comes back short, main_checkout refuses a start or an
+# import main lacks, a blob or checkout file cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, import_home, the parser (its comment lists why) or a
-# lower fails, the IMPORT_OUT_MAX budget is spent, or an imported path main
-# lacks lies under a directory main stores as a symlink or gitlink or exists in
-# the checkout as anything but a plain directory below the root (the
-# top-level .git is skipped); need_root exits instead.
+# lower fails, or the IMPORT_OUT_MAX budget is spent; need_root exits instead.
+# Phase 2 begins when queue empties: tq's checkout files then join it, and a
+# path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
-  local -A ent=() seen=() dir=() pok=()
+  local - rec f d p i c lk out used=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local -A ent=() seen=() dir=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
@@ -726,7 +752,7 @@ main_imports() {
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
   done  # then a name that is also a directory of another listed name (a crafted tree) fails:
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
-  nul_list recs env GIT_LITERAL_PATHSPECS=0 git ls-files -z --cached --others -- ':(glob,icase)**/*.md' || return 1
+  nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   # One tr lower-cases every candidate (lower would fork per path).
   [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
@@ -734,16 +760,19 @@ main_imports() {
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
     if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      [[ "${cand[i]:0:1}" == m ]] || return 1  # main lacks it: not walked until U2a3c
-      seen[${cand[i]:2}]=1; queue+=("${cand[i]:2}")
+      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent "$f" || c=$?
+      [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
+      seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
   done
   import_home || return 1
   IMPORTED_MAIN=$'\n'
-  while [[ ${#queue[@]} -gt 0 ]]; do
+  while [[ ${#queue[@]} -gt 0 || ${#tq[@]} -gt 0 ]]; do
+    [[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }  # phase 2: main's walk is done
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    case "${ent[$f]}" in
+    case "${ent[$f]-checkout}" in
+      checkout) out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d" < "$f")" || { IMPORTED_MAIN=error; return 1; } ;;
       100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
         # $(...) drops NULs, so they are counted first; the x keeps trailing
@@ -772,27 +801,10 @@ main_imports() {
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
       [[ -z "${seen[$p]+set}" ]] || continue
+      c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent "$p" || c=$?  # main lacks p: admitted before it is marked seen
+      [[ $c -ne 1 ]] || { IMPORTED_MAIN=error; return 1; }
       seen[$p]=1
-      if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
-      # The top-level .git (a prefix candidate from @.gitignore) names no file
-      # main has, and is skipped when it is a plain directory or a linked
-      # worktree's gitfile holding no @. Claude Code reads a gitfile like any
-      # file, so one holding an @ (its gitdir path names the main checkout, which
-      # the host places) fails the walk (U2a3b L2-confirm security F1). A nested
-      # .git is not skipped: a nested repository's .git directory passes the
-      # plain-directory check below, and a .git file fails below, as files under
-      # .git do when the checkout holds them (U2a3c walks them).
-      if [[ "$p" == .git ]]; then
-        [[ -d .git && ! -L .git ]] && continue
-        if [[ -f .git && ! -L .git ]]; then
-          i="$(tr -cd @ < .git | wc -c)" && [[ "$i" -eq 0 ]] || { IMPORTED_MAIN=error; return 1; }
-          continue
-        fi
-      fi
-      # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
-      # pok holds parents already checked: a token's prefixes share them, so the loop stops at the first.
-      c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${pok[$c]+set}" ]] || break; pok[$c]=1; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
-      [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }
+      if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); elif [[ $c -eq 0 ]]; then tq+=("$p"); fi
     done < <(printf '%s\n' "$out")
   done
 }
