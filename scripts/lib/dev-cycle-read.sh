@@ -467,7 +467,9 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # Not covered (known issue A5): start files under a symlinked directory (on
 # main or in the checkout: neither listing enters one) or in a submodule or an
 # untracked nested repo, other names that one file has on a case-insensitive
-# checkout, and absolute imports. IMPORTED_MAIN reads "error" until a walk
+# checkout, absolute imports, and three shapes A5 lists as untraced against
+# Claude Code (command references, a link's own directory, a token's ..).
+# IMPORTED_MAIN reads "error" until a walk
 # succeeds; the result is cached for the commit, MAIN_BY_NAME and root in
 # IMPORTED_MAIN_DONE, so a caller whose checkout changes between calls sets
 # IMPORTED_MAIN_DONE="" to walk again. isimported asks either walk.
