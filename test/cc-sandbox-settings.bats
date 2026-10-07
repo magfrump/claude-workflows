@@ -83,7 +83,22 @@ entries_for() {
   [ "$(jq '.allowUnsandboxedCommands' <<< "$t")" = false ]
   # Decided explicitly, not left to the default (true).
   [ "$(jq '.autoAllowBashIfSandboxed' <<< "$t")" = false ]
-  [ "$(jq 'has("enableWeakerNestedSandbox")' <<< "$t")" = false ]
+  # Stated explicitly: managed settings only win on keys they set, so an omitted
+  # switch could be flipped weaker by a user or project settings file.
+  [ "$(jq '.enableWeakerNestedSandbox' <<< "$t")" = false ]
+  [ "$(jq '.filesystem.disabled' <<< "$t")" = false ]
+  [ "$(jq '.network.allowAllUnixSockets' <<< "$t")" = false ]
+  # Things that run unsandboxed (hooks, git, the next session) must not be
+  # sandbox-writable: the PATH-first elan bin dir, the web-taint state, and the
+  # project files that wire hooks or execute on git.
+  for p in '~/.elan/bin' /tmp/cc-web-taint /workspace/.claude/settings.json \
+           /workspace/.claude/settings.local.json /workspace/.mcp.json \
+           /workspace/.git/config /workspace/.git/hooks; do
+    echo "denyWrite must hold $p"
+    [ "$(jq --arg p "$p" '.filesystem.denyWrite | index($p) != null' <<< "$t")" = true ]
+  done
+  [ "$(jq '[.filesystem.allowWrite[] | select(startswith("~/.claude"))] | length' <<< "$t")" -eq 0 ]
+  [ "$(jq -r '.permissions.deny | index("Read(//home/node/.claude/.credentials.json)") != null' "$TEMPLATE")" = true ]
   [ "$(jq '.network.allowManagedDomainsOnly' <<< "$t")" = true ]
   [ "$(jq '.filesystem.denyRead | index("~/.claude/.credentials.json") != null' <<< "$t")" = true ]
   [ "$(jq '.filesystem.denyWrite | index("~/.claude/settings.json") != null' <<< "$t")" = true ]

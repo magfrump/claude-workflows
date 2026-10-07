@@ -464,8 +464,11 @@ ARG ELAN_VERSION=v4.2.4
 ARG ELAN_SHA256_AMD64=42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
 ARG ELAN_SHA256_ARM64=05febd124d84ebf994b2e7479922a5650b1e950c17ae3bd1ddd776b65bb72bf9
 ARG LEAN_TOOLCHAINS=""
+# elan's bin dir is node-writable, so it goes LAST on PATH: first, a file planted
+# there would shadow bash/git/python3 for every hook (Q-125 security review). It
+# only provides lean, lake and elan, which nothing else on PATH provides.
 ENV ELAN_HOME=/home/node/.elan \
-    PATH=/home/node/.elan/bin:$PATH
+    PATH=$PATH:/home/node/.elan/bin
 RUN case "$(dpkg --print-architecture)" in \
       amd64) ELAN_TARGET=x86_64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_AMD64" ;; \
       arm64) ELAN_TARGET=aarch64-unknown-linux-gnu; ELAN_SHA="$ELAN_SHA256_ARM64" ;; \
