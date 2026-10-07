@@ -2,7 +2,7 @@
 
 - **Goal**: Make Claude Code's Bash sandbox run in cc-isolated, refusing sandboxed reads of `~/.claude/.credentials.json` and writes of `~/.claude/settings*.json`, without granting the container a capability (Q-124 [1]).
 - **Project state**: Builds Q-124 [1] as Q-125, in two stacked units (U1 seccomp, U2 managed settings) · unblocks Q-098 (global allowlist) · blocked on one host run (cite: docs/spikes/weaker-nested-sandbox-cc-isolated.md)
-- **Task status**: in-progress (steps 1–4 implemented; host steps 5–6 pending)
+- **Task status**: in-progress (steps 1–5 done: host probe passed 2026-10-07, Q-127 moot; step 6 live run pending, via `docs/working/live-check-q125.sh`)
 
 Research: [research-q125-cc-isolated-sandbox.md](research-q125-cc-isolated-sandbox.md)
 
