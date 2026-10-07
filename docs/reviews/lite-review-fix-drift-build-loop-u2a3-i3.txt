@@ -1,0 +1,3 @@
+lite-review [fix-drift]: 1 finding(s):
+  1. scripts/lib/dev-cycle-read.sh:537-548 | High | documentation | Comment claims unsupported error conditions
+     The updated main_imports comment lists "a FIFO" and "the root itself" as conditions causing return 1, but the code contains no explicit checks for FIFO files or root-directory paths.

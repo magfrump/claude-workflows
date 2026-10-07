@@ -1,0 +1,3 @@
+lite-review [fix-drift]: 1 finding(s):
+  1. scripts/lib/dev-cycle-read.sh:463-467 | Medium | Comment accuracy | Ambiguous coverage status for symlinked-directory case
+     The comment lists "an import path through a directory main stores as a symlink when the checkout does not have that link" as not covered. However, the code fix now detects and fails the walk when `..` appears after a symlink (lines 594-601), regardless of checkout state. The comment should clarify that the `..` case is now covered (fail-closed), or distinguish it from other symlink-path cases that remain unhandled.

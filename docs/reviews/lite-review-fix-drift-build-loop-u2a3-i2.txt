@@ -1,0 +1,3 @@
+lite-review [fix-drift]: 1 finding(s):
+  1. scripts/lib/dev-cycle-read.sh:464-468 | Informational | Documentation accuracy | Comment wording on untraced Claude Code behavior
+     The "Not covered (known issue A5)" section now correctly excludes "an import path main lacks under a directory main stores as a symlink" (now handled by code lines 614-616), but A5 documents three cases as "Untraced" (symlinked instruction files, `.claude/commands/` references, and `@..` in tokens) without cross-reference to the lib comment.  This is not technically drift, but reading the lib comment alone could mislead readers that these untraced cases are "not covered," when they're actually deferred pending Claude Code verification.
