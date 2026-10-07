@@ -1056,20 +1056,19 @@ EOF
     [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
 }
 
-@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email is not one" {
+@test "--check-fix reads an import token whole: underscores, emphasis, #fragments, link text; an email-shaped token is over-read (superset)" {
     mkdir -p docs
     { echo 'See @docs/my_notes.md and **@docs/bold.md** and _@docs/em_one.md_ and *@docs/star.md*.'
       echo 'Also @docs/frag.md#intro, [@docs/link.md](docs/link.md) and (@docs/paren.md).'
-      echo 'Mail user@docs/email.md is not an import.'; } > GEMINI.md
+      echo 'Mail user@docs/email.md is no import for Claude Code, but the superset reads it.'; } > GEMINI.md
     for f in my_notes bold em_one star frag link paren email; do echo x > "docs/$f.md"; done
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/my_notes.md docs/bold.md docs/em_one.md docs/star.md \
         docs/frag.md docs/link.md docs/paren.md docs/email.md
     [ "$status" -eq 0 ]
-    for f in my_notes bold em_one star frag link paren; do
+    for f in my_notes bold em_one star frag link paren email; do
         [[ "$output" == *"skip docs/$f.md: an instruction file imports"* ]] || { echo "missing skip: $f"; echo "$output"; return 1; }
     done
-    [[ "$output" == *"ok docs/email.md"* ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-fix finds instruction files in any case among many unrelated tracked files" {
@@ -1097,7 +1096,7 @@ EOF
                  isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
-        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_RE UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
+        for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
         for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
@@ -1173,11 +1172,12 @@ none 1: [] []" ] || { echo "$output"; return 1; }
     make_repo "$BATS_TEST_TMPDIR/other" main
     ( cd "$BATS_TEST_TMPDIR/other" && echo 'See @docs/b.md' > CLAUDE.md && mkdir docs && echo x > docs/b.md )
     run env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
-        ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo
-        cd "$2"; ROOT_REAL="$(pwd -P)"; imported_names; printf "%s" "$IMPORTED" | tr "\n" " "; echo' _ \
+        w() { for p in docs/a.md docs/b.md; do if [[ "$IMPORTED" == *$'"'"'\n'"'"'"$p"$'"'"'\n'"'"'* ]]; then printf " %s" "$p"; fi; done; echo; }
+        ROOT_REAL="$(pwd -P)"; imported_names; w
+        cd "$2"; ROOT_REAL="$(pwd -P)"; imported_names; w' _ \
         "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$BATS_TEST_TMPDIR/other"
-    [ "$output" = " docs/a.md 
- docs/b.md " ] || { echo "[$output]"; return 1; }
+    [ "$output" = " docs/a.md
+ docs/b.md" ] || { echo "[$output]"; return 1; }
 }
 
 @test "--check-answer reads main's commit: a working-tree or branch-only answer is open (T34)" {

@@ -447,9 +447,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # instructions, so an in-cycle fix never edits it. The walk starts at every
 # instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
 # gitignored), resolves each @path against the importing file's directory as
-# Claude Code does (~/ and absolute paths lead outside the repo and are not
-# followed), and reads each plain file it reaches once (import_targets has the
-# token rules). It returns 1, with IMPORTED set to "error", when the start
+# Claude Code does (import_targets reads a superset of its names and drops ~/
+# and paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read or
 # the parser fails, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
@@ -473,88 +472,90 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # (U2a4's floor names start files by its own rules). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# absolute imports, checkout conversions (A5), and three shapes A5 lists as
+# checkout conversions (A5), and three shapes A5 lists as
 # untraced against Claude Code.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
 # checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again.
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
-# UTF-8 spaces that end an import token as a blank does (import_targets makes
-# each one a blank before it matches tokens): U+00A0, U+1680,
-# U+2000-200A, U+2028/2029, U+202F, U+205F, U+3000 and U+FEFF (Claude Code's
-# token ends at JavaScript's \s, which includes U+FEFF).
+# UTF-8 spaces, which end an import token as a blank does (import_targets makes
+# each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
+# U+205F, U+3000 and U+FEFF (Claude Code's token ends at JavaScript's \s).
 UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x80\x82' $'\xe2\x80\x83' $'\xe2\x80\x84'
   $'\xe2\x80\x85' $'\xe2\x80\x86' $'\xe2\x80\x87' $'\xe2\x80\x88' $'\xe2\x80\x89' $'\xe2\x80\x8a' $'\xe2\x80\xa8'
   $'\xe2\x80\xa9' $'\xe2\x80\xaf' $'\xe2\x81\x9f' $'\xe3\x80\x80' $'\xef\xbb\xbf')
-IMPORT_RE='(^|[^[:alnum:]])@[^[:space:]\\#]+'
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 # The import targets in the text on stdin, for a file in directory $1 ("" at
-# the top level): one repo-relative path per line, case kept. Every import walk
-# shares these rules, so a change here changes --check-fix too. A token may
-# follow any byte but a letter or digit (so user@host is not one); it ends at a
-# blank, a UNI_SPACES space included, or at a backslash, as the import token of
-# Claude Code does, and at #, where Claude Code cuts the name it captured (so a
-# token after a # is an over-read; a name holding a backslash-escaped space is
-# not read, known issue A5). That regex keeps brackets,
-# parentheses, backticks and trailing punctuation in a name (@x.md. reads
-# x.md.), while the Markdown around a token (emphasis, a link or image, inline
-# HTML, a code span) may end it at any later one of those marks, and the next
-# Markdown token may start a new import at an @ inside the match. So each
-# token also yields every suffix after an @ that follows a non-alphanumeric
-# byte, and each of those its whole and its part before each of [ ] ( ) < ! * _
-# and backtick, each also with trailing . , ; : ! ? * _ ~ ) ] or backticks
-# stripped, each path once per token. Claude Code deletes the closed HTML
-# comments of a block that opens with <!-- (on the line of the block's first
-# -->) and reads what is left, so every line holding <!-- is also read once
-# more with its closed comments removed and an unclosed one kept. A NUL counts
-# as a blank. Over-reading only over-refuses. ~/ and absolute paths, and paths
-# leaving the repo (.. or ../, not a ..x name), are dropped. It reads ROOT_REAL
-# without checking it (the caller has run need_root) and returns 1 when sed,
-# awk or grep fails. The rules follow Claude Code 2.1.292's import regex and
-# Markdown lexer (U2a2 and U2a3b security reviews); re-check them when Claude
-# Code changes either (test/agents-gemini-sync.bats holds a separate, older
-# finder for where an import starts, not a copy of these rules).
+# the top level): one repo-relative path per line, case kept, each once. Every
+# import walk shares these rules, so a change here changes --check-fix too.
+# They read a superset of what Claude Code 2.1.292 can import (its import
+# regex and Markdown lexer: U2a2 and U2a3b security reviews), failing toward
+# "imported" rather than modelling where Markdown ends a name. Every @ in a
+# line starts a candidate, whatever precedes it and inside code spans and
+# fences too; each prefix of the run after it, up to the first blank (a NUL or
+# a UNI_SPACES space counts as one) and at most 4096 bytes, is a candidate
+# name, with a backslash-escaped space read as a space. A line holding <!-- is
+# also read with its closed HTML comments removed (Claude Code splices them).
+# A candidate is resolved lexically against $1 (as realpath -ms does); ~/
+# paths, absolute paths outside ROOT_REAL and paths leaving the repo are
+# dropped, and an absolute path inside ROOT_REAL is read repo-relative. The
+# cost is false positives: a prefix that is itself a file counts as imported.
+# It returns 1 when sed or awk fails, or when the candidates run past a
+# work bound (so a pathological file fails the walk rather than stalling it).
+# Re-check the superset when Claude Code changes its import grammar
+# (test/agents-gemini-sync.bats holds a separate, older finder for where an
+# import starts, not these rules).
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+IMPORT_AWK='
+function emit(c,   n, i, k, part, st, out) {
+  work += length(c); if (work > 50000000) exit 3
+  if (c == "" || substr(c, 1, 2) == "~/") return
+  if (substr(c, 1, 1) == "/") {
+    if (root == "" || index(c, root "/") != 1) return
+    c = substr(c, length(root) + 2)
+  } else if (dir != "") c = dir "/" c
+  n = split(c, part, "/"); k = 0
+  for (i = 1; i <= n; i++) {
+    if (part[i] == "" || part[i] == ".") continue
+    if (part[i] == "..") { if (k == 0) return; k--; continue }
+    st[++k] = part[i]
+  }
+  if (k == 0) return
+  out = st[1]; for (i = 2; i <= k; i++) out = out "/" st[i]
+  if (!(out in seen)) { seen[out] = 1; print out }
+}
+function scan(line,   i, j, L, ch, name) {
+  L = length(line)
+  for (i = 1; i <= L; i++) {
+    if (substr(line, i, 1) != "@") continue
+    name = ""
+    for (j = i + 1; j <= L && length(name) < 4096; j++) {
+      ch = substr(line, j, 1)
+      if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
+      else if (ch == " " || ch == "\t" || ch == "\r") break
+      name = name ch; emit(name)
+    }
+  }
+}
+function splice(line,   o, i, j, r) {
+  o = ""
+  while ((i = index(line, "<!--")) > 0) {
+    r = substr(line, i + 4); j = index(r, "-->"); if (j == 0) break
+    o = o substr(line, 1, i - 1); line = substr(r, j + 3)
+  }
+  return o line
+}
+{ scan($0); if (index($0, "<!--")) scan(splice($0)) }'
 import_targets() {
-  local t r v w p u x y q toks b=$'\x60' cut s=(-e 's/\x0/ /g'); local -A cs n
-  cut="[][()<!*_$b]"  # the cut marks as a glob bracket (b: a backtick)
+  local u toks s=(-e 's/\x0/ /g')
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
-  # Two steps, not a pipe: under pipefail grep's "no match" would hide a sed failure.
+  # Two steps, not a pipe: under pipefail awk's success would not hide a sed
+  # failure, but a caller without pipefail would.
   toks="$(env LC_ALL=C sed "${s[@]}")" || return 1
-  if [[ "$toks" == *'<!--'* ]]; then
-    # One awk pass, linear in the text: each line holding <!-- without its closed comments.
-    # shellcheck disable=SC2016  # the $0 is awk's
-    y="$(printf '%s\n' "$toks" | env LC_ALL=C awk 'index($0, "<!--") {
-      o = ""; s = $0
-      while ((i = index(s, "<!--")) > 0) { r = substr(s, i + 4); j = index(r, "-->"); if (j == 0) break; o = o substr(s, 1, i - 1); s = substr(r, j + 3) }
-      print o s }')" || return 1
-    toks+=$'\n'"$y"
-  fi
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
-  # and a failed write would read as "no match".
-  toks="$(printf '%s\n' "$toks" | env LC_ALL=C grep -aoE "$IMPORT_RE")" || [[ $? -eq 1 ]] || return 1
-  while IFS= read -r t; do
-    [[ -n "$t" ]] || continue
-    # Keys carry an x prefix: a bare @ or * subscript would name the whole array.
-    t="${t#*@}"; cs=(); n=(); q=("$t"); x="$t"
-    while [[ "$x" == *[^[:alnum:]]@* ]]; do x="${x#*[^[:alnum:]]@}"; q+=("$x"); done
-    for r in "${q[@]}"; do
-      # r walks back through the suffix's prefixes, one per cut mark.
-      while :; do
-        v="$r"; while [[ "$v" == *[.,\;:!?*_~\)\]] || "$v" == *"$b" ]]; do v="${v%?}"; done
-        for w in "$r" "$v"; do
-          [[ -n "$w" && "$w" != \~/* && "$w" != /* && -z "${cs[x$w]+set}" ]] || continue
-          cs[x$w]=1
-          p="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${1:+$1/}$w" 2>/dev/null)" || continue
-          [[ "$p" != .. && "$p" != ../* && -z "${n[x$p]+set}" ]] || continue
-          n[x$p]=1; printf '%s\n' "$p"
-        done
-        [[ "$r" == *$cut* ]] || break
-        # shellcheck disable=SC2295  # $cut is the glob bracket, matched as a pattern
-        r="${r%$cut*}"
-      done
-    done
-  done < <(printf '%s\n' "$toks")
+  # and a failed write would read as no imports.
+  printf '%s\n' "$toks" | env LC_ALL=C awk -v dir="$1" -v root="$ROOT_REAL" "$IMPORT_AWK"
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -589,10 +590,12 @@ imported_names() {
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     out="$(import_targets "$d" < "$f")" || { IMPORTED=error; return 1; }
+    [[ -n "$out" ]] || continue
+    # One lower per file, not per candidate: the superset yields many.
+    lp="$(lower "$out")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
     while IFS= read -r p; do
-      [[ -n "$p" ]] || continue
-      lp="$(lower "$p")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
-      if [[ "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
+      # -f first: most candidates name no file, and inrepo_here forks.
+      if [[ -f "$p" && "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
     done < <(printf '%s\n' "$out")
   done
 }

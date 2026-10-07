@@ -336,7 +336,7 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
     git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m tree-and-link)"; git checkout -qf main; imps main docs/secret.md; want walk failed; want docs/secret.md imported
 }
 
-@test "both walks read what Claude Code reads: an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
+@test "both walks read everything Claude Code reads (a superset): an @ after a Unicode space, Markdown and a code span around a token, ( ) in a name; ~x is over-read, ~/ dropped; an @ after a link or code span starts another import; a stray <!-- elsewhere does not shift a splice (U2a3b)" {
     mkdir -p docs
     # \x60: a backtick (a code span that closes right after the name). A cut mark
     # earlier in the name (my_notes) does not hide a later one; two NBSPs on a
@@ -357,6 +357,26 @@ scripts/x.sh: imported" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -; want '~/x.md' -
     done
+}
+
+@test "the superset over-reads, pinned: an @ in a code span or fence, after a letter, a prefix that is a file, an escaped space, an absolute path in the repo; the work bound fails the walk (U2a3b)" {
+    mkdir -p docs
+    { printf 'Code \x60@docs/span.md\x60 and user@docs/mail.md and @docs/pre.md.bak\n'
+      printf '\x60\x60\x60\n@docs/fence.md\n\x60\x60\x60\n'
+      printf 'See @docs/my\\ notes.md and @%s/docs/abs.md\n' "$(pwd -P)"; } > AGENTS.md
+    for f in span mail pre fence abs; do printf 'x\n' > "docs/$f.md"; done; printf 'x\n' > 'docs/my notes.md'
+    commit_all superset
+    ps=(docs/span.md docs/mail.md docs/pre.md docs/fence.md 'docs/my notes.md' docs/abs.md)
+    for w in tree main; do
+        imps "$w" "${ps[@]}" docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done; want docs/other.md -
+    done
+    # Seven 4200-byte runs after an @ pass the candidate-work bound: the parser returns 1.
+    for i in 1 2 3 4 5 6 7; do printf '@'; head -c 4200 /dev/zero | tr '\0' x; printf '\n'; done > "$BATS_TEST_TMPDIR/heavy.txt"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        if import_targets "" < "$2" >/dev/null; then echo read; else echo failed; fi' _ "$LIB" "$BATS_TEST_TMPDIR/heavy.txt"
+    [ "$output" = failed ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "both walks fail closed when tr fails; the tree walk fails closed when its start listing fails or a start name holds a newline; the parser returns 1 when it cannot read its input (U2a3b)" {
@@ -389,7 +409,7 @@ walk failed" ] || { echo "$output $stderr"; return 1; }
     { head -c 70000 /dev/zero | tr '\0' x; printf '\nsee @docs/big.md\n'; } > "$BATS_TEST_TMPDIR/big.txt"
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; ulimit -f 0; source "$1"; ROOT_REAL="$(pwd -P)"
         import_targets "" < "$2"' _ "$LIB" "$BATS_TEST_TMPDIR/big.txt"
-    [ "$status" -eq 0 ] && [ "$output" = docs/big.md ] || { echo "$status $output $stderr"; return 1; }
+    [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -qxF docs/big.md || { echo "$status $output $stderr"; return 1; }
     # A corrupt index: git ls-files fails, so the tree walk has no start list.
     printf 'junk' > .git/index
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
