@@ -33,10 +33,11 @@
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
 # refuses a brief path that is not plain in the working tree, which the cycle
-# writes), and so does main_imports (it reads the checkout only to fail, until
-# U2a3c, so the gate needs a fresh worktree; the block above IMPORTED= lists
-# each case; it needs resolve_main to have found main by name);
-# imported_names reads the working tree at ROOT_REAL.
+# writes). main_imports walks main's commit first, listing and checking the
+# working tree as it goes, and then reads the working tree's own files (the
+# checkout's start files and imported files main lacks, which can only add
+# imports or fail it; it needs resolve_main to have found main by name);
+# imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -453,7 +454,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # this process's HOME, and drops paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read,
 # import_home or the parser (its comment lists why) fails, the IMPORT_OUT_MAX
-# budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
+# or IMPORT_WORK_MAX budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
 # IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
 # returns 1 again.
@@ -461,27 +462,35 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # at every instruction file stored there (and every .md under a .claude/rules/
 # directory at any depth, which Claude Code also loads) and follows an import
 # into the file main stores at that path, whatever its name; a symlink there is
-# followed to the path its text names. An imported path main lacks is recorded
-# and not read. It refuses what it does not model, as FENCE_AWK does: a name
+# followed to the path its text names. Once main's walk is done, a second phase
+# walks the checkout's start files main lacks (untracked, ignored or only in
+# the index) and the imported files main lacks, when each is a plain file
+# there, and only appends. It refuses what it does not model, as FENCE_AWK does: a name
 # listed twice or as both a file and a directory, a name holding a newline,
 # symlink text that is empty, absolute, leaves
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
-# in the checkout), an imported path main lacks that lies under a directory
-# main stores as a symlink or gitlink, or that the checkout holds as anything
-# but a plain directory (the root itself included), and a start file main
-# lacks (untracked, ignored, or in the checkout's index) fail the walk, so
-# isimported main answers imported for every path. Checkout files are not walked until U2a3c, so the walk fails
-# closed on them. A start file answers imported only when an import reaches it
+# in the checkout), and a checkout path it would walk (a start or an import
+# main lacks) that lies under a directory main stores as a symlink or gitlink
+# or under any checkout ancestor but a plain searchable directory (absent
+# ones and plain files excepted: nothing below them loads), or that the
+# checkout holds as anything but a readable plain file, a plain directory or
+# nothing (the root included),
+# or a checkout listing git prints any stderr for, fail the walk, so isimported main
+# answers imported for every path. A linked worktree's .git file and files
+# under .git are checkout files like any other. A start file answers imported only when an import reaches it
 # (U2a4's floor names start files by its own rules). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# checkout conversions (A5), and command files (.claude/commands/*.md, whose
+# checkout conversions (A5), command files (.claude/commands/*.md, whose
 # @ names Claude Code loads when the command runs: U2a3b L2-confirm security
-# F2; U2a4's shared start predicate).
+# F2; U2a4's shared start predicate), and a start that is not a regular file or
+# symlink (git does not list a FIFO). The walk reads the checkout as one
+# snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
-# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, so a caller whose
-# checkout changes between calls sets IMPORTED_MAIN_DONE="" to walk again,
-# and a cached error returns 1 again. A caller that changes HOME clears both
+# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
+# whose files it read, so a caller whose checkout may have changed (a file
+# added or edited) sets IMPORTED_MAIN_DONE="" to walk again, and a cached
+# error returns 1 again. A caller that changes HOME clears both
 # IMPORTED_DONE and IMPORTED_MAIN_DONE (both caches are keyed without it).
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
@@ -495,6 +504,15 @@ IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # 2 KB, /workspace's about 6 KB. A caller that changes it clears IMPORTED_DONE
 # and IMPORTED_MAIN_DONE before walking again.
 IMPORT_OUT_MAX=4000000
+# Each walk also fails once the parser's work (the candidate and comment-splice
+# characters it scans and each resolved spelling it joins, which for a
+# relative name carries ROOT_REAL, so a longer root buys less; the unit of its
+# per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
+# work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
+# of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# The bound is per walk: a caller that runs both walks pays up to two. A caller
+# that changes it clears both caches, as for IMPORT_OUT_MAX.
+IMPORT_WORK_MAX=50000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
 # U+205F, U+3000 and U+FEFF (Claude Code's token ends at JavaScript's \s).
@@ -506,8 +524,13 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # the top level): one repo-relative path per line, case kept, each once. It
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
-# (what may still be printed; IMPORT_OUT_MAX when unset or empty, and 0 when
-# not a number, so the first name fails it). Every import walk shares these
+# (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
+# reads a number otherwise: its numeric prefix (so 1e3 is 1000 and inf no
+# bound), or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
+# walk: what its IMPORT_WORK_MAX has left, which then also caps the per-file
+# work bound, and a last line "/N" reports the work spent; import_work reads
+# it. Unset or empty: no trailer and only the per-file bound; otherwise read
+# as IMPORT_LEFT is). Both walks pass numbers. Every import walk shares these
 # rules, so a change here changes --check-fix too.
 # The superset claim (the one statement of it; known issue A5 and plan F11
 # point here): these rules read every name Claude Code 2.1.292 can import (its
@@ -545,7 +568,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
 function emit(c) {
-  work += length(c); if (work > 50000000) exit 3
+  work += length(c); if (work > wmax) exit 3
   # Claude Code trims the name; it rejects a name led by a space first, so
   # trimming one only over-reads.
   sub(/^ +/, "", c); sub(/ +$/, "", c)
@@ -563,7 +586,7 @@ function put(c,   n, i, k, part, st, out) {
   if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   # The resolved spelling is what costs (its length grows with the depth of
   # the importing file), so it is charged too, and each is resolved once per file.
-  work += length(c); if (work > 50000000) exit 3
+  work += length(c); if (work > wmax) exit 3
   if (c in tried) return
   tried[c] = 1
   n = split(c, part, "/"); k = 0
@@ -596,7 +619,7 @@ function scan(line,   i, j, L, ch, name) {
 function splice(line,   o, i, j, r) {
   o = ""
   while ((i = index(line, "<!--")) > 0) {
-    r = substr(line, i + 4); work += length(r); if (work > 50000000) exit 3
+    r = substr(line, i + 4); work += length(r); if (work > wmax) exit 3
     j = index(r, "-->"); if (j == 0) break
     o = o substr(line, 1, i - 1); line = substr(r, j + 3)
   }
@@ -605,8 +628,10 @@ function splice(line,   o, i, j, r) {
 BEGIN {
   dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homereal = ENVIRON["IT_HOME_REAL"]
   left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
+  wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
-{ scan($0); if (index($0, "<!--")) scan(splice($0)) }'
+{ scan($0); if (index($0, "<!--")) scan(splice($0)) }
+END { if (trail) print "/" (work + 0) }'
 # Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
 # U+10FFFF), as an awk ERE for a C-locale awk -v: it agreed with python3's
 # decoding on 20,013 cases (U2a3b L2-i2 performance F1). Only text it rejects
@@ -648,7 +673,17 @@ import_targets() {
   # backslash escapes in them. IMPORT_LEFT, set by a walk, is what its
   # IMPORT_OUT_MAX budget has left, so awk stops there rather than after.
   printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOME_REAL="$IMPORT_HOME_REAL" \
-    IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" awk "$IMPORT_AWK" || return 1
+    IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
+}
+# import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
+# printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with
+# /) from the variable OUT, and adds N to the variable TOTAL. It returns 1 when
+# the trailer is missing or TOTAL passes IMPORT_WORK_MAX.
+import_work() {
+  local -n iw_o="$1" iw_t="$2"; local iw_w="${iw_o##*/}"
+  [[ "$iw_w" =~ ^[0123456789]+$ && ( "$iw_o" == "/$iw_w" || "$iw_o" == *$'\n'"/$iw_w" ) ]] || return 1
+  iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
+  (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
 }
 # Instruction-file names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
@@ -658,14 +693,79 @@ import_targets() {
 instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || [[ $? -eq 1 ]]; }
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
-untracked_md() { GIT_LITERAL_PATHSPECS=0 git ls-files -z --others -- ':(glob,icase)**/*.md'; }
+untracked_md() { md_ls --others; }
+# md_ls ARGS...: git ls-files -z ARGS over the checkout's .md files, any case (the one pathspec).
+md_ls() { GIT_LITERAL_PATHSPECS=0 git ls-files -z "$@" -- ':(glob,icase)**/*.md'; }
 # nul_list NAME CMD...: array NAME gets CMD's NUL-split output, or is emptied and 1 unless CMD exited 0 and its output was empty or ended in NUL.
 nul_list() { local -n nl_a="$1"; shift; mapfile -d '' nl_a < <("$@" && printf rc=0 || printf rc=1); [[ ${#nl_a[@]} -gt 0 && "${nl_a[-1]}" == rc=0 ]] || { nl_a=(); return 1; }; unset 'nl_a[-1]'; }
+# lower_all ARGS...: each argument lower-cased and NUL-terminated, in one tr
+# (lower would fork per path). Read it through nul_list: a tr that dies after a
+# partial flush then fails the list rather than truncating its last name and
+# dropping a start (U2a3b final N1).
+lower_all() { local -; set -o pipefail; printf '%s\0' "$@" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
+# capped_read: the first 4 MiB + 1 bytes of stdin, the one reader both walks
+# parse, for checkout files and main's blobs alike. Claude Code skips a file
+# over 4 MiB, so reading only its start over-reads at worst, and a huge file a
+# prefix candidate names cannot stall a walk (L2 security F2). With the word
+# drain (after git cat-file) it reads the rest, so the writer never dies of
+# SIGPIPE, which pipefail would report as a failed read (U2a3b L2-C5); an
+# argument, not a [[ -p /dev/stdin ]] test, which needs /proc. The drain is
+# time the work bound does not charge (git inflates the whole blob).
+capped_read() { head -c 4194305 || return 1; [[ "${1:-}" != drain ]] || cat > /dev/null; }
 # The tree walk's start candidates, NUL-separated: tracked and untracked names
 # through instruction_names, failing when any of the three commands fails.
 tree_starts() { local -; set -o pipefail; { git ls-files -z && untracked_md; } | instruction_names; }
+# The checkout's .md files, tracked, untracked and ignored, NUL-separated (main_imports'
+# phase-2 seeds); fails when git exits nonzero or prints anything on stderr,
+# since an unreadable directory goes unlisted with only a warning.
+checkout_md() { local e; { e="$(md_ls --cached --others 2>&1 >&3)"; } 3>&1 && [[ -z "$e" ]]; }
+# main_checkout ENT MEMO PATH, the one admission check for main_imports'
+# checkout phase; ENT names the associative array of main's modes by path, and
+# MEMO one of the ancestors already decided (a token's prefixes share them, so
+# each costs its realpath once per walk: U2a3b L2-C6): d for a plain
+# searchable directory, 2 for one absent or a plain file (nothing below it
+# loads), set only once its own and every higher ancestor's main mode passed
+# (PATH's own mode is checked first: main's link or gitlink at PATH answers 1).
+# A MEMO hit skips that mode check too, so a MEMO serves one walk and one ENT.
+# main_imports calls it only for paths main lacks.
+# 0 for a readable plain checkout file to walk, 2 when nothing there loads
+# (absent, below an absent ancestor or a plain file, or a plain directory), 1
+# to fail the walk: an ancestor main stores as a link or gitlink, an ancestor
+# that is anything else but a plain searchable directory, an unreadable plain
+# file, ENT or MEMO not an associative array, or anything else at PATH.
+# Callers test 1 as a refusal, never as a plain false. The plain tests are
+# rawfile's and plaindir's; unlike blocker it answers 2 below a plain file and
+# needs a searchable directory (a second traversal on purpose).
+main_checkout() {
+  local - c="$3" i st=d anc=(); local -n mc_e="$1" mc_m="$2"
+  # ${x@a} on an empty array is an unbound-variable error under set -u (an
+  # empty main tree, the first call's MEMO); the body reads both through :- and +set.
+  # ${x[0]@a}, not ${x@a}, which costs time linear in the array's size (U2a3c
+  # final performance F1: quadratic once MEMO grows with the tokens).
+  set +u; [[ "${mc_e[0]@a}" == *A* && "${mc_m[0]@a}" == *A* ]] || return 1
+  # Main's link or gitlink at PATH refuses before a checkout directory there is memoized as d (U2a3c final fact-check 34).
+  [[ ! "${mc_e[$3]:-}" =~ ^1[26]0000$ ]] || return 1
+  # Bottom up to the nearest decided ancestor, then top down from it (U2a3c
+  # i2 performance F1: top down alone rescanned every absent ancestor).
+  while [[ "$c" == */* ]]; do c="${c%/*}"; if [[ -n "${mc_m[$c]+set}" ]]; then st="${mc_m[$c]}"; break; fi; anc+=("$c"); done
+  for ((i = ${#anc[@]} - 1; i >= 0; i--)); do
+    c="${anc[i]}"
+    [[ ! "${mc_e[$c]:-}" =~ ^1[26]0000$ ]] || return 1
+    if [[ "$st" == d ]]; then
+      if [[ ! -e "$c" && ! -L "$c" ]] || rawfile "$c"; then st=2
+      elif ! plaindir "$c" || [[ ! -x "$c" ]]; then return 1; fi
+    fi
+    mc_m[$c]="$st"
+  done
+  [[ "$st" == d ]] || return 2
+  c="$3"; [[ -e "$c" || -L "$c" ]] || return 2
+  if rawfile "$c"; then [[ -r "$c" ]]; return; fi
+  plaindir "$c" || return 1
+  [[ ! -x "$c" ]] || mc_m[$c]=d  # a prefix candidate's directory, which longer ones pass through
+  return 2
+}
 imported_names() {
-  local - f d p lp out used=0 seen=$'\n' queue=() recs=(); set -o pipefail
+  local - f d p lp out used=0 work=0 seen=$'\n' queue=() recs=(); set -o pipefail
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
@@ -683,9 +783,8 @@ imported_names() {
   while [[ ${#queue[@]} -gt 0 ]]; do
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    # Claude Code skips a file over 4 MiB, so reading only its start over-reads at
-    # worst, and a huge file a prefix candidate names cannot stall the walk (L2 security F2).
-    out="$(head -c 4194305 -- "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED=error; return 1; }
+    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+      && import_work out work || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -699,19 +798,20 @@ imported_names() {
 # The main walk; returns 1, with IMPORTED_MAIN set to "error", so a caller
 # refuses rather than reading a partial list, when main is not found by name,
 # the commit's tree or the checkout's .md list (tracked and untracked) cannot
-# be listed whole (nul_list), a tree record does not parse or has a type but
+# be listed whole (nul_list, checkout_md), a tree record does not parse or has a type but
 # blob, link or gitlink, a name is listed twice (git's lookups read the first
 # copy), is also a directory of another listed name, or holds a newline, the
-# lower-cased start list comes back short, a start file main lacks is listed
-# (even one deleted from the checkout), a blob cannot be read, symlink text it
+# start list's lower_all fails or comes back short, main_checkout refuses a start or an
+# import main lacks, a blob or checkout file cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
 # a .. after a symlink, import_home, the parser (its comment lists why) or a
-# lower fails, the IMPORT_OUT_MAX budget is spent, or an imported path main
-# lacks lies under a directory main stores as a symlink or gitlink or exists in
-# the checkout as anything but a plain directory below the root (the
-# top-level .git is skipped); need_root exits instead.
+# lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
+# need_root exits instead.
+# Phase 2 begins when queue empties: tq's checkout files then join it, and a
+# path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 queue=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 work=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
   local -A ent=() seen=() dir=() pok=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -726,26 +826,32 @@ main_imports() {
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
   done  # then a name that is also a directory of another listed name (a crafted tree) fails:
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
-  nul_list recs env GIT_LITERAL_PATHSPECS=0 git ls-files -z --cached --others -- ':(glob,icase)**/*.md' || return 1
+  nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
-  # One tr lower-cases every candidate (lower would fork per path).
-  [[ ${#cand[@]} -eq 0 ]] || mapfile -d '' low < <(printf '%s\0' "${cand[@]}" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')
+  [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
   [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
     if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      [[ "${cand[i]:0:1}" == m ]] || return 1  # main lacks it: not walked until U2a3c
-      seen[${cand[i]:2}]=1; queue+=("${cand[i]:2}")
+      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
+      [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
+      seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
   done
   import_home || return 1
   IMPORTED_MAIN=$'\n'
-  while [[ ${#queue[@]} -gt 0 ]]; do
+  while [[ ${#queue[@]} -gt 0 || ${#tq[@]} -gt 0 ]]; do
+    [[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }  # phase 2: main's walk is done
     f="${queue[0]}"; queue=("${queue[@]:1}")
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    case "${ent[$f]}" in
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) import_targets "$d")" || { IMPORTED_MAIN=error; return 1; } ;;
+    case "${ent[$f]-checkout}" in
+      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read drain | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+          && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
+        # Link text past PATH_MAX (4096) names nothing; it fails before the two whole reads below.
+        i="$(git cat-file -s "$MAIN_SHA:$f")" && [[ "$i" -le 4096 ]] || { IMPORTED_MAIN=error; return 1; }
         # $(...) drops NULs, so they are counted first; the x keeps trailing
         # newlines, which $(...) would also drop.
         if ! i="$(git cat-file blob "$MAIN_SHA:$f" | tr -cd '\0' | wc -c)" || [[ "$i" -ne 0 ]] \
@@ -772,27 +878,10 @@ main_imports() {
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
       [[ -z "${seen[$p]+set}" ]] || continue
+      c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p" || c=$?  # main lacks p: admitted before it is marked seen
+      [[ $c -ne 1 ]] || { IMPORTED_MAIN=error; return 1; }
       seen[$p]=1
-      if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); continue; fi
-      # The top-level .git (a prefix candidate from @.gitignore) names no file
-      # main has, and is skipped when it is a plain directory or a linked
-      # worktree's gitfile holding no @. Claude Code reads a gitfile like any
-      # file, so one holding an @ (its gitdir path names the main checkout, which
-      # the host places) fails the walk (U2a3b L2-confirm security F1). A nested
-      # .git is not skipped: a nested repository's .git directory passes the
-      # plain-directory check below, and a .git file fails below, as files under
-      # .git do when the checkout holds them (U2a3c walks them).
-      if [[ "$p" == .git ]]; then
-        [[ -d .git && ! -L .git ]] && continue
-        if [[ -f .git && ! -L .git ]]; then
-          i="$(tr -cd @ < .git | wc -c)" && [[ "$i" -eq 0 ]] || { IMPORTED_MAIN=error; return 1; }
-          continue
-        fi
-      fi
-      # Main lacks p: under a link or gitlink main stores, or in the checkout as anything but a plain directory, fail.
-      # pok holds parents already checked: a token's prefixes share them, so the loop stops at the first.
-      c="$p"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${pok[$c]+set}" ]] || break; pok[$c]=1; [[ ! "${ent[$c]:-}" =~ ^1[26]0000$ ]] || { IMPORTED_MAIN=error; return 1; }; done
-      [[ -d "$p" && ! -L "$p" && -z "$(blocker "$p" dir)" ]] || [[ ! -e "$p" && ! -L "$p" ]] || { IMPORTED_MAIN=error; return 1; }
+      if [[ -n "${ent[$p]+set}" ]]; then queue+=("$p"); elif [[ $c -eq 0 ]]; then tq+=("$p"); fi
     done < <(printf '%s\n' "$out")
   done
 }
