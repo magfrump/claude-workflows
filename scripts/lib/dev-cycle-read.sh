@@ -668,7 +668,9 @@ function scan(line,   i, L) {
     names(line, i + 1, L, 0)
     # A mention in a command may be quoted (@"docs/a b.md", which the prompt-mention
     # reader of Claude Code 2.1.293 accepts): the run after the quote is read too,
-    # up to the closing quote, blanks included (U2a4 i1 security F1, i2 fact-check 19b).
+    # up to the closing quote, blanks included (U2a4 i1 security F1, i2 fact-check 19b);
+    # such a name can match a real file, which the floor then refuses (pathform
+    # already refuses it to --check-fix).
     if (substr(line, i + 1, 1) == "\"") names(line, i + 2, L, 1)
   }
 }
