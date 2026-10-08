@@ -1,9 +1,30 @@
-Commit: 2b6f2f91
+Commit: a3489c4f
 Loop-pass short-circuit: used at 03be719e
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2a4` (U2a4, the self-merge floor over one read-as-truth rule and one start predicate), on main 7afdb8d2. Iterations 1 and 2 are in `code-review-rubric-2026-10-07-feat-build-loop-u2a4.md`.
-**Status: ⚠️ FINAL CONFIRMING PASS (iteration 3) NOT CLEAN — no red; two Medium security ambers and greens, all fixed in 2f9464d3 (unreviewed); the unit is 540 code lines against the 400 cap; landing is the user's call (Q-131)** (single-sample review; absence of findings is not an attestation)
+**Status: ⚠️ CONFIRMING PASS (Q-131 [1]) NOT CLEAN — one Medium security under-read (a regression in 2f9464d3) and Lows, all fixed (unreviewed but tested against the old lib); 599 code lines; landing goes back to the user per Q-131 (Q-132)** (single-sample review; absence of findings is not an attestation)
+
+## Confirming pass after Q-131 [1] (Commit a3489c4f, scope 2b6f2f91..a3489c4f)
+
+Q-131 [1] waived the size cap and asked for a k=1 fact-check plus the security critic over the final pass's unreviewed fixes (2f9464d3); a new finding goes back to the user. Delivery: self-read. The security critic used the installed Claude Code 2.1.293 binary as its oracle (its mention reader, regex `(^|[\s。、？！])@"([^"]+)"`, and file-name parser).
+
+Reports (both `Commit: a3489c4f`):
+- `code-fact-check-report-build-loop-u2a4-confirm.md`: 32 claims. 21 Verified, 8 Mostly accurate, 2 Stale, 0 Incorrect, 1 Unverifiable.
+- `security-reviewer-review-2026-10-08-build-loop-u2a4-confirm.md`: 1 Medium, 4 Low, 2 Informational.
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| CP1 | A quoted mention with a `#L5`/`#section` suffix and a blank in its name is no longer read (Claude Code's file-name parser drops the suffix; the pre-2f9464d3 prefix reader caught it): the floor would pass the file | 🟡 Medium (regression) | security F1 (executed) | Fixed: `quoted` also reads the text before its first `#` |
+| CP2 | A `@"` at the end of a line was not carried | 🟢 Low | security F2 | Fixed: an explicit open-quote flag `qo` |
+| CP3 | A start-named link to a directory (`.claude/rules/r.md -> ../../p`) passed START_LINK and was then dropped | 🟢 Low | security F3 | Fixed: a link to a directory or gitlink fails the main walk; a gitlink start at a START_LINK path fails too (fact-check 4b) |
+| CP4 | `qopen` re-copied the held text per line uncharged: an unclosed quote over many lines ran quadratic time (193 s at 4 MB) instead of failing the bound | 🟢 Low | security F4, fact-check Stale 15a, Mostly 7b, 19f | Fixed: each copy is charged; a new test fails both walks on it |
+| CP5 | A quoted name holding a UNI_SPACES character is read with a blank (sed runs first) | 🟢 Low (pre-existing) | security F5 | Deferred: override row, known issue A5 |
+| CP6 | A quote opened only in the comment-spliced line was not carried; a quoted name was only read trimmed | Informational | security notes, fact-check Mostly 8a | Fixed (over-read): the spliced scan carries when the raw one did not; quoted names are read trimmed and as written |
+| CP7 | main_imports' two failure lists omitted START_LINK; START_LINK's comment, contract item 8, IMPORT_WORK_MAX's "uncharged" note and a test comment were imprecise | 🟢 | fact-check Stale 15c, Mostly 2, 3, 15b, 16c | Fixed |
+| CP8 | The Claude Code 2.1.293 regex | — | fact-check Unverifiable 8b | The security critic read it from the installed binary |
+
+Tests after the fixes: build-loop-check 79/79 (the new cases in tests 74 and 77 and the new test 78 fail on the pre-fix lib), build-loop-read 19, dev-cycle 78, fixture-git-env 2, fixture-hermeticity 2, hermeticity-lint 53; shellcheck clean; `--check-fix` gives main's answers over all tracked paths; both walks pass on this repo and /workspace (about 1.4 s). `scripts/health-check.sh` passed at a3489c4f.
 
 ## Iteration 3 of 3: final confirming pass (Commit 2b6f2f91, k=3, full panel, Stage 2.5)
 
