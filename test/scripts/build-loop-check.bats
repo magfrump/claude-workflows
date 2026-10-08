@@ -32,7 +32,7 @@ floors() {
 INSTR="an instruction or prompt file, which sessions load from the checkout"
 DOT="a dotfile or a path under a dot-directory"
 GATE="the gate's own code, which lands only through a merge-gate- review entry"
-IMP="an instruction file on the default branch imports it with @ (directly or through another import)"
+IMP="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"
 WALKFAIL="the default branch's instruction files could not be walked for @ imports"
 OWN="one of the dev cycle's own files"
 USER="the user's constraints doc, which every loop prompt carries"
@@ -1160,6 +1160,15 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     imps main docs/x.md; want walk ok; want docs/x.md imported
     ln -s ../../docs/t.md .claude/commands/t.md && commit_all command-link
     imps main docs/x.md; want walk failed; want docs/x.md imported
+    # A start directory, or .claude itself, stored as a link lists its prompts under
+    # the target's path, which isstart does not know: the walk fails (U2a4 final security F1).
+    git rm -rq .claude && mkdir -p prompts && printf 'run @docs/q.md\n' > prompts/c.md && commit_all unlink
+    imps main docs/q.md; want walk ok; want docs/q.md -
+    for l in .claude/commands .claude/Skills .claude; do
+        mkdir -p "$(dirname "$l")" && ln -s "$(realpath -m --relative-to="$(dirname "$l")" prompts)" "$l" && commit_all "link $l"
+        imps main docs/q.md; want walk failed; want docs/q.md imported
+        git rm -rq "${l%%/*}" && commit_all "unlink $l"
+    done
 }
 
 @test "the parser resolves each relative name against every directory it is given (U2a4)" {
@@ -1185,10 +1194,17 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     printf 'use @docs/k.md\n' > .claude/skills/k/SKILL.md
     printf 'run @docs/n.md\n' > a/.claude/commands/b/.claude/commands/x.md
     printf 'run @d.md\n' > c/.claude/.claude/commands/y.md
-    # A line of 2,000 quotes after an @ costs quadratic, not cubic, parser work: the walk passes.
+    # A quoted text that spans lines resolves across the break (U2a4 final security F2); a
+    # .claudex component is no session base (final fact-check 31).
+    printf 'run @"x\n/../docs/m.md" now\n' > .claude/commands/m.md
+    mkdir -p e/.claudex/.claude/commands && printf 'run @f.md\n' > e/.claudex/.claude/commands/z.md
+    # Lines of 2,000 quotes after an @, and an unclosed @" before 3 KB of prose, in an
+    # instruction file and a prompt, cost little parser work: the walk passes (final performance F1).
     { printf 'see @'; for ((i = 0; i < 2000; i++)); do printf '"'; done; printf '\n'; } > CLAUDE.md
+    { printf 'say @"'; for ((i = 0; i < 600; i++)); do printf 'word '; done; printf '\n'; } | tee -a CLAUDE.md >> .claude/commands/q.md
     commit_all prompts
-    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md)
+    imps main e/f.md; want e/f.md -
+    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md docs/m.md e/.claudex/f.md)
     for w in tree main; do
         imps "$w" "${ps[@]}"
         want walk ok; for p in "${ps[@]}"; do want "$p" imported; done

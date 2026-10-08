@@ -3,7 +3,8 @@
 # scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
 # readers refuse (FENCE_AWK), the brief, branch and answer checks, the
-# instruction-file import walks, and the default branch.
+# instruction-file import walks, the read-as-truth rule and self-merge floor
+# they serve, and the default branch.
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
@@ -64,8 +65,9 @@
 #     reads as "not imported" to a raw membership test (row 419).
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
 #     and only a PATH main lacks.
-#  8. Pass truthrule, isstart and ownfile a lower-cased path (floor and
-#     check_fix lower first; truthrule refuses an upper-case letter as case).
+#  8. Pass truthrule, isstart, ownfile, prompt_dir and prompt_bases a
+#     lower-cased path (floor, check_fix and the walks lower first; truthrule
+#     refuses an upper-case letter as case).
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -482,6 +484,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # as a superset). truthrule refuses the same names; instruction_names is its
 # grep prefilter, and a test holds the two equal.
 PROMPT_DIR='(^|/)\.claude/(commands|agents|output-styles|skills)/'
+# A start directory, or .claude itself, as main_imports refuses a link there.
+START_LINK='/\.claude(/(rules|commands|agents|output-styles|skills)(/.*)?)?$'
 isstart() { [[ "${1##*/}" =~ $INSTRUCTION_FILE ]] || [[ "$1" == *.md && ( "$1" =~ $PROMPT_DIR || "/$1" == */.claude/rules/* ) ]]; }
 # prompt_dir MAP LP PATH: for a start under PROMPT_DIR (LP lower-cased, PATH as
 # spelled), MAP[PATH] gets LP, so a walk knows to read it against prompt_bases.
@@ -493,12 +497,13 @@ prompt_dir() { local -n pd_m="$1"; [[ ! "$2" =~ $PROMPT_DIR ]] || pd_m[$3]="$2";
 # nested one too: U2a4 i1 security F3), as PATH spells them, once each. Not
 # covered: a session started anywhere else (U2b's reader model).
 prompt_bases() {
-  local -n pb_a="$1"; local rest="/$2" n
+  local -n pb_a="$1"; local c n=0 parts=()
   pb_a=("")
-  while [[ "$rest" == */.claude/* ]]; do
-    # Up to /.claude, not /.claude/: a .claude/ directly inside another keeps its slash (U2a4 i2 fact-check 1).
-    rest="${rest#*/.claude}"; n=$(( ${#2} - ${#rest} - 8 ))
-    (( n <= 0 )) || pb_a+=("${3:0:n}")
+  # Whole components, so .claude/.claude/ keeps both bases and .claudex is none (U2a4 i2 fact-check 1, final fact-check 31).
+  IFS=/ read -r -a parts <<<"$2"
+  for c in "${parts[@]}"; do
+    [[ "$c" != .claude || $n -eq 0 ]] || pb_a+=("${3:0:n-1}")
+    n=$(( n + ${#c} + 1 ))
   done
 }
 # Paths, lower-cased, that instruction files pull in with an @ import (Claude
@@ -542,10 +547,8 @@ prompt_bases() {
 # snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
-# whose files it read, so a caller whose checkout may have changed (a file
-# added or edited) sets IMPORTED_MAIN_DONE="" to walk again, and a cached
-# error returns 1 again. A caller that changes HOME clears both
-# IMPORTED_DONE and IMPORTED_MAIN_DONE (both caches are keyed without it).
+# whose files it read, nor HOME, so a caller whose checkout or HOME may have
+# changed calls import_reset (contract item 4); a cached error returns 1 again.
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; the reader set is U2b's).
@@ -557,8 +560,7 @@ import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; }
 # (characters, newlines between names counted; awk counts bytes, so it may stop
 # first): the parser's work bound is per file, while the bash side's cost grows
 # with everything printed (performance L2 F2). A fresh clone's walks print about
-# 2 KB, /workspace's about 6 KB. A caller that changes it clears IMPORTED_DONE
-# and IMPORTED_MAIN_DONE before walking again.
+# 2 KB, /workspace's about 6 KB. A caller that changes it calls import_reset.
 IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
 # characters it scans and each resolved spelling it joins, which for a
@@ -567,7 +569,7 @@ IMPORT_OUT_MAX=4000000
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
-# that changes it clears both caches, as for IMPORT_OUT_MAX.
+# that changes it calls import_reset.
 IMPORT_WORK_MAX=50000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
@@ -597,11 +599,16 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # in a line starts a candidate, whatever precedes it and inside code spans and
 # fences too; each prefix of the run after it, up to the first blank (a NUL or
 # a UNI_SPACES space counts as one), is a candidate name, with a
-# backslash-escaped space read as a space. A line holding <!-- is also read
+# backslash-escaped space read as a space. After @" the quoted text is also
+# read whole, to its closing quote on that line or a later one (the
+# prompt-mention reader of Claude Code 2.1.293, @"([^"]+)", that a command's
+# names go through: U2a4; untraced whether command expansion calls it). A
+# line holding <!-- is also read
 # with its closed HTML comments removed (Claude Code splices them), and text
 # holding a byte above 0x7f is also read decoded as Claude Code decodes it (an
 # invalid UTF-8 sequence becomes U+FFFD). Each candidate is trimmed of spaces,
-# made absolute (ROOT_REAL/$1/name unless it starts with /) and resolved
+# made absolute (ROOT_REAL/DIR/name for $1 and each further directory, unless
+# it starts with /) and resolved
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
 # ROOT_REAL, and printed repo-relative. A ~/ name is joined to this process's
@@ -619,7 +626,8 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # empty, when a ~/ name appears and the home is not absolute, or when the
 # candidates and comment splices run past a work bound or print past
 # IMPORT_LEFT (so a pathological file fails the walk rather than stalling it).
-# Re-check the superset when Claude Code changes its import grammar, how its
+# Re-check the superset when Claude Code changes its import grammar or its
+# prompt-mention reader, how its
 # runtime reads an empty or unset HOME, or how it decodes invalid UTF-8
 # (test/agents-gemini-sync.bats holds a separate, older finder for where an
 # import starts, not these rules).
@@ -655,31 +663,39 @@ function put(c,   n, i, k, part, st, out) {
   }
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
   if (index(out, pre) != 1 || length(out) <= length(pre)) return
+  # A quoted text that spans lines can resolve to a name holding a newline,
+  # which no file a walk admits has (and a printed one would split in two).
+  if (index(out, "\n")) return
   out = substr(out, length(pre) + 1)
   if (out in seen) return
   # printed counts as the walks count: each name, a newline between names.
   seen[out] = 1; printed += length(out) + 1; if (printed - 1 > left) exit 3
   print out
 }
-function scan(line,   i, L) {
+# scan LINE CARRY: every candidate in LINE. A mention in a command may be quoted
+# (@"docs/a b.md": the prompt-mention reader of Claude Code 2.1.293, @"([^"]+)",
+# which spans lines): the run after the quote is read as an unquoted one, and
+# the whole quoted text once, at its closing quote on this line or, when CARRY
+# is set, a later one (qopen holds it meanwhile, charged as work), so prefixes
+# never grow past a blank (U2a4 i1 security F1; final security F2, performance F1).
+function scan(line, carry,   i, L, k, r) {
   L = length(line)
   for (i = 1; i <= L; i++) {
     if (substr(line, i, 1) != "@") continue
-    names(line, i + 1, L, 0)
-    # A mention in a command may be quoted (@"docs/a b.md", which the prompt-mention
-    # reader of Claude Code 2.1.293 accepts): the run after the quote is read too,
-    # up to the closing quote, blanks included (U2a4 i1 security F1, i2 fact-check 19b);
-    # such a name can match a real file, which the floor then refuses (pathform
-    # already refuses it to --check-fix).
-    if (substr(line, i + 1, 1) == "\"") names(line, i + 2, L, 1)
+    names(line, i + 1, L)
+    if (substr(line, i + 1, 1) != "\"") continue
+    names(line, i + 2, L)
+    r = substr(line, i + 2); work += length(r); if (work > wmax) exit 3
+    k = index(r, "\"")
+    if (k > 1) emit(substr(r, 1, k - 1))
+    else if (k == 0 && carry && r != "") qopen = r
   }
 }
-function names(line, j, L, q,   ch, name) {
+function names(line, j, L,   ch, name) {
   name = ""
   for (; j <= L; j++) {
     ch = substr(line, j, 1)
-    if (q) { if (ch == "\"") break }
-    else if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
+    if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
     else if (ch == " " || ch == "\t" || ch == "\r") break
     name = name ch; emit(name)
   }
@@ -700,7 +716,13 @@ BEGIN {
   left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
   wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
-{ scan($0); if (index($0, "<!--")) scan(splice($0)) }
+{
+  if (qopen != "") {
+    work += length($0); if (work > wmax) exit 3
+    k = index($0, "\""); if (k) { emit(qopen "\n" substr($0, 1, k - 1)); qopen = "" } else qopen = qopen "\n" $0
+  }
+  scan($0, 1); if (index($0, "<!--")) scan(splice($0), 0)
+}
 END { if (trail) print "/" (work + 0) }'
 # Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
 # U+10FFFF), as an awk ERE for a C-locale awk -v: it agreed with python3's
@@ -883,7 +905,7 @@ imported_names() {
 # Phase 2 begins when queue empties: tq's checkout files then join it, and a
 # path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=(); set -o pipefail  # as brief_fields
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
   local -A ent=() seen=() dir=() pok=() pdir=()
   need_root
@@ -897,8 +919,15 @@ main_imports() {
     [[ -z "${ent[$f]+set}" && "$f" != *$'\n'* ]] || return 1
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
+    [[ ! "${ent[$f]}" =~ ^1[26]0000$ ]] || links+=("$f")
   done  # then a name that is also a directory of another listed name (a crafted tree) fails:
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
+  # A link or gitlink at or below a .claude/ start directory (or .claude itself)
+  # lists its prompts under the target's path, which isstart does not know: not
+  # modelled, so it fails (U2a4 final security F1), unless the link is a start
+# itself (a rules file is followed, a prompt fails in the read arm).
+  [[ ${#links[@]} -eq 0 ]] || nul_list parts lower_all "${links[@]}" || return 1
+  for f in "${parts[@]}"; do [[ ! "/$f" =~ $START_LINK ]] || isstart "$f" || return 1; done  # a start link is read as one, below
   nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
@@ -1001,8 +1030,8 @@ truthrule() {
 # truthwalk WALK PATH: runs the import walk WALK (tree for --check-fix, main
 # for floor), then asks it about PATH (any case), as isimported WALK PATH does,
 # so a caller words a failed walk without knowing the order (override row 418).
-# Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH
-# (TRUTH_WHY=imported), else 1 with TRUTH_WHY empty; an unknown WALK answers
+# Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH or cannot
+# lower-case it (TRUTH_WHY=imported), else 1 with TRUTH_WHY empty; an unknown WALK answers
 # walk without running one. For tree or main it exits through need_root.
 truthwalk() {
   TRUTH_WHY=walk
@@ -1056,7 +1085,7 @@ floor() {
   elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
   elif truthwalk main "$lp"; then
     if [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
-    else FLOOR_WHY="an instruction file on the default branch imports it with @ (directly or through another import)"; fi
+    else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
   else return 1; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
