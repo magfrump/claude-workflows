@@ -573,6 +573,9 @@ IMPORT_OUT_MAX=4000000
 # per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# A quote left open is charged per line for all its text so far, so an
+# unclosed @" followed by about 90 KB with no " spends the bound and fails
+# the walk (fail-closed; U2a4 confirm2 security C1, override row).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
 # that changes it calls import_reset.
 IMPORT_WORK_MAX=50000000
@@ -998,6 +1001,7 @@ main_imports() {
         [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; }
         # A link to a directory or a gitlink would be dropped below, but a
         # loader may read a directory's files (untraced): it fails (confirming security F3).
+        # -d reads the checkout, as -L above does (confirm2 security C3).
         [[ -z "${dir[$out]+set}" && "${ent[$out]:-}" != 160000 && ! -d "$out" ]] || { IMPORTED_MAIN=error; return 1; } ;;
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;

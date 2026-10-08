@@ -1,9 +1,19 @@
-Commit: a3489c4f
+Commit: a9894f29
 Loop-pass short-circuit: used at 03be719e
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2a4` (U2a4, the self-merge floor over one read-as-truth rule and one start predicate), on main 7afdb8d2. Iterations 1 and 2 are in `code-review-rubric-2026-10-07-feat-build-loop-u2a4.md`.
-**Status: ⚠️ CONFIRMING PASS (Q-131 [1]) NOT CLEAN — one Medium security under-read (a regression in 2f9464d3) and Lows, all fixed (unreviewed but tested against the old lib); 599 code lines; landing goes back to the user per Q-131 (Q-132)** (single-sample review; absence of findings is not an attestation)
+**Status: ✅ Q-132 [1] SECURITY PASS — nothing Medium or above; C1 (Low, fail-closed) Won't-Fix with an override row, C2 deferred, C3 commented; landing per Q-132 [1]** (single-sample review; absence of findings is not an attestation)
+
+## Security pass after Q-132 [1] (Commit a9894f29, scope a3489c4f..185e92f1)
+
+Report: `security-reviewer-review-2026-10-08-build-loop-u2a4-confirm2.md`. F1-F4 of the previous pass hold (executed; the file-name parser read from the 2.1.293 binary). Both walks still pass on this worktree and /workspace.
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| C1 | The per-line charge of the held quote text fails the walk at about 90 KB after an unclosed `@"` (fail-closed) | 🟢 Low (introduced by 185e92f1) | Won't-Fix: override row; threshold in IMPORT_WORK_MAX's comment |
+| C2 | A spanning quote is continued only through raw lines, not the spliced reading | Informational | Deferred: override row (Claude Code hands its mention reader the raw input) |
+| C3 | `-d "$out"` reads the checkout: a checkout directory where main has a file fails the walk | Informational | Comment added |
 
 ## Confirming pass after Q-131 [1] (Commit a3489c4f, scope 2b6f2f91..a3489c4f)
 
