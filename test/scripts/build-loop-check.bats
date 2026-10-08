@@ -1247,15 +1247,17 @@ c: $IMP" ] || { echo "$output $stderr"; return 1; }
 }
 
 # show: what a failed test prints, the history included (the plan's test spec; row 223).
-show() { echo "status $status"; echo "$output"; echo "$stderr"; git log --oneline --graph --all; }
+show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
 # gated BRANCH: brief x, open and naming BRANCH (B is its path), and BRANCH with one commit.
 gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
 
-@test "under a broken log.* config --status skips the branch instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
+@test "under a broken log.* config the brief and branch reads skip instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
     gated feat/x; tip feat/x "handoff: ready"
     git config log.date bogus
     run --separate-stderr bash "$BL" --status "$B"
     [ "$status" -eq 0 ] && [ "$output" = "skip $B: Branch: its commit count or date could not be read" ] || { show; return 1; }
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-branch feat/x
+    [ "$status" -eq 0 ] && [ "$output" = "skip feat/x: its commit count or date could not be read" ] || { show; return 1; }
 }
 
 @test "--status runs no repo-local textconv driver while it finds a brief's Status commit (U2b1a1)" {
@@ -1265,4 +1267,18 @@ gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
     run --separate-stderr bash "$BL" --status "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B open "* ]] || { show; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/textconv-ran" ] || { echo "textconv ran"; return 1; }
+}
+
+@test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {
+    brief x "Status: open" "Branch: feat/x"
+    # main's tip, re-signed: a gpgsig header makes log.showSignature call gpg.program.
+    c="$(git cat-file commit main | awk 'NR == 1 { print; print "gpgsig -----BEGIN PGP SIGNATURE-----"; print " x"; print " -----END PGP SIGNATURE-----"; next } { print }' | git hash-object -t commit -w --stdin)"
+    git update-ref refs/heads/main "$c"
+    printf '#!/bin/sh\ntouch "%s/gpg-ran"; echo INJECTED\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/gpg"; chmod +x "$BATS_TEST_TMPDIR/gpg"
+    git config log.showSignature true; git config gpg.program "$BATS_TEST_TMPDIR/gpg"
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B open review feat/x absent - - 0" ] || { show; return 1; }
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-brief "$B"
+    [ "$output" = "ok $B open $c" ] || { show; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/gpg-ran" ] || { echo "gpg.program ran"; return 1; }
 }

@@ -46,7 +46,7 @@
 #             one that does not, "skip <name>: <reason>" for a name outside
 #             letters, digits, . _ - /, starting with -, not a valid branch name
 #             (HEAD, refs/...) or the default branch, or a branch whose count
-#             or date cannot be read (a broken log.* config). The commit is
+#             or date cannot be read (a broken config). The commit is
 #             refs/heads/<name>'s own, never a same-named tag's.
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
 #             file under docs/ (not the cycle's own files, working/,
