@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
+| [Q-135](#q-135--u2b1b-landing) | you: judgment | U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and ... | 2026-10-08 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -48,6 +49,30 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-135 · u2b1b-landing
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
+
+U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and R9 fixed) passed its final confirming pass with no red: may it land?
+
+- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1b.md` and the merge message `docs/working/merge-msg-build-loop-u2b1b.md`, both on `feat/build-loop-u2b1b` at 6999c037 (worktree `.claude/wt-build-loop-u2b1b`).
+- **Evidence:**
+  - Three iterations, at the cap. No pass found a red. Iteration 1's ambers were fixed in a382a3f8 and iteration 2's wording in e02d056b.
+  - The final pass (k=3, full panel, Stage 2.5) found 0 behavioral Incorrect claims. Its 4 Incorrect verdicts were test and doc text. Five security endorsements were Verified by execution.
+  - The final pass's ambers were fixed after it, in e14773a3 and 6999c037, which change text, quoting and one test. The A15 order test now fails its mutant. The lite fix-drift check found nothing.
+  - Every carried fix's mutant fails its test.
+  - Suites 101/19/78/2/2. The health check passed at 6999c037. 396 code lines.
+  - R8 (a same-uid race on the gate's temp directory) is a Q-103 residual (row 509).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Land it** | Merge `feat/build-loop-u2b1b` locally (`--no-ff`, the merge message above) after re-running the health check on the merge. | One answer. | The post-pass changes (text, quoting, one test) land reviewed only by the lite check and the suites. |
+| **[2] One more confirming pass first** | A k=1 fact-check plus security over e02d056b..6999c037, then ask again. | One answer now, one later. | Nothing; delay and about 300k tokens. |
+
+- **Blocks:** U2b2, U2b3 and U2c (stacked on it).
+- **Interim:** nothing merges. Recommended: [1]. The post-pass changes don't touch script behaviour.
+- **If the answer differs:** [2] runs the pass and re-asks with its result.
 
 ### Q-117 · verify-egress-resolve-time-ipset
 **Needs:** you: terminal · **Opened:** 2026-10-05 · **Status:** OPEN
