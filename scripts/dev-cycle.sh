@@ -50,7 +50,7 @@
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
 #             file under docs/ (not the cycle's own files, working/,
 #             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
-#             or dotfile, an instruction file, or a file an instruction file
+#             or dotfile, an instruction or prompt file, or a file one
 #             names after an @, read broadly; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise, and for every path when the import walk fails.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
@@ -177,7 +177,7 @@ check_fix() {
   if truthrule "$lp" && [[ "$TRUTH_WHY" == cycle ]]; then echo "skip $a: one of the cycle's own files (use --check-write)"
   elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
-  elif truthwalk "$lp" tree; then
+  elif truthwalk tree "$lp"; then
     if [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
     else echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"; fi
   else check_path "$a"; fi

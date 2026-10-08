@@ -1105,7 +1105,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
         for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
         claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
-        docs/decisions/1.md docs/human-author/a.md docs/thoughts/t.md docs/guide.md
+        docs/decisions/1.md docs/human-author/a.md docs/thoughts/t.md docs/guide.md Docs/Constraints.md
     [ "$output" = "claude.md: instr
 docs/x/skill.md: instr
 .claude/commands/c.md: instr
@@ -1117,7 +1117,8 @@ docs/constraints.md: user
 docs/decisions/1.md: record
 docs/human-author/a.md: record
 docs/thoughts/t.md: -
-docs/guide.md: -" ] || { echo "$output $stderr"; return 1; }
+docs/guide.md: -
+Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     mkdir -p docs/thoughts && printf 'x\n' > docs/thoughts/t.md && commit_all thoughts
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/thoughts/t.md
     [ "$output" = "ok docs/thoughts/t.md" ] || { echo "$output $stderr"; return 1; }
@@ -1166,4 +1167,40 @@ docs/guide.md: -" ] || { echo "$output $stderr"; return 1; }
         printf "@a.md @/x/b.md\n" | import_targets docs sub/ ""' _ "$LIB"
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     for p in docs/a.md sub/a.md a.md; do printf '%s\n' "$output" | grep -qxF "$p" || { echo "want $p: $output"; return 1; }; done
+}
+
+@test "instruction_names, the tree walk's prefilter, keeps exactly the names isstart accepts (U2a4 i1 architecture F6)" {
+    run --separate-stderr env LC_ALL=C bash -c 'source "$1"; ps=()
+        for d in "" a/ a/b/; do for n in CLAUDE.md claude.local.md Agents.MD agent.md GEMINI.md SKILL.md skills.md x.md x.txt claude.md.bak; do ps+=("$d$n"); done
+            for c in rules commands agents output-styles skills notes; do for t in x.md sub/X.MD x.txt; do ps+=("$d.claude/$c/$t" "$d.Claude/$c/$t"); done; done; done
+        want=$(for p in "${ps[@]}"; do l=$(lower "$p"); isstart "$l" && printf "%s\n" "$p"; done)
+        got=$(printf "%s\0" "${ps[@]}" | instruction_names | tr "\0" "\n")
+        [[ "$want" == "$got" ]] && echo same || { echo "isstart:"; echo "$want"; echo "prefilter:"; echo "$got"; }' _ "$LIB"
+    [ "$output" = same ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "both walks read a quoted prompt mention, a skill's names against the session, and every enclosing .claude/'s directory (U2a4 i1 security F1-F3)" {
+    mkdir -p .claude/commands .claude/skills/k a/.claude/commands/b/.claude/commands docs
+    printf 'run @"docs/q.md"\n' > .claude/commands/q.md
+    printf 'use @docs/k.md\n' > .claude/skills/k/SKILL.md
+    printf 'run @docs/n.md\n' > a/.claude/commands/b/.claude/commands/x.md
+    commit_all prompts
+    for w in tree main; do
+        imps "$w" docs/q.md docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md
+        want walk ok; for p in docs/q.md docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md; do want "$p" imported; done
+    done
+}
+
+@test "truthwalk empties TRUTH_WHY when it does not refuse; import_reset makes the next floor walk again (U2a4 i1 api-consistency 1, architecture F1)" {
+    printf 'see @docs/a.md\n' > CLAUDE.md && commit_all claude
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        truthwalk main docs/b.md || echo "b: [$TRUTH_WHY]"
+        truthwalk main docs/a.md && echo "a: [$TRUTH_WHY]"
+        printf "see @docs/c.md\n" > CLAUDE.local.md
+        floor docs/c.md x M || echo "c cached: -"
+        import_reset; floor docs/c.md x M && echo "c: $FLOOR_WHY"' _ "$LIB"
+    [ "$output" = "b: []
+a: [imported]
+c cached: -
+c: $IMP" ] || { echo "$output $stderr"; return 1; }
 }
