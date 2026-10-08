@@ -1246,10 +1246,100 @@ c cached: -
 c: $IMP" ] || { echo "$output $stderr"; return 1; }
 }
 
-# show: what a failed test prints, the history included (the plan's test spec; row 223).
+# chk ARG...: run build-loop.sh --check. show: what a failed --check test prints,
+# the history included (the plan's test spec; row 223).
+chk() { run --separate-stderr bash "$BL" --check "$@"; }
 show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
 # gated BRANCH: brief x, open and naming BRANCH (B is its path), and BRANCH with one commit.
 gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
+
+@test "--check: a clean merge is ok with the tip and the merged tree; main's later commits are merged, not judged; a conflict refuses (T16, U2b1a)" {
+    gated feat/x; t="$(git rev-parse feat/x)"
+    echo m > main.txt && commit_all "main moves on"
+    chk "$B"
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] && [ -z "$stderr" ] || { show; return 1; }
+    echo clash > work-feat-x.txt && commit_all clash
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
+}
+
+@test "--check's merge reads no checkout attributes: an untracked .gitattributes, or one planted in .git, cannot turn a conflict into a union merge (U2b1a)" {
+    gated feat/x
+    echo clash > work-feat-x.txt && commit_all clash
+    printf '* merge=union\n' > .gitattributes
+    printf '* merge=union\n' > .git/.gitattributes
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
+}
+
+@test "--check --expect: the tip's full id passes in either order; a stale id refuses; a short id, a name, HEAD, upper case, no value, a second --expect or two briefs are usage errors (T17, U2b1a)" {
+    gated feat/x; t="$(git rev-parse feat/x)"; m="$(git rev-parse main)"
+    for args in "$B --expect $t" "--expect $t $B"; do
+        # shellcheck disable=SC2086  # split on purpose: two argument orders
+        chk $args
+        [ "$status" -eq 0 ] && [[ "$output" == "ok $B $t "* ]] || { show; return 1; }
+    done
+    chk "$B" --expect "$m"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the tip of feat/x is $t, not the expected $m" ] || { show; return 1; }
+    for e in "${t:0:12}" feat/x HEAD "$(printf '%s' "$t" | tr abcdef ABCDEF)"; do
+        chk "$B" --expect "$e"
+        [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"full 40- or 64-hex commit id"* ]] || { show; return 1; }
+    done
+    for args in "$B --expect" "$B --expect $t --expect $t" "$B $B --expect $t" "--expect $t"; do
+        # shellcheck disable=SC2086
+        chk $args
+        [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"usage:"* ]] || { echo "args: $args"; show; return 1; }
+    done
+}
+
+@test "--check refuses a brief done, dropped or new on main, a branch absent or not ahead; skips what --status skips; answers each brief and exits 2 on any refusal (T18, F31, U2b1a)" {
+    for st in 'done' dropped; do
+        brief "$st" "Status: $st" "Branch: feat/$st"; work "feat/$st"
+        chk "$B"
+        [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the brief is $st on the default branch; only an open brief merges" ] || { show; return 1; }
+    done
+    chk docs/working/briefs/2026-10-01-new.md
+    [ "$status" -eq 2 ] && [ "$output" = "refuse docs/working/briefs/2026-10-01-new.md: the brief is new on the default branch; only an open brief merges" ] || { show; return 1; }
+    brief gone "Status: open" "Branch: feat/gone"; gone="$B"
+    brief level "Status: open" "Branch: feat/level"; level="$B"; git branch feat/level main
+    gated feat/x; x="$B"
+    chk "$gone" "$level" "$x"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $gone: its branch feat/gone does not exist
+refuse $level: its branch feat/level has no commit the default branch lacks
+ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)" ] || { show; return 1; }
+    brief twin "Status: open" "Branch: Feat/X"
+    chk "$x"
+    [ "$status" -eq 2 ] && [ "$output" = "skip $x: another open brief on the default branch names the same branch (compared ignoring case)" ] || { show; return 1; }
+}
+
+@test "--check's state gate refuses each planted git state that can run a command or change the merge, before reading any brief (T26, U2b1a)" {
+    gated feat/x
+    for kv in filter.x.clean=true filter.x.smudge=true include.path=/dev/null includeIf.gitdir:/x/.path=/dev/null \
+              hook.x.command=true merge.x.driver=true merge.renormalize=true diff.ignoreSubmodules=all diff.x.textconv=true \
+              core.fsmonitor=true core.attributesFile=/dev/null core.hooksPath=/dev/null gpg.program=true log.showSignature=true \
+              extensions.partialClone=origin remote.origin.promisor=true; do
+        git config "${kv%%=*}" "${kv#*=}"
+        chk "$B"
+        [ "$status" -eq 2 ] && [[ "$output" == "refuse state "*": set in config, it can make the gate's git run a command or change its merge" ]] \
+            && [ "${#lines[@]}" -eq 1 ] || { echo "key: $kv"; show; return 1; }
+        git config --unset "${kv%%=*}"
+    done
+    git config extensions.worktreeConfig true && git config --worktree merge.y.driver true
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state merge.y.driver: set in config.worktree, it can make the gate's git run a command or change its merge" ] || { show; return 1; }
+    git config --worktree --unset merge.y.driver
+    printf '* merge=union\n' > .git/info/attributes
+    git rev-parse main > .git/info/grafts
+    git rev-parse main > .git/shallow
+    git replace "$(git rev-parse main)" "$(git rev-parse feat/x)"
+    git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/feat/x
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state info/attributes: present and not empty
+refuse state info/grafts: present and not empty
+refuse state shallow: present and not empty
+refuse state refs/replace: 1 replace ref(s)
+refuse state origin/HEAD: it names a branch other than origin/main or origin/master" ] || { show; return 1; }
+}
 
 @test "under a broken log.* config the brief and branch reads skip instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
     gated feat/x; tip feat/x "handoff: ready"
@@ -1260,13 +1350,71 @@ gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
     [ "$status" -eq 0 ] && [ "$output" = "skip feat/x: its commit count or date could not be read" ] || { show; return 1; }
 }
 
-@test "--status runs no repo-local textconv driver while it finds a brief's Status commit (U2b1a1)" {
+@test "build-loop.sh and the reader lib never push (T20, U2b1a)" {
+    run grep -nwi push "$BL" "$LIB"
+    [ "$status" -eq 1 ] || { echo "$output"; return 1; }
+}
+
+@test "--check refuses a partial clone before any object is read: a promisor remote's upload-pack never runs for a missing object (R1, U2b1a i1)" {
+    gated feat/x
+    # A lazy fetch of a missing blob would run the promisor remote's upload-pack, so it leaves a mark.
+    git config remote.origin.url "$BATS_TEST_TMPDIR/nowhere"
+    git config remote.origin.uploadpack "touch $BATS_TEST_TMPDIR/fetched; git-upload-pack"
+    git config remote.origin.promisor true
+    git config extensions.partialClone origin
+    # main's tip commit: resolve_main reads it, so the gate must run before resolve_main.
+    o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state remote.origin.promisor: set in config, it can make the gate's git run a command or change its merge
+refuse state extensions.partialclone: set in config, it can make the gate's git run a command or change its merge" ] || { echo "$status $output $stderr"; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
+}
+
+@test "every git call --check makes carries harden's config pairs (core.hooksPath=/dev/null among them), no global config and no transport (T26, A4, U2b1a i1, i2)" {
+    gated feat/x
+    # A shim ahead of git logs each call's config pairs, then runs the real git.
+    S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
+    printf '#!/bin/bash\nl=""; for ((i = 0; i < ${GIT_CONFIG_COUNT:-0}; i++)); do k="GIT_CONFIG_KEY_$i"; v="GIT_CONFIG_VALUE_$i"; l+=" ${!k}=${!v}"; done\necho "$l G=$GIT_CONFIG_GLOBAL P=$GIT_ALLOW_PROTOCOL" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"
+    chmod +x "$S/git"
+    PATH="$S:$PATH" chk "$B"
+    [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
+    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
+    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false G=/dev/null P=none; do
+        ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
+    done
+}
+
+@test "--status runs no repo-local textconv driver while it finds a brief's Status commit (C3, U2b1a i1)" {
     gated feat/x
     git config diff.x.textconv "touch $BATS_TEST_TMPDIR/textconv-ran; cat"
     printf '*.md diff=x\n' > .gitattributes
     run --separate-stderr bash "$BL" --status "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B open "* ]] || { show; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/textconv-ran" ] || { echo "textconv ran"; return 1; }
+}
+
+@test "--check's merge opens no submodule repository: a promisor one under .git/modules never fetches, and the moved gitlink is a conflict (U2b1a i2)" {
+    gated feat/x
+    s1="$(printf '%040d' 0 | tr 0 a)"; s2="${s1//a/b}"; s3="${s1//a/c}"
+    printf '[submodule "sm"]\n\tpath = sub\n\turl = ./nowhere\n' > .gitmodules
+    git update-index --add --cacheinfo "160000,$s1,sub"; commit_all sub1
+    git checkout -q feat/x; git merge -q main -m m1; git update-index --add --cacheinfo "160000,$s2,sub"; git commit -q -m sub2; git checkout -q main
+    git update-index --add --cacheinfo "160000,$s3,sub"; git commit -q -m sub3
+    git init -q --bare .git/modules/sm
+    git -C .git/modules/sm config remote.origin.url "$BATS_TEST_TMPDIR/nowhere"
+    git -C .git/modules/sm config remote.origin.uploadpack "touch $BATS_TEST_TMPDIR/fetched; git-upload-pack"
+    git -C .git/modules/sm config remote.origin.promisor true
+    git -C .git/modules/sm config extensions.partialClone origin
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
+}
+
+@test "--check merges in a SHA-256 repository: TIP and TREE are 64-hex (U2b1a i2)" {
+    rm -rf .git && git init -q -b main --object-format=sha256 && git commit -q --allow-empty -m initial
+    gated feat/x; t="$(git rev-parse feat/x)"
+    chk "$B" --expect "$t"
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
 }
 
 @test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {

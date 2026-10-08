@@ -1,9 +1,49 @@
-Commit: 9e5d92df
+Commit: 63ea50e7
 Loop-pass short-circuit: used at 93655b47
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b1a` (U2b1a, `--check`'s frame: hardened git, state gate, `--expect`, brief and branch checks, merge-tree), on main 5d39307a.
-**Status: ⚠️ ITERATION 2 NOT CLEAN — one behavioral red (merge-tree opened a submodule repository and lazily fetched through its config) and three High security findings; R2, F1, F2 fixed, F3 deferred (plan-level); the unit then measured 439 lines and split (U2b1a1 reader fixes, U2b1a2 --check), whose loops continue from here** (single-sample review; absence of findings is not an attestation)
+**Status: ⛔ ITERATION 3 (U2b1a2) AT THE CAP — four reds open (R6-R9); decision: escalate (Q-133); answered [3]: landed with R6-R9 and A15-A19 as known issues (override rows), fixed in U2b1b; U2b1a1 split off and clean** (single-sample review; absence of findings is not an attestation)
+
+## Iteration 3 of 3: final confirming pass on U2b1a2 (Commit 63ea50e7, k=3, full panel, scope `feat/build-loop-u2b1a1...HEAD`)
+
+U2b1a split at iteration 2 for size (U2b1a1 below it, its own loop, clean); this loop's counter continued on U2b1a2. Delivery mode: inline-diff-only, as a file. Reports: `code-fact-check-report-build-loop-u2b1a2-final.md` (merged r1-r3: 56 clusters, 43 Verified, 5 Mostly accurate, 3 Stale, 5 Incorrect; agreement 50/56), `security-reviewer-review-2026-10-08-build-loop-u2b1a2-final.md` (2 High, 1 Low; the first security agent damaged the worktree with a probe whose temp-dir variable was unset and wrote no report: restored by update-ref with CAS, junk branch `feat/x` left for the user), `performance-reviewer-review-2026-10-08-build-loop-u2b1a2-final.md` (2 Low), `api-consistency-reviewer-review-2026-10-08-build-loop-u2b1a2-final.md` (5 Minor, 3 Informational), `architecture-review-review-2026-10-08-build-loop-u2b1a2-final.md` (3 Coupling, 3 Minor, 2 Informational).
+
+### 🔴 Must Fix (iteration 3)
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| R6 | merge_result trusts merge-tree's exit status and drops its stderr: with the tip's tree object missing, merge-tree prints `error: Could not read <tree>`, exits 0, and `--check` prints `ok BRIEF TIP TREE` for a tree that treats the branch side as empty (P2 deleted the brief). | Incorrect (high), behavioral | fact-check Claim 42 (r3, executed); architecture 5 | Open (cap) |
+| R7 | origin/HEAD fix bypass: a loop creates a local `master` at any commit and points origin/HEAD at origin/master; the state gate accepts it, resolve_main takes `master`, and a brief `done` on the real main prints ok (P1). In a master-only repo a loop-made `main` wins without touching origin/HEAD (P1b). | High | security F1 (executed) | Open (cap) |
+| R8 | A same-uid process can write the gate's own `GATE_TMP` (merge driver in `git/config`, `* merge=X` in `info/attributes` or `work/.gitattributes`) between gate_repo and merge-tree (~40 ms); the driver ran and a conflicting merge printed ok with the planted tree, 3 of 3 (P2). Row 494's "the gate repository closes merge-tree" is false against a racing writer. | High | security F2 (executed) | Open (cap) |
+| R9 | The submodule test is vacuous (`commit_all` drops the base gitlink; no merge base); it passes with merge-tree in the real repo. Nothing pins gate_repo's submodule isolation; the rubric's R2 and mutant notes are false. | Incorrect (all 3 replicates) | fact-check Claims 2, 3, 51 | Open (cap) |
+
+### 🟡 Must Address (iteration 3)
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| A15 | No test pins "state gate before any object read" (GIT_ALLOW_PROTOCOL hides the order); R1's "both mutants let upload-pack run" is Stale. | fact-check Claims 16, 49 | Open (cap) |
+| A16 | U2b1b's `diff-tree` in the real repo hides a moved gitlink under `submodule.<name>.ignore=all` (repo config) or an uncommitted `.gitmodules` with `ignore = all`; plan F8's `-c diff.ignoreSubmodules=none` does not fix it, `--ignore-submodules=none` or the gate repo does (probed). | architecture 1 | Open: plan F8 to correct before U2b1b |
+| A17 | System config reaches every gate call (`merge.directoryRenames` flipped a conflict); root-owned here. Alternates, packs and the multi-pack-index are object sources F3's row does not name; a planted pack may shadow a loose object (untested). | fact-check Claims 15, 31, 39; security lead (c) | Open (cap) |
+| A18 | `core.commitGraph=false` costs 8-48 ms per history walk, three walks per brief; check_line's re-read repeats one (row 500's price is stale). | performance F1, F2 | Open (cap) |
+| A19 | Doc drift: --check help's state-gate list omits shallow and origin/HEAD; state_gate comment's key list; "present and not empty" for a symlink or directory; "every line ok" exit wording would force U2b1b's path lines to start with ok; `refuse state gate:` is not a state line. | fact-check Claims 21, 34, 35; api 1-5 | Open (cap) |
+
+### Iteration-4 gate decision
+
+**Answered 2026-10-08, Q-133 [3]:** land U2b1a2 as is; R6-R9 and A15-A19 carried to U2b1b with override rows. `--check` can print ok for a wrong merge until then; nothing merges through it before U3.
+
+## Iterations (3 completed)
+Iteration 1 (k=1, short-circuit): R1 partial-clone lazy fetch, fixed. Iteration 2 (k=1, full panel): R2 submodule lazy fetch, security F1/F2/F4-F8, fixed; split at 439 lines. Iteration 3 (k=3, full panel, on U2b1a2): R6-R9 above.
+## Remaining Must Fix
+R6 (missing object read as an empty side), R7 (local master + origin/HEAD), R8 (race on GATE_TMP), R9 (vacuous test).
+## Remaining Must Address
+A15-A19.
+## Convergence diagnosis (one sentence)
+Each pass closes the git read paths the last one found and the security critic finds the next one a same-uid hostile loop can use (planted config, objects, refs, now a race on the gate's own temp directory), so the loop is converging on the honest-path defects (R6, R9) but not on a threat model the plan itself scopes out ("What the gate can and cannot do": a loop with a shell is not contained; its residuals go to Q-103).
+## Recommended action (ship-with-issues / split-PR / pause for redesign)
+Pause for a threat-model ruling, then one more iteration: fix R6 (refuse on any merge-tree stderr and check the tip, main and base trees exist), R7 (refuse when the default branch is ambiguous: both main and master, or origin/HEAD naming a branch whose local ref is not the one resolve_main picks), R9 and A15 (real fixtures), A16-A19's wording and F8; record R8 and A17's object sources with F3 as hostile-loop residuals in Q-103.
+
+Decision: **escalate** (Q-133). A split would not converge either: the open reds sit in both halves and the architecture critic found the halves' output contract is not separable (a lower half would print ok for a conflict).
 
 ## Iteration 2 of 3 (Commit 9e5d92df, `--loop-pass`, k=1, `--full`: the critics had not yet seen the branch)
 
