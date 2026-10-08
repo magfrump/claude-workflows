@@ -120,6 +120,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 | [Q-131](#q-131--u2a4-land-over-cap) | U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but ... | 2026-10-08 |
+| [Q-132](#q-132--u2a4-confirm-pass-regression) | U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes int... | 2026-10-08 |
 <!-- index:end -->
 
 ## Answered
@@ -2258,4 +2259,28 @@ U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and e
 - **Interim:** nothing merges. The branch holds at a3489c4f. Recommended: [1], as with U2a3c (Q-128/Q-129).
 - **If the answer differs:** [3] reworks the branch into two units; [2] skips the pass.
 
+
+### Q-132 · u2a4-confirm-pass-regression
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes introduced, plus Lows. All are fixed and tested, and by Q-131's rule the landing comes back to you: how should it land? **Answered 2026-10-08: [1].** The security-only pass over 185e92f1 found nothing Medium or above (C1 Low fail-closed, Won't-Fix; C2, C3 Informational); merged at 73589cd7.
+
+- **Why it's yours:** Q-131 [1] routed any new finding back to you, and the unit is now 599 code lines (cap 400, already waived).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2a4.md`, section "Confirming pass after Q-131 [1]" (rows CP1-CP8), on `feat/build-loop-u2a4` at a9894f29, worktree `.claude/wt-build-loop-u2a4`.
+- **Evidence:**
+  - Fact-check (k=1, 32 claims): 0 Incorrect, 2 Stale comments. Security, checked against the installed Claude Code 2.1.293 binary: 1 Medium, 4 Low.
+  - The Medium (CP1): 2f9464d3's quoted-mention rewrite stopped reading `@"docs/a b.md#L5"` as `docs/a b.md` (Claude Code drops the `#L5`), so the floor would have let that file self-merge. Fixed in 185e92f1, along with an open quote at line end, a start-named link to a directory, an uncharged quadratic carry (193 s at 4 MB, now fails the bound) and the comments.
+  - Deferred: a quoted name holding an NBSP is read with a blank (Low, pre-existing; override row, known issue A5).
+  - Tests: build-loop-check 79/79; the new cases fail on the old lib. The other suites pass; `--check-fix` gives main's answers on every tracked path; the lite fix-drift check over 185e92f1 found nothing. The health check passed at a3489c4f and is re-run before any merge.
+  - Pattern: each of the last two fix batches to the quoted-mention reader brought one new finding, both in that reader (an untraced superset of Claude Code's reader).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Security-only pass over 185e92f1; land unless Medium+** | The security critic (with the binary as oracle) reviews just the latest fixes. No Medium or above → fix any Lows, merge locally without asking again. Medium or above → back to you. | One answer now; another only if it finds Medium+. | A Low the pass finds lands fixed but unreviewed; a miss lands in a floor that has no caller until U2c. |
+| **[2] Land now** | Health check on HEAD, merge message, local merge at a9894f29. | One answer. | An error in 185e92f1's parser changes reaches main unreviewed. Nothing calls the floor until U2c, whose review reads it again. |
+| **[3] Split** | The prompt-file layer (commands/agents/skills starts, quoted mentions, session bases) moves to U2a4b with its own loop; U2a4 lands the floor, truthrule/truthwalk, `.claude/rules/` starts and the contract. | One answer, plus a later U2a4b landing. | Until U2a4b lands, a doc only a `.claude/commands/` file imports passes the floor and `--check-fix`, as on main today (row 435); the rework costs a session. |
+
+- **Blocks:** U2a4's merge, and U2b/U2c, which stack on it.
+- **Interim:** nothing merges; the branch holds at a9894f29. Recommended: [1]. The last finding was a Medium in the same reader, so one targeted pass is cheap insurance, and it lands without another ask if clean.
+- **If the answer differs:** [2] skips the pass; [3] reworks the branch into two units.
 
