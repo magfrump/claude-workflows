@@ -3,7 +3,7 @@ Loop-pass short-circuit: used at 93655b47
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b1a` (U2b1a, `--check`'s frame: hardened git, state gate, `--expect`, brief and branch checks, merge-tree), on main 5d39307a.
-**Status: ⚠️ ITERATION 2 NOT CLEAN — one behavioral red (merge-tree opened a submodule repository and lazily fetched through its config) and three High security findings; R2, F1, F2 fixed, F3 deferred (plan-level); the unit then measured 439 lines and split (U2b1a1 reader fixes, U2b1a2 --check), whose loops continue from here** (single-sample review; absence of findings is not an attestation)
+**Status: ⛔ ITERATION 3 (U2b1a2) AT THE CAP — four reds open (R6-R9); decision: escalate (Q-133); U2b1a1 split off and clean** (single-sample review; absence of findings is not an attestation)
 
 ## Iteration 3 of 3: final confirming pass on U2b1a2 (Commit 63ea50e7, k=3, full panel, scope `feat/build-loop-u2b1a1...HEAD`)
 
