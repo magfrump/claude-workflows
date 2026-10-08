@@ -1,8 +1,34 @@
-Commit: 809df345
+Commit: a382a3f8
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b1b` (U2b1b: `--check`'s changed-path lines and N rules, plus U2b1a2's carried R6, R7, R9, A15, A17, A19), on main 0e4596ce.
-**Status: 🟡 ITERATION 1 — no red; ambers to fix or acknowledge** (single-sample review; absence of findings is not an attestation)
+**Status: 🟡 ITERATION 2 — no red, no behavioral amber; wording fixed in batch 2; final confirming pass next** (single-sample review; absence of findings is not an attestation)
+
+## Iteration 2 of 3 (Commit a382a3f8, `--loop-pass`, k=1, scope `809df345..a382a3f8`, incremental)
+
+Reports: `code-fact-check-report-build-loop-u2b1b-i2.md` (30 claims: 25 Verified, 5 Mostly accurate, 0 Incorrect; the missing-blob mutant fails R6; six merge-tree probes match a382a3f8's correction paragraph), `security-reviewer-review-2026-10-08-build-loop-u2b1b-i2.md`, `performance-reviewer-review-2026-10-08-build-loop-u2b1b-i2.md`, `api-consistency-reviewer-review-2026-10-08-build-loop-u2b1b-i2.md`, `architecture-review-review-2026-10-08-build-loop-u2b1b-i2.md`. Prior items verified: security F1, F2; performance F1 (5,000 paths 13,460 ms → about 1,340 ms); api 1-3; architecture 1, 2, 5: all resolved. No re-fire.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | Wording (Mostly accurate): A16 pinned only jointly (test comment); "which security F2 now refuses" covers blobs, not subtrees (diff-tree refuses those); own_blob "Returns 1"; "a tr per path cost 2.5 ms"; "every new file" means regular files. | Mostly accurate | fact-check i2 1-5 | Fixed in batch 2 (comments; the a382a3f8 message's subtree point is corrected in batch 2's message); the joint pin: Won't-Fix row |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D1 | nrules depends on truthrule's word order (instr and dot tested before cycle); fails open if a future word shadows cycle. | architecture i2 1, security i2 2 | Fixed: the invariant is stated in nrules and in truthrule's comment, which names the N rules as a consumer; T14 pins today's families |
+| D2 | Plan F12 and the `--state` line lag the code (subtrees, constraints, default_gate). | architecture i2 2, api i2 2 | Fixed in the plan |
+| D3 | Help: "(a .git part included)" understates pathform; the refusal said "a file" where the help says a blob, and filed it under "could not be computed"; a wrong-typed object reads as missing. | api i2 1, 3; security i2 1 | Fixed: help and message say "names a blob the object store lacks" (absent, or not a blob), as its own case |
+| D4 | default_gate printing both findings has no test. | fact-check i2, api i2 | Fixed: R7 test writes a master ref naming a tree |
+| D5 | The K-of-N line names TIP, sibling refusals a branch. | api i2 4 | Won't-Fix (row) |
+| D6 | Row 509's surface omits `git/refs/` and `git/HEAD`; check_line's phases and nrules' seven arguments; floor on already-denied paths. | fact-check i2, architecture i2 3, 4 | Rows 509, 512, 517 updated |
+| D7 | Prices: truthrule per path, the batch-check, linear at 0.25 ms per path. | performance i2 F1, F2 | Won't-Fix (row) |
 
 ## Iteration 1 of 3 (Commit 809df345, `--loop-pass`, k=1, full branch: no prior rubric)
 

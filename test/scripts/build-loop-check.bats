@@ -1506,7 +1506,8 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
 
 @test "--check refuses a symlink or gitlink on either side, though submodule ignore=all is set, and passes an exec bit (T12, F7, A16, U2b1b)" {
     mkdir -p scripts && echo a > f.txt && echo b > g.txt && echo s > scripts/x.sh
-    # ignore = all in .gitmodules and the repo config: diff-tree in the real repository would hide gl (A16).
+    # ignore = all in .gitmodules and the repo config: diff-tree in the real repository without
+    # --ignore-submodules=none would hide gl (A16). The gate repository and the flag each suffice, so this pins them together.
     printf '[submodule "gl"]\n\tpath = gl\n\turl = ./x\n\tignore = all\n[submodule "og"]\n\tpath = og\n\turl = ./x\n\tignore = all\n' > .gitmodules
     commit_all files; git config submodule.gl.ignore all; git config submodule.og.ignore all
     ln -s f.txt was-link && commit_all link
@@ -1546,7 +1547,7 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     b="$(echo absent | git hash-object --stdin)"
     tip feat/x "add" "$( (git ls-tree main; printf '100644 blob %s\tnew.txt\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
     chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a file the object store lacks" ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
 }
 
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
@@ -1557,7 +1558,13 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     git symbolic-ref --delete refs/remotes/origin/HEAD
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist" ] || { show; return 1; }
-    git branch -D -q master; git branch -m main master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+    # Both findings at once: a master ref that names no commit is not taken, so origin/HEAD disagrees too.
+    git rev-parse main^{tree} > .git/refs/heads/master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master  # git refuses to write it
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist
+refuse state default-branch: origin/HEAD names origin/master, but the default branch taken is main" ] || { show; return 1; }
+    rm .git/refs/heads/master
+    git branch -m main master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: origin/HEAD names origin/main, but the default branch taken is master" ] || { show; return 1; }
 }

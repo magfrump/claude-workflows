@@ -1074,6 +1074,8 @@ isimported() {
   esac
 }
 # The read-as-truth rule --check-fix and floor share (plan D5 items 1, 2 and 4;
+# build-loop.sh's N rules read its cycle, settings and user words too, so a
+# word tested before them must never match a file those words cover:
 # override rows 204, 322, 348), for a lower-cased path: returns 0 with
 # TRUTH_WHY set when it refuses: instr (isstart: an instruction or prompt
 # file), dot (a .-prefixed component, a top-level one included), cycle

@@ -104,10 +104,11 @@
 #                 after --status read it, TIP is not SHA, the merge conflicts,
 #                 or the merge (or its changed paths) could not be computed:
 #                 git failed, or warned on stderr (a missing tree object), or
-#                 the tree of main, TIP or a merge base is missing; or a file
-#                 the merge adds or changes names a blob the object store
-#                 lacks. Or "K of N changed paths refused in the merge of TIP
-#                 (tree TREE)", when deny lines follow.
+#                 the tree of main, TIP or a merge base is missing. Or "the
+#                 merge of BRANCH names a blob the object store lacks": a
+#                 regular file the merge adds or changes names an object that
+#                 is absent or not a blob. Or "K of N changed paths refused in
+#                 the merge of TIP (tree TREE)", when deny lines follow.
 #             skip BRIEF: WHY
 #                 As --status skips it.
 #             After an ok line or a K of N refusal, one line per path TREE
@@ -118,7 +119,7 @@
 #             path BRIEF S PATH
 #             deny BRIEF S PATH: WHY
 #                 The N rules, under either policy: a path pathform refuses
-#                 (a .git part included); a mode other than 100644 or 100755
+#                 (a part starting .git, any case: .github/); a mode other than 100644 or 100755
 #                 on either side (a symlink or gitlink); the brief's own file,
 #                 unless only its first Status: line outside a fence changes,
 #                 from open to done (mode kept); and, compared lower-cased, the
@@ -530,8 +531,8 @@ merge_result() {
 # The blob id the brief's own file $1 may have in the merge (F13): main's copy
 # with its first Status: line outside a fence, the one brief_fields reads
 # (status_line has read it as "Status: open"), reading "Status: done", every
-# other byte kept (a CR at its end too). Returns 1 when a read fails; the
-# caller checks it (hash-object would hash a truncated read).
+# other byte kept (a CR at its end too). Returns non-zero when a read fails;
+# the caller checks it (hash-object would hash a truncated read).
 own_blob() {
   local n
   # The whole blob is read (no early exit: SIGPIPE under pipefail).
@@ -558,7 +559,10 @@ nrules() {
     { [[ "$5" == M && "$2" == "$3" ]] && ob="$(own_blob "$1")" && [[ "$4" == "$ob" ]]; } \
       || DENY="this brief: only its first Status: line outside a fence may change, from open to done"
   else
-    truthrule "$7" || true  # $7 is lower-cased, so no word hides cycle, settings or user
+    # $7 is lower-cased, so the case word cannot fire; instr and dot, tested
+    # before cycle, match no cycle file, docs/dev-cycle.md or docs/constraints.md
+    # today (T14 fails if one ever does: truthrule names this third consumer).
+    truthrule "$7" || true
     case "$TRUTH_WHY" in
       cycle|settings) DENY="one of the dev cycle's own files" ;;
       user) DENY="the user's constraints doc, which every loop prompt carries" ;;
@@ -605,12 +609,14 @@ check_line() {
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "ok $a $sha $tree"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
-  # blob the store lacks would land unseen: every new file must be present.
+  # blob the store lacks would land unseen: every regular file the merge adds
+  # or changes must name a blob present in the store (a missing subtree already
+  # failed diff-tree).
   if [[ ${#ids[@]} -gt 0 ]] && { ! out="$(printf '%s\n' "${ids[@]}" | gate_git cat-file --batch-check='%(objecttype)')" \
     || [[ "$(printf '%s\n' "$out" | grep -cx blob)" -ne ${#ids[@]} ]]; }; then
-    echo "refuse $a: the merge of $br names a file the object store lacks"; return
+    echo "refuse $a: the merge of $br names a blob the object store lacks"; return
   fi
-  # One lower-casing pass for every path (a tr per path cost 2.5 ms each).
+  # One lower-casing pass for every path (a tr per path cost 1 to 2.5 ms each).
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
     p="${ps[$i]}"; shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
