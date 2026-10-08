@@ -5,6 +5,7 @@
 #
 # Usage: scripts/build-loop.sh --settings
 #        scripts/build-loop.sh --status BRIEF...
+#        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh -h | --help
 #
 #   --settings  four lines from the default branch's commit, never the working
@@ -74,13 +75,38 @@
 #                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
 #                 briefs on main could not be listed.
+#   --check   the gate (D7), advisory when a loop runs it. First a state gate:
+#             a git config key (common config or config.worktree, includes not
+#             followed) for a filter, include, config hook, merge or diff
+#             setting, core.fsmonitor, core.attributesFile, core.hooksPath,
+#             gpg.*, log.showSignature, extensions.partialClone or
+#             remote.*.promisor (a partial clone), a non-empty info/attributes or
+#             info/grafts, or a replace ref prints "refuse state WHAT: WHY"
+#             per finding and exits 2 before any brief is read. Then one line
+#             per brief path, in argument order:
+#             ok BRIEF TIP TREE
+#                 --status reads the brief as open and its branch at TIP, at
+#                 least one commit ahead of main (and TIP equals SHA when
+#                 --expect is given, a full 40- or 64-hex id with exactly one
+#                 brief); TREE is the merge of TIP into main as merge-tree
+#                 writes it, run where no checkout's attributes are read.
+#             refuse BRIEF: WHY
+#                 The brief is done, dropped or new on main, its branch is
+#                 absent or not ahead, it moved or could not be read again
+#                 after --status read it, TIP is not SHA, the merge conflicts,
+#                 or the merge could not be computed.
+#             skip BRIEF: WHY
+#                 As --status skips it.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
-# found by name (origin/HEAD, main or master). Read-only: writes nothing.
+# found by name (origin/HEAD, main or master). Writes nothing but --check's
+# merge objects (merge-tree writes the merged trees and blobs into the object
+# store) and its own temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
-# Exit: 0 every line printed (or help); 1 bad usage, not a git repo, no perl or
-# lib/dev-cycle-read.sh, or no default branch found by name.
+# Exit: 0 every line printed (or help), and for --check every line ok; 2 any
+# --check line or the state gate not ok; 1 bad usage, not a git repo, no perl
+# or lib/dev-cycle-read.sh, or no default branch found by name.
 
 set -euo pipefail
 
@@ -95,27 +121,92 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF...)" >&2; exit 1; }
-MODE=""; ARGS=()
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA])" >&2; exit 1; }
+MODE=""; ARGS=(); EXPECT=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
+  --check)
+    MODE=check; shift
+    while [[ $# -gt 0 ]]; do
+      if [[ "$1" == --expect ]]; then
+        [[ $# -ge 2 && -z "$EXPECT" ]] || usage "--expect takes one commit id, given once"
+        # The full id only: a short id, a branch name or HEAD would let git pick the commit.
+        [[ "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || usage "--expect takes a full 40- or 64-hex commit id"
+        EXPECT="$2"; shift 2
+      else ARGS+=("$1"); shift; fi
+    done
+    [[ ${#ARGS[@]} -gt 0 ]] || usage "--check needs at least one brief path"
+    [[ -z "$EXPECT" || ${#ARGS[@]} -eq 1 ]] || usage "--expect goes with exactly one brief path" ;;
   # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
   -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
   *) usage "Unknown option: $1" ;;
 esac
 
+# Every git call in this process, the lib's included, runs hardened. Config
+# pairs outrank the repo's config: main's own objects (core.useReplaceRefs in
+# the repo's config would override GIT_NO_REPLACE_OBJECTS), no hook, no
+# fsmonitor command, no core.attributesFile, no commit-graph (a forged one
+# changes merge bases). GIT_CONFIG_GLOBAL=/dev/null: a loop can write the
+# user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
+# transport at all, so a lazy fetch (a partial clone's missing object) fails
+# however the config was planted, even after the state gate read it. The
+# caller's own environment is trusted: its `git -c` or a zero-padded
+# GIT_CONFIG_COUNT can still win (U3b's --state). What the rest cannot switch
+# off, --check's state gate refuses.
+harden() {
+  local c="${GIT_CONFIG_COUNT:-0}" kv
+  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false; do
+    export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
+  done
+  export GIT_CONFIG_COUNT="$c"
+}
+harden
+export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_ALLOW_PROTOCOL=none
+# The gate's state check (D7, F25): repo-local git state that can make the
+# gate's git run a command or change what it reads, which harden does not
+# switch off. Prints one "refuse state WHAT: WHY" line per finding, returns 1
+# on any, and reads no object (git config --file --no-includes follows no
+# include; --git-path reads no index). Keys, in the common config and this
+# worktree's config.worktree: filter, merge and diff drivers (commands), config
+# hooks, includes, core.attributesFile, gpg and log.showSignature (gpg.program
+# runs), and a partial clone (extensions.partialClone, remote.*.promisor;
+# GIT_ALLOW_PROTOCOL already stops its fetch). Files: a non-empty
+# info/attributes, info/grafts or shallow (each changes merges or history), a
+# ref under refs/replace/, and an origin/HEAD naming any branch but
+# origin/main or origin/master (resolve_main would take the default branch
+# from it).
+STATE_KEYS_RE='^(filter\.|include|hook\.|merge\.|diff\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|log\.showsignature|extensions\.partialclone$|remote\..*\.promisor$)'
+state_gate() {
+  local f p out rc line bad=0 refs
+  for f in config config.worktree; do
+    p="$(git rev-parse --path-format=absolute --git-path "$f" 2>/dev/null)" || { echo "refuse state $f: its path could not be read"; return 1; }
+    [[ -f "$p" ]] || { [[ "$f" == config.worktree ]] && continue; echo "refuse state config: no git config file at $p"; return 1; }
+    rc=0; out="$(git config --file "$p" --no-includes --name-only --get-regexp "$STATE_KEYS_RE")" || rc=$?
+    if [[ "$rc" -gt 1 ]]; then echo "refuse state $f: it could not be read (git config exit $rc)"; bad=1; continue; fi
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && { echo "refuse state $line: set in $f, it can make the gate's git run a command or change its merge"; bad=1; }
+    done <<<"$out"
+  done
+  for f in info/attributes info/grafts shallow; do
+    p="$(git rev-parse --path-format=absolute --git-path "$f" 2>/dev/null)" || { echo "refuse state $f: its path could not be read"; return 1; }
+    if [[ -s "$p" || -L "$p" || ( -e "$p" && ! -f "$p" ) ]]; then echo "refuse state $f: present and not empty"; bad=1; fi
+  done
+  refs="$(git for-each-ref --format='%(refname)' refs/replace/)" || { echo "refuse state refs/replace: could not be listed"; return 1; }
+  [[ -z "$refs" ]] || { echo "refuse state refs/replace: $(printf '%s\n' "$refs" | wc -l) replace ref(s)"; bad=1; }
+  rc=0; p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || rc=$?
+  if [[ "$rc" -gt 1 ]] || [[ -n "$p" && "$p" != refs/remotes/origin/main && "$p" != refs/remotes/origin/master ]]; then
+    echo "refuse state origin/HEAD: it names a branch other than origin/main or origin/master"; bad=1
+  fi
+  return "$bad"
+}
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules
 ROOT_REAL="$(pwd -P)"
-# Read main's own objects: a replace ref could swap in any settings blob.
-# core.useReplaceRefs in the repo's config would override the variable, so a
-# config-count pair turns it off. The caller's own environment is trusted: its
-# `git -c` or a zero-padded GIT_CONFIG_COUNT can still win (U3b's --state).
-cfg="${GIT_CONFIG_COUNT:-0}"; export "GIT_CONFIG_KEY_$cfg=core.useReplaceRefs" "GIT_CONFIG_VALUE_$cfg=false" GIT_CONFIG_COUNT=$((cfg + 1))
-export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1
+# --check refuses planted state before any git call reads an object (resolve_main does).
+if [[ "$MODE" == check ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
 
@@ -345,6 +436,57 @@ status_line() {
   echo "ok $a $st $pol $br $loop $sha $date $disp$reason"
 }
 
+# merge_result's own repository, set up once per run in GATE_TMP (the caller's
+# mktemp -d, removed at exit): a git dir with no config but the repo's object
+# format, no modules/, info/ or shallow, and an empty directory to run in, so
+# merge-tree reads none of the repo's config (a submodule repository under
+# .git/modules is never opened), no checkout's .gitattributes (git 2.39 reads
+# one from the current directory even under --work-tree), and only the repo's
+# object store (GIT_OBJECT_DIRECTORY, where it also writes). GATE_ENV unsets the
+# repo-local variables (GIT_COMMON_DIR and the like) that would point it back.
+GATE_TMP=""; GATE_ENV=()
+gate_repo() {
+  local fmt v
+  GATE_ENV=(env)
+  for v in $(git rev-parse --local-env-vars); do [[ "$v" == GIT_CONFIG* || "$v" == GIT_NO_REPLACE_OBJECTS ]] || GATE_ENV+=(-u "$v"); done
+  v="$(git rev-parse --path-format=absolute --git-path objects)" && fmt="$(git rev-parse --show-object-format)" \
+    && [[ "$fmt" == sha1 || "$fmt" == sha256 ]] && mkdir "$GATE_TMP/git" "$GATE_TMP/git/refs" "$GATE_TMP/work" || return 1
+  printf 'ref: refs/heads/none\n' > "$GATE_TMP/git/HEAD"
+  printf '[core]\n\trepositoryformatversion = 1\n[extensions]\n\tobjectformat = %s\n' "$fmt" > "$GATE_TMP/git/config"
+  GATE_ENV+=(GIT_DIR="$GATE_TMP/git" GIT_OBJECT_DIRECTORY="$v")
+}
+# The merge of TIP into MAIN_SHA as the gate lands it (D7): prints the result
+# tree; returns 1 on a conflict (a gitlink both sides moved is one, since no
+# submodule repository is reachable), 2 when git failed.
+merge_result() {
+  local out rc=0
+  out="$(cd "$GATE_TMP/work" && "${GATE_ENV[@]}" git merge-tree --write-tree --no-messages "$MAIN_SHA" "$1" 2>/dev/null)" || rc=$?
+  [[ "$rc" -le 1 && "${out%%$'\n'*}" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || return 2
+  [[ "$rc" -eq 0 ]] || return 1
+  echo "${out%%$'\n'*}"
+}
+# --check for one brief: "ok BRIEF TIP TREE", or one skip or refuse line (from
+# status_line, then the gate's own reasons). U2b1b adds the changed paths.
+check_line() {
+  local a="$1" out st br loop sha n tree rc=0
+  out="$(status_line "$a")"
+  [[ "$out" == "ok "* ]] || { echo "$out"; return; }
+  read -r _ _ st _ br loop sha _ <<<"$out"
+  if [[ "$st" != open ]]; then echo "refuse $a: the brief is $st on the default branch; only an open brief merges"; return; fi
+  if [[ "$loop" == absent ]]; then echo "refuse $a: its branch $br does not exist"; return; fi
+  out="$(check_branch "$br")"
+  read -r _ _ _ n _ <<<"$out"
+  if [[ "$out" != "ok $br $sha "* || ! "$n" =~ ^$DIGIT+$ ]]; then echo "refuse $a: its branch $br moved or could not be read again"; return; fi
+  if [[ "$n" -eq 0 ]]; then echo "refuse $a: its branch $br has no commit the default branch lacks"; return; fi
+  if [[ -n "$EXPECT" && "$sha" != "$EXPECT" ]]; then echo "refuse $a: the tip of $br is $sha, not the expected $EXPECT"; return; fi
+  tree="$(merge_result "$sha")" || rc=$?
+  case "$rc" in
+    0) echo "ok $a $sha $tree" ;;
+    1) echo "refuse $a: $br conflicts with the default branch" ;;
+    *) echo "refuse $a: the merge of $br could not be computed" ;;
+  esac
+}
+
 case "$MODE" in
   status)
     read_settings
@@ -353,5 +495,17 @@ case "$MODE" in
   settings)
     read_settings
     printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE"
+    ;;
+  check)
+    read_settings
+    open_shared  # once, in this shell: check_line runs in a subshell
+    GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
+    gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
+    fails=0
+    for a in "${ARGS[@]}"; do
+      out="$(check_line "$a")"; printf '%s\n' "$out"
+      [[ "$out" == "ok "* ]] || fails=1
+    done
+    [[ "$fails" -eq 0 ]] || exit 2
     ;;
 esac
