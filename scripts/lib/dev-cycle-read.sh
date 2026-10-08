@@ -418,9 +418,14 @@ check_brief() {
   # "Status: " in this file: a merge commit for merged work, the branch's own
   # commit after a fast-forward; never a later Asked:/Kept: edit. Any such line
   # counts (a quoted one, or a move into closed/, which adds the file whole).
-  # --no-textconv: -G greps the diff, and a repo-local textconv driver would run.
-  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s --no-textconv -G'^Status: ' "$MAIN_SHA" -- "$a")"
-  [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
+  # Repo config is switched off where it would run a command or change the
+  # commit: --no-textconv (-G greps the diff, and a textconv driver would run),
+  # --no-show-signature (log.showSignature runs gpg.program), --no-follow
+  # (log.follow); and never anything but a full commit id (git's output can be
+  # empty under a broken config, as on main: the field is then empty).
+  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s --no-textconv --no-show-signature --no-follow -G'^Status: ' "$MAIN_SHA" -- "$a")"
+  [[ -n "$c" ]] || c="$(git log -1 --format=%H --no-show-signature --no-follow "$MAIN_SHA" -- "$a")"
+  if [[ -n "$c" && ! "$c" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]]; then echo "skip $a: its Status commit could not be read"; return; fi
   echo "ok $a ${st#Status: } $c"
 }
 # A brief's branch reaches git only as the commit show-ref finds at exactly
@@ -432,7 +437,7 @@ check_brief() {
 # time zone (as the committer set it: a future date is possible).
 # The default branch is skipped, and so is every name when there is no default
 # branch found by name (main_by_name), and so is a branch whose count or date
-# cannot be read (a broken log.* config, say: row 307).
+# cannot be read (a broken log.* or grep.* config, say: row 307).
 check_branch() {
   local a="$1" sha n d
   if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
@@ -445,7 +450,7 @@ check_branch() {
     [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
     if [[ -z "$sha" ]]; then echo "absent $a"
     elif n="$(git rev-list --count "$MAIN_SHA..$sha" 2>/dev/null)" && [[ "$n" =~ ^$DIGIT+$ ]] \
-      && d="$(git log -1 --format=%cs "$sha" 2>/dev/null)" && [[ "$d" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]]; then echo "ok $a $sha $n $d"
+      && d="$(git log -1 --no-show-signature --format=%cs "$sha" 2>/dev/null)" && [[ "$d" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]]; then echo "ok $a $sha $n $d"
     else echo "skip $a: its commit count or date could not be read"; fi
   fi
 }

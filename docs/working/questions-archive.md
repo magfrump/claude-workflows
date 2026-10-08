@@ -121,6 +121,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 | [Q-131](#q-131--u2a4-land-over-cap) | U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but ... | 2026-10-08 |
 | [Q-132](#q-132--u2a4-confirm-pass-regression) | U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes int... | 2026-10-08 |
+| [Q-134](#q-134--u2b1a1-landing) | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
 <!-- index:end -->
 
 ## Answered
@@ -2283,4 +2284,27 @@ U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the
 - **Blocks:** U2a4's merge, and U2b/U2c, which stack on it.
 - **Interim:** nothing merges; the branch holds at a9894f29. Recommended: [1]. The last finding was a Medium in the same reader, so one targeted pass is cheap insurance, and it lands without another ask if clean.
 - **If the answer differs:** [2] skips the pass; [3] reworks the branch into two units.
+
+### Q-134 · u2b1a1-landing
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip, `check_brief`'s `git log` hardened) passed its final confirming pass with no red: may it land? **Answered 2026-10-08: [1].** The health check passed on the merge; merged at f0d2ef09.
+
+- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1a1.md` on `feat/build-loop-u2b1a1` at aeb6f8fd (worktree `.claude/wt-build-loop-u2b1a1`).
+- **Evidence:**
+  - The final pass (k=3, full panel) found no red; the fact-check had 0 Incorrect (32 claims).
+  - Ambers fixed after the pass (4a7e021d): a planted `gpg.program` no longer runs in `check_brief`'s or `check_branch`'s `git log` (pre-existing), the dev-cycle skill no longer reads a broken config as an idle branch, and wording.
+  - The lite fix-drift check found one claim, refuted by execution.
+  - Suites 82/19/78/2/2; the health check passed at aeb6f8fd. 145 code lines.
+  - Rewritten objects (security F2) are deferred with the row Q-133 also names.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Land it** | Merge `feat/build-loop-u2b1a1` locally (`--no-ff`) after re-running the health check on the merge. | One answer. | The post-pass fixes (4a7e021d) land reviewed only by the lite check and the suites. |
+| **[2] Wait for Q-133** | Hold until U2b1a2's ruling and land both together. | One answer now, one later. | Nothing; only delay. |
+
+- **Blocks:** nothing besides U2b1a2's merge (stacked on it).
+- **Interim:** nothing merges. Recommended: [1]: its code is independent of Q-133's question.
+- **If the answer differs:** [2] lands it with U2b1a2.
 

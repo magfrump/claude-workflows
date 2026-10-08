@@ -3,7 +3,7 @@ Loop-pass short-circuit: used at 93655b47
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b1a` (U2b1a, `--check`'s frame: hardened git, state gate, `--expect`, brief and branch checks, merge-tree), on main 5d39307a.
-**Status: ⛔ ITERATION 3 (U2b1a2) AT THE CAP — four reds open (R6-R9); decision: escalate (Q-133); U2b1a1 split off and clean** (single-sample review; absence of findings is not an attestation)
+**Status: ⛔ ITERATION 3 (U2b1a2) AT THE CAP — four reds open (R6-R9); decision: escalate (Q-133); answered [3]: landed with R6-R9 and A15-A19 as known issues (override rows), fixed in U2b1b; U2b1a1 split off and clean** (single-sample review; absence of findings is not an attestation)
 
 ## Iteration 3 of 3: final confirming pass on U2b1a2 (Commit 63ea50e7, k=3, full panel, scope `feat/build-loop-u2b1a1...HEAD`)
 
@@ -29,6 +29,8 @@ U2b1a split at iteration 2 for size (U2b1a1 below it, its own loop, clean); this
 | A19 | Doc drift: --check help's state-gate list omits shallow and origin/HEAD; state_gate comment's key list; "present and not empty" for a symlink or directory; "every line ok" exit wording would force U2b1b's path lines to start with ok; `refuse state gate:` is not a state line. | fact-check Claims 21, 34, 35; api 1-5 | Open (cap) |
 
 ### Iteration-4 gate decision
+
+**Answered 2026-10-08, Q-133 [3]:** land U2b1a2 as is; R6-R9 and A15-A19 carried to U2b1b with override rows. `--check` can print ok for a wrong merge until then; nothing merges through it before U3.
 
 ## Iterations (3 completed)
 Iteration 1 (k=1, short-circuit): R1 partial-clone lazy fetch, fixed. Iteration 2 (k=1, full panel): R2 submodule lazy fetch, security F1/F2/F4-F8, fixed; split at 439 lines. Iteration 3 (k=3, full panel, on U2b1a2): R6-R9 above.

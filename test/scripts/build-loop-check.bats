@@ -1249,7 +1249,7 @@ c: $IMP" ] || { echo "$output $stderr"; return 1; }
 # chk ARG...: run build-loop.sh --check. show: what a failed --check test prints,
 # the history included (the plan's test spec; row 223).
 chk() { run --separate-stderr bash "$BL" --check "$@"; }
-show() { echo "status $status"; echo "$output"; echo "$stderr"; git log --oneline --graph --all; }
+show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
 # gated BRANCH: brief x, open and naming BRANCH (B is its path), and BRANCH with one commit.
 gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
 
@@ -1341,11 +1341,13 @@ refuse state refs/replace: 1 replace ref(s)
 refuse state origin/HEAD: it names a branch other than origin/main or origin/master" ] || { show; return 1; }
 }
 
-@test "under a broken log.* config --status skips the branch instead of reading LOOP or DATE wrong (row 307, U2b1a)" {
+@test "under a broken log.* config the brief and branch reads skip instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
     gated feat/x; tip feat/x "handoff: ready"
     git config log.date bogus
     run --separate-stderr bash "$BL" --status "$B"
     [ "$status" -eq 0 ] && [ "$output" = "skip $B: Branch: its commit count or date could not be read" ] || { show; return 1; }
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-branch feat/x
+    [ "$status" -eq 0 ] && [ "$output" = "skip feat/x: its commit count or date could not be read" ] || { show; return 1; }
 }
 
 @test "build-loop.sh and the reader lib never push (T20, U2b1a)" {
@@ -1413,4 +1415,18 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     gated feat/x; t="$(git rev-parse feat/x)"
     chk "$B" --expect "$t"
     [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
+}
+
+@test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {
+    brief x "Status: open" "Branch: feat/x"
+    # main's tip, re-signed: a gpgsig header makes log.showSignature call gpg.program.
+    c="$(git cat-file commit main | awk 'NR == 1 { print; print "gpgsig -----BEGIN PGP SIGNATURE-----"; print " x"; print " -----END PGP SIGNATURE-----"; next } { print }' | git hash-object -t commit -w --stdin)"
+    git update-ref refs/heads/main "$c"
+    printf '#!/bin/sh\ntouch "%s/gpg-ran"; echo INJECTED\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/gpg"; chmod +x "$BATS_TEST_TMPDIR/gpg"
+    git config log.showSignature true; git config gpg.program "$BATS_TEST_TMPDIR/gpg"
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B open review feat/x absent - - 0" ] || { show; return 1; }
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-brief "$B"
+    [ "$output" = "ok $B open $c" ] || { show; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/gpg-ran" ] || { echo "gpg.program ran"; return 1; }
 }

@@ -70,8 +70,10 @@
 #                 The brief cannot be read (as --check-brief), its Branch:
 #                 line is missing or malformed or its Dispatched: line
 #                 malformed, its branch name is refused (as --check-branch)
-#                 or its commit count or date cannot be read, on a branch ahead of main the tip's subject (its message's
-#                 first line) starts "handoff:" but it is not a marker, or, for
+#                 or its commit count or date cannot be read; on a branch
+#                 ahead of main the tip's subject (its message's first line)
+#                 starts "handoff:" but it is not a marker (or the tip cannot
+#                 be read); or, for
 #                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
 #                 briefs on main could not be listed.
