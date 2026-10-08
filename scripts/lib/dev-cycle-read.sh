@@ -66,8 +66,9 @@
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
 #     and only a PATH main lacks.
 #  8. Pass truthrule, isstart, ownfile, prompt_dir and prompt_bases a
-#     lower-cased path (floor, check_fix and the walks lower first; truthrule
-#     refuses an upper-case letter as case).
+#     lower-cased path (prompt_dir and prompt_bases also take the path as
+#     spelled; floor, check_fix and the walks lower first; truthrule refuses an
+#     upper-case letter as case).
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -484,7 +485,8 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # as a superset). truthrule refuses the same names; instruction_names is its
 # grep prefilter, and a test holds the two equal.
 PROMPT_DIR='(^|/)\.claude/(commands|agents|output-styles|skills)/'
-# A start directory, or .claude itself, as main_imports refuses a link there.
+# A start directory, any path below one, or .claude itself: main_imports
+# refuses a link or gitlink there unless it is a symlinked start.
 START_LINK='/\.claude(/(rules|commands|agents|output-styles|skills)(/.*)?)?$'
 isstart() { [[ "${1##*/}" =~ $INSTRUCTION_FILE ]] || [[ "$1" == *.md && ( "$1" =~ $PROMPT_DIR || "/$1" == */.claude/rules/* ) ]]; }
 # prompt_dir MAP LP PATH: for a start under PROMPT_DIR (LP lower-cased, PATH as
@@ -529,7 +531,10 @@ prompt_bases() {
 # listed twice or as both a file and a directory, a name holding a newline,
 # symlink text that is empty, absolute, leaves
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
-# in the checkout), a prompt start (prompt_dir) main stores as a symlink, and a checkout path it would walk (a start or an import
+# in the checkout), a prompt start (prompt_dir) main stores as a symlink, a
+# link or gitlink main stores at or below a .claude/ start directory or at
+# .claude (START_LINK) unless it is a symlinked start, a link to a directory
+# or a gitlink, and a checkout path it would walk (a start or an import
 # main lacks) that lies under a directory main stores as a symlink or gitlink
 # or under any checkout ancestor but a plain searchable directory (absent
 # ones and plain files excepted: nothing below them loads), or that the
@@ -567,7 +572,7 @@ IMPORT_OUT_MAX=4000000
 # relative name carries ROOT_REAL, so a longer root buys less; the unit of its
 # per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
-# of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
 # that changes it calls import_reset.
 IMPORT_WORK_MAX=50000000
@@ -633,11 +638,11 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # import starts, not these rules).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
-function emit(c,   i) {
+function emit(c, keep,   i) {
   work += length(c); if (work > wmax) exit 3
   # Claude Code trims the name; it rejects a name led by a space first, so
-  # trimming one only over-reads.
-  sub(/^ +/, "", c); sub(/ +$/, "", c)
+  # trimming one only over-reads. KEEP skips the trim (a quoted name, below).
+  if (!keep) { sub(/^ +/, "", c); sub(/ +$/, "", c) }
   if (c == "") return
   # ~/ joins the home directory (Claude Code: path.join(os.homedir(), rest)),
   # also spelled through its real path, since ROOT_REAL is real.
@@ -676,8 +681,10 @@ function put(c,   n, i, k, part, st, out) {
 # (@"docs/a b.md": the prompt-mention reader of Claude Code 2.1.293, @"([^"]+)",
 # which spans lines): the run after the quote is read as an unquoted one, and
 # the whole quoted text once, at its closing quote on this line or, when CARRY
-# is set, a later one (qopen holds it meanwhile, charged as work), so prefixes
-# never grow past a blank (U2a4 i1 security F1; final security F2, performance F1).
+# is set, a later one (qo marks an open quote, even an empty one, and qopen
+# holds its text; each held line and each copy of qopen is charged as work), so
+# prefixes never grow past a blank (U2a4 i1 security F1; final security F2,
+# performance F1; confirming security F2, F4).
 function scan(line, carry,   i, L, k, r) {
   L = length(line)
   for (i = 1; i <= L; i++) {
@@ -687,9 +694,17 @@ function scan(line, carry,   i, L, k, r) {
     names(line, i + 2, L)
     r = substr(line, i + 2); work += length(r); if (work > wmax) exit 3
     k = index(r, "\"")
-    if (k > 1) emit(substr(r, 1, k - 1))
-    else if (k == 0 && carry && r != "") qopen = r
+    if (k > 1) quoted(substr(r, 1, k - 1))
+    else if (k == 0 && carry) { qo = 1; qopen = r }
   }
+}
+# quoted TEXT: Claude Code reads a mention through its file-name parser, which
+# drops a #L5, #L2-9 or #section suffix (confirming security F1), and may not
+# trim it (untraced): read the text whole and before its first #, each trimmed
+# and as written.
+function quoted(q,   h) {
+  emit(q); emit(q, 1)
+  h = index(q, "#"); if (h > 1) { emit(substr(q, 1, h - 1)); emit(substr(q, 1, h - 1), 1) }
 }
 function names(line, j, L,   ch, name) {
   name = ""
@@ -717,11 +732,14 @@ BEGIN {
   wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
 {
-  if (qopen != "") {
-    work += length($0); if (work > wmax) exit 3
-    k = index($0, "\""); if (k) { emit(qopen "\n" substr($0, 1, k - 1)); qopen = "" } else qopen = qopen "\n" $0
+  if (qo) {
+    # The append copies qopen, so that copy is charged too: a quote left open
+    # over many lines fails the bound rather than running quadratic time.
+    work += length($0) + length(qopen); if (work > wmax) exit 3
+    k = index($0, "\""); if (k) { quoted(qopen "\n" substr($0, 1, k - 1)); qo = 0; qopen = "" } else qopen = qopen "\n" $0
   }
-  scan($0, 1); if (index($0, "<!--")) scan(splice($0), 0)
+  # The spliced line may open a quote the raw one does not.
+  scan($0, 1); if (index($0, "<!--")) scan(splice($0), !qo)
 }
 END { if (trail) print "/" (work + 0) }'
 # Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
@@ -898,8 +916,9 @@ imported_names() {
 # copy), is also a directory of another listed name, or holds a newline, the
 # start list's lower_all fails or comes back short, main_checkout refuses a start or an
 # import main lacks, a blob or checkout file cannot be read, symlink text it
-# follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
-# a .. after a symlink, import_home, the parser (its comment lists why) or a
+# follows is empty, absolute, leaves the repo, holds a newline or a NUL, has
+# a .. after a symlink, or names a directory or a gitlink, a link or gitlink
+# sits where START_LINK matches and is not a symlinked start, import_home, the parser (its comment lists why) or a
 # lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
 # need_root exits instead.
 # Phase 2 begins when queue empties: tq's checkout files then join it, and a
@@ -924,10 +943,14 @@ main_imports() {
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
   # A link or gitlink at or below a .claude/ start directory (or .claude itself)
   # lists its prompts under the target's path, which isstart does not know: not
-  # modelled, so it fails (U2a4 final security F1), unless the link is a start
-# itself (a rules file is followed, a prompt fails in the read arm).
+  # modelled, so it fails (U2a4 final security F1), unless the link is a
+  # symlinked start (a rules file is followed, a prompt fails in the read arm);
+  # a gitlink start fails too, since a checkout holds it as a directory.
   [[ ${#links[@]} -eq 0 ]] || nul_list parts lower_all "${links[@]}" || return 1
-  for f in "${parts[@]}"; do [[ ! "/$f" =~ $START_LINK ]] || isstart "$f" || return 1; done  # a start link is read as one, below
+  [[ ${#parts[@]} -eq ${#links[@]} ]] || return 1
+  for i in "${!parts[@]}"; do
+    [[ ! "/${parts[i]}" =~ $START_LINK ]] || { isstart "${parts[i]}" && [[ "${ent[${links[i]}]}" == 120000 ]]; } || return 1
+  done
   nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
@@ -972,7 +995,10 @@ main_imports() {
           [[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1
         done
         out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
-        [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
+        [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; }
+        # A link to a directory or a gitlink would be dropped below, but a
+        # loader may read a directory's files (untraced): it fails (confirming security F3).
+        [[ -z "${dir[$out]+set}" && "${ent[$out]:-}" != 160000 && ! -d "$out" ]] || { IMPORTED_MAIN=error; return 1; } ;;
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;
     esac

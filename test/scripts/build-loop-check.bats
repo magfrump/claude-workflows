@@ -1169,6 +1169,14 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
         imps main docs/q.md; want walk failed; want docs/q.md imported
         git rm -rq "${l%%/*}" && commit_all "unlink $l"
     done
+    # A start-named link to a directory, and a gitlink start, fail too (confirming security F3).
+    mkdir -p .claude/rules && ln -s ../../prompts .claude/rules/r.md && commit_all dir-link
+    imps main docs/q.md; want walk failed; want docs/q.md imported
+    git rm -rq .claude && commit_all unlink-dir
+    t="$(printf '160000 commit %s\tg.md\n' "$(git rev-parse main)" | git mktree)"; t="$(printf '040000 tree %s\trules\n' "$t" | git mktree)"
+    t="$(printf '040000 tree %s\t.claude\n040000 tree %s\tprompts\n' "$t" "$(git rev-parse main:prompts)" | git mktree)"
+    git update-ref refs/heads/main "$(git commit-tree "$t" -p main -m gitlink-rule)"
+    imps main docs/q.md; want walk failed; want docs/q.md imported
 }
 
 @test "the parser resolves each relative name against every directory it is given (U2a4)" {
@@ -1198,17 +1206,30 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     # .claudex component is no session base (final fact-check 31).
     printf 'run @"x\n/../docs/m.md" now\n' > .claude/commands/m.md
     mkdir -p e/.claudex/.claude/commands && printf 'run @f.md\n' > e/.claudex/.claude/commands/z.md
+    # Claude Code drops a #L5 or #section suffix, and an @" may end its line or open in a
+    # spliced comment; a quoted name is also read untrimmed (confirming security F1, F2, notes).
+    printf 'review @"docs/h b.md#L5" and @"docs/s.md#sec"\nrun @"\n/../docs/e.md" now\n' > .claude/commands/h.md
+    printf 'run @<!-- c -->"x\n/../docs/c.md" and @"docs/z.md "\n' > .claude/commands/c.md
     # Lines of 2,000 quotes after an @, and an unclosed @" before 3 KB of prose, in an
-    # instruction file and a prompt, cost little parser work: the walk passes (final performance F1).
+    # instruction file and a prompt, stay within the work bound (the quote line costs about
+    # 8M of its 50M per read): the walk passes (final performance F1).
     { printf 'see @'; for ((i = 0; i < 2000; i++)); do printf '"'; done; printf '\n'; } > CLAUDE.md
     { printf 'say @"'; for ((i = 0; i < 600; i++)); do printf 'word '; done; printf '\n'; } | tee -a CLAUDE.md >> .claude/commands/q.md
     commit_all prompts
     imps main e/f.md; want e/f.md -
-    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md docs/m.md e/.claudex/f.md)
+    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md docs/m.md e/.claudex/f.md
+        "docs/h b.md" docs/s.md docs/e.md docs/c.md "docs/z.md ")
     for w in tree main; do
         imps "$w" "${ps[@]}"
         want walk ok; for p in "${ps[@]}"; do want "$p" imported; done
     done
+}
+
+@test "a quote left open over many lines fails both walks within the work bound, not after quadratic time (U2a4 confirming fact-check 15a, security F4)" {
+    mkdir -p .claude/commands
+    { printf 'run @"x\n'; for ((i = 0; i < 20000; i++)); do printf 'word word\n'; done; } > .claude/commands/o.md
+    commit_all open-quote
+    for w in tree main; do imps "$w" docs/x.md; want walk failed; want docs/x.md imported; done
 }
 
 @test "truthwalk empties TRUTH_WHY when it does not refuse; import_reset makes the next floor walk again (U2a4 i1 api-consistency 1, architecture F1)" {
