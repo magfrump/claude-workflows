@@ -49,4 +49,6 @@ One cluster qualified: check_brief's `git log` lines (`scripts/lib/dev-cycle-rea
 
 ## Fixes after the final pass
 
-Commit after ae08688c: A1, A2, A4, C2. Suites 82/19/78/2/2; the lite fix-drift check over that commit is recorded below.
+Commit 4a7e021d (after ae08688c): A1, A2, A4, C2. Suites 82/19/78/2/2.
+
+Lite fix-drift (`scripts/lite-review.py --mode fix-drift`, run over a scratch commit holding only 4a7e021d's code and plan changes, since the carried review reports put the real range over the script's 192 KB limit): one finding, "check_branch's comment says log.* or grep.*; grep.* does not affect git log". Refuted: fact-check Claim 13 executed it, and a re-run (`grep.patternType bogus`, `dev-cycle.sh --check-branch`) printed "skip feat/x: its commit count or date could not be read". No change.
