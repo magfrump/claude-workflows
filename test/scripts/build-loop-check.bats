@@ -1533,14 +1533,14 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
 @test "--check refuses a merge git warned about or that names a missing object: a missing tip or merge-base tree is not read as empty, a missing blob does not land (R6, U2b1b)" {
     echo base > f.txt && commit_all f
     gated feat/x
-    o="$(git rev-parse feat/x^{tree})"; mv ".git/objects/${o:0:2}/${o:2}" "$BATS_TEST_TMPDIR/tree"
+    o="$(git rev-parse "feat/x^{tree}")"; mv ".git/objects/${o:0:2}/${o:2}" "$BATS_TEST_TMPDIR/tree"
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
     mv "$BATS_TEST_TMPDIR/tree" ".git/objects/${o:0:2}/${o:2}"
     # merge-tree reads a missing top-level tree as empty and warns, exiting 0 when that merge is otherwise
     # clean (a missing subtree or blob it must read is fatal; one it passes by id is silent: the case below).
     onx 'echo b > b.txt'; echo m > m.txt && commit_all m
-    o="$(git rev-parse main~1^{tree})"; rm ".git/objects/${o:0:2}/${o:2}"
+    o="$(git rev-parse "main~1^{tree}")"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
     # A blob the store lacks, which merge-tree passes by id without reading (security F2).
@@ -1560,7 +1560,7 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist" ] || { show; return 1; }
     # Both findings at once: a master ref that names no commit is not taken, so origin/HEAD disagrees too.
-    git rev-parse main^{tree} > .git/refs/heads/master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master  # git refuses to write it
+    git rev-parse "main^{tree}" > .git/refs/heads/master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master  # git refuses to write it
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist
 refuse state default-branch: origin/HEAD names origin/master, but the default branch taken is main" ] || { show; return 1; }
