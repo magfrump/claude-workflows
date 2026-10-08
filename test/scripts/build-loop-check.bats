@@ -1257,7 +1257,8 @@ gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
     gated feat/x; t="$(git rev-parse feat/x)"
     echo m > main.txt && commit_all "main moves on"
     chk "$B"
-    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] && [ -z "$stderr" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)
+path $B A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
     echo clash > work-feat-x.txt && commit_all clash
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
@@ -1306,7 +1307,8 @@ gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
     chk "$gone" "$level" "$x"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $gone: its branch feat/gone does not exist
 refuse $level: its branch feat/level has no commit the default branch lacks
-ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)" ] || { show; return 1; }
+ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)
+path $x A work-feat-x.txt" ] || { show; return 1; }
     brief twin "Status: open" "Branch: Feat/X"
     chk "$x"
     [ "$status" -eq 2 ] && [ "$output" = "skip $x: another open brief on the default branch names the same branch (compared ignoring case)" ] || { show; return 1; }
@@ -1334,9 +1336,9 @@ ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)" ] || {
     git replace "$(git rev-parse main)" "$(git rev-parse feat/x)"
     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/feat/x
     chk "$B"
-    [ "$status" -eq 2 ] && [ "$output" = "refuse state info/attributes: present and not empty
-refuse state info/grafts: present and not empty
-refuse state shallow: present and not empty
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state info/attributes: present and not an empty file
+refuse state info/grafts: present and not an empty file
+refuse state shallow: present and not an empty file
 refuse state refs/replace: 1 replace ref(s)
 refuse state origin/HEAD: it names a branch other than origin/main or origin/master" ] || { show; return 1; }
 }
@@ -1370,16 +1372,18 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
 }
 
-@test "every git call --check makes carries harden's config pairs (core.hooksPath=/dev/null among them), no global config and no transport (T26, A4, U2b1a i1, i2)" {
+@test "every git call --check makes carries harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
     gated feat/x
     # A shim ahead of git logs each call's config pairs, then runs the real git.
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
-    printf '#!/bin/bash\nl=""; for ((i = 0; i < ${GIT_CONFIG_COUNT:-0}; i++)); do k="GIT_CONFIG_KEY_$i"; v="GIT_CONFIG_VALUE_$i"; l+=" ${!k}=${!v}"; done\necho "$l G=$GIT_CONFIG_GLOBAL P=$GIT_ALLOW_PROTOCOL" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"
+    printf '#!/bin/bash\nl=""; for ((i = 0; i < ${GIT_CONFIG_COUNT:-0}; i++)); do k="GIT_CONFIG_KEY_$i"; v="GIT_CONFIG_VALUE_$i"; l+=" ${!k}=${!v}"; done\necho "$l G=$GIT_CONFIG_GLOBAL P=$GIT_ALLOW_PROTOCOL S=$GIT_CONFIG_NOSYSTEM" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"
     chmod +x "$S/git"
+    # The fixture sets GIT_CONFIG_NOSYSTEM; unset, so the script's own setting is what the log shows (A17).
+    unset GIT_CONFIG_NOSYSTEM
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false G=/dev/null P=none; do
+    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }
@@ -1397,7 +1401,8 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     gated feat/x
     s1="$(printf '%040d' 0 | tr 0 a)"; s2="${s1//a/b}"; s3="${s1//a/c}"
     printf '[submodule "sm"]\n\tpath = sub\n\turl = ./nowhere\n' > .gitmodules
-    git update-index --add --cacheinfo "160000,$s1,sub"; commit_all sub1
+    # Not commit_all: add -A would drop the gitlink, which has no directory (R9).
+    git add .gitmodules; git update-index --add --cacheinfo "160000,$s1,sub"; git commit -q -m sub1
     git checkout -q feat/x; git merge -q main -m m1; git update-index --add --cacheinfo "160000,$s2,sub"; git commit -q -m sub2; git checkout -q main
     git update-index --add --cacheinfo "160000,$s3,sub"; git commit -q -m sub3
     git init -q --bare .git/modules/sm
@@ -1414,7 +1419,8 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     rm -rf .git && git init -q -b main --object-format=sha256 && git commit -q --allow-empty -m initial
     gated feat/x; t="$(git rev-parse feat/x)"
     chk "$B" --expect "$t"
-    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)
+path $B A work-feat-x.txt" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
 }
 
 @test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {
@@ -1429,4 +1435,141 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-brief "$B"
     [ "$output" = "ok $B open $c" ] || { show; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/gpg-ran" ] || { echo "gpg.program ran"; return 1; }
+}
+
+# onx SNIPPET: feat/x rebuilt from main with one commit holding what SNIPPET
+# (shell code, run on feat/x) changes.
+onx() { git checkout -q -B feat/x main && eval "$1" && commit_all onx && git checkout -q main; }
+# has LINE: the --check output holds exactly LINE.
+has() { printf '%s\n' "$output" | grep -qxF -- "$1" || { echo "want: $1"; show; return 1; }; }
+NOWN="one of the dev cycle's own files"
+NUSER="the user's constraints doc, which every loop prompt carries"
+NFORM="not an allowed path form (letters, digits and . _ - / only, no .git part)"
+NMODE="not a regular file on both sides (only modes 100644 and 100755 land)"
+NBRIEF="this brief: only its first Status: line outside a fence may change, from open to done"
+
+@test "--check lists every changed path and refuses the dev cycle's own files, other briefs and the constraints doc in any case; other paths pass (T14, F2, F12, F54, U2b1b)" {
+    brief other "Status: open" "Branch: feat/o"; o="$B"
+    mkdir -p docs/working && echo r > docs/roadmap.md && commit_all roadmap
+    gated feat/x
+    fs=(docs/roadmap.md docs/working/questions.md docs/working/questions-archive.md docs/working/idea-log.md
+        docs/working/cycles/cycle-2026-10-01.md docs/working/cycles/notes.md docs/dev-cycle.md "$o"
+        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md)
+    onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/ok.md; do echo x > "$f"; done'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 13 of 14 changed paths refused" ] && [ "${#lines[@]}" -eq 15 ] || { show; return 1; }
+    has "deny $B M docs/roadmap.md: $NOWN"
+    for f in "${fs[@]:1}"; do [[ "$f" == "$o" ]] && m=M || m=A; has "deny $B $m $f: $NOWN"; done
+    has "deny $B A docs/constraints.md: $NUSER"
+    has "path $B A docs/ok.md"
+    # The paths come in diff-tree order, after the verdict.
+    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[14]}" = "deny $B A docs/working/questions.md: $NOWN" ] || { show; return 1; }
+    # A branch whose changes main already holds merges to main's own tree: ok, no path line.
+    onx 'echo x > docs/ok.md'; git checkout -q -B main feat/x; git checkout -q -B feat/x main; git commit -q --allow-empty -m e; git checkout -q main
+    chk "$B"
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 1 ] && [[ "${lines[0]}" == "ok $B "* ]] || { show; return 1; }
+}
+
+@test "--check: the brief's own file may change only its first Status: line outside a fence, open to done (T15, F13, U2b1b)" {
+    brief x '```' 'Status: open' '```' 'Status: open' 'Branch: feat/x'
+    printf 'Status: open\r\nBranch: feat/c\n' > docs/working/briefs/2026-10-01-crlf.md && commit_all crlf
+    # Lines: 1 title, 2 blank, 3-5 a fence holding a Status line, 6 the Status line, 7 Branch.
+    onx 'sed -i "6s/open/done/" "$B"'
+    chk "$B"
+    [ "$status" -eq 0 ] && [ "${lines[1]}" = "path $B M $B" ] && [ "${#lines[@]}" -eq 2 ] || { show; return 1; }
+    for s in 'sed -i "4s/open/done/" "$B"' 'sed -i "6s/open/dropped/" "$B"' 'sed -i "6s/open/done/" "$B"; echo "Paths: docs/" >> "$B"' \
+             'sed -i "6s/open/done/" "$B"; chmod +x "$B"' 'sed -i "6s/open/done/" "$B"; echo "" >> "$B"'; do
+        onx "$s"
+        chk "$B"
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 of 1 changed paths refused" ] && has "deny $B M $B: $NBRIEF" || { echo "snippet: $s"; return 1; }
+    done
+    onx 'mkdir -p docs/working/briefs/closed; git mv "$B" docs/working/briefs/closed/'
+    chk "$B"
+    [ "$status" -eq 2 ] && has "deny $B D $B: $NBRIEF" && has "deny $B A docs/working/briefs/closed/2026-10-01-x.md: $NOWN" || return 1
+    # A CRLF brief keeps its CR: only "Status: done\r" matches.
+    c=docs/working/briefs/2026-10-01-crlf.md
+    git checkout -q -B feat/c main; printf 'Status: done\r\nBranch: feat/c\n' > "$c"; commit_all c; git checkout -q main
+    chk "$c"
+    [ "$status" -eq 0 ] && [ "${lines[1]}" = "path $c M $c" ] || { show; return 1; }
+}
+
+@test "--check: a rename is its two sides, so moving a cycle file out refuses its old path (T11, F6, U2b1b)" {
+    mkdir -p docs && echo r > docs/roadmap.md && commit_all roadmap
+    gated feat/x
+    onx 'git mv docs/roadmap.md docs/x.md'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 of 2 changed paths refused" ] || { show; return 1; }
+    has "deny $B D docs/roadmap.md: $NOWN"; has "path $B A docs/x.md"
+}
+
+@test "--check refuses a symlink or gitlink on either side and passes an exec bit (T12, F7, U2b1b)" {
+    mkdir -p scripts && echo a > f.txt && echo b > g.txt && echo s > scripts/x.sh && commit_all files
+    ln -s f.txt was-link && commit_all link
+    gated feat/x
+    onx 'ln -s f.txt link; rm g.txt; ln -s f.txt g.txt; rm was-link; echo w > was-link; chmod +x scripts/x.sh; echo n > scripts/n.sh; chmod +x scripts/n.sh'
+    git checkout -q feat/x; git update-index --add --cacheinfo "160000,$(git rev-parse main),gl"; git commit -q -m gitlink; git checkout -q main
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 4 of 6 changed paths refused" ] || { show; return 1; }
+    for p in "T g.txt" "A gl" "A link" "T was-link"; do has "deny $B $p: $NMODE"; done
+    has "path $B A scripts/n.sh"; has "path $B M scripts/x.sh"
+}
+
+@test "--check refuses a changed path pathform refuses, and prints only a name in its character set (T13, F17, U2b1b)" {
+    gated feat/x
+    onx 'mkdir -p .github; echo x > .github/w.yml; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > ./-x.md'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 5 of 5 changed paths refused" ] && [ "${#lines[@]}" -eq 6 ] || { show; return 1; }
+    has "deny $B A -x.md: $NFORM"; has "deny $B A .github/w.yml: $NFORM"
+    [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 3 ] || { show; return 1; }
+}
+
+@test "--check refuses a merge git warned about: a missing tip or merge-base tree is not read as empty (R6, U2b1b)" {
+    echo base > f.txt && commit_all f
+    gated feat/x
+    o="$(git rev-parse feat/x^{tree})"; mv ".git/objects/${o:0:2}/${o:2}" "$BATS_TEST_TMPDIR/tree"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
+    mv "$BATS_TEST_TMPDIR/tree" ".git/objects/${o:0:2}/${o:2}"
+    # merge-tree reads a missing top-level tree as empty, warns and exits 0 (a missing subtree or blob is fatal).
+    onx 'echo b > b.txt'; echo m > m.txt && commit_all m
+    o="$(git rev-parse main~1^{tree})"; rm ".git/objects/${o:0:2}/${o:2}"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
+}
+
+@test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
+    gated feat/x
+    git branch master feat/x; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist" ] || { show; return 1; }
+    git symbolic-ref --delete refs/remotes/origin/HEAD
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: both main and master exist" ] || { show; return 1; }
+    git branch -D -q master; git branch -m main master; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: origin/HEAD names origin/main, but the default branch taken is master" ] || { show; return 1; }
+}
+
+@test "--check's merge reads no submodule repository: a gitlink fast-forward the real repository would merge is a conflict (R9, U2b1b)" {
+    git init -q --bare .git/modules/sm; e="$(git -C .git/modules/sm hash-object -t tree -w --stdin < /dev/null)"
+    w="$(git -C .git/modules/sm commit-tree "$e" -m w)"; x="$(git -C .git/modules/sm commit-tree "$e" -p "$w" -m x)"; y="$(git -C .git/modules/sm commit-tree "$e" -p "$x" -m y)"
+    # The brief first: commit_all's add -A would drop a gitlink that has no directory.
+    brief x "Status: open" "Branch: feat/x"
+    printf '[submodule "sm"]\n\tpath = sub\n\turl = ./nowhere\n' > .gitmodules
+    git add .gitmodules; git update-index --add --cacheinfo "160000,$w,sub"; git commit -q -m base
+    git branch feat/x main
+    git update-index --cacheinfo "160000,$x,sub"; git commit -q -m main-x
+    git checkout -q feat/x; git update-index --cacheinfo "160000,$y,sub"; git commit -q -m branch-y; git checkout -q main
+    # The real repository opens .git/modules/sm and fast-forwards x to y: the case gate_repo must not reach.
+    git merge-tree --write-tree main feat/x > /dev/null || { echo "fixture: the real repository did not merge"; return 1; }
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
+}
+
+@test "--check runs its state gate before resolve_main reads an object: a planted key refuses even with main's commit missing (A15, U2b1b)" {
+    gated feat/x
+    git config merge.x.driver true
+    o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state merge.x.driver: set in config, it can make the gate's git run a command or change its merge" ] || { show; return 1; }
 }
