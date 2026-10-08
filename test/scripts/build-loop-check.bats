@@ -22,6 +22,23 @@ imps() {
 }
 # want PATH WORD: the imps output holds exactly "PATH: WORD" (want walk ok|failed).
 want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; echo "$output $stderr"; return 1; }; }
+# floors STEM STATUS PATH...: the lib's floor for each path, as imps runs the
+# walks; one "PATH: WHY" or "PATH: -" line each, read with want.
+floors() {
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
+        resolve_main || true; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
+        for p in "$@"; do if floor "$p" "$s" "$st"; then echo "$p: $FLOOR_WHY"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
+}
+INSTR="an instruction or prompt file, which sessions load from the checkout"
+DOT="a dotfile or a path under a dot-directory"
+GATE="the gate's own code, which lands only through a merge-gate- review entry"
+IMP="an instruction file on the default branch imports it with @ (directly or through another import)"
+WALKFAIL="the default branch's instruction files could not be walked for @ imports"
+OWN="one of the dev cycle's own files"
+USER="the user's constraints doc, which every loop prompt carries"
+REC="a record later runs read as truth"
+WORK="a working file that is not this brief's own (they carry its full stem)"
+REV="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
 
 @test "tree walk shares the token rules: Unicode spaces end a token, punctuation is read kept and stripped, a ..x name is followed, a NUL hides no import, a cycle ends (U2a2)" {
     mkdir -p docs
@@ -1009,4 +1026,144 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         declare -A E=([b.md]=100644 [e.md]=100755) M=()
         for p in b.md e.md; do c=0; main_checkout E M "$p" || c=$?; echo "$p $c"; done' _ "$LIB"
     [ "$status" -eq 0 ] && [ -z "$stderr" ] && [ "$output" = $'b.md 0\ne.md 0' ] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "floor: instruction and prompt files, dotfiles, gate code, imports, cycle files, records and other briefs' files refuse; the rest pass (T10, U2a4)" {
+    mkdir -p docs skills/x
+    printf 'Rules: @docs/imported.md and @docs/new.md\n' > CLAUDE.md
+    printf 'More: @deep.md.\n' > docs/imported.md
+    printf 'deep\n' > docs/deep.md
+    printf 'See **@ref.md**\n' > skills/x/SKILL.md
+    commit_all imports
+    # An untracked local instruction file adds imports; a working-tree edit of a
+    # tracked one does not (main's copy decides).
+    printf 'Mine: @docs/private.md\n' > CLAUDE.local.md
+    printf 'Rules: @docs/wt-only.md\n' > CLAUDE.md
+    s=2026-10-01-x
+    refuse=(CLAUDE.md "$INSTR" docs/sub/SKILL.md "$INSTR" Agents.MD "$INSTR" docs/working/CLAUDE.md "$INSTR"
+        .claude/rules/x.md "$INSTR" .claude/commands/c.md "$INSTR" scripts/lib/CLAUDE.md "$INSTR"
+        .claude/settings.json "$DOT" .envrc "$DOT" .gitattributes "$DOT" docs/x/.y "$DOT" .github/x.yml "$DOT"
+        scripts/build-loop.sh "$GATE" scripts/dev-cycle.sh "$GATE" scripts/questions.sh "$GATE"
+        scripts/lib/dev-cycle-read.sh "$GATE" scripts/lib/new.sh "$GATE" Scripts/Build-Loop.sh "$GATE"
+        docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"
+        docs/constraints.md "$USER" docs/dev-cycle.md "$OWN" docs/roadmap.md "$OWN" Docs/Roadmap.md "$OWN"
+        docs/working/questions.md "$OWN" docs/working/briefs/2026-10-02-y.md "$OWN" docs/working/briefs/closed/2026-10-01-x.md "$OWN"
+        docs/decisions/001-x.md "$REC" docs/thoughts/x.md "$REC" docs/human-author/x.md "$REC"
+        docs/working/checkpoint-2026-10-02-y.md "$WORK" docs/working/plan-x.md "$WORK" docs/working/notes.md "$WORK"
+        docs/working/plan-2026-10-01-xy.md "$WORK" docs/working/scratch/plan-2026-10-01-x.md "$WORK"
+        docs/reviews/r-2026-10-01-x.md "$REV")
+    pass=(scripts/other.sh skills/x/helper.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
+        workflows/x.md docs/working/plan-2026-10-01-x.md docs/working/Research-2026-10-01-x.md docs/working/test-strategy-2026-10-01-x.md)
+    paths=(); for ((i = 0; i < ${#refuse[@]}; i += 2)); do paths+=("${refuse[i]}"); done
+    floors "$s" M "${paths[@]}" "${pass[@]}"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    for ((i = 0; i < ${#refuse[@]}; i += 2)); do want "${refuse[i]}" "${refuse[i+1]}"; done
+    for p in "${pass[@]}"; do want "$p" -; done
+    [ "${#lines[@]}" -eq $(( ${#paths[@]} + ${#pass[@]} )) ] || { echo "$output"; return 1; }
+}
+
+@test "floor: only an added review whose name ends with the full stem is the brief's own (T10, F23, F27, U2a4)" {
+    s=2026-10-01-x
+    floors "$s" A docs/reviews/code-review-2026-10-01-x.md docs/reviews/2026-10-01-x.md docs/reviews/r-2026-10-02-y.md \
+        docs/reviews/r-2026-10-01-xy.md docs/reviews/2026-10-01-x-notes.md docs/reviews/sub/r-2026-10-01-x.md docs/reviews/x.md
+    want docs/reviews/code-review-2026-10-01-x.md -
+    want docs/reviews/2026-10-01-x.md -
+    for p in docs/reviews/r-2026-10-02-y.md docs/reviews/r-2026-10-01-xy.md docs/reviews/2026-10-01-x-notes.md \
+             docs/reviews/sub/r-2026-10-01-x.md docs/reviews/x.md; do want "$p" "$REV"; done
+    # Modified or deleted, even its own name is a record; an empty stem owns nothing.
+    floors "$s" D docs/reviews/code-review-2026-10-01-x.md
+    want docs/reviews/code-review-2026-10-01-x.md "$REV"
+    floors "" A docs/reviews/-.md docs/working/plan-.md
+    want docs/reviews/-.md "$REV"
+    want docs/working/plan-.md "$WORK"
+}
+
+@test "floor fails closed when main's walk fails, main is not found by name, or a path cannot be lower-cased (U2a4; override row 424)" {
+    printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
+    floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh -
+    # A failing tr: floor and --check-fix each refuse, and say why.
+    mkdir -p "$BATS_TEST_TMPDIR/bin" docs && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "the path could not be lower-cased"
+    printf 'x\n' > docs/b.md && commit_all doc
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/b.md
+    [ "$output" = "skip docs/b.md: the path could not be lower-cased; file it instead" ] || { echo "$output $stderr"; return 1; }
+    # The instruction file's blob is missing from the object store.
+    o="$(git rev-parse main:CLAUDE.md)"
+    rm ".git/objects/${o:0:2}/${o:2}"
+    floors 2026-10-01-x M scripts/other.sh docs/b.md
+    want scripts/other.sh "$WALKFAIL"
+    want docs/b.md "$WALKFAIL"
+    # No default branch found by name: nothing is read, everything refuses.
+    git checkout -q -b trunk && git branch -q -D main
+    floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "$WALKFAIL"
+}
+
+@test "check_fix and floor share one read-as-truth rule; docs/thoughts/ differs on purpose (U2a4; override rows 204, 322, 348)" {
+    run --separate-stderr env LC_ALL=C bash -c 'source "$1"; shift
+        for p in "$@"; do if truthrule "$p"; then echo "$p: $TRUTH_WHY"; else echo "$p: -"; fi; done' _ "$LIB" \
+        claude.md docs/x/skill.md .claude/commands/c.md .envrc docs/x/.y docs/roadmap.md docs/dev-cycle.md docs/constraints.md \
+        docs/decisions/1.md docs/human-author/a.md docs/thoughts/t.md docs/guide.md
+    [ "$output" = "claude.md: instr
+docs/x/skill.md: instr
+.claude/commands/c.md: instr
+.envrc: dot
+docs/x/.y: dot
+docs/roadmap.md: cycle
+docs/dev-cycle.md: settings
+docs/constraints.md: user
+docs/decisions/1.md: record
+docs/human-author/a.md: record
+docs/thoughts/t.md: -
+docs/guide.md: -" ] || { echo "$output $stderr"; return 1; }
+    mkdir -p docs/thoughts && printf 'x\n' > docs/thoughts/t.md && commit_all thoughts
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/thoughts/t.md
+    [ "$output" = "ok docs/thoughts/t.md" ] || { echo "$output $stderr"; return 1; }
+    floors 2026-10-01-x M docs/thoughts/t.md
+    want docs/thoughts/t.md "$REC"
+}
+
+@test "both walks start at .md files under .claude/rules/, commands/, agents/ and output-styles/ at any depth, tracked or not; a prompt's names also resolve against its .claude/'s directory and the top level (U2a4; override rows 370, 435)" {
+    mkdir -p .claude/commands/ns .claude/agents .claude/output-styles .claude/rules/a sub/.claude/commands docs
+    printf 'run @docs/c1.md\n' > .claude/commands/ns/go.md
+    printf 'as @docs/a1.md\n' > .claude/agents/rev.md
+    printf 'as @docs/o1.md\n' > .claude/output-styles/terse.md
+    printf 'rule @r1.md\n' > .claude/rules/a/r.md
+    printf 'run @docs/s1.md\n' > sub/.claude/commands/x.md
+    printf 'not a start @docs/n1.md\n' > .claude/notes.md
+    printf 'x\n' > docs/c1.md
+    commit_all prompts
+    printf 'run @docs/u1.md\n' > .claude/commands/u.md
+    for w in tree main; do
+        imps "$w" docs/c1.md docs/a1.md docs/o1.md .claude/rules/a/r1.md sub/docs/s1.md docs/s1.md \
+            sub/.claude/commands/docs/s1.md docs/u1.md docs/n1.md .claude/rules/a/docs/r1.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+        want walk ok
+        for p in docs/c1.md docs/a1.md docs/o1.md .claude/rules/a/r1.md sub/docs/s1.md docs/s1.md sub/.claude/commands/docs/s1.md docs/u1.md; do
+            want "$p" imported
+        done
+        want docs/n1.md -; want .claude/rules/a/docs/r1.md -
+    done
+    # Override row 435's case: a doc a command names is refused by both callers.
+    floors 2026-10-01-x M docs/c1.md
+    want docs/c1.md "$IMP"
+    run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-fix docs/c1.md
+    [[ "$output" == "skip docs/c1.md: an instruction file names it after an @"* ]] || { echo "$output $stderr"; return 1; }
+}
+
+@test "main walk fails on a prompt start main stores as a symlink, since its names resolve against the session, not the link's target (U2a4)" {
+    mkdir -p .claude/commands .claude/rules docs && printf 'see @docs/x.md\n' > docs/t.md
+    ln -s ../../docs/t.md .claude/rules/t.md && commit_all rule-link
+    imps main docs/x.md; want walk ok; want docs/x.md imported
+    ln -s ../../docs/t.md .claude/commands/t.md && commit_all command-link
+    imps main docs/x.md; want walk failed; want docs/x.md imported
+}
+
+@test "the parser resolves each relative name against every directory it is given (U2a4)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        printf "@a.md @/x/b.md\n" | import_targets docs sub/ ""' _ "$LIB"
+    [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
+    for p in docs/a.md sub/a.md a.md; do printf '%s\n' "$output" | grep -qxF "$p" || { echo "want $p: $output"; return 1; }; done
 }
