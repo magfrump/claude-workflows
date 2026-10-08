@@ -121,6 +121,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
 | [Q-131](#q-131--u2a4-land-over-cap) | U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but ... | 2026-10-08 |
 | [Q-132](#q-132--u2a4-confirm-pass-regression) | U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes int... | 2026-10-08 |
+| [Q-133](#q-133--u2b1a2-gate-threat-model) | U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the securi... | 2026-10-08 |
 | [Q-134](#q-134--u2b1a1-landing) | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
 <!-- index:end -->
 
@@ -2307,4 +2308,29 @@ U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail 
 - **Blocks:** nothing besides U2b1a2's merge (stacked on it).
 - **Interim:** nothing merges. Recommended: [1]: its code is independent of Q-133's question.
 - **If the answer differs:** [2] lands it with U2b1a2.
+
+### Q-133 · u2b1a2-gate-threat-model
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the security critic keeps finding attacks by a deliberately hostile same-uid loop: is that threat in the gate's scope, and may it have one more iteration? **Answered 2026-10-08: [3].** Landed as is at 6cf869d7 (health check passed on the branch after main was merged in, 697081eb); R6-R9 and A15-A19 have override rows with trigger U2b1b, which fixes them.
+
+- **Why it's yours:** the plan's "What the gate can and cannot do" says no script contains a loop that turns hostile with its shell, and lists such paths as Q-103 residuals; the reviews now find them faster than one unit can close them. Where the line sits sets how much more gate code is worth writing.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1a.md`, section "Iteration 3 of 3" and its iteration-4 gate, on `feat/build-loop-u2b1a2` at 5ac071dd (worktree `.claude/wt-build-loop-u2b1a2`).
+- **The four reds:**
+  - R6 (honest-path): a missing tip tree object makes merge-tree print an error but exit 0, and `--check` prints ok for a merge that treats the branch side as empty.
+  - R7: a loop that creates a local `master` and points origin/HEAD at origin/master makes resolve_main read the wrong default branch, so a brief `done` on main reads ok.
+  - R8 (hostile): a same-uid process racing the gate's own temp directory (~40 ms) plants a merge driver; it ran and a conflict read ok.
+  - R9 (honest-path): the submodule test is vacuous, so nothing pins the isolation fix for iteration 2's lazy fetch.
+- Also deferred at iteration 2 (override row): rewritten object bytes behind an unchanged id (security F3), now known to reach every reader.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Plan's scope; one more iteration** | Iteration 4 fixes R6 (refuse on any merge-tree stderr; check the tip, main and base trees exist), R7 (refuse an ambiguous default branch: both main and master, or origin/HEAD disagreeing with the branch resolve_main picks), R9 and the ordering test, the wording and plan F8; then a final pass. R8, rewritten objects and planted packs/alternates go to Q-103 as hostile-loop residuals beside F19 and F35. | One answer; one more pass (~1M tokens). | A hostile loop can still race or forge what the gate reads; the gate stays a check on honest slips, as the plan already says. |
+| **[2] Hostile loops in scope** | Pause U2b; revise the plan so the gate runs where loops cannot write (another uid, or a private namespace and object copy), then rebuild U2b1a2 on that. | A plan revision to review; days of rework. | Over-engineering for a threat the solo setup may never meet; U2b-U5 slip. |
+| **[3] Land U2b1a2 as is, fix later** | Merge with the four reds recorded as known issues; fix them in U2b1b. | One answer. | `--check` can print ok for a wrong merge until U2b1b lands; nothing merges through it until U3, so no merge is exposed yet. |
+
+- **Blocks:** U2b1a2, and U2b1b, U2b2, U2b3, U2c (stacked on it).
+- **Interim:** nothing; U2b1a2 is paused at the cap (no fix work until answered). Recommended: [1].
+- **If the answer differs:** [2] reworks U2b1a2; [3] carries R6-R9 into U2b1b's review.
+
 
