@@ -119,6 +119,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-127](#q-127--q125-proc-fallback) | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
 | [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
+| [Q-131](#q-131--u2a4-land-over-cap) | U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but ... | 2026-10-08 |
 <!-- index:end -->
 
 ## Answered
@@ -2230,4 +2231,31 @@ U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it foun
 - **Blocks:** U2a4 (the floor), then U2b and U2c.
 - **Interim:** nothing runs on U2a3c until you answer.
 - **If the answer differs:** none of the options redoes work.
+
+### Q-131 · u2a4-land-over-cap
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but the final pass's fixes are unreviewed and the unit is 540 code lines against the 400 cap. How should it land? **Answered 2026-10-08: [1].** Cap waived; a k=1 fact-check plus the security critic over 2b6f2f91..a3489c4f; clean → merge; a new finding → back to the user (it found one: Q-132).
+
+- **Why it's yours:** only you can waive the size cap (decision log 62), and Q-128/Q-129 made landing after an unclean final pass your call.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2a4.md` (final pass) and `-2026-10-07-` (iterations 1-2), on branch `feat/build-loop-u2a4` at a3489c4f, worktree `.claude/wt-build-loop-u2a4`.
+- **Evidence:**
+  - Final pass (k=3, full panel, Stage 2.5): 0 Incorrect.
+    - Two Medium security under-reads, fixed in 2f9464d3: a `.claude/commands` directory that main stores as a symlink hid the command body, and a quoted `@"…"` mention spanning lines was not read.
+    - One Low performance regression, also fixed there: an unclosed `@"` before long prose failed both walks closed.
+    - Doc fixes.
+  - Tests: build-loop-check 78/78, dev-cycle 78, build-loop-read 19, lint 53. `--check-fix` is byte-identical to main over all 3,104 tracked paths, and the floor refuses everything the pre-split ancestor refused (6,320 pairs).
+  - The fix-drift lite check over 2f9464d3 found nothing.
+  - Size by stage: 381 lines at the start; 443, 471 and then 540 after each iteration's fixes. Most of the growth is the prompt-file layer the reviews asked for (commands/agents/output-styles/skills starts, session bases, quoted mentions, start-directory links) and its tests.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Waive the cap; one confirming pass, then land** | A k=1 fact-check plus the security critic over 2b6f2f91..HEAD (the unreviewed fixes). If clean, the agent writes the merge message and merges locally. A new finding comes back to you. | One answer now. Possibly one more if the pass finds something. | A 540-line unit lands, larger than the review-size guidance, though every line went through at least one full-panel pass or the confirming pass. |
+| **[2] Waive the cap; land now** | The agent writes the merge message and merges at a3489c4f. The final fixes rest on tests and the lite check only. | One answer. | An error in the last fix batch (the quoted-run rewrite, the link rule) reaches main unreviewed. Floor has no caller until U2b/U2c, so nothing acts on it yet. |
+| **[3] Split** | The prompt-file layer (about 200 lines with tests) moves to U2a4b with its own loop. U2a4 lands the floor, truthrule/truthwalk, `.claude/rules/` starts and the contract. | One answer, plus a later U2a4b landing. | Until U2a4b lands, a doc that only a `.claude/commands/` file imports passes the floor and `--check-fix`, as on main today (row 435). |
+
+- **Blocks:** U2a4's merge, and U2b/U2c, which stack on it.
+- **Interim:** nothing merges. The branch holds at a3489c4f. Recommended: [1], as with U2a3c (Q-128/Q-129).
+- **If the answer differs:** [3] reworks the branch into two units; [2] skips the pass.
+
 
