@@ -1154,7 +1154,7 @@ docs/guide.md: -" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "main walk fails on a prompt start main stores as a symlink, since its names resolve against the session, not the link's target (U2a4)" {
-    mkdir -p .claude/commands .claude/rules docs && printf 'see @docs/x.md\n' > docs/t.md
+    mkdir -p .claude/commands .claude/rules docs && printf 'see @x.md\n' > docs/t.md
     ln -s ../../docs/t.md .claude/rules/t.md && commit_all rule-link
     imps main docs/x.md; want walk ok; want docs/x.md imported
     ln -s ../../docs/t.md .claude/commands/t.md && commit_all command-link
