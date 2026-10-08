@@ -27,6 +27,8 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
+| [Q-133](#q-133--u2b1a2-gate-threat-model) | you: judgment | U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the securi... | 2026-10-08 |
+| [Q-134](#q-134--u2b1a1-landing) | you: judgment | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -348,3 +350,50 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 
 
 
+
+### Q-133 · u2b1a2-gate-threat-model
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
+
+U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the security critic keeps finding attacks by a deliberately hostile same-uid loop: is that threat in the gate's scope, and may it have one more iteration?
+
+- **Why it's yours:** the plan's "What the gate can and cannot do" says no script contains a loop that turns hostile with its shell, and lists such paths as Q-103 residuals; the reviews now find them faster than one unit can close them. Where the line sits sets how much more gate code is worth writing.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1a.md`, section "Iteration 3 of 3" and its iteration-4 gate, on `feat/build-loop-u2b1a2` at 5ac071dd (worktree `.claude/wt-build-loop-u2b1a2`).
+- **The four reds:**
+  - R6 (honest-path): a missing tip tree object makes merge-tree print an error but exit 0, and `--check` prints ok for a merge that treats the branch side as empty.
+  - R7: a loop that creates a local `master` and points origin/HEAD at origin/master makes resolve_main read the wrong default branch, so a brief `done` on main reads ok.
+  - R8 (hostile): a same-uid process racing the gate's own temp directory (~40 ms) plants a merge driver; it ran and a conflict read ok.
+  - R9 (honest-path): the submodule test is vacuous, so nothing pins the isolation fix for iteration 2's lazy fetch.
+- Also deferred at iteration 2 (override row): rewritten object bytes behind an unchanged id (security F3), now known to reach every reader.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Plan's scope; one more iteration** | Iteration 4 fixes R6 (refuse on any merge-tree stderr; check the tip, main and base trees exist), R7 (refuse an ambiguous default branch: both main and master, or origin/HEAD disagreeing with the branch resolve_main picks), R9 and the ordering test, the wording and plan F8; then a final pass. R8, rewritten objects and planted packs/alternates go to Q-103 as hostile-loop residuals beside F19 and F35. | One answer; one more pass (~1M tokens). | A hostile loop can still race or forge what the gate reads; the gate stays a check on honest slips, as the plan already says. |
+| **[2] Hostile loops in scope** | Pause U2b; revise the plan so the gate runs where loops cannot write (another uid, or a private namespace and object copy), then rebuild U2b1a2 on that. | A plan revision to review; days of rework. | Over-engineering for a threat the solo setup may never meet; U2b-U5 slip. |
+| **[3] Land U2b1a2 as is, fix later** | Merge with the four reds recorded as known issues; fix them in U2b1b. | One answer. | `--check` can print ok for a wrong merge until U2b1b lands; nothing merges through it until U3, so no merge is exposed yet. |
+
+- **Blocks:** U2b1a2, and U2b1b, U2b2, U2b3, U2c (stacked on it).
+- **Interim:** nothing; U2b1a2 is paused at the cap (no fix work until answered). Recommended: [1].
+- **If the answer differs:** [2] reworks U2b1a2; [3] carries R6-R9 into U2b1b's review.
+
+### Q-134 · u2b1a1-landing
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
+
+U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip, `check_brief`'s `git log` hardened) passed its final confirming pass with no red: may it land?
+
+- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1a1.md` on `feat/build-loop-u2b1a1` at aeb6f8fd (worktree `.claude/wt-build-loop-u2b1a1`).
+- **Evidence:**
+  - The final pass (k=3, full panel) found no red; the fact-check had 0 Incorrect (32 claims).
+  - Ambers fixed after the pass (4a7e021d): a planted `gpg.program` no longer runs in `check_brief`'s or `check_branch`'s `git log` (pre-existing), the dev-cycle skill no longer reads a broken config as an idle branch, and wording.
+  - The lite fix-drift check found one claim, refuted by execution.
+  - Suites 82/19/78/2/2; the health check passed at aeb6f8fd. 145 code lines.
+  - Rewritten objects (security F2) are deferred with the row Q-133 also names.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Land it** | Merge `feat/build-loop-u2b1a1` locally (`--no-ff`) after re-running the health check on the merge. | One answer. | The post-pass fixes (4a7e021d) land reviewed only by the lite check and the suites. |
+| **[2] Wait for Q-133** | Hold until U2b1a2's ruling and land both together. | One answer now, one later. | Nothing; only delay. |
+
+- **Blocks:** nothing besides U2b1a2's merge (stacked on it).
+- **Interim:** nothing merges. Recommended: [1]: its code is independent of Q-133's question.
+- **If the answer differs:** [2] lands it with U2b1a2.
