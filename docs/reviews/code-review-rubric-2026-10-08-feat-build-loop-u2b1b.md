@@ -1,8 +1,51 @@
-Commit: a382a3f8
+Commit: e02d056b
+Loop closed at e02d056b
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b1b` (U2b1b: `--check`'s changed-path lines and N rules, plus U2b1a2's carried R6, R7, R9, A15, A17, A19), on main 0e4596ce.
-**Status: 🟡 ITERATION 2 — no red, no behavioral amber; wording fixed in batch 2; final confirming pass next** (single-sample review; absence of findings is not an attestation)
+**Status: ✅ ITERATION 3 (final confirming pass) — no red; the final ambers are test and doc text, fixed after the pass (unreviewed, lite-checked); converged at the cap** (single-sample review; absence of findings is not an attestation)
+
+## Iteration 3 of 3: final confirming pass (Commit e02d056b, k=3, full panel, Stage 2.5, scope `main...HEAD`)
+
+Reports: `code-fact-check-report-build-loop-u2b1b-final.md` (merged r1-r3: 71 clusters, 55 Verified, 9 Mostly accurate, 2 Stale, 4 Incorrect, 1 Unverifiable; agreement 59/71, 83.1%; plus Stage 2.5's six submitted claims 72a-76), `security-reviewer-review-2026-10-08-build-loop-u2b1b-final.md`, `performance-reviewer-review-2026-10-08-build-loop-u2b1b-final.md`, `api-consistency-reviewer-review-2026-10-08-build-loop-u2b1b-final.md`, `architecture-review-review-2026-10-08-build-loop-u2b1b-final.md`. Every carried fix's mutant fails its test (R6 both guards, R7, R9, A17, the missing-blob check, merge-tree in the real repo, the own brief's mode); single guards of R6 and A16 pass alone (rows 514, 518). The Fact-Check Gate did not pause in away mode (process row): no Incorrect is behavioral.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| E1 | The A15 test pinned only "before main_by_name refuses": a mutant moving state_gate after resolve_main passed (reproduced by the orchestrator's executable-defect check). | Incorrect (test name) | fact-check claim 56 (r2); architecture final 1; security final 2 | Fixed after the pass: a git call log asserts every `^{commit}` read follows state_gate's refs/replace listing; the mutant now fails |
+| E2 | Test comment `build-loop-check.bats:1540` and override row 514: "a missing subtree or blob is fatal" (only when merge-tree must read it). | Incorrect (doc) | claims 10b, 52 | Fixed after the pass |
+| E3 | Plan :212 (K-of-N text), :283 (R8 "proposed"), :305 (R8 surface list). | Stale / Mostly accurate | claims 18, 19b, 20; api final 1 | Fixed after the pass |
+| E4 | Comments and help: build-loop.sh:564 (T14 and the subtree fallback), :608 (bytes after the last NUL), help :90-92 ("refuse state gate" timing), Exit line (mktemp). | Mostly accurate | claims 22, 27, 36, 39; api final 2 | Fixed after the pass |
+| E5 | Commit messages: cc9b69d3's probe parenthetical (Incorrect), a382a3f8's A16 mutant and 13.5 s figure, its F2 subtree note (Mostly accurate), cc9b69d3's "rev 2 under both" (Unverifiable). | Immutable | claims 59, 60, 63-65 | Accepted-immutable row (59); the rest corrected in later messages |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G1 | A directory planted at a cycle file's name main lacks (or `docs/working/cycles` as a file) prints ok; fails closed. | security final F1 (Low, hostile-loop) | Defer (row, trigger U2c) |
+| G2 | Two refusals name the wrong cause under a git warning (batch-check, hash-object). | Stage 2.5 claim 72b | Won't-Fix (row) |
+| G3 | Startup order repeated by U3/U3b; POLICY dropped by check_line; the real-repo vs gate-repo rule unstated. | architecture final 1-3 | Defer (row) |
+| G4 | S-rule flags under review; refuse vs skip for read failures; one 94-column help line. | api final 3-5 | Defer (row, trigger U2c) |
+| G5 | Fixed cost about 14-20 ms per brief. | performance final F1 | Priced (row 520) |
+
+### ✅ Confirmed Good (Stage 2.5, executed)
+
+| Claim | Evidence | Backing |
+|---|---|---|
+| R6: a missing tip or merge-base tree, stderr from any of the six gate git calls, or an absent or wrong-typed blob refuses with exit 2 | probes p72 (deleted trees, injected stderr per call, absent blobs on A and M, a 100644 tree and a 100755 commit) | claim 72b, Verified, executed |
+| The brief's own file passes only the exact first-Status open→done edit with its mode kept (LF, CRLF, 100755; both policies); 13 variants denied | probe p73 | claim 73, Verified, executed |
+| Symlink and gitlink shapes on either side are denied, including a gitlink real-repo diff-tree hides under ignore=all | probes p74, p74b | claim 74, Verified, executed |
+| No gate git call reads repo, worktree, global or system config, attributes or .git/modules (own_blob's cat-file, a real-repo read of main's blob, excepted) | probes p75, p75b (git's own view per call; no strace) | claim 75, Verified, executed (Medium) |
+| An ambiguous default branch exits 2 with only refuse state lines, before any brief is read | probe p76 | claim 76, Verified, executed |
+
+### Loop outcome
+
+Review converged in 3 iterations (at the cap): 0 Must Fix found; iteration 1's 5 ambers fixed or acknowledged with rows; the final pass's ambers are test and doc text, fixed after the pass in one unreviewed commit with a lite fix-drift check. Exit condition 2 (no Must Fix remains; known issues documented in the merge message).
 
 ## Iteration 2 of 3 (Commit a382a3f8, `--loop-pass`, k=1, scope `809df345..a382a3f8`, incremental)
 
@@ -68,7 +111,7 @@ None.
 
 ## ⏭️ Skipped Core Critics
 
-None. Contextual: test-strategy not selected (tests changed with the code; the fact-check's test-gap escalations stand in for it).
+None, in any iteration. Contextual: test-strategy not selected (tests changed with the code; the fact-check's test-gap escalations stand in for it).
 
 ## Considered overrides
 

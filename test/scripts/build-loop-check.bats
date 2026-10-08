@@ -1537,7 +1537,8 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
     mv "$BATS_TEST_TMPDIR/tree" ".git/objects/${o:0:2}/${o:2}"
-    # merge-tree reads a missing top-level tree as empty, warns and exits 0 (a missing subtree or blob is fatal).
+    # merge-tree reads a missing top-level tree as empty and warns, exiting 0 when that merge is otherwise
+    # clean (a missing subtree or blob it must read is fatal; one it passes by id is silent: the case below).
     onx 'echo b > b.txt'; echo m > m.txt && commit_all m
     o="$(git rev-parse main~1^{tree})"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"
@@ -1585,8 +1586,16 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: feat/x conflicts with the default branch" ] || { show; return 1; }
 }
 
-@test "--check runs its state gate before resolve_main reads an object: a planted key refuses even with main's commit missing (A15, U2b1b)" {
+@test "--check runs its state gate before resolve_main reads an object: every commit read follows the gate's last call, and a planted key refuses even with main's commit missing (A15, U2b1b)" {
     gated feat/x
+    # A shim logs each git call in order; resolve_main's first object read is a rev-parse of SHA^{commit}.
+    S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
+    printf '#!/bin/bash\necho "$*" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"; chmod +x "$S/git"
+    PATH="$S:$PATH" chk "$B"
+    [ "$status" -eq 0 ] || { show; return 1; }
+    g="$(grep -n -m1 -F 'for-each-ref --format=%(refname) refs/replace/' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
+    r="$(grep -n -m1 -F '^{commit}' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
+    [ -n "$g" ] && [ -n "$r" ] && [ "$g" -lt "$r" ] || { echo "gate call at line $g, first commit read at line $r"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
     git config merge.x.driver true
     o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"

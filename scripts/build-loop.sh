@@ -88,9 +88,10 @@
 #             origin/master; then (once main is found) both main and master
 #             present, or origin/HEAD naming another branch than the one taken.
 #             Each finding prints "refuse state WHAT: WHY" and exits 2 before
-#             any brief is read ("refuse state gate: WHY" when the gate's own
-#             merge repository cannot be set up). Then, per brief path, in
-#             argument order, one verdict line:
+#             any brief is read ("refuse state gate: WHY", when the gate's own
+#             merge repository cannot be set up, comes after the settings and
+#             open briefs are read, before any verdict line). Then, per brief
+#             path, in argument order, one verdict line:
 #             ok BRIEF TIP TREE
 #                 --status reads the brief as open and its branch at TIP, at
 #                 least one commit ahead of main (and TIP equals SHA when
@@ -119,9 +120,10 @@
 #             path BRIEF S PATH
 #             deny BRIEF S PATH: WHY
 #                 The N rules, under either policy: a path pathform refuses
-#                 (a part starting .git, any case: .github/); a mode other than 100644 or 100755
-#                 on either side (a symlink or gitlink); the brief's own file,
-#                 unless only its first Status: line outside a fence changes,
+#                 (a part starting .git, any case: .github/); a mode other
+#                 than 100644 or 100755 on either side (a symlink or
+#                 gitlink); the brief's own file, unless only its first
+#                 Status: line outside a fence changes,
 #                 from open to done (mode kept); and, compared lower-cased, the
 #                 dev cycle's own files (the roadmap, the questions files, the
 #                 idea log, docs/dev-cycle.md, anything under
@@ -136,7 +138,8 @@
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help), and for --check every verdict line ok;
 # 2 any --check verdict line or the state gate not ok; 1 bad usage, not a git
-# repo, no perl or lib/dev-cycle-read.sh, or no default branch found by name.
+# repo, no perl or lib/dev-cycle-read.sh, a failed mktemp (--check; no line
+# printed), or no default branch found by name.
 
 set -euo pipefail
 
@@ -561,7 +564,8 @@ nrules() {
   else
     # $7 is lower-cased, so the case word cannot fire; instr and dot, tested
     # before cycle, match no cycle file, docs/dev-cycle.md or docs/constraints.md
-    # today (T14 fails if one ever does: truthrule names this third consumer).
+    # today (T14 fails if one ever hides a covered file outside briefs/ and
+    # cycles/, which the fallback below still denies; truthrule names this third consumer).
     truthrule "$7" || true
     case "$TRUTH_WHY" in
       cycle|settings) DENY="one of the dev cycle's own files" ;;
@@ -605,7 +609,8 @@ check_line() {
     oms+=("${BASH_REMATCH[1]}"); nms+=("${BASH_REMATCH[2]}"); nos+=("${BASH_REMATCH[3]}"); ss+=("${BASH_REMATCH[4]}"); ps+=("$p")
     [[ "${nms[-1]}" != 100644 && "${nms[-1]}" != 100755 ]] || ids+=("${nos[-1]}")
   done < "$GATE_TMP/diff"
-  # Every record read whole: two NUL-ended fields each.
+  # Every record read whole: two NUL-ended fields each (bytes after the last
+  # NUL are not counted; git's own output never ends that way).
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "ok $a $sha $tree"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
