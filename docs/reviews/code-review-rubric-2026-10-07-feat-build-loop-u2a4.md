@@ -1,8 +1,39 @@
-Commit: d7cdc1ea
+Commit: 03be719e
+Loop-pass short-circuit: used at 03be719e
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2a4` (U2a4, the self-merge floor over one read-as-truth rule and one start predicate), on main 7afdb8d2.
-**Status: ⚠️ ITERATION 1 NOT CLEAN — no red; 6 ambers, all fixed; next pass reviews the fixes** (single-sample review; absence of findings is not an attestation)
+**Status: ⚠️ ITERATION 2 NOT CLEAN — one behavioral red (prompt_bases), fixed; the final confirming pass (iteration 3, k=3, full panel) is next** (single-sample review; absence of findings is not an attestation)
+
+## Iteration 2 of 3 (Commit 03be719e, `--loop-pass`, k=1, range d7cdc1ea..03be719e)
+
+Scope: the fix commit (the loop-pass default range from this rubric's stamp). The fact-check found a behavioral Incorrect at high confidence, so the first-red short-circuit fired (the first in this loop). The critics were skipped, and no amber was collected beyond the fact-check's. Security is not forced: the diff touches no enforcement file (`hooks/live-verify-gate.sh`'s regex).
+
+Report: `code-fact-check-report-build-loop-u2a4-i2.md`: k=1, 30 claims. 18 Verified, 9 Mostly accurate, 2 Incorrect, 1 Unverifiable.
+
+### 🔴 Must Fix (iteration 2)
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| R1 | `prompt_bases` drops a base when one `.claude/` sits directly inside another (`a/.claude/.claude/commands/x.md` gets no `a/.claude`): `${rest#*/.claude/}` eats the slash the next match needs, so both walks miss `@../docs/n1.md` from such a prompt. | Incorrect (high), behavioral | fact-check Claims 1, 2 (executed) | Fixed | It strips up to `/.claude` with `- 8`. Tested (`c/.claude/.claude/commands/y.md`). The claim's doc copies (commit 03be719e, A5, plan, test title) are now true; the commit is covered by an Accepted-immutable row. |
+
+### 🟡 Must Address (iteration 2)
+
+| # | Finding | Severity | Source | Status | Author note |
+|---|---|---|---|---|---|
+| A7 | Fix A1's recursive quote strip made a line of many `"` after an `@` cubic: 450 quotes cost 32.2M work units against 210K before it, and about 500 hit mawk's eval-stack limit, so one such line failed both walks (fail-closed: floor then refuses every path). | Mostly accurate (high), behavioral | fact-check Claim 27 (executed), escalation 2 | Fixed | The quoted read is a second candidate run from the character after the quote (`names`), not a recursion. A 2,000-quote line walks ok (tested). |
+| A8 | The binary's extractor reads `@"docs/a b.md"`, whose name holds a space; the parser ended the run at the blank. | Mostly accurate (high), behavioral | fact-check Claim 19b | Fixed | A quoted run ends only at the closing quote. Tested. Whether command expansion calls that extractor is still untraced (Claim 19c, Unverifiable). |
+
+### 🟢 Consider (iteration 2)
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| C22 | The plan's U2b bullet listed only some contract items | fact-check Claim 10 | Fixed: it points to the header, without a list |
+| C23 | F11's "its enclosing `.claude/` directories" | fact-check Claim 11 | Fixed |
+| C24 | truthwalk with an unknown WALK returns 0 without the need_root exit; the header said it exits | fact-check Claim 13 | Fixed in both comments |
+| C25 | Override rows 463 and 479 describe the d7cdc1ea set and a wrong line split | fact-check Claims 23, 24 | Rows corrected |
+| C26 | Commit 03be719e's path count and its "every enclosing" wording | fact-check Claims 2, 26 | Accepted-immutable row |
+| C27 | floor's `case` wording cannot be reached from floor (it lowers first) | fact-check (Verified note) | Kept: it is what floor would print if a later edit dropped the lower-casing (contract item 8) |
 
 ## Iteration 1 of 3 (Commit d7cdc1ea, `--loop-pass`, k=1)
 
@@ -32,7 +63,7 @@ None.
 | A3 | The floor wiring relies on a cache that a caller resets by assigning a variable by name. Contract item 4 was only a comment. | Coupling | architecture F1 | Fixed | `import_reset`, which contract item 4 now names. Tested: a checkout change goes unseen until the reset, and seen after it. |
 | A4 | `truthwalk` left TRUTH_WHY=imported when it returned 1. | Inconsistent | api-consistency 1 | Fixed | It now returns 1 with TRUTH_WHY empty. Tested. |
 | A5 | `truthrule`, `isstart` and `ownfile` under-refuse a mixed-case path; only the current callers' lower-casing keeps them right. | Inconsistent | api-consistency 2 | Fixed | `truthrule` refuses an upper-case letter as `case`, and floor words it. Contract item 8 says to lower-case first. The truthrule table test has a mixed-case row. |
-| A6 | `isstart` and the `instruction_names` prefilter spell the start rule twice, and no test holds them equal. A widened isstart with a stale grep would make --check-fix under-read silently. | Minor (under-read class) | architecture F6; fact-check check 2 (0 misses over 234,256 generated paths) | Fixed | A table test compares the two over 3 depths × 10 instruction names × 6 dirs × 3 tails × 2 cases. |
+| A6 | `isstart` and the `instruction_names` prefilter spell the start rule twice, and no test holds them equal. A widened isstart with a stale grep would make --check-fix under-read silently. | Minor (under-read class) | architecture F6; fact-check check 2 (0 misses over 234,256 generated paths) | Fixed | A table test compares the two over 138 paths: 3 depths × (10 basenames, 4 of them negatives, + 6 dirs × 3 tails × 2 cases); dropping `skills` from either side fails it (i2 fact-check 8a, 8b). |
 
 ### 🟢 Consider
 

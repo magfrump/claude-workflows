@@ -15,7 +15,7 @@
 # imported_names and main_imports also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
-# check_brief, isimported, truthwalk, floor and the import walks exit 1 (need_root) unless
+# check_brief, isimported, truthwalk (for tree or main), floor and the import walks exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # imported_names and main_imports return 1 when the walk fails: call them under
@@ -496,7 +496,8 @@ prompt_bases() {
   local -n pb_a="$1"; local rest="/$2" n
   pb_a=("")
   while [[ "$rest" == */.claude/* ]]; do
-    rest="${rest#*/.claude/}"; n=$(( ${#2} - ${#rest} - 9 ))
+    # Up to /.claude, not /.claude/: a .claude/ directly inside another keeps its slash (U2a4 i2 fact-check 1).
+    rest="${rest#*/.claude}"; n=$(( ${#2} - ${#rest} - 8 ))
     (( n <= 0 )) || pb_a+=("${3:0:n}")
   done
 }
@@ -626,9 +627,6 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 IMPORT_AWK='
 function emit(c,   i) {
   work += length(c); if (work > wmax) exit 3
-  # A mention in a command may be quoted (@"docs/x.md", which the prompt-mention
-  # reader of Claude Code 2.1.293 accepts): the name after the quote is read too.
-  if (substr(c, 1, 1) == "\"" && length(c) > 1) emit(substr(c, 2))
   # Claude Code trims the name; it rejects a name led by a space first, so
   # trimming one only over-reads.
   sub(/^ +/, "", c); sub(/ +$/, "", c)
@@ -663,17 +661,25 @@ function put(c,   n, i, k, part, st, out) {
   seen[out] = 1; printed += length(out) + 1; if (printed - 1 > left) exit 3
   print out
 }
-function scan(line,   i, j, L, ch, name) {
+function scan(line,   i, L) {
   L = length(line)
   for (i = 1; i <= L; i++) {
     if (substr(line, i, 1) != "@") continue
-    name = ""
-    for (j = i + 1; j <= L; j++) {
-      ch = substr(line, j, 1)
-      if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
-      else if (ch == " " || ch == "\t" || ch == "\r") break
-      name = name ch; emit(name)
-    }
+    names(line, i + 1, L, 0)
+    # A mention in a command may be quoted (@"docs/a b.md", which the prompt-mention
+    # reader of Claude Code 2.1.293 accepts): the run after the quote is read too,
+    # up to the closing quote, blanks included (U2a4 i1 security F1, i2 fact-check 19b).
+    if (substr(line, i + 1, 1) == "\"") names(line, i + 2, L, 1)
+  }
+}
+function names(line, j, L, q,   ch, name) {
+  name = ""
+  for (; j <= L; j++) {
+    ch = substr(line, j, 1)
+    if (q) { if (ch == "\"") break }
+    else if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
+    else if (ch == " " || ch == "\t" || ch == "\r") break
+    name = name ch; emit(name)
   }
 }
 function splice(line,   o, i, j, r) {
@@ -995,7 +1001,7 @@ truthrule() {
 # so a caller words a failed walk without knowing the order (override row 418).
 # Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH
 # (TRUTH_WHY=imported), else 1 with TRUTH_WHY empty; an unknown WALK answers
-# walk. It exits through need_root.
+# walk without running one. For tree or main it exits through need_root.
 truthwalk() {
   TRUTH_WHY=walk
   case "$1" in main) main_imports || return 0 ;; tree) imported_names || return 0 ;; *) return 0 ;; esac

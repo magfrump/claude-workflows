@@ -1179,15 +1179,19 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     [ "$output" = same ] || { echo "$output $stderr"; return 1; }
 }
 
-@test "both walks read a quoted prompt mention, a skill's names against the session, and every enclosing .claude/'s directory (U2a4 i1 security F1-F3)" {
-    mkdir -p .claude/commands .claude/skills/k a/.claude/commands/b/.claude/commands docs
-    printf 'run @"docs/q.md"\n' > .claude/commands/q.md
+@test "both walks read a quoted prompt mention (blanks included), a skill's names against the session, and the directory holding every enclosing .claude/ (U2a4 i1 security F1-F3, i2 fact-check 1, 19b, 27)" {
+    mkdir -p .claude/commands .claude/skills/k a/.claude/commands/b/.claude/commands c/.claude/.claude/commands docs
+    printf 'run @"docs/q.md" and @"docs/a b.md"\n' > .claude/commands/q.md
     printf 'use @docs/k.md\n' > .claude/skills/k/SKILL.md
     printf 'run @docs/n.md\n' > a/.claude/commands/b/.claude/commands/x.md
+    printf 'run @d.md\n' > c/.claude/.claude/commands/y.md
+    # A line of 2,000 quotes after an @ costs quadratic, not cubic, parser work: the walk passes.
+    { printf 'see @'; for ((i = 0; i < 2000; i++)); do printf '"'; done; printf '\n'; } > CLAUDE.md
     commit_all prompts
+    ps=(docs/q.md "docs/a b.md" docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md c/d.md c/.claude/d.md)
     for w in tree main; do
-        imps "$w" docs/q.md docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md
-        want walk ok; for p in docs/q.md docs/k.md docs/n.md a/docs/n.md a/.claude/commands/b/docs/n.md; do want "$p" imported; done
+        imps "$w" "${ps[@]}"
+        want walk ok; for p in "${ps[@]}"; do want "$p" imported; done
     done
 }
 
