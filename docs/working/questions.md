@@ -28,7 +28,6 @@ The index below is generated — edit entries, not the table.
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-133](#q-133--u2b1a2-gate-threat-model) | you: judgment | U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the securi... | 2026-10-08 |
-| [Q-134](#q-134--u2b1a1-landing) | you: judgment | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -376,25 +375,3 @@ U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with fou
 - **Interim:** nothing; U2b1a2 is paused at the cap (no fix work until answered). Recommended: [1].
 - **If the answer differs:** [2] reworks U2b1a2; [3] carries R6-R9 into U2b1b's review.
 
-### Q-134 · u2b1a1-landing
-**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
-
-U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip, `check_brief`'s `git log` hardened) passed its final confirming pass with no red: may it land?
-
-- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
-- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1a1.md` on `feat/build-loop-u2b1a1` at aeb6f8fd (worktree `.claude/wt-build-loop-u2b1a1`).
-- **Evidence:**
-  - The final pass (k=3, full panel) found no red; the fact-check had 0 Incorrect (32 claims).
-  - Ambers fixed after the pass (4a7e021d): a planted `gpg.program` no longer runs in `check_brief`'s or `check_branch`'s `git log` (pre-existing), the dev-cycle skill no longer reads a broken config as an idle branch, and wording.
-  - The lite fix-drift check found one claim, refuted by execution.
-  - Suites 82/19/78/2/2; the health check passed at aeb6f8fd. 145 code lines.
-  - Rewritten objects (security F2) are deferred with the row Q-133 also names.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Land it** | Merge `feat/build-loop-u2b1a1` locally (`--no-ff`) after re-running the health check on the merge. | One answer. | The post-pass fixes (4a7e021d) land reviewed only by the lite check and the suites. |
-| **[2] Wait for Q-133** | Hold until U2b1a2's ruling and land both together. | One answer now, one later. | Nothing; only delay. |
-
-- **Blocks:** nothing besides U2b1a2's merge (stacked on it).
-- **Interim:** nothing merges. Recommended: [1]: its code is independent of Q-133's question.
-- **If the answer differs:** [2] lands it with U2b1a2.
