@@ -1245,3 +1245,24 @@ a: [imported]
 c cached: -
 c: $IMP" ] || { echo "$output $stderr"; return 1; }
 }
+
+# show: what a failed test prints, the history included (the plan's test spec; row 223).
+show() { echo "status $status"; echo "$output"; echo "$stderr"; git log --oneline --graph --all; }
+# gated BRANCH: brief x, open and naming BRANCH (B is its path), and BRANCH with one commit.
+gated() { brief x "Status: open" "Branch: $1"; work "$1"; }
+
+@test "under a broken log.* config --status skips the branch instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
+    gated feat/x; tip feat/x "handoff: ready"
+    git config log.date bogus
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$status" -eq 0 ] && [ "$output" = "skip $B: Branch: its commit count or date could not be read" ] || { show; return 1; }
+}
+
+@test "--status runs no repo-local textconv driver while it finds a brief's Status commit (U2b1a1)" {
+    gated feat/x
+    git config diff.x.textconv "touch $BATS_TEST_TMPDIR/textconv-ran; cat"
+    printf '*.md diff=x\n' > .gitattributes
+    run --separate-stderr bash "$BL" --status "$B"
+    [ "$status" -eq 0 ] && [[ "$output" == "ok $B open "* ]] || { show; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/textconv-ran" ] || { echo "textconv ran"; return 1; }
+}

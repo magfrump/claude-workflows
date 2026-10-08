@@ -68,8 +68,8 @@
 #             skip BRIEF: WHY
 #                 The brief cannot be read (as --check-brief), its Branch:
 #                 line is missing or malformed or its Dispatched: line
-#                 malformed, its branch name is refused (as --check-branch),
-#                 on a branch ahead of main the tip's subject (its message's
+#                 malformed, its branch name is refused (as --check-branch)
+#                 or its commit count or date cannot be read, on a branch ahead of main the tip's subject (its message's
 #                 first line) starts "handoff:" but it is not a marker, or, for
 #                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
@@ -280,9 +280,16 @@ read_settings() {
 # The caller has checked that the branch is at least one commit ahead of main.
 marker_kind() {
   local msg subj rest p r
-  # git parses the object: its tree, its parents and where the message starts.
-  read -ra p <<<"$(git rev-list --parents -n 1 "$1")"
-  msg="$(git log -1 --format=%B "$1")"; subj="${msg%%$'\n'*}"
+  # git parses the parents; the message is the raw object's text after its
+  # first empty line (no header holds one), read with cat-file so no log.* or
+  # i18n.* config can change or break it. A failed read answers bad, never
+  # working (row 307).
+  # NULs are dropped here (bash would warn on stderr); the NUL check below reads the raw object.
+  if ! p="$(git rev-list --parents -n 1 "$1" 2>/dev/null)" || ! msg="$(git cat-file commit "$1" 2>/dev/null | tr -d '\000')"; then
+    echo "bad its commit could not be read"; return
+  fi
+  if [[ "$msg" == *$'\n\n'* ]]; then msg="${msg#*$'\n\n'}"; else msg=""; fi
+  read -ra p <<<"$p"; subj="${msg%%$'\n'*}"
   [[ "$subj" == handoff:* ]] || { echo working; return; }
   if [[ "$(git cat-file commit "$1" | tr -cd '\000' | wc -c)" -gt 0 ]]; then echo "bad it holds a NUL byte"; return; fi
   if [[ ${#p[@]} -eq 1 ]]; then echo "bad it has no parent"; return; fi
@@ -299,32 +306,9 @@ marker_kind() {
   if [[ "$subj" == "handoff: stopped: "* ]] && printf '%s\n' "$r" | LC_ALL=C grep -qxE '[!-~]([ -~]{0,118}[!-~])?'; then echo "stopped $r"
   else echo 'bad its subject is not exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (REASON: 1 to 120 printable ASCII characters, no blank at either end)'; fi
 }
-# Lower-cased branch names that more than one open brief on main (in briefs/ or
-# closed/) names, each between newlines: such briefs are skipped (F31).
-# status_line computes it on first use, so no caller can skip it.
-SHARED_BRANCHES=""
-shared_branches() {
-  local f list b rc=0
-  local -A n=() BRIEF=()  # a local BRIEF: the caller's stays as it was
-  # One git grep finds the files with a "Status: open" line (a superset: fences
-  # are not modelled); brief_fields then reads only those. Exit 1 is "none";
-  # an exit above 1, a corrupt object's included, fails closed
-  # (SHARED_BRANCHES=error: every open brief skips). A brief whose object is
-  # missing (git grep warns, exits 0 or 1) is not counted (row 293).
-  list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
-  if [[ "$rc" -gt 1 ]]; then SHARED_BRANCHES=error; return; fi
-  while IFS= read -r f; do
-    f="${f#"$MAIN_SHA":}"
-    if ! { isbrief "$f" || isclosed "$f"; } || ! brief_fields "$f"; then continue; fi
-    [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
-    b="$(lower "${BASH_REMATCH[1]}")"; n[$b]=$(( ${n[$b]-0} + 1 ))
-  done <<<"$list"
-  SHARED_BRANCHES=$'\n'
-  for b in "${!n[@]}"; do [[ "${n[$b]}" -lt 2 ]] || SHARED_BRANCHES+="$b"$'\n'; done
-}
 status_line() {
   local a="$1" out st br sha ahead date loop kind reason="" pol=review disp=0
-  [[ -n "$SHARED_BRANCHES" ]] || shared_branches
+  open_shared
   out="$(check_brief "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
   read -r _ _ st _ <<<"$out"
@@ -339,8 +323,8 @@ status_line() {
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
-  if [[ "$st" == open && "$SHARED_BRANCHES" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed"; return; fi
-  if [[ "$st" == open && "$SHARED_BRANCHES" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
+  if [[ "$st" == open && "$OPEN_SHARED" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed"; return; fi
+  if [[ "$st" == open && "$OPEN_SHARED" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
     echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi
   out="$(check_branch "$br")"
