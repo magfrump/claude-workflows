@@ -3,7 +3,8 @@
 # scripts/build-loop.sh can share it: the output scrub, the plain-file
 # and path-form rules, the cycle's own file names, the Markdown shapes the
 # readers refuse (FENCE_AWK), the brief, branch and answer checks, the
-# instruction-file import walks, and the default branch.
+# instruction-file import walks, the read-as-truth rule and self-merge floor
+# they serve, and the default branch.
 #
 # Sourced, never run: it only defines functions and variables. Each script
 # sources it from its own directory (never from the repo it acts on), so a copy
@@ -15,7 +16,7 @@
 # imported_names and main_imports also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
-# check_brief, isimported and the import walks exit 1 (need_root) unless
+# check_brief, isimported, truthwalk (for tree or main), floor and the import walks exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # imported_names and main_imports return 1 when the walk fails: call them under
@@ -38,6 +39,36 @@
 # checkout's start files and imported files main lacks, which can only add
 # imports or fail it; it needs resolve_main to have found main by name);
 # imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
+#
+# The gate caller contract, for floor and main_imports (the one statement of
+# it; plan step 5's U2b bullet and known issue A5 point here; override row 459):
+#  1. Run as above, with main found by name, under LC_ALL=C (under a UTF-8
+#     locale a non-UTF-8 name on main fails the walk).
+#  2. Walk a clean worktree at MAIN_SHA, final before the walk (the walk reads
+#     main's blob for every path main stores, and the checkout only where main
+#     lacks a path), where git ls-files prints nothing on stderr (any fails the
+#     walk), under the git environment the override log names (GIT_INDEX_FILE,
+#     GIT_WORK_TREE, fsmonitor, sparse checkout, core.ignoreCase, replace refs).
+#  3. Refuse a checkout whose core.symlinks is false or with a
+#     working-tree-encoding, filter or ident attribute on any path the walk
+#     reads (.gitattributes, $GIT_DIR/info/attributes, core.attributesFile).
+#     U2b builds this; the walk does not check it.
+#  4. Call import_reset before each gate decision and after any checkout
+#     change (rows 372, 439), or when HOME, IMPORT_OUT_MAX or IMPORT_WORK_MAX
+#     changes: neither walk's cache key holds them.
+#  5. Ask floor about each changed path, in this shell, before pathform or
+#     main_entry (so .github/x.yml is refused as a dotfile, not as badform),
+#     and refuse the whole branch on any main_entry word but blob or absent
+#     (rows 308, 324). Floor item 5 (symlinks, gitlinks) and the brief's own
+#     Status change are the caller's rules.
+#  6. Read a walk only through isimported or truthwalk: IMPORTED_MAIN=error
+#     reads as "not imported" to a raw membership test (row 419).
+#  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
+#     and only a PATH main lacks.
+#  8. Pass truthrule, isstart, ownfile, prompt_dir and prompt_bases a
+#     lower-cased path (prompt_dir and prompt_bases also take the path as
+#     spelled; floor, check_fix and the walks lower first; truthrule refuses an
+#     upper-case letter as case).
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -445,11 +476,43 @@ resolve_main() {
 # AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
 # written inline, the hermeticity lint reads the alternation as a command.)
 INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz0123456789_-]+)?\.md$|^skill\.md$'
+# The one start rule both walks use (U2a4), for a lower-cased path: an
+# instruction file's name, or a .md file at any depth under a .claude/
+# directory's rules/ (memory, whose names resolve against the file's own
+# directory) or PROMPT_DIR's commands/, agents/, output-styles/ or skills/ (a
+# command's @ names load when it runs, resolved against the session's
+# directory: U2a3b L2-confirm security F2; the other three are untraced, read
+# as a superset). truthrule refuses the same names; instruction_names is its
+# grep prefilter, and a test holds the two equal.
+PROMPT_DIR='(^|/)\.claude/(commands|agents|output-styles|skills)/'
+# A start directory, any path below one, or .claude itself: main_imports
+# refuses a link or gitlink there unless it is a symlinked start.
+START_LINK='/\.claude(/(rules|commands|agents|output-styles|skills)(/.*)?)?$'
+isstart() { [[ "${1##*/}" =~ $INSTRUCTION_FILE ]] || [[ "$1" == *.md && ( "$1" =~ $PROMPT_DIR || "/$1" == */.claude/rules/* ) ]]; }
+# prompt_dir MAP LP PATH: for a start under PROMPT_DIR (LP lower-cased, PATH as
+# spelled), MAP[PATH] gets LP, so a walk knows to read it against prompt_bases.
+# shellcheck disable=SC2034  # pd_m is the caller's map, set by name
+prompt_dir() { local -n pd_m="$1"; [[ ! "$2" =~ $PROMPT_DIR ]] || pd_m[$3]="$2"; }
+# prompt_bases NAME LP PATH: array NAME gets the directories a prompt start
+# also resolves its names against, where a session reading it may have
+# started: the top level and the one holding each .claude/ in its path (a
+# nested one too: U2a4 i1 security F3), as PATH spells them, once each. Not
+# covered: a session started anywhere else (U2b's reader model).
+prompt_bases() {
+  local -n pb_a="$1"; local c n=0 parts=()
+  pb_a=("")
+  # Whole components, so .claude/.claude/ keeps both bases and .claudex is none (U2a4 i2 fact-check 1, final fact-check 31).
+  IFS=/ read -r -a parts <<<"$2"
+  for c in "${parts[@]}"; do
+    [[ "$c" != .claude || $n -eq 0 ]] || pb_a+=("${3:0:n-1}")
+    n=$(( n + ${#c} + 1 ))
+  done
+}
 # Paths, lower-cased, that instruction files pull in with an @ import (Claude
 # Code's "@path" syntax), followed transitively: such a file is read as
 # instructions, so an in-cycle fix never edits it. The walk starts at every
-# instruction file in the checkout, tracked or not (CLAUDE.local.md is usually
-# gitignored), resolves each @path against the importing file's directory as
+# start file in the checkout (isstart), tracked or not (CLAUDE.local.md is usually
+# gitignored), resolves each @path against the importing file's directory (and a prompt's also against prompt_bases') as
 # Claude Code does (import_targets reads a superset of its names, ~/ against
 # this process's HOME, and drops paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read,
@@ -459,8 +522,7 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
 # returns 1 again.
 # main_imports walks the default branch's commit instead, for the gate: it starts
-# at every instruction file stored there (and every .md under a .claude/rules/
-# directory at any depth, which Claude Code also loads) and follows an import
+# at every start file stored there (isstart) and follows an import
 # into the file main stores at that path, whatever its name; a symlink there is
 # followed to the path its text names. Once main's walk is done, a second phase
 # walks the checkout's start files main lacks (untracked, ignored or only in
@@ -469,7 +531,10 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # listed twice or as both a file and a directory, a name holding a newline,
 # symlink text that is empty, absolute, leaves
 # the repo, holds a newline or a NUL, or has a .. after a symlink (on main or
-# in the checkout), and a checkout path it would walk (a start or an import
+# in the checkout), a prompt start (prompt_dir) main stores as a symlink, a
+# link or gitlink main stores at or below a .claude/ start directory or at
+# .claude (START_LINK) unless it is a symlinked start, a link to a directory
+# or a gitlink, and a checkout path it would walk (a start or an import
 # main lacks) that lies under a directory main stores as a symlink or gitlink
 # or under any checkout ancestor but a plain searchable directory (absent
 # ones and plain files excepted: nothing below them loads), or that the
@@ -478,40 +543,41 @@ INSTRUCTION_FILE='^(claude|agents?|gemini)(\.[abcdefghijklmnopqrstuvwxyz01234567
 # or a checkout listing git prints any stderr for, fail the walk, so isimported main
 # answers imported for every path. A linked worktree's .git file and files
 # under .git are checkout files like any other. A start file answers imported only when an import reaches it
-# (U2a4's floor names start files by its own rules). Not covered (known issue
+# (floor refuses start files by truthrule). Not covered (known issue
 # A5): start files under a symlinked directory or in a submodule or untracked
 # nested repo, other names one file has on a case-insensitive checkout,
-# checkout conversions (A5), command files (.claude/commands/*.md, whose
-# @ names Claude Code loads when the command runs: U2a3b L2-confirm security
-# F2; U2a4's shared start predicate), and a start that is not a regular file or
+# checkout conversions (A5), a prompt read by a session started outside
+# prompt_bases' directories, and a start that is not a regular file or
 # symlink (git does not list a FIFO). The walk reads the checkout as one
 # snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
 # the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
-# whose files it read, so a caller whose checkout may have changed (a file
-# added or edited) sets IMPORTED_MAIN_DONE="" to walk again, and a cached
-# error returns 1 again. A caller that changes HOME clears both
-# IMPORTED_DONE and IMPORTED_MAIN_DONE (both caches are keyed without it).
+# whose files it read, nor HOME, so a caller whose checkout or HOME may have
+# changed calls import_reset (contract item 4); a cached error returns 1 again.
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; the reader set is U2b's).
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
+# import_reset: the next call of either walk walks again (caller contract item 4).
+import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; }
 # Each walk fails once import_targets has printed more than this in all
 # (characters, newlines between names counted; awk counts bytes, so it may stop
 # first): the parser's work bound is per file, while the bash side's cost grows
 # with everything printed (performance L2 F2). A fresh clone's walks print about
-# 2 KB, /workspace's about 6 KB. A caller that changes it clears IMPORTED_DONE
-# and IMPORTED_MAIN_DONE before walking again.
+# 2 KB, /workspace's about 6 KB. A caller that changes it calls import_reset.
 IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
 # characters it scans and each resolved spelling it joins, which for a
 # relative name carries ROOT_REAL, so a longer root buys less; the unit of its
 # per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
-# of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# A quote left open is charged per line for all its text so far, so an
+# unclosed @" followed by about 90 KB with no " spends the bound and fails
+# the walk (fail-closed; U2a4 confirm2 security C1, override row).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller
-# that changes it clears both caches, as for IMPORT_OUT_MAX.
+# that changes it calls import_reset.
 IMPORT_WORK_MAX=50000000
 # UTF-8 spaces, which end an import token as a blank does (import_targets makes
 # each one a blank first): U+00A0, U+1680, U+2000-200A, U+2028/2029, U+202F,
@@ -521,7 +587,9 @@ UNI_SPACES=($'\xc2\xa0' $'\xe1\x9a\x80' $'\xe2\x80\x80' $'\xe2\x80\x81' $'\xe2\x
   $'\xe2\x80\xa9' $'\xe2\x80\xaf' $'\xe2\x81\x9f' $'\xe3\x80\x80' $'\xef\xbb\xbf')
 lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'; }
 # The import targets in the text on stdin, for a file in directory $1 ("" at
-# the top level): one repo-relative path per line, case kept, each once. It
+# the top level), a relative name resolved against $1 and against each further
+# directory given (a prompt's session directories: prompt_bases): one
+# repo-relative path per line, case kept, each once. It
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
@@ -539,11 +607,16 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # in a line starts a candidate, whatever precedes it and inside code spans and
 # fences too; each prefix of the run after it, up to the first blank (a NUL or
 # a UNI_SPACES space counts as one), is a candidate name, with a
-# backslash-escaped space read as a space. A line holding <!-- is also read
+# backslash-escaped space read as a space. After @" the quoted text is also
+# read whole, to its closing quote on that line or a later one (the
+# prompt-mention reader of Claude Code 2.1.293, @"([^"]+)", that a command's
+# names go through: U2a4; untraced whether command expansion calls it). A
+# line holding <!-- is also read
 # with its closed HTML comments removed (Claude Code splices them), and text
 # holding a byte above 0x7f is also read decoded as Claude Code decodes it (an
 # invalid UTF-8 sequence becomes U+FFFD). Each candidate is trimmed of spaces,
-# made absolute (ROOT_REAL/$1/name unless it starts with /) and resolved
+# made absolute (ROOT_REAL/DIR/name for $1 and each further directory, unless
+# it starts with /) and resolved
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
 # ROOT_REAL, and printed repo-relative. A ~/ name is joined to this process's
@@ -561,17 +634,18 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # empty, when a ~/ name appears and the home is not absolute, or when the
 # candidates and comment splices run past a work bound or print past
 # IMPORT_LEFT (so a pathological file fails the walk rather than stalling it).
-# Re-check the superset when Claude Code changes its import grammar, how its
+# Re-check the superset when Claude Code changes its import grammar or its
+# prompt-mention reader, how its
 # runtime reads an empty or unset HOME, or how it decodes invalid UTF-8
 # (test/agents-gemini-sync.bats holds a separate, older finder for where an
 # import starts, not these rules).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
-function emit(c) {
+function emit(c, keep,   i) {
   work += length(c); if (work > wmax) exit 3
   # Claude Code trims the name; it rejects a name led by a space first, so
-  # trimming one only over-reads.
-  sub(/^ +/, "", c); sub(/ +$/, "", c)
+  # trimming one only over-reads. KEEP skips the trim (a quoted name, below).
+  if (!keep) { sub(/^ +/, "", c); sub(/ +$/, "", c) }
   if (c == "") return
   # ~/ joins the home directory (Claude Code: path.join(os.homedir(), rest)),
   # also spelled through its real path, since ROOT_REAL is real.
@@ -580,10 +654,10 @@ function emit(c) {
     if (homereal != home) put(homereal "/" substr(c, 3))
     c = home "/" substr(c, 3)
   }
-  put(c)
+  if (substr(c, 1, 1) == "/") { put(c); return }
+  for (i = 0; i <= nd; i++) put(root "/" dirs[i] "/" c)
 }
 function put(c,   n, i, k, part, st, out) {
-  if (substr(c, 1, 1) != "/") c = root "/" dir "/" c
   # The resolved spelling is what costs (its length grows with the depth of
   # the importing file), so it is charged too, and each is resolved once per file.
   work += length(c); if (work > wmax) exit 3
@@ -597,23 +671,51 @@ function put(c,   n, i, k, part, st, out) {
   }
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
   if (index(out, pre) != 1 || length(out) <= length(pre)) return
+  # A quoted text that spans lines can resolve to a name holding a newline,
+  # which no file a walk admits has (and a printed one would split in two).
+  if (index(out, "\n")) return
   out = substr(out, length(pre) + 1)
   if (out in seen) return
   # printed counts as the walks count: each name, a newline between names.
   seen[out] = 1; printed += length(out) + 1; if (printed - 1 > left) exit 3
   print out
 }
-function scan(line,   i, j, L, ch, name) {
+# scan LINE CARRY: every candidate in LINE. A mention in a command may be quoted
+# (@"docs/a b.md": the prompt-mention reader of Claude Code 2.1.293, @"([^"]+)",
+# which spans lines): the run after the quote is read as an unquoted one, and
+# the whole quoted text once, at its closing quote on this line or, when CARRY
+# is set, a later one (qo marks an open quote, even an empty one, and qopen
+# holds its text; each held line and each copy of qopen is charged as work), so
+# prefixes never grow past a blank (U2a4 i1 security F1; final security F2,
+# performance F1; confirming security F2, F4).
+function scan(line, carry,   i, L, k, r) {
   L = length(line)
   for (i = 1; i <= L; i++) {
     if (substr(line, i, 1) != "@") continue
-    name = ""
-    for (j = i + 1; j <= L; j++) {
-      ch = substr(line, j, 1)
-      if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
-      else if (ch == " " || ch == "\t" || ch == "\r") break
-      name = name ch; emit(name)
-    }
+    names(line, i + 1, L)
+    if (substr(line, i + 1, 1) != "\"") continue
+    names(line, i + 2, L)
+    r = substr(line, i + 2); work += length(r); if (work > wmax) exit 3
+    k = index(r, "\"")
+    if (k > 1) quoted(substr(r, 1, k - 1))
+    else if (k == 0 && carry) { qo = 1; qopen = r }
+  }
+}
+# quoted TEXT: Claude Code reads a mention through its file-name parser, which
+# drops a #L5, #L2-9 or #section suffix (confirming security F1), and may not
+# trim it (untraced): read the text whole and before its first #, each trimmed
+# and as written.
+function quoted(q,   h) {
+  emit(q); emit(q, 1)
+  h = index(q, "#"); if (h > 1) { emit(substr(q, 1, h - 1)); emit(substr(q, 1, h - 1), 1) }
+}
+function names(line, j, L,   ch, name) {
+  name = ""
+  for (; j <= L; j++) {
+    ch = substr(line, j, 1)
+    if (ch == "\\" && substr(line, j + 1, 1) == " ") { ch = " "; j++ }
+    else if (ch == " " || ch == "\t" || ch == "\r") break
+    name = name ch; emit(name)
   }
 }
 function splice(line,   o, i, j, r) {
@@ -626,11 +728,22 @@ function splice(line,   o, i, j, r) {
   return o line
 }
 BEGIN {
-  dir = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homereal = ENVIRON["IT_HOME_REAL"]
+  # IT_XDIRS: the further directories, each led by an x so "" survives split.
+  nd = split(ENVIRON["IT_XDIRS"], dirs, "\n"); for (i = nd; i >= 1; i--) dirs[i] = substr(dirs[i], 2)
+  dirs[0] = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homereal = ENVIRON["IT_HOME_REAL"]
   left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
   wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
-{ scan($0); if (index($0, "<!--")) scan(splice($0)) }
+{
+  if (qo) {
+    # The append copies qopen, so that copy is charged too: a quote left open
+    # over many lines fails the bound rather than running quadratic time.
+    work += length($0) + length(qopen); if (work > wmax) exit 3
+    k = index($0, "\""); if (k) { quoted(qopen "\n" substr($0, 1, k - 1)); qo = 0; qopen = "" } else qopen = qopen "\n" $0
+  }
+  # The spliced line may open a quote the raw one does not.
+  scan($0, 1); if (index($0, "<!--")) scan(splice($0), !qo)
+}
 END { if (trail) print "/" (work + 0) }'
 # Well-formed UTF-8 (RFC 3629: no overlongs, surrogates or code points past
 # U+10FFFF), as an awk ERE for a C-locale awk -v: it agreed with python3's
@@ -652,8 +765,9 @@ import_home() {
   IMPORT_HOME="$h"; IMPORT_HOME_REAL="${hr:-$h}"; IMPORT_HOME_DONE="$key"
 }
 import_targets() {
-  local u d toks s=(-e 's/\x0/ /g') LC_ALL=C
+  local u d toks x="" s=(-e 's/\x0/ /g') LC_ALL=C
   import_home || return 1
+  [[ $# -lt 2 ]] || x="$(printf 'x%s\n' "${@:2}")"  # the walks refuse a name holding a newline
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
   # failure, but a caller without pipefail would.
@@ -669,10 +783,10 @@ import_targets() {
   fi
   # A pipe, not a here-string: bash writes a long here-string to a temp file,
   # and a failed write would read as no imports.
-  # dir, root and home go through the environment: awk -v would read
+  # The directories, root and home go through the environment: awk -v would read
   # backslash escapes in them. IMPORT_LEFT, set by a walk, is what its
   # IMPORT_OUT_MAX budget has left, so awk stops there rather than after.
-  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOME_REAL="$IMPORT_HOME_REAL" \
+  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_XDIRS="$x" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOME_REAL="$IMPORT_HOME_REAL" \
     IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
 }
 # import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
@@ -685,12 +799,12 @@ import_work() {
   iw_o="${iw_o%/*}"; iw_o="${iw_o%$'\n'}"
   (( (iw_t += iw_w) <= IMPORT_WORK_MAX ))
 }
-# Instruction-file names among NUL-separated paths on stdin: one grep, before
+# Start names among NUL-separated paths on stdin: one grep, before
 # the tree walk forks lower and a plain check per path (forking for every tracked
-# file took seconds). It matches INSTRUCTION_FILE's names; the walk's own test
+# file took seconds). It matches isstart's names; isstart
 # stays the authority. LC_ALL=C makes -i ASCII-only. It returns 0 when no name
 # matches and 1 when grep fails (grep's own no-match is 1).
-instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$' || [[ $? -eq 1 ]]; }
+instruction_names() { env LC_ALL=C grep -zaiE '(^|/)((claude|agents?|gemini)(\.[a-z0-9_-]+)?|skill)\.md$|(^|/)\.claude/(rules|commands|agents|output-styles|skills)/.*\.md$' || [[ $? -eq 1 ]]; }
 # The checkout's untracked and ignored .md files, NUL-separated: --others
 # without --exclude-standard already lists ignored files.
 untracked_md() { md_ls --others; }
@@ -765,7 +879,8 @@ main_checkout() {
   return 2
 }
 imported_names() {
-  local - f d p lp out used=0 work=0 seen=$'\n' queue=() recs=(); set -o pipefail
+  local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=(); set -o pipefail
+  local -A pdir=()
   need_root
   [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
   IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
@@ -773,17 +888,18 @@ imported_names() {
   for f in "${recs[@]}"; do
     # seen is newline-separated: a name holding a newline could hide another start.
     [[ "$f" != *$'\n'* ]] || return 1
-    lp="$(lower "${f##*/}")" || return 1
-    if [[ ! "$lp" =~ $INSTRUCTION_FILE ]] || ! inrepo_here "$f"; then continue; fi
+    lp="$(lower "$f")" || return 1
+    if ! isstart "$lp" || ! inrepo_here "$f"; then continue; fi
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
-    seen+="$f"$'\n'; queue+=("$f")
+    seen+="$f"$'\n'; queue+=("$f"); prompt_dir pdir "$lp" "$f"
   done
   import_home || return 1
   IMPORTED=$'\n'
-  while [[ ${#queue[@]} -gt 0 ]]; do
-    f="${queue[0]}"; queue=("${queue[@]:1}")
+  # An index, not a copy per pop (quadratic in the files read: override row 461).
+  while [[ $qi -lt ${#queue[@]} ]]; do
+    f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+    out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d" "${xs[@]}")" \
       && import_work out work || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
@@ -803,16 +919,17 @@ imported_names() {
 # copy), is also a directory of another listed name, or holds a newline, the
 # start list's lower_all fails or comes back short, main_checkout refuses a start or an
 # import main lacks, a blob or checkout file cannot be read, symlink text it
-# follows is empty, absolute, leaves the repo, holds a newline or a NUL, or has
-# a .. after a symlink, import_home, the parser (its comment lists why) or a
+# follows is empty, absolute, leaves the repo, holds a newline or a NUL, has
+# a .. after a symlink, or names a directory or a gitlink, a link or gitlink
+# sits where START_LINK matches and is not a symlinked start, import_home, the parser (its comment lists why) or a
 # lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
 # need_root exits instead.
 # Phase 2 begins when queue empties: tq's checkout files then join it, and a
 # path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 work=0 queue=() tq=() recs=() cand=() low=() parts=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=(); set -o pipefail  # as brief_fields
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
-  local -A ent=() seen=() dir=() pok=()
+  local -A ent=() seen=() dir=() pok=() pdir=()
   need_root
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
   IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
@@ -824,32 +941,46 @@ main_imports() {
     [[ -z "${ent[$f]+set}" && "$f" != *$'\n'* ]] || return 1
     ent[$f]="${BASH_REMATCH[1]}"
     [[ "$f" != *.[mM][dD] ]] || cand+=("m:$f")
+    [[ ! "${ent[$f]}" =~ ^1[26]0000$ ]] || links+=("$f")
   done  # then a name that is also a directory of another listed name (a crafted tree) fails:
   for f in "${!ent[@]}"; do c="$f"; while [[ "$c" == */* ]]; do c="${c%/*}"; [[ -z "${dir[$c]+set}" ]] || break; [[ -z "${ent[$c]+set}" ]] || return 1; dir[$c]=1; done; done
+  # A link or gitlink at or below a .claude/ start directory (or .claude itself)
+  # lists its prompts under the target's path, which isstart does not know: not
+  # modelled, so it fails (U2a4 final security F1), unless the link is a
+  # symlinked start (a rules file is followed, a prompt fails in the read arm);
+  # a gitlink start fails too, since a checkout holds it as a directory.
+  [[ ${#links[@]} -eq 0 ]] || nul_list parts lower_all "${links[@]}" || return 1
+  [[ ${#parts[@]} -eq ${#links[@]} ]] || return 1
+  for i in "${!parts[@]}"; do
+    [[ ! "/${parts[i]}" =~ $START_LINK ]] || { isstart "${parts[i]}" && [[ "${ent[${links[i]}]}" == 120000 ]]; } || return 1
+  done
   nul_list recs checkout_md || return 1
   for f in "${recs[@]}"; do [[ "$f" != *$'\n'* ]] || return 1; [[ -n "${ent[$f]+set}" ]] || cand+=("t:$f"); done
   [[ ${#cand[@]} -eq 0 ]] || nul_list low lower_all "${cand[@]}" || return 1
   [[ ${#low[@]} -eq ${#cand[@]} ]] || return 1
   for i in "${!cand[@]}"; do
     f="${low[i]:2}"
-    if [[ "${f##*/}" =~ $INSTRUCTION_FILE || "$f" == .claude/rules/*.md || "$f" == */.claude/rules/*.md ]]; then
-      f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
+    if isstart "$f"; then
+      prompt_dir pdir "$f" "${cand[i]:2}"; f="${cand[i]:2}"; c=0; [[ "${cand[i]:0:1}" == m ]] || main_checkout ent pok "$f" || c=$?
       [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
       seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
   done
   import_home || return 1
   IMPORTED_MAIN=$'\n'
-  while [[ ${#queue[@]} -gt 0 || ${#tq[@]} -gt 0 ]]; do
-    [[ ${#queue[@]} -gt 0 ]] || { queue=("${tq[@]}"); tq=(); }  # phase 2: main's walk is done
-    f="${queue[0]}"; queue=("${queue[@]:1}")
+  # An index, not a copy per pop, as in imported_names (override row 461).
+  while [[ $qi -lt ${#queue[@]} || ${#tq[@]} -gt 0 ]]; do
+    [[ $qi -lt ${#queue[@]} ]] || { queue=("${tq[@]}"); tq=(); qi=0; }  # phase 2: main's walk is done
+    f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]-checkout}" in
-      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+      checkout) out="$(capped_read < "$f" | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d" "${xs[@]}")" \
           && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
-      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read drain | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d")" \
+      100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read drain | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d" "${xs[@]}")" \
           && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
       120000)  # a symlink: its text names the file read, as one more import
+        # A prompt's names resolve against the session, not its target's directory: not modelled.
+        [[ ${#xs[@]} -eq 0 ]] || { IMPORTED_MAIN=error; return 1; }
         # Link text past PATH_MAX (4096) names nothing; it fails before the two whole reads below.
         i="$(git cat-file -s "$MAIN_SHA:$f")" && [[ "$i" -le 4096 ]] || { IMPORTED_MAIN=error; return 1; }
         # $(...) drops NULs, so they are counted first; the x keeps trailing
@@ -867,7 +998,11 @@ main_imports() {
           [[ "${ent[$p]:-}" != 120000 && ! -L "$p" ]] || lk=1
         done
         out="$(realpath -ms --relative-to="$ROOT_REAL" -- "$ROOT_REAL/${d:+$d/}$out" 2>/dev/null)" || out=..
-        [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; } ;;
+        [[ "$out" != .. && "$out" != ../* ]] || { IMPORTED_MAIN=error; return 1; }
+        # A link to a directory or a gitlink would be dropped below, but a
+        # loader may read a directory's files (untraced): it fails (confirming security F3).
+        # -d reads the checkout, as -L above does (confirm2 security C3).
+        [[ -z "${dir[$out]+set}" && "${ent[$out]:-}" != 160000 && ! -d "$out" ]] || { IMPORTED_MAIN=error; return 1; } ;;
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;
     esac
@@ -888,7 +1023,7 @@ main_imports() {
 # Whether path $2 (any case) is imported, by the walk $1 names: tree or main.
 # A failed walk, a failed lower of $2, or a walk name that is neither answers
 # imported (0), so a caller testing it with `if` refuses; a caller that words a
-# failed walk runs the walk first (imported_names or main_imports, under if). Run it in the caller's shell: the walk exits
+# failed walk asks truthwalk, which runs the walk first. Run it in the caller's shell: the walk exits
 # through need_root and caches its result.
 isimported() {
   local lp
@@ -899,6 +1034,89 @@ isimported() {
     tree) imported_names || return 0; [[ "$IMPORTED" == *$'\n'"$lp"$'\n'* ]] ;;
     *) return 0 ;;
   esac
+}
+# The read-as-truth rule --check-fix and floor share (plan D5 items 1, 2 and 4;
+# override rows 204, 322, 348), for a lower-cased path: returns 0 with
+# TRUTH_WHY set when it refuses: instr (isstart: an instruction or prompt
+# file), dot (a .-prefixed component, a top-level one included), cycle
+# (writable), settings (docs/dev-cycle.md), user (docs/constraints.md, the
+# user's: plan D2) or record (docs/decisions/, docs/human-author/), and case
+# for a path holding an upper-case letter (a caller that did not lower it).
+# Each caller words the words and adds its own rules (docs/thoughts/ is the
+# floor's only: a living doc an in-cycle fix may edit). truthwalk then asks
+# the import walk. Run both in the caller's shell: they set TRUTH_WHY.
+TRUTH_WHY=""
+truthrule() {
+  TRUTH_WHY=""
+  if [[ "$1" == *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]* ]]; then TRUTH_WHY="case"
+  elif isstart "$1"; then TRUTH_WHY="instr"
+  elif [[ "/$1" == */.* ]]; then TRUTH_WHY="dot"
+  elif writable "$1"; then TRUTH_WHY="cycle"
+  elif [[ "$1" == docs/dev-cycle.md ]]; then TRUTH_WHY="settings"
+  elif [[ "$1" == docs/constraints.md ]]; then TRUTH_WHY="user"
+  elif [[ "$1" =~ ^docs/(decisions|human-author)/ ]]; then TRUTH_WHY="record"
+  else return 1; fi
+}
+# truthwalk WALK PATH: runs the import walk WALK (tree for --check-fix, main
+# for floor), then asks it about PATH (any case), as isimported WALK PATH does,
+# so a caller words a failed walk without knowing the order (override row 418).
+# Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH or cannot
+# lower-case it (TRUTH_WHY=imported), else 1 with TRUTH_WHY empty; an unknown WALK answers
+# walk without running one. For tree or main it exits through need_root.
+truthwalk() {
+  TRUTH_WHY=walk
+  case "$1" in main) main_imports || return 0 ;; tree) imported_names || return 0 ;; *) return 0 ;; esac
+  TRUTH_WHY=imported; isimported "$1" "$2" || { TRUTH_WHY=""; return 1; }
+}
+# A brief's own files, keyed on its full stem $2 (YYYY-MM-DD-slug, so a slug
+# shared by two dates is not a collision), for a lower-cased path $1 with
+# diff-tree status letter $3: its working docs, docs/working/{research,plan,
+# checkpoint,handoff,test-strategy}-STEM.md, and a review it adds,
+# docs/reviews/STEM.md or docs/reviews/NAME-STEM.md (a modified or deleted
+# review is never its own: reviews are records).
+ownfile() {
+  local b="${1#docs/reviews/}"
+  [[ -n "$2" ]] || return 1
+  if [[ "$1" =~ ^docs/working/(research|plan|checkpoint|handoff|test-strategy)-(.+)\.md$ && "${BASH_REMATCH[2]}" == "$2" ]]; then return 0; fi
+  [[ "$3" == A && "$1" == docs/reviews/* && "$b" != */* && ( "$b" == "$2.md" || "$b" == *"-$2.md" ) ]]
+}
+# The gate's own code: main's copy runs the next merge (plan D6), so a change
+# to it lands only through a merge-gate- review entry, never a self-merge.
+GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
+# The self-merge floor (plan D5 items 1-4): a changed path that a self-merge never lands,
+# even when the brief's Paths: lists it, because it takes effect on merge with
+# no later review or later runs read it as truth. $1 is the path as the merge
+# result stores it, $2 the brief's full stem and $3 the diff-tree status
+# letter alone (R for R100; only A makes a review the brief's own).
+# Returns 0 with FLOOR_WHY set when the floor refuses, else 1. Paths compare
+# lower-cased (a case-insensitive checkout reads Docs/Roadmap.md as
+# docs/roadmap.md). The caller's duties are the gate caller contract's (the
+# lib's header): floor item 5, symlinks and gitlinks, is the caller's mode
+# rule, and the caller judges the brief's own Status change before this.
+FLOOR_WHY=""  # read by floor's caller (U2c's --check)
+# shellcheck disable=SC2034
+floor() {
+  local lp
+  need_root
+  FLOOR_WHY=""
+  lp="$(lower "$1")" || { FLOOR_WHY="the path could not be lower-cased"; return 0; }
+  if truthrule "$lp"; then
+    case "$TRUTH_WHY" in
+      instr) FLOOR_WHY="an instruction or prompt file, which sessions load from the checkout" ;;
+      dot) FLOOR_WHY="a dotfile or a path under a dot-directory" ;;
+      user) FLOOR_WHY="the user's constraints doc, which every loop prompt carries" ;;
+      record) FLOOR_WHY="a record later runs read as truth" ;;
+      case) FLOOR_WHY="the path could not be lower-cased" ;;
+      *) FLOOR_WHY="one of the dev cycle's own files" ;;
+    esac
+  elif [[ "$lp" =~ $GATE_CODE ]]; then FLOOR_WHY="the gate's own code, which lands only through a merge-gate- review entry"
+  elif [[ "$lp" == docs/thoughts/* ]]; then FLOOR_WHY="a record later runs read as truth"
+  elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a working file that is not this brief's own (they carry its full stem)"
+  elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
+  elif truthwalk main "$lp"; then
+    if [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
+    else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
+  else return 1; fi
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),

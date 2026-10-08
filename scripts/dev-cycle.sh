@@ -50,7 +50,7 @@
 #   --check-fix  "ok <path>" for a file an in-cycle fix may edit: a tracked .md
 #             file under docs/ (not the cycle's own files, working/,
 #             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
-#             or dotfile, an instruction file, or a file an instruction file
+#             or dotfile, an instruction or prompt file, or a file one
 #             names after an @, read broadly; compared ignoring case) or README.md; "skip <path>: <reason>"
 #             otherwise, and for every path when the import walk fails.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
@@ -166,22 +166,20 @@ check_write() {
 }
 # An in-cycle fix edits documentation only; the header's --check-fix paragraph
 # is the rule, and the skip messages below repeat it. constraints.md is the
-# user's (plan D2); docs/thoughts/ stays fixable. Anything else is filed.
+# user's (plan D2); docs/thoughts/ stays fixable. Anything else is filed. The
+# denials it shares with the self-merge floor are the lib's truthrule.
 check_fix() {
-  local a="$1" low lp
+  local a="$1" lp
   if [[ "$a" == *[*?]* ]]; then echo "skip ${a//$'\n'/ }: --check-fix takes one file, not a glob"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
   # Compared lower-cased: on a case-insensitive filesystem docs/Working/ is docs/working/.
-  lp="$(printf '%s' "$a" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz')"
-  low="${lp##*/}"
-  if writable "$a" || writable "$lp"; then echo "skip $a: one of the cycle's own files (use --check-write)"
-  elif [[ ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|human-author|reviews|decisions)/ \
-    || "$lp" == docs/dev-cycle.md || "$lp" == docs/constraints.md || "$a" == */.* || "$low" =~ $INSTRUCTION_FILE ]]; then
+  if ! lp="$(lower "$a")"; then echo "skip $a: the path could not be lower-cased; file it instead"; return; fi
+  if truthrule "$lp" && [[ "$TRUTH_WHY" == cycle ]]; then echo "skip $a: one of the cycle's own files (use --check-write)"
+  elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
-  elif ! imported_names; then
-    echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
-  elif isimported tree "$lp"; then
-    echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"
+  elif truthwalk tree "$lp"; then
+    if [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
+    else echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"; fi
   else check_path "$a"; fi
 }
 resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
