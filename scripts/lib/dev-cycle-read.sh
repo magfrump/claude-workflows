@@ -507,7 +507,7 @@ IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
 # characters it scans and each resolved spelling it joins, which for a
 # relative name carries ROOT_REAL, so a longer root buys less; the unit of its
-# per-file bound of 50,000,000, about 1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
+# per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
 # The bound is per walk: a caller that runs both walks pays up to two. A caller

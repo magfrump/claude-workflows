@@ -92,7 +92,7 @@ None open. (D1 below was a performance High with a quadratic stall, not a correc
 | D1 | `${x@a}` costs time linear in the array, and 2fbd929b's MEMO grows per token, so the walk went quadratic (4,000 deep absent tokens: 44.6 s here, 85 s in the critic's run; a 50k-entry main tree with 1,000 tokens: 33 s against 3 s on main) | High | performance F1 | Fixed (4b7f2357) | `${x[0]@a}` is O(1) and gives the same answers (empty, large, indexed, scalar, unset checked). 2.5 s now, main 0.9 s. A 20 s-timeout test fails at 3a35c8b9 (it catches on hosts up to ~2x faster). |
 | D2 | main_checkout memoized a checkout directory at PATH as d without checking ENT[PATH], so a caller passing a PATH main stores as a link or gitlink opens every later path below it (and `x.md` main stores as a gitlink answered 0). Unreachable from main_imports | Incorrect (comment) / Coupling / Inconsistent / Low | fact-check claim 34 (r1, r2); architecture F1; api-consistency 1; security F1 | Fixed (4b7f2357) | Guard: main's link or gitlink at PATH answers 1 (test-strategy's form; a broad "any ENT path" guard would break T1's blob row). Precondition test added; comment and U2b bullet state it. |
 | D3 | Test 59 (T3) fixed IMPORT_WORK_MAX=1000 while w grows with the fixture root's length: red under a TMPDIR over ~27 characters | test bug / Medium | fact-check r1 claim 1; test-strategy G1 | Fixed (4b7f2357) | Caps derived from w; verified under 17- and 74-character TMPDIRs. |
-| D4 | The U2b bullet dropped "a clean worktree at MAIN_SHA": the walk reads main's blob for every path main stores, so an edited tracked instruction file's imports go unread (test 77 pins this as intended) | Low | security F2 | Fixed (4b7f2357) | Restored as the first of four caller duties. |
+| D4 | The U2b bullet dropped "a clean worktree at MAIN_SHA": the walk reads main's blob for every path main stores, so an edited tracked instruction file's imports go unread (build-loop-check test 4 (was "test 77") pins this as intended) | Low | security F2 | Fixed (4b7f2357) | Restored as the first of four caller duties. |
 
 ### 🟢 Consider
 
@@ -190,3 +190,11 @@ Rows 439-460. The per-start cost row's "linear" premise is broken by G1 above (r
 - Queue pop (:841): performance P1 alone. G1.
 
 tokens (confirming pass): fc 3 × ~245k, merge 199k, critics 125k + 132k + 119k + 117k + 141k, Stage 2.5 ~120k ≈ 1.6M
+
+## Lite fix-drift check after Q-129 [1] (Commit 4ce2c6bf, scope 83c69b48..4ce2c6bf)
+
+- `code-fact-check-report-build-loop-u2a3c-lite.md` (k=1): 20 claims, 15 Verified, 3 Mostly accurate, 2 Unverifiable, 0 Incorrect or Stale. The lib diff is comments only (executed). The three wording items (the rubric's D4 row, F11's refusal list, "about 1-4 s" → 0.1-4 s) are fixed in the commit that adds this section. The two Unverifiable timings were blocked by host load: the 5,000-file queue pop was re-measured by the orchestrator at load 1.4 (84.1 s, 41.1 s with an index pop; override row 461 says 85.8 / 42.7), and test 66's "6.5 s at 1.5x" stays a measured-once figure.
+- `test-strategy-review-2026-10-07-build-loop-u2a3c-lite.md`: no findings. Each new test kills its mutant; tests 65-68 pass under 23- and 83-character TMPDIRs and under load.
+- Process note: the lite test-strategy agent left 48 busy loops running (it reported them gone), which held the host's load near 50 for about 4.7 h, stalled the lite fact-check's background run and failed `test/install-host.bats` T69 in the health check (on main too). The orchestrator killed them by PID; T69 then passed.
+
+**Result: clean (no red, no amber).** Next: merge message and the merge ask (Q-129 [1]).
