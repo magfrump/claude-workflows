@@ -1444,8 +1444,10 @@ onx() { git checkout -q -B feat/x main && eval "$1" && commit_all onx && git che
 has() { printf '%s\n' "$output" | grep -qxF -- "$1" || { echo "want: $1"; show; return 1; }; }
 NOWN="one of the dev cycle's own files"
 NUSER="the user's constraints doc, which every loop prompt carries"
-NFORM="not an allowed path form (letters, digits and . _ - / only, no .git part)"
-NMODE="not a regular file on both sides (only modes 100644 and 100755 land)"
+NFORM="not an allowed path form (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
+NMODE="a symlink, gitlink or other non-file entry on one side (only modes 100644 and 100755 land)"
+# nref K N: the verdict line refusing K of N changed paths in the merge of feat/x into main.
+nref() { echo "refuse $B: $1 of $2 changed paths refused in the merge of $(git rev-parse feat/x) (tree $(git merge-tree --write-tree main feat/x))"; }
 NBRIEF="this brief: only its first Status: line outside a fence may change, from open to done"
 
 @test "--check lists every changed path and refuses the dev cycle's own files, other briefs and the constraints doc in any case; other paths pass (T14, F2, F12, F54, U2b1b)" {
@@ -1454,16 +1456,16 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     gated feat/x
     fs=(docs/roadmap.md docs/working/questions.md docs/working/questions-archive.md docs/working/idea-log.md
         docs/working/cycles/cycle-2026-10-01.md docs/working/cycles/notes.md docs/dev-cycle.md "$o"
-        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md)
-    onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/ok.md; do echo x > "$f"; done'
+        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md)
+    onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/CONSTRAINTS.md docs/ok.md; do echo x > "$f"; done'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 13 of 14 changed paths refused" ] && [ "${#lines[@]}" -eq 15 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 15 16)" ] && [ "${#lines[@]}" -eq 17 ] || { show; return 1; }
     has "deny $B M docs/roadmap.md: $NOWN"
     for f in "${fs[@]:1}"; do [[ "$f" == "$o" ]] && m=M || m=A; has "deny $B $m $f: $NOWN"; done
-    has "deny $B A docs/constraints.md: $NUSER"
+    has "deny $B A docs/constraints.md: $NUSER"; has "deny $B A docs/CONSTRAINTS.md: $NUSER"
     has "path $B A docs/ok.md"
     # The paths come in diff-tree order, after the verdict.
-    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[14]}" = "deny $B A docs/working/questions.md: $NOWN" ] || { show; return 1; }
+    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[16]}" = "deny $B A docs/working/questions.md: $NOWN" ] || { show; return 1; }
     # A branch whose changes main already holds merges to main's own tree: ok, no path line.
     onx 'echo x > docs/ok.md'; git checkout -q -B main feat/x; git checkout -q -B feat/x main; git commit -q --allow-empty -m e; git checkout -q main
     chk "$B"
@@ -1481,7 +1483,7 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
              'sed -i "6s/open/done/" "$B"; chmod +x "$B"' 'sed -i "6s/open/done/" "$B"; echo "" >> "$B"'; do
         onx "$s"
         chk "$B"
-        [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 of 1 changed paths refused" ] && has "deny $B M $B: $NBRIEF" || { echo "snippet: $s"; return 1; }
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 1)" ] && has "deny $B M $B: $NBRIEF" || { echo "snippet: $s"; return 1; }
     done
     onx 'mkdir -p docs/working/briefs/closed; git mv "$B" docs/working/briefs/closed/'
     chk "$B"
@@ -1498,19 +1500,23 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     gated feat/x
     onx 'git mv docs/roadmap.md docs/x.md'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 of 2 changed paths refused" ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 2)" ] || { show; return 1; }
     has "deny $B D docs/roadmap.md: $NOWN"; has "path $B A docs/x.md"
 }
 
-@test "--check refuses a symlink or gitlink on either side and passes an exec bit (T12, F7, U2b1b)" {
-    mkdir -p scripts && echo a > f.txt && echo b > g.txt && echo s > scripts/x.sh && commit_all files
+@test "--check refuses a symlink or gitlink on either side, though submodule ignore=all is set, and passes an exec bit (T12, F7, A16, U2b1b)" {
+    mkdir -p scripts && echo a > f.txt && echo b > g.txt && echo s > scripts/x.sh
+    # ignore = all in .gitmodules and the repo config: diff-tree in the real repository would hide gl (A16).
+    printf '[submodule "gl"]\n\tpath = gl\n\turl = ./x\n\tignore = all\n[submodule "og"]\n\tpath = og\n\turl = ./x\n\tignore = all\n' > .gitmodules
+    commit_all files; git config submodule.gl.ignore all; git config submodule.og.ignore all
     ln -s f.txt was-link && commit_all link
     gated feat/x
-    onx 'ln -s f.txt link; rm g.txt; ln -s f.txt g.txt; rm was-link; echo w > was-link; chmod +x scripts/x.sh; echo n > scripts/n.sh; chmod +x scripts/n.sh'
+    git update-index --add --cacheinfo "160000,$(git rev-parse main),og"; git commit -q -m old-gitlink
+    onx 'git rm -q --cached og; rmdir og 2>/dev/null || true; echo f > og; ln -s f.txt link; rm g.txt; ln -s f.txt g.txt; rm was-link; echo w > was-link; chmod +x scripts/x.sh; echo n > scripts/n.sh; chmod +x scripts/n.sh'
     git checkout -q feat/x; git update-index --add --cacheinfo "160000,$(git rev-parse main),gl"; git commit -q -m gitlink; git checkout -q main
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 4 of 6 changed paths refused" ] || { show; return 1; }
-    for p in "T g.txt" "A gl" "A link" "T was-link"; do has "deny $B $p: $NMODE"; done
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 7)" ] || { show; return 1; }
+    for p in "T g.txt" "A gl" "A link" "T og" "T was-link"; do has "deny $B $p: $NMODE"; done
     has "path $B A scripts/n.sh"; has "path $B M scripts/x.sh"
 }
 
@@ -1518,12 +1524,12 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     gated feat/x
     onx 'mkdir -p .github; echo x > .github/w.yml; echo x > "a b.md"; echo x > "$(printf "caf\xc3\xa9.md")"; echo x > "$(printf "n\nl.md")"; echo x > ./-x.md'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 5 of 5 changed paths refused" ] && [ "${#lines[@]}" -eq 6 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 5)" ] && [ "${#lines[@]}" -eq 6 ] || { show; return 1; }
     has "deny $B A -x.md: $NFORM"; has "deny $B A .github/w.yml: $NFORM"
     [ "$(printf '%s\n' "$output" | grep -cxF "deny $B A ?: $NFORM")" -eq 3 ] || { show; return 1; }
 }
 
-@test "--check refuses a merge git warned about: a missing tip or merge-base tree is not read as empty (R6, U2b1b)" {
+@test "--check refuses a merge git warned about or that names a missing object: a missing tip or merge-base tree is not read as empty, a missing blob does not land (R6, U2b1b)" {
     echo base > f.txt && commit_all f
     gated feat/x
     o="$(git rev-parse feat/x^{tree})"; mv ".git/objects/${o:0:2}/${o:2}" "$BATS_TEST_TMPDIR/tree"
@@ -1535,6 +1541,12 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     o="$(git rev-parse main~1^{tree})"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x could not be computed" ] || { show; return 1; }
+    # A blob the store lacks, which merge-tree passes by id without reading (security F2).
+    rm -rf .git && git init -q -b main && git commit -q --allow-empty -m initial && gated feat/x
+    b="$(echo absent | git hash-object --stdin)"
+    tip feat/x "add" "$( (git ls-tree main; printf '100644 blob %s\tnew.txt\n' "$b") | git mktree --missing)" "$(git rev-parse main)"
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a file the object store lacks" ] || { show; return 1; }
 }
 
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {

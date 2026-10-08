@@ -56,11 +56,13 @@
 #  4. Call import_reset before each gate decision and after any checkout
 #     change (rows 372, 439), or when HOME, IMPORT_OUT_MAX or IMPORT_WORK_MAX
 #     changes: neither walk's cache key holds them.
-#  5. Ask floor about each changed path, in this shell, before pathform or
-#     main_entry (so .github/x.yml is refused as a dotfile, not as badform),
+#  5. Ask floor about each changed path, in this shell, before main_entry,
 #     and refuse the whole branch on any main_entry word but blob or absent
 #     (rows 308, 324). Floor item 5 (symlinks, gitlinks) and the brief's own
-#     Status change are the caller's rules.
+#     Status change are the caller's rules; build-loop.sh's N rules apply
+#     them, and pathform, under both policies before floor runs, so a path
+#     pathform refuses (.github/x.yml) is denied as a path form and floor's
+#     dotfile reason serves the dot paths pathform accepts (.envrc).
 #  6. Read a walk only through isimported or truthwalk: IMPORTED_MAIN=error
 #     reads as "not imported" to a raw membership test (row 419).
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,

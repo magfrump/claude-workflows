@@ -104,8 +104,10 @@
 #                 after --status read it, TIP is not SHA, the merge conflicts,
 #                 or the merge (or its changed paths) could not be computed:
 #                 git failed, or warned on stderr (a missing tree object), or
-#                 the tree of main, TIP or a merge base is missing. Or
-#                 "K of N changed paths refused", when deny lines follow.
+#                 the tree of main, TIP or a merge base is missing; or a file
+#                 the merge adds or changes names a blob the object store
+#                 lacks. Or "K of N changed paths refused in the merge of TIP
+#                 (tree TREE)", when deny lines follow.
 #             skip BRIEF: WHY
 #                 As --status skips it.
 #             After an ok line or a K of N refusal, one line per path TREE
@@ -198,7 +200,7 @@ export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT
 # switch off. Prints one "refuse state WHAT: WHY" line per finding, returns 1
 # on any, and reads no object (git config --file --no-includes follows no
 # include; --git-path reads no index). Keys, in the common config and this
-# worktree's config.worktree: filter, merge and diff drivers (commands), config
+# worktree's config.worktree: filter drivers, every merge.* and diff.* key (drivers run commands), config
 # hooks, includes, core.fsmonitor, core.attributesFile, core.hooksPath, gpg and
 # log.showSignature (gpg.program runs), and a partial clone (extensions.partialClone, remote.*.promisor;
 # GIT_ALLOW_PROTOCOL already stops its fetch). Files: an info/attributes,
@@ -230,6 +232,22 @@ state_gate() {
   fi
   return "$bad"
 }
+# The state gate's second half, once resolve_main has run (U3b's --state calls
+# both): the default branch counts only when no other name could claim it. A
+# loop can create a local master beside main (or main beside master) and point
+# origin/HEAD at it, and resolve_main would follow (R7). Prints one line per
+# finding, as state_gate does; returns 1 on any.
+default_gate() {
+  local p bad=0
+  if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/heads/master; then
+    echo "refuse state default-branch: both main and master exist"; bad=1
+  fi
+  p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
+  if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
+    echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; bad=1
+  fi
+  return "$bad"
+}
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules
@@ -238,18 +256,7 @@ ROOT_REAL="$(pwd -P)"
 if [[ "$MODE" == check ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
-# --check takes the default branch only when no other name could claim it: a
-# loop can create a local master beside main (or main beside master) and point
-# origin/HEAD at it, and resolve_main would follow (R7).
-if [[ "$MODE" == check ]]; then
-  if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/heads/master; then
-    echo "refuse state default-branch: both main and master exist"; exit 2
-  fi
-  p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
-  if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
-    echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; exit 2
-  fi
-fi
+if [[ "$MODE" == check ]]; then default_gate || exit 2; fi
 
 # A file on main: FILE_OUT is what awk program $2 (after FENCE_AWK) printed over
 # it; or it returns 1 with FILE_WHY "absent" or why it was not read (main_entry,
@@ -523,7 +530,8 @@ merge_result() {
 # The blob id the brief's own file $1 may have in the merge (F13): main's copy
 # with its first Status: line outside a fence, the one brief_fields reads
 # (status_line has read it as "Status: open"), reading "Status: done", every
-# other byte kept (a CR at its end too).
+# other byte kept (a CR at its end too). Returns 1 when a read fails; the
+# caller checks it (hash-object would hash a truncated read).
 own_blob() {
   local n
   # The whole blob is read (no early exit: SIGPIPE under pipefail).
@@ -533,30 +541,39 @@ own_blob() {
   git cat-file blob "$MAIN_SHA:$1" | N="$n" perl -pe 's/^Status: open(\r?)$/Status: done$1/ if $. == $ENV{N}' | gate_git hash-object --no-filters --stdin
 }
 # The N rules (plan D5; both policies) for one changed path of brief $1:
-# diff-tree's old and new modes $2 $3, new blob $4, status $5 and path $6.
-# Sets DENY to why the path is refused, or empties it. Paths compare
-# lower-cased (a case-insensitive checkout reads Docs/Roadmap.md as the
-# roadmap). U2c adds the S rules.
+# diff-tree's old and new modes $2 $3, new blob $4, status $5, path $6 and
+# its lower-cased spelling $7. Sets DENY to why the path is refused, or
+# empties it. The brief's own file is matched exactly; the cycle's files
+# (truthrule's cycle and settings words: writable() and docs/dev-cycle.md,
+# plus anything under docs/working/briefs/ or docs/working/cycles/) and the
+# constraints doc (its user word) compare lower-cased, as a case-insensitive
+# checkout reads Docs/Roadmap.md as the roadmap. U2c adds the S rules.
 DENY=""
 nrules() {
-  local lp
+  local ob
   DENY=""
-  if ! pathform "$6"; then DENY="not an allowed path form (letters, digits and . _ - / only, no .git part)"
-  elif [[ ! "$2 $3" =~ ^(000000|100644|100755)\ (000000|100644|100755)$ ]]; then DENY="not a regular file on both sides (only modes 100644 and 100755 land)"
+  if ! pathform "$6"; then DENY="not an allowed path form (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
+  elif [[ ! "$2 $3" =~ ^(000000|100644|100755)\ (000000|100644|100755)$ ]]; then DENY="a symlink, gitlink or other non-file entry on one side (only modes 100644 and 100755 land)"
   elif [[ "$6" == "$1" ]]; then
-    [[ "$5" == M && "$2" == "$3" && "$4" == "$(own_blob "$1")" ]] || DENY="this brief: only its first Status: line outside a fence may change, from open to done"
-  elif ! lp="$(lower "$6")"; then DENY="the path could not be lower-cased"
-  elif writable "$lp" || [[ "$lp" =~ ^docs/(dev-cycle\.md$|working/(briefs|cycles)/) ]]; then DENY="one of the dev cycle's own files"
-  elif [[ "$lp" == docs/constraints.md ]]; then DENY="the user's constraints doc, which every loop prompt carries"
+    { [[ "$5" == M && "$2" == "$3" ]] && ob="$(own_blob "$1")" && [[ "$4" == "$ob" ]]; } \
+      || DENY="this brief: only its first Status: line outside a fence may change, from open to done"
+  else
+    truthrule "$7" || true  # $7 is lower-cased, so no word hides cycle, settings or user
+    case "$TRUTH_WHY" in
+      cycle|settings) DENY="one of the dev cycle's own files" ;;
+      user) DENY="the user's constraints doc, which every loop prompt carries" ;;
+      *) [[ ! "$7" =~ ^docs/working/(briefs|cycles)/ ]] || DENY="one of the dev cycle's own files" ;;
+    esac
   fi
 }
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed
-# paths refused", then a "path BRIEF S PATH" or "deny BRIEF S PATH: WHY" line
-# per path the merge changes against main (diff-tree's status letter S, in its
-# order; PATH is "?" unless every character is one pathform allows); or one
-# skip or refuse line (from status_line, then the gate's own reasons).
+# paths refused in the merge of TIP (tree TREE)", then a "path BRIEF S PATH" or
+# "deny BRIEF S PATH: WHY" line per path the merge changes against main
+# (diff-tree's status letter S, in its order; PATH is "?" unless every
+# character is one pathform allows); or one skip or refuse line (from
+# status_line, then the gate's own reasons).
 check_line() {
-  local a="$1" out st br loop sha n tree meta p om nm no s shown rc=0 i=0 nd=0 rows=()
+  local a="$1" out st br loop sha n tree meta p shown rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
   out="$(status_line "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
   read -r _ _ st _ br loop sha _ <<<"$out"
@@ -579,18 +596,29 @@ check_line() {
     echo "refuse $a: the paths the merge of $br changes could not be listed"; return
   fi
   while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
-    i=$((i + 1))
     [[ "$meta" =~ ^:([01234567]{6})\ ([01234567]{6})\ [0123456789abcdef]+\ ([0123456789abcdef]+)\ ([AMDT])$ ]] \
       || { echo "refuse $a: the paths the merge of $br changes could not be read"; return; }
-    om="${BASH_REMATCH[1]}"; nm="${BASH_REMATCH[2]}"; no="${BASH_REMATCH[3]}"; s="${BASH_REMATCH[4]}"
-    shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
-    nrules "$a" "$om" "$nm" "$no" "$s" "$p"
-    if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a $s $shown: $DENY"); else rows+=("path $a $s $shown"); fi
+    oms+=("${BASH_REMATCH[1]}"); nms+=("${BASH_REMATCH[2]}"); nos+=("${BASH_REMATCH[3]}"); ss+=("${BASH_REMATCH[4]}"); ps+=("$p")
+    [[ "${nms[-1]}" != 100644 && "${nms[-1]}" != 100755 ]] || ids+=("${nos[-1]}")
   done < "$GATE_TMP/diff"
   # Every record read whole: two NUL-ended fields each.
-  if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * i)) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
-  if [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of $i changed paths refused"; fi
-  [[ "$i" -eq 0 ]] || printf '%s\n' "${rows[@]}"
+  if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
+  if [[ ${#ps[@]} -eq 0 ]]; then echo "ok $a $sha $tree"; return; fi
+  # merge-tree passes a side's unchanged blob by id without reading it, so a
+  # blob the store lacks would land unseen: every new file must be present.
+  if [[ ${#ids[@]} -gt 0 ]] && { ! out="$(printf '%s\n' "${ids[@]}" | gate_git cat-file --batch-check='%(objecttype)')" \
+    || [[ "$(printf '%s\n' "$out" | grep -cx blob)" -ne ${#ids[@]} ]]; }; then
+    echo "refuse $a: the merge of $br names a file the object store lacks"; return
+  fi
+  # One lower-casing pass for every path (a tr per path cost 2.5 ms each).
+  if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
+  for i in "${!ps[@]}"; do
+    p="${ps[$i]}"; shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
+    nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}"
+    if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
+  done
+  if [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
+  printf '%s\n' "${rows[@]}"
 }
 
 case "$MODE" in

@@ -302,7 +302,7 @@ Stacked review units (log row 62: about 400 changed code lines outside `docs/`; 
     - `you: judgment` entries for C1–C3 (defaults as Interim), C4 under item (a), C5 filed as ANSWERED with your in-session answer, and one for `Self-merge never: workflows/` in this repo (keep or drop).
     - One `you: judgment` entry: this repo has no `docs/constraints.md`, so dispatch stays off here until you write it (D2).
     - One `you: terminal` release entry: rebuild and bless, so the image's dev-cycle skill carries this unit. The gate does not need it (D6), but the installed skill does. Release entries list every commit and changed path since the image's `.manifest` commit, flagging self-merged ones (F58); the skill's close step says so for future releases.
-13. **U5, Q-103 and brief**: re-route Q-103 to `you: judgment`, listing F11 (with its `MAIN_SHA` precondition for the import walk), F19, F21, F29, F35, F37, F58 and F59 and "what the gate can and cannot do". Set this brief's Status to `done` in U5's merge.
+13. **U5, Q-103 and brief**: re-route Q-103 to `you: judgment`, listing F11 (with its `MAIN_SHA` precondition for the import walk), F19, F21, F29, F35, F37, F58 and F59, U2b1a2's R8 (a same-uid writer racing the gate's GATE_TMP: its config, info/, work/.gitattributes, err and diff; override row 509) and "what the gate can and cannot do". Set this brief's Status to `done` in U5's merge.
 
 ## Implementation order
 
