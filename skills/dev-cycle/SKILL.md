@@ -318,7 +318,8 @@ docs/working/questions.md.
      **[1] keep**, **[2] drop** and **[3] done** (it shipped; its status line was not set),
      and add its ID to `Asked:` (IDs separated by ", "). Until it is answered, the brief still
      holds its slot. "Shows no work": `--check-branch` prints `absent`, skips the name
-     (recorded), prints a count of 0, or prints a tip date more than 14 days before today
+     (recorded; not a skip saying its count or date could not be read, which is a
+     broken git config to record, never idleness), prints a count of 0, or prints a tip date more than 14 days before today
      (an idle branch, including a squash-merged one whose status line was not set). A tip
      date more than two days after today is recorded and counts as idle (the committer
      sets the date; two days cover every time-zone pair).

@@ -198,9 +198,10 @@ DIGIT='[0123456789]'
 SLUG='[abcdefghijklmnopqrstuvwxyz0123456789-]+'
 isbrief() { [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; }
 isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
+anybrief() { isbrief "$1" || isclosed "$1"; }
 writable() {
   [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ \
-    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]] || isbrief "$1" || isclosed "$1"
+    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]] || anybrief "$1"
 }
 # Code fences, read only in their plain form, so that every fence this reads is
 # read the way CommonMark reads it: a line starting at column 0 with 3 or more `
@@ -388,7 +389,7 @@ check_brief() {
   need_root
   if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if ! pathform "$a"; then echo "skip ${a//$'\n'/ }: not an allowed path form"; return; fi
-  if ! isbrief "$a" && ! isclosed "$a"; then
+  if ! anybrief "$a"; then
     echo "skip $a: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)"; return
   fi
   if [[ -n "$(blocker "$a" file)" ]]; then echo "skip $a: reached through a symlink, or not a regular file"; return; fi
@@ -417,8 +418,14 @@ check_brief() {
   # "Status: " in this file: a merge commit for merged work, the branch's own
   # commit after a fast-forward; never a later Asked:/Kept: edit. Any such line
   # counts (a quoted one, or a move into closed/, which adds the file whole).
-  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s -G'^Status: ' "$MAIN_SHA" -- "$a")"
-  [[ -n "$c" ]] || c="$(git log -1 --format=%H "$MAIN_SHA" -- "$a")"
+  # Repo config is switched off where it would run a command or change the
+  # commit: --no-textconv (-G greps the diff, and a textconv driver would run),
+  # --no-show-signature (log.showSignature runs gpg.program), --no-follow
+  # (log.follow); and never anything but a full commit id (git's output can be
+  # empty under a broken config, as on main: the field is then empty).
+  c="$(git log -1 --format=%H --first-parent --diff-merges=first-parent -s --no-textconv --no-show-signature --no-follow -G'^Status: ' "$MAIN_SHA" -- "$a")"
+  [[ -n "$c" ]] || c="$(git log -1 --format=%H --no-show-signature --no-follow "$MAIN_SHA" -- "$a")"
+  if [[ -n "$c" && ! "$c" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]]; then echo "skip $a: its Status commit could not be read"; return; fi
   echo "ok $a ${st#Status: } $c"
 }
 # A brief's branch reaches git only as the commit show-ref finds at exactly
@@ -429,9 +436,10 @@ check_brief() {
 # its count) and the date of its tip commit, YYYY-MM-DD in the committer's own
 # time zone (as the committer set it: a future date is possible).
 # The default branch is skipped, and so is every name when there is no default
-# branch found by name (main_by_name).
+# branch found by name (main_by_name), and so is a branch whose count or date
+# cannot be read (a broken log.* or grep.* config, say: row 307).
 check_branch() {
-  local a="$1" sha
+  local a="$1" sha n d
   if ! main_by_name; then echo "skip ${a//$'\n'/ }: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   if [[ ! "$a" =~ ^[$NAMECHARS]+$ || "$a" == -* ]]; then echo "skip ${a//$'\n'/ }: not an allowed branch name"
   elif ! git check-ref-format "refs/heads/$a" || ! git check-ref-format --branch "$a" >/dev/null 2>&1 \
@@ -440,9 +448,37 @@ check_branch() {
   else
     sha="$(git show-ref --verify --hash "refs/heads/$a" 2>/dev/null || true)"
     [[ -z "$sha" ]] || sha="$(git rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null || true)"
-    if [[ -n "$sha" ]]; then echo "ok $a $sha $(git rev-list --count "$MAIN_SHA..$sha") $(git log -1 --format=%cs "$sha")"
-    else echo "absent $a"; fi
+    if [[ -z "$sha" ]]; then echo "absent $a"
+    elif n="$(git rev-list --count "$MAIN_SHA..$sha" 2>/dev/null)" && [[ "$n" =~ ^$DIGIT+$ ]] \
+      && d="$(git log -1 --no-show-signature --format=%cs "$sha" 2>/dev/null)" && [[ "$d" =~ ^$DIGIT{4}-$DIGIT{2}-$DIGIT{2}$ ]]; then echo "ok $a $sha $n $d"
+    else echo "skip $a: its commit count or date could not be read"; fi
   fi
+}
+# The lower-cased branch names that more than one open brief on main (in
+# briefs/ or closed/) names, each between newlines, in OPEN_SHARED: a caller
+# skips an open brief whose branch is listed (F31), and every open brief when
+# it reads error. open_shared computes it once per process, from MAIN_SHA.
+# One git grep finds the files with a "Status: open" line (a superset: fences
+# are not modelled); brief_fields then reads only those, so every brief is
+# still read through main_entry. Exit 1 is "none"; any exit above 1, a corrupt
+# object's included, fails closed. A brief whose object is missing (git grep
+# warns, exits 0 or 1) is not counted (row 293). Call it in the caller's shell.
+OPEN_SHARED=""
+open_shared() {
+  local f list b rc=0
+  local -A count=() BRIEF=()  # a local BRIEF: the caller's stays as it was
+  [[ -z "$OPEN_SHARED" ]] || return 0
+  if ! main_by_name; then OPEN_SHARED=error; return; fi
+  list="$(git grep --no-color -l -E '^Status: open'$'\r''?$' "$MAIN_SHA" -- docs/working/briefs/)" || rc=$?
+  if [[ "$rc" -gt 1 ]]; then OPEN_SHARED=error; return; fi
+  while IFS= read -r f; do
+    f="${f#"$MAIN_SHA":}"
+    if ! anybrief "$f" || ! brief_fields "$f"; then continue; fi
+    [[ "${BRIEF[status]-}" == "Status: open" && "${BRIEF[branch]-}" =~ ^Branch:\ ([^\ ]+)$ ]] || continue
+    b="$(lower "${BASH_REMATCH[1]}")"; count[$b]=$(( ${count[$b]-0} + 1 ))
+  done <<<"$list"
+  OPEN_SHARED=$'\n'
+  for b in "${!count[@]}"; do [[ "${count[$b]}" -lt 2 ]] || OPEN_SHARED+="$b"$'\n'; done
 }
 # The default branch: sets MAIN (its name), MAIN_SHA and MAIN_BY_NAME (1 when the
 # name is origin/HEAD's, main or master, not the current branch's), and returns 1
