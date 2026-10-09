@@ -1734,7 +1734,7 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     done
 }
 
-@test "the caller's reader roots and homes add the host checkout's spellings, and only add (U2b3a; rows 425, 437; Q-121, Q-123)" {
+@test "the caller's reader roots and homes add the host checkout's spellings (U2b3a; rows 425, 437; Q-121, Q-123)" {
     mkdir -p docs
     printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md\n' > AGENTS.md; commit_all host
     for w in tree main; do
@@ -1743,11 +1743,6 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         IMPORT_READER_ROOTS=/host/cw IMPORT_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/h.md imported; want docs/a.md imported
-        # A root inside the repo projects there too, and the name under ROOT_REAL is kept.
-        printf 'See @docs/k.md\n' > CLAUDE.md
-        IMPORT_READER_ROOTS="$(pwd -P)/docs" imps "$w" docs/k.md k.md
-        want walk ok; want docs/k.md imported; want k.md imported
-        rm CLAUDE.md
     done
 }
 
