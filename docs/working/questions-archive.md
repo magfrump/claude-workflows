@@ -123,6 +123,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-132](#q-132--u2a4-confirm-pass-regression) | U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes int... | 2026-10-08 |
 | [Q-133](#q-133--u2b1a2-gate-threat-model) | U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the securi... | 2026-10-08 |
 | [Q-134](#q-134--u2b1a1-landing) | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
+| [Q-135](#q-135--u2b1b-landing) | U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and ... | 2026-10-08 |
 <!-- index:end -->
 
 ## Answered
@@ -2332,5 +2333,30 @@ U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with fou
 - **Blocks:** U2b1a2, and U2b1b, U2b2, U2b3, U2c (stacked on it).
 - **Interim:** nothing; U2b1a2 is paused at the cap (no fix work until answered). Recommended: [1].
 - **If the answer differs:** [2] reworks U2b1a2; [3] carries R6-R9 into U2b1b's review.
+
+
+### Q-135 · u2b1b-landing
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and R9 fixed) passed its final confirming pass with no red: may it land? **Answered 2026-10-08: [1].** Merged at d71d044d; the health check passed on the merge.
+
+- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b1b.md` and the merge message `docs/working/merge-msg-build-loop-u2b1b.md`, both on `feat/build-loop-u2b1b` at 6999c037 (worktree `.claude/wt-build-loop-u2b1b`).
+- **Evidence:**
+  - Three iterations, at the cap. No pass found a red. Iteration 1's ambers were fixed in a382a3f8 and iteration 2's wording in e02d056b.
+  - The final pass (k=3, full panel, Stage 2.5) found 0 behavioral Incorrect claims. Its 4 Incorrect verdicts were test and doc text. Five security endorsements were Verified by execution.
+  - The final pass's ambers were fixed after it, in e14773a3 and 6999c037, which change text, quoting and one test. The A15 order test now fails its mutant. The lite fix-drift check found nothing.
+  - Every carried fix's mutant fails its test.
+  - Suites 101/19/78/2/2. The health check passed at 6999c037. 396 code lines.
+  - R8 (a same-uid race on the gate's temp directory) is a Q-103 residual (row 509).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Land it** | Merge `feat/build-loop-u2b1b` locally (`--no-ff`, the merge message above) after re-running the health check on the merge. | One answer. | The post-pass changes (text, quoting, one test) land reviewed only by the lite check and the suites. |
+| **[2] One more confirming pass first** | A k=1 fact-check plus security over e02d056b..6999c037, then ask again. | One answer now, one later. | Nothing; delay and about 300k tokens. |
+
+- **Blocks:** U2b2, U2b3 and U2c (stacked on it).
+- **Interim:** nothing merges. Recommended: [1]. The post-pass changes don't touch script behaviour.
+- **If the answer differs:** [2] runs the pass and re-asks with its result.
 
 
