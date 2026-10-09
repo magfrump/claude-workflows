@@ -21,6 +21,20 @@ trailing CR is ignored). Anything else counts as unset, which means `review`.
 Interim note: the "(interim; Q-103)" on the policy line keeps it unset until Q-103 is
 answered.
 
+Reader roots: /home/magfrump/claude-workflows /workspace
+
+Reader homes: /home/magfrump /home/node
+
+The two lines above name the readers the self-merge floor and `--check-fix` model besides
+this checkout, its registered worktrees and the running session's HOME: both spellings of the
+main checkout, the host's and the container's (when the image breaks, the user runs sessions
+on the host in `~/claude-workflows`: Q-121, Q-123), and both HOMEs, so a walk run on either
+side reads the other side's names. Each is one line of absolute paths (letters, digits and
+`. _ - /`, with no empty, `.` or `..` part, each listed once) separated by single spaces (or
+`none`), followed by a blank line (outside a code block) or the end of the file. A second copy, a line in any other form, or a file the readers refuse (an
+unclosed code block, say) fails the import walks, so the floor refuses every path. Only the
+default branch's copy is read (`scripts/build-loop.sh --settings` prints its `readers` line).
+
 ## Idea sources
 
 Step 5 reads these when it brainstorms, besides the seed log `docs/working/idea-log.md`.

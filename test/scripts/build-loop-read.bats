@@ -74,6 +74,8 @@ setup() { bl_setup; }
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [[ "$(line policy)" == "policy review unset: line "*' is not exactly "Build-loop policy: self-merge" or "Build-loop policy: review"' ]] \
         || { echo "$output"; return 1; }
+    # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
+    [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
 }
 
 @test "--settings reads main's commit: the working tree and other branches never decide (T4)" {
@@ -193,10 +195,10 @@ setup() { bl_setup; }
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
 }
 
-@test "--settings prints its four lines in order and exits 0; usage errors and a missing default branch exit 1" {
+@test "--settings prints its five lines in order and exits 0; usage errors and a missing default branch exit 1" {
     run --separate-stderr bash "$BL" --settings
-    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 4 ] || { echo "$output"; return 1; }
-    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * ]] \
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 5 ] || { echo "$output"; return 1; }
+    [[ "${lines[0]}" == policy\ * && "${lines[1]}" == slots\ * && "${lines[2]}" == never\ * && "${lines[3]}" == constraints\ * && "${lines[4]}" == readers\ * ]] \
         || { echo "$output"; return 1; }
     for args in "" "--bogus" "--settings extra" "--status"; do
         # shellcheck disable=SC2086  # split the argument list on purpose
@@ -486,4 +488,41 @@ setup() { bl_setup; }
     brief n 'Status: open' $'Branch: feat/\x01n' && printf 'Status: open\nBranch: feat/n\0x\n' > "$B" && commit_all nul
     run --separate-stderr bash "$BL" --status "$B"
     [ "$output" = "skip $B: line 2 holds a NUL byte, so the brief is not read" ] || { echo "$output"; return 1; }
+}
+
+@test "--settings: Reader roots and Reader homes give the readers line; any other form is malformed and never echoed (U2b3b1)" {
+    W='docs/dev-cycle.md on the default branch'
+    settings 'Build-loop policy: review'
+    settings_is readers 'readers none: no line starts "Reader roots:" or "Reader homes:"'
+    git rm -q docs/dev-cycle.md && commit_all gone
+    settings_is readers "readers none: no docs/dev-cycle.md on the default branch"
+    settings 'Reader roots: /host/cw /host/cw-2' '' 'Reader homes: none'; settings_is readers "readers 2-roots 0-homes set: $W"
+    settings 'Reader homes: /home/u_1/x.y'; settings_is readers "readers 0-roots 1-homes set: $W"
+    # One trailing CR is dropped, as on the policy line; a fenced copy is not read.
+    printf 'Reader roots: /host/cw\r\n\n```\nReader roots: rel\n```\n' > docs/dev-cycle.md && commit_all cr
+    settings_is readers "readers 1-roots 0-homes set: $W"
+    M='readers malformed: line 1 lists entry 1, which is not an absolute path of letters, digits and . _ - / with no empty, . or .. part; both import walks fail'
+    for v in 'Reader roots: rel' 'Reader roots: /' 'Reader roots: //a' 'Reader roots: /a/' 'Reader roots: /a//b' 'Reader roots: /a/../b' \
+             'Reader roots: /a/./b' 'Reader roots: /..' 'Reader homes: ~/x' 'Reader roots: none /a' $'Reader roots: /caf\xc3\xa9' 'Reader roots: /a*b' \
+             'Reader roots: /a:b' $'Reader roots: /a\t/b'; do
+        settings "$v"; settings_is readers "$M"
+        [[ "$output" != *caf* && "$output" != *'/a'* && "$output" != *'~/x'* && "$output" != *rel* ]] || { echo "echoed [$v]: $output"; return 1; }
+    done
+    settings 'Reader roots: /a /b /a'; settings_is readers 'readers malformed: line 1 lists entry 3 twice; both import walks fail'
+    N='readers malformed: line 1 is not exactly "Reader roots: PATH ..." with single spaces; both import walks fail'
+    for v in 'Reader roots:' 'Reader roots: ' 'Reader roots: /a  /b' 'Reader roots:  /a' 'Reader roots: /a ' \
+             'Reader roots : /a' 'reader roots: /a'; do
+        settings "$v"; settings_is readers "$N"
+    done
+    # A copy in markup, a continued line, or a file FENCE_AWK refuses: malformed too.
+    settings 'Reader homes: /h' '' '- **Reader homes:** /g'
+    settings_is readers 'readers malformed: more than one line starts "Reader homes:" (lines 1 and 3); both import walks fail'
+    settings 'Reader roots: /a' '/b'; settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list); both import walks fail'
+    settings 'Reader roots: /a' '' $'\x60\x60\x60'
+    settings_is readers 'readers malformed: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read; both import walks fail'
+    # Only main's commit decides: a loop's branch and the working tree are ignored.
+    settings 'Reader roots: /host/cw'
+    git checkout -q -b loop && printf 'Reader roots: rel\n' > docs/dev-cycle.md && commit_all loop
+    printf 'Reader roots: /a /b\n' > docs/dev-cycle.md
+    settings_is readers "readers 1-roots 0-homes set: $W"
 }

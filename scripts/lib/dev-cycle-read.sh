@@ -39,7 +39,8 @@
 # checkout's start files and imported files main lacks, which can only add
 # imports or fail it; it needs resolve_main to have found main by name);
 # imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
-# Both walks also read the repository's worktree registry (import_readers).
+# Both walks also read the repository's worktree registry (import_readers),
+# and reader_settings reads docs/dev-cycle.md from the default branch's commit.
 #
 # The gate caller contract, for floor and main_imports (the one statement of
 # it; plan step 5's U2b bullet and known issue A5 point here; override row 459):
@@ -82,11 +83,12 @@
 #     lower-cased path (prompt_dir and prompt_bases also take the path as
 #     spelled; floor, check_fix and the walks lower first; truthrule refuses an
 #     upper-case letter as case).
-#  9. Set IMPORT_READER_ROOTS and IMPORT_READER_HOMES after sourcing the lib
-#     (which clears them) and before a decision's first walk, from the
-#     default branch's settings (U2b3b), never
-#     from the environment: each is newline-separated absolute paths, the host
-#     spellings of this checkout and the host HOME (import_readers). Never set
+#  9. Call reader_settings after sourcing the lib (which clears the reader
+#     lists) and resolve_main, before a decision's first walk: it sets
+#     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md
+#     (host spellings of the main worktree and host HOMEs), or IMPORT_READER_WHY,
+#     which fails both walks; both scripts call it. Never set these yourself
+#     (from the environment or after reader_settings), nor
 #     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -527,6 +529,111 @@ resolve_main() {
   fi
   [[ -n "$MAIN_SHA" ]]
 }
+# A file on main: FILE_OUT is what awk program $2 (after FENCE_AWK) printed over
+# it; or it returns 1 with FILE_WHY "absent" or why it was not read (main_entry,
+# a failed read, or FENCE_AWK's "odd N WHY" / "unbalanced N").
+FILE_OUT=""; FILE_WHY=""
+main_file() {
+  local f="$1" e n why
+  FILE_OUT=""; FILE_WHY=""
+  e="$(main_entry "$f")"
+  case "$e" in
+    blob) ;;
+    absent) FILE_WHY=absent; return 1 ;;
+    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
+  esac
+  FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")" \
+    || { FILE_WHY="$f could not be read from the default branch"; return 1; }
+  case "$FILE_OUT" in
+    odd\ *) read -r _ n why <<<"$FILE_OUT"; FILE_WHY="line $n of $f $(oddwhy "$why"), so the file is not read"; return 1 ;;
+    unbalanced\ *) FILE_WHY="the code fence opened at line ${FILE_OUT#unbalanced } of $f is never closed, so the file is not read"; return 1 ;;
+  esac
+}
+# One pass over docs/dev-cycle.md (read_settings, reader_settings): per key, how
+# many lines start with it once all but letters is dropped and case folded (best
+# effort), the first two line numbers, whether the next unfenced line after the
+# first is blank or the end (NEXT 1), and the first line: "KEY COUNT FIRST SECOND NEXT<TAB>LINE".
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+SETTINGS_AWK='
+{ sub(/\r$/, "") }
+fence($0) { next }
+{
+  if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }
+  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
+  if (index(s, "buildlooppolicy") == 1) k = "policy"
+  else if (index(s, "buildloopslots") == 1) k = "slots"
+  else if (index(s, "selfmergenever") == 1) k = "never"
+  else if (index(s, "readerroots") == 1) k = "roots"
+  else if (index(s, "readerhomes") == 1) k = "homes"
+  if (k != "") { c[k]++; if (c[k] == 1) { l1[k] = NR; t[k] = $0; nx[k] = 1; pk = k } else if (c[k] == 2) l2[k] = NR }
+}
+END {
+  if (odd) print "odd " odd " " oddwhy
+  else if (infence) print "unbalanced " fline
+  else for (k in c) print k " " c[k] " " l1[k] " " (k in l2 ? l2[k] : 0) " " nx[k] "\t" t[k]
+}'
+# readerform PATH: a path the reader settings may name: absolute, of NAMECHARS
+# alone (so no blank or control byte: U2b3a final security 3), not / alone,
+# with no empty, . or .. part.
+readerform() {
+  local rest="${1#/}/" c
+  [[ "$1" == /?* && "$1" =~ ^[$NAMECHARS]+$ ]] || return 1
+  while [[ -n "$rest" ]]; do c="${rest%%/*}"; rest="${rest#*/}"; [[ -n "$c" && "$c" != . && "$c" != .. ]] || return 1; done
+}
+# reader_settings: caller contract item 9's lists, from main's docs/dev-cycle.md:
+# "Reader roots: PATH ..." (host spellings of the main worktree, the first git
+# worktree list entry) and "Reader homes: PATH ..." (host homes), or "none";
+# each one line as "Self-merge never:" is, each PATH in readerform, listed once.
+# Sets IMPORT_READER_ROOTS, IMPORT_READER_HOMES and READERS_LINE; no file or
+# line adds no reader. A file main_file refuses, a second copy, a bad line or
+# no main found by name (i1 security F1) sets IMPORT_READER_WHY, which fails
+# both walks. Call it in the caller's shell once main is resolved; a caller
+# that never calls it models no host reader (override row).
+READERS_LINE=""; IMPORT_READER_WHY=""
+# shellcheck disable=SC2034  # READERS_LINE: read by build-loop.sh --settings
+reader_settings() {
+  local f=docs/dev-cycle.md l k c l1 l2 nx key t v p i why="" nr=0 nh=0 ps=()
+  local -A cnt=() first=() second=() next=() text=() rd_seen=()
+  IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""; IMPORT_READER_WHY=""
+  if ! main_by_name; then
+    IMPORT_READER_WHY="no default branch was found by name (origin/HEAD, main or master)"
+    READERS_LINE="readers malformed: $IMPORT_READER_WHY; both import walks fail"; return 0
+  fi
+  if ! main_file "$f" "$SETTINGS_AWK"; then
+    if [[ "$FILE_WHY" == absent ]]; then READERS_LINE="readers none: no $f on the default branch"; return 0; fi
+    why="$FILE_WHY"
+  else
+    while IFS= read -r l; do
+      [[ -n "$l" ]] || continue
+      read -r k c l1 l2 nx <<<"${l%%$'\t'*}"
+      cnt[$k]="$c"; first[$k]="$l1"; second[$k]="$l2"; next[$k]="$nx"; text[$k]="${l#*$'\t'}"
+    done <<<"$FILE_OUT"
+    for k in roots homes; do
+      [[ -n "${cnt[$k]-}" && -z "$why" ]] || continue
+      key="Reader $k:"; t="${text[$k]}"; v="${t#"$key" }"
+      if [[ "${cnt[$k]}" -gt 1 ]]; then why="more than one line starts \"$key\" (lines ${first[$k]} and ${second[$k]})"
+      elif [[ "$t" != "$key "* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then why="line ${first[$k]} is not exactly \"$key PATH ...\" with single spaces"
+      elif [[ "${next[$k]}" != 1 ]]; then why="line ${first[$k]} is followed by a non-blank line outside a fence (it may continue the list)"
+      elif [[ "$v" != none ]]; then
+        IFS=' ' read -ra ps <<<"$v"; i=0; rd_seen=()  # not a bare $v: the shell would expand * and ?
+        for p in "${ps[@]}"; do
+          i=$((i + 1))
+          if ! readerform "$p"; then why="line ${first[$k]} lists entry $i, which is not an absolute path of letters, digits and . _ - / with no empty, . or .. part"; break; fi
+          if [[ -n "${rd_seen[$p]-}" ]]; then why="line ${first[$k]} lists entry $i twice"; break; fi
+          rd_seen[$p]=1
+          if [[ $k == roots ]]; then IMPORT_READER_ROOTS+="$p"$'\n'; nr=$((nr + 1)); else IMPORT_READER_HOMES+="$p"$'\n'; nh=$((nh + 1)); fi
+        done
+      fi
+    done
+  fi
+  if [[ -n "$why" ]]; then
+    IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""; IMPORT_READER_WHY="$why"
+    READERS_LINE="readers malformed: $why; both import walks fail"; return 0
+  fi
+  IMPORT_READER_ROOTS="${IMPORT_READER_ROOTS%$'\n'}"; IMPORT_READER_HOMES="${IMPORT_READER_HOMES%$'\n'}"
+  if [[ -z "${cnt[roots]-}${cnt[homes]-}" ]]; then READERS_LINE='readers none: no line starts "Reader roots:" or "Reader homes:"'
+  else READERS_LINE="readers $nr-roots $nh-homes set: $f on the default branch"; fi
+}
 # Instruction-file basenames, lower-cased: CLAUDE.md, CLAUDE.local.md,
 # AGENTS.override.md and the like, GEMINI.md, SKILL.md. (A variable, quoted:
 # written inline, the hermeticity lint reads the alternation as a command.)
@@ -612,8 +719,8 @@ prompt_bases() {
 # cached error returns 1 again.
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
-# CLAUDE.md, the user's memory file (known issue A5; U2b3b's outside starts),
-# nor at a start file only another registered checkout holds (U2b3b).
+# CLAUDE.md, the user's memory file (known issue A5; U2b3b2's outside starts),
+# nor at a start file only another registered checkout holds (U2b3b2).
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # import_reset: the next call of either walk walks again (caller contract item 4).
@@ -631,11 +738,13 @@ IMPORT_OUT_MAX=4000000
 # of 50,000,000, up to about 5 s here with one root and about 9 s with 24, by
 # the name's shape: U2b3a i2 fact-check) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
-# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 330,600 each over its 24 reader roots (8,200 with one; 2026-10-08).
+# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 350,000 each over its 25 reader roots and 870,000 over 49 (one host alias), 8,200 with one (2026-10-09).
 # That work grows with the square of the root count (each relative name is
 # joined once per root, and each join is projected against every root), so
 # the honest walks spend this bound near 570 roots and then fail closed:
 # prune the registry (git worktree prune) long before (U2b3a i2 performance F1).
+# Roots are about (1 + C) times the worktrees for C host aliases (G8): with
+# one, near 285 worktrees (49 roots here: about 1.3-1.7 s per walk, by load; U2b3b1 i1 performance F1).
 # A quote left open is charged per line for all its text so far, so an
 # unclosed @" followed by about 90 KB with no " spends the bound and fails
 # the walk (fail-closed; U2a4 confirm2 security C1, override row).
@@ -656,7 +765,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell), import_readers'
 # IMPORT_ROOTS and IMPORT_HOMES when its memo key is current (else ROOT_REAL
-# alone and import_home's home: a call outside a walk), and IMPORT_LEFT
+# alone and import_home's home: a call outside a walk; either fails on refused settings), and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
 # reads a number otherwise: its numeric prefix (so 1e3 is 1000 and inf no
 # bound), or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
@@ -685,7 +794,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
 # a reader root (import_readers: ROOT_REAL, every registered worktree, the
-# caller's IMPORT_READER_ROOTS), and printed relative to each root holding
+# caller's IMPORT_READER_ROOTS, worktrees re-spelled under these), and printed relative to each root holding
 # it but an outer one whose path down to a nested root holding it has a dot
 # component (the parser's dotnest; truthrule's dot word must keep refusing
 # every such path). A relative name is resolved against each root's copy of its
@@ -694,10 +803,10 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # to each reader home (this process's and IMPORT_READER_HOMES), in spelled and
 # real forms. Known exceptions, where a session reading the file can import
 # what these rules do not yield: a session in a checkout or under a home
-# import_readers does not list (U2b3b's settings line names the host's), a
+# import_readers does not list (reader_settings names the host's), a
 # start file only another reader root's checkout holds (untracked or ignored
 # there, such as /workspace's devcontainer-config/claude-home/CLAUDE.md: the
-# walks read the gate's own checkout only; U2b3b), names
+# walks read the gate's own checkout only; U2b3b2), names
 # that differ only in case on a case-insensitive file
 # system (docs/reviews/override-log.md line 350), Claude Code's approved
 # external includes, and any further decoding it may add (an entity, a percent
@@ -864,24 +973,28 @@ import_home() {
 # import_readers: the reader model's roots and homes (plan step 5, U2b3a),
 # which both walks take before their cache check and key on. IMPORT_ROOTS
 # holds ROOT_REAL, every path git worktree list registers for this repository
-# (prunable ones too: a host path such as /home/magfrump/cw-egress-verify) and
-# IMPORT_READER_ROOTS; IMPORT_HOMES holds import_home's two spellings and
+# (prunable ones too: a host path such as /home/magfrump/cw-egress-verify),
+# each IMPORT_READER_ROOTS entry and, beneath each of these and the main
+# worktree (the first record), every registered worktree beneath any of them; IMPORT_HOMES holds import_home's two spellings and
 # IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
 # home first, and lists every entry as written and as realpath -m reads it,
 # once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
-# (contract item 9): newline-separated absolute paths, blank lines skipped,
+# (contract item 9; reader_settings sets them): newline-separated absolute paths, blank lines skipped,
 # for the host checkout Q-123 names and the host HOME, since sessions there
 # spell this repository through them. Sourcing the lib clears them, so the
 # environment never sets them. The parser prints a name relative to every
 # root holding it but a dot-nested outer one (its comment says why), so a
-# root can add names and hide only dot paths. It returns 1 when import_home
+# root can add names and hide only dot paths. It returns 1 when
+# IMPORT_READER_WHY is set (reader_settings refused the settings), import_home
 # or the listing fails, or a root or a caller's home is not absolute, holds a
 # newline, or is / alone as written or as realpath reads it (every path would
 # project into the repo). This process's own home is kept as the parser takes
 # it (a relative one fails only a ~/ name), but one holding a newline is read
 # as empty, which fails only a ~/ name too.
-# The result is memoized in IMPORT_READERS_DONE, keyed on ROOT_REAL, HOME and
-# the caller's two lists, until import_reset (contract item 4): the registry
+# The result, a refusal included (but not an import_home failure, which
+# returns first), is memoized in IMPORT_READERS_DONE, keyed on ROOT_REAL,
+# HOME, the caller's two lists and IMPORT_READER_WHY, until
+# import_reset (contract item 4): the registry
 # is read once per decision, so one decision sees one root set and a cache
 # hit forks nothing here (U2b3a i1 performance F1, architecture F6).
 # Not covered: a hostile loop can rewrite the worktree registry in the shared
@@ -891,21 +1004,31 @@ IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_READERS_DONE=""; IMPORT_READER_ROOTS=""
 # import_home), each part led by its length so no part can run into the next.
 IMPORT_READERS_KEY=""
 import_readers_key() {
-  local a="${ROOT_REAL:-}" b="$IMPORT_HOME_DONE" c="$IMPORT_READER_ROOTS" d="$IMPORT_READER_HOMES"
-  IMPORT_READERS_KEY="${#a}:$a ${#b}:$b ${#c}:$c ${#d}:$d"
+  local a="${ROOT_REAL:-}" b="$IMPORT_HOME_DONE" c="$IMPORT_READER_ROOTS" d="$IMPORT_READER_HOMES" e="$IMPORT_READER_WHY"
+  IMPORT_READERS_KEY="${#a}:$a ${#b}:$b ${#c}:$c ${#d}:$d ${#e}:$e"
 }
 import_readers() {
-  local p i k n t rs_l=() rs_r=() rs_h=() rs_x=() rs_real=() rs_ro=() rs_ho=(); local -A rs_seen=()
+  local p rs_m=() rs_cr rs_l=() rs_w=() rs_c=() rs_r=() rs_h=() rs_x=() rs_real=() rs_ro=() rs_ho=() i n t; local -A rs_seen=()
   import_home || return 1
   import_readers_key
-  [[ "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || return 0
-  k="$IMPORT_READERS_KEY"
-  IMPORT_READERS_DONE=""
-  # ROOT_REAL leads the roots: an empty one would let a registered worktree lead instead.
-  [[ -n "${ROOT_REAL:-}" ]] || return 1
+  # A refusal is memoized too, as an empty IMPORT_ROOTS (a result never is:
+  # ROOT_REAL leads it), so a refusing decision lists the registry once (U2b3a final performance F1).
+  if [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" ]]; then [[ -n "$IMPORT_ROOTS" ]]; return; fi
+  IMPORT_READERS_DONE="$IMPORT_READERS_KEY"; IMPORT_ROOTS=""; IMPORT_HOMES=""
+  # ROOT_REAL leads the roots: an empty one would let a registered worktree lead
+  # instead. reader_settings' refusal fails the walks.
+  [[ -n "${ROOT_REAL:-}" && -z "$IMPORT_READER_WHY" ]] || return 1
   nul_list rs_l git worktree list --porcelain -z || return 1
-  rs_r=("$ROOT_REAL"); for p in "${rs_l[@]}"; do [[ "$p" != "worktree "* ]] || rs_r+=("${p#worktree }"); done
-  [[ -z "$IMPORT_READER_ROOTS" ]] || mapfile -t -O "${#rs_r[@]}" rs_r <<<"$IMPORT_READER_ROOTS"
+  for p in "${rs_l[@]}"; do [[ "$p" != "worktree "* ]] || rs_w+=("${p#worktree }"); done
+  # The first record is the main worktree, which each caller root spells on a
+  # host, so a worktree registered beneath any spelling of it (one a host
+  # session added too) is spelled beneath every other (U2b3a i1 architecture
+  # F4, U2b3b1 final security F2).
+  [[ ${#rs_w[@]} -eq 0 ]] || rs_m=("${rs_w[0]}")
+  [[ -z "$IMPORT_READER_ROOTS" ]] || mapfile -t rs_c <<<"$IMPORT_READER_ROOTS"
+  rs_r=("$ROOT_REAL" "${rs_w[@]}")
+  for rs_cr in "${rs_c[@]}"; do [[ -z "$rs_cr" ]] || { rs_r+=("$rs_cr"); rs_m+=("$rs_cr"); }; done
+  for p in "${rs_w[@]}"; do for rs_cr in "${rs_m[@]}"; do [[ "$p" != "$rs_cr"/* ]] || for t in "${rs_m[@]}"; do rs_r+=("$t${p#"$rs_cr"}"); done; done; done
   [[ -z "$IMPORT_READER_HOMES" ]] || mapfile -t rs_h <<<"$IMPORT_READER_HOMES"
   # The roots and the caller's homes, blank lines dropped, checked and then
   # resolved in one realpath call (a fork per root cost 14 ms over 24 roots).
@@ -931,7 +1054,6 @@ import_readers() {
   for p in "${rs_ho[@]}"; do [[ "$p" == "${rs_h[0]}" || "$p" == "${rs_h[1]-}" ]] || rs_h+=("$p"); done
   printf -v IMPORT_ROOTS '%s\n' "${rs_ro[@]}"; IMPORT_ROOTS="${IMPORT_ROOTS%$'\n'}"
   printf -v IMPORT_HOMES '%s\n' "${rs_h[@]}"; IMPORT_HOMES="${IMPORT_HOMES%$'\n'}"
-  IMPORT_READERS_DONE="$k"
 }
 import_targets() {
   local u d toks x="" s=(-e 's/\x0/ /g') LC_ALL=C roots="${ROOT_REAL:-}" homes
@@ -939,6 +1061,7 @@ import_targets() {
   homes="$IMPORT_HOME"$'\n'"$IMPORT_HOME_REAL"
   import_readers_key
   [[ -z "$IMPORT_READERS_DONE" || "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || { roots="$IMPORT_ROOTS"; homes="$IMPORT_HOMES"; }
+  [[ -z "$IMPORT_READER_WHY" ]] || return 1  # refused settings fail every reader (U2b3b1 i1 security F2)
   [[ $# -lt 2 ]] || x="$(printf 'x%s\n' "${@:2}")"  # the walks refuse a name holding a newline
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
@@ -1289,7 +1412,8 @@ floor() {
   elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a working file that is not this brief's own (they carry its full stem)"
   elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
   elif truthwalk main "$lp"; then
-    if [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
+    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports: the reader settings of docs/dev-cycle.md cannot be used: $IMPORT_READER_WHY"
+    elif [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
     else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
   else return 1; fi
 }
