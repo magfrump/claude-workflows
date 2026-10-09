@@ -1,0 +1,24 @@
+{
+  "mode": "fix-drift",
+  "model": "claude-haiku-4-5-20251001",
+  "range": "128ee81d..a2cbd9c6",
+  "parse_ok": true,
+  "n_findings": 1,
+  "findings": [
+    {
+      "path": "docs/working/plan-build-loop-handoff.md",
+      "lines": "286",
+      "severity": "High",
+      "domain": "Documentation",
+      "title": "Prescriptive guidance undone relative to code",
+      "description": "The prose added to U2c prescribes that \"`need_root` run once in the parent shell or test the abort\" and to \"add a test that fails when check_line's `import_reset` is removed,\" but neither `need_root` exists in the codebase nor is such a test present in the code changes. The prose describes implementation work as a completed unit without evidence it was executed."
+    }
+  ],
+  "tokens": {
+    "input": 9,
+    "output": 10452,
+    "cache_creation": 17210,
+    "cache_read": 0
+  },
+  "num_turns": 1
+}
