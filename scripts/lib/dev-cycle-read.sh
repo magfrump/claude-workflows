@@ -1004,7 +1004,8 @@ import_home() {
 # worktree (the first record), every registered worktree beneath any of them; IMPORT_HOMES holds import_home's two spellings and
 # IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
 # home first, and lists every entry as written and as realpath -m reads it,
-# once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
+# once; an empty ROOT_REAL returns 1. IMPORT_DOTNEST holds the parser's
+# dotnest pairs over IMPORT_ROOTS (its comment in the body says how). IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
 # (contract item 9; reader_settings sets them): newline-separated absolute paths, blank lines skipped,
 # for the host checkout Q-123 names and the host HOME, since sessions there
 # spell this repository through them. Sourcing the lib clears them, so the
