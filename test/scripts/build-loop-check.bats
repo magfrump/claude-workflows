@@ -13,9 +13,13 @@ setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 # imps WALK PATH...: in the fixture repo with main resolved and ROOT_REAL set,
 # "walk: ok" or "walk: failed" (main_imports' or imported_names' return),
 # then "PATH: imported" or "PATH: -" from isimported WALK for each path.
+# T_READER_ROOTS and T_READER_HOMES, when set, become the caller's
+# IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them).
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
+        [[ -z "${T_READER_ROOTS+set}" ]] || IMPORT_READER_ROOTS="$T_READER_ROOTS"
+        [[ -z "${T_READER_HOMES+set}" ]] || IMPORT_READER_HOMES="$T_READER_HOMES"
         resolve_main || true; ROOT_REAL="$(pwd -P)"; w="$1"; shift
         if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
@@ -1705,4 +1709,140 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     rm -rf sub; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" sub
     # git status already fails on a symlink there (exit 128), before the gitlink rule reads it.
     coref "git status failed or warned in the checkout"
+}
+
+# U2b3a, the reader model's roots and homes (plan step 5): a session reading the
+# repo from another checkout or HOME resolves names the gate's own root does not.
+
+@test "both walks read an absolute name into another worktree of the repo as that repo path, as the gate runs from its own worktree (U2b3a)" {
+    mkdir -p docs && r="$(pwd -P)"
+    printf 'See @%s/docs/abs.md\n' "$r" > AGENTS.md; echo x > docs/abs.md; commit_all abs
+    git worktree add -q --detach ../gate && cd ../gate
+    for w in tree main; do
+        imps "$w" docs/abs.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/abs.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks resolve a relative name against every worktree's directory, so it can re-enter a nested or sibling worktree (U2b3a; rows 425, 432)" {
+    mkdir -p docs && echo n > docs/n.md && echo s > docs/s.md
+    # From the main checkout, .claude/wt-b/ is a nested worktree; from wt-b, ../side/ is its sibling.
+    printf 'See @.claude/wt-b/docs/n.md and @../side/docs/s.md\n' > AGENTS.md; commit_all rel
+    git worktree add -q --detach .claude/wt-b; git worktree add -q --detach .claude/side
+    git worktree add -q --detach ../gate && cd ../gate
+    for w in tree main; do
+        imps "$w" docs/n.md docs/s.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/n.md imported; want docs/s.md imported; want docs/other.md -
+    done
+}
+
+@test "the caller's reader roots and homes add the host checkout's spellings, and the environment does not set them (U2b3a; rows 425, 437; Q-121, Q-123; i1 architecture F2)" {
+    mkdir -p docs
+    printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md\n' > AGENTS.md; commit_all host
+    for w in tree main; do
+        imps "$w" docs/h.md docs/a.md
+        want walk ok; want docs/h.md -; want docs/a.md -
+        T_READER_ROOTS=/host/cw T_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/h.md imported; want docs/a.md imported
+        # Inherited, they are cleared when the lib is sourced (contract item 9).
+        IMPORT_READER_ROOTS=/host/cw IMPORT_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
+        want walk ok; want docs/h.md -; want docs/a.md -
+    done
+}
+
+@test "a root nested in another at a non-dot path keeps the outer path's names: a stale registry entry or a caller root inside the repo (U2b3a i1 security 1, architecture F1)" {
+    mkdir -p docs && r="$(pwd -P)"
+    printf 'See @%s/sub/x.md\n' "$r" > AGENTS.md; commit_all nest
+    # A worktree at sub/ whose directory was then removed: git lists it as prunable.
+    git worktree add -q --detach sub && rm -rf sub
+    git worktree list --porcelain | grep -qxF "worktree $r/sub" || { git worktree list --porcelain; return 1; }
+    for w in tree main; do
+        imps "$w" sub/x.md x.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want sub/x.md imported; want x.md imported; want docs/other.md -
+    done
+    # The same nesting from a caller root, as written and through a symlink, with the stale entry pruned.
+    git worktree prune; ! git worktree list --porcelain | grep -qxF "worktree $r/sub" || return 1
+    ln -s "$r/sub" "$BATS_TEST_TMPDIR/lnk"
+    for w in tree main; do
+        imps "$w" sub/x.md x.md; want walk ok; want sub/x.md imported; want x.md -
+        for c in "$r/sub" "$BATS_TEST_TMPDIR/lnk"; do
+            T_READER_ROOTS="$c" imps "$w" sub/x.md x.md
+            want walk ok; want sub/x.md imported; want x.md imported
+        done
+    done
+    # dotnest omits only paths truthrule refuses as dot paths (security i2 2): a dot-nested spelling is one.
+    run --separate-stderr bash -c 'source "$1"; for p in .claude/wt-a/sub/y.md docs/.wt/a/q.md; do truthrule "$p"; echo "$p $TRUTH_WHY"; done' _ "$LIB"
+    [ "${lines[0]}" = ".claude/wt-a/sub/y.md dot" ] && [ "${lines[1]}" = "docs/.wt/a/q.md dot" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "both walks fail closed on a reader root or home they cannot model, and when git worktree list fails (U2b3a; i1 fact-check 18)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all bad
+    for w in tree main; do
+        for v in "T_READER_ROOTS=rel/cw" "T_READER_ROOTS=/" "T_READER_ROOTS=//" "T_READER_ROOTS=/x/.." "T_READER_HOMES=rel" \
+                 "T_READER_HOMES=/x/.." "T_READER_ROOTS=/a"$'\n'"rel" "T_READER_HOMES=/h"$'\n'"rel"; do
+            export "${v?}"; imps "$w" docs/a.md docs/other.md; unset T_READER_ROOTS T_READER_HOMES
+            want walk failed; want docs/other.md imported
+        done
+        # Blank lines between entries are skipped, not refused.
+        T_READER_ROOTS=$'/a\n\n/b\n' imps "$w" docs/a.md; want walk ok
+    done
+    # An empty ROOT_REAL is refused, not skipped, so a registered worktree never leads the roots (final fact-check 1).
+    run --separate-stderr bash -c 'source "$1"; ROOT_REAL=""; import_readers; echo "rc=$? [$IMPORT_READERS_DONE]"' _ "$LIB"
+    [ "$output" = "rc=1 []" ] || { echo "$output $stderr"; return 1; }
+    S="$BATS_TEST_TMPDIR/wt" && mkdir -p "$S"
+    printf '#!/bin/sh\n[ "$1" = worktree ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$S/git" && chmod +x "$S/git"
+    for w in tree main; do
+        PATH="$S:$PATH" imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+    done
+}
+
+@test "a HOME holding a newline fails a walk only when a ~/ name needs it, as a relative HOME does (U2b3a i1 fact-check E1, api F3)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all plain
+    for w in tree main; do
+        HOME="$BATS_TEST_TMPDIR/h"$'\n'"x" imps "$w" docs/a.md docs/other.md
+        want walk ok; want docs/a.md imported; want docs/other.md -
+    done
+    printf 'See @~/x.md and @docs/a.md\n' > AGENTS.md && commit_all tilde
+    # The walk fails, and a failed walk answers imported for every path (fail closed).
+    for w in tree main; do
+        HOME="$BATS_TEST_TMPDIR/h"$'\n'"x" imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+    done
+}
+
+@test "a worktree path holding a newline fails both walks (U2b3a)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all nl
+    git worktree add -q --detach "$BATS_TEST_TMPDIR/a"$'\n'"b" || skip "git refused a worktree path holding a newline"
+    for w in tree main; do
+        imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+    done
+}
+
+@test "both walk caches key on the reader set, which is read once until import_reset (U2b3a; row 437; i1 performance F1, architecture F6)" {
+    mkdir -p docs && printf 'See @/host/cw/docs/a.md and @~/cw/docs/h.md and @%s/docs/w.md\n' "$BATS_TEST_TMPDIR/late" > AGENTS.md && commit_all key
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        resolve_main || true; ROOT_REAL="$(pwd -P)"
+        for w in tree main; do
+            import_reset; IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""
+            isimported "$w" docs/a.md && echo "$w a0: imported" || echo "$w a0: -"
+            IMPORT_READER_ROOTS=/host/cw
+            isimported "$w" docs/a.md && echo "$w a1: imported" || echo "$w a1: -"
+            isimported "$w" docs/h.md && echo "$w h1: imported" || echo "$w h1: -"
+            IMPORT_READER_HOMES=/host
+            isimported "$w" docs/h.md && echo "$w h2: imported" || echo "$w h2: -"
+            # A worktree added mid-decision is seen only after import_reset.
+            [[ $w == main ]] || git worktree add -q --detach "$2/late"
+            isimported "$w" docs/w.md && echo "$w w1: imported" || echo "$w w1: -"
+            import_reset
+            isimported "$w" docs/w.md && echo "$w w2: imported" || echo "$w w2: -"
+        done' _ "$LIB" "$BATS_TEST_TMPDIR"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    for w in tree main; do want "$w a0" -; want "$w a1" imported; want "$w h1" -; want "$w h2" imported; want "$w w2" imported; done
+    want "tree w1" -
 }

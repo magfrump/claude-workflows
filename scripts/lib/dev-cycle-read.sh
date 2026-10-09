@@ -39,6 +39,7 @@
 # checkout's start files and imported files main lacks, which can only add
 # imports or fail it; it needs resolve_main to have found main by name);
 # imported_names, checkout_md and main_checkout read the working tree at ROOT_REAL.
+# Both walks also read the repository's worktree registry (import_readers).
 #
 # The gate caller contract, for floor and main_imports (the one statement of
 # it; plan step 5's U2b bullet and known issue A5 point here; override row 459):
@@ -61,8 +62,11 @@
 #     main stores hashes, unfiltered, to main's blob (so an eol conversion
 #     fails it too, and an attribute that changes no bytes does not).
 #  4. Call import_reset before each gate decision and after any checkout
-#     change (rows 372, 439), or when HOME, IMPORT_OUT_MAX or IMPORT_WORK_MAX
-#     changes: neither walk's cache key holds them.
+#     change (rows 372, 439), or when IMPORT_OUT_MAX or IMPORT_WORK_MAX
+#     changes: neither walk's cache key holds them (both hold import_readers'
+#     roots and homes, so HOME and IMPORT_READER_* need no reset; the
+#     worktree registry is read again after a reset or when one of those
+#     changes, so set them before a decision's first walk: item 9).
 #  5. Ask floor about each changed path, in this shell, before main_entry,
 #     and refuse the whole branch on any main_entry word but blob or absent
 #     (rows 308, 324). Floor item 5 (symlinks, gitlinks) and the brief's own
@@ -78,6 +82,12 @@
 #     lower-cased path (prompt_dir and prompt_bases also take the path as
 #     spelled; floor, check_fix and the walks lower first; truthrule refuses an
 #     upper-case letter as case).
+#  9. Set IMPORT_READER_ROOTS and IMPORT_READER_HOMES after sourcing the lib
+#     (which clears them) and before a decision's first walk, from the
+#     default branch's settings (U2b3b), never
+#     from the environment: each is newline-separated absolute paths, the host
+#     spellings of this checkout and the host HOME (import_readers). Never set
+#     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -559,13 +569,13 @@ prompt_bases() {
 # start file in the checkout (isstart), tracked or not (CLAUDE.local.md is usually
 # gitignored), resolves each @path against the importing file's directory (and a prompt's also against prompt_bases') as
 # Claude Code does (import_targets reads a superset of its names, ~/ against
-# this process's HOME, and drops paths outside the repo), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
+# every reader home, and drops paths outside every reader root: import_readers), and reads each plain file it reaches once. It returns 1, with IMPORTED set to "error", when the start
 # listing (git ls-files, untracked_md, instruction_names), lower, a file read,
-# import_home or the parser (its comment lists why) fails, the IMPORT_OUT_MAX
+# import_readers or the parser (its comment lists why) fails, the IMPORT_OUT_MAX
 # or IMPORT_WORK_MAX budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
-# IMPORTED_DONE; a call for another ROOT_REAL recomputes it, and a cached error
-# returns 1 again.
+# IMPORTED_DONE, keyed on import_readers' roots (ROOT_REAL first) and homes; a
+# call for another reader set recomputes it, and a cached error returns 1 again.
 # main_imports walks the default branch's commit instead, for the gate: it starts
 # at every start file stored there (isstart) and follows an import
 # into the file main stores at that path, whatever its name; a symlink there is
@@ -596,16 +606,18 @@ prompt_bases() {
 # symlink (git does not list a FIFO). The walk reads the checkout as one
 # snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
-# the commit, MAIN_BY_NAME and root in IMPORTED_MAIN_DONE, never the checkout,
-# whose files it read, nor HOME, so a caller whose checkout or HOME may have
-# changed calls import_reset (contract item 4); a cached error returns 1 again.
+# the commit, MAIN_BY_NAME and import_readers' roots and homes in
+# IMPORTED_MAIN_DONE, never the checkout, whose files it read, so a caller
+# whose checkout may have changed calls import_reset (contract item 4); a
+# cached error returns 1 again.
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
-# CLAUDE.md, the user's memory file (known issue A5; the reader set is U2b's).
+# CLAUDE.md, the user's memory file (known issue A5; U2b3b's outside starts),
+# nor at a start file only another registered checkout holds (U2b3b).
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # import_reset: the next call of either walk walks again (caller contract item 4).
-import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; }
+import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; IMPORT_READERS_DONE=""; }
 # Each walk fails once import_targets has printed more than this in all
 # (characters, newlines between names counted; awk counts bytes, so it may stop
 # first): the parser's work bound is per file, while the bash side's cost grows
@@ -613,11 +625,17 @@ import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; }
 # 2 KB, /workspace's about 6 KB. A caller that changes it calls import_reset.
 IMPORT_OUT_MAX=4000000
 # Each walk also fails once the parser's work (the candidate and comment-splice
-# characters it scans and each resolved spelling it joins, which for a
-# relative name carries ROOT_REAL, so a longer root buys less; the unit of its
-# per-file bound of 50,000,000, about 0.1-4 s here, by the name's shape) passes this in all, so N adversarial files cost one bound of charged parser
+# characters it scans, each resolved spelling it joins, which for a
+# relative name carries a root, so a longer root buys less, and one unit per
+# reader root for each spelling it projects; the unit of its per-file bound
+# of 50,000,000, up to about 5 s here with one root and about 9 s with 24, by
+# the name's shape: U2b3a i2 fact-check) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
-# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 8,100 each (2026-10-07).
+# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 330,600 each over its 24 reader roots (8,200 with one; 2026-10-08).
+# That work grows with the square of the root count (each relative name is
+# joined once per root, and each join is projected against every root), so
+# the honest walks spend this bound near 570 roots and then fail closed:
+# prune the registry (git worktree prune) long before (U2b3a i2 performance F1).
 # A quote left open is charged per line for all its text so far, so an
 # unclosed @" followed by about 90 KB with no " spends the bound and fails
 # the walk (fail-closed; U2a4 confirm2 security C1, override row).
@@ -636,7 +654,9 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # directory given (a prompt's session directories: prompt_bases): one
 # repo-relative path per line, case kept, each once. It
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
-# globals in the caller's shell unless called in a subshell) and IMPORT_LEFT
+# globals in the caller's shell unless called in a subshell), import_readers'
+# IMPORT_ROOTS and IMPORT_HOMES when its memo key is current (else ROOT_REAL
+# alone and import_home's home: a call outside a walk), and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
 # reads a number otherwise: its numeric prefix (so 1e3 is 1000 and inf no
 # bound), or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
@@ -660,16 +680,25 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # with its closed HTML comments removed (Claude Code splices them), and text
 # holding a byte above 0x7f is also read decoded as Claude Code decodes it (an
 # invalid UTF-8 sequence becomes U+FFFD). Each candidate is trimmed of spaces,
-# made absolute (ROOT_REAL/DIR/name for $1 and each further directory, unless
+# made absolute (ROOT/DIR/name for each reader root, $1 and each further directory, unless
 # it starts with /) and resolved
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
-# ROOT_REAL, and printed repo-relative. A ~/ name is joined to this process's
-# home (import_home), in its spelled and real forms. Known exceptions, where a
-# session reading the file can import what these rules do not yield: a session
-# whose home differs from this process's (its ~/ names), a session in another
-# checkout of the repo (an absolute name into that checkout, or a relative one
-# that re-enters through its directory; the reader set is U2b's), names that differ only in case on a case-insensitive file
+# a reader root (import_readers: ROOT_REAL, every registered worktree, the
+# caller's IMPORT_READER_ROOTS), and printed relative to each root holding
+# it but an outer one whose path down to a nested root holding it has a dot
+# component (the parser's dotnest; truthrule's dot word must keep refusing
+# every such path). A relative name is resolved against each root's copy of its
+# directory, so a name a session in any checkout spells is resolved as it
+# would be there (its start files are another matter: below), and a ~/ name is joined
+# to each reader home (this process's and IMPORT_READER_HOMES), in spelled and
+# real forms. Known exceptions, where a session reading the file can import
+# what these rules do not yield: a session in a checkout or under a home
+# import_readers does not list (U2b3b's settings line names the host's), a
+# start file only another reader root's checkout holds (untracked or ignored
+# there, such as /workspace's devcontainer-config/claude-home/CLAUDE.md: the
+# walks read the gate's own checkout only; U2b3b), names
+# that differ only in case on a case-insensitive file
 # system (docs/reviews/override-log.md line 350), Claude Code's approved
 # external includes, and any further decoding it may add (an entity, a percent
 # escape). The cost is false positives: a prefix that is itself a file counts
@@ -686,23 +715,26 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # import starts, not these rules).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 IMPORT_AWK='
-function emit(c, keep,   i) {
+function emit(c, keep,   i, r) {
   work += length(c); if (work > wmax) exit 3
   # Claude Code trims the name; it rejects a name led by a space first, so
   # trimming one only over-reads. KEEP skips the trim (a quoted name, below).
   if (!keep) { sub(/^ +/, "", c); sub(/ +$/, "", c) }
   if (c == "") return
   # ~/ joins the home directory (Claude Code: path.join(os.homedir(), rest)),
-  # also spelled through its real path, since ROOT_REAL is real.
+  # for each reader home (the home of this process first), each in its spelled
+  # and real forms, since a root may be spelled either way.
   if (substr(c, 1, 2) == "~/") {
-    if (substr(home, 1, 1) != "/") exit 4
-    if (homereal != home) put(homereal "/" substr(c, 3))
-    c = home "/" substr(c, 3)
+    if (substr(homes[1], 1, 1) != "/") exit 4
+    for (i = 1; i <= nh; i++) if (homes[i] != "") put(homes[i] "/" substr(c, 3))
+    return
   }
   if (substr(c, 1, 1) == "/") { put(c); return }
-  for (i = 0; i <= nd; i++) put(root "/" dirs[i] "/" c)
+  # A session in any checkout resolves the name against its own copy of the
+  # directory, so a .. can re-enter a sibling or nested worktree (U2b3a).
+  for (r = 1; r <= nr; r++) for (i = 0; i <= nd; i++) put(roots[r] "/" dirs[i] "/" c)
 }
-function put(c,   n, i, k, part, st, out) {
+function put(c,   n, i, j, k, part, st, out, h, nho) {
   # The resolved spelling is what costs (its length grows with the depth of
   # the importing file), so it is charged too, and each is resolved once per file.
   work += length(c); if (work > wmax) exit 3
@@ -715,11 +747,25 @@ function put(c,   n, i, k, part, st, out) {
     st[++k] = part[i]
   }
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
-  if (index(out, pre) != 1 || length(out) <= length(pre)) return
   # A quoted text that spans lines can resolve to a name holding a newline,
   # which no file a walk admits has (and a printed one would split in two).
   if (index(out, "\n")) return
-  out = substr(out, length(pre) + 1)
+  # Relative to every root holding it, but an outer root whose path down to a
+  # nested root holding it has a dot component (dotnest): a session in a
+  # worktree under /workspace/.claude/ reads the file there as a path of that
+  # worktree, and the outer spelling is a dot path the floor refuses whole
+  # (the dot word of truthrule: narrowing it means changing this rule too),
+  # while a root nested at any other path (a stale registry entry at sub/)
+  # must not take the outer path from the walk (U2b3a i1 security 1). The
+  # loop over the roots is charged as work too (i1 performance F2).
+  work += nr; if (work > wmax) exit 3
+  nho = 0; for (i = 1; i <= nr; i++) if (index(out, pre[i]) == 1 && length(out) > length(pre[i])) h[++nho] = i
+  for (i = 1; i <= nho; i++) {
+    for (j = 1; j <= nho; j++) if ((h[i], h[j]) in dotnest) break
+    if (j > nho) show(substr(out, length(pre[h[i]]) + 1))
+  }
+}
+function show(out) {
   if (out in seen) return
   # printed counts as the walks count: each name, a newline between names.
   seen[out] = 1; printed += length(out) + 1; if (printed - 1 > left) exit 3
@@ -775,8 +821,14 @@ function splice(line,   o, i, j, r) {
 BEGIN {
   # IT_XDIRS: the further directories, each led by an x so "" survives split.
   nd = split(ENVIRON["IT_XDIRS"], dirs, "\n"); for (i = nd; i >= 1; i--) dirs[i] = substr(dirs[i], 2)
-  dirs[0] = ENVIRON["IT_DIR"]; root = ENVIRON["IT_ROOT"]; home = ENVIRON["IT_HOME"]; homereal = ENVIRON["IT_HOME_REAL"]
-  left = ENVIRON["IT_LEFT"] + 0; pre = (root == "/") ? "/" : root "/"; if (root == "") exit 2
+  dirs[0] = ENVIRON["IT_DIR"]
+  # IT_ROOTS and IT_HOMES: newline-separated, ROOT_REAL and the home of this process first (import_readers).
+  nr = split(ENVIRON["IT_ROOTS"], roots, "\n"); if (nr == 0 || roots[1] == "") exit 2
+  for (i = 1; i <= nr; i++) pre[i] = (roots[i] == "/") ? "/" : roots[i] "/"
+  for (i = 1; i <= nr; i++) for (j = 1; j <= nr; j++)
+    if (length(pre[j]) > length(pre[i]) && index(pre[j], pre[i]) == 1 && index("/" substr(pre[j], length(pre[i]) + 1), "/.")) dotnest[i, j] = 1
+  nh = split(ENVIRON["IT_HOMES"], homes, "\n")
+  left = ENVIRON["IT_LEFT"] + 0
   wmax = 50000000; trail = (ENVIRON["IT_WORK"] != ""); if (trail && ENVIRON["IT_WORK"] + 0 < wmax) wmax = ENVIRON["IT_WORK"] + 0
 }
 {
@@ -809,9 +861,84 @@ import_home() {
   if [[ "$h" == /* ]]; then hr="$(realpath -m -- "$h")" || return 1; fi
   IMPORT_HOME="$h"; IMPORT_HOME_REAL="${hr:-$h}"; IMPORT_HOME_DONE="$key"
 }
-import_targets() {
-  local u d toks x="" s=(-e 's/\x0/ /g') LC_ALL=C
+# import_readers: the reader model's roots and homes (plan step 5, U2b3a),
+# which both walks take before their cache check and key on. IMPORT_ROOTS
+# holds ROOT_REAL, every path git worktree list registers for this repository
+# (prunable ones too: a host path such as /home/magfrump/cw-egress-verify) and
+# IMPORT_READER_ROOTS; IMPORT_HOMES holds import_home's two spellings and
+# IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
+# home first, and lists every entry as written and as realpath -m reads it,
+# once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
+# (contract item 9): newline-separated absolute paths, blank lines skipped,
+# for the host checkout Q-123 names and the host HOME, since sessions there
+# spell this repository through them. Sourcing the lib clears them, so the
+# environment never sets them. The parser prints a name relative to every
+# root holding it but a dot-nested outer one (its comment says why), so a
+# root can add names and hide only dot paths. It returns 1 when import_home
+# or the listing fails, or a root or a caller's home is not absolute, holds a
+# newline, or is / alone as written or as realpath reads it (every path would
+# project into the repo). This process's own home is kept as the parser takes
+# it (a relative one fails only a ~/ name), but one holding a newline is read
+# as empty, which fails only a ~/ name too.
+# The result is memoized in IMPORT_READERS_DONE, keyed on ROOT_REAL, HOME and
+# the caller's two lists, until import_reset (contract item 4): the registry
+# is read once per decision, so one decision sees one root set and a cache
+# hit forks nothing here (U2b3a i1 performance F1, architecture F6).
+# Not covered: a hostile loop can rewrite the worktree registry in the shared
+# common dir, dropping a root (a Q-103 residual).
+IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_READERS_DONE=""; IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""
+# import_readers_key: IMPORT_READERS_KEY, the key import_readers memoizes on (after
+# import_home), each part led by its length so no part can run into the next.
+IMPORT_READERS_KEY=""
+import_readers_key() {
+  local a="${ROOT_REAL:-}" b="$IMPORT_HOME_DONE" c="$IMPORT_READER_ROOTS" d="$IMPORT_READER_HOMES"
+  IMPORT_READERS_KEY="${#a}:$a ${#b}:$b ${#c}:$c ${#d}:$d"
+}
+import_readers() {
+  local p i k n t rs_l=() rs_r=() rs_h=() rs_x=() rs_real=() rs_ro=() rs_ho=(); local -A rs_seen=()
   import_home || return 1
+  import_readers_key
+  [[ "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || return 0
+  k="$IMPORT_READERS_KEY"
+  IMPORT_READERS_DONE=""
+  # ROOT_REAL leads the roots: an empty one would let a registered worktree lead instead.
+  [[ -n "${ROOT_REAL:-}" ]] || return 1
+  nul_list rs_l git worktree list --porcelain -z || return 1
+  rs_r=("$ROOT_REAL"); for p in "${rs_l[@]}"; do [[ "$p" != "worktree "* ]] || rs_r+=("${p#worktree }"); done
+  [[ -z "$IMPORT_READER_ROOTS" ]] || mapfile -t -O "${#rs_r[@]}" rs_r <<<"$IMPORT_READER_ROOTS"
+  [[ -z "$IMPORT_READER_HOMES" ]] || mapfile -t rs_h <<<"$IMPORT_READER_HOMES"
+  # The roots and the caller's homes, blank lines dropped, checked and then
+  # resolved in one realpath call (a fork per root cost 14 ms over 24 roots).
+  for p in "${rs_r[@]}" "${rs_h[@]}"; do
+    [[ -n "$p" ]] || continue
+    [[ "$p" == /* && "$p" != *$'\n'* && -n "${p//\//}" ]] || return 1
+    rs_x+=("$p")
+  done
+  n=${#rs_r[@]}; for p in "${rs_r[@]}"; do [[ -n "$p" ]] || n=$((n - 1)); done
+  nul_list rs_real realpath -mz -- "${rs_x[@]}" || return 1
+  [[ ${#rs_real[@]} -eq ${#rs_x[@]} ]] || return 1
+  for i in "${!rs_x[@]}"; do
+    [[ -n "${rs_real[i]//\//}" && "${rs_real[i]}" != *$'\n'* ]] || return 1
+    if [[ $i -lt $n ]]; then t=r; else t=h; fi
+    for p in "${rs_x[i]}" "${rs_real[i]}"; do
+      [[ -z "${rs_seen[$t$p]+set}" ]] || continue
+      rs_seen[$t$p]=1; if [[ $t == r ]]; then rs_ro+=("$p"); else rs_ho+=("$p"); fi
+    done
+  done
+  # This process's own homes come first, kept as the parser reads them.
+  rs_h=(); for p in "$IMPORT_HOME" "$IMPORT_HOME_REAL"; do [[ "$p" != *$'\n'* ]] || p=""; rs_h+=("$p"); done
+  [[ "${rs_h[1]}" != "${rs_h[0]}" ]] || unset 'rs_h[1]'
+  for p in "${rs_ho[@]}"; do [[ "$p" == "${rs_h[0]}" || "$p" == "${rs_h[1]-}" ]] || rs_h+=("$p"); done
+  printf -v IMPORT_ROOTS '%s\n' "${rs_ro[@]}"; IMPORT_ROOTS="${IMPORT_ROOTS%$'\n'}"
+  printf -v IMPORT_HOMES '%s\n' "${rs_h[@]}"; IMPORT_HOMES="${IMPORT_HOMES%$'\n'}"
+  IMPORT_READERS_DONE="$k"
+}
+import_targets() {
+  local u d toks x="" s=(-e 's/\x0/ /g') LC_ALL=C roots="${ROOT_REAL:-}" homes
+  import_home || return 1
+  homes="$IMPORT_HOME"$'\n'"$IMPORT_HOME_REAL"
+  import_readers_key
+  [[ -z "$IMPORT_READERS_DONE" || "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || { roots="$IMPORT_ROOTS"; homes="$IMPORT_HOMES"; }
   [[ $# -lt 2 ]] || x="$(printf 'x%s\n' "${@:2}")"  # the walks refuse a name holding a newline
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
@@ -831,7 +958,7 @@ import_targets() {
   # The directories, root and home go through the environment: awk -v would read
   # backslash escapes in them. IMPORT_LEFT, set by a walk, is what its
   # IMPORT_OUT_MAX budget has left, so awk stops there rather than after.
-  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_XDIRS="$x" IT_ROOT="${ROOT_REAL:-}" IT_HOME="$IMPORT_HOME" IT_HOME_REAL="$IMPORT_HOME_REAL" \
+  printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_XDIRS="$x" IT_ROOTS="$roots" IT_HOMES="$homes" \
     IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
 }
 # import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
@@ -927,8 +1054,10 @@ imported_names() {
   local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=(); set -o pipefail
   local -A pdir=()
   need_root
-  [[ "$IMPORTED_DONE" == "$ROOT_REAL" ]] && { [[ "$IMPORTED" != error ]]; return; }
-  IMPORTED_DONE="$ROOT_REAL"; IMPORTED=error
+  import_readers || { IMPORTED_DONE=""; IMPORTED=error; return 1; }
+  # The roots never hold an empty line, so the blank line ends them.
+  [[ "$IMPORTED_DONE" == "$IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES" ]] && { [[ "$IMPORTED" != error ]]; return; }
+  IMPORTED_DONE="$IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES"; IMPORTED=error
   nul_list recs tree_starts || return 1
   for f in "${recs[@]}"; do
     # seen is newline-separated: a name holding a newline could hide another start.
@@ -938,7 +1067,6 @@ imported_names() {
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f"); prompt_dir pdir "$lp" "$f"
   done
-  import_home || return 1
   IMPORTED=$'\n'
   # An index, not a copy per pop (quadratic in the files read: override row 461).
   while [[ $qi -lt ${#queue[@]} ]]; do
@@ -966,7 +1094,7 @@ imported_names() {
 # import main lacks, a blob or checkout file cannot be read, symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, has
 # a .. after a symlink, or names a directory or a gitlink, a link or gitlink
-# sits where START_LINK matches and is not a symlinked start, import_home, the parser (its comment lists why) or a
+# sits where START_LINK matches and is not a symlinked start, import_readers, the parser (its comment lists why) or a
 # lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
 # need_root exits instead.
 # Phase 2 begins when queue empties: tq's checkout files then join it, and a
@@ -976,8 +1104,9 @@ main_imports() {
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
   local -A ent=() seen=() dir=() pok=() pdir=()
   need_root
-  [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
-  IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $ROOT_REAL"
+  import_readers || { IMPORTED_MAIN_DONE=""; IMPORTED_MAIN=error; return 1; }
+  [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
+  IMPORTED_MAIN=error; IMPORTED_MAIN_DONE="$MAIN_SHA $MAIN_BY_NAME $IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES"
   main_by_name || return 1
   nul_list recs git ls-tree -r -z --full-tree "$MAIN_SHA" || return 1
   for rec in "${recs[@]}"; do
@@ -1011,7 +1140,6 @@ main_imports() {
       seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
   done
-  import_home || return 1
   IMPORTED_MAIN=$'\n'
   # An index, not a copy per pop, as in imported_names (override row 461).
   while [[ $qi -lt ${#queue[@]} || ${#tq[@]} -gt 0 ]]; do
@@ -1097,7 +1225,7 @@ truthrule() {
   TRUTH_WHY=""
   if [[ "$1" == *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]* ]]; then TRUTH_WHY="case"
   elif isstart "$1"; then TRUTH_WHY="instr"
-  elif [[ "/$1" == */.* ]]; then TRUTH_WHY="dot"
+  elif [[ "/$1" == */.* ]]; then TRUTH_WHY="dot"  # the parser's dotnest omits only such paths: keep the two equal
   elif writable "$1"; then TRUTH_WHY="cycle"
   elif [[ "$1" == docs/dev-cycle.md ]]; then TRUTH_WHY="settings"
   elif [[ "$1" == docs/constraints.md ]]; then TRUTH_WHY="user"
