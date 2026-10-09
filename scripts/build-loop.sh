@@ -112,21 +112,32 @@
 #                 the merge of TIP (tree TREE)", when deny lines follow. Or,
 #                 for a brief --status reads as self-merge, "a self-merge
 #                 brief needs --check run from a clean checkout of the
-#                 default branch's commit; WHY": the checkout --check runs
-#                 from (the self-merge floor reads it) has HEAD at another
-#                 commit, a repo-local GIT_* variable set (GIT_INDEX_FILE,
-#                 GIT_WORK_TREE...), core.symlinks false, core.ignoreCase or
-#                 core.sparseCheckout true, an index entry marked
-#                 skip-worktree, assume-unchanged or unmerged, a change git
-#                 status shows (untracked files aside), an untracked nested
-#                 repository or a gitlink checked out with files, or a
-#                 regular file whose bytes are not main's blob (a filter,
-#                 working-tree-encoding, ident or eol conversion). Untracked
-#                 and ignored files are allowed. A review brief does not read
-#                 the checkout, so a loop can run --check from its own branch.
+#                 default branch's commit; WHY" (the text up to "; " is
+#                 fixed; path and deny lines follow it as they follow ok):
+#                 the checkout --check runs from (the self-merge floor reads
+#                 it) has its HEAD at another commit; a repo-local git
+#                 variable set (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
+#                 GIT_CONFIG and the like; the caller's GIT_CONFIG_PARAMETERS
+#                 and GIT_CONFIG_COUNT pairs, GIT_NO_REPLACE_OBJECTS and
+#                 GIT_PREFIX aside); core.symlinks false, core.ignoreCase or
+#                 core.sparseCheckout true, or one of them unreadable; an
+#                 index entry marked skip-worktree, assume-unchanged or
+#                 unmerged; a change git status shows (untracked files
+#                 aside), or git status failing or warning; an untracked
+#                 nested repository, or a gitlink's path that is a symlink,
+#                 cannot be listed or holds files; a file main stores whose
+#                 name holds a newline, starts with a quote or ends with a
+#                 CR (the byte comparison cannot read it); or a regular file
+#                 whose bytes are not main's blob (a filter,
+#                 working-tree-encoding, ident or eol conversion); or a
+#                 listing or hash of these that fails. Untracked and ignored
+#                 files are allowed. It is judged after the merge and the
+#                 N rules, so a loop running --check from its own branch
+#                 still gets the path lines; a review brief does not read
+#                 the checkout.
 #             skip BRIEF: WHY
 #                 As --status skips it.
-#             After an ok line or a K of N refusal, one line per path TREE
+#             After an ok line, a K of N refusal or a checkout refusal, one line per path TREE
 #             changes against main (diff-tree -r --no-renames, so a rename is
 #             its D and A sides), in diff-tree's order; S is its status letter
 #             (A, M, D or T) and PATH is "?" unless every character is one
@@ -511,10 +522,16 @@ status_line() {
 # object store (GIT_OBJECT_DIRECTORY, where it also writes). GATE_ENV unsets the
 # repo-local variables (GIT_COMMON_DIR and the like) that would point it back.
 GATE_TMP=""; GATE_ENV=()
+# callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
+# gate keeps: the caller's config pairs, which harden extends and trusts
+# (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
+# this script sets. GIT_CONFIG, a whole config file git config reads instead of
+# the repo's, is not one (gate_repo unsets it; checkout_gate refuses it).
+callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$1" == GIT_NO_REPLACE_OBJECTS ]]; }
 gate_repo() {
   local fmt v
   GATE_ENV=(env)
-  for v in $(git rev-parse --local-env-vars); do [[ "$v" == GIT_CONFIG* || "$v" == GIT_NO_REPLACE_OBJECTS ]] || GATE_ENV+=(-u "$v"); done
+  for v in $(git rev-parse --local-env-vars); do callervar "$v" || GATE_ENV+=(-u "$v"); done
   v="$(git rev-parse --path-format=absolute --git-path objects)" && fmt="$(git rev-parse --show-object-format)" \
     && [[ "$fmt" == sha1 || "$fmt" == sha256 ]] && mkdir "$GATE_TMP/git" "$GATE_TMP/git/refs" "$GATE_TMP/work" || return 1
   printf 'ref: refs/heads/none\n' > "$GATE_TMP/git/HEAD"
@@ -589,62 +606,85 @@ nrules() {
   fi
 }
 # The checkout --check runs from, which a self-merge brief's floor walk (U2c)
-# reads: the gate caller contract's items 2 and 3 (the lib's header). Sets
-# CHECKOUT_WHY to why the checkout fails them, or empties it; returns 1 on a
-# failure. Item 3 is checked by its effect, not by predicting it with
-# check-attr: every regular file main stores must hash, unfiltered, to main's
-# blob, so no conversion (a filter, working-tree-encoding, ident or eol
-# attribute from any attributes source, the user's global ones included, which
-# harden hides from the gate's own git) changed what a session reads there.
-# Untracked and ignored files are allowed: the walk reads them as they are. A
-# nested repository's files are not walk starts (rows 366, 373), so an
-# untracked one, or a gitlink checked out with any file, fails. Needs GATE_TMP.
+# reads: the parts of the gate caller contract's items 2 and 3 (the lib's
+# header) a checkout can break. Item 2's fsmonitor and replace refs are harden's
+# and the state gate's, and its ls-files stderr rule is the walk's own. Sets
+# CHECKOUT_WHY to why the checkout fails, or empties it; returns 1 on a
+# failure. check_line calls it for each self-merge brief, after the N rules and
+# where U2c's floor walk will run, so it is final before that walk. Item 3 is
+# checked by its effect, not by predicting it with check-attr: every regular
+# file main stores must hash, unfiltered, to main's blob, so no conversion (a
+# filter, working-tree-encoding, ident or eol attribute from any attributes
+# source, the user's global ones included, which harden hides from the gate's
+# own git) changed what a session reads there. Untracked and ignored files
+# are allowed: the walk reads them as they are. A nested repository's files
+# are not walk starts (rows 366, 373), so an untracked one, or a gitlink
+# checked out with any file, fails. Needs GATE_TMP.
 CHECKOUT_WHY=""
 checkout_gate() {
-  local v x rc r n ps=() ids=() re=$'^(100644|100755|160000) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
+  # The C locale: under UTF-8 a regex . does not match an invalid byte, and a
+  # record skipped for its name would escape the byte comparison.
+  local LC_ALL=C
+  local v x rc r n p ps=() ids=() re=$'^([01234567]{6}) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
   CHECKOUT_WHY=""
   for v in $(git rev-parse --local-env-vars); do
-    # harden's own config pairs (and the caller's, which it trusts) are not a checkout.
-    [[ "$v" == GIT_CONFIG* || "$v" == GIT_NO_REPLACE_OBJECTS || "$v" == GIT_PREFIX || -z "${!v+set}" ]] \
-      || { CHECKOUT_WHY="$v is set, so git can read another work tree, index or object store"; return 1; }
+    # GIT_PREFIX only names a subdirectory for an alias; the script cds to the top level.
+    [[ -z "${!v+set}" || "$v" == GIT_PREFIX ]] || callervar "$v" \
+      || { CHECKOUT_WHY="$v is set, so git can read another work tree, index, object store or config file"; return 1; }
   done
-  x="$(git rev-parse --verify -q 'HEAD^{commit}')" || x=""
-  [[ "$x" == "$MAIN_SHA" ]] || { CHECKOUT_WHY="its HEAD is not the default branch's commit $MAIN_SHA"; return 1; }
+  x="$(git rev-parse --verify -q 'HEAD^{commit}')" || x="unreadable"
+  [[ "$x" == "$MAIN_SHA" ]] || { CHECKOUT_WHY="the checkout's HEAD is $x, not the default branch's commit $MAIN_SHA"; return 1; }
   for v in "core.symlinks false: a symlink is checked out as a file holding its text" \
     "core.ignoreCase true: a case-insensitive checkout" "core.sparseCheckout true: a sparse checkout"; do
     rc=0; x="$(git config --type=bool --get "${v%% *}" 2>/dev/null)" || rc=$?
     r="${v#* }"
-    [[ "$rc" -le 1 && "$x" != "${r%%:*}" ]] || { CHECKOUT_WHY="${v%% *} is ${r%%:*} or unreadable (${r#*: })"; return 1; }
+    [[ "$rc" -le 1 ]] || { CHECKOUT_WHY="${v%% *} could not be read"; return 1; }
+    [[ "$x" != "${r%%:*}" ]] || { CHECKOUT_WHY="${v%% *} is $r"; return 1; }
   done
   # ls-files -v tags each entry: H is plain; S is skip-worktree, lower case is
-  # assume-unchanged (git status skips both), M is unmerged.
-  n="$(git ls-files -v -z | tr '\0' '\n' | LC_ALL=C awk 'substr($0, 1, 2) != "H " { n++ } END { print n + 0 }')" || n=x
-  [[ "$n" == 0 ]] || { CHECKOUT_WHY="its index marks entries skip-worktree, assume-unchanged or unmerged, or could not be listed"; return 1; }
-  x="$(git status --porcelain=v1 -z --untracked-files=no --ignore-submodules=none 2>&1)" || x=failed
-  [[ -z "$x" ]] || { CHECKOUT_WHY="its index or tracked files differ from that commit (git status)"; return 1; }
+  # assume-unchanged (git status skips a change under either), M is unmerged.
+  n="$(git ls-files -v -z | tr '\0' '\n' | awk 'substr($0, 1, 2) != "H " { n++ } END { print n + 0 }')" \
+    || { CHECKOUT_WHY="the checkout's index could not be listed"; return 1; }
+  [[ "$n" == 0 ]] || { CHECKOUT_WHY="the checkout's index marks entries skip-worktree, assume-unchanged or unmerged"; return 1; }
+  # To a file: bash would warn on stderr about the NULs a $(...) drops.
+  git status --porcelain=v1 -z --untracked-files=no --ignore-submodules=none > "$GATE_TMP/status" 2>"$GATE_TMP/err" && [[ ! -s "$GATE_TMP/err" ]] \
+    || { CHECKOUT_WHY="git status failed or warned in the checkout"; return 1; }
+  [[ ! -s "$GATE_TMP/status" ]] || { CHECKOUT_WHY="the checkout's index or tracked files differ from that commit (git status)"; return 1; }
   # Without --exclude-standard every untracked file is listed, ignored ones too,
   # and a nested repository as its directory with a trailing / (no file name
   # holds a /). Listed to a file first: under pipefail a reader that stops
   # early, or finds nothing, would hide a failed listing.
-  git ls-files -z --others > "$GATE_TMP/others" || { CHECKOUT_WHY="its untracked files could not be listed"; return 1; }
-  x="$(tr '\0' '\n' < "$GATE_TMP/others" | LC_ALL=C awk '/\/$/ { n++ } END { print n + 0 }')" || x=x
-  [[ "$x" == 0 ]] || { CHECKOUT_WHY="it holds an untracked nested repository, whose instruction files the walk does not read"; return 1; }
+  git ls-files -z --others > "$GATE_TMP/others" || { CHECKOUT_WHY="the checkout's untracked files could not be listed"; return 1; }
+  x="$(tr '\0' '\n' < "$GATE_TMP/others" | awk '/\/$/ { n++ } END { print n + 0 }')" || x=x
+  [[ "$x" == 0 ]] || { CHECKOUT_WHY="the checkout holds an untracked nested repository, whose instruction files the walk does not read"; return 1; }
   git ls-tree -r -z --full-tree "$MAIN_SHA" > "$GATE_TMP/tree" || { CHECKOUT_WHY="the default branch's tree could not be listed"; return 1; }
   while IFS= read -r -d '' r; do
-    [[ "$r" =~ $re ]] || continue
-    if [[ "${BASH_REMATCH[1]}" == 160000 ]]; then
-      x="$(ls -A -- "${BASH_REMATCH[3]}" 2>/dev/null)" || x=""
-      [[ -z "$x" ]] || { CHECKOUT_WHY="a gitlink is checked out with files, whose instruction files the walk does not read"; return 1; }
-      continue
-    fi
-    [[ "${BASH_REMATCH[3]}" != *$'\n'* ]] || { CHECKOUT_WHY="a file on the default branch has a newline in its name"; return 1; }
-    ids+=("${BASH_REMATCH[2]}"); ps+=("${BASH_REMATCH[3]}")
+    [[ "$r" =~ $re ]] || { CHECKOUT_WHY="the default branch's tree could not be read"; return 1; }
+    p="${BASH_REMATCH[3]}"
+    case "${BASH_REMATCH[1]}" in
+      100644|100755) ;;
+      # git status compares a link's text to its blob unconverted (core.symlinks is true here).
+      120000) continue ;;
+      160000)
+        if [[ -L "$p" ]] || { [[ -e "$p" ]] && ! x="$(ls -A -- "$p" 2>/dev/null)"; }; then
+          CHECKOUT_WHY="a gitlink's path in the checkout is a symlink or cannot be listed"; return 1
+        fi
+        [[ ! -e "$p" || -z "$x" ]] || { CHECKOUT_WHY="a gitlink is checked out with files, whose instruction files the walk does not read"; return 1; }
+        continue ;;
+      *) CHECKOUT_WHY="the default branch's tree could not be read"; return 1 ;;
+    esac
+    # hash-object --stdin-paths reads a line: a newline splits a name, a
+    # leading " is unquoted and a trailing CR dropped, so another file is hashed.
+    [[ "$p" != *$'\n'* && "$p" != \"* && "$p" != *$'\r' ]] \
+      || { CHECKOUT_WHY="a file on the default branch has a name the byte comparison cannot read (a newline, a leading quote or a trailing CR)"; return 1; }
+    ids+=("${BASH_REMATCH[2]}"); ps+=("$p")
   done < "$GATE_TMP/tree"
   [[ ${#ps[@]} -gt 0 ]] || return 0
   # --stdin-paths: one hash-object for every file (one per path cost a process each).
-  if ! x="$(printf '%s\n' "${ps[@]}" | git hash-object --no-filters --stdin-paths 2>/dev/null)" || [[ "$x" != "$(printf '%s\n' "${ids[@]}")" ]]; then
-    CHECKOUT_WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"; return 1
-  fi
+  x="$(printf '%s\n' "${ps[@]}" | git hash-object --no-filters --stdin-paths 2>/dev/null)" \
+    || { CHECKOUT_WHY="the checkout's files could not be hashed"; return 1; }
+  [[ "$x" == "$(printf '%s\n' "${ids[@]}")" ]] \
+    || { CHECKOUT_WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"; return 1; }
 }
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed
 # paths refused in the merge of TIP (tree TREE)", then a "path BRIEF S PATH" or
@@ -653,7 +693,7 @@ checkout_gate() {
 # character is one pathform allows); or one skip or refuse line (from
 # status_line, then the gate's own reasons).
 check_line() {
-  local a="$1" out st pol br loop sha n tree meta p shown rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  local a="$1" out st pol br loop sha n tree meta p shown co rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
   out="$(status_line "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
@@ -665,9 +705,6 @@ check_line() {
   if [[ "$out" != "ok $br $sha "* || ! "$n" =~ ^$DIGIT+$ ]]; then echo "refuse $a: its branch $br moved or could not be read again"; return; fi
   if [[ "$n" -eq 0 ]]; then echo "refuse $a: its branch $br has no commit the default branch lacks"; return; fi
   if [[ -n "$EXPECT" && "$sha" != "$EXPECT" ]]; then echo "refuse $a: the tip of $br is $sha, not the expected $EXPECT"; return; fi
-  if [[ "$pol" == self-merge && -n "$CHECKOUT_WHY" ]]; then
-    echo "refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; return
-  fi
   tree="$(merge_result "$sha")" || rc=$?
   case "$rc" in
     0) ;;
@@ -688,7 +725,11 @@ check_line() {
   # Every record read whole: two NUL-ended fields each (bytes after the last
   # NUL are not counted; git's own output never ends that way).
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
-  if [[ ${#ps[@]} -eq 0 ]]; then echo "ok $a $sha $tree"; return; fi
+  # A self-merge brief's checkout (contract items 2 and 3), judged after the
+  # merge, so the path lines still print (a loop's advisory run from its own
+  # branch learns them), and before U2c's floor walk, which runs per path below.
+  co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
+  if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
   # blob the store lacks would land unseen: every regular file the merge adds
   # or changes must name a blob present in the store (a missing subtree already
@@ -704,7 +745,7 @@ check_line() {
     nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}"
     if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
   done
-  if [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
+  if [[ -n "$co" ]]; then echo "$co"; elif [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
   printf '%s\n' "${rows[@]}"
 }
 
@@ -722,8 +763,6 @@ case "$MODE" in
     open_shared  # once, in this shell: check_line runs in a subshell
     GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
     gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
-    # Once, in this shell, before any verdict; only self-merge briefs read it.
-    if [[ "$POLICY" == self-merge ]]; then checkout_gate || true; fi
     fails=0
     for a in "${ARGS[@]}"; do
       out="$(check_line "$a")"; printf '%s\n' "$out"
