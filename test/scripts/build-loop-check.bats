@@ -1793,6 +1793,7 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         want walk ok; want docs/a.md imported; want docs/other.md -
     done
     printf 'See @~/x.md and @docs/a.md\n' > AGENTS.md && commit_all tilde
+    # The walk fails, and a failed walk answers imported for every path (fail closed).
     for w in tree main; do
         HOME="$BATS_TEST_TMPDIR/h"$'\n'"x" imps "$w" docs/a.md docs/other.md
         want walk failed; want docs/other.md imported

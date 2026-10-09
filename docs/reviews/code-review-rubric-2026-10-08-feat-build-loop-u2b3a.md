@@ -37,6 +37,10 @@ None.
 | G11 | isimported's answer for a `.claude/...` path now depends on the registry; both consumers refuse dot paths before asking. | api F9 | Won't-Fix (override row) |
 | G12 | Commit 5516c6e6 says "main's 129 names": both walks give 128 distinct names (129 counts IMPORTED's newlines); its "1.33 s against 1.31 s" is within noise. | fact-check claims 22a-c | Accepted-immutable (override row); the merge message states 128 names |
 
+### Fix-commit drift check (lite, 84e597ae..4dba56dc)
+
+One finding, refuted: "the HOME-newline test expects docs/other.md imported in its second loop" (Medium, test-prose-mismatch). That loop's walk fails, and a failed walk answers imported for every path, the suite's fail-closed convention; a comment saying so was added to the test.
+
 ### 🧩 Composition check
 
 - `dev-cycle-read.sh:733-735, 838-841, 857-866` (security 1, architecture F1): one defect stated in full by both sources; merged as A1 (`distinct defects` does not apply: same mechanism, convergent).
