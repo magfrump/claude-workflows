@@ -1,8 +1,9 @@
-Commit: f56ba3f5
+Commit: 3908e37e
+Loop closed at 3908e37e
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b1` (U2b3b1: the reader settings, `Reader roots:` and `Reader homes:`, for both import walks), on main f8d003c7.
-**Status: 🟡 ITERATION 2 (final confirming pass, k=3, full panel) — no red; one amber (security final F1, Medium: main named only the host spelling) fixed in 3908e37e with the rest of the pass's findings; 3908e37e awaits iteration 3's confirming pass. Single-sample review; absence of findings is not an attestation.**
+**Status: ✅ ITERATION 3 (confirming pass over 3908e37e) — no red, no amber; the loop converged in 3 iterations: 0 Must Fix; Must Address: 3 fixed (B1, B2, A2's no-main half), 2 acknowledged with revisit triggers (A1, A2's redirect half). Comment-only follow-ups in the commit after 3908e37e. Single-sample review; absence of findings is not an attestation.**
 
 ## Iteration 1 (Commit 8ed86432, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
@@ -96,3 +97,13 @@ None.
 None.
 
 Tokens: fc 3 x ~190k, critics 120k + 99k + 104k + 102k ≈ 990k.
+
+## Iteration 3 (Commit 3908e37e, confirming pass, k=1, scope `f56ba3f5..3908e37e`: fact-check + security)
+
+Reports: `code-fact-check-report-build-loop-u2b3b1-confirm.md` (22 claims: 20 Verified, 2 Mostly accurate), `security-review-2026-10-09-u2b3b1-confirm.md` (no Critical to Low; 2 Informational). Lite fix-drift over a code-only scratch commit of the range: no findings. B1 and H1 confirmed by execution (the two-way test fails on f56ba3f5's lib); edge cases of the two-way loop (a caller root equal to the main record, blank entries, `/`, nested roots) fail closed or add only roots.
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| I1 | Nested reader roots make the two-way loop add unused roots. | security confirm I1; fact-check confirm observation | Won't-Fix: override row. |
+| I2 | Contract item 9's "after it" is unclear. | security confirm I2 | Fixed (comment) after 3908e37e. |
+| I3 | "1.5-1.7 s per walk" (1.34 s at low load); a test comment still said "the host alias and HOME". | fact-check confirm (Mostly accurate) | Fixed (comments) after 3908e37e. |

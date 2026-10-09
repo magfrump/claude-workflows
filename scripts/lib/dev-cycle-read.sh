@@ -87,8 +87,8 @@
 #     lists) and resolve_main, before a decision's first walk: it sets
 #     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md
 #     (host spellings of the main worktree and host HOMEs), or IMPORT_READER_WHY,
-#     which fails both walks; both scripts call it. Never set these from the
-#     environment or after it, nor
+#     which fails both walks; both scripts call it. Never set these yourself
+#     (from the environment or after reader_settings), nor
 #     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -744,7 +744,7 @@ IMPORT_OUT_MAX=4000000
 # the honest walks spend this bound near 570 roots and then fail closed:
 # prune the registry (git worktree prune) long before (U2b3a i2 performance F1).
 # Roots are about (1 + C) times the worktrees for C host aliases (G8): with
-# one, near 285 worktrees (49 roots here: 1.5-1.7 s per walk; U2b3b1 i1 performance F1).
+# one, near 285 worktrees (49 roots here: about 1.3-1.7 s per walk, by load; U2b3b1 i1 performance F1).
 # A quote left open is charged per line for all its text so far, so an
 # unclosed @" followed by about 90 KB with no " spends the bound and fails
 # the walk (fail-closed; U2a4 confirm2 security C1, override row).

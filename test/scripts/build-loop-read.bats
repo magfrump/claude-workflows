@@ -74,7 +74,7 @@ setup() { bl_setup; }
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
     [[ "$(line policy)" == "policy review unset: line "*' is not exactly "Build-loop policy: self-merge" or "Build-loop policy: review"' ]] \
         || { echo "$output"; return 1; }
-    # The host alias and HOME (Q-121, Q-123), and no prose line read as a copy.
+    # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
     [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
 }
 
