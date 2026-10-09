@@ -1673,6 +1673,9 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     echo q > '"q"'; commit_all quote; coref "$NAME"
     git rm -q '"q"'; commit_all unquote; cook
     echo r > $'r\r'; commit_all cr; coref "$NAME"
+    git rm -q $'r\r'; commit_all uncr; cook
+    # A newline in a name is read as one index entry, so the name rule names it (final fact-check claim 14).
+    echo n > $'n\nl'; commit_all nl; coref "$NAME"
 }
 
 @test "--check judges a review brief without its checkout, and a self-merge brief's checkout after its paths, so a loop's advisory run from its branch still lists them (U2b2 i1 api F1, architecture F2)" {

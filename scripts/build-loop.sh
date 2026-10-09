@@ -122,7 +122,8 @@
 #                 GIT_CONFIG and the like; the caller's GIT_CONFIG_PARAMETERS
 #                 and GIT_CONFIG_COUNT pairs, GIT_NO_REPLACE_OBJECTS and
 #                 GIT_PREFIX aside); core.symlinks false, core.ignoreCase or
-#                 core.sparseCheckout true, or one of them unreadable; an
+#                 core.sparseCheckout true (a value git cannot read as a
+#                 boolean stops git itself first: exit 1, no line); an
 #                 index entry marked skip-worktree, assume-unchanged or
 #                 unmerged; a change git status shows (untracked files
 #                 aside), or git status failing or warning; an untracked
@@ -626,8 +627,8 @@ nrules() {
 # checked out with any file, fails. Needs GATE_TMP.
 CHECKOUT_WHY=""
 checkout_gate() {
-  # The C locale: under UTF-8 a regex . does not match an invalid byte, and a
-  # record skipped for its name would escape the byte comparison.
+  # The C locale: under UTF-8 a regex . does not match an invalid byte, so a
+  # record with such a name would fail to parse (and be refused as unreadable).
   local -x LC_ALL=C  # exported: tr, awk and git run under it too
   local v x rc r n p ps=() ids=() re=$'^([01234567]{6}) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
   CHECKOUT_WHY=""
@@ -640,6 +641,7 @@ checkout_gate() {
   [[ "$x" == "$MAIN_SHA" ]] || { CHECKOUT_WHY="the checkout's HEAD is $x, not the default branch's commit $MAIN_SHA"; return 1; }
   for v in "core.symlinks false: a symlink is checked out as a file holding its text" \
     "core.ignoreCase true: a case-insensitive checkout" "core.sparseCheckout true: a sparse checkout"; do
+    # rc above 1 is a defensive branch: git refuses a bad boolean before any command runs.
     rc=0; x="$(git config --type=bool --get "${v%% *}" 2>/dev/null)" || rc=$?
     r="${v#* }"
     [[ "$rc" -le 1 ]] || { CHECKOUT_WHY="${v%% *} could not be read"; return 1; }
@@ -647,7 +649,8 @@ checkout_gate() {
   done
   # ls-files -v tags each entry: H is plain; S is skip-worktree, lower case is
   # assume-unchanged (git status skips a change under either), M is unmerged.
-  n="$(git ls-files -v -z | tr '\0' '\n' | awk 'substr($0, 1, 2) != "H " { n++ } END { print n + 0 }')" \
+  # perl -0 reads NUL-ended records, so a name holding a newline is one entry.
+  n="$(git ls-files -v -z | LC_ALL=C perl -0ne '$n++ unless /^H /; END { print $n + 0 }')" \
     || { CHECKOUT_WHY="the checkout's index could not be listed"; return 1; }
   [[ "$n" == 0 ]] || { CHECKOUT_WHY="the checkout's index marks entries skip-worktree, assume-unchanged or unmerged"; return 1; }
   # To a file: bash would warn on stderr about the NULs a $(...) drops.
@@ -656,8 +659,8 @@ checkout_gate() {
   [[ ! -s "$GATE_TMP/status" ]] || { CHECKOUT_WHY="the checkout's index or tracked files differ from that commit (git status)"; return 1; }
   # Without --exclude-standard every untracked file is listed, ignored ones too,
   # and a nested repository as its directory with a trailing / (no file name
-  # holds a /). Listed to a file first: under pipefail a reader that stops
-  # early, or finds nothing, would hide a failed listing.
+  # holds a /). Listed to a file first, so the listing's own status is
+  # checked apart from the count (a pipe's status mixes the two).
   git ls-files -z --others > "$GATE_TMP/others" || { CHECKOUT_WHY="the checkout's untracked files could not be listed"; return 1; }
   x="$(tr '\0' '\n' < "$GATE_TMP/others" | awk '/\/$/ { n++ } END { print n + 0 }')" || x=x
   [[ "$x" == 0 ]] || { CHECKOUT_WHY="the checkout holds an untracked nested repository, whose instruction files the walk does not read"; return 1; }
@@ -734,8 +737,8 @@ check_line() {
   # below and only when co is empty (never over a checkout refused here); its
   # refusal replaces the verdict line only, so the N rules' path and deny lines
   # still print (a loop's advisory run from its own branch learns them). Run
-  # per brief, so each decision sees the checkout as it is: about 0.25 s here,
-  # times the self-merge briefs in one --check (at most the slot count).
+  # per brief, so each decision sees the checkout as it is: about 0.3 s here,
+  # times the self-merge briefs passed to one --check.
   co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
