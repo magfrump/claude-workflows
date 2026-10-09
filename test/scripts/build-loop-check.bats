@@ -1706,3 +1706,92 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     # git status already fails on a symlink there (exit 128), before the gitlink rule reads it.
     coref "git status failed or warned in the checkout"
 }
+
+# U2b3a, the reader model's roots and homes (plan step 5): a session reading the
+# repo from another checkout or HOME resolves names the gate's own root does not.
+
+@test "both walks read an absolute name into another worktree of the repo as that repo path, as the gate runs from its own worktree (U2b3a)" {
+    mkdir -p docs && r="$(pwd -P)"
+    printf 'See @%s/docs/abs.md\n' "$r" > AGENTS.md; echo x > docs/abs.md; commit_all abs
+    git worktree add -q --detach ../gate && cd ../gate
+    for w in tree main; do
+        imps "$w" docs/abs.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/abs.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks resolve a relative name against every worktree's directory, so it can re-enter a nested or sibling worktree (U2b3a; rows 425, 432)" {
+    mkdir -p docs && echo n > docs/n.md && echo s > docs/s.md
+    # From the main checkout, .claude/wt-b/ is a nested worktree; from wt-b, ../side/ is its sibling.
+    printf 'See @.claude/wt-b/docs/n.md and @../side/docs/s.md\n' > AGENTS.md; commit_all rel
+    git worktree add -q --detach .claude/wt-b; git worktree add -q --detach .claude/side
+    git worktree add -q --detach ../gate && cd ../gate
+    for w in tree main; do
+        imps "$w" docs/n.md docs/s.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/n.md imported; want docs/s.md imported; want docs/other.md -
+    done
+}
+
+@test "the caller's reader roots and homes add the host checkout's spellings, and only add (U2b3a; rows 425, 437; Q-121, Q-123)" {
+    mkdir -p docs
+    printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md\n' > AGENTS.md; commit_all host
+    for w in tree main; do
+        imps "$w" docs/h.md docs/a.md
+        want walk ok; want docs/h.md -; want docs/a.md -
+        IMPORT_READER_ROOTS=/host/cw IMPORT_READER_HOMES=/host imps "$w" docs/h.md docs/a.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/h.md imported; want docs/a.md imported
+        # A root inside the repo projects there too, and the name under ROOT_REAL is kept.
+        printf 'See @docs/k.md\n' > CLAUDE.md
+        IMPORT_READER_ROOTS="$(pwd -P)/docs" imps "$w" docs/k.md k.md
+        want walk ok; want docs/k.md imported; want k.md imported
+        rm CLAUDE.md
+    done
+}
+
+@test "both walks fail closed on a reader root or home they cannot model, and when git worktree list fails (U2b3a)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all bad
+    for w in tree main; do
+        for v in "IMPORT_READER_ROOTS=rel/cw" "IMPORT_READER_ROOTS=/" "IMPORT_READER_ROOTS=//" "IMPORT_READER_HOMES=rel" \
+                 "IMPORT_READER_ROOTS=/a"$'\n'"rel" "IMPORT_READER_HOMES=/h"$'\n'"rel"; do
+            export "${v?}"; imps "$w" docs/a.md docs/other.md; unset IMPORT_READER_ROOTS IMPORT_READER_HOMES
+            want walk failed; want docs/other.md imported
+        done
+        # Blank lines between entries are skipped, not refused.
+        IMPORT_READER_ROOTS=$'/a\n\n/b\n' imps "$w" docs/a.md; want walk ok
+    done
+    S="$BATS_TEST_TMPDIR/wt" && mkdir -p "$S"
+    printf '#!/bin/sh\n[ "$1" = worktree ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$S/git" && chmod +x "$S/git"
+    for w in tree main; do
+        PATH="$S:$PATH" imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+    done
+}
+
+@test "a worktree path holding a newline fails both walks (U2b3a)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all nl
+    git worktree add -q --detach "$BATS_TEST_TMPDIR/a"$'\n'"b" || skip "git refused a worktree path holding a newline"
+    for w in tree main; do
+        imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+    done
+}
+
+@test "both walk caches key on the reader set, so a changed reader root or home walks again without import_reset (U2b3a; row 437)" {
+    mkdir -p docs && printf 'See @/host/cw/docs/a.md and @~/cw/docs/h.md\n' > AGENTS.md && commit_all key
+    run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"
+        resolve_main || true; ROOT_REAL="$(pwd -P)"
+        for w in tree main; do
+            unset IMPORT_READER_ROOTS IMPORT_READER_HOMES
+            isimported "$w" docs/a.md && echo "$w a0: imported" || echo "$w a0: -"
+            IMPORT_READER_ROOTS=/host/cw
+            isimported "$w" docs/a.md && echo "$w a1: imported" || echo "$w a1: -"
+            isimported "$w" docs/h.md && echo "$w h1: imported" || echo "$w h1: -"
+            IMPORT_READER_HOMES=/host
+            isimported "$w" docs/h.md && echo "$w h2: imported" || echo "$w h2: -"
+        done' _ "$LIB"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    for w in tree main; do want "$w a0" -; want "$w a1" imported; want "$w h1" -; want "$w h2" imported; done
+}
