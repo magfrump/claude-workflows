@@ -113,7 +113,9 @@
 #                 for a brief --status reads as self-merge, "a self-merge
 #                 brief needs --check run from a clean checkout of the
 #                 default branch's commit; WHY" (the text up to "; " is
-#                 fixed; path and deny lines follow it as they follow ok):
+#                 fixed, but a WHY naming a read failure is not one a clean
+#                 checkout cures; path and deny lines follow it as they
+#                 follow a K of N refusal):
 #                 the checkout --check runs from (the self-merge floor reads
 #                 it) has its HEAD at another commit; a repo-local git
 #                 variable set (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE,
@@ -125,7 +127,7 @@
 #                 unmerged; a change git status shows (untracked files
 #                 aside), or git status failing or warning; an untracked
 #                 nested repository, or a gitlink's path that is a symlink,
-#                 cannot be listed or holds files; a file main stores whose
+#                 cannot be listed or holds files; a regular file main stores whose
 #                 name holds a newline, starts with a quote or ends with a
 #                 CR (the byte comparison cannot read it); or a regular file
 #                 whose bytes are not main's blob (a filter,
@@ -729,8 +731,11 @@ check_line() {
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
   # A self-merge brief's checkout (contract items 2 and 3), checked once the
   # merge's paths are read and before U2c's floor walk, which runs per path
-  # below; its refusal replaces the verdict line only, so the path lines still
-  # print (a loop's advisory run from its own branch learns them).
+  # below and only when co is empty (never over a checkout refused here); its
+  # refusal replaces the verdict line only, so the N rules' path and deny lines
+  # still print (a loop's advisory run from its own branch learns them). Run
+  # per brief, so each decision sees the checkout as it is: about 0.25 s here,
+  # times the self-merge briefs in one --check (at most the slot count).
   co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a

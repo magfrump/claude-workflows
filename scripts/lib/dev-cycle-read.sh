@@ -54,7 +54,7 @@
 #     reads (.gitattributes, $GIT_DIR/info/attributes, core.attributesFile).
 #     The walk checks neither item but item 2's ls-files stderr rule.
 #     build-loop.sh --check does, for each self-merge brief before the walk
-#     (U2b2): harden and its state gate own item 2's fsmonitor and replace
+#     (U2b2; item 1's LC_ALL=C for the walk is its U2c floor caller's): harden and its state gate own item 2's fsmonitor and replace
 #     refs; checkout_gate the rest of item 2 (a clean checkout at MAIN_SHA, the
 #     GIT_* variables, core.ignoreCase, sparse checkout), core.symlinks, and
 #     the attributes by their effect, not by check-attr: every regular file
