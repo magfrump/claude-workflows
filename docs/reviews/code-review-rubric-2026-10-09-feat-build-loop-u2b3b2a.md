@@ -1,8 +1,45 @@
-Commit: 55490d15
+Commit: f7a96eed
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2a` (U2b3b2a: the parser's second channel and both walks following imports to files below no reader root), on main b7728cfd.
-**Status: 🟡 ITERATION 1 (Commit 55490d15) — no red; two fail-open findings (A1, A2) and the structural ambers fixed in the iteration-1 fix commit; 10 findings declined with override rows. Next: iteration 2 over the fix range.**
+**Status: 🟡 ITERATION 2 (Commit f7a96eed) — no red; iteration 1's A1, A2, A4 verified fixed (mutants executed); iteration 2's findings are text only, fixed in its fix commit; 15 findings declined with override rows in all. Next: iteration 3, the final confirming pass (k=3, full panel, full branch).**
+
+## Iteration 2 (Commit f7a96eed, `--loop-pass`, k=1, scope `55490d15..f7a96eed`, full panel)
+
+Delivery mode: self-read, partial-scope label. Fact-check first, then the four critics in parallel with its results. Reports: `code-fact-check-report-build-loop-u2b3b2a-i2.md` (k=1: 30 claims, 27 Verified, 2 Mostly accurate, 1 Incorrect; 22 executed; the three fix mutants each fail a test), `security-review-2026-10-09-u2b3b2a-i2.md`, `performance-review-2026-10-09-u2b3b2a-i2.md`, `api-consistency-review-2026-10-09-u2b3b2a-i2.md`, `architecture-review-2026-10-09-u2b3b2a-i2.md`. No short-circuit: the one Incorrect is a commit-message claim (🟡 under tier policy T).
+
+Prior Must Address: A1 resolved, A2 resolved, A4 resolved in code (its header half finished here, B1); A3 acknowledged (row).
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | import_file's header did not say an absolute FILE needs IMPORT_WORK_LEFT and returns 1 without it; commit 18fba03d claims both headers say it. U2b3b2b's seeds are its first non-walk caller. | Incorrect (commit message) / Inconsistent | fact-check Claim 24; api F1; architecture N1; security F1 | Fixed: import_file's header states the duty and that 1 is a failed walk, never a skip; commit message: Accepted-immutable row. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| H1 | import_outside's returns-1 list omits IMPORT_WORK_LEFT unset and an import_targets failure. | fact-check Claim 12 | Fixed (comment). |
+| H2 | The newline test's title says both walks; only the tree-walk half pins A2. | fact-check Claim 20a | Fixed (title). |
+| H3 | Why only IMPORT_WHOLE is cleared at source; it is a global mode a caller could set. | api F2; architecture N3 | Fixed (comment: a one-call prefix only; the walks set the two budgets per call). |
+| H4 | main_imports' failure list omits an outside-file read. | architecture N4 | Fixed (comment). |
+| H5 | An outside file changed during the walk is read as it then is. | security F2 | Fixed (walk header). |
+| H6 | `outside_ok`'s naming. | api F3 | Won't-Fix: override row. |
+| H7 | import_file's DIR is ignored for an absolute FILE. | architecture N2 | Won't-Fix: override row (documented). |
+| H8 | outside_ok's call cost; import_outside's realpath -ez cost. | performance F1, F2 | Won't-Fix: override rows (measured, small). |
+
+### 🧩 Composition check
+
+- import_file / import_outside headers (fact-check 24, 12; api F1; architecture N1; security F1): one defect stated by every fragment (the missing IMPORT_WORK_LEFT clause), already B1; no composition.
+
+Override rows this iteration: 5 (B1's commit message, H6, H7, H8 ×2), counts equal.
+
+Tokens: fact-check 167k, security 110k, performance 90k, api 96k, architecture 97k ≈ 560k.
 
 ## Iteration 1 (Commit 55490d15, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
