@@ -1876,7 +1876,7 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     done
     # The floor names the cause (U2b3b1 i1 api-consistency F1).
     T_SETTINGS=1 floors 2026-10-01-x A docs/other.md
-    want docs/other.md "the reader settings of docs/dev-cycle.md cannot be used (more than one line starts \"Reader roots:\" (lines 1 and 3)), so the instruction files could not be walked for @ imports"
+    want docs/other.md "the default branch's instruction files could not be walked for @ imports: the reader settings of docs/dev-cycle.md cannot be used: more than one line starts \"Reader roots:\" (lines 1 and 3)"
     # Refused settings fail import_targets outside a walk too, which reads no memo (i1 security F2).
     run --separate-stderr bash -c 'source "$1"; ROOT_REAL="$(pwd -P)"; IMPORT_READER_WHY=x; printf "@docs/a.md\n" | import_targets ""; echo "rc=$?"' _ "$LIB"
     [ "$output" = "rc=1" ] || { echo "$output $stderr"; return 1; }
@@ -1892,6 +1892,12 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         T_READER_ROOTS=/host/cw imps "$w" docs/n.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/n.md imported; want docs/other.md -
+    done
+    # The other way: a worktree registered beneath a caller root (a host session's) is spelled beneath main's (final security F2).
+    m="$(cd ../repo && pwd -P)"; printf 'See @%s/.claude/wt-h/docs/n.md\n' "$m" > ../repo/AGENTS.md
+    git -C ../repo commit -qam back && git worktree add -q --detach "$BATS_TEST_TMPDIR/host/cw/.claude/wt-h" && git checkout -q --detach main
+    for w in tree main; do
+        T_READER_ROOTS="$BATS_TEST_TMPDIR/host/cw" imps "$w" docs/n.md; want walk ok; want docs/n.md imported
     done
 }
 

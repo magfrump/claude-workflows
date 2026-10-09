@@ -56,8 +56,8 @@
 #             otherwise, and for every path when the import walk fails. The
 #             walk also models the host readers the default branch's
 #             docs/dev-cycle.md names ("Reader roots:", "Reader homes:"; see
-#             build-loop.sh --settings), and fails when those lines are malformed
-#             or no default branch is found by name.
+#             build-loop.sh --settings), and fails when those lines are malformed,
+#             the file is not read, or no default branch is found by name.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
 #             branch's commit (an answer only in the working tree is not seen:
@@ -183,7 +183,7 @@ check_fix() {
   elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
   elif truthwalk tree "$lp"; then
-    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then echo "skip $a: the reader settings of docs/dev-cycle.md cannot be used ($IMPORT_READER_WHY), so the instruction-file import walk failed; file it instead"
+    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out: the reader settings of docs/dev-cycle.md cannot be used: $IMPORT_READER_WHY; file it instead"
     elif [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
     else echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"; fi
   else check_path "$a"; fi

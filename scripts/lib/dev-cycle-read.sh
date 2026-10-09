@@ -87,7 +87,8 @@
 #     lists) and resolve_main, before a decision's first walk: it sets
 #     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md
 #     (host spellings of the main worktree and host HOMEs), or IMPORT_READER_WHY,
-#     which fails both walks; both scripts call it. Never set
+#     which fails both walks; both scripts call it. Never set these from the
+#     environment or after it, nor
 #     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -595,7 +596,7 @@ reader_settings() {
   local -A cnt=() first=() second=() next=() text=() rd_seen=()
   IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""; IMPORT_READER_WHY=""
   if ! main_by_name; then
-    IMPORT_READER_WHY="no default branch was found by name, so its reader settings cannot be read"
+    IMPORT_READER_WHY="no default branch was found by name (origin/HEAD, main or master)"
     READERS_LINE="readers malformed: $IMPORT_READER_WHY; both import walks fail"; return 0
   fi
   if ! main_file "$f" "$SETTINGS_AWK"; then
@@ -743,7 +744,7 @@ IMPORT_OUT_MAX=4000000
 # the honest walks spend this bound near 570 roots and then fail closed:
 # prune the registry (git worktree prune) long before (U2b3a i2 performance F1).
 # Roots are about (1 + C) times the worktrees for C host aliases (G8): with
-# one, near 285 worktrees (49 roots here: 1.5 s per walk; U2b3b1 i1 performance F1).
+# one, near 285 worktrees (49 roots here: 1.5-1.7 s per walk; U2b3b1 i1 performance F1).
 # A quote left open is charged per line for all its text so far, so an
 # unclosed @" followed by about 90 KB with no " spends the bound and fails
 # the walk (fail-closed; U2a4 confirm2 security C1, override row).
@@ -793,7 +794,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; it is kept only when it lies below
 # a reader root (import_readers: ROOT_REAL, every registered worktree, the
-# caller's IMPORT_READER_ROOTS), and printed relative to each root holding
+# caller's IMPORT_READER_ROOTS, worktrees re-spelled under these), and printed relative to each root holding
 # it but an outer one whose path down to a nested root holding it has a dot
 # component (the parser's dotnest; truthrule's dot word must keep refusing
 # every such path). A relative name is resolved against each root's copy of its
@@ -973,9 +974,8 @@ import_home() {
 # which both walks take before their cache check and key on. IMPORT_ROOTS
 # holds ROOT_REAL, every path git worktree list registers for this repository
 # (prunable ones too: a host path such as /home/magfrump/cw-egress-verify),
-# each IMPORT_READER_ROOTS entry and, beneath each such entry, every
-# registered worktree that lies beneath the main worktree (the first record),
-# re-spelled there; IMPORT_HOMES holds import_home's two spellings and
+# each IMPORT_READER_ROOTS entry and, beneath each of these and the main
+# worktree (the first record), every registered worktree beneath any of them; IMPORT_HOMES holds import_home's two spellings and
 # IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
 # home first, and lists every entry as written and as realpath -m reads it,
 # once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
@@ -1008,7 +1008,7 @@ import_readers_key() {
   IMPORT_READERS_KEY="${#a}:$a ${#b}:$b ${#c}:$c ${#d}:$d ${#e}:$e"
 }
 import_readers() {
-  local p rs_m="" rs_cr rs_l=() rs_w=() rs_c=() rs_r=() rs_h=() rs_x=() rs_real=() rs_ro=() rs_ho=() i n t; local -A rs_seen=()
+  local p rs_m=() rs_cr rs_l=() rs_w=() rs_c=() rs_r=() rs_h=() rs_x=() rs_real=() rs_ro=() rs_ho=() i n t; local -A rs_seen=()
   import_home || return 1
   import_readers_key
   # A refusal is memoized too, as an empty IMPORT_ROOTS (a result never is:
@@ -1021,15 +1021,14 @@ import_readers() {
   nul_list rs_l git worktree list --porcelain -z || return 1
   for p in "${rs_l[@]}"; do [[ "$p" != "worktree "* ]] || rs_w+=("${p#worktree }"); done
   # The first record is the main worktree, which each caller root spells on a
-  # host, so the worktrees registered beneath it are spelled beneath each
-  # caller root there too (U2b3a i1 architecture F4).
-  [[ ${#rs_w[@]} -eq 0 ]] || rs_m="${rs_w[0]}"
+  # host, so a worktree registered beneath any spelling of it (one a host
+  # session added too) is spelled beneath every other (U2b3a i1 architecture
+  # F4, U2b3b1 final security F2).
+  [[ ${#rs_w[@]} -eq 0 ]] || rs_m=("${rs_w[0]}")
   [[ -z "$IMPORT_READER_ROOTS" ]] || mapfile -t rs_c <<<"$IMPORT_READER_ROOTS"
   rs_r=("$ROOT_REAL" "${rs_w[@]}")
-  for rs_cr in "${rs_c[@]}"; do
-    [[ -n "$rs_cr" ]] || continue
-    rs_r+=("$rs_cr"); for p in "${rs_w[@]}"; do [[ -z "$rs_m" || "$p" != "$rs_m"/* ]] || rs_r+=("$rs_cr${p#"$rs_m"}"); done
-  done
+  for rs_cr in "${rs_c[@]}"; do [[ -z "$rs_cr" ]] || { rs_r+=("$rs_cr"); rs_m+=("$rs_cr"); }; done
+  for p in "${rs_w[@]}"; do for rs_cr in "${rs_m[@]}"; do [[ "$p" != "$rs_cr"/* ]] || for t in "${rs_m[@]}"; do rs_r+=("$t${p#"$rs_cr"}"); done; done; done
   [[ -z "$IMPORT_READER_HOMES" ]] || mapfile -t rs_h <<<"$IMPORT_READER_HOMES"
   # The roots and the caller's homes, blank lines dropped, checked and then
   # resolved in one realpath call (a fork per root cost 14 ms over 24 roots).
@@ -1413,7 +1412,7 @@ floor() {
   elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a working file that is not this brief's own (they carry its full stem)"
   elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
   elif truthwalk main "$lp"; then
-    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then FLOOR_WHY="the reader settings of docs/dev-cycle.md cannot be used ($IMPORT_READER_WHY), so the instruction files could not be walked for @ imports"
+    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports: the reader settings of docs/dev-cycle.md cannot be used: $IMPORT_READER_WHY"
     elif [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
     else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
   else return 1; fi

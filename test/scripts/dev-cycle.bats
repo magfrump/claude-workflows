@@ -1409,16 +1409,15 @@ skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
     [ "${lines[0]}" = "ok docs/notes.md" ] && [ "${lines[1]}" = "ok docs/h.md" ] || { echo "$output $stderr"; return 1; }
-    printf 'Reader roots: /host/cw\n\nReader homes: /host\n' > docs/dev-cycle.md && git add -A && git commit -qm readers
-    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
+    printf 'Reader roots: /host/cw\n\nReader homes: /host\n' > docs/dev-cycle.md && git add -A && git commit -qm readers; run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
     [[ "${lines[0]}" == "skip docs/notes.md: an instruction file names it"* && "${lines[1]}" == "skip docs/h.md: an instruction file names it"* ]] \
         || { echo "$output $stderr"; return 1; }
-    printf 'Reader roots: host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm bad
-    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
-    [[ "${lines[0]}" == "skip docs/notes.md: the reader settings of docs/dev-cycle.md cannot be used (line 1 lists entry 1, "* \
-        && "${lines[1]}" == "skip docs/h.md: the reader settings of docs/dev-cycle.md cannot be used"* ]] || { echo "$output $stderr"; return 1; }
+    printf 'Reader roots: host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm bad; run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
+    W='the instruction-file import walk failed, so an import of it cannot be ruled out: the reader settings of docs/dev-cycle.md cannot be used: '
+    [[ "${lines[0]}" == "skip docs/notes.md: ${W}line 1 lists entry 1, "* && "${lines[1]}" == "skip docs/h.md: $W"* ]] || { echo "$output $stderr"; return 1; }
     # With no default branch found by name the settings cannot be read: fail closed.
     printf 'Reader roots: /host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm good && git branch -m main trunk
-    run --separate-stderr bash "$DC" --check-fix docs/notes.md
-    [[ "$output" == "skip docs/notes.md: the reader settings of docs/dev-cycle.md cannot be used (no default branch was found by name"* ]] || { echo "$output $stderr"; return 1; }
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
+    [ "${lines[0]}" = "skip docs/notes.md: ${W}no default branch was found by name (origin/HEAD, main or master); file it instead" ] \
+        && [[ "${lines[1]}" == "skip docs/h.md: ${W}no default branch"* ]] || { echo "$output $stderr"; return 1; }
 }

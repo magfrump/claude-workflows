@@ -75,7 +75,7 @@ setup() { bl_setup; }
     [[ "$(line policy)" == "policy review unset: line "*' is not exactly "Build-loop policy: self-merge" or "Build-loop policy: review"' ]] \
         || { echo "$output"; return 1; }
     # The host alias and HOME (Q-121, Q-123), and no prose line read as a copy.
-    [ "$(line readers)" = "readers 1-roots 1-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
+    [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
 }
 
 @test "--settings reads main's commit: the working tree and other branches never decide (T4)" {
@@ -496,10 +496,8 @@ setup() { bl_setup; }
     settings_is readers 'readers none: no line starts "Reader roots:" or "Reader homes:"'
     git rm -q docs/dev-cycle.md && commit_all gone
     settings_is readers "readers none: no docs/dev-cycle.md on the default branch"
-    settings 'Reader roots: /host/cw /host/cw-2' '' 'Reader homes: none'
-    settings_is readers "readers 2-roots 0-homes set: $W"
-    settings 'Reader homes: /home/u_1/x.y'
-    settings_is readers "readers 0-roots 1-homes set: $W"
+    settings 'Reader roots: /host/cw /host/cw-2' '' 'Reader homes: none'; settings_is readers "readers 2-roots 0-homes set: $W"
+    settings 'Reader homes: /home/u_1/x.y'; settings_is readers "readers 0-roots 1-homes set: $W"
     # One trailing CR is dropped, as on the policy line; a fenced copy is not read.
     printf 'Reader roots: /host/cw\r\n\n```\nReader roots: rel\n```\n' > docs/dev-cycle.md && commit_all cr
     settings_is readers "readers 1-roots 0-homes set: $W"
@@ -510,8 +508,7 @@ setup() { bl_setup; }
         settings "$v"; settings_is readers "$M"
         [[ "$output" != *caf* && "$output" != *'/a'* && "$output" != *'~/x'* && "$output" != *rel* ]] || { echo "echoed [$v]: $output"; return 1; }
     done
-    settings 'Reader roots: /a /b /a'
-    settings_is readers 'readers malformed: line 1 lists entry 3 twice; both import walks fail'
+    settings 'Reader roots: /a /b /a'; settings_is readers 'readers malformed: line 1 lists entry 3 twice; both import walks fail'
     N='readers malformed: line 1 is not exactly "Reader roots: PATH ..." with single spaces; both import walks fail'
     for v in 'Reader roots:' 'Reader roots: ' 'Reader roots: /a  /b' 'Reader roots:  /a' 'Reader roots: /a ' \
              'Reader roots : /a' 'reader roots: /a'; do
@@ -520,8 +517,7 @@ setup() { bl_setup; }
     # A copy in markup, a continued line, or a file FENCE_AWK refuses: malformed too.
     settings 'Reader homes: /h' '' '- **Reader homes:** /g'
     settings_is readers 'readers malformed: more than one line starts "Reader homes:" (lines 1 and 3); both import walks fail'
-    settings 'Reader roots: /a' '/b'
-    settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list); both import walks fail'
+    settings 'Reader roots: /a' '/b'; settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list); both import walks fail'
     settings 'Reader roots: /a' '' $'\x60\x60\x60'
     settings_is readers 'readers malformed: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read; both import walks fail'
     # Only main's commit decides: a loop's branch and the working tree are ignored.
