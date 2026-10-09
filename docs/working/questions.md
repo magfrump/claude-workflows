@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-137](#q-137--u2b3a-landing) | you: judgment | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -49,35 +48,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-137 · u2b3a-landing
-**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
-
-U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree reads `@/workspace/...` as every container session does) passed its final confirming pass with no red. May it land?
-
-- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
-- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b3a.md` and the merge message `docs/working/merge-msg-build-loop-u2b3a.md`, both on `feat/build-loop-u2b3a` at 275eb77c (worktree `.claude/wt-build-loop-u2b3a`).
-- **Evidence:**
-  - Three iterations, at the cap; no pass found a red.
-  - Iteration 1's three ambers were fixed in 4dba56dc. One was an executed fail-open my first build introduced: a stale worktree entry at `sub/` hid `sub/x.md`. The dotnest rule replaced the longest-root projection.
-  - Iteration 2 found only text, fixed in 3d2d8c44.
-  - The final pass (k=3, full panel, Stage 2.5) found 0 Incorrect claims, and three routed claims were Verified by execution.
-  - Over /workspace, both walks give main's 128 names, and a cached check takes 3 ms.
-  - Suites 114/19/78/2/2/53. The health check passed at eb578e3d. 360 code and test lines.
-- **Decided without you:**
-  - The parser prints every holding root's spelling except a dot-nested outer one. Printing every spelling cost 37× the output; printing only the longest root's hid names.
-  - The reader set is read once per decision, until import_reset.
-  - Sourcing the lib clears the caller lists, so the environment never sets them.
-  - The final pass's one amber is deferred to U2b3b, with its comment fixed: start files only another registered checkout holds are not walked. It is not a regression, and no tracked path is involved today.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Land it** | Merge `feat/build-loop-u2b3a` locally (`--no-ff`, the merge message above) after re-running the health check on the merge. | One answer. | eb578e3d's post-pass changes land reviewed only by the lite check and the suites: an empty-ROOT_REAL guard (with a test) and comment and plan text. |
-| **[2] One more confirming pass first** | A k=1 fact-check plus security over 3d2d8c44..eb578e3d, then ask again. | One answer now, one later. | Nothing; delay and about 300k tokens. |
-
-- **Blocks:** U2b3b and U2c (stacked on it).
-- **Interim:** nothing merges. Recommended: [1]. The one post-pass code change refuses an input no caller passes.
-- **If the answer differs:** [2] runs the pass and re-asks with its result.
 
 ### Q-117 · verify-egress-resolve-time-ipset
 **Needs:** you: terminal · **Opened:** 2026-10-05 · **Status:** OPEN

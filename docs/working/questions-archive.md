@@ -125,6 +125,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-134](#q-134--u2b1a1-landing) | U2b1a1 (the reader half of U2b1a: brief enumeration in the lib, reads that fail under a broken config skip,... | 2026-10-08 |
 | [Q-135](#q-135--u2b1b-landing) | U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and ... | 2026-10-08 |
 | [Q-136](#q-136--u2b2-landing) | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
+| [Q-137](#q-137--u2b3a-landing) | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
 <!-- index:end -->
 
 ## Answered
@@ -2393,5 +2394,35 @@ U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout 
 
 
 
+
+
+### Q-137 · u2b3a-landing
+**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** ANSWERED
+
+U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree reads `@/workspace/...` as every container session does) passed its final confirming pass with no red. May it land? **Answered 2026-10-09: [1].** Merged at 949c7c33; the health check passed on the merge. Standing instruction with the answer: merges and review adjustments like this one go ahead on the recommendation without asking.
+
+- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
+- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b3a.md` and the merge message `docs/working/merge-msg-build-loop-u2b3a.md`, both on `feat/build-loop-u2b3a` at 275eb77c (worktree `.claude/wt-build-loop-u2b3a`).
+- **Evidence:**
+  - Three iterations, at the cap; no pass found a red.
+  - Iteration 1's three ambers were fixed in 4dba56dc. One was an executed fail-open my first build introduced: a stale worktree entry at `sub/` hid `sub/x.md`. The dotnest rule replaced the longest-root projection.
+  - Iteration 2 found only text, fixed in 3d2d8c44.
+  - The final pass (k=3, full panel, Stage 2.5) found 0 Incorrect claims, and three routed claims were Verified by execution.
+  - Over /workspace, both walks give main's 128 names, and a cached check takes 3 ms.
+  - Suites 114/19/78/2/2/53. The health check passed at eb578e3d. 360 code and test lines.
+- **Decided without you:**
+  - The parser prints every holding root's spelling except a dot-nested outer one. Printing every spelling cost 37× the output; printing only the longest root's hid names.
+  - The reader set is read once per decision, until import_reset.
+  - Sourcing the lib clears the caller lists, so the environment never sets them.
+  - The final pass's one amber is deferred to U2b3b, with its comment fixed: start files only another registered checkout holds are not walked. It is not a regression, and no tracked path is involved today.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Land it** | Merge `feat/build-loop-u2b3a` locally (`--no-ff`, the merge message above) after re-running the health check on the merge. | One answer. | eb578e3d's post-pass changes land reviewed only by the lite check and the suites: an empty-ROOT_REAL guard (with a test) and comment and plan text. |
+| **[2] One more confirming pass first** | A k=1 fact-check plus security over 3d2d8c44..eb578e3d, then ask again. | One answer now, one later. | Nothing; delay and about 300k tokens. |
+
+- **Blocks:** U2b3b and U2c (stacked on it).
+- **Interim:** nothing merges. Recommended: [1]. The one post-pass code change refuses an input no caller passes.
+- **If the answer differs:** [2] runs the pass and re-asks with its result.
 
 
