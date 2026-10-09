@@ -1,8 +1,45 @@
-Commit: f7a96eed
+Commit: 82bb5281
+Loop closed at 82bb5281
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2a` (U2b3b2a: the parser's second channel and both walks following imports to files below no reader root), on main b7728cfd.
-**Status: 🟡 ITERATION 2 (Commit f7a96eed) — no red; iteration 1's A1, A2, A4 verified fixed (mutants executed); iteration 2's findings are text only, fixed in its fix commit; 15 findings declined with override rows in all. Next: iteration 3, the final confirming pass (k=3, full panel, full branch).**
+**Status: ✅ ITERATION 3 (final confirming pass over 82bb5281, k=3, full panel) — no red; the loop converged in 3 iterations: 0 Must Fix; Must Address: 4 fixed (A1, A2, A4, B1), 3 acknowledged with revisit triggers (A3, S1 routed to U2b3b2b; S2 a named exception). Final-pass text fixes in the commit after 82bb5281 (unreviewed; suites green). Single-sample review; absence of findings is not an attestation.**
+
+## Iteration 3: final confirming pass (Commit 82bb5281, no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: self-read. Fact-check first (three replicates, merged most-severe-wins into `code-fact-check-report-build-loop-u2b3b2a-final.md`; replicates `-final-r1/-r2/-r3.md`: 48/38/40 claims, 0 Incorrect, 1 Stale, 4 Mostly accurate, 1 Unverifiable; every count, red-on-main, mutant and line claim Verified by execution), then the four critics in parallel with the merged results: `security-review-2026-10-09-u2b3b2a-final.md`, `performance-review-…-final.md`, `api-consistency-review-…-final.md`, `architecture-review-…-final.md`. Stage 2.5 not run: security's two routed endorsements are executed in its own probe and match Verified fact-check claims. Before this pass, iteration 2's lite fix-drift check reported one finding (import_outside's IMPORT_WORK_LEFT case "not visible in the code"), refuted: the 1 comes through import_work's missing trailer, executed in iteration 2's fact-check.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| S1 | An outside link into another reader root (or through a linked directory) whose checkout lacks a file main has is skipped as missing: both walks answer `-` for a main file a session there loads once that checkout has it (executed). Admission precedes the projection. | Medium (not a regression) | security F1; fact-check Claim 2 (r2); architecture F1 | Acknowledged: named in the walk header; override row, Defer to U2b3b2b (revisit: its plan), whose symlinked seeds need the same projection-first order. |
+| S2 | An outside file whose name holds a newline, named only by a quoted mention across lines, is dropped by the parser (executed). | Medium (Low exploitability) | security F2; fact-check Claim 1 (r1, Stale) | Acknowledged: a named exception (walk header, put's comment); failing would break honest open quotes; override row (revisit: Claude Code's mention reader traced to span lines). |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| K1 | import_outside's returns-1 list lacked the summed IMPORT_WORK_MAX case; its "a read fails" held only under the caller's pipefail. | fact-check Claim 3; api F1 | Fixed: listed; import_outside and import_file set pipefail themselves. |
+| K2 | The walk header and import_outside disagreed about a file that changes during a walk. | api F2; architecture F2 | Fixed: one wording (edited: read; removed or unreadable: fails the walk). |
+| K3 | import_outside's header says "below no reader root"; it reads any absolute path (U2b3b2b's C1 seeds). | architecture F3 | Fixed (header). |
+| K4 | `//` names in the walk lists lengthen every lookup. | performance F1 | Defer: override row (U2b3b2b). |
+| K5 | Only the `//` arm keeps outside files in phase 2. | architecture F4 | Defer: override row (U2b3b2b). |
+| K6 | Commit 82bb5281 calls the list complete. | fact-check Claim 4 | Accepted-immutable: override row. |
+| K7 | A bind-mount alias of a reader root is untested. | fact-check r3 escalation; security | Defer: override row (U2b3b2b). |
+
+### 🧩 Composition check
+
+- outside_ok and both `//` arms (security F1, fact-check Claim 2, architecture F1): one root stated by architecture F1 itself (admission before projection), already S1; no composition.
+- import_outside's header (fact-check Claim 3, api F1, F2, architecture F2, F3): distinct text defects, K1-K3.
+
+Override rows this iteration: 6 (S1, S2, K4, K5, K6, K7), counts equal. Review converged in 3 iterations; 0 Must Fix; Must Address: 4 resolved, 3 acknowledged.
+
+Tokens: fact-check 207k + 200k + 189k, security 134k, performance 102k, api 108k, architecture 108k ≈ 1.05M.
 
 ## Iteration 2 (Commit f7a96eed, `--loop-pass`, k=1, scope `55490d15..f7a96eed`, full panel)
 
