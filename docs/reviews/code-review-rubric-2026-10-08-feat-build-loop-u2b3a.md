@@ -1,8 +1,8 @@
-Commit: 5516c6e6
+Commit: c9197fd2
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3a` (U2b3a: the reader model's roots and homes in the import parser), on main e50aab35.
-**Status: 🟡 ITERATION 1 — no red; three Must Address (a nested root at a non-dot path hides names, an executed fail-open; the caller's reader lists inherited from the environment; reader_set's per-call cost), all fixed after the pass with eleven of twelve Consider rows (unreviewed)**
+**Status: 🟡 ITERATION 1 — no red; three Must Address (a nested root at a non-dot path hides names, an executed fail-open; the caller's reader lists inherited from the environment; reader_set's per-call cost), all fixed; ITERATION 2 — no red; every iteration-1 fix holds; two text ambers (a stale superset sentence, inexact figures and a test row) fixed after the pass (unreviewed)**
 
 ## Iteration 1 (Commit 5516c6e6, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
@@ -55,3 +55,39 @@ Rows 425, 432 (this unit's target: other checkouts and homes), 437 (cache keys t
 ### Tokens
 
 fc 1×157k; critics 4× (security 156k, performance 141k, api 131k, architecture 147k) ≈ 730k total.
+
+## Iteration 2 (Commit c9197fd2, `--loop-pass`, k=1, scope `5516c6e6..c9197fd2` (scripts, test), full panel)
+
+Delivery mode: inline-diff-only (shared brief with the partial-scope label). Reports: `code-fact-check-report-build-loop-u2b3a-i2.md` (33 claims: 24 Verified, 7 Mostly accurate, 1 Stale, 1 Unverifiable, 0 Incorrect), `security-review-2026-10-08-u2b3a-i2.md`, `performance-review-2026-10-08-u2b3a-i2.md`, `api-consistency-review-2026-10-08-u2b3a-i2.md`, `architecture-review-2026-10-08-u2b3a-i2.md`. Iteration 1: A1, A2, A3, G1-G3, G5-G7, G10 verified resolved (security ran nine nesting shapes; architecture judged dotnest better than its own i1 suggestion, which would have failed every walk while a stale entry stayed registered); G4 partial (see B1, B2).
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | The superset statement still says names print "relative to the longest one holding it", the rule A1 replaced; and dotnest is safe only because truthrule's dot word refuses every omitted spelling, which neither comment said (a narrowed truthrule would reopen A1 with no test red). | Stale (doc) / Minor | fact-check i2 claim 9; api N1; architecture N1; security 2 | Fixed: the statement names dotnest; put's comment and truthrule's dot line cross-reference each other; a test pins truthrule's dot answer for two dot-nested spellings |
+| B2 | Inexact text: contract item 4's "read again only after a reset" (a memo-key change also re-reads); "0.1-4 s"/"about 7 s" (5.1 s and 8.8 s measured); "8,600 with one" (8,240); "a cached walk costs no fork" (need_root forks); the nested-root test's caller-root row did not nest over the name. | Mostly accurate | fact-check i2 claims 1, 6, 7b, 15b, 21; api N3; architecture N4; security 1 | Fixed: wording and figures corrected; item 9 says to set the lists before a decision's first walk; the test now runs a caller root at `sub/`, as written and through a symlink, after pruning the stale entry |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| H1 | Charged work now grows with the square of the root count: the honest walks reach the 50M bound near 570 roots (24 today) and then fail closed. | performance i2 F1 | Fixed (documented in the IMPORT_WORK_MAX comment, with `git worktree prune` as the remedy) |
+| H2 | The dotnest table is rebuilt in every parser process (~8 ms per walk at 24 roots). | performance i2 F2 | Defer (override row) |
+| H3 | `readers_key`/`READERS_KEY` lacked the `import_` prefix; the Inputs paragraph did not name the registry read. | api N2, N4 | Fixed (`import_readers_key`, `IMPORT_READERS_KEY`; Inputs line added) |
+| H4 | check_fix has no settings reader to set the lists contract item 9 asks for. | architecture N2 | Defer to U2b3b (override row, plan sub-bullet) |
+| H5 | import_targets falls back to ROOT_REAL alone without a current memo. | architecture N3 | Defer to U2b3b (override row) |
+| H6 | `T_READER_*` is honoured only by imps. | api N5 | Defer to U2c (override row) |
+| H7 | Commit 4dba56dc's figures (89 ms, 8,600, 324 lines). | fact-check i2 claims 26c-f | Accepted-immutable (override row); the merge message re-states them |
+
+### 🧩 Composition check
+
+- `dev-cycle-read.sh:679, 738-751, 1210` (fact-check 9, api N1, architecture N1, security 2): one root, B1 (the dotnest rule and the truthrule invariant it leans on, stated nowhere).
+- `dev-cycle-read.sh:64-67, 83-86` (fact-check 1, api N3, architecture N4): one root, folded into B2.
+
+### Tokens
+
+fc 1×189k; critics 4× (security 159k, performance 137k, api 134k, architecture 160k) ≈ 780k total.
