@@ -52,7 +52,9 @@
 #  3. Refuse a checkout whose core.symlinks is false or with a
 #     working-tree-encoding, filter or ident attribute on any path the walk
 #     reads (.gitattributes, $GIT_DIR/info/attributes, core.attributesFile).
-#     U2b builds this; the walk does not check it.
+#     The walk does not check items 2 and 3; build-loop.sh's checkout_gate
+#     does for --check (U2b2), item 3 by its effect: every regular file main
+#     stores hashes, unfiltered, to main's blob.
 #  4. Call import_reset before each gate decision and after any checkout
 #     change (rows 372, 439), or when HOME, IMPORT_OUT_MAX or IMPORT_WORK_MAX
 #     changes: neither walk's cache key holds them.

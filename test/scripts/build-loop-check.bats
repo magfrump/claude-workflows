@@ -1601,3 +1601,65 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state merge.x.driver: set in config, it can make the gate's git run a command or change its merge" ] || { show; return 1; }
 }
+
+# sm: self-merge on, brief x (self-merge, naming feat/x) and feat/x with one commit; B is its path.
+sm() { settings "Build-loop policy: self-merge" "Self-merge never: none"; brief x "Status: open" "Branch: feat/x" "Policy: self-merge"; work feat/x; }
+CO="a self-merge brief needs --check run from a clean checkout of the default branch's commit"
+# coref WHY: --check refused brief x for its checkout, with WHY. cook: --check passed it.
+coref() { chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse $B: $CO; $1" ] || { echo "want: $1"; show; return 1; }; }
+cook() { chk "$B"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] || { show; return 1; }; }
+IDX="its index marks entries skip-worktree, assume-unchanged or unmerged, or could not be listed"
+STAT="its index or tracked files differ from that commit (git status)"
+
+@test "--check refuses a self-merge brief unless it runs from a clean checkout of main: HEAD, env, config, index bits, status, nested repositories (contract item 2, U2b2)" {
+    sm; echo a > docs/a.md && commit_all a
+    # Untracked and ignored files are allowed: the walk reads them as they are.
+    echo '*.local.md' > .git/info/exclude; echo x > CLAUDE.local.md; echo y > untracked.md
+    cook
+    git checkout -q --detach HEAD~1; coref "its HEAD is not the default branch's commit $(git rev-parse main)"; git checkout -q main
+    echo b >> docs/a.md; coref "$STAT"; git checkout -q -- docs/a.md
+    echo n > new.md; git add new.md; coref "$STAT"; git rm -q --cached new.md
+    # Each index flag hides a change git status would show.
+    echo c >> docs/a.md; git update-index --assume-unchanged docs/a.md; coref "$IDX"
+    git update-index --no-assume-unchanged docs/a.md; git checkout -q -- docs/a.md
+    git update-index --skip-worktree docs/a.md; coref "$IDX"; git update-index --no-skip-worktree docs/a.md
+    cook
+    git config core.symlinks false; coref "core.symlinks is false or unreadable (a symlink is checked out as a file holding its text)"
+    git config --unset core.symlinks
+    git config core.ignoreCase true; coref "core.ignoreCase is true or unreadable (a case-insensitive checkout)"; git config core.ignoreCase false
+    git config core.sparseCheckout true; coref "core.sparseCheckout is true or unreadable (a sparse checkout)"; git config --unset core.sparseCheckout
+    cook
+    GIT_INDEX_FILE="$PWD/.git/index" chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: $CO; GIT_INDEX_FILE is set, so git can read another work tree, index or object store" ] || { show; return 1; }
+    git init -q nested; coref "it holds an untracked nested repository, whose instruction files the walk does not read"; rm -rf nested
+    cook
+}
+
+@test "--check refuses a self-merge brief whose checked-out bytes are not main's blob though git status is clean: ident and eol attributes (contract item 3, row 397, U2b2)" {
+    sm; mkdir -p docs
+    printf 'see @docs/x$Id$\n' > docs/i.md; printf 'docs/i.md ident\n' > .gitattributes; commit_all ident
+    rm docs/i.md; git checkout -q -- docs/i.md
+    grep -q 'Id: ' docs/i.md && [ -z "$(git status --porcelain)" ] || { cat docs/i.md; git status; return 1; }
+    WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"
+    coref "$WHY"
+    printf 'docs/i.md eol=crlf\n' > .gitattributes; commit_all crlf
+    rm docs/i.md; git checkout -q -- docs/i.md
+    [ -z "$(git status --porcelain)" ] || { git status; return 1; }
+    coref "$WHY"
+    git rm -q .gitattributes; commit_all plain; rm docs/i.md; git checkout -q -- docs/i.md
+    cook
+}
+
+@test "--check judges a review brief without its checkout; a gitlink checked out with files fails a self-merge brief (U2b2)" {
+    sm; settings "Build-loop policy: review"
+    echo d > dirty.txt; git add dirty.txt; git checkout -q --detach HEAD~1
+    cook
+    git checkout -q main; git rm -q --cached dirty.txt; rm dirty.txt
+    settings "Build-loop policy: self-merge" "Self-merge never: none"
+    cook
+    # A gitlink on main: an empty directory there passes; a file in it fails.
+    git update-index --add --cacheinfo "160000,$(git rev-parse HEAD),sub"; git commit -q -m gitlink
+    mkdir sub; cook
+    echo '@../docs/x.md' > sub/CLAUDE.md
+    coref "a gitlink is checked out with files, whose instruction files the walk does not read"
+}
