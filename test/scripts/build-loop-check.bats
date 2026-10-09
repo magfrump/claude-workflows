@@ -1790,6 +1790,9 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         # Blank lines between entries are skipped, not refused.
         T_READER_ROOTS=$'/a\n\n/b\n' imps "$w" docs/a.md; want walk ok
     done
+    # An empty ROOT_REAL is refused, not skipped, so a registered worktree never leads the roots (final fact-check 1).
+    run --separate-stderr bash -c 'source "$1"; ROOT_REAL=""; import_readers; echo "rc=$? [$IMPORT_READERS_DONE]"' _ "$LIB"
+    [ "$output" = "rc=1 []" ] || { echo "$output $stderr"; return 1; }
     S="$BATS_TEST_TMPDIR/wt" && mkdir -p "$S"
     printf '#!/bin/sh\n[ "$1" = worktree ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$S/git" && chmod +x "$S/git"
     for w in tree main; do

@@ -86,7 +86,8 @@
 #     (which clears them) and before a decision's first walk, from the
 #     default branch's settings (U2b3b), never
 #     from the environment: each is newline-separated absolute paths, the host
-#     spellings of this checkout and the host HOME (import_readers).
+#     spellings of this checkout and the host HOME (import_readers). Never set
+#     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
 # TAB and LF, DEL, C1 controls (U+0080-009F), bidi controls (U+200E/F,
@@ -573,7 +574,7 @@ prompt_bases() {
 # import_readers or the parser (its comment lists why) fails, the IMPORT_OUT_MAX
 # or IMPORT_WORK_MAX budget is spent, or a start file's name holds a newline (its callers in scripts/ test it under if or ||, where set -e is off); an
 # inrepo_here that fails skips its path. One result is cached, for the root in
-# IMPORTED_DONE, keyed on import_readers's roots (ROOT_REAL first) and homes; a
+# IMPORTED_DONE, keyed on import_readers' roots (ROOT_REAL first) and homes; a
 # call for another reader set recomputes it, and a cached error returns 1 again.
 # main_imports walks the default branch's commit instead, for the gate: it starts
 # at every start file stored there (isstart) and follows an import
@@ -605,13 +606,14 @@ prompt_bases() {
 # symlink (git does not list a FIFO). The walk reads the checkout as one
 # snapshot: a file swapped between its admission and its read is not seen.
 # IMPORTED_MAIN reads "error" until a walk succeeds; the result is cached for
-# the commit, MAIN_BY_NAME and import_readers's roots and homes in
+# the commit, MAIN_BY_NAME and import_readers' roots and homes in
 # IMPORTED_MAIN_DONE, never the checkout, whose files it read, so a caller
 # whose checkout may have changed calls import_reset (contract item 4); a
 # cached error returns 1 again.
 # Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
-# CLAUDE.md, the user's memory file (known issue A5; U2b3b's outside starts).
+# CLAUDE.md, the user's memory file (known issue A5; U2b3b's outside starts),
+# nor at a start file only another registered checkout holds (U2b3b).
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # import_reset: the next call of either walk walks again (caller contract item 4).
@@ -626,7 +628,7 @@ IMPORT_OUT_MAX=4000000
 # characters it scans, each resolved spelling it joins, which for a
 # relative name carries a root, so a longer root buys less, and one unit per
 # reader root for each spelling it projects; the unit of its per-file bound
-# of 50,000,000, about 0.1-5 s here with one root and about 9 s with 24, by
+# of 50,000,000, up to about 5 s here with one root and about 9 s with 24, by
 # the name's shape: U2b3a i2 fact-check) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
 # of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 330,600 each over its 24 reader roots (8,200 with one; 2026-10-08).
@@ -687,11 +689,15 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # it but an outer one whose path down to a nested root holding it has a dot
 # component (the parser's dotnest; truthrule's dot word must keep refusing
 # every such path). A relative name is resolved against each root's copy of its
-# directory, so a session in any checkout is modelled, and a ~/ name is joined
+# directory, so a name a session in any checkout spells is resolved as it
+# would be there (its start files are another matter: below), and a ~/ name is joined
 # to each reader home (this process's and IMPORT_READER_HOMES), in spelled and
 # real forms. Known exceptions, where a session reading the file can import
 # what these rules do not yield: a session in a checkout or under a home
-# import_readers does not list (U2b3b's settings line names the host's), names
+# import_readers does not list (U2b3b's settings line names the host's), a
+# start file only another reader root's checkout holds (untracked or ignored
+# there, such as /workspace's devcontainer-config/claude-home/CLAUDE.md: the
+# walks read the gate's own checkout only; U2b3b), names
 # that differ only in case on a case-insensitive file
 # system (docs/reviews/override-log.md line 350), Claude Code's approved
 # external includes, and any further decoding it may add (an entity, a percent
@@ -862,7 +868,7 @@ import_home() {
 # IMPORT_READER_ROOTS; IMPORT_HOMES holds import_home's two spellings and
 # IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
 # home first, and lists every entry as written and as realpath -m reads it,
-# once. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
+# once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
 # (contract item 9): newline-separated absolute paths, blank lines skipped,
 # for the host checkout Q-123 names and the host HOME, since sessions there
 # spell this repository through them. Sourcing the lib clears them, so the
@@ -895,6 +901,8 @@ import_readers() {
   [[ "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || return 0
   k="$IMPORT_READERS_KEY"
   IMPORT_READERS_DONE=""
+  # ROOT_REAL leads the roots: an empty one would let a registered worktree lead instead.
+  [[ -n "${ROOT_REAL:-}" ]] || return 1
   nul_list rs_l git worktree list --porcelain -z || return 1
   rs_r=("$ROOT_REAL"); for p in "${rs_l[@]}"; do [[ "$p" != "worktree "* ]] || rs_r+=("${p#worktree }"); done
   [[ -z "$IMPORT_READER_ROOTS" ]] || mapfile -t -O "${#rs_r[@]}" rs_r <<<"$IMPORT_READER_ROOTS"
