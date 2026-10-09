@@ -718,14 +718,23 @@ prompt_bases() {
 # whose checkout may have changed calls import_reset (contract item 4); a
 # cached error returns 1 again.
 # Both walks follow an import to a file below no reader root (the parser's
-# second channel) when it is a readable regular file, reading it from the file
-# system, as the checkout phase does, through outside_targets; one that is
-# missing, unreadable or not a regular file is skipped, since a session cannot
-# load it either (a session under another uid is the reader model's host
-# exception). Neither walk starts at an instruction file outside the repo, though Claude
+# second channel) when outside_ok admits it, reading it from the file system,
+# as the checkout phase does, through import_outside (the main walk in phase
+# 2); one that is missing, unreadable or not a regular file here is skipped.
+# Known exceptions: a file a session elsewhere can load that this container
+# cannot see (under a reader home such as the host's, which reader_settings
+# names and which is absent here, or under another uid: U2b3b2a i1 security
+# F1), and a regular file swapped for a FIFO after its admission, which
+# stalls the read (as a checkout file can). A large outside file a prefix
+# names (@/usr/bin/python3.md reads /usr/bin/python3) or a very long
+# absolute name (each prefix prints, about L*L/2 bytes, as relative names
+# already do) can spend a walk's budget, which fails closed (i1 performance
+# F1, F2). Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; U2b3b2b's outside starts),
 # nor at a start file only another registered checkout holds (U2b3b2b).
+# The walks' lists (IMPORTED, IMPORTED_MAIN) also hold the second channel's
+# lower-cased // names, which no repo path isimported asks for can match.
 # isimported asks either walk.
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""
 # import_reset: the next call of either walk walks again (caller contract item 4).
@@ -798,8 +807,8 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # with its closed HTML comments removed (Claude Code splices them), and text
 # holding a byte above 0x7f is also read decoded as Claude Code decodes it (an
 # invalid UTF-8 sequence becomes U+FFFD). Each candidate is trimmed of spaces,
-# made absolute (ROOT/DIR/name for each reader root, $1 and each further directory, unless
-# it starts with /) and resolved
+# made absolute (ROOT/DIR/name for each reader root and each of $1 and the further directories,
+# or DIR/name for one led by /, unless the name starts with /) and resolved
 # lexically, .. stopping at / as Node's path.resolve does, so a name that
 # leaves the repo and re-enters it is kept; a name below no reader root
 # (import_readers: ROOT_REAL, every registered worktree, the caller's
@@ -816,7 +825,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # import_readers does not list (reader_settings names the host's), a
 # start file only another reader root's checkout holds (untracked or ignored
 # there, such as /workspace's devcontainer-config/claude-home/CLAUDE.md: the
-# walks read the gate's own checkout only; U2b3b2), names
+# walks read the gate's own checkout only; U2b3b2b), names
 # that differ only in case on a case-insensitive file
 # system (docs/reviews/override-log.md line 350), Claude Code's approved
 # external includes, and any further decoding it may add (an entity, a percent
@@ -871,7 +880,7 @@ function put(c,   n, i, j, k, part, st, out, h, nho) {
   # which no file a walk admits has (and a printed one would split in two).
   if (index(out, "\n") || out == "") return
   # Relative to every root holding it, but an outer root whose path down to a
-  # nested root holding it has a dot component (dotnest): a session in a
+  # nested root holding it has a dot component (dotnest, from import_readers): a session in a
   # worktree under /workspace/.claude/ reads the file there as a path of that
   # worktree, and the outer spelling is a dot path the floor refuses whole
   # (the dot word of truthrule: narrowing it means changing this rule too),
@@ -993,7 +1002,7 @@ import_home() {
 # (prunable ones too: a host path such as /home/magfrump/cw-egress-verify),
 # each IMPORT_READER_ROOTS entry and, beneath each of these and the main
 # worktree (the first record), every registered worktree beneath any of them; IMPORT_HOMES holds import_home's two spellings and
-# IMPORT_READER_HOMES; IMPORT_DOTNEST the parser's dotnest pairs over IMPORT_ROOTS. Each is newline-separated, ROOT_REAL or this process's
+# IMPORT_READER_HOMES. Each is newline-separated, ROOT_REAL or this process's
 # home first, and lists every entry as written and as realpath -m reads it,
 # once; an empty ROOT_REAL returns 1. IMPORT_READER_ROOTS and IMPORT_READER_HOMES are the caller's
 # (contract item 9; reader_settings sets them): newline-separated absolute paths, blank lines skipped,
@@ -1017,6 +1026,9 @@ import_home() {
 # Not covered: a hostile loop can rewrite the worktree registry in the shared
 # common dir, dropping a root (a Q-103 residual).
 IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_DOTNEST=""; IMPORT_READERS_DONE=""; IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""
+# Set only for one import_targets call (import_outside's projection); cleared here, so an inherited
+# one cannot make every walk read its text as whole names (U2b3b2a i1 architecture A1).
+IMPORT_WHOLE=""
 # import_readers_key: IMPORT_READERS_KEY, the key import_readers memoizes on (after
 # import_home), each part led by its length so no part can run into the next.
 IMPORT_READERS_KEY=""
@@ -1071,11 +1083,12 @@ import_readers() {
   for p in "${rs_ho[@]}"; do [[ "$p" == "${rs_h[0]}" || "$p" == "${rs_h[1]-}" ]] || rs_h+=("$p"); done
   printf -v IMPORT_ROOTS '%s\n' "${rs_ro[@]}"; IMPORT_ROOTS="${IMPORT_ROOTS%$'\n'}"
   printf -v IMPORT_HOMES '%s\n' "${rs_h[@]}"; IMPORT_HOMES="${IMPORT_HOMES%$'\n'}"
-  # The parser's dotnest pairs, by 1-based index into IMPORT_ROOTS: J lies below I
+  # IMPORT_DOTNEST: the parser's dotnest pairs, "I J" lines by 1-based index into IMPORT_ROOTS: J lies below I
   # through a dot component. Built once here, not in every parser process (U2b3a i2 performance F2).
   for i in "${!rs_ro[@]}"; do for n in "${!rs_ro[@]}"; do
     p="${rs_ro[i]}/"; t="${rs_ro[n]}/"; [[ ${#t} -le ${#p} || "$t" != "$p"* || "/${t#"$p"}" != *"/."* ]] || IMPORT_DOTNEST+="$((i + 1)) $((n + 1))"$'\n'
   done; done
+  IMPORT_DOTNEST="${IMPORT_DOTNEST%$'\n'}"
 }
 import_targets() {
   local u d toks x="" s=(-e 's/\x0/ /g') LC_ALL=C
@@ -1106,23 +1119,36 @@ import_targets() {
   printf '%s\n' "$toks" | env LC_ALL=C IT_DIR="$1" IT_XDIRS="$x" IT_ROOTS="$IMPORT_ROOTS" IT_HOMES="$IMPORT_HOMES" IT_DOTNEST="$IMPORT_DOTNEST" \
     IT_WHOLE="${IMPORT_WHOLE:-}" IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
 }
-# outside_targets FILE: import_targets' output for FILE, an absolute path below
-# no reader root (a name from the parser's second channel), read from the file
-# system against its own directory; when its real path differs (a symlink on
-# the way), that path is also projected whole (IMPORT_WHOLE), so a link into a
-# reader root reads as an import of the repo path and one to another outside
-# file as that file. The two work trailers are summed into one.
-outside_targets() {
-  local d="${1%/*}" r a b="" w=0
-  r="$(realpath -e -- "$1")" || return 1
-  a="$(capped_read < "$1" | import_targets "${d:-/}")" && import_work a w || return 1
+# import_outside FILE [DIRS...]: import_targets' output for FILE, an absolute
+# path below no reader root (a name from the parser's second channel), read
+# from the file system against its own directory and each DIRS entry (as
+# import_targets takes further directories); when its real path differs (a
+# symlink on the way), that path is also projected whole (IMPORT_WHOLE), so a
+# link into a reader root reads as an import of the repo path and one to
+# another outside file as that file, which the walk then reads again under
+# its real path. For a walk, which sets IMPORT_WORK_LEFT: the two trailers
+# are summed into one, and each call may spend all that a walk has left, so
+# the walk's own import_work check is what bounds the pair. It returns 1 on
+# a failed read or a real path holding a newline (the projection reads one
+# name per line: U2b3b2a i1 fact-check), so a file that changed after the
+# walk admitted it fails the walk rather than being skipped.
+import_outside() {
+  local d="${1%/*}" r a b="" w=0 rl=()
+  nul_list rl realpath -ez -- "$1" && [[ ${#rl[@]} -eq 1 && "${rl[0]}" != *$'\n'* ]] || return 1
+  r="${rl[0]}"
+  a="$(capped_read < "$1" | import_targets "${d:-/}" "${@:2}")" && import_work a w || return 1
   if [[ "$r" != "$1" ]]; then b="$(printf '%s\n' "$r" | IMPORT_WHOLE=1 import_targets /)" && import_work b w || return 1; fi
   printf '%s\n' ${a:+"$a"} ${b:+"$b"} "/$w"
 }
-# file_targets FILE DIR [DIRS...]: import_targets over FILE as the file system
+# import_file FILE DIR [DIRS...]: import_targets over FILE as the file system
 # holds it, for both walks: a repo path (DIR and DIRS as import_targets takes
-# them), or an absolute one through outside_targets.
-file_targets() { if [[ "$1" == /* ]]; then outside_targets "$1"; else capped_read < "$1" | import_targets "${@:2}"; fi; }
+# them), or an absolute one through import_outside (its own directory in
+# place of DIR, and DIRS).
+import_file() { if [[ "$1" == /* ]]; then import_outside "$1" "${@:3}"; else capped_read < "$1" | import_targets "${@:2}"; fi; }
+# outside_ok PATH: whether a walk reads PATH, a name below no reader root: a
+# readable regular file (the one admission rule both walks apply). Anything
+# else is skipped: a session in this container cannot load it either.
+outside_ok() { [[ -f "$1" && -r "$1" ]]; }
 # import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
 # printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with
 # /, and a second-channel name starts with //) from the variable OUT, and adds N to the variable TOTAL. It returns 1 when
@@ -1234,7 +1260,7 @@ imported_names() {
   while [[ $qi -lt ${#queue[@]} ]]; do
     f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
-    out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) file_targets "$f" "$d" "${xs[@]}")" \
+    out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_file "$f" "$d" "${xs[@]}")" \
       && import_work out work || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
@@ -1242,7 +1268,7 @@ imported_names() {
     lp="$(lower "$out")" || { IMPORTED=error; return 1; }; IMPORTED+="$lp"$'\n'
     while IFS= read -r p; do
       # A name below no root (//PATH) is read where it lies, when a session could load it.
-      [[ "$p" != //* ]] || { p="${p#/}"; [[ -f "$p" && -r "$p" && "$seen" != *$'\n'"$p"$'\n'* ]] && seen+="$p"$'\n' && queue+=("$p"); continue; }
+      [[ "$p" != //* ]] || { p="${p#/}"; outside_ok "$p" && [[ "$seen" != *$'\n'"$p"$'\n'* ]] && seen+="$p"$'\n' && queue+=("$p"); continue; }
       # -f first: most candidates name no file, and inrepo_here forks.
       if [[ -f "$p" && "$seen" != *$'\n'"$p"$'\n'* ]] && inrepo_here "$p"; then seen+="$p"$'\n'; queue+=("$p"); fi
     done < <(printf '%s\n' "$out")
@@ -1261,8 +1287,8 @@ imported_names() {
 # sits where START_LINK matches and is not a symlinked start, import_readers, the parser (its comment lists why) or a
 # lower fails, or the IMPORT_OUT_MAX or IMPORT_WORK_MAX budget is spent;
 # need_root exits instead.
-# Phase 2 begins when queue empties: tq's checkout files then join it, and a
-# path main lacks reads the checkout.
+# Phase 2 begins when queue empties: tq's checkout files and outside files
+# (absolute paths, never main's) then join it, and a path main lacks reads the checkout.
 main_imports() {
   local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=(); set -o pipefail  # as brief_fields
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
@@ -1311,7 +1337,7 @@ main_imports() {
     f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]-checkout}" in
-      checkout) out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) file_targets "$f" "$d" "${xs[@]}")" \
+      checkout) out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_file "$f" "$d" "${xs[@]}")" \
           && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
       100644|100755) out="$(git cat-file blob "$MAIN_SHA:$f" | capped_read drain | IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_targets "$d" "${xs[@]}")" \
           && import_work out work || { IMPORTED_MAIN=error; return 1; } ;;
@@ -1350,7 +1376,7 @@ main_imports() {
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
       # Below no root: read from the file system in phase 2, as the checkout is.
-      [[ "$p" != //* ]] || { p="${p#/}"; [[ -z "${seen[$p]+set}" && -f "$p" && -r "$p" ]] && seen[$p]=1 && tq+=("$p"); continue; }
+      [[ "$p" != //* ]] || { p="${p#/}"; [[ -z "${seen[$p]+set}" ]] && outside_ok "$p" && seen[$p]=1 && tq+=("$p"); continue; }
       [[ -z "${seen[$p]+set}" ]] || continue
       c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p" || c=$?  # main lacks p: admitted before it is marked seen
       [[ $c -ne 1 ]] || { IMPORTED_MAIN=error; return 1; }
@@ -1391,7 +1417,7 @@ truthrule() {
   TRUTH_WHY=""
   if [[ "$1" == *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]* ]]; then TRUTH_WHY="case"
   elif isstart "$1"; then TRUTH_WHY="instr"
-  elif [[ "/$1" == */.* ]]; then TRUTH_WHY="dot"  # the parser's dotnest omits only such paths: keep the two equal
+  elif [[ "/$1" == */.* ]]; then TRUTH_WHY="dot"  # import_readers' dotnest pairs omit only such paths: keep the two equal
   elif writable "$1"; then TRUTH_WHY="cycle"
   elif [[ "$1" == docs/dev-cycle.md ]]; then TRUTH_WHY="settings"
   elif [[ "$1" == docs/constraints.md ]]; then TRUTH_WHY="user"

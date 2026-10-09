@@ -652,7 +652,20 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         imps "$w" docs/x.md docs/y.md docs/z.md sub/o2.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/x.md imported; want docs/y.md imported; want docs/z.md -; want sub/o2.md -; want docs/other.md -
+        # An inherited IMPORT_WHOLE is cleared when the lib is sourced, so text is still read as text (i1 architecture A1).
+        IMPORT_WHOLE=1 imps "$w" docs/x.md; want walk ok; want docs/x.md imported
     done
+}
+
+@test "an outside link whose real path holds a newline fails both walks; import_file reads an outside file against its own directory and the DIRS it is given (U2b3b2a i1 fact-check, architecture A2)" {
+    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o" && r="$(pwd -P)"
+    printf 'See @%s/nl.md\n' "$o" > AGENTS.md; commit_all nl
+    printf 'q: @docs/q.md\n' > "$r/docs/a"$'\n'"b.md" && ln -s "$r/docs/a"$'\n'"b.md" "$o/nl.md"
+    for w in tree main; do imps "$w" docs/q.md; want walk failed; want docs/q.md imported; done
+    printf 'p: @docs/n.md\n' > "$o/p.md"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        IMPORT_WORK_LEFT=100000 import_file "$2" ignored ""' _ "$LIB" "$o/p.md"
+    for l in docs/n.md "/$o/docs/n.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
 }
 
 @test "an outside name whose real path lies in the repo reads as that repo path; an unreadable, missing or non-regular outside name is skipped, as a session cannot load it (U2b3b2a)" {
