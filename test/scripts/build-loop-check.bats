@@ -1763,8 +1763,20 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         imps "$w" sub/x.md x.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want sub/x.md imported; want x.md imported; want docs/other.md -
-        T_READER_ROOTS="$r/docs" imps "$w" sub/x.md; want walk ok; want sub/x.md imported
     done
+    # The same nesting from a caller root, as written and through a symlink, with the stale entry pruned.
+    git worktree prune; ! git worktree list --porcelain | grep -qxF "worktree $r/sub" || return 1
+    ln -s "$r/sub" "$BATS_TEST_TMPDIR/lnk"
+    for w in tree main; do
+        imps "$w" sub/x.md x.md; want walk ok; want sub/x.md imported; want x.md -
+        for c in "$r/sub" "$BATS_TEST_TMPDIR/lnk"; do
+            T_READER_ROOTS="$c" imps "$w" sub/x.md x.md
+            want walk ok; want sub/x.md imported; want x.md imported
+        done
+    done
+    # dotnest omits only paths truthrule refuses as dot paths (security i2 2): a dot-nested spelling is one.
+    run --separate-stderr bash -c 'source "$1"; for p in .claude/wt-a/sub/y.md docs/.wt/a/q.md; do truthrule "$p"; echo "$p $TRUTH_WHY"; done' _ "$LIB"
+    [ "${lines[0]}" = ".claude/wt-a/sub/y.md dot" ] && [ "${lines[1]}" = "docs/.wt/a/q.md dot" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "both walks fail closed on a reader root or home they cannot model, and when git worktree list fails (U2b3a; i1 fact-check 18)" {
