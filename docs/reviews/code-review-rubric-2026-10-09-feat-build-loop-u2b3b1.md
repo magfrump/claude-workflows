@@ -1,8 +1,8 @@
-Commit: 8ed86432
+Commit: f56ba3f5
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b1` (U2b3b1: the reader settings, `Reader roots:` and `Reader homes:`, for both import walks), on main f8d003c7.
-**Status: 🟡 ITERATION 1 — no red; two ambers (architecture F1, the settings rule written twice; security F1, `--check-fix` able to model no host reader) acknowledged with revisit triggers after the fixable half of security F1 was fixed in 1ece139d (unreviewed). Single-sample review; absence of findings is not an attestation.**
+**Status: 🟡 ITERATION 2 (final confirming pass, k=3, full panel) — no red; one amber (security final F1, Medium: main named only the host spelling) fixed in 3908e37e with the rest of the pass's findings; 3908e37e awaits iteration 3's confirming pass. Single-sample review; absence of findings is not an attestation.**
 
 ## Iteration 1 (Commit 8ed86432, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
@@ -53,3 +53,46 @@ None asserted on a loop pass (routed endorsements stay pending execution verific
 None.
 
 Tokens: fc 152k, critics 109k + 105k + 108k + 107k ≈ 581k.
+
+## Iteration 2 (Commit f56ba3f5, final confirming pass: no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Reports: `code-fact-check-report-build-loop-u2b3b1-final.md` (merged from `-final-r1/-r2/-r3`: 1 Incorrect and 2 Stale on plan line 301 and an unchanged comment, 6 Mostly accurate, 2 Unverifiable, the rest Verified, most by execution), `security-review-2026-10-09-u2b3b1-final.md`, `performance-review-2026-10-09-u2b3b1-final.md`, `api-consistency-review-2026-10-09-u2b3b1-final.md`, `architecture-review-2026-10-09-u2b3b1-final.md`. Considered overrides: iteration 1's eight rows (not re-filed by any critic).
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Considered overrides | Status |
+|---|---|---|---|---|---|
+| B1 | Main's settings named only the host spelling, so a walk run on the host never had `/workspace` as a root and dropped `@/workspace/docs/x.md` (executed: `ok` vs `skip`). | Medium | security final F1 | none | Fixed in 3908e37e: docs/dev-cycle.md names `/home/magfrump/claude-workflows /workspace` and `/home/magfrump /home/node`. |
+| B2 | Plan line 301 says import_readers refuses a control byte (readerform does) and that without main the lists stay empty (both walks fail). | Incorrect + Stale (doc) | fact-check final | none | Fixed in 3908e37e. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| H1 | G8 re-spelled only worktrees under the main record; one a host session registered beneath a caller root was not spelled beneath main's (executed). | security final F2 (Low) | Fixed in 3908e37e: every spelling re-spells the others; test fails on the one-way lib. |
+| H2 | The superset comment's root list omits the re-spelled worktrees. | fact-check (Stale); architecture final A2 | Fixed in 3908e37e. |
+| H3 | Walk-failure texts drop their siblings' clauses and nest parentheses; the no-main WHY omits "(origin/HEAD, main or master)"; item 9 lost "never from the environment". | api final F1-F3 | Fixed in 3908e37e. |
+| H4 | --check-fix header omits "the file is not read"; "1.5 s per walk" (tree walk 1.7 s); docs path rule; H4 test's no-main step passed one path. | fact-check (Mostly accurate); performance final F1 | Fixed in 3908e37e. |
+| H5 | Refused settings detected in three places. | architecture final A1 | Deferred to U2b3b2: override row. |
+| H6 | floor and check_fix derive the settings cause alike. | architecture final A3 | Deferred to U2c: override row. |
+| H7 | "870,000 over 49" measured 899,730 / 868,530. | fact-check (Mostly accurate) | Won't-Fix: override row. |
+| H8 | 8ed86432's "(was 1.3 s)" did not reproduce; 1ece139d's "~30 call sites" unverifiable. | fact-check (Unverifiable) | Commit messages, immutable; noted here. |
+
+### ✅ Confirmed Good
+
+- Every reader_settings and `--settings` readers rule, executed in a 32-case probe (fact-check final r1; r2, r3 alike). Evidence: `scripts/lib/dev-cycle-read.sh` reader_settings; backing: executed Verified.
+- A refused reader set is memoized, an import_home failure is not; import_targets fails on refused settings with and without a current memo (executed, all three replicates).
+
+### 🧩 Composition check
+
+- lib import_readers G8 loop / docs/dev-cycle.md settings (security final F1, F2): distinct defects (one is a missing spelling in the data, the other a one-way mapping in the code); fixed together in 3908e37e.
+
+### ⏭️ Skipped Core Critics
+
+None.
+
+Tokens: fc 3 x ~190k, critics 120k + 99k + 104k + 102k ≈ 990k.
