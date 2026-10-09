@@ -53,7 +53,10 @@
 #             human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, a dot-directory
 #             or dotfile, an instruction or prompt file, or a file one
 #             names after an @, read broadly; compared ignoring case) or README.md; "skip <path>: <reason>"
-#             otherwise, and for every path when the import walk fails.
+#             otherwise, and for every path when the import walk fails. The
+#             walk also models the host readers the default branch's
+#             docs/dev-cycle.md names ("Reader roots:", "Reader homes:"; see
+#             build-loop.sh --settings), and fails when those lines are malformed.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
 #             branch's commit (an answer only in the working tree is not seen:
@@ -184,6 +187,9 @@ check_fix() {
   else check_path "$a"; fi
 }
 resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
+# The reader lists the import walk takes, from main's settings (the lib's caller
+# contract item 9); without main found by name they stay empty.
+reader_settings
 # The check modes run here. --check-brief, --check-branch and --check-answer
 # read the default branch's commit, so they need one found by name
 # (origin/HEAD, main or master), not the current branch; the other modes do

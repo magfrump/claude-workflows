@@ -14,13 +14,14 @@ setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 # "walk: ok" or "walk: failed" (main_imports' or imported_names' return),
 # then "PATH: imported" or "PATH: -" from isimported WALK for each path.
 # T_READER_ROOTS and T_READER_HOMES, when set, become the caller's
-# IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them).
+# IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them);
+# T_SETTINGS=1 sets them as the scripts do, with reader_settings.
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
         [[ -z "${T_READER_ROOTS+set}" ]] || IMPORT_READER_ROOTS="$T_READER_ROOTS"
         [[ -z "${T_READER_HOMES+set}" ]] || IMPORT_READER_HOMES="$T_READER_HOMES"
-        resolve_main || true; ROOT_REAL="$(pwd -P)"; w="$1"; shift
+        resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; w="$1"; shift
         if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
@@ -1791,7 +1792,7 @@ ENVS="is set, so git can read another work tree, index, object store or config f
         T_READER_ROOTS=$'/a\n\n/b\n' imps "$w" docs/a.md; want walk ok
     done
     # An empty ROOT_REAL is refused, not skipped, so a registered worktree never leads the roots (final fact-check 1).
-    run --separate-stderr bash -c 'source "$1"; ROOT_REAL=""; import_readers; echo "rc=$? [$IMPORT_READERS_DONE]"' _ "$LIB"
+    run --separate-stderr bash -c 'source "$1"; ROOT_REAL=""; import_readers; echo "rc=$? [$IMPORT_ROOTS]"' _ "$LIB"
     [ "$output" = "rc=1 []" ] || { echo "$output $stderr"; return 1; }
     S="$BATS_TEST_TMPDIR/wt" && mkdir -p "$S"
     printf '#!/bin/sh\n[ "$1" = worktree ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$S/git" && chmod +x "$S/git"
@@ -1845,4 +1846,58 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
     for w in tree main; do want "$w a0" -; want "$w a1" imported; want "$w h1" -; want "$w h2" imported; want "$w w2" imported; done
     want "tree w1" -
+}
+
+# U2b3b1, the reader settings (plan step 5): main's docs/dev-cycle.md names the
+# host readers, and both walks take them through reader_settings.
+
+@test "both walks take the reader lists from main's docs/dev-cycle.md, never the working tree, and a malformed line fails them (U2b3b1; H4)" {
+    mkdir -p docs
+    printf 'See @~/cw/docs/h.md and @/host/cw/docs/a.md and @/wt/docs/w.md\n' > AGENTS.md; commit_all host
+    for w in tree main; do
+        T_SETTINGS=1 imps "$w" docs/h.md docs/a.md; want walk ok; want docs/h.md -; want docs/a.md -
+    done
+    settings 'Reader roots: /host/cw' '' 'Reader homes: /host'
+    # A root only the working tree's copy names is not read.
+    printf 'Reader roots: /host/cw /wt\n\nReader homes: /host\n' > docs/dev-cycle.md
+    for w in tree main; do
+        T_SETTINGS=1 imps "$w" docs/h.md docs/a.md docs/w.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/h.md imported; want docs/a.md imported; want docs/w.md -; want docs/other.md -
+    done
+    git checkout -q docs/dev-cycle.md
+    # A malformed line (or a second copy) fails both walks, which then answer imported for every path.
+    for v in 'Reader roots: host/cw' $'Reader roots: /host/cw\n\n**Reader roots:** /wt'; do
+        settings "$v"
+        for w in tree main; do
+            T_SETTINGS=1 imps "$w" docs/a.md docs/other.md
+            want walk failed; want docs/other.md imported
+        done
+    done
+}
+
+@test "a caller root re-spells the worktrees registered beneath the main worktree (U2b3b1; U2b3a i1 architecture F4)" {
+    mkdir -p docs && echo n > docs/n.md
+    printf 'See @/host/cw/.claude/wt-b/docs/n.md\n' > AGENTS.md; commit_all respell
+    git worktree add -q --detach .claude/wt-b
+    git worktree add -q --detach ../gate && cd ../gate
+    for w in tree main; do
+        imps "$w" docs/n.md; want walk ok; want docs/n.md -
+        T_READER_ROOTS=/host/cw imps "$w" docs/n.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/n.md imported; want docs/other.md -
+    done
+}
+
+@test "a refused reader set is memoized, so a decision lists the worktree registry once (U2b3b1; U2b3a final performance F1)" {
+    mkdir -p docs && printf 'See @docs/a.md\n' > AGENTS.md && commit_all memo
+    S="$BATS_TEST_TMPDIR/stub" && mkdir -p "$S"
+    printf '#!/bin/sh\n[ "$1" = worktree ] && echo x >> %s/log\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
+    for w in tree main; do
+        : > "$S/log"
+        # The walk, then isimported for each path: three calls of the walk in one decision.
+        PATH="$S:$PATH" T_READER_ROOTS=rel imps "$w" docs/a.md docs/other.md
+        want walk failed; want docs/other.md imported
+        [ "$(wc -l < "$S/log")" -eq 1 ] || { echo "$w: $(wc -l < "$S/log") listings"; return 1; }
+    done
 }

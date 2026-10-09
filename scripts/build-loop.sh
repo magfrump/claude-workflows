@@ -8,7 +8,7 @@
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh -h | --help
 #
-#   --settings  four lines from the default branch's commit, never the working
+#   --settings  five lines from the default branch's commit, never the working
 #             tree (a build loop can write any working tree). Lines 1-3 from
 #             one line of docs/dev-cycle.md; a second copy, or a file the lib's
 #             FENCE_AWK refuses, gives review, 3 and malformed (WHY says which):
@@ -40,6 +40,16 @@
 #                 A line starting like "h1"/"s1" in letters and digits (after
 #                 marks and a task box) but not exact makes the file unreadable
 #                 (best effort). Only "ok" lets the orchestrator dispatch.
+#             readers N-roots M-homes set|none|malformed: WHY
+#                 The extra readers both import walks model (the lib's
+#                 reader_settings): "Reader roots: PATH ..." (host spellings
+#                 of the main worktree) and "Reader homes: PATH ..." (host
+#                 homes), or "...: none". Each is one line, single spaces,
+#                 the next line outside a fence blank or the end; a PATH is
+#                 absolute, not / alone, of letters, digits and . _ - / with
+#                 no empty, . or .. part, listed once. none: no file or no
+#                 such line. malformed (a second copy, a bad line, or a file
+#                 not read) fails both walks, so the floor refuses every path.
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a checked task
@@ -290,51 +300,10 @@ if [[ "$MODE" == check ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
 if [[ "$MODE" == check ]]; then default_gate || exit 2; fi
+# The reader lists both import walks take, from main's settings (the lib's
+# caller contract item 9), before any walk; --settings prints its line.
+reader_settings
 
-# A file on main: FILE_OUT is what awk program $2 (after FENCE_AWK) printed over
-# it; or it returns 1 with FILE_WHY "absent" or why it was not read (main_entry,
-# a failed read, or FENCE_AWK's "odd N WHY" / "unbalanced N").
-FILE_OUT=""; FILE_WHY=""
-main_file() {
-  local f="$1" e n why
-  FILE_OUT=""; FILE_WHY=""
-  e="$(main_entry "$f")"
-  case "$e" in
-    blob) ;;
-    absent) FILE_WHY=absent; return 1 ;;
-    *) FILE_WHY="$(entry_why "$e" "$f")"; return 1 ;;
-  esac
-  FILE_OUT="$(git cat-file blob "$MAIN_SHA:$f" | env LC_ALL=C awk "$FENCE_AWK$2")" \
-    || { FILE_WHY="$f could not be read from the default branch"; return 1; }
-  case "$FILE_OUT" in
-    odd\ *) read -r _ n why <<<"$FILE_OUT"; FILE_WHY="line $n of $f $(oddwhy "$why"), so the file is not read"; return 1 ;;
-    unbalanced\ *) FILE_WHY="the code fence opened at line ${FILE_OUT#unbalanced } of $f is never closed, so the file is not read"; return 1 ;;
-  esac
-}
-
-# One pass over docs/dev-cycle.md: per key, how many lines start with it once
-# everything but letters is dropped and case folded (best effort: most markup,
-# a BOM or a misplaced colon cannot hide a copy), the first two line numbers,
-# whether the next line outside a fence after the first is blank or the end of
-# the file (NEXT 1) or not, and the first line whole:
-# "KEY COUNT FIRST SECOND NEXT<TAB>LINE".
-# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
-SETTINGS_AWK='
-{ sub(/\r$/, "") }
-fence($0) { next }
-{
-  if (pk != "") { nx[pk] = ($0 ~ /^[ \t]*$/); pk = "" }
-  s = tolower($0); gsub(/[^a-z]/, "", s); k = ""
-  if (index(s, "buildlooppolicy") == 1) k = "policy"
-  else if (index(s, "buildloopslots") == 1) k = "slots"
-  else if (index(s, "selfmergenever") == 1) k = "never"
-  if (k != "") { c[k]++; if (c[k] == 1) { l1[k] = NR; t[k] = $0; nx[k] = 1; pk = k } else if (c[k] == 2) l2[k] = NR }
-}
-END {
-  if (odd) print "odd " odd " " oddwhy
-  else if (infence) print "unbalanced " fline
-  else for (k in c) print k " " c[k] " " l1[k] " " (k in l2 ? l2[k] : 0) " " nx[k] "\t" t[k]
-}'
 # docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST
 # SECOND" or "near LINE" (the first problem found).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
@@ -767,7 +736,7 @@ case "$MODE" in
     ;;
   settings)
     read_settings
-    printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE"
+    printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE"
     ;;
   check)
     read_settings
