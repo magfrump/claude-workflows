@@ -131,10 +131,11 @@
 #                 whose bytes are not main's blob (a filter,
 #                 working-tree-encoding, ident or eol conversion); or a
 #                 listing or hash of these that fails. Untracked and ignored
-#                 files are allowed. It is judged after the merge and the
-#                 N rules, so a loop running --check from its own branch
-#                 still gets the path lines; a review brief does not read
-#                 the checkout.
+#                 files are allowed. The merge's own refusals above (a
+#                 conflict, a missing blob...) come first; this one replaces
+#                 only the verdict line, so a loop running --check from its
+#                 own branch still gets the path lines. A review brief does
+#                 not read the checkout.
 #             skip BRIEF: WHY
 #                 As --status skips it.
 #             After an ok line, a K of N refusal or a checkout refusal, one line per path TREE
@@ -525,8 +526,8 @@ GATE_TMP=""; GATE_ENV=()
 # callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
 # gate keeps: the caller's config pairs, which harden extends and trusts
 # (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
-# this script sets. GIT_CONFIG, a whole config file git config reads instead of
-# the repo's, is not one (gate_repo unsets it; checkout_gate refuses it).
+# this script sets. GIT_CONFIG is not one: git config then reads that one file
+# instead of every scope (gate_repo unsets it; checkout_gate refuses it).
 callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$1" == GIT_NO_REPLACE_OBJECTS ]]; }
 gate_repo() {
   local fmt v
@@ -610,8 +611,9 @@ nrules() {
 # header) a checkout can break. Item 2's fsmonitor and replace refs are harden's
 # and the state gate's, and its ls-files stderr rule is the walk's own. Sets
 # CHECKOUT_WHY to why the checkout fails, or empties it; returns 1 on a
-# failure. check_line calls it for each self-merge brief, after the N rules and
-# where U2c's floor walk will run, so it is final before that walk. Item 3 is
+# failure. check_line calls it for each self-merge brief once the merge and
+# its changed paths are read, before the N rules and U2c's floor walk run per
+# path, so it is final before that walk. Item 3 is
 # checked by its effect, not by predicting it with check-attr: every regular
 # file main stores must hash, unfiltered, to main's blob, so no conversion (a
 # filter, working-tree-encoding, ident or eol attribute from any attributes
@@ -624,7 +626,7 @@ CHECKOUT_WHY=""
 checkout_gate() {
   # The C locale: under UTF-8 a regex . does not match an invalid byte, and a
   # record skipped for its name would escape the byte comparison.
-  local LC_ALL=C
+  local -x LC_ALL=C  # exported: tr, awk and git run under it too
   local v x rc r n p ps=() ids=() re=$'^([01234567]{6}) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
   CHECKOUT_WHY=""
   for v in $(git rev-parse --local-env-vars); do
@@ -725,9 +727,10 @@ check_line() {
   # Every record read whole: two NUL-ended fields each (bytes after the last
   # NUL are not counted; git's own output never ends that way).
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
-  # A self-merge brief's checkout (contract items 2 and 3), judged after the
-  # merge, so the path lines still print (a loop's advisory run from its own
-  # branch learns them), and before U2c's floor walk, which runs per path below.
+  # A self-merge brief's checkout (contract items 2 and 3), checked once the
+  # merge's paths are read and before U2c's floor walk, which runs per path
+  # below; its refusal replaces the verdict line only, so the path lines still
+  # print (a loop's advisory run from its own branch learns them).
   co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a

@@ -1700,6 +1700,6 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     LINK="a gitlink's path in the checkout is a symlink or cannot be listed"
     chmod 111 sub; coref "$LINK"; chmod 755 sub
     rm -rf sub; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" sub
-    # git status already warns about a symlink there, before the gitlink rule reads it.
+    # git status already fails on a symlink there (exit 128), before the gitlink rule reads it.
     coref "git status failed or warned in the checkout"
 }
