@@ -29,9 +29,10 @@ The two lines above name the readers the self-merge floor and `--check-fix` mode
 this checkout, its registered worktrees and the running session's HOME: the host spelling of
 the main checkout (when the image breaks, the user runs sessions on the host in
 `~/claude-workflows`: Q-121, Q-123) and the host's HOME. Each is one line of absolute paths
-separated by single spaces (or `none`), followed by a blank line. A second copy, or a line in
-any other form, fails the import walks, so the floor refuses every path. Only the default
-branch's copy is read (`scripts/build-loop.sh --settings` prints its `readers` line).
+separated by single spaces (or `none`), followed by a blank line (outside a code block) or the
+end of the file. A second copy, a line in any other form, or a file the readers refuse (an
+unclosed code block, say) fails the import walks, so the floor refuses every path. Only the
+default branch's copy is read (`scripts/build-loop.sh --settings` prints its `readers` line).
 
 ## Idea sources
 

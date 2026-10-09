@@ -503,7 +503,7 @@ setup() { bl_setup; }
     # One trailing CR is dropped, as on the policy line; a fenced copy is not read.
     printf 'Reader roots: /host/cw\r\n\n```\nReader roots: rel\n```\n' > docs/dev-cycle.md && commit_all cr
     settings_is readers "readers 1-roots 0-homes set: $W"
-    M='readers malformed: line 1 lists entry 1, which is not an absolute path of letters, digits and . _ - / with no empty, . or .. part, so both import walks fail'
+    M='readers malformed: line 1 lists entry 1, which is not an absolute path of letters, digits and . _ - / with no empty, . or .. part; both import walks fail'
     for v in 'Reader roots: rel' 'Reader roots: /' 'Reader roots: //a' 'Reader roots: /a/' 'Reader roots: /a//b' 'Reader roots: /a/../b' \
              'Reader roots: /a/./b' 'Reader roots: /..' 'Reader homes: ~/x' 'Reader roots: none /a' $'Reader roots: /caf\xc3\xa9' 'Reader roots: /a*b' \
              'Reader roots: /a:b' $'Reader roots: /a\t/b'; do
@@ -511,19 +511,19 @@ setup() { bl_setup; }
         [[ "$output" != *caf* && "$output" != *'/a'* && "$output" != *'~/x'* && "$output" != *rel* ]] || { echo "echoed [$v]: $output"; return 1; }
     done
     settings 'Reader roots: /a /b /a'
-    settings_is readers 'readers malformed: line 1 lists entry 3 twice, so both import walks fail'
-    N='readers malformed: line 1 is not exactly "Reader roots: PATH ..." with single spaces, so both import walks fail'
+    settings_is readers 'readers malformed: line 1 lists entry 3 twice; both import walks fail'
+    N='readers malformed: line 1 is not exactly "Reader roots: PATH ..." with single spaces; both import walks fail'
     for v in 'Reader roots:' 'Reader roots: ' 'Reader roots: /a  /b' 'Reader roots:  /a' 'Reader roots: /a ' \
              'Reader roots : /a' 'reader roots: /a'; do
         settings "$v"; settings_is readers "$N"
     done
     # A copy in markup, a continued line, or a file FENCE_AWK refuses: malformed too.
     settings 'Reader homes: /h' '' '- **Reader homes:** /g'
-    settings_is readers 'readers malformed: more than one line starts "Reader homes:" (lines 1 and 3), so both import walks fail'
+    settings_is readers 'readers malformed: more than one line starts "Reader homes:" (lines 1 and 3); both import walks fail'
     settings 'Reader roots: /a' '/b'
-    settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list), so both import walks fail'
+    settings_is readers 'readers malformed: line 1 is followed by a non-blank line outside a fence (it may continue the list); both import walks fail'
     settings 'Reader roots: /a' '' $'\x60\x60\x60'
-    settings_is readers 'readers malformed: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read, so both import walks fail'
+    settings_is readers 'readers malformed: the code fence opened at line 3 of docs/dev-cycle.md is never closed, so the file is not read; both import walks fail'
     # Only main's commit decides: a loop's branch and the working tree are ignored.
     settings 'Reader roots: /host/cw'
     git checkout -q -b loop && printf 'Reader roots: rel\n' > docs/dev-cycle.md && commit_all loop

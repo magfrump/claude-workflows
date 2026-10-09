@@ -1404,7 +1404,7 @@ skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own
     [ "$output" = "skip 2026-01-01-x.md: not a build brief (docs/working/briefs/[closed/]YYYY-MM-DD-<slug>.md)" ] || { echo "$output"; return 1; }
 }
 
-@test "--check-fix models the host readers main's docs/dev-cycle.md names, and refuses every path on a malformed line (U2b3b1; H4)" {
+@test "--check-fix models the host readers main's docs/dev-cycle.md names, and refuses every path on a malformed line or with no main by name (U2b3b1; H4; i1 security F1)" {
     mkdir -p docs && printf 'See @/host/cw/docs/notes.md and @~/cw/docs/h.md\n' > CLAUDE.md && echo x > docs/notes.md && echo h > docs/h.md
     git add -A && git commit -qm docs
     run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
@@ -1414,6 +1414,11 @@ skip docs/working/briefs/closedx/2026-01-01-x.md: not one of the dev cycle's own
     [[ "${lines[0]}" == "skip docs/notes.md: an instruction file names it"* && "${lines[1]}" == "skip docs/h.md: an instruction file names it"* ]] \
         || { echo "$output $stderr"; return 1; }
     printf 'Reader roots: host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm bad
+    run --separate-stderr bash "$DC" --check-fix docs/notes.md docs/h.md
+    [[ "${lines[0]}" == "skip docs/notes.md: the reader settings of docs/dev-cycle.md cannot be used (line 1 lists entry 1, "* \
+        && "${lines[1]}" == "skip docs/h.md: the reader settings of docs/dev-cycle.md cannot be used"* ]] || { echo "$output $stderr"; return 1; }
+    # With no default branch found by name the settings cannot be read: fail closed.
+    printf 'Reader roots: /host/cw\n' > docs/dev-cycle.md && git add -A && git commit -qm good && git branch -m main trunk
     run --separate-stderr bash "$DC" --check-fix docs/notes.md
-    [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
+    [[ "$output" == "skip docs/notes.md: the reader settings of docs/dev-cycle.md cannot be used (no default branch was found by name"* ]] || { echo "$output $stderr"; return 1; }
 }

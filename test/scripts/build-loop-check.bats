@@ -31,7 +31,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
 # walks; one "PATH: WHY" or "PATH: -" line each, read with want.
 floors() {
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
-        resolve_main || true; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
+        resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
         for p in "$@"; do if floor "$p" "$s" "$st"; then echo "$p: $FLOOR_WHY"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
 INSTR="an instruction or prompt file, which sessions load from the checkout"
@@ -1874,6 +1874,12 @@ ENVS="is set, so git can read another work tree, index, object store or config f
             want walk failed; want docs/other.md imported
         done
     done
+    # The floor names the cause (U2b3b1 i1 api-consistency F1).
+    T_SETTINGS=1 floors 2026-10-01-x A docs/other.md
+    want docs/other.md "the reader settings of docs/dev-cycle.md cannot be used (more than one line starts \"Reader roots:\" (lines 1 and 3)), so the instruction files could not be walked for @ imports"
+    # Refused settings fail import_targets outside a walk too, which reads no memo (i1 security F2).
+    run --separate-stderr bash -c 'source "$1"; ROOT_REAL="$(pwd -P)"; IMPORT_READER_WHY=x; printf "@docs/a.md\n" | import_targets ""; echo "rc=$?"' _ "$LIB"
+    [ "$output" = "rc=1" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "a caller root re-spells the worktrees registered beneath the main worktree (U2b3b1; U2b3a i1 architecture F4)" {

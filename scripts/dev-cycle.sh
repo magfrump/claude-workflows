@@ -56,7 +56,8 @@
 #             otherwise, and for every path when the import walk fails. The
 #             walk also models the host readers the default branch's
 #             docs/dev-cycle.md names ("Reader roots:", "Reader homes:"; see
-#             build-loop.sh --settings), and fails when those lines are malformed.
+#             build-loop.sh --settings), and fails when those lines are malformed
+#             or no default branch is found by name.
 #   --check-answer  "<option> Q-NNN" for a keep-or-drop-or-done question, read
 #             from docs/working/questions.md or its archive on the default
 #             branch's commit (an answer only in the working tree is not seen:
@@ -182,13 +183,14 @@ check_fix() {
   elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
   elif truthwalk tree "$lp"; then
-    if [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
+    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then echo "skip $a: the reader settings of docs/dev-cycle.md cannot be used ($IMPORT_READER_WHY), so the instruction-file import walk failed; file it instead"
+    elif [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
     else echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"; fi
   else check_path "$a"; fi
 }
 resolve_main || [[ -n "$CHECK" ]] || { echo "Could not resolve a default branch (tried origin/HEAD, main, master, the current branch)" >&2; exit 1; }
 # The reader lists the import walk takes, from main's settings (the lib's caller
-# contract item 9); without main found by name they stay empty.
+# contract item 9); without main found by name the walk fails closed.
 reader_settings
 # The check modes run here. --check-brief, --check-branch and --check-answer
 # read the default branch's commit, so they need one found by name

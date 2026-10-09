@@ -49,7 +49,8 @@
 #                 absolute, not / alone, of letters, digits and . _ - / with
 #                 no empty, . or .. part, listed once. none: no file or no
 #                 such line. malformed (a second copy, a bad line, or a file
-#                 not read) fails both walks, so the floor refuses every path.
+#                 not read) fails both walks, so the floor refuses every path;
+#                 its WHY ends "; both import walks fail".
 #             Copies are found best effort: a line counts as one when its
 #             letters alone, case folded, start with the key's
 #             ("buildlooppolicy"). Markup that adds letters (a checked task
@@ -301,7 +302,8 @@ resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
 if [[ "$MODE" == check ]]; then default_gate || exit 2; fi
 # The reader lists both import walks take, from main's settings (the lib's
-# caller contract item 9), before any walk; --settings prints its line.
+# caller contract item 9), before any walk; --settings prints its line. Not
+# read_settings below: without this call the walks model no host reader.
 reader_settings
 
 # docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST

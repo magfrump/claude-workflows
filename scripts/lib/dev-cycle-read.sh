@@ -84,11 +84,10 @@
 #     spelled; floor, check_fix and the walks lower first; truthrule refuses an
 #     upper-case letter as case).
 #  9. Call reader_settings after sourcing the lib (which clears the reader
-#     lists) and resolve_main, and before a decision's first walk: it sets
-#     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from the default branch's
-#     docs/dev-cycle.md, never from the environment (the host spellings of the
-#     main worktree and the host HOME: import_readers), or IMPORT_READER_WHY,
-#     which fails both walks. build-loop.sh and dev-cycle.sh both call it. Never set
+#     lists) and resolve_main, before a decision's first walk: it sets
+#     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md
+#     (host spellings of the main worktree and host HOMEs), or IMPORT_READER_WHY,
+#     which fails both walks; both scripts call it. Never set
 #     IMPORT_ROOTS or IMPORT_HOMES: they are import_readers' results.
 
 # The one scrub for everything printed, stdout and stderr: drops C0 controls but
@@ -549,12 +548,10 @@ main_file() {
     unbalanced\ *) FILE_WHY="the code fence opened at line ${FILE_OUT#unbalanced } of $f is never closed, so the file is not read"; return 1 ;;
   esac
 }
-# One pass over docs/dev-cycle.md (build-loop.sh's read_settings and
-# reader_settings): per key, how many lines start with it once everything but
-# letters is dropped and case folded (best effort: most markup, a BOM or a
-# misplaced colon cannot hide a copy), the first two line numbers, whether the
-# next line outside a fence after the first is blank or the end of the file
-# (NEXT 1) or not, and the first line whole: "KEY COUNT FIRST SECOND NEXT<TAB>LINE".
+# One pass over docs/dev-cycle.md (read_settings, reader_settings): per key, how
+# many lines start with it once all but letters is dropped and case folded (best
+# effort), the first two line numbers, whether the next unfenced line after the
+# first is blank or the end (NEXT 1), and the first line: "KEY COUNT FIRST SECOND NEXT<TAB>LINE".
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 SETTINGS_AWK='
 { sub(/\r$/, "") }
@@ -582,28 +579,25 @@ readerform() {
   [[ "$1" == /?* && "$1" =~ ^[$NAMECHARS]+$ ]] || return 1
   while [[ -n "$rest" ]]; do c="${rest%%/*}"; rest="${rest#*/}"; [[ -n "$c" && "$c" != . && "$c" != .. ]] || return 1; done
 }
-# reader_settings: the reader lists both walks take (caller contract item 9),
-# from the default branch's docs/dev-cycle.md, which no loop can write:
-# "Reader roots: PATH ..." names the host spellings of the repository's main
-# worktree (the first git worktree list entry; import_readers re-spells the
-# worktrees registered beneath it under each one), and "Reader homes: PATH ..."
-# the homes of sessions on a host the container cannot see; "...: none" names
-# none. Each key is one line, as "Self-merge never:" is: exact, single spaces,
-# the next line outside a fence blank or the end, each PATH in readerform and
-# listed once. Sets IMPORT_READER_ROOTS and IMPORT_READER_HOMES, and
-# READERS_LINE (--settings' readers line). No file and no line add no reader. A
-# file main_file does not read, a second copy of a key or a malformed line
-# sets IMPORT_READER_WHY instead, which import_readers refuses, so both walks
-# fail: the floor refuses every path and --check-fix skips. Without main found
-# by name there is no settings source, so the lists stay empty. Call it in the
-# caller's shell, once main is resolved.
+# reader_settings: caller contract item 9's lists, from main's docs/dev-cycle.md:
+# "Reader roots: PATH ..." (host spellings of the main worktree, the first git
+# worktree list entry) and "Reader homes: PATH ..." (host homes), or "none";
+# each one line as "Self-merge never:" is, each PATH in readerform, listed once.
+# Sets IMPORT_READER_ROOTS, IMPORT_READER_HOMES and READERS_LINE; no file or
+# line adds no reader. A file main_file refuses, a second copy, a bad line or
+# no main found by name (i1 security F1) sets IMPORT_READER_WHY, which fails
+# both walks. Call it in the caller's shell once main is resolved; a caller
+# that never calls it models no host reader (override row).
 READERS_LINE=""; IMPORT_READER_WHY=""
 # shellcheck disable=SC2034  # READERS_LINE: read by build-loop.sh --settings
 reader_settings() {
   local f=docs/dev-cycle.md l k c l1 l2 nx key t v p i why="" nr=0 nh=0 ps=()
   local -A cnt=() first=() second=() next=() text=() rd_seen=()
   IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""; IMPORT_READER_WHY=""
-  if ! main_by_name; then READERS_LINE="readers none: no default branch found by name"; return 0; fi
+  if ! main_by_name; then
+    IMPORT_READER_WHY="no default branch was found by name, so its reader settings cannot be read"
+    READERS_LINE="readers malformed: $IMPORT_READER_WHY; both import walks fail"; return 0
+  fi
   if ! main_file "$f" "$SETTINGS_AWK"; then
     if [[ "$FILE_WHY" == absent ]]; then READERS_LINE="readers none: no $f on the default branch"; return 0; fi
     why="$FILE_WHY"
@@ -633,7 +627,7 @@ reader_settings() {
   fi
   if [[ -n "$why" ]]; then
     IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""; IMPORT_READER_WHY="$why"
-    READERS_LINE="readers malformed: $why, so both import walks fail"; return 0
+    READERS_LINE="readers malformed: $why; both import walks fail"; return 0
   fi
   IMPORT_READER_ROOTS="${IMPORT_READER_ROOTS%$'\n'}"; IMPORT_READER_HOMES="${IMPORT_READER_HOMES%$'\n'}"
   if [[ -z "${cnt[roots]-}${cnt[homes]-}" ]]; then READERS_LINE='readers none: no line starts "Reader roots:" or "Reader homes:"'
@@ -743,13 +737,13 @@ IMPORT_OUT_MAX=4000000
 # of 50,000,000, up to about 5 s here with one root and about 9 s with 24, by
 # the name's shape: U2b3a i2 fact-check) passes this in all, so N adversarial files cost one bound of charged parser
 # work, not N (U2a3b L2-confirm performance P2); reading, draining and the scan
-# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 330,600 each over its 24 reader roots (8,200 with one; 2026-10-08).
+# of @-less lines (but those read while a quote is open) are not charged (L2-C7, U2a3c i2 performance F3). /workspace's walks spend about 350,000 each over its 25 reader roots and 870,000 over 49 (one host alias), 8,200 with one (2026-10-09).
 # That work grows with the square of the root count (each relative name is
 # joined once per root, and each join is projected against every root), so
 # the honest walks spend this bound near 570 roots and then fail closed:
 # prune the registry (git worktree prune) long before (U2b3a i2 performance F1).
-# Each caller root re-spells the worktrees under the main worktree, so one
-# host alias about doubles the count (49 roots here: 1.5 s per walk, U2b3b1).
+# Roots are about (1 + C) times the worktrees for C host aliases (G8): with
+# one, near 285 worktrees (49 roots here: 1.5 s per walk; U2b3b1 i1 performance F1).
 # A quote left open is charged per line for all its text so far, so an
 # unclosed @" followed by about 90 KB with no " spends the bound and fails
 # the walk (fail-closed; U2a4 confirm2 security C1, override row).
@@ -770,7 +764,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # also reads ROOT_REAL, HOME (through import_home, which sets the IMPORT_HOME*
 # globals in the caller's shell unless called in a subshell), import_readers'
 # IMPORT_ROOTS and IMPORT_HOMES when its memo key is current (else ROOT_REAL
-# alone and import_home's home: a call outside a walk), and IMPORT_LEFT
+# alone and import_home's home: a call outside a walk; either fails on refused settings), and IMPORT_LEFT
 # (what may still be printed; IMPORT_OUT_MAX when unset or empty, and as awk
 # reads a number otherwise: its numeric prefix (so 1e3 is 1000 and inf no
 # bound), or 0, so the first name fails it) and IMPORT_WORK_LEFT (set by a
@@ -997,8 +991,9 @@ import_home() {
 # project into the repo). This process's own home is kept as the parser takes
 # it (a relative one fails only a ~/ name), but one holding a newline is read
 # as empty, which fails only a ~/ name too.
-# The result, a refusal included, is memoized in IMPORT_READERS_DONE, keyed on
-# ROOT_REAL, HOME, the caller's two lists and IMPORT_READER_WHY, until
+# The result, a refusal included (but not an import_home failure, which
+# returns first), is memoized in IMPORT_READERS_DONE, keyed on ROOT_REAL,
+# HOME, the caller's two lists and IMPORT_READER_WHY, until
 # import_reset (contract item 4): the registry
 # is read once per decision, so one decision sees one root set and a cache
 # hit forks nothing here (U2b3a i1 performance F1, architecture F6).
@@ -1067,6 +1062,7 @@ import_targets() {
   homes="$IMPORT_HOME"$'\n'"$IMPORT_HOME_REAL"
   import_readers_key
   [[ -z "$IMPORT_READERS_DONE" || "$IMPORT_READERS_DONE" != "$IMPORT_READERS_KEY" ]] || { roots="$IMPORT_ROOTS"; homes="$IMPORT_HOMES"; }
+  [[ -z "$IMPORT_READER_WHY" ]] || return 1  # refused settings fail every reader (U2b3b1 i1 security F2)
   [[ $# -lt 2 ]] || x="$(printf 'x%s\n' "${@:2}")"  # the walks refuse a name holding a newline
   for u in "${UNI_SPACES[@]}"; do s+=(-e "s/$u/ /g"); done
   # Two steps, not a pipe: under pipefail awk's success would not hide a sed
@@ -1417,7 +1413,8 @@ floor() {
   elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a working file that is not this brief's own (they carry its full stem)"
   elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
   elif truthwalk main "$lp"; then
-    if [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
+    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then FLOOR_WHY="the reader settings of docs/dev-cycle.md cannot be used ($IMPORT_READER_WHY), so the instruction files could not be walked for @ imports"
+    elif [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports"
     else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
   else return 1; fi
 }

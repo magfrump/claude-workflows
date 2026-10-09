@@ -201,7 +201,7 @@ Both scripts source the lib from their own `SCRIPT_DIR`, so the copy D6 extracts
 ## Script interface (`scripts/build-loop.sh`)
 
 Read modes:
-- `--settings` → from main's commit: `policy self-merge|review set|unset: WHY`, `slots N set|default: WHY`, `never GLOB… set|none|malformed: WHY` (from `docs/dev-cycle.md`), and `constraints ok N-hard M-soft|missing|none-hard|unreadable: WHY` (from `docs/constraints.md`, read under FENCE_AWK).
+- `--settings` → from main's commit: `policy self-merge|review set|unset: WHY`, `slots N set|default: WHY`, `never GLOB… set|none|malformed: WHY` (from `docs/dev-cycle.md`), `constraints ok N-hard M-soft|missing|none-hard|unreadable: WHY` (from `docs/constraints.md`, read under FENCE_AWK), and (U2b3b1) `readers N-roots M-homes set|none|malformed: WHY` (the `Reader roots:` and `Reader homes:` lines of `docs/dev-cycle.md`).
 - `--status BRIEF…` → `ok BRIEF STATE POLICY BRANCH LOOP SHA DATE DISPATCHED [REASON]`, where LOOP is `absent | working | ready | blocked | stopped`.
 - `--marker BRIEF` → `ok BRIEF SHA`, then the `blocked` or `stopped` body under D11's rules; otherwise `skip`.
 - `--state` → `ok`, or `refuse state WHAT: WHY` for each planted `.git` state the gate refuses (exit 2), as `--check` prints them (U2b1a's `state_gate`, then U2b1b's `default_gate` once main is resolved: both main and master, or origin/HEAD naming another branch than the one taken).
