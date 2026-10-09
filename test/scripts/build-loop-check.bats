@@ -628,11 +628,59 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "the parser keeps every path below ROOT_REAL /, and returns 1 for an empty ROOT_REAL (U2a3b L2-i2 test-strategy)" {
-    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL=/
-        printf "See @/etc/x.md and @docs/a.md and @../b.md\n" | import_targets sub; echo "rc=$?"
-        ROOT_REAL=""; printf "See @docs/a.md\n" | import_targets "" >/dev/null; echo "rc=$?"' _ "$LIB"
-    for l in etc/x.md sub/docs/a.md b.md rc=0 rc=1; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
+@test "the parser prints a name below no reader root as //PATH, joins a relative name to an absolute directory alone, reads IMPORT_WHOLE lines whole, takes import_readers' roots outside a walk, and fails for a ROOT_REAL of / or empty (U2a3b L2-i2 test-strategy, U2b3b2a)" {
+    git worktree add -q --detach ../side && git worktree add -q --detach .claude/wt-b
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; s="$(cd ../side && pwd -P)"
+        printf "See @/etc/x.md and @a.md and @%s/docs/in.md and @%s/docs/w.md and @%s/.claude/wt-b/n.md\n" "$ROOT_REAL" "$s" "$ROOT_REAL" | import_targets /opt/d; echo "rc=$?"
+        printf "%s\n" "$ROOT_REAL/docs/a b.md" "/etc/x y" | IMPORT_WHOLE=1 import_targets / | sed "s/^/whole /"
+        for ROOT_REAL in / ""; do printf "See @docs/a.md\n" | import_targets "" >/dev/null; echo "rc=$?"; done' _ "$LIB"
+    for l in //etc/x.md //opt/d/a.md docs/in.md docs/w.md n.md rc=0 'whole docs/a b.md' 'whole //etc/x y'; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
+    [ "$(printf '%s\n' "$output" | grep -c '^whole ')" -eq 2 ] && [ "$(printf '%s\n' "$output" | grep -c '^rc=1$')" -eq 2 ] || { echo "$output"; return 1; }
+    # A relative name stays in its absolute directory; a dot-nested root's outer spelling is not printed (import_readers' IMPORT_DOTNEST).
+    ! printf '%s\n' "$output" | grep -qxE 'a\.md|docs/a\.md|\.claude/wt-b/n\.md' || { echo "$output"; return 1; }
+}
+
+@test "both walks follow an import below no reader root, read where it lies against its own directory, through outside chains and back into the repo; a cycle ends (U2b3b2a; U2b3a i1 architecture F5)" {
+    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o/sub" && r="$(pwd -P)"
+    printf 'See @%s/o1.md and @~/h.md\n' "$o" > AGENTS.md
+    printf 'o1: @sub/o2.md\n' > "$o/o1.md"
+    # Back in by an absolute and a relative name, and a cycle to o1.
+    printf 'o2: @%s/docs/x.md, @../o1.md and @../../repo/docs/y.md\n' "$r" > "$o/sub/o2.md"
+    printf 'h: @docs/z.md\n' > "$HOME/h.md"  # against the home's directory, not the repo
+    echo x > docs/x.md; echo y > docs/y.md; echo z > docs/z.md; mkdir sub && echo s > sub/o2.md; commit_all out
+    for w in tree main; do
+        imps "$w" docs/x.md docs/y.md docs/z.md sub/o2.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/x.md imported; want docs/y.md imported; want docs/z.md -; want sub/o2.md -; want docs/other.md -
+        # An inherited IMPORT_WHOLE is cleared when the lib is sourced, so text is still read as text (i1 architecture A1).
+        IMPORT_WHOLE=1 imps "$w" docs/x.md; want walk ok; want docs/x.md imported
+    done
+}
+
+@test "an outside link whose real path holds a newline fails the tree walk (the main walk already fails on the newline-named checkout file); import_file reads an outside file against its own directory and the DIRS it is given (U2b3b2a i1 fact-check, architecture A2)" {
+    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o" && r="$(pwd -P)"
+    printf 'See @%s/nl.md\n' "$o" > AGENTS.md; commit_all nl
+    printf 'q: @docs/q.md\n' > "$r/docs/a"$'\n'"b.md" && ln -s "$r/docs/a"$'\n'"b.md" "$o/nl.md"
+    for w in tree main; do imps "$w" docs/q.md; want walk failed; want docs/q.md imported; done
+    printf 'p: @docs/n.md\n' > "$o/p.md"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"
+        IMPORT_WORK_LEFT=100000 import_file "$2" ignored ""' _ "$LIB" "$o/p.md"
+    for l in docs/n.md "/$o/docs/n.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
+}
+
+@test "an outside name whose real path lies in the repo reads as that repo path; an unreadable, missing or non-regular outside name is skipped, as a session cannot load it (U2b3b2a)" {
+    [ "$(id -u)" -ne 0 ] || skip "root reads a mode-000 file"
+    o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o/dir" && r="$(pwd -P)"
+    ln -s "$r/docs" "$o/dl" && ln -s "$r/docs/t.md" "$o/tl.md"
+    printf 'See @%s/dl/s.md, @%s/tl.md, @%s/no.md, @%s/dir and @%s/locked.md\n' "$o" "$o" "$o" "$o" "$o" > AGENTS.md
+    # Read as the repo's docs/t.md, so @u.md resolves against docs/.
+    printf 't: @u.md\n' > docs/t.md; echo s > docs/s.md; echo u > docs/u.md; commit_all links
+    printf 'l: @docs/q.md\n' > "$o/locked.md" && chmod 000 "$o/locked.md"
+    for w in tree main; do
+        imps "$w" docs/s.md docs/t.md docs/u.md docs/q.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/s.md imported; want docs/t.md imported; want docs/u.md imported; want docs/q.md -
+    done
 }
 
 @test "both walks read an import whose .. runs past / and re-enters the repo, as Node's path.resolve stops at / (U2a3b L2-i2 test-strategy)" {
