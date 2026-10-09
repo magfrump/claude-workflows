@@ -1,8 +1,9 @@
-Commit: c9197fd2
+Commit: 3d2d8c44
+Loop closed at 3d2d8c44
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3a` (U2b3a: the reader model's roots and homes in the import parser), on main e50aab35.
-**Status: 🟡 ITERATION 1 — no red; three Must Address (a nested root at a non-dot path hides names, an executed fail-open; the caller's reader lists inherited from the environment; reader_set's per-call cost), all fixed; ITERATION 2 — no red; every iteration-1 fix holds; two text ambers (a stale superset sentence, inexact figures and a test row) fixed after the pass (unreviewed)**
+**Status: ✅ ITERATION 3 (final confirming pass) — no red; one amber (start files only another checkout holds are not walked: Medium, not a regression) acknowledged with a revisit trigger (U2b3b) after its overclaiming comment was fixed; the other final findings fixed after the pass (unreviewed, lite-checked) or routed by override rows; converged at the cap** (single-sample review; absence of findings is not an attestation)
 
 ## Iteration 1 (Commit 5516c6e6, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
@@ -91,3 +92,50 @@ None.
 ### Tokens
 
 fc 1×189k; critics 4× (security 159k, performance 137k, api 134k, architecture 160k) ≈ 780k total.
+
+## Iteration 3 (Commit 3d2d8c44, final confirming pass: no `--loop-pass`, k=3, scope `main...HEAD`, full panel, Stage 2.5)
+
+Delivery mode: inline-diff-only. Reports: merged `code-fact-check-report-build-loop-u2b3a-final.md` (k=3 from `-final-r1/r2/r3.md`: 36 clusters, 34 Verified, 2 Mostly accurate, 0 Stale, 0 Incorrect; agreement 94%), `security-review-2026-10-08-u2b3a-final.md`, `performance-review-2026-10-08-u2b3a-final.md`, `api-consistency-review-2026-10-08-u2b3a-final.md`, `architecture-review-2026-10-08-u2b3a-final.md`, `code-fact-check-submitted-claims-build-loop-u2b3a.md` (Stage 2.5: 3 routed claims, all Verified, executed). Every iteration 1-2 fix re-verified (each replicate ran HEAD's U2b3a tests against main, 5516c6e6 and later commits: red where the rubric says).
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| C1 | Start files only another registered checkout holds are never walked (executed: an untracked `CLAUDE.local.md` in a sibling worktree; from a gate worktree the walks give 64 of /workspace's 128 names, the rest from its gitignored `devcontainer-config/claude-home/CLAUDE.md`), and the superset statement overclaimed "a session in any checkout is modelled". Main's lib alike; no tracked path is among today's checkout-only imports. | Medium (not a regression) / Minor | security final 1; architecture final F1; fact-check final r1 | Comment fixed (names resolved as in any checkout; both exception lists name the case); seeding deferred to U2b3b with a revisit trigger (override row; plan sub-bullet) |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D1 | import_readers skipped an empty ROOT_REAL, so a registered worktree could lead the roots and import_targets then returned 0 (unreachable: need_root exits first). | fact-check final claim 1; api final F1; architecture final F2; security final 4 | Fixed: refused, with a test red on 3d2d8c44 |
+| D2 | "about 0.1-5 s" low end (a single long run spends the bound in 28 ms). | fact-check final claim 2 | Fixed: "up to about 5 s" |
+| D3 | `IMPORT_READERS_KEY` missing from the sourced-definitions test; IMPORT_ROOTS/IMPORT_HOMES not marked as results. | api final F2, F3 | Fixed (test list; contract item 9) |
+| D4 | The parent U2b plan bullet still said "the longest matching root". | api final escalation | Fixed (points to the U2b3a sub-bullet) |
+| D5 | A `/proc/self/cwd` alias name is dropped (main alike). | security final 2 | Won't-Fix (override row) |
+| D6 | A caller root ending in CR passes. | security final 3 | Defer to U2b3b (override row) |
+| D7 | A refused reader set is not cached (~5 ms per call on an all-refusing decision). | performance final F1 | Defer to U2b3b (override row) |
+
+### ✅ Confirmed Good
+
+| Claim | Evidence | Backing |
+|---|---|---|
+| A caller root that is a symlink to `/` fails both walks closed (every path answers imported). | realpath -mz reads it as `/`, which the `-n "${rs_real[i]//\//}"` test refuses; a plain-directory root as control walks ok | submitted claim 5, executed |
+| Every spelling dotnest omits has a dot component, so truthrule refuses it (as `dot`, or as `instr` for an instruction-file name). | 1,500 random root sets: 598 omitted spellings, none without `/.`; the two comments cross-reference each other | submitted claim 6, executed |
+| The eight U2b3a tests pass at 3d2d8c44, and each guards what the rubric says (red on main; tests 3-6 and 8 red on 5516c6e6; test 7 guards only a regression to main). | `bats --filter U2b3a`: 1..8 ok; replicate runs against five lib versions | submitted claim 7 and fact-check final r1-r3, executed |
+
+### 🧩 Composition check
+
+- `dev-cycle-read.sh:689-690, 612-614` (security 1, architecture F1, fact-check r1): one root, C1.
+- `dev-cycle-read.sh:899-909, 701` (fact-check 1, api F1, architecture F2, security 4): one root, D1.
+
+### Considered overrides
+
+Rows 425, 431, 432, 437, 477 and this branch's rows (G8, G9 and H4, H5 deferred to U2b3b; H2, H6 deferred; G11 Won't-Fix; G12, H7 Accepted-immutable); four new rows for C1, D5, D6, D7.
+
+### Tokens
+
+fc 3× (202k, 184k, 198k); critics 4× (security 175k, performance 128k, api 144k, architecture 144k); Stage 2.5 121k ≈ 1.3M total.
