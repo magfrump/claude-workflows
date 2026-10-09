@@ -27,7 +27,6 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-136](#q-136--u2b2-landing) | you: judgment | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -346,38 +345,5 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 - **Update 2026-10-06:** under [1], U2a2 (the floor plus the walk, 400 code lines before U2a1's carried rows) was split again, then once more at its review's iteration 2 (fixes and tests put it near 480 lines): U2a2 is the shared token parser and `isimported tree`, U2a3 the commit-reading walk, U2a4 the floor. No new judgment: the same refuse-what-is-not-modelled walk, in smaller units. Under [3], U2a3 is the unit replaced.
 - **Update 2026-10-08:** U2b was split the same way before any code, for size alone (tests count toward the cap): U2b1a (`--check`'s frame: hardened git, state gate, `--expect`, merge-tree), U2b1b (the changed paths and the N rules), U2b2 (the gate's checkout), U2b3 (the reader model). Plan step 5's U2b split note lists each. No new judgment; commit d0199be6 on `feat/build-loop-u2b1a`. At review iteration 2 U2b1a split again for size (439 lines): U2b1a1 (the reader side `--status` uses) lands first, then U2b1a2 (`--check`); plan step 5's note.
 - **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
-
-
-### Q-136 · u2b2-landing
-**Needs:** you: judgment · **Opened:** 2026-10-08 · **Status:** OPEN
-
-U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate caller contract items 2-4) passed its final confirming pass with no red. May it land?
-
-- **Why it's yours:** merges to main are asked (memory `no-github-routing-solo-dev`, local merge only).
-- **Read:** `docs/reviews/code-review-rubric-2026-10-08-feat-build-loop-u2b2.md` and the merge message `docs/working/merge-msg-build-loop-u2b2.md`, both on `feat/build-loop-u2b2` at d903499a (worktree `.claude/wt-build-loop-u2b2`).
-- **Evidence:**
-  - Three iterations, at the cap, and no pass found a red.
-  - Iteration 1's nine ambers were fixed in 639f7b40, among them three Medium security bypasses, all executed: a non-UTF-8 name, quote and CR names, an unlistable gitlink.
-  - Iteration 2 found no security finding. Its text fixes went into 368a3194 and 1f4f7a21.
-  - The final pass (k=3, full panel, Stage 2.5) found 0 behavioral Incorrect claims. Five submitted claims were Verified; four of them executed a global sparse checkout, autocrlf and a global-only ident attribute, and each was refused.
-  - The final pass's ambers were fixed after it, in a2cbd9c6: help and comment text, plus one misleading reason (a newline name was refused as index bits; it now reads records with perl -0, and a test fails on the old count). The lite fix-drift check's one finding was refuted.
-  - Suites 106/19/78/2/2. The health check passed at a2cbd9c6. About 240 code and test lines.
-- **Decided without you (in the merge message's Areas of uncertainty):**
-  - Item 3 is checked by effect: every file main stores hashes, unfiltered, to main's blob. This replaces check-attr, so an eol=crlf checkout is refused.
-  - core.ignoreCase true is refused.
-  - The refusal is per self-merge brief.
-  - The main /workspace checkout refuses every self-merge brief, because its agent worktrees count as nested repositories. The orchestrator's own worktree (D13) is where --check runs.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Land it** | Merge `feat/build-loop-u2b2` locally (`--no-ff`, the merge message above) after re-running the health check on the merge. | One answer. | a2cbd9c6's newline-name fix and text land reviewed only by the lite check, a mutant and the suites. |
-| **[2] One more confirming pass first** | A k=1 fact-check plus security over 1f4f7a21..a2cbd9c6, then ask again. | One answer now, one later. | Nothing; delay and about 300k tokens. |
-
-- **Blocks:** U2b3 and U2c (stacked on it).
-- **Interim:** nothing merges. Recommended: [1]. The one post-pass behaviour change only alters which reason a refusal gives.
-- **If the answer differs:** [2] runs the pass and re-asks with its result.
-
-
-
 
 
