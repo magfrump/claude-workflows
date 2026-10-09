@@ -729,7 +729,8 @@ prompt_bases() {
 # names (@/usr/bin/python3.md reads /usr/bin/python3) or a very long
 # absolute name (each prefix prints, about L*L/2 bytes, as relative names
 # already do) can spend a walk's budget, which fails closed (i1 performance
-# F1, F2). Neither walk starts at an instruction file outside the repo, though Claude
+# F1, F2). The walk reads outside files as they are when it runs: one
+# changed or removed during the walk is read as it then is (i2 security F2). Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; U2b3b2b's outside starts),
 # nor at a start file only another registered checkout holds (U2b3b2b).
@@ -1027,8 +1028,10 @@ import_home() {
 # Not covered: a hostile loop can rewrite the worktree registry in the shared
 # common dir, dropping a root (a Q-103 residual).
 IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_DOTNEST=""; IMPORT_READERS_DONE=""; IMPORT_READER_ROOTS=""; IMPORT_READER_HOMES=""
-# Set only for one import_targets call (import_outside's projection); cleared here, so an inherited
-# one cannot make every walk read its text as whole names (U2b3b2a i1 architecture A1).
+# Set only as a one-call prefix (import_outside's projection), never assigned
+# by a caller; cleared here, so an inherited one cannot make every walk read
+# its text as whole names (U2b3b2a i1 architecture A1). IMPORT_LEFT and
+# IMPORT_WORK_LEFT need no clearing: every walk sets both for each call.
 IMPORT_WHOLE=""
 # import_readers_key: IMPORT_READERS_KEY, the key import_readers memoizes on (after
 # import_home), each part led by its length so no part can run into the next.
@@ -1129,10 +1132,11 @@ import_targets() {
 # another outside file as that file, which the walk then reads again under
 # its real path. For a walk, which sets IMPORT_WORK_LEFT: the two trailers
 # are summed into one, and each call may spend all that a walk has left, so
-# the walk's own import_work check is what bounds the pair. It returns 1 on
-# a failed read or a real path holding a newline (the projection reads one
-# name per line: U2b3b2a i1 fact-check), so a file that changed after the
-# walk admitted it fails the walk rather than being skipped.
+# the walk's own import_work check is what bounds the pair. It returns 1 when
+# IMPORT_WORK_LEFT is unset or empty (no trailer to sum), when realpath, a
+# read or import_targets fails, or on a real path holding a newline (the
+# projection reads one name per line: U2b3b2a i1 fact-check), so a file that
+# changed after the walk admitted it fails the walk rather than being skipped.
 import_outside() {
   local d="${1%/*}" r a b="" w=0 rl=()
   nul_list rl realpath -ez -- "$1" && [[ ${#rl[@]} -eq 1 && "${rl[0]}" != *$'\n'* ]] || return 1
@@ -1144,7 +1148,9 @@ import_outside() {
 # import_file FILE DIR [DIRS...]: import_targets over FILE as the file system
 # holds it, for both walks: a repo path (DIR and DIRS as import_targets takes
 # them), or an absolute one through import_outside (its own directory in
-# place of DIR, and DIRS).
+# place of DIR, and DIRS). An absolute FILE needs IMPORT_WORK_LEFT set, as
+# every walk sets it, and returns 1 without it; a caller treats that 1 as a
+# failed walk, never as a file to skip (U2b3b2a i2 fact-check 24).
 import_file() { if [[ "$1" == /* ]]; then import_outside "$1" "${@:3}"; else capped_read < "$1" | import_targets "${@:2}"; fi; }
 # outside_ok PATH: whether a walk reads PATH, a name below no reader root: a
 # readable regular file (the one admission rule both walks apply). Anything
@@ -1282,7 +1288,7 @@ imported_names() {
 # blob, link or gitlink, a name is listed twice (git's lookups read the first
 # copy), is also a directory of another listed name, or holds a newline, the
 # start list's lower_all fails or comes back short, main_checkout refuses a start or an
-# import main lacks, a blob or checkout file cannot be read, symlink text it
+# import main lacks, a blob, checkout file or outside file cannot be read (import_outside), symlink text it
 # follows is empty, absolute, leaves the repo, holds a newline or a NUL, has
 # a .. after a symlink, or names a directory or a gitlink, a link or gitlink
 # sits where START_LINK matches and is not a symlinked start, import_readers, the parser (its comment lists why) or a

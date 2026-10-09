@@ -657,7 +657,7 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "an outside link whose real path holds a newline fails both walks; import_file reads an outside file against its own directory and the DIRS it is given (U2b3b2a i1 fact-check, architecture A2)" {
+@test "an outside link whose real path holds a newline fails the tree walk (the main walk already fails on the newline-named checkout file); import_file reads an outside file against its own directory and the DIRS it is given (U2b3b2a i1 fact-check, architecture A2)" {
     o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o" && r="$(pwd -P)"
     printf 'See @%s/nl.md\n' "$o" > AGENTS.md; commit_all nl
     printf 'q: @docs/q.md\n' > "$r/docs/a"$'\n'"b.md" && ln -s "$r/docs/a"$'\n'"b.md" "$o/nl.md"
