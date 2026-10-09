@@ -730,7 +730,16 @@ prompt_bases() {
 # absolute name (each prefix prints, about L*L/2 bytes, as relative names
 # already do) can spend a walk's budget, which fails closed (i1 performance
 # F1, F2). The walk reads outside files as they are when it runs: one
-# changed or removed during the walk is read as it then is (i2 security F2). Neither walk starts at an instruction file outside the repo, though Claude
+# edited during the walk is read as it then is, and one removed or made
+# unreadable after its admission fails the walk (import_outside; i2 security
+# F2, final api F2). Admission tests the file system before import_outside
+# projects the real path (final architecture F1), so an outside link into
+# another reader root whose checkout lacks a file main has is skipped, though
+# a session there reads main's file once that checkout has it (final security
+# F1, override row; U2b3b2b, whose symlinked seeds meet it, projects first);
+# and an outside file whose name holds a newline, which only a quoted mention
+# across lines can name, is dropped by the parser (final security F2,
+# override row). Neither walk starts at an instruction file outside the repo, though Claude
 # Code loads them and follows their imports into it: a parent directory's
 # CLAUDE.md, the user's memory file (known issue A5; U2b3b2b's outside starts),
 # nor at a start file only another registered checkout holds (U2b3b2b).
@@ -878,7 +887,8 @@ function put(c,   n, i, j, k, part, st, out, h, nho) {
   }
   out = ""; for (i = 1; i <= k; i++) out = out "/" st[i]
   # A quoted text that spans lines can resolve to a name holding a newline,
-  # which no file a walk admits has (and a printed one would split in two).
+  # which a printed line would split in two: dropped (no repo name a walk lists
+  # holds one; an outside one is a named exception in the walk header).
   if (index(out, "\n") || out == "") return
   # Relative to every root holding it, but an outer root whose path down to a
   # nested root holding it has a dot component (dotnest, from import_readers): a session in a
@@ -1124,7 +1134,8 @@ import_targets() {
     IT_WHOLE="${IMPORT_WHOLE:-}" IT_LEFT="${IMPORT_LEFT:-$IMPORT_OUT_MAX}" IT_WORK="${IMPORT_WORK_LEFT:-}" awk "$IMPORT_AWK" || return 1
 }
 # import_outside FILE [DIRS...]: import_targets' output for FILE, an absolute
-# path below no reader root (a name from the parser's second channel), read
+# path (for the walks, one below no reader root: a name from the parser's
+# second channel), read
 # from the file system against its own directory and each DIRS entry (as
 # import_targets takes further directories); when its real path differs (a
 # symlink on the way), that path is also projected whole (IMPORT_WHOLE), so a
@@ -1133,12 +1144,14 @@ import_targets() {
 # its real path. For a walk, which sets IMPORT_WORK_LEFT: the two trailers
 # are summed into one, and each call may spend all that a walk has left, so
 # the walk's own import_work check is what bounds the pair. It returns 1 when
-# IMPORT_WORK_LEFT is unset or empty (no trailer to sum), when realpath, a
-# read or import_targets fails, or on a real path holding a newline (the
-# projection reads one name per line: U2b3b2a i1 fact-check), so a file that
-# changed after the walk admitted it fails the walk rather than being skipped.
+# IMPORT_WORK_LEFT is unset or empty (no trailer to sum), when the summed work
+# passes IMPORT_WORK_MAX, when realpath, a read or import_targets fails
+# (under its own pipefail), or on a real path holding a newline (the
+# projection reads one name per line: U2b3b2a i1 fact-check), so a file
+# removed or made unreadable after the walk admitted it fails the walk rather
+# than being skipped; an edited one is read as it then is.
 import_outside() {
-  local d="${1%/*}" r a b="" w=0 rl=()
+  local - d="${1%/*}" r a b="" w=0 rl=(); set -o pipefail
   nul_list rl realpath -ez -- "$1" && [[ ${#rl[@]} -eq 1 && "${rl[0]}" != *$'\n'* ]] || return 1
   r="${rl[0]}"
   a="$(capped_read < "$1" | import_targets "${d:-/}" "${@:2}")" && import_work a w || return 1
@@ -1151,7 +1164,7 @@ import_outside() {
 # place of DIR, and DIRS). An absolute FILE needs IMPORT_WORK_LEFT set, as
 # every walk sets it, and returns 1 without it; a caller treats that 1 as a
 # failed walk, never as a file to skip (U2b3b2a i2 fact-check 24).
-import_file() { if [[ "$1" == /* ]]; then import_outside "$1" "${@:3}"; else capped_read < "$1" | import_targets "${@:2}"; fi; }
+import_file() { local -; set -o pipefail; if [[ "$1" == /* ]]; then import_outside "$1" "${@:3}"; else capped_read < "$1" | import_targets "${@:2}"; fi; }
 # outside_ok PATH: whether a walk reads PATH, a name below no reader root: a
 # readable regular file (the one admission rule both walks apply). Anything
 # else is skipped: a session in this container cannot load it either.
