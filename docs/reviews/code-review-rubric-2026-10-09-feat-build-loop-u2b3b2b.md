@@ -1,10 +1,39 @@
-Commit: 1c820663
+Commit: 39f64d62
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2b` (U2b3b2b: both import walks start at outside seeds — config dirs, ancestors, other worktrees' start files — and project rejected `//` names), on main 07fe578b.
-**Status: 🟡 ITERATION 1 (loop pass over 1c820663, k=1, full panel) — no behavioral red; Must Address fixed or routed in the fix commit after 1c820663 (unreviewed until iteration 2).**
+**Status: 🟡 ITERATION 2 (loop pass over 1c820663..39f64d62, k=1, full panel) — no behavioral red; Must Address fixed in the fix commit after 39f64d62 (unreviewed until the final pass).**
 
-## Iteration 1 (Commit 1c820663, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
+## Iteration 2 (Commit 39f64d62, `--loop-pass`, k=1, scope `1c820663..39f64d62`, full panel)
+
+Delivery mode: self-read; partial-scope label applied. Fact-check `code-fact-check-report-build-loop-u2b3b2b-i2.md` (26 claims: 20 Verified, 4 Mostly accurate, 1 Incorrect, 1 Unverifiable; every commit count re-run and held). Critics: `security-review-2026-10-09-u2b3b2b-i2.md`, `performance-review-…-i2.md`, `api-consistency-review-…-i2.md`, `architecture-review-…-i2.md`. Every iteration-1 item marked Fixed was confirmed but K11 (below). An uncommitted N1 edit landed in the worktree mid-pass; the fact-check re-ran its checks against 39f64d62 itself.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | The @ filter accepted grep status 2, so a fatal grep error (memory exhausted, executed) dropped the rest of a batch and the walks reported ok; a C1 link to /dev/zero or a FIFO hung the walk (executed), since grep now opened links outside_ok had not admitted. The headers said a grep that cannot finish fails the walk. | Medium (regression in the fix range) | security N1, N2; api F1; fact-check 7, 16 | Fixed: with_at reads only seeds outside_ok admits, keeps links unread, and accepts grep status 0 or 1 only (test: a grep shim exiting 2 fails both walks). |
+| B2 | The fix added `realpath -mz -- "${cx[@]}"` over every config seed outside xargs: "Argument list too long" at 40,000 rules files (executed; fails closed). K11 was only partly fixed. | Low (fails closed) | fact-check 22b | Fixed: realpath runs in xargs batches. |
+| B3 | C1's start test read the path below the innermost root, so a worktree nested in another root's .claude/skills/ lost its starts and a SKILL.md there was tagged f (executed). | Low (narrowing) | fact-check Goal-Alignment note | Fixed: isstart and the prompt test read the whole lower-cased path (a superset); the byte skip also requires ROOT_REAL's copy to be a start at its inner path (test: nested worktree's README.md). |
+| B4 | The early `return 0` with no C1 candidate skipped the newline check; the stale `lo` from the tops phase would then fail the length check. | Low | api F2; architecture 2 | Fixed: no early return; each phase guards its own empty list. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| L1 | 35 @-free skill seeds kept for their link, though their real path is below no root: read twice for nothing (0.85 s per walk). | performance N1 | Fixed: a link-reached @-free config seed is kept only when its real path lies below a reader root. Walks now 2 to 2.5 s, same 1177 names. |
+| L2 | root_starts missing from the sourcing inventory; its header did not say absolute paths; IMPORT_MANAGED_DIR lacked the reset line; plan text misplaced. | api F3-F6 | Fixed. |
+| L3 | The @ filter leaned on the parser's @ rule with no cross-reference; the grep wrapper was written twice; fl/os_at state crossed phases. | architecture 1-3 | Fixed: with_at holds the wrapper and the rule's note; scan's comment points back to it. |
+| L4 | Walk-time figures and "6,720 seeds" unverifiable or imprecise. | fact-check 1, 2, 8 | Fixed: re-measured (2 to 2.5 s over 8 worktrees, about 50 seeds); the 6,720 figure was measured on an uncommitted variant (recorded as such). |
+| L5 | rawfile and lower forks, ~0.1 s per walk; find over /workspace is now most of outside_seeds. | performance N2, N3 | Won't-Fix (measured, small). |
+
+## Iteration 1
+
+### Iteration 1 detail (Commit 1c820663, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
 Delivery mode: self-read. The fact-check (`code-fact-check-report-build-loop-u2b3b2b.md`: 24 claims, 16 Verified, 3 Incorrect, 1 Stale, 3 Mostly accurate, 1 Unverifiable) and the four critics ran in parallel, as in earlier build-loop units: `security-review-2026-10-09-u2b3b2b.md`, `performance-review-2026-10-09-u2b3b2b.md`, `api-consistency-review-2026-10-09-u2b3b2b.md`, `architecture-review-2026-10-09-u2b3b2b.md`. Contextual critics: architecture-review (new lib functions, the walks' contract). Stage 2.5 skipped (loop pass); security's two routed endorsements stay pending execution verification.
 

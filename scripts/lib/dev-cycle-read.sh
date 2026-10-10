@@ -757,8 +757,8 @@ prompt_bases() {
 # walk (fail-closed: one loop's worktree can hold every self-merge back; i1
 # security F3), though Claude Code reads an ancestor's files by name; a seed
 # swapped for a FIFO stalls it, as a checkout file can. The seeds cost: over
-# this repository's 8 registered worktrees, about 85 seeds and 3 to 3.5 s per
-# walk, against 0.6 s without (2026-10-09; i1 performance).
+# this repository's 8 registered worktrees, about 50 seeds and 2 to 2.5 s per
+# walk, against 0.6 s without (2026-10-09; i1, i2 performance).
 # The walks' lists (IMPORTED, IMPORTED_MAIN) also hold the second channel's
 # lower-cased // names, which no repo path isimported asks for can match.
 # isimported asks either walk.
@@ -934,7 +934,8 @@ function show(out) {
 # is set, a later one (qo marks an open quote, even an empty one, and qopen
 # holds its text; each held line and each copy of qopen is charged as work), so
 # prefixes never grow past a blank (U2a4 i1 security F1; final security F2,
-# performance F1; confirming security F2, F4).
+# performance F1; confirming security F2, F4). Every name starts at an @
+# byte: outside_seeds drops a seed holding none (with_at leans on this).
 function scan(line, carry,   i, L, k, r) {
   L = length(line)
   for (i = 1; i <= L; i++) {
@@ -1058,6 +1059,7 @@ IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_DOTNEST=""; IMPORT_READERS_DONE=""; IMP
 IMPORT_WHOLE=""
 # The managed policy's directory (Claude Code on Linux), an outside_seeds
 # config dir; set here, so the environment never moves it (a test sets it).
+# A caller that changes it calls import_reset (contract item 4).
 IMPORT_MANAGED_DIR=/etc/claude-code
 # import_readers_key: IMPORT_READERS_KEY, the key import_readers memoizes on (after
 # import_home), each part led by its length so no part can run into the next.
@@ -1206,9 +1208,21 @@ outside_proj() {
   [[ -z "$b" ]] || op_o+="${op_o:+$'\n'}$b"
 }
 # root_starts ROOT: the start-named files (instruction_names) below ROOT, an
-# absolute directory, NUL-separated, listed with find -P (.git pruned):
+# absolute directory, as absolute paths, NUL-separated, listed with find -P (.git pruned):
 # regular files and links. It fails when find or grep does.
 root_starts() { local -; set -o pipefail; find -P "$1" -name .git -prune -o '(' -type f -o -type l ')' -iname '*.md' -print0 | instruction_names; }
+# with_at NAME PATH...: array NAME gets the PATHs outside_ok admits that hold
+# an @ byte, read by grep in xargs batches (no argument list too long). The
+# outside_seeds filter leans on the parser: it starts every name at an @ (scan
+# in IMPORT_AWK; a change there changes this). It returns 1 on any grep error
+# (a file that vanished or became unreadable after admission: i2 api F1).
+with_at() {
+  local -n wa_a="$1"; local p wa_ok=(); shift
+  # shellcheck disable=SC2034  # wa_a is the caller's array, filled by name
+  wa_a=()
+  for p in "$@"; do ! outside_ok "$p" || wa_ok+=("$p"); done
+  [[ ${#wa_ok[@]} -eq 0 ]] || nul_list wa_a xargs -0r -a <(printf '%s\0' "${wa_ok[@]}") sh -c 'grep -lZF -e @ -- "$@"; [ $? -le 1 ]' sh
+}
 # outside_seeds NAME: array NAME gets the walks' outside starts (U2b3b2b): files
 # Claude Code may load that no checkout the walks read holds, each an absolute
 # path led by f, or by p for a prompt (a walk reads it against prompt_bases
@@ -1284,11 +1298,18 @@ for f in sys.argv[1:]:
     [[ ${#fl[@]} -eq 0 ]] || nul_list lo lower_all "${fl[@]}" && [[ ${#lo[@]} -eq ${#fl[@]} ]] || return 1
     for i in "${!fl[@]}"; do isstart "${lo[i]}" && { cx+=("${fl[i]}"); kx+=(f); }; done
   fi
-  # The config seeds that can yield a name: an @ in the file, or a link on the way.
-  [[ ${#cx[@]} -eq 0 ]] || nul_list fl xargs -0r -a <(printf '%s\0' "${cx[@]}") sh -c 'grep -lsZF -e @ -- "$@"; [ $? -le 2 ]' sh || return 1
+  # The config seeds that can yield a name: an @ in the file, or a link on the
+  # way to a real path below a reader root (projected as that repo path; one
+  # below no root holds no @ either: i2 performance N1).
+  with_at fl "${cx[@]}" || return 1
   for d in "${fl[@]}"; do os_at[$d]=1; done
-  [[ ${#cx[@]} -eq 0 ]] || nul_list rl realpath -mz -- "${cx[@]}" && [[ ${#rl[@]} -eq ${#cx[@]} ]] || return 1
-  for i in "${!cx[@]}"; do [[ -z "${os_at[${cx[i]}]+set}" && "${rl[i]}" == "${cx[i]}" ]] || os_a+=("${kx[i]}${cx[i]}"); done
+  # In xargs batches, as with_at reads: config trees can hold any number of files (i2 fact-check 22b).
+  rl=(); if [[ ${#cx[@]} -gt 0 ]]; then nul_list rl xargs -0r -a <(printf '%s\0' "${cx[@]}") realpath -mz -- && [[ ${#rl[@]} -eq ${#cx[@]} ]] || return 1; fi
+  for i in "${!cx[@]}"; do
+    in=""; [[ -z "${os_at[${cx[i]}]+set}" ]] || in=1
+    [[ -n "$in" || "${rl[i]}" == "${cx[i]}" ]] || for q in "${rs[@]}"; do [[ "${rl[i]}" != "$q"/* ]] || in=1; done
+    [[ -z "$in" ]] || os_a+=("${kx[i]}${cx[i]}")
+  done
   # C1: each other root's start files, real path once each.
   nul_list rl realpath -mz -- "${rs[@]}" || return 1
   for r in "${rl[@]}"; do [[ "$r" != "$ROOT_REAL" && -d "$r" && -z "${os_s[r$r]+set}" ]] || continue; os_s[r$r]=1; cr+=("$r"); done
@@ -1300,18 +1321,20 @@ for f in sys.argv[1:]:
     nul_list fl root_starts "$r" || return 1
     for d in "${fl[@]}"; do [[ "$d" == "$ROOT_REAL"/* && "$r" != "$ROOT_REAL"/* ]] || cx+=("$d"); done
   done
-  [[ ${#cx[@]} -gt 0 ]] || return 0
-  # Each one's path below its innermost root: isstart's (the authority, after
-  # instruction_names' prefilter), the prompt test's and the byte comparison's.
+  # isstart (the authority, after instruction_names' prefilter) and the prompt
+  # test read the whole path, so a start below any root holding it counts (a
+  # superset: i2 fact-check, a worktree nested in a .claude/skills/); the byte
+  # comparison takes the path below its innermost root.
   for d in "${cx[@]}"; do q=""; for r in "${cr[@]}"; do [[ "$d" != "$r"/* || ${#r} -le ${#q} ]] || q="$r"; done; ir+=("${d#"$q"/}"); done
-  nul_list lo lower_all "${ir[@]}" && [[ ${#lo[@]} -eq ${#ir[@]} ]] || return 1
-  nul_list fl xargs -0r -a <(printf '%s\0' "${cx[@]}") sh -c 'grep -lsZF -e @ -- "$@"; [ $? -le 2 ]' sh || return 1
+  lo=(); if [[ ${#cx[@]} -gt 0 ]]; then nul_list lo lower_all "${cx[@]}" && [[ ${#lo[@]} -eq ${#cx[@]} ]] || return 1; fi
+  with_at fl "${cx[@]}" || return 1
   for d in "${fl[@]}"; do os_at[$d]=1; done
   for i in "${!cx[@]}"; do
     isstart "${lo[i]}" && [[ -n "${os_at[${cx[i]}]+set}" || -L "${cx[i]}" ]] || continue
     c=f; [[ ! "${lo[i]}" =~ $PROMPT_DIR ]] || c=p
     # rawfile: a ROOT_REAL copy reached through a link the tree walk does not start at (i1 fact-check 19b).
-    if [[ ! -L "${cx[i]}" ]] && rawfile "${ir[i]}" && outside_ok "${cx[i]}"; then sp+=("$c${cx[i]}"); hs+=("${cx[i]}" "${ir[i]}"); else os_a+=("$c${cx[i]}"); fi
+    # isstart on the inner path's tail of lo: ROOT_REAL's copy must be a start there too.
+    if [[ ! -L "${cx[i]}" ]] && isstart "${lo[i]:${#lo[i]}-${#ir[i]}}" && rawfile "${ir[i]}" && outside_ok "${cx[i]}"; then sp+=("$c${cx[i]}"); hs+=("${cx[i]}" "${ir[i]}"); else os_a+=("$c${cx[i]}"); fi
   done
   if [[ ${#hs[@]} -gt 0 ]]; then
     nul_list lo xargs -0r -a <(printf '%s\0' "${hs[@]}") sha1sum -z -- && [[ ${#lo[@]} -eq ${#hs[@]} ]] || return 1

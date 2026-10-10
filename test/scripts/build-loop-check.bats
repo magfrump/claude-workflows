@@ -728,13 +728,15 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     printf 'u: @docs/u.md\n' > "$sd/CLAUDE.local.md"; printf 'k: @docs/k.md\n' > "$sd/.claude/commands/k.md"; echo none > "$sd/GEMINI.md"
     # A prompt under .CLAUDE also resolves against the directory holding it (contract item 8's lower-cased path).
     printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
+    # A worktree nested in side's .claude/skills/: its README.md is a prompt by the whole path (i2 fact-check).
+    mkdir -p "$sd/.claude/skills" && git worktree add -q --detach "$sd/.claude/skills/wt" && printf 'w: @docs/w.md\n' > "$sd/.claude/skills/wt/README.md"
     printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
     # git is never run in another root: its .git file is the loop's to write.
     S="$BATS_TEST_TMPDIR/gitlog" && mkdir -p "$S" && printf '#!/bin/sh\necho "$PWD $*" >> "%s/log"\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
     for w in tree main; do
-        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md
+        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md docs/w.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in u k t s v; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported
+        want walk ok; for f in u k t s v w; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported
     done
     ! grep -e "^$sd" -e ' -C ' "$S/log" || return 1
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; IMPORT_MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"
@@ -760,6 +762,10 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
     chmod 755 "$HOME/.claude/rules/locked" && printf '@x\n' > "$HOME/.claude/rules/a"$'\n'"b.md"
     for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
+    # A grep error in the @ filter (not only an unreadable file: memory exhausted) fails the walk (i2 security N1, api F1).
+    rm "$HOME/.claude/rules/a"$'\n'"b.md" && printf '@x\n' > "$HOME/.claude/rules/r.md" && S="$BATS_TEST_TMPDIR/g2" && mkdir -p "$S"
+    printf '#!/bin/sh\n[ "$1" = -lZF ] && exit 2\nexec %s "$@"\n' "$(command -v grep)" > "$S/grep" && chmod +x "$S/grep"
+    for w in tree main; do PATH="$S:$PATH" imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
 }
 
 @test "both walks read an import whose .. runs past / and re-enters the repo, as Node's path.resolve stops at / (U2a3b L2-i2 test-strategy)" {
