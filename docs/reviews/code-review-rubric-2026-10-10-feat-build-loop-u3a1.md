@@ -1,8 +1,37 @@
-Commit: 83f75281
+Commit: d10cfba8
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a1` (U3a1: --check re-hashes main's and the merge's objects; status as values; gate_start), on main d5736445.
-**Status: 🟡 ITERATION 2 (`--loop-pass`, k=1, full panel, scope `65007bf8..83f75281`) — no Must Fix; 1 Must Address (architecture 1: one brief's second-copy refusal carried to later briefs), fixed in the commit after 83f75281 (unreviewed at this stamp).**
+**Status: 🔴 ITERATION 3 = final confirming pass (no `--loop-pass`, k=3, full panel, Stage 2.5, scope `main...d10cfba8`) — 1 Must Fix (security F1, reproduced), fixed in the commit after d10cfba8 (unreviewed at this stamp). Iteration-4 gate decision below.**
+
+## Iteration 3: final confirming pass (Commit d10cfba8, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: inline-diff-only. Fact-check: three replicates (`code-fact-check-report-build-loop-u3a1-final-r1/-r2/-r3.md`: 26/38/38 claims) merged most-severe-wins into `code-fact-check-report-build-loop-u3a1-final.md` (56 clusters: 48 Verified, 5 Mostly accurate, 1 Stale, 1 Incorrect, 1 Unverifiable; agreement 82.1%). The Incorrect is a test title (doc-class, 🟡 under policy T: no behavioral red). Critics (opus, parallel; `*-review-2026-10-10-build-loop-u3a1-final.md`): security (1 High, 1 Info), architecture (1 Minor, 1 Info), api (2 Info), performance (1 Info). Stage 2.5 (`code-fact-check-submitted-claims-build-loop-u3a1.md`, appended to the merged report as claims 57-59): 57 Verified (executed: the midx pin reaches all 57 git calls, gate_git's included, and closes the swapped-offset midx route; this also answers fact-check 10b's Unverifiable), 58 Verified (executed), 59 Mostly accurate (the brief is still read twice in status_fields; the saving is one check_branch per brief).
+
+### 🔴 Must Fix
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| E1 | The pack listing was newline-separated: a pack named `x<LF>y.idx`, with valid decoy indexes at `pack/x` and `objects/y.idx`, kept the forged pack's index out of the second-copy scan; the gate printed ok for a forged `Branch: feat/y` (reproduced end to end). | security F1 (High) | Fixed: `find -print0` / `read -d ''`; test with the newline pack and decoys, which fails on d10cfba8. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| F1 | store_check's skip set chosen by a file's existence: a second main call would skip main silently. | architecture 1 | Fixed: an explicit `--main`; any other call fails without main's list. |
+| F2 | check_line's carry list omitted `$GATE_TMP/main`. | architecture 2 | Fixed. |
+| F3 | The help's per-brief gloss omits that a mid-run second copy of main's object refuses there; the state paragraph lacked "(gitlinks aside)". | api 1, 2 | Fixed. |
+| F4 | Plan note "skipping ids already checked"; the Not-checked lists omit check_brief's `git log -G` walk; gate_start's comment omits mktemp's exit 1; a test title named a multi-pack-index case it lacks. | fact-check 2b, 4b, 20, 25a, 34b | Fixed. |
+| F5 | Commit 65007bf8 cites row 512 and says the brief is read once. | fact-check 36c, 36d; Stage 2.5 59 | Immutable; row; merge message corrected. |
+| F6 | The midx pin's lookup cost. | performance F1 | Row (Won't-Fix). |
+
+### Iteration-4 gate decision
+
+**Decision: escalate**, resolved under Q-137's standing instruction (review adjustments go ahead on the recommendation, without a Q entry), as U2b3b2c's was: E1 is a contained fix (two lines and a test) of the same listing iteration 2 built, so the recommendation is a narrow confirming pass (k=1 fact-check + security over the fix range), not a split or another full loop. Any Must Fix there stops the unit and goes to a Q entry.
+
+### 🧩 Composition check
+
+- store_check :614-660 (security F1, architecture 1/2, api 1, fact-check 20/21, Stage 2.5 57/58): distinct defects (listing framing, skip-set selection, carry list, help gloss, comment omissions), each stated.
 
 ## Iteration 2 (Commit 83f75281, `--loop-pass`, k=1, scope `65007bf8..83f75281`, full panel)
 
