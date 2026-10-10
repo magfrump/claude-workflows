@@ -1,8 +1,36 @@
-Commit: 6cbca87c
+Commit: a5837597
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a2` (U3a2: `--merge BRIEF --expect SHA` lands a self-merge brief by compare-and-swap, or by a fast-forward in the worktree that has main checked out; check_line's verdict as values), on main 6666a5ce.
-**Status: 🔴 ITERATION 3 (final confirming pass, k=3, scope `main...HEAD`, full panel, at 6cbca87c) — 3 Must Fix (fact-check Incorrect, behavioral) and 3 Must Address (security Medium), one root: land read worktree state less carefully than git. All fixed in the final fix batch (unreviewed). Iteration-4 gate: escalate, resolved under Q-137 as a narrow confirming pass (k=1 fact-check + security over the fix range).**
+**Status: 🔴 CONFIRMING PASS (k=1 fact-check + security, scope `6cbca87c..a5837597`) — 1 Must Fix (fact-check Incorrect: a dot-named admin dir's unsearchable rebase-merge still merged), 3 Must Address (security Medium: HEAD read unlike git, a symbolic alias of main, the dot-dir gap), 1 Low regression (bare repositories could not land). Per the iteration-4 decision a Must Fix here stops the merge: Q entry filed. An interim fix batch is on the branch, unreviewed. Loop not closed.**
+
+## Confirming pass (Commit a5837597, k=1 fact-check + security, scope `6cbca87c..a5837597`)
+
+Fact-check (`code-fact-check-report-u3a2-confirm.md`): 28 claims, 19 Verified, 3 Mostly accurate, 5 Incorrect, 1 Unverifiable; E1-E6 resolved but for E2's dot-named sub-case; honest layouts (real rebase of another branch, detached, prunable, locked, bisect from another branch, a linked W) still merge. Security (`security-review-2026-10-10-u3a2-confirm.md`): every final-pass probe re-run refuses; three new Mediums and one Low regression, executed.
+
+### 🔴 Must Fix
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G1 | The searchability check globbed `worktrees/*/rebase-*`, skipping dot-named admin dirs: a `.x` admin dir's mode-000 rebase-merge of main merged (and `rebase --abort` would reset main). | fact-check 4, 14 (Incorrect, executed); security 3 (Medium) | Interim fix (unreviewed): the check runs per admin dir, dot names included; test. |
+
+### 🟡 Must Address
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G2 | HEAD was read by awk: `ref:` then a CR or newline (git accepts both) was not counted, so with the gitdir file gone the counts agreed at 0 and the CAS ran under W. | security 1 (Medium, executed) | Interim fix: each admin dir's HEAD resolved by `git --git-dir=D symbolic-ref -q HEAD` (rc 2+ refuses); test. |
+| G3 | A worktree on a symbolic alias of main was not counted (pre-existing at 6cbca87c). | security 2 (Medium, executed) | Interim fix: symbolic-ref follows the chain; test. |
+| G4 | A bare repository with linked worktrees could not land: the bare repository's own HEAD counted as a worktree on main. | security 4 (Low, regression) | Interim fix: skipped when the list marks the repository bare; a bare-listed repository with an index refuses (a planted core.bare); test. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| G5 | state_is's comment said "as git reads it" (git drops less); the CR test planted a shape git does not act on; the repository rule omitted symbolic-ref; "in its order"; "from 416". | fact-check 9, 10, 12, 19, 24, 27 | Comments and test corrected; commit messages immutable. |
+| G6 | The W git-dir comparison (`-ef "$hd"`) has no test of its own; `--no-deref` likewise (row). | fact-check 22 | Open (row for --no-deref; the -ef test is owed with the next pass). |
+| G7 | A symlinked HEAD (core.preferSymlinkRefs) now refuses. | security 5 | Fails closed; deprecated git option. |
+
+Unit at 398 code lines after the interim batch (tests and comments compressed). Suites 7/145/20/79/2/2; health check passed at a5837597. Mutants of the four newest guards each fail the suite.
 
 ## Iteration 3: final confirming pass (Commit 6cbca87c, k=3, scope `main...HEAD`, full panel)
 
