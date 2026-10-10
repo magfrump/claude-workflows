@@ -1717,7 +1717,9 @@ main_imports() {
     esac
     rq=(); outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir pext out "$f" rq; } || { IMPORTED_MAIN=error; return 1; }
     # A name read before its prompt marks changed is read again with them, as
-    # in imported_names; // entries are phase 2's, so queue is tq's (one main_checkout answered 2 for was never read).
+    # in imported_names. A // entry is only ever popped in phase 2, where queue
+    # holds tq's former entries, so the name joins the queue being walked. A
+    # seen name main lacks and main_checkout answers 2 for was never read: skipped.
     for p in "${rq[@]}"; do
       [[ -n "${seen[$p]+set}" ]] || continue
       c=0; [[ -n "${ent[$p]+set}" ]] || main_checkout ent pok "$p" || c=$?
