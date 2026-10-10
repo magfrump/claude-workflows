@@ -730,13 +730,15 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
     # A worktree nested in side's .claude/skills/: its README.md is a prompt by the whole path (i2 fact-check).
     mkdir -p "$sd/.claude/skills" && git worktree add -q --detach "$sd/.claude/skills/wt" && printf 'w: @docs/w.md\n' > "$sd/.claude/skills/wt/README.md"
+    # One nested in side's sub/.claude/skills/ holds AGENTS.md with this checkout's bytes: a prompt there, a plain start here, so not skipped (final fact-check 21).
+    mkdir -p "$sd/sub/.claude/skills" && git worktree add -q --detach "$sd/sub/.claude/skills/wn"
     printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
     # git is never run in another root: its .git file is the loop's to write.
     S="$BATS_TEST_TMPDIR/gitlog" && mkdir -p "$S" && printf '#!/bin/sh\necho "$PWD $*" >> "%s/log"\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
     for w in tree main; do
-        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md docs/w.md
+        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md docs/w.md sub/docs/s.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in u k t s v w; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported
+        want walk ok; for f in u k t s v w; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported; want sub/docs/s.md imported
     done
     ! grep -e "^$sd" -e ' -C ' "$S/log" || return 1
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; IMPORT_MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"

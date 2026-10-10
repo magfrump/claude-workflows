@@ -1,8 +1,47 @@
-Commit: 39f64d62
+Commit: 8f99fcaf
+Loop closed at 8f99fcaf
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2b` (U2b3b2b: both import walks start at outside seeds — config dirs, ancestors, other worktrees' start files — and project rejected `//` names), on main 07fe578b.
-**Status: 🟡 ITERATION 2 (loop pass over 1c820663..39f64d62, k=1, full panel) — no behavioral red; Must Address fixed in the fix commit after 39f64d62 (unreviewed until the final pass).**
+**Status: ✅ ITERATION 3 (final confirming pass over 8f99fcaf, k=3, full panel) — no Must Fix; the loop converged in 3 iterations. Must Address: 11 fixed (A1, A4-A6, B1-B4, C1, C2 text, C3 text), 4 acknowledged with revisit triggers (A2 and C4 routed to U2b3b2c; A3 a named exception; A5's key half deferred). Final-pass fixes in the commit after 8f99fcaf (unreviewed; suites green). Single-sample review; absence of findings is not an attestation.**
+
+## Iteration 3: final confirming pass (Commit 8f99fcaf, no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: self-read. Fact-check first: three replicates (`code-fact-check-report-build-loop-u2b3b2b-final-r1/-r2/-r3.md`: 29/42/32 claims) merged most-severe-wins into `code-fact-check-report-build-loop-u2b3b2b-final.md` (42 clusters: 2 Incorrect, 2 Stale, 8 Mostly accurate, 2 Unverifiable; every suite count, red-on-base test, line count and timing re-run and held). Then the four critics with the merged report: `security-review-2026-10-09-u2b3b2b-final.md`, `performance-review-…-final.md`, `api-consistency-review-…-final.md`, `architecture-review-…-final.md`. Stage 2.5 not run: security's two routed endorsements (with_at's read and error policy, the L1 link rule) match executed Verified fact-check claims (r3 with_at cases; r1, r3 fail-closed paths).
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| C1 | The C1 byte skip ignored the seed's kind: a worktree nested under another root's `.claude/skills/` holding ROOT_REAL's bytes in a file that is a prompt by its whole path and a plain start at its inner path was skipped, losing its prompt-base names (executed: `sub/docs/z.md -`). Introduced by iteration 2's whole-path start test. | Medium (narrow layout) | fact-check 21 (r2 Incorrect, r3); architecture Coupling | Fixed: the skip also needs the inner path's kind to equal the seed's (architecture's probe-tested form); test: a worktree nested at `side/sub/.claude/skills/wn`, red on 8f99fcaf. |
+| C2 | outside_seeds' header still said isstart reads the inner path; the skip sentence omitted conditions and said "the walks start there too". | Low (text) | fact-check 19, 12; api F1 | Fixed (header lists all four skip conditions). |
+| C3 | Walk header: "an unreadable directory in any registered worktree fails every walk" (not ROOT_REAL for the tree walk); timing 2 to 2.5 s (measured 1.9 to 3.4 s; 0.8 s main without). | Low (text) | fact-check 9, 10; api F2; performance F2 | Fixed ("any other registered worktree"; 2 to 3.5 s, 0.5 to 0.85 s). |
+| C4 | A seed that is a dangling link into a reader root is never projected: config listings never list it, and both walks drop a C1 one at outside_ok (executed P1-P3: `-`), though outside_proj projects the same link reached by an `@` import. Not a regression (main seeded nothing). | Medium (uncommon trigger) | security F1 | Acknowledged: named in the walk header; routed to U2b3b2c (plan bullet); override row. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| M1 | Plan bullets described the iteration-1 design; U2b3b2c should own the root-copy comparison. | fact-check 1, 2, 3; api F3; architecture Minor | Fixed: an "as built" paragraph; U2b3b2c's bullet names the comparison and C4. |
+| M2 | scan's "every name starts at an @" is not true of IMPORT_WHOLE input. | fact-check 11; architecture Informational | Fixed (comment). |
+| M3 | Commit messages: 8f99fcaf "keeps links unread" (38b), "each new assertion is red" (32), "same 1177 names" (40); 1c820663 timings (36). | fact-check 38b, 32, 40, 36 | Accepted-immutable: override rows. |
+| M4 | Two link rules (config: real path below a root; C1: any link), and no test of an @-free link seed. | architecture Informational | Defer: with the K12 split (override row). |
+| M5 | A caller passing one of outside_seeds' or with_at's own local names gets an empty array (probed); no caller does. | api F4 | Defer: with the K12 split (override row). |
+| M6 | Each @-bearing seed costs 12 to 15 ms per walk and their number is uncapped (0.7 s today). | performance F1 | Acknowledged: walk header; override row (revisit: over ~200 seeds or a walk over 5 s). |
+| M7 | A config tree linked into a reader root keeps every @-free file. | performance F3 | Won't-Fix (not here; host case ~0.8 s). |
+
+### 🧩 Composition check
+
+- outside_seeds C1 skip (fact-check 19, 12, 21; api F1; architecture Coupling): one root, the skip's own copy of the walks' start rules; C1 (fixed) and C2 (text).
+- Seed admission vs projection (security F1; architecture Informational on link rules): distinct defects — C4 is a missing projection for dangling seeds, M4 the duplicated keep-rule.
+
+### Considered overrides
+
+The eight rows dated 2026-10-09 for this branch still stand on their reasons (architecture final); rows 573 (S1, fixed here by outside_proj), 575 (K4: `//` lines 27.8 KB, trigger not fired), 576 (K5), 578, 558.
 
 ## Iteration 2 (Commit 39f64d62, `--loop-pass`, k=1, scope `1c820663..39f64d62`, full panel)
 
@@ -82,3 +121,5 @@ None. The fact-check's Incorrect claims are a narrow tree-walk gap (19b, tiered 
 Rows 558 (A3 host home, kept an exception), 561, 571 (settled), 573 (S1: fixed here by outside_proj), 575 (K4: `//` lines ~83 KB, still deferred), 576 (K5: no observable test; plan corrected), 578 (bind-mount alias: still untested), 550, 554 (U2b3b1; seeds do not multiply by re-spelling since C1 dedupes real paths).
 
 Single-sample review; absence of findings is not an attestation.
+
+Override rows this loop: 8 (iterations 1-2) + 7 (final). Review converged in 3 iterations; 0 Must Fix.

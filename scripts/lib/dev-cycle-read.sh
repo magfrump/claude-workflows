@@ -751,14 +751,17 @@ prompt_bases() {
 # root reaches there through a file that root holds with other bytes or alone
 # (routed to U2b3b2c); a symlinked directory in another root (A5); and a C1
 # start whose bytes match ROOT_REAL's in a checkout that is not clean (the
-# gate's is, by contract item 2). Any seed listing find, grep or sha1sum
-# cannot complete fails the walk, so an unreadable directory in any
-# registered worktree, or a link loop under a config dir's trees, fails every
+# gate's is, by contract item 2); a seed that is a dangling link into a
+# reader root, which no listing keeps as outside_proj keeps such an import
+# (final security F1; routed to U2b3b2c). Any seed listing find, grep or
+# sha1sum cannot complete fails the walk, so an unreadable directory in any
+# other registered worktree, or a link loop under a config dir's trees, fails every
 # walk (fail-closed: one loop's worktree can hold every self-merge back; i1
 # security F3), though Claude Code reads an ancestor's files by name; a seed
 # swapped for a FIFO stalls it, as a checkout file can. The seeds cost: over
-# this repository's 8 registered worktrees, about 50 seeds and 2 to 2.5 s per
-# walk, against 0.6 s without (2026-10-09; i1, i2 performance).
+# this repository's 8 registered worktrees, 50 seeds and 2 to 3.5 s per walk,
+# against 0.5 to 0.85 s without; each seed holding an @ costs 12 to 15 ms, and
+# their number is not capped (2026-10-09; final performance F1, override row).
 # The walks' lists (IMPORTED, IMPORTED_MAIN) also hold the second channel's
 # lower-cased // names, which no repo path isimported asks for can match.
 # isimported asks either walk.
@@ -934,8 +937,10 @@ function show(out) {
 # is set, a later one (qo marks an open quote, even an empty one, and qopen
 # holds its text; each held line and each copy of qopen is charged as work), so
 # prefixes never grow past a blank (U2a4 i1 security F1; final security F2,
-# performance F1; confirming security F2, F4). Every name starts at an @
-# byte: outside_seeds drops a seed holding none (with_at leans on this).
+# performance F1; confirming security F2, F4). Every name read from text
+# starts at an @ byte (IMPORT_WHOLE input is a projection, not text):
+# outside_seeds drops a seed holding none unless a link leads to it (with_at
+# leans on this).
 function scan(line, carry,   i, L, k, r) {
   L = length(line)
   for (i = 1; i <= L; i++) {
@@ -1234,17 +1239,19 @@ with_at() {
 # projects/*/memory/MEMORY.md (f), its trees followed through links (find -L:
 # the user's skills link into /opt). (2) Each ancestor of a reader root that
 # lies below no root: its instruction-named files, and its .claude as a config
-# dir. (3) C1: every start file (isstart, by its path below its innermost
-# root) in another reader root present here, tracked or not (a superset). A
-# root below another listed one comes with it, unless it lies below ROOT_REAL,
-# whose files that listing drops: then it is listed itself (and a root below
-# it twice, which the walks' seen absorbs). One whose bytes equal ROOT_REAL's
-# plain file (rawfile) at that path is skipped: the parser joins that file's
-# names under every root and the walks start there too (given contract item
-# 2's clean checkout, which also keeps out an untracked nested repo whose
-# files neither walk lists). Not covered (routed to U2b3b2c): a file another
-# root holds with other bytes, or alone, that a start there imports (the
-# walks read ROOT_REAL's copy or main's: i1 security F1).
+# dir. (3) C1: every start file (isstart, and the prompt test, on its whole
+# lower-cased path: a superset) in another reader root present here, tracked
+# or not. A root below another listed one comes with it, unless it lies below
+# ROOT_REAL, whose files that listing drops: then it is listed itself (and a
+# root below it twice, which the walks' seen absorbs). One is skipped when it
+# is not a link, its bytes equal ROOT_REAL's plain file (rawfile) at its path
+# below its innermost root, and that file is a start of the same kind (f or
+# p) there: the parser joins that file's names under every root and the walks
+# read it the same way (given contract item 2's clean checkout, which also
+# keeps out an untracked nested repo whose files neither walk lists; final
+# fact-check 21). Not covered (routed to U2b3b2c): a file another root holds
+# with other bytes, or alone, that a start there imports (the walks read
+# ROOT_REAL's copy or main's, or nothing: i1 security F1).
 # Roots are listed with find -P (.git pruned), never git -C: a loop controls
 # its worktree's .git file, so git there could read a config the loop wrote
 # (core.fsmonitor runs a command). Only a seed holding an @ byte or reached
@@ -1333,8 +1340,9 @@ for f in sys.argv[1:]:
     isstart "${lo[i]}" && [[ -n "${os_at[${cx[i]}]+set}" || -L "${cx[i]}" ]] || continue
     c=f; [[ ! "${lo[i]}" =~ $PROMPT_DIR ]] || c=p
     # rawfile: a ROOT_REAL copy reached through a link the tree walk does not start at (i1 fact-check 19b).
-    # isstart on the inner path's tail of lo: ROOT_REAL's copy must be a start there too.
-    if [[ ! -L "${cx[i]}" ]] && isstart "${lo[i]:${#lo[i]}-${#ir[i]}}" && rawfile "${ir[i]}" && outside_ok "${cx[i]}"; then sp+=("$c${cx[i]}"); hs+=("${cx[i]}" "${ir[i]}"); else os_a+=("$c${cx[i]}"); fi
+    # The inner path's tail of lo: ROOT_REAL's copy must be a start of the same kind there.
+    d="${lo[i]:${#lo[i]}-${#ir[i]}}"; q=f; [[ ! "$d" =~ $PROMPT_DIR ]] || q=p
+    if [[ ! -L "${cx[i]}" && "$q" == "$c" ]] && isstart "$d" && rawfile "${ir[i]}" && outside_ok "${cx[i]}"; then sp+=("$c${cx[i]}"); hs+=("${cx[i]}" "${ir[i]}"); else os_a+=("$c${cx[i]}"); fi
   done
   if [[ ${#hs[@]} -gt 0 ]]; then
     nul_list lo xargs -0r -a <(printf '%s\0' "${hs[@]}") sha1sum -z -- && [[ ${#lo[@]} -eq ${#hs[@]} ]] || return 1
