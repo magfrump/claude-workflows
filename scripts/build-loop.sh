@@ -665,7 +665,7 @@ never_res() {
 srules() {
   local i e
   DENY=""
-  if [[ -z "$5" ]] && floor "$2" "$1" "$4"; then DENY="$FLOOR_WHY"; return 0; fi
+  if [[ -z "$5" ]] && floor "$2" "$1" "$4" "$3"; then DENY="$FLOOR_WHY"; return 0; fi
   for i in "${!NEVER_RES[@]}"; do
     [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
   done
