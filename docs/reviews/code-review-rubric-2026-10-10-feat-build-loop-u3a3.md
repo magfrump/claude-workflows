@@ -1,8 +1,8 @@
-Commit: a7a4f784
+Commit: e25a6e89
 
 # Code Review Rubric
 
-**Scope:** feat/build-loop-u3a3 vs main (full branch; iteration 1, --loop-pass, k=1 fact-check, delivery mode self-read) | **Reviewed:** 2026-10-10 | **Status: 🔴 DOES NOT PASS** at a7a4f784 — 1 red item (fixed in the iteration-1 fix commit; re-review pending)
+**Scope:** feat/build-loop-u3a3 vs main (full branch; iteration 1, --loop-pass, k=1 fact-check, delivery mode self-read) | **Reviewed:** 2026-10-10 | **Status: 🟡 iteration 2 clean of red** — i1 R1 verified fixed; i2 added no red; i2 ambers fixed or deferred with rows (final confirming pass pending)
 
 Panel: code-fact-check (k=1, opus), security-reviewer, performance-reviewer, api-consistency-reviewer, architecture-review (auto-selected: lib contract change). Not triggered: test-strategy (tests changed with source), tech-debt-triage, dependency-upgrade, ui-visual-review. No short-circuit (no behavioral red at fact-check).
 
@@ -45,6 +45,17 @@ Panel: code-fact-check (k=1, opus), security-reviewer, performance-reviewer, api
 | C13 | A plain merge- approval lands floor-protected paths with no warning on the entry | security 3 | Informational | for-author | — | Deferred (row; trigger U4's entry body lists them with floor_why reasons) |
 
 ---
+
+### Iteration 2 (loop pass, scope a7a4f784..e25a6e89, k=1; security, api-consistency, architecture; performance skipped: its only delta is the `$(< FILE)` swap it proposed)
+
+Prior items verified: R1 resolved (security, api); A2, A3, C4 resolved (architecture); C2, C3 resolved (api). No new 🔴.
+
+| # | Finding | Source | Tier | Status |
+|---|---|---|---|---|
+| A4 | `scripts/health-check.sh` (and the suites it runs), which the dev-cycle skill runs from main's checkout each cycle, matches neither GATE_CODE nor the floor, so a self-merge whose Paths: lists it lands code the orchestrator runs (pre-existing, not this diff) | security i2 F1 (Medium, Low confidence) | 🟡 | Deferred (row; routed to Q-103 / U5) |
+| C14 | GATE_CODE's comment gave only the scripts' reason; no floor test named a skills/dev-cycle/ path | architecture i2 Minor, api i2 F1, security i2 F4 | 🟢 | Fixed (comment gives both reasons; T10 refuses skills/dev-cycle/references/x.md and Skills/Dev-Cycle/x.sh, passes skills/dev-cycle-x/a.md) |
+| C15 | Header said "(under --approved, the N rules' lines only)", readable as dropping --expect; A1 sentence placed before "then the message reads"; the gate list copied by hand | fact-check i2 claim 1, api i2 F2, security i2 F3, architecture i2 Informational | 🟢 | Fixed (wording, order, "the lib's GATE_CODE"); T35 adds a mismatched --expect under --approved |
+| C16 | A sibling skill (skills/dev-cycle-2/SKILL.md) or routing row can redirect the cycle under a plain merge- slug | security i2 F2 | 🟢 | Deferred (row: same trigger as the C13 row, U4's entry body) |
 
 ## ↩️ Considered Overrides
 

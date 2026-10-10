@@ -212,7 +212,8 @@
 #                 other line is malformed, and only own files land.
 #   --merge   lands a self-merge brief (D7), or with --approved a brief of
 #             either policy: --check's lines for BRIEF at --expect's tip
-#             (under --approved, the N rules' lines only), but an ok
+#             (under --approved, without the S rules or the checkout
+#             refusal; --expect still binds the tip), but an ok
 #             verdict line becomes
 #             merged BRIEF TIP TREE NEW
 #                 The default branch now points at NEW, a commit of TREE
@@ -228,14 +229,15 @@
 #                 is answered with option 1 under the heading exactly
 #                 "### Q-NNN · merge-STEM-SHA12" (SHA12: TIP's first 12 hex
 #                 digits), or "merge-gate-STEM-SHA12" when a changed path,
-#                 lower-cased, is the gate's own code (scripts/build-loop.sh,
-#                 dev-cycle.sh, questions.sh, anything under scripts/lib/ or
-#                 skills/dev-cycle/). The heading pins only TIP's prefix:
-#                 --expect binds the full tip, so the caller passes the full
-#                 TIP it filed the entry for, never the branch's live tip;
-#                 then the message reads "(build-loop approved merge)" with
-#                 a second trailer "Build-loop-approved: Q-NNN", and the
-#                 reflog "build-loop: approved merge of STEM". Author and committer names and emails from
+#                 lower-cased, is the gate's own code (the lib's GATE_CODE:
+#                 scripts/build-loop.sh, dev-cycle.sh, questions.sh, anything
+#                 under scripts/lib/ or skills/dev-cycle/); then the message
+#                 reads "(build-loop approved merge)" with a second trailer
+#                 "Build-loop-approved: Q-NNN", and the reflog "build-loop:
+#                 approved merge of STEM". The heading pins only TIP's
+#                 prefix: --expect binds the full tip, so the caller passes
+#                 the full TIP it filed the entry for, never the branch's
+#                 live tip. Author and committer names and emails from
 #                 GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL, or else
 #                 git config (the caller's global file included, the system
 #                 file not), each email non-empty; EMAIL or a guess from the

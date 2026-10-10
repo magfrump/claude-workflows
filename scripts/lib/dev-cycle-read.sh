@@ -1915,11 +1915,13 @@ ownfile() {
   if [[ "$1" =~ ^docs/working/(research|plan|checkpoint|handoff|test-strategy)-(.+)\.md$ && "${BASH_REMATCH[2]}" == "$2" ]]; then return 0; fi
   [[ "$3" == A && "$1" == docs/reviews/* && "$b" != */* && ( "$b" == "$2.md" || "$b" == *"-$2.md" ) ]]
 }
-# The gate's own code: main's copy runs the next merge (plan D6), so a change
-# to it lands only through a merge-gate- review entry, never a self-merge.
-# The dev-cycle skill counts too (plan D4, F52): it carries the D6 snippet
-# that copies and runs the gate. One list for floor and build-loop.sh's
-# --approved, which tests it on its own (floor does not run there).
+# The gate's own files: a change to them lands only through a merge-gate-
+# review entry, never a self-merge. The scripts because main's copy runs the
+# next merge (plan D6, D5 item 3); skills/dev-cycle/ because it carries the
+# D6 snippet that copies and runs the gate (plan D4, F52), though sessions
+# load the skill only from a release, so here the floor is stricter than D5.
+# One list for floor and build-loop.sh's --approved, which tests it on its
+# own (floor does not run there); build-loop.sh's header repeats it.
 GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
 # The self-merge floor (plan D5 items 1-4): a changed path that a self-merge never lands,
 # even when the brief's Paths: lists it, because it takes effect on merge with

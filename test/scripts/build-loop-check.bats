@@ -1301,6 +1301,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         .claude/settings.json "$DOT" .envrc "$DOT" .gitattributes "$DOT" docs/x/.y "$DOT" .github/x.yml "$DOT"
         scripts/build-loop.sh "$GATE" scripts/dev-cycle.sh "$GATE" scripts/questions.sh "$GATE"
         scripts/lib/dev-cycle-read.sh "$GATE" scripts/lib/new.sh "$GATE" Scripts/Build-Loop.sh "$GATE"
+        skills/dev-cycle/references/x.md "$GATE" Skills/Dev-Cycle/x.sh "$GATE" skills/dev-cycle/SKILL.md "$INSTR"
         docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"
         docs/constraints.md "$USER" docs/dev-cycle.md "$OWN" docs/roadmap.md "$OWN" Docs/Roadmap.md "$OWN"
         docs/working/questions.md "$OWN" docs/working/briefs/2026-10-02-y.md "$OWN" docs/working/briefs/closed/2026-10-01-x.md "$OWN"
@@ -1308,7 +1309,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         docs/working/checkpoint-2026-10-02-y.md "$WORK" docs/working/plan-x.md "$WORK" docs/working/notes.md "$WORK"
         docs/working/plan-2026-10-01-xy.md "$WORK" docs/working/scratch/plan-2026-10-01-x.md "$WORK"
         docs/reviews/r-2026-10-01-x.md "$REV")
-    pass=(scripts/other.sh skills/x/helper.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
+    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
         workflows/x.md docs/working/plan-2026-10-01-x.md docs/working/Research-2026-10-01-x.md docs/working/test-strategy-2026-10-01-x.md)
     paths=(); for ((i = 0; i < ${#refuse[@]}; i += 2)); do paths+=("${refuse[i]}"); done
     floors "$s" M "${paths[@]}" "${pass[@]}"

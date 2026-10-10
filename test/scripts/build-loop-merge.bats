@@ -232,6 +232,9 @@ Build-loop-approved: Q-001" ]
     approve Q-001 "$S" OPEN; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
     sed -i 's/OPEN/ANSWERED/' docs/working/questions.md; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
     git checkout -q -- docs/working/questions.md
+    # The approval binds the heading's prefix; --expect still binds the full tip (i2 security 3).
+    mrg "$B" --expect "$M" --approved Q-001
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the tip of feat/x is $T, not the expected $M" ] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
     mrg "$B" --expect "$T" --approved Q-002; refused "Q-002 does not approve this merge: no such entry in docs/working/questions.md or questions-archive.md on the default branch"
     for s in "merge-2026-10-01-y-${T:0:12}" "merge-2026-10-01-x-${M:0:12}" "merge-gate-2026-10-01-x-${T:0:12}" "merge-2026-10-01-x-${T:0:12} " "$S-x"; do
         approve Q-001 "$s"; mrg "$B" --expect "$T" --approved Q-001; refused "Q-001 approves no merge of this tip: its heading must read \"Q-001 · $S\""
