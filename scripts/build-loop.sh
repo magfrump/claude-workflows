@@ -176,9 +176,12 @@
 #                 on each path the N rules pass but the brief's own file
 #                 (first match): the self-merge floor (the lib's floor:
 #                 instruction and prompt files and what they import with @,
-#                 dot paths, the gate's own code, the user's and the cycle's
-#                 records, a working doc or review that is not the brief's
-#                 own; not run when the verdict already refuses for the
+#                 a path below the name of an instruction or prompt file
+#                 or of an imported .md file, dot paths, the gate's own code, the user's and the
+#                 cycle's records, a working doc or review that is not the
+#                 brief's own; a walk that fails refuses every path, its
+#                 reason saying where, with a PATH outside pathform's
+#                 characters shown as ?; not run when the verdict already refuses for the
 #                 checkout or the brief's re-read, so a loop's advisory run
 #                 from its own branch can print a path the floor would
 #                 refuse as a path line); a glob of --settings' never
@@ -665,7 +668,7 @@ never_res() {
 srules() {
   local i e
   DENY=""
-  if [[ -z "$5" ]] && floor "$2" "$1" "$4"; then DENY="$FLOOR_WHY"; return 0; fi
+  if [[ -z "$5" ]] && floor "$2" "$1" "$4" "$3"; then DENY="$FLOOR_WHY"; return 0; fi
   for i in "${!NEVER_RES[@]}"; do
     [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
   done

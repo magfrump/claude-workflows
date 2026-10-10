@@ -811,6 +811,41 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
+@test "a live prompt link in another worktree whose target there holds older bytes reads this checkout's copy as a prompt too (U2b3b2c final security F3, row 602)" {
+    mkdir -p docs && echo old > docs/t.md && echo x > AGENTS.md && commit_all old
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" && ln -s ../../docs/t.md "$sd/.claude/commands/k.md"
+    printf 't: @top.md\n' > docs/t.md; echo top > top.md; commit_all new
+    for w in tree main; do
+        imps "$w" top.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want top.md imported
+    done
+}
+
+@test "prompt_marks marks a live prompt link's names only when its real path lies below a reader root (U2c2 i1 performance 1, i2 fact-check 12a)" {
+    r="$(pwd -P)" && o="$BATS_TEST_TMPDIR/opt" && mkdir -p "$o" docs && echo a > "$o/k.md" && echo a > docs/k.md && ln -s "$o/k.md" "$BATS_TEST_TMPDIR/out.md" && ln -s "$r/docs/k.md" "$BATS_TEST_TMPDIR/in.md"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; import_readers
+        for f in "$2" "$3"; do declare -A pd=(["$f"]="$f") px=(); rq=(); out="docs/a.md"; prompt_marks pd px out "$f" rq; echo "${f##*/}: ${rq[*]:-none}"; unset pd px; done' _ "$LIB" "$BATS_TEST_TMPDIR/out.md" "$BATS_TEST_TMPDIR/in.md"
+    [ "$output" = "out.md: none
+in.md: docs/a.md" ] || { echo "$output $stderr"; return 1; }
+}
+
+@test "both walks key on the config dirs: a CLAUDE_CONFIG_DIR set after a walk walks again without import_reset; one holding a newline fails (override row 581)" {
+    r="$(pwd -P)" && g="$BATS_TEST_TMPDIR/cfg" && mkdir -p "$g" docs && printf 'g: @%s/docs/e.md\n' "$r" > "$g/CLAUDE.md" && echo e > docs/e.md && echo x > AGENTS.md && commit_all c
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"; IMPORT_MANAGED_DIR=/nonexistent/managed
+        for w in main tree; do
+            unset CLAUDE_CONFIG_DIR; isimported "$w" docs/e.md && echo "$w unset: imported" || echo "$w unset: -"
+            CLAUDE_CONFIG_DIR="$2"; isimported "$w" docs/e.md && echo "$w set: imported" || echo "$w set: -"
+            CLAUDE_CONFIG_DIR="$3"; if import_readers; then echo "$w newline: read"; else echo "$w newline: refused"; fi
+        done' _ "$LIB" "$g" "$g"$'\n'x
+    [ "$output" = "main unset: -
+main set: imported
+main newline: refused
+tree unset: -
+tree set: imported
+tree newline: refused" ] || { echo "$output $stderr"; return 1; }
+}
+
 @test "a prompt copy with this checkout's bytes is still read: a worktree under a .claude/ adds prompt bases (U2b3b2c i2 fact-check 16)" {
     r="$(pwd -P)" && h="$BATS_TEST_TMPDIR/h" && mkdir -p docs .claude/commands "$h/.claude" && printf 'k: @z.md\n' > .claude/commands/k.md && echo x > AGENTS.md && commit_all pc
     git worktree add -q --detach "$h/.claude/wt" && printf 'z: @%s/docs/z2.md\n' "$r" > "$h/z.md"
@@ -1299,10 +1334,21 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     want docs/working/plan-.md "$WORK"
 }
 
-@test "floor fails closed when main's walk fails, main is not found by name, or a path cannot be lower-cased (U2a4; override row 424)" {
+@test "floor fails closed when main's walk fails, saying where, when main is not found by name, or a path cannot be lower-cased (U2a4; override rows 376, 424, 467)" {
     printf 'Rules: @docs/a.md\n' > CLAUDE.md && commit_all claude
     floors 2026-10-01-x M scripts/other.sh
     want scripts/other.sh -
+    # IMPORTED_MAIN_WHY, worded: a checkout path the walk reads that is not plain (an untracked start that is a link; an import below an unsearchable directory), a seed listing.
+    ln -s CLAUDE.md AGENTS.md; floors 2026-10-01-x M scripts/other.sh; rm AGENTS.md
+    want scripts/other.sh "$WALKFAIL: AGENTS.md, which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores"
+    mkdir docs && echo x > docs/a.md && chmod 644 docs; floors 2026-10-01-x M scripts/other.sh; chmod 755 docs; rm -r docs
+    [[ "${lines[0]}" == "scripts/other.sh: $WALKFAIL: docs/a"*", which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores" ]] || { echo "$output"; return 1; }
+    CLAUDE_CONFIG_DIR=rel floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path"
+    if [ "$(id -u)" -ne 0 ]; then
+        mkdir -p "$HOME/.claude/rules/locked" && chmod 000 "$HOME/.claude/rules/locked"; floors 2026-10-01-x M scripts/other.sh; chmod 755 "$HOME/.claude/rules/locked"
+        want scripts/other.sh "$WALKFAIL: the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed, or one's path holds a newline or could not be lower-cased"
+    fi
     # A failing tr: floor and --check-fix each refuse, and say why.
     mkdir -p "$BATS_TEST_TMPDIR/bin" docs && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
     PATH="$BATS_TEST_TMPDIR/bin:$PATH" floors 2026-10-01-x M scripts/other.sh
@@ -1314,12 +1360,42 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     o="$(git rev-parse main:CLAUDE.md)"
     rm ".git/objects/${o:0:2}/${o:2}"
     floors 2026-10-01-x M scripts/other.sh docs/b.md
-    want scripts/other.sh "$WALKFAIL"
-    want docs/b.md "$WALKFAIL"
+    for p in scripts/other.sh docs/b.md; do want "$p" "$WALKFAIL: CLAUDE.md could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"; done
+    # main stores .claude/rules as a link (START_LINK).
+    git hash-object -w CLAUDE.md > /dev/null; mkdir -p .claude && ln -s ../docs .claude/rules && commit_all rules-link
+    floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "$WALKFAIL: the default branch stores a link or gitlink at .claude or at or below a .claude/ start directory, at .claude/rules"
+    # A name outside pathform's characters prints as ? (i1 security 1): a start whose blob is missing.
+    git rm -q -r --cached .claude && rm -r .claude && mkdir 'a b' && printf 'y\n' > 'a b/CLAUDE.md' && commit_all crafted
+    o="$(git rev-parse 'main:a b/CLAUDE.md')"; rm ".git/objects/${o:0:2}/${o:2}"
+    floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "$WALKFAIL: ? could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"
     # No default branch found by name: nothing is read, everything refuses.
     git checkout -q -b trunk && git branch -q -D main
     floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL"
+    want scripts/other.sh "$WALKFAIL: the default branch was not found by name"
+    # An unset ROOT_REAL exits 1 before any read (i1 A1).
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; floor docs/x.md x M docs/x.md; echo reached' _ "$LIB"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
+}
+
+@test "floor refuses a path below a start file's name or an imported .md name, as a directory there keeps the file from being created (U2c1 i1 security 1, U2c2 i1 security 3)" {
+    printf 'see @docs/new.md\n' > AGENTS.md && commit_all imp
+    floors 2026-10-01-x A src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y src/claude.mdx/n.txt docs/new.md/n.txt docs/x.txt docs/ne/x.txt
+    for p in src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y docs/new.md/n.txt; do want "$p" "a path below the name of an instruction or prompt file, or of a .md file one imports with @"; done
+    # docs and docs/ne are import names too (the parser's prefixes), but no .md name.
+    for p in src/claude.mdx/n.txt docs/x.txt docs/ne/x.txt; do want "$p" -; done
+}
+
+@test "floor given the lowered path forks no lower, and a cached walk no root check (U2c1 final performance 1)" {
+    S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"
+    for b in tr pwd; do printf '#!/bin/sh\necho %s >> "%s/calls"\nexit 1\n' "$b" "$BATS_TEST_TMPDIR" > "$S/$b"; chmod +x "$S/$b"; done
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        floor docs/a.md x M docs/a.md || echo "a: -"; PATH="$2:$PATH"; enable -n pwd
+        floor docs/b.md x M docs/b.md || echo "b: -"; floor Docs/C.md x M Docs/C.md && echo "C: $FLOOR_WHY"' _ "$LIB" "$S"
+    [ "$output" = "a: -
+b: -
+C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] || { echo "$output $stderr"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
 }
 
 @test "check_fix and floor share one read-as-truth rule; docs/thoughts/ differs on purpose (U2a4; override rows 204, 322, 348)" {
