@@ -259,7 +259,8 @@ esac
 # Every git call in this process, the lib's included, runs hardened. Config
 # pairs outrank the repo's config: main's own objects (core.useReplaceRefs in
 # the repo's config would override GIT_NO_REPLACE_OBJECTS), no hook, no
-# fsmonitor command, no core.attributesFile, no commit-graph (a forged one
+# fsmonitor command, no core.attributesFile, no multi-pack-index (a second
+# route to an object, past store_check's listing), no commit-graph (a forged one
 # changes merge bases). GIT_CONFIG_GLOBAL=/dev/null: a loop can write the
 # user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
 # transport at all, so a lazy fetch (a partial clone's missing object) fails
@@ -269,7 +270,7 @@ esac
 # off, --check's state gate refuses.
 harden() {
   local c="${GIT_CONFIG_COUNT:-0}" kv
-  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false; do
+  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false; do
     export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
   done
   export GIT_CONFIG_COUNT="$c"
@@ -287,8 +288,8 @@ export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT
 # hooks, includes, core.fsmonitor, core.attributesFile, core.hooksPath, gpg and
 # log.showSignature (gpg.program runs), and a partial clone (extensions.partialClone, remote.*.promisor;
 # GIT_ALLOW_PROTOCOL already stops its fetch). Files: an info/attributes,
-# info/grafts or shallow that is not absent or an empty regular file (each
-# changes merges or history), a ref under refs/replace/, and an origin/HEAD naming any branch but
+# info/grafts, shallow or objects/info/alternates that is not absent or an
+# empty regular file (each changes merges, history or the objects read), a ref under refs/replace/, and an origin/HEAD naming any branch but
 # origin/main or origin/master (resolve_main would take the default branch
 # from it).
 STATE_KEYS_RE='^(filter\.|include|hook\.|merge\.|diff\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|log\.showsignature|extensions\.partialclone$|remote\..*\.promisor$)'
@@ -337,15 +338,15 @@ cd "$ROOT"
 ROOT_REAL="$(pwd -P)"
 # --check refuses planted state before any git call reads an object (resolve_main
 # does); gate_start runs the rest of its startup.
-GATE=""; [[ "$MODE" != check ]] || GATE=1
-if [[ -n "$GATE" ]]; then state_gate || exit 2; fi
+GATED=""; [[ "$MODE" != check ]] || GATED=1  # a mode that decides (not the gate repository's GATE_*)
+if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
 # The reader lists both import walks take, from main's settings (the lib's
 # caller contract item 9), before any walk; --settings prints its line. Not
 # read_settings below: without this call the walks model no host reader.
 # gate_start calls it once main's objects are checked.
-[[ -n "$GATE" ]] || reader_settings
+[[ -n "$GATED" ]] || reader_settings
 
 # docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST
 # SECOND" or "near LINE" (the first problem found).
@@ -597,31 +598,34 @@ gate_git() {
 # would change what the gate reads, and only fsck would notice. Each REV (a
 # commit or a tree), its root tree, and every tree and blob below it (a gitlink
 # names another repository's commit) are read in one cat-file --batch and
-# re-hashed by one perl, for sha1 or sha256; each verified id is appended to
-# $GATE_TMP/checked, and an id already there (main's, from gate_start) is not
-# read again. Then no checked id may have a second copy: in two packs, or loose
-# and packed. git can read either copy of an id, and two reads of one id
+# re-hashed by one perl, for sha1 or sha256, but an id in $GATE_TMP/main (main's,
+# which gate_start's call leaves there) is not read again. Then no id of
+# main's or of this call may have a second copy in the store: in two packs, or
+# loose and packed. git can read either copy of an id, and two reads of one id
 # (cat-file --batch here, cat-file blob MAIN:PATH in brief_fields) took
 # different ones (U3a1 i1 security F1: a second pack holding forged bytes under
-# the brief's id was read by brief_fields and passed the batch). With one copy
-# every read gets the bytes checked here. Returns 1 on a mismatch, a missing
-# object, a second copy or a failed read. Not checked: objects a decision
-# reaches only through history (the tip's parent, read by marker_kind; the
-# commits check_branch counts; the merge bases, whose merge result the rules
-# judge), and a writer racing between this check and a later read (R8's
-# family, Q-103). Reads the real repository's object store, as merge-tree
-# writes into it. Needs GATE_TMP.
+# the brief's id was read by brief_fields and passed the batch). The listing
+# follows links and takes dot-named packs, and harden switches off the
+# multi-pack-index, a second route to an id (i2 security F1). Only one call's
+# ids are judged, so one brief's refusal never carries to the next (i2
+# architecture 1). Returns 1 on a mismatch, a missing object, a second copy or
+# a failed read. Not checked: objects a decision reaches only through history
+# (the tip's parent, read by marker_kind; the commits check_branch counts; the
+# merge bases, whose merge result the rules judge), and a writer racing
+# between a check and a later read (R8's family, Q-103), which for main's
+# objects spans the whole run, as they are re-hashed once. Reads the real
+# repository's object store, as merge-tree writes into it. Needs GATE_TMP.
 store_check() {
-  local r alg fmt o p
+  local r alg fmt o
   fmt="$(git rev-parse --show-object-format)" && o="$(git rev-parse --path-format=absolute --git-path objects)" || return 1
   case "$fmt" in sha1) alg=1 ;; sha256) alg=256 ;; *) return 1 ;; esac
-  touch "$GATE_TMP/checked" || return 1
-  # Each object name once, never an id already checked; git's own error for a
+  [[ -e "$GATE_TMP/main" ]] || : > "$GATE_TMP/main" || return 1
+  # Each object name once, never one of main's ids; git's own error for a
   # missing tree is dropped (the missing object fails the check).
   { for r in "$@"; do
       printf '%s\n' "$r" "$r^{tree}"
       git ls-tree -r -t --full-tree --format='%(objecttype) %(objectname)' "$r" 2>/dev/null | awk '$1 != "commit" { print $2 }' || exit 1
-    done; } | awk 'FILENAME != "-" { seen[$0]; next } !($0 in seen) { seen[$0]; print }' "$GATE_TMP/checked" - | git cat-file --batch \
+    done; } | awk 'FILENAME != "-" { seen[$0]; next } !($0 in seen) { seen[$0]; print }' "$GATE_TMP/main" - | git cat-file --batch \
     | env LC_ALL=C ALG="$alg" perl -e 'use Digest::SHA; binmode STDIN; my $n = 0;
       while (defined(my $h = <STDIN>)) {
         my ($id, $t, $s) = $h =~ /^([0-9a-f]+) ([a-z]+) ([0-9]+)\n\z/ or exit 1;  # "NAME missing" too
@@ -629,15 +633,15 @@ store_check() {
         Digest::SHA->new($ENV{ALG})->add("$t $s\0", $b)->hexdigest eq $id or exit 1;
         print "$id\n"; $n++;
       }
-      exit($n ? 0 : 1)' >> "$GATE_TMP/checked" || return 1  # REV^{tree} is never skipped, so 0 read is a fault
-  # Every copy in the store: each pack index's ids, then each loose object file.
-  { for p in "$o"/pack/*.idx; do
-      [[ -e "$p" ]] || continue
-      git show-index --object-format="$fmt" < "$p" | awk '{ print $2 }' || exit 1
-    done
-    # From inside the store: a -path pattern would read glob characters in its path.
-    (cd "$o" && find . -mindepth 2 -maxdepth 2 ! -type d -path './[0123456789abcdef][0123456789abcdef]/*') | awk -F/ '{ print $(NF - 1) $NF }'
-  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/checked" -
+      exit($n ? 0 : 1)' > "$GATE_TMP/call" || return 1  # REV^{tree} is never skipped, so 0 read is a fault
+  # Every copy in the store: each pack index's ids, then each loose object
+  # file. From inside the store (a -path pattern would read glob characters in
+  # its path), with find -L: git opens a linked fan-out directory or pack, and
+  # a pack whose name starts with a dot, as it opens any other.
+  { (cd "$o" && find -L pack -mindepth 1 -maxdepth 1 -name '*.idx' ! -type d) > "$GATE_TMP/idx" || exit 1
+    while IFS= read -r r; do git show-index --object-format="$fmt" < "$o/$r" | awk '{ print $2 }' || exit 1; done < "$GATE_TMP/idx"
+    (cd "$o" && find -L . -mindepth 2 -maxdepth 2 ! -type d -path './[0123456789abcdef][0123456789abcdef]/*') | awk -F/ '{ print $(NF - 1) $NF }'
+  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" -
 }
 # The merge of TIP into MAIN_SHA as the gate lands it (D7): prints the result
 # tree; returns 1 on a conflict (a gitlink both sides moved is one, since no
@@ -851,7 +855,8 @@ gate_start() {
   default_gate || exit 2
   GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
   gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
-  store_check "$MAIN_SHA" || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
+  store_check "$MAIN_SHA" && mv "$GATE_TMP/call" "$GATE_TMP/main" \
+    || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
   reader_settings; read_settings; never_res; open_shared
 }
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed

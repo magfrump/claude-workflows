@@ -1682,7 +1682,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false G=/dev/null P=none S=1; do
+    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }
@@ -1890,7 +1890,25 @@ OBJS="refuse state objects: the default branch's commit or an object of its tree
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
     rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
     o="$(git rev-parse feat/x:work-feat-x.txt)"; git repack -adq; loose "$o"
-    chk "$B"; [ "$status" -eq 2 ] && [[ "$output" == "refuse $B: an object of the tip of feat/x or of the merge "* ]] || { show; return 1; }
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
+    # One brief's refusal does not carry to the next in the same run (i2 architecture 1, api 1).
+    x="$B"; brief y "Status: open" "Branch: feat/y"; work feat/y; y="$B"; B="$x"
+    chk "$y" "$B"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "ok $y "* ]] && [[ "${lines[2]}" == "refuse $B: an object of the tip of feat/x "* ]] || { show; return 1; }
+    chk "$B" "$y"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: "* ]] && [[ "${lines[1]}" == "ok $y "* ]] || { show; return 1; }
+}
+
+@test "--check's second-copy scan lists what git opens: a pack named with a leading dot, a linked fan-out directory, and no multi-pack-index route (U3a1 i2 security F1)" {
+    echo base > f.txt && commit_all f && gated feat/x
+    git repack -adq; o="$(git rev-parse "main:$B")"
+    echo "$o" | git pack-objects -q "$BATS_TEST_TMPDIR/p" >/dev/null
+    for f in "$BATS_TEST_TMPDIR"/p-*; do mv "$f" ".git/objects/pack/.hidden.${f##*.}"; done
+    [ "$(git cat-file -t "$o")" = blob ] || return 1
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+    rm .git/objects/pack/.hidden.*; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    # A loose copy in a fan-out directory reached through a link.
+    mkdir -p "$BATS_TEST_TMPDIR/fan"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/" 2>/dev/null || true
+    loose "$o"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/${o:0:2}"; ln -s "$BATS_TEST_TMPDIR/fan/${o:0:2}" ".git/objects/${o:0:2}"
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
 }
 
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
@@ -1938,7 +1956,7 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     g="$(grep -n -m1 -F 'for-each-ref --format=%(refname) refs/replace/' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     r="$(grep -n -m1 -F '^{commit}' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     [ -n "$g" ] && [ -n "$r" ] && [ "$g" -lt "$r" ] || { echo "gate call at line $g, first commit read at line $r"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
-    # store_check re-hashes main's objects before the first blob of main is read (the settings: U3a1 i1 architecture 1).
+    # store_check re-hashes main's objects before any cat-file blob read of main (U3a1 i1 architecture 1).
     c="$(grep -n -m1 -x 'cat-file --batch' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     f="$(grep -n -m1 '^cat-file blob ' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     [ -n "$c" ] && [ -n "$f" ] && [ "$c" -lt "$f" ] || { echo "store_check at line $c, first blob read at line $f"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
