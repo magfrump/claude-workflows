@@ -239,7 +239,8 @@
 #             just before the move; the branch moved since the check, or
 #             cannot be updated. With the branch checked out in W, also when
 #             W is missing or fails the state gate (its own
-#             config.worktree), is not its own top level or not on the branch at
+#             config.worktree), is not its own top level (or not the
+#             worktree whose git directory names the branch) or not on it at
 #             the checked commit, is mid a merge, cherry-pick, revert,
 #             rebase, bisect or sequence, has a tracked change (or git status
 #             fails or warns there), holds an untracked or ignored file at a
@@ -1095,7 +1096,7 @@ land() {
     [[ "$(git -C "$w" rev-parse --show-toplevel)" -ef "$w" && "$(git -C "$w" rev-parse --absolute-git-dir)" -ef "$hd" \
       && "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" \
       && "$(git -C "$w" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
-      || { MERGE_WHY="$in is missing, not its own top level, or not on it at $MAIN_SHA"; return 1; }
+      || { MERGE_WHY="$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $MAIN_SHA"; return 1; }
     for q in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START rebase-merge rebase-apply sequencer; do
       x="$(git -C "$w" rev-parse --path-format=absolute --git-path "$q")" && [[ ! -e "$x" && ! -L "$x" ]] \
         || { MERGE_WHY="$in is in the middle of a merge, cherry-pick, revert, rebase or bisect ($q)"; return 1; }

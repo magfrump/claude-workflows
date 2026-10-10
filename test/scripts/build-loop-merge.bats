@@ -148,7 +148,7 @@ Build-loop-gate: 2026-10-01-x" ]
     echo f > "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
     ln -s "$BATS_TEST_TMPDIR" "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
     mkdir "$BATS_TEST_TMPDIR/elsewhere" && git -C "$R" config core.worktree "$BATS_TEST_TMPDIR/elsewhere"
-    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, or not on it at $M"; git -C "$R" config --unset core.worktree
+    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $M"; git -C "$R" config --unset core.worktree
     # W's own config.worktree is gated before git status runs there: its clean filter never runs (i2 security F1).
     git config extensions.worktreeConfig true && git -C "$R" config --worktree filter.x.clean "touch '$BATS_TEST_TMPDIR/ran'; cat"
     echo '* filter=x' > "$R/.gitattributes"; touch -d '2000-01-01' "$R/docs/dev-cycle.md"
