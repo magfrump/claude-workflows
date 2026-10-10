@@ -17,7 +17,7 @@
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
 # check_brief, isimported and the import walks (truthwalk and floor through
-# them; a call the walk's caches answer checks nothing) exit 1 (need_root) unless
+# them; a call the walk's caches answer checks only that ROOT_REAL is set) exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # imported_names and main_imports return 1 when the walk fails: call them under
@@ -817,7 +817,7 @@ walk_why() {
     link) echo "the default branch stores a link or gitlink at .claude or at or below a .claude/ start directory, at $d" ;;
     list) echo "the checkout's .md files could not be listed or lower-cased, or one's name holds a newline" ;;
     start|admit) echo "the checkout holds $d, which the walk reads, as other than a readable plain file below plain directories" ;;
-    seeds) echo "the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed" ;;
+    seeds) echo "the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed, or one's path holds a newline or could not be lower-cased" ;;
     copies) echo "another worktree's copy of an imported name could not be compared with this checkout's" ;;
     read) echo "$d could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model" ;;
     budget) echo "the walk printed more than its IMPORT_OUT_MAX budget" ;;
@@ -825,11 +825,12 @@ walk_why() {
   esac
 }
 # readers_root: need_root, unless ROOT_REAL is set and import_readers' memo
-# already answers for its key (a hit reads nothing), so a walk never lists the
+# already holds a result for its key (a hit reads nothing; a memoized refusal
+# checks the root too), so a walk never lists the
 # registry from an unchecked directory; each walk calls it first and need_root
 # again below its own cache check, so a call both caches answer forks no root
 # check (U2c2 i1 A1; U2c1 final performance 1).
-readers_root() { { [[ -n "${ROOT_REAL:-}" ]] && import_home && import_readers_key && [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" ]]; } || need_root; }
+readers_root() { { [[ -n "${ROOT_REAL:-}" ]] && import_home && import_readers_key && [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" && -n "$IMPORT_ROOTS" ]]; } || need_root; }
 # import_reset: the next call of either walk walks again (caller contract item 4).
 import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; IMPORT_READERS_DONE=""; }
 # Each walk fails once import_targets has printed more than this in all
@@ -1374,8 +1375,9 @@ root_copies() {
 # a // one (a dangling prompt link), or a live one, when its real path differs
 # and lies below a reader root (a link on the way, whose projection OUT holds
 # as a repo name: final security F3, row 602; OUT also holds the target's own
-# names, marked too, an over-read only); any other returns 0 unmarked (a link
-# out of every root, as ~/.claude/skills into /opt, projects no repo name:
+# names, marked too, an over-read only); any other returns 0 unmarked (the
+# projection of a link out of every root, as ~/.claude/skills into /opt,
+# holds no repo name; its target's own names are read plain, as before F3:
 # U2c2 i1 performance 1).
 # Each repo name in OUT is read as a prompt, as a session reads the link's
 # target: PDIR gets it lower-cased when it lacks it (its own prompt bases),
@@ -1386,11 +1388,11 @@ root_copies() {
 # already queued it queues it again (one still waiting is read twice) (final security F1: a plain read, or one
 # without these bases). It returns 1 when lower or realpath fails.
 prompt_marks() {
-  local -n pm_p="$1" pm_x="$2" pm_o="$3" pm_r="$5"; local p l="$4" lp="${pm_p[$4]}" b pm_b=()
+  local -n pm_p="$1" pm_x="$2" pm_o="$3" pm_r="$5"; local p l="$4" lp="${pm_p[$4]}" b in="" pm_b=()
   if [[ "$l" == //* ]]; then l="${l#/}"; lp="${lp#/}"
   else
     b="$(realpath -e -- "$l")" || return 1; [[ "$b" != "$l" ]] || return 0
-    while IFS= read -r p; do [[ "$b" != "$p"/* ]] || break; done <<<"$IMPORT_ROOTS"; [[ "$b" == "$p"/* ]] || return 0
+    while IFS= read -r p; do [[ "$b" != "$p"/* ]] || in=1; done <<<"$IMPORT_ROOTS"; [[ -n "$in" ]] || return 0
   fi
   prompt_bases pm_b "$lp" "$l"
   printf -v b '%s\n' "${l%/*}" "${pm_b[@]:1}"; b="${b%$'\n'}"
@@ -1916,7 +1918,8 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # rule, and the caller judges the brief's own Status change before this.
 # It reads nothing but through main_imports, whose root check runs when it
 # walks, so a call both of main_imports' caches answer (import_readers' memo
-# and the walk's) forks nothing; neither changes within a gate decision.
+# and the walk's) forks nothing but walk_why's subshell after a failed walk;
+# neither changes within a gate decision.
 FLOOR_WHY=""  # read by floor's caller (build-loop.sh srules)
 # shellcheck disable=SC2034
 floor() {

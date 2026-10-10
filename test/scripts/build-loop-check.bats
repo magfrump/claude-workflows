@@ -822,6 +822,14 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
+@test "prompt_marks marks a live prompt link's names only when its real path lies below a reader root (U2c2 i1 performance 1, i2 fact-check 12a)" {
+    r="$(pwd -P)" && o="$BATS_TEST_TMPDIR/opt" && mkdir -p "$o" docs && echo a > "$o/k.md" && echo a > docs/k.md && ln -s "$o/k.md" "$BATS_TEST_TMPDIR/out.md" && ln -s "$r/docs/k.md" "$BATS_TEST_TMPDIR/in.md"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; ROOT_REAL="$(pwd -P)"; import_readers
+        for f in "$2" "$3"; do declare -A pd=(["$f"]="$f") px=(); rq=(); out="docs/a.md"; prompt_marks pd px out "$f" rq; echo "${f##*/}: ${rq[*]:-none}"; unset pd px; done' _ "$LIB" "$BATS_TEST_TMPDIR/out.md" "$BATS_TEST_TMPDIR/in.md"
+    [ "$output" = "out.md: none
+in.md: docs/a.md" ] || { echo "$output $stderr"; return 1; }
+}
+
 @test "both walks key on the config dirs: a CLAUDE_CONFIG_DIR set after a walk walks again without import_reset; one holding a newline fails (override row 581)" {
     r="$(pwd -P)" && g="$BATS_TEST_TMPDIR/cfg" && mkdir -p "$g" docs && printf 'g: @%s/docs/e.md\n' "$r" > "$g/CLAUDE.md" && echo e > docs/e.md && echo x > AGENTS.md && commit_all c
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"; IMPORT_MANAGED_DIR=/nonexistent/managed
@@ -1339,7 +1347,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path"
     if [ "$(id -u)" -ne 0 ]; then
         mkdir -p "$HOME/.claude/rules/locked" && chmod 000 "$HOME/.claude/rules/locked"; floors 2026-10-01-x M scripts/other.sh; chmod 755 "$HOME/.claude/rules/locked"
-        want scripts/other.sh "$WALKFAIL: the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed"
+        want scripts/other.sh "$WALKFAIL: the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed, or one's path holds a newline or could not be lower-cased"
     fi
     # A failing tr: floor and --check-fix each refuse, and say why.
     mkdir -p "$BATS_TEST_TMPDIR/bin" docs && printf '#!/bin/sh\nexit 1\n' > "$BATS_TEST_TMPDIR/bin/tr" && chmod +x "$BATS_TEST_TMPDIR/bin/tr"
