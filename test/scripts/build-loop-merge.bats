@@ -153,8 +153,7 @@ Build-loop-gate: 2026-10-01-x" ]
     [ ! -e "$BATS_TEST_TMPDIR/ran" ]; rm "$R/.gitattributes"; git -C "$R" config --worktree --unset filter.x.clean; git config --unset extensions.worktreeConfig
     git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main
     # w2's .git names a copy of its admin dir outside worktrees/: on main at M, but not the git dir that counted (rubric G6).
-    cp -r "$R/.git/worktrees/w2" "$BATS_TEST_TMPDIR/rogue" && echo "$R/.git" > "$BATS_TEST_TMPDIR/rogue/commondir" && echo "gitdir: $BATS_TEST_TMPDIR/rogue" > "$BATS_TEST_TMPDIR/w2/.git"
-    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $M"; echo "gitdir: $R/.git/worktrees/w2" > "$BATS_TEST_TMPDIR/w2/.git"
+    cp -r "$R/.git/worktrees/w2" "$BATS_TEST_TMPDIR/rogue" && echo "$R/.git" > "$BATS_TEST_TMPDIR/rogue/commondir" && echo "gitdir: $BATS_TEST_TMPDIR/rogue" > "$BATS_TEST_TMPDIR/w2/.git"; mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, not the one whose git directory names the branch, or not on it at $M"; echo "gitdir: $R/.git/worktrees/w2" > "$BATS_TEST_TMPDIR/w2/.git"
     # Its gitdir file gone, git worktree list drops w2, which still has main checked out (final security F1).
     mv "$R/.git/worktrees/w2/gitdir" "$BATS_TEST_TMPDIR/gd"; mrg "$B" --expect "$T"; nref "a worktree has the default branch checked out that git worktree list does not show"
     # Its HEAD as git reads it (confirming security 1, 2): "ref:" then a newline; on a symbolic alias of main.

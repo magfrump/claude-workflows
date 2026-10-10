@@ -231,7 +231,7 @@
 #             no identity is known; the worktrees, the git directory or a
 #             worktree's own git directory, HEAD or rebase or bisect state
 #             cannot be read (exists but is not a readable plain file in a
-#             searchable directory); the branch is checked out in two
+#             searchable directory, or git cannot read the HEAD); the branch is checked out in two
 #             worktrees, or in one git worktree list does not show (its
 #             gitdir file gone), its HEAD read through any symbolic ref;
 #             the repository lists as bare but has an index; a worktree is rebasing it (or a paused
@@ -1038,7 +1038,7 @@ merge_ident() {
 # land AUTHORITY: --merge's landing (D7, F29), once check_line printed ok
 # (VERDICT) under the authority the caller checked and names (self-merge;
 # U3a3 adds its approval), which the message and reflog carry. Decide (the
-# header's refusals: an ignored file at an added path counts,
+# header's refusals but policy and --check's: an ignored file at an added path counts,
 # as merge --ff-only overwrites one), then write NEW in the gate repository,
 # run the state gate (here and in W) and default_gate again (row 494), and
 # move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
@@ -1078,7 +1078,7 @@ land() {
       [[ "$q" != HEAD && ! -e "$d/$q" && ! -L "$d/$q" ]] && continue  # only HEAD must exist
       [[ -f "$d/$q" && ! -L "$d/$q" && -r "$d/$q" ]] || { MERGE_WHY="a worktree's git state ($q) cannot be read"; return 1; }
     done
-    x=0; q="$(git --git-dir="$d" symbolic-ref -q HEAD)" || x=$?
+    x=0; q="$(git --git-dir="$d" symbolic-ref -q HEAD 2>/dev/null)" || x=$?
     [[ "$x" -le 1 ]] || { MERGE_WHY="a worktree's git state (HEAD) cannot be read"; return 1; }
     [[ "$q" != "refs/heads/$MAIN" || ( -n "$bare" && "$d" == "$common" ) ]] || { n=$((n + 1)); hd="$d"; }
     # A rebase of it, or one that will move it (--update-refs lists it).
