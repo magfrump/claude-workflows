@@ -94,15 +94,20 @@
 #             setting, core.fsmonitor, core.attributesFile, core.hooksPath,
 #             gpg.*, log.showSignature, extensions.partialClone or
 #             remote.*.promisor (a partial clone); an info/attributes,
-#             info/grafts or shallow that is not absent or an empty file; a
+#             info/grafts, shallow or objects/info/alternates (another
+#             object store) that is not absent or an empty file; a
 #             replace ref; an origin/HEAD naming any branch but origin/main or
 #             origin/master; then (once main is found) both main and master
-#             present, or origin/HEAD naming another branch than the one taken.
+#             present, or origin/HEAD naming another branch than the one taken;
+#             then the gate's own merge repository not set up ("refuse state
+#             gate: WHY"); then main's commit, or a tree or blob of its tree
+#             (gitlinks aside), that does not hash to its id, has a second copy in the object
+#             store (two packs, or loose and packed: git may read either) or
+#             cannot be read ("refuse state objects: WHY"; every file the
+#             gate reads from main is one).
 #             Each finding prints "refuse state WHAT: WHY" and exits 2 before
-#             any brief is read ("refuse state gate: WHY", when the gate's own
-#             merge repository cannot be set up, comes after the settings and
-#             open briefs are read, before any verdict line). Then, per brief
-#             path, in argument order, one verdict line:
+#             the settings or any brief is read. Then, per brief path, in
+#             argument order, one verdict line:
 #             ok BRIEF TIP TREE
 #                 --status reads the brief as open and its branch at TIP, at
 #                 least one commit ahead of main (and TIP equals SHA when
@@ -112,14 +117,20 @@
 #                 are read; and no changed path is denied.
 #             refuse BRIEF: WHY
 #                 The brief is done, dropped or new on main, its branch is
-#                 absent or not ahead, it moved or could not be read again
-#                 after --status read it, TIP is not SHA, the merge conflicts,
+#                 absent or not ahead, TIP is not SHA, the merge conflicts,
 #                 or the merge (or its changed paths) could not be computed:
 #                 git failed, or warned on stderr (a missing tree object), or
 #                 the tree of main, TIP or a merge base is missing. Or "the
 #                 merge of BRANCH names a blob the object store lacks": a
 #                 regular file the merge adds or changes names an object that
-#                 is absent or not a blob. Or "K of N changed paths refused in
+#                 is absent or not a blob. Or "an object of the tip of BRANCH
+#                 or of the merge does not hash to its id, has a second copy
+#                 in the object store, or could not be read": the tip's
+#                 commit, or a tree or blob of its tree or of TREE (gitlinks
+#                 aside; a second copy of one of main's objects, made after
+#                 the state check, is reported here too), read back and re-hashed (git checks no object's
+#                 hash when it reads one, so a rewritten object file would
+#                 pass for the committed one). Or "K of N changed paths refused in
 #                 the merge of TIP (tree TREE)", when deny lines follow. Or,
 #                 for a brief --status reads as self-merge, "a self-merge
 #                 brief needs --check run from a clean checkout of the
@@ -152,9 +163,7 @@
 #                 not read the checkout.
 #             skip BRIEF: WHY
 #                 As --status skips it.
-#             After an ok line, a K of N refusal, a checkout refusal or
-#             "refuse BRIEF: the brief could not be read again from the
-#             default branch" (a self-merge brief), one line per path TREE
+#             After an ok line, a K of N refusal or a checkout refusal, one line per path TREE
 #             changes against main (diff-tree -r --no-renames, so a rename is
 #             its D and A sides), in diff-tree's order; S is its status letter
 #             (A, M, D or T) and PATH is "?" unless every character is one
@@ -182,7 +191,7 @@
 #                 brief's own; a walk that fails refuses every path, its
 #                 reason saying where, with a PATH outside pathform's
 #                 characters shown as ?; not run when the verdict already refuses for the
-#                 checkout or the brief's re-read, so a loop's advisory run
+#                 checkout, so a loop's advisory run
 #                 from its own branch can print a path the floor would
 #                 refuse as a path line); a glob of --settings' never
 #                 line, compared lower-cased, * and ? within one part, matching
@@ -251,7 +260,8 @@ esac
 # Every git call in this process, the lib's included, runs hardened. Config
 # pairs outrank the repo's config: main's own objects (core.useReplaceRefs in
 # the repo's config would override GIT_NO_REPLACE_OBJECTS), no hook, no
-# fsmonitor command, no core.attributesFile, no commit-graph (a forged one
+# fsmonitor command, no core.attributesFile, no multi-pack-index (a second
+# route to an object, past store_check's listing), no commit-graph (a forged one
 # changes merge bases). GIT_CONFIG_GLOBAL=/dev/null: a loop can write the
 # user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
 # transport at all, so a lazy fetch (a partial clone's missing object) fails
@@ -261,7 +271,7 @@ esac
 # off, --check's state gate refuses.
 harden() {
   local c="${GIT_CONFIG_COUNT:-0}" kv
-  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false; do
+  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false; do
     export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
   done
   export GIT_CONFIG_COUNT="$c"
@@ -279,8 +289,8 @@ export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT
 # hooks, includes, core.fsmonitor, core.attributesFile, core.hooksPath, gpg and
 # log.showSignature (gpg.program runs), and a partial clone (extensions.partialClone, remote.*.promisor;
 # GIT_ALLOW_PROTOCOL already stops its fetch). Files: an info/attributes,
-# info/grafts or shallow that is not absent or an empty regular file (each
-# changes merges or history), a ref under refs/replace/, and an origin/HEAD naming any branch but
+# info/grafts, shallow or objects/info/alternates that is not absent or an
+# empty regular file (each changes merges, history or the objects read), a ref under refs/replace/, and an origin/HEAD naming any branch but
 # origin/main or origin/master (resolve_main would take the default branch
 # from it).
 STATE_KEYS_RE='^(filter\.|include|hook\.|merge\.|diff\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|log\.showsignature|extensions\.partialclone$|remote\..*\.promisor$)'
@@ -295,7 +305,7 @@ state_gate() {
       [[ -n "$line" ]] && { echo "refuse state $line: set in $f, it can make the gate's git run a command or change its merge"; bad=1; }
     done <<<"$out"
   done
-  for f in info/attributes info/grafts shallow; do
+  for f in info/attributes info/grafts shallow objects/info/alternates; do
     p="$(git rev-parse --path-format=absolute --git-path "$f" 2>/dev/null)" || { echo "refuse state $f: its path could not be read"; return 1; }
     if [[ -s "$p" || -L "$p" || ( -e "$p" && ! -f "$p" ) ]]; then echo "refuse state $f: present and not an empty file"; bad=1; fi
   done
@@ -327,15 +337,17 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git 
 cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules
 ROOT_REAL="$(pwd -P)"
-# --check refuses planted state before any git call reads an object (resolve_main does).
-if [[ "$MODE" == check ]]; then state_gate || exit 2; fi
+# --check refuses planted state before any git call reads an object (resolve_main
+# does); gate_start runs the rest of its startup.
+GATED=""; [[ "$MODE" != check ]] || GATED=1  # a mode that decides (not the gate repository's GATE_*)
+if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
-if [[ "$MODE" == check ]]; then default_gate || exit 2; fi
 # The reader lists both import walks take, from main's settings (the lib's
 # caller contract item 9), before any walk; --settings prints its line. Not
 # read_settings below: without this call the walks model no host reader.
-reader_settings
+# gate_start calls it once main's objects are checked.
+[[ -n "$GATED" ]] || reader_settings
 
 # docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST
 # SECOND" or "near LINE" (the first problem found).
@@ -491,44 +503,61 @@ marker_kind() {
   if [[ "$subj" == "handoff: stopped: "* ]] && printf '%s\n' "$r" | LC_ALL=C grep -qxE '[!-~]([ -~]{0,118}[!-~])?'; then echo "stopped $r"
   else echo 'bad its subject is not exactly "handoff: ready", "handoff: blocked" or "handoff: stopped: REASON" (REASON: 1 to 120 printable ASCII characters, no blank at either end)'; fi
 }
-status_line() {
+# --status for one brief, as values (row 496): STATUS[line] is the line
+# --status prints. Only for an "ok" line does STATUS hold its fields by name,
+# each the bare value as printed (state, policy, branch, loop, sha, date,
+# dispatched, reason; "-" for a branch, sha or date there is none of, and an
+# empty reason), and ahead, the branch's commit count past main (0 when
+# absent); a skip line sets only line. BRIEF is emptied, then holds what
+# brief_fields read for this brief (whole lines, as brief_fields keeps them;
+# empty for a new brief or one check_brief skips): check_line takes Paths:
+# from it, so nothing between may call brief_fields. Call it in the caller's
+# own shell.
+declare -A STATUS=()
+status_fields() {
   local a="$1" out st br sha ahead date loop kind reason="" pol=review disp=0
+  STATUS=(); BRIEF=()
   open_shared
   out="$(check_brief "$a")"
-  [[ "$out" == "ok "* ]] || { echo "$out"; return; }
+  [[ "$out" == "ok "* ]] || { STATUS[line]="$out"; return; }
   read -r _ _ st _ <<<"$out"
-  if [[ "$st" == new ]]; then echo "ok $a new review - absent - - 0"; return; fi
-  brief_fields "$a" || { echo "skip $a: the brief is not read"; return; }
-  if [[ -z "${BRIEF[branch]+set}" ]]; then echo "skip $a: no Branch: line on the default branch"; return; fi
-  if [[ ! "${BRIEF[branch]}" =~ ^Branch:\ ([^\ ]+)$ ]]; then echo "skip $a: its first Branch: line is not exactly \"Branch: NAME\""; return; fi
+  if [[ "$st" == new ]]; then
+    STATUS=([line]="ok $a new review - absent - - 0" [state]=new [policy]=review [branch]=- [loop]=absent [sha]=- [ahead]=0 [date]=- [dispatched]=0 [reason]="")
+    return
+  fi
+  brief_fields "$a" || { STATUS[line]="skip $a: the brief is not read"; return; }
+  if [[ -z "${BRIEF[branch]+set}" ]]; then STATUS[line]="skip $a: no Branch: line on the default branch"; return; fi
+  if [[ ! "${BRIEF[branch]}" =~ ^Branch:\ ([^\ ]+)$ ]]; then STATUS[line]="skip $a: its first Branch: line is not exactly \"Branch: NAME\""; return; fi
   br="${BASH_REMATCH[1]}"
   if [[ -n "${BRIEF[dispatched]+set}" ]]; then
     [[ "${BRIEF[dispatched]}" =~ ^Dispatched:\ (0|[123456789][0123456789]?)$ ]] \
-      || { echo "skip $a: its first Dispatched: line is not exactly \"Dispatched: N\" with N from 0 to 99"; return; }
+      || { STATUS[line]="skip $a: its first Dispatched: line is not exactly \"Dispatched: N\" with N from 0 to 99"; return; }
     disp="${BASH_REMATCH[1]}"
   fi
   [[ "$POLICY" == self-merge && "${BRIEF[policy]-}" == "Policy: self-merge" ]] && pol=self-merge
-  if [[ "$st" == open && "$OPEN_SHARED" == error ]]; then echo "skip $a: the open briefs on the default branch could not be listed"; return; fi
+  if [[ "$st" == open && "$OPEN_SHARED" == error ]]; then STATUS[line]="skip $a: the open briefs on the default branch could not be listed"; return; fi
   if [[ "$st" == open && "$OPEN_SHARED" == *$'\n'"$(lower "$br")"$'\n'* ]]; then
-    echo "skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
+    STATUS[line]="skip $a: another open brief on the default branch names the same branch (compared ignoring case)"; return
   fi
   out="$(check_branch "$br")"
+  sha=- ahead=0 date=- loop=absent
   case "$out" in
-    "absent "*) echo "ok $a $st $pol $br absent - - $disp"; return ;;
-    "ok "*) read -r _ _ sha ahead date <<<"$out" ;;
-    *) echo "skip $a: Branch: ${out#*: }"; return ;;
+    "absent "*) ;;
+    "ok "*) read -r _ _ sha ahead date <<<"$out"; loop=working ;;
+    *) STATUS[line]="skip $a: Branch: ${out#*: }"; return ;;
   esac
-  loop=working
   if [[ "$ahead" -gt 0 ]]; then
     kind="$(marker_kind "$sha")"
     case "$kind" in
-      bad\ *) echo "skip $a: the tip of $br starts \"handoff:\" but is not a marker: ${kind#bad }"; return ;;
-      stopped\ *) loop=stopped; reason=" ${kind#stopped }" ;;
+      bad\ *) STATUS[line]="skip $a: the tip of $br starts \"handoff:\" but is not a marker: ${kind#bad }"; return ;;
+      stopped\ *) loop=stopped; reason="${kind#stopped }" ;;
       *) loop="$kind" ;;
     esac
   fi
-  echo "ok $a $st $pol $br $loop $sha $date $disp$reason"
+  STATUS=([line]="ok $a $st $pol $br $loop $sha $date $disp${reason:+ $reason}" [state]="$st" [policy]="$pol" [branch]="$br"
+    [loop]="$loop" [sha]="$sha" [ahead]="$ahead" [date]="$date" [dispatched]="$disp" [reason]="$reason")
 }
+status_line() { status_fields "$1"; echo "${STATUS[line]}"; }
 
 # merge_result's own repository, set up once per run in GATE_TMP (the caller's
 # mktemp -d, removed at exit): a git dir with no config but the repo's object
@@ -564,6 +593,65 @@ gate_git() {
   [[ ! -s "$GATE_TMP/err" ]] || return 3
   return "$rc"
 }
+# store_check [--main] REV...: the objects of REV a decision reads hash to their ids
+# and have one copy each (rows 492, 503). git checks no hash when it reads an
+# object, so a same-uid writer that rewrites an object file behind its id
+# would change what the gate reads, and only fsck would notice. Each REV (a
+# commit or a tree), its root tree, and every tree and blob below it (a gitlink
+# names another repository's commit) are read in one cat-file --batch and
+# re-hashed by one perl, for sha1 or sha256, but an id in $GATE_TMP/main (main's,
+# which gate_start's --main call leaves there; any other call fails without
+# it) is not read again. Then no id of
+# main's or of this call may have a second copy in the store: in two packs, or
+# loose and packed. git can read either copy of an id, and two reads of one id
+# (cat-file --batch here, cat-file blob MAIN:PATH in brief_fields) took
+# different ones (U3a1 i1 security F1: a second pack holding forged bytes under
+# the brief's id was read by brief_fields and passed the batch). The listing
+# follows links and takes dot-named packs, and harden switches off the
+# multi-pack-index, a second route to an id (i2 security F1). Only one call's
+# ids are judged, so one brief's refusal never carries to the next (i2
+# architecture 1). Returns 1 on a mismatch, a missing object, a second copy or
+# a failed read. Not checked: objects a decision reaches only through history
+# (the tip's parent, read by marker_kind; the commits check_branch counts;
+# check_brief's git log -G walk, which can only skip a brief; the merge bases,
+# whose merge result the rules judge), and a writer racing
+# between a check and a later read (R8's family, Q-103), which for main's
+# objects spans the whole run, as they are re-hashed once. Reads the real
+# repository's object store, as merge-tree writes into it. Needs GATE_TMP.
+store_check() {
+  local r alg fmt o main=""
+  [[ "$1" != --main ]] || { main=1; shift; }
+  fmt="$(git rev-parse --show-object-format)" && o="$(git rev-parse --path-format=absolute --git-path objects)" || return 1
+  case "$fmt" in sha1) alg=1 ;; sha256) alg=256 ;; *) return 1 ;; esac
+  # --main (gate_start's call) starts the skip list empty and keeps its ids
+  # there; any other call needs it, so a second main call cannot skip main.
+  if [[ -n "$main" ]]; then : > "$GATE_TMP/main" || return 1; elif [[ ! -s "$GATE_TMP/main" ]]; then return 1; fi
+  # Each object name once, never one of main's ids; git's own error for a
+  # missing tree is dropped (the missing object fails the check).
+  { for r in "$@"; do
+      printf '%s\n' "$r" "$r^{tree}"
+      git ls-tree -r -t --full-tree --format='%(objecttype) %(objectname)' "$r" 2>/dev/null | awk '$1 != "commit" { print $2 }' || exit 1
+    done; } | awk 'FILENAME != "-" { seen[$0]; next } !($0 in seen) { seen[$0]; print }' "$GATE_TMP/main" - | git cat-file --batch \
+    | env LC_ALL=C ALG="$alg" perl -e 'use Digest::SHA; binmode STDIN; my $n = 0;
+      while (defined(my $h = <STDIN>)) {
+        my ($id, $t, $s) = $h =~ /^([0-9a-f]+) ([a-z]+) ([0-9]+)\n\z/ or exit 1;  # "NAME missing" too
+        read(STDIN, my $b, $s) == $s && (getc(STDIN) // "") eq "\n" or exit 1;
+        Digest::SHA->new($ENV{ALG})->add("$t $s\0", $b)->hexdigest eq $id or exit 1;
+        print "$id\n"; $n++;
+      }
+      exit($n ? 0 : 1)' > "$GATE_TMP/call" || return 1  # REV^{tree} is never skipped, so 0 read is a fault
+  # Every copy in the store: each pack index's ids, then each loose object
+  # file. From inside the store (a -path pattern would read glob characters in
+  # its path), with find -L: git opens a linked fan-out directory or pack, and
+  # a pack whose name starts with a dot, as it opens any other.
+  # NUL-ended: a pack name holding a newline would read as two other names,
+  # and its own index would go unread (final security F1).
+  { (cd "$o" && find -L pack -mindepth 1 -maxdepth 1 -name '*.idx' ! -type d -print0) > "$GATE_TMP/idx" || exit 1
+    while IFS= read -r -d '' r; do git show-index --object-format="$fmt" < "$o/$r" | awk '{ print $2 }' || exit 1; done < "$GATE_TMP/idx"
+    (cd "$o" && find -L . -mindepth 2 -maxdepth 2 ! -type d -path './[0123456789abcdef][0123456789abcdef]/*') | awk -F/ '{ print $(NF - 1) $NF }'
+  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" - || return 1
+  [[ -z "$main" ]] || mv "$GATE_TMP/call" "$GATE_TMP/main"
+}
 # The merge of TIP into MAIN_SHA as the gate lands it (D7): prints the result
 # tree; returns 1 on a conflict (a gitlink both sides moved is one, since no
 # submodule repository is reachable), 2 when git failed or warned, or the
@@ -581,7 +669,7 @@ merge_result() {
 }
 # The blob id the brief's own file $1 may have in the merge (F13): main's copy
 # with its first Status: line outside a fence, the one brief_fields reads
-# (status_line has read it as "Status: open"), reading "Status: done", every
+# (status_fields has read it as "Status: open"), reading "Status: done", every
 # other byte kept (a CR at its end too). Returns non-zero when a read fails;
 # the caller checks it (hash-object would hash a truncated read).
 own_blob() {
@@ -658,8 +746,7 @@ never_res() {
 # The S rules (plan D5; a self-merge brief only) for a changed path the N rules
 # passed that is not the brief's own file (the N rules alone judge that one):
 # $1 the brief's full stem, $2 the path, $3 its lower-cased spelling, $4
-# diff-tree's status letter, $5 the verdict's refusal, if any (the checkout's
-# or the brief re-read's). Sets DENY, first match winning: the floor (only
+# diff-tree's status letter, $5 the checkout's refusal, if any. Sets DENY, first match winning: the floor (only
 # when $5 is empty: it walks the checkout), a Self-merge never: glob, then the
 # allowlist (Paths:, or ownfile). The allowlist widens nothing by case: Paths:
 # entries compare exactly, and an own file counts only when the whole path is
@@ -673,7 +760,6 @@ srules() {
     [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
   done
   [[ "$2" != "$3" ]] || ! ownfile "$2" "$1" "$4" || return 0
-  [[ "$PATHS_WHY" != unread ]] || { DENY="the brief could not be read again from the default branch"; return 0; }
   [[ -z "$PATHS_WHY" ]] || { DENY="the brief's Paths: line $PATHS_WHY, so only its own files land"; return 0; }
   for e in "${PATHS[@]}"; do
     [[ "$2" != "$e" && ( "$e" != */ || "$2" != "$e"* ) ]] || return 0
@@ -764,33 +850,48 @@ checkout_gate() {
   [[ "$x" == "$(printf '%s\n' "${ids[@]}")" ]] \
     || { CHECKOUT_WHY="a file's checked-out bytes are not the default branch's blob (a filter, working-tree-encoding, ident or eol conversion)"; return 1; }
 }
+# The gate's startup once the top level has run state_gate, resolve_main and
+# main_by_name, in this order, each refusal a "refuse state" line and exit 2
+# before any setting or brief is read (a failed mktemp exits 1 with no line): the default branch unambiguous
+# (default_gate); the gate's merge repository (GATE_TMP, removed at exit);
+# main's commit and tree re-hashed, each object with one copy (store_check);
+# then the reader lists both walks take, --settings' values, the never globs
+# and the open briefs (once, in this shell). The repository rule: main's files
+# and refs, the branch tips, the checkout and store_check's object reads are
+# in the real repository; the merge computations (merge-base, merge-tree,
+# diff-tree, the blob checks) run through gate_git.
+gate_start() {
+  default_gate || exit 2
+  GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
+  gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
+  store_check --main "$MAIN_SHA" \
+    || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
+  reader_settings; read_settings; never_res; open_shared
+}
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed
 # paths refused in the merge of TIP (tree TREE)", then a "path BRIEF S PATH" or
 # "deny BRIEF S PATH: WHY" line per path the merge changes against main
 # (diff-tree's status letter S, in its order; PATH is "?" unless every
-# character is one pathform allows); or one skip or refuse line (from
-# status_line, then the gate's own reasons). It runs in the caller's shell, so
+# character is one pathform allows); or one skip or refuse line (status_fields'
+# STATUS[line], then the gate's own reasons). It runs in the caller's shell, so
 # an exit (need_root's) ends the run, and set -e applies to its own lines but
 # not inside a helper called in a condition (floor and its walk, brief_fields,
 # checkout_gate, nul_list) or in $(...), which refuse by their own guards.
-# Nothing but its locals and the walk caches it resets may carry from one
-# brief to the next: each helper empties its own globals before use (DENY,
-# PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
+# Nothing but its locals, the walk caches it resets and store_check's list of
+# main's ids ($GATE_TMP/main, on purpose) may carry from one brief to the next: each helper empties its own globals before use (DENY,
+# PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, STATUS, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
 # TRUTH_WHY).
 check_line() {
   # Contract item 1 (the floor's walk); exported, so its children run under it too.
   local -x LC_ALL=C
-  local a="$1" out st pol br loop sha n tree meta p shown co stem rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  local a="$1" out st pol br sha tree meta p shown co stem rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
-  out="$(status_line "$a")"
-  [[ "$out" == "ok "* ]] || { echo "$out"; return; }
-  read -r _ _ st pol br loop sha _ <<<"$out"
+  status_fields "$a"
+  [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return; }
+  st="${STATUS[state]}"; pol="${STATUS[policy]}"; br="${STATUS[branch]}"; sha="${STATUS[sha]}"
   if [[ "$st" != open ]]; then echo "refuse $a: the brief is $st on the default branch; only an open brief merges"; return; fi
-  if [[ "$loop" == absent ]]; then echo "refuse $a: its branch $br does not exist"; return; fi
-  out="$(check_branch "$br")"
-  read -r _ _ _ n _ <<<"$out"
-  if [[ "$out" != "ok $br $sha "* || ! "$n" =~ ^$DIGIT+$ ]]; then echo "refuse $a: its branch $br moved or could not be read again"; return; fi
-  if [[ "$n" -eq 0 ]]; then echo "refuse $a: its branch $br has no commit the default branch lacks"; return; fi
+  if [[ "${STATUS[loop]}" == absent ]]; then echo "refuse $a: its branch $br does not exist"; return; fi
+  if [[ "${STATUS[ahead]}" -eq 0 ]]; then echo "refuse $a: its branch $br has no commit the default branch lacks"; return; fi
   if [[ -n "$EXPECT" && "$sha" != "$EXPECT" ]]; then echo "refuse $a: the tip of $br is $sha, not the expected $EXPECT"; return; fi
   tree="$(merge_result "$sha")" || rc=$?
   case "$rc" in
@@ -812,22 +913,6 @@ check_line() {
   # Every record read whole: two NUL-ended fields each (bytes after the last
   # NUL are not counted; git's own output never ends that way).
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
-  # A self-merge brief's checkout (contract items 2 and 3), checked once the
-  # merge's paths are read and before the S rules (srules), whose floor walk
-  # runs per path below only when co is empty (never over a checkout refused
-  # here); its refusal replaces the verdict line only, so the path and deny lines
-  # still print (a loop's advisory run from its own branch learns them). Run
-  # per brief, so each decision sees the checkout as it is: about 0.3 s here,
-  # times the self-merge briefs passed to one --check.
-  co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
-  # The S rules' inputs, read again from main's commit (status_line read them in a subshell).
-  stem="${a##*/}"; stem="${stem%.md}"
-  # A failed read refuses the verdict as a checkout refusal does (path lines
-  # still print, the floor does not run).
-  if [[ "$pol" == self-merge ]]; then
-    if brief_fields "$a"; then read_paths; else PATHS=(); PATHS_WHY=unread; co="${co:-refuse $a: the brief could not be read again from the default branch}"; fi
-  fi
-  if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
   # blob the store lacks would land unseen: every regular file the merge adds
   # or changes must name a blob present in the store (a missing subtree already
@@ -836,6 +921,20 @@ check_line() {
     || [[ "$(printf '%s\n' "$out" | grep -cx blob)" -ne ${#ids[@]} ]]; }; then
     echo "refuse $a: the merge of $br names a blob the object store lacks"; return
   fi
+  # The tip's objects and the merge's, re-hashed (main's were, in gate_start).
+  if ! store_check "$sha" "$tree"; then echo "refuse $a: an object of the tip of $br or of the merge does not hash to its id, has a second copy in the object store, or could not be read"; return; fi
+  # A self-merge brief's checkout (contract items 2 and 3), checked once the
+  # merge's paths are read and before the S rules (srules), whose floor walk
+  # runs per path below only when co is empty (never over a checkout refused
+  # here); its refusal replaces the verdict line only, so the path and deny lines
+  # still print (a loop's advisory run from its own branch learns them). Run
+  # per brief, so each decision sees the checkout as it is: about 0.3 s here,
+  # times the self-merge briefs passed to one --check.
+  co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
+  # The S rules' inputs: the brief as status_fields read it from main's commit.
+  stem="${a##*/}"; stem="${stem%.md}"
+  [[ "$pol" != self-merge ]] || read_paths
+  if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # One lower-casing pass for every path (a tr per path cost 1 to 2.5 ms each).
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
@@ -858,10 +957,7 @@ case "$MODE" in
     printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE"
     ;;
   check)
-    read_settings; never_res
-    open_shared  # once, in this shell: status_line runs in a subshell
-    GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
-    gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
+    gate_start
     fails=0
     for a in "${ARGS[@]}"; do
       # In this shell, not $(...): the floor's need_root exit ends the run, and

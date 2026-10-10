@@ -1630,12 +1630,14 @@ path $x A work-feat-x.txt" ] || { show; return 1; }
     printf '* merge=union\n' > .git/info/attributes
     git rev-parse main > .git/info/grafts
     git rev-parse main > .git/shallow
+    echo "$BATS_TEST_TMPDIR/elsewhere" > .git/objects/info/alternates
     git replace "$(git rev-parse main)" "$(git rev-parse feat/x)"
     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/feat/x
     chk "$B"
     [ "$status" -eq 2 ] && [ "$output" = "refuse state info/attributes: present and not an empty file
 refuse state info/grafts: present and not an empty file
 refuse state shallow: present and not an empty file
+refuse state objects/info/alternates: present and not an empty file
 refuse state refs/replace: 1 replace ref(s)
 refuse state origin/HEAD: it names a branch other than origin/main or origin/master" ] || { show; return 1; }
 }
@@ -1680,7 +1682,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false G=/dev/null P=none S=1; do
+    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }
@@ -1718,6 +1720,10 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     chk "$B" --expect "$t"
     [ "$status" -eq 0 ] && [ "$output" = "ok $B $t $(git merge-tree --write-tree main feat/x)
 path $B A work-feat-x.txt" ] && [ "${#t}" -eq 64 ] || { show; return 1; }
+    # Packed, with a second copy of the brief's blob: store_check reads SHA-256 pack indexes (U3a1).
+    git repack -adq; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    git rev-parse "main:$B" | git pack-objects -q .git/objects/pack/pack >/dev/null
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
 }
 
 @test "--status runs no gpg.program for a signed brief commit and prints only a full commit id (U2b1a1 final security F1)" {
@@ -1848,6 +1854,70 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
 }
 
+# forge ID TEXT: rewrite loose object ID's file to hold a blob of TEXT, its id unchanged.
+forge() {
+    local f=".git/objects/${1:0:2}/${1:2}"
+    chmod u+w "$f" && printf 'blob %s\0%s' "${#2}" "$2" | perl -MCompress::Zlib -0777 -ne 'print compress($_)' > "$f"
+}
+# loose ID: a loose copy of packed blob ID, beside the packed one (git itself writes none for an object it has).
+loose() {
+    mkdir -p ".git/objects/${1:0:2}" && git cat-file blob "$1" | perl -MCompress::Zlib -0777 -ne 'print compress("blob " . length($_) . "\0" . $_)' > ".git/objects/${1:0:2}/${1:2}"
+}
+OBJS="refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"
+@test "--check re-hashes what it reads: a rewritten, missing or second copy of an object of main's tree refuses the state before any brief; of the tip's tree, the brief; a packed store passes (rows 492, 503, U3a1, i1 security F1)" {
+    echo base > f.txt && commit_all f
+    gated feat/x; t="$(git rev-parse feat/x)"
+    git repack -adq
+    chk "$B"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] || { show; return 1; }
+    # A second copy of the brief's blob, though its bytes are the same: in a second pack, then loose.
+    o="$(git rev-parse "main:$B")"; echo "$o" | git pack-objects -q .git/objects/pack/pack >/dev/null
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
+    git repack -adq; loose "$o"
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+    # git reads the forged bytes as the brief's (cat-file checks no hash); the gate refuses before reading it.
+    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse "main:$B")"; forge "$o" $'# Brief: x\n\nStatus: open\nBranch: feat/y\n'
+    [ "$(git cat-file blob "$o" | grep Branch)" = "Branch: feat/y" ] || { echo "the forged blob does not read back"; return 1; }
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
+    # A tree of main's no rule reads, missing: the same refusal, and git's own error is not printed.
+    rm -rf .git && git init -q -b main && mkdir -p d && echo base > d/f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse main:d)"; rm ".git/objects/${o:0:2}/${o:2}"
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] && [ -z "$stderr" ] || { show; return 1; }
+    # The tip's own file, rewritten, then a second copy of it: that brief refuses, with no path line.
+    rm -rf .git d && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse feat/x:work-feat-x.txt)"; forge "$o" 'other bytes'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
+    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse feat/x:work-feat-x.txt)"; git repack -adq; loose "$o"
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of the tip of feat/x or of the merge does not hash to its id, has a second copy in the object store, or could not be read" ] || { show; return 1; }
+    # One brief's refusal does not carry to the next in the same run (i2 architecture 1, api 1).
+    x="$B"; brief y "Status: open" "Branch: feat/y"; work feat/y; y="$B"; B="$x"
+    chk "$y" "$B"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "ok $y "* ]] && [[ "${lines[2]}" == "refuse $B: an object of the tip of feat/x "* ]] || { show; return 1; }
+    chk "$B" "$y"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: "* ]] && [[ "${lines[1]}" == "ok $y "* ]] || { show; return 1; }
+}
+
+@test "--check's second-copy scan lists what git opens: a pack named with a leading dot or holding a newline, and a linked fan-out directory (U3a1 i2 security F1, final security F1; the multi-pack-index pin is in the config-pairs test)" {
+    echo base > f.txt && commit_all f && gated feat/x
+    git repack -adq; o="$(git rev-parse "main:$B")"
+    echo "$o" | git pack-objects -q "$BATS_TEST_TMPDIR/p" >/dev/null
+    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/.hidden.${f##*.}"; done
+    [ "$(git cat-file -t "$o")" = blob ] || return 1
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+    rm .git/objects/pack/.hidden.*; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    # A name holding a newline, with decoys at the two halves a line-based listing would read: valid
+    # indexes of a pack holding only a blob no tree names, so such a listing finds no second copy and fails no read.
+    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/x"$'\n'"y.${f##*.}"; done
+    echo decoy | git hash-object -w --stdin | git pack-objects -q "$BATS_TEST_TMPDIR/d" >/dev/null
+    cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/pack/x; cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/y.idx
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+    rm .git/objects/pack/x* .git/objects/y.idx; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    # A loose copy in a fan-out directory reached through a link.
+    mkdir -p "$BATS_TEST_TMPDIR/fan"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/" 2>/dev/null || true
+    loose "$o"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/${o:0:2}"; ln -s "$BATS_TEST_TMPDIR/fan/${o:0:2}" ".git/objects/${o:0:2}"
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+}
+
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
     gated feat/x
     git branch master feat/x; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master
@@ -1893,6 +1963,10 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
     g="$(grep -n -m1 -F 'for-each-ref --format=%(refname) refs/replace/' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     r="$(grep -n -m1 -F '^{commit}' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
     [ -n "$g" ] && [ -n "$r" ] && [ "$g" -lt "$r" ] || { echo "gate call at line $g, first commit read at line $r"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
+    # store_check re-hashes main's objects before any cat-file blob read of main (U3a1 i1 architecture 1).
+    c="$(grep -n -m1 -x 'cat-file --batch' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
+    f="$(grep -n -m1 '^cat-file blob ' "$BATS_TEST_TMPDIR/calls" | cut -d: -f1)"
+    [ -n "$c" ] && [ -n "$f" ] && [ "$c" -lt "$f" ] || { echo "store_check at line $c, first blob read at line $f"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
     git config merge.x.driver true
     o="$(git rev-parse main)"; rm ".git/objects/${o:0:2}/${o:2}"
     chk "$B"
