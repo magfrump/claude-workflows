@@ -1897,14 +1897,21 @@ OBJS="refuse state objects: the default branch's commit or an object of its tree
     chk "$B" "$y"; [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: "* ]] && [[ "${lines[1]}" == "ok $y "* ]] || { show; return 1; }
 }
 
-@test "--check's second-copy scan lists what git opens: a pack named with a leading dot, a linked fan-out directory, and no multi-pack-index route (U3a1 i2 security F1)" {
+@test "--check's second-copy scan lists what git opens: a pack named with a leading dot or holding a newline, and a linked fan-out directory (U3a1 i2 security F1, final security F1; the multi-pack-index pin is in the config-pairs test)" {
     echo base > f.txt && commit_all f && gated feat/x
     git repack -adq; o="$(git rev-parse "main:$B")"
     echo "$o" | git pack-objects -q "$BATS_TEST_TMPDIR/p" >/dev/null
-    for f in "$BATS_TEST_TMPDIR"/p-*; do mv "$f" ".git/objects/pack/.hidden.${f##*.}"; done
+    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/.hidden.${f##*.}"; done
     [ "$(git cat-file -t "$o")" = blob ] || return 1
     chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
     rm .git/objects/pack/.hidden.*; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    # A name holding a newline, with decoys at the two halves a line-based listing would read: valid
+    # indexes of a pack holding only a blob no tree names, so such a listing finds no second copy and fails no read.
+    for f in "$BATS_TEST_TMPDIR"/p-*; do cp "$f" ".git/objects/pack/x"$'\n'"y.${f##*.}"; done
+    echo decoy | git hash-object -w --stdin | git pack-objects -q "$BATS_TEST_TMPDIR/d" >/dev/null
+    cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/pack/x; cp "$BATS_TEST_TMPDIR"/d-*.idx .git/objects/y.idx
+    chk "$B"; [ "$status" -eq 2 ] && [ "$output" = "$OBJS" ] || { show; return 1; }
+    rm .git/objects/pack/x* .git/objects/y.idx; chk "$B"; [ "$status" -eq 0 ] || { show; return 1; }
     # A loose copy in a fan-out directory reached through a link.
     mkdir -p "$BATS_TEST_TMPDIR/fan"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/" 2>/dev/null || true
     loose "$o"; mv ".git/objects/${o:0:2}" "$BATS_TEST_TMPDIR/fan/${o:0:2}"; ln -s "$BATS_TEST_TMPDIR/fan/${o:0:2}" ".git/objects/${o:0:2}"

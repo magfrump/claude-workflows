@@ -100,8 +100,8 @@
 #             origin/master; then (once main is found) both main and master
 #             present, or origin/HEAD naming another branch than the one taken;
 #             then the gate's own merge repository not set up ("refuse state
-#             gate: WHY"); then main's commit, or a tree or blob of its tree,
-#             that does not hash to its id, has a second copy in the object
+#             gate: WHY"); then main's commit, or a tree or blob of its tree
+#             (gitlinks aside), that does not hash to its id, has a second copy in the object
 #             store (two packs, or loose and packed: git may read either) or
 #             cannot be read ("refuse state objects: WHY"; every file the
 #             gate reads from main is one).
@@ -127,7 +127,8 @@
 #                 or of the merge does not hash to its id, has a second copy
 #                 in the object store, or could not be read": the tip's
 #                 commit, or a tree or blob of its tree or of TREE (gitlinks
-#                 aside), read back and re-hashed (git checks no object's
+#                 aside; a second copy of one of main's objects, made after
+#                 the state check, is reported here too), read back and re-hashed (git checks no object's
 #                 hash when it reads one, so a rewritten object file would
 #                 pass for the committed one). Or "K of N changed paths refused in
 #                 the merge of TIP (tree TREE)", when deny lines follow. Or,
@@ -592,14 +593,15 @@ gate_git() {
   [[ ! -s "$GATE_TMP/err" ]] || return 3
   return "$rc"
 }
-# store_check REV...: the objects of REV a decision reads hash to their ids
+# store_check [--main] REV...: the objects of REV a decision reads hash to their ids
 # and have one copy each (rows 492, 503). git checks no hash when it reads an
 # object, so a same-uid writer that rewrites an object file behind its id
 # would change what the gate reads, and only fsck would notice. Each REV (a
 # commit or a tree), its root tree, and every tree and blob below it (a gitlink
 # names another repository's commit) are read in one cat-file --batch and
 # re-hashed by one perl, for sha1 or sha256, but an id in $GATE_TMP/main (main's,
-# which gate_start's call leaves there) is not read again. Then no id of
+# which gate_start's --main call leaves there; any other call fails without
+# it) is not read again. Then no id of
 # main's or of this call may have a second copy in the store: in two packs, or
 # loose and packed. git can read either copy of an id, and two reads of one id
 # (cat-file --batch here, cat-file blob MAIN:PATH in brief_fields) took
@@ -610,16 +612,20 @@ gate_git() {
 # ids are judged, so one brief's refusal never carries to the next (i2
 # architecture 1). Returns 1 on a mismatch, a missing object, a second copy or
 # a failed read. Not checked: objects a decision reaches only through history
-# (the tip's parent, read by marker_kind; the commits check_branch counts; the
-# merge bases, whose merge result the rules judge), and a writer racing
+# (the tip's parent, read by marker_kind; the commits check_branch counts;
+# check_brief's git log -G walk, which can only skip a brief; the merge bases,
+# whose merge result the rules judge), and a writer racing
 # between a check and a later read (R8's family, Q-103), which for main's
 # objects spans the whole run, as they are re-hashed once. Reads the real
 # repository's object store, as merge-tree writes into it. Needs GATE_TMP.
 store_check() {
-  local r alg fmt o
+  local r alg fmt o main=""
+  [[ "$1" != --main ]] || { main=1; shift; }
   fmt="$(git rev-parse --show-object-format)" && o="$(git rev-parse --path-format=absolute --git-path objects)" || return 1
   case "$fmt" in sha1) alg=1 ;; sha256) alg=256 ;; *) return 1 ;; esac
-  [[ -e "$GATE_TMP/main" ]] || : > "$GATE_TMP/main" || return 1
+  # --main (gate_start's call) starts the skip list empty and keeps its ids
+  # there; any other call needs it, so a second main call cannot skip main.
+  if [[ -n "$main" ]]; then : > "$GATE_TMP/main" || return 1; elif [[ ! -s "$GATE_TMP/main" ]]; then return 1; fi
   # Each object name once, never one of main's ids; git's own error for a
   # missing tree is dropped (the missing object fails the check).
   { for r in "$@"; do
@@ -638,10 +644,13 @@ store_check() {
   # file. From inside the store (a -path pattern would read glob characters in
   # its path), with find -L: git opens a linked fan-out directory or pack, and
   # a pack whose name starts with a dot, as it opens any other.
-  { (cd "$o" && find -L pack -mindepth 1 -maxdepth 1 -name '*.idx' ! -type d) > "$GATE_TMP/idx" || exit 1
-    while IFS= read -r r; do git show-index --object-format="$fmt" < "$o/$r" | awk '{ print $2 }' || exit 1; done < "$GATE_TMP/idx"
+  # NUL-ended: a pack name holding a newline would read as two other names,
+  # and its own index would go unread (final security F1).
+  { (cd "$o" && find -L pack -mindepth 1 -maxdepth 1 -name '*.idx' ! -type d -print0) > "$GATE_TMP/idx" || exit 1
+    while IFS= read -r -d '' r; do git show-index --object-format="$fmt" < "$o/$r" | awk '{ print $2 }' || exit 1; done < "$GATE_TMP/idx"
     (cd "$o" && find -L . -mindepth 2 -maxdepth 2 ! -type d -path './[0123456789abcdef][0123456789abcdef]/*') | awk -F/ '{ print $(NF - 1) $NF }'
-  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" -
+  } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" - || return 1
+  [[ -z "$main" ]] || mv "$GATE_TMP/call" "$GATE_TMP/main"
 }
 # The merge of TIP into MAIN_SHA as the gate lands it (D7): prints the result
 # tree; returns 1 on a conflict (a gitlink both sides moved is one, since no
@@ -843,7 +852,7 @@ checkout_gate() {
 }
 # The gate's startup once the top level has run state_gate, resolve_main and
 # main_by_name, in this order, each refusal a "refuse state" line and exit 2
-# before any setting or brief is read: the default branch unambiguous
+# before any setting or brief is read (a failed mktemp exits 1 with no line): the default branch unambiguous
 # (default_gate); the gate's merge repository (GATE_TMP, removed at exit);
 # main's commit and tree re-hashed, each object with one copy (store_check);
 # then the reader lists both walks take, --settings' values, the never globs
@@ -855,7 +864,7 @@ gate_start() {
   default_gate || exit 2
   GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
   gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
-  store_check "$MAIN_SHA" && mv "$GATE_TMP/call" "$GATE_TMP/main" \
+  store_check --main "$MAIN_SHA" \
     || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
   reader_settings; read_settings; never_res; open_shared
 }
@@ -868,8 +877,8 @@ gate_start() {
 # an exit (need_root's) ends the run, and set -e applies to its own lines but
 # not inside a helper called in a condition (floor and its walk, brief_fields,
 # checkout_gate, nul_list) or in $(...), which refuse by their own guards.
-# Nothing but its locals and the walk caches it resets may carry from one
-# brief to the next: each helper empties its own globals before use (DENY,
+# Nothing but its locals, the walk caches it resets and store_check's list of
+# main's ids ($GATE_TMP/main, on purpose) may carry from one brief to the next: each helper empties its own globals before use (DENY,
 # PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, STATUS, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
 # TRUTH_WHY).
 check_line() {
