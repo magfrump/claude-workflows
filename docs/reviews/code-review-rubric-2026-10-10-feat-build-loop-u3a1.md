@@ -1,8 +1,34 @@
-Commit: 65007bf8
+Commit: 83f75281
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a1` (U3a1: --check re-hashes main's and the merge's objects; status as values; gate_start), on main d5736445.
-**Status: 🔴 ITERATION 1 (`--loop-pass`, k=1, full panel, scope `main...65007bf8`) — 1 Must Fix (security F1), fixed in the commit after 65007bf8 (unreviewed at this stamp).**
+**Status: 🟡 ITERATION 2 (`--loop-pass`, k=1, full panel, scope `65007bf8..83f75281`) — no Must Fix; 1 Must Address (architecture 1: one brief's second-copy refusal carried to later briefs), fixed in the commit after 83f75281 (unreviewed at this stamp).**
+
+## Iteration 2 (Commit 83f75281, `--loop-pass`, k=1, scope `65007bf8..83f75281`, full panel)
+
+Incremental scope (the fix batch; docs/reviews excluded). Fact-check k=1 (`code-fact-check-report-build-loop-u3a1-i2.md`): 30 claims, 26 Verified, 2 Mostly accurate, 2 Stale, 0 Incorrect; executed the duplicate refusal (two packs, loose+packed, SHA-1/256) and its fail-closed paths. Critics (opus, parallel; `*-review-2026-10-10-build-loop-u3a1-i2.md`): security (2 Medium, 1 Info; read-static), architecture (1 Coupling, 2 Info), api (1 Minor, 2 Info), performance (1 Low). Prior Must Fix A1/A2: verified resolved (fact-check executed; security read). No re-fire of a fixed finding (the carry-over is new, introduced by the C2 skip).
+
+### 🟡 Must Address
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| B1 | `$GATE_TMP/checked` was both the skip cache and the duplicate scan's set, so one brief's second copy refused every later brief in the run under its own name (reproduced by two critics). | architecture 1 (Coupling); api 1; performance (escalation) | Fixed: store_check skips main's ids ($GATE_TMP/main, kept by gate_start) and judges main's plus this call's ids only; a two-brief test in both orders. |
+| B2 | The scan listed packs by glob (no dot names) and loose files without following links; the repo's core.multiPackIndex gave real-repo reads a second route. | security F1 (Medium, read-static) | Fixed: find -L inside the store for both; harden pins core.multiPackIndex=false (the config-pairs test lists it); tests for a dot-named pack and a linked fan-out dir. |
+| B3 | Main's objects are re-hashed once per run: a rewrite in place after startup reaches later briefs. | security F2 (Medium) | Deferred with a row (R8 family, Q-103); stated in the comment and plan note. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D1 | Plan's U3a2 bullet cited the removed re-read; state_gate's header omitted alternates. | fact-check i2 5, 10; api 2 | Fixed. |
+| D2 | Test comments: "with no path line" unpinned; "the settings" was the brief. | fact-check i2 26, 27 | Fixed (full line pinned; comment says any blob read). |
+| D3 | "With one copy every read gets the bytes checked here" overclaims. | security F3 | Comment reworded. |
+| D4 | GATE flag shares the gate repository's GATE_ prefix. | architecture 3 | Renamed GATED. |
+| D5 | Scan cost grows with the store; store_check's lib move needs the scratch dir; `refuse state objects` vs `objects/info/alternates`. | performance F1; architecture 2; api 3 | Rows. |
+
+### 🧩 Composition check
+
+- store_check :614-641 (architecture 1, api 1, performance escalation, security F1/F2): architecture 1 states the root (two jobs on one file) completely; security F1/F2 are distinct (listing gaps, race window).
 
 ## Iteration 1 (Commit 65007bf8, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
