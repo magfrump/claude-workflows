@@ -95,3 +95,7 @@ None.
 - `read_paths` / read_settings (architecture 1, api 1): one root (A1), stated by architecture 1 already.
 
 No other multi-source co-located clusters qualified.
+
+## Confirming pass (after the loop; k=1 fact-check + security over `fcc2dd9b..069ddfa9`)
+
+Fact-check `code-fact-check-report-build-loop-u2c1-confirm.md` (17 claims: 16 Verified, 1 Mostly accurate, an override row's "the row above"); security `security-review-2026-10-10-u2c1-confirm.md`: D1 closed (probed both ways; the D1 mutant fails the new test row), the re-read refusal behaves as documented, `unread` cannot collide; N1 (an exact upper-case review in Paths:) and the untested re-read branch deferred with rows. No Incorrect, no new fail-open. Lite fix-drift over 0f9b6a46: one comment wording, fixed in 069ddfa9.
