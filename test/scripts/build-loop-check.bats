@@ -785,12 +785,20 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 
 @test "a dangling prompt link in another worktree reads its target as a prompt (U2b3b2c i1 security F1)" {
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$sd/.claude/commands"  # side lacks docs/
-    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; printf 't: @top.md\n' > docs/t.md; echo top > top.md; echo x > AGENTS.md; commit_all pk
+    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; printf 't: @top.md\n' > docs/t.md; echo top > top.md; echo x > AGENTS.md
+    # Under a nested .claude/, the link's own bases (side/sub) apply to its target's names too (i2 fact-check 9b).
+    mkdir -p "$sd/sub/.claude/commands" sub && ln -s ../../../docs/u.md "$sd/sub/.claude/commands/k.md"; printf 'u: @top2.md\n' > docs/u.md; echo t2 > sub/top2.md; commit_all pk
     for w in tree main; do
-        imps "$w" docs/t.md top.md
+        imps "$w" docs/t.md top.md sub/top2.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; want docs/t.md imported; want top.md imported
+        want walk ok; want docs/t.md imported; want top.md imported; want sub/top2.md imported
     done
+}
+
+@test "a prompt copy with this checkout's bytes is still read: a worktree under a .claude/ adds prompt bases (U2b3b2c i2 fact-check 16)" {
+    r="$(pwd -P)" && h="$BATS_TEST_TMPDIR/h" && mkdir -p docs .claude/commands "$h/.claude" && printf 'k: @z.md\n' > .claude/commands/k.md && echo x > AGENTS.md && commit_all pc
+    git worktree add -q --detach "$h/.claude/wt" && printf 'z: @%s/docs/z2.md\n' "$r" > "$h/z.md"
+    for w in tree main; do imps "$w" docs/z2.md; [ -z "$stderr" ] || return 1; want walk ok; want docs/z2.md imported; done
 }
 
 @test "a seed that is a dangling link into another worktree reads as the repo path it names (U2b3b2c; U2b3b2b final security F1)" {

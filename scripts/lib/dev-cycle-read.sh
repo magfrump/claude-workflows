@@ -1251,10 +1251,12 @@ with_at() {
 # does not. The array Q is cleared, then, for each NAME (an absolute one or a
 # // name is skipped) not yet a key of the associative array CMP (it then is
 # one) and each IMPORT_OTHER root, gets ROOT/NAME when outside_ok admits it,
-# unless rawfile's test holds on both sides (ROOT_REAL/NAME and ROOT/NAME are
-# each a regular file whose real path is its own spelling: no link on the way)
-# and their bytes are equal (the walks read ROOT_REAL's file, or main's, which
-# contract item 2 makes the same), and //ROOT/NAME when it is a link
+# unless NAME is no prompt, rawfile's test holds on both sides (ROOT_REAL/NAME
+# and ROOT/NAME are each a regular file whose real path is its own spelling:
+# no link on the way) and their bytes are equal (the walks read ROOT_REAL's
+# file, or main's, which contract item 2 makes the same, and resolve its
+# relative names against every root; a prompt copy is always read, since its
+# absolute path can add prompt bases: i2 fact-check 16), and //ROOT/NAME when it is a link
 # outside_ok rejects (a dangling one, which the walks project as outside_proj
 # projects a // name). A copy of a NAME the associative array PDIR holds (a
 # prompt) is added to it, lower-cased, so it is read as one, and its // form
@@ -1283,7 +1285,7 @@ root_copies() {
   if [[ $n -gt 0 ]]; then
     nul_list rl xargs -0r -a <(printf '%s\0' "${ps[@]}" "${cs[@]}") realpath -mz -- && [[ ${#rl[@]} -eq $((2 * n)) ]] || return 1
     for i in "${!ps[@]}"; do
-      if [[ -f "${ps[i]}" && "${rl[i]}" == "$ROOT_REAL/${ps[i]}" && "${rl[n + i]}" == "${cs[i]}" ]]; then sp+=("$i"); hs+=("${cs[i]}" "${ps[i]}"); else qs+=("${cs[i]}"); qn+=("${ps[i]}"); fi
+      if [[ -z "${rc_p[${ps[i]}]+set}" && -f "${ps[i]}" && "${rl[i]}" == "$ROOT_REAL/${ps[i]}" && "${rl[n + i]}" == "${cs[i]}" ]]; then sp+=("$i"); hs+=("${cs[i]}" "${ps[i]}"); else qs+=("${cs[i]}"); qn+=("${ps[i]}"); fi
     done
   fi
   if [[ ${#hs[@]} -gt 0 ]]; then
@@ -1295,16 +1297,22 @@ root_copies() {
     rc_q+=("${qs[i]}")
   done
 }
-# prompt_marks PDIR OUT: after a // queue entry the associative array PDIR
-# holds (a dangling prompt link) is projected, each repo name in the variable
-# OUT that PDIR lacks is added to it, lower-cased, so the walk reads it as a
-# prompt, as a session reads the link's target (U2b3b2c i1 security F1). A name
-# already read is not read again as a prompt: a named exception. It returns 1
-# when lower fails.
+# prompt_marks PDIR PEXT OUT F: after F, a // queue entry the associative
+# array PDIR holds (a dangling prompt link), is projected, each repo name in
+# the variable OUT is read as a prompt, as a session reads the link's target:
+# PDIR gets it lower-cased (its own prompt bases), and the associative array
+# PEXT gets the link's directory and the link's own prompt bases (absolute,
+# newline-separated), which the walks add to its DIRS (U2b3b2c i1 security F1,
+# i2 fact-check 9b: a link under a nested .claude/). A name already read is
+# not read again as a prompt: a named exception. It returns 1 when lower fails.
 prompt_marks() {
-  local -n pm_p="$1" pm_o="$2"; local p
+  local -n pm_p="$1" pm_x="$2" pm_o="$3"; local p l="${4#/}" b pm_b=()
+  prompt_bases pm_b "${pm_p[$4]#/}" "$l"
+  printf -v b '%s\n' "${l%/*}" "${pm_b[@]:1}"; b="${b%$'\n'}"
   while IFS= read -r p; do
-    [[ -z "$p" || "$p" == /* || -n "${pm_p[$p]+set}" ]] || pm_p[$p]="$(lower "$p")" || return 1
+    [[ -n "$p" && "$p" != /* ]] || continue
+    [[ -n "${pm_p[$p]+set}" ]] || pm_p[$p]="$(lower "$p")" || return 1
+    pm_x[$p]="${pm_x[$p]:+${pm_x[$p]}$'\n'}$b"
   done < <(printf '%s\n' "$pm_o")
 }
 # outside_seeds NAME: array NAME gets the walks' outside starts (U2b3b2b): files
@@ -1433,7 +1441,7 @@ c1_seeds() {
   for i in "${!cx[@]}"; do
     isstart "${lo[i]}" && [[ -n "${c1_at[${cx[i]}]+set}" || -L "${cx[i]}" ]] || continue
     c=f; [[ ! "${lo[i]}" =~ $PROMPT_DIR ]] || c=p
-    # rawfile, not -f, on ROOT_REAL's copy: one reached through a link there is no walk start (U2b3b2b i1 fact-check 19b).
+    # rawfile, not -f, on ROOT_REAL's copy: one reached through a link there is no tree walk start (U2b3b2b i1 fact-check 19b).
     # The inner path's tail of lo: ROOT_REAL's copy must be a start of the same kind there.
     d="${lo[i]:${#lo[i]}-${#ir[i]}}"; q=f; [[ ! "$d" =~ $PROMPT_DIR ]] || q=p
     [[ ! -L "${cx[i]}" && "$q" == "$c" ]] && isstart "$d" && rawfile "${ir[i]}" || c1_a+=("$c${cx[i]}")
@@ -1530,7 +1538,7 @@ main_checkout() {
 }
 imported_names() {
   local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=() sd=() cq=() nm=(); set -o pipefail
-  local -A pdir=() cmp=()
+  local -A pdir=() cmp=() pext=()
   need_root
   import_readers || { IMPORTED_DONE=""; IMPORTED=error; return 1; }
   # The roots never hold an empty line, so the blank line ends them.
@@ -1562,11 +1570,12 @@ imported_names() {
   # An index, not a copy per pop (quadratic in the files read: override row 461).
   while [[ $qi -lt ${#queue[@]} ]]; do
     f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
+    [[ -z "${pext[$f]+set}" ]] || mapfile -t -O "${#xs[@]}" xs <<<"${pext[$f]}"  # a dangling prompt link's bases (prompt_marks)
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     if [[ "$f" == //* ]]; then out="$f"  # a dangling link: outside_proj reads its real path alone
     else out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_file "$f" "$d" "${xs[@]}")" \
       && import_work out work || { IMPORTED=error; return 1; }; fi
-    outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir out; } || { IMPORTED=error; return 1; }
+    outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir pext out "$f"; } || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -1602,7 +1611,7 @@ imported_names() {
 main_imports() {
   local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=() sd=() cq=() nm=(); set -o pipefail  # as brief_fields
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, cmp root_copies' CMP, passed by name
-  local -A ent=() seen=() dir=() pok=() pdir=() cmp=()
+  local -A ent=() seen=() dir=() pok=() pdir=() cmp=() pext=()
   need_root
   import_readers || { IMPORTED_MAIN_DONE=""; IMPORTED_MAIN=error; return 1; }
   [[ "$IMPORTED_MAIN_DONE" == "$MAIN_SHA $MAIN_BY_NAME $IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES" ]] && { [[ "$IMPORTED_MAIN" != error ]]; return; }
@@ -1658,6 +1667,7 @@ main_imports() {
   while [[ $qi -lt ${#queue[@]} || ${#tq[@]} -gt 0 ]]; do
     [[ $qi -lt ${#queue[@]} ]] || { queue=("${tq[@]}"); tq=(); qi=0; }  # phase 2: main's walk is done
     f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
+    [[ -z "${pext[$f]+set}" ]] || mapfile -t -O "${#xs[@]}" xs <<<"${pext[$f]}"  # a dangling prompt link's bases (prompt_marks)
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     case "${ent[$f]-checkout}" in
       checkout) if [[ "$f" == //* ]]; then out="$f"  # a dangling link: outside_proj below reads its real path alone
@@ -1693,7 +1703,7 @@ main_imports() {
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;
     esac
-    outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir out; } || { IMPORTED_MAIN=error; return 1; }
+    outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir pext out "$f"; } || { IMPORTED_MAIN=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED_MAIN=error; return 1; }
     # One lower per file, not per candidate, as in imported_names.

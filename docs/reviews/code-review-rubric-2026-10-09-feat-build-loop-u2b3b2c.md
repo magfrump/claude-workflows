@@ -1,8 +1,35 @@
-Commit: f7e1bea2
+Commit: c69f352f
+Loop-pass short-circuit: used at c69f352f
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2c` (U2b3b2c: both import walks read other reader roots' copies of the names they reach; dangling-link seeds projected), on main 8e550626.
-**Status: 🟡 ITERATION 1 (`--loop-pass`, k=1, full panel, over f7e1bea2) — no Must Fix; Must Address fixed in the commit after f7e1bea2 except two acknowledged with override rows. Single-sample review; absence of findings is not an attestation.**
+**Status: 🔴→fixed ITERATION 2 (`--loop-pass`, k=1, scope `f7e1bea2..c69f352f`, short-circuited at fact-check) — one behavioural red (B1) and one Must Address (B2), fixed in the commit after c69f352f with tests; critics deferred to the final confirming pass. Single-sample review; absence of findings is not an attestation.**
+
+## Iteration 2 (Commit c69f352f, `--loop-pass`, k=1, scope `f7e1bea2..c69f352f`, short-circuited)
+
+Delivery mode: self-read; partial-scope label applied. Fact-check `code-fact-check-report-build-loop-u2b3b2c-i2.md` (21 claims: 18 Verified, 1 Mostly accurate, 2 Incorrect). Every iteration-1 fix verified as claimed (A8: identical outside_seeds output under f7e1bea2's and c69f352f's libs, on /workspace and on a fixture where one path is both a config and a C1 seed). Loop-pass short-circuit: behavioural 🔴 confirmed at fact-check (claim 9b) — the four critics skipped this pass; the final confirming pass runs the full panel.
+
+### 🔴 Must Fix
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | prompt_marks read a dangling prompt link's target with the target's prompt bases, not the link's: under a nested `.claude/` (`side/sub/.claude/commands/k.md`) names resolved against `side/sub` were missed (executed: `sub/top.md -`; live link: imported). | Behavioural (fail-open, narrow) | fact-check 9b | Fixed: prompt_marks also records the link's directory and prompt bases (pext), which both walks add to the target's DIRS; the dangling-prompt test gained the nested case, red on c69f352f. |
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B2 | The equal-bytes skip dropped a prompt copy in a root nested under a `.claude/` whose parent is no root: its absolute path adds prompt bases ROOT_REAL's copy lacks (executed fixture; not on /workspace). The test comment claiming equal copies add nothing was wrong for prompts. | Medium | fact-check 16 | Fixed: a prompt copy is always read (no equal-bytes skip); test "a prompt copy with this checkout's bytes is still read…", red on c69f352f; root_copies' comment says why. |
+| B3 | c69f352f's comment said a copy reached through a link "is no walk start"; true only of the tree walk. | Low (text) | fact-check 13 | Fixed ("no tree walk start"). |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| B4 | No test drives root_copies' `//` form of a prompt copy (C1 seeds every link in another root first, so the seed route covers it). | fact-check gap | Acknowledged (override row). |
+| B5 | The brief's "357 lines" was 359 at c69f352f. | fact-check 7 | Noted; 377 after B1-B3. |
+
+**Iteration 1 status (below):**
 
 ## Iteration 1 (Commit f7e1bea2, `--loop-pass`, k=1, scope `main...HEAD` (full: no prior rubric), full panel)
 
