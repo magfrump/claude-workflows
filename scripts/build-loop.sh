@@ -217,21 +217,24 @@
 #                 "Merge branch 'BRANCH' (build-loop self-merge)" and the
 #                 trailer "Build-loop-gate: STEM" (the brief's file name
 #                 without .md); its reflog entry reads "build-loop:
-#                 self-merge of STEM". Author and committer from the
-#                 environment, or else git config (the caller's global file
-#                 included, the system file not); git guessing one from the
-#                 host refuses instead. With the branch checked out in no
+#                 self-merge of STEM" (git adds ": Fast-forward" when W
+#                 moves it). Author and committer names and emails from
+#                 GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL, or else
+#                 git config (the caller's global file included, the system
+#                 file not); EMAIL or a guess from the host refuses instead. With the branch checked out in no
 #                 worktree it moves by compare-and-swap from the checked
 #                 commit; checked out in a worktree W, by merge --ff-only in W.
-#             or refuse BRIEF: WHY, with the path lines following as after
-#             a --check refusal, when: the policy --status reads is review;
+#             or refuse BRIEF: WHY, with the ok line's path lines following,
+#             when: the policy --status reads is review;
 #             no identity is known; the worktrees or the git directory
 #             cannot be read; the branch is checked out in two worktrees; a
-#             worktree is rebasing it or bisecting from it; the merge commit
+#             worktree is rebasing it (or a paused rebase will move it) or
+#             bisecting from it, or that state cannot be read; the merge commit
 #             cannot be written; the state gate or default_gate refuses again
 #             just before the move; the branch moved since the check, or
 #             cannot be updated. With the branch checked out in W, also when
-#             W is missing, is not its own top level or not on the branch at
+#             W is missing or fails the state gate (its own
+#             config.worktree), is not its own top level or not on the branch at
 #             the checked commit, is mid a merge, cherry-pick, revert,
 #             rebase, bisect or sequence, has a tracked change (or git status
 #             fails or warns there), holds an untracked or ignored file at a
@@ -985,6 +988,7 @@ check_line() {
   [[ "$pol" != self-merge ]] || read_paths
   # Reads check_line's locals (bash scope is dynamic); called only here.
   verdict_ok() {
+    local i
     VERDICT=([tip]="$sha" [tree]="$tree" [policy]="$pol" [branch]="$br" [stem]="$stem")
     for i in "${!ps[@]}"; do CHANGED[${ps[$i]}]="${ss[$i]}"; done
     echo "ok $a $sha $tree"
@@ -1003,10 +1007,10 @@ check_line() {
 }
 
 # The merge commit's author and committer, as git var resolves them: the
-# environment, then git config with the caller's global file (no system file:
-# GIT_CONFIG_NOSYSTEM stays set). user.useConfigOnly: without either, git
-# would guess a name from the passwd entry and the host's domain; it refuses
-# instead. Exported (for the rest of the run) because commit-tree runs in the
+# environment's GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL, then git config with the caller's global file (no system file:
+# GIT_CONFIG_NOSYSTEM stays set), each name and email on its own.
+# user.useConfigOnly: without them git would take EMAIL or guess from the
+# passwd entry and the host's domain; it refuses instead. Exported (for the rest of the run) because commit-tree runs in the
 # gate repository, which has no config. Returns 1 when git knows none.
 merge_ident() {
   local w x
@@ -1016,8 +1020,9 @@ merge_ident() {
     export "GIT_${w}_NAME=${BASH_REMATCH[1]}" "GIT_${w}_EMAIL=${BASH_REMATCH[2]}"
   done
 }
-# --merge's landing, once check_line printed ok (VERDICT) under an authority
-# the caller checked (self-merge here): decide, then write, then move (D7,
+# land AUTHORITY: --merge's landing, once check_line printed ok (VERDICT)
+# under the authority the caller checked and names (self-merge; U3a3 adds
+# its approval), which the message and reflog carry: decide, then write, then move (D7,
 # F29). No worktree may be rebasing the default branch or bisecting from it.
 # When no worktree has it checked out: a compare-and-swap (update-ref from
 # MAIN_SHA, so a branch that moved since the check is left as it is). When a
@@ -1031,12 +1036,12 @@ merge_ident() {
 # state gate (here and in W) and default_gate run again (row 494), and the
 # branch moves: by update-ref, or by merge --ff-only NEW in W, after which it
 # must read NEW. Sets NEW, or MERGE_WHY and returns 1 (a refusal after the
-# write leaves NEW unreachable in the store). Residuals (Q-103): a worktree
+# write leaves NEW set and unreachable in the store). Residuals (Q-103): a worktree
 # checking the branch out, or W switching to another branch at MAIN_SHA,
 # between these checks and the move.
 NEW=""; MERGE_WHY=""
 land() {
-  local x w="" p q d common in="the worktree with the default branch checked out" msg="build-loop: self-merge of ${VERDICT[stem]}"
+  local x w="" p q d common in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
   NEW=""; MERGE_WHY=""
   merge_ident || { MERGE_WHY="git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"; return 1; }
   # NUL-ended fields; each record starts "worktree PATH".
@@ -1053,12 +1058,19 @@ land() {
   common="$(git rev-parse --path-format=absolute --git-common-dir)" || { MERGE_WHY="the git directory could not be found"; return 1; }
   for d in "$common" "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?*; do
     [[ -d "$d" ]] || continue
-    for q in rebase-merge/head-name rebase-apply/head-name; do
-      [[ ! -f "$d/$q" || "$(<"$d/$q")" != "refs/heads/$MAIN" ]] || { MERGE_WHY="a worktree is rebasing the default branch"; return 1; }
+    # A rebase of it, or one that will move it (--update-refs lists it).
+    for q in rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs; do
+      [[ ! -e "$d/$q" ]] || { [[ -r "$d/$q" ]] && ! grep -qxF "refs/heads/$MAIN" "$d/$q"; } \
+        || { MERGE_WHY="a worktree is rebasing the default branch, or its rebase state cannot be read"; return 1; }
     done
-    [[ ! -f "$d/BISECT_START" || "$(<"$d/BISECT_START")" != "$MAIN" ]] || { MERGE_WHY="a worktree is bisecting from the default branch"; return 1; }
+    [[ ! -e "$d/BISECT_START" ]] || { [[ -r "$d/BISECT_START" ]] && [[ "$(<"$d/BISECT_START")" != "$MAIN" ]]; } \
+      || { MERGE_WHY="a worktree is bisecting from the default branch, or its bisect state cannot be read"; return 1; }
   done
   if [[ -n "$w" ]]; then
+    # W's own config.worktree before any git command runs there (git status
+    # would run a filter it names); the startup gate read this checkout's.
+    [[ -d "$w" ]] || { MERGE_WHY="$in is missing"; return 1; }
+    (cd "$w" && state_gate) > "$GATE_TMP/state" || { MERGE_WHY="$in fails the state gate ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
     [[ "$(git -C "$w" rev-parse --show-toplevel)" -ef "$w" && "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" \
       && "$(git -C "$w" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
       || { MERGE_WHY="$in is missing, not its own top level, or not on it at $MAIN_SHA"; return 1; }
@@ -1080,7 +1092,7 @@ land() {
       done
     done
   fi
-  printf "Merge branch '%s' (build-loop self-merge)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "${VERDICT[stem]}" > "$GATE_TMP/msg" \
+  printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "$1" "${VERDICT[stem]}" > "$GATE_TMP/msg" \
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"
@@ -1128,7 +1140,7 @@ case "$MODE" in
     # result, replace it.
     if [[ -z "${VERDICT[tree]-}" ]]; then cat "$GATE_TMP/line"; exit 2; fi
     if [[ "${VERDICT[policy]}" != self-merge ]]; then v="refuse $a: the brief's policy is review; --merge lands only a self-merge brief"
-    elif land; then v="merged $a ${VERDICT[tip]} ${VERDICT[tree]} $NEW"; else v="refuse $a: $MERGE_WHY"; fi
+    elif land self-merge; then v="merged $a ${VERDICT[tip]} ${VERDICT[tree]} $NEW"; else v="refuse $a: $MERGE_WHY"; fi
     { echo "$v"; tail -n +2 "$GATE_TMP/line"; }
     [[ "$v" == merged* ]] || exit 2
     ;;

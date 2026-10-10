@@ -101,6 +101,11 @@ Build-loop-gate: 2026-10-01-x" ]
     [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ "$(cat "$R/work-feat-x.txt")" = feat/x ] || { show; return 1; }
     [ "$(git reflog -1 --format=%gs main)" = "build-loop: self-merge of 2026-10-01-x: Fast-forward" ]
     # The branch's own mergeOptions are cleared: --squash would stage the merge in W and leave main (i1 security F1).
+    # No maintenance task repacks the store store_check read (i2 performance F1): loose objects stay loose.
+    git -C "$R" reset -q --hard "$M" && git config maintenance.auto true && git config maintenance.loose-objects.enabled true && git config maintenance.loose-objects.auto 1
+    np="$(find "$R/.git/objects/pack" -type f | wc -l)"
+    mrg "$B" --expect "$T"
+    [ "$status" -eq 0 ] && [ "$(find "$R/.git/objects/pack" -type f | wc -l)" = "$np" ] || { show; return 1; }
     git -C "$R" reset -q --hard "$M" && git config branch.main.mergeOptions --squash
     mrg "$B" --expect "$T"
     [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
@@ -125,10 +130,15 @@ Build-loop-gate: 2026-10-01-x" ]
     done
     a="$R/.git/worktrees/o"
     mkdir "$a/rebase-merge" && echo refs/heads/main > "$a/rebase-merge/head-name"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$a/rebase-merge"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"
+    # A paused rebase --update-refs of another branch that will move main (i2 security F2); an unreadable head-name.
+    printf 'refs/heads/feat/z\n' > "$a/rebase-merge/head-name"; printf 'refs/heads/main\n%s\n%s\n' "$M" "$M" > "$a/rebase-merge/update-refs"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"
+    rm "$a/rebase-merge/update-refs"; chmod 000 "$a/rebase-merge/head-name"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"; rm -r "$a/rebase-merge"
     mkdir -p "$R/.git/worktrees/.x/rebase-merge" && echo refs/heads/main > "$R/.git/worktrees/.x/rebase-merge/head-name"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$R/.git/worktrees/.x"
-    echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"; rm -r "$R/.git/worktrees/.x"
+    echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch, or its bisect state cannot be read"
     echo feat/x > "$a/BISECT_START"; mrg "$B" --expect "$T"; [ "$status" -eq 0 ] || { show; return 1; }
 }
 
@@ -141,6 +151,11 @@ Build-loop-gate: 2026-10-01-x" ]
     ln -s "$BATS_TEST_TMPDIR" "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
     mkdir "$BATS_TEST_TMPDIR/elsewhere" && git -C "$R" config core.worktree "$BATS_TEST_TMPDIR/elsewhere"
     mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, or not on it at $M"; git -C "$R" config --unset core.worktree
+    # W's own config.worktree is gated before git status runs there: its clean filter never runs (i2 security F1).
+    git config extensions.worktreeConfig true && git -C "$R" config --worktree filter.x.clean "touch '$BATS_TEST_TMPDIR/ran'; cat"
+    echo '* filter=x' > "$R/.gitattributes"; touch -d '2000-01-01' "$R/docs/dev-cycle.md"
+    mrg "$B" --expect "$T"; nref "$in fails the state gate (refuse state filter.x.clean: set in config.worktree, it can make the gate's git run a command or change its merge)"
+    [ ! -e "$BATS_TEST_TMPDIR/ran" ]; rm "$R/.gitattributes"; git -C "$R" config --worktree --unset filter.x.clean; git config --unset extensions.worktreeConfig
     git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main && rm -rf "$BATS_TEST_TMPDIR/w2"
-    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, or not on it at $M"
+    mrg "$B" --expect "$T"; nref "$in is missing"
 }
