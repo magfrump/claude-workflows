@@ -1112,7 +1112,7 @@ EOF
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
-        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORT_ROOTS IMPORT_HOMES IMPORT_READERS_DONE IMPORT_READERS_KEY IMPORT_READER_ROOTS IMPORT_READER_HOMES IMPORT_DOTNEST IMPORT_WHOLE MANAGED_DIR BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORT_ROOTS IMPORT_HOMES IMPORT_READERS_DONE IMPORT_READERS_KEY IMPORT_READER_ROOTS IMPORT_READER_HOMES IMPORT_DOTNEST IMPORT_WHOLE IMPORT_MANAGED_DIR BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }

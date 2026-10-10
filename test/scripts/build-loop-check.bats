@@ -16,13 +16,13 @@ setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 # T_READER_ROOTS and T_READER_HOMES, when set, become the caller's
 # IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them);
 # T_SETTINGS=1 sets them as the scripts do, with reader_settings. T_MANAGED
-# becomes MANAGED_DIR (by default a path that does not exist).
+# becomes IMPORT_MANAGED_DIR (by default a path that does not exist).
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
         [[ -z "${T_READER_ROOTS+set}" ]] || IMPORT_READER_ROOTS="$T_READER_ROOTS"
         [[ -z "${T_READER_HOMES+set}" ]] || IMPORT_READER_HOMES="$T_READER_HOMES"
-        MANAGED_DIR="${T_MANAGED:-/nonexistent/managed}"  # the real /etc/claude-code stays out
+        IMPORT_MANAGED_DIR="${T_MANAGED:-/nonexistent/managed}"  # the real /etc/claude-code stays out
         resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; w="$1"; shift
         if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
@@ -702,7 +702,9 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         # A rule's relative name stays in its directory; other memory files and uninstalled plugin versions are not loaded.
         for f in h n o; do want "docs/$f.md" -; done
         # An installed list python3 cannot read gives every cached version.
-        echo '{' > "$c/plugins/installed_plugins.json"; imps "$w" docs/o.md; want walk ok; want docs/o.md imported
+        echo '{' > "$c/plugins/installed_plugins.json"; imps "$w" docs/o.md; want walk ok; want docs/o.md imported; [ -z "$stderr" ] || return 1
+        # A relative CLAUDE_CONFIG_DIR is not modelled: the walk fails (i1 api F5).
+        CLAUDE_CONFIG_DIR=rel imps "$w" docs/o.md; want walk failed
         echo "$j" > "$c/plugins/installed_plugins.json"
     done
 }
@@ -719,22 +721,25 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one whose bytes match this checkout's copy (U2b3b2b; U2b3a final security 1)" {
-    mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; for f in s u k t; do echo "$f" > "docs/$f.md"; done; commit_all c1
-    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub"
-    printf 'u: @docs/u.md\n' > "$sd/CLAUDE.local.md"; printf 'k: @docs/k.md\n' > "$sd/.claude/commands/k.md"
+@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one whose bytes match this checkout's plain copy or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
+    mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
+    for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub/.CLAUDE/commands"
+    printf 'u: @docs/u.md\n' > "$sd/CLAUDE.local.md"; printf 'k: @docs/k.md\n' > "$sd/.claude/commands/k.md"; echo none > "$sd/GEMINI.md"
+    # A prompt under .CLAUDE also resolves against the directory holding it (contract item 8's lower-cased path).
+    printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
     printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
     # git is never run in another root: its .git file is the loop's to write.
     S="$BATS_TEST_TMPDIR/gitlog" && mkdir -p "$S" && printf '#!/bin/sh\necho "$PWD $*" >> "%s/log"\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
     for w in tree main; do
-        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md
+        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
-        want walk ok; for f in u k t s; do want "docs/$f.md" imported; done; want docs/x.md -
+        want walk ok; for f in u k t s v; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported
     done
     ! grep -e "^$sd" -e ' -C ' "$S/log" || return 1
-    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; IMPORT_MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"
     for l in "f$sd/CLAUDE.local.md" "p$sd/.claude/commands/k.md" "f$sd/sub/CLAUDE.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
-    ! printf '%s\n' "$output" | grep -qF "$sd/AGENTS.md" || { echo "$output"; return 1; }
+    ! printf '%s\n' "$output" | grep -qF -e "$sd/AGENTS.md" -e "$sd/GEMINI.md" || { echo "$output"; return 1; }
 }
 
 @test "a // name outside_ok rejects is projected through its realpath -m: a dangling link, or a linked directory, into another worktree reads as the repo path (U2b3b2b; U2b3b2a final security F1)" {
@@ -753,7 +758,7 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     printf 'x\n' > AGENTS.md && commit_all f && mkdir -p "$HOME/.claude/rules/locked"
     chmod 000 "$HOME/.claude/rules/locked"
     for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
-    chmod 755 "$HOME/.claude/rules/locked" && printf 'x\n' > "$HOME/.claude/rules/a"$'\n'"b.md"
+    chmod 755 "$HOME/.claude/rules/locked" && printf '@x\n' > "$HOME/.claude/rules/a"$'\n'"b.md"
     for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
 }
 
