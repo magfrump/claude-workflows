@@ -152,7 +152,9 @@
 #                 not read the checkout.
 #             skip BRIEF: WHY
 #                 As --status skips it.
-#             After an ok line, a K of N refusal or a checkout refusal, one line per path TREE
+#             After an ok line, a K of N refusal, a checkout refusal or
+#             "refuse BRIEF: the brief could not be read again from the
+#             default branch" (a self-merge brief), one line per path TREE
 #             changes against main (diff-tree -r --no-renames, so a rename is
 #             its D and A sides), in diff-tree's order; S is its status letter
 #             (A, M, D or T) and PATH is "?" unless every character is one
@@ -176,14 +178,18 @@
 #                 instruction and prompt files and what they import with @,
 #                 dot paths, the gate's own code, the user's and the cycle's
 #                 records, a working doc or review that is not the brief's
-#                 own; not run over a checkout refused above); a glob of --settings' never
+#                 own; not run when the verdict already refuses for the
+#                 checkout or the brief's re-read, so a loop's advisory run
+#                 from its own branch can print a path the floor would
+#                 refuse as a path line); a glob of --settings' never
 #                 line, compared lower-cased, * and ? within one part, matching
 #                 the path or a directory above it; and a path neither listed
 #                 in the brief's first "Paths:" line nor one of its own files
 #                 (docs/working/{research,plan,checkpoint,handoff,
 #                 test-strategy}-STEM.md, an added docs/reviews/STEM.md or
-#                 NAME-STEM.md; the allowlist takes these only in lower
-#                 case, though the floor passes any case). "Paths: P ..." lists paths
+#                 NAME-STEM.md; the allowlist takes these only when the
+#                 whole path is lower case, though the floor passes any
+#                 case). "Paths: PATH ..." lists paths
 #                 pathform allows, with single spaces, each once, compared
 #                 exactly (a trailing / makes a directory, matched at a part
 #                 boundary; unlike a never glob, an entry without one matches
@@ -588,7 +594,7 @@ own_blob() {
 # its lower-cased spelling $7. Sets DENY to why the path is refused, or
 # empties it. The brief's own file is matched exactly; the cycle's files
 # (truthrule's cycle and settings words: writable() and docs/dev-cycle.md,
-# plus anything under docs/working/briefs/ or docs/working/cycles/) and the
+# plus docs/working/briefs and docs/working/cycles, as files or anything under them) and the
 # constraints doc (its user word) compare lower-cased, as a case-insensitive
 # checkout reads Docs/Roadmap.md as the roadmap; so does a path below one of
 # those names (docs/roadmap.md/x, which main may lack, would keep the cycle
@@ -649,12 +655,13 @@ never_res() {
 # The S rules (plan D5; a self-merge brief only) for a changed path the N rules
 # passed that is not the brief's own file (the N rules alone judge that one):
 # $1 the brief's full stem, $2 the path, $3 its lower-cased spelling, $4
-# diff-tree's status letter, $5 the checkout refusal, if any. Sets DENY, first
-# match winning: the floor (only when $5 is empty: it walks the checkout), a
-# Self-merge never: glob, then the allowlist (Paths:, or ownfile). The
-# allowlist widens nothing by case: Paths: entries compare exactly, and ownfile
-# gets the path as spelled, so an own file passes only when the diff spells
-# it in lower case (ownfile folds nothing).
+# diff-tree's status letter, $5 the verdict's refusal, if any (the checkout's
+# or the brief re-read's). Sets DENY, first match winning: the floor (only
+# when $5 is empty: it walks the checkout), a Self-merge never: glob, then the
+# allowlist (Paths:, or ownfile). The allowlist widens nothing by case: Paths:
+# entries compare exactly, and an own file counts only when the whole path is
+# lower case (ownfile folds nothing, and a review's NAME part may hold any
+# letter).
 srules() {
   local i e
   DENY=""
@@ -662,7 +669,8 @@ srules() {
   for i in "${!NEVER_RES[@]}"; do
     [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
   done
-  ! ownfile "$2" "$1" "$4" || return 0
+  [[ "$2" != "$3" ]] || ! ownfile "$2" "$1" "$4" || return 0
+  [[ "$PATHS_WHY" != unread ]] || { DENY="the brief could not be read again from the default branch"; return 0; }
   [[ -z "$PATHS_WHY" ]] || { DENY="the brief's Paths: line $PATHS_WHY, so only its own files land"; return 0; }
   for e in "${PATHS[@]}"; do
     [[ "$2" != "$e" && ( "$e" != */ || "$2" != "$e"* ) ]] || return 0
@@ -764,7 +772,7 @@ checkout_gate() {
 # checkout_gate, nul_list) or in $(...), which refuse by their own guards.
 # Nothing but its locals and the walk caches it resets may carry from one
 # brief to the next: each helper empties its own globals before use (DENY,
-# PATHS and PATHS_WHY, LIST and LIST_WHY, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
+# PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
 # TRUTH_WHY).
 check_line() {
   # Contract item 1 (the floor's walk); exported, so its children run under it too.
@@ -814,7 +822,7 @@ check_line() {
   # A failed read refuses the verdict as a checkout refusal does (path lines
   # still print, the floor does not run).
   if [[ "$pol" == self-merge ]]; then
-    if brief_fields "$a"; then read_paths; else PATHS=(); PATHS_WHY="could not be read again"; co="${co:-refuse $a: the brief could not be read again from the default branch}"; fi
+    if brief_fields "$a"; then read_paths; else PATHS=(); PATHS_WHY=unread; co="${co:-refuse $a: the brief could not be read again from the default branch}"; fi
   fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a

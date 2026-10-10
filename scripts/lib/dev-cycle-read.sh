@@ -87,10 +87,11 @@
 #     reads as "not imported" to a raw membership test (row 419).
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
 #     and only a PATH main lacks.
-#  8. Pass truthrule, isstart, ownfile, prompt_dir and prompt_bases a
-#     lower-cased path (prompt_dir and prompt_bases also take the path as
-#     spelled; floor, check_fix and the walks lower first; truthrule refuses an
-#     upper-case letter as case).
+#  8. Pass truthrule, isstart, prompt_dir and prompt_bases a lower-cased path
+#     (prompt_dir and prompt_bases also take the path as spelled; floor,
+#     check_fix and the walks lower first; truthrule refuses an upper-case
+#     letter as case). ownfile folds no case: floor passes it the lowered
+#     path, build-loop.sh's srules only an all-lower-case one.
 #  9. Call reader_settings after sourcing the lib (which clears the reader
 #     lists) and resolve_main, before a decision's first walk: it sets
 #     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md

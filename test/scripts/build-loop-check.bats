@@ -1969,10 +1969,11 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
              "Paths: docs/../x|lists entry 1, which is not an allowed path form" "Paths: /docs/a|lists entry 1, which is not an allowed path form" \
              "Paths:|is not exactly \"Paths: PATH ...\" with single spaces" "Paths: none|" "-|"; do
         if [[ "${l%|*}" == - ]]; then smb; else smb "${l%|*}"; fi
-        onx 'mkdir -p docs/working Docs/Working; echo x > docs/a; echo x > docs/working/plan-2026-10-01-x.md; echo x > Docs/Working/Plan-2026-10-01-x.md'
+        onx 'mkdir -p docs/working Docs/Working; echo x > docs/a; echo x > docs/working/plan-2026-10-01-x.md; echo x > Docs/Working/Plan-2026-10-01-x.md; mkdir -p docs/reviews; echo x > docs/reviews/Code-Review-2026-10-01-x.md'
         chk "$B"
         w="${l#*|}"; [[ -n "$w" ]] && w="the brief's Paths: line $w, so only its own files land" || w="$NLIST"
-        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 2 3)" ] && has "deny $B A docs/a: $w" && has "deny $B A Docs/Working/Plan-2026-10-01-x.md: $w" \
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 3 4)" ] && has "deny $B A docs/a: $w" && has "deny $B A Docs/Working/Plan-2026-10-01-x.md: $w" \
+            && has "deny $B A docs/reviews/Code-Review-2026-10-01-x.md: $w" \
             && has "path $B A docs/working/plan-2026-10-01-x.md" || { echo "line: $l"; return 1; }
     done
 }
