@@ -1964,15 +1964,15 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
     for f in docs/ab.md Hooks/x.sh scripts/x.sh; do has "deny $B A $f: $NLIST"; done
 }
 
-@test "--check: a malformed Paths: line lands only the brief's own files; Paths: alone or none lists nothing (T10, U2c1)" {
+@test "--check: a malformed Paths: line lands only the brief's own files, spelled in lower case; Paths: none or no line lists nothing (T10, U2c1 i1)" {
     for l in "Paths: docs/a docs/a/|lists entry 2 twice" "Paths:  docs/a|is not exactly \"Paths: PATH ...\" with single spaces" \
              "Paths: docs/../x|lists entry 1, which is not an allowed path form" "Paths: /docs/a|lists entry 1, which is not an allowed path form" \
-             "Paths:|" "-|"; do
+             "Paths:|is not exactly \"Paths: PATH ...\" with single spaces" "Paths: none|" "-|"; do
         if [[ "${l%|*}" == - ]]; then smb; else smb "${l%|*}"; fi
-        onx 'mkdir -p docs/working; echo x > docs/a; echo x > docs/working/plan-2026-10-01-x.md'
+        onx 'mkdir -p docs/working Docs/Working; echo x > docs/a; echo x > docs/working/plan-2026-10-01-x.md; echo x > Docs/Working/Plan-2026-10-01-x.md'
         chk "$B"
         w="${l#*|}"; [[ -n "$w" ]] && w="the brief's Paths: line $w, so only its own files land" || w="$NLIST"
-        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 2)" ] && has "deny $B A docs/a: $w" \
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 2 3)" ] && has "deny $B A docs/a: $w" && has "deny $B A Docs/Working/Plan-2026-10-01-x.md: $w" \
             && has "path $B A docs/working/plan-2026-10-01-x.md" || { echo "line: $l"; return 1; }
     done
 }
@@ -1982,7 +1982,8 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
     onx 'mkdir -p workflows/sub Workflows docs/sub; for f in workflows/x.md workflows/sub/y.md Workflows/Z.md docs/n.txt docs/sub/n.txt workflowsx.md; do echo x > "$f"; done'
     chk "$B"
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 4 6)" ] || { show; return 1; }
-    for f in workflows/x.md workflows/sub/y.md Workflows/Z.md docs/n.txt; do has "deny $B A $f: a Self-merge never: glob in docs/dev-cycle.md matches it"; done
+    for f in workflows/x.md workflows/sub/y.md Workflows/Z.md; do has "deny $B A $f: matched by workflows/ in the Self-merge never: line of docs/dev-cycle.md"; done
+    has "deny $B A docs/n.txt: matched by docs/*.txt in the Self-merge never: line of docs/dev-cycle.md"
     has "path $B A docs/sub/n.txt"; has "path $B A workflowsx.md"
     settings "Build-loop policy: review" "Self-merge never: workflows/ docs/*.txt"
     chk "$B"
