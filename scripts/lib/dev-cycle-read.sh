@@ -801,8 +801,9 @@ prompt_bases() {
 # IMPORT_OUT_MAX). It is empty after a walk that succeeds and kept with a
 # cached failure. Each stage sets its KIND before it runs, so a failure a
 # stage adds reports that stage (one with its own KIND sets it where it
-# fails). walk_why words it.
-IMPORTED=error; IMPORTED_DONE=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""; IMPORTED_MAIN_WHY=""
+# fails). walk_why words it. The tree walk's IMPORTED_WHY is readers when
+# import_readers fails, else empty (its other failures are not told apart).
+IMPORTED=error; IMPORTED_DONE=""; IMPORTED_WHY=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""; IMPORTED_MAIN_WHY=""
 # walk_why WHY: the sentence for an IMPORTED_MAIN_WHY word, as entry_why words
 # main_entry's. A PATH shows only when every character is one pathform allows
 # (check_line's rule for repo text, so a crafted name prints as ?: U2c2 i1
@@ -1628,11 +1629,11 @@ imported_names() {
   local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=() sd=() cq=() nm=() rq=(); set -o pipefail
   local -A pdir=() cmp=() pext=()
   readers_root
-  import_readers || { IMPORTED_DONE=""; IMPORTED=error; return 1; }
+  import_readers || { IMPORTED_DONE=""; IMPORTED=error; IMPORTED_WHY=readers; return 1; }
   # The roots never hold an empty line, so the blank line ends them.
   [[ "$IMPORTED_DONE" == "$IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES"$'\n\n'"$IMPORT_CONFIGS" ]] && { [[ "$IMPORTED" != error ]]; return; }
   need_root  # below the cache check, as in main_imports
-  IMPORTED_DONE="$IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES"$'\n\n'"$IMPORT_CONFIGS"; IMPORTED=error
+  IMPORTED_DONE="$IMPORT_ROOTS"$'\n\n'"$IMPORT_HOMES"$'\n\n'"$IMPORT_CONFIGS"; IMPORTED=error; IMPORTED_WHY=""
   nul_list recs tree_starts || return 1
   for f in "${recs[@]}"; do
     # seen is newline-separated: a name holding a newline could hide another start.
@@ -1879,13 +1880,19 @@ truthrule() {
 # walk_has as isimported does, but with no lower (isimported's lower and root
 # check cost floor ~2 ms a path: U2c1 final performance 1), so a caller
 # words a failed walk without knowing the order (override row 418).
-# Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH or PATH holds
+# Returns 0 when the walk fails (TRUTH_WHY=walk, with TRUTH_WHERE walk_why's
+# sentence for where, or empty when the walk does not say: rows 630, 634) or reaches PATH or PATH holds
 # an upper-case letter (TRUTH_WHY=imported; both callers run truthrule's case
 # word first), else 1 with TRUTH_WHY empty; an unknown WALK answers
 # walk without running one. For tree or main it exits through need_root when it walks.
+TRUTH_WHERE=""
 truthwalk() {
-  TRUTH_WHY=walk
-  case "$1" in main) main_imports || return 0 ;; tree) imported_names || return 0 ;; *) return 0 ;; esac
+  TRUTH_WHY=walk; TRUTH_WHERE=""
+  case "$1" in
+    main) main_imports || { TRUTH_WHERE="$(walk_why "$IMPORTED_MAIN_WHY")"; return 0; } ;;
+    tree) imported_names || { [[ -z "$IMPORTED_WHY" ]] || TRUTH_WHERE="$(walk_why "$IMPORTED_WHY")"; return 0; } ;;
+    *) return 0 ;;
+  esac
   TRUTH_WHY=imported
   [[ "$2" != *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]* ]] && ! walk_has "$1" "$2" || return 0
   TRUTH_WHY=""; return 1
@@ -1914,7 +1921,8 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # optional, $1 lower-cased (build-loop.sh passes it, so floor forks no
 # lower: U2c1 final performance 1; floor then reads only $4, so the two must
 # agree; an upper-case letter in it refuses as case).
-# Returns 0 with FLOOR_WHY set when the floor refuses, else 1. Paths compare
+# Returns 0 with FLOOR_WHY set to a word when the floor refuses (floor_why
+# words it: row 472; gate is the gate's own code, which a caller can test), else 1. Paths compare
 # lower-cased (a case-insensitive checkout reads Docs/Roadmap.md as
 # docs/roadmap.md), and a path below a start file's name or an imported .md
 # name is refused too (a directory there keeps the file from being created:
@@ -1924,7 +1932,7 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # It reads nothing but through main_imports, whose root check runs when it
 # walks, so a call given $4 that both of main_imports' caches answer
 # (import_readers' memo and the walk's) forks nothing but walk_why's
-# subshell after a failed walk; neither changes within a gate decision.
+# subshell (truthwalk's) after a failed walk; neither changes within a gate decision.
 # Without $4 it forks a lower per path: a caller with many paths lowers them
 # in one batch, as check_line does (final performance 2).
 FLOOR_WHY=""  # read by floor's caller (build-loop.sh srules)
@@ -1932,31 +1940,41 @@ FLOOR_WHY=""  # read by floor's caller (build-loop.sh srules)
 floor() {
   local lp="${4-}" d
   FLOOR_WHY=""
-  [[ -n "$lp" ]] || lp="$(lower "$1")" || { FLOOR_WHY="the path could not be lower-cased"; return 0; }
-  if truthrule "$lp"; then
-    case "$TRUTH_WHY" in
-      instr) FLOOR_WHY="an instruction or prompt file, which sessions load from the checkout" ;;
-      dot) FLOOR_WHY="a dotfile or a path under a dot-directory" ;;
-      user) FLOOR_WHY="the user's constraints doc, which every loop prompt carries" ;;
-      record) FLOOR_WHY="a record later runs read as truth" ;;
-      case) FLOOR_WHY="the path could not be lower-cased" ;;
-      *) FLOOR_WHY="one of the dev cycle's own files" ;;
-    esac
-  elif [[ "$lp" =~ $GATE_CODE ]]; then FLOOR_WHY="the gate's own code, which lands only through a merge-gate- review entry"
-  elif [[ "$lp" == docs/thoughts/* ]]; then FLOOR_WHY="a record later runs read as truth"
-  elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a working file that is not this brief's own (they carry its full stem)"
-  elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY="a review record (only an added review named STEM.md or NAME-STEM.md lands)"
-  elif truthwalk main "$lp"; then
-    if [[ "$TRUTH_WHY" == walk ]]; then FLOOR_WHY="the default branch's instruction files could not be walked for @ imports: $(walk_why "$IMPORTED_MAIN_WHY")"
-    else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
+  [[ -n "$lp" ]] || lp="$(lower "$1")" || { FLOOR_WHY=case; return 0; }
+  if truthrule "$lp"; then FLOOR_WHY="$TRUTH_WHY"; [[ "$FLOOR_WHY" != settings ]] || FLOOR_WHY=cycle
+  elif [[ "$lp" =~ $GATE_CODE ]]; then FLOOR_WHY=gate
+  elif [[ "$lp" == docs/thoughts/* ]]; then FLOOR_WHY=record
+  elif [[ "$lp" == docs/working/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY=working
+  elif [[ "$lp" == docs/reviews/* ]] && ! ownfile "$lp" "$2" "$3"; then FLOOR_WHY=review
+  elif truthwalk main "$lp"; then FLOOR_WHY="$TRUTH_WHY"  # walk (TRUTH_WHERE says where) or imported
   else
     # A directory at a start's name, or at an imported .md name (not any import's: the parser's prefixes make every directory an import passes through one; override row).
     # Reached only after truthwalk main answered 1, so the walk succeeded (contract item 6).
     d="$lp"; while [[ "$d" == */* ]]; do
-      d="${d%/*}"; ! isstart "$d" && { [[ "$d" != *.md ]] || ! walk_has main "$d"; } || { FLOOR_WHY="a path below the name of an instruction or prompt file, or of a .md file one imports with @"; return 0; }
+      d="${d%/*}"; ! isstart "$d" && { [[ "$d" != *.md ]] || ! walk_has main "$d"; } || { FLOOR_WHY=below; return 0; }
     done
     return 1
   fi
+}
+# floor_why WORD: the sentence for a FLOOR_WHY word, as walk_why words
+# IMPORTED_MAIN_WHY's; walk reads TRUTH_WHERE, so word it before the next
+# truthwalk.
+floor_why() {
+  case "$1" in
+    instr) echo "an instruction or prompt file, which sessions load from the checkout" ;;
+    dot) echo "a dotfile or a path under a dot-directory" ;;
+    cycle) echo "one of the dev cycle's own files" ;;
+    user) echo "the user's constraints doc, which every loop prompt carries" ;;
+    record) echo "a record later runs read as truth" ;;
+    case) echo "the path could not be lower-cased" ;;
+    gate) echo "the gate's own code, which lands only through a merge-gate- review entry" ;;
+    working) echo "a working file that is not this brief's own (they carry its full stem)" ;;
+    review) echo "a review record (only an added review named STEM.md or NAME-STEM.md lands)" ;;
+    walk) echo "the default branch's instruction files could not be walked for @ imports: $TRUTH_WHERE" ;;
+    imported) echo "an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)" ;;
+    below) echo "a path below the name of an instruction or prompt file, or of a .md file one imports with @" ;;
+    *) echo "refused by the self-merge floor (${1:-no reason recorded})" ;;
+  esac
 }
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),
@@ -2007,7 +2025,7 @@ function heading(l,   h) {
 { sub(/\r$/, "") }
 infence && /^### Q-[0123456789]+ / { if (!qline) qline = NR; inside = 0 }
 fence($0) { next }
-heading($0) { count++; inside = (count == 1); header = 0; next }
+heading($0) { count++; inside = (count == 1); header = 0; if (inside) head = substr($0, 5); next }
 /^(#|##|###) / { inside = 0; next }
 !inside { next }
 !header && /^\*\*Needs:\*\*/ {
@@ -2036,16 +2054,22 @@ END {
   else if (infence) print "unbalanced " fline
   else if (qline) print "quoted " qline
   else if (count > 1) print "dup"
-  else if (count) print (!answered ? "open" : done ? result : "unrecognized")
+  else if (count) { print (!answered ? "open" : done ? result : "unrecognized"); print head }
 }'
 # One answer, from docs/working/questions.md and questions-archive.md on the
 # default branch's commit, never the working tree: an answer that unblocks
 # autonomous work must have reached main (plan D8), because a build loop can
 # write any working tree. A file stored as anything but a regular file under
 # plain directories there is not read (main_entry). It reads only git objects,
-# so it needs no ROOT_REAL and adds nothing to SKIPPED.
+# so it needs no ROOT_REAL and adds nothing to SKIPPED. With an answer line it
+# sets ANSWER_HEAD to the entry's heading after "### " ("Q-NNN · SLUG", CR
+# dropped), else empties it; a caller that reads it (build-loop.sh --approved)
+# calls check_answer in its own shell, its output to a file.
+ANSWER_HEAD=""
+# shellcheck disable=SC2034  # ANSWER_HEAD is read by the caller
 check_answer() {
-  local - a="$1" f e r hit="" where="" n why; set -o pipefail  # as brief_fields
+  local - a="$1" f e r hit="" where="" n why head=""; set -o pipefail  # as brief_fields
+  ANSWER_HEAD=""
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   for f in docs/working/questions.md docs/working/questions-archive.md; do
@@ -2066,8 +2090,8 @@ check_answer() {
       quoted\ *) echo "skip $a: line ${r#quoted } of $f is a question heading inside a code fence (questions.sh archive splits entries there), so no entry in $f is read"; return ;;
     esac
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
-    hit="$r"; where="$f"
+    hit="${r%%$'\n'*}"; head="${r#*$'\n'}"; where="$f"
   done
-  if [[ -n "$hit" ]]; then echo "$hit $a"
+  if [[ -n "$hit" ]]; then ANSWER_HEAD="$head"; echo "$hit $a"
   else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md on the default branch"; fi
 }

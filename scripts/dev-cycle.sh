@@ -183,8 +183,7 @@ check_fix() {
   elif [[ -n "$TRUTH_WHY" || ! "$lp" =~ ^docs/.*\.md$|^readme\.md$ || "$lp" =~ ^docs/(working|reviews)/ ]]; then
     echo "skip $a: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead"
   elif truthwalk tree "$lp"; then
-    if [[ "$TRUTH_WHY" == walk && -n "$IMPORT_READER_WHY" ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out: the reader settings of docs/dev-cycle.md cannot be used: $IMPORT_READER_WHY; file it instead"
-    elif [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out; file it instead"
+    if [[ "$TRUTH_WHY" == walk ]]; then echo "skip $a: the instruction-file import walk failed, so an import of it cannot be ruled out${TRUTH_WHERE:+: $TRUTH_WHERE}; file it instead"
     else echo "skip $a: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead"; fi
   else check_path "$a"; fi
 }
