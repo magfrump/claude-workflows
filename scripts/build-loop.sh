@@ -6,6 +6,7 @@
 # Usage: scripts/build-loop.sh --settings
 #        scripts/build-loop.sh --status BRIEF...
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
+#        scripts/build-loop.sh --merge BRIEF --expect SHA
 #        scripts/build-loop.sh -h | --help
 #
 #   --settings  five lines from the default branch's commit, never the working
@@ -207,19 +208,47 @@
 #                 boundary; unlike a never glob, an entry without one matches
 #                 that file alone); "Paths: none" or no line lists none; any
 #                 other line is malformed, and only own files land.
+#   --merge   lands a self-merge brief (D7): --check's lines for BRIEF at
+#             --expect's tip, but an ok verdict line becomes
+#             merged BRIEF NEW TIP TREE
+#                 The default branch now points at NEW, a commit of TREE
+#                 whose parents are main's commit and TIP, with the message
+#                 "Merge branch 'BRANCH' (build-loop self-merge)" and the
+#                 trailer "Build-loop-gate: STEM" (the brief's file name
+#                 without .md). Author and committer as git would take them
+#                 (the environment, then git config, the caller's global
+#                 file included); none known refuses. With the branch checked
+#                 out in no worktree it moves by compare-and-swap from the
+#                 checked commit; checked out in a worktree W, by merge
+#                 --ff-only in W.
+#             or refuse BRIEF: WHY, when the policy --status reads is review,
+#             no identity is known, a worktree is rebasing the default branch
+#             or bisecting from it, the branch moved since the check, the git
+#             state gate refuses again just before the move; or, with the
+#             branch checked out in W, W is not on it at the checked commit,
+#             is mid a merge, cherry-pick, revert, rebase, bisect or sequence,
+#             has a tracked change, holds an untracked or ignored file at a
+#             path the merge adds (or a file or link where it adds a
+#             directory), or its fast-forward fails or leaves the branch
+#             elsewhere. --check's own refusals and skips print as they are.
+#             Residual: a worktree that checks the branch out, or W switching
+#             to another branch at the same commit, between the checks and
+#             the move.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
 # merge objects (merge-tree writes the merged trees and blobs into the object
-# store) and its own temporary directory, removed at exit.
+# store), --merge's commit and the branch it moves (and W's files), and its
+# own temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
-# Exit: 0 every line printed (or help), and for --check every verdict line ok;
-# 2 any --check verdict line or the state gate not ok. A --check can also stop
+# Exit: 0 every line printed (or help), for --check every verdict line ok,
+# for --merge merged; 2 any other --check or --merge verdict line, or the
+# state gate not ok. A --check can also stop
 # part way, after the lines of the briefs before, with 1 (need_root) or a
 # failed command's own status: a caller reads any exit but 0 as nothing
 # decided. 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, a
-# failed mktemp (--check; no line printed), or no default branch found by name.
+# failed mktemp (--check, --merge; no line printed), or no default branch found by name.
 
 set -euo pipefail
 
@@ -234,13 +263,13 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA])" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA)" >&2; exit 1; }
 MODE=""; ARGS=(); EXPECT=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
-  --check)
-    MODE=check; shift
+  --check|--merge)
+    MODE="${1#--}"; shift
     while [[ $# -gt 0 ]]; do
       if [[ "$1" == --expect ]]; then
         [[ $# -ge 2 && -z "$EXPECT" ]] || usage "--expect takes one commit id, given once"
@@ -249,8 +278,9 @@ case "${1:-}" in
         EXPECT="$2"; shift 2
       else ARGS+=("$1"); shift; fi
     done
-    [[ ${#ARGS[@]} -gt 0 ]] || usage "--check needs at least one brief path"
-    [[ -z "$EXPECT" || ${#ARGS[@]} -eq 1 ]] || usage "--expect goes with exactly one brief path" ;;
+    [[ ${#ARGS[@]} -gt 0 ]] || usage "--$MODE needs at least one brief path"
+    [[ -z "$EXPECT" || ${#ARGS[@]} -eq 1 ]] || usage "--expect goes with exactly one brief path"
+    [[ "$MODE" == check || -n "$EXPECT" ]] || usage "--merge takes one brief path and --expect SHA" ;;
   # The header: from line 2 to the first non-empty line not starting with # (no fixed range to go stale).
   -h|--help) sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') usage "no mode given" ;;
@@ -277,6 +307,9 @@ harden() {
   export GIT_CONFIG_COUNT="$c"
 }
 harden
+# The caller's global config, for merge_ident alone (the merge commit's names:
+# all a loop that writes it could change there); every other call reads none.
+CALLER_GLOBAL=(-u GIT_CONFIG_GLOBAL); [[ -z "${GIT_CONFIG_GLOBAL+set}" ]] || CALLER_GLOBAL=("GIT_CONFIG_GLOBAL=$GIT_CONFIG_GLOBAL")
 # GIT_CONFIG_NOSYSTEM: the system config is no more the gate's than the
 # user's (merge.directoryRenames there flipped a conflict: A17).
 export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none
@@ -339,7 +372,7 @@ cd "$ROOT"
 ROOT_REAL="$(pwd -P)"
 # --check refuses planted state before any git call reads an object (resolve_main
 # does); gate_start runs the rest of its startup.
-GATED=""; [[ "$MODE" != check ]] || GATED=1  # a mode that decides (not the gate repository's GATE_*)
+GATED=""; [[ "$MODE" != check && "$MODE" != merge ]] || GATED=1  # a mode that decides (not the gate repository's GATE_*)
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -880,11 +913,16 @@ gate_start() {
 # Nothing but its locals, the walk caches it resets and store_check's list of
 # main's ids ($GATE_TMP/main, on purpose) may carry from one brief to the next: each helper empties its own globals before use (DENY,
 # PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, STATUS, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
-# TRUTH_WHY).
+# TRUTH_WHY; VERDICT and CHANGED here).
+# The verdict as values (row 512), for --merge: VERDICT holds tip, tree,
+# policy, branch and stem only after an ok line (empty otherwise), and CHANGED
+# each changed path's status letter.
+declare -A VERDICT=() CHANGED=()
 check_line() {
   # Contract item 1 (the floor's walk); exported, so its children run under it too.
   local -x LC_ALL=C
   local a="$1" out st pol br sha tree meta p shown co stem rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  VERDICT=(); CHANGED=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
   status_fields "$a"
   [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return; }
@@ -907,7 +945,7 @@ check_line() {
   while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
     [[ "$meta" =~ ^:([01234567]{6})\ ([01234567]{6})\ [0123456789abcdef]+\ ([0123456789abcdef]+)\ ([AMDT])$ ]] \
       || { echo "refuse $a: the paths the merge of $br changes could not be read"; return; }
-    oms+=("${BASH_REMATCH[1]}"); nms+=("${BASH_REMATCH[2]}"); nos+=("${BASH_REMATCH[3]}"); ss+=("${BASH_REMATCH[4]}"); ps+=("$p")
+    oms+=("${BASH_REMATCH[1]}"); nms+=("${BASH_REMATCH[2]}"); nos+=("${BASH_REMATCH[3]}"); ss+=("${BASH_REMATCH[4]}"); ps+=("$p"); CHANGED[$p]="${ss[-1]}"
     [[ "${nms[-1]}" != 100644 && "${nms[-1]}" != 100755 ]] || ids+=("${nos[-1]}")
   done < "$GATE_TMP/diff"
   # Every record read whole: two NUL-ended fields each (bytes after the last
@@ -934,7 +972,9 @@ check_line() {
   # The S rules' inputs: the brief as status_fields read it from main's commit.
   stem="${a##*/}"; stem="${stem%.md}"
   [[ "$pol" != self-merge ]] || read_paths
-  if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
+  # Defined here for its locals (bash function names are global).
+  verdict_ok() { VERDICT=([tip]="$sha" [tree]="$tree" [policy]="$pol" [branch]="$br" [stem]="$stem"); echo "ok $a $sha $tree"; }
+  if [[ ${#ps[@]} -eq 0 ]]; then if [[ -n "$co" ]]; then echo "$co"; else verdict_ok; fi; return; fi
   # One lower-casing pass for every path (a tr per path cost 1 to 2.5 ms each).
   if ! nul_list lps lower_all "${ps[@]}" || [[ ${#lps[@]} -ne ${#ps[@]} ]]; then echo "refuse $a: the paths the merge of $br changes could not be lower-cased"; return; fi
   for i in "${!ps[@]}"; do
@@ -943,8 +983,95 @@ check_line() {
     [[ -n "$DENY" || "$pol" != self-merge || "$p" == "$a" ]] || srules "$stem" "$p" "${lps[$i]}" "${ss[$i]}" "$co"
     if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
   done
-  if [[ -n "$co" ]]; then echo "$co"; elif [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
+  if [[ -n "$co" ]]; then echo "$co"; elif [[ "$nd" -eq 0 ]]; then verdict_ok; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
   printf '%s\n' "${rows[@]}"
+}
+
+# The merge commit's author and committer, as git var resolves them (the
+# environment, then git config with the caller's global file), exported for
+# commit-tree in the gate repository, which has no config. Returns 1 when git
+# knows none (it never guesses one from the host name).
+merge_ident() {
+  local w x
+  for w in AUTHOR COMMITTER; do
+    x="$(env "${CALLER_GLOBAL[@]}" git var "GIT_${w}_IDENT" 2>/dev/null)" || return 1
+    [[ "$x" =~ ^([^\<\>]+)\ \<([^\<\>]*)\>\ [0123456789]+\ [-+][0123456789]{4}$ ]] || return 1
+    export "GIT_${w}_NAME=${BASH_REMATCH[1]}" "GIT_${w}_EMAIL=${BASH_REMATCH[2]}"
+  done
+}
+# --merge's landing, once check_line printed ok (VERDICT): the merge commit
+# NEW (TREE with parents main's commit and the tip, and a "Build-loop-gate:
+# STEM" trailer), written in the gate repository, then the default branch
+# moved to it (D7, F29). No worktree may be rebasing it or bisecting from it.
+# When no worktree has it checked out: a compare-and-swap (update-ref from
+# MAIN_SHA, so a branch that moved since the check is left as it is). When a
+# worktree W has it: W must be on it at MAIN_SHA, with no tracked change, no
+# merge, cherry-pick, revert, rebase, bisect or sequence in progress, nothing
+# at a path the merge adds (an untracked or ignored file: merge --ff-only
+# overwrites an ignored one) and no file or link where the merge needs a
+# directory; then merge --ff-only NEW in W, and the branch must read NEW
+# after. The state gate (here and in W) and default_gate run again just
+# before the branch moves (row 494). Sets NEW, or MERGE_WHY and returns 1.
+# Residuals (Q-103): a worktree checking the branch out, or W switching to
+# another branch at MAIN_SHA, between these checks and the move.
+NEW=""; MERGE_WHY=""
+land() {
+  local x w="" p q d common in="the worktree with the default branch checked out"
+  NEW=""; MERGE_WHY=""
+  [[ "${VERDICT[policy]}" == self-merge ]] || { MERGE_WHY="the brief's policy is review; --merge lands only a self-merge brief"; return 1; }
+  merge_ident || { MERGE_WHY="git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email)"; return 1; }
+  printf "Merge branch '%s' (build-loop self-merge)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "${VERDICT[stem]}" > "$GATE_TMP/msg"
+  x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
+    && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
+  NEW="$x"
+  # NUL-ended fields; each record starts "worktree PATH".
+  git worktree list --porcelain -z > "$GATE_TMP/wts" || { MERGE_WHY="the worktrees could not be listed"; return 1; }
+  while IFS= read -r -d '' x; do
+    case "$x" in
+      "worktree "*) p="${x#worktree }" ;;
+      "branch refs/heads/$MAIN") [[ -z "$w" ]] || { MERGE_WHY="the default branch is checked out in two worktrees"; return 1; }; w="$p" ;;
+    esac
+  done < "$GATE_TMP/wts"
+  # Each worktree's own git dir: the common one and those under worktrees/.
+  common="$(git rev-parse --path-format=absolute --git-common-dir)" || { MERGE_WHY="the git directory could not be found"; return 1; }
+  for d in "$common" "$common"/worktrees/*; do
+    [[ -d "$d" ]] || continue
+    for q in rebase-merge rebase-apply; do
+      [[ "$(cat "$d/$q/head-name" 2>/dev/null)" != "refs/heads/$MAIN" ]] || { MERGE_WHY="a worktree is rebasing the default branch"; return 1; }
+    done
+    [[ "$(cat "$d/BISECT_START" 2>/dev/null)" != "$MAIN" ]] || { MERGE_WHY="a worktree is bisecting from the default branch"; return 1; }
+  done
+  if [[ -n "$w" ]]; then
+    [[ "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" && "$(git -C "$w" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
+      || { MERGE_WHY="$in is missing, or not on it at $MAIN_SHA"; return 1; }
+    for q in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START rebase-merge rebase-apply sequencer; do
+      x="$(git -C "$w" rev-parse --path-format=absolute --git-path "$q")" && [[ ! -e "$x" && ! -L "$x" ]] \
+        || { MERGE_WHY="$in is in the middle of a merge, cherry-pick, revert, rebase or bisect ($q)"; return 1; }
+    done
+    git -C "$w" status --porcelain=v1 -z --untracked-files=no > "$GATE_TMP/wstatus" 2>"$GATE_TMP/err" && [[ ! -s "$GATE_TMP/err" && ! -s "$GATE_TMP/wstatus" ]] \
+      || { MERGE_WHY="$in has a tracked change, or git status failed or warned there"; return 1; }
+    for p in "${!CHANGED[@]}"; do
+      [[ "${CHANGED[$p]}" == A ]] || continue
+      [[ ! -e "$w/$p" && ! -L "$w/$p" ]] || { MERGE_WHY="$in holds an untracked or ignored $p, a path the merge adds"; return 1; }
+      q="$p"
+      while [[ "$q" == */* ]]; do
+        q="${q%/*}"
+        # A directory, nothing, or a file the merge deletes (git replaces it).
+        [[ ( -d "$w/$q" && ! -L "$w/$q" ) || ( ! -e "$w/$q" && ! -L "$w/$q" ) || "${CHANGED[$q]-}" == D ]] \
+          || { MERGE_WHY="$in holds $q, where the merge adds a directory"; return 1; }
+      done
+    done
+  fi
+  { state_gate && default_gate && { [[ -z "$w" ]] || (cd "$w" && state_gate); }; } > "$GATE_TMP/state" \
+    || { MERGE_WHY="the git state changed after the check ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
+  if [[ -z "$w" ]]; then
+    git update-ref -m "build-loop: self-merge of ${VERDICT[stem]}" "refs/heads/$MAIN" "$NEW" "$MAIN_SHA" 2>/dev/null \
+      || { MERGE_WHY="the default branch moved after the check, or could not be updated; it was left as it is"; return 1; }
+  else
+    # gc.auto=0: merge would start a git gc of the store store_check read.
+    git -C "$w" -c gc.auto=0 merge --ff-only -q "$NEW" > "$GATE_TMP/ff" 2>&1 || { MERGE_WHY="the fast-forward in $in failed"; return 1; }
+    [[ "$(git rev-parse --verify -q "refs/heads/$MAIN")" == "$NEW" ]] || { MERGE_WHY="the default branch is not at the merge after the fast-forward in $in"; return 1; }
+  fi
 }
 
 case "$MODE" in
@@ -966,5 +1093,15 @@ case "$MODE" in
       [[ "$(head -c 3 "$GATE_TMP/line")" == "ok " ]] || fails=1
     done
     [[ "$fails" -eq 0 ]] || exit 2
+    ;;
+  merge)
+    gate_start
+    a="${ARGS[0]}"
+    check_line "$a" > "$GATE_TMP/line"
+    # land's result replaces only the verdict line; the path lines follow.
+    if [[ -z "${VERDICT[tree]-}" ]]; then cat "$GATE_TMP/line"; exit 2; fi
+    if land; then v="merged $a $NEW ${VERDICT[tip]} ${VERDICT[tree]}"; else v="refuse $a: $MERGE_WHY"; fi
+    { echo "$v"; tail -n +2 "$GATE_TMP/line"; }
+    [[ "$v" == merged* ]] || exit 2
     ;;
 esac
