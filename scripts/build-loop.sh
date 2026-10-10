@@ -176,8 +176,8 @@
 #                 on each path the N rules pass but the brief's own file
 #                 (first match): the self-merge floor (the lib's floor:
 #                 instruction and prompt files and what they import with @,
-#                 a path below a start file's or an imported .md file's
-#                 name, dot paths, the gate's own code, the user's and the
+#                 a path below the name of an instruction or prompt file
+#                 or of an imported .md file, dot paths, the gate's own code, the user's and the
 #                 cycle's records, a working doc or review that is not the
 #                 brief's own; a walk that fails refuses every path, its
 #                 reason saying where, with a PATH outside pathform's

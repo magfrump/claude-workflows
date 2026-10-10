@@ -1340,9 +1340,9 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     want scripts/other.sh -
     # IMPORTED_MAIN_WHY, worded: a checkout path the walk reads that is not plain (an untracked start that is a link; an import below an unsearchable directory), a seed listing.
     ln -s CLAUDE.md AGENTS.md; floors 2026-10-01-x M scripts/other.sh; rm AGENTS.md
-    want scripts/other.sh "$WALKFAIL: the checkout holds AGENTS.md, which the walk reads, as other than a readable plain file below plain directories"
+    want scripts/other.sh "$WALKFAIL: AGENTS.md, which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores"
     mkdir docs && echo x > docs/a.md && chmod 644 docs; floors 2026-10-01-x M scripts/other.sh; chmod 755 docs; rm -r docs
-    [[ "${lines[0]}" == "scripts/other.sh: $WALKFAIL: the checkout holds docs/a"*", which the walk reads, as other than a readable plain file below plain directories" ]] || { echo "$output"; return 1; }
+    [[ "${lines[0]}" == "scripts/other.sh: $WALKFAIL: docs/a"*", which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores" ]] || { echo "$output"; return 1; }
     CLAUDE_CONFIG_DIR=rel floors 2026-10-01-x M scripts/other.sh
     want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path"
     if [ "$(id -u)" -ne 0 ]; then

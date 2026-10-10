@@ -16,8 +16,9 @@
 # imported_names and main_imports also set
 # pipefail for themselves), cds to the repo root and sets ROOT_REAL (that root,
 # symlinks resolved) before calling any file check. inrepo, dirok, skipped,
-# check_brief, isimported and the import walks (truthwalk and floor through
-# them; a call the walk's caches answer checks only that ROOT_REAL is set) exit 1 (need_root) unless
+# check_brief, isimported and the import walks (truthwalk, and floor for a
+# path its earlier rules pass, through them; a call the walk's caches answer
+# checks only that ROOT_REAL is set) exit 1 (need_root) unless
 # ROOT_REAL is set, is the current directory and is a repository's top level;
 # while ROOT_REAL is unset, rawfile, plaindir and blocker read nothing as plain.
 # imported_names and main_imports return 1 when the walk fails: call them under
@@ -84,8 +85,9 @@
 #     both policies, and its S rules run floor only on a path they pass, so a
 #     path pathform refuses (.github/x.yml) is denied as a path form and
 #     floor's dotfile reason serves the dot paths pathform accepts (.envrc).
-#  6. Read a walk only through isimported or truthwalk: IMPORTED_MAIN=error
-#     reads as "not imported" to a raw membership test (row 419).
+#  6. Read a walk only through isimported or truthwalk (or, inside the lib,
+#     walk_has once that walk succeeded): IMPORTED_MAIN=error reads as "not
+#     imported" to a raw membership test (row 419).
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
 #     and only a PATH main lacks.
 #  8. Pass truthrule, truthwalk, isstart, prompt_dir and prompt_bases a lower-cased path
@@ -815,10 +817,10 @@ walk_why() {
     main) echo "the default branch was not found by name" ;;
     tree) echo "the default branch's tree could not be read, or holds a name or link the walk does not model" ;;
     link) echo "the default branch stores a link or gitlink at .claude or at or below a .claude/ start directory, at $d" ;;
-    list) echo "the checkout's .md files could not be listed or lower-cased, or one's name holds a newline" ;;
-    start|admit) echo "the checkout holds $d, which the walk reads, as other than a readable plain file below plain directories" ;;
+    list) echo "the checkout's .md files could not be listed, the .md names lower-cased, or one's name holds a newline" ;;
+    start|admit) echo "$d, which the walk reads from the checkout, is not a readable plain file below plain searchable directories, or lies below a link or gitlink the default branch stores" ;;
     seeds) echo "the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed, or one's path holds a newline or could not be lower-cased" ;;
-    copies) echo "another worktree's copy of an imported name could not be compared with this checkout's" ;;
+    copies) echo "another worktree's copy of a start or an imported name could not be compared with this checkout's" ;;
     read) echo "$d could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model" ;;
     budget) echo "the walk printed more than its IMPORT_OUT_MAX budget" ;;
     *) echo "the walk failed (${k:-no reason recorded})" ;;
@@ -829,7 +831,8 @@ walk_why() {
 # checks the root too), so a walk never lists the
 # registry from an unchecked directory; each walk calls it first and need_root
 # again below its own cache check, so a call both caches answer forks no root
-# check (U2c2 i1 A1; U2c1 final performance 1).
+# check (U2c2 i1 A1; U2c1 final performance 1). It repeats import_readers'
+# memo test (key, then a refusal as empty IMPORT_ROOTS): change the two together.
 readers_root() { { [[ -n "${ROOT_REAL:-}" ]] && import_home && import_readers_key && [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" && -n "$IMPORT_ROOTS" ]]; } || need_root; }
 # import_reset: the next call of either walk walks again (caller contract item 4).
 import_reset() { IMPORTED_DONE=""; IMPORTED_MAIN_DONE=""; IMPORT_READERS_DONE=""; }
@@ -1122,8 +1125,9 @@ import_home() {
 # IMPORT_OTHER holds every root's real path but ROOT_REAL's that is a
 # directory here, once each, newline-separated: the roots whose copies
 # root_copies and outside_seeds read. IMPORT_CONFIGS holds outside_seeds'
-# config dirs, newline-separated: each absolute home's .claude, then
-# CLAUDE_CONFIG_DIR when set and IMPORT_MANAGED_DIR; the key holds both, so
+# item (1) config dirs (item (2)'s follow from IMPORT_ROOTS), newline-separated:
+# each absolute home's .claude, then CLAUDE_CONFIG_DIR when set and not
+# empty, and IMPORT_MANAGED_DIR; the key holds both, so
 # the walks, keyed on IMPORT_CONFIGS too, see a change without import_reset
 # (override row 581). A CLAUDE_CONFIG_DIR that is not absolute or holds a
 # newline returns 1.
@@ -1152,6 +1156,7 @@ import_readers() {
   import_readers_key
   # A refusal is memoized too, as an empty IMPORT_ROOTS (a result never is:
   # ROOT_REAL leads it), so a refusing decision lists the registry once (U2b3a final performance F1).
+  # readers_root repeats this test: change the two together.
   if [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" ]]; then [[ -n "$IMPORT_ROOTS" ]]; return; fi
   IMPORT_READERS_DONE="$IMPORT_READERS_KEY"; IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_DOTNEST=""; IMPORT_OTHER=""; IMPORT_CONFIGS=""
   # ROOT_REAL leads the roots: an empty one would let a registered worktree lead
@@ -1442,14 +1447,13 @@ prompt_marks() {
 # functions' locals (a nameref to one reads that local).
 outside_seeds() {
   local -n ow_a="$1"; local ow_d
-  config_seeds "$1" || return 1; c1_seeds "$1" || return 1
+  ow_a=(); config_seeds "$1" || return 1; c1_seeds "$1" || return 1
   for ow_d in "${ow_a[@]}"; do [[ "$ow_d" != *$'\n'* ]] || return 1; done
 }
-# config_seeds NAME: array NAME gets outside_seeds' items (1) and (2). It
+# config_seeds NAME: appends outside_seeds' items (1) and (2) to array NAME. It
 # returns 1 when a find, grep, realpath or lower_all fails.
 config_seeds() {
   local -n os_a="$1"; local d q r c i in rs=() cf=() tops=() fr=() pr=() mr=() fl=() rl=() cx=() kx=() lo=() pj=(); local -A os_s=() os_at=()
-  os_a=()
   mapfile -t rs <<<"$IMPORT_ROOTS"; mapfile -t cf <<<"$IMPORT_CONFIGS"
   for r in "${rs[@]}"; do
     d="$r"
@@ -1840,10 +1844,11 @@ isimported() {
 }
 # walk_has WALK LP: whether the list of the walk WALK names (main or tree), as
 # its last call left it, holds LP, a lower-cased path: no fork. Ask it only
-# after that walk succeeded (contract item 6: an error list holds nothing).
+# after that walk succeeded (contract item 6); on an error list it answers
+# 0, as isimported does, so a misplaced call refuses (final api 1).
 walk_has() {
   if [[ "$1" == main ]]; then local -n wh_l=IMPORTED_MAIN; else local -n wh_l=IMPORTED; fi
-  [[ "$wh_l" == *$'\n'"$2"$'\n'* ]]
+  [[ "$wh_l" == error || "$wh_l" == *$'\n'"$2"$'\n'* ]]
 }
 # The read-as-truth rule --check-fix and floor share (plan D5 items 1, 2 and 4;
 # build-loop.sh's N rules read its cycle, settings and user words too, so a
@@ -1872,7 +1877,7 @@ truthrule() {
 # truthwalk WALK PATH: runs the import walk WALK (tree for --check-fix, main
 # for floor), then asks it about PATH, lower-cased (contract item 8), through
 # walk_has as isimported does, but with no lower (isimported's lower and root
-# check cost floor ~1 ms a path: U2c1 final performance 1), so a caller
+# check cost floor ~2 ms a path: U2c1 final performance 1), so a caller
 # words a failed walk without knowing the order (override row 418).
 # Returns 0 when the walk fails (TRUTH_WHY=walk) or reaches PATH or PATH holds
 # an upper-case letter (TRUTH_WHY=imported; both callers run truthrule's case
@@ -1917,9 +1922,11 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # lib's header): floor item 5, symlinks and gitlinks, is the caller's mode
 # rule, and the caller judges the brief's own Status change before this.
 # It reads nothing but through main_imports, whose root check runs when it
-# walks, so a call both of main_imports' caches answer (import_readers' memo
-# and the walk's) forks nothing but walk_why's subshell after a failed walk;
-# neither changes within a gate decision.
+# walks, so a call given $4 that both of main_imports' caches answer
+# (import_readers' memo and the walk's) forks nothing but walk_why's
+# subshell after a failed walk; neither changes within a gate decision.
+# Without $4 it forks a lower per path: a caller with many paths lowers them
+# in one batch, as check_line does (final performance 2).
 FLOOR_WHY=""  # read by floor's caller (build-loop.sh srules)
 # shellcheck disable=SC2034
 floor() {
@@ -1944,6 +1951,7 @@ floor() {
     else FLOOR_WHY="an instruction or prompt file (on the default branch, or only in the checkout) imports it with @ (directly or through another import)"; fi
   else
     # A directory at a start's name, or at an imported .md name (not any import's: the parser's prefixes make every directory an import passes through one; override row).
+    # Reached only after truthwalk main answered 1, so the walk succeeded (contract item 6).
     d="$lp"; while [[ "$d" == */* ]]; do
       d="${d%/*}"; ! isstart "$d" && { [[ "$d" != *.md ]] || ! walk_has main "$d"; } || { FLOOR_WHY="a path below the name of an instruction or prompt file, or of a .md file one imports with @"; return 0; }
     done
