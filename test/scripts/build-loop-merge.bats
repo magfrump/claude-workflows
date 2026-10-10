@@ -38,8 +38,7 @@ refused() {
 
 @test "--merge lands a self-merge brief by compare-and-swap when no worktree has main checked out: parents, tree, message, trailer; a second run refuses (T22, G13, U3a2)" {
     sm; git checkout -q --detach main
-    mrg "$B" --expect "$T"
-    n="$(git rev-parse main)"
+    mrg "$B" --expect "$T"; n="$(git rev-parse main)"
     [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
 path $B A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse "$n^1") $(git rev-parse "$n^2") $(git rev-parse "$n^{tree}")" = "$M $T $TR" ]
@@ -89,8 +88,7 @@ Build-loop-gate: 2026-10-01-x" ]
 
 @test "--merge fast-forwards the worktree that has main checked out, from it or from another, keeping an unrelated untracked file; a worktree on another branch is left alone (T23, F50, U3a2)" {
     sm; echo u > unrelated.txt
-    mrg "$B" --expect "$T"
-    n="$(git rev-parse main)"
+    mrg "$B" --expect "$T"; n="$(git rev-parse main)"
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $TR $n" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse HEAD)" = "$n" ] && [ "$(cat work-feat-x.txt)" = feat/x ] && [ -f unrelated.txt ] && [ -z "$(git status --porcelain --untracked-files=no)" ]
     git reset -q --hard "$M"; orch
@@ -108,13 +106,11 @@ Build-loop-gate: 2026-10-01-x" ]
 
 @test "--merge refuses when the worktree with main checked out has a tracked change, is mid an operation, or holds a file at a path the merge adds; or a worktree rebases or bisects main (T23, F29, F50, U3a2)" {
     sm; orch
-    in="the worktree with the default branch checked out"
-    echo d >> "$R/docs/dev-cycle.md"; mrg "$B" --expect "$T"; refused "$in has a tracked change, or git status failed or warned there"
+    in="the worktree with the default branch checked out"; echo d >> "$R/docs/dev-cycle.md"; mrg "$B" --expect "$T"; refused "$in has a tracked change, or git status failed or warned there"
     git -C "$R" checkout -q -- docs/dev-cycle.md
     echo u > "$R/work-feat-x.txt"; mrg "$B" --expect "$T"; refused "$in holds an untracked or ignored work-feat-x.txt, a path the merge adds"
     echo work-feat-x.txt > "$R/.git/info/exclude"; mrg "$B" --expect "$T"; refused "$in holds an untracked or ignored work-feat-x.txt, a path the merge adds"
-    rm "$R/work-feat-x.txt"
-    for f in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START; do
+    rm "$R/work-feat-x.txt"; for f in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START; do
         echo "$M" > "$R/.git/$f"; mrg "$B" --expect "$T"; refused "$in is in the middle of a merge, cherry-pick, revert, rebase or bisect ($f)"; rm "$R/.git/$f"
     done
     for f in rebase-merge rebase-apply sequencer; do
@@ -123,8 +119,8 @@ Build-loop-gate: 2026-10-01-x" ]
     a="$R/.git/worktrees/o"
     mkdir "$a/rebase-merge" && echo refs/heads/main > "$a/rebase-merge/head-name"
     mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
-    # As git reads it: a CR and blanks around the name (final security F2).
-    printf ' refs/heads/main \r\n' > "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
+    # A CR git's rebase --abort strips (final security F2).
+    printf 'refs/heads/main\r\n' > "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
     # A paused rebase --update-refs of another branch that will move main (i2 security F2).
     printf 'refs/heads/feat/z\n' > "$a/rebase-merge/head-name"; printf 'refs/heads/main\n%s\n%s\n' "$M" "$M" > "$a/rebase-merge/update-refs"
     mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
@@ -134,8 +130,9 @@ Build-loop-gate: 2026-10-01-x" ]
     mkdir "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "$hn"
     chmod 000 "$a/rebase-merge"; mrg "$B" --expect "$T"; refused "a worktree's git directory or rebase state cannot be read"; chmod 755 "$a/rebase-merge"; rm -r "$a/rebase-merge"
     echo x > "$a/BISECT_START"; chmod 000 "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree's git state (BISECT_START) cannot be read"; rm -f "$a/BISECT_START"
-    mkdir -p "$R/.git/worktrees/.x/rebase-merge" && echo refs/heads/main > "$R/.git/worktrees/.x/rebase-merge/head-name" && echo "$M" > "$R/.git/worktrees/.x/HEAD"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$R/.git/worktrees/.x"
+    x="$R/.git/worktrees/.x"; mkdir -p "$x/rebase-merge" && echo refs/heads/main > "$x/rebase-merge/head-name" && echo "$M" > "$x/HEAD" && echo ../.. > "$x/commondir"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
+    chmod 000 "$x/rebase-merge"; mrg "$B" --expect "$T"; refused "a worktree's git directory or rebase state cannot be read"; chmod 755 "$x/rebase-merge"; rm -r "$x"
     echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch"
     echo feat/x > "$a/BISECT_START"; mrg "$B" --expect "$T"; [ "$status" -eq 0 ] || { show; return 1; }
 }
@@ -157,6 +154,18 @@ Build-loop-gate: 2026-10-01-x" ]
     git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main
     # Its gitdir file gone, git worktree list drops w2, which still has main checked out (final security F1).
     mv "$R/.git/worktrees/w2/gitdir" "$BATS_TEST_TMPDIR/gd"; mrg "$B" --expect "$T"; nref "a worktree has the default branch checked out that git worktree list does not show"
-    mv "$BATS_TEST_TMPDIR/gd" "$R/.git/worktrees/w2/gitdir"; rm -rf "$BATS_TEST_TMPDIR/w2"
+    # Its HEAD as git reads it (confirming security 1, 2): "ref:" then a newline; on a symbolic alias of main.
+    printf 'ref:\nrefs/heads/main\n' > "$R/.git/worktrees/w2/HEAD"; mrg "$B" --expect "$T"; nref "a worktree has the default branch checked out that git worktree list does not show"
+    git symbolic-ref refs/heads/alias refs/heads/main && echo 'ref: refs/heads/alias' > "$R/.git/worktrees/w2/HEAD"; mrg "$B" --expect "$T"; nref "a worktree has the default branch checked out that git worktree list does not show"
+    echo 'ref: refs/heads/main' > "$R/.git/worktrees/w2/HEAD"; git update-ref -d --no-deref refs/heads/alias; mv "$BATS_TEST_TMPDIR/gd" "$R/.git/worktrees/w2/gitdir"; rm -rf "$BATS_TEST_TMPDIR/w2"
     mrg "$B" --expect "$T"; nref "$in is missing"
+}
+
+@test "--merge lands in a bare repository whose worktree is detached or on main, and refuses one listed bare with an index (U3a2 confirming security 4)" {
+    sm; git clone -q --bare "$R" "$BATS_TEST_TMPDIR/b.git" && cd "$BATS_TEST_TMPDIR/b.git" && git worktree add -q --detach ../bo main && cd ../bo || return 1
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "merged $B "* ]] || { show; return 1; }
+    git -C ../b.git update-ref refs/heads/main "$M"; git -C ../b.git worktree add -q ../bw main
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C ../bw rev-parse HEAD)" = "$(git rev-parse main)" ] || { show; return 1; }
+    git -C ../b.git update-ref refs/heads/main "$M"; git -C ../bw reset -q --hard "$M"; : > ../b.git/index
+    mrg "$B" --expect "$T"; [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: the repository lists as bare but has an index" ] || { show; return 1; }
 }

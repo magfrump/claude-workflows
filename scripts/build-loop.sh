@@ -233,7 +233,8 @@
 #             cannot be read (exists but is not a readable plain file in a
 #             searchable directory); the branch is checked out in two
 #             worktrees, or in one git worktree list does not show (its
-#             gitdir file gone); a worktree is rebasing it (or a paused
+#             gitdir file gone), its HEAD read through any symbolic ref;
+#             the repository lists as bare but has an index; a worktree is rebasing it (or a paused
 #             rebase will move it) or bisecting from it; the merge commit
 #             cannot be written; the state gate or default_gate refuses again
 #             just before the move; the branch moved since the check, or
@@ -917,9 +918,9 @@ checkout_gate() {
 # diff-tree, the blob checks) and --merge's commit-tree run through gate_git
 # (into the real object store). --merge moves the branch in the real
 # repository (update-ref) or in W (merge --ff-only, after land's reads
-# there: the state gate, rev-parse, --git-path probes, git status); its
-# worktree list, git-common-dir and the worktrees' state files are read in
-# the real repository, and merge_ident alone (git var) reads the caller's
+# there: the state gate, rev-parse, symbolic-ref, --git-path probes, git
+# status); its worktree list, git-common-dir, each worktree's HEAD
+# (symbolic-ref with that git dir) and state files are read in the real repository, and merge_ident alone (git var) reads the caller's
 # global config.
 gate_start() {
   default_gate || exit 2
@@ -1037,7 +1038,7 @@ merge_ident() {
 # land AUTHORITY: --merge's landing (D7, F29), once check_line printed ok
 # (VERDICT) under the authority the caller checked and names (self-merge;
 # U3a3 adds its approval), which the message and reflog carry. Decide (the
-# header's refusals, in its order: an ignored file at an added path counts,
+# header's refusals: an ignored file at an added path counts,
 # as merge --ff-only overwrites one), then write NEW in the gate repository,
 # run the state gate (here and in W) and default_gate again (row 494), and
 # move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
@@ -1046,12 +1047,11 @@ merge_ident() {
 # set and, but after a racing branch switch in W, unreachable). Residuals
 # (Q-103) as the header names them.
 NEW=""; MERGE_WHY=""
-# state_is FILE WANT: a line of git's state file FILE is WANT, read as git
-# reads it (blanks and a CR at either end dropped; "ref:" and its target
-# split by any blanks).
-state_is() { LC_ALL=C awk -v w="$2" '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, ""); sub(/^ref:[ \t]*/, "ref: ") } $0 == w { f = 1 } END { exit !f }' "$1"; }
+# state_is FILE WANT: a line of FILE is WANT, blanks and a CR at either end
+# dropped (more than git drops, so it matches wherever git would act).
+state_is() { LC_ALL=C awk -v w="$2" '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, "") } $0 == w { f = 1 } END { exit !f }' "$1"; }
 land() {
-  local x w="" p q d common hd="" n=0 in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
+  local x w="" p q d common hd="" n=0 bare="" in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
   NEW=""; MERGE_WHY=""
   merge_ident || { MERGE_WHY="git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"; return 1; }
   # NUL-ended fields; each record starts "worktree PATH".
@@ -1059,27 +1059,28 @@ land() {
   while IFS= read -r -d '' x; do
     case "$x" in
       "worktree "*) p="${x#worktree }" ;;
+      bare) bare=1 ;;  # the repository itself
       "branch refs/heads/$MAIN") [[ -z "$w" ]] || { MERGE_WHY="the default branch is checked out in two worktrees"; return 1; }; w="$p" ;;
     esac
   done < "$GATE_TMP/wts"
-  # Each worktree's own git dir, read as files: the common one and every
-  # entry under worktrees/ (dot names too). Its HEAD names the branch it has
-  # checked out, so a worktree git worktree list drops (its gitdir file gone
-  # or unreadable) still counts; its rebase state names a branch a rebase
-  # will move (worktree list shows a rebasing worktree as detached). Anything
-  # that exists but is not a readable plain file in a searchable directory
-  # refuses, and values compare as git reads them (state_is).
+  # Every worktree's own git dir (the common one, every entry of worktrees/),
+  # read without the list: its HEAD (through any symbolic ref) counts one the
+  # list dropped, its rebase state one the list shows as detached. Anything
+  # there git could read and the gate cannot refuses.
   common="$(git rev-parse --path-format=absolute --git-common-dir)" || { MERGE_WHY="the git directory could not be found"; return 1; }
-  for d in "$common" "$common"/worktrees "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?* "$common"/worktrees/*/rebase-{merge,apply} "$common"/rebase-{merge,apply}; do
-    [[ ! -e "$d" && ! -L "$d" ]] || [[ -d "$d" && ! -L "$d" && -r "$d" && -x "$d" ]] || { MERGE_WHY="a worktree's git directory or rebase state cannot be read"; return 1; }
-  done
-  for d in "$common" "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?*; do
-    [[ -d "$d" ]] || continue
+  [[ -z "$bare" || ( ! -e "$common/index" && ! -L "$common/index" ) ]] || { MERGE_WHY="the repository lists as bare but has an index"; return 1; }
+  for d in "$common" "$common"/worktrees "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?*; do
+    for q in "" /rebase-merge /rebase-apply; do
+      [[ ! -e "$d$q" && ! -L "$d$q" ]] || [[ -d "$d$q" && ! -L "$d$q" && -r "$d$q" && -x "$d$q" ]] || { MERGE_WHY="a worktree's git directory or rebase state cannot be read"; return 1; }
+    done
+    [[ -d "$d" && "$d" != "$common/worktrees" ]] || continue
     for q in HEAD rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs BISECT_START; do
       [[ "$q" != HEAD && ! -e "$d/$q" && ! -L "$d/$q" ]] && continue  # only HEAD must exist
       [[ -f "$d/$q" && ! -L "$d/$q" && -r "$d/$q" ]] || { MERGE_WHY="a worktree's git state ($q) cannot be read"; return 1; }
     done
-    if state_is "$d/HEAD" "ref: refs/heads/$MAIN"; then n=$((n + 1)); hd="$d"; fi
+    x=0; q="$(git --git-dir="$d" symbolic-ref -q HEAD)" || x=$?
+    [[ "$x" -le 1 ]] || { MERGE_WHY="a worktree's git state (HEAD) cannot be read"; return 1; }
+    [[ "$q" != "refs/heads/$MAIN" || ( -n "$bare" && "$d" == "$common" ) ]] || { n=$((n + 1)); hd="$d"; }
     # A rebase of it, or one that will move it (--update-refs lists it).
     for q in rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs; do
       [[ ! -f "$d/$q" ]] || ! state_is "$d/$q" "refs/heads/$MAIN" || { MERGE_WHY="a worktree is rebasing the default branch"; return 1; }
@@ -1158,9 +1159,7 @@ case "$MODE" in
     gate_start
     a="${ARGS[0]}"
     check_line "$a" > "$GATE_TMP/line"
-    # The verdict line is check_line's first (the path lines follow it); the
-    # authority (here only self-merge; U3a3 adds --approved), then land's
-    # result, replace it.
+    # The authority (U3a3 adds --approved), then land, replace the verdict line (check_line's first).
     if [[ -z "${VERDICT[tree]-}" ]]; then cat "$GATE_TMP/line"; exit 2; fi
     if [[ "${VERDICT[policy]}" != self-merge ]]; then v="refuse $a: the brief's policy is review; --merge lands only a self-merge brief"
     elif land self-merge; then v="merged $a ${VERDICT[tip]} ${VERDICT[tree]} $NEW"; else v="refuse $a: $MERGE_WHY"; fi
