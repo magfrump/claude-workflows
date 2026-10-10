@@ -1,8 +1,35 @@
-Commit: 3111ee9d
+Commit: ac078bd7
+Loop-pass short-circuit: used at ac078bd7
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2c2` (U2c2: the walk side: floor's cost and reasons, a path below a start's name, live prompt links (F3), config dirs in the reader key, c1_seeds), on main 75ec873c.
-**Status: 🟡 ITERATION 1 (`--loop-pass`, k=1, scope `main...HEAD`, full panel) — no Must Fix; Must Address A1, A2 and the Consider items fixed or rowed in 07af69c0 (unreviewed at this stamp; lite fix-drift check: no findings). Next: iteration 2 over the fix range.**
+**Status: 🔴 ITERATION 2 (`--loop-pass`, k=1, range 3111ee9d..ac078bd7, short-circuited at fact-check) — Must Fix B1 (the A9 fix did nothing) fixed in 2be3db37 with a test, unreviewed at this stamp (lite fix-drift: one finding, refuted). Next: iteration 3, the final confirming pass (k=3, full panel, no `--loop-pass`).**
+
+## Iteration 2 (Commit ac078bd7, `--loop-pass`, k=1, scope `3111ee9d..ac078bd7`, partial)
+
+Fact-check `code-fact-check-report-build-loop-u2c2-i2.md` (40 claims: 30 Verified, 6 Mostly accurate, 3 Incorrect, 1 Unverifiable; executed probes). Loop-pass short-circuit: behavioral 🔴 confirmed at fact-check (claim 12a); critics skipped (`## ⏭️ Skipped Core Critics`: security, performance, api-consistency, architecture — loop-pass short-circuit (behavioral red confirmed); no enforcement file in the diff). Rubric A1-A8 and A12-A14 verified fixed.
+
+### 🔴 Must Fix
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| B1 | prompt_marks' below-a-root test never refused: `read` empties `p` at EOF, so `[[ "$b" == "$p"/* ]]` passed every absolute path; the A9 fix (and 07af69c0's and the rubric's claims) did nothing (executed, probe P1). Not a security regression: marking as before the fix. | Incorrect (behavioral) | fact-check 12a, 29, 36 | Fixed: a flag set inside the loop; test (out-of-root link unmarked, into-root link marked) fails on ac078bd7's lib. |
+
+### 🟡 Must Address
+None.
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| B2 | prompt_marks' doc: an out-of-root link's target text can still yield repo names (read plain). | fact-check 12b | Fixed in text. |
+| B3 | A memoized import_readers refusal skipped need_root (a wrong cwd got a readers reason); the header's "checks nothing" was loose. | fact-check 2, architecture escalation | Fixed: readers_root needs a held result (non-empty roots) to skip; header says it checks only that ROOT_REAL is set. |
+| B4 | floor's "forks nothing" omits walk_why's subshell after a failed walk (the fix range added it). | fact-check 21, 37 | Fixed in text (per path only when the walk failed). |
+| B5 | walk_why's seeds sentence omits a newline path and a failed lower. | fact-check 9b, 38 | Fixed. |
+| B6 | walk_why shows absolute host paths whose characters pass, and an unknown KIND unfiltered (all KINDs are lib-internal). | fact-check escalation | No change: the pathform-character rule is check_line's own; the host path names where to look. |
+| B7 | "both walks give main's 1593 names" not re-run by the fact-check. | fact-check 33 | Re-run by the author after the fix. |
+
+Lite fix-drift check over 2be3db37: one finding (readers_root's "a memoized refusal checks the root too" said to describe a DONE != KEY path), refuted: import_readers sets IMPORT_READERS_DONE before any refusal (a refusal is memoized as an empty IMPORT_ROOTS), so a memoized refusal has DONE == KEY and reaches the `-n "$IMPORT_ROOTS"` test.
 
 ## Iteration 1 (Commit 3111ee9d, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
