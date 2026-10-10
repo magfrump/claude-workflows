@@ -1,8 +1,28 @@
-Commit: 7d78e6d0
+Commit: f782d9ee
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a2` (U3a2: `--merge BRIEF --expect SHA` lands a self-merge brief by compare-and-swap, or by a fast-forward in the worktree that has main checked out; check_line's verdict as values), on main 6666a5ce.
-**Status: 🟡 ITERATION 1 (`--loop-pass`, k=1, full panel) — no Must Fix; 3 Must Address, all fixed in the fix batch (unreviewed); the rest fixed or deferred with override rows.**
+**Status: 🟡 ITERATION 2 (`--loop-pass`, k=1, scope `7d78e6d0..f782d9ee`, full panel) — no Must Fix; 1 Must Address (B1), fixed in the iteration-2 fix batch (unreviewed); iteration 1's A1-A3 confirmed resolved.**
+
+## Iteration 2 (Commit f782d9ee, `--loop-pass`, k=1, scope `7d78e6d0..f782d9ee`, full panel)
+
+Partial scope (the iteration-1 fix batch; the rest of the branch labelled context). Fact-check k=1 (`code-fact-check-report-u3a2-i2.md`): 28 claims, 22 Verified, 6 Mostly accurate, 0 Incorrect; A1-A3 confirmed resolved by execution; 9 mutants on a copy, 7 caught (maintenance.auto and the CHANGED fill survived). Critics (opus, parallel; `*-review-2026-10-10-u3a2-i2.md`): security (1 Medium, executed; 1 Info), performance (1 Info), api-consistency (2 Minor, 1 Info), architecture (4 Info). No re-fire of an iteration-1 finding; no override row re-flagged. Lite fix-drift check over the i1 fix commit: 2 findings, both refuted (land does run git status in W; GIT_CONFIG_NOSYSTEM is exported at the top).
+
+### 🟡 Must Address
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| B1 | With main checked out in a linked worktree W other than the gate's checkout, W's config.worktree was first state-gated after `git -C W status` had run, so a clean filter it names ran inside the gate (and one that deleted its config afterwards let the run print merged). Pre-existing since 7d78e6d0, kept by the fix batch. | security F1 (Medium, executed) | Fixed: state_gate in W as soon as W is known, before any git command there; test with a filter marker (fails without the fix). |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D1 | A paused `rebase --update-refs` that will move main went unseen; an unreadable rebase or bisect file read as empty. | security F2; security listed | Fixed: update-refs read; unreadable state refuses; tests. |
+| D2 | Header: reflog text exact only for update-ref; "from the environment" too broad (EMAIL refused); path-line wording; "Sets NEW, or MERGE_WHY". | api N1-N3; fact-check 3, 4a, 13, 15c | Fixed. |
+| D3 | land writes "self-merge" while the caller holds the check; verdict_ok wrote check_line's `i`. | architecture 1, 4 | Fixed: `land AUTHORITY`; `local i`. |
+| D4 | Nothing tests maintenance.auto=false. | performance F1; fact-check 26 (M7) | Fixed: loose-objects maintenance on in the fixture, pack count unchanged (fails without the flag). |
+| D5 | The trailer is one literal; land not split; CHANGED placement mutant; C9 commit wording; listed-not-tested candidates. | architecture 2, 3; fact-check 25, 26 (M8); security listed | Rows (Defer / Defer / Won't-Fix / Won't-Fix / Defer). |
 
 ## Iteration 1 (Commit 7d78e6d0, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
