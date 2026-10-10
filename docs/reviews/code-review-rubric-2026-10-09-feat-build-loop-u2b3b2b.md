@@ -39,6 +39,10 @@ None.
 - outside_seeds C1 skip (fact-check 19, 12, 21; api F1; architecture Coupling): one root, the skip's own copy of the walks' start rules; C1 (fixed) and C2 (text).
 - Seed admission vs projection (security F1; architecture Informational on link rules): distinct defects — C4 is a missing projection for dangling seeds, M4 the duplicated keep-rule.
 
+### After the pass
+
+Lite fix-drift check (`scripts/lite-review.py --mode fix-drift`) over a scratch commit holding only 3b72bf8e's code and plan changes on 8f99fcaf: one finding (the C1 test's comment says the nested worktree holds AGENTS.md, which the code does not create), refuted: `git worktree add` checks out the committed AGENTS.md, and the assertion is red on 8f99fcaf. The comment now says where the file comes from.
+
 ### Considered overrides
 
 The eight rows dated 2026-10-09 for this branch still stand on their reasons (architecture final); rows 573 (S1, fixed here by outside_proj), 575 (K4: `//` lines 27.8 KB, trigger not fired), 576 (K5), 578, 558.

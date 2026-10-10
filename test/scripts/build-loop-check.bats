@@ -730,7 +730,8 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
     # A worktree nested in side's .claude/skills/: its README.md is a prompt by the whole path (i2 fact-check).
     mkdir -p "$sd/.claude/skills" && git worktree add -q --detach "$sd/.claude/skills/wt" && printf 'w: @docs/w.md\n' > "$sd/.claude/skills/wt/README.md"
-    # One nested in side's sub/.claude/skills/ holds AGENTS.md with this checkout's bytes: a prompt there, a plain start here, so not skipped (final fact-check 21).
+    # One nested in side's sub/.claude/skills/ checks out the committed AGENTS.md, this checkout's bytes: a prompt
+    # there (its @docs/s.md also resolves against side's sub/), a plain start here, so not skipped (final fact-check 21).
     mkdir -p "$sd/sub/.claude/skills" && git worktree add -q --detach "$sd/sub/.claude/skills/wn"
     printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
     # git is never run in another root: its .git file is the loop's to write.
