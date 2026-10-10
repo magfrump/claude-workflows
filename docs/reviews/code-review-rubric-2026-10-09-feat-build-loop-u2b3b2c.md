@@ -1,9 +1,50 @@
-Commit: c69f352f
-Loop-pass short-circuit: used at c69f352f
+Commit: 007e867f
+Loop closed at 007e867f
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2b3b2c` (U2b3b2c: both import walks read other reader roots' copies of the names they reach; dangling-link seeds projected), on main 8e550626.
-**Status: 🔴→fixed ITERATION 2 (`--loop-pass`, k=1, scope `f7e1bea2..c69f352f`, short-circuited at fact-check) — one behavioural red (B1) and one Must Address (B2), fixed in the commit after c69f352f with tests; critics deferred to the final confirming pass. Single-sample review; absence of findings is not an attestation.**
+**Status: ✅ ITERATION 3 (final confirming pass over 007e867f, no `--loop-pass`, k=3, full panel) — no Must Fix; the loop converged in 3 iterations. Must Address: C1-C3, C5 fixed in the commit after 007e867f (unreviewed at this stamp; a confirming pass follows), C4 (final security F3, not a regression) routed to U2c with an override row. Single-sample review; absence of findings is not an attestation.**
+
+## Iteration 3: final confirming pass (Commit 007e867f, no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: self-read. Fact-check: three replicates (`code-fact-check-report-build-loop-u2b3b2c-final-r1/-r2/-r3.md`: 34/40/34 claims) merged most-severe-wins into `code-fact-check-report-build-loop-u2b3b2c-final.md` (44 clusters: 35 Verified, 4 Mostly accurate, 3 Stale, 1 Incorrect (test comment), 1 Unverifiable; agreement 38/44; every count, name set, seed set and red-on-prior-lib claim re-run and held). Critics with the merged results: `security-review-2026-10-09-u2b3b2c-final.md`, `performance-review-…-final.md`, `api-consistency-review-…-final.md`, `architecture-review-…-final.md`. Stage 2.5: security's routed endorsements (i1 F2 fix, i1 F1 fix in its covered order, an equal-bytes copy's .. import still followed, the C1 skip under contract item 2) match executed Verified claims in the merged report (claims on root_copies' skip and the C1 sentence; r1-r3 probes) or were superseded by C1 below; not dispatched separately.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| C1 | A name a dangling prompt link projects is never read again once the walk has read it: plain first (PA, main walk), as a start (PB, both walks), or as a prompt without the link's bases (PG, both walks); the override row's "named exception" was reachable by a plain layout. | Medium (fail-open) | fact-check r1 escalation; security F1; api N1; architecture 1; performance F2 | Fixed: prompt_marks appends each name whose marks changed (newly a prompt, or a base pext lacked) to RQ, and both walks re-read those already seen (the main walk only those main has or main_checkout admits, on phase 2's queue; charged to the budgets); test "a name a dangling prompt link projects is read again…" (PA, PB, PG), red on 007e867f; row 595 struck. Copies keep the mark taken at first comparison (documented: a session in another root loads them through its own links). |
+| C2 | root_copies dropped a copy missing below a linked directory in another root (live or dangling), projecting nothing (PD). | Medium (fail-open) | fact-check r2 escalation; security F2 | Fixed: missing copies join the batched realpath -m, and one whose real path differs is queued as //ROOT/NAME; the linked-directory test gained the case, red on 007e867f. |
+| C3 | Every other root's prompt copy was read even with equal bytes (B2): 6 s vs 2.7 s at 4 worktrees, 20 s vs 5.7 s at 16, on 50 prompt files, adding no name. | Medium (cost) | performance F1 | Fixed: an equal-bytes prompt copy is skipped unless its root lies below a .claude/ component whose parent is no reader root (the only source of extra prompt bases; computed per root). The i2 fact-check-16 test still passes. |
+| C4 | A live prompt link in another root whose target there holds other bytes than its projected repo path: the name is read plain from this checkout (PC). Not a regression. | Medium | security F3 | Deferred to U2c (override row): the fix would pass the 400-line cap; named in the walk header. |
+| C5 | Stale or loose text: import_outside's and outside_ok's lists omit root_copies' copies; the walk block and c1_seeds' "when its bytes differ"; the C1 test title; the `:767` reason (Incorrect); the `:777` comment (non-prompt); prompt_marks "gets"; root_copies' "run after import_readers". | Low (text) | fact-check 8, 13, 14, 16, 22, 30, 32, 34; api N2-N4 | Fixed. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D1 | The outside_seeds split (i1 A8) took the fix batch to 417 lines. | size gate | Reverted (356 lines); row 582's split re-keyed in a new override row. |
+| D2 | Prompt-base merge written twice; each mechanism once per walk. | architecture 2, 3 | Deferred with D1 (row). |
+| D3 | pext growth per link. | performance F3 | Won't-Fix (row). |
+| D4 | Commit f7e1bea2's +0.05 s timing. | fact-check 41 | Accepted-immutable (row); the header now says about 0.2 s, measured interleaved. |
+
+### 🧩 Composition check
+
+- prompt_marks / walk read order (security F1, api N1, architecture 1, performance F2, fact-check r1): one root defect — prompt marks set after a name's read never reached a re-read — composed as C1.
+- root_copies admission (security F2, performance F1, fact-check r2, 16): distinct — a missing-copy projection (C2) and a cost rule (C3).
+
+### Considered overrides
+
+The u2b3b2b rows 580, 581, 583, 586, 588 stand; this branch's earlier rows stand except 595 (struck: C1).
+
+### After the pass
+
+Suites 288/288 (serial); both walks over /workspace give main's 242 names; interleaved against main's lib the branch adds about 0.2 s per walk (load ~3). 356 changed code lines.
+
 
 ## Iteration 2 (Commit c69f352f, `--loop-pass`, k=1, scope `f7e1bea2..c69f352f`, short-circuited)
 

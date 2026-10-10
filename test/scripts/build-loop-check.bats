@@ -721,7 +721,7 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one whose bytes match this checkout's plain copy or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
+@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
     mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
     for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub/.CLAUDE/commands"
@@ -764,7 +764,8 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
     # side's docs/a.md differs; side alone holds docs/n.md; its docs/b.md is a link to a file side lacks (dangling).
     printf 'a: @b.md and @n.md\n' > "$sd/docs/a.md"; printf 'n: @c.md\n' > "$sd/docs/n.md"; rm "$sd/docs/gone.md"; ln -sf gone.md "$sd/docs/b.md"
-    # side's prompt differs, so C1 leaves it to the name: its @docs/k2.md resolves against side's top level only as a prompt.
+    # This checkout holds the prompt as a plain start, so C1 leaves side's copy to root_copies, which reads it
+    # (its bytes differ): its @docs/k2.md resolves against side's top level only as a prompt.
     printf 'k: @docs/k2.md\n' > "$sd/.claude/commands/k.md"
     for w in tree main; do
         imps "$w" docs/b.md docs/n.md docs/c.md docs/k2.md docs/gone.md docs/e.md
@@ -774,13 +775,15 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "a copy with this checkout's bytes under a linked directory is read, so its real path is projected (U2b3b2c; i1 security F2)" {
-    # (A plain copy with equal bytes is skipped as a cost: the parser already resolves this
-    # checkout's relative names against every root, so reading it could add nothing.)
+    # (A plain copy of a non-prompt name with equal bytes is skipped as a cost: the parser already
+    # resolves this checkout's relative names against every root, so reading it could add nothing.)
     mkdir -p docs && printf 'see @docs/x.md\n' > AGENTS.md && echo x > docs/x.md && commit_all eq
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
     for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md -; done
     mv "$sd/docs" "$sd/real" && ln -s real "$sd/docs"
     for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
+    # A copy the linked directory lacks is projected all the same (final security F2).
+    rm "$sd/real/x.md"; for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
 }
 
 @test "a dangling prompt link in another worktree reads its target as a prompt (U2b3b2c i1 security F1)" {
@@ -792,6 +795,19 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         imps "$w" docs/t.md top.md sub/top2.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/t.md imported; want top.md imported; want sub/top2.md imported
+    done
+}
+
+@test "a name a dangling prompt link projects is read again as a prompt when the walk read it before: plain, as a start, or with other bases (U2b3b2c final security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs/d .claude/commands "$sd/.claude/commands" "$sd/sub/.claude/commands" sub  # side lacks all three targets
+    # PA: AGENTS.md reads docs/t.md plainly first; PB: the target is a start; PG: the target is a prompt here, linked under side's sub/.claude/.
+    printf 'see @docs/t.md\n' > AGENTS.md; printf 't: @top.md\n' > docs/t.md; printf 'c: @topc.md\n' > docs/d/CLAUDE.md; printf 'x: @top2.md\n' > .claude/commands/x.md
+    echo a > top.md; echo b > topc.md; echo c > sub/top2.md; commit_all pr
+    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; ln -s ../../docs/d/CLAUDE.md "$sd/.claude/commands/c.md"; ln -s ../../../.claude/commands/x.md "$sd/sub/.claude/commands/k.md"
+    for w in tree main; do
+        imps "$w" top.md topc.md sub/top2.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want top.md imported; want topc.md imported; want sub/top2.md imported
     done
 }
 
