@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
+| [Q-138](#q-138--u3a2-land-discovery-past-cap) | you: judgment | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -346,4 +347,20 @@ U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split i
 - **Update 2026-10-08:** U2b was split the same way before any code, for size alone (tests count toward the cap): U2b1a (`--check`'s frame: hardened git, state gate, `--expect`, merge-tree), U2b1b (the changed paths and the N rules), U2b2 (the gate's checkout), U2b3 (the reader model). Plan step 5's U2b split note lists each. No new judgment; commit d0199be6 on `feat/build-loop-u2b1a`. At review iteration 2 U2b1a split again for size (439 lines): U2b1a1 (the reader side `--status` uses) lands first, then U2b1a2 (`--check`); plan step 5's note.
 - **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
 
+### Q-138 · u3a2-land-discovery-past-cap
+**Needs:** you: judgment · **Opened:** 2026-10-10 · **Status:** OPEN
 
+U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decision found one more Must Fix in the same class, so by that decision the merge stops here. How should it land?
+
+- **Why it's yours:** each security pass since the final one has found one more way to plant git state that `land` reads less carefully than git (a deleted gitdir file, CRLF rebase state, a symbolic main, then a dot-named admin dir, a `ref:` split by a newline, a symbolic alias). Every one needs a same-uid writer to plant git internals before the run; none lets main land anything but the judged merge commit; the damage is to a checkout that has main checked out (or a later `rebase --abort` undoing the merge). Whether that class is worth more passes, or belongs with Q-103's residuals, is a threat-model call.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-10-feat-build-loop-u3a2.md` (on `feat/build-loop-u3a2`: iterations 1-3, the gate decision, the confirming pass) · `docs/reviews/security-review-2026-10-10-u3a2-confirm.md` · plan step 7's U3a2 bullet.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow pass, then merge** | k=1 fact-check + security over the interim batch ce38eafb (HEAD resolved by git itself, per-dir checks, bare repositories). Merge on no new Must Fix; any further planted-state finding of this class becomes an override row routed to Q-103 instead of another pass. | None. | A planted-state shape the gate misses stays open until Q-103's re-route (U5). Nothing calls `--merge` until U4 writes the orchestrator. |
+| **[2] Merge now with known issues** | Land ce38eafb as is (unreviewed batch; suites and mutants green), the class routed to Q-103 with override rows. | None. | The interim batch has had no review; a regression in it lands. |
+| **[3] Narrow the design** | `--merge` lands only by compare-and-swap and refuses whenever any worktree has the default branch checked out (no fast-forward in W, no admin-dir reading). | Detach or switch `/workspace` off main before the orchestrator merges; a design change in plan D7/F29. | Your usual checkout on main blocks every self-merge until you move it. |
+
+- **Blocks:** U3a2's merge, and so U3a3 (`--approved` reuses `land`).
+- **Interim:** nothing merged; `feat/build-loop-u3a2` (worktree `.claude/wt-build-loop-u3a2`, tip ce38eafb, 398 code lines, suites 7/145/20/79/2/2) holds the interim batch. A fresh session runs [1] unless you answer otherwise.
+- **If the answer differs:** [2] merges ce38eafb directly; [3] removes the W path and most of the discovery block (a smaller unit, re-reviewed).
