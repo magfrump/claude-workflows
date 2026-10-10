@@ -721,7 +721,7 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one whose bytes match this checkout's plain copy or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
+@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes, or reads a prompt copy that has bases of its own) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
     mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
     for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub/.CLAUDE/commands"
@@ -756,6 +756,86 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/n.md imported; want docs/m.md imported; want docs/deep.md imported; want docs/other.md -
     done
+}
+
+@test "both walks read another worktree's copy of a name they reach when this checkout lacks it or its bytes differ, through chains there; a prompt's copy reads as a prompt; a dangling one is projected (U2b3b2c; U2b3b2b i1 security F1)" {
+    mkdir -p docs .claude/commands && printf 'see @docs/a.md\n' > AGENTS.md && printf 'k: @docs/k.md\n' > .claude/commands/k.md
+    for f in a b c k k2 e gone; do echo "$f" > "docs/$f.md"; done; commit_all rc
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
+    # side's docs/a.md differs; side alone holds docs/n.md; its docs/b.md is a link to a file side lacks (dangling).
+    printf 'a: @b.md and @n.md\n' > "$sd/docs/a.md"; printf 'n: @c.md\n' > "$sd/docs/n.md"; rm "$sd/docs/gone.md"; ln -sf gone.md "$sd/docs/b.md"
+    # This checkout holds the prompt as a plain start, so C1 leaves side's copy to root_copies, which reads it
+    # (its bytes differ): its @docs/k2.md resolves against side's top level only as a prompt.
+    printf 'k: @docs/k2.md\n' > "$sd/.claude/commands/k.md"
+    for w in tree main; do
+        imps "$w" docs/b.md docs/n.md docs/c.md docs/k2.md docs/gone.md docs/e.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for f in b n c k2 gone; do want "docs/$f.md" imported; done; want docs/e.md -
+    done
+}
+
+@test "a copy with this checkout's bytes under a linked directory is read, so its real path is projected (U2b3b2c; i1 security F2)" {
+    # (A plain copy of a non-prompt name with equal bytes is skipped as a cost: the parser already
+    # resolves this checkout's relative names against every root, so reading it could add nothing.)
+    mkdir -p docs && printf 'see @docs/x.md\n' > AGENTS.md && echo x > docs/x.md && commit_all eq
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
+    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md -; done
+    mv "$sd/docs" "$sd/real" && ln -s real "$sd/docs"
+    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
+    # A copy the linked directory lacks is projected all the same (final security F2).
+    rm "$sd/real/x.md"; for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
+}
+
+@test "a dangling prompt link in another worktree reads its target as a prompt (U2b3b2c i1 security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$sd/.claude/commands"  # side lacks docs/
+    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; printf 't: @top.md\n' > docs/t.md; echo top > top.md; echo x > AGENTS.md
+    # Under a nested .claude/, the link's own bases (side/sub) apply to its target's names too (i2 fact-check 9b).
+    mkdir -p "$sd/sub/.claude/commands" sub && ln -s ../../../docs/u.md "$sd/sub/.claude/commands/k.md"; printf 'u: @top2.md\n' > docs/u.md; echo t2 > sub/top2.md; commit_all pk
+    for w in tree main; do
+        imps "$w" docs/t.md top.md sub/top2.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/t.md imported; want top.md imported; want sub/top2.md imported
+    done
+}
+
+@test "a name a dangling prompt link projects is read again as a prompt when the walk read it before: plain, as a start, or with other bases (U2b3b2c final security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs/d .claude/commands "$sd/.claude/commands" "$sd/sub/.claude/commands" sub  # side lacks all three targets
+    # PA: the main walk reads docs/t.md plainly first (the tree walk queues the link before it); PB: the target is a start; PG: the target is a prompt here, linked under side's sub/.claude/.
+    printf 'see @docs/t.md\n' > AGENTS.md; printf 't: @top.md\n' > docs/t.md; printf 'c: @topc.md\n' > docs/d/CLAUDE.md; printf 'x: @top2.md\n' > .claude/commands/x.md
+    echo a > top.md; echo b > topc.md; echo c > sub/top2.md; commit_all pr
+    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; ln -s ../../docs/d/CLAUDE.md "$sd/.claude/commands/c.md"; ln -s ../../../.claude/commands/x.md "$sd/sub/.claude/commands/k.md"
+    for w in tree main; do
+        imps "$w" top.md topc.md sub/top2.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want top.md imported; want topc.md imported; want sub/top2.md imported
+    done
+}
+
+@test "a prompt copy with this checkout's bytes is still read: a worktree under a .claude/ adds prompt bases (U2b3b2c i2 fact-check 16)" {
+    r="$(pwd -P)" && h="$BATS_TEST_TMPDIR/h" && mkdir -p docs .claude/commands "$h/.claude" && printf 'k: @z.md\n' > .claude/commands/k.md && echo x > AGENTS.md && commit_all pc
+    git worktree add -q --detach "$h/.claude/wt" && printf 'z: @%s/docs/z2.md\n' "$r" > "$h/z.md"
+    for w in tree main; do imps "$w" docs/z2.md; [ -z "$stderr" ] || return 1; want walk ok; want docs/z2.md imported; done
+}
+
+@test "a seed that is a dangling link into another worktree reads as the repo path it names (U2b3b2c; U2b3b2b final security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$HOME/.claude/rules"  # side lacks docs/
+    ln -s "$sd/docs/n.md" "$HOME/.claude/CLAUDE.md" && ln -s "$sd/docs/r.md" "$HOME/.claude/rules/r.md" && ln -s /nonexistent/x.md "$HOME/.claude/rules/x.md"
+    printf 'n: @deep.md\n' > docs/n.md; echo r > docs/r.md; echo d > docs/deep.md; echo x > AGENTS.md; commit_all dg
+    for w in tree main; do
+        imps "$w" docs/n.md docs/r.md docs/deep.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/n.md imported; want docs/r.md imported; want docs/deep.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks fail closed when another worktree's copy cannot be compared with this checkout's (U2b3b2c)" {
+    [ "$(id -u)" -ne 0 ] || skip "root reads a mode-000 file"
+    mkdir -p docs && printf 'see @docs/a.md\n' > AGENTS.md && echo a > docs/a.md && commit_all cmp
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && echo other > "$sd/docs/a.md"
+    # The main walk reads main's blob, so only the comparison reads the unreadable checkout file.
+    chmod 000 docs/a.md; for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done; chmod 644 docs/a.md
+    S="$BATS_TEST_TMPDIR/s1" && mkdir -p "$S" && printf '#!/bin/sh\nexit 1\n' > "$S/sha1sum" && chmod +x "$S/sha1sum"
+    for w in tree main; do PATH="$S:$PATH" imps "$w" docs/a.md; want walk failed; done
 }
 
 @test "both walks fail closed when a seed directory cannot be listed or a seed's name holds a newline (U2b3b2b)" {
