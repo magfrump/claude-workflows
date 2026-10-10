@@ -361,6 +361,6 @@ U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass a
 | **[2] Merge now with known issues** | Land ce38eafb as is (unreviewed batch; suites and mutants green), the class routed to Q-103 with override rows. | None. | The interim batch has had no review; a regression in it lands. |
 | **[3] Narrow the design** | `--merge` lands only by compare-and-swap and refuses whenever any worktree has the default branch checked out (no fast-forward in W, no admin-dir reading). | Detach or switch `/workspace` off main before the orchestrator merges; a design change in plan D7/F29. | Your usual checkout on main blocks every self-merge until you move it. |
 
-- **Blocks:** U3a2's merge, and so U3a3 (`--approved` reuses `land`).
-- **Interim:** nothing merged; `feat/build-loop-u3a2` (worktree `.claude/wt-build-loop-u3a2`, tip ce38eafb, 398 code lines, suites 7/145/20/79/2/2) holds the interim batch. A fresh session runs [1] unless you answer otherwise.
-- **If the answer differs:** [2] merges ce38eafb directly; [3] removes the W path and most of the discovery block (a smaller unit, re-reviewed).
+- **Blocks:** nothing now (U3a2 merged on the interim).
+- **Interim:** [1] taken 2026-10-10: the second confirming pass (k=1 fact-check + security over 20de9671..2028aa89, plus the owed G6 test) found no Must Fix or Must Address; a Low planted-state regression (a planted `core.bare` with the index deleted) became an override row routed to Q-103; merged at 5dae21fb. Rubric section "Second confirming pass".
+- **If the answer differs:** [2] is moot; [3] is a follow-up unit that removes the W path and most of the discovery block from main (re-reviewed).
