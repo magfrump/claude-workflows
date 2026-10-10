@@ -1,8 +1,23 @@
-Commit: a5837597
+Commit: 07360526
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a2` (U3a2: `--merge BRIEF --expect SHA` lands a self-merge brief by compare-and-swap, or by a fast-forward in the worktree that has main checked out; check_line's verdict as values), on main 6666a5ce.
-**Status: 🔴 CONFIRMING PASS (k=1 fact-check + security, scope `6cbca87c..a5837597`) — 1 Must Fix (fact-check Incorrect: a dot-named admin dir's unsearchable rebase-merge still merged), 3 Must Address (security Medium: HEAD read unlike git, a symbolic alias of main, the dot-dir gap), 1 Low regression (bare repositories could not land). Per the iteration-4 decision a Must Fix here stops the merge: Q entry filed. An interim fix batch is on the branch, unreviewed. Loop not closed.**
+**Status: 🟢 SECOND CONFIRMING PASS CLEAN (Q-138 interim [1]: k=1 fact-check + security, scope `20de9671..2028aa89`) — no Must Fix, no Must Address; one Low planted-state regression routed to Q-103 (override row); text and stderr fixed in 07360526. Loop closed at 07360526.**
+
+## Second confirming pass (Commit 2028aa89, k=1 fact-check + security, scope `20de9671..2028aa89`, Q-138 interim [1])
+
+Scope: the interim batch ce38eafb (G1-G5) and 2028aa89 (G6's test: w2's `.git` names a copy of its admin dir outside worktrees/; red against a mutant without `-ef "$hd"`). Fact-check (`code-fact-check-report-u3a2-confirm2.md`): 16 claims, 14 Verified, 2 Mostly accurate, 0 Incorrect; a mutant of each new guard fails exactly its test. Security (`security-review-2026-10-10-u3a2-confirm2.md`): every earlier HEAD shape refuses (and `refs/worktree/m` to main); `.x`/`..x` admin dirs refuse; four bare layouts land; no new command execution (GIT_TRACE); no false refusal of an honest layout 20de9671 landed.
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| H1 | `core.bare=true` planted with the main worktree's index deleted: the repository lists as bare with no index, land skips its HEAD and moves main by CAS under it (git's own `branch -f main` agrees at that moment). | security 1 (Low, regression, planted-state, executed) | Q-138 [1]: planted-state class, override row routed to Q-103. |
+| H2 | An admin dir git cannot open (no commondir, a HEAD git rejects) refuses every landing; symbolic-ref's `fatal:` line (an absolute path) reached stderr; the header did not name the case. | security 2 (Informational; fails closed) | Fixed 07360526: stderr dropped, header names a HEAD git cannot read. |
+| H3 | A separate-git-dir or submodule repository whose main worktree is on main refuses (git 2.39's list reports the git dir as its path). | security 3 (Informational, not a regression) | Override row; honest-path false refusal, fails closed. |
+| H4 | The header's "cannot be read" parenthetical was narrower than the symbolic-ref refusal; land's "the header's refusals" includes the policy and --check refusals it does not make. | fact-check (2 Mostly accurate) | Fixed 07360526. |
+
+Unit at 400 code lines (cap 400; the G6 test folded). Suites 7/145/20/79 green at 07360526; shellcheck clean. G6 closed.
 
 ## Confirming pass (Commit a5837597, k=1 fact-check + security, scope `6cbca87c..a5837597`)
 
@@ -27,7 +42,7 @@ Fact-check (`code-fact-check-report-u3a2-confirm.md`): 28 claims, 19 Verified, 3
 | # | Finding | Source | Status |
 |---|---|---|---|
 | G5 | state_is's comment said "as git reads it" (git drops less); the CR test planted a shape git does not act on; the repository rule omitted symbolic-ref; "in its order"; "from 416". | fact-check 9, 10, 12, 19, 24, 27 | Comments and test corrected; commit messages immutable. |
-| G6 | The W git-dir comparison (`-ef "$hd"`) has no test of its own; `--no-deref` likewise (row). | fact-check 22 | Open (row for --no-deref; the -ef test is owed with the next pass). |
+| G6 | The W git-dir comparison (`-ef "$hd"`) has no test of its own; `--no-deref` likewise (row). | fact-check 22 | -ef test added 2028aa89 (second confirming pass); row for --no-deref. |
 | G7 | A symlinked HEAD (core.preferSymlinkRefs) now refuses. | security 5 | Fails closed; deprecated git option. |
 
 Unit at 398 code lines after the interim batch (tests and comments compressed). Suites 7/145/20/79/2/2; health check passed at a5837597. Mutants of the four newest guards each fail the suite.
