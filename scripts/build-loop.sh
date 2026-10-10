@@ -99,7 +99,8 @@
 #             object store) that is not absent or an empty file; a
 #             replace ref; an origin/HEAD naming any branch but origin/main or
 #             origin/master; then (once main is found) both main and master
-#             present, or origin/HEAD naming another branch than the one taken;
+#             present, the default branch a symbolic ref, or origin/HEAD
+#             naming another branch than the one taken;
 #             then the gate's own merge repository not set up ("refuse state
 #             gate: WHY"); then main's commit, or a tree or blob of its tree
 #             (gitlinks aside), that does not hash to its id, has a second copy in the object
@@ -221,15 +222,19 @@
 #                 moves it). Author and committer names and emails from
 #                 GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL, or else
 #                 git config (the caller's global file included, the system
-#                 file not); EMAIL or a guess from the host refuses instead. With the branch checked out in no
+#                 file not), each email non-empty; EMAIL or a guess from the
+#                 host refuses instead. With the branch checked out in no
 #                 worktree it moves by compare-and-swap from the checked
 #                 commit; checked out in a worktree W, by merge --ff-only in W.
 #             or refuse BRIEF: WHY, with the ok line's path lines following,
 #             when: the policy --status reads is review;
-#             no identity is known; the worktrees or the git directory
-#             cannot be read; the branch is checked out in two worktrees; a
-#             worktree is rebasing it (or a paused rebase will move it) or
-#             bisecting from it, or that state cannot be read; the merge commit
+#             no identity is known; the worktrees, the git directory or a
+#             worktree's own git directory, HEAD or rebase or bisect state
+#             cannot be read (exists but is not a readable plain file in a
+#             searchable directory); the branch is checked out in two
+#             worktrees, or in one git worktree list does not show (its
+#             gitdir file gone); a worktree is rebasing it (or a paused
+#             rebase will move it) or bisecting from it; the merge commit
 #             cannot be written; the state gate or default_gate refuses again
 #             just before the move; the branch moved since the check, or
 #             cannot be updated. With the branch checked out in W, also when
@@ -243,7 +248,9 @@
 #             elsewhere. --check's own refusals and skips print as they are
 #             (a checkout refusal still names --check). Residual: a worktree
 #             that checks the branch out, or W switching to another branch at
-#             the same commit, between the checks and the move.
+#             the same commit, between the checks and the move; a checkout
+#             whose git directory lies outside the repository's worktrees/,
+#             which neither git nor the gate can see.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
@@ -371,6 +378,9 @@ default_gate() {
   if git show-ref --verify --quiet refs/heads/main && git show-ref --verify --quiet refs/heads/master; then
     echo "refuse state default-branch: both main and master exist"; bad=1
   fi
+  # A symbolic default branch: a worktree on it lists as its target's, and
+  # update-ref would move the target (final security F3).
+  if git symbolic-ref -q "refs/heads/$MAIN" >/dev/null; then echo "refuse state default-branch: refs/heads/$MAIN is a symbolic ref"; bad=1; fi
   p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
   if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
     echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; bad=1
@@ -905,8 +915,11 @@ checkout_gate() {
 # in the real repository; the merge computations (merge-base, merge-tree,
 # diff-tree, the blob checks) and --merge's commit-tree run through gate_git
 # (into the real object store). --merge moves the branch in the real
-# repository (update-ref) or in W (merge --ff-only), and merge_ident alone
-# reads the caller's global config.
+# repository (update-ref) or in W (merge --ff-only, after land's reads
+# there: the state gate, rev-parse, --git-path probes, git status); its
+# worktree list, git-common-dir and the worktrees' state files are read in
+# the real repository, and merge_ident alone (git var) reads the caller's
+# global config.
 gate_start() {
   default_gate || exit 2
   GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
@@ -1016,32 +1029,28 @@ merge_ident() {
   local w x
   for w in AUTHOR COMMITTER; do
     x="$(env "${CALLER_GLOBAL[@]}" git -c user.useConfigOnly=true var "GIT_${w}_IDENT" 2>/dev/null)" || return 1
-    [[ "$x" =~ ^([^\<\>]+)\ \<([^\<\>]*)\>\ [0123456789]+\ [-+][0123456789]{4}$ ]] || return 1
+    [[ "$x" =~ ^([^\<\>]+)\ \<([^\<\>]+)\>\ [0123456789]+\ [-+][0123456789]{4}$ ]] || return 1
     export "GIT_${w}_NAME=${BASH_REMATCH[1]}" "GIT_${w}_EMAIL=${BASH_REMATCH[2]}"
   done
 }
-# land AUTHORITY: --merge's landing, once check_line printed ok (VERDICT)
-# under the authority the caller checked and names (self-merge; U3a3 adds
-# its approval), which the message and reflog carry: decide, then write, then move (D7,
-# F29). No worktree may be rebasing the default branch or bisecting from it.
-# When no worktree has it checked out: a compare-and-swap (update-ref from
-# MAIN_SHA, so a branch that moved since the check is left as it is). When a
-# worktree W has it: W must be its own top level (no core.worktree elsewhere),
-# on it at MAIN_SHA, with no tracked change, no merge, cherry-pick, revert,
-# rebase, bisect or sequence in progress, nothing at a path the merge adds
-# (an untracked or ignored file: merge --ff-only overwrites an ignored one)
-# and no file or link where the merge needs a directory. Then the merge
-# commit NEW (TREE with parents main's commit and the tip, and a
-# "Build-loop-gate: STEM" trailer) is written in the gate repository, the
-# state gate (here and in W) and default_gate run again (row 494), and the
-# branch moves: by update-ref, or by merge --ff-only NEW in W, after which it
-# must read NEW. Sets NEW, or MERGE_WHY and returns 1 (a refusal after the
-# write leaves NEW set and unreachable in the store). Residuals (Q-103): a worktree
-# checking the branch out, or W switching to another branch at MAIN_SHA,
-# between these checks and the move.
+# land AUTHORITY: --merge's landing (D7, F29), once check_line printed ok
+# (VERDICT) under the authority the caller checked and names (self-merge;
+# U3a3 adds its approval), which the message and reflog carry. Decide (the
+# header's refusals, in its order: an ignored file at an added path counts,
+# as merge --ff-only overwrites one), then write NEW in the gate repository,
+# run the state gate (here and in W) and default_gate again (row 494), and
+# move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
+# the branch, else by merge --ff-only NEW in W, after which it must read NEW.
+# Sets NEW, or MERGE_WHY and returns 1 (a refusal after the write leaves NEW
+# set and, but after a racing branch switch in W, unreachable). Residuals
+# (Q-103) as the header names them.
 NEW=""; MERGE_WHY=""
+# state_is FILE WANT: a line of git's state file FILE is WANT, read as git
+# reads it (blanks and a CR at either end dropped; "ref:" and its target
+# split by any blanks).
+state_is() { LC_ALL=C awk -v w="$2" '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, ""); sub(/^ref:[ \t]*/, "ref: ") } $0 == w { f = 1 } END { exit !f }' "$1"; }
 land() {
-  local x w="" p q d common in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
+  local x w="" p q d common hd="" n=0 in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
   NEW=""; MERGE_WHY=""
   merge_ident || { MERGE_WHY="git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"; return 1; }
   # NUL-ended fields; each record starts "worktree PATH".
@@ -1052,26 +1061,39 @@ land() {
       "branch refs/heads/$MAIN") [[ -z "$w" ]] || { MERGE_WHY="the default branch is checked out in two worktrees"; return 1; }; w="$p" ;;
     esac
   done < "$GATE_TMP/wts"
-  # Each worktree's own git dir, read as files: the common one and those under
-  # worktrees/ (dot names too). worktree list shows a rebasing worktree as
-  # detached, so only its rebase state names the branch.
+  # Each worktree's own git dir, read as files: the common one and every
+  # entry under worktrees/ (dot names too). Its HEAD names the branch it has
+  # checked out, so a worktree git worktree list drops (its gitdir file gone
+  # or unreadable) still counts; its rebase state names a branch a rebase
+  # will move (worktree list shows a rebasing worktree as detached). Anything
+  # that exists but is not a readable plain file in a searchable directory
+  # refuses, and values compare as git reads them (state_is).
   common="$(git rev-parse --path-format=absolute --git-common-dir)" || { MERGE_WHY="the git directory could not be found"; return 1; }
+  for d in "$common" "$common"/worktrees "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?* "$common"/worktrees/*/rebase-{merge,apply} "$common"/rebase-{merge,apply}; do
+    [[ ! -e "$d" && ! -L "$d" ]] || [[ -d "$d" && ! -L "$d" && -r "$d" && -x "$d" ]] || { MERGE_WHY="a worktree's git directory or rebase state cannot be read"; return 1; }
+  done
   for d in "$common" "$common"/worktrees/* "$common"/worktrees/.[!.]* "$common"/worktrees/..?*; do
     [[ -d "$d" ]] || continue
+    for q in HEAD rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs BISECT_START; do
+      [[ "$q" != HEAD && ! -e "$d/$q" && ! -L "$d/$q" ]] && continue  # only HEAD must exist
+      [[ -f "$d/$q" && ! -L "$d/$q" && -r "$d/$q" ]] || { MERGE_WHY="a worktree's git state ($q) cannot be read"; return 1; }
+    done
+    if state_is "$d/HEAD" "ref: refs/heads/$MAIN"; then n=$((n + 1)); hd="$d"; fi
     # A rebase of it, or one that will move it (--update-refs lists it).
     for q in rebase-merge/head-name rebase-apply/head-name rebase-merge/update-refs; do
-      [[ ! -e "$d/$q" ]] || { [[ -r "$d/$q" ]] && ! grep -qxF "refs/heads/$MAIN" "$d/$q"; } \
-        || { MERGE_WHY="a worktree is rebasing the default branch, or its rebase state cannot be read"; return 1; }
+      [[ ! -f "$d/$q" ]] || ! state_is "$d/$q" "refs/heads/$MAIN" || { MERGE_WHY="a worktree is rebasing the default branch"; return 1; }
     done
-    [[ ! -e "$d/BISECT_START" ]] || { [[ -r "$d/BISECT_START" ]] && [[ "$(<"$d/BISECT_START")" != "$MAIN" ]]; } \
-      || { MERGE_WHY="a worktree is bisecting from the default branch, or its bisect state cannot be read"; return 1; }
+    [[ ! -f "$d/BISECT_START" ]] || ! state_is "$d/BISECT_START" "$MAIN" || { MERGE_WHY="a worktree is bisecting from the default branch"; return 1; }
   done
+  [[ "$n" -eq "$([[ -n "$w" ]] && echo 1 || echo 0)" ]] || { MERGE_WHY="a worktree has the default branch checked out that git worktree list does not show"; return 1; }
   if [[ -n "$w" ]]; then
-    # W's own config.worktree before any git command runs there (git status
-    # would run a filter it names); the startup gate read this checkout's.
+    # W's own config.worktree before any git command reads its work tree or
+    # index (git status would run a filter it names; the gate's own reads run
+    # none); the startup gate read this checkout's.
     [[ -d "$w" ]] || { MERGE_WHY="$in is missing"; return 1; }
     (cd "$w" && state_gate) > "$GATE_TMP/state" || { MERGE_WHY="$in fails the state gate ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
-    [[ "$(git -C "$w" rev-parse --show-toplevel)" -ef "$w" && "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" \
+    [[ "$(git -C "$w" rev-parse --show-toplevel)" -ef "$w" && "$(git -C "$w" rev-parse --absolute-git-dir)" -ef "$hd" \
+      && "$(git -C "$w" symbolic-ref -q HEAD)" == "refs/heads/$MAIN" \
       && "$(git -C "$w" rev-parse --verify -q 'HEAD^{commit}')" == "$MAIN_SHA" ]] \
       || { MERGE_WHY="$in is missing, not its own top level, or not on it at $MAIN_SHA"; return 1; }
     for q in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_START rebase-merge rebase-apply sequencer; do
@@ -1099,7 +1121,7 @@ land() {
   { state_gate && default_gate && { [[ -z "$w" ]] || (cd "$w" && state_gate); }; } > "$GATE_TMP/state" \
     || { MERGE_WHY="the git state changed after the check ($(head -n 1 "$GATE_TMP/state"))"; return 1; }
   if [[ -z "$w" ]]; then
-    git update-ref -m "$msg" "refs/heads/$MAIN" "$NEW" "$MAIN_SHA" 2>/dev/null \
+    git update-ref --no-deref -m "$msg" "refs/heads/$MAIN" "$NEW" "$MAIN_SHA" 2>/dev/null \
       || { MERGE_WHY="the default branch moved after the check, or could not be updated; it was left as it is"; return 1; }
   else
     # The branch's own mergeOptions (--squash would stage the merge in W and

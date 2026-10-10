@@ -1,9 +1,7 @@
 #!/usr/bin/env bats
 # @category fast
-# Contract tests for build-loop.sh --merge (U3a2): a self-merge brief lands by
-# compare-and-swap, or by a fast-forward in the worktree that has main checked
-# out. Each test builds a throwaway repo under $BATS_TEST_TMPDIR
-# (test/lib/build-loop-fixtures.bash); this repo is untouched.
+# Contract tests for build-loop.sh --merge (U3a2), each in a throwaway repo
+# under $BATS_TEST_TMPDIR (test/lib/build-loop-fixtures.bash).
 
 bats_require_minimum_version 1.5.0
 load ../lib/build-loop-fixtures
@@ -13,9 +11,8 @@ setup() { bl_setup; }
 # mrg ARG...: run build-loop.sh --merge. show: what a failed test prints, the history included.
 mrg() { run --separate-stderr bash "$BL" --merge "$@"; }
 show() { echo "status $status"; echo "$output"; echo "$stderr"; git -c log.date=default log --oneline --graph --all; }
-# sm [PATHS]: self-merge on, brief x (self-merge, naming feat/x, listing PATHS,
-# by default feat/x's file) and feat/x with one commit; B is its path, T its
-# tip, M main's commit, TR the merged tree.
+# sm [PATHS]: self-merge on, brief x (self-merge, feat/x, Paths: PATHS or feat/x's file) and feat/x
+# with one commit; B is the brief's path, T the tip, M main's commit, TR the merged tree.
 sm() {
     settings "Build-loop policy: self-merge" "Self-merge never: none"
     brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "Paths: ${1:-work-feat-x.txt}"; work feat/x
@@ -23,9 +20,8 @@ sm() {
 }
 # orch: a worktree detached at main, as the orchestrator's own; the test moves into it.
 orch() { git worktree add -q --detach "$BATS_TEST_TMPDIR/o" main && cd "$BATS_TEST_TMPDIR/o" || return 1; }
-# shim WHEN ACTION: a git first on PATH that runs ACTION (shell; REAL is the
-# real git) once, before the first call whose arguments hold WHEN. Used as
-# PATH="$SHIM:$PATH" mrg ..., so the test's own git calls are the real one.
+# shim WHEN ACTION: a git (used as PATH="$SHIM:$PATH" mrg ...) that runs ACTION (shell; REAL is
+# the real git) once, before the first call whose arguments hold WHEN.
 SHIM_REAL="$(command -v git)"
 shim() {
     SHIM="$BATS_TEST_TMPDIR/bin"; mkdir -p "$SHIM"; rm -f "$SHIM/fired"
@@ -60,30 +56,31 @@ Build-loop-gate: 2026-10-01-x" ]
     sm; git checkout -q --detach main
     o="$(git commit-tree "$(git rev-parse 'main^{tree}')" -p main -m other)"
     shim update-ref "\"\$REAL\" update-ref refs/heads/main $o"
-    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"
-    M="$o" refused "the default branch moved after the check, or could not be updated; it was left as it is"
+    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; M="$o" refused "the default branch moved after the check, or could not be updated; it was left as it is"
     git update-ref refs/heads/main "$M"
     shim commit-tree "\"\$REAL\" config --file '$R/.git/config' filter.x.clean cat"  # commit-tree runs in the gate repository
-    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"
-    refused "the git state changed after the check (refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge)"
+    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; refused "the git state changed after the check (refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge)"
+    # A symbolic default branch refuses before any brief (final security F3).
+    git config --unset filter.x.clean; git update-ref refs/heads/trunk "$M" && git symbolic-ref refs/heads/main refs/heads/trunk
+    mrg "$B" --expect "$T"; [ "$status" -eq 2 ] && [ "$output" = "refuse state default-branch: refs/heads/main is a symbolic ref" ] && [ "$(git rev-parse trunk)" = "$M" ] || { show; return 1; }
 }
 
 @test "--merge refuses a review brief and a caller git knows no identity for, takes the identity from the caller's global config, and needs one brief and --expect (U3a2)" {
     sm; git checkout -q --detach main
     noid=(env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL)
-    run --separate-stderr "${noid[@]}" bash "$BL" --merge "$B" --expect "$T"
-    refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
+    run --separate-stderr "${noid[@]}" bash "$BL" --merge "$B" --expect "$T"; refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
     # Names set but the email only in EMAIL: git would take it (and on other hosts guess from the domain); user.useConfigOnly refuses.
-    run --separate-stderr "${noid[@]}" GIT_AUTHOR_NAME=n GIT_COMMITTER_NAME=n EMAIL=e@example.invalid bash "$BL" --merge "$B" --expect "$T"
-    refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
+    run --separate-stderr "${noid[@]}" GIT_AUTHOR_NAME=n GIT_COMMITTER_NAME=n EMAIL=e@example.invalid bash "$BL" --merge "$B" --expect "$T"; refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
     printf '[user]\n\tname = g\n\temail = g@example.invalid\n' > "$BATS_TEST_TMPDIR/gc"
     run --separate-stderr "${noid[@]}" GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gc" bash "$BL" --merge "$B" --expect "$T"
     [ "$status" -eq 0 ] && [ "$(git log -1 --format='%an %ae %cn %ce' main)" = "g g@example.invalid g g@example.invalid" ] || { show; return 1; }
     git update-ref refs/heads/main "$M"
+    # A name with only committer.email set: the author's email would be empty (final fact-check 5).
+    printf '[user]\n\tname = g\n[committer]\n\temail = c@example.invalid\n' > "$BATS_TEST_TMPDIR/gc2"
+    run --separate-stderr "${noid[@]}" GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gc2" bash "$BL" --merge "$B" --expect "$T"; refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
     git checkout -q main && settings "Build-loop policy: review" "Self-merge never: none" && git checkout -q --detach main
     M="$(git rev-parse main)"
-    mrg "$B" --expect "$T"
-    refused "the brief's policy is review; --merge lands only a self-merge brief"
+    mrg "$B" --expect "$T"; refused "the brief's policy is review; --merge lands only a self-merge brief"
     for args in "$B" "--expect $T" "$B $B --expect $T"; do
         read -ra av <<<"$args"; mrg "${av[@]}"
         [ "$status" -eq 1 ] && [[ "$stderr" == "--merge takes one brief path and --expect SHA "* ]] || { show; return 1; }
@@ -97,21 +94,16 @@ Build-loop-gate: 2026-10-01-x" ]
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $TR $n" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse HEAD)" = "$n" ] && [ "$(cat work-feat-x.txt)" = feat/x ] && [ -f unrelated.txt ] && [ -z "$(git status --porcelain --untracked-files=no)" ]
     git reset -q --hard "$M"; orch
-    mrg "$B" --expect "$T"
-    [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ "$(cat "$R/work-feat-x.txt")" = feat/x ] || { show; return 1; }
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ "$(cat "$R/work-feat-x.txt")" = feat/x ] || { show; return 1; }
     [ "$(git reflog -1 --format=%gs main)" = "build-loop: self-merge of 2026-10-01-x: Fast-forward" ]
-    # The branch's own mergeOptions are cleared: --squash would stage the merge in W and leave main (i1 security F1).
-    # No maintenance task repacks the store store_check read (i2 performance F1): loose objects stay loose.
+    # No maintenance repack of the store store_check read (i2 performance F1); then a --squash mergeOptions is cleared (i1 security F1).
     git -C "$R" reset -q --hard "$M" && git config maintenance.auto true && git config maintenance.loose-objects.enabled true && git config maintenance.loose-objects.auto 1
     np="$(find "$R/.git/objects/pack" -type f | wc -l)"
-    mrg "$B" --expect "$T"
-    [ "$status" -eq 0 ] && [ "$(find "$R/.git/objects/pack" -type f | wc -l)" = "$np" ] || { show; return 1; }
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(find "$R/.git/objects/pack" -type f | wc -l)" = "$np" ] || { show; return 1; }
     git -C "$R" reset -q --hard "$M" && git config branch.main.mergeOptions --squash
-    mrg "$B" --expect "$T"
-    [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
     git -C "$R" reset -q --hard "$M" && git -C "$R" checkout -q -b feat/y
-    mrg "$B" --expect "$T"
-    [ "$status" -eq 0 ] && [ "$(git -C "$R" symbolic-ref HEAD)" = refs/heads/feat/y ] && [ "$(git -C "$R" rev-parse HEAD)" = "$M" ] || { show; return 1; }
+    mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C "$R" symbolic-ref HEAD)" = refs/heads/feat/y ] && [ "$(git -C "$R" rev-parse HEAD)" = "$M" ] || { show; return 1; }
 }
 
 @test "--merge refuses when the worktree with main checked out has a tracked change, is mid an operation, or holds a file at a path the merge adds; or a worktree rebases or bisects main (T23, F29, F50, U3a2)" {
@@ -130,15 +122,21 @@ Build-loop-gate: 2026-10-01-x" ]
     done
     a="$R/.git/worktrees/o"
     mkdir "$a/rebase-merge" && echo refs/heads/main > "$a/rebase-merge/head-name"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"
-    # A paused rebase --update-refs of another branch that will move main (i2 security F2); an unreadable head-name.
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
+    # As git reads it: a CR and blanks around the name (final security F2).
+    printf ' refs/heads/main \r\n' > "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
+    # A paused rebase --update-refs of another branch that will move main (i2 security F2).
     printf 'refs/heads/feat/z\n' > "$a/rebase-merge/head-name"; printf 'refs/heads/main\n%s\n%s\n' "$M" "$M" > "$a/rebase-merge/update-refs"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"
-    rm "$a/rebase-merge/update-refs"; chmod 000 "$a/rebase-merge/head-name"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"; rm -r "$a/rebase-merge"
-    mkdir -p "$R/.git/worktrees/.x/rebase-merge" && echo refs/heads/main > "$R/.git/worktrees/.x/rebase-merge/head-name"
-    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch, or its rebase state cannot be read"; rm -r "$R/.git/worktrees/.x"
-    echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch, or its bisect state cannot be read"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"
+    # State that exists but cannot be read as a plain file refuses (final fact-check 8, 9; security F2).
+    hn="a worktree's git state (rebase-merge/head-name) cannot be read"; rm "$a/rebase-merge/update-refs"
+    chmod 000 "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "$hn"; rm -f "$a/rebase-merge/head-name"
+    mkdir "$a/rebase-merge/head-name"; mrg "$B" --expect "$T"; refused "$hn"
+    chmod 000 "$a/rebase-merge"; mrg "$B" --expect "$T"; refused "a worktree's git directory or rebase state cannot be read"; chmod 755 "$a/rebase-merge"; rm -r "$a/rebase-merge"
+    echo x > "$a/BISECT_START"; chmod 000 "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree's git state (BISECT_START) cannot be read"; rm -f "$a/BISECT_START"
+    mkdir -p "$R/.git/worktrees/.x/rebase-merge" && echo refs/heads/main > "$R/.git/worktrees/.x/rebase-merge/head-name" && echo "$M" > "$R/.git/worktrees/.x/HEAD"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$R/.git/worktrees/.x"
+    echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch"
     echo feat/x > "$a/BISECT_START"; mrg "$B" --expect "$T"; [ "$status" -eq 0 ] || { show; return 1; }
 }
 
@@ -156,6 +154,9 @@ Build-loop-gate: 2026-10-01-x" ]
     echo '* filter=x' > "$R/.gitattributes"; touch -d '2000-01-01' "$R/docs/dev-cycle.md"
     mrg "$B" --expect "$T"; nref "$in fails the state gate (refuse state filter.x.clean: set in config.worktree, it can make the gate's git run a command or change its merge)"
     [ ! -e "$BATS_TEST_TMPDIR/ran" ]; rm "$R/.gitattributes"; git -C "$R" config --worktree --unset filter.x.clean; git config --unset extensions.worktreeConfig
-    git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main && rm -rf "$BATS_TEST_TMPDIR/w2"
+    git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main
+    # Its gitdir file gone, git worktree list drops w2, which still has main checked out (final security F1).
+    mv "$R/.git/worktrees/w2/gitdir" "$BATS_TEST_TMPDIR/gd"; mrg "$B" --expect "$T"; nref "a worktree has the default branch checked out that git worktree list does not show"
+    mv "$BATS_TEST_TMPDIR/gd" "$R/.git/worktrees/w2/gitdir"; rm -rf "$BATS_TEST_TMPDIR/w2"
     mrg "$B" --expect "$T"; nref "$in is missing"
 }
