@@ -1,8 +1,13 @@
-Commit: d10cfba8
+Commit: a27f93b6
+Loop closed at a27f93b6
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u3a1` (U3a1: --check re-hashes main's and the merge's objects; status as values; gate_start), on main d5736445.
-**Status: 🔴 ITERATION 3 = final confirming pass (no `--loop-pass`, k=3, full panel, Stage 2.5, scope `main...d10cfba8`) — 1 Must Fix (security F1, reproduced), fixed in the commit after d10cfba8 (unreviewed at this stamp). Iteration-4 gate decision below.**
+**Status: 🟢 CONFIRMING PASS (k=1 fact-check + security, scope `d10cfba8..a27f93b6`, after the iteration-4 gate decision) — clean: no finding at any severity. Loop closed at a27f93b6.** Single-sample review; absence of findings is not an attestation.
+
+## Confirming pass (Commit a27f93b6, k=1, scope `d10cfba8..a27f93b6`)
+
+Fact-check (`code-fact-check-report-build-loop-u3a1-confirm.md`): 16 claims, 16 Verified (13 executed); the newline-pack test fails on d10cfba8's script and passes now. Security (`security-reviewer-review-2026-10-10-build-loop-u3a1-confirm.md`): no findings; E1 closed, the forged-pack recipe re-run under 35 name shapes and file types (control bytes, invalid UTF-8 under C and C.utf8, links, find -L loops, a directory or FIFO .idx): every live attack refused or stopped with no verdict; --main fails closed. One informational row (a FIFO .idx hangs git and the gate). Lite fix-drift over a27f93b6: no findings.
 
 ## Iteration 3: final confirming pass (Commit d10cfba8, k=3, scope `main...HEAD`, full panel)
 
