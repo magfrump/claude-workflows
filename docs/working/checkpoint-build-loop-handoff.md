@@ -7,7 +7,7 @@ Design conversation: docs/working/handoff-build-loop-handoff.md
 ## Project state
 - **Branch purpose**: `scripts/build-loop.sh` (gate, markers, dispatch plumbing), the reader lib extracted from `scripts/dev-cycle.sh`, and the dev-cycle skill rewritten as an orchestrator loop that dispatches, collects and merges.
 - **Position in larger initiative**: roadmap In flight "Build-loop handoff" (brief `docs/working/briefs/2026-10-02-build-loop-handoff.md`); Q-103 waits on it. Stacked units U0 → U1 → U2 (U2a1 → U2a2 → U2b → U2c) → U3 → U3b → U3c → U4 → U5.
-- **Blocked on**: nothing. Next: U3 (plan step 5's U3: `--start`/`--prompt` (lock, dispatch cap)/`--merge --approved`), carrying U2c2's hand-offs (plan step 5's U2c2 as-built note: TRUTH_WHERE for both walks with row 472; a second floor caller batch-lowers its paths). Q-119 (the U2a split, interim [1]) is open and blocks nothing.
+- **Blocked on**: nothing. Next: U3, split before code (2026-10-10, plan step 7's U3 split note) into U3a1 (store_check re-hash, check_line values), U3a2 (`--merge` self-merge), U3a3 (`--approved`), U3d (`--start`/`--prompt`). U3a1 in progress on `feat/build-loop-u3a1` (`.claude/wt-build-loop-u3a1`). Carries U2c2's hand-offs (TRUTH_WHERE with row 472, now in U3a3; a second floor caller batch-lowers its paths). Q-119 (the U2a split, interim [1]) is open and blocks nothing.
 - U0 landed 2026-10-05 (U0a `fa32a2ca`, U0b `7807e703`, U0c `f5bdd726`); U1 landed 2026-10-05/06 (U1a adff525b, U1b 62830b0a, U1c 9f78df7e, U1d 4e12b03c). Rubrics: `docs/reviews/code-review-rubric-2026-10-0{4,5,6}-feat-build-loop-u*.md`.
 
 ## U2 state (read first)
