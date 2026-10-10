@@ -1797,7 +1797,8 @@ truthwalk() {
   TRUTH_WHY=imported; isimported "$1" "$2" || { TRUTH_WHY=""; return 1; }
 }
 # A brief's own files, keyed on its full stem $2 (YYYY-MM-DD-slug, so a slug
-# shared by two dates is not a collision), for a lower-cased path $1 with
+# shared by two dates is not a collision), for a path $1 (it folds no case:
+# floor passes it lower-cased, build-loop.sh srules as spelled) with
 # diff-tree status letter $3: its working docs, docs/working/{research,plan,
 # checkpoint,handoff,test-strategy}-STEM.md, and a review it adds,
 # docs/reviews/STEM.md or docs/reviews/NAME-STEM.md (a modified or deleted

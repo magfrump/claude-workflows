@@ -1,8 +1,26 @@
-Commit: eddfd5f9
+Commit: cf7dd447
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2c1` (U2c1: the S rules in `--check`: Paths:, own files, the floor, Self-merge never:), on main 5c407a4c.
-**Status: 🟡 ITERATION 1 (`--loop-pass`, k=1, full branch, full panel) — no Must Fix; one Must Address (A1, Coupling) fixed in part with a row; Minor/Low findings fixed or deferred with rows in the fix batch after eddfd5f9 (unreviewed at this stamp).** Single-sample review; absence of findings is not an attestation.
+**Status: 🟢 ITERATION 2 (`--loop-pass`, k=1, range eddfd5f9..cf7dd447) — no Must Fix, no Must Address; Consider items fixed in the commit after cf7dd447 (unreviewed at this stamp). Next: the final confirming pass (k=3, full panel, no `--loop-pass`).** Single-sample review; absence of findings is not an attestation.
+
+## Iteration 2 (Commit cf7dd447, `--loop-pass`, k=1, scope `eddfd5f9..cf7dd447`, partial)
+
+Fact-check `code-fact-check-report-build-loop-u2c1-i2.md` (20 claims: 17 Verified, 3 Mostly accurate; a 44-input differential run found the never line's parse unchanged; the B1 mutant is caught). Critics: security, api-consistency, architecture (`*-2026-10-10-u2c1-i2.md`); performance skipped (the range adds no per-path work). Prior findings verified: A1 fixed in part (row), B1, B2, B5-B8, B12 fixed; B3, B4, B9, B10 rows present.
+
+### 🔴 Must Fix
+None.
+### 🟡 Must Address
+None.
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| C1 | A failed brief re-read now let own files land with an ok verdict, the failure visible only on deny lines; it also made check_line a second writer of PATHS. | security F1; architecture F-iv | Fixed: the re-read failure refuses the verdict as a checkout refusal does; path lines still print. |
+| C2 | read_settings told the form reason apart by its wording ("is not exactly") and re-parsed `none`. | architecture F-ii; api 1, 2 | Fixed: list_entries sets LIST_BAD (form, entry); none read from the empty LIST. |
+| C3 | ownfile's lib comment still said it takes a lower-cased path. | architecture F-i | Fixed: it folds no case; both callers named. |
+| C4 | check_line's "set -e applies" and its globals list were imprecise; the Exit: text said 1 for a mid-run stop; --help's "in lower case" read as the floor's rule too. | fact-check 5, 7, 14a; security F2; architecture F-v | Fixed in text. |
+| C5 | Row 616's reason argued for moving list_entries into the lib. | architecture F-iii | Reason corrected in a new row. |
 
 ## Iteration 1 (Commit eddfd5f9, `--loop-pass`, k=1, scope `main...HEAD`, full panel)
 
