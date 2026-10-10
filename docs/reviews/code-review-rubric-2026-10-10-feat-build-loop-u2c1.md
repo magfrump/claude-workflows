@@ -1,8 +1,42 @@
-Commit: cf7dd447
+Commit: 9e7c61c5
+Loop closed at 9e7c61c5
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2c1` (U2c1: the S rules in `--check`: Paths:, own files, the floor, Self-merge never:), on main 5c407a4c.
 **Status: 🟢 ITERATION 2 (`--loop-pass`, k=1, range eddfd5f9..cf7dd447) — no Must Fix, no Must Address; Consider items fixed in the commit after cf7dd447 (unreviewed at this stamp). Next: the final confirming pass (k=3, full panel, no `--loop-pass`).** Single-sample review; absence of findings is not an attestation.
+
+## Iteration 3: final confirming pass (Commit 9e7c61c5, no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: self-read. Fact-check: three replicates (`code-fact-check-report-build-loop-u2c1-final-r1/-r2/-r3.md`: 48/47/54 claims) merged most-severe-wins into `code-fact-check-report-build-loop-u2c1-final.md` (63 clusters: 40 Verified, 9 Mostly accurate, 4 Stale, 6 Incorrect, 4 Unverifiable; agreement 79.4%). Critics (opus, parallel): security, performance, api-consistency, architecture (`*-2026-10-10-u2c1-final.md`). Stage 2.5: `code-fact-check-submitted-claims-build-loop-u2c1.md` (claims 55-59: 4 Verified, 1 Mostly accurate, all executed). Lite fix-drift over 9e7c61c5's fixes: one finding, refuted (it read the i2 security report, which described the code before C1).
+
+### 🔴 Must Fix
+None.
+
+### 🟡 Must Address
+
+| # | Finding | Severity | Source | Status |
+|---|---|---|---|---|
+| D1 | An added review whose NAME part holds upper case (`docs/reviews/Code-Review-2026-10-01-x.md`) counted as the brief's own file: ownfile's `*"-$2.md"` checks no case, while --help, srules' comment and plan:311 said own files land only in lower case; on a case-insensitive clone it can take an existing review's name. | Medium | fact-check r3 (Incorrect 12b, 18b, 27b, 50); security F1; architecture F1 | Fixed: srules accepts an own file only when the whole path is lower case; test row added; contract item 8 updated. |
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| D2 | Contract item 8 still said ownfile takes a lower-cased path. | fact-check 37 (Stale); architecture F2 | Fixed. |
+| D3 | --help :155/:179 omitted the brief re-read refusal; srules' $5 "the checkout refusal"; on a re-read failure the deny text said "so only its own files land". | fact-check 14, 16b, 27a, 28; security F2; architecture F3 | Fixed: help names the re-read refusal; $5 is "the verdict's refusal"; the re-read deny reads "the brief could not be read again from the default branch". |
+| D4 | A loop's advisory run skips the floor silently (its checkout always refuses). | api-consistency 1 | Fixed in --help; U3 loop prompt (row). |
+| D5 | "Paths: P ..." placeholder; LIST_BAD missing from check_line's globals list; nrules' comment omitted briefs/cycles as files. | api-consistency 2; architecture F4; fact-check 23a | Fixed. |
+| D6 | Override rows 610, 612, 613 inaccurate (need_root 4 per floor call; re-read now refuses). | fact-check 3a-c, 5, 6; performance 1 | Corrected in new rows. |
+| D7 | Commit messages eddfd5f9, d435100e overtaken. | fact-check 46, 50, 52 | Accepted-immutable (row). |
+| D8 | LIST_BAD=entry unread. | api-consistency 3 | Won't-Fix (row). |
+| D9 | "exactly one walk per brief" is at most one. | Stage 2.5 claim 59 | No code text claims it; the merge message says "at most one". |
+
+### 🧩 Composition check
+
+- ownfile / srules case (fact-check r3, security F1, architecture F1, api i1 3): one root, stated completely by each (D1); no composed row.
+- re-read refusal text (fact-check 14/16b/27a/28, security F2, architecture F3): distinct wording defects of one change (D3), each stated.
+
+No other multi-source co-located clusters qualified.
 
 ## Iteration 2 (Commit cf7dd447, `--loop-pass`, k=1, scope `eddfd5f9..cf7dd447`, partial)
 
