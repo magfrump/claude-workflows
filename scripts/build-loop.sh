@@ -660,8 +660,8 @@ never_res() {
 # when $5 is empty: it walks the checkout), a Self-merge never: glob, then the
 # allowlist (Paths:, or ownfile). The allowlist widens nothing by case: Paths:
 # entries compare exactly, and an own file counts only when the whole path is
-# lower case (ownfile folds nothing, and a review's NAME part may hold any
-# letter).
+# lower case (ownfile folds nothing, and its review pattern would take any
+# letter in NAME, so this test is what keeps NAME lower case).
 srules() {
   local i e
   DENY=""
