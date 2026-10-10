@@ -1824,7 +1824,7 @@ refuse state default-branch: origin/HEAD names origin/master, but the default br
 }
 
 # sm: self-merge on, brief x (self-merge, naming feat/x) and feat/x with one commit; B is its path.
-sm() { settings "Build-loop policy: self-merge" "Self-merge never: none"; brief x "Status: open" "Branch: feat/x" "Policy: self-merge"; work feat/x; }
+sm() { settings "Build-loop policy: self-merge" "Self-merge never: none"; brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "Paths: work-feat-x.txt"; work feat/x; }
 CO="a self-merge brief needs --check run from a clean checkout of the default branch's commit"
 # coref WHY: --check refused brief x for its checkout, with WHY, and still listed
 # feat/x's one changed path. cook: --check passed it.
@@ -1926,6 +1926,92 @@ ENVS="is set, so git can read another work tree, index, object store or config f
     rm -rf sub; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" sub
     # git status already fails on a symlink there (exit 128), before the gitlink rule reads it.
     coref "git status failed or warned in the checkout"
+}
+
+# U2c1, the S rules (plan D5): a self-merge brief lands only what its Paths:
+# lists or its own files, never what the floor or a Self-merge never: glob refuses.
+
+# smb LINE...: self-merge on (never line $NEV, default none) and brief x, self-merge on feat/x, with these lines.
+smb() { settings "Build-loop policy: self-merge" "${NEV:-Self-merge never: none}"; brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "$@"; }
+NLIST="neither listed in the brief's Paths: line nor one of its own files"
+
+@test "--check self-merges listed paths (exec bit, a directory entry), the brief's own working docs and added reviews, and its Status line (T9, U2c1)" {
+    smb "Paths: scripts/other.sh skills/x/ hooks/x.sh install.sh test/"
+    fs=(scripts/other.sh skills/x/helper.md skills/x/y/z.md hooks/x.sh install.sh test/x.bats docs/working/research-2026-10-01-x.md
+        docs/working/plan-2026-10-01-x.md docs/working/checkpoint-2026-10-01-x.md docs/reviews/2026-10-01-x.md docs/reviews/code-review-2026-10-01-x.md)
+    onx 'mkdir -p scripts skills/x/y hooks test docs/reviews; for f in "${fs[@]}"; do echo x > "$f"; done; chmod +x scripts/other.sh; sed -i "s/^Status: open/Status: done/" "$B"'
+    chk "$B"
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "${#lines[@]}" -eq 13 ] && [ -z "$stderr" ] || { show; return 1; }
+    has "path $B M $B"; for f in "${fs[@]}"; do has "path $B A $f"; done
+}
+
+@test "--check refuses a self-merge path the floor names though Paths: lists it, a symlink at a listed path, and a path Paths: does not list exactly (T10, rows 349, 474, U2c1)" {
+    mkdir -p docs/reviews && printf 'see @docs/imp.md\n' > CLAUDE.md && echo r > docs/reviews/old.md && commit_all floor
+    fl=(CLAUDE.md skills/x/SKILL.md docs/imp.md .claude/settings.json .envrc docs/x/.y scripts/build-loop.sh scripts/lib/dev-cycle-read.sh
+        docs/decisions/001-x.md docs/thoughts/x.md docs/working/checkpoint-2026-10-02-y.md docs/reviews/r-2026-10-02-y.md docs/reviews/old.md)
+    smb "Paths: ${fl[*]:0:11} docs/reviews/ docs/a scripts/link.sh hooks/x.sh"
+    onx 'mkdir -p skills/x .claude docs/x scripts/lib docs/decisions docs/thoughts docs/working Hooks
+        for f in "${fl[@]}" docs/a docs/ab.md Hooks/x.sh scripts/x.sh; do echo x > "$f"; done; ln -s x.sh scripts/link.sh'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 17 18)" ] && [ -z "$stderr" ] || { show; return 1; }
+    has "deny $B M CLAUDE.md: $INSTR"; has "deny $B A skills/x/SKILL.md: $INSTR"; has "deny $B A docs/imp.md: $IMP"
+    for f in .claude/settings.json .envrc docs/x/.y; do has "deny $B A $f: $DOT"; done
+    has "deny $B A scripts/build-loop.sh: $GATE"; has "deny $B A scripts/lib/dev-cycle-read.sh: $GATE"
+    has "deny $B A docs/decisions/001-x.md: $REC"; has "deny $B A docs/thoughts/x.md: $REC"
+    has "deny $B A docs/working/checkpoint-2026-10-02-y.md: $WORK"
+    has "deny $B A docs/reviews/r-2026-10-02-y.md: $REV"; has "deny $B M docs/reviews/old.md: $REV"
+    has "path $B A docs/a"; has "deny $B A scripts/link.sh: $NMODE"
+    for f in docs/ab.md Hooks/x.sh scripts/x.sh; do has "deny $B A $f: $NLIST"; done
+}
+
+@test "--check: a malformed Paths: line lands only the brief's own files; Paths: alone or none lists nothing (T10, U2c1)" {
+    for l in "Paths: docs/a docs/a/|lists entry 2 twice" "Paths:  docs/a|is not exactly \"Paths: PATH ...\" with single spaces" \
+             "Paths: docs/../x|lists entry 1, which is not an allowed path form" "Paths: /docs/a|lists entry 1, which is not an allowed path form" \
+             "Paths:|" "-|"; do
+        if [[ "${l%|*}" == - ]]; then smb; else smb "${l%|*}"; fi
+        onx 'mkdir -p docs/working; echo x > docs/a; echo x > docs/working/plan-2026-10-01-x.md'
+        chk "$B"
+        w="${l#*|}"; [[ -n "$w" ]] && w="the brief's Paths: line $w, so only its own files land" || w="$NLIST"
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 1 2)" ] && has "deny $B A docs/a: $w" \
+            && has "path $B A docs/working/plan-2026-10-01-x.md" || { echo "line: $l"; return 1; }
+    done
+}
+
+@test "--check: a Self-merge never: glob refuses a listed path under self-merge, by part and in any case; review ignores it (T45, U2c1)" {
+    NEV="Self-merge never: workflows/ docs/*.txt" smb "Paths: workflows/ Workflows/ docs/ workflowsx.md"
+    onx 'mkdir -p workflows/sub Workflows docs/sub; for f in workflows/x.md workflows/sub/y.md Workflows/Z.md docs/n.txt docs/sub/n.txt workflowsx.md; do echo x > "$f"; done'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 4 6)" ] || { show; return 1; }
+    for f in workflows/x.md workflows/sub/y.md Workflows/Z.md docs/n.txt; do has "deny $B A $f: a Self-merge never: glob in docs/dev-cycle.md matches it"; done
+    has "path $B A docs/sub/n.txt"; has "path $B A workflowsx.md"
+    settings "Build-loop policy: review" "Self-merge never: workflows/ docs/*.txt"
+    chk "$B"
+    [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 7 ] || { show; return 1; }
+}
+
+@test "--check refuses a path below a cycle file's or the constraints doc's name, and cycles/ as a file (an N rule; row 523, U2c1)" {
+    gated feat/x
+    onx 'mkdir -p docs/roadmap.md docs/constraints.md Docs/Dev-Cycle.md docs/working/questions.md/a; for f in docs/roadmap.md/f docs/constraints.md/f Docs/Dev-Cycle.md/x docs/working/questions.md/a/b docs/working/cycles; do echo x > "$f"; done'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 5 5)" ] || { show; return 1; }
+    for f in docs/roadmap.md/f docs/constraints.md/f Docs/Dev-Cycle.md/x docs/working/questions.md/a/b; do
+        has "deny $B A $f: a path below the name of one of the dev cycle's own files or the constraints doc"
+    done
+    has "deny $B A docs/working/cycles: $NOWN"
+}
+
+@test "--check walks once per self-merge decision (check_line's import_reset, in the parent shell) and under the C locale (contract items 1, 4; row 532, U2c1)" {
+    smb "Paths: work-feat-x.txt"; work feat/x; x="$B"
+    brief y "Status: open" "Branch: feat/y" "Policy: self-merge" "Paths: work-feat-y.txt"; work feat/y
+    S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
+    printf '#!/bin/bash\necho "$*" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$real" > "$S/git"; chmod +x "$S/git"
+    PATH="$S:$PATH" chk "$x" "$B"
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $x "* && "${lines[2]}" == "ok $B "* ]] || { show; return 1; }
+    [ "$(grep -c '^worktree list' "$BATS_TEST_TMPDIR/calls")" -eq 2 ] || { cat "$BATS_TEST_TMPDIR/calls"; return 1; }
+    # A name that is not UTF-8 on main fails a walk run under a UTF-8 locale; the gate walks under C.
+    printf 'x\n' > $'docs/\xff.md'; commit_all latin
+    LC_ALL=C.utf8 chk "$x"
+    [ "$status" -eq 0 ] && [ "${lines[1]}" = "path $x A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
 }
 
 # U2b3a, the reader model's roots and homes (plan step 5): a session reading the
