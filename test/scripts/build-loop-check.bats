@@ -1336,7 +1336,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     mkdir docs && echo x > docs/a.md && chmod 644 docs; floors 2026-10-01-x M scripts/other.sh; chmod 755 docs; rm -r docs
     [[ "${lines[0]}" == "scripts/other.sh: $WALKFAIL: the checkout holds docs/a"*", which the walk reads, as other than a readable plain file below plain directories" ]] || { echo "$output"; return 1; }
     CLAUDE_CONFIG_DIR=rel floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root or home or CLAUDE_CONFIG_DIR is not an absolute path"
+    want scripts/other.sh "$WALKFAIL: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path"
     if [ "$(id -u)" -ne 0 ]; then
         mkdir -p "$HOME/.claude/rules/locked" && chmod 000 "$HOME/.claude/rules/locked"; floors 2026-10-01-x M scripts/other.sh; chmod 755 "$HOME/.claude/rules/locked"
         want scripts/other.sh "$WALKFAIL: the instruction files outside the checkout (config dirs, ancestors, other worktrees) could not be listed"
@@ -1352,21 +1352,31 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     o="$(git rev-parse main:CLAUDE.md)"
     rm ".git/objects/${o:0:2}/${o:2}"
     floors 2026-10-01-x M scripts/other.sh docs/b.md
-    for p in scripts/other.sh docs/b.md; do want "$p" "$WALKFAIL: CLAUDE.md could not be read or its imports parsed within the walk's work budget, or it is a link the walk does not model"; done
+    for p in scripts/other.sh docs/b.md; do want "$p" "$WALKFAIL: CLAUDE.md could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"; done
     # main stores .claude/rules as a link (START_LINK).
     git hash-object -w CLAUDE.md > /dev/null; mkdir -p .claude && ln -s ../docs .claude/rules && commit_all rules-link
     floors 2026-10-01-x M scripts/other.sh
-    want scripts/other.sh "$WALKFAIL: the default branch stores a link or gitlink at or below a .claude/ start directory, at .claude/rules"
+    want scripts/other.sh "$WALKFAIL: the default branch stores a link or gitlink at .claude or at or below a .claude/ start directory, at .claude/rules"
+    # A name outside pathform's characters prints as ? (i1 security 1): a start whose blob is missing.
+    git rm -q -r --cached .claude && rm -r .claude && mkdir 'a b' && printf 'y\n' > 'a b/CLAUDE.md' && commit_all crafted
+    o="$(git rev-parse 'main:a b/CLAUDE.md')"; rm ".git/objects/${o:0:2}/${o:2}"
+    floors 2026-10-01-x M scripts/other.sh
+    want scripts/other.sh "$WALKFAIL: ? could not be read, or its imports parsed within the walk's budgets (IMPORT_WORK_MAX, IMPORT_OUT_MAX), or it is a link the walk does not model"
     # No default branch found by name: nothing is read, everything refuses.
     git checkout -q -b trunk && git branch -q -D main
     floors 2026-10-01-x M scripts/other.sh
     want scripts/other.sh "$WALKFAIL: the default branch was not found by name"
+    # An unset ROOT_REAL exits 1 before any read (i1 A1).
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; floor docs/x.md x M docs/x.md; echo reached' _ "$LIB"
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == *"ROOT_REAL is not set"* ]] || { echo "$status $output $stderr"; return 1; }
 }
 
-@test "floor refuses a path below a start file's name, as a directory there keeps the file from being created (U2c1 i1 security 1)" {
-    floors 2026-10-01-x A src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y src/claude.mdx/n.txt
-    for p in src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y; do want "$p" "a path below the name of an instruction or prompt file"; done
-    want src/claude.mdx/n.txt -
+@test "floor refuses a path below a start file's name or an imported .md name, as a directory there keeps the file from being created (U2c1 i1 security 1, U2c2 i1 security 3)" {
+    printf 'see @docs/new.md\n' > AGENTS.md && commit_all imp
+    floors 2026-10-01-x A src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y src/claude.mdx/n.txt docs/new.md/n.txt docs/x.txt docs/ne/x.txt
+    for p in src/CLAUDE.md/n.txt docs/Agents.local.md/a/b skills/x/skill.md/y docs/new.md/n.txt; do want "$p" "a path below the name of an instruction or prompt file, or of a .md file one imports with @"; done
+    # docs and docs/ne are import names too (the parser's prefixes), but no .md name.
+    for p in src/claude.mdx/n.txt docs/x.txt docs/ne/x.txt; do want "$p" -; done
 }
 
 @test "floor given the lowered path forks no lower, and a cached walk no root check (U2c1 final performance 1)" {

@@ -176,9 +176,12 @@
 #                 on each path the N rules pass but the brief's own file
 #                 (first match): the self-merge floor (the lib's floor:
 #                 instruction and prompt files and what they import with @,
-#                 dot paths, the gate's own code, the user's and the cycle's
-#                 records, a working doc or review that is not the brief's
-#                 own; not run when the verdict already refuses for the
+#                 a path below a start file's or an imported .md file's
+#                 name, dot paths, the gate's own code, the user's and the
+#                 cycle's records, a working doc or review that is not the
+#                 brief's own; a walk that fails refuses every path, its
+#                 reason saying where, with a PATH outside pathform's
+#                 characters shown as ?; not run when the verdict already refuses for the
 #                 checkout or the brief's re-read, so a loop's advisory run
 #                 from its own branch can print a path the floor would
 #                 refuse as a path line); a glob of --settings' never
