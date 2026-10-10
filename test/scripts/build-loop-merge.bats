@@ -44,14 +44,14 @@ refused() {
     sm; git checkout -q --detach main
     mrg "$B" --expect "$T"
     n="$(git rev-parse main)"
-    [ "$status" -eq 0 ] && [ "$output" = "merged $B $n $T $TR
+    [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
 path $B A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse "$n^1") $(git rev-parse "$n^2") $(git rev-parse "$n^{tree}")" = "$M $T $TR" ]
     [ "$(git log -1 --format=%B "$n")" = "Merge branch 'feat/x' (build-loop self-merge)
 
 Build-loop-gate: 2026-10-01-x" ]
     [ "$(git log -1 --format='%an %ae %cn %ce' "$n")" = "t t@example.invalid t t@example.invalid" ]
-    [ "$(git rev-parse HEAD)" = "$M" ]
+    [ "$(git rev-parse HEAD)" = "$M" ] && [ "$(git reflog -1 --format=%gs main)" = "build-loop: self-merge of 2026-10-01-x" ]
     mrg "$B" --expect "$T"
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: its branch feat/x has no commit the default branch lacks" ] && [ "$(git rev-parse main)" = "$n" ] || { show; return 1; }
 }
@@ -72,7 +72,10 @@ Build-loop-gate: 2026-10-01-x" ]
     sm; git checkout -q --detach main
     noid=(env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL)
     run --separate-stderr "${noid[@]}" bash "$BL" --merge "$B" --expect "$T"
-    refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email)"
+    refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
+    # Names set but the email only in EMAIL: git would take it (and on other hosts guess from the domain); user.useConfigOnly refuses.
+    run --separate-stderr "${noid[@]}" GIT_AUTHOR_NAME=n GIT_COMMITTER_NAME=n EMAIL=e@example.invalid bash "$BL" --merge "$B" --expect "$T"
+    refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
     printf '[user]\n\tname = g\n\temail = g@example.invalid\n' > "$BATS_TEST_TMPDIR/gc"
     run --separate-stderr "${noid[@]}" GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gc" bash "$BL" --merge "$B" --expect "$T"
     [ "$status" -eq 0 ] && [ "$(git log -1 --format='%an %ae %cn %ce' main)" = "g g@example.invalid g g@example.invalid" ] || { show; return 1; }
@@ -81,21 +84,26 @@ Build-loop-gate: 2026-10-01-x" ]
     M="$(git rev-parse main)"
     mrg "$B" --expect "$T"
     refused "the brief's policy is review; --merge lands only a self-merge brief"
-    mrg "$B"
-    [ "$status" -eq 1 ] && [[ "$stderr" == "--merge takes one brief path and --expect SHA "* ]] || { show; return 1; }
-    mrg "$B" "$B" --expect "$T"
-    [ "$status" -eq 1 ] && [[ "$stderr" == "--expect goes with exactly one brief path "* ]] || { show; return 1; }
+    for args in "$B" "--expect $T" "$B $B --expect $T"; do
+        read -ra av <<<"$args"; mrg "${av[@]}"
+        [ "$status" -eq 1 ] && [[ "$stderr" == "--merge takes one brief path and --expect SHA "* ]] || { show; return 1; }
+    done
 }
 
 @test "--merge fast-forwards the worktree that has main checked out, from it or from another, keeping an unrelated untracked file; a worktree on another branch is left alone (T23, F50, U3a2)" {
     sm; echo u > unrelated.txt
     mrg "$B" --expect "$T"
     n="$(git rev-parse main)"
-    [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $n $T $TR" ] && [ -z "$stderr" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $TR $n" ] && [ -z "$stderr" ] || { show; return 1; }
     [ "$(git rev-parse HEAD)" = "$n" ] && [ "$(cat work-feat-x.txt)" = feat/x ] && [ -f unrelated.txt ] && [ -z "$(git status --porcelain --untracked-files=no)" ]
     git reset -q --hard "$M"; orch
     mrg "$B" --expect "$T"
     [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ "$(cat "$R/work-feat-x.txt")" = feat/x ] || { show; return 1; }
+    [ "$(git reflog -1 --format=%gs main)" = "build-loop: self-merge of 2026-10-01-x: Fast-forward" ]
+    # The branch's own mergeOptions are cleared: --squash would stage the merge in W and leave main (i1 security F1).
+    git -C "$R" reset -q --hard "$M" && git config branch.main.mergeOptions --squash
+    mrg "$B" --expect "$T"
+    [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$(git rev-parse main)" ] && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
     git -C "$R" reset -q --hard "$M" && git -C "$R" checkout -q -b feat/y
     mrg "$B" --expect "$T"
     [ "$status" -eq 0 ] && [ "$(git -C "$R" symbolic-ref HEAD)" = refs/heads/feat/y ] && [ "$(git -C "$R" rev-parse HEAD)" = "$M" ] || { show; return 1; }
@@ -118,17 +126,21 @@ Build-loop-gate: 2026-10-01-x" ]
     a="$R/.git/worktrees/o"
     mkdir "$a/rebase-merge" && echo refs/heads/main > "$a/rebase-merge/head-name"
     mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$a/rebase-merge"
+    mkdir -p "$R/.git/worktrees/.x/rebase-merge" && echo refs/heads/main > "$R/.git/worktrees/.x/rebase-merge/head-name"
+    mrg "$B" --expect "$T"; refused "a worktree is rebasing the default branch"; rm -r "$R/.git/worktrees/.x"
     echo main > "$a/BISECT_START"; mrg "$B" --expect "$T"; refused "a worktree is bisecting from the default branch"
     echo feat/x > "$a/BISECT_START"; mrg "$B" --expect "$T"; [ "$status" -eq 0 ] || { show; return 1; }
 }
 
-@test "--merge refuses a file or link where the merge adds a directory, and a worktree registered on main that is missing (T23, U3a2)" {
+@test "--merge refuses a file or link where the merge adds a directory, and a worktree registered on main that is missing or has its work tree elsewhere (T23, U3a2; i1 security)" {
     sm "work-feat-x.txt sub/"; git checkout -q feat/x && mkdir sub && echo f > sub/f.txt && commit_all sub && git checkout -q main
     T="$(git rev-parse feat/x)"; TR="$(git merge-tree --write-tree main feat/x)"; orch
     in="the worktree with the default branch checked out"
     nref() { [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: $1" ] && [ "$(git rev-parse main)" = "$M" ] || { echo "want: $1"; show; return 1; }; }
     echo f > "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
     ln -s "$BATS_TEST_TMPDIR" "$R/sub"; mrg "$B" --expect "$T"; nref "$in holds sub, where the merge adds a directory"; rm "$R/sub"
+    mkdir "$BATS_TEST_TMPDIR/elsewhere" && git -C "$R" config core.worktree "$BATS_TEST_TMPDIR/elsewhere"
+    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, or not on it at $M"; git -C "$R" config --unset core.worktree
     git -C "$R" checkout -q --detach && git worktree add -q "$BATS_TEST_TMPDIR/w2" main && rm -rf "$BATS_TEST_TMPDIR/w2"
-    mrg "$B" --expect "$T"; nref "$in is missing, or not on it at $M"
+    mrg "$B" --expect "$T"; nref "$in is missing, not its own top level, or not on it at $M"
 }
