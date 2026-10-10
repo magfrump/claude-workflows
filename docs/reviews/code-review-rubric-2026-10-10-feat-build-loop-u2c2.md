@@ -1,9 +1,57 @@
-Commit: ac078bd7
-Loop-pass short-circuit: used at ac078bd7
+Commit: 8786f8fc
+Loop closed at 8786f8fc
 # Code Review Rubric
 
 **Branch:** `feat/build-loop-u2c2` (U2c2: the walk side: floor's cost and reasons, a path below a start's name, live prompt links (F3), config dirs in the reader key, c1_seeds), on main 75ec873c.
-**Status: 🔴 ITERATION 2 (`--loop-pass`, k=1, range 3111ee9d..ac078bd7, short-circuited at fact-check) — Must Fix B1 (the A9 fix did nothing) fixed in 2be3db37 with a test, unreviewed at this stamp (lite fix-drift: one finding, refuted). Next: iteration 3, the final confirming pass (k=3, full panel, no `--loop-pass`).**
+**Status: 🟢 ITERATION 3 = final confirming pass (no `--loop-pass`, k=3, full panel, Stage 2.5, scope `main...8786f8fc`) — no Must Fix, no Must Address; Consider items fixed in the commit after 8786f8fc (unreviewed at this stamp) or rowed. Loop converged cleanly in 3 iterations.** Single-sample review; absence of findings is not an attestation.
+
+## Iteration 3: final confirming pass (Commit 8786f8fc, no `--loop-pass`, k=3, scope `main...HEAD`, full panel)
+
+Delivery mode: inline-diff-only (agents read the saved diff and a shared brief). Fact-check: three replicates (`code-fact-check-report-build-loop-u2c2-final-r1/-r2/-r3.md`: 33/40/30 claims) merged most-severe-wins into `code-fact-check-report-build-loop-u2c2-final.md` (49 clusters: 36 Verified, 8 Mostly accurate, 1 Stale, 2 Incorrect, 2 Unverifiable; agreement 83.7%). The two Incorrects and the Stale are commit-message claims already settled (A17, B1). Critics (opus, parallel): security (no findings), performance (4 Informational), api-consistency (3 Minor, 4 Informational), architecture (2 Minor, 3 Informational) (`*-2026-10-10-u2c2-final.md`). Stage 2.5: 12 routed claims (`code-fact-check-submitted-claims-build-loop-u2c2.md`, appended to the merged report as claims 50-61): 11 Verified (executed), 1 Mostly accurate (the cached-floor speedup is ~8-11x, not 11-14x).
+
+Considered overrides: the twelve 2026-10-10 rows for this branch (settled; none re-filed by a critic).
+
+### 🔴 Must Fix
+None.
+
+### 🟡 Must Address
+None.
+
+### 🟢 Consider
+
+| # | Finding | Source | Status |
+|---|---|---|---|
+| C1 | The header implied floor always exits on an unset ROOT_REAL; its earlier rules refuse with no root check (fail-closed; no caller relies on the exit: Stage 2.5 claim 56). | fact-check 3; api 7 | Fixed in text. |
+| C2 | floor's "forks nothing" needs $4; a caller without it pays a lower per path. | fact-check 42; performance 2 | Fixed in text (batch-lower, as check_line does). |
+| C3 | walk_why's list, copies and start/admit sentences named narrower causes than their KIND. | fact-check 13-15; api 2 | Fixed. |
+| C4 | truthwalk's "~1 ms" for isimported's forks: ~2 ms measured. | fact-check 18 | Fixed. |
+| C5 | IMPORT_CONFIGS' doc: item (1)'s dirs only; "when set" means set and not empty. | fact-check 29; api 4; architecture 4 | Fixed. |
+| C6 | walk_has, a raw membership test, read an error list as "not imported"; contract item 6 did not name it; floor's ancestor loop relies on the walk having succeeded. | api 1; architecture 2 | Fixed: walk_has answers 0 on an error list; item 6 admits it after a successful walk; floor's loop states its precondition. |
+| C7 | readers_root repeats import_readers' memo test. | architecture 1 | Cross-referenced in both ("change the two together"); row. |
+| C8 | config_seeds emptied the shared array and c1_seeds appended (order-dependent). | architecture 3 | Fixed: the wrapper empties it; both append. |
+| C9 | --check help said "start file's name" (lib-internal). | api 6 | Fixed. |
+| C10 | readers_root's name; the reader-settings sentence written twice; the .md-ancestor loop's glob cost; inverted nameref prefixes. | api 3, 5; architecture 5; performance 1 | Rows (Won't-Fix / Defer). |
+| C11 | "a three-call outside_seeds wrapper" (07af69c0, rubric A7) is two calls plus a newline check. | fact-check 32 | Commit message immutable; the merge message words it right. |
+| C12 | performance endorsement P1's 11-14x. | Stage 2.5 claim 57 | The merge message uses ~8-11x. |
+
+### 🧩 Composition check
+
+- floor :1916-1952 (fact-check 3/42, api 1/7, architecture 2, performance 1/2): distinct defects (exit wording, $4 cost, walk_has precondition, ancestor glob cost), each stated (C1, C2, C6, C10).
+- walk_why :812-824 (fact-check 13-15, api 2): one wording class, stated completely by each (C3).
+
+No other multi-source co-located clusters qualified.
+
+### ✅ Confirmed Good
+
+| Claim | Evidence | Backing |
+|---|---|---|
+| prompt_marks marks a live entry only when its real path lies below a reader root, as a whole-component literal prefix (`/a/b` never takes `/a/bc`; `*`, `?`, `[x]` roots match only themselves). | `while IFS= read -r p; do [[ "$b" != "$p"/* ]] \|\| in=1; done <<<"$IMPORT_ROOTS"; [[ -n "$in" ]] \|\| return 0` | Stage 2.5 claim 50, executed. |
+| F3 is closed for a live prompt link (and a 2-3 hop chain) in another worktree, in both walks; main's lib misses the 2-hop chain. | test "a live prompt link in another worktree whose target there holds older bytes ..." | Stage 2.5 claim 51; fact-check final 49 region; executed. |
+| readers_root never lets a walk list the registry or read the checkout from an unchecked directory; a double cache hit answers for ROOT_REAL's own walk and runs no external command. | `readers_root() { { [[ -n "${ROOT_REAL:-}" ]] && import_home && import_readers_key && [[ "$IMPORT_READERS_DONE" == "$IMPORT_READERS_KEY" && -n "$IMPORT_ROOTS" ]]; } \|\| need_root; }` | Stage 2.5 claims 52, 59, executed. |
+| floor gives the same answer with and without $4 when $4 is $1 lower-cased (24 paths). | `[[ -n "$lp" ]] \|\| lp="$(lower "$1")"` | Stage 2.5 claim 53, executed. |
+| Both walks walk again without import_reset after a HOME, CLAUDE_CONFIG_DIR or IMPORT_MANAGED_DIR change. | walk keys `..."$IMPORT_HOMES"$'\n\n'"$IMPORT_CONFIGS"` | Stage 2.5 claim 55; test "both walks key on the config dirs"; executed. |
+
+Tokens: fc 3×(233k-248k) + merge 191k, critics 193k + 137k + 180k + 148k, Stage 2.5 183k ≈ 1.8M.
 
 ## Iteration 2 (Commit ac078bd7, `--loop-pass`, k=1, scope `3111ee9d..ac078bd7`, partial)
 
