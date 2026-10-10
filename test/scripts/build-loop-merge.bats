@@ -214,17 +214,21 @@ Build-loop-approved: Q-001" ]
     mrg "$B" --expect "$T" --approved Q-001
     [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $(git merge-tree --write-tree "$M" "$T") $(git rev-parse main)" ] \
         && [ "${lines[1]}" = "path $B A work-feat-x.txt" ] || { show; return 1; }
-    git update-ref refs/heads/main "$M"; git checkout -q feat/x && mkdir -p docs && echo r > docs/roadmap.md && commit_all roadmap
+    # A cycle file still refuses: the roadmap, and the questions file an approval is read from (i1 security).
+    git update-ref refs/heads/main "$M"; git checkout -q feat/x && mkdir -p docs/working && echo r > docs/roadmap.md && echo q > docs/working/questions-archive.md && commit_all cycle
     T="$(git rev-parse feat/x)"; approve Q-001 "merge-2026-10-01-x-${T:0:12}"
     mrg "$B" --expect "$T" --approved Q-001
-    [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: 1 of 2 changed paths refused in the merge of $T "* ]] \
-        && [ "${lines[1]}" = "deny $B A docs/roadmap.md: one of the dev cycle's own files" ] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: 2 of 3 changed paths refused in the merge of $T "* ]] \
+        && printf '%s\n' "$output" | grep -qxF "deny $B A docs/roadmap.md: one of the dev cycle's own files" \
+        && printf '%s\n' "$output" | grep -qxF "deny $B A docs/working/questions-archive.md: one of the dev cycle's own files" \
+        && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
 }
 
 @test "--merge --approved refuses an answer other than [1], an open entry, an answer only in the working tree, no entry, and a slug naming another brief, an older tip or the gate (T35, U3a3)" {
     rv; no="Q-001 does not approve this merge"
-    approve Q-001 "$S" ANSWERED "Q-001: [2]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is not option 1"
-    approve Q-001 "$S" ANSWERED "Q-001: [3]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is not option 1"
+    approve Q-001 "$S" ANSWERED "Q-001: [2]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 2"
+    approve Q-001 "$S" ANSWERED "Q-001: [3]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 3"
+    approve Q-001 "$S" ANSWERED "Q-001: merge"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is not read as an option ([1], 1 or keep approve)"
     approve Q-001 "$S" OPEN; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
     sed -i 's/OPEN/ANSWERED/' docs/working/questions.md; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
     git checkout -q -- docs/working/questions.md
@@ -234,8 +238,8 @@ Build-loop-approved: Q-001" ]
     done
 }
 
-@test "--merge --approved needs merge-gate-STEM-SHA12 when a changed path is the gate's own code, compared lower-cased (T35, U3a3)" {
-    for g in scripts/build-loop.sh Scripts/Lib/x.sh; do
+@test "--merge --approved needs merge-gate-STEM-SHA12 when a changed path is the gate's own code, the dev-cycle skill included, compared lower-cased (T35, F52, U3a3)" {
+    for g in scripts/build-loop.sh Scripts/Lib/x.sh skills/dev-cycle/references/x.md; do
         rv "$g"; G="merge-gate-2026-10-01-x-${T:0:12}"
         mrg "$B" --expect "$T" --approved Q-001
         [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: Q-001 approves no merge of this tip: its heading must read \"Q-001 · $G\" (the merge changes the gate's own code)" ] \

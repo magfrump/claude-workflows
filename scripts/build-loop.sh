@@ -210,8 +210,10 @@
 #                 boundary; unlike a never glob, an entry without one matches
 #                 that file alone); "Paths: none" or no line lists none; any
 #                 other line is malformed, and only own files land.
-#   --merge   lands a self-merge brief (D7): --check's lines for BRIEF at
-#             --expect's tip, but an ok verdict line becomes
+#   --merge   lands a self-merge brief (D7), or with --approved a brief of
+#             either policy: --check's lines for BRIEF at --expect's tip
+#             (under --approved, the N rules' lines only), but an ok
+#             verdict line becomes
 #             merged BRIEF TIP TREE NEW
 #                 The default branch now points at NEW, a commit of TREE
 #                 whose parents are main's commit and TIP, with the message
@@ -227,7 +229,10 @@
 #                 "### Q-NNN · merge-STEM-SHA12" (SHA12: TIP's first 12 hex
 #                 digits), or "merge-gate-STEM-SHA12" when a changed path,
 #                 lower-cased, is the gate's own code (scripts/build-loop.sh,
-#                 dev-cycle.sh, questions.sh, anything under scripts/lib/);
+#                 dev-cycle.sh, questions.sh, anything under scripts/lib/ or
+#                 skills/dev-cycle/). The heading pins only TIP's prefix:
+#                 --expect binds the full tip, so the caller passes the full
+#                 TIP it filed the entry for, never the branch's live tip;
 #                 then the message reads "(build-loop approved merge)" with
 #                 a second trailer "Build-loop-approved: Q-NNN", and the
 #                 reflog "build-loop: approved merge of STEM". Author and committer names and emails from
@@ -239,8 +244,9 @@
 #                 commit; checked out in a worktree W, by merge --ff-only in W.
 #             or refuse BRIEF: WHY, with the ok line's path lines following,
 #             when: without --approved, the policy --status reads is review;
-#             with it, Q-NNN is open, skipped (WHY quotes the skip) or not
-#             answered with option 1, or its heading is not the one above;
+#             with it, Q-NNN is open, skipped (WHY quotes the skip) or
+#             answered with another option or an answer not read (WHY names
+#             which), or its heading is not the one above;
 #             no identity is known; the worktrees, the git directory or a
 #             worktree's own git directory, HEAD or rebase or bisect state
 #             cannot be read (exists but is not a readable plain file in a
@@ -1071,21 +1077,23 @@ approval() {
   local r s="merge-" g=""
   [[ -z "${VERDICT[gate]}" ]] || { s="merge-gate-"; g=" (the merge changes the gate's own code)"; }
   s+="${VERDICT[stem]}-${VERDICT[tip]:0:12}"
-  # In this shell, to a file: ANSWER_HEAD would not leave a $(...).
-  check_answer "$1" > "$GATE_TMP/answer"; r="$(cat "$GATE_TMP/answer")"
+  # In this shell, to a file: ANSWER_HEADING would not leave a $(...).
+  check_answer "$1" > "$GATE_TMP/answer"; r="$(< "$GATE_TMP/answer")"
   case "$r" in
     "keep $1") ;;
     "open $1") MERGE_WHY="$1 does not approve this merge: it is not answered on the default branch"; return 1 ;;
     "skip $1: "*) MERGE_WHY="$1 does not approve this merge: ${r#"skip $1: "}"; return 1 ;;
-    *) MERGE_WHY="$1 does not approve this merge: its answer on the default branch is not option 1"; return 1 ;;
+    "drop $1") MERGE_WHY="$1 does not approve this merge: its answer on the default branch is option 2"; return 1 ;;
+    "done $1") MERGE_WHY="$1 does not approve this merge: its answer on the default branch is option 3"; return 1 ;;
+    *) MERGE_WHY="$1 does not approve this merge: its answer on the default branch is not read as an option ([1], 1 or keep approve)"; return 1 ;;
   esac
-  [[ "$ANSWER_HEAD" == "$1 · $s" ]] \
+  [[ "$ANSWER_HEADING" == "$1 · $s" ]] \
     || { MERGE_WHY="$1 approves no merge of this tip: its heading must read \"$1 · $s\"$g"; return 1; }
 }
 # land AUTHORITY [Q-NNN]: --merge's landing (D7, F29), once check_line printed ok
 # (VERDICT) under the authority the caller checked and names (self-merge, or
 # approved with its question), which the message and reflog carry. Decide (the
-# header's refusals but policy and --check's: an ignored file at an added path counts,
+# header's refusals but the policy's, approval's and --check's: an ignored file at an added path counts,
 # as merge --ff-only overwrites one), then write NEW in the gate repository,
 # run the state gate (here and in W) and default_gate again (row 494), and
 # move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
@@ -1166,7 +1174,7 @@ land() {
     done
   fi
   { printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "$what" "${VERDICT[stem]}"
-    [[ -z "${2-}" ]] || printf 'Build-loop-approved: %s\n' "$2"; } > "$GATE_TMP/msg" \
+    [[ "$1" != approved ]] || printf 'Build-loop-approved: %s\n' "$2"; } > "$GATE_TMP/msg" \
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"

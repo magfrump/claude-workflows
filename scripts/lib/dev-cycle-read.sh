@@ -32,6 +32,10 @@
 # text: print it through scrub, read it as `out="$(check_brief ...)"` under
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
+# A caller that also reads ANSWER_HEADING (check_answer's side value: the
+# entry's heading) runs check_answer in its own shell, its output to a file
+# under set -e, since a $(...) would drop the value; check_answer reaches no
+# need_root (it reads only git objects), so nothing exits there.
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
@@ -804,7 +808,8 @@ prompt_bases() {
 # fails). walk_why words it. The tree walk's IMPORTED_WHY is readers when
 # import_readers fails, else empty (its other failures are not told apart).
 IMPORTED=error; IMPORTED_DONE=""; IMPORTED_WHY=""; IMPORTED_MAIN=error; IMPORTED_MAIN_DONE=""; IMPORTED_MAIN_WHY=""
-# walk_why WHY: the sentence for an IMPORTED_MAIN_WHY word, as entry_why words
+# walk_why WHY: the sentence for an IMPORTED_MAIN_WHY word (or the tree walk's
+# IMPORTED_WHY, which is only ever readers), as entry_why words
 # main_entry's. A PATH shows only when every character is one pathform allows
 # (check_line's rule for repo text, so a crafted name prints as ?: U2c2 i1
 # security 1), a // entry as its absolute path.
@@ -1912,7 +1917,10 @@ ownfile() {
 }
 # The gate's own code: main's copy runs the next merge (plan D6), so a change
 # to it lands only through a merge-gate- review entry, never a self-merge.
-GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
+# The dev-cycle skill counts too (plan D4, F52): it carries the D6 snippet
+# that copies and runs the gate. One list for floor and build-loop.sh's
+# --approved, which tests it on its own (floor does not run there).
+GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'
 # The self-merge floor (plan D5 items 1-4): a changed path that a self-merge never lands,
 # even when the brief's Paths: lists it, because it takes effect on merge with
 # no later review or later runs read it as truth. $1 is the path as the merge
@@ -1922,7 +1930,9 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # lower: U2c1 final performance 1; floor then reads only $4, so the two must
 # agree; an upper-case letter in it refuses as case).
 # Returns 0 with FLOOR_WHY set to a word when the floor refuses (floor_why
-# words it: row 472; gate is the gate's own code, which a caller can test), else 1. Paths compare
+# words it: row 472), else 1. Its gate word is no test of whether a merge
+# touches gate code (floor runs after the rules before it, and not at all
+# under --approved): test GATE_CODE for that. Paths compare
 # lower-cased (a case-insensitive checkout reads Docs/Roadmap.md as
 # docs/roadmap.md), and a path below a start file's name or an imported .md
 # name is refused too (a directory there keeps the file from being created:
@@ -2062,14 +2072,14 @@ END {
 # write any working tree. A file stored as anything but a regular file under
 # plain directories there is not read (main_entry). It reads only git objects,
 # so it needs no ROOT_REAL and adds nothing to SKIPPED. With an answer line it
-# sets ANSWER_HEAD to the entry's heading after "### " ("Q-NNN · SLUG", CR
+# sets ANSWER_HEADING to the entry's heading after "### " ("Q-NNN · SLUG", CR
 # dropped), else empties it; a caller that reads it (build-loop.sh --approved)
 # calls check_answer in its own shell, its output to a file.
-ANSWER_HEAD=""
-# shellcheck disable=SC2034  # ANSWER_HEAD is read by the caller
+ANSWER_HEADING=""
+# shellcheck disable=SC2034  # ANSWER_HEADING is read by the caller
 check_answer() {
   local - a="$1" f e r hit="" where="" n why head=""; set -o pipefail  # as brief_fields
-  ANSWER_HEAD=""
+  ANSWER_HEADING=""
   if [[ ! "$a" =~ ^Q-[0123456789]+$ ]]; then echo "skip ${a//$'\n'/ }: not a question ID (Q- and digits)"; return; fi
   if ! main_by_name; then echo "skip $a: no default branch found by name (origin/HEAD, main or master), or resolve_main has not run"; return; fi
   for f in docs/working/questions.md docs/working/questions-archive.md; do
@@ -2092,6 +2102,6 @@ check_answer() {
     if [[ -n "$hit" ]]; then echo "skip $a: an entry with this heading in both $where and $f"; return; fi
     hit="${r%%$'\n'*}"; head="${r#*$'\n'}"; where="$f"
   done
-  if [[ -n "$hit" ]]; then ANSWER_HEAD="$head"; echo "$hit $a"
+  if [[ -n "$hit" ]]; then ANSWER_HEADING="$head"; echo "$hit $a"
   else echo "skip $a: no such entry in docs/working/questions.md or questions-archive.md on the default branch"; fi
 }
