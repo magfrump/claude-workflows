@@ -152,7 +152,9 @@
 #                 not read the checkout.
 #             skip BRIEF: WHY
 #                 As --status skips it.
-#             After an ok line, a K of N refusal or a checkout refusal, one line per path TREE
+#             After an ok line, a K of N refusal, a checkout refusal or
+#             "refuse BRIEF: the brief could not be read again from the
+#             default branch" (a self-merge brief), one line per path TREE
 #             changes against main (diff-tree -r --no-renames, so a rename is
 #             its D and A sides), in diff-tree's order; S is its status letter
 #             (A, M, D or T) and PATH is "?" unless every character is one
@@ -167,8 +169,32 @@
 #                 from open to done (mode kept); and, compared lower-cased, the
 #                 dev cycle's own files (the roadmap, the questions files, the
 #                 idea log, docs/dev-cycle.md, anything under
-#                 docs/working/briefs/ or docs/working/cycles/) and
-#                 docs/constraints.md.
+#                 docs/working/briefs/ or docs/working/cycles/, or either
+#                 as a file) and docs/constraints.md, or a path below one of
+#                 those names.
+#                 Then the S rules, for a brief --status reads as self-merge,
+#                 on each path the N rules pass but the brief's own file
+#                 (first match): the self-merge floor (the lib's floor:
+#                 instruction and prompt files and what they import with @,
+#                 dot paths, the gate's own code, the user's and the cycle's
+#                 records, a working doc or review that is not the brief's
+#                 own; not run when the verdict already refuses for the
+#                 checkout or the brief's re-read, so a loop's advisory run
+#                 from its own branch can print a path the floor would
+#                 refuse as a path line); a glob of --settings' never
+#                 line, compared lower-cased, * and ? within one part, matching
+#                 the path or a directory above it; and a path neither listed
+#                 in the brief's first "Paths:" line nor one of its own files
+#                 (docs/working/{research,plan,checkpoint,handoff,
+#                 test-strategy}-STEM.md, an added docs/reviews/STEM.md or
+#                 NAME-STEM.md; the allowlist takes these only when the
+#                 whole path is lower case, though the floor passes any
+#                 case). "Paths: PATH ..." lists paths
+#                 pathform allows, with single spaces, each once, compared
+#                 exactly (a trailing / makes a directory, matched at a part
+#                 boundary; unlike a never glob, an entry without one matches
+#                 that file alone); "Paths: none" or no line lists none; any
+#                 other line is malformed, and only own files land.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
@@ -177,9 +203,11 @@
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help), and for --check every verdict line ok;
-# 2 any --check verdict line or the state gate not ok; 1 bad usage, not a git
-# repo, no perl or lib/dev-cycle-read.sh, a failed mktemp (--check; no line
-# printed), or no default branch found by name.
+# 2 any --check verdict line or the state gate not ok. A --check can also stop
+# part way, after the lines of the briefs before, with 1 (need_root) or a
+# failed command's own status: a caller reads any exit but 0 as nothing
+# decided. 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, a
+# failed mktemp (--check; no line printed), or no default branch found by name.
 
 set -euo pipefail
 
@@ -332,6 +360,29 @@ END {
     print (bad != "" ? bad : "ok " hard + 0 " " soft + 0)
   }
 }'
+# list_entries LINE KEY WORD FORM: the list-line grammar Self-merge never: and
+# a brief's Paths: share. LINE is exactly "KEY: none" or "KEY: E ..." with
+# single spaces (WORD names E in the reason), and each E, a trailing / dropped,
+# passes FORM (globform or pathform) and is listed once. Sets LIST (the
+# entries as written, a trailing / kept; empty for none) or LIST_WHY, and
+# LIST_BAD to form (the line's shape) or entry (an entry), or empty.
+LIST=(); LIST_WHY=""; LIST_BAD=""
+list_entries() {
+  local v="${1#"$2": }" e i=0
+  local -A seen=()
+  LIST=(); LIST_WHY=""; LIST_BAD=""
+  # Split on single spaces only; FORM then refuses any other blank in an entry.
+  if [[ "$1" != "$2: "* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then LIST_WHY="is not exactly \"$2: ${3^^} ...\" with single spaces"; LIST_BAD=form; return 0; fi
+  [[ "$v" != none ]] || return 0
+  IFS=' ' read -ra LIST <<<"$v"  # not a bare $v: the shell would expand * and ? against files
+  for e in "${LIST[@]}"; do
+    i=$((i + 1))
+    if ! "$4" "${e%/}"; then LIST_WHY="lists entry $i, which is not an allowed $3 form"; break; fi
+    if [[ -n "${seen[${e%/}]-}" ]]; then LIST_WHY="lists entry $i twice"; break; fi
+    seen[${e%/}]=1
+  done
+  [[ -z "$LIST_WHY" ]] || { LIST=(); LIST_BAD=entry; }
+}
 # A never entry: pathform's rule, but a .git* part (.github/) is allowed, since
 # the list only adds refusals and must not turn self-merge off by naming one.
 globform() {
@@ -349,8 +400,8 @@ globform() {
 POLICY=review; POLICY_LINE=""; SLOTS_LINE=""; NEVER=(); NEVER_LINE=""; CONSTRAINTS_LINE=""
 # shellcheck disable=SC2034  # NEVER: for the planned gate
 read_settings() {
-  local f=docs/dev-cycle.md where l k c l1 l2 nx t v g i why never_ok="" parts=()
-  local -A cnt=() first=() second=() next=() text=() seen=()
+  local f=docs/dev-cycle.md where l k c l1 l2 nx t v why never_ok=""
+  local -A cnt=() first=() second=() next=() text=()
   POLICY=review; NEVER=()
   where="of $f on the default branch"
   if ! main_file "$f" "$SETTINGS_AWK"; then
@@ -369,25 +420,13 @@ read_settings() {
     if [[ -z "${cnt[never]-}" ]]; then NEVER_LINE='never none: no line starts "Self-merge never:"'
     elif [[ "${cnt[never]}" -gt 1 ]]; then NEVER_LINE="never malformed: $(many 'Self-merge never:' never)"
     else
-      t="${text[never]}"; v="${t#Self-merge never: }"; why=""
-      # Split on single spaces only; globform then refuses any other blank in an entry.
-      if [[ "$t" != "Self-merge never: "* || ! "$v" =~ ^[^\ ]+(\ [^\ ]+)*$ ]]; then
-        why='is not exactly "Self-merge never: GLOB ..." with single spaces'
-      elif [[ "${next[never]}" != 1 ]]; then why="is followed by a non-blank line outside a fence (it may continue the list)"
-      elif [[ "$v" == none ]]; then parts=()
-      else
-        i=0
-        IFS=' ' read -ra parts <<<"$v"  # not a bare $v: the shell would expand * and ? against files
-        for g in "${parts[@]}"; do
-          i=$((i + 1))
-          if ! globform "${g%/}"; then why="lists entry $i, which is not an allowed glob form"; break; fi
-          if [[ -n "${seen[${g%/}]-}" ]]; then why="lists entry $i twice"; break; fi
-          seen[${g%/}]=1
-        done
-      fi
+      t="${text[never]}"; v="${t#Self-merge never: }"
+      list_entries "$t" "Self-merge never" glob globform; why="$LIST_WHY"
+      # The form reason comes first, then the next line, then the entries.
+      if [[ "$LIST_BAD" != form && "${next[never]}" != 1 ]]; then why="is followed by a non-blank line outside a fence (it may continue the list)"; fi
       if [[ -n "$why" ]]; then NEVER_LINE="never malformed: line ${first[never]} $why"
-      elif [[ "$v" == none ]]; then never_ok=1; NEVER_LINE="never none: line ${first[never]} $where lists none"
-      else never_ok=1; NEVER=("${parts[@]}"); NEVER_LINE="never $v set: line ${first[never]} $where"; fi
+      elif [[ ${#LIST[@]} -eq 0 ]]; then never_ok=1; NEVER_LINE="never none: line ${first[never]} $where lists none"
+      else never_ok=1; NEVER=("${LIST[@]}"); NEVER_LINE="never $v set: line ${first[never]} $where"; fi
     fi
     if [[ -z "${cnt[policy]-}" ]]; then POLICY_LINE='policy review unset: no line starts "Build-loop policy:"'
     elif [[ "${cnt[policy]}" -gt 1 ]]; then POLICY_LINE="policy review unset: $(many 'Build-loop policy:' policy)"
@@ -555,12 +594,14 @@ own_blob() {
 # its lower-cased spelling $7. Sets DENY to why the path is refused, or
 # empties it. The brief's own file is matched exactly; the cycle's files
 # (truthrule's cycle and settings words: writable() and docs/dev-cycle.md,
-# plus anything under docs/working/briefs/ or docs/working/cycles/) and the
+# plus docs/working/briefs and docs/working/cycles, as files or anything under them) and the
 # constraints doc (its user word) compare lower-cased, as a case-insensitive
-# checkout reads Docs/Roadmap.md as the roadmap. U2c adds the S rules.
+# checkout reads Docs/Roadmap.md as the roadmap; so does a path below one of
+# those names (docs/roadmap.md/x, which main may lack, would keep the cycle
+# from writing the file: row 523). srules adds the S rules.
 DENY=""
 nrules() {
-  local ob
+  local ob d="$7"
   DENY=""
   if ! pathform "$6"; then DENY="not an allowed path form (letters, digits and . _ - / only; no leading - or /; no empty, . or .. part; no part starting .git)"
   elif [[ ! "$2 $3" =~ ^(000000|100644|100755)\ (000000|100644|100755)$ ]]; then DENY="a symlink, gitlink or other non-file entry on one side (only modes 100644 and 100755 land)"
@@ -576,17 +617,73 @@ nrules() {
     case "$TRUTH_WHY" in
       cycle|settings) DENY="one of the dev cycle's own files" ;;
       user) DENY="the user's constraints doc, which every loop prompt carries" ;;
-      *) [[ ! "$7" =~ ^docs/working/(briefs|cycles)/ ]] || DENY="one of the dev cycle's own files" ;;
+      *) [[ ! "$7" =~ ^docs/working/(briefs|cycles)(/|$) ]] || DENY="one of the dev cycle's own files" ;;
     esac
+    while [[ -z "$DENY" && "$d" == */* ]]; do
+      d="${d%/*}"; truthrule "$d" || true
+      [[ ! "$TRUTH_WHY" =~ ^(cycle|settings|user)$ ]] || DENY="a path below the name of one of the dev cycle's own files or the constraints doc"
+    done
   fi
 }
-# The checkout --check runs from, which a self-merge brief's floor walk (U2c)
+# The brief's Paths: line (plan D5's allowlist), from BRIEF[paths]: as
+# list_entries reads "Paths: PATH ...", each entry pathform's, a trailing /
+# making it a directory; "Paths: none", or no line, lists none. Sets PATHS
+# or, for a malformed line, PATHS_WHY (which lands only the brief's own files).
+PATHS=(); PATHS_WHY=""
+read_paths() {
+  PATHS=(); PATHS_WHY=""
+  [[ -n "${BRIEF[paths]+set}" ]] || return 0
+  list_entries "${BRIEF[paths]}" Paths path pathform
+  PATHS=("${LIST[@]}"); PATHS_WHY="$LIST_WHY"
+}
+# NEVER's globs as regexes for a lower-cased path (a denylist, so case folds):
+# * and ? match within one part, and a glob matches the path or any directory
+# above it (a trailing / changes nothing). Set once, after read_settings.
+NEVER_RES=()
+never_res() {
+  local g c i re
+  NEVER_RES=()
+  for g in "${NEVER[@]}"; do
+    g="$(lower "${g%/}")"; re=""
+    for ((i = 0; i < ${#g}; i++)); do
+      c="${g:i:1}"
+      case "$c" in '*') re+='[^/]*' ;; '?') re+='[^/]' ;; .) re+='\.' ;; *) re+="$c" ;; esac
+    done
+    NEVER_RES+=("^$re(/|\$)")
+  done
+}
+# The S rules (plan D5; a self-merge brief only) for a changed path the N rules
+# passed that is not the brief's own file (the N rules alone judge that one):
+# $1 the brief's full stem, $2 the path, $3 its lower-cased spelling, $4
+# diff-tree's status letter, $5 the verdict's refusal, if any (the checkout's
+# or the brief re-read's). Sets DENY, first match winning: the floor (only
+# when $5 is empty: it walks the checkout), a Self-merge never: glob, then the
+# allowlist (Paths:, or ownfile). The allowlist widens nothing by case: Paths:
+# entries compare exactly, and an own file counts only when the whole path is
+# lower case (ownfile folds nothing, and its review pattern would take any
+# letter in NAME, so this test is what keeps NAME lower case).
+srules() {
+  local i e
+  DENY=""
+  if [[ -z "$5" ]] && floor "$2" "$1" "$4"; then DENY="$FLOOR_WHY"; return 0; fi
+  for i in "${!NEVER_RES[@]}"; do
+    [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
+  done
+  [[ "$2" != "$3" ]] || ! ownfile "$2" "$1" "$4" || return 0
+  [[ "$PATHS_WHY" != unread ]] || { DENY="the brief could not be read again from the default branch"; return 0; }
+  [[ -z "$PATHS_WHY" ]] || { DENY="the brief's Paths: line $PATHS_WHY, so only its own files land"; return 0; }
+  for e in "${PATHS[@]}"; do
+    [[ "$2" != "$e" && ( "$e" != */ || "$2" != "$e"* ) ]] || return 0
+  done
+  DENY="neither listed in the brief's Paths: line nor one of its own files"
+}
+# The checkout --check runs from, which a self-merge brief's floor walk (srules)
 # reads: the parts of the gate caller contract's items 2 and 3 (the lib's
 # header) a checkout can break. Item 2's fsmonitor and replace refs are harden's
 # and the state gate's, and its ls-files stderr rule is the walk's own. Sets
 # CHECKOUT_WHY to why the checkout fails, or empties it; returns 1 on a
 # failure. check_line calls it for each self-merge brief once the merge and
-# its changed paths are read, before the N rules and U2c's floor walk run per
+# its changed paths are read, before the N rules and the floor walk run per
 # path, so it is final before that walk. Item 3 is
 # checked by its effect, not by predicting it with check-attr: every regular
 # file main stores must hash, unfiltered, to main's blob, so no conversion (a
@@ -669,9 +766,18 @@ checkout_gate() {
 # "deny BRIEF S PATH: WHY" line per path the merge changes against main
 # (diff-tree's status letter S, in its order; PATH is "?" unless every
 # character is one pathform allows); or one skip or refuse line (from
-# status_line, then the gate's own reasons).
+# status_line, then the gate's own reasons). It runs in the caller's shell, so
+# an exit (need_root's) ends the run, and set -e applies to its own lines but
+# not inside a helper called in a condition (floor and its walk, brief_fields,
+# checkout_gate, nul_list) or in $(...), which refuse by their own guards.
+# Nothing but its locals and the walk caches it resets may carry from one
+# brief to the next: each helper empties its own globals before use (DENY,
+# PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
+# TRUTH_WHY).
 check_line() {
-  local a="$1" out st pol br loop sha n tree meta p shown co rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  # Contract item 1 (the floor's walk); exported, so its children run under it too.
+  local -x LC_ALL=C
+  local a="$1" out st pol br loop sha n tree meta p shown co stem rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
   out="$(status_line "$a")"
   [[ "$out" == "ok "* ]] || { echo "$out"; return; }
@@ -704,13 +810,20 @@ check_line() {
   # NUL are not counted; git's own output never ends that way).
   if [[ "$(tr -cd '\000' < "$GATE_TMP/diff" | wc -c)" -ne $((2 * ${#ps[@]})) ]]; then echo "refuse $a: the paths the merge of $br changes could not be read"; return; fi
   # A self-merge brief's checkout (contract items 2 and 3), checked once the
-  # merge's paths are read and before U2c's floor walk, which runs per path
-  # below and only when co is empty (never over a checkout refused here); its
-  # refusal replaces the verdict line only, so the N rules' path and deny lines
+  # merge's paths are read and before the S rules (srules), whose floor walk
+  # runs per path below only when co is empty (never over a checkout refused
+  # here); its refusal replaces the verdict line only, so the path and deny lines
   # still print (a loop's advisory run from its own branch learns them). Run
   # per brief, so each decision sees the checkout as it is: about 0.3 s here,
   # times the self-merge briefs passed to one --check.
   co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
+  # The S rules' inputs, read again from main's commit (status_line read them in a subshell).
+  stem="${a##*/}"; stem="${stem%.md}"
+  # A failed read refuses the verdict as a checkout refusal does (path lines
+  # still print, the floor does not run).
+  if [[ "$pol" == self-merge ]]; then
+    if brief_fields "$a"; then read_paths; else PATHS=(); PATHS_WHY=unread; co="${co:-refuse $a: the brief could not be read again from the default branch}"; fi
+  fi
   if [[ ${#ps[@]} -eq 0 ]]; then echo "${co:-ok $a $sha $tree}"; return; fi
   # merge-tree passes a side's unchanged blob by id without reading it, so a
   # blob the store lacks would land unseen: every regular file the merge adds
@@ -725,6 +838,7 @@ check_line() {
   for i in "${!ps[@]}"; do
     p="${ps[$i]}"; shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
     nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}"
+    [[ -n "$DENY" || "$pol" != self-merge || "$p" == "$a" ]] || srules "$stem" "$p" "${lps[$i]}" "${ss[$i]}" "$co"
     if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
   done
   if [[ -n "$co" ]]; then echo "$co"; elif [[ "$nd" -eq 0 ]]; then echo "ok $a $sha $tree"; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
@@ -741,14 +855,16 @@ case "$MODE" in
     printf '%s\n' "$POLICY_LINE" "$SLOTS_LINE" "$NEVER_LINE" "$CONSTRAINTS_LINE" "$READERS_LINE"
     ;;
   check)
-    read_settings
-    open_shared  # once, in this shell: check_line runs in a subshell
+    read_settings; never_res
+    open_shared  # once, in this shell: status_line runs in a subshell
     GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
     gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
     fails=0
     for a in "${ARGS[@]}"; do
-      out="$(check_line "$a")"; printf '%s\n' "$out"
-      [[ "$out" == "ok "* ]] || fails=1
+      # In this shell, not $(...): the floor's need_root exit ends the run, and
+      # check_line's import_reset is what keeps one brief's walk from the next.
+      check_line "$a" > "$GATE_TMP/line"; cat "$GATE_TMP/line"
+      [[ "$(head -c 3 "$GATE_TMP/line")" == "ok " ]] || fails=1
     done
     [[ "$fails" -eq 0 ]] || exit 2
     ;;

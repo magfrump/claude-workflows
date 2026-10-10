@@ -60,7 +60,7 @@
 #     reads (.gitattributes, $GIT_DIR/info/attributes, core.attributesFile).
 #     The walk checks neither item but item 2's ls-files stderr rule.
 #     build-loop.sh --check does, for each self-merge brief before the walk
-#     (U2b2; item 1's LC_ALL=C for the walk is its U2c floor caller's): harden and its state gate own item 2's fsmonitor and replace
+#     (U2b2; its check_line runs the walk under item 1's LC_ALL=C): harden and its state gate own item 2's fsmonitor and replace
 #     refs; checkout_gate the rest of item 2 (a clean checkout at MAIN_SHA, the
 #     GIT_* variables, core.ignoreCase, sparse checkout), core.symlinks, and
 #     the attributes by their effect, not by check-attr: every regular file
@@ -73,21 +73,25 @@
 #     roots and homes, so HOME and IMPORT_READER_* need no reset; the
 #     worktree registry is read again after a reset or when one of those
 #     changes, so set them before a decision's first walk: item 9).
-#  5. Ask floor about each changed path, in this shell, before main_entry,
-#     and refuse the whole branch on any main_entry word but blob or absent
-#     (rows 308, 324). Floor item 5 (symlinks, gitlinks) and the brief's own
-#     Status change are the caller's rules; build-loop.sh's N rules apply
-#     them, and pathform, under both policies before floor runs, so a path
-#     pathform refuses (.github/x.yml) is denied as a path form and floor's
-#     dotfile reason serves the dot paths pathform accepts (.envrc).
+#  5. Ask floor about each changed path, in this shell. A caller that reads
+#     a path from main by name asks floor before main_entry, and refuses the
+#     whole branch on any main_entry word but blob or absent (rows 308, 324);
+#     build-loop.sh reads diff-tree -r of main and the merge instead, where a
+#     symlink or gitlink above a path is a changed entry of its own. Floor
+#     item 5 (symlinks, gitlinks) and the brief's own Status change are the
+#     caller's rules; build-loop.sh's N rules apply them, and pathform, under
+#     both policies, and its S rules run floor only on a path they pass, so a
+#     path pathform refuses (.github/x.yml) is denied as a path form and
+#     floor's dotfile reason serves the dot paths pathform accepts (.envrc).
 #  6. Read a walk only through isimported or truthwalk: IMPORTED_MAIN=error
 #     reads as "not imported" to a raw membership test (row 419).
 #  7. A second caller of main_checkout passes a fresh MEMO per walk and ENT,
 #     and only a PATH main lacks.
-#  8. Pass truthrule, isstart, ownfile, prompt_dir and prompt_bases a
-#     lower-cased path (prompt_dir and prompt_bases also take the path as
-#     spelled; floor, check_fix and the walks lower first; truthrule refuses an
-#     upper-case letter as case).
+#  8. Pass truthrule, isstart, prompt_dir and prompt_bases a lower-cased path
+#     (prompt_dir and prompt_bases also take the path as spelled; floor,
+#     check_fix and the walks lower first; truthrule refuses an upper-case
+#     letter as case). ownfile folds no case: floor passes it the lowered
+#     path, build-loop.sh's srules only an all-lower-case one.
 #  9. Call reader_settings after sourcing the lib (which clears the reader
 #     lists) and resolve_main, before a decision's first walk: it sets
 #     IMPORT_READER_ROOTS and IMPORT_READER_HOMES from main's docs/dev-cycle.md
@@ -1794,7 +1798,8 @@ truthwalk() {
   TRUTH_WHY=imported; isimported "$1" "$2" || { TRUTH_WHY=""; return 1; }
 }
 # A brief's own files, keyed on its full stem $2 (YYYY-MM-DD-slug, so a slug
-# shared by two dates is not a collision), for a lower-cased path $1 with
+# shared by two dates is not a collision), for a path $1 (it folds no case:
+# floor passes it lower-cased, build-loop.sh srules as spelled) with
 # diff-tree status letter $3: its working docs, docs/working/{research,plan,
 # checkpoint,handoff,test-strategy}-STEM.md, and a review it adds,
 # docs/reviews/STEM.md or docs/reviews/NAME-STEM.md (a modified or deleted
@@ -1818,7 +1823,7 @@ GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/'
 # docs/roadmap.md). The caller's duties are the gate caller contract's (the
 # lib's header): floor item 5, symlinks and gitlinks, is the caller's mode
 # rule, and the caller judges the brief's own Status change before this.
-FLOOR_WHY=""  # read by floor's caller (U2c's --check)
+FLOOR_WHY=""  # read by floor's caller (build-loop.sh srules)
 # shellcheck disable=SC2034
 floor() {
   local lp
