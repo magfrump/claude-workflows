@@ -753,7 +753,7 @@ prompt_bases() {
 # main walk in phase 2. A seed that is a dangling link joins the queue as a
 # // name, which only outside_proj reads (U2b3b2b final security F1); a
 # prompt's projected names are read as prompts with the link's bases, again
-# when the walk read them before (prompt_marks; one main stores as a symlink
+# when the walk queued them before (one still waiting is read twice; prompt_marks; one main stores as a symlink
 # fails the main walk, as a symlinked prompt start does). For every repo name
 # a walk reaches, a start included, root_copies also reads each other reader
 # root's copy unless reading it could add nothing (its comment: ROOT_REAL
@@ -778,7 +778,7 @@ prompt_bases() {
 # against 0.5 to 0.85 s without; each seed holding an @ costs 12 to 15 ms, and
 # their number is not capped (2026-10-09; final performance F1, override row).
 # root_copies adds about 0.2 s per walk over 7 other roots here (interleaved
-# against main's lib, 2026-10-09: most of it the realpath of every missing
+# against main's lib, 2026-10-09: the largest part the realpath of every missing
 # copy), and about 11 ms per copy it reads: a worktree at a commit where many imported files differ
 # adds a read per file (its comment; U2b3b2c i1 performance F1, override row).
 # The walks' lists (IMPORTED, IMPORTED_MAIN) also hold the second channel's
@@ -1324,7 +1324,7 @@ root_copies() {
 # newline-separated) are appended to its entry in the associative array PEXT,
 # which the walks add to its DIRS (U2b3b2c i1 security F1, i2 fact-check 9b).
 # Each name whose marks changed is appended to the array RQ: a walk that has
-# already read it reads it again (final security F1: a plain read, or one
+# already queued it queues it again (one still waiting is read twice) (final security F1: a plain read, or one
 # without these bases). It returns 1 when lower fails.
 prompt_marks() {
   local -n pm_p="$1" pm_x="$2" pm_o="$3" pm_r="$5"; local p l="${4#/}" b pm_b=()
@@ -1572,7 +1572,7 @@ imported_names() {
     seen+="$p"$'\n'; queue+=("$p"); [[ "$f" != p* ]] || pdir[$p]="$(lower "$p")" || return 1
   done
   # Other roots' copies of the starts, then of every name the loop reaches
-  # (root_copies). c1_seeds skips another root's start that has the same kind
+  # (root_copies). outside_seeds' C1 part skips another root's start that has the same kind
   # here only because every start passes through here, pdir already set.
   root_copies cq cmp pdir "${queue[@]}" || return 1
   for p in "${cq[@]}"; do [[ "$seen" == *$'\n'"$p"$'\n'* ]] || { seen+="$p"$'\n'; queue+=("$p"); }; done
@@ -1586,7 +1586,7 @@ imported_names() {
     else out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_file "$f" "$d" "${xs[@]}")" \
       && import_work out work || { IMPORTED=error; return 1; }; fi
     rq=(); outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir pext out "$f" rq; } || { IMPORTED=error; return 1; }
-    # A name read before its prompt marks changed is read again with them (final security F1; charged to the budgets).
+    # A name queued before its prompt marks changed is read again with them (final security F1; charged to the budgets).
     for p in "${rq[@]}"; do [[ "$seen" != *$'\n'"$p"$'\n'* ]] || queue+=("$p"); done
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
@@ -1670,7 +1670,7 @@ main_imports() {
     seen[$p]=1; tq+=("$p"); [[ "$f" != p* ]] || pdir[$p]="$(lower "$p")" || return 1
   done
   # Other roots' copies of the starts, then of every name the loop reaches
-  # (root_copies), in phase 2. c1_seeds skips another root's start that has
+  # (root_copies), in phase 2. outside_seeds' C1 part skips another root's start that has
   # the same kind here only because every start passes through here, pdir already set.
   root_copies cq cmp pdir "${queue[@]}" "${tq[@]}" || return 1
   for p in "${cq[@]}"; do [[ -n "${seen[$p]+set}" ]] || { seen[$p]=1; tq+=("$p"); }; done
@@ -1716,7 +1716,7 @@ main_imports() {
     *) IMPORTED_MAIN=error; return 1 ;;
     esac
     rq=(); outside_proj out work && { [[ "$f" != //* || -z "${pdir[$f]+set}" ]] || prompt_marks pdir pext out "$f" rq; } || { IMPORTED_MAIN=error; return 1; }
-    # A name read before its prompt marks changed is read again with them, as
+    # A name queued before its prompt marks changed is read again with them, as
     # in imported_names. A // entry is only ever popped in phase 2, where queue
     # holds tq's former entries, so the name joins the queue being walked. A
     # seen name main lacks and main_checkout answers 2 for was never read: skipped.

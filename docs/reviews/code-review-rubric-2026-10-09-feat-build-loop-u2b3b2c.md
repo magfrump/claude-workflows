@@ -37,6 +37,10 @@ None.
 - prompt_marks / walk read order (security F1, api N1, architecture 1, performance F2, fact-check r1): one root defect — prompt marks set after a name's read never reached a re-read — composed as C1.
 - root_copies admission (security F2, performance F1, fact-check r2, 16): distinct — a missing-copy projection (C2) and a cost rule (C3).
 
+### Confirming pass (after the loop; k=1 fact-check + security over `007e867f..80a1720d`)
+
+`code-fact-check-report-build-loop-u2b3b2c-confirm.md` (41 claims: 30 Verified, 8 Mostly accurate, 2 Stale, 1 Unverifiable, 0 Incorrect; 288/288, 242 names, outside_seeds byte-equal to f7e1bea2's, +0.21 s per walk interleaved) and `security-review-2026-10-09-u2b3b2c-confirm.md` (final F1, F2 fixed in both walks, PA/PB/PG/PD and deeper variants re-run; no new fail-open; C2 adds no fail-closed mode beyond the named class; C3 held against every spelling probed; C4 still open as deferred; one layout now fails the main walk closed instead of open, as named). Text fixed after it: two stale "c1_seeds" comments, "already read" → queued (a waiting name is read twice), the cost line ("the largest part"), the C1 title and the PA comment; the stale override rows amended by a new row. Not re-reviewed: text only.
+
 ### Considered overrides
 
 The u2b3b2b rows 580, 581, 583, 586, 588 stand; this branch's earlier rows stand except 595 (struck: C1).
