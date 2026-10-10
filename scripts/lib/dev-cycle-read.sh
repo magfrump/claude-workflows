@@ -1433,7 +1433,7 @@ c1_seeds() {
   for i in "${!cx[@]}"; do
     isstart "${lo[i]}" && [[ -n "${c1_at[${cx[i]}]+set}" || -L "${cx[i]}" ]] || continue
     c=f; [[ ! "${lo[i]}" =~ $PROMPT_DIR ]] || c=p
-    # rawfile: a ROOT_REAL copy reached through a link the tree walk does not start at (i1 fact-check 19b).
+    # rawfile, not -f, on ROOT_REAL's copy: one reached through a link there is no walk start (U2b3b2b i1 fact-check 19b).
     # The inner path's tail of lo: ROOT_REAL's copy must be a start of the same kind there.
     d="${lo[i]:${#lo[i]}-${#ir[i]}}"; q=f; [[ ! "$d" =~ $PROMPT_DIR ]] || q=p
     [[ ! -L "${cx[i]}" && "$q" == "$c" ]] && isstart "$d" && rawfile "${ir[i]}" || c1_a+=("$c${cx[i]}")
