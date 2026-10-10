@@ -732,17 +732,24 @@ prompt_bases() {
 # F1, F2). The walk reads outside files as they are when it runs: one
 # edited during the walk is read as it then is, and one removed or made
 # unreadable after its admission fails the walk (import_outside; i2 security
-# F2, final api F2). Admission tests the file system before import_outside
-# projects the real path (final architecture F1), so an outside link into
-# another reader root whose checkout lacks a file main has is skipped, though
-# a session there reads main's file once that checkout has it (final security
-# F1, override row; U2b3b2b, whose symlinked seeds meet it, projects first);
-# and an outside file whose name holds a newline, which only a quoted mention
-# across lines can name, is dropped by the parser (final security F2,
-# override row). Neither walk starts at an instruction file outside the repo, though Claude
-# Code loads them and follows their imports into it: a parent directory's
-# CLAUDE.md, the user's memory file (known issue A5; U2b3b2b's outside starts),
-# nor at a start file only another registered checkout holds (U2b3b2b).
+# F2, final api F2). A // name outside_ok rejects is projected through its
+# realpath -m (outside_proj), so an outside link into another reader root
+# whose checkout lacks a file main has reads as that repo path (U2b3b2a final
+# security F1); an outside file whose name holds a newline, which only a
+# quoted mention across lines can name, is dropped by the parser (final
+# security F2, override row). Both walks also start at outside_seeds' files
+# (U2b3b2b; its comment lists them): the user's memory, rules, prompts,
+# installed plugins and auto memory under each config dir, the managed
+# policy, instruction files in ancestors below no root, and the start files
+# other reader roots hold (C1); the tree walk after the checkout's starts, the
+# main walk in phase 2. Named exceptions: a home or root this container cannot
+# see (the host's: U2b3b2a i1 security F1, A3), a C1 start whose bytes match
+# ROOT_REAL's file at its path in a checkout that is not clean (the gate's
+# is, by contract item 2), and an ancestor or config dir find cannot list,
+# which fails the walk though Claude Code reads its files by name. The seeds
+# cost: over this repository's 6 registered worktrees, about 140 seed files
+# and 7 s per walk, against 0.7 s without (2026-10-09; the file-system
+# listing of other roots is about 1.9 s of it).
 # The walks' lists (IMPORTED, IMPORTED_MAIN) also hold the second channel's
 # lower-cased // names, which no repo path isimported asks for can match.
 # isimported asks either walk.
@@ -832,10 +839,7 @@ lower() { printf '%s' "$1" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqr
 # to each reader home (this process's and IMPORT_READER_HOMES), in spelled and
 # real forms. Known exceptions, where a session reading the file can import
 # what these rules do not yield: a session in a checkout or under a home
-# import_readers does not list (reader_settings names the host's), a
-# start file only another reader root's checkout holds (untracked or ignored
-# there, such as /workspace's devcontainer-config/claude-home/CLAUDE.md: the
-# walks read the gate's own checkout only; U2b3b2b), names
+# import_readers does not list (reader_settings names the host's), names
 # that differ only in case on a case-insensitive file
 # system (docs/reviews/override-log.md line 350), Claude Code's approved
 # external includes, and any further decoding it may add (an entity, a percent
@@ -1043,6 +1047,9 @@ IMPORT_ROOTS=""; IMPORT_HOMES=""; IMPORT_DOTNEST=""; IMPORT_READERS_DONE=""; IMP
 # its text as whole names (U2b3b2a i1 architecture A1). IMPORT_LEFT and
 # IMPORT_WORK_LEFT need no clearing: every walk sets both for each call.
 IMPORT_WHOLE=""
+# The managed policy's directory (Claude Code on Linux), an outside_seeds
+# config dir; set here, so the environment never moves it (a test sets it).
+MANAGED_DIR=/etc/claude-code
 # import_readers_key: IMPORT_READERS_KEY, the key import_readers memoizes on (after
 # import_home), each part led by its length so no part can run into the next.
 IMPORT_READERS_KEY=""
@@ -1169,6 +1176,112 @@ import_file() { local -; set -o pipefail; if [[ "$1" == /* ]]; then import_outsi
 # readable regular file (the one admission rule both walks apply). Anything
 # else is skipped: a session in this container cannot load it either.
 outside_ok() { [[ -f "$1" && -r "$1" ]]; }
+# outside_proj OUT TOTAL: the // names in the variable OUT that outside_ok
+# rejects get one realpath -m, and each whose real path differs (a dangling
+# link into another reader root, or a linked directory on the way) is
+# projected whole, as import_outside projects an admitted one; the
+# projection's names are appended to OUT and its work to TOTAL, so a link into
+# another root's checkout that lacks main's file reads as the repo path (U2b3b2a
+# final security F1). It returns 1 when realpath or the projection fails, a
+# real path holds a newline, or TOTAL passes IMPORT_WORK_MAX.
+outside_proj() {
+  local -n op_o="$1" op_t="$2"; local - p b="" i rj=() rl=() df=(); set -o pipefail
+  while IFS= read -r p; do [[ "$p" != //* ]] || outside_ok "${p#/}" || rj+=("${p#/}"); done < <(printf '%s\n' "$op_o")
+  [[ ${#rj[@]} -gt 0 ]] || return 0
+  nul_list rl realpath -mz -- "${rj[@]}" && [[ ${#rl[@]} -eq ${#rj[@]} ]] || return 1
+  for i in "${!rj[@]}"; do [[ "${rl[i]}" != *$'\n'* ]] || return 1; [[ "${rl[i]}" == "${rj[i]}" ]] || df+=("${rl[i]}"); done
+  [[ ${#df[@]} -gt 0 ]] || return 0
+  b="$(printf '%s\n' "${df[@]}" | IMPORT_WHOLE=1 IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - op_t)) import_targets /)" && import_work b op_t || return 1
+  [[ -z "$b" ]] || op_o+="${op_o:+$'\n'}$b"
+}
+# outside_seeds NAME: array NAME gets the walks' outside starts (U2b3b2b), the
+# files Claude Code loads that no checkout the walks read holds, each an
+# absolute path led by f, or by p for a prompt (a walk reads it against
+# prompt_bases too). (1) Each config dir (every reader home's .claude,
+# CLAUDE_CONFIG_DIR when absolute, and MANAGED_DIR, the managed policy's): its
+# instruction-named files, rules/ (f), commands/, agents/, output-styles/,
+# skills/ and plugins/cache/ (p; every installed plugin version, a superset)
+# and auto memory's projects/*/memory/MEMORY.md (f), followed through links
+# (find -L: the user's skills link into /opt). (2) Each ancestor of a reader
+# root that lies below no root: its instruction-named files, and its .claude
+# as a config dir. (3) C1: every start file isstart names in another reader
+# root present here, tracked or not (a superset), listed once: a root below
+# another listed one comes with it, and ROOT_REAL's own files are the walks'
+# already. Roots are listed from the file system (find -P, .git pruned), never
+# with git -C: a loop controls its worktree's .git file, so git there could
+# read a config the loop wrote (core.fsmonitor runs a command). It returns 1
+# when a find, realpath or lower_all fails, or a seed's path holds a newline.
+# Run it after import_readers. CLAUDE_CONFIG_DIR is read on each call: a caller
+# that changes it calls import_reset.
+outside_seeds() {
+  local -n os_a="$1"; local d q r c i in nt rs=() cf=() tops=() fr=() pr=() mr=() fl=() rl=() cr=() rel=() abs=() lo=() sp=() hs=() pj=(); local -A os_s=()
+  os_a=()
+  mapfile -t rs <<<"$IMPORT_ROOTS"; mapfile -t fl <<<"$IMPORT_HOMES"
+  for d in "${fl[@]}"; do [[ "$d" != /* ]] || cf+=("${d%/}/.claude"); done
+  [[ "${CLAUDE_CONFIG_DIR:-}" != /* ]] || cf+=("$CLAUDE_CONFIG_DIR"); cf+=("$MANAGED_DIR")
+  for r in "${rs[@]}"; do
+    d="$r"
+    while [[ "$d" != / ]]; do
+      d="${d%/*}"; d="${d:-/}"; in=""
+      for q in "${rs[@]}"; do [[ "$d" != "$q" && "$d" != "$q"/* ]] || in=1; done
+      [[ -n "$in" || -n "${os_s[a$d]+set}" ]] || { os_s[a$d]=1; [[ ! -d "$d" ]] || tops+=("$d"); cf+=("${d%/}/.claude"); }
+    done
+  done
+  for d in "${cf[@]}"; do
+    [[ -z "${os_s[c$d]+set}" && -d "$d" ]] || continue; os_s[c$d]=1; tops+=("$d")
+    [[ ! -d "$d/rules" ]] || fr+=("$d/rules"); [[ ! -d "$d/projects" ]] || mr+=("$d/projects")
+    for c in commands agents output-styles skills; do [[ ! -d "$d/$c" ]] || pr+=("$d/$c"); done
+    [[ ! -f "$d/plugins/installed_plugins.json" ]] || pj+=("$d/plugins/installed_plugins.json")
+  done
+  # Plugins: each installed version's directory, as installed_plugins.json
+  # names it; a file python3 cannot read that way gives every cached version
+  # (a superset, rather than a failed walk).
+  if [[ ${#pj[@]} -gt 0 ]]; then
+    if nul_list fl python3 -I -c 'import json, sys
+for f in sys.argv[1:]:
+    for v in json.load(open(f))["plugins"].values():
+        for e in v: sys.stdout.write(e["installPath"] + "\0")' "${pj[@]}"; then
+      for d in "${fl[@]}"; do [[ "$d" != /* || ! -d "$d" ]] || pr+=("$d"); done
+    else for d in "${pj[@]}"; do [[ ! -d "${d%/*}/cache" ]] || pr+=("${d%/*}/cache"); done; fi
+  fi
+  if [[ ${#fr[@]} -gt 0 ]]; then nul_list fl find -L "${fr[@]}" -type f -iname '*.md' -print0 || return 1; for d in "${fl[@]}"; do os_a+=("f$d"); done; fi
+  if [[ ${#pr[@]} -gt 0 ]]; then nul_list fl find -L "${pr[@]}" -type f -iname '*.md' -print0 || return 1; for d in "${fl[@]}"; do os_a+=("p$d"); done; fi
+  if [[ ${#mr[@]} -gt 0 ]]; then
+    nul_list fl find -L "${mr[@]}" -mindepth 3 -maxdepth 3 -type f -name MEMORY.md -print0 || return 1
+    for d in "${fl[@]}"; do [[ "$d" != */memory/MEMORY.md ]] || os_a+=("f$d"); done
+  fi
+  # Top-level files go through isstart with C1's, by their whole path. -H and
+  # -xtype, not -L: a link to a file counts, and a link to an ancestor (a
+  # loop to find -L) is not followed.
+  if [[ ${#tops[@]} -gt 0 ]]; then nul_list fl find -H "${tops[@]}" -maxdepth 1 -xtype f -print0 || return 1; rel=("${fl[@]}"); abs=("${fl[@]}"); fi
+  nt=${#rel[@]}
+  nul_list rl realpath -mz -- "${rs[@]}" || return 1
+  for r in "${rl[@]}"; do [[ "$r" != "$ROOT_REAL" && -d "$r" && -z "${os_s[r$r]+set}" ]] || continue; os_s[r$r]=1; cr+=("$r"); done
+  for r in "${cr[@]}"; do
+    # A root below another is listed with it, unless the walks' own ROOT_REAL, whose files are dropped there, lies between.
+    in=""; [[ "$r" == "$ROOT_REAL"/* ]] || for q in "${cr[@]}"; do [[ "$r" != "$q"/* ]] || in=1; done
+    [[ -z "$in" ]] || continue
+    nul_list fl find -P "$r" -name .git -prune -o '(' -type f -o -type l ')' -iname '*.md' -printf '%P\0' || return 1
+    for d in "${fl[@]}"; do [[ "$r/$d" == "$ROOT_REAL"/* && "$r" != "$ROOT_REAL"/* ]] || { rel+=("$d"); abs+=("$r/$d"); }; done
+  done
+  [[ ${#rel[@]} -eq 0 ]] || nul_list lo lower_all "${rel[@]}" && [[ ${#lo[@]} -eq ${#rel[@]} ]] || return 1
+  for i in "${!rel[@]}"; do
+    isstart "${lo[i]}" || continue
+    c=f; [[ ! "${lo[i]}" =~ $PROMPT_DIR ]] || c=p
+    # A C1 start whose bytes equal ROOT_REAL's file at its path below its
+    # innermost root yields no name that file does not (the parser joins a
+    # repo file's names under every root), and the walks read that file as a
+    # start already: compared below, in one sha1sum (most of them, here).
+    q=""; [[ $i -lt $nt ]] || for r in "${cr[@]}"; do [[ "${abs[i]}" != "$r"/* || ${#r} -le ${#q} ]] || q="$r"; done
+    d="${abs[i]#"$q"/}"  # its path below that root; lower-cased, the same length's tail of lo's
+    if [[ -n "$q" && -f "$d" ]] && isstart "${lo[i]:${#lo[i]}-${#d}}" && outside_ok "${abs[i]}"; then sp+=("$c${abs[i]}"); hs+=("${abs[i]}" "${abs[i]#"$q"/}"); else os_a+=("$c${abs[i]}"); fi
+  done
+  if [[ ${#hs[@]} -gt 0 ]]; then
+    nul_list lo sha1sum -z -- "${hs[@]}" && [[ ${#lo[@]} -eq ${#hs[@]} ]] || return 1
+    for i in "${!sp[@]}"; do [[ "${lo[2*i]:0:40}" == "${lo[2*i+1]:0:40}" ]] || os_a+=("${sp[i]}"); done
+  fi
+  for d in "${os_a[@]}"; do [[ "$d" != *$'\n'* ]] || return 1; done
+}
 # import_work OUT TOTAL: strips the parser's work trailer (its last line, "/N",
 # printed when IMPORT_WORK_LEFT is set; a repo-relative name never starts with
 # /, and a second-channel name starts with //) from the variable OUT, and adds N to the variable TOTAL. It returns 1 when
@@ -1259,7 +1372,7 @@ main_checkout() {
   return 2
 }
 imported_names() {
-  local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=(); set -o pipefail
+  local - f d p lp out used=0 work=0 qi=0 seen=$'\n' queue=() recs=() xs=() sd=(); set -o pipefail
   local -A pdir=()
   need_root
   import_readers || { IMPORTED_DONE=""; IMPORTED=error; return 1; }
@@ -1275,13 +1388,19 @@ imported_names() {
     [[ "$seen" == *$'\n'"$f"$'\n'* ]] && continue
     seen+="$f"$'\n'; queue+=("$f"); prompt_dir pdir "$lp" "$f"
   done
+  # The outside starts, after the checkout's, admitted as a // name is.
+  outside_seeds sd || return 1
+  for f in "${sd[@]}"; do
+    p="${f:1}"; outside_ok "$p" && [[ "$seen" != *$'\n'"$p"$'\n'* ]] || continue
+    seen+="$p"$'\n'; queue+=("$p"); [[ "$f" != p* ]] || pdir[$p]="$p"
+  done
   IMPORTED=$'\n'
   # An index, not a copy per pop (quadratic in the files read: override row 461).
   while [[ $qi -lt ${#queue[@]} ]]; do
     f="${queue[qi]}"; qi=$((qi + 1)); xs=(); [[ -z "${pdir[$f]+set}" ]] || prompt_bases xs "${pdir[$f]}" "$f"
     if [[ "$f" == */* ]]; then d="${f%/*}"; else d=""; fi
     out="$(IMPORT_LEFT=$((IMPORT_OUT_MAX - used)) IMPORT_WORK_LEFT=$((IMPORT_WORK_MAX - work)) import_file "$f" "$d" "${xs[@]}")" \
-      && import_work out work || { IMPORTED=error; return 1; }
+      && import_work out work && outside_proj out work || { IMPORTED=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED=error; return 1; }
     # One lower per file, not per candidate: the superset yields many.
@@ -1310,7 +1429,7 @@ imported_names() {
 # Phase 2 begins when queue empties: tq's checkout files and outside files
 # (absolute paths, never main's) then join it, and a path main lacks reads the checkout.
 main_imports() {
-  local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=(); set -o pipefail  # as brief_fields
+  local - rec f d p i c lk out used=0 work=0 qi=0 queue=() tq=() recs=() cand=() low=() parts=() xs=() links=() sd=(); set -o pipefail  # as brief_fields
   # shellcheck disable=SC2034  # pok is main_checkout's MEMO, passed by name
   local -A ent=() seen=() dir=() pok=() pdir=()
   need_root
@@ -1349,6 +1468,12 @@ main_imports() {
       [[ $c -ne 1 ]] || return 1; [[ $c -eq 0 ]] || continue
       seen[$f]=1; if [[ -n "${ent[$f]+set}" ]]; then queue+=("$f"); else tq+=("$f"); fi
     fi
+  done
+  # The outside starts join phase 2, as an outside import does (never main's arms).
+  outside_seeds sd || return 1
+  for f in "${sd[@]}"; do
+    p="${f:1}"; [[ -z "${seen[$p]+set}" ]] && outside_ok "$p" || continue
+    seen[$p]=1; tq+=("$p"); [[ "$f" != p* ]] || pdir[$p]="$p"
   done
   IMPORTED_MAIN=$'\n'
   # An index, not a copy per pop, as in imported_names (override row 461).
@@ -1389,6 +1514,7 @@ main_imports() {
       160000) continue ;;  # a gitlink: its files are not main's
     *) IMPORTED_MAIN=error; return 1 ;;
     esac
+    outside_proj out work || { IMPORTED_MAIN=error; return 1; }
     [[ -n "$out" ]] || continue
     (( (used += ${#out}) <= IMPORT_OUT_MAX )) || { IMPORTED_MAIN=error; return 1; }
     # One lower per file, not per candidate, as in imported_names.
