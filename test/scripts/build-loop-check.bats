@@ -1848,6 +1848,34 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the merge of feat/x names a blob the object store lacks" ] || { show; return 1; }
 }
 
+# forge ID TEXT: rewrite loose object ID's file to hold a blob of TEXT, its id unchanged.
+forge() {
+    local f=".git/objects/${1:0:2}/${1:2}"
+    chmod u+w "$f" && printf 'blob %s\0%s' "${#2}" "$2" | perl -MCompress::Zlib -0777 -ne 'print compress($_)' > "$f"
+}
+@test "--check re-hashes what it reads: a rewritten or missing object of main's tree refuses the state before any brief; one of the tip's tree refuses the brief; a packed store passes (rows 492, 503, U3a1)" {
+    echo base > f.txt && commit_all f
+    gated feat/x; t="$(git rev-parse feat/x)"
+    git repack -adq
+    chk "$B"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B $t $(git merge-tree --write-tree main feat/x)" ] || { show; return 1; }
+    # git reads the forged bytes as the brief's (cat-file checks no hash); the gate refuses before reading it.
+    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse "main:$B")"; forge "$o" $'# Brief: x\n\nStatus: open\nBranch: feat/y\n'
+    [ "$(git cat-file blob "$o" | grep Branch)" = "Branch: feat/y" ] || { echo "the forged blob does not read back"; return 1; }
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, or could not be read" ] \
+        && [ -z "$stderr" ] || { show; return 1; }
+    # A blob of main's tree no rule reads, missing: the same refusal.
+    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    o="$(git rev-parse main:f.txt)"; rm ".git/objects/${o:0:2}/${o:2}"
+    chk "$B"; [ "$status" -eq 2 ] && [[ "$output" == "refuse state objects: "* ]] || { show; return 1; }
+    # The tip's own file, rewritten: that brief refuses, with no path line.
+    rm -rf .git && git init -q -b main && echo base > f.txt && commit_all f && gated feat/x
+    forge "$(git rev-parse feat/x:work-feat-x.txt)" 'other bytes'
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: an object of feat/x's tip or of its merge does not hash to its id, or could not be read" ] || { show; return 1; }
+}
+
 @test "--check refuses an ambiguous default branch: both main and master, or origin/HEAD naming a branch the gate did not take (R7, U2b1b)" {
     gated feat/x
     git branch master feat/x; git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master
