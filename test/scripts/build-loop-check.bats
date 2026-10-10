@@ -15,12 +15,14 @@ setup() { bl_setup; LIB="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"; }
 # then "PATH: imported" or "PATH: -" from isimported WALK for each path.
 # T_READER_ROOTS and T_READER_HOMES, when set, become the caller's
 # IMPORT_READER_ROOTS and IMPORT_READER_HOMES after the lib is sourced (it clears them);
-# T_SETTINGS=1 sets them as the scripts do, with reader_settings.
+# T_SETTINGS=1 sets them as the scripts do, with reader_settings. T_MANAGED
+# becomes IMPORT_MANAGED_DIR (by default a path that does not exist).
 imps() {
     # timeout: a walk that never ends (an import cycle it does not stop) fails the test.
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
         [[ -z "${T_READER_ROOTS+set}" ]] || IMPORT_READER_ROOTS="$T_READER_ROOTS"
         [[ -z "${T_READER_HOMES+set}" ]] || IMPORT_READER_HOMES="$T_READER_HOMES"
+        IMPORT_MANAGED_DIR="${T_MANAGED:-/nonexistent/managed}"  # the real /etc/claude-code stays out
         resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; w="$1"; shift
         if { [[ "$w" == main ]] && main_imports; } || { [[ "$w" == tree ]] && imported_names; }; then echo "walk: ok"; else echo "walk: failed"; fi
         for p in "$@"; do if isimported "$w" "$p"; then echo "$p: imported"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
@@ -681,6 +683,92 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/s.md imported; want docs/t.md imported; want docs/u.md imported; want docs/q.md -
     done
+}
+
+@test "both walks start at each config dir's memory, rules, prompts, auto memory and installed plugins, and at the managed policy (U2b3b2b)" {
+    r="$(pwd -P)" && c="$HOME/.claude" && g="$BATS_TEST_TMPDIR/cfg" && m="$BATS_TEST_TMPDIR/managed" && pc="$c/plugins/cache/mk/pl"
+    mkdir -p docs "$c/rules/sub" "$c/commands" "$c/projects/p/memory" "$g" "$m" "$pc/1/skills/s" "$pc/0/skills/s"
+    printf 'm: @%s/docs/a.md\n' "$r" > "$c/CLAUDE.md"; printf 'r: @%s/docs/b.md and @docs/h.md\n' "$r" > "$c/rules/sub/r.md"
+    printf 'c: @docs/c.md\n' > "$c/commands/c.md"  # a prompt: its names also resolve against the session's top level
+    printf 'a: @%s/docs/d.md\n' "$r" > "$c/projects/p/memory/MEMORY.md"; printf 'n: @%s/docs/n.md\n' "$r" > "$c/projects/p/memory/other.md"
+    printf 'g: @%s/docs/e.md\n' "$r" > "$g/AGENTS.md"; printf 'p: @%s/docs/p.md\n' "$r" > "$m/CLAUDE.md"
+    printf 'f: @docs/f.md\n' > "$pc/1/skills/s/SKILL.md"; printf 'o: @docs/o.md\n' > "$pc/0/skills/s/SKILL.md"
+    j="$(printf '{"version": 2, "plugins": {"pl@mk": [{"scope": "user", "installPath": "%s/1"}]}}' "$pc")" && echo "$j" > "$c/plugins/installed_plugins.json"
+    for f in a b c d e f h n o p; do echo "$f" > "docs/$f.md"; done; commit_all seeds
+    for w in tree main; do
+        CLAUDE_CONFIG_DIR="$g" T_MANAGED="$m" imps "$w" docs/{a,b,c,d,e,f,p,h,n,o}.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for f in a b c d e f p; do want "docs/$f.md" imported; done
+        # A rule's relative name stays in its directory; other memory files and uninstalled plugin versions are not loaded.
+        for f in h n o; do want "docs/$f.md" -; done
+        # An installed list python3 cannot read gives every cached version.
+        echo '{' > "$c/plugins/installed_plugins.json"; imps "$w" docs/o.md; want walk ok; want docs/o.md imported; [ -z "$stderr" ] || return 1
+        # A relative CLAUDE_CONFIG_DIR is not modelled: the walk fails (i1 api F5).
+        CLAUDE_CONFIG_DIR=rel imps "$w" docs/o.md; want walk failed
+        echo "$j" > "$c/plugins/installed_plugins.json"
+    done
+}
+
+@test "both walks start at the instruction files of an ancestor below no reader root and at its .claude (U2b3b2b)" {
+    mkdir -p docs "$BATS_TEST_TMPDIR/.claude/rules" && r="$(pwd -P)"
+    printf 'x: @repo/docs/a.md\n' > "$BATS_TEST_TMPDIR/CLAUDE.local.md"  # against the ancestor's own directory
+    printf 'y: @%s/docs/b.md\n' "$r" > "$BATS_TEST_TMPDIR/.claude/rules/y.md"
+    echo a > docs/a.md; echo b > docs/b.md; commit_all anc
+    for w in tree main; do
+        imps "$w" docs/a.md docs/b.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/b.md imported; want docs/other.md -
+    done
+}
+
+@test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one whose bytes match this checkout's plain copy or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
+    mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
+    for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p "$sd/.claude/commands" "$sd/sub/.CLAUDE/commands"
+    printf 'u: @docs/u.md\n' > "$sd/CLAUDE.local.md"; printf 'k: @docs/k.md\n' > "$sd/.claude/commands/k.md"; echo none > "$sd/GEMINI.md"
+    # A prompt under .CLAUDE also resolves against the directory holding it (contract item 8's lower-cased path).
+    printf 'p: @docs/up.md\n' > "$sd/sub/.CLAUDE/commands/p.md"
+    # A worktree nested in side's .claude/skills/: its README.md is a prompt by the whole path (i2 fact-check).
+    mkdir -p "$sd/.claude/skills" && git worktree add -q --detach "$sd/.claude/skills/wt" && printf 'w: @docs/w.md\n' > "$sd/.claude/skills/wt/README.md"
+    # One nested in side's sub/.claude/skills/ checks out the committed AGENTS.md, this checkout's bytes: a prompt
+    # there (its @docs/s.md also resolves against side's sub/), a plain start here, so not skipped (final fact-check 21).
+    mkdir -p "$sd/sub/.claude/skills" && git worktree add -q --detach "$sd/sub/.claude/skills/wn"
+    printf 't: @../docs/t.md\n' > "$sd/sub/CLAUDE.md"; printf 'x: @docs/x.md\n' > "$sd/sub/notes.md"
+    # git is never run in another root: its .git file is the loop's to write.
+    S="$BATS_TEST_TMPDIR/gitlog" && mkdir -p "$S" && printf '#!/bin/sh\necho "$PWD $*" >> "%s/log"\nexec %s "$@"\n' "$S" "$(command -v git)" > "$S/git" && chmod +x "$S/git"
+    for w in tree main; do
+        PATH="$S:$PATH" T_READER_ROOTS=/nonexistent/host imps "$w" docs/u.md docs/k.md docs/t.md docs/x.md docs/s.md docs/v.md sub/docs/up.md docs/w.md sub/docs/s.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; for f in u k t s v w; do want "docs/$f.md" imported; done; want docs/x.md -; want sub/docs/up.md imported; want sub/docs/s.md imported
+    done
+    ! grep -e "^$sd" -e ' -C ' "$S/log" || return 1
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; IMPORT_MANAGED_DIR=/nonexistent; ROOT_REAL="$(pwd -P)"; import_readers; outside_seeds a; printf "%s\n" "${a[@]}"' _ "$LIB"
+    for l in "f$sd/CLAUDE.local.md" "p$sd/.claude/commands/k.md" "f$sd/sub/CLAUDE.md"; do printf '%s\n' "$output" | grep -qxF "$l" || { echo "missing $l: $output $stderr"; return 1; }; done
+    ! printf '%s\n' "$output" | grep -qF -e "$sd/AGENTS.md" -e "$sd/GEMINI.md" || { echo "$output"; return 1; }
+}
+
+@test "a // name outside_ok rejects is projected through its realpath -m: a dangling link, or a linked directory, into another worktree reads as the repo path (U2b3b2b; U2b3b2a final security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && o="$BATS_TEST_TMPDIR/out" && mkdir -p docs "$o"
+    ln -s "$sd/docs/n.md" "$o/l.md" && ln -s "$sd/docs" "$o/dl"  # side lacks docs/ (it is at the first commit)
+    printf 'See @%s/l.md and @%s/dl/m.md\n' "$o" "$o" > AGENTS.md; printf 'n: @deep.md\n' > docs/n.md; echo m > docs/m.md; echo d > docs/deep.md; commit_all proj
+    for w in tree main; do
+        imps "$w" docs/n.md docs/m.md docs/deep.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/n.md imported; want docs/m.md imported; want docs/deep.md imported; want docs/other.md -
+    done
+}
+
+@test "both walks fail closed when a seed directory cannot be listed or a seed's name holds a newline (U2b3b2b)" {
+    [ "$(id -u)" -ne 0 ] || skip "root lists a mode-000 directory"
+    printf 'x\n' > AGENTS.md && commit_all f && mkdir -p "$HOME/.claude/rules/locked"
+    chmod 000 "$HOME/.claude/rules/locked"
+    for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
+    chmod 755 "$HOME/.claude/rules/locked" && printf '@x\n' > "$HOME/.claude/rules/a"$'\n'"b.md"
+    for w in tree main; do imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
+    # A grep error in the @ filter (not only an unreadable file: memory exhausted) fails the walk (i2 security N1, api F1).
+    rm "$HOME/.claude/rules/a"$'\n'"b.md" && printf '@x\n' > "$HOME/.claude/rules/r.md" && S="$BATS_TEST_TMPDIR/g2" && mkdir -p "$S"
+    printf '#!/bin/sh\n[ "$1" = -lZF ] && exit 2\nexec %s "$@"\n' "$(command -v grep)" > "$S/grep" && chmod +x "$S/grep"
+    for w in tree main; do PATH="$S:$PATH" imps "$w" docs/a.md; want walk failed; want docs/a.md imported; done
 }
 
 @test "both walks read an import whose .. runs past / and re-enters the repo, as Node's path.resolve stops at / (U2a3b L2-i2 test-strategy)" {

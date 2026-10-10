@@ -15,7 +15,8 @@ setup() {
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
     # HOME in the temp dir: the ~/.claude/scripts fallback can't reach the real one.
-    export HOME="$BATS_TEST_TMPDIR/home"
+    # The walks also read the config dir it names (outside_seeds): the fixture's home only.
+    export HOME="$BATS_TEST_TMPDIR/home"; unset CLAUDE_CONFIG_DIR
     mkdir -p "$HOME"
     R="$BATS_TEST_TMPDIR/repo"
     make_repo "$R" main
@@ -1107,11 +1108,11 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read import_work import_readers import_readers_key import_outside import_file outside_ok; do
+                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read import_work import_readers import_readers_key import_outside import_file outside_ok outside_proj outside_seeds root_starts with_at; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done
-        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORT_ROOTS IMPORT_HOMES IMPORT_READERS_DONE IMPORT_READERS_KEY IMPORT_READER_ROOTS IMPORT_READER_HOMES IMPORT_DOTNEST IMPORT_WHOLE BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
+        for v in SKIPPED SKIP_AT MAIN MAIN_SHA MAIN_BY_NAME IMPORTED IMPORTED_DONE IMPORTED_MAIN IMPORTED_MAIN_DONE IMPORT_ROOTS IMPORT_HOMES IMPORT_READERS_DONE IMPORT_READERS_KEY IMPORT_READER_ROOTS IMPORT_READER_HOMES IMPORT_DOTNEST IMPORT_WHOLE IMPORT_MANAGED_DIR BRIEF BRIEF_ODD; do declare -p "$v" >/dev/null 2>&1 || echo "unset $v"; done
         echo sourced' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     [ "$status" -eq 0 ] && [ "$output" = sourced ] && [ -z "$stderr" ] || { echo "$output"; echo "$stderr"; return 1; }
     [ ! -e "$S/called" ] || { cat "$S/called"; return 1; }

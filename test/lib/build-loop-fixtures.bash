@@ -16,7 +16,8 @@ bl_setup() {
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
     export GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid
-    export HOME="$BATS_TEST_TMPDIR/home" LC_ALL=C
+    # The walks read the config dirs under HOME and CLAUDE_CONFIG_DIR (outside_seeds): the fixture's home only.
+    export HOME="$BATS_TEST_TMPDIR/home" LC_ALL=C; unset CLAUDE_CONFIG_DIR
     mkdir -p "$HOME"
     R="$BATS_TEST_TMPDIR/repo"
     mkdir -p "$R" && cd "$R" || return 1
