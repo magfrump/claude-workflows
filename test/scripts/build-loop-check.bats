@@ -762,8 +762,8 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     mkdir -p docs .claude/commands && printf 'see @docs/a.md\n' > AGENTS.md && printf 'k: @docs/k.md\n' > .claude/commands/k.md
     for f in a b c k k2 e gone; do echo "$f" > "docs/$f.md"; done; commit_all rc
     git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
-    # side's docs/a.md differs; side alone holds docs/n.md; its docs/b.md is a link to a file side lacks.
-    printf 'a: @b.md and @n.md\n' > "$sd/docs/a.md"; printf 'n: @c.md\n' > "$sd/docs/n.md"; ln -sf gone.md "$sd/docs/b.md"
+    # side's docs/a.md differs; side alone holds docs/n.md; its docs/b.md is a link to a file side lacks (dangling).
+    printf 'a: @b.md and @n.md\n' > "$sd/docs/a.md"; printf 'n: @c.md\n' > "$sd/docs/n.md"; rm "$sd/docs/gone.md"; ln -sf gone.md "$sd/docs/b.md"
     # side's prompt differs, so C1 leaves it to the name: its @docs/k2.md resolves against side's top level only as a prompt.
     printf 'k: @docs/k2.md\n' > "$sd/.claude/commands/k.md"
     for w in tree main; do
@@ -771,8 +771,26 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; for f in b n c k2 gone; do want "docs/$f.md" imported; done; want docs/e.md -
     done
-    # A copy whose bytes match is not read: side's AGENTS.md would add docs/e.md only if it were.
-    printf 'see @docs/a.md\n' > "$sd/AGENTS.md" && imps tree docs/e.md && want docs/e.md -
+}
+
+@test "a copy with this checkout's bytes under a linked directory is read, so its real path is projected (U2b3b2c; i1 security F2)" {
+    # (A plain copy with equal bytes is skipped as a cost: the parser already resolves this
+    # checkout's relative names against every root, so reading it could add nothing.)
+    mkdir -p docs && printf 'see @docs/x.md\n' > AGENTS.md && echo x > docs/x.md && commit_all eq
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)"
+    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md -; done
+    mv "$sd/docs" "$sd/real" && ln -s real "$sd/docs"
+    for k in tree main; do imps "$k" real/x.md; [ -z "$stderr" ] || return 1; want walk ok; want real/x.md imported; done
+}
+
+@test "a dangling prompt link in another worktree reads its target as a prompt (U2b3b2c i1 security F1)" {
+    git worktree add -q --detach ../side && sd="$(cd ../side && pwd -P)" && mkdir -p docs "$sd/.claude/commands"  # side lacks docs/
+    ln -s ../../docs/t.md "$sd/.claude/commands/k.md"; printf 't: @top.md\n' > docs/t.md; echo top > top.md; echo x > AGENTS.md; commit_all pk
+    for w in tree main; do
+        imps "$w" docs/t.md top.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/t.md imported; want top.md imported
+    done
 }
 
 @test "a seed that is a dangling link into another worktree reads as the repo path it names (U2b3b2c; U2b3b2b final security F1)" {
