@@ -651,7 +651,8 @@ never_res() {
 # match winning: the floor (only when $5 is empty: it walks the checkout), a
 # Self-merge never: glob, then the allowlist (Paths:, or ownfile). The
 # allowlist widens nothing by case: Paths: entries compare exactly, and ownfile
-# gets the path as spelled (it matches only a lower-case spelling).
+# gets the path as spelled, so an own file passes only when the diff spells
+# it in lower case (ownfile folds nothing).
 srules() {
   local i e
   DENY=""
