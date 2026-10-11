@@ -59,7 +59,10 @@ Scope: full branch for the critics (short-circuited in iteration 1), fact-check 
 
 Status (iteration 2): no Must Fix; Must Address B1, B2 fixed.
 
+## 🧩 Composition check
 
-No multi-source co-located clusters qualified (one source this pass).
+- Iteration 1: no multi-source co-located clusters qualified (one source).
+- Iteration 2, `scripts/build-loop.sh` dispatch's existing-worktree arm (~:1296-1302): security 1 (B2, 🟡), api-consistency 1 (B1, 🟡), security 2 (B3), fact-check i2 (symlink arm). Distinct defects: B1 is the lock rule's input (marker state), B2 its atomicity, B3 the path's form; each states its own mechanism and fix.
+- Iteration 2, wt_of vs land (architecture 1, api-consistency 6): one finding raised twice, not a composition (no 🔴/🟡 fragment).
 
 Single-sample review; absence of findings is not an attestation.
