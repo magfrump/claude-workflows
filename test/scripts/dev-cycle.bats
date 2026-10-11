@@ -1055,6 +1055,10 @@ EOF
     printf 'junk' > .git/index
     run --separate-stderr bash "$DC" --check-fix docs/notes.md
     [[ "$output" == "skip docs/notes.md: the instruction-file import walk failed"* ]] || { echo "$output $stderr"; return 1; }
+    # The reader set refused with no settings reason: the lib's TRUTH_WHERE says where (rows 630, 634; U3a3 final architecture 2).
+    rm .git/index && git reset -q
+    run --separate-stderr env CLAUDE_CONFIG_DIR=relative bash "$DC" --check-fix docs/notes.md
+    [ "$output" = "skip docs/notes.md: the instruction-file import walk failed, so an import of it cannot be ruled out: the worktree registry could not be read, or a reader root, home or CLAUDE_CONFIG_DIR is not a usable absolute path; file it instead" ] || { echo "$output $stderr"; return 1; }
 }
 
 @test "--check-fix refuses a doc imported through the repo's parent directory, as main did (FAILS at be94c871: L2 fact-check Claim 1 class 1)" {

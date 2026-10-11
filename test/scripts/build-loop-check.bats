@@ -34,7 +34,7 @@ want() { printf '%s\n' "$output" | grep -qxF "$1: $2" || { echo "want: $1: $2"; 
 floors() {
     run --separate-stderr timeout 60 env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; shift
         resolve_main || true; [[ -z "${T_SETTINGS:-}" ]] || reader_settings; ROOT_REAL="$(pwd -P)"; s="$1"; st="$2"; shift 2
-        for p in "$@"; do if floor "$p" "$s" "$st"; then echo "$p: $FLOOR_WHY"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
+        for p in "$@"; do if floor "$p" "$s" "$st"; then echo "$p: $(floor_why "$FLOOR_WHY")"; else echo "$p: -"; fi; done' _ "$LIB" "$@"
 }
 INSTR="an instruction or prompt file, which sessions load from the checkout"
 DOT="a dotfile or a path under a dot-directory"
@@ -1301,6 +1301,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         .claude/settings.json "$DOT" .envrc "$DOT" .gitattributes "$DOT" docs/x/.y "$DOT" .github/x.yml "$DOT"
         scripts/build-loop.sh "$GATE" scripts/dev-cycle.sh "$GATE" scripts/questions.sh "$GATE"
         scripts/lib/dev-cycle-read.sh "$GATE" scripts/lib/new.sh "$GATE" Scripts/Build-Loop.sh "$GATE"
+        skills/dev-cycle/references/x.md "$GATE" Skills/Dev-Cycle/x.sh "$GATE" skills/dev-cycle/SKILL.md "$INSTR"
         docs/imported.md "$IMP" Docs/Imported.md "$IMP" docs/deep.md "$IMP" skills/x/ref.md "$IMP" docs/new.md "$IMP" docs/private.md "$IMP"
         docs/constraints.md "$USER" docs/dev-cycle.md "$OWN" docs/roadmap.md "$OWN" Docs/Roadmap.md "$OWN"
         docs/working/questions.md "$OWN" docs/working/briefs/2026-10-02-y.md "$OWN" docs/working/briefs/closed/2026-10-01-x.md "$OWN"
@@ -1308,7 +1309,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
         docs/working/checkpoint-2026-10-02-y.md "$WORK" docs/working/plan-x.md "$WORK" docs/working/notes.md "$WORK"
         docs/working/plan-2026-10-01-xy.md "$WORK" docs/working/scratch/plan-2026-10-01-x.md "$WORK"
         docs/reviews/r-2026-10-01-x.md "$REV")
-    pass=(scripts/other.sh skills/x/helper.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
+    pass=(scripts/other.sh skills/x/helper.md skills/dev-cycle-x/a.md hooks/x.sh install.sh test/x.bats docs/guide.md docs/wt-only.md
         workflows/x.md docs/working/plan-2026-10-01-x.md docs/working/Research-2026-10-01-x.md docs/working/test-strategy-2026-10-01-x.md)
     paths=(); for ((i = 0; i < ${#refuse[@]}; i += 2)); do paths+=("${refuse[i]}"); done
     floors "$s" M "${paths[@]}" "${pass[@]}"
@@ -1392,7 +1393,7 @@ memo-indexed 1" ] || { echo "$status $output $stderr"; return 1; }
     for b in tr pwd; do printf '#!/bin/sh\necho %s >> "%s/calls"\nexit 1\n' "$b" "$BATS_TEST_TMPDIR" > "$S/$b"; chmod +x "$S/$b"; done
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
         floor docs/a.md x M docs/a.md || echo "a: -"; PATH="$2:$PATH"; enable -n pwd
-        floor docs/b.md x M docs/b.md || echo "b: -"; floor Docs/C.md x M Docs/C.md && echo "C: $FLOOR_WHY"' _ "$LIB" "$S"
+        floor docs/b.md x M docs/b.md || echo "b: -"; floor Docs/C.md x M Docs/C.md && echo "C: $(floor_why "$FLOOR_WHY")"' _ "$LIB" "$S"
     [ "$output" = "a: -
 b: -
 C: the path could not be lower-cased" ] && [ ! -e "$BATS_TEST_TMPDIR/calls" ] || { echo "$output $stderr"; cat "$BATS_TEST_TMPDIR/calls"; return 1; }
@@ -1529,6 +1530,18 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
     for w in tree main; do imps "$w" docs/x.md; want walk failed; want docs/x.md imported; done
 }
 
+@test "floor sets a word, which floor_why words; a failed walk's TRUTH_WHERE says where, for both walks (rows 472, 630, 634, U3a3)" {
+    run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
+        floor scripts/build-loop.sh x M && echo "[$FLOOR_WHY] $(floor_why "$FLOOR_WHY")"
+        IMPORT_READER_WHY="planted"; import_reset
+        floor docs/a.md x M && echo "[$FLOOR_WHY] $(floor_why "$FLOOR_WHY")"
+        truthwalk tree docs/a.md && echo "tree [$TRUTH_WHY] $TRUTH_WHERE"' _ "$LIB"
+    R="the reader settings of docs/dev-cycle.md cannot be used: planted"
+    [ "$output" = "[gate] $GATE
+[walk] $WALKFAIL: $R
+tree [walk] $R" ] || { echo "$output $stderr"; return 1; }
+}
+
 @test "truthwalk empties TRUTH_WHY when it does not refuse; import_reset makes the next floor walk again (U2a4 i1 api-consistency 1, architecture F1)" {
     printf 'see @docs/a.md\n' > CLAUDE.md && commit_all claude
     run --separate-stderr env LC_ALL=C bash -c 'set -euo pipefail; source "$1"; resolve_main; ROOT_REAL="$(pwd -P)"
@@ -1536,7 +1549,7 @@ Docs/Constraints.md: case" ] || { echo "$output $stderr"; return 1; }
         truthwalk main docs/a.md && echo "a: [$TRUTH_WHY]"
         printf "see @docs/c.md\n" > CLAUDE.local.md
         floor docs/c.md x M || echo "c cached: -"
-        import_reset; floor docs/c.md x M && echo "c: $FLOOR_WHY"' _ "$LIB"
+        import_reset; floor docs/c.md x M && echo "c: $(floor_why "$FLOOR_WHY")"' _ "$LIB"
     [ "$output" = "b: []
 a: [imported]
 c cached: -

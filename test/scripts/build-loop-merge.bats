@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # @category fast
-# Contract tests for build-loop.sh --merge (U3a2), each in a throwaway repo
+# Contract tests for build-loop.sh --merge (U3a2) and --merge --approved (U3a3), each in a throwaway repo
 # under $BATS_TEST_TMPDIR (test/lib/build-loop-fixtures.bash).
 
 bats_require_minimum_version 1.5.0
@@ -79,7 +79,7 @@ Build-loop-gate: 2026-10-01-x" ]
     run --separate-stderr "${noid[@]}" GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gc2" bash "$BL" --merge "$B" --expect "$T"; refused "git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"
     git checkout -q main && settings "Build-loop policy: review" "Self-merge never: none" && git checkout -q --detach main
     M="$(git rev-parse main)"
-    mrg "$B" --expect "$T"; refused "the brief's policy is review; --merge lands only a self-merge brief"
+    mrg "$B" --expect "$T"; refused "the brief's policy is review; --merge lands it only with --approved Q-NNN"
     for args in "$B" "--expect $T" "$B $B --expect $T"; do
         read -ra av <<<"$args"; mrg "${av[@]}"
         [ "$status" -eq 1 ] && [[ "$stderr" == "--merge takes one brief path and --expect SHA "* ]] || { show; return 1; }
@@ -170,4 +170,93 @@ Build-loop-gate: 2026-10-01-x" ]
     mrg "$B" --expect "$T"; [ "$status" -eq 0 ] && [ "$(git -C ../bw rev-parse HEAD)" = "$(git rev-parse main)" ] || { show; return 1; }
     git -C ../b.git update-ref refs/heads/main "$M"; git -C ../bw reset -q --hard "$M"; : > ../b.git/index
     mrg "$B" --expect "$T"; [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: the repository lists as bare but has an index" ] || { show; return 1; }
+}
+
+# approve ID SLUG [STATUS [ANSWER]]: docs/working/questions.md holding one entry "### ID · SLUG" with
+# that Status (ANSWERED) and answer line ("ID: [1]"), committed on main; the checkout is left
+# detached at main, and M is main's commit.
+approve() {
+    git checkout -q main && mkdir -p docs/working \
+        && printf '### %s \302\267 %s\n**Needs:** you: judgment \302\267 **Opened:** 2026-10-01 \302\267 **Status:** %s\n\nMerge it?\n\n%s\n' \
+            "$1" "$2" "${3:-ANSWERED}" "${4:-$1: [1]}" > docs/working/questions.md \
+        && commit_all "answer $1" && git checkout -q --detach main && M="$(git rev-parse main)"
+}
+# rv [FILE]: review policy, brief x (no Policy: line, so review) and feat/x with one commit (and a
+# second adding FILE, when given), then Q-001 answered [1] as merge-2026-10-01-x-SHA12 (S); T the tip,
+# TR the merged tree.
+rv() {
+    settings "Build-loop policy: review"; brief x "Status: open" "Branch: feat/x"; work feat/x
+    [[ -z "${1:-}" ]] || { git checkout -q feat/x && mkdir -p "$(dirname "$1")" && echo g > "$1" && commit_all gate && git checkout -q main; }
+    T="$(git rev-parse feat/x)"; S="merge-2026-10-01-x-${T:0:12}"; approve Q-001 "$S"
+    TR="$(git merge-tree --write-tree main feat/x)"
+}
+
+@test "--merge --approved lands a review brief on Q-NNN answered [1] under merge-STEM-SHA12: message, trailers, reflog (T35, U3a3)" {
+    rv
+    mrg "$B" --expect "$T" --approved Q-001; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
+path $B A work-feat-x.txt" ] && [ -z "$stderr" ] || { show; return 1; }
+    [ "$(git rev-parse "$n^1") $(git rev-parse "$n^2") $(git rev-parse "$n^{tree}")" = "$M $T $TR" ]
+    [ "$(git log -1 --format=%B "$n")" = "Merge branch 'feat/x' (build-loop approved merge)
+
+Build-loop-gate: 2026-10-01-x
+Build-loop-approved: Q-001" ]
+    [ "$(git reflog -1 --format=%gs main)" = "build-loop: approved merge of 2026-10-01-x" ]
+}
+
+@test "--merge --approved runs the N rules only: a self-merge brief lands past its never glob, its Paths: line and the checkout rule; a cycle file still refuses (T35, row 653, U3a3)" {
+    settings "Build-loop policy: self-merge" "Self-merge never: work-*"
+    brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "Paths: none"; work feat/x
+    T="$(git rev-parse feat/x)"; approve Q-001 "merge-2026-10-01-x-${T:0:12}"
+    git checkout -q feat/x  # the checkout is not at main's commit: a self-merge --check refuses it
+    mrg "$B" --expect "$T"
+    [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: a self-merge brief needs --check run from a clean checkout"* ]] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+    mrg "$B" --expect "$T" --approved Q-001
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "merged $B $T $(git merge-tree --write-tree "$M" "$T") $(git rev-parse main)" ] \
+        && [ "${lines[1]}" = "path $B A work-feat-x.txt" ] || { show; return 1; }
+    # A cycle file still refuses: the roadmap, and the questions file an approval is read from (i1 security).
+    git update-ref refs/heads/main "$M"; git checkout -q feat/x && mkdir -p docs/working && echo r > docs/roadmap.md && echo q > docs/working/questions-archive.md && commit_all cycle
+    T="$(git rev-parse feat/x)"; approve Q-001 "merge-2026-10-01-x-${T:0:12}"
+    mrg "$B" --expect "$T" --approved Q-001
+    [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: 2 of 3 changed paths refused in the merge of $T "* ]] \
+        && printf '%s\n' "$output" | grep -qxF "deny $B A docs/roadmap.md: one of the dev cycle's own files" \
+        && printf '%s\n' "$output" | grep -qxF "deny $B A docs/working/questions-archive.md: one of the dev cycle's own files" \
+        && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+}
+
+@test "--merge --approved refuses an answer other than [1], an open entry, an answer only in the working tree, no entry, and a slug naming another brief, an older tip or the gate (T35, U3a3)" {
+    rv; no="Q-001 does not approve this merge"
+    approve Q-001 "$S" ANSWERED "Q-001: [2]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 2"
+    approve Q-001 "$S" ANSWERED "Q-001: [3]"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is option 3"
+    approve Q-001 "$S" ANSWERED "Q-001: merge"; mrg "$B" --expect "$T" --approved Q-001; refused "$no: its answer on the default branch is not read as an option ([1], 1 or keep approve)"
+    approve Q-001 "$S" OPEN; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
+    sed -i 's/OPEN/ANSWERED/' docs/working/questions.md; mrg "$B" --expect "$T" --approved Q-001; refused "$no: it is not answered on the default branch"
+    git checkout -q -- docs/working/questions.md
+    # The approval binds the heading's prefix; --expect still binds the full tip (i2 security 3).
+    mrg "$B" --expect "$M" --approved Q-001
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: the tip of feat/x is $T, not the expected $M" ] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+    mrg "$B" --expect "$T" --approved Q-002; refused "Q-002 does not approve this merge: no such entry in docs/working/questions.md or questions-archive.md on the default branch"
+    for s in "merge-2026-10-01-y-${T:0:12}" "merge-2026-10-01-x-${M:0:12}" "merge-gate-2026-10-01-x-${T:0:12}" "merge-2026-10-01-x-${T:0:12} " "$S-x"; do
+        approve Q-001 "$s"; mrg "$B" --expect "$T" --approved Q-001; refused "Q-001 approves no merge of this tip: its heading must read \"Q-001 · $S\""
+    done
+}
+
+@test "--merge --approved needs merge-gate-STEM-SHA12 when a changed path is the gate's own code, the dev-cycle skill included, compared lower-cased (T35, F52, U3a3)" {
+    for g in scripts/build-loop.sh Scripts/Lib/x.sh skills/dev-cycle/references/x.md; do
+        rv "$g"; G="merge-gate-2026-10-01-x-${T:0:12}"
+        mrg "$B" --expect "$T" --approved Q-001
+        [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: Q-001 approves no merge of this tip: its heading must read \"Q-001 · $G\" (the merge changes the gate's own code)" ] \
+            && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+        approve Q-001 "$G"; mrg "$B" --expect "$T" --approved Q-001
+        [ "$status" -eq 0 ] && [[ "${lines[0]}" == "merged $B $T "* ]] || { show; return 1; }
+        cd "$BATS_TEST_TMPDIR" && rm -rf "$R" && mkdir "$R" && cd "$R" && git init -q -b main && git commit -q --allow-empty -m initial
+    done
+}
+
+@test "--approved goes with --merge only and takes one question ID (U3a3)" {
+    rv
+    for args in "--check $B --approved Q-001" "--merge $B --expect $T --approved q-1" "--merge $B --expect $T --approved Q-001 --approved Q-001" "--merge $B --expect $T --approved"; do
+        read -ra av <<<"$args"; run --separate-stderr bash "$BL" "${av[@]}"
+        [ "$status" -eq 1 ] && [[ "$stderr" == "--approved "* ]] && [ "$(git rev-parse main)" = "$M" ] || { echo "$args"; show; return 1; }
+    done
 }

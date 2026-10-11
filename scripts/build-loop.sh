@@ -6,7 +6,7 @@
 # Usage: scripts/build-loop.sh --settings
 #        scripts/build-loop.sh --status BRIEF...
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
-#        scripts/build-loop.sh --merge BRIEF --expect SHA
+#        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh -h | --help
 #
 #   --settings  five lines from the default branch's commit, never the working
@@ -210,16 +210,34 @@
 #                 boundary; unlike a never glob, an entry without one matches
 #                 that file alone); "Paths: none" or no line lists none; any
 #                 other line is malformed, and only own files land.
-#   --merge   lands a self-merge brief (D7): --check's lines for BRIEF at
-#             --expect's tip, but an ok verdict line becomes
+#   --merge   lands a self-merge brief (D7), or with --approved a brief of
+#             either policy: --check's lines for BRIEF at --expect's tip
+#             (under --approved, without the S rules or the checkout
+#             refusal; --expect still binds the tip), but an ok
+#             verdict line becomes
 #             merged BRIEF TIP TREE NEW
 #                 The default branch now points at NEW, a commit of TREE
 #                 whose parents are main's commit and TIP, with the message
 #                 "Merge branch 'BRANCH' (build-loop self-merge)" and the
 #                 trailer "Build-loop-gate: STEM" (the brief's file name
 #                 without .md); its reflog entry reads "build-loop:
-#                 self-merge of STEM" (git adds ": Fast-forward" when W
-#                 moves it). Author and committer names and emails from
+#                 self-merge of STEM" (under either authority git adds
+#                 ": Fast-forward" when W moves it). With --approved Q-NNN it lands a brief of
+#                 either policy under the N rules alone (no S rules, no
+#                 checkout rule) when the questions entry Q-NNN, read from
+#                 the default branch's commit as --check-answer reads it,
+#                 is answered with option 1 under the heading exactly
+#                 "### Q-NNN · merge-STEM-SHA12" (SHA12: TIP's first 12 hex
+#                 digits), or "merge-gate-STEM-SHA12" when a changed path,
+#                 lower-cased, is the gate's own code (the lib's GATE_CODE:
+#                 scripts/build-loop.sh, dev-cycle.sh, questions.sh, anything
+#                 under scripts/lib/ or skills/dev-cycle/); then the message
+#                 reads "(build-loop approved merge)" with a second trailer
+#                 "Build-loop-approved: Q-NNN", and the reflog "build-loop:
+#                 approved merge of STEM". The heading pins only TIP's
+#                 prefix: --expect binds the full tip, so the caller passes
+#                 the full TIP it filed the entry for, never the branch's
+#                 live tip. Author and committer names and emails from
 #                 GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL, or else
 #                 git config (the caller's global file included, the system
 #                 file not), each email non-empty; EMAIL or a guess from the
@@ -227,7 +245,10 @@
 #                 worktree it moves by compare-and-swap from the checked
 #                 commit; checked out in a worktree W, by merge --ff-only in W.
 #             or refuse BRIEF: WHY, with the ok line's path lines following,
-#             when: the policy --status reads is review;
+#             when: without --approved, the policy --status reads is review;
+#             with it, Q-NNN is open, skipped (WHY quotes the skip) or
+#             answered with another option or an answer not read (WHY names
+#             which), or its heading is not the one above;
 #             no identity is known; the worktrees, the git directory or a
 #             worktree's own git directory, HEAD or rebase or bisect state
 #             cannot be read (exists but is not a readable plain file in a
@@ -283,8 +304,8 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA)" >&2; exit 1; }
-MODE=""; ARGS=(); EXPECT=""
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN])" >&2; exit 1; }
+MODE=""; ARGS=(); EXPECT=""; APPROVED=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
@@ -296,6 +317,10 @@ case "${1:-}" in
         # The full id only: a short id, a branch name or HEAD would let git pick the commit.
         [[ "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || usage "--expect takes a full 40- or 64-hex commit id"
         EXPECT="$2"; shift 2
+      elif [[ "$1" == --approved ]]; then
+        [[ "$MODE" == merge ]] || usage "--approved goes with --merge"
+        [[ $# -ge 2 && -z "$APPROVED" && "$2" =~ ^Q-[0123456789]+$ ]] || usage "--approved takes one question ID (Q- and digits), given once"
+        APPROVED="$2"; shift 2
       else ARGS+=("$1"); shift; fi
     done
     [[ "$MODE" == check || ( -n "$EXPECT" && ${#ARGS[@]} -eq 1 ) ]] || usage "--merge takes one brief path and --expect SHA"
@@ -811,7 +836,7 @@ never_res() {
 srules() {
   local i e
   DENY=""
-  if [[ -z "$5" ]] && floor "$2" "$1" "$4" "$3"; then DENY="$FLOOR_WHY"; return 0; fi
+  if [[ -z "$5" ]] && floor "$2" "$1" "$4" "$3"; then DENY="$(floor_why "$FLOOR_WHY")"; return 0; fi
   for i in "${!NEVER_RES[@]}"; do
     [[ ! "$3" =~ ${NEVER_RES[$i]} ]] || { DENY="matched by ${NEVER[$i]} in the Self-merge never: line of docs/dev-cycle.md"; return 0; }
   done
@@ -944,18 +969,25 @@ gate_start() {
 # PATHS and PATHS_WHY, LIST, LIST_WHY and LIST_BAD, STATUS, BRIEF, CHECKOUT_WHY, FLOOR_WHY,
 # TRUTH_WHY; VERDICT and CHANGED here).
 # The verdict as values (row 512), for --merge: VERDICT holds tip, tree,
-# policy, branch and stem, and CHANGED each changed path's status letter,
-# only after an ok line (both empty otherwise).
+# policy, branch, stem and gate (1 when a changed path, lower-cased, is the
+# gate's own code, GATE_CODE; else empty), and CHANGED each changed path's
+# status letter, only after an ok line (both empty otherwise).
+# AUTH, the authority the run lands under (row 653), decides the rules: empty
+# for --check and self-merge for --merge, where a brief --status reads as
+# self-merge gets the S rules and its checkout checked; approved (--merge
+# --approved) runs the N rules alone, whatever the policy.
 declare -A VERDICT=() CHANGED=()
+AUTH=""
 check_line() {
   # Contract item 1 (the floor's walk); exported, so its children run under it too.
   local -x LC_ALL=C
-  local a="$1" out st pol br sha tree meta p shown co stem rc=0 i nd=0 rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
+  local a="$1" out st pol br sha tree meta p shown co stem rc=0 i nd=0 gc="" sm="" rows=() oms=() nms=() nos=() ss=() ps=() lps=() ids=()
   VERDICT=(); CHANGED=()
   import_reset  # caller contract item 4: no walk cache outlives a decision
   status_fields "$a"
   [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return; }
   st="${STATUS[state]}"; pol="${STATUS[policy]}"; br="${STATUS[branch]}"; sha="${STATUS[sha]}"
+  [[ "$pol" != self-merge || "$AUTH" == approved ]] || sm=1  # the S rules and the checkout
   if [[ "$st" != open ]]; then echo "refuse $a: the brief is $st on the default branch; only an open brief merges"; return; fi
   if [[ "${STATUS[loop]}" == absent ]]; then echo "refuse $a: its branch $br does not exist"; return; fi
   if [[ "${STATUS[ahead]}" -eq 0 ]]; then echo "refuse $a: its branch $br has no commit the default branch lacks"; return; fi
@@ -997,14 +1029,14 @@ check_line() {
   # still print (a loop's advisory run from its own branch learns them). Run
   # per brief, so each decision sees the checkout as it is: about 0.3 s here,
   # times the self-merge briefs passed to one --check.
-  co=""; if [[ "$pol" == self-merge ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
+  co=""; if [[ -n "$sm" ]] && ! checkout_gate; then co="refuse $a: a self-merge brief needs --check run from a clean checkout of the default branch's commit; $CHECKOUT_WHY"; fi
   # The S rules' inputs: the brief as status_fields read it from main's commit.
   stem="${a##*/}"; stem="${stem%.md}"
-  [[ "$pol" != self-merge ]] || read_paths
+  [[ -z "$sm" ]] || read_paths
   # Reads check_line's locals (bash scope is dynamic); called only here.
   verdict_ok() {
     local i
-    VERDICT=([tip]="$sha" [tree]="$tree" [policy]="$pol" [branch]="$br" [stem]="$stem")
+    VERDICT=([tip]="$sha" [tree]="$tree" [policy]="$pol" [branch]="$br" [stem]="$stem" [gate]="$gc")
     for i in "${!ps[@]}"; do CHANGED[${ps[$i]}]="${ss[$i]}"; done
     echo "ok $a $sha $tree"
   }
@@ -1014,7 +1046,8 @@ check_line() {
   for i in "${!ps[@]}"; do
     p="${ps[$i]}"; shown="?"; [[ ! "$p" =~ ^[$NAMECHARS]+$ ]] || shown="$p"
     nrules "$a" "${oms[$i]}" "${nms[$i]}" "${nos[$i]}" "${ss[$i]}" "$p" "${lps[$i]}"
-    [[ -n "$DENY" || "$pol" != self-merge || "$p" == "$a" ]] || srules "$stem" "$p" "${lps[$i]}" "${ss[$i]}" "$co"
+    [[ ! "${lps[$i]}" =~ $GATE_CODE ]] || gc=1
+    [[ -n "$DENY" || -z "$sm" || "$p" == "$a" ]] || srules "$stem" "$p" "${lps[$i]}" "${ss[$i]}" "$co"
     if [[ -n "$DENY" ]]; then nd=$((nd + 1)); rows+=("deny $a ${ss[$i]} $shown: $DENY"); else rows+=("path $a ${ss[$i]} $shown"); fi
   done
   if [[ -n "$co" ]]; then echo "$co"; elif [[ "$nd" -eq 0 ]]; then verdict_ok; else echo "refuse $a: $nd of ${#ps[@]} changed paths refused in the merge of $sha (tree $tree)"; fi
@@ -1035,10 +1068,34 @@ merge_ident() {
     export "GIT_${w}_NAME=${BASH_REMATCH[1]}" "GIT_${w}_EMAIL=${BASH_REMATCH[2]}"
   done
 }
-# land AUTHORITY: --merge's landing (D7, F29), once check_line printed ok
-# (VERDICT) under the authority the caller checked and names (self-merge;
-# U3a3 adds its approval), which the message and reflog carry. Decide (the
-# header's refusals but policy and --check's: an ignored file at an added path counts,
+# approval Q-NNN: whether the questions entry Q-NNN, read from main's commit
+# by check_answer (D8: an answer only in a working tree counts for nothing),
+# approves landing VERDICT: answered with option 1 under the heading
+# "Q-NNN · merge-STEM-SHA12", SHA12 the tip's first 12 hex digits, or
+# "merge-gate-STEM-SHA12" when VERDICT[gate] is set; exactly, so an answer
+# for another brief, an older tip or a merge without the gate's code does not
+# carry. Sets MERGE_WHY and returns 1 when it does not.
+approval() {
+  local r s="merge-" g=""
+  [[ -z "${VERDICT[gate]}" ]] || { s="merge-gate-"; g=" (the merge changes the gate's own code)"; }
+  s+="${VERDICT[stem]}-${VERDICT[tip]:0:12}"
+  # In this shell, to a file: ANSWER_HEADING would not leave a $(...).
+  check_answer "$1" > "$GATE_TMP/answer"; r="$(< "$GATE_TMP/answer")"
+  case "$r" in
+    "keep $1") ;;
+    "open $1") MERGE_WHY="$1 does not approve this merge: it is not answered on the default branch"; return 1 ;;
+    "skip $1: "*) MERGE_WHY="$1 does not approve this merge: ${r#"skip $1: "}"; return 1 ;;
+    "drop $1") MERGE_WHY="$1 does not approve this merge: its answer on the default branch is option 2"; return 1 ;;
+    "done $1") MERGE_WHY="$1 does not approve this merge: its answer on the default branch is option 3"; return 1 ;;
+    *) MERGE_WHY="$1 does not approve this merge: its answer on the default branch is not read as an option ([1], 1 or keep approve)"; return 1 ;;
+  esac
+  [[ "$ANSWER_HEADING" == "$1 · $s" ]] \
+    || { MERGE_WHY="$1 approves no merge of this tip: its heading must read \"$1 · $s\"$g"; return 1; }
+}
+# land AUTHORITY [Q-NNN]: --merge's landing (D7, F29), once check_line printed ok
+# (VERDICT) under the authority the caller checked and names (self-merge, or
+# approved with its question), which the message and reflog carry. Decide (the
+# header's refusals but the policy's, approval's and --check's: an ignored file at an added path counts,
 # as merge --ff-only overwrites one), then write NEW in the gate repository,
 # run the state gate (here and in W) and default_gate again (row 494), and
 # move: by update-ref from MAIN_SHA (compare-and-swap) when no worktree has
@@ -1051,7 +1108,9 @@ NEW=""; MERGE_WHY=""
 # dropped (more than git drops, so it matches wherever git would act).
 state_is() { LC_ALL=C awk -v w="$2" '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, "") } $0 == w { f = 1 } END { exit !f }' "$1"; }
 land() {
-  local x w="" p q d common hd="" n=0 bare="" in="the worktree with the default branch checked out" msg="build-loop: $1 of ${VERDICT[stem]}"
+  local x w="" p q d common hd="" n=0 bare="" in="the worktree with the default branch checked out" what="$1" msg
+  [[ "$1" != approved ]] || what="approved merge"
+  msg="build-loop: $what of ${VERDICT[stem]}"
   NEW=""; MERGE_WHY=""
   merge_ident || { MERGE_WHY="git knows no author or committer identity (GIT_AUTHOR_NAME and the like, or user.name and user.email in git config)"; return 1; }
   # NUL-ended fields; each record starts "worktree PATH".
@@ -1116,7 +1175,8 @@ land() {
       done
     done
   fi
-  printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "$1" "${VERDICT[stem]}" > "$GATE_TMP/msg" \
+  { printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "$what" "${VERDICT[stem]}"
+    [[ "$1" != approved ]] || printf 'Build-loop-approved: %s\n' "$2"; } > "$GATE_TMP/msg" \
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"
@@ -1156,13 +1216,15 @@ case "$MODE" in
     [[ "$fails" -eq 0 ]] || exit 2
     ;;
   merge)
+    AUTH=self-merge; [[ -z "$APPROVED" ]] || AUTH=approved
     gate_start
     a="${ARGS[0]}"
     check_line "$a" > "$GATE_TMP/line"
-    # The authority (U3a3 adds --approved), then land, replace the verdict line (check_line's first).
+    # The authority's own check, then land, replace the verdict line (check_line's first).
     if [[ -z "${VERDICT[tree]-}" ]]; then cat "$GATE_TMP/line"; exit 2; fi
-    if [[ "${VERDICT[policy]}" != self-merge ]]; then v="refuse $a: the brief's policy is review; --merge lands only a self-merge brief"
-    elif land self-merge; then v="merged $a ${VERDICT[tip]} ${VERDICT[tree]} $NEW"; else v="refuse $a: $MERGE_WHY"; fi
+    if [[ "$AUTH" == self-merge && "${VERDICT[policy]}" != self-merge ]]; then v="refuse $a: the brief's policy is review; --merge lands it only with --approved Q-NNN"
+    elif [[ "$AUTH" == approved ]] && ! approval "$APPROVED"; then v="refuse $a: $MERGE_WHY"
+    elif land "$AUTH" "$APPROVED"; then v="merged $a ${VERDICT[tip]} ${VERDICT[tree]} $NEW"; else v="refuse $a: $MERGE_WHY"; fi
     { echo "$v"; tail -n +2 "$GATE_TMP/line"; }
     [[ "$v" == merged* ]] || exit 2
     ;;
