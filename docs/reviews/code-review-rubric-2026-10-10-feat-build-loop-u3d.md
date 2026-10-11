@@ -1,4 +1,4 @@
-Commit: 4b863735
+Commit: d4d178d9
 Loop-pass short-circuit: used at aff39758
 
 # Code Review Rubric: feat/build-loop-u3d (U3d, --start / --prompt)
@@ -76,6 +76,19 @@ Fact-check k=3 merged most-severe-wins: `code-fact-check-report-u3d-final.md` (5
 | C9 | 🟢 | Commit text: aff39758's steal sentence stale after B1/A1; its Notes (A6); 23ba4511's merge-message promise | fact-check 36b, 36c, 38c | Corrected in the merge message |
 
 Status (iteration 3): no Must Fix; Must Address C1, C2 fixed after the pass (unreviewed: see the confirming pass below). Loop outcome: converged without a fourth iteration; the fix batch gets a narrow confirming pass (k=1 fact-check with Stage 2.5's routed claims, and security) over 4b863735..HEAD.
+
+## Confirming pass over the final fix batch (4b863735..d4d178d9)
+
+Not a fourth iteration: the final pass left no Must Fix (exit condition 2); this narrow pass reviews its unreviewed fix batch, per the Q-137 standing instruction. Fact-check k=1 with Stage 2.5 (`code-fact-check-report-u3d-confirm.md`: 32 claims, 0 Incorrect; submitted security endorsements S1-S4 all Verified, executed) and security (`security-review-2026-10-10-u3d-confirm.md`). C1, C2, C3 (FIFO, dangling link, directory, links, mode 000), C4 and C5 re-run and hold.
+
+| ID | Tier | Finding | Source | Status |
+|---|---|---|---|---|
+| D1 | 🟡 | `ended` checks only that the recorded tip differs: a live loop that rewinds its branch to an older marker (reset) has its lock taken by a plain --prompt (F44; executed, q4) | confirming security 1 (Medium) | Fixed: the recorded tip must also be an ancestor of the tip (`merge-base --is-ancestor`, fails closed); tested; the prompt forbids moving the branch below the dispatch commit |
+| D2 | 🟢 | Header: "DIR, or the default, ... not a path --dir takes" (a bad --dir is a usage error); "only two refusals can clear" (failed git commands may clear on retry) | confirming fact-check 2, 5 | Fixed |
+| D3 | 🟢 | d4d178d9's "a working tip under an old lock" (the lock is current, taken at an earlier tip) | confirming fact-check 21b | Merge message |
+| D4 | 🟢 | No test guards 9>&-; the ancestor rule's cost for a rebasing loop | confirming fact-check M6; security | Defer / Won't-Fix (2 override rows) |
+
+Status: no Must Fix; D1 fixed, tested and mutation-checked; lite fix-drift on the fix commit.
 
 ## 🧩 Composition check
 
