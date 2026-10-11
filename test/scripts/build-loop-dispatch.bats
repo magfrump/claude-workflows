@@ -60,6 +60,12 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     # A failed add removes the branch it made.
     : > "$BATS_TEST_TMPDIR/f"
     dsp --start "$B" --dir "$BATS_TEST_TMPDIR/f/wt"; refused "the worktree $BATS_TEST_TMPDIR/f/wt could not be added"; none
+    # Create-only: a branch another writer makes after the check is not taken over (i1 A5).
+    g="$(command -v git)"; o="$(git commit-tree "$(git rev-parse 'main^{tree}')" -p main -m other)"; mkdir "$BATS_TEST_TMPDIR/bin"
+    printf '#!/usr/bin/env bash\n[[ "$*" != "update-ref refs/heads/feat/x "* ]] || "%s" update-ref refs/heads/feat/x %s\nexec "%s" "$@"\n' "$g" "$o" "$g" > "$BATS_TEST_TMPDIR/bin/git"
+    chmod +x "$BATS_TEST_TMPDIR/bin/git"
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" dsp --start "$B"; refused "its branch feat/x could not be created"
+    [ "$(git rev-parse feat/x)" = "$o" ] && git update-ref -d refs/heads/feat/x && none
     git config filter.x.clean cat
     dsp --start "$B"; [ "$status" -eq 2 ] && [ "$output" = "refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge" ] || { show; return 1; }; none
     git config --unset filter.x.clean
@@ -86,9 +92,10 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     git worktree unlock "$W"
     dsp --prompt "$B" --dir "$BATS_TEST_TMPDIR/other"; refused "its branch feat/x is checked out in $W, not in --dir's directory"
     dsp --prompt "$B"; [ "$status" -eq 0 ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
-    git worktree unlock "$W"; rm -rf "$W"
-    dsp --prompt "$B"; refused "its branch feat/x is checked out in $W, which is missing (git worktree prune drops it)"
-    git worktree prune
+    # A dead loop's worktree, gone but still locked (git never calls it prunable), even with old times (i1 A1).
+    lock "$W" "build-loop dispatch of 2026-10-01-x, UTC 2020-01-01T00:00:00Z"; rm -rf "$W"
+    dsp --prompt "$B" --steal; refused "its branch feat/x is checked out in $W, which is missing (git worktree unlock, then git worktree prune, drop it)"
+    git worktree unlock "$W"; git worktree prune
     dsp --prompt "$B"; [ "$status" -eq 0 ] && [ "$(git -C "$W" rev-parse HEAD)" = "$t" ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
     sed -i 's/^Branch: feat\/x/&\nDispatched: 4/' "$B" && git commit -qam cap  # -a: not the worktree under .claude/
     dsp --prompt "$B"; refused "it was dispatched 4 times, and the cap is 4"
