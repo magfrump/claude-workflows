@@ -301,7 +301,7 @@
 #             TIME", and that time and the tip's commit time are both over 2
 #             hours ago; then it is locked again with a new reason. Also
 #             refused: the branch in two worktrees, or in one whose directory
-#             is missing (locked or not).
+#             is missing or a symbolic link (locked or not).
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
@@ -1296,7 +1296,7 @@ dispatch() {
   elif [[ "$WT_N" -eq 1 ]]; then
     if [[ -n "$DIR" && "$DIR" != "$WT" ]]; then x="its branch $br is checked out in $WT, not in --dir's directory"
     # git never calls a locked worktree prunable, and dispatch always locks: test the directory too.
-    elif [[ -n "$WT_PRUNE" || ! -d "$WT" || -L "$WT" ]]; then x="its branch $br is checked out in $WT, which is missing (git worktree unlock, then git worktree prune, drop it)"
+    elif [[ -n "$WT_PRUNE" || ! -d "$WT" || -L "$WT" ]]; then x="its branch $br is checked out in $WT, which is missing or a symbolic link (git worktree unlock, then git worktree prune, drop a missing one)"
     elif [[ -n "$WT_LOCK" ]] && ! steal; then x="$STEAL_WHY"
     elif ! { [[ -z "$WT_LOCK" ]] || git worktree unlock "$WT"; } || ! git worktree lock --reason "$reason" "$WT"; then x="its worktree $WT could not be locked (it may be left unlocked)"
     else DIR="$WT"; fi

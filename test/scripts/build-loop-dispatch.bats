@@ -94,7 +94,7 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     dsp --prompt "$B"; [ "$status" -eq 0 ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
     # A dead loop's worktree, gone but still locked (git never calls it prunable), even with old times (i1 A1).
     lock "$W" "build-loop dispatch of 2026-10-01-x, UTC 2020-01-01T00:00:00Z"; rm -rf "$W"
-    dsp --prompt "$B" --steal; refused "its branch feat/x is checked out in $W, which is missing (git worktree unlock, then git worktree prune, drop it)"
+    dsp --prompt "$B" --steal; refused "its branch feat/x is checked out in $W, which is missing or a symbolic link (git worktree unlock, then git worktree prune, drop a missing one)"
     git worktree unlock "$W"; git worktree prune
     dsp --prompt "$B"; [ "$status" -eq 0 ] && [ "$(git -C "$W" rev-parse HEAD)" = "$t" ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
     sed -i 's/^Branch: feat\/x/&\nDispatched: 4/' "$B" && git commit -qam cap  # -a: not the worktree under .claude/
