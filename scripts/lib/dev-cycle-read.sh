@@ -33,9 +33,10 @@
 # set -e (which stops when need_root exits; `if out=...` and `< <(...)` would
 # carry on), and treat any line that is not a positive answer as a refusal.
 # A caller that also reads ANSWER_HEADING (check_answer's side value: the
-# entry's heading) runs check_answer in its own shell, its output to a file
-# under set -e, since a $(...) would drop the value; check_answer reaches no
-# need_root (it reads only git objects), so nothing exits there.
+# entry's heading) runs check_answer in its own shell, its output to a file,
+# since a $(...) would drop the value; check_answer reaches no need_root (it
+# reads only git objects), so nothing exits there, and set -e need not hold
+# (build-loop.sh calls it inside a condition).
 # Every script that calls scrub_reexec shares its DEV_CYCLE_SCRUBBED marker.
 # Inputs: check_brief, check_branch, check_answer, main_entry and brief_fields
 # read the default branch's commit, never the working tree (check_brief also
@@ -1917,8 +1918,8 @@ ownfile() {
 }
 # The gate's own files: a change to them lands only through a merge-gate-
 # review entry, never a self-merge. The scripts because main's copy runs the
-# next merge (plan D6, D5 item 3); skills/dev-cycle/ because it carries the
-# D6 snippet that copies and runs the gate (plan D4, F52), though sessions
+# next merge (plan D6, D5 item 3); skills/dev-cycle/ because plan D6 puts the
+# snippet that copies and runs the gate in its SKILL.md (U4; plan D4, F52), though sessions
 # load the skill only from a release, so here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its
 # own (floor does not run there); build-loop.sh's header repeats it.
@@ -1991,7 +1992,9 @@ floor_why() {
 # The keep-or-drop answer rule, for one entry of a questions file. Prints keep,
 # drop, done, open, unrecognized, dup (the heading appears more than once),
 # "odd N WHY", "unbalanced N" or "quoted N" (the file cannot be trusted; N is
-# the line, WHY the oddwhy reason), or nothing when the file has no such entry. A trailing CR is dropped.
+# the line, WHY the oddwhy reason), or nothing when the file has no such entry;
+# after keep, drop, done, open or unrecognized, a second line holds the entry's
+# heading after "### " (check_answer splits it off). A trailing CR is dropped.
 # Fences are tracked across the whole file (FENCE_AWK), and no fenced line is
 # read. Each of these makes the whole file a skip for every ID, naming the line
 # and the reason: anything FENCE_AWK refuses (see its comment), a fence still
@@ -2073,10 +2076,11 @@ END {
 # autonomous work must have reached main (plan D8), because a build loop can
 # write any working tree. A file stored as anything but a regular file under
 # plain directories there is not read (main_entry). It reads only git objects,
-# so it needs no ROOT_REAL and adds nothing to SKIPPED. With an answer line it
-# sets ANSWER_HEADING to the entry's heading after "### " ("Q-NNN · SLUG", CR
-# dropped), else empties it; a caller that reads it (build-loop.sh --approved)
-# calls check_answer in its own shell, its output to a file.
+# so it needs no ROOT_REAL and adds nothing to SKIPPED. For any result but a
+# skip (open included) it sets ANSWER_HEADING to the entry's heading text after
+# "### " (as written, CR dropped; "Q-NNN · SLUG" by the questions grammar),
+# else empties it; a caller that reads it (build-loop.sh --approved) calls
+# check_answer in its own shell, its output to a file.
 ANSWER_HEADING=""
 # shellcheck disable=SC2034  # ANSWER_HEADING is read by the caller
 check_answer() {

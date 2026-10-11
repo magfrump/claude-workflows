@@ -221,8 +221,8 @@
 #                 "Merge branch 'BRANCH' (build-loop self-merge)" and the
 #                 trailer "Build-loop-gate: STEM" (the brief's file name
 #                 without .md); its reflog entry reads "build-loop:
-#                 self-merge of STEM" (git adds ": Fast-forward" when W
-#                 moves it). With --approved Q-NNN it lands a brief of
+#                 self-merge of STEM" (under either authority git adds
+#                 ": Fast-forward" when W moves it). With --approved Q-NNN it lands a brief of
 #                 either policy under the N rules alone (no S rules, no
 #                 checkout rule) when the questions entry Q-NNN, read from
 #                 the default branch's commit as --check-answer reads it,

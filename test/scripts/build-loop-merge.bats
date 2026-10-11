@@ -181,8 +181,8 @@ approve() {
             "$1" "$2" "${3:-ANSWERED}" "${4:-$1: [1]}" > docs/working/questions.md \
         && commit_all "answer $1" && git checkout -q --detach main && M="$(git rev-parse main)"
 }
-# rv [FILE]: review policy, brief x (no Policy: line, so review) and feat/x with one commit (that
-# also adds FILE, when given), then Q-001 answered [1] as merge-2026-10-01-x-SHA12 (S); T the tip,
+# rv [FILE]: review policy, brief x (no Policy: line, so review) and feat/x with one commit (and a
+# second adding FILE, when given), then Q-001 answered [1] as merge-2026-10-01-x-SHA12 (S); T the tip,
 # TR the merged tree.
 rv() {
     settings "Build-loop policy: review"; brief x "Status: open" "Branch: feat/x"; work feat/x
