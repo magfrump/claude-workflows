@@ -1,8 +1,9 @@
-Commit: e25a6e89
+Commit: 01a2935f
+Loop closed at 01a2935f
 
 # Code Review Rubric
 
-**Scope:** feat/build-loop-u3a3 vs main (full branch; iteration 1, --loop-pass, k=1 fact-check, delivery mode self-read) | **Reviewed:** 2026-10-10 | **Status: 🟡 iteration 2 clean of red** — i1 R1 verified fixed; i2 added no red; i2 ambers fixed or deferred with rows (final confirming pass pending)
+**Scope:** feat/build-loop-u3a3 vs main (full branch; iteration 1, --loop-pass, k=1 fact-check, delivery mode self-read) | **Reviewed:** 2026-10-10 | **Status: ✅ PASSES** — final confirming pass (iteration 3 of 3, full branch, k=3, full panel) found no 🔴; its doc-class ambers were fixed in the closing comment commit (fix-drift checked) and the rest carry override rows. Single-sample review; absence of findings is not an attestation.
 
 Panel: code-fact-check (k=1, opus), security-reviewer, performance-reviewer, api-consistency-reviewer, architecture-review (auto-selected: lib contract change). Not triggered: test-strategy (tests changed with source), tech-debt-triage, dependency-upgrade, ui-visual-review. No short-circuit (no behavioral red at fact-check).
 
@@ -57,6 +58,31 @@ Prior items verified: R1 resolved (security, api); A2, A3, C4 resolved (architec
 | C15 | Header said "(under --approved, the N rules' lines only)", readable as dropping --expect; A1 sentence placed before "then the message reads"; the gate list copied by hand | fact-check i2 claim 1, api i2 F2, security i2 F3, architecture i2 Informational | 🟢 | Fixed (wording, order, "the lib's GATE_CODE"); T35 adds a mismatched --expect under --approved |
 | C16 | A sibling skill (skills/dev-cycle-2/SKILL.md) or routing row can redirect the cycle under a plain merge- slug | security i2 F2 | 🟢 | Deferred (row: same trigger as the C13 row, U4's entry body) |
 
+### Iteration 3: final confirming pass (full branch at 01a2935f; fact-check k=3 merged most-severe-wins; security, performance, api-consistency, architecture; Stage 2.5 on 5 routed endorsements)
+
+No 🔴: no behavioral Incorrect; no critic finding above Informational/Minor. Performance clean.
+
+| # | Finding | Source | Tier | Status |
+|---|---|---|---|---|
+| A5 | `rv` helper comment said one commit when FILE adds a second | fact-check final claim 1 (Incorrect, r3; doc-class → 🟡 under T) | 🟡 | Fixed (closing commit) |
+| A6 | ANSWER_AWK's comment described one output word; it now also prints the heading | fact-check final claim 2 (Stale, r1+r2), architecture final 1, api final 2 | 🟡 | Fixed (closing commit) |
+| C17 | Lib header said "under set -e" (the caller runs in a condition); check_answer's comment said "with an answer line" (set for any non-skip) | fact-check final claims 3, 4; api final 3 | 🟢 | Fixed (closing commit) |
+| C18 | GATE_CODE's and e25a6e89's "carries the D6 snippet" (U4 adds it) | fact-check final claim 5 | 🟢 | Fixed in the comment; commit body corrected in the merge message |
+| C19 | Header named ": Fast-forward" only for the self-merge reflog | fact-check escalation (r2), api final 1 | 🟢 | Fixed (closing commit) |
+| C20 | check_fix's new walk-failure suffix untested | fact-check escalation (r1), architecture final 2 | 🟢 | Fixed (dev-cycle.bats asserts the registry/root sentence) |
+| C21 | approval reads the answer word back from a temp file a same-uid writer could race | security final 1 (Informational) | 🟢 | Deferred (row; Q-103 surface list, U5) |
+
+## ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| --merge prints `merged` only when land returns 0; every policy, approval and land refusal prints refuse and exits 2 | ✅ Confirmed (scope: the merge arm's decision; check_line's own lines and startup refusals not covered) | submitted claim 7, executed: `scripts/build-loop.sh:1224-1229` | security endorsement, verified by fact-check | for-orchestrator-synthesis |
+| VERDICT[gate] is set for every diff-tree record whose lower-cased path matches GATE_CODE, deletions included | ✅ Confirmed | submitted claim 9, executed: deletion-only gate change refused under merge-, landed under merge-gate- | security endorsement, verified | for-orchestrator-synthesis |
+| The answer is read at the MAIN_SHA land uses as parent and CAS old value; a main moved to a [2] answer makes the swap refuse | ✅ Confirmed (scope: CAS path; ff-in-W path not raced) | submitted claim 10, executed | security endorsement, verified | for-orchestrator-synthesis |
+| The floor-word refactor refuses the same paths as main's floor but the intended skills/dev-cycle/ widening; no empty deny reason | ✅ Confirmed (scope: walk-failure wording read-static; case word unreachable from check_line) | submitted claim 11, executed: 19-path brief, identical --check output on main and HEAD but skills/dev-cycle/ | security endorsement, verified | for-orchestrator-synthesis |
+
+Submitted claim 8 (approval's acceptance rule) is Mostly accurate: one trailing CR on the heading is dropped before the byte compare (documented); every other variant refused.
+
 ## ↩️ Considered Overrides
 
 | Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
@@ -71,11 +97,6 @@ Prior items verified: R1 resolved (security, api); A2, A3, C4 resolved (architec
 
 ---
 
-## ✅ Confirmed Good
-
-Endorsements routed `route: code-fact-check` by security (same MAIN_SHA for answer and landing; questions files N-denied; no empty-DENY path in floor_why; `sm` unchanged for --check and self-merge) are pending execution verification (Stage 2.5 runs on the terminal pass).
-
----
 
 ## 🧩 Composition check
 
