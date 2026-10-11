@@ -290,7 +290,7 @@
 #                 write on the brief; then the loop's prompt, every line after.
 #             or skip BRIEF: WHY as --status skips it, or refuse BRIEF: WHY (a
 #             rule above; a worktree already has the branch checked out,
-#             unborn; DIR, or the default, exists or is not a path --dir
+#             unborn; DIR exists, or the default is not a path --dir
 #             takes; constraints.md, the worktrees or the branch could not be
 #             read, listed or created; or the worktree could not be added),
 #             leaving no branch or worktree it made (unless removing the
@@ -312,9 +312,11 @@
 #             not one --dir takes. Both refuse while another --start or
 #             --prompt holds the repository's dispatch lock (a flock on
 #             build-loop-dispatch.lock in the git common directory), or when
-#             that file is not a plain file or cannot be opened. Only two
-#             refusals can clear with no change to the repository: "another
-#             --start or --prompt is running ..." and "... under 2 hours old".
+#             that file is not a plain file or cannot be opened. Of the rule
+#             refusals, only two can clear with no change to the repository:
+#             "another --start or --prompt is running ..." and "... under 2
+#             hours old"; a refusal naming a failed git command (could not be
+#             read, listed, created, added or locked) may clear on a retry.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
@@ -1294,12 +1296,14 @@ steal() {
   [[ $(( $(date -u +%s) - l )) -gt "$STEAL_AGE" ]] || { STEAL_WHY="its worktree $WT is locked, and its lock or tip is under $(( STEAL_AGE / 3600 )) hours old"; return 1; }
 }
 # ended: whether the loop under WT's lock has ended (D3): the tip is a handoff
-# marker and the lock reason names the tip it was dispatched at, another one.
-# A lock taken at this marker is a newer, live dispatch (final security 1).
+# marker and the lock reason names the tip it was dispatched at, another one
+# and an ancestor of it (the loop committed since; a rewind to an older
+# marker does not end a live loop: confirming security 1). A lock taken at
+# this marker is a newer, live dispatch (final security 1).
 ended() {
   [[ "${STATUS[loop]}" == ready || "${STATUS[loop]}" == blocked || "${STATUS[loop]}" == stopped ]] || return 1
   [[ "$WT_LOCK" =~ ^locked\ build-loop\ dispatch\ of\ [^\ ]+\ at\ ([0123456789abcdef]{40}|[0123456789abcdef]{64}),\ UTC\  ]] || return 1
-  [[ "${BASH_REMATCH[1]}" != "${STATUS[sha]}" ]]
+  [[ "${BASH_REMATCH[1]}" != "${STATUS[sha]}" ]] && git merge-base --is-ancestor "${BASH_REMATCH[1]}" "${STATUS[sha]}" 2>/dev/null
 }
 # dispatch BRIEF: --start or --prompt (D1) for one brief, under the dispatch
 # lock its caller holds. Prints "ok BRIEF BRANCH DIR", "dispatched N" and the
@@ -1363,7 +1367,7 @@ PROMPT
   printf '%s\n' "$3" | sed 's/\r$//; s/^/> /'
   cat <<PROMPT
 Run every design choice through divergent design seeded with these constraints and your brief's own. One option dominates (Path A): decide and continue. No clear winner, no option surviving the hard constraints, or a fact only the user has: end with a blocked marker.
-Force-add your research doc (git add -f docs/working/research-$s.md), so your design records land with your work.
+Force-add your research doc (git add -f docs/working/research-$s.md), so your design records land with your work. Only add commits: never reset, rebase or otherwise move your branch below $5, the commit you were dispatched at.
 End with one marker, an empty commit at your branch tip whose first line is exactly one of:
 - "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done;
 - "handoff: blocked", with the question after a blank line as plain prose and an options table: no line that starts, after blanks, ">" and list markers, with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit;

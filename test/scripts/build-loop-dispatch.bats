@@ -109,6 +109,11 @@ lock() { git worktree unlock "$1" 2>/dev/null; git worktree lock --reason "$2" "
     dsp --prompt "$B"; [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok $B feat/x $W" ] && [[ "$output" == *"whose tip is $t."* ]] || { show; return 1; }
     # That lock names this marker: a second re-dispatch before the new loop commits is a live one (final security 1).
     dsp --prompt "$B"; [[ "$status" -eq 2 && "$output" == "refuse $B: its worktree $W is locked (locked build-loop dispatch of 2026-10-01-x at $t, UTC "* ]] || { show; return 1; }
+    # A live loop that rewinds to an older marker is not ended by it (confirming security 1).
+    git worktree unlock "$W"; git -C "$W" commit -q --allow-empty -m "handoff: blocked"
+    dsp --prompt "$B"; [ "$status" -eq 0 ] || { show; return 1; }
+    git -C "$W" reset -q --hard "$t"
+    dsp --prompt "$B"; [[ "$status" -eq 2 && "$output" == "refuse $B: its worktree $W is locked ("* ]] || { show; return 1; }
     git worktree unlock "$W"
     dsp --prompt "$B" --dir "$BATS_TEST_TMPDIR/other"; refused "its branch feat/x is checked out in $W, not in --dir's directory"
     dsp --prompt "$B"; [ "$status" -eq 0 ] && git worktree list --porcelain | grep -q "^locked build-loop" || { show; return 1; }
