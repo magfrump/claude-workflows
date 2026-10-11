@@ -1,4 +1,4 @@
-Commit: e3781a2c
+Commit: 4b863735
 Loop-pass short-circuit: used at aff39758
 
 # Code Review Rubric: feat/build-loop-u3d (U3d, --start / --prompt)
@@ -59,10 +59,29 @@ Scope: full branch for the critics (short-circuited in iteration 1), fact-check 
 
 Status (iteration 2): no Must Fix; Must Address B1, B2 fixed.
 
+## Iteration 3 of 3: final confirming pass (full branch at 4b863735, k=3, full panel)
+
+Fact-check k=3 merged most-severe-wins: `code-fact-check-report-u3d-final.md` (56 claims: 38 Verified, 11 Mostly Accurate, 1 Stale, 2 Incorrect, 4 Unverifiable; agreement 42/56 = 75%; replicates `-final-r{1,2,3}.md`). Four merged rows (36a, 38a, 38c, 42a) carry a whole-message verdict the rule put on a sub-claim the replicate did not fault; kept as merged, commit text only. Fact-check gate: not paused (/away; continue). Critics: `security-review-2026-10-10-u3d-final.md`, `performance-review-2026-10-10-u3d-final.md`, `api-consistency-review-2026-10-10-u3d-final.md`, `architecture-review-2026-10-10-u3d-final.md`. Prior B1, B2: resolved (security executed six rounds; api-consistency confirmed B1's flows) but B1 opened C1. No re-fires of a fixed finding.
+
+| ID | Tier | Finding | Source | Status |
+|---|---|---|---|---|
+| C1 | 🟡 | After a marker re-dispatch the marker stays at the tip until the new loop commits, so a second --prompt takes the live loop's lock without --steal (two agents in one worktree, F44; executed: two ok, both dispatched 1) | security 1 (Medium), api-consistency 1 (Inconsistent); composed (one mechanism) | Fixed: the lock reason records the dispatched tip ("... at TIP, UTC TIME"); a marker ends the loop only when it differs from that tip (`ended`); tested |
+| C2 | 🟡 | --start on an absent branch checked out unborn in a worktree prints ok, creates no branch, relocks it (the exemption keyed on "not working" let --start into the existing-worktree arm) | fact-check 3b (Incorrect, r3, executed), architecture 1, security 2 (Low) | Fixed: --start refuses when any worktree has the branch; the exemption names ready/blocked/stopped; tested |
+| C3 | 🟢 | The lock refusal says "another run" when the lock file cannot be opened (permanent); a FIFO hangs open(); a dangling symlink is followed | fact-check 28, api-consistency 2, security 3 | Fixed: a lock path not absent or a plain file refuses with its own reason; the held-lock refusal says "retry once it ends"; the header names the two retryable refusals; tested (dangling symlink) |
+| C4 | 🟢 | dispatch's children inherit the lock descriptor | performance 1 (Info) | Fixed: `9>&-` |
+| C5 | 🟢 | The worktree path printed before readerform | security 4 (Info) | Fixed: readerform first |
+| C6 | 🟢 | Header refusal list, dispatch comment (failed delete; caller holds the lock), case-arm comment's span, STEAL_AGE unused in messages, floor "below" omits prompt files, test 4's name and an "old times" comment | fact-check 5a, 17, 23, 33a, 33c; architecture 2, 3 | Fixed |
+| C7 | 🟢 | Plan's as-built note does not say it supersedes D1, the Dispatch bullets, F44, T40 | api-consistency 3 | Fixed |
+| C8 | 🟢 | Untested --prompt constraints-ok and WT_PRUNE arms; submodule configs unread by state_gate (git 2.39 runs nothing); loop_prompt reads DIR | fact-check r3 gap; security; architecture 4 | Defer / Won't-Fix (3 override rows) |
+| C9 | 🟢 | Commit text: aff39758's steal sentence stale after B1/A1; its Notes (A6); 23ba4511's merge-message promise | fact-check 36b, 36c, 38c | Corrected in the merge message |
+
+Status (iteration 3): no Must Fix; Must Address C1, C2 fixed after the pass (unreviewed: see the confirming pass below). Loop outcome: converged without a fourth iteration; the fix batch gets a narrow confirming pass (k=1 fact-check with Stage 2.5's routed claims, and security) over 4b863735..HEAD.
+
 ## 🧩 Composition check
 
 - Iteration 1: no multi-source co-located clusters qualified (one source).
 - Iteration 2, `scripts/build-loop.sh` dispatch's existing-worktree arm (~:1296-1302): security 1 (B2, 🟡), api-consistency 1 (B1, 🟡), security 2 (B3), fact-check i2 (symlink arm). Distinct defects: B1 is the lock rule's input (marker state), B2 its atomicity, B3 the path's form; each states its own mechanism and fix.
+- Final pass, dispatch's existing-worktree arm: security 1 + api-consistency 1 (C1) state one mechanism, composed in C1 (🟡, inherits); fact-check 3b + architecture 1 + security 2 (C2) likewise one mechanism.
 - Iteration 2, wt_of vs land (architecture 1, api-consistency 6): one finding raised twice, not a composition (no 🔴/🟡 fragment).
 
 Single-sample review; absence of findings is not an attestation.
