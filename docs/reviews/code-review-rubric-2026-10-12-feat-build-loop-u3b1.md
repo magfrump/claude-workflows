@@ -1,5 +1,5 @@
-Commit: 91659c66
-Loop-pass short-circuit: used at 91659c66
+Commit: 5e816c5b
+Loop closed at 5e816c5b
 
 # Code Review Rubric: feat/build-loop-u3b1 (U3b1, --state / --marker)
 
@@ -58,6 +58,27 @@ Fact-check `docs/reviews/code-fact-check-report-u3b1-i2.md`: 24 claims, 19 Verif
 
 Commit-body corrections owed in the merge message: 8f99a919 says "valid UTF-8" and "skipped unread".
 
+## Iteration 3: final confirming pass (full branch `main...5e816c5b`, k=3 fact-check, full panel, opus)
+
+Fact-check merged `docs/reviews/code-fact-check-report-u3b1-final.md` (r1 31, r2 40, r3 32 claims): 0 behavioural Incorrect; 1 Incorrect cluster (ec9ba0c7 and 8f99a919 commit-body text), 4 Mostly-accurate clusters (help and plan text), 2 Unverifiable. Critics (`*-2026-10-12-u3b1-final.md`): security 1 Low; performance 1 Informational + 1 outside lane; api-consistency 1 Minor + 1 Informational; architecture 0 red, 0 amber, 5 green. Prior B1-B21 and C1-C5: resolved or settled by their rows (critics re-checked; none re-filed). Stage 2.5: the routed endorsements (count check before any git call, caller-pair precedence, every printed line `>`-led, quoted body cannot open a fence, default_gate on a tag) were each executed by at least one final fact-check replicate or critic probe and are Verified there; no ✅ rows are claimed beyond them.
+
+Status: **0 🔴 · 0 🟡 · 🟢 12** — single-sample review; absence of findings is not an attestation.
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| D1 | ec9ba0c7's body: GIT_GRAFT_FILE and the object directories "never read"; 8f99a919's body: "skipped unread", "valid UTF-8", CAS only | fact-check cluster 1, 2 (Incorrect, commit text) | Corrected in the merge message |
+| D2 | --state's exit-1 list incomplete | fact-check cluster 3; api-consistency 1 | Fixed (text: "when a caller's git setting stops git or the script first ..."; plan names U4's rule) |
+| D3 | Header: FENCE_AWK reads the body "as written" | fact-check cluster 4 | Fixed (text: "as printed") |
+| D4 | Plan: "anything but a commit" | fact-check cluster 5 | Fixed (text: an annotated tag) |
+| D5 | U3b3's git_harden has no recorded contract for HARDEN and CALLER_COUNT | architecture 1 | Fixed (plan's U3b3 bullet) |
+| D6 | U3b2 should say whether --main-log is gated | architecture 5 | Fixed (plan's U3b2 bullet) |
+| D7 | scrub's 4096-byte cut splits a character, skipping a long valid line | performance (outside lane) | Defer (row) |
+| D8 | Strict UTF-8 regex recursion limit | performance 1 | Defer (row) |
+| D9 | Pasted body becomes the index summary; `\|` shifts cells | security 1, api-consistency 2 | Defer U4 (row) |
+| D10 | HARDEN key marked by a trailing blank | architecture 2 | Won't-Fix (row) |
+| D11 | BODY_RULE and its regex are two literals | architecture 3 | Defer (row) |
+| D12 | Help lists HARDEN's keys as prose | architecture 4 | Won't-Fix (row) |
+
 ## 🧩 Composition check
 
 B4 (fact-check 13, architecture 1, api-consistency 1; default_gate at `scripts/build-loop.sh:543-545` and land `:1385`): distinct defects: no; one root, stated by each fragment already (compare the ref with itself, not with the startup snapshot). No other multi-source co-located cluster qualified.
@@ -72,5 +93,6 @@ None.
 
 ## Iteration log
 
+- Iteration 3 (final, full branch, k=3, full panel): 0 red, 0 amber; text fixes after it (D2-D6) are docs and help comments, checked by the lite fix-drift reviewer; loop closed at 5e816c5b.
 - Iteration 2 (fix range, k=1, short-circuited at fact-check): 1 behavioural red (C1), fixed with C2-C5 in 8367359f; 399 lines.
 - Iteration 1 (full scope, k=1, full panel): 0 red, 9 amber, 12 green. Fixes mutation-checked (6 mutants killed: the `<!--` rule, the UTF-8 rule, the size cap, the quoted FENCE pass, the HARDEN key match, the tag check). Size 398 changed code lines.
