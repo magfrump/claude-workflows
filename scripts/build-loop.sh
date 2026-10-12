@@ -5,6 +5,8 @@
 #
 # Usage: scripts/build-loop.sh --settings
 #        scripts/build-loop.sh --status BRIEF...
+#        scripts/build-loop.sh --marker BRIEF
+#        scripts/build-loop.sh --state
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
@@ -91,6 +93,47 @@
 #                 an open brief only, another open brief on main (in briefs/ or
 #                 closed/) names the same branch (ignoring case) or the open
 #                 briefs on main could not be listed.
+#   --marker  the body of BRIEF's blocked or stopped marker (D4, D11), for an
+#             entry the orchestrator heads itself:
+#             ok BRIEF SHA
+#                 SHA: the marker (the branch tip, as --status reads it). Then
+#                 the body (the message after the subject and the blank line
+#                 below it, trailing blank lines dropped), scrubbed as all
+#                 output is, each line prefixed "> " (an empty one ">"); at
+#                 most 100 lines of 300 bytes (a character is never split),
+#                 with a last line "> (build-loop.sh --marker cut this body:
+#                 K of N lines shown, M cut at 300 bytes)" when cut. A stopped
+#                 marker's body may be empty.
+#             skip BRIEF: WHY
+#                 As --status skips it; the tip is no blocked or stopped
+#                 marker (WHY names --status' LOOP); the marker commit is over
+#                 64 KiB (its body is not processed); a body line starts, after blanks, ">" and list
+#                 markers ("-", "*", "+", "1." or "1)" and a blank), with "#",
+#                 "**Needs:**", "**Status:**", "**Answer" or "Q-" and a digit,
+#                 in any case, holds "<!--" (questions.sh's index markers) or
+#                 is not strict UTF-8 (no surrogate or code point past
+#                 U+10FFFF, as questions.sh check reads it; the loop prompt's rule); a line of the
+#                 body as printed, bare or quoted, that FENCE_AWK refuses, or a
+#                 fence it leaves open; a blocked marker with no body; or a
+#                 read that fails.
+#   --state   the state gate --check runs first, alone (D13, F51; the
+#             orchestrator runs it at the start of each iteration): ok, or
+#             --check's "refuse state WHAT: WHY" lines and exit 2. It checks
+#             what this script's own git reads trust, as they run hardened;
+#             it does not make a plain git command safe in the caller's shell,
+#             and it is a snapshot. Exit 1 (stderr only) when a caller's git
+#             setting stops git or the script first (a GIT_CONFIG_COUNT not
+#             plain decimal, a GIT_DIR naming no repository...). First, read only here, the
+#             caller's environment: a
+#             repo-local git variable set (GIT_REPLACE_REF_BASE, GIT_GRAFT_FILE,
+#             GIT_SHALLOW_FILE, GIT_DIR, the object directories and the like;
+#             the caller's config pairs, GIT_NO_REPLACE_OBJECTS and GIT_PREFIX
+#             aside), or a caller pair (git -c, GIT_CONFIG_COUNT) setting a key
+#             the state gate refuses or one this script's own hardening sets
+#             (core.useReplaceRefs, core.hooksPath, core.fsmonitor,
+#             core.attributesFile, core.commitGraph, core.multiPackIndex;
+#             a git -c pair would win over it), whatever the value. Then --check's state gate, its
+#             default-branch rules and its object check, as listed there.
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
 #             a git config key (common config or config.worktree, includes not
 #             followed) for a filter, include, config hook, merge or diff
@@ -101,8 +144,9 @@
 #             object store) that is not absent or an empty file; a
 #             replace ref; an origin/HEAD naming any branch but origin/main or
 #             origin/master; then (once main is found) both main and master
-#             present, the default branch a symbolic ref, or origin/HEAD
-#             naming another branch than the one taken;
+#             present, the default branch a symbolic ref or naming an object
+#             that is not a commit (an annotated tag), or origin/HEAD naming
+#             another branch than the one taken;
 #             then the gate's own merge repository not set up ("refuse state
 #             gate: WHY"); then main's commit, or a tree or blob of its tree
 #             (gitlinks aside), that does not hash to its id, has a second copy in the object
@@ -328,13 +372,16 @@
 # temporary directory, removed at exit.
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
-# Exit: 0 every line printed (or help), for --check every verdict line ok,
-# for --merge merged, for --start and --prompt ok; 2 any other --check,
-# --merge, --start or --prompt verdict line, or the state gate not ok. A --check or --merge can also stop
-# part way, after the lines of the briefs before, with 1 (need_root) or a
-# failed command's own status: a caller reads any exit but 0 as nothing
-# decided. 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, a
-# failed mktemp (--check, --merge, --start, --prompt; no line printed), or no default branch found by name.
+# Exit: 0 every line printed (or help; a --marker skip is a line), for
+# --state ok, for --check every verdict line ok, for --merge merged, for
+# --start and --prompt ok; 2 any other --check, --merge, --start or --prompt
+# verdict line, or the state gate (--state's included) not ok. A --check or
+# --merge can also stop part way, after the lines of the briefs before, with 1
+# (need_root) or a failed command's own status: a caller reads any exit but 0
+# as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
+# decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
+# (--state, --check, --merge, --start, --prompt; no line printed),
+# or no default branch found by name.
 
 set -euo pipefail
 
@@ -349,11 +396,13 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
 MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
+  --marker) MODE=marker; shift; ARGS=("$@"); [[ $# -eq 1 ]] || usage "--marker takes one brief path" ;;
+  --state) MODE=state; [[ $# -eq 1 ]] || usage "--state takes no arguments" ;;
   --check|--merge)
     MODE="${1#--}"; shift
     while [[ $# -gt 0 ]]; do
@@ -398,12 +447,16 @@ esac
 # user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
 # transport at all, so a lazy fetch (a partial clone's missing object) fails
 # however the config was planted, even after the state gate read it. The
-# caller's own environment is trusted: its `git -c` or a zero-padded
-# GIT_CONFIG_COUNT can still win (U3b's --state). What the rest cannot switch
-# off, --check's state gate refuses.
+# caller's own environment is trusted: its `git -c` pairs can still win, so
+# --state reads them (caller_gate); a GIT_CONFIG_COUNT that is not plain
+# decimal (010 reads as 8 here and as 10 to git) stops every mode. What the
+# rest cannot switch off, --check's state gate refuses.
+CALLER_COUNT="${GIT_CONFIG_COUNT:-0}"
+HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false)
 harden() {
-  local c="${GIT_CONFIG_COUNT:-0}" kv
-  for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false; do
+  local c="$CALLER_COUNT" kv
+  [[ "$c" =~ ^(0|[123456789][0123456789]*)$ ]] || { echo "build-loop.sh: GIT_CONFIG_COUNT is not a plain decimal count" >&2; exit 1; }
+  for kv in "${HARDEN[@]}"; do
     export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
   done
   export GIT_CONFIG_COUNT="$c"
@@ -452,7 +505,46 @@ state_gate() {
   fi
   return "$bad"
 }
-# The state gate's second half, once resolve_main has run (U3b's --state calls
+# callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
+# gate keeps: the caller's config pairs, which harden extends and trusts
+# (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
+# this script sets. GIT_CONFIG is not one: git config then reads that one file
+# instead of every scope (gate_repo unsets it; checkout_gate refuses it).
+callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$1" == GIT_NO_REPLACE_OBJECTS ]]; }
+# stray_vars: the repo-local git variables set here, one per line, but the
+# caller's (callervar) and GIT_PREFIX, which only names a subdirectory for an
+# alias (the script cds to the top level). checkout_gate and caller_gate refuse them.
+stray_vars() { local v; for v in $(git rev-parse --local-env-vars); do [[ -z "${!v+set}" || "$v" == GIT_PREFIX ]] || callervar "$v" || echo "$v"; done; }
+# --state's snapshot of the git settings in the caller's environment (rows
+# 276, 281, 666), which harden and the state gate trust: the orchestrator runs
+# --state at the start of each iteration, so a git variable or pair that
+# persists in its environment (a loop can write ~/.zshrc) shows there. Not
+# covered: anything else such an environment can do (BASH_ENV, PATH), and
+# what changes after the snapshot. A stray variable: GIT_REPLACE_REF_BASE,
+# GIT_SHALLOW_FILE and GIT_ALTERNATE_OBJECT_DIRECTORIES name files the state
+# gate does not read, and GIT_GRAFT_FILE or GIT_OBJECT_DIRECTORY move the ones
+# it does. A caller pair (git -c, GIT_CONFIG_COUNT; read with the caller's
+# count, so harden's own pairs are not listed) for a key the state gate
+# refuses or one HARDEN sets, whatever its value: git applies git -c pairs
+# after harden's, so they win (a GIT_CONFIG_COUNT pair comes before harden's
+# and loses, but is refused too). Prints one "refuse state WHAT: WHY" line per
+# finding, returns 1 on any.
+caller_gate() {
+  local v x k kv bad=0
+  for v in $(stray_vars); do
+    echo "refuse state $v: set in the caller's environment, so git can read another repository, object store, index, config, graft, shallow or replace-ref file"; bad=1
+  done
+  x="$(GIT_CONFIG_COUNT="$CALLER_COUNT" git config --list --show-scope --name-only)" || { echo "refuse state caller-config: the caller's config pairs could not be read"; return 1; }
+  while IFS=$'\t' read -r v k; do
+    [[ "$v" == command ]] || continue
+    for kv in "${HARDEN[@]}"; do kv="${kv%%=*}"; [[ "$k" != "${kv,,}" ]] || k+=" "; done  # a trailing blank marks a HARDEN key
+    if [[ "$k" == *" " || "$k" =~ $STATE_KEYS_RE ]]; then
+      echo "refuse state ${k% }: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)"; bad=1
+    fi
+  done <<<"$x"
+  return "$bad"
+}
+# The state gate's second half, once resolve_main has run (--state calls
 # both): the default branch counts only when no other name could claim it. A
 # loop can create a local master beside main (or main beside master) and point
 # origin/HEAD at it, and resolve_main would follow (R7). Prints one line per
@@ -465,6 +557,12 @@ default_gate() {
   # A symbolic default branch: a worktree on it lists as its target's, and
   # update-ref would move the target (final security F3).
   if git symbolic-ref -q "refs/heads/$MAIN" >/dev/null; then echo "refuse state default-branch: refs/heads/$MAIN is a symbolic ref"; bad=1; fi
+  # resolve_main peels the ref to its commit, which land's compare-and-swap
+  # would then never match (row 656). The ref itself, not MAIN_SHA: land's
+  # re-run must leave a moved branch to its own refusal (the
+  # compare-and-swap, or the fast-forward in W).
+  p="$(git show-ref --verify --hash "refs/heads/$MAIN" 2>/dev/null)" && [[ "$(git cat-file -t "$p" 2>/dev/null)" == commit ]] \
+    || { echo "refuse state default-branch: refs/heads/$MAIN names an object that is not a commit"; bad=1; }
   p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
   if [[ -n "$p" && "$p" != "refs/remotes/origin/$MAIN" ]]; then
     echo "refuse state default-branch: origin/HEAD names ${p#refs/remotes/}, but the default branch taken is $MAIN"; bad=1
@@ -477,8 +575,12 @@ cd "$ROOT"
 ROOT_REAL="$(pwd -P)"
 # --check refuses planted state before any git call reads an object (resolve_main
 # does); gate_start runs the rest of its startup.
-# Every mode but the two read modes decides or writes (a new mode is gated by default).
-GATED=""; [[ "$MODE" == settings || "$MODE" == status ]] || GATED=1  # not the gate repository's GATE_*
+# Every mode but the read modes decides or writes (a new mode is gated by
+# default). --marker reads one marker as --status reads its tip: the
+# orchestrator's --state at the start of its iteration covers both (row 690).
+GATED=""; [[ "$MODE" =~ ^(settings|status|marker)$ ]] || GATED=1  # not the gate repository's GATE_*
+# The caller's environment first: it can point the state gate's own reads elsewhere.
+if [[ "$MODE" == state ]]; then caller_gate || exit 2; fi
 if [[ -n "$GATED" ]]; then state_gate || exit 2; fi
 resolve_main || true
 main_by_name || { echo "build-loop.sh needs a default branch found by name (origin/HEAD, main or master); found none" >&2; exit 1; }
@@ -700,6 +802,73 @@ status_fields() {
 }
 status_line() { status_fields "$1"; echo "${STATUS[line]}"; }
 
+# A blocked marker's body rule (D3, D11), as the loop prompt states it and
+# --marker enforces it (row 689: one string), with BODY_LINES and BODY_BYTES.
+BODY_RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
+# The marker commit's size cap in bytes: over it, the body is not processed
+# (marker_kind has still read the commit, in --status' own reads).
+BODY_LINES=100; BODY_BYTES=300; MARKER_MAX=65536
+# --marker for one brief (D4, D11): "ok BRIEF SHA" and its blocked or stopped
+# marker's body (the message after the subject and the blank line below it),
+# scrubbed, cut to BODY_LINES lines of BODY_BYTES bytes (a character is never
+# split) with a note after it, every line "> "-prefixed (an empty one ">");
+# or one skip line.
+# The orchestrator files the body inside an entry it heads itself: the
+# questions readers anchor at column 0, so a quoted line is never read as a
+# heading, a Needs line or an answer (E2, E3). A body line breaking BODY_RULE
+# skips the marker, as does any line FENCE_AWK refuses in the body or in its
+# quoted form (the questions file is read whole by FENCE_AWK: one refused line
+# there would stop every answer in it), or a blocked body with no text.
+marker() {
+  local a="$1" m body r n why
+  status_fields "$a"
+  [[ "${STATUS[line]}" == "ok "* ]] || { echo "${STATUS[line]}"; return; }
+  [[ "${STATUS[loop]}" == blocked || "${STATUS[loop]}" == stopped ]] \
+    || { echo "skip $a: the tip of ${STATUS[branch]} is not a blocked or stopped marker (${STATUS[loop]})"; return; }
+  # marker_kind has refused a NUL and a second subject line; the headers end at the first empty line.
+  n="$(git cat-file -s "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
+  [[ "$n" -le "$MARKER_MAX" ]] || { echo "skip $a: its marker is $n bytes, over the $MARKER_MAX-byte cap"; return; }
+  m="$(git cat-file commit "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
+  body=""; m="${m#*$'\n\n'}"; [[ "$m" != *$'\n'* ]] || body="${m#*$'\n'}"; body="${body#$'\n'}"
+  # Scrubbed first, so the rules, the caps and FENCE_AWK read what is printed.
+  # Prints "rule N", or the quoted lines (no lines: nothing but blanks).
+  # shellcheck disable=SC2016  # perl code, not shell
+  body="$(printf '%s\n' "$body" | scrub | env LC_ALL=C N="$BODY_LINES" B="$BODY_BYTES" perl -e '
+    my @l = map { s/\n\z//r } <STDIN>; pop @l while @l && $l[-1] =~ /^[ \t]*\z/;
+    for my $i (0 .. $#l) {
+      (my $s = $l[$i]) =~ s/^(?:[ \t>]|[-*+][ \t]|[0-9]+[.)][ \t])*//;
+      # "<!--" anywhere: questions.sh finds its index markers anywhere in a line (security i1 F1).
+      if ($s =~ /^(?:#|\*\*needs:\*\*|\*\*status:\*\*|\*\*answer|q-[0-9])/i || index($l[$i], "<!--") >= 0
+        || $l[$i] !~ /\A(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*\z/) { print "rule ", $i + 1, "\n"; exit 0 }
+    }
+    my ($k, $cut) = (@l > $ENV{N} ? $ENV{N} : scalar @l, 0);
+    for my $s (@l[0 .. $k - 1]) {
+      if (length($s) > $ENV{B}) {
+        $s = substr($s, 0, $ENV{B}); $cut++;
+        # A lead byte whose sequence the cut left short goes with its tail.
+        if ($s =~ /([\xC0-\xF7][\x80-\xBF]*)\z/) { my $b = ord($1); $s = substr($s, 0, -length($1)) if length($1) < ($b >= 0xF0 ? 4 : $b >= 0xE0 ? 3 : 2) }
+      }
+      print $s eq "" ? ">\n" : "> $s\n";
+    }
+    print "> (build-loop.sh --marker cut this body: $k of ", scalar @l, " lines shown, $cut cut at $ENV{B} bytes)\n" if $k < @l || $cut')" \
+    || { echo "skip $a: its marker's body could not be read"; return; }
+  if [[ "$body" == "rule "* ]]; then echo "skip $a: a line of its marker's body breaks the blocked-body rule ($BODY_RULE): line ${body#rule }"; return; fi
+  [[ -n "$body" || "${STATUS[loop]}" == stopped ]] || { echo "skip $a: its blocked marker holds no question (the body is empty)"; return; }
+  # FENCE_AWK over the body as written, then as quoted; line N is the body's line N either way.
+  # shellcheck disable=SC2016  # awk code, not shell
+  for m in "$(printf '%s\n' "$body" | sed -E 's/^> ?//')" "$body"; do
+    [[ -n "$body" ]] || break
+    r="$(printf '%s\n' "$m" | env LC_ALL=C awk "$FENCE_AWK"'fence($0) { next } END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline }')" \
+      || { echo "skip $a: its marker's body could not be read"; return; }
+    case "$r" in
+      odd\ *) read -r _ n why <<<"$r"; echo "skip $a: line $n of its marker's body $(oddwhy "$why")"; return ;;
+      unbalanced\ *) echo "skip $a: the code fence opened at line ${r#unbalanced } of its marker's body is never closed"; return ;;
+    esac
+  done
+  echo "ok $a ${STATUS[sha]}"
+  [[ -z "$body" ]] || printf '%s\n' "$body"
+}
+
 # merge_result's own repository, set up once per run in GATE_TMP (the caller's
 # mktemp -d, removed at exit): a git dir with no config but the repo's object
 # format, no modules/, info/ or shallow, and an empty directory to run in, so
@@ -709,12 +878,6 @@ status_line() { status_fields "$1"; echo "${STATUS[line]}"; }
 # object store (GIT_OBJECT_DIRECTORY, where it also writes). GATE_ENV unsets the
 # repo-local variables (GIT_COMMON_DIR and the like) that would point it back.
 GATE_TMP=""; GATE_ENV=()
-# callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
-# gate keeps: the caller's config pairs, which harden extends and trusts
-# (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
-# this script sets. GIT_CONFIG is not one: git config then reads that one file
-# instead of every scope (gate_repo unsets it; checkout_gate refuses it).
-callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$1" == GIT_NO_REPLACE_OBJECTS ]]; }
 gate_repo() {
   local fmt v
   GATE_ENV=(env)
@@ -930,11 +1093,8 @@ checkout_gate() {
   local -x LC_ALL=C  # exported: tr, awk and git run under it too
   local v x rc r n p ps=() ids=() re=$'^([01234567]{6}) [a-z]+ ([0123456789abcdef]+)\t(.*)$'
   CHECKOUT_WHY=""
-  for v in $(git rev-parse --local-env-vars); do
-    # GIT_PREFIX only names a subdirectory for an alias; the script cds to the top level.
-    [[ -z "${!v+set}" || "$v" == GIT_PREFIX ]] || callervar "$v" \
-      || { CHECKOUT_WHY="$v is set, so git can read another work tree, index, object store or config file"; return 1; }
-  done
+  x="$(stray_vars)"; v="${x%%$'\n'*}"
+  [[ -z "$v" ]] || { CHECKOUT_WHY="$v is set, so git can read another work tree, index, object store or config file"; return 1; }
   x="$(git rev-parse --verify -q 'HEAD^{commit}')" || x="unreadable"
   [[ "$x" == "$MAIN_SHA" ]] || { CHECKOUT_WHY="the checkout's HEAD is $x, not the default branch's commit $MAIN_SHA"; return 1; }
   for v in "core.symlinks false: a symlink is checked out as a file holding its text" \
@@ -1007,12 +1167,17 @@ checkout_gate() {
 # status); its worktree list, git-common-dir, each worktree's HEAD
 # (symbolic-ref with that git dir) and state files are read in the real repository, and merge_ident alone (git var) reads the caller's
 # global config.
-gate_start() {
+# state_start is its state half (all --state runs once main is found: rows
+# 525, 690).
+state_start() {
   default_gate || exit 2
   GATE_TMP="$(mktemp -d)"; trap 'rm -rf -- "$GATE_TMP"' EXIT
   gate_repo || { echo "refuse state gate: its merge repository could not be set up"; exit 2; }
   store_check --main "$MAIN_SHA" \
     || { echo "refuse state objects: the default branch's commit or an object of its tree does not hash to its id, has a second copy in the object store, or could not be read"; exit 2; }
+}
+gate_start() {
+  state_start
   reader_settings; read_settings; never_res; open_shared
 }
 # --check for one brief: "ok BRIEF TIP TREE" or "refuse BRIEF: K of N changed
@@ -1370,7 +1535,7 @@ Run every design choice through divergent design seeded with these constraints a
 Force-add your research doc (git add -f docs/working/research-$s.md), so your design records land with your work. Only add commits: never reset, rebase or otherwise move your branch below $5, the commit you were dispatched at.
 End with one marker, an empty commit at your branch tip whose first line is exactly one of:
 - "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done;
-- "handoff: blocked", with the question after a blank line as plain prose and an options table: no line that starts, after blanks, ">" and list markers, with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit;
+- "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is skipped): $BODY_RULE;
 - "handoff: stopped: REASON" (1 to 120 printable ASCII characters, no blank at either end), on a stop condition: adding a dependency or a symlink, an edit these rules forbid, or a --check refusal you cannot fix within Paths:.
 Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge, open a pull request or publish.
 Never write the questions files, the roadmap, docs/dev-cycle.md or any other brief. In your own brief change only the Status line, from open to done, in your final change.
@@ -1378,6 +1543,14 @@ PROMPT
 }
 
 case "$MODE" in
+  marker)
+    read_settings
+    marker "${ARGS[0]}"
+    ;;
+  state)
+    state_start
+    echo ok
+    ;;
   status)
     read_settings
     for a in "${ARGS[@]}"; do status_line "$a"; done
