@@ -1004,7 +1004,8 @@ store_check() {
   } | awk 'FILENAME != "-" { want[$0]; next } ($0 in want) && n[$0]++ { bad = 1 } END { exit bad }' "$GATE_TMP/main" "$GATE_TMP/call" - || return 1
   [[ -z "$main" ]] || mv "$GATE_TMP/call" "$GATE_TMP/main"
 }
-# The merge of TIP into MAIN_SHA as the gate lands it (D7): prints the result
+# The merge of TIP into MAIN_SHA as the gate lands it (D7; --main-log's
+# clean_merge re-derives it with the same merge-tree options): prints the result
 # tree; returns 1 on a conflict (a gitlink both sides moved is one, since no
 # submodule repository is reachable), 2 when git failed or warned, or the
 # tree of main, the tip or a merge base is missing (R6).
@@ -1629,6 +1630,16 @@ function flush(   i) { if (nr != na) bad = 1; for (i = 1; i <= nr; i++) if (r[i]
   bad = 1
 }
 END { flush(); exit !(n > 0 && !bad) }'
+# clean_merge P1 P2 TREE: TREE is merge-tree's clean merge of P1 and P2, by
+# the call merge_result makes for land (same options; keep the two alike, or
+# every gate merge reads other). merge-tree writes the merged trees and blobs
+# into the object store, as --check's does: a merge whose tree is not this one
+# (conflicting, hand-resolved, or made with -s, -X or merge config) can add
+# new ones.
+clean_merge() {
+  local t
+  t="$(gate_git merge-tree --write-tree --no-messages "$1" "$2")" && [[ "$t" == "$3" ]]
+}
 # log_class C: --main-log's class of the first-parent commit C (gate, chore,
 # answers or other) in CLASS, its message's first line in SUBJ ("-" when
 # empty). C, its changes and the record it adds are read in the gate
@@ -1638,25 +1649,18 @@ END { flush(); exit !(n > 0 && !bad) }'
 # write it: an amended merge keeps both parents and the message (i1 security
 # F1). Checked after the subject, so other merges cost no merge-tree run (i2
 # performance 1).
-# clean_merge: log_class's commit ($GATE_TMP/c, parents ps) has merge-tree's
-# tree. merge-tree writes the merged trees and blobs into the object store, as
-# --check's does (only a conflicting or hand-resolved merge adds new ones).
-clean_merge() {
-  local t
-  t="$(gate_git merge-tree --write-tree --no-messages "${ps[0]}" "${ps[1]}")" \
-    && [[ "$t" == "$(LC_ALL=C awk '/^tree / { print $2; exit }' "$GATE_TMP/c")" ]]
-}
 log_class() {
-  local c="$1" ps=() m=() meta p x b q
+  local c="$1" ps=() m=() meta p x b q t
   CLASS=other; SUBJ=-
   gate_git cat-file commit "$c" > "$GATE_TMP/c" || return 0
   mapfile -t ps < <(LC_ALL=C awk '/^$/ { exit } /^parent / { print $2 }' "$GATE_TMP/c")
+  t="$(LC_ALL=C awk '/^tree / { print $2; exit }' "$GATE_TMP/c")"
   # The message, byte for byte: everything after the header's blank line.
   LC_ALL=C perl -0777 -ne 's/\A.*?\n\n//s and print' "$GATE_TMP/c" > "$GATE_TMP/m" || return 0
   mapfile -t -n 5 m < "$GATE_TMP/m"; SUBJ="${m[0]-}"; [[ -n "$SUBJ" ]] || SUBJ=-
   if [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(.+)\'\ \(build-loop\ (self-merge|approved merge)\)$ ]]; then
     b="${BASH_REMATCH[1]}"; x="${BASH_REMATCH[2]}"
-    clean_merge || return 0
+    clean_merge "${ps[0]}" "${ps[1]}" "$t" || return 0
     [[ "${m[2]-}" =~ ^Build-loop-gate:\ (.+)$ ]] || return 0
     p="${BASH_REMATCH[1]}"
     q=""
@@ -1664,7 +1668,7 @@ log_class() {
     gate_msg "$b" "$x" "$p" "$q" > "$GATE_TMP/want" && cmp -s "$GATE_TMP/want" "$GATE_TMP/m" && CLASS=gate
   elif [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(chore/dev-cycle-[0123456789]{4}-[0123456789]{2}-[0123456789]{2}(-[0123456789]{4})?)\'($|\ into\ |:) ]]; then
     b="${BASH_REMATCH[1]}"
-    clean_merge || return 0
+    clean_merge "${ps[0]}" "${ps[1]}" "$t" || return 0
     gate_git diff-tree -r --no-renames --raw -z "${ps[0]}" "$c" > "$GATE_TMP/d" || return 0
     while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
       [[ "$p" =~ ^docs/working/cycles/cycle-[^/]+\.md$ && "$meta" =~ ^:[01234567]{6}\ 100644\ [0123456789abcdef]+\ ([0123456789abcdef]+)\ [AM]$ ]] || continue
@@ -1695,10 +1699,13 @@ main_log() {
   # The commits above SINCE (rev-list lists newest first).
   LC_ALL=C awk -v s="$1" '$0 == s { f = 1; exit } { print } END { exit !f }' "$GATE_TMP/fp" > "$GATE_TMP/after" \
     || { echo "main $MAIN_SHA -"; echo "refuse main-log: $1 is not on the default branch's first-parent history at $MAIN_SHA"; return 1; }
-  echo "main $MAIN_SHA $(wc -l < "$GATE_TMP/after")"
+  # Oldest first, to a file: a failed tac must not end the listing early with exit 0 (final security).
+  tac "$GATE_TMP/after" > "$GATE_TMP/fp" \
+    || { echo "main $MAIN_SHA -"; echo "refuse main-log: the default branch's first-parent history could not be listed"; return 1; }
+  echo "main $MAIN_SHA $(wc -l < "$GATE_TMP/fp")"
   while IFS= read -r c; do
     log_class "$c"; echo "$CLASS $c $SUBJ"; [[ "$CLASS" != other ]] || o=1
-  done < <(tac "$GATE_TMP/after")
+  done < "$GATE_TMP/fp"
   return "$o"
 }
 
