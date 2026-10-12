@@ -1,4 +1,5 @@
-Commit: ec9ba0c7
+Commit: 91659c66
+Loop-pass short-circuit: used at 91659c66
 
 # Code Review Rubric: feat/build-loop-u3b1 (U3b1, --state / --marker)
 
@@ -43,6 +44,20 @@ None.
 
 Rows 493/494/517 "close on the flow" (fact-check claim 23, Unverifiable): the plan note now says they close once U4 starts each iteration with `--state`.
 
+## Iteration 2 (scope `ec9ba0c7..91659c66`, loop pass, k=1; short-circuited at fact-check)
+
+Fact-check `docs/reviews/code-fact-check-report-u3b1-i2.md`: 24 claims, 19 Verified, 2 Mostly Accurate, 3 Incorrect (1 behavioural). Critics skipped: loop-pass short-circuit (behavioral red confirmed); build-loop.sh is not an enforcement file. Prior B1-B8: B1, B3-B8 resolved; B2 partly open (C1).
+
+| ID | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| C1 | The UTF-8 rule used Perl's decoder, which takes surrogates, code points past U+10FFFF and 5-byte sequences that questions.sh check refuses (B2 still reachable) | 🔴 behavioural | fact-check claim 7b (Incorrect) | Fixed 8367359f (strict match; raw-commit tests; mutant killed) |
+| C2 | "skipped unread": the body was read before the cap test, and marker_kind reads the commit anyway | 🟡 (text) | claim 15 (Incorrect, text) | Fixed (cap before the read; text) |
+| C3 | B4's description named only the compare-and-swap; no test pinned B4 | 🟡 | claim 14 (Mostly Accurate) | Fixed (text; merge-suite case; mutant killed) |
+| C4 | --state's exit-1 list: an existing non-repo GIT_WORK_TREE refuses with exit 2 | 🟢 | claim 9 (Mostly Accurate) | Fixed (text) |
+| C5 | Override row rationale "capped at 64 KiB" for marker_kind's reads | 🟢 | claim 4 (Incorrect, text) | Fixed (row text) |
+
+Commit-body corrections owed in the merge message: 8f99a919 says "valid UTF-8" and "skipped unread".
+
 ## 🧩 Composition check
 
 B4 (fact-check 13, architecture 1, api-consistency 1; default_gate at `scripts/build-loop.sh:543-545` and land `:1385`): distinct defects: no; one root, stated by each fragment already (compare the ref with itself, not with the startup snapshot). No other multi-source co-located cluster qualified.
@@ -57,4 +72,5 @@ None.
 
 ## Iteration log
 
+- Iteration 2 (fix range, k=1, short-circuited at fact-check): 1 behavioural red (C1), fixed with C2-C5 in 8367359f; 399 lines.
 - Iteration 1 (full scope, k=1, full panel): 0 red, 9 amber, 12 green. Fixes mutation-checked (6 mutants killed: the `<!--` rule, the UTF-8 rule, the size cap, the quoted FENCE pass, the HARDEN key match, the tag check). Size 398 changed code lines.
