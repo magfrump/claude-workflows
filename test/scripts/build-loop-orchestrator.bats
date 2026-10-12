@@ -192,23 +192,32 @@ other $T answer"
 @test "--main-log reads other for a near miss of each class, and refuses a SINCE off main's first-parent history (T39, U3b2)" {
     qs; S="$(git rev-parse main)"; work feat/x; X="$(git rev-parse feat/x)"
     M="Merge branch 'feat/x' (build-loop self-merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x"
-    # The gate message on two parents is gate; with a line more, on one parent, or approved without its trailer, other.
-    tip main "$M" "$(git rev-parse 'main^{tree}')" "$S" "$X"; G="$(git rev-parse main)"
-    tip main "$M"$'\nmore' "$(git rev-parse 'main^{tree}')" "$G" "$X"; tip main "$M"
-    tip main "Merge branch 'feat/x' (build-loop approved merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x" "$(git rev-parse 'main^{tree}')" "$(git rev-parse main)" "$X"
-    T="$(git rev-parse main)"; ml "$S" 2 "main $T 4
+    # The gate message on two parents with their clean merge is gate; with a line more, on one parent,
+    # approved without its trailer, or over another tree (an amended merge: i1 security F1), other.
+    tip main "$M" "$(git merge-tree --write-tree main "$X")" "$S" "$X"; G="$(git rev-parse main)"
+    tip main "$M"$'\nmore' "$(git merge-tree --write-tree main "$X")" "$G" "$X"; tip main "$M"
+    tip main "Merge branch 'feat/x' (build-loop approved merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x" "$(git merge-tree --write-tree main "$X")" "$(git rev-parse main)" "$X"
+    git checkout -q feat/x; echo slip > slip.txt; commit_all slip; git checkout -q main
+    tip main "$M" "$(git merge-tree --write-tree main feat/x)" "$(git rev-parse main)" "$X"; T="$(git rev-parse main)"
+    ml "$S" 2 "main $T 5
 gate $G Merge branch 'feat/x' (build-loop self-merge)
+other $(git rev-parse main~3) Merge branch 'feat/x' (build-loop self-merge)
 other $(git rev-parse main~2) Merge branch 'feat/x' (build-loop self-merge)
-other $(git rev-parse main~1) Merge branch 'feat/x' (build-loop self-merge)
-other $T Merge branch 'feat/x' (build-loop approved merge)"
-    # A chore merge whose record names another branch, or a branch outside the pattern; an empty
-    # commit; a header line whose route changes too; a blank line alone.
-    S="$T"; chore chore/dev-cycle-2026-10-12 "Branch: chore/dev-cycle-2026-10-13"; chore chore/dev-cycle-x "Branch: chore/dev-cycle-x"
-    git commit -q --allow-empty -m empty
+other $(git rev-parse main~1) Merge branch 'feat/x' (build-loop approved merge)
+other $T Merge branch 'feat/x' (build-loop self-merge)"
+    # A chore merge whose record names another branch, a branch outside the pattern, or amended with
+    # another file; an empty commit (subject printed as -); a header line whose route changes too; a
+    # blank line alone; a Status flip alone; deleting an answer (i1 security F2).
+    q 's/x/x/' 'Q-001: [1]'; S="$(git rev-parse main)"
+    chore chore/dev-cycle-2026-10-12 "Branch: chore/dev-cycle-2026-10-13"; chore chore/dev-cycle-x "Branch: chore/dev-cycle-x"
+    chore chore/dev-cycle-2026-10-14 "Branch: chore/dev-cycle-2026-10-14"; echo slip > slip2.txt; git add slip2.txt; git commit -q --amend --no-edit
+    tip main ''; E="$(git rev-parse main)"
     q 's/you: judgment · \*\*Opened:\*\* 2026-10-12 · \*\*Status:\*\* OPEN/agent · **Opened:** 2026-10-12 · **Status:** ANSWERED/'
-    q '' ''
-    bl --main-log "$S"; [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 6 ] && [ "$(printf '%s\n' "${lines[@]:1}" | cut -d' ' -f1 | sort -u)" = other ] || { show; return 1; }
-    # SINCE: the merged branch's tip is no first-parent commit of main; a short id is usage.
-    ml "$X" 2 "refuse main-log: $X is not on the default branch's first-parent history at $(git rev-parse main)"
+    q '' ''; q 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/'; q '/^Q-001: \[1\]$/d'
+    bl --main-log "$S"; [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 9 ] && [ "${lines[4]}" = "other $E -" ] \
+        && [ "$(printf '%s\n' "${lines[@]:1}" | cut -d' ' -f1 | sort -u)" = other ] || { show; return 1; }
+    # SINCE: the merged branch's tip is no first-parent commit of main (main's line still comes first); a short id is usage.
+    T="$(git rev-parse main)"; ml "$X" 2 "main $T -
+refuse main-log: $X is not on the default branch's first-parent history at $T"
     bl --main-log "${X:0:12}"; [ "$status" -eq 1 ] && [[ "$stderr" == "--main-log takes one full 40- or 64-hex commit id"* ]] || { show; return 1; }
 }

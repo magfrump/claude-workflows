@@ -143,31 +143,36 @@
 #             main MAIN N
 #                 MAIN: the default branch's commit; N: the first-parent
 #                 commits after SINCE up to MAIN, one line each after this,
-#                 oldest first:
+#                 oldest first ("-" before a refusal):
 #             gate|chore|answers|other SHA SUBJECT
-#                 SUBJECT: the message's first line. gate: two parents and
+#                 SUBJECT: the message's first line ("-" when empty). A
+#                 two-parent commit is gate or chore only when its tree is
+#                 the clean merge of its parents (merge-tree), as --merge and
+#                 git merge write it; an amended or hand-resolved merge is
+#                 other. gate: two parents and
 #                 the message --merge writes, byte for byte. chore: two
-#                 parents, a subject starting "Merge branch 'B'" (then the
-#                 end, " into " or ":"), B being chore/dev-cycle-DATE or
+#                 parents, a subject "Merge branch 'B'" then the end, " into "
+#                 or ":" (any other text after the quote is other), B being chore/dev-cycle-DATE or
 #                 chore/dev-cycle-DATE-HHMM (DATE YYYY-MM-DD), and a cycle
-#                 record the merge adds or changes (a regular file
-#                 docs/working/cycles/cycle-*.md) holding the line "Branch: B"
+#                 record the merge adds or changes (docs/working/cycles/cycle-*.md,
+#                 mode 100644) holding the line "Branch: B", anywhere in it
 #                 (a trailing CR dropped). answers: one parent, and only
 #                 docs/working/questions.md or questions-archive.md change,
-#                 regular files kept regular, in lines that are blank, answer
+#                 mode 100644 on both sides, in lines that are blank, answer
 #                 lines (after an optional "- ", "Q-" and digits and ":", or a
 #                 bold "**Answer:", "**Answer (" or "**Answered" in any case:
 #                 --check-answer's labels) or header lines ("**Needs:**") whose
 #                 Status field alone changed (in each hunk the removed and the
 #                 added header lines, Status values set aside, match in
-#                 order); at least one such line not blank. Any other commit,
+#                 order); at least one answer line added. Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
-#                 other. The class is read from the commit's own text (and its
-#                 objects are not re-hashed): it catches an honest slip, not a
+#                 other. The class is read from the commit's own text (and
+#                 objects below MAIN are not re-hashed): it catches an honest slip, not a
 #                 commit made to look like one of the others (F19).
-#             or refuse main-log: WHY, when SINCE is not on that history (main
-#             was rewritten, or SINCE is on another branch) or it cannot be
-#             listed.
+#             or "main MAIN -" and refuse main-log: WHY, when SINCE (a full
+#             id; a short one is a usage error, exit 1) is not on that history
+#             (main was rewritten, or SINCE is on another branch) or it cannot
+#             be listed.
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
 #             a git config key (common config or config.worktree, includes not
 #             followed) for a filter, include, config hook, merge or diff
@@ -1357,7 +1362,10 @@ approval() {
 }
 # gate_msg BRANCH WHAT STEM [Q-NNN]: the message of the merge --merge writes
 # (land) and --main-log reads as gate, its one definition (row 662). WHAT is
-# self-merge, or "approved merge" with its Q-NNN.
+# self-merge, or "approved merge" with its Q-NNN. log_class parses the fields
+# back out by the same shape (subject, line 3, line 4) and compares bytes, so
+# a change here must change its parser too; gate merges already on main keep
+# the old shape and would read as other inside a SINCE window.
 gate_msg() {
   printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "$1" "$2" "$3"
   [[ -z "${4-}" ]] || printf 'Build-loop-approved: %s\n' "$4"
@@ -1589,7 +1597,9 @@ PROMPT
 # --main-log's answers rule over one commit's diff (diff-tree -p -U0 --text):
 # every changed line in a hunk is blank, an answer line or a header line, the
 # removed and added header lines of each hunk match in order once their Status
-# values are set aside, and at least one changed line is not blank.
+# values are set aside, and at least one answer line is added (a Status flip, a
+# deleted answer or a revert alone adds none: i1 security F2). The labels are
+# --check-answer's (the lib's ANSWER_AWK, which points back here).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 ANSWERS_AWK='
 function needs(l,   n, i, f, t, o) {
@@ -1605,16 +1615,19 @@ function flush(   i) { if (nr != na) bad = 1; for (i = 1; i <= nr; i++) if (r[i]
   s = substr($0, 1, 1); l = substr($0, 2); sub(/\r$/, "", l)
   if (s != "-" && s != "+") { bad = 1; next }
   if (l ~ /^[ \t]*$/) next
-  n++; t = l; sub(/^- /, "", t)
-  if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) next
+  t = l; sub(/^- /, "", t)
+  if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) { if (s == "+") n++; next }
   if (substr(l, 1, 10) == "**Needs:**") { if (s == "-") r[++nr] = needs(l); else a[++na] = needs(l); next }
   bad = 1
 }
 END { flush(); exit !(n > 0 && !bad) }'
 # log_class C: --main-log's class of the first-parent commit C (gate, chore,
-# answers or other) in CLASS, its message's first line in SUBJ. C, its
-# changes and the record it adds are read in the gate repository (no repo
-# config or checkout attributes); any failed read makes C other.
+# answers or other) in CLASS, its message's first line in SUBJ ("-" when
+# empty). C, its changes and the record it adds are read in the gate
+# repository (no repo config or checkout attributes); any failed read makes C
+# other. A two-parent commit counts only when its tree is the clean merge of
+# its parents, as land and git merge write it: an amended merge keeps both
+# parents and the message (i1 security F1).
 log_class() {
   local c="$1" ps=() m=() meta p x b q
   CLASS=other; SUBJ=""
@@ -1622,7 +1635,11 @@ log_class() {
   mapfile -t ps < <(LC_ALL=C awk '/^$/ { exit } /^parent / { print $2 }' "$GATE_TMP/c")
   # The message, byte for byte: everything after the header's blank line.
   LC_ALL=C perl -0777 -ne 's/\A.*?\n\n//s and print' "$GATE_TMP/c" > "$GATE_TMP/m" || return 0
-  mapfile -t -n 5 m < "$GATE_TMP/m"; SUBJ="${m[0]-}"
+  mapfile -t -n 5 m < "$GATE_TMP/m"; SUBJ="${m[0]-}"; [[ -n "$SUBJ" ]] || SUBJ=-
+  if [[ ${#ps[@]} -eq 2 ]]; then
+    x="$(gate_git merge-tree --write-tree --no-messages "${ps[0]}" "${ps[1]}")" \
+      && [[ "$x" == "$(LC_ALL=C awk '/^tree / { print $2; exit }' "$GATE_TMP/c")" ]] || return 0
+  fi
   if [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(.+)\'\ \(build-loop\ (self-merge|approved merge)\)$ ]]; then
     b="${BASH_REMATCH[1]}"; x="${BASH_REMATCH[2]}"
     [[ "${m[2]-}" =~ ^Build-loop-gate:\ (.+)$ ]] || return 0
@@ -1656,10 +1673,12 @@ log_class() {
 # commit is other.
 main_log() {
   local c o=0
-  gate_git rev-list --first-parent "$MAIN_SHA" > "$GATE_TMP/fp" || { echo "refuse main-log: the default branch's first-parent history could not be listed"; return 1; }
+  # Main's commit first, even before a refusal (U4 records it: i1 api-consistency 1).
+  gate_git rev-list --first-parent "$MAIN_SHA" > "$GATE_TMP/fp" \
+    || { echo "main $MAIN_SHA -"; echo "refuse main-log: the default branch's first-parent history could not be listed"; return 1; }
   # The commits above SINCE (rev-list lists newest first).
   LC_ALL=C awk -v s="$1" '$0 == s { f = 1; exit } { print } END { exit !f }' "$GATE_TMP/fp" > "$GATE_TMP/after" \
-    || { echo "refuse main-log: $1 is not on the default branch's first-parent history at $MAIN_SHA"; return 1; }
+    || { echo "main $MAIN_SHA -"; echo "refuse main-log: $1 is not on the default branch's first-parent history at $MAIN_SHA"; return 1; }
   echo "main $MAIN_SHA $(wc -l < "$GATE_TMP/after")"
   while IFS= read -r c; do
     log_class "$c"; echo "$CLASS $c $SUBJ"; [[ "$CLASS" != other ]] || o=1
