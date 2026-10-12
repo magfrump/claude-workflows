@@ -107,11 +107,12 @@
 #             skip BRIEF: WHY
 #                 As --status skips it; the tip is no blocked or stopped
 #                 marker (WHY names --status' LOOP); the marker commit is over
-#                 64 KiB; a body line starts, after blanks, ">" and list
+#                 64 KiB (its body is not processed); a body line starts, after blanks, ">" and list
 #                 markers ("-", "*", "+", "1." or "1)" and a blank), with "#",
 #                 "**Needs:**", "**Status:**", "**Answer" or "Q-" and a digit,
 #                 in any case, holds "<!--" (questions.sh's index markers) or
-#                 is not valid UTF-8 (the loop prompt's rule); a line of the
+#                 is not strict UTF-8 (no surrogate or code point past
+#                 U+10FFFF, as questions.sh check reads it; the loop prompt's rule); a line of the
 #                 body, as written or as quoted, that FENCE_AWK refuses, or a
 #                 fence it leaves open; a blocked marker with no body; or a
 #                 read that fails.
@@ -121,8 +122,8 @@
 #             what this script's own git reads trust, as they run hardened;
 #             it does not make a plain git command safe in the caller's shell,
 #             and it is a snapshot. Exit 1 (stderr only) for a caller's
-#             GIT_CONFIG_COUNT that is not plain decimal, or a GIT_DIR or
-#             GIT_WORK_TREE naming no repository. First, read only here, the
+#             GIT_CONFIG_COUNT that is not plain decimal, or a GIT_DIR
+#             naming no repository. First, read only here, the
 #             caller's environment: a
 #             repo-local git variable set (GIT_REPLACE_REF_BASE, GIT_GRAFT_FILE,
 #             GIT_SHALLOW_FILE, GIT_DIR, the object directories and the like;
@@ -558,7 +559,8 @@ default_gate() {
   if git symbolic-ref -q "refs/heads/$MAIN" >/dev/null; then echo "refuse state default-branch: refs/heads/$MAIN is a symbolic ref"; bad=1; fi
   # resolve_main peels the ref to its commit, which land's compare-and-swap
   # would then never match (row 656). The ref itself, not MAIN_SHA: land's
-  # re-run must leave a moved branch to the compare-and-swap's own refusal.
+  # re-run must leave a moved branch to its own refusal (the
+  # compare-and-swap, or the fast-forward in W).
   p="$(git show-ref --verify --hash "refs/heads/$MAIN" 2>/dev/null)" && [[ "$(git cat-file -t "$p" 2>/dev/null)" == commit ]] \
     || { echo "refuse state default-branch: refs/heads/$MAIN names an object that is not a commit"; bad=1; }
   p="$(git symbolic-ref -q refs/remotes/origin/HEAD)" || true
@@ -802,8 +804,9 @@ status_line() { status_fields "$1"; echo "${STATUS[line]}"; }
 
 # A blocked marker's body rule (D3, D11), as the loop prompt states it and
 # --marker enforces it (row 689: one string), with BODY_LINES and BODY_BYTES.
-BODY_RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; valid UTF-8'
-# The marker commit's size cap in bytes (a larger one is skipped unread).
+BODY_RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
+# The marker commit's size cap in bytes: over it, the body is not processed
+# (marker_kind has still read the commit, in --status' own reads).
 BODY_LINES=100; BODY_BYTES=300; MARKER_MAX=65536
 # --marker for one brief (D4, D11): "ok BRIEF SHA" and its blocked or stopped
 # marker's body (the message after the subject and the blank line below it),
@@ -823,8 +826,9 @@ marker() {
   [[ "${STATUS[loop]}" == blocked || "${STATUS[loop]}" == stopped ]] \
     || { echo "skip $a: the tip of ${STATUS[branch]} is not a blocked or stopped marker (${STATUS[loop]})"; return; }
   # marker_kind has refused a NUL and a second subject line; the headers end at the first empty line.
-  n="$(git cat-file -s "${STATUS[sha]}")" && m="$(git cat-file commit "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
+  n="$(git cat-file -s "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
   [[ "$n" -le "$MARKER_MAX" ]] || { echo "skip $a: its marker is $n bytes, over the $MARKER_MAX-byte cap"; return; }
+  m="$(git cat-file commit "${STATUS[sha]}")" || { echo "skip $a: its marker could not be read"; return; }
   body=""; m="${m#*$'\n\n'}"; [[ "$m" != *$'\n'* ]] || body="${m#*$'\n'}"; body="${body#$'\n'}"
   # Scrubbed first, so the rules, the caps and FENCE_AWK read what is printed.
   # Prints "rule N", or the quoted lines (no lines: nothing but blanks).
@@ -835,7 +839,7 @@ marker() {
       (my $s = $l[$i]) =~ s/^(?:[ \t>]|[-*+][ \t]|[0-9]+[.)][ \t])*//;
       # "<!--" anywhere: questions.sh finds its index markers anywhere in a line (security i1 F1).
       if ($s =~ /^(?:#|\*\*needs:\*\*|\*\*status:\*\*|\*\*answer|q-[0-9])/i || index($l[$i], "<!--") >= 0
-        || !utf8::decode(my $u = $l[$i])) { print "rule ", $i + 1, "\n"; exit 0 }
+        || $l[$i] !~ /\A(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*\z/) { print "rule ", $i + 1, "\n"; exit 0 }
     }
     my ($k, $cut) = (@l > $ENV{N} ? $ENV{N} : scalar @l, 0);
     for my $s (@l[0 .. $k - 1]) {
@@ -1531,7 +1535,7 @@ Run every design choice through divergent design seeded with these constraints a
 Force-add your research doc (git add -f docs/working/research-$s.md), so your design records land with your work. Only add commits: never reset, rebase or otherwise move your branch below $5, the commit you were dispatched at.
 End with one marker, an empty commit at your branch tip whose first line is exactly one of:
 - "handoff: ready", once the review-fix loop is clean and your final change sets your brief's Status line from open to done;
-- "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is not read): $BODY_RULE;
+- "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is skipped): $BODY_RULE;
 - "handoff: stopped: REASON" (1 to 120 printable ASCII characters, no blank at either end), on a stop condition: adding a dependency or a symlink, an edit these rules forbid, or a --check refusal you cannot fix within Paths:.
 Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge, open a pull request or publish.
 Never write the questions files, the roadmap, docs/dev-cycle.md or any other brief. In your own brief change only the Status line, from open to done, in your final change.

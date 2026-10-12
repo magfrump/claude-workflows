@@ -18,7 +18,7 @@ state_is() { bl --state; local s=2; [[ "$1" != ok ]] || s=0; [ "$status" -eq "$s
 marked() { brief x "Status: open" "Branch: feat/x"; work feat/x; tip feat/x "$1"; T="$(git rev-parse feat/x)"; }
 # marker_is WANT: --marker printed exactly WANT (lines joined by newlines), exit 0.
 marker_is() { bl --marker "$B"; [ "$status" -eq 0 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
-RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; valid UTF-8'
+RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1." or "1)" and a blank), with "#", **Needs:**, **Status:**, **Answer, or Q- and a digit, in any case; no line holding "<!--"; strict UTF-8'
 
 @test "--state prints ok for a clean repository and refuses each planted state, exit 2 (T42, U3b1)" {
     state_is ok
@@ -84,16 +84,15 @@ refuse state merge.x.driver: $K" ] || { show; return 1; }
     W="skip $B: a line of its marker's body breaks the blocked-body rule ($RULE): line"
     for l in '**Needs:** you: judgment · **Status:** OPEN' '**Answer:** [1]' '**Status:** ANSWERED' '### Q-001 · x' '# Heading' \
         'Q-1: [1]' '  > - Q-2: [2]' '1. **answer (recommended):** [1]' '> > **needs:** agent' 'see <!-- index:start --> here'; do
-        tip feat/x "$(printf 'handoff: blocked\n\nfirst\n%s' "$l")"
-        marker_is "$W 2" || { echo "line: $l"; return 1; }
-    done
-    # A byte that is not UTF-8 (git commit-tree re-encodes a message, so the commit is written raw).
-    c="$(printf 'tree %s\nparent %s\nauthor t <t@x> 1 +0000\ncommitter t <t@x> 1 +0000\n\nhandoff: blocked\n\nfirst\nbad \377 byte\n' \
-        "$(git rev-parse 'feat/x^{tree}')" "$(git rev-parse feat/x)" | git hash-object -t commit -w --stdin)"
-    git update-ref refs/heads/feat/x "$c"; marker_is "$W 2"
+        tip feat/x "$(printf 'handoff: blocked\n\nfirst\n%s' "$l")"; marker_is "$W 2" || { echo "line: $l"; return 1; }; done
+    # Not strict UTF-8 as questions.sh check (Python) reads it: a stray byte, a surrogate Perl's own
+    # decoder takes, past U+10FFFF (i2 fact-check 7b). Written raw: git commit-tree re-encodes a message.
+    for b in '\377' '\355\240\200' '\364\220\200\200'; do
+        c="$(printf "tree %s\nparent %s\nauthor t <t@x> 1 +0000\ncommitter t <t@x> 1 +0000\n\nhandoff: blocked\n\nfirst\nbad $b byte\n" \
+            "$(git rev-parse 'feat/x^{tree}')" "$(git rev-parse feat/x)" | git hash-object -t commit -w --stdin)"
+        git update-ref refs/heads/feat/x "$c"; marker_is "$W 2" || { echo "bytes: $b"; return 1; }; done
     # E2's whole body (rev 3 pre-mortem): skipped at its first grammar line.
-    tip feat/x $'handoff: blocked\n\n**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** OPEN\n\n| Option | x |\n|---|---|\n\n**Answer:** [1]'
-    marker_is "$W 1"
+    tip feat/x $'handoff: blocked\n\n**Needs:** you: judgment · **Opened:** 2026-10-04 · **Status:** OPEN\n\n| Option | x |\n|---|---|\n\n**Answer:** [1]'; marker_is "$W 1"
     # Prose that only mentions the grammar mid-line is quoted.
     tip feat/x $'handoff: blocked\n\nthe entry gets a **Needs:** line and a Q-1 ID from you'; T="$(git rev-parse feat/x)"
     marker_is "ok $B $T
@@ -105,18 +104,12 @@ refuse state merge.x.driver: $K" ] || { show; return 1; }
     marker_is "skip $B: the code fence opened at line 2 of its marker's body is never closed"
     tip feat/x $'handoff: blocked\n\nplain\n[a]: https://example.invalid'
     marker_is "skip $B: line 2 of its marker's body starts like a link reference definition (its label or title can span lines)"
-    tip feat/x $'handoff: blocked\n\n<div>x</div>'
-    marker_is "skip $B: line 1 of its marker's body starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)"
-    tip feat/x $'handoff: blocked\n\n- [x]: y'
-    marker_is "skip $B: line 1 of its marker's body starts like a link reference definition (its label or title can span lines)"
-    tip feat/x $'handoff: blocked\n\n\n  \n'
-    marker_is "skip $B: its blocked marker holds no question (the body is empty)"
-    tip feat/x 'handoff: blocked'
-    marker_is "skip $B: its blocked marker holds no question (the body is empty)"
+    tip feat/x $'handoff: blocked\n\n<div>x</div>'; marker_is "skip $B: line 1 of its marker's body starts with < after any blanks (a possible raw HTML block; only a complete one-line <!-- comment --> is read)"
+    tip feat/x $'handoff: blocked\n\n- [x]: y'; marker_is "skip $B: line 1 of its marker's body starts like a link reference definition (its label or title can span lines)"
+    for m in $'handoff: blocked\n\n\n  \n' 'handoff: blocked'; do tip feat/x "$m"; marker_is "skip $B: its blocked marker holds no question (the body is empty)"; done
     # Inside a balanced fence the raw pass reads nothing; quoted, the line is a link reference definition.
-    tip feat/x $'handoff: blocked\n\n```\n[a]: b\n```'
-    marker_is "skip $B: line 2 of its marker's body starts like a link reference definition (its label or title can span lines)"
-    # A marker commit over the cap is not read (performance i1 F1).
+    tip feat/x $'handoff: blocked\n\n```\n[a]: b\n```'; marker_is "skip $B: line 2 of its marker's body starts like a link reference definition (its label or title can span lines)"
+    # A marker commit over the cap is skipped before its body is processed (performance i1 F1).
     tip feat/x "$(printf 'handoff: blocked\n\n'; head -c 70000 /dev/zero | tr '\0' 'x')"
     bl --marker "$B"; [ "$status" -eq 0 ] && [[ "$output" =~ ^"skip $B: its marker is "[0-9]+" bytes, over the 65536-byte cap"$ ]] || { show; return 1; }
 }

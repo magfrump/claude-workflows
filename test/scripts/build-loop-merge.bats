@@ -57,6 +57,10 @@ Build-loop-gate: 2026-10-01-x" ]
     shim update-ref "\"\$REAL\" update-ref refs/heads/main $o"
     PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; M="$o" refused "the default branch moved after the check, or could not be updated; it was left as it is"
     git update-ref refs/heads/main "$M"
+    # Moved before land's default_gate re-run: still the compare-and-swap's refusal, not a non-commit (U3b1 B4).
+    shim commit-tree "\"\$REAL\" --git-dir='$R/.git' update-ref refs/heads/main $o"
+    PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; M="$o" refused "the default branch moved after the check, or could not be updated; it was left as it is"
+    git update-ref refs/heads/main "$M"
     shim commit-tree "\"\$REAL\" config --file '$R/.git/config' filter.x.clean cat"  # commit-tree runs in the gate repository
     PATH="$SHIM:$PATH" mrg "$B" --expect "$T"; refused "the git state changed after the check (refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge)"
     # A symbolic default branch refuses before any brief (final security F3).
