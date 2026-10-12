@@ -1,0 +1,21 @@
+Q-102: [1]
+
+Q-117:
+Running this requires a devcontainer install with a branched image, which refuses while any other work is running.
+This will block verification constantly as a pattern while also creating a large user error security surface if I install a test setup for the container and forget to return to the main setup before opening a session.
+We need a different process for validating specific sections of code without blocking use of the harness overall
+
+Q-109: Done
+
+Q-130:
+See Q-117; this test process is too disruptive.
+
+Q-119:
+I think [1] is correct; I don't have any need for repo names to start with . or contain newlines. If a repo name does have a problematic name, refusing to open it seems like the correct default.
+
+Q-138:
+I think [1] was correct, since [3] would prevent all self-merges to main and effectively block development on every project.
+
+Q-139:
+"Why it's yours" says this is a question about threat model; please update the question to clarify the threat models clearly.
+The "If it's wrong" column isn't easy to parse as a description of threats.
