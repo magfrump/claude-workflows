@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-138](#q-138--u3a2-land-discovery-past-cap) | you: judgment | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
+| [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath = /home/magfrump/claude-workflows/.git/hooks` (the host spell... | 2026-10-12 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
@@ -364,3 +365,21 @@ U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass a
 - **Blocks:** nothing now (U3a2 merged on the interim).
 - **Interim:** [1] taken 2026-10-10: the second confirming pass (k=1 fact-check + security over 20de9671..2028aa89, plus the owed G6 test) found no Must Fix or Must Address; a Low planted-state regression (a planted `core.bare` with the index deleted) became an override row routed to Q-103; merged at 5dae21fb. Rubric section "Second confirming pass".
 - **If the answer differs:** [2] is moot; [3] is a follow-up unit that removes the W path and most of the discovery block from main (re-reviewed).
+
+### Q-139 · workspace-hookspath-fails-state-gate
+**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** OPEN
+
+`/workspace/.git/config` sets `core.hooksPath = /home/magfrump/claude-workflows/.git/hooks` (the host spelling of the repo's own default hooks dir), and the build-loop state gate refuses any `core.hooksPath`, so every gated mode (`--check`, `--merge`, `--start`, `--prompt`, and now `--state`) refuses in this repository, from any worktree. Which way should it clear?
+
+- **Why it's yours:** it is your repository's config, set on the host (not by this repo's scripts as far as the sessions can see), and the gate's rule is a threat-model choice.
+- **Read:** `scripts/build-loop.sh` state_gate (STATE_KEYS_RE) and harden (core.hooksPath=/dev/null for the gate's own git) · merge message of `feat/build-loop-u3b1` (ef7a1122), Areas of uncertainty.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Unset it on the host** | `git config --unset core.hooksPath` in `~/claude-workflows`: git's default is the same hooks dir, so the host runs the same hooks. | One terminal command. | If a tool set it on purpose (to pin hooks across a path change), that tool may set it again or warn. |
+| **[2] Let the gate accept the repo's own hooks dir** | state_gate passes a `core.hooksPath` that names this repository's own hooks dir under any reader-root spelling; harden already runs the gate's git with no hooks. | None now; a small follow-up unit (with review). | The risk is a spelling check that admits another dir. |
+| **[3] Leave it until U4** | Nothing calls the gated modes yet; decide when the orchestrator first runs here. | None now. | The first orchestrator iteration in this repo refuses at `--state` until it is decided. |
+
+- **Blocks:** nothing now; the orchestrator's first live run in this repo (U4).
+- **Interim:** [3]: no code or config change; noted in U3b1's merge message.
+- **If the answer differs:** [2] is a follow-up unit before U4 lands; [1] needs nothing from the sessions.
