@@ -7,6 +7,7 @@
 #        scripts/build-loop.sh --status BRIEF...
 #        scripts/build-loop.sh --marker BRIEF
 #        scripts/build-loop.sh --state
+#        scripts/build-loop.sh --main-log SINCE
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
@@ -134,6 +135,39 @@
 #             core.attributesFile, core.commitGraph, core.multiPackIndex;
 #             a git -c pair would win over it), whatever the value. Then --check's state gate, its
 #             default-branch rules and its object check, as listed there.
+#   --main-log  what moved the default branch since SINCE (D13, F19, F43; the
+#             orchestrator runs it at the start of each iteration with the last
+#             record's "Main at:" commit), after --state's gate but its caller
+#             check. SINCE: a full 40- or 64-hex id of a commit on the default
+#             branch's first-parent history. Prints
+#             main MAIN N
+#                 MAIN: the default branch's commit; N: the first-parent
+#                 commits after SINCE up to MAIN, one line each after this,
+#                 oldest first:
+#             gate|chore|answers|other SHA SUBJECT
+#                 SUBJECT: the message's first line. gate: two parents and
+#                 the message --merge writes, byte for byte. chore: two
+#                 parents, a subject starting "Merge branch 'B'" (then the
+#                 end, " into " or ":"), B being chore/dev-cycle-DATE or
+#                 chore/dev-cycle-DATE-HHMM (DATE YYYY-MM-DD), and a cycle
+#                 record the merge adds or changes (a regular file
+#                 docs/working/cycles/cycle-*.md) holding the line "Branch: B"
+#                 (a trailing CR dropped). answers: one parent, and only
+#                 docs/working/questions.md or questions-archive.md change,
+#                 regular files kept regular, in lines that are blank, answer
+#                 lines (after an optional "- ", "Q-" and digits and ":", or a
+#                 bold "**Answer:", "**Answer (" or "**Answered" in any case:
+#                 --check-answer's labels) or header lines ("**Needs:**") whose
+#                 Status field alone changed (in each hunk the removed and the
+#                 added header lines, Status values set aside, match in
+#                 order); at least one such line not blank. Any other commit,
+#                 or one whose message, parents or changes cannot be read, is
+#                 other. The class is read from the commit's own text (and its
+#                 objects are not re-hashed): it catches an honest slip, not a
+#                 commit made to look like one of the others (F19).
+#             or refuse main-log: WHY, when SINCE is not on that history (main
+#             was rewritten, or SINCE is on another branch) or it cannot be
+#             listed.
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
 #             a git config key (common config or config.worktree, includes not
 #             followed) for a filter, include, config hook, merge or diff
@@ -373,14 +407,15 @@
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help; a --marker skip is a line), for
-# --state ok, for --check every verdict line ok, for --merge merged, for
-# --start and --prompt ok; 2 any other --check, --merge, --start or --prompt
-# verdict line, or the state gate (--state's included) not ok. A --check or
+# --state ok, for --main-log no other line, for --check every verdict line ok,
+# for --merge merged, for --start and --prompt ok; 2 any other --check,
+# --merge, --start or --prompt verdict line, --main-log's other or refuse
+# line, or the state gate (--state's included) not ok. A --check or
 # --merge can also stop part way, after the lines of the briefs before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
-# (--state, --check, --merge, --start, --prompt; no line printed),
+# (--state, --main-log, --check, --merge, --start, --prompt; no line printed),
 # or no default branch found by name.
 
 set -euo pipefail
@@ -396,13 +431,16 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
 MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
   --marker) MODE=marker; shift; ARGS=("$@"); [[ $# -eq 1 ]] || usage "--marker takes one brief path" ;;
   --state) MODE=state; [[ $# -eq 1 ]] || usage "--state takes no arguments" ;;
+  --main-log)
+    MODE="main-log"; ARGS=("${2:-}")
+    [[ $# -eq 2 && "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || usage "--main-log takes one full 40- or 64-hex commit id" ;;
   --check|--merge)
     MODE="${1#--}"; shift
     while [[ $# -gt 0 ]]; do
@@ -1317,6 +1355,13 @@ approval() {
   [[ "$ANSWER_HEADING" == "$1 · $s" ]] \
     || { MERGE_WHY="$1 approves no merge of this tip: its heading must read \"$1 · $s\"$g"; return 1; }
 }
+# gate_msg BRANCH WHAT STEM [Q-NNN]: the message of the merge --merge writes
+# (land) and --main-log reads as gate, its one definition (row 662). WHAT is
+# self-merge, or "approved merge" with its Q-NNN.
+gate_msg() {
+  printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "$1" "$2" "$3"
+  [[ -z "${4-}" ]] || printf 'Build-loop-approved: %s\n' "$4"
+}
 # land AUTHORITY [Q-NNN]: --merge's landing (D7, F29), once check_line printed ok
 # (VERDICT) under the authority the caller checked and names (self-merge, or
 # approved with its question), which the message and reflog carry. Decide (the
@@ -1400,8 +1445,7 @@ land() {
       done
     done
   fi
-  { printf "Merge branch '%s' (build-loop %s)\n\nBuild-loop-gate: %s\n" "${VERDICT[branch]}" "$what" "${VERDICT[stem]}"
-    [[ "$1" != approved ]] || printf 'Build-loop-approved: %s\n' "$2"; } > "$GATE_TMP/msg" \
+  gate_msg "${VERDICT[branch]}" "$what" "${VERDICT[stem]}" "${2-}" > "$GATE_TMP/msg" \
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"
@@ -1542,6 +1586,87 @@ Never write the questions files, the roadmap, docs/dev-cycle.md or any other bri
 PROMPT
 }
 
+# --main-log's answers rule over one commit's diff (diff-tree -p -U0 --text):
+# every changed line in a hunk is blank, an answer line or a header line, the
+# removed and added header lines of each hunk match in order once their Status
+# values are set aside, and at least one changed line is not blank.
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+ANSWERS_AWK='
+function needs(l,   n, i, f, t, o) {
+  n = split(l, fld, " · "); o = ""
+  for (i = 1; i <= n; i++) { f = fld[i]; t = f; sub(/^[ \t]+/, "", t); if (substr(t, 1, 12) == "**Status:** ") f = "**Status:**"; o = o (i > 1 ? " · " : "") f }
+  return o
+}
+function flush(   i) { if (nr != na) bad = 1; for (i = 1; i <= nr; i++) if (r[i] != a[i]) bad = 1; nr = na = 0 }
+/^diff --git / { flush(); hunk = 0; next }
+/^@@ / { flush(); hunk = 1; next }
+!hunk || /^\\/ { next }
+{
+  s = substr($0, 1, 1); l = substr($0, 2); sub(/\r$/, "", l)
+  if (s != "-" && s != "+") { bad = 1; next }
+  if (l ~ /^[ \t]*$/) next
+  n++; t = l; sub(/^- /, "", t)
+  if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) next
+  if (substr(l, 1, 10) == "**Needs:**") { if (s == "-") r[++nr] = needs(l); else a[++na] = needs(l); next }
+  bad = 1
+}
+END { flush(); exit !(n > 0 && !bad) }'
+# log_class C: --main-log's class of the first-parent commit C (gate, chore,
+# answers or other) in CLASS, its message's first line in SUBJ. C, its
+# changes and the record it adds are read in the gate repository (no repo
+# config or checkout attributes); any failed read makes C other.
+log_class() {
+  local c="$1" ps=() m=() meta p x b q
+  CLASS=other; SUBJ=""
+  gate_git cat-file commit "$c" > "$GATE_TMP/c" || return 0
+  mapfile -t ps < <(LC_ALL=C awk '/^$/ { exit } /^parent / { print $2 }' "$GATE_TMP/c")
+  # The message, byte for byte: everything after the header's blank line.
+  LC_ALL=C perl -0777 -ne 's/\A.*?\n\n//s and print' "$GATE_TMP/c" > "$GATE_TMP/m" || return 0
+  mapfile -t -n 5 m < "$GATE_TMP/m"; SUBJ="${m[0]-}"
+  if [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(.+)\'\ \(build-loop\ (self-merge|approved merge)\)$ ]]; then
+    b="${BASH_REMATCH[1]}"; x="${BASH_REMATCH[2]}"
+    [[ "${m[2]-}" =~ ^Build-loop-gate:\ (.+)$ ]] || return 0
+    p="${BASH_REMATCH[1]}"
+    q=""
+    if [[ "$x" != self-merge ]]; then [[ "${m[3]-}" =~ ^Build-loop-approved:\ (Q-[0123456789]+)$ ]] || return 0; q="${BASH_REMATCH[1]}"; fi
+    gate_msg "$b" "$x" "$p" "$q" > "$GATE_TMP/want" && cmp -s "$GATE_TMP/want" "$GATE_TMP/m" && CLASS=gate
+  elif [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(chore/dev-cycle-[0123456789]{4}-[0123456789]{2}-[0123456789]{2}(-[0123456789]{4})?)\'($|\ into\ |:) ]]; then
+    b="${BASH_REMATCH[1]}"
+    gate_git diff-tree -r --no-renames --raw -z "${ps[0]}" "$c" > "$GATE_TMP/d" || return 0
+    while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
+      [[ "$p" =~ ^docs/working/cycles/cycle-[^/]+\.md$ && "$meta" =~ ^:[01234567]{6}\ 100644\ [0123456789abcdef]+\ ([0123456789abcdef]+)\ [AM]$ ]] || continue
+      # pipefail: a failed read is no record.
+      gate_git cat-file blob "${BASH_REMATCH[1]}" | LC_ALL=C awk -v w="Branch: $b" '{ sub(/\r$/, "") } $0 == w { f = 1 } END { exit !f }' && { CLASS=chore; return 0; }
+    done < "$GATE_TMP/d"
+  elif [[ ${#ps[@]} -eq 1 ]]; then
+    gate_git diff-tree -r --no-renames --raw -z "${ps[0]}" "$c" > "$GATE_TMP/d" || return 0
+    x=0
+    while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
+      [[ "$meta" =~ ^:100644\ 100644\ [0123456789abcdef]+\ [0123456789abcdef]+\ M$ && ( "$p" == docs/working/questions.md || "$p" == docs/working/questions-archive.md ) ]] || return 0
+      x=$((x + 1))
+    done < "$GATE_TMP/d"
+    # Every record read whole, as check_line reads its diff.
+    [[ "$x" -gt 0 && "$(tr -cd '\000' < "$GATE_TMP/d" | wc -c)" -eq $((2 * x)) ]] || return 0
+    gate_git diff-tree -p -U0 --no-renames --no-ext-diff --no-textconv --text --no-color "${ps[0]}" "$c" > "$GATE_TMP/p" || return 0
+    LC_ALL=C awk "$ANSWERS_AWK" "$GATE_TMP/p" && CLASS=answers
+  fi
+  return 0
+}
+# main_log SINCE: --main-log's lines. Returns 1 when SINCE is refused or any
+# commit is other.
+main_log() {
+  local c o=0
+  gate_git rev-list --first-parent "$MAIN_SHA" > "$GATE_TMP/fp" || { echo "refuse main-log: the default branch's first-parent history could not be listed"; return 1; }
+  # The commits above SINCE (rev-list lists newest first).
+  LC_ALL=C awk -v s="$1" '$0 == s { f = 1; exit } { print } END { exit !f }' "$GATE_TMP/fp" > "$GATE_TMP/after" \
+    || { echo "refuse main-log: $1 is not on the default branch's first-parent history at $MAIN_SHA"; return 1; }
+  echo "main $MAIN_SHA $(wc -l < "$GATE_TMP/after")"
+  while IFS= read -r c; do
+    log_class "$c"; echo "$CLASS $c $SUBJ"; [[ "$CLASS" != other ]] || o=1
+  done < <(tac "$GATE_TMP/after")
+  return "$o"
+}
+
 case "$MODE" in
   marker)
     read_settings
@@ -1550,6 +1675,10 @@ case "$MODE" in
   state)
     state_start
     echo ok
+    ;;
+  main-log)
+    state_start
+    main_log "${ARGS[0]}" || exit 2
     ;;
   status)
     read_settings

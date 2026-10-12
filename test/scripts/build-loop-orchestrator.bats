@@ -158,3 +158,57 @@ refuse state merge.x.driver: $K" ] || { show; return 1; }
     run --separate-stderr bash "$QS" archive
     [ "$status" -eq 0 ] && grep -q '^### Q-120 ' docs/working/questions-archive.md && ! grep -q '^### Q-120 ' docs/working/questions.md || { show; cat docs/working/questions.md; return 1; }
 }
+
+# ml SINCE STATUS WANT: --main-log SINCE printed exactly WANT with exit STATUS. qs: docs/working/questions.md
+# with entry Q-001 (OPEN, an options table), committed. q SED [LINE...]: edit it by sed, append LINEs, commit.
+ml() { bl --main-log "$1"; [ "$status" -eq "$2" ] && [ "$output" = "$3" ] && [ -z "$stderr" ] || { echo "want $2: $3"; show; return 1; }; }
+q() { sed -i "$1" docs/working/questions.md; shift; [[ $# -eq 0 ]] || printf '%s\n' "$@" >> docs/working/questions.md; commit_all answer; }
+qs() { mkdir -p docs/working; printf '%s\n' '# Questions' '' '### Q-001 · x' '**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** OPEN' '' 'Which?' '' '| Option | x |' '|---|---|' '| **[1] a** | b |' > docs/working/questions.md; commit_all questions; }
+# chore B RECORD-LINE: B with a cycle record holding RECORD-LINE, merged into main with --no-ff.
+chore() { git checkout -q -b "$1" main && mkdir -p docs/working/cycles && printf '# Cycle\n%s\n' "$2" > docs/working/cycles/cycle-2026-10-12.md \
+    && commit_all record && git checkout -q main && git merge -q --no-ff -m "Merge branch '$1': cycle" "$1"; }
+
+@test "--main-log classifies each first-parent commit after SINCE, oldest first: gate, chore, answers, other (T39, U3b2)" {
+    settings "Build-loop policy: self-merge" "Self-merge never: none"
+    brief x "Status: open" "Branch: feat/x" "Policy: self-merge" "Paths: work-feat-x.txt"; work feat/x; qs; S="$(git rev-parse main)"
+    ml "$S" 0 "main $S 0"
+    git checkout -q --detach main; bash "$BL" --merge "$B" --expect "$(git rev-parse feat/x)" > /dev/null; git checkout -q main; G="$(git rev-parse main)"
+    chore chore/dev-cycle-2026-10-12-1430 "Branch: chore/dev-cycle-2026-10-12-1430"; C="$(git rev-parse main)"
+    q 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' '' '- **Answer:** [1]' 'Q-001: [1]'; A="$(git rev-parse main)"
+    mkdir -p docs; echo x > docs/x.md; commit_all "docs: x"; O="$(git rev-parse main)"
+    # Answer-shaped, but the options table changes too (T39).
+    q 's/| b |/| c |/' 'Q-001: [2]'; T="$(git rev-parse main)"
+    ml "$S" 2 "main $T 5
+gate $G Merge branch 'feat/x' (build-loop self-merge)
+chore $C Merge branch 'chore/dev-cycle-2026-10-12-1430': cycle
+answers $A answer
+other $O docs: x
+other $T answer"
+    ml "$A" 2 "main $T 2
+other $O docs: x
+other $T answer"
+}
+
+@test "--main-log reads other for a near miss of each class, and refuses a SINCE off main's first-parent history (T39, U3b2)" {
+    qs; S="$(git rev-parse main)"; work feat/x; X="$(git rev-parse feat/x)"
+    M="Merge branch 'feat/x' (build-loop self-merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x"
+    # The gate message on two parents is gate; with a line more, on one parent, or approved without its trailer, other.
+    tip main "$M" "$(git rev-parse 'main^{tree}')" "$S" "$X"; G="$(git rev-parse main)"
+    tip main "$M"$'\nmore' "$(git rev-parse 'main^{tree}')" "$G" "$X"; tip main "$M"
+    tip main "Merge branch 'feat/x' (build-loop approved merge)"$'\n\n'"Build-loop-gate: 2026-10-01-x" "$(git rev-parse 'main^{tree}')" "$(git rev-parse main)" "$X"
+    T="$(git rev-parse main)"; ml "$S" 2 "main $T 4
+gate $G Merge branch 'feat/x' (build-loop self-merge)
+other $(git rev-parse main~2) Merge branch 'feat/x' (build-loop self-merge)
+other $(git rev-parse main~1) Merge branch 'feat/x' (build-loop self-merge)
+other $T Merge branch 'feat/x' (build-loop approved merge)"
+    # A chore merge whose record names another branch, or a branch outside the pattern; an empty
+    # commit; a header line whose route changes too; a blank line alone.
+    S="$T"; chore chore/dev-cycle-2026-10-12 "Branch: chore/dev-cycle-2026-10-13"; chore chore/dev-cycle-x "Branch: chore/dev-cycle-x"
+    git commit -q --allow-empty -m empty
+    q 's/you: judgment · \*\*Opened:\*\* 2026-10-12 · \*\*Status:\*\* OPEN/agent · **Opened:** 2026-10-12 · **Status:** ANSWERED/'
+    q '' ''
+    bl --main-log "$S"; [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 6 ] && [ "$(printf '%s\n' "${lines[@]:1}" | cut -d' ' -f1 | sort -u)" = other ] || { show; return 1; }
+    # SINCE: the merged branch's tip is no first-parent commit of main; a short id is usage.
+    ml "$X" 2 "refuse main-log: $X is not on the default branch's first-parent history at $(git rev-parse main)"
+    bl --main-log "${X:0:12}"; [ "$status" -eq 1 ] && [[ "$stderr" == "--main-log takes one full 40- or 64-hex commit id"* ]] || { show; return 1; }
+}
