@@ -113,7 +113,7 @@
 #                 in any case, holds "<!--" (questions.sh's index markers) or
 #                 is not strict UTF-8 (no surrogate or code point past
 #                 U+10FFFF, as questions.sh check reads it; the loop prompt's rule); a line of the
-#                 body, as written or as quoted, that FENCE_AWK refuses, or a
+#                 body as printed, bare or quoted, that FENCE_AWK refuses, or a
 #                 fence it leaves open; a blocked marker with no body; or a
 #                 read that fails.
 #   --state   the state gate --check runs first, alone (D13, F51; the
@@ -121,9 +121,9 @@
 #             --check's "refuse state WHAT: WHY" lines and exit 2. It checks
 #             what this script's own git reads trust, as they run hardened;
 #             it does not make a plain git command safe in the caller's shell,
-#             and it is a snapshot. Exit 1 (stderr only) for a caller's
-#             GIT_CONFIG_COUNT that is not plain decimal, or a GIT_DIR
-#             naming no repository. First, read only here, the
+#             and it is a snapshot. Exit 1 (stderr only) when a caller's git
+#             setting stops git or the script first (a GIT_CONFIG_COUNT not
+#             plain decimal, a GIT_DIR naming no repository...). First, read only here, the
 #             caller's environment: a
 #             repo-local git variable set (GIT_REPLACE_REF_BASE, GIT_GRAFT_FILE,
 #             GIT_SHALLOW_FILE, GIT_DIR, the object directories and the like;
