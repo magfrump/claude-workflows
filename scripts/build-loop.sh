@@ -145,11 +145,14 @@
 #                 commits after SINCE up to MAIN, one line each after this,
 #                 oldest first ("-" before a refusal):
 #             gate|chore|answers|other SHA SUBJECT
-#                 SUBJECT: the message's first line ("-" when empty). A
+#                 SUBJECT: the message's first line, display only ("-" when
+#                 empty, so "-" may also be the text "-"). A
 #                 two-parent commit is gate or chore only when its tree is
-#                 the clean merge of its parents (merge-tree), as --merge and
-#                 git merge write it; an amended or hand-resolved merge is
-#                 other. gate: two parents and
+#                 the clean merge of its parents (merge-tree, which writes
+#                 the merged objects as --check's does), as --merge and a git
+#                 merge with git's defaults write it (no -s or -X, no merge.*
+#                 config, no merge attribute); an amended or hand-resolved
+#                 merge is other. gate: two parents and
 #                 the message --merge writes, byte for byte. chore: two
 #                 parents, a subject "Merge branch 'B'" then the end, " into "
 #                 or ":" (any other text after the quote is other), B being chore/dev-cycle-DATE or
@@ -164,10 +167,12 @@
 #                 --check-answer's labels) or header lines ("**Needs:**") whose
 #                 Status field alone changed (in each hunk the removed and the
 #                 added header lines, Status values set aside, match in
-#                 order); at least one answer line added. Any other commit,
+#                 order); at least one answer line added (any entry's: the
+#                 class trusts the content, F19). Any other commit,
 #                 or one whose message, parents or changes cannot be read, is
 #                 other. The class is read from the commit's own text (and
-#                 objects below MAIN are not re-hashed): it catches an honest slip, not a
+#                 commits before MAIN, and objects not in MAIN's tree, are
+#                 not re-hashed): it catches an honest slip, not a
 #                 commit made to look like one of the others (F19).
 #             or "main MAIN -" and refuse main-log: WHY, when SINCE (a full
 #             id; a short one is a usage error, exit 1) is not on that history
@@ -403,7 +408,7 @@
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
 # found by name (origin/HEAD, main or master). Writes nothing but --check's
-# merge objects (merge-tree writes the merged trees and blobs into the object
+# and --main-log's merge objects (merge-tree writes the merged trees and blobs into the object
 # store), --merge's commit, the branch it moves and that branch's reflog
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
 # and its reflog, the worktrees and locks --start and --prompt make or
@@ -1597,9 +1602,12 @@ PROMPT
 # --main-log's answers rule over one commit's diff (diff-tree -p -U0 --text):
 # every changed line in a hunk is blank, an answer line or a header line, the
 # removed and added header lines of each hunk match in order once their Status
-# values are set aside, and at least one answer line is added (a Status flip, a
-# deleted answer or a revert alone adds none: i1 security F2). The labels are
-# --check-answer's (the lib's ANSWER_AWK, which points back here).
+# values are set aside, and at least one answer line is added (a Status flip
+# or a deleted answer alone adds none: i1 security F2). Any added answer label
+# counts, in any entry and from anyone (a revert restoring an old answer, a
+# loop answering an agent entry): the class trusts content (i2 security F1,
+# F19). The labels are --check-answer's (the lib's ANSWER_AWK, which points
+# back here).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 ANSWERS_AWK='
 function needs(l,   n, i, f, t, o) {
@@ -1625,23 +1633,30 @@ END { flush(); exit !(n > 0 && !bad) }'
 # answers or other) in CLASS, its message's first line in SUBJ ("-" when
 # empty). C, its changes and the record it adds are read in the gate
 # repository (no repo config or checkout attributes); any failed read makes C
-# other. A two-parent commit counts only when its tree is the clean merge of
-# its parents, as land and git merge write it: an amended merge keeps both
-# parents and the message (i1 security F1).
+# other. A gate or chore subject counts only when the commit's tree is the
+# clean merge of its parents (clean_merge), as land and a default git merge
+# write it: an amended merge keeps both parents and the message (i1 security
+# F1). Checked after the subject, so other merges cost no merge-tree run (i2
+# performance 1).
+# clean_merge: log_class's commit ($GATE_TMP/c, parents ps) has merge-tree's
+# tree. merge-tree writes the merged trees and blobs into the object store, as
+# --check's does (only a conflicting or hand-resolved merge adds new ones).
+clean_merge() {
+  local t
+  t="$(gate_git merge-tree --write-tree --no-messages "${ps[0]}" "${ps[1]}")" \
+    && [[ "$t" == "$(LC_ALL=C awk '/^tree / { print $2; exit }' "$GATE_TMP/c")" ]]
+}
 log_class() {
   local c="$1" ps=() m=() meta p x b q
-  CLASS=other; SUBJ=""
+  CLASS=other; SUBJ=-
   gate_git cat-file commit "$c" > "$GATE_TMP/c" || return 0
   mapfile -t ps < <(LC_ALL=C awk '/^$/ { exit } /^parent / { print $2 }' "$GATE_TMP/c")
   # The message, byte for byte: everything after the header's blank line.
   LC_ALL=C perl -0777 -ne 's/\A.*?\n\n//s and print' "$GATE_TMP/c" > "$GATE_TMP/m" || return 0
   mapfile -t -n 5 m < "$GATE_TMP/m"; SUBJ="${m[0]-}"; [[ -n "$SUBJ" ]] || SUBJ=-
-  if [[ ${#ps[@]} -eq 2 ]]; then
-    x="$(gate_git merge-tree --write-tree --no-messages "${ps[0]}" "${ps[1]}")" \
-      && [[ "$x" == "$(LC_ALL=C awk '/^tree / { print $2; exit }' "$GATE_TMP/c")" ]] || return 0
-  fi
   if [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(.+)\'\ \(build-loop\ (self-merge|approved merge)\)$ ]]; then
     b="${BASH_REMATCH[1]}"; x="${BASH_REMATCH[2]}"
+    clean_merge || return 0
     [[ "${m[2]-}" =~ ^Build-loop-gate:\ (.+)$ ]] || return 0
     p="${BASH_REMATCH[1]}"
     q=""
@@ -1649,6 +1664,7 @@ log_class() {
     gate_msg "$b" "$x" "$p" "$q" > "$GATE_TMP/want" && cmp -s "$GATE_TMP/want" "$GATE_TMP/m" && CLASS=gate
   elif [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(chore/dev-cycle-[0123456789]{4}-[0123456789]{2}-[0123456789]{2}(-[0123456789]{4})?)\'($|\ into\ |:) ]]; then
     b="${BASH_REMATCH[1]}"
+    clean_merge || return 0
     gate_git diff-tree -r --no-renames --raw -z "${ps[0]}" "$c" > "$GATE_TMP/d" || return 0
     while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
       [[ "$p" =~ ^docs/working/cycles/cycle-[^/]+\.md$ && "$meta" =~ ^:[01234567]{6}\ 100644\ [0123456789abcdef]+\ ([0123456789abcdef]+)\ [AM]$ ]] || continue

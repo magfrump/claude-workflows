@@ -212,8 +212,9 @@ other $T Merge branch 'feat/x' (build-loop self-merge)"
     chore chore/dev-cycle-2026-10-12 "Branch: chore/dev-cycle-2026-10-13"; chore chore/dev-cycle-x "Branch: chore/dev-cycle-x"
     chore chore/dev-cycle-2026-10-14 "Branch: chore/dev-cycle-2026-10-14"; echo slip > slip2.txt; git add slip2.txt; git commit -q --amend --no-edit
     tip main ''; E="$(git rev-parse main)"
-    q 's/you: judgment · \*\*Opened:\*\* 2026-10-12 · \*\*Status:\*\* OPEN/agent · **Opened:** 2026-10-12 · **Status:** ANSWERED/'
-    q '' ''; q 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/'; q '/^Q-001: \[1\]$/d'
+    # The Status flip first: once it is ANSWERED, only the route can change (a real diff each: i2 fact-check 2).
+    q 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/'; q 's/you: judgment/agent/'; q '' ''; q '/^Q-001: \[1\]$/d'
+    for i in 4 3 2 1; do [ -n "$(git diff "main~$i" "main~$((i - 1))")" ] || { echo "empty: main~$i"; return 1; }; done
     bl --main-log "$S"; [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 9 ] && [ "${lines[4]}" = "other $E -" ] \
         && [ "$(printf '%s\n' "${lines[@]:1}" | cut -d' ' -f1 | sort -u)" = other ] || { show; return 1; }
     # SINCE: the merged branch's tip is no first-parent commit of main (main's line still comes first); a short id is usage.
