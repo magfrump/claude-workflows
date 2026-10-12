@@ -100,16 +100,20 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-099](#q-099--roadmap-vs-feature-ideas) | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
 | [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
 | [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
+| [Q-102](#q-102--default-test-parallelism) | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
 | [Q-104](#q-104--unit-growth-during-review) | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
 | [Q-105](#q-105--devcontainer-breakage-definition) | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
+| [Q-109](#q-109--delete-merged-branches-2026-10-02) | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
 | [Q-114](#q-114--build-loop-u1c-size-waiver) | U1c of the build-loop handoff (`feat/build-loop-u1c`, the constraints line and `--status`) is 426 changed c... | 2026-10-05 |
 | [Q-115](#q-115--build-loop-u1b-r5) | U1b's fourth review pass found R5: the replace-ref guard does not beat a caller's own `git -c core.useRepla... | 2026-10-05 |
 | [Q-116](#q-116--digest-scan-working-dd-triggers) | Should the dev-cycle digest (section 2) also scan `docs/working/dd-*.md` design docs for a "Revisit trigger... | 2026-10-05 |
+| [Q-117](#q-117--verify-egress-resolve-time-ipset) | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
 | [Q-118](#q-118--build-loop-u1c-r1-and-size) | U1c's third (cap) review pass found R1, introduced by its own fix: colour config or a failing `git grep` si... | 2026-10-05 |
+| [Q-119](#q-119--u2a-split-at-cap) | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
 | [Q-120](#q-120--u2a3b-iteration-4-gate) | U2a3b's loop 2 used its three iterations, and the final confirming pass (k=3, full panel) did not close cle... | 2026-10-07 |
 | [Q-121](#q-121--sessions-outside-workspace) | Does any Claude Code session that might read this repo's instruction files run with a working directory out... | 2026-10-07 |
 | [Q-122](#q-122--u2a3b-confirming-pass-not-clean) | U2a3b's waived confirming pass (Q-120 [1]) found one new Low regression and one routed Medium, both now fix... | 2026-10-07 |
@@ -119,6 +123,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-127](#q-127--q125-proc-fallback) | If Q-126 shows bwrap cannot mount a fresh `/proc` in the container (A T1 FAIL), which fallback? | 2026-10-07 |
 | [Q-128](#q-128--u2a3c-final-pass-gate) | U2a3c (the checkout phase of the gate's import walk) used its three review iterations, and the final confir... | 2026-10-07 |
 | [Q-129](#q-129--u2a3c-confirm-pass-gate) | U2a3c's confirming pass (Q-128 [1]) found no red and no code defect, but it found new doc, test and one Low... | 2026-10-07 |
+| [Q-130](#q-130--q125-live-run) | Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox ch... | 2026-10-07 |
 | [Q-131](#q-131--u2a4-land-over-cap) | U2a4 (the self-merge floor) ended its 3-iteration review loop with no red, and every finding is fixed, but ... | 2026-10-08 |
 | [Q-132](#q-132--u2a4-confirm-pass-regression) | U2a4's confirming pass (Q-131 [1]) found one Medium under-read, a regression the final pass's own fixes int... | 2026-10-08 |
 | [Q-133](#q-133--u2b1a2-gate-threat-model) | U2b1a2 (`build-loop.sh --check`'s frame) hit the 3-iteration review cap with four reds open, and the securi... | 2026-10-08 |
@@ -126,6 +131,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-135](#q-135--u2b1b-landing) | U2b1b (`--check` lists the merge's changed paths and applies the N rules; U2b1a2's carried reds R6, R7 and ... | 2026-10-08 |
 | [Q-136](#q-136--u2b2-landing) | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
 | [Q-137](#q-137--u2b3a-landing) | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
+| [Q-138](#q-138--u3a2-land-discovery-past-cap) | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
 <!-- index:end -->
 
 ## Answered
@@ -2424,5 +2430,152 @@ U2b3a (the import walks resolve names against every reader root and home, so the
 - **Blocks:** U2b3b and U2c (stacked on it).
 - **Interim:** nothing merges. Recommended: [1]. The one post-pass code change refuses an input no caller passes.
 - **If the answer differs:** [2] runs the pass and re-asks with its result.
+
+
+### Q-117 · verify-egress-resolve-time-ipset
+**Needs:** you: terminal · **Opened:** 2026-10-05 · **Status:** ANSWERED
+
+Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117: pass`, or paste the container block's output.
+
+- **Why it's yours:** the rebuild runs on the host, and the sandbox can't run iptables or dnsmasq. The branch's 105 bats tests only cover how the config and rules are put together.
+- **Read:** `docs/working/egress-android-build.md` (Correction section, on the branch) · `docs/decisions/038-sni-resolve-time-ipset.md` · `docs/reviews/security-review-2026-10-05-egress-sni-resolve-time-ipset.md`
+- **What it proves:** four dnsmasq/kernel behaviours the fix assumes but nobody has observed: the ipset add lands before the reply goes out; matching is by query name, so addresses behind a CNAME are added; re-adding refreshes the 1 h timeout; CAP_NET_ADMIN survives dnsmasq dropping to its user. The firewall's own boot check covers the first and last. The rotation wait below covers the CNAME case, which is the real bug: before the fix, every fetch after Google moved the pool failed with `Errno 113`.
+
+Two blocks, because they run in different shells. Edit the two `/path/to/...` lines first.
+
+```bash
+# --- HOST: install the branch's devcontainer config, then rebuild herald's container ---
+cd /path/to/claude-workflows        # EDIT: your host checkout of this repo
+git worktree add --detach ../cw-egress-verify fix/egress-dnsmasq-ipset   # --detach: the branch is checked out in an agent worktree
+(cd ../cw-egress-verify && ./devcontainer-config/install.sh)              # read the diff (it is the rebuild gate), answer y
+HERALD=/path/to/herald              # EDIT: the herald repo
+cc-isolated --probe-only "$HERALD" && cc-isolated "$HERALD"
+```
+
+```bash
+# --- CONTAINER: in the rebuilt herald session's shell. Takes up to ~45 min (waits for a pool rotation). ---
+U=https://dl.google.com/dl/android/maven2/com/android/application/com.android.application.gradle.plugin/8.7.3/com.android.application.gradle.plugin-8.7.3.pom
+L=/run/cc-sni-proxy/proxy.log
+echo "firewall marker: $(cat /run/cc-firewall/complete 2>&1)"
+echo "dnsmasq instances (expect 2): $(pgrep -u dnsmasq dnsmasq | wc -l)"
+echo "fetch 1 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
+first=$(grep -oE 'ALLOW sni=dl\.google\.com -> [0-9.]+' "$L" | tail -1 | awk '{print $4}')
+echo "first ALLOW address: ${first:-NONE}"
+echo "waiting for the pool to drop $first (polls every 30 s, gives up after 45 min)..."
+for i in $(seq 1 90); do getent ahostsv4 dl.google.com | awk '{print $1}' | grep -qxF "$first" || break; sleep 30; done
+echo "pool now: $(getent ahostsv4 dl.google.com | awk '{print $1}' | sort -u | tr '\n' ' ')"
+echo "fetch 2 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
+echo "FAIL lines for dl.google.com (expect 0): $(grep -c 'FAIL sni=dl\.google\.com' "$L")"
+grep -E 'sni=dl\.google\.com' "$L" | tail -5
+```
+
+**Pass** = 2 instances, both fetches 200, 0 FAIL lines, and "pool now" no longer lists the first ALLOW address. If the loop gave up with the address still listed, the pool didn't rotate; run the container block again later.
+
+- **Blocks:** merging `fix/egress-dnsmasq-ipset`; herald's Android build.
+- **Interim:** branch unmerged. Herald works around it by restarting its container (the firewall re-resolves at startup) and building straight away. Separately, herald should set `buildToolsVersion = "35.0.0"`.
+- **If it fails:** paste the output. To put the host back on main's config, run `./devcontainer-config/install.sh` from your main checkout. Either way, finish with `git worktree remove ../cw-egress-verify`.
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** not run. "Running this requires a devcontainer install with a branched image, which refuses while any other work is running. This will block verification constantly as a pattern while also creating a large user error security surface if I install a test setup for the container and forget to return to the main setup before opening a session. We need a different process for validating specific sections of code without blocking use of the harness overall." Follow-up: a verification process that does not install a branch image on the host (design work for a dev cycle); `fix/egress-dnsmasq-ipset` stays unmerged until it exists.
+
+
+### Q-109 · delete-merged-branches-2026-10-02
+**Needs:** you: terminal · **Opened:** 2026-10-02 · **Status:** ANSWERED
+
+Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting branches needs your approval:
+
+```
+git -C /workspace branch -d feat/hook-refuse-redirects feat/run-tests-jobs feat/workflow-router-skills fix/agents-md-no-imports
+```
+
+- **Interim:** the branches stay. They cost nothing but clutter.
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** done (the user ran the deletion).
+
+
+### Q-102 · default-test-parallelism
+**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** ANSWERED
+
+`scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no caller passes `--jobs`. Should health-check.sh and pr-prep's test gate run in parallel by default?
+
+- **Why it's yours:** it trades wall time on every gate against a small flake risk, in the checks you rely on.
+- **Read:** Q-090 (archive) · the "Parallel runs" section of the `scripts/run-tests.sh` header · `docs/reviews/code-review-rubric-2026-09-30-feat-run-tests-jobs.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Parallel by default, with an env override** | health-check and pr-prep pass `--jobs 8` (a `RUN_TESTS_JOBS`-style variable picks N, and 1 means serial). Falls back to serial when there is no GNU parallel. | A small reviewed change | A timing race shows up as a flaky gate. So far that is 1 in about 13 runs, since fixed. You re-run, or set N=1. |
+| **[2] Opt-in only** | Callers stay serial; agents and you pass `--jobs` by hand | None | Every gate keeps costing about 7.5 min instead of 2.5 min, and agents rarely remember the flag |
+
+- **Interim:** [2]. Nothing calls `--jobs` yet.
+- **If the answer differs:** nothing to redo.
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** [1] parallel by default, with an env override. Not applied yet: health-check.sh and pr-prep still run serially; the change is a small reviewed unit for the next dev cycle to brief.
+
+
+### Q-130 · q125-live-run
+**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** ANSWERED
+
+Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox checks.
+
+```
+cd ~/claude-workflows && git worktree add --detach /tmp/q125-install feat/q125-cc-isolated-sandbox && /tmp/q125-install/devcontainer-config/install.sh; git -C ~/claude-workflows worktree remove /tmp/q125-install
+cc-isolated --probe-only ~/claude-workflows && cc-isolated ~/claude-workflows
+```
+
+Then, in that session, type: `Run bash docs/working/live-check-q125.sh with your Bash tool (not !), then run it again with --watch in the background while I /login, and paste me every RESULT line.`
+
+- **Read:** `docs/working/live-check-q125.sh` (on the branch) says what C1–C10 test. It aborts before any write if the credential is readable. Plan step 6 is the spec.
+- **Before you paste:** install.sh refuses while any Claude Code process runs on the host (Q-058), so close sessions first. Say **y** to target 1 (devcontainer config) and **N** to target 2 (host `~/.claude`). Target 2 records the repo it ran from as canonical, and this one is a temp worktree that the paste deletes. The branch changes nothing there anyway.
+- **What the answer decides:**
+  - The session fails to start with `sandbox required but unavailable` → the sandbox broke on the real image. Paste that error; the rollback is install.sh from main (plan Rollback).
+  - Every RESULT is pass → pr-prep runs per unit, then U1 and U2 merge with `Live-verified: <the hash cc-isolated --list shows>`.
+  - Any FAIL → the agent fixes it on U2 and you re-run this entry.
+- **Blocks:** Q-125's merge, and Q-098.
+- **Interim:** every cc-isolated project now runs the branch's config until install.sh is re-run from main. To back out, run the same paste with `main` in place of the branch.
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** not run: "See Q-117; this test process is too disruptive." The same follow-up as Q-117 covers it; Q-125 and Q-098 stay blocked until then.
+
+
+### Q-119 · u2a-split-at-cap
+**Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** ANSWERED
+
+U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the split, and the redesign it carries, the right call?
+
+- **Why it's yours:** the split replaces "model every tree shape" with "refuse what is not modelled", which makes self-merge refuse every path in a repo holding an odd name. That trades reach for safety on a gate you will rely on.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a.md` (iterations 1-3 and the gate decision, on branch `feat/build-loop-u2a`) · plan step 5's U2 split note
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the split** | U2a1 (lib wording, `badform`, `isclosed`, constraints.md for `--check-fix`, U1d rows) lands now; U2a2 rebuilds the floor's import walk to fail closed on newline names, absolute or newline symlink text and `..` names, on a fresh 3-iteration loop. | None now. | A repo with such a name gets no self-merge until it is renamed; the refusal names the reason. |
+| **[2] Escalate instead** | Undo the split; you review the three iterations and authorize more iterations on one unit. | Reading three rubric sections. | The loop keeps finding one new shape per pass, as it did three times. |
+| **[3] Abandon the commit-reading walk** | Run the import walk in a clean worktree checked out at main's commit (the plan's other option) instead. | None now; a design change in U2b. | A checkout costs time per `--check` and touches disk the gate otherwise never writes. |
+
+- **Blocks:** nothing; U2a1 lands, U2a2 proceeds under [1].
+- **Interim:** [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`.
+- **Update 2026-10-06:** under [1], U2a2 (the floor plus the walk, 400 code lines before U2a1's carried rows) was split again, then once more at its review's iteration 2 (fixes and tests put it near 480 lines): U2a2 is the shared token parser and `isimported tree`, U2a3 the commit-reading walk, U2a4 the floor. No new judgment: the same refuse-what-is-not-modelled walk, in smaller units. Under [3], U2a3 is the unit replaced.
+- **Update 2026-10-08:** U2b was split the same way before any code, for size alone (tests count toward the cap): U2b1a (`--check`'s frame: hardened git, state gate, `--expect`, merge-tree), U2b1b (the changed paths and the N rules), U2b2 (the gate's checkout), U2b3 (the reader model). Plan step 5's U2b split note lists each. No new judgment; commit d0199be6 on `feat/build-loop-u2b1a`. At review iteration 2 U2b1a split again for size (439 lines): U2b1a1 (the reader side `--status` uses) lands first, then U2b1a2 (`--check`); plan step 5's note.
+- **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** [1] keep the split: "I don't have any need for repo names to start with . or contain newlines. If a repo name does have a problematic name, refusing to open it seems like the correct default." Matches the interim; nothing to redo.
+
+
+### Q-138 · u3a2-land-discovery-past-cap
+**Needs:** you: judgment · **Opened:** 2026-10-10 · **Status:** ANSWERED
+
+U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decision found one more Must Fix in the same class, so by that decision the merge stops here. How should it land?
+
+- **Why it's yours:** each security pass since the final one has found one more way to plant git state that `land` reads less carefully than git (a deleted gitdir file, CRLF rebase state, a symbolic main, then a dot-named admin dir, a `ref:` split by a newline, a symbolic alias). Every one needs a same-uid writer to plant git internals before the run; none lets main land anything but the judged merge commit; the damage is to a checkout that has main checked out (or a later `rebase --abort` undoing the merge). Whether that class is worth more passes, or belongs with Q-103's residuals, is a threat-model call.
+- **Read:** `docs/reviews/code-review-rubric-2026-10-10-feat-build-loop-u3a2.md` (on `feat/build-loop-u3a2`: iterations 1-3, the gate decision, the confirming pass) · `docs/reviews/security-review-2026-10-10-u3a2-confirm.md` · plan step 7's U3a2 bullet.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow pass, then merge** | k=1 fact-check + security over the interim batch ce38eafb (HEAD resolved by git itself, per-dir checks, bare repositories). Merge on no new Must Fix; any further planted-state finding of this class becomes an override row routed to Q-103 instead of another pass. | None. | A planted-state shape the gate misses stays open until Q-103's re-route (U5). Nothing calls `--merge` until U4 writes the orchestrator. |
+| **[2] Merge now with known issues** | Land ce38eafb as is (unreviewed batch; suites and mutants green), the class routed to Q-103 with override rows. | None. | The interim batch has had no review; a regression in it lands. |
+| **[3] Narrow the design** | `--merge` lands only by compare-and-swap and refuses whenever any worktree has the default branch checked out (no fast-forward in W, no admin-dir reading). | Detach or switch `/workspace` off main before the orchestrator merges; a design change in plan D7/F29. | Your usual checkout on main blocks every self-merge until you move it. |
+
+- **Blocks:** nothing now (U3a2 merged on the interim).
+- **Interim:** [1] taken 2026-10-10: the second confirming pass (k=1 fact-check + security over 20de9671..2028aa89, plus the owed G6 test) found no Must Fix or Must Address; a Low planted-state regression (a planted `core.bare` with the index deleted) became an override row routed to Q-103; merged at 5dae21fb. Rubric section "Second confirming pass".
+- **If the answer differs:** [2] is moot; [3] is a follow-up unit that removes the W path and most of the discovery block from main (re-reviewed).
+
+**Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** [1]: "[3] would prevent all self-merges to main and effectively block development on every project." Matches the interim; nothing to redo.
 
 

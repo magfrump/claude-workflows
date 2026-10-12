@@ -25,14 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-102](#q-102--default-test-parallelism) | you: judgment | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
-| [Q-119](#q-119--u2a-split-at-cap) | you: judgment | U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the spl... | 2026-10-06 |
-| [Q-138](#q-138--u3a2-land-discovery-past-cap) | you: judgment | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
-| [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath = /home/magfrump/claude-workflows/.git/hooks` (the host spell... | 2026-10-12 |
+| [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
-| [Q-109](#q-109--delete-merged-branches-2026-10-02) | you: terminal | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
-| [Q-117](#q-117--verify-egress-resolve-time-ipset) | you: terminal | Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117:... | 2026-10-05 |
-| [Q-130](#q-130--q125-live-run) | you: terminal | Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox ch... | 2026-10-07 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
@@ -50,49 +44,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-117 · verify-egress-resolve-time-ipset
-**Needs:** you: terminal · **Opened:** 2026-10-05 · **Status:** OPEN
-
-Live-verify `fix/egress-dnsmasq-ipset` (the dl.google.com fix) on the host before it merges. Answer `Q-117: pass`, or paste the container block's output.
-
-- **Why it's yours:** the rebuild runs on the host, and the sandbox can't run iptables or dnsmasq. The branch's 105 bats tests only cover how the config and rules are put together.
-- **Read:** `docs/working/egress-android-build.md` (Correction section, on the branch) · `docs/decisions/038-sni-resolve-time-ipset.md` · `docs/reviews/security-review-2026-10-05-egress-sni-resolve-time-ipset.md`
-- **What it proves:** four dnsmasq/kernel behaviours the fix assumes but nobody has observed: the ipset add lands before the reply goes out; matching is by query name, so addresses behind a CNAME are added; re-adding refreshes the 1 h timeout; CAP_NET_ADMIN survives dnsmasq dropping to its user. The firewall's own boot check covers the first and last. The rotation wait below covers the CNAME case, which is the real bug: before the fix, every fetch after Google moved the pool failed with `Errno 113`.
-
-Two blocks, because they run in different shells. Edit the two `/path/to/...` lines first.
-
-```bash
-# --- HOST: install the branch's devcontainer config, then rebuild herald's container ---
-cd /path/to/claude-workflows        # EDIT: your host checkout of this repo
-git worktree add --detach ../cw-egress-verify fix/egress-dnsmasq-ipset   # --detach: the branch is checked out in an agent worktree
-(cd ../cw-egress-verify && ./devcontainer-config/install.sh)              # read the diff (it is the rebuild gate), answer y
-HERALD=/path/to/herald              # EDIT: the herald repo
-cc-isolated --probe-only "$HERALD" && cc-isolated "$HERALD"
-```
-
-```bash
-# --- CONTAINER: in the rebuilt herald session's shell. Takes up to ~45 min (waits for a pool rotation). ---
-U=https://dl.google.com/dl/android/maven2/com/android/application/com.android.application.gradle.plugin/8.7.3/com.android.application.gradle.plugin-8.7.3.pom
-L=/run/cc-sni-proxy/proxy.log
-echo "firewall marker: $(cat /run/cc-firewall/complete 2>&1)"
-echo "dnsmasq instances (expect 2): $(pgrep -u dnsmasq dnsmasq | wc -l)"
-echo "fetch 1 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
-first=$(grep -oE 'ALLOW sni=dl\.google\.com -> [0-9.]+' "$L" | tail -1 | awk '{print $4}')
-echo "first ALLOW address: ${first:-NONE}"
-echo "waiting for the pool to drop $first (polls every 30 s, gives up after 45 min)..."
-for i in $(seq 1 90); do getent ahostsv4 dl.google.com | awk '{print $1}' | grep -qxF "$first" || break; sleep 30; done
-echo "pool now: $(getent ahostsv4 dl.google.com | awk '{print $1}' | sort -u | tr '\n' ' ')"
-echo "fetch 2 (expect 200): $(curl -sS -m 10 -o /dev/null -w '%{http_code}' "$U")"
-echo "FAIL lines for dl.google.com (expect 0): $(grep -c 'FAIL sni=dl\.google\.com' "$L")"
-grep -E 'sni=dl\.google\.com' "$L" | tail -5
-```
-
-**Pass** = 2 instances, both fetches 200, 0 FAIL lines, and "pool now" no longer lists the first ALLOW address. If the loop gave up with the address still listed, the pool didn't rotate; run the container block again later.
-
-- **Blocks:** merging `fix/egress-dnsmasq-ipset`; herald's Android build.
-- **Interim:** branch unmerged. Herald works around it by restarting its container (the firewall re-resolves at startup) and building straight away. Separately, herald should set `buildToolsVersion = "35.0.0"`.
-- **If it fails:** paste the output. To put the host back on main's config, run `./devcontainer-config/install.sh` from your main checkout. Either way, finish with `git worktree remove ../cw-egress-verify`.
 
 ### Q-107 · claude-home-payload-second-consumer
 **Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
@@ -119,17 +70,6 @@ In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test ru
 - **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356-357`) with its own 4. Fix: unset the variable in that suite's `setup()` (not at top level of `test/lib/hermetic-env.bash`: `run-tests.sh` sources that file before its own write, so the count would vanish), or have the runner stop passing the variable to the bats processes it starts; add a test that the parent's file is untouched. Having the runner refuse an inherited value cannot work: the health check passes the variable through the environment (`scripts/health-check.sh`, check 5).
 - **Interim:** trust the runner's own NOT RUN list, not the summary line.
 
-### Q-109 · delete-merged-branches-2026-10-02
-**Needs:** you: terminal · **Opened:** 2026-10-02 · **Status:** OPEN
-
-Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting branches needs your approval:
-
-```
-git -C /workspace branch -d feat/hook-refuse-redirects feat/run-tests-jobs feat/workflow-router-skills fix/agents-md-no-imports
-```
-
-- **Interim:** the branches stay. They cost nothing but clutter.
-
 ### Q-103 · dev-cycle-build-loop-policy
 **Needs:** deferred · **Opened:** 2026-10-01 · **Status:** OPEN
 
@@ -146,22 +86,6 @@ Once the build-loop handoff exists, may its build loops merge their own branches
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`. Nothing reads it until the handoff unit lands; its design counts that line as unset, which means `review`.
 - **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]) and delete the paragraph starting "Interim note:".
-
-### Q-102 · default-test-parallelism
-**Needs:** you: judgment · **Opened:** 2026-09-30 · **Status:** OPEN
-
-`scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no caller passes `--jobs`. Should health-check.sh and pr-prep's test gate run in parallel by default?
-
-- **Why it's yours:** it trades wall time on every gate against a small flake risk, in the checks you rely on.
-- **Read:** Q-090 (archive) · the "Parallel runs" section of the `scripts/run-tests.sh` header · `docs/reviews/code-review-rubric-2026-09-30-feat-run-tests-jobs.md`
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Parallel by default, with an env override** | health-check and pr-prep pass `--jobs 8` (a `RUN_TESTS_JOBS`-style variable picks N, and 1 means serial). Falls back to serial when there is no GNU parallel. | A small reviewed change | A timing race shows up as a flaky gate. So far that is 1 in about 13 runs, since fixed. You re-run, or set N=1. |
-| **[2] Opt-in only** | Callers stay serial; agents and you pass `--jobs` by hand | None | Every gate keeps costing about 7.5 min instead of 2.5 min, and agents rarely remember the flag |
-
-- **Interim:** [2]. Nothing calls `--jobs` yet.
-- **If the answer differs:** nothing to redo.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -297,27 +221,6 @@ Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default
 
   - **Update 2026-10-07 (Q-126):** the host probe passed, so a fresh `/proc` works and Q-127 is moot. U2 has merged main (2961ca2f), so the live run installs current payload. Next is Q-130.
 
-### Q-130 · q125-live-run
-**Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** OPEN
-
-Install the Q-125 branch on the host, rebuild and probe cc-isolated, then have a session run the sandbox checks.
-
-```
-cd ~/claude-workflows && git worktree add --detach /tmp/q125-install feat/q125-cc-isolated-sandbox && /tmp/q125-install/devcontainer-config/install.sh; git -C ~/claude-workflows worktree remove /tmp/q125-install
-cc-isolated --probe-only ~/claude-workflows && cc-isolated ~/claude-workflows
-```
-
-Then, in that session, type: `Run bash docs/working/live-check-q125.sh with your Bash tool (not !), then run it again with --watch in the background while I /login, and paste me every RESULT line.`
-
-- **Read:** `docs/working/live-check-q125.sh` (on the branch) says what C1–C10 test. It aborts before any write if the credential is readable. Plan step 6 is the spec.
-- **Before you paste:** install.sh refuses while any Claude Code process runs on the host (Q-058), so close sessions first. Say **y** to target 1 (devcontainer config) and **N** to target 2 (host `~/.claude`). Target 2 records the repo it ran from as canonical, and this one is a temp worktree that the paste deletes. The branch changes nothing there anyway.
-- **What the answer decides:**
-  - The session fails to start with `sandbox required but unavailable` → the sandbox broke on the real image. Paste that error; the rollback is install.sh from main (plan Rollback).
-  - Every RESULT is pass → pr-prep runs per unit, then U1 and U2 merge with `Live-verified: <the hash cc-isolated --list shows>`.
-  - Any FAIL → the agent fixes it on U2 and you re-run this entry.
-- **Blocks:** Q-125's merge, and Q-098.
-- **Interim:** every cc-isolated project now runs the branch's config until install.sh is re-run from main. To back out, run the same paste with `main` in place of the branch.
-
 ### Q-089 · host-tools-trust-category
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
 
@@ -328,58 +231,26 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
 
 
-### Q-119 · u2a-split-at-cap
-**Needs:** you: judgment · **Opened:** 2026-10-06 · **Status:** OPEN
-
-U2a (the self-merge floor) hit the 3-iteration review cap, and the agent split it in /away mode: is the split, and the redesign it carries, the right call?
-
-- **Why it's yours:** the split replaces "model every tree shape" with "refuse what is not modelled", which makes self-merge refuse every path in a repo holding an odd name. That trades reach for safety on a gate you will rely on.
-- **Read:** `docs/reviews/code-review-rubric-2026-10-06-feat-build-loop-u2a.md` (iterations 1-3 and the gate decision, on branch `feat/build-loop-u2a`) · plan step 5's U2 split note
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep the split** | U2a1 (lib wording, `badform`, `isclosed`, constraints.md for `--check-fix`, U1d rows) lands now; U2a2 rebuilds the floor's import walk to fail closed on newline names, absolute or newline symlink text and `..` names, on a fresh 3-iteration loop. | None now. | A repo with such a name gets no self-merge until it is renamed; the refusal names the reason. |
-| **[2] Escalate instead** | Undo the split; you review the three iterations and authorize more iterations on one unit. | Reading three rubric sections. | The loop keeps finding one new shape per pass, as it did three times. |
-| **[3] Abandon the commit-reading walk** | Run the import walk in a clean worktree checked out at main's commit (the plan's other option) instead. | None now; a design change in U2b. | A checkout costs time per `--check` and touches disk the gate otherwise never writes. |
-
-- **Blocks:** nothing; U2a1 lands, U2a2 proceeds under [1].
-- **Interim:** [1]. Split recorded in the U2a rubric and commit e8f76379 on `feat/build-loop-u2a`.
-- **Update 2026-10-06:** under [1], U2a2 (the floor plus the walk, 400 code lines before U2a1's carried rows) was split again, then once more at its review's iteration 2 (fixes and tests put it near 480 lines): U2a2 is the shared token parser and `isimported tree`, U2a3 the commit-reading walk, U2a4 the floor. No new judgment: the same refuse-what-is-not-modelled walk, in smaller units. Under [3], U2a3 is the unit replaced.
-- **Update 2026-10-08:** U2b was split the same way before any code, for size alone (tests count toward the cap): U2b1a (`--check`'s frame: hardened git, state gate, `--expect`, merge-tree), U2b1b (the changed paths and the N rules), U2b2 (the gate's checkout), U2b3 (the reader model). Plan step 5's U2b split note lists each. No new judgment; commit d0199be6 on `feat/build-loop-u2b1a`. At review iteration 2 U2b1a split again for size (439 lines): U2b1a1 (the reader side `--status` uses) lands first, then U2b1a2 (`--check`); plan step 5's note.
-- **If the answer differs:** [2] reverts nothing on main (U2a1 stands either way); [3] replaces U2a3's walk.
-
-### Q-138 · u3a2-land-discovery-past-cap
-**Needs:** you: judgment · **Opened:** 2026-10-10 · **Status:** OPEN
-
-U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decision found one more Must Fix in the same class, so by that decision the merge stops here. How should it land?
-
-- **Why it's yours:** each security pass since the final one has found one more way to plant git state that `land` reads less carefully than git (a deleted gitdir file, CRLF rebase state, a symbolic main, then a dot-named admin dir, a `ref:` split by a newline, a symbolic alias). Every one needs a same-uid writer to plant git internals before the run; none lets main land anything but the judged merge commit; the damage is to a checkout that has main checked out (or a later `rebase --abort` undoing the merge). Whether that class is worth more passes, or belongs with Q-103's residuals, is a threat-model call.
-- **Read:** `docs/reviews/code-review-rubric-2026-10-10-feat-build-loop-u3a2.md` (on `feat/build-loop-u3a2`: iterations 1-3, the gate decision, the confirming pass) · `docs/reviews/security-review-2026-10-10-u3a2-confirm.md` · plan step 7's U3a2 bullet.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One more narrow pass, then merge** | k=1 fact-check + security over the interim batch ce38eafb (HEAD resolved by git itself, per-dir checks, bare repositories). Merge on no new Must Fix; any further planted-state finding of this class becomes an override row routed to Q-103 instead of another pass. | None. | A planted-state shape the gate misses stays open until Q-103's re-route (U5). Nothing calls `--merge` until U4 writes the orchestrator. |
-| **[2] Merge now with known issues** | Land ce38eafb as is (unreviewed batch; suites and mutants green), the class routed to Q-103 with override rows. | None. | The interim batch has had no review; a regression in it lands. |
-| **[3] Narrow the design** | `--merge` lands only by compare-and-swap and refuses whenever any worktree has the default branch checked out (no fast-forward in W, no admin-dir reading). | Detach or switch `/workspace` off main before the orchestrator merges; a design change in plan D7/F29. | Your usual checkout on main blocks every self-merge until you move it. |
-
-- **Blocks:** nothing now (U3a2 merged on the interim).
-- **Interim:** [1] taken 2026-10-10: the second confirming pass (k=1 fact-check + security over 20de9671..2028aa89, plus the owed G6 test) found no Must Fix or Must Address; a Low planted-state regression (a planted `core.bare` with the index deleted) became an override row routed to Q-103; merged at 5dae21fb. Rubric section "Second confirming pass".
-- **If the answer differs:** [2] is moot; [3] is a follow-up unit that removes the W path and most of the discovery block from main (re-reviewed).
-
 ### Q-139 · workspace-hookspath-fails-state-gate
 **Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** OPEN
 
-`/workspace/.git/config` sets `core.hooksPath = /home/magfrump/claude-workflows/.git/hooks` (the host spelling of the repo's own default hooks dir), and the build-loop state gate refuses any `core.hooksPath`, so every gated mode (`--check`, `--merge`, `--start`, `--prompt`, and now `--state`) refuses in this repository, from any worktree. Which way should it clear?
+`/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host spelling of this repo's own default hooks directory). The build-loop state gate refuses any `core.hooksPath`, so every gated mode (`--check`, `--merge`, `--start`, `--prompt`, `--state`, `--main-log`) refuses in this repo. Which way should the gate and the config meet?
 
-- **Why it's yours:** it is your repository's config, set on the host (not by this repo's scripts as far as the sessions can see), and the gate's rule is a threat-model choice.
-- **Read:** `scripts/build-loop.sh` state_gate (STATE_KEYS_RE) and harden (core.hooksPath=/dev/null for the gate's own git) · merge message of `feat/build-loop-u3b1` (ef7a1122), Areas of uncertainty.
+- **Why it's yours:** the setting is your host config (no script in this repo sets it, as far as the sessions can see), and the choice is how much the gate trusts repo config it did not write.
+- **The threats in play** (a build loop runs as your user and can write `.git/config` and `.git/hooks/`):
+  - **T1, a planted hooks directory.** A loop sets `core.hooksPath` to a directory it wrote. The next plain git command anyone runs here (your commit, a pr-prep merge, the orchestrator's own git outside the script) runs the loop's hook as you, outside the loop's sandbox and after review. Refusing every `core.hooksPath` is how the gate catches this.
+  - **T2, a hook written into the default directory.** A loop writes `.git/hooks/pre-commit` with no config change at all. No option here touches T2: the gate does not read the hooks directory today, and the script's own git runs with hooks off (`core.hooksPath=/dev/null`). It is listed so that no option below is read as closing it.
+  - **T3, a look-alike path.** Under [2], a value that reads as this repo's hooks directory but resolves elsewhere (a symlink, another reader root's spelling, `..` parts) would pass the gate and be T1 again.
+- **Read:** `scripts/build-loop.sh` state_gate (STATE_KEYS_RE) and harden · merge message of `feat/build-loop-u3b1` (ef7a1122), Areas of uncertainty.
 
-| Option | What it means | Cost to you | If it's wrong |
+| Option | What it means | Cost to you | Threat left open if it's wrong |
 |---|---|---|---|
-| **[1] Unset it on the host** | `git config --unset core.hooksPath` in `~/claude-workflows`: git's default is the same hooks dir, so the host runs the same hooks. | One terminal command. | If a tool set it on purpose (to pin hooks across a path change), that tool may set it again or warn. |
-| **[2] Let the gate accept the repo's own hooks dir** | state_gate passes a `core.hooksPath` that names this repository's own hooks dir under any reader-root spelling; harden already runs the gate's git with no hooks. | None now; a small follow-up unit (with review). | The risk is a spelling check that admits another dir. |
-| **[3] Leave it until U4** | Nothing calls the gated modes yet; decide when the orchestrator first runs here. | None now. | The first orchestrator iteration in this repo refuses at `--state` until it is decided. |
+| **[1] Unset it on the host** | `git config --unset core.hooksPath` in `~/claude-workflows`; git then uses the same default hooks directory, so the same hooks run. | One terminal command. | None new: T1 stays fully guarded (any `core.hooksPath` is refused). If a host tool sets it again on purpose, the gate refuses again: lost availability, not safety. |
+| **[2] Let the gate accept this repo's own hooks directory** | state_gate passes a `core.hooksPath` whose real path is this repository's own `hooks` directory under the git common dir; anything else still refuses. | None now; a small follow-up unit with review. | T3: if the real-path check has a hole, a planted directory passes, and T1 runs a loop's hook in your next plain git command. |
+| **[3] Leave it until U4** | No change; decide when the orchestrator first runs here. | None now. | None new; every gated mode keeps refusing here, so the orchestrator's first iteration in this repo stops at `--state` until this is answered. |
 
-- **Blocks:** nothing now; the orchestrator's first live run in this repo (U4).
-- **Interim:** [3]: no code or config change; noted in U3b1's merge message.
-- **If the answer differs:** [2] is a follow-up unit before U4 lands; [1] needs nothing from the sessions.
+- **Blocks:** the orchestrator's first live run in this repo (U4); nothing before it.
+- **Interim:** [3]: no code or config change.
+- **If the answer differs:** [1] needs nothing from the sessions; [2] is a follow-up unit before U4 lands.
+- **Rewritten 2026-10-12** on your note (answers-10-12-26.txt): the threats are now named separately, and the last column says which threat each option leaves open.
+
