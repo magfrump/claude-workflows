@@ -1,4 +1,4 @@
-Commit: 4e14d1cc
+Commit: b1a6f0a2
 
 # Code Review Rubric: feat/build-loop-u4a
 
@@ -90,3 +90,45 @@ No behavioral red at high confidence: the fact-check's one Incorrect (claim 4b) 
 - `scripts/build-loop.sh` cycle_rules truth rule (B4, B6, B7; security, architecture, api): distinct defects (case spelling, comment, wording).
 
 **Status (iteration 2):** no red; four ambers fixed. Next: final confirming pass (no `--loop-pass`, full branch, k=3).
+
+## Iteration 3: final confirming pass (no `--loop-pass`, full branch at c4e36d1d, k=3 fact-check, full core panel + architecture)
+
+**Fact-Check Gate:** one Incorrect at high confidence (claim 1, the repeated-ID refusal names "another brief"; message-only, the refusal stands). Choice in /away: **fix first** (U3c precedent): d46cd00f, then the critic panel reviewed b1a6f0a2. Verdict agreement 23/31 (74%), every disagreement between adjacent wording verdicts. Reports: `code-fact-check-report-2026-10-13-u4a-final{,-r1,-r2,-r3}.md`, `{security,performance,api-consistency,architecture}-review-2026-10-13-u4a-final.md`.
+
+### 🔴 Must Fix
+
+None.
+
+### 🟡 Must Address
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| C1 | --land-cycle never reads HEAD's history: any path outside the deny-list lands unjudged, so a chore branch carrying a loop's commits lands them, read as chore (P1: `src/app.sh`, `test/t.bats`). | security F1 | Medium | Fixed: allowlist, the cycle's own files, a .md under docs/ or README.md (--check-fix's scope) |
+| C2 | An added Asked: ID is not tied to the brief its entry is for: an entry filed for brief y, its ID on brief x's line, passes; y's answer applies to x. | security F2 (the part of i2 F-a not taken) | Medium | Fixed: the entry's heading must end -STEM-N for the brief that adds it |
+| C3 | Final fact-check claim 1 (Incorrect, message-only). | fact-check | Incorrect (message) | Fixed in d46cd00f |
+
+### 🟢 Consider
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| C4 | cycle_rules lacks the floor's "below" class (`AGENTS.md/x` landed). | security F3 (Low) | Fixed by C1's allowlist |
+| C5 | ASCII-only lower: a Kelvin-sign `SKILLS/...` path landed. | security F4 (Informational) | Fixed by C1's allowlist |
+| C6 | A refused questions file left cy.new empty, so every correct Asked: item also refused as "names no entry" (wrong cause). | architecture 1 (Minor, probed) | Fixed: questions_rules returns 2, only the item's form is then judged |
+| C7 | Comments still say "--cycle-diff's" / "the index" for shared code. | architecture 2 | Fixed |
+| C8 | The plan's U3b2 note says cycle-*.md; the narrowing is unrecorded; the --cycle-diff bullet lists only i1's rules. | api 1, 2; fact-check claims 5, 6 | Fixed (plan) |
+| C9 | No test asserts the reflog text or hook absence. | api 3; fact-check escalation | Defer (override row) |
+| C10 | Stale commit-message names (722c2e10, 70d24331); 4df6ec58's floor_why wording. | fact-check claims 2, 3, 7 | Won't-Fix (override rows) |
+| C11 | Header: fast-forward reflog suffix. | fact-check claim 4 | Fixed in d46cd00f |
+| C12 | state_start runs twice per iteration (~0.38 s each). | performance (considered, not filed) | — (by design: the land re-checks the state it lands from) |
+
+Endorsement claims routed (`route: code-fact-check`): security 1-4 (the land writes what it judged with no hooks; --main and index refusals; the merge judged, rename refused; log_class's record name), performance 1 (the land's added time is land's re-checks). Stage 2.5 runs in the confirming pass below, over the fixed code.
+
+### 🧩 Composition check
+
+- `scripts/build-loop.sh` cycle_rules path rules (C1, C4, C5; security F1, F3, F4): **composed → C1**: one root, the rules were a deny-list over an unbounded path set; an allowlist of --check-fix's scope closes all three. Fragment rows keep their tiers.
+- `scripts/build-loop.sh` Asked: rule (C2, C3, C6; security, fact-check, architecture): distinct defects (brief binding, message text, unread-file signalling).
+
+### Iteration-4 gate (review-fix-loop.md hard cap)
+
+The final pass found two Mediums, fixed in the commit after this one. **Decision: escalate**, as a narrow confirming pass (U3a1/U3a2/U3c precedent; in /away mode, Q-137's standing instruction): a k=1 fact-check of the fix range with Stage 2.5 over the routed endorsement claims, plus security over the fix range. Merge on no new Must Fix or Must Address; otherwise stop and file a `you: judgment` entry. Not split (331 code lines, one concern) and not abandoned.
+
