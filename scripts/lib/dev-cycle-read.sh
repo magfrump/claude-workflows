@@ -67,7 +67,7 @@
 #     reads (.gitattributes, $GIT_DIR/info/attributes, core.attributesFile).
 #     The walk checks neither item but item 2's ls-files stderr rule.
 #     build-loop.sh --check does, for each self-merge brief before the walk
-#     (U2b2; its check_line runs the walk under item 1's LC_ALL=C): harden and its state gate own item 2's fsmonitor and replace
+#     (U2b2; its check_line runs the walk under item 1's LC_ALL=C): git_harden and the state gate own item 2's fsmonitor and replace
 #     refs; checkout_gate the rest of item 2 (a clean checkout at MAIN_SHA, the
 #     GIT_* variables, core.ignoreCase, sparse checkout), core.symlinks, and
 #     the attributes by their effect, not by check-attr: every regular file
@@ -322,6 +322,42 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
     bom) echo "starts with a byte-order mark" ;;
     *) echo "is a fence-like line that is not a plain column-0 fence" ;;
   esac
+}
+# git_harden: every later git call in this process and its children runs
+# hardened, but where a caller hands back its own setting on purpose
+# (build-loop.sh's caller_gate reads the caller's count, merge_ident its global
+# config); build-loop.sh and dev-cycle.sh call it once, after scrub_reexec and
+# before their first git call (D6 runs both as gate code: rows 281, 495). The
+# trust model: the repository, the user's and the system's git config are
+# writable by a loop and not trusted; the caller's own environment is.
+# HARDEN's config pairs outrank the repo's config: main's own objects
+# (core.useReplaceRefs there would override GIT_NO_REPLACE_OBJECTS), no hook,
+# no fsmonitor command, no core.attributesFile, no multi-pack-index (a second
+# route to an object, past build-loop.sh's store_check), no commit-graph (a
+# forged one changes merge bases), git log's own date format and no signature
+# check (a bad log.date stops git log; log.showSignature runs gpg.program).
+# GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM: a loop can write the
+# user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
+# transport, so a lazy fetch (a partial clone's missing object) fails however
+# its config was planted. The caller's own pairs (git -c, GIT_CONFIG_COUNT)
+# still apply, git -c ones after HARDEN's: CALLER_COUNT keeps the caller's
+# count for build-loop.sh's caller_gate, which refuses a HARDEN key there by
+# name. A GIT_CONFIG_COUNT that is not plain decimal (010 reads as 8 here and
+# as 10 to git) exits 1. What these cannot switch off, build-loop.sh's state
+# gate refuses in its gated modes; dev-cycle.sh runs no state gate (row 548). A
+# second call returns at once: it would count HARDEN's pairs as the caller's.
+HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false)
+CALLER_COUNT=""
+git_harden() {
+  [[ -z "$CALLER_COUNT" ]] || return 0
+  local c="${GIT_CONFIG_COUNT:-0}" kv
+  [[ "$c" =~ ^(0|[123456789][0123456789]*)$ ]] || { echo "${0##*/}: GIT_CONFIG_COUNT is not a plain decimal count" >&2; exit 1; }
+  # shellcheck disable=SC2034  # read by build-loop.sh (caller_gate)
+  CALLER_COUNT="$c"
+  for kv in "${HARDEN[@]}"; do
+    export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
+  done
+  export GIT_CONFIG_COUNT="$c" GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none
 }
 # The default branch, set by resolve_main (below). check_brief, check_branch,
 # check_answer, main_entry and brief_fields read its commit, so they answer only

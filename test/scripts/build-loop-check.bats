@@ -1657,7 +1657,8 @@ refuse state origin/HEAD: it names a branch other than origin/main or origin/mas
 
 @test "under a broken log.* config the brief and branch reads skip instead of reading LOOP or DATE wrong (row 307, U2b1a1)" {
     gated feat/x; tip feat/x "handoff: ready"
-    git config log.date bogus
+    # Not log.date: git_harden's log.date pair overrides it (row 505); a bad boolean still stops git log.
+    git config log.abbrevCommit bogus
     run --separate-stderr bash "$BL" --status "$B"
     [ "$status" -eq 0 ] && [ "$output" = "skip $B: Branch: its commit count or date could not be read" ] || { show; return 1; }
     run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-branch feat/x
@@ -1684,7 +1685,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
 }
 
-@test "every git call --check makes carries harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
+@test "every git call --check makes carries git_harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
     gated feat/x
     # A shim ahead of git logs each call's config pairs, then runs the real git.
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
@@ -1695,7 +1696,8 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false G=/dev/null P=none S=1; do
+    # HARDEN from the lib itself, so a key added there is checked here too.
+    for kv in $(bash -c 'source "$1"; echo "${HARDEN[*]}"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh") G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }

@@ -47,7 +47,7 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
 refuse state merge.x.driver: $K" ] || { show; return 1; }
     run --separate-stderr env GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller GIT_CONFIG_KEY_1=core.hooksPath GIT_CONFIG_VALUE_1=/x bash "$BL" --state
     [ "$status" -eq 2 ] && [ "$output" = "refuse state core.hookspath: $K" ] || { show; return 1; }
-    # A plain caller pair passes; a count harden would misread stops every mode (row 276).
+    # A plain caller pair passes; a count git_harden would misread stops every mode (row 276).
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller state_is ok
     for c in 010 08 1x " 1"; do
         run --separate-stderr env GIT_CONFIG_COUNT="$c" GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller bash "$BL" --settings
@@ -222,4 +222,168 @@ other $T Merge branch 'feat/x' (build-loop self-merge)"
     T="$(git rev-parse main)"; ml "$X" 2 "main $T -
 refuse main-log: $X is not on the default branch's first-parent history at $T"
     bl --main-log "${X:0:12}"; [ "$status" -eq 1 ] && [[ "$stderr" == "--main-log takes one full 40- or 64-hex commit id"* ]] || { show; return 1; }
+}
+
+# The D6 snippet (U3b3). d6_copy ROOT OPT: D6, a copy of test/lib/d6-snippet.bash
+# with D6_ROOT and D6_OPT replaced. d6_setup: main holds this branch's four
+# scripts, and D6 takes this fixture's root commit as claude-workflows' own.
+d6_copy() { D6="$BATS_TEST_TMPDIR/d6.bash"; sed "s|^  D6_ROOT=.*; D6_OPT=.*|  D6_ROOT=$1; D6_OPT=$2|" "$REPO_ROOT/test/lib/d6-snippet.bash" > "$D6"; grep -qxF "  D6_ROOT=$1; D6_OPT=$2" "$D6"; }
+d6_setup() {
+    mkdir -p scripts/lib && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh scripts/ && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" scripts/lib/
+    commit_all scripts && d6_copy "$(git rev-list --max-parents=0 main)" /opt/claude-workflows
+}
+d6() { run --separate-stderr bash "$D6" "$@"; }
+# d6_is WANT: the snippet refused with exactly WANT, exit 2, before running anything.
+d6_is() { d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && [ -z "$stderr" ] || { echo "want: $1"; show; return 1; }; }
+# shim: a git ahead of the real one on PATH that logs each call's config pairs and environment (T26's).
+shim() {
+    S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"
+    printf '#!/bin/bash\nl=""; for ((i = 0; i < ${GIT_CONFIG_COUNT:-0}; i++)); do k="GIT_CONFIG_KEY_$i"; v="GIT_CONFIG_VALUE_$i"; l+=" ${!k}=${!v}"; done\necho "$l G=$GIT_CONFIG_GLOBAL P=$GIT_ALLOW_PROTOCOL S=$GIT_CONFIG_NOSYSTEM" >> "%s/calls"\nexec "%s" "$@"\n' "$BATS_TEST_TMPDIR" "$(command -v git)" > "$S/git"
+    chmod +x "$S/git"
+}
+
+@test "the D6 snippet runs main's four scripts from a fresh temp dir, each with its own lib and questions.sh, never the working tree's, and removes the dir (T33, U3b3)" {
+    d6_setup
+    # main's lib says where it was sourced from; main's questions.sh answers open with one watched entry.
+    echo 'echo "lib at ${BASH_SOURCE[0]}" >&2' >> scripts/lib/dev-cycle-read.sh
+    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger  from-main"; exit 0; }' scripts/questions.sh
+    mkdir -p docs/working && printf '# Questions\n' > docs/working/questions.md && printf '# Archive\n' > docs/working/questions-archive.md
+    commit_all "marked copies"
+    for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'exit 9' > "scripts/$f"; done
+    export TMPDIR="$BATS_TEST_TMPDIR/t"; mkdir "$TMPDIR"
+    d6 build-loop.sh --settings
+    [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
+    while IFS= read -r l; do [[ "$l" == "lib at $TMPDIR/"*/scripts/lib/dev-cycle-read.sh ]] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
+    # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
+    d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
+    d6 dev-cycle.sh
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-main\n'* ]] || { show; return 1; }
+    [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
+    # A byte the reader did not hash is never used: a git whose cat-file --batch alters one word of the blobs it prints.
+    git checkout -q -- scripts; S="$BATS_TEST_TMPDIR/tamper"; mkdir -p "$S"
+    printf '#!/bin/bash\nif [[ " $* " == *" --batch "* ]]; then "%s" "$@" | sed -u s/pipefail/PIPEFAIL/; else exec "%s" "$@"; fi\n' "$(command -v git)" "$(command -v git)" > "$S/git"; chmod +x "$S/git"
+    PATH="$S:$PATH" d6 build-loop.sh --settings
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] && [[ "$stderr" == *" does not hash to its id" ]] || { show; return 1; }
+    [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
+    # The SKILL.md block and test/lib/d6-snippet.bash are byte-equal (T33): pending until U4 writes the block.
+}
+
+@test "the D6 snippet refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
+    d6_setup
+    R="refuse d6: a replace ref exists (F38)"
+    id="$(git rev-parse main:scripts/build-loop.sh)"; git replace "$id" "$(printf 'echo replaced\n' | git hash-object -w --stdin)"; d6_is "$R"; git replace -d "$id"
+    c="$(git rev-parse main)"; git replace "$c" "$(git commit-tree "$(git rev-parse 'main^{tree}')" -m other)"; d6_is "$R"; git replace -d "$c"
+    git rev-parse main > .git/info/grafts; d6_is "refuse d6: info/grafts exists (F38)"; rm .git/info/grafts
+    git branch -q master; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -D master
+    git branch -q feat/y; git symbolic-ref refs/heads/main refs/heads/feat/y; d6_is "refuse d6: refs/heads/main is a symbolic ref"
+    # git refuses to update-ref a branch to a tag: write the ref file (row 656's case).
+    git update-ref --no-deref refs/heads/main "$c"; git tag -a -m t t1 main; git rev-parse t1 > .git/refs/heads/main
+    d6_is "refuse d6: refs/heads/main names no commit"; echo "$c" > .git/refs/heads/main
+    d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
+    run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh or dev-cycle.sh" ] || { show; return 1; }
+}
+
+# inplace ID FROM: the loose object file for ID now holds FROM's object, as a same-uid writer could leave it.
+inplace() { local o=".git/objects/${1:0:2}/${1:2}" f=".git/objects/${2:0:2}/${2:2}"; chmod u+w "$o"; cp "$f" "$o"; }
+A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
+
+@test "the D6 snippet refuses the scripts/ tree rewritten in place, and runs no planted bytes (T36, U3b3 i1 A1, i2 B1)" {
+    d6_setup
+    # A scripts tree whose build-loop.sh says replaced, written over main's real scripts tree.
+    x="$(git rev-parse main:scripts)"; e="$(printf 'echo replaced\n' | git hash-object -w --stdin)"
+    y="$(git ls-tree main:scripts | sed "s/ [0-9a-f]*\tbuild-loop.sh$/ $e\tbuild-loop.sh/" | git mktree)"
+    inplace "$x" "$y"; [ "$(git ls-tree --format="%(objectname)" main -- scripts/build-loop.sh)" = "$e" ]
+    d6 build-loop.sh --settings
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet refuses a first-parent commit rewritten in place to end main's history at D6_ROOT (T36, U3b3 i1 A1)" {
+    d6_setup
+    r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"; t="$(git rev-parse main)"
+    f="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\n\nforged\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
+    inplace "$t" "$f"; [ "$(git rev-list --first-parent --max-parents=0 main)" = "$r" ]
+    d6_copy "$r" /opt/claude-workflows; d6 build-loop.sh --settings
+    # The verified reader names the mismatch on stderr; the one stdout line is the snippet's.
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet refuses, never falls to the image copy, when main's first-parent history cannot be read whole: a missing commit, a shallow clone (T36, U3b3 i2 B2)" {
+    d6_setup; c="$(git rev-parse main~1)"; rm -f ".git/objects/${c:0:2}/${c:2}"
+    d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+    git clone -q --depth 1 "file://$BATS_TEST_TMPDIR/repo" "$BATS_TEST_TMPDIR/shallow"
+    cd "$BATS_TEST_TMPDIR/shallow"; d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet reads a first parent only directly after the tree line, as git does: a late parent line is no parent (T37, U3b3 final security F1 b)" {
+    d6_setup; r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"
+    c="$(printf 'tree %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\nparent %s\n\nlate\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
+    git update-ref refs/heads/main "$c"; [ "$(git rev-list --max-parents=0 main)" = "$c" ]
+    # D6_ROOT names the commit only the late line points at: the snippet must take the image copy (a uid-owned stub here, so refused).
+    U="$BATS_TEST_TMPDIR/opt"; mkdir -p "$U/scripts/lib"; d6_copy "$r" "$U"
+    d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
+}
+
+@test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's copy from main refuses the same tip (T27, U3b3)" {
+    d6_setup; brief x "Status: open" "Branch: feat/x"
+    W="$BATS_TEST_TMPDIR/wt"; git worktree add -q -b feat/x "$W" main; cd "$W"
+    # The loop drops the mode rule from its own copy and adds a symlink.
+    sed -i 's/elif \[\[ ! "\$2 \$3" =~/elif false \&\& [[ ! "$2 $3" =~/' scripts/build-loop.sh; grep -q 'elif false && ' scripts/build-loop.sh
+    ln -s x link; commit_all loop
+    run --separate-stderr bash scripts/build-loop.sh --check "$B"
+    [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
+    d6 build-loop.sh --check "$B"
+    [ "$status" -eq 2 ] && [[ "$output" == "refuse $B: 1 of 2 changed paths refused in the merge of $(git rev-parse feat/x) "* ]] \
+        && [[ "$output" == *$'\n'"deny $B A link: a symlink, gitlink or other non-file entry on one side "* ]] || { show; return 1; }
+}
+
+@test "outside claude-workflows the D6 snippet runs the image copy by absolute path, not main's copy (T37, U3b3)" {
+    O=/opt/claude-workflows
+    [[ -f "$O/scripts/build-loop.sh" && "$(stat -c %u "$O/scripts")" == 0 ]] || skip "no root-owned image copy at $O here"
+    mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
+    run --separate-stderr bash "$REPO_ROOT/test/lib/d6-snippet.bash" build-loop.sh --help
+    [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
+}
+
+@test "outside claude-workflows the D6 snippet refuses an image copy the uid owns, and never runs main's (T37, U3b3)" {
+    mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
+    U="$BATS_TEST_TMPDIR/opt"; mkdir -p "$U/scripts/lib"
+    cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$U/scripts/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$U/scripts/lib/"
+    d6_copy 640cf00735754d4253819a0354fb8ca9b71a8ea7 "$U"
+    d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
+}
+
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git carries the same (rows 281, 311, 495, U3b3)" {
+    L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
+    run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false"
+    E="GIT_ALLOW_PROTOCOL=none GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0"
+    want="caller 1"; for kv in $H; do want+=$'\n'"pair $kv"; done
+    k=0; keys="GIT_CONFIG_KEY_0=user.name"; vals="GIT_CONFIG_VALUE_0=c"
+    for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
+    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=9" "$keys" "$vals" | LC_ALL=C sort)"
+    [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
+    # The snippet cannot source the lib (it runs before anything is checked): its one git array repeats both lists.
+    g="$(grep '^  G=(env ' "$REPO_ROOT/test/lib/d6-snippet.bash")"
+    [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
+    [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
+}
+
+@test "every git call dev-cycle.sh makes carries git_harden's pairs: a bogus log.date stops nothing, log.showSignature runs no gpg.program (rows 495, 505, U3b3)" {
+    brief x "Status: open"
+    # A signed-looking commit on main: git log under log.showSignature runs gpg.program for it.
+    c="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1700000000 +0000\ncommitter t <t@e> 1700000000 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n x\n -----END PGP SIGNATURE-----\n\nsigned\n' "$(git rev-parse 'main^{tree}')" "$(git rev-parse main)" | git hash-object -t commit -w --stdin)"
+    git update-ref refs/heads/main "$c"; git reset -q --hard main
+    printf '#!/bin/sh\ntouch "%s/gpg-ran"\nexit 1\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/gpg"; chmod +x "$BATS_TEST_TMPDIR/gpg"
+    git config log.date bogus; git config log.showSignature true; git config gpg.program "$BATS_TEST_TMPDIR/gpg"; shim
+    PATH="$S:$PATH" run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --check-brief "$B"
+    [ "$status" -eq 0 ] && [[ "$output" == "ok $B open "* ]] || { show; return 1; }
+    PATH="$S:$PATH" run --separate-stderr bash "$REPO_ROOT/scripts/dev-cycle.sh" --since=2020-01-01
+    [ "$status" -eq 0 ] && [[ "$output" == *"## 3. Watched questions"* ]] || { show; return 1; }
+    [ ! -e "$BATS_TEST_TMPDIR/gpg-ran" ] || { echo "gpg.program ran"; return 1; }
+    n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
+    # HARDEN from the lib itself, so a key added there is checked here too.
+    for kv in $(bash -c 'source "$1"; echo "${HARDEN[*]}"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh") G=/dev/null P=none S=1; do
+        ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
+    done
 }
