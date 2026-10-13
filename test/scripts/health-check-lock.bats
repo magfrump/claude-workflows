@@ -1,9 +1,7 @@
 #!/usr/bin/env bats
 # @category fast
-# T43 (plan D14, U3c): scripts/health-check.sh runs one at a time per
-# repository, on a flock in the common git dir. Each test copies the script and
-# the libs it sources into a throwaway repo under $BATS_TEST_TMPDIR, with check
-# 5's runner stubbed, so no real suite runs.
+# T43 (plan D14, U3c): health-check.sh runs one at a time per repository (a flock in the common git dir);
+# each test copies it and its libs into a throwaway repo, check 5's runner stubbed.
 
 setup() {
     W="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -12,8 +10,7 @@ setup() {
     cp "$W/scripts/health-check.sh" scripts/ && cp "$W"/scripts/lib/{log-format,md-utils,skill-paths}.sh scripts/lib/
     # The stub runner: --fast logs its run's start and end a second apart; --slow under LEAVE leaves a process running.
     printf '#!/bin/sh\nif [ "$1" != --fast ]; then [ -z "$LEAVE" ] || { sleep 5 >/dev/null 2>&1 3>&- & }; exit 0; fi\necho "in $RUN" >> "%s"; sleep 1; echo "out $RUN" >> "%s"\n' "$L" "$L" > "$BATS_TEST_TMPDIR/stub"
-    chmod +x "$BATS_TEST_TMPDIR/stub"
-    export HEALTH_CHECK_RUN_TESTS="$BATS_TEST_TMPDIR/stub"; unset HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_LOCK_HELD
+    chmod +x "$BATS_TEST_TMPDIR/stub"; export HEALTH_CHECK_RUN_TESTS="$BATS_TEST_TMPDIR/stub"; unset HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_LOCK_HELD
 }
 
 @test "two concurrent health checks serialize on the lock: the second starts after the first ends, and says it waits (T43)" {

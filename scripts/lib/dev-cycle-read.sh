@@ -2057,6 +2057,7 @@ floor_why() {
 # labels and the header line's Status field: change all of them together (a
 # label read here but not there lets --cycle-diff pass an answer: i2
 # architecture 1; build-loop-orchestrator.bats checks the label regex).
+# --cycle-diff runs this program itself (id Q-) for the whole-file skips.
 # shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
 ANSWER_AWK='
 function option(span,   s, w, r, t) {

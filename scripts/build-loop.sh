@@ -186,10 +186,12 @@
 #             against BASE, git merge-base of HEAD and main's commit (step 7's
 #             merges move main within an iteration). Prints ok, or exit 2 and:
 #             refuse PATH: WHY
-#                 PATH is HEAD (no merge base), index (not listed) or the file.
-#                 The questions files, read together (an entry may move between
-#                 them, delimited as --check-answer reads them; a copy it refuses
-#                 whole, FENCE_AWK's or a fenced question heading, refuses): an entry on BASE whose heading, **Needs:**
+#                 PATH is HEAD (no merge base, or several: merge main into HEAD),
+#                 index (not listed) or the file. The questions files, read
+#                 together (an entry may move between them, delimited as
+#                 --check-answer reads them; a copy it skips whole, FENCE_AWK's
+#                 or a fenced question heading, refuses, and on BASE's side only
+#                 a fix on main clears it): an entry on BASE whose heading, **Needs:**
 #                 or answer lines (--main-log's labels, any ID) differ in the
 #                 index, in order, or are gone; a new entry filed answered
 #                 (Status ANSWERED or an answer line); WHY starts with its ID.
@@ -1738,21 +1740,18 @@ main_log() {
 # --cycle-diff's questions reader, per file (FENCE_AWK first): "ID F K LINE"
 # (tab-separated) per key line of an entry, as --check-answer delimits one: K
 # is h for its heading, n for a **Needs:** line, a for an answer line
-# (ANSWERS_AWK's labels, any ID); F names the file. Then "odd" or "unbalanced"
-# when FENCE_AWK refuses the file, or "quoted" for a question heading in a
-# fence, which makes --check-answer skip the whole file (so removing one, a
-# free line, would make its answers readable: final fact-check claim 42).
+# (ANSWERS_AWK's labels, any ID); F names the file. A file --check-answer
+# skips whole is refused first, by ANSWER_AWK itself (final architecture 1).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QKEYS_AWK='
 { sub(/\r$/, "") }
-infence && /^### Q-[0123456789]+ / { if (!q) q = NR }
 fence($0) { next }
 /^### Q-[0123456789]+([ \t]|$)/ { id = substr($0, 5); sub(/[ \t].*/, "", id); print id "\t" f "\th\t" $0; next }
 /^(#|##|###) / { id = ""; next }
 id == "" { next }
 /^\*\*Needs:\*\*/ { print id "\t" f "\tn\t" $0; next }
 { t = $0; sub(/^- /, "", t); if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) print id "\t" f "\ta\t" $0 }
-END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else if (q) print "quoted " q }'
+'
 # The base's key lines (file 1) against the index's (file 2), each side
 # questions.md's then the archive's, ok the --answered IDs: "ID F gone|new" per
 # refused entry. An entry's key lines are compared in file order (--check-answer
@@ -1806,7 +1805,9 @@ cyc_blob() {
 # cycle_diff: --cycle-diff's lines. Returns 1 on any refusal.
 cycle_diff() {
   local base i p f k md id bad=0 qi=() t="$GATE_TMP/cy"
-  if ! base="$(git merge-base HEAD "$MAIN_SHA" 2>/dev/null)"; then echo "refuse HEAD: it shares no commit with the default branch's $MAIN_SHA, or could not be read"; return 1; fi
+  if ! base="$(git merge-base --all HEAD "$MAIN_SHA" 2>/dev/null)" || [[ -z "$base" ]]; then echo "refuse HEAD: it shares no commit with the default branch's $MAIN_SHA, or could not be read"; return 1; fi
+  # The land merges through a virtual base when there are several (criss-cross): judge none (final security F1).
+  [[ "$base" != *$'\n'* ]] || { echo "refuse HEAD: it has more than one merge base with the default branch's $MAIN_SHA; merge the default branch into HEAD first"; return 1; }
   # The checkout's own git, for its index (state_gate has run on it).
   if ! git diff-index --cached --raw -z --no-renames --ignore-submodules=none "$base" > "$t.raw" 2>"$GATE_TMP/err" \
     || [[ -s "$GATE_TMP/err" ]] || ! raw_records "$t.raw"; then
@@ -1836,10 +1837,9 @@ cycle_diff() {
   # file: lines judged free here (a fence pair, a heading) can capture an
   # answer main gained since the fork (i2 security F1). So the questions files
   # must be as on main: merge the default branch into HEAD first.
-  if ! gate_git ls-tree -z "$base" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lb" \
-    || ! gate_git ls-tree -z "$MAIN_SHA" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lm" || ! cmp -s "$t.lb" "$t.lm"; then
-    echo "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $base, or they could not be compared; merge it into HEAD, then stage again"; return 1
-  fi
+  gate_git ls-tree -z "$base" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lb" \
+    && gate_git ls-tree -z "$MAIN_SHA" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lm" || { echo "refuse index: the questions files could not be listed"; return 1; }
+  cmp -s "$t.lb" "$t.lm" || { echo "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $base; merge it into HEAD, then stage again"; return 1; }
   # Both questions files on each side, the unchanged one included (an entry can move between them).
   : > "$t.qo"; : > "$t.qn"
   for f in docs/working/questions.md docs/working/questions-archive.md; do
@@ -1854,10 +1854,10 @@ cycle_diff() {
       cp "$t.o" "$t.n"
     fi
     for p in o n; do
-      LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" > "$t.k" || { echo "refuse $f: it could not be read"; return 1; }
-      k=base; [[ "$p" == o ]] || k=index
-      if grep -qv '^Q-' "$t.k"; then echo "refuse $f: --check-answer refuses its $k copy whole ($(grep -v '^Q-' "$t.k"))"; return 1; fi
-      cat "$t.k" >> "$t.q$p"
+      # The whole-file verdict from --check-answer's own reader (id Q- names no entry): FENCE_AWK's refusals and a fenced question heading.
+      k=base; [[ "$p" == o ]] || k=index; md="$(LC_ALL=C awk -v id=Q- "$FENCE_AWK$ANSWER_AWK" "$t.$p")" || md="unread"
+      [[ -z "$md" ]] || { echo "refuse $f: --check-answer refuses its $k copy whole ($md)"; return 1; }
+      LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" >> "$t.q$p" || { echo "refuse $f: it could not be read"; return 1; }
     done
   done
   LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" > "$t.w" \

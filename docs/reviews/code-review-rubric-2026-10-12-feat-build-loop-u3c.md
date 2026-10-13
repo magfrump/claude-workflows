@@ -1,4 +1,4 @@
-Commit: 74deb04e
+Commit: 4aad0f9c
 Loop-pass short-circuit: used at 414c9295
 
 # Code Review Rubric: feat/build-loop-u3c
@@ -84,3 +84,43 @@ None.
 Rows 724 (discharged), 722 (re-keyed to U4 by this branch's row), 682 (pre-existing, U5/Q-103): as in iteration 1; no critic re-argued them.
 
 **Status (iteration 2):** 🔴 0, 🟡 2 (B1, B2; fixed in the batch below), 🟢 14. Next: iteration 3, the final confirming pass (k=3, full panel, Stage 2.5) over the full branch.
+
+---
+
+# Iteration 3: final confirming pass (k=3 fact-check at ec9dace7; critic panel at 4aad0f9c)
+
+**Scope:** full branch. Fact-Check Gate (behavioral Incorrect, high) taken as **Fix first** in /away mode: 4aad0f9c fixed it, then the critics reviewed 4aad0f9c. Dispatch mode: parallel. Stage 2.5 folded into the confirming pass below (the code changed again).
+**Reports:** `code-fact-check-report-2026-10-12-u3c-final.md` (merged k=3: 59 clusters, 44 Verified, 12 Mostly accurate, 2 Incorrect, 1 Unverifiable; agreement 78.0%) and replicates `-final-r{1,2,3}.md`; `security-review-2026-10-12-u3c-final.md`, `performance-review-2026-10-12-u3c-final.md` (no findings; --main-log fix measured), `api-consistency-review-2026-10-12-u3c-final.md`, `architecture-review-2026-10-12-u3c-final.md`.
+
+## 🔴 Must Fix
+
+| ID | Finding | Source | Evidence | Status |
+|---|---|---|---|---|
+| C1 | QKEYS_AWK lacked --check-answer's whole-file "quoted" skip: with a fenced `### Q-NNN ` heading on main, an index removing only that free line passed and made the file's answers readable (skip → keep). d77dae74's "fails safe" was wrong. | merged fact-check claim 53 (r1, r3 executed: Incorrect high) | `scripts/lib/dev-cycle-read.sh:2082` `infence && /^### Q-[0123456789]+ / { if (!qline) qline = NR; inside = 0 }` vs QKEYS_AWK `fence($0) { next }` | Fixed in 4aad0f9c (both sides refuse; T38 base-side bypass case) |
+
+## 🟡 Must Address
+
+| ID | Finding | Source | Evidence | Status |
+|---|---|---|---|---|
+| C2 | A criss-cross history (several merge bases) defeats the main-changed rule: `git merge-base` picks one, the land merges through a virtual base; reproduced to keep. | security F1 (Medium, reproduced) | `scripts/build-loop.sh` cycle_diff: `base="$(git merge-base HEAD "$MAIN_SHA" ...)"` | Fixed (pending commit): `merge-base --all`, several refuse; T38 case (red without it) |
+| C3 | The answer grammar's newest rule (fenced-heading skip) was a fourth unguarded copy; pointer and parity test did not cover it. | architecture 1 (Coupling) | `scripts/build-loop.sh` QKEYS_AWK END `else if (q) print "quoted " q` | Fixed (pending commit): the whole-file verdict is ANSWER_AWK itself (id Q-); QKEYS_AWK's copy removed; pointer updated |
+
+## 🟢 Consider
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| C4 | The main-changed refusal also covered a listing failure, and was the one refusal with a recovery U4 must act on. | api-consistency 1 | Fixed: listing failure is `refuse index`; text pinned in the plan's As-built note |
+| C5 | The plan's U3c bullet had no As-built note. | api-consistency 2 | Fixed |
+| C6 | A BASE-side whole-copy refusal is a stop for the user (only a fix on main clears it). | api-consistency 3 | Fixed: header |
+| C7 | Row 722's re-key too broad: GATE_CODE changes and a retargeted `Asked:` line decide what counts as an answer. | security F2 (Low) | Fixed: the row names both as U4 duties |
+| C8 | Every process a locked health check starts inherits HEALTH_CHECK_LOCK_HELD=1. | security 3 (Info) | Accepted: documented in the header |
+| C9 | cycle_diff reads RAW_* globals by index across its body. | architecture 2 (Info) | Accepted: safe while nothing in cycle_diff calls raw_records again |
+| C10 | No main-moved guard for the roadmap or idea log. | fact-check escalation E-3; architecture 3 | Accepted: only the questions files feed a reader that decides from merged content; clean merges cannot drop a brief line; idea-log appends conflict |
+| C11 | Wording: Done before a space; deletion of a questions file judged by entries; health-check's own exits; flock missing exits 127; T38 comment; refusals naming questions.md when only the archive changed; parity test counts per file. | merged fact-check Mostly accurate | Fixed in 4aad0f9c, but the last two (accepted) |
+| C12 | Commit-text claims in branch history: ec9dace7's diff-tree reason (the call lacked -r), its 4.3 s timing (not re-run), 3021d0a4's "fail" (the mutant hangs). | merged fact-check claims 55, 57, 49 | Accepted: branch history, not rewritten |
+
+## Considered overrides
+
+Rows 724 (discharged), 722 (re-keyed, now sharpened by C7), 682 (pre-existing): as before. This branch's iteration-2 deferral rows (lock wait, --answered record, hooks, land from checked MAIN_SHA, roadmap preamble) were judged correctly scoped by the final security critic.
+
+**Status (iteration 3):** 🔴 1 (fixed 4aad0f9c), 🟡 2 (fixed in the batch after 4aad0f9c, unreviewed). The loop is at its 3-iteration cap: the iteration-4 gate's decision is **escalate to a narrow confirming pass** (k=1 fact-check with the routed endorsement claims, plus security, over the fix range), as U3a1 and U3a2 did under Q-137; merge on no new Must Fix.
