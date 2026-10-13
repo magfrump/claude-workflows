@@ -1,4 +1,5 @@
-Commit: 5d175c0e
+Commit: 5583a2cd
+Loop closed at 5583a2cd
 Loop-pass short-circuit: used at 7a927183
 
 # Code Review Rubric: feat/build-loop-u3b3 (U3b3, git_harden and the D6 snippet)
@@ -68,7 +69,7 @@ Scope: full branch rather than the delta, since the critics had not yet run on t
 | B8 | git_harden must run once per process but did not enforce it | 🟢 (Minor) | architecture F4 | Fixed (second call returns; pinned in the environment test) |
 | B9 | Two tests listed HARDEN's keys by hand | 🟢 (Minor) | architecture F2 | Fixed (both loop over the lib's HARDEN) |
 | B10 | The snippet's re-hash is a narrower store_check, neither naming the other | 🟢 (Minor) | architecture F3 | Fixed (cross-reference comments; the verified reader needs no second-copy rule) |
-| B11 | Root check and re-hash walked history twice (~35 ms, linear) | 🟢 (Low) | performance F1 | Fixed (one walk) |
+| B11 | Root check and re-hash walked history twice (~35 ms, linear) | 🟢 (Low) | performance F1 | Fixed (one walk; but per-request round trips made the one walk slower: 63 ms vs 30 ms, final performance F1, row) |
 | B12 | dev-cycle.sh's header did not say its git reads no user/system config or transport | 🟢 (Minor) | api-consistency F4 | Fixed (header) |
 | B13 | The snippet's checks repeat the gate's without saying so | 🟢 | architecture F5 | Fixed (header: before, not instead of) |
 | B14 | `refuse d6:` can precede any mode's output | 🟢 (Minor) | api-consistency F2 | Defer (row; U4 hand-off in the plan note) |
@@ -83,3 +84,29 @@ Re-flagged settled decisions (no action — see override-log): the extracted cop
 Endorsements routed (`route: code-fact-check`): the own() walk; dev-cycle.sh calls git_harden before any git call. Pending execution verification (Stage 2.5 runs on the final pass). Performance: hardening made no measurable difference to the digest (unverified, submitted).
 
 Composition check: one qualifying cluster, `test/lib/d6-snippet.bash:44-55` (security F1, F2; performance F1; architecture F3; fact-check escalations): composed as B1's root, "the snippet decides what runs from readers it did not verify; read and verify in one process" (fixed as above). Others: distinct defects (text-only rows).
+
+## Final confirming pass (full branch `main...5583a2cd`, k=3, full panel, Stage 2.5)
+
+Fact-check merged `docs/reviews/code-fact-check-report-2026-10-12-u3b3-final.md` (replicates r1-r3): 95 clusters, 80 Verified, 8 Mostly Accurate, 1 Stale, 2 Incorrect (both doc/commit text, unanimous), 4 Unverifiable; agreement 94.7%. No behavioural Incorrect. Critics (opus, parallel): security (1 Medium), performance (1 Low), api-consistency (1 Minor, 1 Info), architecture (1 Coupling, 2 Minor, 1 Info). Dispatch mode: parallel. Stage 2.5 `docs/reviews/code-fact-check-submitted-claims-2026-10-12-u3b3-final.md`: 9 submitted endorsement claims (security 5, performance 4), all Verified, executed (claim 96 included the critic's untested layout: a forged packed copy beside a real loose one refuses). Single-sample review; absence of findings is not an attestation.
+
+| ID | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| C1 | The snippet picks main's copy from the repository's own data: in another project, a moved main onto a copy of D6_ROOT (a) or a rewritten `.git` entry (c; also in claude-workflows, unseen by --main-log) runs that project's scripts instead of the image copy | 🟡 (Medium; Coupling) | security F1, architecture F1, fact-check E1/E6 | Defer (row; **Q-140**, you: judgment); header and plan note name the gap |
+| C2 | Route (b): the reader followed a late `parent` header line that git ignores | 🟡 (Medium) | security F1 b, architecture F1, fact-check E5 | Fixed (first parent only directly after the tree line; test; old regex killed) |
+| C3 | The reader ran with the caller's PERL5LIB / PERL5OPT / PERL_UNICODE / PERLIO | 🟢 | api-consistency F2, architecture F4 | Fixed (env -u) |
+| C4 | "each comment names the other": the snippet never named store_check | 🟡 (Incorrect, doc) | fact-check claims 26b, 89 (unanimous) | Fixed (the reader's comment names store_check; commit c9648432 immutable) |
+| C5 | Stale "git names the mismatch on stderr too" | 🟢 | fact-check claim 68 | Fixed |
+| C6 | Gates scope, "status 255", "trees above scripts/lib/", "never reads the working tree" | 🟢 | fact-check claims 13b, 53, 55, 57; security F1 c | Fixed (text) |
+| C7 | `refuse d6:` also covers environmental failures; the hand-off called it planted state | 🟢 (Minor) | api-consistency F1 | Defer (row; plan hand-off reworded) |
+| C8 | One request per commit: slower walk, full walk outside claude-workflows on every call | 🟢 (Low) | performance F1 | Defer (row; Q-140 / U4 / ~30k commits) |
+| C9 | No direct test seam for the perl reader | 🟢 (Minor) | architecture F2 | Defer (row; U4) |
+| C10 | Row 734's "~70 ms fixed" | 🟢 (Mostly Accurate) | fact-check claim 3a | Won't-Fix (correction row appended) |
+| C11 | No timeout on a hung git or perl | 🟢 (Info) | Stage 2.5 note | Defer (row; U4) |
+
+Fix commits after the pass: 2e51450e (C2-C6, C7's text), 42022ab1 (fix-drift wording); unreviewed by a full pass; lite fix-drift: one finding, fixed in 42022ab1. Suites 286/286 at 2e51450e. Exit: no Must Fix; the one open Must Address (C1) carries a revisit trigger (Q-140), so the loop exits under "ship with documented known issues" in 3 iterations, with divergence detection fired once (i2, B1 = A1).
+
+Re-flagged settled decisions (no action — see override-log): row 548 (dev-cycle.sh runs no state gate; claims 13b, 53); rows 200/509 (temp-dir race); this branch's moved-main row (claude-workflows case of C1).
+
+Composition check: one qualifying cluster, `test/lib/d6-snippet.bash:55-86` (security F1, architecture F1, performance F1, fact-check E1/E5/E6, api F2): composed as C1's root, "what the snippet trusts is chosen from inside the repository it judges"; routed to Q-140. Others: distinct defects.
+
+Considered overrides: rows 200, 281, 311, 495, 505, 644, 648, 666, 702, 704, 709 (this unit's), 509, 548, 721, and this branch's rows dated 2026-10-12.
