@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-140](#q-140--d6-snippet-trust-root) | you: judgment | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
+| [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -275,3 +276,24 @@ Today the snippet runs main's own scripts when main's first-parent root commit i
 - **Blocks:** U4 writing the selector into SKILL.md (U3b3 merges with the gap named).
 - **Interim:** today's rule stays, documented as a known gap in the snippet's header and the plan note; nothing runs the snippet until U4.
 - **If the answer differs:** [1] deletes the verified reader and the root test (the snippet keeps its ref and ownership checks; about 30 lines and five tests go); [2] adds one check before the reader and a container setting.
+
+### Q-141 · u4a-asked-binding-residue
+**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** OPEN
+
+U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: merge U4a after one more narrow fix, merge it as is, or rework the binding?
+
+- **Why it's yours:** the loop passed its 3-iteration cap and the confirming pass that was to decide the merge found a new Medium, which by the gate written in the rubric stops the merge and comes to you (the U3a2 / Q-138 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4a.md` (iteration-4 gate) on `feat/build-loop-u4a`; `docs/reviews/security-review-2026-10-13-u4a-confirm.md` F-A, F-B; `docs/reviews/code-fact-check-report-2026-10-13-u4a-confirm.md` claim 3b.
+
+An added Asked: ID must name an entry whose heading ends `-STEM-N` for the brief that adds it (so one brief cannot inherit another's answer). The check is anchored at a hyphen, so `keep-or-drop-2026-10-02-foo-2026-10-01-x-1`, an entry for a brief whose name ends in brief x's name, passes on brief x's line (executed by both the fact-check and security). Only the cycle names briefs and writes Asked: lines; no loop can. Also open, Low: the new path allowlist compares the path as spelled, so a fix to `readme.md` or `Docs/x.md` that --check-fix allows is refused (fails closed).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | The slug's prefix may hold only letters and hyphens (`^[a-z]+(-[a-z]+)*-STEM-N$`; a stem starts with a date's digit, so no other stem fits), the allowlist compares lower-cased; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more pass of review cost; U4b inherits the slug contract |
+| **[2] Merge as is** | F-A and F-B become override rows (the cycle alone names briefs); U4b proceeds | None | A cycle that names a follow-up brief after its parent could apply the parent's answer to it |
+| **[3] Rework the binding** | Bind each Asked: ID by a `Brief:` line in the entry body instead of the slug, defined in U4b's entry grammar | A follow-up unit's review | U4a merges later; U4b's entry grammar grows |
+
+- **Blocks:** U4a's merge, hence U4b.
+- **Interim:** [1] (the Q-138 precedent): the fix and its confirming pass run now; U4a merges if that pass finds no new Must Fix or Must Address.
+- **If the answer differs:** [2] reverts the narrow fix (two lines and a test); [3] adds a follow-up unit after U4b's entry grammar.
+
