@@ -463,16 +463,24 @@ refuse docs/working/idea-log.md: a side is not a regular file (mode 100644), or 
     for a in "--answered" "--answered 7" "x"; do bl --cycle-diff $a; [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "[$a]"; show; return 1; }; done
 }
 
-@test "--cycle-diff refuses the gate's own code and a brief's Asked: line other than extended, matched by name across a move to closed/ (row 745, U4a)" {
+@test "--cycle-diff refuses the gate's code, truth files and a brief's Asked: line other than extended by entries the change files, matched by name across a move to closed/ (row 745, U4a, i1 security F1-F3)" {
     F=docs/working/briefs/2026-10-01-x.md; C=docs/working/briefs/closed/2026-10-01-x.md; mkdir -p docs/working/briefs/closed scripts/lib
-    printf '%s\n' 'Status: open' 'Asked: Q-001@abc' > "$F"; echo s > scripts/lib/a.sh; commit_all briefs; git checkout -q -b chore/dev-cycle-2026-10-12
-    W="its first Asked: line drops or changes an ID it held; the cycle only appends one"
-    sed -i 's/^Asked: .*/&, Q-002@def/' "$F"; git add -A; cd_is ok; git reset -q --hard
+    printf '%s\n' 'Status: open' 'Asked: Q-001@abc' > "$F"; echo s > scripts/lib/a.sh; echo d > docs/dev-cycle.md; commit_all briefs; qa
+    W="its first Asked: line drops or changes an ID it held; the cycle only appends one"; E='### Q-002 · y'
+    # An ID appended for an entry this change files passes; one naming no new entry (another question's, or none) refuses (F1).
+    sed -i 's/^Asked: .*/&, Q-002@def/' "$F"; printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; git add -A; cd_is ok
+    git checkout -q HEAD -- docs/working/questions.md; cd_is "refuse $F: its Asked: line adds Q-002@def, which names no question entry this change files"; git reset -q --hard
+    sed -i 's/^Asked: .*/&, Q-003@def/' "$F"; git add -A; cd_is "refuse $F: its Asked: line adds Q-003@def, which names no question entry this change files"; git reset -q --hard
     git mv "$F" "$C"; cd_is ok; sed -i 's/^Asked: .*/Asked: Q-002@def/' "$C"; git add -A; cd_is "refuse $C: $W"; git reset -q --hard
     sed -i 's/Q-001@abc/Q-009@abc/' "$F"; git add -A; cd_is "refuse $F: $W"; git reset -q --hard
-    mkdir -p SKILLS/dev-cycle; echo s > SKILLS/dev-cycle/x.md; echo t >> scripts/lib/a.sh; git add -A
-    G="the gate's own code; an in-cycle fix edits only docs --check-fix allows"; cd_is "refuse SKILLS/dev-cycle/x.md: $G
-refuse scripts/lib/a.sh: $G"
+    git rm -q "$F"; cd_is "refuse $F: deleted or renamed with its Asked: line; the cycle only moves a brief to closed/ under its name"; git reset -q --hard
+    # The gate's code and truth files but the cycle's own (F2), compared lower-cased.
+    mkdir -p SKILLS/dev-cycle; echo s > SKILLS/dev-cycle/x.md; echo t >> scripts/lib/a.sh; echo t >> docs/dev-cycle.md; echo a > AGENTS.md; git add -A
+    G="an in-cycle fix edits only docs --check-fix allows"; T="a file sessions or later cycles read as truth"
+    cd_is "refuse AGENTS.md: $T (instr); $G
+refuse SKILLS/dev-cycle/x.md: the gate's own code; $G
+refuse docs/dev-cycle.md: $T (settings); $G
+refuse scripts/lib/a.sh: the gate's own code; $G"
 }
 
 # lc_is WANT ARG...: --land-cycle ARG... refused with exactly WANT, exit 2. rec LINE...: the day's cycle record gains LINEs, committed.
@@ -481,24 +489,24 @@ rec() { mkdir -p docs/working/cycles && printf '%s\n' "$@" >> docs/working/cycle
 
 @test "--land-cycle lands HEAD's chore branch as the merge --main-log reads as chore, by compare-and-swap or a fast-forward where main is checked out (D13, rows 719, 749, 752, U4a)" {
     qa; B=chore/dev-cycle-2026-10-12; M="$(git rev-parse main)"
-    lc_is "refuse HEAD: it has no commit the default branch lacks, or its history could not be read" --expect "$M"
+    lc_is "refuse HEAD: it has no commit the default branch lacks, or its history could not be read" --main "$M"
     rec "Branch: chore/dev-cycle-2026-10-13"
-    lc_is "refuse HEAD: the merge adds or changes no cycle record (docs/working/cycles/cycle-YYYY-MM-DD.md) holding the line \"Branch: $B\", so --main-log would read it as other" --expect "$M"
-    rec "Branch: $B"; echo x > o.md; git add o.md; lc_is "refuse HEAD: the index holds changes its commit lacks, or could not be read; commit them first" --expect "$M"
+    lc_is "refuse HEAD: the merge adds or changes no cycle record (docs/working/cycles/cycle-YYYY-MM-DD.md) holding the line \"Branch: $B\", so --main-log would read it as other" --main "$M"
+    rec "Branch: $B"; echo x > o.md; git add o.md; lc_is "refuse HEAD: the index holds changes its commit lacks, or could not be read; commit them first" --main "$M"
     git rm -q --cached o.md; rm o.md
     sed -i '/^Which/a Q-001: [1]' docs/working/questions.md; commit_all answer
-    lc_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered" --expect "$M"
+    lc_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered" --main "$M"
     onmain x.md x; N2="$(git rev-parse main)"
-    lc_is "refuse HEAD: the default branch is at $N2, not the expected $M; merge it into HEAD, run --cycle-diff again and land with that commit" --expect "$M" --answered Q-001
-    git checkout -q -b feat/y; lc_is "refuse HEAD: it is not on a branch chore/dev-cycle-DATE or chore/dev-cycle-DATE-HHMM" --expect "$N2"; git checkout -q "$B"
+    lc_is "refuse HEAD: the default branch is at $N2, not --main's $M; merge it into HEAD, run --cycle-diff again and land with --main $N2" --main "$M" --answered Q-001
+    git checkout -q -b feat/y; lc_is "refuse HEAD: it is not on a branch chore/dev-cycle-DATE or chore/dev-cycle-DATE-HHMM" --main "$N2"; git checkout -q "$B"
     H="$(git rev-parse HEAD)"; T="$(git merge-tree --write-tree main HEAD)"
-    bl --land-cycle --expect "$N2" --answered Q-001
+    bl --land-cycle --main "$N2" --answered Q-001
     [ "$status" -eq 0 ] && [ "$output" = "landed $B $H $T $(git rev-parse main)" ] && [ "$(git rev-parse main^1 main^2 'main^{tree}')" = "$N2"$'\n'"$H"$'\n'"$T" ] \
         && [ "$(git log -1 --format=%B main)" = "Merge branch '$B'" ] || { show; return 1; }
     bl --main-log "$N2"; [ "$status" -eq 0 ] && [ "${lines[1]}" = "chore $(git rev-parse main) Merge branch '$B'" ] || { show; return 1; }
     # Main checked out in the first worktree: the land fast-forwards it there; HEAD in a linked worktree.
     git checkout -q main; git worktree add -q -b chore/dev-cycle-2026-10-13-0900 "$BATS_TEST_TMPDIR/wt" main; cd "$BATS_TEST_TMPDIR/wt"
-    rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; bl --land-cycle --expect "$M"
+    rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; bl --land-cycle --main "$M"
     [ "$status" -eq 0 ] && [[ "$output" == "landed chore/dev-cycle-2026-10-13-0900 $(git rev-parse HEAD) "* ]] && [ "$(git -C "$R" rev-parse HEAD^1)" = "$M" ] \
         && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
 }
@@ -509,7 +517,7 @@ rec() { mkdir -p docs/working/cycles && printf '%s\n' "$@" >> docs/working/cycle
     rec "Branch: chore/dev-cycle-2026-10-12"; onmain docs/working/draft.md "$(sed 's/OPEN/ANSWERED/; /^Which/a Q-001: [1]' docs/working/questions.md)"
     # --cycle-diff's guard compares the questions files' listings, which neither side has on the base (U3c's confirming pass).
     cd_is ok; git show "$(git merge-tree --write-tree main HEAD):docs/working/questions.md" | grep -qxF 'Q-001: [1]'
-    lc_is "refuse docs/working/questions.md: Q-001 is a new entry filed answered (Status ANSWERED or an answer line), and Q-001 is not in --answered" --expect "$(git rev-parse main)"
+    lc_is "refuse docs/working/questions.md: Q-001 is a new entry filed answered (Status ANSWERED or an answer line), and Q-001 is not in --answered" --main "$(git rev-parse main)"
     git merge -q --no-edit main; echo chore > x.md; commit_all x; onmain x.md main
-    lc_is "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first" --expect "$(git rev-parse main)"
+    lc_is "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first" --main "$(git rev-parse main)"
 }

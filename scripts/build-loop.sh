@@ -9,7 +9,7 @@
 #        scripts/build-loop.sh --state
 #        scripts/build-loop.sh --main-log SINCE
 #        scripts/build-loop.sh --cycle-diff [--answered Q-NNN]...
-#        scripts/build-loop.sh --land-cycle --expect SHA [--answered Q-NNN]...
+#        scripts/build-loop.sh --land-cycle --main SHA [--answered Q-NNN]...
 #        scripts/build-loop.sh --check BRIEF... [--expect SHA]
 #        scripts/build-loop.sh --merge BRIEF --expect SHA [--approved Q-NNN]
 #        scripts/build-loop.sh --start BRIEF [--dir DIR]
@@ -213,19 +213,28 @@
 #                 roadmap or idea log, a side not a regular 100644 file, or a
 #                 failed read refuses (a questions file is judged by its entries); a
 #                 new roadmap or idea log, and every other path, is not judged,
-#                 but for two rules (row 745): a path of the gate's own code
-#                 (GATE_CODE, compared lower-cased) refuses, and a brief whose
-#                 first unfenced "Asked:" line, matched by file name (a move to
-#                 closed/ too), is neither as on BASE nor BASE's line followed
-#                 by ", " and more (an ID dropped or changed) refuses.
+#                 but for these rules (row 745), which every path meets: a
+#                 path of the gate's own code (GATE_CODE) or one the lib's
+#                 truthrule reads as truth but a cycle file (an instruction or
+#                 prompt file, a dot path, docs/dev-cycle.md,
+#                 docs/constraints.md, docs/decisions/, docs/human-author/;
+#                 both compared lower-cased) refuses: --check-fix refuses them
+#                 too. A brief's first unfenced "Asked:" line, matched by file
+#                 name (a move to closed/ under its name too), must be as on
+#                 BASE, or BASE's line followed by ", " and more (none on BASE:
+#                 any line), and each item added (", "-separated, Q-NNN or
+#                 Q-NNN@SHA) must name an entry the questions files gain (a
+#                 "### Q-NNN" heading BASE lacks); a brief with an Asked: line
+#                 deleted, or renamed to another file name, refuses.
 #                 As --main-log, BASE's objects are not re-hashed: it catches the
 #                 orchestrator's own slip, not a forged commit.
 #   --land-cycle  lands the orchestrator's chore branch (D13; run in its
 #             worktree once --cycle-diff passed and the index is committed),
 #             after --state's gate but its caller check: HEAD must be on
 #             chore/dev-cycle-DATE or chore/dev-cycle-DATE-HHMM, the index as
-#             its commit, and --expect the default branch's commit (the one
-#             --cycle-diff checked). The merge of HEAD into main, as --check's
+#             its commit, and --main the default branch's commit (the one
+#             --cycle-diff checked; --merge's --expect is a branch tip
+#             instead). The merge of HEAD into main, as --check's
 #             (merge-tree, no repo config), is judged against main by
 #             --cycle-diff's rules with these --answered IDs (what lands: a
 #             rename git pairs into a questions file, or a fence pair that
@@ -236,14 +245,19 @@
 #             that commit, or a fast-forward in the worktree that has it
 #             checked out; no hooks run). Prints
 #             landed B HEAD TREE NEW
-#                 NEW: the merge commit, now the default branch's.
-#             or refuse lines and exit 2: --cycle-diff's (PATH a file), or
+#                 B: the branch; HEAD: its commit (the merge's second
+#                 parent); TREE: the merge's tree; NEW: the merge commit, now
+#                 the default branch's (its reflog entry reads "build-loop:
+#                 cycle land of B").
+#             or refuse lines and exit 2: --cycle-diff's rules' (PATH a file;
+#             a copy of the merge is "its merge copy"), or
 #             refuse HEAD: WHY
 #                 Not on such a branch; the default branch moved (merge it
-#                 into HEAD, run --cycle-diff again, land with that commit);
-#                 staged changes; nothing the default branch lacks; a
+#                 into HEAD, run --cycle-diff again, land with --main at its
+#                 commit); staged changes; nothing the default branch lacks; a
 #                 conflict; an object that does not hash or has two copies;
-#                 no such record; or --merge's own refusals of the move.
+#                 no such record; --merge's own refusals of the move; or a
+#                 read that fails (HEAD's commit, the merge, its paths).
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
 #             a git config key (common config or config.worktree, includes not
 #             followed) for a filter, include, config hook, merge or diff
@@ -507,8 +521,8 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... | --land-cycle --expect SHA [--answered Q-NNN]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
-MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=()
+usage() { echo "$1 (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... | --land-cycle --main SHA [--answered Q-NNN]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])" >&2; exit 1; }
+MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
@@ -520,13 +534,13 @@ case "${1:-}" in
   --cycle-diff|--land-cycle)
     MODE="${1#--}"; shift
     while [[ $# -gt 0 ]]; do
-      if [[ "$1" == --expect && "$MODE" == land-cycle && $# -ge 2 && -z "$EXPECT" && "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]]; then EXPECT="$2"
+      if [[ "$1" == --main && "$MODE" == land-cycle && $# -ge 2 && -z "$LAND_MAIN" && "$2" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]]; then LAND_MAIN="$2"
       elif [[ "$1" == --answered && $# -ge 2 && "$2" =~ ^Q-[0123456789]+$ ]]; then ANSWERED+=("$2")
       elif [[ "$MODE" == cycle-diff ]]; then usage "--cycle-diff takes only --answered Q-NNN, one ID each"
-      else usage "--land-cycle takes --expect SHA (a full commit id), once, and --answered Q-NNN, one ID each"; fi
+      else usage "--land-cycle takes --main SHA (the default branch's full commit id), once, and --answered Q-NNN, one ID each"; fi
       shift 2
     done
-    [[ "$MODE" == cycle-diff || -n "$EXPECT" ]] || usage "--land-cycle needs --expect SHA, the default branch's commit --cycle-diff checked" ;;
+    [[ "$MODE" == cycle-diff || -n "$LAND_MAIN" ]] || usage "--land-cycle needs --main SHA, the default branch's commit --cycle-diff checked" ;;
   --check|--merge)
     MODE="${1#--}"; shift
     while [[ $# -gt 0 ]]; do
@@ -1528,7 +1542,7 @@ land() {
       done
     done
   fi
-  { if [[ "$1" == cycle ]]; then printf "Merge branch '%s'\n" "${VERDICT[branch]}"; else gate_msg "${VERDICT[branch]}" "$what" "${VERDICT[stem]}" "${2-}"; fi; } > "$GATE_TMP/msg" \
+  { if [[ "$1" == cycle ]]; then chore_msg "${VERDICT[branch]}"; else gate_msg "${VERDICT[branch]}" "$what" "${VERDICT[stem]}" "${2-}"; fi; } > "$GATE_TMP/msg" \
     && x="$(gate_git commit-tree --no-gpg-sign -p "$MAIN_SHA" -p "${VERDICT[tip]}" "${VERDICT[tree]}" < "$GATE_TMP/msg")" \
     && [[ "$x" =~ ^([0123456789abcdef]{40}|[0123456789abcdef]{64})$ ]] || { MERGE_WHY="the merge commit could not be written"; return 1; }
   NEW="$x"
@@ -1709,6 +1723,9 @@ clean_merge() {
   local t
   t="$(gate_git merge-tree --write-tree --no-messages "$1" "$2")" && [[ "$t" == "$3" ]]
 }
+# chore_msg B: the message of a chore merge, as git merge writes it and
+# --land-cycle writes it (land); log_class reads it back by its subject regex.
+chore_msg() { printf "Merge branch '%s'\n" "$1"; }
 # chore_record B: a cycle record among RAW_* (isrecord, added or changed,
 # mode 100644) holds the line "Branch: B" (a trailing CR dropped): what makes
 # a merge of B chore for --main-log, and what --land-cycle checks before it
@@ -1850,7 +1867,7 @@ cyc_blob() {
 }
 # cycle_diff: --cycle-diff's lines. Returns 1 on any refusal.
 cycle_diff() {
-  local base t="$GATE_TMP/cy"
+  local base p t="$GATE_TMP/cy"
   if ! base="$(git merge-base --all HEAD "$MAIN_SHA" 2>/dev/null)" || [[ -z "$base" ]]; then echo "refuse HEAD: it shares no commit with the default branch's $MAIN_SHA, or could not be read"; return 1; fi
   # The land merges through a virtual base when there are several (criss-cross): judge none (final security F1).
   [[ "$base" != *$'\n'* ]] || { echo "refuse HEAD: it has more than one merge base with the default branch's $MAIN_SHA; merge the default branch into HEAD first"; return 1; }
@@ -1859,27 +1876,45 @@ cycle_diff() {
     || [[ -s "$GATE_TMP/err" ]] || ! raw_records "$t.raw"; then
     echo "refuse index: the staged changes against $base could not be listed"; return 1
   fi
-  cycle_rules "$base"
+  # The chore branch lands as a merge, and --check-answer reads the merged
+  # file: lines judged free here (a fence pair, a heading) can capture an
+  # answer main gained since the fork (U3c i2 security F1). So a staged
+  # questions change needs the questions files as on main: merge the default
+  # branch into HEAD first. (--land-cycle judges the merge itself.)
+  for p in "${RAW_P[@]}"; do
+    [[ "$p" == docs/working/questions.md || "$p" == docs/working/questions-archive.md ]] || continue
+    gate_git ls-tree -z "$base" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lb" \
+      && gate_git ls-tree -z "$MAIN_SHA" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lm" || { echo "refuse index: the questions files could not be listed"; return 1; }
+    cmp -s "$t.lb" "$t.lm" || { echo "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $base; merge it into HEAD, then stage again"; return 1; }
+    break
+  done
+  cycle_rules "$base" index
 }
-# asked FILE: a brief's first "Asked:" line outside a fence (as brief_fields
-# reads it, a trailing CR dropped), or nothing.
+# asked FILE: a brief's first "Asked:" line outside a fence, a trailing CR
+# dropped, or nothing: brief_fields' reading, but for a brief FENCE_AWK
+# refuses after that line, which brief_fields does not read at all.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 asked() { LC_ALL=C awk "$FENCE_AWK"'{ sub(/\r$/, "") } fence($0) { next } /^Asked:/ { print; exit }' "$1"; }
-# cycle_rules BASE: the cycle's rules over RAW_* (raw_records of a listing
-# against BASE): --cycle-diff's (BASE the merge base, the listing the index)
-# and --land-cycle's (BASE main's commit, the listing the merge it writes).
-# Prints "refuse PATH: WHY" per finding; returns 1 on any.
+# cycle_rules BASE SIDE: the cycle's rules over RAW_* (raw_records of a
+# listing against BASE): --cycle-diff's (BASE the merge base, SIDE "index")
+# and --land-cycle's (BASE main's commit, SIDE "merge", the merge it writes),
+# SIDE naming the listing's side in refusals. Prints "refuse PATH: WHY" per
+# finding; returns 1 on any.
 cycle_rules() {
-  local base="$1" i p f k md id bad=0 qi=() t="$GATE_TMP/cy"
-  local -A ao=() an=() ap=()
+  local base="$1" side="$2" i p lp f k md id bad=0 qi=() t="$GATE_TMP/cy"
+  local -A ao=() an=() ap=() aop=()
   for i in "${!RAW_P[@]}"; do
-    p="${RAW_P[i]}"
-    # An in-cycle fix edits only docs --check-fix allows, and the gate's code decides what an answer is (U3c final security F2).
-    if [[ "$(lower "$p")" =~ $GATE_CODE ]]; then echo "refuse $p: the gate's own code; an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
+    p="${RAW_P[i]}"; lp="$(lower "$p")"
+    # An in-cycle fix edits only docs --check-fix allows: never the gate's code,
+    # which decides what an answer is (U3c final security F2), nor a file
+    # sessions or the cycle read as truth but the cycle's own (truthrule, which
+    # --check-fix refuses too: i1 security F2).
+    if [[ "$lp" =~ $GATE_CODE ]]; then echo "refuse $p: the gate's own code; an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
+    if truthrule "$lp" && [[ "$TRUTH_WHY" != cycle ]]; then echo "refuse $p: a file sessions or later cycles read as truth ($TRUTH_WHY); an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
     if anybrief "$p"; then
       # Each side's first Asked: line, by file name: a move to closed/ is a D and an A side.
       if ! cyc_blob "${RAW_OM[i]}" "${RAW_OO[i]}" "$t.o" || ! cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$t.n"; then echo "refuse $p: a side is not a regular file (mode 100644), or could not be read"; bad=1; continue; fi
-      [[ "${RAW_OM[i]}" == 000000 ]] || ao[${p##*/}]="$(asked "$t.o")"
+      [[ "${RAW_OM[i]}" == 000000 ]] || { ao[${p##*/}]="$(asked "$t.o")"; aop[${p##*/}]="$p"; }
       [[ "${RAW_NM[i]}" == 000000 ]] || { an[${p##*/}]="$(asked "$t.n")"; ap[${p##*/}]="$p"; }
       continue
     fi
@@ -1900,20 +1935,8 @@ cycle_rules() {
       while IFS= read -r k; do echo "refuse $p: $k"; bad=1; done < "$t.w"
     fi
   done
-  # Step 6 only appends an ID to Asked: (row 745: a retargeted ID would reuse another question's answer).
-  for f in "${!ao[@]}"; do
-    [[ -n "${ao[$f]}" && -n "${an[$f]+set}" ]] || continue
-    [[ "${an[$f]}" == "${ao[$f]}" || "${an[$f]}" == "${ao[$f]}, "* ]] || { echo "refuse ${ap[$f]}: its first Asked: line drops or changes an ID it held; the cycle only appends one"; bad=1; }
-  done
-  [[ ${#qi[@]} -gt 0 ]] || return "$bad"
-  # The chore branch lands as a merge, and --check-answer reads the merged
-  # file: lines judged free here (a fence pair, a heading) can capture an
-  # answer main gained since the fork (i2 security F1). So the questions files
-  # must be as on main: merge the default branch into HEAD first (always so
-  # for --land-cycle, which judges the merge itself).
-  gate_git ls-tree -z "$base" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lb" \
-    && gate_git ls-tree -z "$MAIN_SHA" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lm" || { echo "refuse index: the questions files could not be listed"; return 1; }
-  cmp -s "$t.lb" "$t.lm" || { echo "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $base; merge it into HEAD, then stage again"; return 1; }
+  : > "$t.new"
+  if [[ ${#qi[@]} -eq 0 ]]; then asked_rule "$t.new" || bad=1; return "$bad"; fi
   # Both questions files on each side, the unchanged one included (an entry can move between them).
   : > "$t.qo"; : > "$t.qn"
   for f in docs/working/questions.md docs/working/questions-archive.md; do
@@ -1929,7 +1952,7 @@ cycle_rules() {
     fi
     for p in o n; do
       # The whole-file verdict from --check-answer's own reader (id Q- names no Q-digits entry; a bare "### Q-" heading only refuses): FENCE_AWK's refusals and a fenced question heading.
-      k=base; [[ "$p" == o ]] || k=index; md="$(LC_ALL=C awk -v id=Q- "$FENCE_AWK$ANSWER_AWK" "$t.$p")" || md="unread"
+      k=base; [[ "$p" == o ]] || k="$side"; md="$(LC_ALL=C awk -v id=Q- "$FENCE_AWK$ANSWER_AWK" "$t.$p")" || md="unread"
       [[ -z "$md" ]] || { echo "refuse $f: --check-answer refuses its $k copy whole ($md)"; return 1; }
       LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" >> "$t.q$p" || { echo "refuse $f: it could not be read"; return 1; }
     done
@@ -1941,17 +1964,49 @@ cycle_rules() {
     if [[ "$k" == gone ]]; then echo "refuse docs/working/$f: $i's heading, Needs or answer lines changed or are gone, and $i is not in --answered"
     else echo "refuse docs/working/$f: $i is a new entry filed answered (Status ANSWERED or an answer line), and $i is not in --answered"; fi
   done < <(LC_ALL=C sort "$t.w")
+  # The entries this change files: a heading the listing has and BASE lacks.
+  LC_ALL=C awk -F '\t' 'FILENAME == ARGV[1] { if ($3 == "h") o[$1]; next } $3 == "h" && !($1 in o) { print $1 }' "$t.qo" "$t.qn" > "$t.new" \
+    || { echo "refuse docs/working/questions.md: the entries could not be compared"; return 1; }
+  asked_rule "$t.new" || bad=1
+  return "$bad"
+}
+# asked_rule NEW: step 6 only appends IDs to a brief's first Asked: line, each
+# an entry this change files (NEW, one ID per line): an ID dropped, changed,
+# or reused from another entry would apply that question's answer to this
+# brief, since --check-answer matches the ID alone (row 745; i1 security F1).
+# A brief deleted, or renamed to another file name, with an Asked: line
+# refuses too (i1 security F3). Reads cycle_rules' ao, an, ap and aop (bash
+# scope is dynamic); called only there. Returns 1 on any refusal.
+asked_rule() {
+  local f o n a x bad=0
+  for f in "${!ao[@]}"; do
+    [[ -z "${ao[$f]}" || -n "${an[$f]+set}" ]] || { echo "refuse ${aop[$f]}: deleted or renamed with its Asked: line; the cycle only moves a brief to closed/ under its name"; bad=1; }
+  done
+  for f in "${!an[@]}"; do
+    o="${ao[$f]-}"; n="${an[$f]}"
+    [[ "$n" != "$o" ]] || continue
+    if [[ -z "$o" ]]; then a="${n#Asked:}"; a="${a# }"
+    elif [[ "$n" == "$o, "* ]]; then a="${n#"$o, "}"
+    else echo "refuse ${ap[$f]}: its first Asked: line drops or changes an ID it held; the cycle only appends one"; bad=1; continue; fi
+    # Each added item, ", "-separated: Q-NNN, or Q-NNN@MARKER-SHA (D4).
+    a+=", "
+    while [[ -n "$a" ]]; do
+      x="${a%%, *}"; a="${a#*, }"
+      [[ "$x" =~ ^(Q-[0123456789]+)(@|$) ]] && grep -qxF -- "${BASH_REMATCH[1]}" "$1" \
+        || { echo "refuse ${ap[$f]}: its Asked: line adds $x, which names no question entry this change files"; bad=1; }
+    done
+  done
   return "$bad"
 }
 # land_cycle: --land-cycle's lines: HEAD's chore branch lands on the default
 # branch as a merge --main-log reads as chore (D13; rows 719, 749, 752, 753).
-# Prints "landed BRANCH HEAD TREE NEW", or refuse lines; returns 1 on any.
+# Prints "landed B HEAD TREE NEW", or refuse lines; returns 1 on any.
 land_cycle() {
   local b h r rc=0 i
   b="$(git symbolic-ref -q HEAD)" || b=""
   [[ "$b" =~ ^refs/heads/(chore/dev-cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}(-$DIGIT{4})?)$ ]] || { echo "refuse HEAD: it is not on a branch chore/dev-cycle-DATE or chore/dev-cycle-DATE-HHMM"; return 1; }
   b="${BASH_REMATCH[1]}"
-  [[ "$EXPECT" == "$MAIN_SHA" ]] || { echo "refuse HEAD: the default branch is at $MAIN_SHA, not the expected $EXPECT; merge it into HEAD, run --cycle-diff again and land with that commit"; return 1; }
+  [[ "$LAND_MAIN" == "$MAIN_SHA" ]] || { echo "refuse HEAD: the default branch is at $MAIN_SHA, not --main's $LAND_MAIN; merge it into HEAD, run --cycle-diff again and land with --main $MAIN_SHA"; return 1; }
   h="$(git rev-parse --verify -q 'HEAD^{commit}')" || { echo "refuse HEAD: its commit could not be read"; return 1; }
   # The land takes HEAD's commit, never the index: anything staged would stay behind.
   git diff-index --cached --quiet --ignore-submodules=none "$h" -- 2>"$GATE_TMP/err" && [[ ! -s "$GATE_TMP/err" ]] \
@@ -1964,14 +2019,18 @@ land_cycle() {
     1) echo "refuse HEAD: it conflicts with the default branch; merge the default branch into HEAD first"; return 1 ;;
     *) echo "refuse HEAD: its merge into the default branch could not be computed"; return 1 ;;
   esac
+  # Also what check_line's blob-presence check gives --merge: store_check reads
+  # every blob of R, so a blob the store lacks refuses here (i1 architecture 1).
   store_check "$h" "$r" || { echo "refuse HEAD: an object of HEAD or of the merge does not hash to its id, has a second copy in the object store, or could not be read"; return 1; }
   # The merge as it lands, against main: rename pairing and a fence pair that
   # captures main's answer show here, not in --cycle-diff's index (row 753).
   gate_git diff-tree -r --no-renames --raw -z --ignore-submodules=none "$MAIN_SHA" "$r" > "$GATE_TMP/diff" && raw_records "$GATE_TMP/diff" \
     || { echo "refuse HEAD: the paths its merge changes could not be listed"; return 1; }
-  cycle_rules "$MAIN_SHA" || return 1
+  # cycle_rules reads RAW_* and leaves it as raw_records filled it, for chore_record and CHANGED.
+  cycle_rules "$MAIN_SHA" merge || return 1
   chore_record "$b" || { echo "refuse HEAD: the merge adds or changes no cycle record (docs/working/cycles/cycle-YYYY-MM-DD.md) holding the line \"Branch: $b\", so --main-log would read it as other"; return 1; }
-  VERDICT=([tip]="$h" [tree]="$r" [branch]="$b" [stem]="$b"); CHANGED=()
+  # Every key check_line sets, so land reads none unset (i1 architecture 4).
+  VERDICT=([tip]="$h" [tree]="$r" [policy]=- [branch]="$b" [stem]="$b" [gate]=""); CHANGED=()
   for i in "${!RAW_P[@]}"; do CHANGED[${RAW_P[i]}]="${RAW_S[i]}"; done
   land cycle || { echo "refuse HEAD: $MERGE_WHY"; return 1; }
   echo "landed $b $h $r $NEW"
