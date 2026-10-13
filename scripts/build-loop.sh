@@ -191,7 +191,8 @@
 #                 docs/working/questions.md and questions-archive.md, read
 #                 together (an entry may move between them): an entry on BASE
 #                 whose heading, **Needs:** lines or answer lines (--main-log's
-#                 answer labels, any ID) differ in the index, or are gone, and
+#                 answer labels, any ID) differ in the index, in order, or are
+#                 gone, and
 #                 a new entry filed answered (Status ANSWERED or an answer
 #                 line), unless its ID was given with --answered (an answer the
 #                 user gave the orchestrator in-session); an entry's other
@@ -205,7 +206,8 @@
 #                 "## Done" names on BASE named on no line of the index (an
 #                 interim reading of "the cycle's own moves": step 6 rewrites
 #                 Now, Next and Ideas and keeps Done to the last cycle).
-#                 A new file, and every other path, is not judged. One of
+#                 A new roadmap or idea log, and every other path, is not
+#                 judged (a new questions file is: its entries are new). One of
 #                 these files not a regular file, or a read that fails,
 #                 refuses; so do HEAD with no merge base ("refuse HEAD") and
 #                 an index that cannot be listed ("refuse index"). As
@@ -1748,9 +1750,11 @@ id == "" { next }
 /^\*\*Needs:\*\*/ { print id "\t" f "\tn\t" $0; next }
 { t = $0; sub(/^- /, "", t); if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) print id "\t" f "\ta\t" $0 }
 END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline }'
-# The base's key lines (sorted, file 1) against the index's (file 2), ok the
-# --answered IDs: "ID F gone|new" per refused entry. An entry's key lines are
-# compared without F, so an archive move is no change.
+# The base's key lines (file 1) against the index's (file 2), each side
+# questions.md's then the archive's, ok the --answered IDs: "ID F gone|new" per
+# refused entry. An entry's key lines are compared in file order (--check-answer
+# reads the first Needs and the first answer line, so a reorder can change its
+# result: i1 A1) and without F, so an archive move is no change.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QDIFF_AWK='
 function answered(k, l,   n, i, g) {
@@ -1789,9 +1793,9 @@ END {
   for (b in need) if (!(b in named)) print "the brief " b ", named outside Done on the base, is named on no line"
 }'
 # cyc_blob I SIDE OUT: raw record I's blob on SIDE (old or new) into OUT, read
-# in the gate repository; an absent side (all-zero id) is an empty file.
-# Returns 1 when that side is not absent or a regular 100644 file, or the read
-# fails.
+# in the gate repository; an absent side (mode 000000) is an empty file.
+# Returns non-zero when that side is not absent or a regular 100644 file, or
+# the read fails.
 cyc_blob() {
   local md="${RAW_NM[$1]}" id="${RAW_NO[$1]}"
   [[ "$2" == new ]] || { md="${RAW_OM[$1]}"; id="${RAW_OO[$1]}"; }
@@ -1845,8 +1849,7 @@ cycle_diff() {
       cat "$t.k" >> "$t.q$p"
     done
   done
-  LC_ALL=C sort -o "$t.qo" "$t.qo" && LC_ALL=C sort -o "$t.qn" "$t.qn" \
-    && LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" > "$t.w" \
+  LC_ALL=C awk -F '\t' -v ids="${ANSWERED[*]}" "$QDIFF_AWK" "$t.qo" "$t.qn" > "$t.w" \
     || { echo "refuse docs/working/questions.md: the entries could not be compared"; return 1; }
   while read -r i f k; do
     bad=1

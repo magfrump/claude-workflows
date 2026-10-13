@@ -395,7 +395,7 @@ onmain() { local x="$BATS_TEST_TMPDIR/ix" b; b="$(printf '%s\n' "$2" | git hash-
     GIT_INDEX_FILE="$x" git update-index --add --cacheinfo "100644,$b,$1"; git update-ref refs/heads/main "$(git commit-tree "$(GIT_INDEX_FILE="$x" git write-tree)" -p main -m moved)"; }
 N='**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:**'
 qa() { mkdir -p docs/working; printf '%s\n' '# Questions' '### Q-001 · x' "$N OPEN" '' 'Which?' '| **[1] a** | b |' '### Q-003 · z' "$N ANSWERED" 'Q-003: [1]' > docs/working/questions.md
-    printf '%s\n' '# Archive' '### Q-000 · old' "$N ANSWERED" '- **Answer:** [2]' > docs/working/questions-archive.md; commit_all questions; git checkout -q -b chore/dev-cycle-2026-10-12; }
+    printf '%s\n' '# Archive' '### Q-000 · old' "$N ANSWERED" '- **Answer:** [2]' 'Q-000: [1]' > docs/working/questions-archive.md; commit_all questions; git checkout -q -b chore/dev-cycle-2026-10-12; }
 
 @test "--cycle-diff refuses an entry's header or answer changed or gone without --answered, and passes body edits, an open new entry and an archive move (T38, U3c)" {
     qa; cd_is ok
@@ -405,12 +405,14 @@ qa() { mkdir -p docs/working; printf '%s\n' '# Questions' '### Q-001 · x' "$N O
     sed -i '/^Which/a Q-001: [1]' docs/working/questions.md; git add -A; cd_is "$W"; cd_is ok --answered Q-003 --answered Q-001
     # Main moves meanwhile (step 7's merges, a user's answer): the base stays the fork point, so main's change is not the cycle's.
     onmain docs/working/questions.md "# Questions"; cd_is ok --answered Q-001; git reset -q --hard
-    # A route change, a deleted entry, a removed answer line.
+    # A route change, a removed answer line, a deleted entry, two answer lines swapped (--check-answer reads the first: i1 A1).
+    sed -i '/^### Q-001/,/^| \*\*\[1\]/d' docs/working/questions.md; git add -A; cd_is "$W"; git reset -q --hard
+    sed -i '/^- \*\*Answer/{h;d}; /^Q-000/G' docs/working/questions-archive.md; git add -A; W0="${W//Q-001/Q-000}"; cd_is "${W0/questions.md/questions-archive.md}"; git reset -q --hard
     sed -i 's/you: judgment/agent/' docs/working/questions.md; git add -A; cd_is "$W
 ${W//Q-001/Q-003}"; git reset -q --hard
     sed -i '/^Q-003/d' docs/working/questions.md; git add -A; cd_is "${W//Q-001/Q-003}"; git reset -q --hard
-    git rm -q docs/working/questions-archive.md; W0="${W//Q-001/Q-000}"; cd_is "${W0/questions.md/questions-archive.md}"; git reset -q --hard
-    # Free: body lines, an appended open entry, Q-003 archived (moved whole between the files), a new archive file.
+    git rm -q docs/working/questions-archive.md; cd_is "${W0/questions.md/questions-archive.md}"; git reset -q --hard
+    # Free: body lines, an appended open entry, Q-003 archived (moved whole between the files).
     sed -i 's/| b |/| c |/' docs/working/questions.md; printf '%s\n' '### Q-002 · y' "$N OPEN" 'Why?' >> docs/working/questions.md
     sed -n '/^### Q-003/,$p' docs/working/questions.md >> docs/working/questions-archive.md; sed -i '/^### Q-003/,$d' docs/working/questions.md; git add -A; cd_is ok
     # A new entry filed answered is the user's only with its ID listed (F33: a pre-answered merge entry).
