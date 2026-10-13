@@ -330,7 +330,7 @@ If you opened a draft PR in step 2, push the rebased branch to trigger CI remote
 
 In claude-workflows the gate is `scripts/health-check.sh`, which runs the fast suite and then the slow one. Do not run a standalone fast suite just before it.
 
-**Quiesce before the gate.** Wait until no subagent is still running. Then reap leftover probe processes under your uid: check `pgrep -u "$(id -u)" -a` for `sleep`, `cat` on a FIFO, or probe scripts that review agents started. Do not edit tracked files (such as `docs/working/questions.md`) while the gate runs. Stray processes are a real hazard here, because install.sh's no-agent guard (Q-058/Q-062) reads the real process table. In the Q-076 run, leftover probes made install-host T33, T83 and T6 fail in full runs while each passed alone.
+**Quiesce before the gate.** Wait until no subagent this task started is still running; other sessions' agents and build loops share the uid and keep running (dev-cycle D14). Then reap leftover probe processes this task's agents started: find them with `pgrep -u "$(id -u)" -a` (`sleep`, `cat` on a FIFO, probe scripts) and stop each by its PID once its command line shows it is yours, never by a name or pattern (`pkill -f` can stop another session's run). Do not edit tracked files (such as `docs/working/questions.md`) while the gate runs. Stray processes are a real hazard here, because install.sh's no-agent guard (Q-058/Q-062) reads the real process table. In the Q-076 run, leftover probes made install-host T33, T83 and T6 fail in full runs while each passed alone.
 
 **Write the gate's full output to a file** and read failures from that file. Never pipe the output through `grep`: Q-076 lost a real failure that way.
 

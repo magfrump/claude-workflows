@@ -352,7 +352,7 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
 }
 
-@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git carries the same (rows 281, 311, 495, U3b3)" {
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -363,10 +363,12 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
     want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=9" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
-    # The snippet cannot source the lib (it runs before anything is checked): its one git array repeats both lists.
-    g="$(grep '^  G=(env ' "$REPO_ROOT/test/lib/d6-snippet.bash")"
-    [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
-    [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
+    # Neither the snippet (it runs before anything is checked) nor SKILL.md's hg, the orchestrator's own git (rows 704, 736), can source the lib: each repeats both lists, on one line.
+    [ "$(grep -c '^  hg() { env .* "\$@"; }$' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'hg()' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+    for g in "$(grep '^  G=(env ' "$REPO_ROOT/test/lib/d6-snippet.bash")" "$(grep '^  hg() { env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"; do
+        [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
+        [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
+    done
 }
 
 @test "every git call dev-cycle.sh makes carries git_harden's pairs: a bogus log.date stops nothing, log.showSignature runs no gpg.program (rows 495, 505, U3b3)" {
