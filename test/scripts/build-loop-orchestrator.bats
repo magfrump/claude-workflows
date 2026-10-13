@@ -463,23 +463,31 @@ refuse docs/working/idea-log.md: a side is not a regular file (mode 100644), or 
     for a in "--answered" "--answered 7" "x"; do bl --cycle-diff $a; [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "[$a]"; show; return 1; }; done
 }
 
-@test "--cycle-diff refuses the gate's code, truth files and a brief's Asked: line other than extended by entries the change files, matched by name across a move to closed/ (row 745, U4a, i1 security F1-F3)" {
-    F=docs/working/briefs/2026-10-01-x.md; C=docs/working/briefs/closed/2026-10-01-x.md; mkdir -p docs/working/briefs/closed scripts/lib
-    printf '%s\n' 'Status: open' 'Asked: Q-001@abc' > "$F"; echo s > scripts/lib/a.sh; echo d > docs/dev-cycle.md; commit_all briefs; qa
-    W="its first Asked: line drops or changes an ID it held; the cycle only appends one"; E='### Q-002 · y'
+@test "--cycle-diff refuses the gate's code, truth files and a brief's Asked: line other than extended by entries the change files, matched by name across a move to closed/ (row 745, U4a, i1 security F1-F3, i2 F-a to F-d)" {
+    F=docs/working/briefs/2026-10-01-x.md; C=docs/working/briefs/closed/2026-10-01-x.md; Y=docs/working/briefs/2026-10-01-y.md; mkdir -p docs/working/briefs/closed scripts/lib
+    printf '%s\n' 'Status: open' 'Asked: Q-001@abc' > "$F"; printf '%s\n' 'Status: open' > "$Y"; echo s > scripts/lib/a.sh; echo d > docs/dev-cycle.md; commit_all briefs; qa
+    W="its first Asked: line drops or changes an ID it held; the cycle only appends one"; A="its first Asked: line adds"; E='### Q-002 · y'
     # An ID appended for an entry this change files passes; one naming no new entry (another question's, or none) refuses (F1).
-    sed -i 's/^Asked: .*/&, Q-002@def/' "$F"; printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; git add -A; cd_is ok
-    git checkout -q HEAD -- docs/working/questions.md; cd_is "refuse $F: its Asked: line adds Q-002@def, which names no question entry this change files"; git reset -q --hard
-    sed -i 's/^Asked: .*/&, Q-003@def/' "$F"; git add -A; cd_is "refuse $F: its Asked: line adds Q-003@def, which names no question entry this change files"; git reset -q --hard
-    git mv "$F" "$C"; cd_is ok; sed -i 's/^Asked: .*/Asked: Q-002@def/' "$C"; git add -A; cd_is "refuse $C: $W"; git reset -q --hard
+    sed -i 's/^Asked: .*/&, Q-002@def1234/' "$F"; printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; git add -A; cd_is ok
+    git checkout -q HEAD -- docs/working/questions.md; cd_is "refuse $F: $A Q-002@def1234, which names no question entry this change files"; git reset -q --hard
+    sed -i 's/^Asked: .*/&, Q-003/' "$F"; git add -A; cd_is "refuse $F: $A Q-003, which names no question entry this change files"; git reset -q --hard
+    # Only exact items (i2 F-b), and one brief per new entry (i2 F-a).
+    printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; sed -i 's/^Asked: .*/&, Q-002@Q-003/' "$F"; git add -A; cd_is "refuse $F: $A \"Q-002@Q-003\", which is not Q-NNN or Q-NNN@SHA"
+    sed -i 's/^Asked: .*/Asked: Q-001@abc, /' "$F"; git add -A; cd_is "refuse $F: $A \"\", which is not Q-NNN or Q-NNN@SHA"
+    sed -i 's/^Asked: .*/Asked: Q-001@abc, Q-002/' "$F"; echo 'Asked: Q-002' >> "$Y"; git add -A; bl --cycle-diff
+    [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 1 ] && [[ "$output" == "refuse docs/working/briefs/2026-10-01-"[xy]".md: $A Q-002, which another brief's Asked: line adds too" ]] || { show; return 1; }; git reset -q --hard
+    git mv "$F" "$C"; cd_is ok; sed -i 's/^Asked: .*/Asked: Q-002@def1234/' "$C"; git add -A; cd_is "refuse $C: $W"; git reset -q --hard
+    # The same name changed in briefs/ and closed/ at once (i2 F-c).
+    mkdir -p "${C%/*}"; cp "$F" "$C"; sed -i 's/Q-001@abc/Q-009@abc/' "$F"; git add -A; cd_is "refuse $C: another brief path with its file name changes too, and the Asked: rule matches briefs by file name
+refuse $F: $W"; git reset -q --hard; rm -f "$C"
     sed -i 's/Q-001@abc/Q-009@abc/' "$F"; git add -A; cd_is "refuse $F: $W"; git reset -q --hard
     git rm -q "$F"; cd_is "refuse $F: deleted or renamed with its Asked: line; the cycle only moves a brief to closed/ under its name"; git reset -q --hard
-    # The gate's code and truth files but the cycle's own (F2), compared lower-cased.
-    mkdir -p SKILLS/dev-cycle; echo s > SKILLS/dev-cycle/x.md; echo t >> scripts/lib/a.sh; echo t >> docs/dev-cycle.md; echo a > AGENTS.md; git add -A
-    G="an in-cycle fix edits only docs --check-fix allows"; T="a file sessions or later cycles read as truth"
-    cd_is "refuse AGENTS.md: $T (instr); $G
+    # The gate's code and truth files but the cycle's own (F2), compared lower-cased; a cycle file in another case (i2 F-d).
+    mkdir -p SKILLS/dev-cycle; echo s > SKILLS/dev-cycle/x.md; echo t >> scripts/lib/a.sh; echo t >> docs/dev-cycle.md; echo a > AGENTS.md; echo q > docs/working/Questions.md; git add -A
+    G="an in-cycle fix never edits it"; cd_is "refuse AGENTS.md: an instruction or prompt file, which sessions load from the checkout; $G (--check-fix refuses it too)
 refuse SKILLS/dev-cycle/x.md: the gate's own code; $G
-refuse docs/dev-cycle.md: $T (settings); $G
+refuse docs/dev-cycle.md: the dev cycle's settings file; $G (--check-fix refuses it too)
+refuse docs/working/Questions.md: one of the dev cycle's own files, spelled in another case, which these rules do not read
 refuse scripts/lib/a.sh: the gate's own code; $G"
 }
 

@@ -1896,7 +1896,9 @@ walk_has() {
   if [[ "$1" == main ]]; then local -n wh_l=IMPORTED_MAIN; else local -n wh_l=IMPORTED; fi
   [[ "$wh_l" == error || "$wh_l" == *$'\n'"$2"$'\n'* ]]
 }
-# The read-as-truth rule --check-fix and floor share (plan D5 items 1, 2 and 4;
+# The read-as-truth rule --check-fix, floor and build-loop.sh's cycle_rules
+# share (cycle_rules refuses every word but cycle, so a cycle file must never
+# take an earlier word; plan D5 items 1, 2 and 4;
 # build-loop.sh's N rules read its cycle, settings and user words too, so a
 # word tested before them must never match a file those words cover:
 # override rows 204, 322, 348), for a lower-cased path: returns 0 with

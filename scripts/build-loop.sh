@@ -202,7 +202,7 @@
 #                 free. A questions change while main has changed those files
 #                 since BASE refuses (--check-answer reads the merge, where a
 #                 free fence pair can capture main's newer answer): merge main
-#                 into HEAD first. docs/working/idea-log.md other than appended
+#                 into HEAD first. That refusal is printed alone. docs/working/idea-log.md other than appended
 #                 to (BASE's bytes start the index's). docs/roadmap.md: its
 #                 lines above the first "## " heading or its "## " lines
 #                 changed, or a brief file (docs/working/briefs/[closed/]NAME.md)
@@ -213,19 +213,22 @@
 #                 roadmap or idea log, a side not a regular 100644 file, or a
 #                 failed read refuses (a questions file is judged by its entries); a
 #                 new roadmap or idea log, and every other path, is not judged,
-#                 but for these rules (row 745), which every path meets: a
-#                 path of the gate's own code (GATE_CODE) or one the lib's
-#                 truthrule reads as truth, other than a cycle file (an instruction or
-#                 prompt file, a dot path, docs/dev-cycle.md,
+#                 but for these rules (row 745), which every path meets. A
+#                 path of the gate's own code (GATE_CODE) refuses, and so
+#                 does one the lib's truthrule reads as truth (an instruction
+#                 or prompt file, a dot path, docs/dev-cycle.md,
 #                 docs/constraints.md, docs/decisions/, docs/human-author/;
-#                 both compared lower-cased) refuses: --check-fix refuses them
-#                 too. A brief's first unfenced "Asked:" line, matched by file
-#                 name (a move to closed/ under its name too), must be as on
-#                 BASE, or BASE's line followed by ", " and more (none on BASE:
-#                 any line), and each item added (", "-separated, Q-NNN or
-#                 Q-NNN@SHA) must name an entry the questions files gain (a
-#                 "### Q-NNN" heading BASE lacks); a brief with an Asked: line
-#                 deleted, or renamed to another file name, refuses.
+#                 --check-fix refuses them too), both compared lower-cased,
+#                 and a cycle file spelled in another case. A brief's first
+#                 unfenced "Asked:" line, matched by file name (a move to
+#                 closed/ under its name too; two changed paths with one name
+#                 on a side refuse), must be as on BASE, or BASE's line
+#                 followed by ", " and more (no line on BASE: every item is
+#                 added). Each item added (", "-separated) must be exactly
+#                 Q-NNN or Q-NNN@SHA (7-64 hex), name an entry the questions
+#                 files gain (a "### Q-NNN" heading BASE lacks) and be added by
+#                 no other brief. A brief with an Asked: line deleted, or
+#                 renamed to another file name, refuses.
 #                 As --main-log, BASE's objects are not re-hashed: it catches the
 #                 orchestrator's own slip, not a forged commit.
 #   --land-cycle  lands the orchestrator's chore branch (D13; run in its
@@ -1765,6 +1768,7 @@ log_class() {
     q=""
     if [[ "$x" != self-merge ]]; then [[ "${m[3]-}" =~ ^Build-loop-approved:\ (Q-[0123456789]+)$ ]] || return 0; q="${BASH_REMATCH[1]}"; fi
     gate_msg "$b" "$x" "$p" "$q" > "$GATE_TMP/want" && cmp -s "$GATE_TMP/want" "$GATE_TMP/m" && CLASS=gate
+  # chore_msg's subject, or git merge's with " into X" or ": ..." after it.
   elif [[ ${#ps[@]} -eq 2 && "$SUBJ" =~ ^Merge\ branch\ \'(chore/dev-cycle-[0123456789]{4}-[0123456789]{2}-[0123456789]{2}(-[0123456789]{4})?)\'($|\ into\ |:) ]]; then
     b="${BASH_REMATCH[1]}"
     clean_merge "${ps[0]}" "${ps[1]}" "$t" || return 0
@@ -1901,21 +1905,32 @@ asked() { LC_ALL=C awk "$FENCE_AWK"'{ sub(/\r$/, "") } fence($0) { next } /^Aske
 # SIDE naming the listing's side in refusals. Prints "refuse PATH: WHY" per
 # finding; returns 1 on any.
 cycle_rules() {
-  local base="$1" side="$2" i p lp f k md id bad=0 qi=() t="$GATE_TMP/cy"
-  local -A ao=() an=() ap=() aop=()
+  local base="$1" side="$2" i p lp w f o n a x id k bad=0 qi=() t="$GATE_TMP/cy"
+  local -A ao=() an=() ap=() aop=() used=()
   for i in "${!RAW_P[@]}"; do
     p="${RAW_P[i]}"; lp="$(lower "$p")"
-    # An in-cycle fix edits only docs --check-fix allows: never the gate's code,
-    # which decides what an answer is (U3c final security F2), nor a file
-    # sessions or the cycle read as truth, other than the cycle's own (truthrule, which
-    # --check-fix refuses too: i1 security F2).
-    if [[ "$lp" =~ $GATE_CODE ]]; then echo "refuse $p: the gate's own code; an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
-    if truthrule "$lp" && [[ "$TRUTH_WHY" != cycle ]]; then echo "refuse $p: a file sessions or later cycles read as truth ($TRUTH_WHY); an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
+    # An in-cycle fix never edits the gate's code, which decides what an
+    # answer is (U3c final security F2), nor a file sessions or later cycles
+    # read as truth, other than the cycle's own (the lib's truthrule; i1
+    # security F2). --check-fix refuses both, and more (its import walk). A
+    # cycle file spelled in another case is not one these rules read (i2
+    # security F-d).
+    if [[ "$lp" =~ $GATE_CODE ]]; then echo "refuse $p: the gate's own code; an in-cycle fix never edits it"; bad=1; continue; fi
+    if truthrule "$lp" && [[ "$TRUTH_WHY" != cycle ]]; then
+      w="the dev cycle's settings file"; [[ "$TRUTH_WHY" == settings ]] || w="$(floor_why "$TRUTH_WHY")"
+      echo "refuse $p: $w; an in-cycle fix never edits it (--check-fix refuses it too)"; bad=1; continue
+    fi
+    if [[ "$TRUTH_WHY" == cycle && "$p" != "$lp" ]]; then echo "refuse $p: one of the dev cycle's own files, spelled in another case, which these rules do not read"; bad=1; continue; fi
     if anybrief "$p"; then
-      # Each side's first Asked: line, by file name: a move to closed/ is a D and an A side.
+      # Each side's first Asked: line, by file name: a move to closed/ is a D
+      # and an A side. One path per name and side, or one would hide the other (i2 security F-c).
+      f="${p##*/}"
       if ! cyc_blob "${RAW_OM[i]}" "${RAW_OO[i]}" "$t.o" || ! cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$t.n"; then echo "refuse $p: a side is not a regular file (mode 100644), or could not be read"; bad=1; continue; fi
-      [[ "${RAW_OM[i]}" == 000000 ]] || { ao[${p##*/}]="$(asked "$t.o")"; aop[${p##*/}]="$p"; }
-      [[ "${RAW_NM[i]}" == 000000 ]] || { an[${p##*/}]="$(asked "$t.n")"; ap[${p##*/}]="$p"; }
+      if [[ ( "${RAW_OM[i]}" != 000000 && -n "${aop[$f]+set}" ) || ( "${RAW_NM[i]}" != 000000 && -n "${ap[$f]+set}" ) ]]; then
+        echo "refuse $p: another brief path with its file name changes too, and the Asked: rule matches briefs by file name"; bad=1; continue
+      fi
+      [[ "${RAW_OM[i]}" == 000000 ]] || { ao[$f]="$(asked "$t.o")"; aop[$f]="$p"; }
+      [[ "${RAW_NM[i]}" == 000000 ]] || { an[$f]="$(asked "$t.n")"; ap[$f]="$p"; }
       continue
     fi
     case "$p" in
@@ -1935,12 +1950,48 @@ cycle_rules() {
       while IFS= read -r k; do echo "refuse $p: $k"; bad=1; done < "$t.w"
     fi
   done
+  questions_rules "$base" "$side" "${qi[@]}" || bad=1
+  # Step 6 only appends IDs to a brief's first Asked: line, each a Q-NNN or
+  # Q-NNN@SHA (D4) naming an entry this change files ($t.new) and no other
+  # brief takes: an ID dropped, changed, reused or shared would apply another
+  # brief's question's answer to this one, since --check-answer matches the
+  # ID alone (row 745; i1 security F1, F3; i2 F-a, F-b). A brief deleted, or
+  # renamed to another file name, with an Asked: line refuses too.
+  for f in "${!ao[@]}"; do
+    [[ -z "${ao[$f]}" || -n "${an[$f]+set}" ]] || { echo "refuse ${aop[$f]}: deleted or renamed with its Asked: line; the cycle only moves a brief to closed/ under its name"; bad=1; }
+  done
+  for f in "${!an[@]}"; do
+    o="${ao[$f]-}"; n="${an[$f]}"
+    [[ "$n" != "$o" ]] || continue
+    if [[ -z "$o" ]]; then a="${n#Asked:}"; a="${a# }"
+    elif [[ "$n" == "$o, "* ]]; then a="${n#"$o, "}"
+    else echo "refuse ${ap[$f]}: its first Asked: line drops or changes an ID it held; the cycle only appends one"; bad=1; continue; fi
+    a+=", "
+    while [[ -n "$a" ]]; do
+      x="${a%%, *}"; a="${a#*, }"
+      if ! [[ "$x" =~ ^(Q-[0123456789]+)(@[0123456789abcdef]{7,64})?$ ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds \"$x\", which is not Q-NNN or Q-NNN@SHA"; bad=1; continue; fi
+      id="${BASH_REMATCH[1]}"
+      if ! grep -qxF -- "$id" "$t.new"; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which names no question entry this change files"; bad=1
+      elif [[ -n "${used[$id]-}" ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which another brief's Asked: line adds too"; bad=1
+      else used[$id]=1; fi
+    done
+  done
+  return "$bad"
+}
+# questions_rules BASE SIDE I...: cycle_rules' questions-file rules over the
+# RAW_* records I... (the questions files' indices); also writes
+# $GATE_TMP/cy.new, the IDs of the entries the listing files (a "### Q-NNN"
+# heading BASE lacks), one per line: empty when no questions file changed or
+# a read failed. Prints refusals; returns 1 on any.
+questions_rules() {
+  local base="$1" side="$2" f k i p md id bad=0 t="$GATE_TMP/cy"
+  shift 2
   : > "$t.new"
-  if [[ ${#qi[@]} -eq 0 ]]; then asked_rule "$t.new" || bad=1; return "$bad"; fi
+  [[ $# -gt 0 ]] || return 0
   # Both questions files on each side, the unchanged one included (an entry can move between them).
   : > "$t.qo"; : > "$t.qn"
   for f in docs/working/questions.md docs/working/questions-archive.md; do
-    k=""; for i in "${qi[@]}"; do [[ "${RAW_P[i]}" != "$f" ]] || k="$i"; done
+    k=""; for i in "$@"; do [[ "${RAW_P[i]}" != "$f" ]] || k="$i"; done
     if [[ -n "$k" ]]; then
       cyc_blob "${RAW_OM[k]}" "${RAW_OO[k]}" "$t.o" && cyc_blob "${RAW_NM[k]}" "${RAW_NO[k]}" "$t.n" || { echo "refuse $f: a side is not a regular file (mode 100644), or could not be read"; return 1; }
     else
@@ -1964,38 +2015,8 @@ cycle_rules() {
     if [[ "$k" == gone ]]; then echo "refuse docs/working/$f: $i's heading, Needs or answer lines changed or are gone, and $i is not in --answered"
     else echo "refuse docs/working/$f: $i is a new entry filed answered (Status ANSWERED or an answer line), and $i is not in --answered"; fi
   done < <(LC_ALL=C sort "$t.w")
-  # The entries this change files: a heading the listing has and BASE lacks.
   LC_ALL=C awk -F '\t' 'FILENAME == ARGV[1] { if ($3 == "h") o[$1]; next } $3 == "h" && !($1 in o) { print $1 }' "$t.qo" "$t.qn" > "$t.new" \
-    || { echo "refuse docs/working/questions.md: the entries could not be compared"; return 1; }
-  asked_rule "$t.new" || bad=1
-  return "$bad"
-}
-# asked_rule NEW: step 6 only appends IDs to a brief's first Asked: line, each
-# an entry this change files (NEW, one ID per line): an ID dropped, changed,
-# or reused from another entry would apply that question's answer to this
-# brief, since --check-answer matches the ID alone (row 745; i1 security F1).
-# A brief deleted, or renamed to another file name, with an Asked: line
-# refuses too (i1 security F3). Reads cycle_rules' ao, an, ap and aop (bash
-# scope is dynamic); called only there. Returns 1 on any refusal.
-asked_rule() {
-  local f o n a x bad=0
-  for f in "${!ao[@]}"; do
-    [[ -z "${ao[$f]}" || -n "${an[$f]+set}" ]] || { echo "refuse ${aop[$f]}: deleted or renamed with its Asked: line; the cycle only moves a brief to closed/ under its name"; bad=1; }
-  done
-  for f in "${!an[@]}"; do
-    o="${ao[$f]-}"; n="${an[$f]}"
-    [[ "$n" != "$o" ]] || continue
-    if [[ -z "$o" ]]; then a="${n#Asked:}"; a="${a# }"
-    elif [[ "$n" == "$o, "* ]]; then a="${n#"$o, "}"
-    else echo "refuse ${ap[$f]}: its first Asked: line drops or changes an ID it held; the cycle only appends one"; bad=1; continue; fi
-    # Each added item, ", "-separated: Q-NNN, or Q-NNN@MARKER-SHA (D4).
-    a+=", "
-    while [[ -n "$a" ]]; do
-      x="${a%%, *}"; a="${a#*, }"
-      [[ "$x" =~ ^(Q-[0123456789]+)(@|$) ]] && grep -qxF -- "${BASH_REMATCH[1]}" "$1" \
-        || { echo "refuse ${ap[$f]}: its Asked: line adds $x, which names no question entry this change files"; bad=1; }
-    done
-  done
+    || { : > "$t.new"; echo "refuse docs/working/questions.md: the entries could not be compared"; return 1; }
   return "$bad"
 }
 # land_cycle: --land-cycle's lines: HEAD's chore branch lands on the default
