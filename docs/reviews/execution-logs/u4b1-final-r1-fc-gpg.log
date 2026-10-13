@@ -1,0 +1,24 @@
+2026-10-13T22:29:14Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-rwwR
+hg line identical to SKILL.md
+--- control: plain git commit
+error: gpg failed to sign the data
+fatal: failed to write commit object
+plain commit exit 128
+control: gpg ran (1 lines)
+--- hg commit
+hg commit exit 0
+--- hg merge (non-ff)
+hg merge exit 0
+d93514613c9aa1aa80810ba83ba1290f3b562304 N Merge branch 'side'
+45762755fc77bdfe6f00e61f2e08091f4574efbb N hgcommit
+338e5104ce7808c66a8407d9b1e3a945206e9083 N side
+hg: gpg did not run
+--- identity: planted author.name/committer.name vs env
+author=Real <r@r> committer=Real <r@r>
+--- identity with env unset (only user.* from global would apply; here planted author.*)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+author=PLANT committer=PLANT
+cleaned
+exit 0

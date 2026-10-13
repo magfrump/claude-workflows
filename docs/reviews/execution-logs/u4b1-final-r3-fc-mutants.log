@@ -1,0 +1,11 @@
+TEMP /tmp/u4b1-fc3-wZaq
+HEAD 4c9117171232f5984a5f1aa1bdfdb90bd7745c69
+baseline: bats rc=0; ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+0
+mutant A (hg drops commit.gpgSign): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+mutant B (lib drops commit.gpgSign): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+mutant C (snippet drops commit.gpgSign): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+mutant D (hg drops GIT_NO_REPLACE_OBJECTS): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+mutant E (second hg line): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+mutant F (hg pair order swapped): bats rc=1; not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1) 
+removed /tmp/u4b1-fc3-wZaq

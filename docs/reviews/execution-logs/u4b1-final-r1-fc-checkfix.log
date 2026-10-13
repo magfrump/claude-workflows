@@ -1,0 +1,30 @@
+2026-10-13T22:33:02Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-0U0U
+=== --check-fix before staging
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+skip docs/imported-x.md: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead
+skip docs/working/fc1-notes.md: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead
+skip docs/reviews/fc1-rev.md: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead
+ok docs/fc1-plain.md
+ok docs/agents.md/old.md
+skip docs/agents.md/new.md: no tracked file (or ignored file under docs/working/) matches
+skip docs/gemini.md/unstaged.md: no tracked file (or ignored file under docs/working/) matches
+skip docs/fc1-link.md: no tracked file (or ignored file under docs/working/) matches
+exit 0
+=== --cycle-diff
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok
+exit 0
+=== --check-fix after staging
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok docs/agents.md/new.md
+ok docs/gemini.md/unstaged.md
+ok docs/agents.md/old.md
+skip docs/fc1-link.md: reached through a symlink, or not a regular file
+exit 0
+cleaned
+exit 0

@@ -1,0 +1,63 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TEMP /tmp/u4b1-fc3-PyQV
+HG_LINE identical to SKILL.md
+CONTROL plain git commit rc=128 gpgran=yes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+HG commit rc=0 gpgran=no
+HG commit ident: Good <good@x> / GoodC <goodc@x>
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+HG merge rc=0 gpgran=no parents=2
+HG merge ident: Good <good@x> / GoodC <goodc@x>
+CONTROL plain git merge rc=128 gpgran=yes
+STATE repo commit.gpgSign: rc=0 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok
+STATE clean: rc=0 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok
+STATE caller COUNT commit.gpgSign: rc=2 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse state commit.gpgsign: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)
+STATE caller PARAMETERS commit.gpgSign: rc=2 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse state commit.gpgsign: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)
+STATE exported env: rc=0 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok
+STATE filter+merge driver: rc=2 out=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge
+refuse state merge.y.driver: set in config, it can make the gate's git run a command or change its merge
+MAINLOG bootstrap: rc=2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1798: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+main 2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b -
+refuse main-log: 0000000000000000000000000000000000000000 is not on the default branch's first-parent history at 2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b
+MAINLOG 3 back: rc=2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1798: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+main 2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b 3
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1763: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+other 15a0d688e0b7657b196af27ebf254be50d431204 Merge branch 'feat/build-loop-u4a': --land-cycle lands the orchestrator's chore branch from the main it checked, judging the merge; cycle rules bound to the cycle's own paths and briefs
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1763: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+other 596966f015a5f3d061b12f0761b041f3acfdca54 docs(checkpoint): U4a merged at 15a0d688 under Q-141 interim [1]; next U4b with U4a's hand-offs
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1763: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+other 2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b hgcommit
+MAINLOG at main: rc=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1798: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+main 2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b 0
+MAINLOG short: rc=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--main-log takes one full 40- or 64-hex commit id (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... | --land-cycle --main SHA [--answered Q-NNN]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])
+WT add rc=0 branch=chore/dev-cycle-2026-10-13-2200
+WT remove rc=0
+2fde50d9a6ccd8db95c2a0cde17eb3e4ec4f738b
+revparse rc=0
+removed /tmp/u4b1-fc3-PyQV

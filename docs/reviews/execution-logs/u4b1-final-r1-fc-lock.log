@@ -1,0 +1,15 @@
+2026-10-13T22:30:51Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-uTeL
+hc.out: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+waiting
+processes before kill:
+    PID    PPID CMD
+1261475 1261471 flock -o /tmp/u4b1-fc1-uTeL/health-check.lock bash /tmp/u4b1-fc1-uTeL/hc.sh
+    PID CMD
+1261471 bash /tmp/u4b1-fc1-uTeL/hc.sh
+killed 1261471
+RESULT: child ran after the parent was stopped by its PID: child ran (took the lock)
+leftover pids: none
+cleaned
+exit 0

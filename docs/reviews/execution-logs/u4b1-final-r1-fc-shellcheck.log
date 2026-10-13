@@ -1,0 +1,4 @@
+2026-10-13T22:35:17Z
+cwd /workspace/.claude/wt-build-loop-u4b1
+shellcheck -S warning exit 0
+bats file exit 0

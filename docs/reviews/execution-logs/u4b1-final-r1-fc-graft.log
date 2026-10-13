@@ -1,0 +1,7 @@
+2026-10-13T22:34:36Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-G0RY
+before: 3 commits; merge-base --is-ancestor C1 C3: yes
+after grafts: 1 commits; is-ancestor C1 C3: no
+cleaned
+exit 0

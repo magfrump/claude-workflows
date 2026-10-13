@@ -1,0 +1,11 @@
+TEMP /tmp/u4b1-fc3-WerX
+timeout pid 1294620, hc.sh pid 1294623
+tree before kill:
+    PID    PPID COMMAND
+1294627 1294623 flock -o /tmp/u4b1-fc3-WerX/health-check.lock bash /tmp/u4b1-fc3-WerX/hc.sh
+after kill of 1294623: alive? no
+remaining flock waiters from this probe:
+1294627 flock -o /tmp/u4b1-fc3-WerX/health-check.lock bash /tmp/u4b1-fc3-WerX/hc.sh
+ran marker after lock released: yes
+waiting for another health check in this repository (health-check.lock)
+removed /tmp/u4b1-fc3-WerX

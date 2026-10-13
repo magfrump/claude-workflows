@@ -1,0 +1,7 @@
+TEMP /tmp/u4b1-fc3-6VSQ
+HG merge with merge.verifySignatures+gpg.program in .git/config: rc=128 gpgran=yes
+fatal: Commit 7878757 does not have a GPG signature.
+STATE: rc=2
+refuse state merge.verifysignatures: set in config, it can make the gate's git run a command or change its merge
+refuse state gpg.program: set in config, it can make the gate's git run a command or change its merge
+removed /tmp/u4b1-fc3-6VSQ

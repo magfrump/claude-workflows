@@ -1,0 +1,16 @@
+TEMP /tmp/u4b1-fc3-DY1H
+[working] check-fix (before staging): skip docs/working/fc3-w.md: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead
+[working] cycle-diff rc=0: ok
+[reviews] check-fix (before staging): skip docs/reviews/fc3-r.md: in-cycle fixes edit only tracked .md documentation under docs/ (not working/, human-author/, reviews/, decisions/, dev-cycle.md, constraints.md, dot-directories or dotfiles, or instruction files) and README.md; file it instead
+[reviews] cycle-diff rc=0: ok
+[imported] check-fix (before staging): skip docs/fc3-imported.md: an instruction file names it after an @ (directly or through another import), so it may be read as instructions; file it instead
+[imported] cycle-diff rc=0: ok
+[new-below-instr-dir] check-fix (before staging): skip docs/claude.md/new.md: no tracked file (or ignored file under docs/working/) matches
+[new-below-instr-dir] cycle-diff rc=0: ok
+[tracked-below-instr-dir] check-fix (before staging): ok docs/claude.md/tracked.md
+[tracked-below-instr-dir] cycle-diff rc=0: ok
+[symlink] check-fix (before staging): skip docs/fc3-link.md: no tracked file (or ignored file under docs/working/) matches
+[symlink] cycle-diff rc=0: ok
+[control docs/dd-portable.md] check-fix (before staging): ok docs/dd-portable.md
+[control docs/dd-portable.md] cycle-diff rc=0: ok
+removed /tmp/u4b1-fc3-DY1H

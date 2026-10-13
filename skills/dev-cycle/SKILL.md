@@ -23,7 +23,9 @@ no `build-loop.sh` call and no step that needs one; WT made as step 0.3 says, fr
 default branch's commit (`hg -C MAIN_WT rev-parse --verify refs/heads/main`, or master);
 the Rules' `hg` for every git command; and the branch landed through `pr-prep`. The briefs
 go to the user, who starts each. With no `--state` run, nothing refuses the repository
-config `hg` cannot switch off (a filter or merge driver): the by-hand cycle carries that gap.
+state `hg` cannot switch off (a filter, merge or diff driver, signature verification on a
+merge, grafts, alternates and the rest of `--state`'s list): the by-hand cycle carries that
+gap.
 
 ## Rules
 
@@ -47,9 +49,11 @@ config `hg` cannot switch off (a filter or merge driver): the by-hand cycle carr
   `cd WT && bash -s -- SCRIPT ARG... <<'D6'`, then the block below and a last
   line `D6`, pasted whole; never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
   claude-workflows it runs main's own committed scripts, elsewhere the root-owned image copy,
-  so nothing a build loop edits runs as the gate. Read a call's first line before its mode's
+  so nothing a build loop edits in a working tree runs as the gate (a loop that moves main
+  is the gap Q-140 names). Read a call's first line before its mode's
   output: `refuse d6: WHY` (exit 2) means nothing ran. A `build-loop.sh` answer is exit 0,
-  or exit 2 with the mode's own refuse lines; any other exit (1 included), or a call the
+  or exit 2 with the lines its mode documents for it (refuse lines, `--main-log`'s `other`
+  lines, `--check`'s verdict lines); any other exit (1 included), or a call the
   Bash tool timed out, means nothing was decided (a writing mode may have stopped part
   way). `dev-cycle.sh`'s check modes follow the paths rule below. Each stop ends the
   iteration there, with no record (its `Main at:` would move the next SINCE): the line and
@@ -66,9 +70,10 @@ config `hg` cannot switch off (a filter or merge driver): the by-hand cycle carr
   ```
 
   A build loop can write `.git/config` and `~/.gitconfig` as easily as a file. `hg` reads
-  no global or system config and runs no hook, fsmonitor command, signing program or
+  no global or system config and runs no hook, fsmonitor command, commit signing or
   replaced object; a test holds its pairs to the lib's `HARDEN` list. It does not switch off
-  what the repository's own config can still name (a filter, a merge driver): `--state`
+  what the repository's own config can still name (a filter, a merge driver, signature
+  verification on a merge): `--state`
   refuses those, but only when it runs, so run it again (through the D6 block, from WT)
   right before the iteration's commits, and treat a refusal there as step 0 does. A loop
   that plants one between that check and the commit is a residual for Q-103's list (U5).
@@ -141,8 +146,8 @@ records, instruction files) is filed, not written. Run `--check-fix` on each fix
 right before staging it, and stage only paths it, or `--check-write` for the cycle's own
 files, printed `ok` for: the cycle rules `build-loop.sh --cycle-diff` applies to the chore
 commit repeat only part of `--check-fix` (a `.md` under `docs/working/` or `docs/reviews/`,
-a doc an instruction file imports, a new file below a directory named like an instruction
-file, and a symlink pass them; rows 764, 769, 771). Briefs in the directory are found only
+a doc an instruction file imports, and a symlink pass them; rows 764, 769, 771; a new
+file, which `--check-fix` refuses wherever it is, passes them too). Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
 comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
@@ -215,8 +220,8 @@ so the next one starts from the same `Main at:`:
    checkout, MAIN_WT, which the cycle reads but never commits in), before any other git
    command. `ok` goes on; refuse lines (planted `.git` state: replace refs, grafts, hooks or
    filter config, a default branch that is not one plain main or master...) are a stop,
-   quoted in one `you: judgment` entry unless an open one quotes the same lines; so is an
-   exit 1, with its stderr.
+   quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
+   exit is a stop as the Rules say.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the newest `Main at:` line of the
    newest record on the default branch (read with `hg -C MAIN_WT show`, never from a
    working tree); with no such line yet, pass 40 zeros: it prints `main MAIN -` and refuses,
@@ -259,12 +264,15 @@ last good one.
 
 - Quiesce (D14): no subagent this iteration started is still running; build loops and other
   sessions' agents keep running, and only a process this session started is ever stopped, by
-  its PID, never by a name or pattern. Then run the repo's health check from WT, if it has
-  one (e.g. `scripts/health-check.sh` in claude-workflows), to a file, in the background,
+  its PID or process group, never by a name or pattern. Then run the repo's health check
+  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows), to a file,
+  in the background as its own process group (`setsid scripts/health-check.sh > LOG 2>&1`),
   and wait for it to finish before steps 2–4b start their own tests and subagents. It takes
-  a lock in the git common directory, so it waits while a loop's gate runs (it says so once);
-  a wait past an hour is recorded, the run is stopped by its PID (it would still take the
-  lock later), and the step's check is skipped (row 750).
+  a lock in the git common directory, so it waits while a loop's own health check runs (it
+  says so once). A wait past an hour is recorded, the run's whole process group is stopped
+  (`kill -- -PGID`, PGID from `ps -o pgid= -p PID`: stopping its PID alone leaves the
+  waiting `flock` child, which would take the lock later and run the check), and the step's
+  check is skipped (row 750).
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
   pre-existing, flaky). No health check: "skipped: none in this repo".
 - If the digest's section 8 lists `docs/`, `docs/working/` or a questions file, skip the
@@ -406,7 +414,7 @@ docs/working/questions.md.
      keep-or-drop below says drop → Ideas, with the reason, and the
      brief's status line becomes `Status: dropped`. Keep-or-drop says done → Done, with the
      status line set to `Status: done` and the user's answer as the source. Either way,
-     create `docs/working/briefs/closed/` if it is missing, `git mv` the brief there (same
+     create `docs/working/briefs/closed/` if it is missing, `hg mv` the brief there (same
      file name; the destination passes `--check-write`; a brief already under `closed/`
      stays) and point the roadmap line there.
      Done never depends on the branch, so a squash, a rebase or a deleted branch does not

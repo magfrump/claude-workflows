@@ -1,0 +1,63 @@
+2026-10-13T22:29:38Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-EE8R
+=== state clean
+ok
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 0
+=== state with -c commit.gpgSign=true (GIT_CONFIG_PARAMETERS)
+refuse state commit.gpgsign: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== state with GIT_CONFIG_COUNT commit.gpgSign
+refuse state commit.gpgsign: set by the caller's git -c or GIT_CONFIG_COUNT pairs, a key the state gate refuses or one the gate's own hardening sets (a git -c pair wins over it)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== state with repo commit.gpgSign/user.signingKey
+ok
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 0
+=== state with filter
+refuse state filter.x.clean: set in config, it can make the gate's git run a command or change its merge
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== state with merge driver
+refuse state merge.y.driver: set in config, it can make the gate's git run a command or change its merge
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== state with author.name
+ok
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 0
+=== main-log 40 zeros
+main 596966f015a5f3d061b12f0761b041f3acfdca54 -
+refuse main-log: 0000000000000000000000000000000000000000 is not on the default branch's first-parent history at 596966f015a5f3d061b12f0761b041f3acfdca54
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: /workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1798: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== main-log HEAD~3 (first-parent?)
+main 596966f015a5f3d061b12f0761b041f3acfdca54 3
+other 413ce9dddaaa53e6b34bf39ac3515d11d77af585 docs(questions): Q-141, U4a's confirming pass found the Asked: binding residue (merge stopped; interim [1])
+other 15a0d688e0b7657b196af27ebf254be50d431204 Merge branch 'feat/build-loop-u4a': --land-cycle lands the orchestrator's chore branch from the main it checked, judging the merge; cycle rules bound to the cycle's own paths and briefs
+other 596966f015a5f3d061b12f0761b041f3acfdca54 docs(checkpoint): U4a merged at 15a0d688 under Q-141 interim [1]; next U4b with U4a's hand-offs
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: /workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1798: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: /workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1763: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: /workspace/.claude/wt-build-loop-u4b1/scripts/build-loop.sh: line 1763: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 2
+=== main-log short id
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+stderr: --main-log takes one full 40- or 64-hex commit id (usage: build-loop.sh --settings | --status BRIEF... | --marker BRIEF | --state | --main-log SINCE | --cycle-diff [--answered Q-NNN]... | --land-cycle --main SHA [--answered Q-NNN]... | --check BRIEF... [--expect SHA] | --merge BRIEF --expect SHA [--approved Q-NNN] | --start BRIEF [--dir DIR] | --prompt BRIEF [--dir DIR] [--steal])
+exit 1
+cleaned
+exit 0
