@@ -10,8 +10,8 @@ setup() {
     R="$BATS_TEST_TMPDIR/r"; L="$BATS_TEST_TMPDIR/log"
     mkdir -p "$R/scripts/lib" && cd "$R" && git init -q || return 1
     cp "$W/scripts/health-check.sh" scripts/ && cp "$W"/scripts/lib/{log-format,md-utils,skill-paths}.sh scripts/lib/
-    # The stub runner: --fast logs its run's start and end a second apart.
-    printf '#!/bin/sh\n[ "$1" = --fast ] || exit 0\necho "in $RUN" >> "%s"; sleep 1; echo "out $RUN" >> "%s"\n' "$L" "$L" > "$BATS_TEST_TMPDIR/stub"
+    # The stub runner: --fast logs its run's start and end a second apart; --slow under LEAVE leaves a process running.
+    printf '#!/bin/sh\nif [ "$1" != --fast ]; then [ -z "$LEAVE" ] || { sleep 5 >/dev/null 2>&1 3>&- & }; exit 0; fi\necho "in $RUN" >> "%s"; sleep 1; echo "out $RUN" >> "%s"\n' "$L" "$L" > "$BATS_TEST_TMPDIR/stub"
     chmod +x "$BATS_TEST_TMPDIR/stub"
     export HEALTH_CHECK_RUN_TESTS="$BATS_TEST_TMPDIR/stub"; unset HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_LOCK_HELD
 }
@@ -26,14 +26,17 @@ setup() {
     [ -f .git/health-check.lock ]
 }
 
-@test "a run inside a run takes no lock; a lock path that is not a plain file stops the run (T43)" {
+@test "a run inside a run takes no lock, nor does a process a run leaves behind; a lock path that is not a plain file stops the run (T43)" {
     : > .git/health-check.lock
     flock .git/health-check.lock sleep 4 &
     sleep 0.5
     RUN=n HEALTH_CHECK_LOCK_HELD=1 run bash scripts/health-check.sh
     [[ "$output" != *waiting* ]] && grep -qx "out n" "$L" || { echo "$output"; return 1; }
     wait
+    # A process a run leaves behind holds no lock: the next run does not wait for it.
+    RUN=p LEAVE=1 bash scripts/health-check.sh > /dev/null 2>&1 || true; RUN=q run bash scripts/health-check.sh
+    [[ "$output" != *waiting* ]] && grep -qx "out q" "$L" || { echo "$output"; return 1; }
     rm .git/health-check.lock; mkfifo .git/health-check.lock
     run bash scripts/health-check.sh
-    [ "$status" -eq 1 ] && [[ "$output" == *"health-check.lock in $R/.git is not a plain file or cannot be opened"* ]] && [ "$(grep -c "^in " "$L")" -eq 1 ] || { echo "$output"; return 1; }
+    [ "$status" -eq 1 ] && [[ "$output" == *"health-check.lock in $R/.git is not a plain file"* ]] && [ "$(grep -c "^in " "$L")" -eq 3 ] || { echo "$output"; return 1; }
 }

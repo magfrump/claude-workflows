@@ -24,7 +24,7 @@
 #                            sets it for its own runs.
 #   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
-#   HEALTH_CHECK_LOCK_HELD   Set by a run once it holds health-check.lock (one
+#   HEALTH_CHECK_LOCK_HELD   Set for the run that holds health-check.lock (one
 #                            run at a time per repository: take_lock), so a
 #                            run it starts takes no lock and never waits on it.
 #
@@ -1098,21 +1098,30 @@ check_questions_doc() {
 # run inside a run (check 5's suites include health-check.bats, which runs this
 # script) inherits HEALTH_CHECK_LOCK_HELD and takes no lock, or it would wait
 # on its own parent. Outside a git repository there is nothing to share. Only a
-# plain file is opened (a FIFO would block), as build-loop.sh's dispatch lock.
+# plain file is locked (a FIFO would block), as build-loop.sh's dispatch lock.
+# flock(1) holds the lock in its own process and runs this script again as its
+# child with the lock's descriptor closed (-o): no suite, and nothing a test
+# leaves running, inherits the lock, so it ends with this run. Exit 75 is
+# flock's "held elsewhere" (-E), which this script never exits with.
 take_lock() {
-    local d lk
+    local d lk rc=0
     [[ -z "${HEALTH_CHECK_LOCK_HELD:-}" ]] || return 0
     d="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 0
     lk="$d/health-check.lock"
-    if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]] || ! { exec 8>>"$lk"; } 2>/dev/null; then
-        red "health-check.lock in $d is not a plain file or cannot be opened"; exit 1
+    if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]]; then
+        red "health-check.lock in $d is not a plain file"; exit 1
     fi
-    flock -n 8 || { yellow "waiting for another health check in this repository (health-check.lock)"; flock 8; }
     export HEALTH_CHECK_LOCK_HELD=1
+    flock -n -E 75 -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+    if [[ "$rc" -eq 75 ]]; then
+        yellow "waiting for another health check in this repository (health-check.lock)"
+        rc=0; flock -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+    fi
+    exit "$rc"
 }
 
 main() {
-    take_lock
+    take_lock "$@"
     bold "Repo Health Check"
     bold "================="
 
