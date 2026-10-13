@@ -231,7 +231,7 @@
 #                 added). Each item added (", "-separated) must be exactly
 #                 Q-NNN or Q-NNN@SHA (7-64 hex), name an entry the questions
 #                 files gain (a "### Q-NNN" heading BASE lacks) whose heading
-#                 (after " · ") is WORDS-STEM-N (WORDS lower-case letters and
+#                 (after " · ") is WORDS-STEM-N (WORDS lower-case letter runs joined by single
 #                 hyphens, STEM the brief's file name without .md, N digits,
 #                 as keep-or-drop-STEM-N), and be added once (by one brief,
 #                 once). When a questions file is refused whole or unread,
@@ -1969,7 +1969,7 @@ cycle_rules() {
   while IFS=$'\t' read -r id k; do newh[$id]="$k"; done < "$t.new"
   # Step 6 only appends IDs to a brief's first Asked: line, each a Q-NNN or
   # Q-NNN@SHA (D4) naming an entry this change files ($t.new) for this brief
-  # (its heading's slug is WORDS-STEM-N, WORDS letters and hyphens only, so
+  # (its heading's slug is WORDS-STEM-N, WORDS lower-case letter runs joined by single hyphens, so
   # no other stem, which starts with a date, fits before STEM: confirming
   # security F-A; as step 6's keep-or-drop-STEM-N), added once across the briefs: an ID
   # dropped, changed, reused or shared would apply another brief's question's

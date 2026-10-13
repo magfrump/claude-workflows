@@ -1,4 +1,5 @@
-Commit: ca95fead
+Commit: 8389c477
+Loop closed at 8389c477
 
 # Code Review Rubric: feat/build-loop-u4a
 
@@ -154,4 +155,10 @@ Reports: `code-fact-check-report-2026-10-13-u4a-confirm.md` (with `## Submitted 
 | --main-log's chore class reads only docs/working/cycles/cycle-YYYY-MM-DD.md, 100644, A or M | chore_record + isrecord | S4, executed |
 
 Next (Q-141 interim [1]): a second confirming pass (k=1 fact-check + security) over the D1/D2 fix; merge if no new Must Fix or Must Address.
+
+## Second confirming pass (Q-141 interim [1]; fix range ca95fead..8389c477: k=1 fact-check, security)
+
+Reports: `code-fact-check-report-2026-10-13-u4a-confirm2.md` (12 claims: 10 Verified, 2 Mostly accurate wording, 0 Incorrect; F-A shape refused at HEAD, passed on ca95fead), `security-review-2026-10-13-u4a-confirm2.md` (F-A, F-B closed; F-1 Informational: the lowered allowlist also admits F-C/F-D shapes under a differently cased docs/, covered by their override rows). **No new Must Fix or Must Address: merge.** The two wording items (WORDS is lower-case letter runs joined by single hyphens) are fixed in the merge's last commit, unreviewed text.
+
+**Status:** loop closed at 8389c477. Review converged after 3 iterations, a confirming pass and a second confirming pass (Q-141 interim [1]); 0 Must Fix open; Must Address all fixed (A1-A3, B1-B4, C1-C3, D1). Single-sample review; absence of findings is not an attestation.
 
