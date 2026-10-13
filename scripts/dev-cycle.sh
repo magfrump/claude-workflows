@@ -80,7 +80,10 @@
 # Every revisit trigger is printed every run (an output line over 4096 bytes is cut);
 # nothing carries forward.
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
-# project. Read-only: writes nothing to the repo (one temp file, removed on exit).
+# project. Its git reads are hardened (the lib's git_harden): they read no user
+# or system git config (a repository owned by another user that needs a global
+# safe.directory reads as "Not inside a git repository") and no transport (a
+# partial clone's missing object fails). Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
 # skip is an answer, not an error); 1 bad usage, a GIT_CONFIG_COUNT that is not
 # plain decimal, not a git repo, no perl or lib/dev-cycle-read.sh, or no

@@ -259,10 +259,11 @@ shim() {
     d6 dev-cycle.sh
     [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-main\n'* ]] || { show; return 1; }
     [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
-    # An extracted file whose bytes differ from main's id is never run: a git that appends to every blob it prints.
+    # A byte the reader did not hash is never used: a git whose cat-file --batch alters one word of the blobs it prints.
     git checkout -q -- scripts; S="$BATS_TEST_TMPDIR/tamper"; mkdir -p "$S"
-    printf '#!/bin/bash\n"%s" "$@"; s=$?; [[ " $* " != *" cat-file blob "* ]] || echo "echo tampered"; exit "$s"\n' "$(command -v git)" > "$S/git"; chmod +x "$S/git"
-    PATH="$S:$PATH" d6_is "refuse d6: the extracted scripts/build-loop.sh does not hash to main's copy"
+    printf '#!/bin/bash\nif [[ " $* " == *" --batch "* ]]; then "%s" "$@" | sed -u s/pipefail/PIPEFAIL/; else exec "%s" "$@"; fi\n' "$(command -v git)" "$(command -v git)" > "$S/git"; chmod +x "$S/git"
+    PATH="$S:$PATH" d6 build-loop.sh --settings
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] && [[ "$stderr" == *" does not hash to its id" ]] || { show; return 1; }
     [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
     # The SKILL.md block and test/lib/d6-snippet.bash are byte-equal (T33): pending until U4 writes the block.
 }
@@ -284,9 +285,9 @@ shim() {
 
 # inplace ID FROM: the loose object file for ID now holds FROM's object, as a same-uid writer could leave it.
 inplace() { local o=".git/objects/${1:0:2}/${1:2}" f=".git/objects/${2:0:2}/${2:2}"; chmod u+w "$o"; cp "$f" "$o"; }
-A1="refuse d6: an object on main's first-parent history or a tree above scripts/lib/ does not hash to its id"
+A1="refuse d6: main's first-parent history, the trees above scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
 
-@test "the D6 snippet refuses a tree above scripts/ rewritten in place, which points ls-tree at planted bytes (T36, U3b3 i1 A1)" {
+@test "the D6 snippet refuses the scripts/ tree rewritten in place, and runs no planted bytes (T36, U3b3 i1 A1, i2 B1)" {
     d6_setup
     # A scripts tree whose build-loop.sh says replaced, written over main's real scripts tree.
     x="$(git rev-parse main:scripts)"; e="$(printf 'echo replaced\n' | git hash-object -w --stdin)"
@@ -304,6 +305,13 @@ A1="refuse d6: an object on main's first-parent history or a tree above scripts/
     d6_copy "$r" /opt/claude-workflows; d6 build-loop.sh --settings
     # git names the mismatch on stderr too; the one stdout line is the snippet's.
     [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet refuses, never falls to the image copy, when main's first-parent history cannot be read whole: a missing commit, a shallow clone (T36, U3b3 i2 B2)" {
+    d6_setup; c="$(git rev-parse main~1)"; rm -f ".git/objects/${c:0:2}/${c:2}"
+    d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+    git clone -q --depth 1 "file://$BATS_TEST_TMPDIR/repo" "$BATS_TEST_TMPDIR/shallow"
+    cd "$BATS_TEST_TMPDIR/shallow"; d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
 }
 
 @test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's copy from main refuses the same tip (T27, U3b3)" {
@@ -335,9 +343,9 @@ A1="refuse d6: an object on main's first-parent history or a tree above scripts/
     d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
 }
 
-@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment; the D6 snippet's git carries the same (rows 281, 311, 495, U3b3)" {
+@test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git carries the same (rows 281, 311, 495, U3b3)" {
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
-    run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
+    run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false"
     E="GIT_ALLOW_PROTOCOL=none GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0"
@@ -346,9 +354,9 @@ A1="refuse d6: an object on main's first-parent history or a tree above scripts/
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
     want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=9" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
-    # The snippet cannot source the lib (it runs before anything is checked): its one git line repeats both lists.
-    g="$(grep '^  g() { ' "$REPO_ROOT/test/lib/d6-snippet.bash")"
-    [ "$(grep -o -- '-c [^ ]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
+    # The snippet cannot source the lib (it runs before anything is checked): its one git array repeats both lists.
+    g="$(grep '^  G=(env ' "$REPO_ROOT/test/lib/d6-snippet.bash")"
+    [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
     [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
 }
 
@@ -365,7 +373,8 @@ A1="refuse d6: an object on main's first-parent history or a tree above scripts/
     [ "$status" -eq 0 ] && [[ "$output" == *"## 3. Watched questions"* ]] || { show; return 1; }
     [ ! -e "$BATS_TEST_TMPDIR/gpg-ran" ] || { echo "gpg.program ran"; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false G=/dev/null P=none S=1; do
+    # HARDEN from the lib itself, so a key added there is checked here too.
+    for kv in $(bash -c 'source "$1"; echo "${HARDEN[*]}"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh") G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }

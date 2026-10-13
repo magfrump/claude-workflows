@@ -1696,7 +1696,8 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false G=/dev/null P=none S=1; do
+    # HARDEN from the lib itself, so a key added there is checked here too.
+    for kv in $(bash -c 'source "$1"; echo "${HARDEN[*]}"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh") G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }

@@ -344,10 +344,12 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # count for build-loop.sh's caller_gate, which refuses a HARDEN key there by
 # name. A GIT_CONFIG_COUNT that is not plain decimal (010 reads as 8 here and
 # as 10 to git) exits 1. What these cannot switch off, build-loop.sh's state
-# gate refuses.
+# gate refuses in its gated modes; dev-cycle.sh runs no state gate (row 548). A
+# second call returns at once: it would count HARDEN's pairs as the caller's.
 HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false)
 CALLER_COUNT=""
 git_harden() {
+  [[ -z "$CALLER_COUNT" ]] || return 0
   local c="${GIT_CONFIG_COUNT:-0}" kv
   [[ "$c" =~ ^(0|[123456789][0123456789]*)$ ]] || { echo "${0##*/}: GIT_CONFIG_COUNT is not a plain decimal count" >&2; exit 1; }
   # shellcheck disable=SC2034  # read by build-loop.sh (caller_gate)

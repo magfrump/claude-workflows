@@ -131,9 +131,10 @@
 #             the caller's config pairs, GIT_NO_REPLACE_OBJECTS and GIT_PREFIX
 #             aside), or a caller pair (git -c, GIT_CONFIG_COUNT) setting a key
 #             the state gate refuses or one this script's own hardening sets
-#             (core.useReplaceRefs, core.hooksPath, core.fsmonitor,
-#             core.attributesFile, core.commitGraph, core.multiPackIndex;
-#             a git -c pair would win over it), whatever the value. Then --check's state gate, its
+#             (the lib's HARDEN list: core.useReplaceRefs, core.hooksPath,
+#             core.fsmonitor, core.attributesFile, core.commitGraph,
+#             core.multiPackIndex, log.date, log.showSignature; a git -c pair
+#             would win over it), whatever the value. Then --check's state gate, its
 #             default-branch rules and its object check, as listed there.
 #   --main-log  what moved the default branch since SINCE (D13, F19, F43; the
 #             orchestrator runs it at the start of each iteration with the last
@@ -924,7 +925,9 @@ gate_git() {
   return "$rc"
 }
 # store_check [--main] REV...: the objects of REV a decision reads hash to their ids
-# and have one copy each (rows 492, 503). git checks no hash when it reads an
+# and have one copy each (rows 492, 503). (The D6 snippet, test/lib/d6-snippet.bash,
+# runs a narrower reader before this script: SHA-1 only and no second-copy rule,
+# since it uses only bytes it has hashed itself.) git checks no hash when it reads an
 # object, so a same-uid writer that rewrites an object file behind its id
 # would change what the gate reads, and only fsck would notice. Each REV (a
 # commit or a tree), its root tree, and every tree and blob below it (a gitlink
