@@ -1,4 +1,4 @@
-Commit: b1a6f0a2
+Commit: ca95fead
 
 # Code Review Rubric: feat/build-loop-u4a
 
@@ -131,4 +131,27 @@ Endorsement claims routed (`route: code-fact-check`): security 1-4 (the land wri
 ### Iteration-4 gate (review-fix-loop.md hard cap)
 
 The final pass found two Mediums, fixed in the commit after this one. **Decision: escalate**, as a narrow confirming pass (U3a1/U3a2/U3c precedent; in /away mode, Q-137's standing instruction): a k=1 fact-check of the fix range with Stage 2.5 over the routed endorsement claims, plus security over the fix range. Merge on no new Must Fix or Must Address; otherwise stop and file a `you: judgment` entry. Not split (331 code lines, one concern) and not abandoned.
+
+## Confirming pass (fix range b1a6f0a2..ca95fead: k=1 fact-check with Stage 2.5, security)
+
+Reports: `code-fact-check-report-2026-10-13-u4a-confirm.md` (with `## Submitted Claims`), `security-review-2026-10-13-u4a-confirm.md`. Final F1, F2 closed as filed; F3, F4 closed outside docs/.
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| D1 | The -STEM-N binding is anchored at a hyphen: an entry for a brief whose name ends in this brief's name binds here. | fact-check claim 3b (Incorrect, high, behavioral); security F-A | 🟡 Medium | **Merge stopped (gate): Q-141, interim [1]**: slug prefix letters and hyphens only; fixed in the commit after this one |
+| D2 | The allowlist compares the path as spelled; --check-fix compares lower-cased (readme.md, Docs/x.md refused). | security F-B (Low, fails closed) | 🟢 | Fixed with D1 |
+| D3 | docs/AGENTS.md/x.md; Unicode case under docs/; a symlink at docs/*.md; a docs-only carried commit. | security F-C, F-D, F-E; fact-check claim 2 | 🟢 | Defer (override rows) |
+| D4 | Header/comment "what --check-fix may allow"; roadmap test "any other path"; test name's shapes. | fact-check claims 1, 8, 9 | 🟢 | Fixed (wording); claim 8 Won't-Fix (override row) |
+| D5 | Stage 2.5: S1 (writes what it judged, no hooks), S2 (stale --main, dirty index refuse), S3 (merge judged, rename refused), S4 (record name) all **Verified (executed)**; P1 (time mostly land's re-checks) **Incorrect** (doc-only: re-gates ~25%). | fact-check Submitted Claims | — | S1-S4 back ✅ rows below; P1 override row |
+
+### ✅ Confirmed Good (Stage 2.5, executed)
+
+| Claim | Evidence | Backing |
+|---|---|---|
+| --land-cycle writes the tree it judged, parents MAIN_SHA and HEAD's commit, message chore_msg's, and runs no hook on either move | `land`'s commit-tree in the gate repository; update-ref or ff-only with hooks planted | Submitted claim S1, executed |
+| --land-cycle refuses a stale --main and an index that differs from HEAD's commit | land_cycle's `[[ "$LAND_MAIN" == "$MAIN_SHA" ]]` and `diff-index --cached --quiet` | S2, executed |
+| --land-cycle judges the merge: a rename into a new questions file carrying main's answer refuses | U4a test 5 | S3, executed |
+| --main-log's chore class reads only docs/working/cycles/cycle-YYYY-MM-DD.md, 100644, A or M | chore_record + isrecord | S4, executed |
+
+Next (Q-141 interim [1]): a second confirming pass (k=1 fact-check + security) over the D1/D2 fix; merge if no new Must Fix or Must Address.
 
