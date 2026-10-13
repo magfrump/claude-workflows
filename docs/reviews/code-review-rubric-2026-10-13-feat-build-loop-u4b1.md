@@ -1,4 +1,4 @@
-Commit: 0cd86cc0
+Commit: ea59b0c3
 Loop-pass short-circuit: used at 458dc170
 
 # Code Review Rubric: feat/build-loop-u4b1
@@ -83,3 +83,50 @@ Rows 702, 704, 720, 726, 727, 735, 736, 742, 744, 750, 764, 769, 771 (the hand-o
 | B15 | Quiesce terms ("this task" in pr-prep, "iteration"/"session" in the skill). | api Informational | Won't-Fix: each is the scope of its own workflow |
 
 **Status:** 1 red, 6 amber; all fixed or routed in the next commit (unreviewed). Next: iteration 3 = the final confirming pass (k=3, full panel, no `--loop-pass`).
+
+---
+
+## Iteration 3: the final confirming pass (no `--loop-pass`)
+
+**Scope:** full branch. Stage 1: k=3 fact-check at 4c911717 (`code-fact-check-report-2026-10-13-u4b1-final.md`, merged most-severe-wins: 37 clusters, 25 Verified, 8 Mostly accurate, 1 Stale, 3 Incorrect; agreement 28/37, 75.7%). Fact-Check Gate: high-confidence behavioural Incorrect; /away choice **fix first** (U3c precedent): ea59b0c3. Stage 2: security, performance, api-consistency and architecture (selected: the shared HARDEN list) on the full branch at ea59b0c3. Stage 2.5 not run: the routed security and performance claims back no ✅ row here (this rubric lists none) and stay *pending execution verification*; their substance was executed by the critics themselves.
+**Reports:** `code-fact-check-report-2026-10-13-u4b1-final{,-r1,-r2,-r3}.md`, `security-review-2026-10-13-u4b1-final.md` (1 Medium, 2 Low, 1 Info), `performance-review-2026-10-13-u4b1-final.md` (2 Low), `api-consistency-review-2026-10-13-u4b1-final.md` (1 Inconsistent, 1 Minor, 1 Info), `architecture-review-2026-10-13-u4b1-final.md` (1 Coupling, 3 Minor, 1 Info; no Structural).
+**Prior items:** B1-B7 confirmed fixed by the critics (executed: signing, identity, fallback wording).
+
+### 🔴 Must Fix
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| D1 | Stopping a waiting health check by its PID left take_lock's flock child, which took the lock later and ran the check. | fact-check claim 27 (r1-r3, executed) | Incorrect (high) | Fixed in ea59b0c3 (process group), then replaced (D4) |
+| D2 | `--state`'s exit 1 routed to an agent entry by the Rules and a judgment entry by step 0.1. | fact-check claim 10 | Incorrect (high) | Fixed in ea59b0c3; D5 states the routing once |
+
+### 🟡 Must Address
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| D3 | Bootstrap fail-open: a newest record without a `Main at:` line (a commit outside this design dropped it) bootstraps, so --main-log reports nothing and dispatch proceeds. | security F1 | Medium | Fixed: bootstrap only when no record holds the line; else a stop with a judgment entry |
+| D4 | The skill encoded take_lock's process tree (setsid, PGID); setsid forks when its caller leads a group, so the PID can miss. | architecture 1 (Coupling), performance F2, security F2 | Coupling / Low | Fixed: `HEALTH_CHECK_LOCK_WAIT` (flock -w, exit 75, nothing run) in health-check.sh with a test that fails on the old script; the skill sets it |
+| D5 | "Stop" had three routes; a timed-out dev-cycle.sh call and a `refuse d6:` line had none. | api-consistency 1 | Inconsistent | Fixed: one sentence (filed once, the step's judgment entry or an agent entry) |
+
+### 🟢 Consider
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| D6 | A stopped iteration leaves its worktree. | performance F1 | Fixed: a stop after step 0.3 removes WT |
+| D7 | The identity rule did not name the merge of main into WT; `env VAR=… hg` would run Mercurial. | security F3 | Fixed |
+| D8 | build-loop.sh's header HARDEN key list is not pinned. | architecture 2 (executed) | Fixed: the header refers to the lib's list |
+| D9 | The fallback contradicts the D6 Rule; U4c's plan entry did not delete it. | architecture 3 | Fixed: a pointer in the Rule; U4c's entry deletes both |
+| D10 | Exit-2 wording, merge.verifySignatures under hg, the fallback's wider gap, Q-140 scope, the --check-fix list, `git mv`, "the gate" lock wording. | fact-check claims 6, 7, 9, 11, 13, 19, 20, 26 | Fixed in ea59b0c3 |
+| D11 | The installed skill cites this repo's plan D-numbers, override rows and Q-IDs, which dangle in other projects. | architecture 4 | Defer (override row; U5) |
+| D12 | Step 9's chore commit should say whether it goes through a gated mode; one `--state` re-run, once, before which commits. | architecture 5, api-consistency 3 | Defer to U4b2 (override row) |
+| D13 | `merge.verifySignatures=false` could join HARDEN. | security F4 | Won't-Fix (override row): --state refuses the key |
+| D14 | Commit messages: 0cd86cc0's R1 ("only --state refuses commit signing"), 4c911717's "count 10" (GIT_CONFIG_COUNT; HARDEN has 9). | fact-check claims 32, 35 | Accepted-immutable: corrected in the merge message |
+
+## 🧩 Composition check
+
+| Cluster | Fragments | Disposition |
+|---|---|---|
+| SKILL.md step 1 health check (lines ~264-276) | fact-check 27, performance F2, security F2, architecture 1 | composed: one root, the skill re-implementing take_lock's process handling; fix in the script (D4) |
+| SKILL.md Rules stop paragraph (~52-64) | fact-check 9, 10, api 1 | distinct defects: wording vs routing, both fixed |
+
+**Status:** after the fix batch, no open Must Fix or Must Address. The batch (D3-D9, a health-check.sh change) is unreviewed: next, the iteration-4 gate.
+Single-sample review; absence of findings is not an attestation.
