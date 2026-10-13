@@ -226,8 +226,8 @@
 #                 followed by ", " and more (no line on BASE: every item is
 #                 added). Each item added (", "-separated) must be exactly
 #                 Q-NNN or Q-NNN@SHA (7-64 hex), name an entry the questions
-#                 files gain (a "### Q-NNN" heading BASE lacks) and be added by
-#                 no other brief. A brief with an Asked: line deleted, or
+#                 files gain (a "### Q-NNN" heading BASE lacks) and be added
+#                 once (by one brief, once). A brief with an Asked: line deleted, or
 #                 renamed to another file name, refuses.
 #                 As --main-log, BASE's objects are not re-hashed: it catches the
 #                 orchestrator's own slip, not a forged commit.
@@ -251,7 +251,8 @@
 #                 B: the branch; HEAD: its commit (the merge's second
 #                 parent); TREE: the merge's tree; NEW: the merge commit, now
 #                 the default branch's (its reflog entry reads "build-loop:
-#                 cycle land of B").
+#                 cycle land of B", with git's ": Fast-forward" after it on
+#                 the fast-forward path).
 #             or refuse lines and exit 2: --cycle-diff's rules' (PATH a file;
 #             a copy of the merge is "its merge copy"), or
 #             refuse HEAD: WHY
@@ -1952,8 +1953,8 @@ cycle_rules() {
   done
   questions_rules "$base" "$side" "${qi[@]}" || bad=1
   # Step 6 only appends IDs to a brief's first Asked: line, each a Q-NNN or
-  # Q-NNN@SHA (D4) naming an entry this change files ($t.new) and no other
-  # brief takes: an ID dropped, changed, reused or shared would apply another
+  # Q-NNN@SHA (D4) naming an entry this change files ($t.new), added once
+  # across the briefs: an ID dropped, changed, reused or shared would apply another
   # brief's question's answer to this one, since --check-answer matches the
   # ID alone (row 745; i1 security F1, F3; i2 F-a, F-b). A brief deleted, or
   # renamed to another file name, with an Asked: line refuses too.
@@ -1972,7 +1973,7 @@ cycle_rules() {
       if ! [[ "$x" =~ ^(Q-[0123456789]+)(@[0123456789abcdef]{7,64})?$ ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds \"$x\", which is not Q-NNN or Q-NNN@SHA"; bad=1; continue; fi
       id="${BASH_REMATCH[1]}"
       if ! grep -qxF -- "$id" "$t.new"; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which names no question entry this change files"; bad=1
-      elif [[ -n "${used[$id]-}" ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which another brief's Asked: line adds too"; bad=1
+      elif [[ -n "${used[$id]-}" ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which is added more than once (by this or another brief's Asked: line)"; bad=1
       else used[$id]=1; fi
     done
   done

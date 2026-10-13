@@ -475,7 +475,7 @@ refuse docs/working/idea-log.md: a side is not a regular file (mode 100644), or 
     printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; sed -i 's/^Asked: .*/&, Q-002@Q-003/' "$F"; git add -A; cd_is "refuse $F: $A \"Q-002@Q-003\", which is not Q-NNN or Q-NNN@SHA"
     sed -i 's/^Asked: .*/Asked: Q-001@abc, /' "$F"; git add -A; cd_is "refuse $F: $A \"\", which is not Q-NNN or Q-NNN@SHA"
     sed -i 's/^Asked: .*/Asked: Q-001@abc, Q-002/' "$F"; echo 'Asked: Q-002' >> "$Y"; git add -A; bl --cycle-diff
-    [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 1 ] && [[ "$output" == "refuse docs/working/briefs/2026-10-01-"[xy]".md: $A Q-002, which another brief's Asked: line adds too" ]] || { show; return 1; }; git reset -q --hard
+    [ "$status" -eq 2 ] && [ "${#lines[@]}" -eq 1 ] && [[ "$output" == "refuse docs/working/briefs/2026-10-01-"[xy]".md: $A Q-002, which is added more than once (by this or another brief's Asked: line)" ]] || { show; return 1; }; git reset -q --hard
     git mv "$F" "$C"; cd_is ok; sed -i 's/^Asked: .*/Asked: Q-002@def1234/' "$C"; git add -A; cd_is "refuse $C: $W"; git reset -q --hard
     # The same name changed in briefs/ and closed/ at once (i2 F-c).
     mkdir -p "${C%/*}"; cp "$F" "$C"; sed -i 's/Q-001@abc/Q-009@abc/' "$F"; git add -A; cd_is "refuse $C: another brief path with its file name changes too, and the Asked: rule matches briefs by file name
