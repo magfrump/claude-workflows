@@ -489,7 +489,8 @@ esac
 # The caller's global config, for merge_ident alone (the merge commit's names:
 # all a loop that writes it could change there); every other call reads none.
 CALLER_GLOBAL=(-u GIT_CONFIG_GLOBAL); [[ -z "${GIT_CONFIG_GLOBAL+set}" ]] || CALLER_GLOBAL=("GIT_CONFIG_GLOBAL=$GIT_CONFIG_GLOBAL")
-# Every git call in this process, the lib's included, runs hardened (the lib's
+# Every git call in this process, the lib's included, runs hardened, but for
+# caller_gate's read of the caller's pairs and merge_ident's CALLER_GLOBAL (the lib's
 # git_harden, which states the trust model; the system config is no more the
 # gate's than the user's: merge.directoryRenames there flipped a conflict, A17).
 git_harden

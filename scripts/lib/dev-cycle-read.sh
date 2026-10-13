@@ -324,7 +324,9 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
   esac
 }
 # git_harden: every later git call in this process and its children runs
-# hardened; build-loop.sh and dev-cycle.sh call it once, after scrub_reexec and
+# hardened, but where a caller hands back its own setting on purpose
+# (build-loop.sh's caller_gate reads the caller's count, merge_ident its global
+# config); build-loop.sh and dev-cycle.sh call it once, after scrub_reexec and
 # before their first git call (D6 runs both as gate code: rows 281, 495). The
 # trust model: the repository, the user's and the system's git config are
 # writable by a loop and not trusted; the caller's own environment is.

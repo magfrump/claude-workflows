@@ -47,7 +47,7 @@ RULE='no line that starts, after blanks, ">" and list markers ("-", "*", "+", "1
 refuse state merge.x.driver: $K" ] || { show; return 1; }
     run --separate-stderr env GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller GIT_CONFIG_KEY_1=core.hooksPath GIT_CONFIG_VALUE_1=/x bash "$BL" --state
     [ "$status" -eq 2 ] && [ "$output" = "refuse state core.hookspath: $K" ] || { show; return 1; }
-    # A plain caller pair passes; a count harden would misread stops every mode (row 276).
+    # A plain caller pair passes; a count git_harden would misread stops every mode (row 276).
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller state_is ok
     for c in 010 08 1x " 1"; do
         run --separate-stderr env GIT_CONFIG_COUNT="$c" GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=caller bash "$BL" --settings
@@ -275,9 +275,35 @@ shim() {
     git rev-parse main > .git/info/grafts; d6_is "refuse d6: info/grafts exists (F38)"; rm .git/info/grafts
     git branch -q master; d6_is "refuse d6: the default branch is not exactly one of main and master"; git branch -q -D master
     git branch -q feat/y; git symbolic-ref refs/heads/main refs/heads/feat/y; d6_is "refuse d6: refs/heads/main is a symbolic ref"
-    git update-ref --no-deref refs/heads/main "$c"
+    # git refuses to update-ref a branch to a tag: write the ref file (row 656's case).
+    git update-ref --no-deref refs/heads/main "$c"; git tag -a -m t t1 main; git rev-parse t1 > .git/refs/heads/main
+    d6_is "refuse d6: refs/heads/main names no commit"; echo "$c" > .git/refs/heads/main
     d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
     run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh or dev-cycle.sh" ] || { show; return 1; }
+}
+
+# inplace ID FROM: the loose object file for ID now holds FROM's object, as a same-uid writer could leave it.
+inplace() { local o=".git/objects/${1:0:2}/${1:2}" f=".git/objects/${2:0:2}/${2:2}"; chmod u+w "$o"; cp "$f" "$o"; }
+A1="refuse d6: an object on main's first-parent history or a tree above scripts/lib/ does not hash to its id"
+
+@test "the D6 snippet refuses a tree above scripts/ rewritten in place, which points ls-tree at planted bytes (T36, U3b3 i1 A1)" {
+    d6_setup
+    # A scripts tree whose build-loop.sh says replaced, written over main's real scripts tree.
+    x="$(git rev-parse main:scripts)"; e="$(printf 'echo replaced\n' | git hash-object -w --stdin)"
+    y="$(git ls-tree main:scripts | sed "s/ [0-9a-f]*\tbuild-loop.sh$/ $e\tbuild-loop.sh/" | git mktree)"
+    inplace "$x" "$y"; [ "$(git ls-tree --format="%(objectname)" main -- scripts/build-loop.sh)" = "$e" ]
+    d6 build-loop.sh --settings
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet refuses a first-parent commit rewritten in place to end main's history at D6_ROOT (T36, U3b3 i1 A1)" {
+    d6_setup
+    r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"; t="$(git rev-parse main)"
+    f="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\n\nforged\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
+    inplace "$t" "$f"; [ "$(git rev-list --first-parent --max-parents=0 main)" = "$r" ]
+    d6_copy "$r" /opt/claude-workflows; d6 build-loop.sh --settings
+    # git names the mismatch on stderr too; the one stdout line is the snippet's.
+    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
 }
 
 @test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's copy from main refuses the same tip (T27, U3b3)" {

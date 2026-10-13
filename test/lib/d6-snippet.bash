@@ -3,28 +3,32 @@
 # build-loop.sh (the gate) and dev-cycle.sh (the digest). U4 puts this file,
 # byte for byte, in skills/dev-cycle/SKILL.md, the root-owned image copy, as
 # the body of a quoted heredoc that bash reads, so it runs the same from any
-# login shell:
+# login shell and defines nothing in the caller's:
 #   bash -s -- build-loop.sh ARG... <<'D6'
 #   (this file)
 #   D6
-# T33 asserts the two match. Run it from the repository's checkout (the
-# orchestrator's own worktree). It trusts no file the uid can write: in
-# claude-workflows (main's first-parent root commit is D6_ROOT) it runs main's
-# own scripts, extracted from main's commit into a fresh temp dir and
-# hash-checked just before the run; in any other repository it runs the image
+# T33 is to assert the two match once U4 writes the block (pending until then).
+# Run it from the repository's checkout (the orchestrator's own worktree). It
+# runs no file the uid can write: in claude-workflows (main's first-parent
+# root commit is D6_ROOT) it runs main's own scripts, extracted from main's
+# commit into a fresh temp dir once every object that chose them hashes to its
+# id (main's first-parent commits, the trees down to scripts/lib/, the four
+# extracted files); in any other repository it runs the image
 # copy under D6_OPT, by absolute path, once those files and every directory
 # above them are root-owned, no symlink and not writable here. It never reads
 # the working tree, ~/.claude/scripts or a replaced object.
 # Arguments: build-loop.sh or dev-cycle.sh, then that script's own.
 # Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout,
 # with nothing run, for a replace ref, info/grafts, a default branch that is
-# not exactly one plain main or master, a script on main that is not a
-# regular file or whose extracted bytes do not hash to main's id, or an image
-# copy that fails the ownership checks; 1 for another first argument.
+# not exactly one plain main or master or whose ref names no commit itself, an
+# object above that does not hash to its id, a script on main that is not a
+# regular file, an image copy that fails the ownership checks, or a git read
+# or temp-dir step that fails (git may add its own error on stderr); 1 for
+# another first argument.
 # Its own git calls carry the lib's HARDEN pairs and git_harden's environment
 # (a test pins the two lists equal).
 d6() {
-  set -u
+  set -u -o pipefail
   D6_ROOT=640cf00735754d4253819a0354fb8ca9b71a8ea7; D6_OPT=/opt/claude-workflows
   no() { echo "refuse d6: $*"; exit 2; }
   g() { GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false "$@"; }
@@ -40,8 +44,15 @@ d6() {
   m=""; for n in main master; do g show-ref --verify -q "refs/heads/$n" && m+="$n "; done
   m="${m% }"; [[ "$m" == main || "$m" == master ]] || no "the default branch is not exactly one of main and master"
   ! g symbolic-ref -q "refs/heads/$m" >/dev/null || no "refs/heads/$m is a symbolic ref"
-  sha="$(g rev-parse --verify -q "refs/heads/$m^{commit}")" || no "refs/heads/$m names no commit"
+  sha="$(g rev-parse --verify -q "refs/heads/$m")" && [[ "$(g cat-file -t "$sha")" == commit ]] || no "refs/heads/$m names no commit"
   if [[ "$(g rev-list --first-parent --max-parents=0 "$sha")" == "$D6_ROOT" ]]; then
+    # Every object that chose the bytes must hash to its id, read as git reads
+    # it (an object rewritten in place changes what ls-tree or rev-list says):
+    # main's first-parent commits, which made the root match, and the trees
+    # down to scripts/lib/. D6_ROOT is a SHA-1 id, so the repository is SHA-1.
+    { g rev-list --first-parent "$sha" && g rev-parse "$sha^{tree}" "$sha:scripts" "$sha:scripts/lib"; } | g cat-file --batch \
+      | LC_ALL=C perl -MDigest::SHA=sha1_hex -e 'binmode STDIN; my ($n, $b) = (0, ""); while (defined(my $h = <STDIN>)) { chomp $h; my ($id, $t, $s) = split / /, $h; exit 1 unless defined $s && $s =~ /^[0-9]+$/ && read(STDIN, $b, $s) == $s && getc(STDIN) eq "\n" && sha1_hex("$t $s\0$b") eq $id; $n++ } exit($n < 4)' \
+      || no "an object on $m's first-parent history or a tree above scripts/lib/ does not hash to its id"
     d="$(mktemp -d)" || no "mktemp failed"
     trap 'rm -rf "$d"' EXIT
     mkdir "$d/scripts" "$d/scripts/lib" || no "the temp dir could not be laid out"
