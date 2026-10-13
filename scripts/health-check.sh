@@ -1116,7 +1116,7 @@ take_lock() {
     fi
     local w=()
     if [[ -n "${HEALTH_CHECK_LOCK_WAIT:-}" ]]; then
-        [[ "$HEALTH_CHECK_LOCK_WAIT" =~ ^[0123456789]{1,7}$ ]] || { red "HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds (at most 7 digits)"; exit 1; }
+        [[ "$HEALTH_CHECK_LOCK_WAIT" =~ ^[0123456789]{1,7}$ ]] || { red "HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds (at most 7 digits, a bound of this script's own)"; exit 1; }
         w=(-w "$HEALTH_CHECK_LOCK_WAIT")
     fi
     export HEALTH_CHECK_LOCK_HELD=1

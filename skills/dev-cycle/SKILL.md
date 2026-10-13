@@ -233,10 +233,13 @@ so the next one starts from the same `Main at:`:
    exit is a stop as the Rules say.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the newest `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
-   latest date: listed with `hg -C MAIN_WT ls-tree` and read with `hg -C MAIN_WT show`,
+   latest real, not future date of a regular file, as the digest picks its window: listed
+   with `hg -C MAIN_WT ls-tree` and read with `hg -C MAIN_WT show`,
    never from a working tree). Only when main's history never held a `Main at:` line in a
-   record (`hg -C MAIN_WT log -1 --format=%H -G'^Main at: ' MAIN0 -- docs/working/cycles/`
-   prints nothing, MAIN0 being the default branch's commit read just before), pass 40
+   record (`hg -C MAIN_WT log -1 --format=%H --first-parent --diff-merges=first-parent -s
+   --no-textconv --no-show-signature --no-follow -G'^Main at: ' MAIN0 -- docs/working/cycles/`,
+   the lib's check_brief flags, so a merge that drops the records is seen, prints nothing;
+   MAIN0 being the default branch's commit read just before), pass 40
    zeros: it prints `main MAIN -` and refuses, and that MAIN is the bootstrap. Otherwise a
    newest record without the line is a stop, with one `you: judgment` entry: a commit
    outside this design dropped it, and bootstrapping would skip the check of what moved
