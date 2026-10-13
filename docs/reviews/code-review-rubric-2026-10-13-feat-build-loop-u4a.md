@@ -1,4 +1,4 @@
-Commit: 722c2e10
+Commit: 4e14d1cc
 
 # Code Review Rubric: feat/build-loop-u4a
 
@@ -54,3 +54,39 @@ None.
 - Rows 719, 722, 725, 745, 747, 749, 752, 753 (U3b2/U3c hand-offs to U4): answered by this unit; 745 more fully after A1/A4; 749's commit-side half stays U4b's (row 2026-10-13, claim 24b).
 
 **Status:** iteration 1 found no red; 3 ambers fixed. Next: iteration 2 (`--loop-pass`, range 722c2e10..HEAD).
+
+## Iteration 2 (`--loop-pass`, range 722c2e10..4e14d1cc, k=1 fact-check, full core panel + architecture)
+
+No behavioral red at high confidence: the fact-check's one Incorrect (claim 4b) is behavioral at medium confidence, so no short-circuit. Prior ambers A1-A3: A2, A3 resolved; A1 resolved in part (B1-B3 below). Reports: `*-2026-10-13-u4a-i2.md` (fact-check, security, performance, api-consistency, architecture).
+
+### 🟡 Must Address
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| B1 | An Asked: item is checked only at its start (`^(Q-[0-9]+)(@\|$)`): `, Q-002@def,Q-003` or `, Q-002@Q-003` passes with Q-003 an old answered entry. | fact-check claim 4b (Incorrect, medium, behavioral); security F-b | Medium | Fixed: items anchored `^(Q-NNN)(@[0-9a-f]{7,64})?$` |
+| B2 | One new entry's ID can be appended to several briefs' Asked: lines; its one answer then applies to each. | security F-a | Medium | Fixed: each new ID added by one brief only |
+| B3 | A brief changed in both briefs/ and closed/ under one name: the second path overwrote the first in the per-name map, hiding its change. | security F-c | Medium (Low conf.) | Fixed: two changed paths with one name on a side refuse |
+| B4 | A cycle file spelled in another case (`docs/working/Questions.md`, `Briefs/`) passed every rule unjudged; lowering removed truthrule's case word. | security F-d | Medium (Low conf.) | Fixed: refused |
+
+### 🟢 Consider
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| B5 | asked_rule read cycle_rules' locals by dynamic scope (silently passes from another caller); two call sites; the next rule must be added twice. | architecture 1, 3 | Fixed: the Asked: rule inline in cycle_rules; questions_rules has one call site |
+| B6 | truthrule's fourth consumer unstated in the lib; refusal text claimed all of --check-fix. | architecture 2 | Fixed (lib comment, refusal text) |
+| B7 | Refusals print truthrule's internal words (`instr`). | api 1 | Fixed: floor_why's prose |
+| B8 | Plan lists --land-cycle under read modes; plan's --cycle-diff bullet lacks the new rules. | api 2, 5 | Fixed |
+| B9 | Empty Asked: item's garbled refusal; "first" dropped; header said "any line". | api 3, fact-check claim 3 | Fixed |
+| B10 | The moved questions guard suppresses other refusal lines, unstated. | api 4, architecture 5, fact-check claim 12 | Fixed (header) |
+| B11 | Header's class list read as cycle files. | fact-check claims 2, 21b | Fixed (header); 70d24331's body: Won't-Fix (override row) |
+| B12 | chore_msg names log_class but not the reverse. | architecture 4 | Fixed (comment) |
+| B13 | land branches on authority in two places. | architecture 4 | Won't-Fix (override row) |
+| B14 | Docs instruction files @-import are not refused here. | security F-e | Defer to U4b (override row) |
+| B15 | Performance: no findings (truthrule 78 µs/path, asked grep 0.85 ms/item, new-ID awk ≤2 ms). | performance | — |
+
+### 🧩 Composition check
+
+- `scripts/build-loop.sh` Asked: rule (B1, B2, B3, B5; fact-check, security, architecture): distinct defects: item form, ID sharing, map collision and code placement are separate predicates, each stated whole.
+- `scripts/build-loop.sh` cycle_rules truth rule (B4, B6, B7; security, architecture, api): distinct defects (case spelling, comment, wording).
+
+**Status (iteration 2):** no red; four ambers fixed. Next: final confirming pass (no `--loop-pass`, full branch, k=3).
