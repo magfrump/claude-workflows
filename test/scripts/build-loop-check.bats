@@ -1684,7 +1684,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     [ ! -e "$BATS_TEST_TMPDIR/fetched" ] || { echo "upload-pack ran"; return 1; }
 }
 
-@test "every git call --check makes carries harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
+@test "every git call --check makes carries git_harden's config pairs (core.hooksPath=/dev/null among them), no global or system config and no transport (T26, A4, U2b1a i1, i2, A17)" {
     gated feat/x
     # A shim ahead of git logs each call's config pairs, then runs the real git.
     S="$BATS_TEST_TMPDIR/shim"; mkdir -p "$S"; real="$(command -v git)"
@@ -1695,7 +1695,7 @@ refuse state extensions.partialclone: set in config, it can make the gate's git 
     PATH="$S:$PATH" chk "$B"
     [ "$status" -eq 0 ] && [[ "$output" == "ok $B "* ]] || { show; return 1; }
     n="$(wc -l < "$BATS_TEST_TMPDIR/calls")"; [ "$n" -gt 10 ] || { echo "only $n calls logged"; return 1; }
-    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false G=/dev/null P=none S=1; do
+    for kv in core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false G=/dev/null P=none S=1; do
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }

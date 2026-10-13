@@ -82,7 +82,8 @@
 # Acts on $PWD's git repo (like questions.sh), so the installed copy serves any
 # project. Read-only: writes nothing to the repo (one temp file, removed on exit).
 # Exit: 0 digest printed (or, for the check modes, every argument answered: a
-# skip is an answer, not an error); 1 bad usage, not a git repo, no perl or lib/dev-cycle-read.sh, or no
+# skip is an answer, not an error); 1 bad usage, a GIT_CONFIG_COUNT that is not
+# plain decimal, not a git repo, no perl or lib/dev-cycle-read.sh, or no
 # default branch (for the digest, --check-brief, --check-branch and --check-answer); a failed step exits non-zero mid-digest. Printed repo text is data.
 
 set -euo pipefail
@@ -120,15 +121,19 @@ while [[ $# -gt 0 ]]; do
 done
 [[ "$SAMPLE" =~ ^[0-9]+$ ]] || { echo "--sample must be a non-negative integer" >&2; exit 1; }
 
+# Every git call from here on, the lib's and questions.sh's included, runs
+# hardened, as build-loop.sh's do (the lib's git_harden: no hook, fsmonitor,
+# replace ref, user or system config, or transport): D6 runs the digest as
+# gate code. File names are literal, not pathspecs.
+git_harden
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "Not inside a git repository" >&2; exit 1; }
 cd "$ROOT"
 # shellcheck disable=SC2034  # read by the lib's file rules and import walk
 ROOT_REAL="$(pwd -P)"
 skipdir() { skipped "$1" dir; }
 skipnote() { echo "$1 is not read: $SKIP_AT is not a plain file or directory (section 8)."; }
-# DEV_CYCLE_TODAY exists only so tests can pin the date. File names are literal,
-# not pathspecs.
-TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"; export GIT_LITERAL_PATHSPECS=1
+# DEV_CYCLE_TODAY exists only so tests can pin the date.
+TODAY="${DEV_CYCLE_TODAY:-$(date +%F)}"
 
 # Every grep here runs in the C locale (set through env, which bash does not
 # apply to its own locale), so a name that is not UTF-8 still passes, to be

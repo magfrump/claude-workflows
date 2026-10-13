@@ -486,38 +486,15 @@ case "${1:-}" in
   *) usage "Unknown option: $1" ;;
 esac
 
-# Every git call in this process, the lib's included, runs hardened. Config
-# pairs outrank the repo's config: main's own objects (core.useReplaceRefs in
-# the repo's config would override GIT_NO_REPLACE_OBJECTS), no hook, no
-# fsmonitor command, no core.attributesFile, no multi-pack-index (a second
-# route to an object, past store_check's listing), no commit-graph (a forged one
-# changes merge bases). GIT_CONFIG_GLOBAL=/dev/null: a loop can write the
-# user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
-# transport at all, so a lazy fetch (a partial clone's missing object) fails
-# however the config was planted, even after the state gate read it. The
-# caller's own environment is trusted: its `git -c` pairs can still win, so
-# --state reads them (caller_gate); a GIT_CONFIG_COUNT that is not plain
-# decimal (010 reads as 8 here and as 10 to git) stops every mode. What the
-# rest cannot switch off, --check's state gate refuses.
-CALLER_COUNT="${GIT_CONFIG_COUNT:-0}"
-HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false)
-harden() {
-  local c="$CALLER_COUNT" kv
-  [[ "$c" =~ ^(0|[123456789][0123456789]*)$ ]] || { echo "build-loop.sh: GIT_CONFIG_COUNT is not a plain decimal count" >&2; exit 1; }
-  for kv in "${HARDEN[@]}"; do
-    export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
-  done
-  export GIT_CONFIG_COUNT="$c"
-}
-harden
 # The caller's global config, for merge_ident alone (the merge commit's names:
 # all a loop that writes it could change there); every other call reads none.
 CALLER_GLOBAL=(-u GIT_CONFIG_GLOBAL); [[ -z "${GIT_CONFIG_GLOBAL+set}" ]] || CALLER_GLOBAL=("GIT_CONFIG_GLOBAL=$GIT_CONFIG_GLOBAL")
-# GIT_CONFIG_NOSYSTEM: the system config is no more the gate's than the
-# user's (merge.directoryRenames there flipped a conflict: A17).
-export GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none
+# Every git call in this process, the lib's included, runs hardened (the lib's
+# git_harden, which states the trust model; the system config is no more the
+# gate's than the user's: merge.directoryRenames there flipped a conflict, A17).
+git_harden
 # The gate's state check (D7, F25): repo-local git state that can make the
-# gate's git run a command or change what it reads, which harden does not
+# gate's git run a command or change what it reads, which git_harden does not
 # switch off. Prints one "refuse state WHAT: WHY" line per finding, returns 1
 # on any, and reads no object (git config --file --no-includes follows no
 # include; --git-path reads no index). Keys, in the common config and this
@@ -554,7 +531,7 @@ state_gate() {
   return "$bad"
 }
 # callervar NAME: a repo-local variable (git rev-parse --local-env-vars) the
-# gate keeps: the caller's config pairs, which harden extends and trusts
+# gate keeps: the caller's config pairs, which git_harden extends and trusts
 # (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT), and GIT_NO_REPLACE_OBJECTS, which
 # this script sets. GIT_CONFIG is not one: git config then reads that one file
 # instead of every scope (gate_repo unsets it; checkout_gate refuses it).
@@ -564,7 +541,7 @@ callervar() { [[ "$1" == GIT_CONFIG_PARAMETERS || "$1" == GIT_CONFIG_COUNT || "$
 # alias (the script cds to the top level). checkout_gate and caller_gate refuse them.
 stray_vars() { local v; for v in $(git rev-parse --local-env-vars); do [[ -z "${!v+set}" || "$v" == GIT_PREFIX ]] || callervar "$v" || echo "$v"; done; }
 # --state's snapshot of the git settings in the caller's environment (rows
-# 276, 281, 666), which harden and the state gate trust: the orchestrator runs
+# 276, 281, 666), which git_harden and the state gate trust: the orchestrator runs
 # --state at the start of each iteration, so a git variable or pair that
 # persists in its environment (a loop can write ~/.zshrc) shows there. Not
 # covered: anything else such an environment can do (BASH_ENV, PATH), and
@@ -572,9 +549,9 @@ stray_vars() { local v; for v in $(git rev-parse --local-env-vars); do [[ -z "${
 # GIT_SHALLOW_FILE and GIT_ALTERNATE_OBJECT_DIRECTORIES name files the state
 # gate does not read, and GIT_GRAFT_FILE or GIT_OBJECT_DIRECTORY move the ones
 # it does. A caller pair (git -c, GIT_CONFIG_COUNT; read with the caller's
-# count, so harden's own pairs are not listed) for a key the state gate
+# count, so git_harden's own pairs are not listed) for a key the state gate
 # refuses or one HARDEN sets, whatever its value: git applies git -c pairs
-# after harden's, so they win (a GIT_CONFIG_COUNT pair comes before harden's
+# after git_harden's, so they win (a GIT_CONFIG_COUNT pair comes before git_harden's
 # and loses, but is refused too). Prints one "refuse state WHAT: WHY" line per
 # finding, returns 1 on any.
 caller_gate() {
@@ -959,7 +936,7 @@ gate_git() {
 # (cat-file --batch here, cat-file blob MAIN:PATH in brief_fields) took
 # different ones (U3a1 i1 security F1: a second pack holding forged bytes under
 # the brief's id was read by brief_fields and passed the batch). The listing
-# follows links and takes dot-named packs, and harden switches off the
+# follows links and takes dot-named packs, and git_harden switches off the
 # multi-pack-index, a second route to an id (i2 security F1). Only one call's
 # ids are judged, so one brief's refusal never carries to the next (i2
 # architecture 1). Returns 1 on a mismatch, a missing object, a second copy or
@@ -1121,7 +1098,7 @@ srules() {
 }
 # The checkout --check runs from, which a self-merge brief's floor walk (srules)
 # reads: the parts of the gate caller contract's items 2 and 3 (the lib's
-# header) a checkout can break. Item 2's fsmonitor and replace refs are harden's
+# header) a checkout can break. Item 2's fsmonitor and replace refs are git_harden's
 # and the state gate's, and its ls-files stderr rule is the walk's own. Sets
 # CHECKOUT_WHY to why the checkout fails, or empties it; returns 1 on a
 # failure. check_line calls it for each self-merge brief once the merge and
@@ -1130,7 +1107,7 @@ srules() {
 # checked by its effect, not by predicting it with check-attr: every regular
 # file main stores must hash, unfiltered, to main's blob, so no conversion (a
 # filter, working-tree-encoding, ident or eol attribute from any attributes
-# source, the user's global ones included, which harden hides from the gate's
+# source, the user's global ones included, which git_harden hides from the gate's
 # own git) changed what a session reads there. Untracked and ignored files
 # are allowed: the walk reads them as they are. A nested repository's files
 # are not walk starts (rows 366, 373), so an untracked one, or a gitlink
