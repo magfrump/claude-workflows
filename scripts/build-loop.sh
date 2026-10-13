@@ -215,7 +215,7 @@
 #                 new roadmap or idea log, and every other path, is not judged,
 #                 but for these rules (row 745), which every path meets: a
 #                 path of the gate's own code (GATE_CODE) or one the lib's
-#                 truthrule reads as truth but a cycle file (an instruction or
+#                 truthrule reads as truth, other than a cycle file (an instruction or
 #                 prompt file, a dot path, docs/dev-cycle.md,
 #                 docs/constraints.md, docs/decisions/, docs/human-author/;
 #                 both compared lower-cased) refuses: --check-fix refuses them
@@ -1907,7 +1907,7 @@ cycle_rules() {
     p="${RAW_P[i]}"; lp="$(lower "$p")"
     # An in-cycle fix edits only docs --check-fix allows: never the gate's code,
     # which decides what an answer is (U3c final security F2), nor a file
-    # sessions or the cycle read as truth but the cycle's own (truthrule, which
+    # sessions or the cycle read as truth, other than the cycle's own (truthrule, which
     # --check-fix refuses too: i1 security F2).
     if [[ "$lp" =~ $GATE_CODE ]]; then echo "refuse $p: the gate's own code; an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
     if truthrule "$lp" && [[ "$TRUTH_WHY" != cycle ]]; then echo "refuse $p: a file sessions or later cycles read as truth ($TRUTH_WHY); an in-cycle fix edits only docs --check-fix allows"; bad=1; continue; fi
