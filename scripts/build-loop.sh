@@ -181,38 +181,36 @@
 #             (main was rewritten, or SINCE is on another branch) or it cannot
 #             be listed.
 #   --cycle-diff  what the orchestrator's chore commit would land (D13, F28,
-#             F33, F42; run in its own worktree before that commit, which takes
-#             the index as is), after --state's gate but its caller check: the
-#             index against BASE, the fork point of HEAD and the default
-#             branch's commit (git merge-base: step 7's merges move main
-#             within an iteration). Prints ok, or one line per finding and
-#             exit 2:
+#             F33, F42; run in its worktree before that commit, which takes the
+#             index as is), after --state's gate but its caller check: the index
+#             against BASE, git merge-base of HEAD and main's commit (step 7's
+#             merges move main within an iteration). Prints ok, or exit 2 and:
 #             refuse PATH: WHY
-#                 docs/working/questions.md and questions-archive.md, read
-#                 together (an entry may move between them): an entry on BASE
-#                 whose heading, **Needs:** lines or answer lines (--main-log's
-#                 answer labels, any ID) differ in the index, in order, or are
-#                 gone, and
-#                 a new entry filed answered (Status ANSWERED or an answer
-#                 line), unless its ID was given with --answered (an answer the
-#                 user gave the orchestrator in-session); an entry's other
-#                 lines are free. Entries are delimited as --check-answer
-#                 reads them, and a copy FENCE_AWK refuses refuses.
-#                 docs/working/idea-log.md changed other than by appending
-#                 (BASE's bytes start the index's), or deleted.
-#                 docs/roadmap.md deleted, its lines above the first "## "
-#                 heading or its "## " heading lines changed, or a brief file
-#                 (docs/working/briefs/[closed/]NAME.md) a line outside
-#                 "## Done" names on BASE named on no line of the index (an
-#                 interim reading of "the cycle's own moves": step 6 rewrites
-#                 Now, Next and Ideas and keeps Done to the last cycle).
-#                 A new roadmap or idea log, and every other path, is not
-#                 judged (a new questions file is: its entries are new). One of
-#                 these files not a regular file, or a read that fails,
-#                 refuses; so do HEAD with no merge base ("refuse HEAD") and
-#                 an index that cannot be listed ("refuse index"). As
-#                 --main-log, it reads BASE's objects without re-hashing them:
-#                 it catches the orchestrator's own slip, not a forged commit.
+#                 PATH is HEAD (no merge base), index (not listed) or the file.
+#                 The questions files, read together (an entry may move between
+#                 them, delimited as --check-answer reads them; a copy FENCE_AWK
+#                 refuses refuses): an entry on BASE whose heading, **Needs:**
+#                 or answer lines (--main-log's labels, any ID) differ in the
+#                 index, in order, or are gone; a new entry filed answered
+#                 (Status ANSWERED or an answer line); WHY starts with its ID.
+#                 Except IDs given with --answered (answers the user gave the
+#                 orchestrator in-session; exact IDs, Q-14 is not Q-014; a
+#                 repeat or an unused one is ignored). Other entry lines are
+#                 free. A questions change while main has changed those files
+#                 since BASE refuses (--check-answer reads the merge, where a
+#                 free fence pair can capture main's newer answer): merge main
+#                 into HEAD first. docs/working/idea-log.md other than appended
+#                 to (BASE's bytes start the index's). docs/roadmap.md: its
+#                 lines above the first "## " heading or its "## " lines
+#                 changed, or a brief file (docs/working/briefs/[closed/]NAME.md)
+#                 named outside Done on BASE named on no line of the index (Done
+#                 as dev-cycle.sh reads a section: "## Done", any case, alone or
+#                 before a blank or "("); an interim reading of "the cycle's own
+#                 moves", as step 6 rewrites Now, Next and Ideas. A deletion, a
+#                 side not a regular 100644 file, or a failed read refuses; a
+#                 new roadmap or idea log, and every other path, is not judged.
+#                 As --main-log, BASE's objects are not re-hashed: it catches the
+#                 orchestrator's own slip, not a forged commit.
 #   --check   the gate (D7), advisory when a loop runs it. First a state gate:
 #             a git config key (common config or config.worktree, includes not
 #             followed) for a filter, include, config hook, merge or diff
@@ -452,15 +450,15 @@
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help; a --marker skip is a line), for
-# --state ok, for --main-log no other line, for --check every verdict line ok,
+# --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
 # for --merge merged, for --start and --prompt ok; 2 any other --check,
 # --merge, --start or --prompt verdict line, --main-log's other or refuse
-# line, or the state gate (--state's included) not ok. A --check or
+# line, a --cycle-diff refuse line, or the state gate (--state's included) not ok. A --check or
 # --merge can also stop part way, after the lines of the briefs before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
 # decimal, not a git repo, no perl or lib/dev-cycle-read.sh, a failed mktemp
-# (--state, --main-log, --check, --merge, --start, --prompt; no line printed),
+# (--state, --main-log, --cycle-diff, --check, --merge, --start, --prompt; no line printed),
 # or no default branch found by name.
 
 set -euo pipefail
@@ -967,17 +965,18 @@ gate_git() {
 # raw_records FILE: a --raw -z listing (diff-tree, diff-index) read whole, the
 # one reader every caller shares (row 724): RAW_OM and RAW_NM (modes), RAW_OO
 # and RAW_NO (ids), RAW_S (A, M, D or T) and RAW_P (paths), in git's order.
-# Returns 1 when a record does not parse or the NULs are not two per record
-# (bytes after the last NUL are not counted; git's own output never ends so).
+# Returns 1 when a record does not parse or lacks its path (a half record;
+# bytes after the last NUL are not read: git's own output never ends so).
+# Fork-free: --main-log runs it per commit (i2 performance 1).
 RAW_OM=(); RAW_NM=(); RAW_OO=(); RAW_NO=(); RAW_S=(); RAW_P=()
 raw_records() {
   local meta p
   RAW_OM=(); RAW_NM=(); RAW_OO=(); RAW_NO=(); RAW_S=(); RAW_P=()
-  while IFS= read -r -d '' meta && IFS= read -r -d '' p; do
+  while IFS= read -r -d '' meta; do
+    IFS= read -r -d '' p || return 1
     [[ "$meta" =~ ^:([01234567]{6})\ ([01234567]{6})\ ([0123456789abcdef]+)\ ([0123456789abcdef]+)\ ([AMDT])$ ]] || return 1
     RAW_OM+=("${BASH_REMATCH[1]}"); RAW_NM+=("${BASH_REMATCH[2]}"); RAW_OO+=("${BASH_REMATCH[3]}"); RAW_NO+=("${BASH_REMATCH[4]}"); RAW_S+=("${BASH_REMATCH[5]}"); RAW_P+=("$p")
   done < "$1"
-  [[ "$(tr -cd '\000' < "$1" | wc -c)" -eq $((2 * ${#RAW_P[@]})) ]]
 }
 # store_check [--main] REV...: the objects of REV a decision reads hash to their ids
 # and have one copy each (rows 492, 503). (The D6 snippet, test/lib/d6-snippet.bash,
@@ -1774,17 +1773,18 @@ END {
 # --cycle-diff's roadmap rule over the base (file 1) and the index (file 2):
 # one WHY per line. The lines above the first "## " heading and the heading
 # lines stay; a brief file a line outside "## Done" names on the base is named
-# on some line of the index.
+# on some line of the index. A heading is Done as dev-cycle.sh reads its
+# sections ("## Done", any case, alone or before a blank or "(").
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 ROADMAP_AWK='
 { sub(/\r$/, ""); s = (FILENAME == ARGV[1]) ? 1 : 2 }
-/^## / { h[s] = h[s] "\n" $0; sec[s] = $0; in2[s] = 1; next }
+/^## / { h[s] = h[s] "\n" $0; d = tolower($0); done[s] = (d == "## done" || index(d, "## done ") == 1 || index(d, "## done(") == 1); in2[s] = 1; next }
 !in2[s] { p[s] = p[s] "\n" $0; next }
 {
   r = $0
   while (match(r, /docs\/working\/briefs\/(closed\/)?[A-Za-z0-9._-]+\.md/)) {
     b = substr(r, RSTART, RLENGTH); sub(/.*\//, "", b); r = substr(r, RSTART + RLENGTH)
-    if (s == 2) named[b] = 1; else if (sec[1] != "## Done") need[b] = 1
+    if (s == 2) named[b] = 1; else if (!done[1]) need[b] = 1
   }
 }
 END {
@@ -1792,19 +1792,16 @@ END {
   if (h[1] != h[2]) print "its ## headings changed"
   for (b in need) if (!(b in named)) print "the brief " b ", named outside Done on the base, is named on no line"
 }'
-# cyc_blob I SIDE OUT: raw record I's blob on SIDE (old or new) into OUT, read
-# in the gate repository; an absent side (mode 000000) is an empty file.
-# Returns non-zero when that side is not absent or a regular 100644 file, or
-# the read fails.
+# cyc_blob MODE ID OUT: the blob ID into OUT, read in the gate repository; an
+# absent side (MODE 000000) is an empty file. Returns non-zero when MODE is
+# neither 000000 nor 100644 (a symlink, an executable), or the read fails.
 cyc_blob() {
-  local md="${RAW_NM[$1]}" id="${RAW_NO[$1]}"
-  [[ "$2" == new ]] || { md="${RAW_OM[$1]}"; id="${RAW_OO[$1]}"; }
-  if [[ "$md" == 000000 ]]; then : > "$3"; return 0; fi
-  [[ "$md" == 100644 ]] && gate_git cat-file blob "$id" > "$3"
+  if [[ "$1" == 000000 ]]; then : > "$3"; return 0; fi
+  [[ "$1" == 100644 ]] && gate_git cat-file blob "$2" > "$3"
 }
 # cycle_diff: --cycle-diff's lines. Returns 1 on any refusal.
 cycle_diff() {
-  local base i p f k bad=0 qi=() t="$GATE_TMP/cy"
+  local base i p f k md id bad=0 qi=() t="$GATE_TMP/cy"
   if ! base="$(git merge-base HEAD "$MAIN_SHA" 2>/dev/null)"; then echo "refuse HEAD: it shares no commit with the default branch's $MAIN_SHA, or could not be read"; return 1; fi
   # The checkout's own git, for its index (state_gate has run on it).
   if ! git diff-index --cached --raw -z --no-renames --ignore-submodules=none "$base" > "$t.raw" 2>"$GATE_TMP/err" \
@@ -1818,7 +1815,7 @@ cycle_diff() {
       docs/roadmap.md|docs/working/idea-log.md) ;;
       *) continue ;;
     esac
-    if ! cyc_blob "$i" old "$t.o" || ! cyc_blob "$i" new "$t.n"; then echo "refuse $p: a side is not a regular file, or could not be read"; bad=1; continue; fi
+    if ! cyc_blob "${RAW_OM[i]}" "${RAW_OO[i]}" "$t.o" || ! cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$t.n"; then echo "refuse $p: a side is not a regular file (mode 100644), or could not be read"; bad=1; continue; fi
     if [[ "${RAW_OM[i]}" == 000000 ]]; then continue; fi
     if [[ "${RAW_S[i]}" == D ]]; then echo "refuse $p: the index deletes it"; bad=1
     elif [[ "$p" == docs/working/idea-log.md ]]; then
@@ -1831,17 +1828,27 @@ cycle_diff() {
     fi
   done
   [[ ${#qi[@]} -gt 0 ]] || return "$bad"
+  # The chore branch lands as a merge, and --check-answer reads the merged
+  # file: lines judged free here (a fence pair, a heading) can capture an
+  # answer main gained since the fork (i2 security F1). So the questions files
+  # must be as on main: merge the default branch into HEAD first.
+  if ! gate_git ls-tree -z "$base" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lb" \
+    || ! gate_git ls-tree -z "$MAIN_SHA" -- docs/working/questions.md docs/working/questions-archive.md > "$t.lm" || ! cmp -s "$t.lb" "$t.lm"; then
+    echo "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $base, or they could not be compared; merge it into HEAD, then stage again"; return 1
+  fi
   # Both questions files on each side, the unchanged one included (an entry can move between them).
   : > "$t.qo"; : > "$t.qn"
   for f in docs/working/questions.md docs/working/questions-archive.md; do
     k=""; for i in "${qi[@]}"; do [[ "${RAW_P[i]}" != "$f" ]] || k="$i"; done
     if [[ -n "$k" ]]; then
-      cyc_blob "$k" old "$t.o" && cyc_blob "$k" new "$t.n" || { echo "refuse $f: a side is not a regular file, or could not be read"; return 1; }
-    elif gate_git cat-file -e "$base:$f" 2>/dev/null; then
-      [[ "$(gate_git ls-tree "$base" -- "$f" | cut -c1-6)" == 100644 ]] && gate_git cat-file blob "$base:$f" > "$t.o" \
-        || { echo "refuse $f: not a regular file on the base, or could not be read"; return 1; }
+      cyc_blob "${RAW_OM[k]}" "${RAW_OO[k]}" "$t.o" && cyc_blob "${RAW_NM[k]}" "${RAW_NO[k]}" "$t.n" || { echo "refuse $f: a side is not a regular file (mode 100644), or could not be read"; return 1; }
+    else
+      # Unchanged in the index: the base's copy on both sides; no entry, no copy (fact-check i2 claim 15: a failed read refuses).
+      gate_git ls-tree -z "$base" -- "$f" > "$t.lt" || { echo "refuse $f: it could not be listed on the base"; return 1; }
+      [[ -s "$t.lt" ]] || continue
+      IFS=$' \t' read -r -d '' md _ id _ < "$t.lt" && cyc_blob "$md" "$id" "$t.o" || { echo "refuse $f: not a regular file (mode 100644) on the base, or could not be read"; return 1; }
       cp "$t.o" "$t.n"
-    else continue; fi
+    fi
     for p in o n; do
       LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" > "$t.k" || { echo "refuse $f: it could not be read"; return 1; }
       k=base; [[ "$p" == o ]] || k=index

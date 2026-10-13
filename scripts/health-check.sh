@@ -24,9 +24,11 @@
 #                            sets it for its own runs.
 #   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
-#   HEALTH_CHECK_LOCK_HELD   Set for the run that holds health-check.lock (one
-#                            run at a time per repository: take_lock), so a
-#                            run it starts takes no lock and never waits on it.
+#   HEALTH_CHECK_LOCK_HELD   When 1, takes no lock. Set to 1 for the run that
+#                            holds health-check.lock (one run at a time per
+#                            repository: take_lock), so a run it starts never
+#                            waits on it. Not only a test seam: any caller
+#                            setting it skips the lock.
 #
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
@@ -1091,21 +1093,17 @@ check_questions_doc() {
     fi
 }
 
-# One health check at a time per repository (plan D14, F46): the dev cycle's
-# orchestrator and each build loop run this gate from their own worktrees, and
-# concurrent suites share TMPDIR and the machine. flock on
-# health-check.lock in the common git dir, waiting for a run that holds it. A
-# run inside a run (check 5's suites include health-check.bats, which runs this
-# script) inherits HEALTH_CHECK_LOCK_HELD and takes no lock, or it would wait
-# on its own parent. Outside a git repository there is nothing to share. Only a
-# plain file is locked (a FIFO would block), as build-loop.sh's dispatch lock.
-# flock(1) holds the lock in its own process and runs this script again as its
-# child with the lock's descriptor closed (-o): no suite, and nothing a test
-# leaves running, inherits the lock, so it ends with this run. Exit 75 is
-# flock's "held elsewhere" (-E), which this script never exits with.
+# One health check at a time per repository (plan D14, F46: the orchestrator's
+# and each build loop's gates share the machine): flock on health-check.lock in
+# the common git dir, waiting for a holder. flock(1) holds it and re-runs this
+# script as its child with the descriptor closed (-o), so nothing a suite leaves
+# running keeps it; -E 75 marks "held elsewhere" (this script exits 0 or 1). The
+# child, and a run inside it (check 5 runs health-check.bats), get
+# HEALTH_CHECK_LOCK_HELD=1 and take no lock. Only a plain file is locked (a FIFO
+# would block); outside a git repository there is nothing to share.
 take_lock() {
     local d lk rc=0
-    [[ -z "${HEALTH_CHECK_LOCK_HELD:-}" ]] || return 0
+    [[ "${HEALTH_CHECK_LOCK_HELD:-}" != 1 ]] || return 0
     d="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 0
     lk="$d/health-check.lock"
     if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]]; then
