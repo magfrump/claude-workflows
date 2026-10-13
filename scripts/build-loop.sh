@@ -188,8 +188,8 @@
 #             refuse PATH: WHY
 #                 PATH is HEAD (no merge base), index (not listed) or the file.
 #                 The questions files, read together (an entry may move between
-#                 them, delimited as --check-answer reads them; a copy FENCE_AWK
-#                 refuses refuses): an entry on BASE whose heading, **Needs:**
+#                 them, delimited as --check-answer reads them; a copy it refuses
+#                 whole, FENCE_AWK's or a fenced question heading, refuses): an entry on BASE whose heading, **Needs:**
 #                 or answer lines (--main-log's labels, any ID) differ in the
 #                 index, in order, or are gone; a new entry filed answered
 #                 (Status ANSWERED or an answer line); WHY starts with its ID.
@@ -205,9 +205,10 @@
 #                 changed, or a brief file (docs/working/briefs/[closed/]NAME.md)
 #                 named outside Done on BASE named on no line of the index (Done
 #                 as dev-cycle.sh reads a section: "## Done", any case, alone or
-#                 before a blank or "("); an interim reading of "the cycle's own
-#                 moves", as step 6 rewrites Now, Next and Ideas. A deletion, a
-#                 side not a regular 100644 file, or a failed read refuses; a
+#                 before a space or "("); an interim reading of "the cycle's own
+#                 moves", as step 6 rewrites Now, Next and Ideas. Deleting the
+#                 roadmap or idea log, a side not a regular 100644 file, or a
+#                 failed read refuses (a questions file is judged by its entries); a
 #                 new roadmap or idea log, and every other path, is not judged.
 #                 As --main-log, BASE's objects are not re-hashed: it catches the
 #                 orchestrator's own slip, not a forged commit.
@@ -1738,17 +1739,20 @@ main_log() {
 # (tab-separated) per key line of an entry, as --check-answer delimits one: K
 # is h for its heading, n for a **Needs:** line, a for an answer line
 # (ANSWERS_AWK's labels, any ID); F names the file. Then "odd" or "unbalanced"
-# when FENCE_AWK refuses the file.
+# when FENCE_AWK refuses the file, or "quoted" for a question heading in a
+# fence, which makes --check-answer skip the whole file (so removing one, a
+# free line, would make its answers readable: final fact-check claim 42).
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 QKEYS_AWK='
 { sub(/\r$/, "") }
+infence && /^### Q-[0123456789]+ / { if (!q) q = NR }
 fence($0) { next }
 /^### Q-[0123456789]+([ \t]|$)/ { id = substr($0, 5); sub(/[ \t].*/, "", id); print id "\t" f "\th\t" $0; next }
 /^(#|##|###) / { id = ""; next }
 id == "" { next }
 /^\*\*Needs:\*\*/ { print id "\t" f "\tn\t" $0; next }
 { t = $0; sub(/^- /, "", t); if (t ~ /^Q-[0123456789]+:/ || tolower(t) ~ /^\*\*answer(:|ed| \()/) print id "\t" f "\ta\t" $0 }
-END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline }'
+END { if (odd) print "odd " odd " " oddwhy; else if (infence) print "unbalanced " fline; else if (q) print "quoted " q }'
 # The base's key lines (file 1) against the index's (file 2), each side
 # questions.md's then the archive's, ok the --answered IDs: "ID F gone|new" per
 # refused entry. An entry's key lines are compared in file order (--check-answer
@@ -1774,7 +1778,7 @@ END {
 # one WHY per line. The lines above the first "## " heading and the heading
 # lines stay; a brief file a line outside "## Done" names on the base is named
 # on some line of the index. A heading is Done as dev-cycle.sh reads its
-# sections ("## Done", any case, alone or before a blank or "(").
+# sections ("## Done", any case, alone or before a space or "(").
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 ROADMAP_AWK='
 { sub(/\r$/, ""); s = (FILENAME == ARGV[1]) ? 1 : 2 }
@@ -1852,7 +1856,7 @@ cycle_diff() {
     for p in o n; do
       LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" > "$t.k" || { echo "refuse $f: it could not be read"; return 1; }
       k=base; [[ "$p" == o ]] || k=index
-      if grep -qv '^Q-' "$t.k"; then echo "refuse $f: FENCE_AWK refuses its $k copy ($(grep -v '^Q-' "$t.k"))"; return 1; fi
+      if grep -qv '^Q-' "$t.k"; then echo "refuse $f: --check-answer refuses its $k copy whole ($(grep -v '^Q-' "$t.k"))"; return 1; fi
       cat "$t.k" >> "$t.q$p"
     done
   done

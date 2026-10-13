@@ -419,14 +419,18 @@ ${W//Q-001/Q-003}"; git reset -q --hard
     printf '%s\n' '### Q-004 · merge-x-0123456789ab' "$N ANSWERED" >> docs/working/questions.md; git add -A
     cd_is "refuse docs/working/questions.md: Q-004 is a new entry filed answered (Status ANSWERED or an answer line), and Q-004 is not in --answered"
     cd_is ok --answered Q-004
-    # A copy FENCE_AWK refuses.
-    printf '%s\n' '```' >> docs/working/questions.md; git add -A; cd_is "refuse docs/working/questions.md: FENCE_AWK refuses its index copy (unbalanced 12)"
+    # A copy --check-answer refuses whole: FENCE_AWK's, or a fenced question heading (removing one would make its answers readable: final fact-check claim 42).
+    printf '%s\n' '```' >> docs/working/questions.md; git add -A; cd_is "refuse docs/working/questions.md: --check-answer refuses its index copy whole (unbalanced 12)"
+    printf '%s\n' '### Q-005 · q' '```' >> docs/working/questions.md; git add -A; cd_is "refuse docs/working/questions.md: --check-answer refuses its index copy whole (quoted 13)"
     # Main moves meanwhile (step 7's merges): the base stays the fork point, so main's new roadmap is not the cycle's deletion.
     git reset -q --hard; sed -i '/^Which/a Q-001: [1]' docs/working/questions.md; git add -A
     onmain docs/roadmap.md "# R"; cd_is ok --answered Q-001
-    # A user's answer on main meanwhile: the merge could fence it off (i2 security F1), so main is merged first.
+    # A questions change on main meanwhile (a user's answer): the merge could fence it off (i2 security F1), so main is merged first.
     onmain docs/working/questions.md "# Q"; cd_is "refuse docs/working/questions.md: the default branch changed the questions files since the fork point $(git rev-parse HEAD), or they could not be compared; merge it into HEAD, then stage again" --answered Q-001
     git reset -q --hard; git merge -q --no-edit main; printf '%s\n' '### Q-009 · n' "$N OPEN" >> docs/working/questions.md; git add -A; cd_is ok
+    # The bypass itself: main's copy holds a fenced question heading, and the index drops it.
+    git reset -q --hard; onmain docs/working/questions.md "$(printf '%s\n' '```' '### Q-006 · f' '```')"; git merge -q --no-edit main
+    sed -i '/^### Q-006/d' docs/working/questions.md; git add -A; cd_is "refuse docs/working/questions.md: --check-answer refuses its base copy whole (quoted 2)"
 }
 
 @test "the answer label regex is the same in the lib's ANSWER_AWK, ANSWERS_AWK and QKEYS_AWK (U3c i2 architecture 1)" {

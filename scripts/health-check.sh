@@ -1097,7 +1097,7 @@ check_questions_doc() {
 # and each build loop's gates share the machine): flock on health-check.lock in
 # the common git dir, waiting for a holder. flock(1) holds it and re-runs this
 # script as its child with the descriptor closed (-o), so nothing a suite leaves
-# running keeps it; -E 75 marks "held elsewhere" (this script exits 0 or 1). The
+# running keeps it; -E 75 marks "held elsewhere" (its own exits are 0 or 1). The
 # child, and a run inside it (check 5 runs health-check.bats), get
 # HEALTH_CHECK_LOCK_HELD=1 and take no lock. Only a plain file is locked (a FIFO
 # would block); outside a git repository there is nothing to share.
