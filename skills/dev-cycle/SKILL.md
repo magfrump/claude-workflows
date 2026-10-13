@@ -17,10 +17,13 @@ gate) allows (D1-D14: `docs/working/plan-build-loop-handoff.md`). The cycle boun
 one place every trigger is certain to be checked, so it checks all of them every time.
 
 **Until the D6 block is written** (below; Q-140), no script can run as the Rules require. Run
-the cycle by hand instead: the digest as `~/.claude/scripts/dev-cycle.sh` (inside
-claude-workflows, its own `scripts/dev-cycle.sh`) from an up-to-date checkout of the default
-branch, no `build-loop.sh` call and no step that needs one, and the branch landed through
-`pr-prep`; the briefs go to the user, who starts each.
+the cycle by hand instead: every `dev-cycle.sh` call (the digest and every check mode) as
+`~/.claude/scripts/dev-cycle.sh` (inside claude-workflows, its own `scripts/dev-cycle.sh`);
+no `build-loop.sh` call and no step that needs one; WT made as step 0.3 says, from the
+default branch's commit (`hg -C MAIN_WT rev-parse --verify refs/heads/main`, or master);
+the Rules' `hg` for every git command; and the branch landed through `pr-prep`. The briefs
+go to the user, who starts each. With no `--state` run, nothing refuses the repository
+config `hg` cannot switch off (a filter or merge driver): the by-hand cycle carries that gap.
 
 ## Rules
 
@@ -45,11 +48,13 @@ branch, no `build-loop.sh` call and no step that needs one, and the branch lande
   line `D6`, pasted whole; never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
   claude-workflows it runs main's own committed scripts, elsewhere the root-owned image copy,
   so nothing a build loop edits runs as the gate. Read a call's first line before its mode's
-  output: `refuse d6: WHY` (exit 2) means nothing ran; an exit the mode does not document,
-  or a call the Bash tool timed out, means nothing was decided (a writing mode may have
-  stopped part way). Each is a stop: the iteration ends there,
-  with the line and stderr quoted in the record and in one `agent` entry (a full disk reads
-  like planted state, so it is not called hostile). `questions.sh` runs as
+  output: `refuse d6: WHY` (exit 2) means nothing ran. A `build-loop.sh` answer is exit 0,
+  or exit 2 with the mode's own refuse lines; any other exit (1 included), or a call the
+  Bash tool timed out, means nothing was decided (a writing mode may have stopped part
+  way). `dev-cycle.sh`'s check modes follow the paths rule below. Each stop ends the
+  iteration there, with no record (its `Main at:` would move the next SINCE): the line and
+  stderr go in one `agent` entry and the final message (a full disk reads like planted
+  state, so it is not called hostile). `questions.sh` runs as
   `~/.claude/scripts/questions.sh`.
 - **Hardened git** (rows 704, 736). The orchestrator's own git commands (worktrees, staging,
   its commits, merging main into WT, ancestry checks) run in a `bash -s <<'G'` script that
@@ -57,21 +62,21 @@ branch, no `build-loop.sh` call and no step that needs one, and the branch lande
   aliases):
 
   ```bash
-  hg() { env GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false "$@"; }
+  hg() { env GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false -c commit.gpgSign=false "$@"; }
   ```
 
   A build loop can write `.git/config` and `~/.gitconfig` as easily as a file. `hg` reads
-  no global or system config and runs no hook, fsmonitor command or replaced object; a test
-  holds its pairs to the lib's `HARDEN` list. It does not switch off what the repository's
-  own config can still name (a filter, a merge driver, commit signing): `--state` refuses
-  those, but only when it runs, so run it again (through the D6 block, from WT) right before
-  the iteration's commits, and treat a refusal there as step 0 does. A loop that plants one
-  between that check and the commit is the residual Q-103 names. Commits take their
-  identity from the environment's `GIT_AUTHOR_*` and `GIT_COMMITTER_*` names and emails;
-  without them, the same script reads `N="$(git config --global --get user.name)"` and
-  `E=…user.email…` (a read, the one plain `git` here; either empty: stop) and commits with
-  `hg -c user.name="$N" -c user.email="$E" …`, never pasting the values into the script's
-  text. Never export these settings: set them per command, as `hg` does (`--state` refuses a
+  no global or system config and runs no hook, fsmonitor command, signing program or
+  replaced object; a test holds its pairs to the lib's `HARDEN` list. It does not switch off
+  what the repository's own config can still name (a filter, a merge driver): `--state`
+  refuses those, but only when it runs, so run it again (through the D6 block, from WT)
+  right before the iteration's commits, and treat a refusal there as step 0 does. A loop
+  that plants one between that check and the commit is a residual for Q-103's list (U5).
+  Commits set their identity on the command, as `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
+  `GIT_COMMITTER_NAME` and `GIT_COMMITTER_EMAIL` (these outrank a planted `author.*` or
+  `committer.*` key), from the environment's own values, or else from
+  `N="$(git config --global --get user.name)"` and `E=…user.email…` read in the same script
+  (a read, the one plain `git` here; either empty: stop), never pasted into its text. Never export these settings: set them per command, as `hg` does (`--state` refuses a
   caller's config pair for a `HARDEN` key, row 702).
 - **The only questions writer** (D11). Build loops never write the questions files; their
   questions arrive in `blocked` markers, which the orchestrator files.
@@ -136,8 +141,8 @@ records, instruction files) is filed, not written. Run `--check-fix` on each fix
 right before staging it, and stage only paths it, or `--check-write` for the cycle's own
 files, printed `ok` for: the cycle rules `build-loop.sh --cycle-diff` applies to the chore
 commit repeat only part of `--check-fix` (a `.md` under `docs/working/` or `docs/reviews/`,
-a doc an instruction file imports, a directory at an instruction file's name and a symlink
-pass them; rows 764, 769, 771). Briefs in the directory are found only
+a doc an instruction file imports, a new file below a directory named like an instruction
+file, and a symlink pass them; rows 764, 769, 771). Briefs in the directory are found only
 through `--check-path 'docs/working/briefs/*.md'` (a done or dropped brief moves to
 `docs/working/briefs/closed/`, so the glob lists only briefs not yet moved). A brief's state
 comes only from `--check-brief '<path>'` (for a path in `briefs/` or `briefs/closed/`),
@@ -226,6 +231,8 @@ so the next one starts from the same `Main at:`:
    (rows 720, 726).
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
+   WT is removed (`hg -C MAIN_WT worktree remove WT`) once the iteration's land is verified:
+   every registered worktree costs disk and joins the import walks' reader set.
 4. **The digest**: `dev-cycle.sh` through the D6 block from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
@@ -256,7 +263,8 @@ last good one.
   one (e.g. `scripts/health-check.sh` in claude-workflows), to a file, in the background,
   and wait for it to finish before steps 2–4b start their own tests and subagents. It takes
   a lock in the git common directory, so it waits while a loop's gate runs (it says so once);
-  a wait past an hour is recorded and the step's check is skipped (row 750).
+  a wait past an hour is recorded, the run is stopped by its PID (it would still take the
+  lock later), and the step's check is skipped (row 750).
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
   pre-existing, flaky). No health check: "skipped: none in this repo".
 - If the digest's section 8 lists `docs/`, `docs/working/` or a questions file, skip the

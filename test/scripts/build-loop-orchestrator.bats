@@ -356,12 +356,12 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     L="$REPO_ROOT/scripts/lib/dev-cycle-read.sh"
     run env -i PATH="$PATH" GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=c bash -c 'source "$1"; git_harden; git_harden; echo "caller $CALLER_COUNT"; printf "pair %s\n" "${HARDEN[@]}"; env | grep "^GIT_" | sort' _ "$L"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
-    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false"
+    H="core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false commit.gpgSign=false"
     E="GIT_ALLOW_PROTOCOL=none GIT_ATTR_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_LITERAL_PATHSPECS=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0"
     want="caller 1"; for kv in $H; do want+=$'\n'"pair $kv"; done
     k=0; keys="GIT_CONFIG_KEY_0=user.name"; vals="GIT_CONFIG_VALUE_0=c"
     for kv in $H; do k=$((k + 1)); keys+=$'\n'"GIT_CONFIG_KEY_$k=${kv%%=*}"; vals+=$'\n'"GIT_CONFIG_VALUE_$k=${kv#*=}"; done
-    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=9" "$keys" "$vals" | LC_ALL=C sort)"
+    want+=$'\n'"$(printf '%s\n' $E "GIT_CONFIG_COUNT=10" "$keys" "$vals" | LC_ALL=C sort)"
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
     # Neither the snippet (it runs before anything is checked) nor SKILL.md's hg, the orchestrator's own git (rows 704, 736), can source the lib: each repeats both lists, on one line.
     [ "$(grep -c '^  hg() { env .* "\$@"; }$' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'hg()' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }

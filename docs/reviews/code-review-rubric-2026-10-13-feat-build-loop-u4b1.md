@@ -1,4 +1,4 @@
-Commit: 458dc170
+Commit: 0cd86cc0
 Loop-pass short-circuit: used at 458dc170
 
 # Code Review Rubric: feat/build-loop-u4b1
@@ -43,3 +43,43 @@ Loop-pass short-circuit: used at 458dc170
 Rows 702, 704, 720, 726, 727, 735, 736, 742, 744, 750, 764, 769, 771 (the hand-offs this unit answers); none re-flagged.
 
 **Status:** 2 red, 4 amber, all fixed in the next commit (unreviewed). Next: iteration 2, full panel over the fix range.
+
+---
+
+## Iteration 2 (`--loop-pass`, short-circuit already used: full panel)
+
+**Scope:** fact-check over the fix range 458dc170..0cd86cc0 (k=1); security, performance and api-consistency critics over the full branch (no critic had reviewed it). Architecture not selected (no module structure change). Stage 2.5 skipped (loop pass): the security critic's three executed claims stay *pending execution verification*.
+**Reports:** `code-fact-check-report-2026-10-13-u4b1-i2.md` (15 claims: 12 Verified, 2 Mostly accurate, 1 Incorrect), `security-review-2026-10-13-u4b1-i2.md` (3 Medium, 2 Low), `performance-review-2026-10-13-u4b1-i2.md` (1 Medium, 1 Low), `api-consistency-review-2026-10-13-u4b1-i2.md` (4 Inconsistent, 3 Minor, 4 Informational).
+**Prior items:** R2, A1-A4 resolved (fact-check i2); R1 partly: see B1.
+
+### 🔴 Must Fix
+
+| ID | Finding | Source | Severity | Evidence | Status |
+|---|---|---|---|---|---|
+| B1 | The Rule says `--state` refuses commit signing; it refuses gpg.* but not commit.gpgSign/user.signingKey, so hg's commits (and the merge of main into WT) ran gpg after a clean `--state`. | fact-check i2 3c (executed), security F1 (executed), api 4 | Incorrect (high) / Medium | `SKILL.md:66` "a filter, a merge driver, commit signing): `--state` refuses those" | Fixed: commit.gpgSign=false joins HARDEN (lib), the snippet's G and hg (pin test: count 10); the Rule lists signing under what hg covers |
+
+### 🟡 Must Address
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| B2 | author.*/committer.* in the repo config outrank `-c user.name/user.email`. | security F2 (executed) | Medium | Fixed: identity as GIT_AUTHOR_*/GIT_COMMITTER_* on the command |
+| B3 | The by-hand fallback reads as if `--state`'s protection held; it never runs there. | security F3 | Medium | Fixed: the gap named; hg applies in the fallback |
+| B4 | Fallback too narrow: check modes still said "through the D6 block"; no worktree/branch for a by-hand run. | api 1 | Inconsistent | Fixed |
+| B5 | A stop is "quoted in the record" vs step 0's "no record". | api 2 | Inconsistent | Fixed: no record; agent entry and final message |
+| B6 | Exit codes: a documented exit 1 was not a stop; overlap with the check-mode rule. | api 3 | Inconsistent | Fixed: build-loop.sh answers are 0 or 2 with refuse lines; dev-cycle.sh check modes keep the paths rule |
+| B7 | The per-iteration worktree is never removed (disk, and the walks' reader set grows: +0.13 s per worktree per walk). | performance F1 | Medium | Fixed: step 0.3 says WT is removed once the land is verified (U4b2's step 9 runs it) |
+
+### 🟢 Consider
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| B8 | An abandoned health check still takes the lock later. | performance F2 | Fixed: stopped by its PID |
+| B9 | "the residual Q-103 names": Q-103 names none yet. | fact-check i2 claim 5 | Fixed: "a residual for Q-103's list (U5)" |
+| B10 | `--check-fix` passes a tracked file below a directory named like an instruction file. | fact-check i2 claim 9 | Fixed: "a new file below ..." |
+| B11 | `questions.sh` and the fallback's dev-cycle.sh go through the uid-owned ~/.claude/scripts symlink. | security F4 | Defer (override row; Q-103 class) |
+| B12 | An `other` commit blocks dispatch but step 1 still runs main's health check. | security F5 | Defer (override row) |
+| B13 | Step 7's `chore/dev-cycle-<date>`, 3 slots hard-coded, record date clock; U4b2's checklist (description, Flow, `--land-cycle` fast-forwarding MAIN_WT, the SINCE read, `--no-edit` on merges, rerere). | api Minor/Informational, security untested candidates | Defer to U4b2 (override row) |
+| B14 | `hg` shadows Mercurial's command name. | api Minor | Won't-Fix: defined inside each `bash -s` script only |
+| B15 | Quiesce terms ("this task" in pr-prep, "iteration"/"session" in the skill). | api Informational | Won't-Fix: each is the scope of its own workflow |
+
+**Status:** 1 red, 6 amber; all fixed or routed in the next commit (unreviewed). Next: iteration 3 = the final confirming pass (k=3, full panel, no `--loop-pass`).

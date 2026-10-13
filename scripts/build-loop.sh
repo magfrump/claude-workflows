@@ -135,7 +135,7 @@
 #             the state gate refuses or one this script's own hardening sets
 #             (the lib's HARDEN list: core.useReplaceRefs, core.hooksPath,
 #             core.fsmonitor, core.attributesFile, core.commitGraph,
-#             core.multiPackIndex, log.date, log.showSignature; a git -c pair
+#             core.multiPackIndex, log.date, log.showSignature, commit.gpgSign; a git -c pair
 #             would win over it), whatever the value. Then --check's state gate, its
 #             default-branch rules and its object check, as listed there.
 #   --main-log  what moved the default branch since SINCE (D13, F19, F43; the
