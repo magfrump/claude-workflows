@@ -19,9 +19,9 @@
 # 0700 dir is the Q-103 class, row 509). In any other repository (another
 # root, or not SHA-1) it runs the image copy under D6_OPT, by absolute path,
 # once those files and every directory above them are root-owned, no symlink
-# and not writable here. It reads no file of the working tree but the .git
-# entry that finds the repository, no ~/.claude/scripts and no replaced object.
-# It trusts refs/heads/main and that .git entry: a moved main is --main-log's to
+# and not writable here. It reads no working-tree file, no ~/.claude/scripts
+# and no replaced object; its git finds the repository through the checkout's
+# .git entry, which it does not check. It trusts refs/heads/main and that entry: a moved main is --main-log's to
 # report (D13; F19, rows 509, 721). Known gap (final security F1, Q-140): the
 # choice of main's copy rests on the repository's own data, so in another
 # project a loop that moves main onto a copy of D6_ROOT, or rewrites the .git
