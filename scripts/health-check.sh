@@ -30,7 +30,8 @@
 #                            waits on it. Not only a test seam: any caller
 #                            setting it skips the lock.
 #   HEALTH_CHECK_LOCK_WAIT   Seconds to wait for another run's lock (plain
-#                            decimal); past it the run exits 75, having run
+#                            decimal, at most 7 digits; 0: no wait); past it
+#                            the run exits 75, having run
 #                            nothing (the dev-cycle skill's step 1 bound,
 #                            row 750). Unset: wait for as long as it takes.
 #
@@ -1115,7 +1116,7 @@ take_lock() {
     fi
     local w=()
     if [[ -n "${HEALTH_CHECK_LOCK_WAIT:-}" ]]; then
-        [[ "$HEALTH_CHECK_LOCK_WAIT" =~ ^[0123456789]+$ ]] || { red "HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds"; exit 1; }
+        [[ "$HEALTH_CHECK_LOCK_WAIT" =~ ^[0123456789]{1,7}$ ]] || { red "HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds (at most 7 digits)"; exit 1; }
         w=(-w "$HEALTH_CHECK_LOCK_WAIT")
     fi
     export HEALTH_CHECK_LOCK_HELD=1

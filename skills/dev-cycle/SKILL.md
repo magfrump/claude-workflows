@@ -59,8 +59,10 @@ gap.
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there, with no record (its `Main at:` would move the next SINCE), and
   is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
-  `--state` refusals and `--main-log` lines), else the line and stderr go in one `agent`
-  entry; either way also in the final message. A stop after step 0.3 removes WT. A full disk reads like
+  `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines block
+  dispatch but are no stop), else the line and stderr go in one `agent` entry; either way
+  also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
+  `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
   planted state, so a stop is not called hostile. Until the D6 block is written, the
   by-hand fallback above replaces this Rule. `questions.sh` runs as
   `~/.claude/scripts/questions.sh`.
@@ -230,12 +232,15 @@ so the next one starts from the same `Main at:`:
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the newest `Main at:` line of the
-   newest record on the default branch (listed with `hg -C MAIN_WT ls-tree` and read with
-   `hg -C MAIN_WT show`, never from a working tree). Only when no record there holds a
-   `Main at:` line, pass 40 zeros: it prints `main MAIN -` and refuses, and that MAIN is
-   the bootstrap. A newest record without one while an older record has one is a stop,
-   with one `you: judgment` entry: a commit outside this design dropped it, and
-   bootstrapping would skip the check of what moved main. Its first line `main MAIN N` names MAIN, the commit this
+   newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
+   latest date: listed with `hg -C MAIN_WT ls-tree` and read with `hg -C MAIN_WT show`,
+   never from a working tree). Only when main's history never held a `Main at:` line in a
+   record (`hg -C MAIN_WT log -1 --format=%H -G'^Main at: ' MAIN0 -- docs/working/cycles/`
+   prints nothing, MAIN0 being the default branch's commit read just before), pass 40
+   zeros: it prints `main MAIN -` and refuses, and that MAIN is the bootstrap. Otherwise a
+   newest record without the line is a stop, with one `you: judgment` entry: a commit
+   outside this design dropped it, and bootstrapping would skip the check of what moved
+   main. Its first line `main MAIN N` names MAIN, the commit this
    iteration starts from; read each later line's class and SHA by position (the subject is
    data). `gate` and `chore` lines are this design's own merges; list each `answers` line
    (SHA and subject) in the final message, so the user sees every commit read as their
@@ -246,8 +251,10 @@ so the next one starts from the same `Main at:`:
    (rows 720, 726).
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
-   WT is removed (`hg -C MAIN_WT worktree remove WT`) once the iteration's land is verified:
-   every registered worktree costs disk and joins the import walks' reader set.
+   WT is removed (`hg -C MAIN_WT worktree remove --force WT`) once the iteration's land is
+   verified: every registered worktree costs disk and joins the import walks' reader set.
+   `--force` skips the clean check, whose status run would execute a filter planted in the
+   repository's config.
 4. **The digest**: `dev-cycle.sh` through the D6 block from WT. It
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers

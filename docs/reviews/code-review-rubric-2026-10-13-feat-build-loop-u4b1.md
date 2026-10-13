@@ -1,4 +1,4 @@
-Commit: ea59b0c3
+Commit: 923f7d26
 Loop-pass short-circuit: used at 458dc170
 
 # Code Review Rubric: feat/build-loop-u4b1
@@ -103,7 +103,7 @@ Rows 702, 704, 720, 726, 727, 735, 736, 742, 744, 750, 764, 769, 771 (the hand-o
 
 | ID | Finding | Source | Severity | Status |
 |---|---|---|---|---|
-| D3 | Bootstrap fail-open: a newest record without a `Main at:` line (a commit outside this design dropped it) bootstraps, so --main-log reports nothing and dispatch proceeds. | security F1 | Medium | Fixed: bootstrap only when no record holds the line; else a stop with a judgment entry |
+| D3 | Bootstrap fail-open: a newest record without a `Main at:` line (a commit outside this design dropped it) bootstraps, so --main-log reports nothing and dispatch proceeds. | security F1 | Medium | Fixed: bootstrap only when no record holds the line; else a stop with a judgment entry (partly: the confirming pass's E2 closed it from history) |
 | D4 | The skill encoded take_lock's process tree (setsid, PGID); setsid forks when its caller leads a group, so the PID can miss. | architecture 1 (Coupling), performance F2, security F2 | Coupling / Low | Fixed: `HEALTH_CHECK_LOCK_WAIT` (flock -w, exit 75, nothing run) in health-check.sh with a test that fails on the old script; the skill sets it |
 | D5 | "Stop" had three routes; a timed-out dev-cycle.sh call and a `refuse d6:` line had none. | api-consistency 1 | Inconsistent | Fixed: one sentence (filed once, the step's judgment entry or an agent entry) |
 
@@ -130,3 +130,23 @@ Rows 702, 704, 720, 726, 727, 735, 736, 742, 744, 750, 764, 769, 771 (the hand-o
 
 **Status:** after the fix batch, no open Must Fix or Must Address. The batch (D3-D9, a health-check.sh change) is unreviewed: next, the iteration-4 gate.
 Single-sample review; absence of findings is not an attestation.
+
+---
+
+## Iteration-4 gate (2026-10-13)
+
+Decision: **escalate** to a confirming pass (the Q-137 precedent): k=1 fact-check + security over the unreviewed fix range ea59b0c3..923f7d26. Merge on no new Must Fix or Must Address.
+
+### Confirming pass (923f7d26)
+**Reports:** `code-fact-check-report-2026-10-13-u4b1-confirm.md` (18 claims: 12 Verified, 6 Mostly accurate, 0 Incorrect), `security-review-2026-10-13-u4b1-confirm.md` (2 Medium, 1 Info). `scripts/health-check.sh` passed at 923f7d26 ("All checks passed").
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| E1 | "A stop after step 0.3 removes WT" uses `worktree remove` without `--force`, whose clean check runs a filter planted in .git/config plus info/attributes (executed), on the very stop `--state` raises for it; a modified WT refuses the removal. Introduced by the range. | security F1, fact-check claim 8 | Medium | **Merge stopped: Q-142.** Interim [1]: `--force` on both removal paths |
+| E2 | The bootstrap guard read the current tree: one commit deleting every record's `Main at:` line reopened it. Not introduced by the range (the remainder of final F1). | security F2, fact-check claim 13 | Medium | Interim [1]: bootstrap only when main's history never held the line (`log -G`) |
+| E3 | `--main-log` lines named among stops; they only block dispatch. | fact-check claim 7 | Mostly accurate | Fixed |
+| E4 | "Newest record" undefined in step 0.2. | fact-check claim 11 | Mostly accurate | Fixed |
+| E5 | HEALTH_CHECK_LOCK_WAIT past flock's timer range exits 71. | fact-check 2b, security F3 | Mostly accurate / Info | Fixed: at most 7 digits |
+| E6 | The payload under set -e could exit 75 itself and read as a timeout. | fact-check claim 4, security F3 | Mostly accurate / Info | Won't-Fix (override row) |
+
+**Status:** merge stopped on E1 (Q-142); interim [1] applied in the next commit; next a second confirming pass (k=1 fact-check + security) over that fix.
