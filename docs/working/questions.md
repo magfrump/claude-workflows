@@ -294,6 +294,6 @@ An added Asked: ID must name an entry whose heading ends `-STEM-N` for the brief
 | **[3] Rework the binding** | Bind each Asked: ID by a `Brief:` line in the entry body instead of the slug, defined in U4b's entry grammar | A follow-up unit's review | U4a merges later; U4b's entry grammar grows |
 
 - **Blocks:** U4a's merge, hence U4b.
-- **Interim:** [1] (the Q-138 precedent): the fix and its confirming pass run now; U4a merges if that pass finds no new Must Fix or Must Address.
+- **Interim:** [1] (the Q-138 precedent), applied 2026-10-13: fixed in daa09b5f; the second confirming pass found no new Must Fix or Must Address; U4a merged at 15a0d688. The entry stays open for your answer.
 - **If the answer differs:** [2] reverts the narrow fix (two lines and a test); [3] adds a follow-up unit after U4b's entry grammar.
 
