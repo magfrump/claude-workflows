@@ -387,3 +387,57 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
         ! grep -v -- " $kv" "$BATS_TEST_TMPDIR/calls" || { echo "a call without $kv"; return 1; }
     done
 }
+
+# cd_is WANT [ARG...]: --cycle-diff ARG... printed exactly WANT, exit 0 for "ok" and 2 otherwise. onmain PATH TEXT:
+# main moves by one commit setting PATH to TEXT, the checkout untouched. qa: the questions files on main, then a chore branch.
+cd_is() { local w="$1"; shift; bl --cycle-diff "$@"; local s=2; [[ "$w" != ok ]] || s=0; [ "$status" -eq "$s" ] && [ "$output" = "$w" ] && [ -z "$stderr" ] || { echo "want: $w"; show; return 1; }; }
+onmain() { local x="$BATS_TEST_TMPDIR/ix" b; b="$(printf '%s\n' "$2" | git hash-object -w --stdin)"; GIT_INDEX_FILE="$x" git read-tree main
+    GIT_INDEX_FILE="$x" git update-index --add --cacheinfo "100644,$b,$1"; git update-ref refs/heads/main "$(git commit-tree "$(GIT_INDEX_FILE="$x" git write-tree)" -p main -m moved)"; }
+N='**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:**'
+qa() { mkdir -p docs/working; printf '%s\n' '# Questions' '### Q-001 · x' "$N OPEN" '' 'Which?' '| **[1] a** | b |' '### Q-003 · z' "$N ANSWERED" 'Q-003: [1]' > docs/working/questions.md
+    printf '%s\n' '# Archive' '### Q-000 · old' "$N ANSWERED" '- **Answer:** [2]' > docs/working/questions-archive.md; commit_all questions; git checkout -q -b chore/dev-cycle-2026-10-12; }
+
+@test "--cycle-diff refuses an entry's header or answer changed or gone without --answered, and passes body edits, an open new entry and an archive move (T38, U3c)" {
+    qa; cd_is ok
+    W="refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+    # A planted ANSWERED flip (T38), alone and with an answer line; the same with the ID listed passes.
+    sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; git add -A; cd_is "$W"
+    sed -i '/^Which/a Q-001: [1]' docs/working/questions.md; git add -A; cd_is "$W"; cd_is ok --answered Q-003 --answered Q-001
+    # Main moves meanwhile (step 7's merges, a user's answer): the base stays the fork point, so main's change is not the cycle's.
+    onmain docs/working/questions.md "# Questions"; cd_is ok --answered Q-001; git reset -q --hard
+    # A route change, a deleted entry, a removed answer line.
+    sed -i 's/you: judgment/agent/' docs/working/questions.md; git add -A; cd_is "$W
+${W//Q-001/Q-003}"; git reset -q --hard
+    sed -i '/^Q-003/d' docs/working/questions.md; git add -A; cd_is "${W//Q-001/Q-003}"; git reset -q --hard
+    git rm -q docs/working/questions-archive.md; W0="${W//Q-001/Q-000}"; cd_is "${W0/questions.md/questions-archive.md}"; git reset -q --hard
+    # Free: body lines, an appended open entry, Q-003 archived (moved whole between the files), a new archive file.
+    sed -i 's/| b |/| c |/' docs/working/questions.md; printf '%s\n' '### Q-002 · y' "$N OPEN" 'Why?' >> docs/working/questions.md
+    sed -n '/^### Q-003/,$p' docs/working/questions.md >> docs/working/questions-archive.md; sed -i '/^### Q-003/,$d' docs/working/questions.md; git add -A; cd_is ok
+    # A new entry filed answered is the user's only with its ID listed (F33: a pre-answered merge entry).
+    printf '%s\n' '### Q-004 · merge-x-0123456789ab' "$N ANSWERED" >> docs/working/questions.md; git add -A
+    cd_is "refuse docs/working/questions.md: Q-004 is a new entry filed answered (Status ANSWERED or an answer line), and Q-004 is not in --answered"
+    cd_is ok --answered Q-004
+    # A copy FENCE_AWK refuses.
+    printf '%s\n' '```' >> docs/working/questions.md; git add -A; cd_is "refuse docs/working/questions.md: FENCE_AWK refuses its index copy (unbalanced 9)"
+}
+
+@test "--cycle-diff refuses a roadmap preamble, heading or dropped brief line and an idea log edited, not appended; passes the cycle's own rewrites (T38, U3c)" {
+    mkdir -p docs/working; I='- **X**: Brief: `docs/working/briefs/2026-10-01-x.md`'
+    printf '%s\n' '# Roadmap' 'Intro.' '## Now' '- a' '## In flight' "$I" '## Next' '1. n' '## Ideas' '## Done' '- y: `docs/working/briefs/closed/2026-09-01-y.md`' > docs/roadmap.md
+    printf '%s\n' '# Idea log' '- i1 (signal: s)' > docs/working/idea-log.md; commit_all roadmap; git checkout -q -b chore/dev-cycle-2026-10-12
+    # Step 6's rewrites: Next reworded, Done trimmed, X moved to Done at closed/, an idea appended, any other path.
+    sed -i 's/^1\. n/1. m/; /2026-09-01-y/d; /2026-10-01-x/d' docs/roadmap.md; echo '- X done: `docs/working/briefs/closed/2026-10-01-x.md`' >> docs/roadmap.md
+    echo '- i2 (signal: t)' >> docs/working/idea-log.md; echo x > other.md; git add -A; cd_is ok
+    git reset -q --hard; sed -i '/2026-10-01-x/d' docs/roadmap.md; git add -A
+    cd_is "refuse docs/roadmap.md: the brief 2026-10-01-x.md, named outside Done on the base, is named on no line"; git reset -q --hard
+    sed -i 's/^Intro\./Intro!/; s/^## Next/## Later/' docs/roadmap.md; sed -i 's/i1/i0/' docs/working/idea-log.md; git add -A
+    cd_is "refuse docs/roadmap.md: its lines above the first ## heading changed
+refuse docs/roadmap.md: its ## headings changed
+refuse docs/working/idea-log.md: edited other than by appending"; git reset -q --hard
+    git rm -q docs/roadmap.md; rm docs/working/idea-log.md; ln -s x docs/working/idea-log.md; git add -A
+    cd_is "refuse docs/roadmap.md: the index deletes it
+refuse docs/working/idea-log.md: a side is not a regular file, or could not be read"; git reset -q --hard
+    # No merge base; usage.
+    git checkout -q --orphan lone; cd_is "refuse HEAD: it shares no commit with the default branch's $(git rev-parse main), or could not be read"
+    for a in "--answered" "--answered 7" "x"; do bl --cycle-diff $a; [ "$status" -eq 1 ] && [ -z "$output" ] || { echo "[$a]"; show; return 1; }; done
+}
