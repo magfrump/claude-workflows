@@ -240,9 +240,12 @@ SLUG='[abcdefghijklmnopqrstuvwxyz0123456789-]+'
 isbrief() { [[ "$1" =~ ^docs/working/briefs/$DIGIT{4}-$DIGIT{2}-$DIGIT{2}-$SLUG\.md$ ]]; }
 isclosed() { [[ "$1" == docs/working/briefs/closed/* ]] && isbrief "docs/working/briefs/${1#docs/working/briefs/closed/}"; }
 anybrief() { isbrief "$1" || isclosed "$1"; }
+# A cycle record: one per day, updated in place by each iteration (dev-cycle.sh
+# reads the window from these names; build-loop.sh's --main-log and
+# --land-cycle read its Branch: lines).
+isrecord() { [[ "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]]; }
 writable() {
-  [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ \
-    || "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]] || anybrief "$1"
+  [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ ]] || isrecord "$1" || anybrief "$1"
 }
 # Code fences, read only in their plain form, so that every fence this reads is
 # read the way CommonMark reads it: a line starting at column 0 with 3 or more `
