@@ -348,6 +348,7 @@ CALLER_COUNT=""
 git_harden() {
   local c="${GIT_CONFIG_COUNT:-0}" kv
   [[ "$c" =~ ^(0|[123456789][0123456789]*)$ ]] || { echo "${0##*/}: GIT_CONFIG_COUNT is not a plain decimal count" >&2; exit 1; }
+  # shellcheck disable=SC2034  # read by build-loop.sh (caller_gate)
   CALLER_COUNT="$c"
   for kv in "${HARDEN[@]}"; do
     export "GIT_CONFIG_KEY_$c=${kv%%=*}" "GIT_CONFIG_VALUE_$c=${kv#*=}"; c=$((c + 1))
