@@ -2052,8 +2052,12 @@ floor_why() {
 # token decides: [1], 1 or keep; [2], 2 or drop; [3], 3 or done (a word must be
 # followed by the end, punctuation or a dash). Anything else, including a hedge
 # or a bracket further in, is unrecognized, and the user is asked again.
-# build-loop.sh's ANSWERS_AWK (--main-log's answers class) copies these labels
-# and the header line's Status field: change both together.
+# build-loop.sh's ANSWERS_AWK (--main-log's answers class), QKEYS_AWK and
+# QDIFF_AWK (--cycle-diff: also this heading rule and entry end) copy these
+# labels and the header line's Status field: change all of them together (a
+# label read here but not there lets --cycle-diff pass an answer: i2
+# architecture 1; build-loop-orchestrator.bats checks the label regex).
+# --cycle-diff runs this program itself (id Q-) for the whole-file skips.
 # shellcheck disable=SC2016  # awk code, not shell: $0 and the rest must stay literal
 ANSWER_AWK='
 function option(span,   s, w, r, t) {

@@ -24,6 +24,11 @@
 #                            sets it for its own runs.
 #   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
+#   HEALTH_CHECK_LOCK_HELD   When 1, takes no lock. Set to 1 for the run that
+#                            holds health-check.lock (one run at a time per
+#                            repository: take_lock), so a run it starts never
+#                            waits on it. Not only a test seam: any caller
+#                            setting it skips the lock.
 #
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
@@ -1088,7 +1093,33 @@ check_questions_doc() {
     fi
 }
 
+# One health check at a time per repository (plan D14, F46: the orchestrator's
+# and each build loop's gates share the machine): flock on health-check.lock in
+# the common git dir, waiting for a holder. flock(1) holds it and re-runs this
+# script as its child with the descriptor closed (-o), so nothing a suite leaves
+# running keeps it; -E 75 marks "held elsewhere" (its own exits are 0 or 1). The
+# child, and a run inside it (check 5 runs health-check.bats), get
+# HEALTH_CHECK_LOCK_HELD=1 and take no lock. Only a plain file is locked (a FIFO
+# would block); outside a git repository there is nothing to share.
+take_lock() {
+    local d lk rc=0
+    [[ "${HEALTH_CHECK_LOCK_HELD:-}" != 1 ]] || return 0
+    d="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 0
+    lk="$d/health-check.lock"
+    if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]]; then
+        red "health-check.lock in $d is not a plain file"; exit 1
+    fi
+    export HEALTH_CHECK_LOCK_HELD=1
+    flock -n -E 75 -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+    if [[ "$rc" -eq 75 ]]; then
+        yellow "waiting for another health check in this repository (health-check.lock)"
+        rc=0; flock -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+    fi
+    exit "$rc"
+}
+
 main() {
+    take_lock "$@"
     bold "Repo Health Check"
     bold "================="
 
