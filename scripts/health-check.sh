@@ -24,6 +24,9 @@
 #                            sets it for its own runs.
 #   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
+#   HEALTH_CHECK_LOCK_HELD   Set by a run once it holds health-check.lock (one
+#                            run at a time per repository: take_lock), so a
+#                            run it starts takes no lock and never waits on it.
 #
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
@@ -1088,7 +1091,28 @@ check_questions_doc() {
     fi
 }
 
+# One health check at a time per repository (plan D14, F46): the dev cycle's
+# orchestrator and each build loop run this gate from their own worktrees, and
+# concurrent suites share TMPDIR and the machine. flock on
+# health-check.lock in the common git dir, waiting for a run that holds it. A
+# run inside a run (check 5's suites include health-check.bats, which runs this
+# script) inherits HEALTH_CHECK_LOCK_HELD and takes no lock, or it would wait
+# on its own parent. Outside a git repository there is nothing to share. Only a
+# plain file is opened (a FIFO would block), as build-loop.sh's dispatch lock.
+take_lock() {
+    local d lk
+    [[ -z "${HEALTH_CHECK_LOCK_HELD:-}" ]] || return 0
+    d="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 0
+    lk="$d/health-check.lock"
+    if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]] || ! { exec 8>>"$lk"; } 2>/dev/null; then
+        red "health-check.lock in $d is not a plain file or cannot be opened"; exit 1
+    fi
+    flock -n 8 || { yellow "waiting for another health check in this repository (health-check.lock)"; flock 8; }
+    export HEALTH_CHECK_LOCK_HELD=1
+}
+
 main() {
+    take_lock
     bold "Repo Health Check"
     bold "================="
 
