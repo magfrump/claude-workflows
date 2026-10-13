@@ -285,7 +285,7 @@ shim() {
 
 # inplace ID FROM: the loose object file for ID now holds FROM's object, as a same-uid writer could leave it.
 inplace() { local o=".git/objects/${1:0:2}/${1:2}" f=".git/objects/${2:0:2}/${2:2}"; chmod u+w "$o"; cp "$f" "$o"; }
-A1="refuse d6: main's first-parent history, the trees above scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
+A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
 
 @test "the D6 snippet refuses the scripts/ tree rewritten in place, and runs no planted bytes (T36, U3b3 i1 A1, i2 B1)" {
     d6_setup
@@ -303,7 +303,7 @@ A1="refuse d6: main's first-parent history, the trees above scripts/lib/ or the 
     f="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\n\nforged\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
     inplace "$t" "$f"; [ "$(git rev-list --first-parent --max-parents=0 main)" = "$r" ]
     d6_copy "$r" /opt/claude-workflows; d6 build-loop.sh --settings
-    # git names the mismatch on stderr too; the one stdout line is the snippet's.
+    # The verified reader names the mismatch on stderr; the one stdout line is the snippet's.
     [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
 }
 
@@ -312,6 +312,15 @@ A1="refuse d6: main's first-parent history, the trees above scripts/lib/ or the 
     d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
     git clone -q --depth 1 "file://$BATS_TEST_TMPDIR/repo" "$BATS_TEST_TMPDIR/shallow"
     cd "$BATS_TEST_TMPDIR/shallow"; d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
+}
+
+@test "the D6 snippet reads a first parent only directly after the tree line, as git does: a late parent line is no parent (T37, U3b3 final security F1 b)" {
+    d6_setup; r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"
+    c="$(printf 'tree %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\nparent %s\n\nlate\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
+    git update-ref refs/heads/main "$c"; [ "$(git rev-list --max-parents=0 main)" = "$c" ]
+    # D6_ROOT names the commit only the late line points at: the snippet must take the image copy (a uid-owned stub here, so refused).
+    U="$BATS_TEST_TMPDIR/opt"; mkdir -p "$U/scripts/lib"; d6_copy "$r" "$U"
+    d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
 }
 
 @test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's copy from main refuses the same tip (T27, U3b3)" {

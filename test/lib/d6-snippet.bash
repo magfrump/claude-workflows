@@ -19,9 +19,13 @@
 # 0700 dir is the Q-103 class, row 509). In any other repository (another
 # root, or not SHA-1) it runs the image copy under D6_OPT, by absolute path,
 # once those files and every directory above them are root-owned, no symlink
-# and not writable here. It never reads the working tree, ~/.claude/scripts or
-# a replaced object; it trusts refs/heads/main itself (a moved main is
-# --main-log's to report, D13; F19, rows 509, 721).
+# and not writable here. It reads no file of the working tree but the .git
+# entry that finds the repository, no ~/.claude/scripts and no replaced object.
+# It trusts refs/heads/main and that .git entry: a moved main is --main-log's to
+# report (D13; F19, rows 509, 721). Known gap (final security F1, Q-140): the
+# choice of main's copy rests on the repository's own data, so in another
+# project a loop that moves main onto a copy of D6_ROOT, or rewrites the .git
+# entry, gets that project's scripts run instead of the image copy.
 # Arguments: build-loop.sh or dev-cycle.sh, then that script's own.
 # Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout,
 # with nothing run, for a replace ref, info/grafts, a default branch that is
@@ -32,7 +36,8 @@
 # temp-dir step that fails (git or perl may add a line on stderr); 1 for
 # another first argument. Its git carries the lib's HARDEN pairs and
 # git_harden's environment (G; a test pins the two lists equal). These checks
-# come before, not instead of, the script's own state and default-branch gates.
+# come before, not instead of, build-loop.sh's own state and default-branch
+# gates in its gated modes (dev-cycle.sh and the read modes have none: row 548).
 d6() {
   set -u -o pipefail
   D6_ROOT=640cf00735754d4253819a0354fb8ca9b71a8ea7; D6_OPT=/opt/claude-workflows
@@ -53,8 +58,11 @@ d6() {
   ! g symbolic-ref -q "refs/heads/$m" >/dev/null || no "refs/heads/$m is a symbolic ref"
   sha="$(g rev-parse --verify -q "refs/heads/$m")" && [[ "$(g cat-file -t "$sha")" == commit ]] || no "refs/heads/$m names no commit"
   # The verified reader (args: D6_ROOT, the temp dir, main's commit, the git
-  # command). It prints "main" once the four files are written, "other" when
-  # the first-parent root is not D6_ROOT; any failure dies (status 255).
+  # command): a narrower build-loop.sh store_check that needs no second-copy
+  # rule, since it uses only bytes it has hashed itself. It prints "main" once
+  # the four files are written, "other" when the first-parent root is not
+  # D6_ROOT; any failure dies with a non-zero status. A first parent is a
+  # parent line directly after the tree line, as git reads a commit.
   P='use strict; use IPC::Open2; use Digest::SHA qw(sha1_hex);
     my ($root, $out, $c, @git) = @ARGV; open2(my $r, my $w, @git, "cat-file", "--batch"); binmode $r; binmode $w; $w->autoflush(1);
     sub obj { my ($id, $want) = @_; print $w "$id\n"; my $h = <$r>; die "no answer for $id\n" unless defined $h; chomp $h; my ($i, $t, $s) = split / /, $h, 3; my $b = "";
@@ -63,7 +71,7 @@ d6() {
     sub entry { my ($t, $n, $m) = @_; my $b = obj($t, "tree");
       while ($b =~ /\G([0-7]+) ([^\0]+)\0(.{20})/gs) { my ($md, $nm, $id) = ($1, $2, $3); next unless $nm eq $n; die "$n is not a $m entry\n" unless $md =~ $m; return unpack("H*", $id) } die "no $n in $t\n" }
     my $tree; while (1) { my ($hd) = split /\n\n/, obj($c, "commit"), 2; $tree //= $hd =~ /\Atree ([0-9a-f]{40})\n/ ? $1 : die "$c has no tree\n";
-      my ($p) = $hd =~ /^parent ([0-9a-f]{40})$/m; last unless defined $p; $c = $p }
+      my ($p) = $hd =~ /\Atree [0-9a-f]{40}\nparent ([0-9a-f]{40})\n/; last unless defined $p; $c = $p }
     if ($c ne $root) { print "other\n"; exit 0 }
     my $s = entry($tree, "scripts", qr/\A40000\z/); my $l = entry($s, "lib", qr/\A40000\z/);
     for my $f ("build-loop.sh", "dev-cycle.sh", "questions.sh", "lib/dev-cycle-read.sh") { my ($t, $n) = $f =~ m{\Alib/(.*)\z} ? ($l, $1) : ($s, $f);
@@ -75,7 +83,7 @@ d6() {
   x="$(g rev-parse --show-object-format)" || no "the object format could not be read"
   # D6_ROOT is a SHA-1 id: a repository in another format is not claude-workflows.
   if [[ "$x" == sha1 ]]; then
-    x="$(LC_ALL=C perl -e "$P" "$D6_ROOT" "$t" "$sha" "${G[@]}")" || no "$m's first-parent history, the trees above scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
+    x="$(env -u PERL5LIB -u PERL5OPT -u PERL_UNICODE -u PERLIO LC_ALL=C perl -e "$P" "$D6_ROOT" "$t" "$sha" "${G[@]}")" || no "$m's first-parent history, the trees down to scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
   else x=other; fi
   if [[ "$x" == main ]]; then
     d="$t"
