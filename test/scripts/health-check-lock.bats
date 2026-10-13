@@ -37,3 +37,16 @@ setup() {
     run bash scripts/health-check.sh
     [ "$status" -eq 1 ] && [[ "$output" == *"health-check.lock in $R/.git is not a plain file"* ]] && [ "$(grep -c "^in " "$L")" -eq 3 ] || { echo "$output"; return 1; }
 }
+
+@test "HEALTH_CHECK_LOCK_WAIT bounds the wait: past it the run exits 75 having run nothing; a value that is not a number stops the run (row 750, U4b1)" {
+    : > .git/health-check.lock
+    flock .git/health-check.lock sleep 4 &
+    sleep 0.5
+    RUN=w HEALTH_CHECK_LOCK_WAIT=1 run bash scripts/health-check.sh
+    [ "$status" -eq 75 ] && [[ "$output" == *"gave up waiting for health-check.lock after 1s: nothing was checked"* ]] && [ ! -e "$L" ] || { echo "$status $output"; return 1; }
+    RUN=x HEALTH_CHECK_LOCK_WAIT=1s run bash scripts/health-check.sh
+    [ "$status" -eq 1 ] && [[ "$output" == *"HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds"* ]] && [ ! -e "$L" ] || { echo "$status $output"; return 1; }
+    wait
+    RUN=y HEALTH_CHECK_LOCK_WAIT=30 run bash scripts/health-check.sh
+    [ "$status" -ne 75 ] && [[ "$output" != *waiting* ]] && grep -qx "out y" "$L" || { echo "$status $output"; return 1; }
+}

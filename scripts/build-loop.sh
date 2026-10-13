@@ -133,10 +133,8 @@
 #             the caller's config pairs, GIT_NO_REPLACE_OBJECTS and GIT_PREFIX
 #             aside), or a caller pair (git -c, GIT_CONFIG_COUNT) setting a key
 #             the state gate refuses or one this script's own hardening sets
-#             (the lib's HARDEN list: core.useReplaceRefs, core.hooksPath,
-#             core.fsmonitor, core.attributesFile, core.commitGraph,
-#             core.multiPackIndex, log.date, log.showSignature, commit.gpgSign; a git -c pair
-#             would win over it), whatever the value. Then --check's state gate, its
+#             (any key of the lib's HARDEN list, which git_harden's comment
+#             explains; a git -c pair would win over it), whatever the value. Then --check's state gate, its
 #             default-branch rules and its object check, as listed there.
 #   --main-log  what moved the default branch since SINCE (D13, F19, F43; the
 #             orchestrator runs it at the start of each iteration with the last
