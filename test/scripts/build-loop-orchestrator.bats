@@ -446,7 +446,7 @@ ${W//Q-001/Q-003}"; git reset -q --hard
     mkdir -p docs/working; I='- **X**: Brief: `docs/working/briefs/2026-10-01-x.md`'
     printf '%s\n' '# Roadmap' 'Intro.' '## Now' '- a' '## In flight' "$I" '## Next' '1. n' '## Ideas' '## Done (last cycle)' '- y: `docs/working/briefs/closed/2026-09-01-y.md`' > docs/roadmap.md
     printf '%s\n' '# Idea log' '- i1 (signal: s)' > docs/working/idea-log.md; commit_all roadmap; git checkout -q -b chore/dev-cycle-2026-10-12
-    # Step 6's rewrites: Next reworded, Done trimmed, X moved to Done at closed/, an idea appended, any other path.
+    # Step 6's rewrites: Next reworded, Done trimmed, X moved to Done at closed/, an idea appended, any other allowed path.
     sed -i 's/^1\. n/1. m/; /2026-09-01-y/d; /2026-10-01-x/d' docs/roadmap.md; echo '- X done: `docs/working/briefs/closed/2026-10-01-x.md`' >> docs/roadmap.md
     echo '- i2 (signal: t)' >> docs/working/idea-log.md; echo x > docs/other.md; git add -A; cd_is ok
     git reset -q --hard; sed -i '/2026-10-01-x/d' docs/roadmap.md; git add -A
@@ -475,7 +475,10 @@ refuse docs/working/idea-log.md: a side is not a regular file (mode 100644), or 
     printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; sed -i 's/^Asked: .*/&, Q-002@Q-003/' "$F"; git add -A; cd_is "refuse $F: $A \"Q-002@Q-003\", which is not Q-NNN or Q-NNN@SHA"
     sed -i 's/^Asked: .*/Asked: Q-001@abc, /' "$F"; git add -A; cd_is "refuse $F: $A \"\", which is not Q-NNN or Q-NNN@SHA"
     sed -i 's/^Asked: .*/Asked: Q-001@abc, Q-002, Q-002/' "$F"; git add -A; cd_is "refuse $F: $A Q-002, which is added more than once (by this or another brief's Asked: line)"
-    sed -i 's/^Asked: .*/Asked: Q-001@abc/' "$F"; echo 'Asked: Q-002' >> "$Y"; git add -A; cd_is "refuse $Y: $A Q-002, whose entry's heading does not end -2026-10-01-y-N (an entry filed for this brief)"
+    sed -i 's/^Asked: .*/Asked: Q-001@abc/' "$F"; echo 'Asked: Q-002' >> "$Y"; git add -A; cd_is "refuse $Y: $A Q-002, whose entry's heading is not WORDS-2026-10-01-y-N (an entry filed for this brief)"
+    # An entry for a brief whose name ends in this one's does not fit (confirming F-A).
+    sed -i '/^Asked: Q-002$/d' "$Y"; sed -i 's/^### Q-002 · .*/### Q-002 · keep-or-drop-2026-10-02-foo-2026-10-01-x-1/' docs/working/questions.md; sed -i 's/^Asked: .*/&, Q-002/' "$F"; git add -A
+    cd_is "refuse $F: $A Q-002, whose entry's heading is not WORDS-2026-10-01-x-N (an entry filed for this brief)"; git reset -q --hard; printf '%s\n' "$E" "$N OPEN" >> docs/working/questions.md; git add -A
     # A questions file refused whole: only that refusal, not "names no entry" for a correct item (final architecture 1).
     sed -i '/^Asked: Q-002$/d' "$Y"; sed -i 's/^Asked: .*/&, Q-002/' "$F"; printf '%s\n' '```' >> docs/working/questions.md; git add -A
     cd_is "refuse docs/working/questions.md: --check-answer refuses its index copy whole (unbalanced 12)"; git reset -q --hard
@@ -494,8 +497,10 @@ refuse docs/working/Questions.md: one of the dev cycle's own files, spelled in a
 refuse scripts/lib/a.sh: the gate's own code; $G"; git reset -q --hard
     # Only the cycle's files, a .md under docs/ or README.md: a loop's commit carried on the chore branch refuses (final F1, F3, F4).
     mkdir -p src docs/x; echo s > src/app.sh; echo m > docs/x/y.md; echo r > README.md; echo k > "AGENTS.md$(printf '\u212a')"; git add -A
-    O="not a file the cycle changes (its own files, a .md under docs/ or README.md, which --check-fix may allow)"; cd_is "refuse AGENTS.md$(printf '\u212a'): $O
-refuse src/app.sh: $O"
+    O="not a file the cycle changes (its own files, a .md under docs/ or README.md)"; cd_is "refuse AGENTS.md$(printf '\u212a'): $O
+refuse src/app.sh: $O"; git reset -q --hard
+    # Compared lower-cased, as --check-fix compares (confirming F-B).
+    echo r > readme.md; mkdir -p Docs; echo d > Docs/x.md; git add -A; cd_is ok
 }
 
 # lc_is WANT ARG...: --land-cycle ARG... refused with exactly WANT, exit 2. rec LINE...: the day's cycle record gains LINEs, committed.

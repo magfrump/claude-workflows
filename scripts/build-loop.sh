@@ -214,8 +214,10 @@
 #                 failed read refuses (a questions file is judged by its entries); a
 #                 new roadmap or idea log is not judged. Every path meets
 #                 these rules (row 745). A path other than the cycle's own
-#                 files, a .md under docs/ or README.md refuses (what
-#                 --check-fix may allow an in-cycle fix). A
+#                 files, a .md under docs/ or README.md, compared
+#                 lower-cased, refuses (the paths an in-cycle fix may touch;
+#                 wider than --check-fix, whose other refusals the rules
+#                 here repeat only in part). A
 #                 path of the gate's own code (GATE_CODE) refuses, and so
 #                 does one the lib's truthrule reads as truth (an instruction
 #                 or prompt file, a dot path, docs/dev-cycle.md,
@@ -229,8 +231,9 @@
 #                 added). Each item added (", "-separated) must be exactly
 #                 Q-NNN or Q-NNN@SHA (7-64 hex), name an entry the questions
 #                 files gain (a "### Q-NNN" heading BASE lacks) whose heading
-#                 ends "-STEM-N" (STEM the brief's file name without .md, as
-#                 keep-or-drop-STEM-N), and be added once (by one brief,
+#                 (after " · ") is WORDS-STEM-N (WORDS lower-case letters and
+#                 hyphens, STEM the brief's file name without .md, N digits,
+#                 as keep-or-drop-STEM-N), and be added once (by one brief,
 #                 once). When a questions file is refused whole or unread,
 #                 only the item's form is judged. A brief with an Asked: line deleted, or
 #                 renamed to another file name, refuses.
@@ -1927,10 +1930,12 @@ cycle_rules() {
       echo "refuse $p: $w; an in-cycle fix never edits it (--check-fix refuses it too)"; bad=1; continue
     fi
     if [[ "$TRUTH_WHY" == cycle && "$p" != "$lp" ]]; then echo "refuse $p: one of the dev cycle's own files, spelled in another case, which these rules do not read"; bad=1; continue; fi
-    # Any other path is one --check-fix could allow an in-cycle fix: a .md
-    # under docs/ or README.md. A commit the chore branch carries from
-    # elsewhere (a loop's branch) refuses here (final security F1, F3, F4).
-    if [[ "$TRUTH_WHY" != cycle && "$p" != docs/*.md && "$p" != README.md ]]; then echo "refuse $p: not a file the cycle changes (its own files, a .md under docs/ or README.md, which --check-fix may allow)"; bad=1; continue; fi
+    # Any other path is one an in-cycle fix may touch: a .md under docs/ or
+    # README.md, compared lower-cased as --check-fix compares (confirming
+    # security F-B). A commit the chore branch carries from elsewhere (a
+    # loop's branch) refuses here when it touches another path (final
+    # security F1, F3, F4).
+    if [[ "$TRUTH_WHY" != cycle && "$lp" != docs/*.md && "$lp" != readme.md ]]; then echo "refuse $p: not a file the cycle changes (its own files, a .md under docs/ or README.md)"; bad=1; continue; fi
     if anybrief "$p"; then
       # Each side's first Asked: line, by file name: a move to closed/ is a D
       # and an A side. One path per name and side, or one would hide the other (i2 security F-c).
@@ -1964,8 +1969,9 @@ cycle_rules() {
   while IFS=$'\t' read -r id k; do newh[$id]="$k"; done < "$t.new"
   # Step 6 only appends IDs to a brief's first Asked: line, each a Q-NNN or
   # Q-NNN@SHA (D4) naming an entry this change files ($t.new) for this brief
-  # (its heading ends "-STEM-N", STEM the brief's file name without .md, as
-  # step 6's keep-or-drop-STEM-N does), added once across the briefs: an ID
+  # (its heading's slug is WORDS-STEM-N, WORDS letters and hyphens only, so
+  # no other stem, which starts with a date, fits before STEM: confirming
+  # security F-A; as step 6's keep-or-drop-STEM-N), added once across the briefs: an ID
   # dropped, changed, reused or shared would apply another brief's question's
   # answer to this one, since --check-answer matches the ID alone (row 745;
   # i1 security F1, F3; i2 F-a, F-b; final F2). A brief deleted, or renamed to
@@ -1986,7 +1992,7 @@ cycle_rules() {
       if ! [[ "$x" =~ ^(Q-[0123456789]+)(@[0123456789abcdef]{7,64})?$ ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds \"$x\", which is not Q-NNN or Q-NNN@SHA"; bad=1; continue; fi
       id="${BASH_REMATCH[1]}"; [[ "$qrc" -ne 2 ]] || continue
       if [[ -z "${newh[$id]+set}" ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which names no question entry this change files"; bad=1
-      elif ! [[ "${newh[$id]#* · }" =~ (^|-)"${f%.md}"-[0123456789]+$ ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, whose entry's heading does not end -${f%.md}-N (an entry filed for this brief)"; bad=1
+      elif ! [[ "${newh[$id]#* · }" =~ ^[abcdefghijklmnopqrstuvwxyz]+(-[abcdefghijklmnopqrstuvwxyz]+)*-"${f%.md}"-[0123456789]+$ ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, whose entry's heading is not WORDS-${f%.md}-N (an entry filed for this brief)"; bad=1
       elif [[ -n "${used[$id]-}" ]]; then echo "refuse ${ap[$f]}: its first Asked: line adds $x, which is added more than once (by this or another brief's Asked: line)"; bad=1
       else used[$id]=1; fi
     done
