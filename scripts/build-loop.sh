@@ -1854,7 +1854,7 @@ cycle_diff() {
       cp "$t.o" "$t.n"
     fi
     for p in o n; do
-      # The whole-file verdict from --check-answer's own reader (id Q- names no entry): FENCE_AWK's refusals and a fenced question heading.
+      # The whole-file verdict from --check-answer's own reader (id Q- names no Q-digits entry; a bare "### Q-" heading only refuses): FENCE_AWK's refusals and a fenced question heading.
       k=base; [[ "$p" == o ]] || k=index; md="$(LC_ALL=C awk -v id=Q- "$FENCE_AWK$ANSWER_AWK" "$t.$p")" || md="unread"
       [[ -z "$md" ]] || { echo "refuse $f: --check-answer refuses its $k copy whole ($md)"; return 1; }
       LC_ALL=C awk -v f="${f##*/}" "$FENCE_AWK$QKEYS_AWK" "$t.$p" >> "$t.q$p" || { echo "refuse $f: it could not be read"; return 1; }

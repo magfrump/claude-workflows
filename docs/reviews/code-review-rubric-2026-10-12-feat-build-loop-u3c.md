@@ -1,4 +1,5 @@
-Commit: 4aad0f9c
+Commit: 0f0c7e1c
+Loop closed at 0f0c7e1c
 Loop-pass short-circuit: used at 414c9295
 
 # Code Review Rubric: feat/build-loop-u3c
@@ -124,3 +125,18 @@ Rows 724 (discharged), 722 (re-keyed to U4 by this branch's row), 682 (pre-exist
 Rows 724 (discharged), 722 (re-keyed, now sharpened by C7), 682 (pre-existing): as before. This branch's iteration-2 deferral rows (lock wait, --answered record, hooks, land from checked MAIN_SHA, roadmap preamble) were judged correctly scoped by the final security critic.
 
 **Status (iteration 3):** 🔴 1 (fixed 4aad0f9c), 🟡 2 (fixed in the batch after 4aad0f9c, unreviewed). The loop is at its 3-iteration cap: the iteration-4 gate's decision is **escalate to a narrow confirming pass** (k=1 fact-check with the routed endorsement claims, plus security, over the fix range), as U3a1 and U3a2 did under Q-137; merge on no new Must Fix.
+
+---
+
+# Confirming pass (iteration-4 gate: escalate; k=1 fact-check with Stage 2.5 + security over 4aad0f9c..0f0c7e1c)
+
+**Reports:** `code-fact-check-report-2026-10-12-u3c-confirm.md` (27 claims: 23 Verified, 4 Mostly accurate; 6 submitted claims all Verified, claim 23 by a 3,042-pair differential fuzz), `security-review-2026-10-12-u3c-confirm.md`. Suites at 0f0c7e1c: 291/291 (orchestrator 24, read 20, merge 12, dispatch 4, lock 2, check 146, dev-cycle 79, fixtures 2+2).
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| D1 | C2 and C3 closed: the criss-cross fixture refuses at HEAD (ok at 4aad0f9c); ANSWER_AWK with id Q- adds no fail-open (13 inputs; any output or awk failure refuses). | security confirm 1-2, fact-check 22 (executed) | Verified |
+| D2 | Rename pairing at the land: a questions file absent on the base, created by the index while a similar file main edited is deleted, lands main's edit in it (executed). Older than the fix range. | security confirm (Medium, Low confidence) | Deferred: override row (U4's land judges the merge-tree result) |
+| D3 | "id Q- names no entry" is false for a bare `### Q-` heading (fails closed: refuses); "a questions refusal's WHY starts with its ID" holds for entry refusals only. | fact-check 5, 13, 26b; security Info | Fixed: comment and plan text |
+| D4 | 0f0c7e1c's message repeats "names no entry" and omits the lock-test header compaction. | fact-check 19 | Accepted: branch history |
+
+**Status:** 🔴 0, 🟡 0 open in this unit (D2 deferred by override row with a U4 trigger), 🟢 text fixed. Recommendation: merge. Single-sample review; absence of findings is not an attestation.
