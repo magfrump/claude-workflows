@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
+| [Q-145](#q-145--lib-ancestor-listing-vanish-race) | you: judgment | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -298,4 +299,22 @@ Also open from the same pass, Medium, not introduced by the range: the bootstrap
 - **Interim:** [1] (the Q-138 / Q-141 precedent), applied 2026-10-13 on `feat/build-loop-u4b1`; the second confirming pass runs next, and U4b1 merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
 - **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
 
+
+### Q-145 · lib-ancestor-listing-vanish-race
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fails closed when any file in a repo ancestor (e.g. `/tmp`) vanishes mid-listing. Fix the lib first, or merge Q-102 anyway?
+
+- **Why it's yours:** the fix is in GATE_CODE (`scripts/lib/dev-cycle-read.sh`), which lands only on your approval; and merging a gate that flakes is the trade Q-102 [1] priced at "1 in about 13 runs", which this is worse than.
+- **Read:** branch `feat/q102-parallel-gates` (worktree `.claude/wt-q102-parallel-gates`, tip 4bbd6f6d), rubric `docs/reviews/code-review-rubric-2026-10-14-feat-q102-parallel-gates.md` ("Narrow check and gate"). The listing: `find -H "${tops[@]}" -maxdepth 1 ... || return 1` in `seeds`' walk, where `tops` holds every ancestor of the repo. The failures: `find: '/tmp/bats-run-*/bats.PID.out': No such file or directory` (another test file's output under `--jobs`) and `find: '/tmp/tmp.JTuucY5EGl'` (another session's temp file), in build-loop-check 968 and build-loop-merge 1059/1061; each passes alone. 2 of the last 2 gates at load 18-20 (the first gate, at load ~5, passed).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fix the lib, then merge Q-102** (recommended) | A separate reviewed unit: the ancestor listing skips an entry that no longer exists (it is gone, so it holds no instruction file) instead of failing; Q-102 merges once a gate is green | Approving one gate-code merge | The same race can likely hit the real gate when a repo's ancestor or config dir churns (`~/.claude` is written constantly; unverified) — [1] fixes that too |
+| **[2] Merge Q-102 now, fix later** | Parallel default lands; a red gate of this class is re-run (`scripts/run-tests.sh --failed`) or run with `HEALTH_CHECK_JOBS=1` | A re-run on some gates until the fix | Gates flake often under load; agents may misread the red as their own |
+| **[3] Drop the parallel default** | Close Q-102 [1] as not applied; callers stay serial | ~7.5 min per gate stays | Nothing breaks; the lib race stays latent |
+
+- **Blocks:** Q-102's merge.
+- **Interim:** branch unmerged; main's gate stays serial, so nothing is burning.
+- **If the answer differs:** [2] merges the branch as it is; [3] deletes the branch.
 
