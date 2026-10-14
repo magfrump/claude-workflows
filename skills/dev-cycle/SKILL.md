@@ -290,15 +290,17 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `hg -C MAIN_WT rev-list --first-parent M` (the history `--main-log` reads; a merged
    branch's own commits are not on it). Not on main: the gate that runs is a commit no merge
    to main landed; file one `you: judgment` entry `image-off-main-C12` (C's first 12 hex),
-   unless WT's questions files hold one: [1] rebuild from main (check main out on the host,
-   then the paste below), [2] keep this image. On main: run
+   unless WT's questions files hold one: [1] rebuild from main (the paste below, which
+   refuses until the host checkout is at M), [2] keep this image. On main: run
    `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
    `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
    diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
-   ./devcontainer-config/install.sh` (host; then a new sandbox launch; install.sh's own state
-   gate runs before any other git call), interim: the image's gate runs. Exit 0: the image
+   ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
+   call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
+   other git command the user runs on the host here, a checkout to reach M included, can run
+   one a sandbox session planted, install.sh's own trust model), interim: the image's gate runs. Exit 0: the image
    holds main's gate code; list any open `image-lag` or `image-off-main-*` entry in the final
    message as cleared, for the user to answer (the orchestrator never answers one: D8).
    Any other exit: note it in the record. None of these stops the iteration.

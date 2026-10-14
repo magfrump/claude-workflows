@@ -1,4 +1,4 @@
-Commit: 43b8d7ed
+Commit: 18fd4e1e
 
 # Code Review Rubric: feat/build-loop-u4c
 
@@ -120,6 +120,20 @@ before install.sh's state gate, so a planted `core.fsmonitor` or clean filter ra
 **Gate:** two confirming passes have each found a Medium introduced by their range (the second
 by the interim fix itself), so U4c does not merge on the interim: it waits for Q-144's answer
 (the Q-143 precedent). The revert returns the paste to text the full panel reviewed at 43b8d7ed.
+
+## Third confirming pass (18fd4e1e): Q-144 answered [1], security only
+
+Security (`security-review-2026-10-14-u4c-confirm3.md`): the revert fully removes confirm2 F1;
+step 0.1's sandbox calls all run through `hg` after `--state`. **One Medium** (judged introduced;
+arguably implied at 43b8d7ed): `image-off-main`'s [1] told the user to check main out on the
+host, and a host `git checkout` runs planted hooks, fsmonitor and filters before install.sh's
+state gate (which never inspects hooks); 18fd4e1e's "the state gate runs before any other git
+call" was false on that route (executed in a scratch repo).
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| G1 | Host checkout instruction and the overbroad state-gate claim | confirm3 security F1 (Medium) | Fixed: [1] names only the paste (which refuses until HEAD is at M); the claim is scoped to the paste's one `rev-parse`, and any other host git command is named as install.sh's own trust model. A sandbox checkout (security's suggestion) is refused by the Rules (the orchestrator never switches a branch in a checkout it did not create). |
+| G2 | Whatever moves host HEAD to M happens outside the paste | confirm3 security F2 (Informational, pre-existing) | Named in G1's sentence |
 
 ## Status
 
