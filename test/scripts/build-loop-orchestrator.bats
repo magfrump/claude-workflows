@@ -260,7 +260,7 @@ shim() {
     [ ! -e "$REPO_ROOT/test/lib/d6-snippet.bash" ]
 }
 
-@test "the D6 snippet runs the image copy's scripts by absolute path, each with its own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
+@test "the D6 snippet runs the image copy's scripts by absolute path, with the image's own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
     d6_setup
     # main and the working tree each hold scripts that say where they ran; the image copy's lib says where it was sourced from.
     for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo main copy; exit 9' > "scripts/$f"; done

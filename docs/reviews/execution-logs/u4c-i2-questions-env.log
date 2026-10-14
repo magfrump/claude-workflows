@@ -1,0 +1,11 @@
+2026-10-14T06:15:27Z
+cwd=/workspace/.claude/wt-build-loop-u4c
+$ QUESTIONS_LIVE=fake timeout 60 bash -s -- questions.sh next-id < d6.bash
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Q-144
+exit=0
+$ same, direct /opt questions.sh honouring the vars:
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Q-001
+exit=0

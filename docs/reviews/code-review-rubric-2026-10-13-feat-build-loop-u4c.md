@@ -52,6 +52,17 @@ None. Contextual: test-strategy not triggered (tests changed with source), tech-
 
 Rows 735 (refuse d6 handling), 736/737 (HARDEN copies, precedence), 738 (canonical copy: discharged, SKILL.md), 739 (trust root: closed by Q-140 [1]), 740/741 (reader cost and seam: discharged, the reader is gone), 742 (environmental refusals: the perl/temp-dir ones are gone), 743 (fork-overhead figures: superseded by i1 performance), 744 (timeout: the Rules' stop), 775 (questions.sh via ~/.claude/scripts: discharged), 807 (U4b2 F1: fixed in step 0.4), 808-811 (re-keyed, override row).
 
+## Iteration 2 (33ad1767): fix range 1bc823ea..33ad1767
+
+Fact-check (k=1, `docs/reviews/code-fact-check-report-2026-10-13-u4c-i2.md`): 30 claims; 22 Verified,
+7 Mostly accurate, 1 Unverifiable, no Incorrect or Stale. Fixed before the critics ran: step 0.1's
+diff narrowed to GATE_CODE's paths (it read all of `scripts/`, where health-check.sh differs today),
+"built" → "holds" the image's commit, the release named as install.sh then the next sandbox launch,
+a missing manifest or a failed command noted in the record; step 1 names the timeout stop; the
+header says the default branch's ref; Rollback 1 scoped to gate-code reverts; the T33 wording on
+questions.sh's lib. Row 817's "only the D6 block, its Rules and step 0.1" also omits steps 0.4 and
+1 and the deleted fallback (Mostly accurate; its conclusion holds; rows are append-only).
+
 ## Status
 
-Iteration 1 found no 🔴 and five 🟡, all fixed in the fix commit; the loop's next pass reviews that fix range.
+Iteration 1 found no 🔴 and five 🟡, fixed in 33ad1767 (B2's commit-message half an Accepted-immutable row). Health check passed at 1bc823ea (run in the session; log not committed).

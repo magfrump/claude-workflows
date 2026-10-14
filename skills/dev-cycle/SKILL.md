@@ -200,7 +200,7 @@ cd WT && bash -s -- SCRIPT ARG... <<'D6'
 # main's copy, a working-tree copy or ~/.claude/scripts, so no repository data
 # chooses which script runs (Q-140: a choice read from the repository let a
 # loop that moved main, or rewrote the checkout's .git entry, pick its own
-# scripts). It still trusts that entry and refs/heads/main for which repository
+# scripts). It still trusts that entry and the default branch's ref for which repository
 # and branch the script reads (a moved main is --main-log's to report), and it
 # cannot guard against this uid's own shell (PATH, exported functions): the
 # plan's same-uid residual (Q-103). In claude-workflows a gate change runs from
@@ -282,10 +282,12 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say. Then the image lag (Q-140 [1]): C is the `commit=` line of
    `/opt/claude-workflows/.manifest`; when `hg -C MAIN_WT cat-file -e 'C^{commit}'` succeeds
-   (this repository built the image) and `hg -C MAIN_WT diff --quiet C refs/heads/main --
-   scripts/ skills/dev-cycle/` exits 1, the gate that runs is older than main's: file or
-   update one `you: terminal` entry `image-lag`, its paste `./devcontainer-config/install.sh`
-   run from the host, and go on.
+   (this repository holds the image's commit) and `hg -C MAIN_WT diff --quiet C
+   refs/heads/main -- scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh
+   scripts/lib/ skills/dev-cycle/` (GATE_CODE) exits 1, the gate that runs is older than
+   main's: file or update one `you: terminal` entry `image-lag` (the release: the host's
+   `./devcontainer-config/install.sh`, then the next sandbox launch rebuilds the image), and
+   go on. No `.manifest`, no `commit=` line or any other exit: note it in the record and go on.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
    latest real, not future date of a regular file, as the digest picks its window: listed
@@ -372,7 +374,7 @@ last good one.
   `questions.sh archive` (it also reindexes) through the D6 block from WT, so
   answered entries leave the live file. If either fails, note it in the record and go on:
   questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
-  is still a stop, as the Rules say).
+  or a timed-out call is still a stop, as the Rules say).
 - `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
   live loop's, is never pruned). List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting (an

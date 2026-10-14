@@ -393,7 +393,7 @@ The hermetic throwaway-repo setup is the same as `test/scripts/dev-cycle.bats`. 
 | T23 | As rev 2, plus: an untracked unrelated file in W → merge; an untracked file at a path the merge adds → refuse | as listed | integration |
 | T27 | A gate copy with a patched rule, run from the loop's worktree, prints ok; the D6 snippet's copy refuses the same tip | refuse from main's copy | integration |
 | T32 | `--marker`: a plain 3-question body → printed, every line `> `-prefixed; E2's body, E3's line, `### Q-001 · x`, `Q-1: [1]` → skip; 101 lines or a 301-byte line → capped with a note; control/bidi scrubbed; an open fence → skip; a `ready` marker → skip | as listed | unit |
-| T33 | The D6 snippet (as built, U4c): runs the image copy's four files, each with its own lib and `questions.sh`; main's and the working tree's copies have no effect; SKILL.md holds the block once (its one copy) | as listed | integration |
+| T33 | The D6 snippet (as built, U4c): runs the image copy's four files (build-loop.sh and dev-cycle.sh with their own lib, dev-cycle.sh with its own `questions.sh`); main's and the working tree's copies have no effect; SKILL.md holds the block once (its one copy) | as listed | integration |
 | T34 | `--check-answer` (both scripts): an answer only in the working tree → `open`; committed on main → read; committed only on another branch → `open`; the E2 fixture with the body quoted by `--marker` → option 2, and `questions.sh open` omits the ID | as listed | unit |
 | T35 | `--merge --approved`: Q-NNN answered [1] with a matching slug → merges with N rules only; answered [2]/[3]/open; a slug naming another brief or an older TIP; an answer only in the working tree; a gate path under a plain `merge-` slug → refuse, under `merge-gate-` → ok | as listed | integration |
 | T36 | A blob replace ref, and separately a commit replace ref, on main's `build-loop.sh`; `info/grafts` present → the snippet refuses before running anything | refuse | integration |
@@ -429,7 +429,7 @@ Dropped from revision 2: none of the T-ids. T19 and T24 now test the orchestrato
 ## Risks
 
 - **The design grew.** Revision 3 adds about 230 lines of script (U3b) to close what the pre-mortem reproduced. The alternative was to leave the policy at `review` forever and file F41–F43 in Q-103. F41 (answers misread) and F43 (an honest commit to main) bite under `review` too, so they could not just be listed.
-- **The image lags main.** The installed skill (`~/.claude/skills`) is the image copy, so the orchestrator loop runs in this repo only after a release (step 12). Since Q-140 [1] the gate waits too (D6 runs the image copy); step 0.1 files an `image-lag` entry when main's gate code is ahead of the image's `.manifest` commit.
+- **The image lags main.** The installed skill (`~/.claude/skills`) is the image copy, so the orchestrator loop runs in this repo only after a release (step 12). Since Q-140 [1] the gate waits too (D6 runs the image copy); step 0.1 files an `image-lag` entry when main's GATE_CODE paths differ from the image's `.manifest` commit.
 - **Subagent loops die with the orchestrator session.** D1 re-dispatches them; the cost is one resumed RPI session per restart, capped by `Dispatched:`.
 - **D8 adds a step for you:** an answer typed into the working tree counts only once you commit it or tell the orchestrator. The wait message lists such answers.
 - **The state gate (F25, F51) can refuse** when a legitimate local config sets a `diff.*` or `merge.*` key. The refusal names the key.
@@ -438,7 +438,7 @@ Dropped from revision 2: none of the T-ids. T19 and T24 now test the orchestrato
 
 ## Rollback
 
-1. Each unit lands as its own `--no-ff` merge on main; the gate that runs is the image's, so a revert takes effect only after the image is rebuilt from the reverted main (`./devcontainer-config/install.sh`, host). Revert in reverse order: `git revert -m 1 <U5> <U4> <U3c> <U3b> <U3> <U2> <U1> <U0c> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
+1. Each unit lands as its own `--no-ff` merge on main; the gate that runs is the image's, so a revert of gate code takes effect only after the image is rebuilt from the reverted main (the host's `./devcontainer-config/install.sh`, then the next sandbox launch). Revert in reverse order: `git revert -m 1 <U5> <U4> <U3c> <U3b> <U3> <U2> <U1> <U0c> <U0b> <U0a>`. After the U0 reverts, run `bats test/scripts/dev-cycle.bats` (53 pass).
 2. Set Q-103 back to `deferred` with its old Deferred line, remove the C1–C5 and release entries, and run `scripts/questions.sh index`.
 3. Stop a running orchestrator: end the `/loop` (or the session). Its subagent loops stop with it, and their branches and locked worktrees stay for inspection (`git worktree unlock` before removing).
 4. A bad self-merge: commit `Build-loop policy: review` on main first. That binds running loops, because the stricter value wins and the gate re-reads it at merge time. Then `git revert -m 1 <that merge>` and set its brief to `Status: dropped`.
