@@ -24,6 +24,13 @@
 #                            sets it for its own runs.
 #   HEALTH_CHECK_RUN_TESTS   Test-only seam: the runner check 5 invokes.
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
+#   RUN_TESTS_JOBS           Test files check 5 runs at once, passed to the
+#                            runner as --jobs (Q-102 [1]). Default 8; 1 runs
+#                            serially. Same grammar as run-tests.sh's --jobs
+#                            (1 to 999, digits only, no leading zero); any
+#                            other value fails check 5 before it runs a test.
+#                            Without GNU parallel the runner warns and runs
+#                            serially.
 #   HEALTH_CHECK_LOCK_HELD   When 1, takes no lock. Set to 1 for the run that
 #                            holds health-check.lock (one run at a time per
 #                            repository: take_lock), so a run it starts never
@@ -40,7 +47,8 @@
 #   2. Workflow cross-references in CLAUDE.md/AGENTS.md/GEMINI.md resolve
 #   3. CLAUDE.md/AGENTS.md/GEMINI.md reference the same workflows and skills
 #   4. All test fixtures have corresponding expected-verdicts entries
-#   5. BATS tests pass: run-tests.sh --fast, then --slow only if fast is green
+#   5. BATS tests pass: run-tests.sh --fast, then --slow only if fast is green,
+#      both with --jobs $RUN_TESTS_JOBS (default 8)
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow value-justification frontmatter is present
 #   8. Hook scripts in hooks/ are executable, and are wired into the live
@@ -374,6 +382,14 @@ check_fixture_verdicts() {
 # HEALTH_CHECK_RUN_TESTS is a test-only seam naming the runner, so
 # test/scripts/health-check.bats can check the fast-then-slow ordering with a
 # stub instead of re-running the real suites.
+#
+# Parallelism (Q-102 [1]): both runs pass --jobs RUN_TESTS_JOBS, default 8,
+# which measured about 3x faster than serial (140 s against 451 s on 16
+# cores; see the "Parallel runs" section of run-tests.sh). RUN_TESTS_JOBS=1
+# runs serially, for a suspected timing flake. The value is checked here
+# with run-tests.sh's own grammar, so a bad one fails the gate by name rather
+# than as the runner's usage error mid-gate. Falling back to serial without
+# GNU parallel is the runner's job.
 
 check_bats() {
     section "BATS tests"
@@ -389,6 +405,11 @@ check_bats() {
     fi
 
     local runner="${HEALTH_CHECK_RUN_TESTS:-$REPO_ROOT/scripts/run-tests.sh}"
+    local jobs="${RUN_TESTS_JOBS:-8}"
+    if [[ ! "$jobs" =~ ^[1-9][0-9]{0,2}$ ]]; then
+        fail "RUN_TESTS_JOBS='$jobs' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run"
+        return
+    fi
     # The runner writes how many report-dependent suites it gated out (no
     # generated reports for their skill) to RUN_TESTS_NOT_RUN_FILE. Those did
     # not run, so they are reported as a warning with their count, and the
@@ -396,7 +417,7 @@ check_bats() {
     local nr_dir fast_nr slow_nr
     nr_dir="$(mktemp -d)"
 
-    if ! HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/fast" "$runner" --fast; then
+    if ! HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/fast" "$runner" --fast --jobs "$jobs"; then
         fail "Fast BATS suites failed — slow suites not run (fix fast first)"
         rm -rf "$nr_dir"
         return
@@ -404,7 +425,7 @@ check_bats() {
     fast_nr="$(_not_run_count "$nr_dir/fast")"
     pass "Fast BATS suites passed$(_not_run_note "$fast_nr")"
 
-    if HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/slow" "$runner" --slow; then
+    if HEALTH_CHECK_SKIP_BATS=1 RUN_TESTS_NOT_RUN_FILE="$nr_dir/slow" "$runner" --slow --jobs "$jobs"; then
         slow_nr="$(_not_run_count "$nr_dir/slow")"
         pass "Slow BATS suites passed$(_not_run_note "$slow_nr")"
     else

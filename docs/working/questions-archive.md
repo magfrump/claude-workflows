@@ -2513,6 +2513,8 @@ git -C /workspace branch -d feat/hook-refuse-redirects feat/run-tests-jobs feat/
 
 **Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** [1] parallel by default, with an env override. Not applied yet: health-check.sh and pr-prep still run serially; the change is a small reviewed unit for the next dev cycle to brief.
 
+**Applied (2026-10-14, branch `feat/q102-parallel-gates`):** health-check.sh's gate 5 passes `--jobs "${RUN_TESTS_JOBS:-8}"` to both runs; 1 is serial, a value outside run-tests.sh's `--jobs` grammar fails the gate before any test runs, and the runner still falls back to serial without GNU parallel. pr-prep's step 5a names the default and the override.
+
 
 ### Q-130 · q125-live-run
 **Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** ANSWERED

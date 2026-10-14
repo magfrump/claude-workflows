@@ -47,11 +47,7 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-6. **Q-102 [1] — parallel test gates by default.** Motive: answered 2026-10-12; every gate
-   costs ~7.5 min serial against ~2.5 min at `--jobs 8`. First step: health-check.sh and
-   pr-prep's test gate pass `--jobs` from a `RUN_TESTS_JOBS`-style variable (1 = serial),
-   falling back to serial without GNU parallel. A small reviewed unit.
-7. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
+6. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
    answered "not run" on 2026-10-12: installing a branch image refuses while any session
    runs, so it blocks the harness, and a forgotten test install is a security risk.
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.

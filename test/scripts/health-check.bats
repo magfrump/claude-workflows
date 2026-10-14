@@ -182,14 +182,14 @@ _isolated_skills_dir() {
 #
 # Sources health-check.sh (main only runs when executed) and calls check_bats
 # against a stub runner via the HEALTH_CHECK_RUN_TESTS seam, so these tests
-# never run the real suites. The stub logs each invocation's flag and the
+# never run the real suites. The stub logs each invocation's arguments and the
 # HEALTH_CHECK_SKIP_BATS it saw, and exits with STUB_FAST_RC / STUB_SLOW_RC.
 
 _stub_runner() {
   local stub="$BATS_TEST_TMPDIR/run-tests-stub.sh"
   cat > "$stub" <<'STUB'
 #!/usr/bin/env bash
-printf '%s skip=%s\n' "$1" "${HEALTH_CHECK_SKIP_BATS:-unset}" >> "$STUB_LOG"
+printf '%s skip=%s\n' "$*" "${HEALTH_CHECK_SKIP_BATS:-unset}" >> "$STUB_LOG"
 case "$1" in
   --fast) exit "${STUB_FAST_RC:-0}" ;;
   --slow) exit "${STUB_SLOW_RC:-0}" ;;
@@ -200,13 +200,17 @@ STUB
   printf '%s' "$stub"
 }
 
-# Run check_bats with the stub; prints FAIL=<n> last. Gate-5 guard unset here.
+# Run check_bats with the stub; prints FAIL=<n> last. Gate-5 guard unset here,
+# and RUN_TESTS_JOBS too unless STUB_JOBS is set, so an ambient value (the
+# outer gate's own) never reaches the gate under test.
 _run_check_bats() {
   local stub
   stub="$(_stub_runner)"
   export STUB_LOG="$BATS_TEST_TMPDIR/stub.log"
   : > "$STUB_LOG"
-  run env -u HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_RUN_TESTS="$stub" \
+  local jobs_env=(-u RUN_TESTS_JOBS)
+  [[ -n "${STUB_JOBS+set}" ]] && jobs_env=(RUN_TESTS_JOBS="$STUB_JOBS")
+  run env -u HEALTH_CHECK_SKIP_BATS "${jobs_env[@]}" HEALTH_CHECK_RUN_TESTS="$stub" \
     bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
 }
 
@@ -215,7 +219,27 @@ _run_check_bats() {
   echo "$output"; cat "$STUB_LOG"
   [ "$status" -eq 0 ]
   [[ "$output" == *"FAIL=0"* ]]
-  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast skip=1\n--slow skip=1')" ]
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 8 skip=1\n--slow --jobs 8 skip=1')" ]
+}
+
+@test "gate 5: RUN_TESTS_JOBS sets --jobs for both runs; 1 is serial" {
+  STUB_JOBS=1 _run_check_bats
+  echo "$output"; cat "$STUB_LOG"
+  [[ "$output" == *"FAIL=0"* ]]
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 1 skip=1\n--slow --jobs 1 skip=1')" ]
+  STUB_JOBS=16 _run_check_bats
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 16 skip=1\n--slow --jobs 16 skip=1')" ]
+}
+
+@test "gate 5: a RUN_TESTS_JOBS outside run-tests.sh's grammar fails the gate and runs nothing" {
+  local bad
+  for bad in 0 08 1000 -1 abc '8 ' '1;true'; do
+    STUB_JOBS="$bad" _run_check_bats
+    echo "[$bad] $output"
+    [[ "$output" == *"FAIL=1"* ]]
+    [[ "$output" == *"RUN_TESTS_JOBS='$bad' is not 1 to 999"* ]]
+    [ ! -s "$STUB_LOG" ]
+  done
 }
 
 @test "gate 5: red fast blocks slow and fails the gate" {
@@ -223,7 +247,7 @@ _run_check_bats() {
   echo "$output"; cat "$STUB_LOG"
   [[ "$output" == *"FAIL=1"* ]]
   [[ "$output" == *"slow suites not run"* ]]
-  [ "$(cat "$STUB_LOG")" = "--fast skip=1" ]
+  [ "$(cat "$STUB_LOG")" = "--fast --jobs 8 skip=1" ]
 }
 
 @test "gate 5: red slow after green fast fails the gate" {
