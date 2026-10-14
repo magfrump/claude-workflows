@@ -132,6 +132,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-136](#q-136--u2b2-landing) | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
 | [Q-137](#q-137--u2b3a-landing) | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
 | [Q-138](#q-138--u3a2-land-discovery-past-cap) | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
+| [Q-140](#q-140--d6-snippet-trust-root) | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 <!-- index:end -->
 
@@ -2601,4 +2602,27 @@ Every open item fails closed or needs an `other` commit on main that you are ask
 - **Blocks:** U4b2's merge, hence U4c and U5.
 - **Interim:** none. Interim [1] was applied once (484eaafc) and its second confirming pass found new Mediums; the branch waits for your answer.
 - **If the answer differs:** [1] or [3] is a skill-text change on `feat/build-loop-u4b2` plus a confirming pass; [2] merges d00749ab and files the rows.
+
+### Q-140 · d6-snippet-trust-root
+**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** ANSWERED
+
+**Answer (2026-10-13, in session):** [1]. The snippet always runs the root-owned image copy under /opt: U4c drops main's copy (the verified reader and the root test) before writing the D6 block into SKILL.md. Reasoning discussed in session: both routes are hostile-class (Q-103), but they are the only quiet ones (--main-log cannot see them), and [1] removes code rather than adding it; a gate fix in claude-workflows now takes effect at the next image release.
+
+Which copy of the gate should the D6 snippet run, and what decides it?
+
+- **Why it's yours:** it changes plan D6's trust root (main's copy, live at the next merge, vs the root-owned image copy) and may need a container setting; both are your design calls.
+- **Read:** U3b3's rubric `docs/reviews/code-review-rubric-2026-10-12-feat-build-loop-u3b3.md` (final pass, C1); `docs/reviews/security-review-2026-10-12-u3b3-final.md` F1; `docs/reviews/architecture-review-2026-10-12-u3b3-final.md` F1; override rows dated 2026-10-12 for `feat/build-loop-u3b3` (the trust-root row); `test/lib/d6-snippet.bash` header.
+
+Today the snippet runs main's own scripts when main's first-parent root commit is claude-workflows' 640cf007, else the root-owned image copy under /opt. That test reads the repository it is judging. In another project, a loop that moves main onto a copy of 640cf007's public commit gets its own scripts run instead of the image copy. In any project, a loop that rewrites the orchestrator worktree's `.git` file to point at a crafted repository does the same, and in claude-workflows --main-log then sees nothing. (A third route, a late `parent` line, was a parse bug and is fixed.)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Always the image copy** | The snippet drops main's-copy and always runs /opt's root-owned scripts (closes all three routes; no history walk) | None now; in claude-workflows a gate change takes effect only after a release (gate code already needs a merge-gate- review) | A gate fix waits a release to protect the loop that found it |
+| **[2] A trusted outside signal** | Main's copy only when the root test passes AND a value set in the claude-workflows container definition (the caller's environment, trusted) says so | One devcontainer change (an enforcement file: live-verify) and a matching host setting | The gitfile route still works inside claude-workflows; a missing setting silently means /opt |
+| **[3] Leave it to Q-103** | Keep today's rule; the routes need a loop that moves main or rewrites the orchestrator's `.git`, the hostile-loop class Q-103 rules on | None | A hostile loop in another project runs its own gate, which can also hide the move it made |
+
+- **Blocks:** U4 writing the selector into SKILL.md (U3b3 merges with the gap named).
+- **Interim:** today's rule stays, documented as a known gap in the snippet's header and the plan note; nothing runs the snippet until U4.
+- **If the answer differs:** [1] deletes the verified reader and the root test (the snippet keeps its ref and ownership checks; about 30 lines and five tests go); [2] adds one check before the reader and a container setting.
+
 

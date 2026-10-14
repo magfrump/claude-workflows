@@ -26,7 +26,6 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
-| [Q-140](#q-140--d6-snippet-trust-root) | you: judgment | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
@@ -257,26 +256,6 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 - **If the answer differs:** [1] needs nothing from the sessions; [2] is a follow-up unit before U4 lands.
 - **Rewritten 2026-10-12** on your note (answers-10-12-26.txt): the threats are now named separately, and the last column says which threat each option leaves open.
 
-
-### Q-140 · d6-snippet-trust-root
-**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** OPEN
-
-Which copy of the gate should the D6 snippet run, and what decides it?
-
-- **Why it's yours:** it changes plan D6's trust root (main's copy, live at the next merge, vs the root-owned image copy) and may need a container setting; both are your design calls.
-- **Read:** U3b3's rubric `docs/reviews/code-review-rubric-2026-10-12-feat-build-loop-u3b3.md` (final pass, C1); `docs/reviews/security-review-2026-10-12-u3b3-final.md` F1; `docs/reviews/architecture-review-2026-10-12-u3b3-final.md` F1; override rows dated 2026-10-12 for `feat/build-loop-u3b3` (the trust-root row); `test/lib/d6-snippet.bash` header.
-
-Today the snippet runs main's own scripts when main's first-parent root commit is claude-workflows' 640cf007, else the root-owned image copy under /opt. That test reads the repository it is judging. In another project, a loop that moves main onto a copy of 640cf007's public commit gets its own scripts run instead of the image copy. In any project, a loop that rewrites the orchestrator worktree's `.git` file to point at a crafted repository does the same, and in claude-workflows --main-log then sees nothing. (A third route, a late `parent` line, was a parse bug and is fixed.)
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Always the image copy** | The snippet drops main's-copy and always runs /opt's root-owned scripts (closes all three routes; no history walk) | None now; in claude-workflows a gate change takes effect only after a release (gate code already needs a merge-gate- review) | A gate fix waits a release to protect the loop that found it |
-| **[2] A trusted outside signal** | Main's copy only when the root test passes AND a value set in the claude-workflows container definition (the caller's environment, trusted) says so | One devcontainer change (an enforcement file: live-verify) and a matching host setting | The gitfile route still works inside claude-workflows; a missing setting silently means /opt |
-| **[3] Leave it to Q-103** | Keep today's rule; the routes need a loop that moves main or rewrites the orchestrator's `.git`, the hostile-loop class Q-103 rules on | None | A hostile loop in another project runs its own gate, which can also hide the move it made |
-
-- **Blocks:** U4 writing the selector into SKILL.md (U3b3 merges with the gap named).
-- **Interim:** today's rule stays, documented as a known gap in the snippet's header and the plan note; nothing runs the snippet until U4.
-- **If the answer differs:** [1] deletes the verified reader and the root test (the snippet keeps its ref and ownership checks; about 30 lines and five tests go); [2] adds one check before the reader and a container setting.
 
 ### Q-141 · u4a-asked-binding-residue
 **Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** OPEN
