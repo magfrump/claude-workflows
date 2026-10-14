@@ -338,7 +338,9 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # no fsmonitor command, no core.attributesFile, no multi-pack-index (a second
 # route to an object, past build-loop.sh's store_check), no commit-graph (a
 # forged one changes merge bases), git log's own date format and no signature
-# check (a bad log.date stops git log; log.showSignature runs gpg.program).
+# check (a bad log.date stops git log; log.showSignature runs gpg.program),
+# and no commit signing (commit.gpgSign runs gpg.program on a commit or merge:
+# the orchestrator's own commits, SKILL.md's hg; U4b1 i2 security F1).
 # GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM: a loop can write the
 # user's ~/.gitconfig as easily as .git/config. GIT_ALLOW_PROTOCOL=none: no
 # transport, so a lazy fetch (a partial clone's missing object) fails however
@@ -349,7 +351,7 @@ oddwhy() {  # the reason fence() refused a file, for a skip line
 # as 10 to git) exits 1. What these cannot switch off, build-loop.sh's state
 # gate refuses in its gated modes; dev-cycle.sh runs no state gate (row 548). A
 # second call returns at once: it would count HARDEN's pairs as the caller's.
-HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false)
+HARDEN=(core.useReplaceRefs=false core.hooksPath=/dev/null core.fsmonitor=false core.attributesFile=/dev/null core.commitGraph=false core.multiPackIndex=false log.date=default log.showSignature=false commit.gpgSign=false)
 CALLER_COUNT=""
 git_harden() {
   [[ -z "$CALLER_COUNT" ]] || return 0

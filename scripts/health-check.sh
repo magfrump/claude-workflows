@@ -29,6 +29,11 @@
 #                            repository: take_lock), so a run it starts never
 #                            waits on it. Not only a test seam: any caller
 #                            setting it skips the lock.
+#   HEALTH_CHECK_LOCK_WAIT   Seconds to wait for another run's lock (plain
+#                            decimal, at most 7 digits; 0: no wait); past it
+#                            the run exits 75, having run
+#                            nothing (the dev-cycle skill's step 1 bound,
+#                            row 750). Unset: wait for as long as it takes.
 #
 # Checks:
 #   1. Skill YAML frontmatter parses correctly (name + description present)
@@ -1109,11 +1114,18 @@ take_lock() {
     if [[ -L "$lk" || ( -e "$lk" && ! -f "$lk" ) ]]; then
         red "health-check.lock in $d is not a plain file"; exit 1
     fi
+    local w=()
+    if [[ -n "${HEALTH_CHECK_LOCK_WAIT:-}" ]]; then
+        [[ "$HEALTH_CHECK_LOCK_WAIT" =~ ^[0123456789]{1,7}$ ]] || { red "HEALTH_CHECK_LOCK_WAIT is not a plain number of seconds (at most 7 digits, a bound of this script's own)"; exit 1; }
+        w=(-w "$HEALTH_CHECK_LOCK_WAIT")
+    fi
     export HEALTH_CHECK_LOCK_HELD=1
     flock -n -E 75 -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
     if [[ "$rc" -eq 75 ]]; then
         yellow "waiting for another health check in this repository (health-check.lock)"
-        rc=0; flock -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+        # -E 75 also names a -w timeout: the run never started, so 75 is safe to report as such.
+        rc=0; flock "${w[@]}" -E 75 -o "$lk" bash "$REPO_ROOT/scripts/health-check.sh" "$@" || rc=$?
+        [[ "$rc" -ne 75 ]] || red "gave up waiting for health-check.lock after ${HEALTH_CHECK_LOCK_WAIT}s: nothing was checked"
     fi
     exit "$rc"
 }

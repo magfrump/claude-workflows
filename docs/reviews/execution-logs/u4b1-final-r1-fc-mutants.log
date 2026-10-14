@@ -1,0 +1,27 @@
+2026-10-13T22:29:52Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+TMP=/tmp/u4b1-fc1-0EAB
+=== baseline
+bats exit 0
+ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+0
+=== M1 SKILL hg without commit.gpgSign
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+=== M2 SKILL hg without GIT_NO_REPLACE_OBJECTS
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+=== M3 snippet G without commit.gpgSign
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+=== M4 lib HARDEN without commit.gpgSign
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+=== M5 second hg line
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+=== M6 reordered pairs in hg
+bats exit 1
+not ok 1 git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)
+cleaned
+exit 0
