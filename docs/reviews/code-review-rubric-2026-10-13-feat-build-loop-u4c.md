@@ -1,4 +1,5 @@
-Commit: 18fd4e1e
+Commit: a80955a2
+Loop closed at a80955a2
 
 # Code Review Rubric: feat/build-loop-u4c
 
@@ -135,8 +136,15 @@ call" was false on that route (executed in a scratch repo).
 | G1 | Host checkout instruction and the overbroad state-gate claim | confirm3 security F1 (Medium) | Fixed: [1] names only the paste (which refuses until HEAD is at M); the claim is scoped to the paste's one `rev-parse`, and any other host git command is named as install.sh's own trust model. A sandbox checkout (security's suggestion) is refused by the Rules (the orchestrator never switches a branch in a checkout it did not create). |
 | G2 | Whatever moves host HEAD to M happens outside the paste | confirm3 security F2 (Informational, pre-existing) | Named in G1's sentence |
 
+Narrow check of a80955a2 (`security-review-2026-10-14-u4c-confirm3b.md`): closes confirm3 F1;
+the paste's `rev-parse` executed against planted hooks (both locations), fsmonitor, filters,
+textconv, pager and others ran none of them; nothing Medium or above introduced; one Low (the
+host-git warning is not stated to be copied into the `image-off-main-C12` entry), same shape as
+confirm3 F2.
+
 ## Status
 
 Iteration 1 found no 🔴 and five 🟡, fixed in 33ad1767 (B2's commit-message half an Accepted-immutable row). Health check passed at 1bc823ea (run in the session; log not committed).
 Final confirming pass not clean (E1, E2): Q-144, interim [1] applied; a k=1 fact-check and security pass over the interim fix decides the merge.
 Second confirming pass not clean (F1, now reverted): U4c waits for Q-144.
+Third confirming pass and its narrow check clean at a80955a2: merged on Q-144 [1] (the user: "do one more security pass, then merge").
