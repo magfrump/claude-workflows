@@ -1,0 +1,10 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+[2] ./own-cases/absent -> refuse d6: ./own-cases/absent is missing
+[2] ./own-cases/dangling -> refuse d6: ./own-cases/dangling is not root-owned, a plain path and unwritable here
+[2] ./own-cases/link-to-root -> refuse d6: ./own-cases/link-to-root is not root-owned, a plain path and unwritable here
+[2] ./own-cases/present -> refuse d6: ./own-cases/present is not root-owned, a plain path and unwritable here
+[0] /usr/bin/env -> accepted
+[0] /opt/claude-workflows/scripts/build-loop.sh -> accepted
+[0] /opt/claude-workflows/scripts/lib -> accepted
+[0] /opt/claude-workflows -> accepted
+[0] / -> accepted

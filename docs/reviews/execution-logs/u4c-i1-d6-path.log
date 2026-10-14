@@ -1,0 +1,6 @@
+== 2026-10-14T05:50:45Z cwd=/workspace/.claude/wt-build-loop-u4c
+$ PATH="$S/fakebin:$PATH" timeout 60 /usr/bin/bash -s -- build-loop.sh --help < body.sh
+/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+planted bash ran with: /opt/claude-workflows/scripts/build-loop.sh --help
+exit=0

@@ -1,0 +1,43 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-10-14T06:38:33Z
+cwd: /tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/fc-r3/repo.vd4GcX
+== bash d6.bash build-loop.sh --help (first 2 lines)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit=141
+== QUESTIONS_LIVE=planted bash d6.bash questions.sh open
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit=0
+== QUESTIONS_LIVE=planted direct /opt questions.sh open (contrast)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Q-001  you: judgment   planted
+exit=0
+== QUESTIONS_LIVE=planted bash d6.bash dev-cycle.sh | section 3
+## 3. Watched questions (trigger and deferred routes)
+
+None open.
+
+Open by route: none
+
+## 4. Spot-check sample
+exit=0
+== bad first arg
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh
+exit=1
+== D6_OPT pointed at a missing dir (copy with sed)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse d6: /nonexistent-cw/scripts/build-loop.sh is missing
+exit=2
+== outside a repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any of the parent directories): .git
+refuse d6: refs/replace could not be listed
+exit=2
+== rerun without head (the 141 above is SIGPIPE from | head -2 closing early): bash d6.bash build-loop.sh --help > help.out in a fresh temp repo
+exit=0; 464 stdout lines; cmp with bash /opt/claude-workflows/scripts/build-loop.sh --help: identical
+== extraction check: awk from bats:236 on skills/dev-cycle/SKILL.md, then diff with sed -n 197,252p
+2026-10-14T06:49:55Z
+56
+extract-equals-197-252 (diff exit 0)

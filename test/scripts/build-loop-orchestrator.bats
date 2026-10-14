@@ -224,13 +224,23 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
     bl --main-log "${X:0:12}"; [ "$status" -eq 1 ] && [[ "$stderr" == "--main-log takes one full 40- or 64-hex commit id"* ]] || { show; return 1; }
 }
 
-# The D6 snippet (U3b3). d6_copy ROOT OPT: D6, a copy of test/lib/d6-snippet.bash
-# with D6_ROOT and D6_OPT replaced. d6_setup: main holds this branch's four
-# scripts, and D6 takes this fixture's root commit as claude-workflows' own.
-d6_copy() { D6="$BATS_TEST_TMPDIR/d6.bash"; sed "s|^  D6_ROOT=.*; D6_OPT=.*|  D6_ROOT=$1; D6_OPT=$2|" "$REPO_ROOT/test/lib/d6-snippet.bash" > "$D6"; grep -qxF "  D6_ROOT=$1; D6_OPT=$2" "$D6"; }
+# The D6 snippet (U3b3; U4c, Q-140 [1]). Its one copy is SKILL.md's "The D6
+# block": the lines between the block's bash -s line and its D6 line.
+# d6_copy OPT [trust]: D6, that copy with D6_OPT set to OPT; with trust its
+# ownership check passes any path that exists (and refuses a missing one with
+# the snippet's own words), so a uid-owned OPT stands in for the root-owned
+# image. d6_setup: main holds this branch's four scripts,
+# and so does a trusted stand-in at $U.
+d6_copy() {
+    D6="$BATS_TEST_TMPDIR/d6.bash"
+    awk '/^## The D6 block$/ { s = 1 } s && b && /^D6$/ { exit } b { print } s && /^cd WT && bash -s -- SCRIPT ARG\.\.\. <<.D6.$/ { b = 1 }' "$REPO_ROOT/skills/dev-cycle/SKILL.md" > "$D6"
+    grep -qxF '  D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^  D6_OPT=/opt/claude-workflows\$|  D6_OPT=$1|" "$D6" && grep -qxF "  D6_OPT=$1" "$D6" || return 1
+    [[ "${2:-}" != trust ]] || { grep -q '^  own() { ' "$D6" && sed -i 's|^  own() { .*|  own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF '  own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
+}
+opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$1/scripts/lib/"; }
 d6_setup() {
     mkdir -p scripts/lib && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh scripts/ && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" scripts/lib/
-    commit_all scripts && d6_copy "$(git rev-list --max-parents=0 main)" /opt/claude-workflows
+    commit_all scripts && U="$BATS_TEST_TMPDIR/opt" && opt_copy "$U" && d6_copy "$U" trust
 }
 d6() { run --separate-stderr bash "$D6" "$@"; }
 # d6_is WANT: the snippet refused with exactly WANT, exit 2, before running anything.
@@ -242,30 +252,31 @@ shim() {
     chmod +x "$S/git"
 }
 
-@test "the D6 snippet runs main's four scripts from a fresh temp dir, each with its own lib and questions.sh, never the working tree's, and removes the dir (T33, U3b3)" {
+@test "SKILL.md holds the D6 snippet once, and it names no other copy to run: no root test, no read of main's scripts (T33, U4c)" {
+    K="$REPO_ROOT/skills/dev-cycle/SKILL.md"
+    [ "$(grep -c "^cd WT && bash -s -- SCRIPT ARG\.\.\. <<'D6'$" "$K")" -eq 1 ] && [ "$(grep -c '^D6$' "$K")" -eq 1 ] || { grep -n "<<'D6'\|^D6$" "$K"; return 1; }
+    d6_copy /opt/claude-workflows; [ "$(tail -n 1 "$D6")" = 'd6 "$@" </dev/null' ] || { tail -n 3 "$D6"; return 1; }
+    ! grep -v '^ *#' "$D6" | grep -nE 'D6_ROOT|cat-file (blob|--batch)|ls-tree|mktemp|\$HOME|~/' || return 1
+    [ ! -e "$REPO_ROOT/test/lib/d6-snippet.bash" ]
+}
+
+@test "the D6 snippet runs the image copy's scripts by absolute path, with the image's own lib and questions.sh, never main's or the working tree's (T33, U3b3, U4c)" {
     d6_setup
-    # main's lib says where it was sourced from; main's questions.sh answers open with one watched entry.
-    echo 'echo "lib at ${BASH_SOURCE[0]}" >&2' >> scripts/lib/dev-cycle-read.sh
-    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger  from-main"; exit 0; }' scripts/questions.sh
+    # main and the working tree each hold scripts that say where they ran; the image copy's lib says where it was sourced from.
+    for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo main copy; exit 9' > "scripts/$f"; done
     mkdir -p docs/working && printf '# Questions\n' > docs/working/questions.md && printf '# Archive\n' > docs/working/questions-archive.md
-    commit_all "marked copies"
-    for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'exit 9' > "scripts/$f"; done
-    export TMPDIR="$BATS_TEST_TMPDIR/t"; mkdir "$TMPDIR"
+    commit_all "main copies"
+    for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo working copy; exit 9' > "scripts/$f"; done
+    echo 'echo "lib at ${BASH_SOURCE[0]}" >&2' >> "$U/scripts/lib/dev-cycle-read.sh"
+    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger  from-opt"; exit 0; }' "$U/scripts/questions.sh"
     d6 build-loop.sh --settings
     [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
-    while IFS= read -r l; do [[ "$l" == "lib at $TMPDIR/"*/scripts/lib/dev-cycle-read.sh ]] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
+    while IFS= read -r l; do [ "$l" = "lib at $U/scripts/lib/dev-cycle-read.sh" ] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-main\n'* ]] || { show; return 1; }
-    [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
-    # A byte the reader did not hash is never used: a git whose cat-file --batch alters one word of the blobs it prints.
-    git checkout -q -- scripts; S="$BATS_TEST_TMPDIR/tamper"; mkdir -p "$S"
-    printf '#!/bin/bash\nif [[ " $* " == *" --batch "* ]]; then "%s" "$@" | sed -u s/pipefail/PIPEFAIL/; else exec "%s" "$@"; fi\n' "$(command -v git)" "$(command -v git)" > "$S/git"; chmod +x "$S/git"
-    PATH="$S:$PATH" d6 build-loop.sh --settings
-    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] && [[ "$stderr" == *" does not hash to its id" ]] || { show; return 1; }
-    [ -z "$(ls -A "$TMPDIR")" ] || { ls -A "$TMPDIR"; return 1; }
-    # The SKILL.md block and test/lib/d6-snippet.bash are byte-equal (T33): pending until U4 writes the block.
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt\n'* ]] || { show; return 1; }
+    d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger  from-opt" ] || { show; return 1; }
 }
 
 @test "the D6 snippet refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
@@ -280,50 +291,12 @@ shim() {
     git update-ref --no-deref refs/heads/main "$c"; git tag -a -m t t1 main; git rev-parse t1 > .git/refs/heads/main
     d6_is "refuse d6: refs/heads/main names no commit"; echo "$c" > .git/refs/heads/main
     d6 build-loop.sh --settings; [ "$status" -eq 0 ] || { show; return 1; }
-    run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh or dev-cycle.sh" ] || { show; return 1; }
+    rm "$U/scripts/questions.sh"; d6_is "refuse d6: $U/scripts/questions.sh is missing"; cp "$REPO_ROOT/scripts/questions.sh" "$U/scripts/"
+    mv "$U/scripts/lib/dev-cycle-read.sh" "$U/x"; mkdir "$U/scripts/lib/dev-cycle-read.sh"; d6_is "refuse d6: $U/scripts/lib/dev-cycle-read.sh is not a regular file"
+    run --separate-stderr bash "$D6" x; [ "$status" -eq 1 ] && [ -z "$output" ] && [ "$stderr" = "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" ] || { show; return 1; }
 }
 
-# inplace ID FROM: the loose object file for ID now holds FROM's object, as a same-uid writer could leave it.
-inplace() { local o=".git/objects/${1:0:2}/${1:2}" f=".git/objects/${2:0:2}/${2:2}"; chmod u+w "$o"; cp "$f" "$o"; }
-A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or the four files could not be read whole, or an object does not hash to its id"
-
-@test "the D6 snippet refuses the scripts/ tree rewritten in place, and runs no planted bytes (T36, U3b3 i1 A1, i2 B1)" {
-    d6_setup
-    # A scripts tree whose build-loop.sh says replaced, written over main's real scripts tree.
-    x="$(git rev-parse main:scripts)"; e="$(printf 'echo replaced\n' | git hash-object -w --stdin)"
-    y="$(git ls-tree main:scripts | sed "s/ [0-9a-f]*\tbuild-loop.sh$/ $e\tbuild-loop.sh/" | git mktree)"
-    inplace "$x" "$y"; [ "$(git ls-tree --format="%(objectname)" main -- scripts/build-loop.sh)" = "$e" ]
-    d6 build-loop.sh --settings
-    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
-}
-
-@test "the D6 snippet refuses a first-parent commit rewritten in place to end main's history at D6_ROOT (T36, U3b3 i1 A1)" {
-    d6_setup
-    r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"; t="$(git rev-parse main)"
-    f="$(printf 'tree %s\nparent %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\n\nforged\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
-    inplace "$t" "$f"; [ "$(git rev-list --first-parent --max-parents=0 main)" = "$r" ]
-    d6_copy "$r" /opt/claude-workflows; d6 build-loop.sh --settings
-    # The verified reader names the mismatch on stderr; the one stdout line is the snippet's.
-    [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
-}
-
-@test "the D6 snippet refuses, never falls to the image copy, when main's first-parent history cannot be read whole: a missing commit, a shallow clone (T36, U3b3 i2 B2)" {
-    d6_setup; c="$(git rev-parse main~1)"; rm -f ".git/objects/${c:0:2}/${c:2}"
-    d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
-    git clone -q --depth 1 "file://$BATS_TEST_TMPDIR/repo" "$BATS_TEST_TMPDIR/shallow"
-    cd "$BATS_TEST_TMPDIR/shallow"; d6 build-loop.sh --settings; [ "$status" -eq 2 ] && [ "$output" = "$A1" ] || { show; return 1; }
-}
-
-@test "the D6 snippet reads a first parent only directly after the tree line, as git does: a late parent line is no parent (T37, U3b3 final security F1 b)" {
-    d6_setup; r="$(git commit-tree "$(git rev-parse 'main^{tree}')" -m root)"
-    c="$(printf 'tree %s\nauthor t <t@e> 1 +0000\ncommitter t <t@e> 1 +0000\nparent %s\n\nlate\n' "$(git rev-parse 'main^{tree}')" "$r" | git hash-object -t commit -w --stdin)"
-    git update-ref refs/heads/main "$c"; [ "$(git rev-list --max-parents=0 main)" = "$c" ]
-    # D6_ROOT names the commit only the late line points at: the snippet must take the image copy (a uid-owned stub here, so refused).
-    U="$BATS_TEST_TMPDIR/opt"; mkdir -p "$U/scripts/lib"; d6_copy "$r" "$U"
-    d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
-}
-
-@test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's copy from main refuses the same tip (T27, U3b3)" {
+@test "a gate copy patched in the loop's worktree prints ok for its tip; the D6 snippet's image copy refuses the same tip (T27, U3b3)" {
     d6_setup; brief x "Status: open" "Branch: feat/x"
     W="$BATS_TEST_TMPDIR/wt"; git worktree add -q -b feat/x "$W" main; cd "$W"
     # The loop drops the mode rule from its own copy and adds a symlink.
@@ -336,20 +309,19 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
         && [[ "$output" == *$'\n'"deny $B A link: a symlink, gitlink or other non-file entry on one side "* ]] || { show; return 1; }
 }
 
-@test "outside claude-workflows the D6 snippet runs the image copy by absolute path, not main's copy (T37, U3b3)" {
+@test "the D6 snippet runs the root-owned image copy at /opt by absolute path, not main's copy (T37, U3b3)" {
     O=/opt/claude-workflows
     [[ -f "$O/scripts/build-loop.sh" && "$(stat -c %u "$O/scripts")" == 0 ]] || skip "no root-owned image copy at $O here"
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
-    run --separate-stderr bash "$REPO_ROOT/test/lib/d6-snippet.bash" build-loop.sh --help
+    d6_copy "$O"; d6 build-loop.sh --help
     [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
 }
 
-@test "outside claude-workflows the D6 snippet refuses an image copy the uid owns, and never runs main's (T37, U3b3)" {
+@test "the D6 snippet refuses an image copy the uid owns or one missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
-    U="$BATS_TEST_TMPDIR/opt"; mkdir -p "$U/scripts/lib"
-    cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$U/scripts/"; cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$U/scripts/lib/"
-    d6_copy 640cf00735754d4253819a0354fb8ca9b71a8ea7 "$U"
+    U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; d6_copy "$U"
     d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
+    rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"
 }
 
 @test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {
@@ -365,10 +337,20 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     [ "$output" = "$want" ] || { diff <(echo "$want") <(echo "$output"); return 1; }
     # Neither the snippet (it runs before anything is checked) nor SKILL.md's hg, the orchestrator's own git (rows 704, 736), can source the lib: each repeats both lists, on one line.
     [ "$(grep -c '^  hg() { env .* "\$@"; }$' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'hg()' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
-    for g in "$(grep '^  G=(env ' "$REPO_ROOT/test/lib/d6-snippet.bash")" "$(grep '^  hg() { env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"; do
+    [ "$(grep -c '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || return 1
+    for g in "$(grep '^  G=(env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")" "$(grep '^  hg() { env ' "$REPO_ROOT/skills/dev-cycle/SKILL.md")"; do
         [ "$(grep -o -- '-c [^ )]*' <<<"$g" | cut -c4- | tr '\n' ' ')" = "$H " ] || { echo "$g"; return 1; }
         [ "$(grep -o 'GIT_[A-Z_]*=[^ ]*' <<<"$g" | LC_ALL=C sort | tr '\n' ' ')" = "$E " ] || { echo "$g"; return 1; }
     done
+}
+
+@test "SKILL.md step 0.1's image-lag paths are GATE_CODE's, on one line of their own: a GATE_CODE change fails here until this test's literal is updated, and a listed path that is not gate code fails (U4c i2 architecture 1)" {
+    g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
+    P="scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/"
+    [ "$g" = '^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/' ] || { echo "GATE_CODE changed: update step 0.1's PATHS line and this test: $g"; return 1; }
+    q=$'\x60'
+    [ "$(grep -cxF "   $q$P$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/build-loop.sh scripts/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+    for p in $P; do [[ "$p" =~ $g || "${p}x" =~ $g ]] || { echo "not GATE_CODE: $p"; return 1; }; done
 }
 
 @test "SKILL.md's merge-entry slug rule quotes the lib's GATE_CODE, which --approved's heading reads, on one line of its own (row 674, U4b2)" {

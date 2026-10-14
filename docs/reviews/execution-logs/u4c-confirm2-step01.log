@@ -1,0 +1,32 @@
+# 2026-10-14T07:03:05Z cwd=/workspace (read-only)
+M=000a69424bb202a89b7201402af396eb49c2c398
+$ cat /opt/claude-workflows/.manifest
+commit=774a0eef3ff85beb69695e014ab840f70648f193
+dirty=no
+uncommitted_excluded=0
+assembled_from=/home/magfrump/claude-workflows
+exit=0
+== C=774a0eef3ff85beb69695e014ab840f70648f193
+$ git cat-file -e '774a0eef3ff85beb69695e014ab840f70648f193^{commit}'
+exit=0
+$ git rev-list --first-parent M | grep -qx C
+exit=0
+$ git merge-base --is-ancestor C M (old test)
+exit=0
+== C=6beca252982b998c71b3da23c5cd22726b113da6
+$ git cat-file -e '6beca252982b998c71b3da23c5cd22726b113da6^{commit}'
+exit=0
+$ git rev-list --first-parent M | grep -qx C
+exit=1
+$ git merge-base --is-ancestor C M (old test)
+exit=0
+$ git diff --quiet C M -- PATHS
+exit=1
+$ git diff --name-only C M -- PATHS
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+exit=0
+$ git cat-file -e 0000000000000000000000000000000000000001^{commit} (absent object)
+fatal: Not a valid object name 0000000000000000000000000000000000000001^{commit}
+exit=128

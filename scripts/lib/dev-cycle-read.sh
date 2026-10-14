@@ -1960,10 +1960,11 @@ ownfile() {
   [[ "$3" == A && "$1" == docs/reviews/* && "$b" != */* && ( "$b" == "$2.md" || "$b" == *"-$2.md" ) ]]
 }
 # The gate's own files: a change to them lands only through a merge-gate-
-# review entry, never a self-merge. The scripts because main's copy runs the
-# next merge (plan D6, D5 item 3); skills/dev-cycle/ because plan D6 puts the
-# snippet that copies and runs the gate in its SKILL.md (U4; plan D4, F52), though sessions
-# load the skill only from a release, so here the floor is stricter than D5.
+# review entry, never a self-merge. The scripts because the image copy, built
+# from the host checkout's HEAD, runs every merge after the next release (plan D6, D5
+# item 3; Q-140 [1]); skills/dev-cycle/ because its SKILL.md holds the D6 snippet that runs
+# the gate (U4c; plan D4, F52). Both reach a session only from a release, so
+# here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its
 # own (floor does not run there); build-loop.sh's header repeats it.
 GATE_CODE='^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/'

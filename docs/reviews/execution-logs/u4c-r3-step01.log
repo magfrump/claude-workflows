@@ -1,0 +1,21 @@
+cmd: timeout 60 bash step01.sh (scratchpad; read-only git against /workspace with the Rules hg); cwd: scratchpad fc-r3; exit 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-10-14T06:36:34Z
+C=774a0eef3ff85beb69695e014ab840f70648f193 A=/home/magfrump/claude-workflows M=2aaf97b43b6751c5c2061660ae41cb171c298ecb
+cat-file -e exit=0
+is-ancestor exit=0
+diff --quiet exit=1
+--- name-only:
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+name-only exit=0
+--- all of scripts/ name-only (for contrast):
+scripts/build-loop.sh
+scripts/health-check.sh
+scripts/lib/dev-cycle-read.sh
+--- lib-only:
+scripts/lib/dev-cycle-read.sh
+fatal: Not a valid object name 0000000000000000000000000000000000000001^{commit}
+cat-file -e (bogus) exit=128
+is-ancestor(branch HEAD 43b8d7ed9f9601b0128c893ea77745c65f3eed20, M) exit=1

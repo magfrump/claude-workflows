@@ -1040,9 +1040,7 @@ raw_records() {
   done < "$1"
 }
 # store_check [--main] REV...: the objects of REV a decision reads hash to their ids
-# and have one copy each (rows 492, 503). (The D6 snippet, test/lib/d6-snippet.bash,
-# runs a narrower reader before this script: SHA-1 only and no second-copy rule,
-# since it uses only bytes it has hashed itself.) git checks no hash when it reads an
+# and have one copy each (rows 492, 503). git checks no hash when it reads an
 # object, so a same-uid writer that rewrites an object file behind its id
 # would change what the gate reads, and only fsck would notice. Each REV (a
 # commit or a tree), its root tree, and every tree and blob below it (a gitlink

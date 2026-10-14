@@ -1,0 +1,7 @@
+# 2026-10-13T23:38:45-07:00 cwd=/workspace/.claude/wt-build-loop-u4c: the pin test's three assertions run with GATE_CODE widened (adds ^scripts/health-check\.sh$) and the test literal updated to match, SKILL.md's PATHS line unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+assert1 (literal) passes
+assert2 (SKILL line) passes
+assert3 (each P matches) passes
+scripts/health-check.sh is in GATE_CODE but not in PATHS: the test still passes
+exit 0

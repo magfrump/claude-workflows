@@ -1,0 +1,6 @@
+2026-10-14T06:44:40Z
+cwd: /workspace (stands in for A: same repository, read-only)
+cmd: test "$(git rev-parse HEAD)" = M; and with a wrong M
+exit(M=2aaf97b43b6751c5c2061660ae41cb171c298ecb)=0
+exit(wrong M)=1
+main

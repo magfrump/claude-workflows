@@ -1,0 +1,13 @@
+# 2026-10-14T07:03:19Z cwd=/tmp/claude-1000/paste.nCKX (throwaway repo; install.sh is a stub that echoes RAN)
+case clean:
+RAN
+paste exit=0
+case unstaged edit:
+paste exit=1
+case staged edit:
+paste exit=1
+case other untracked file in devcontainer-config:
+RAN
+paste exit=0
+case HEAD moved:
+paste exit=1

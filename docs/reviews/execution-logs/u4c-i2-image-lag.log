@@ -1,0 +1,33 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+C=774a0eef3ff85beb69695e014ab840f70648f193
+2026-10-14T06:12:48Z
+cat-file -e exit=0
+refs/heads/main=2aaf97b43b6751c5c2061660ae41cb171c298ecb
+diff --quiet exit=1
+--- names changed (literal pathspecs on):
+scripts/build-loop.sh
+scripts/health-check.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+--- count without literal pathspecs:
+4
+--- count with literal, no trailing slash:
+4
+--- quiet C..C (expect 0):
+exit=0
+--- literal glob is not a glob (expect exit 0):
+exit=0
+--- same glob, non-literal (expect 1):
+exit=1
+--- unknown commit for cat-file -e:
+fatal: Not a valid object name 0123456789012345678901234567890123456789^{commit}
+exit=128
+--- a tree id peeled with ^{commit}:
+error: 037748c1842a974d3c82e2af7170595b366d40fc^{commit}: expected commit type, but the object dereferences to tree type
+fatal: Not a valid object name 037748c1842a974d3c82e2af7170595b366d40fc^{commit}
+tree exit=128
+--- is C on main's history:
+ancestor exit=0
+--- diff exit when refs/heads/main missing (a master repo), simulated with a bad ref:
+fatal: bad revision 'refs/heads/nonexistent-zz'
+exit=128

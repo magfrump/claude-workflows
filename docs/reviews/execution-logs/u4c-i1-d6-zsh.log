@@ -1,0 +1,21 @@
+== 2026-10-14T05:49:12Z cwd=/workspace/.claude/wt-build-loop-u4c
+cat exit=0
+heredoc byte-identical (3922 bytes)
+zsh run build-loop.sh --help exit=0
+/tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/u4c-i1/help.out /tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/u4c-i1/help.ref differ: char 139, line 3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Q-144
+zsh run questions.sh next-id exit=0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh
+bad first arg exit=1
+bash caller exit=0
+== help diff (zsh-run vs /opt direct; stderr merged):
+3d2
+< bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+diff exit=1
+== received heredoc (first 3 lines):
+# The D6 snippet (plan D6; Q-140 [1]): the one way the orchestrator runs
+# build-loop.sh (the gate), dev-cycle.sh (the digest) and questions.sh. It
+# always runs the root-owned image copy under D6_OPT by absolute path, never
