@@ -234,7 +234,7 @@ _run_check_bats() {
   echo "$output"; cat "$STUB_LOG"
   [[ "$output" == *"FAIL=0"* ]]
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 4 skip=1\n--slow --jobs 4 skip=1')" ]
-  STUB_NPROC=16 STUB_JOBS= _run_check_bats
+  STUB_NPROC=16 STUB_JOBS='' _run_check_bats
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 8 skip=1\n--slow --jobs 8 skip=1')" ]
   # An explicit value is not capped.
   STUB_NPROC=4 STUB_JOBS=16 _run_check_bats
