@@ -1,0 +1,109 @@
+ShellCheck - shell script analysis tool
+version: 0.9.0
+--- db341cb9:
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 221:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 237:
+  STUB_NPROC=16 STUB_JOBS= _run_check_bats
+                          ^-- SC1007 (warning): Remove space after = if trying to assign a value (for empty string, use var='' ... ).
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 280:
+@test "gate 5: HEALTH_CHECK_SKIP_BATS=1 skips the runner with a warning, not a pass" {
+^-- SC2030 (info): Modification of output is local (to subshell caused by @bats test).
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 286:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 314:
+  printf 'Use `rpi.md`.\n' > "$root/global-instructions/CLAUDE.md"
+         ^---------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 323:
+  echo "$output"
+        ^-----^ SC2031 (info): output was modified in a subshell. That change might be lost.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 328:
+  printf 'Use `rpi.md` and `ghost.md`.\n' > "$root/global-instructions/CLAUDE.md"
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 478:
+      bash -c 'source "$1"; check_questions_doc; echo "FAIL=$FAIL"' _ "$SCRIPT"
+              ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 494:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In /tmp/q102cfc.1301885/hc-db341.bats line 512:
+  printf '`Last verified`: 2021-01-01\n`Relevant paths`: `src/b.sh`\n' > "$root/docs/thoughts/ticked.md"
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC1007 -- Remove space after = if trying to...
+  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+  https://www.shellcheck.net/wiki/SC2030 -- Modification of output is local (...
+rc=1
+--- HEAD:
+
+In test/scripts/health-check.bats line 221:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 280:
+@test "gate 5: HEALTH_CHECK_SKIP_BATS=1 skips the runner with a warning, not a pass" {
+^-- SC2030 (info): Modification of output is local (to subshell caused by @bats test).
+
+
+In test/scripts/health-check.bats line 286:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 314:
+  printf 'Use `rpi.md`.\n' > "$root/global-instructions/CLAUDE.md"
+         ^---------------^ SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 323:
+  echo "$output"
+        ^-----^ SC2031 (info): output was modified in a subshell. That change might be lost.
+
+
+In test/scripts/health-check.bats line 328:
+  printf 'Use `rpi.md` and `ghost.md`.\n' > "$root/global-instructions/CLAUDE.md"
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 478:
+      bash -c 'source "$1"; check_questions_doc; echo "FAIL=$FAIL"' _ "$SCRIPT"
+              ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 494:
+    bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
+            ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+
+In test/scripts/health-check.bats line 512:
+  printf '`Last verified`: 2021-01-01\n`Relevant paths`: `src/b.sh`\n' > "$root/docs/thoughts/ticked.md"
+         ^-- SC2016 (info): Expressions don't expand in single quotes, use double quotes for that.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+  https://www.shellcheck.net/wiki/SC2030 -- Modification of output is local (...
+  https://www.shellcheck.net/wiki/SC2031 -- output was modified in a subshell...
+rc=1

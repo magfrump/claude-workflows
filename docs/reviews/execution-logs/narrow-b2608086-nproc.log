@@ -1,0 +1,12 @@
+Wed Oct 14 20:46:01 UTC 2026
+cwd=/tmp/tmp.bFYR6CtR4z; sources /workspace/.claude/wt-q102-parallel-gates/scripts/health-check.sh, calls check_bats with a stub runner and a stub nproc
+nproc=[4] FAIL=0 rc=0 -> --fast --jobs 4
+nproc=[16] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[1000] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[9223372036854775808] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[0] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[abc] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[999] FAIL=0 rc=0 -> --fast --jobs 8
+nproc=[7] FAIL=0 rc=0 -> --fast --jobs 7
+nproc=[1] FAIL=0 rc=0 -> --fast --jobs 1

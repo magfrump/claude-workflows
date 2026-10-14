@@ -1,0 +1,2 @@
+1..1
+ok 1 T92 a same-uid process that hides its cwd (non-dumpable) is refused and named, wherever it works (Q-064 [2])

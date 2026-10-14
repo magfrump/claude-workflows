@@ -1,0 +1,146 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ts=2026-10-14T20:26:01Z cwd=/workspace/.claude/wt-q102-parallel-gates
+== nproc 16
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc 4
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 4
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 4
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc 1
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 1
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 1
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc 0
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc junk
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc empty
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc prints 3 and fails
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 3
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 3
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc exit 127
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc huge
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== nproc missing (not on PATH)
+opts=ehuBc nproc=none
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== empty var, nproc 4
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 4
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 4
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== explicit 16, nproc 4
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 16
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 16
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
+== explicit 08
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+  ✗ HEALTH_CHECK_JOBS='08' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+exit=0
+== explicit 1000
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+  ✗ HEALTH_CHECK_JOBS='1000' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+exit=0
+== RUN_TESTS_JOBS=2 ignored, nproc 16
+opts=ehuBc nproc=/tmp/q102cfc.1301885/bin/nproc
+
+── BATS tests ──
+RUNNER --fast --jobs 8
+  ✓ Fast BATS suites passed
+RUNNER --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+exit=0
