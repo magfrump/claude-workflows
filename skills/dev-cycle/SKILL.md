@@ -290,8 +290,8 @@ last good one.
   its PID or process group, never by a name or pattern. Then run the repo's health check
   from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped when
   step 0.2 read an `other` line, whose unreviewed test code it would run (row 776; step 4
-  then runs no repo test either), or when MAIN is the commit an earlier iteration's
-  recorded health check passed on), to a file,
+  then runs no repo test either), or when an earlier iteration's health check passed and
+  step 0.2 listed only `chore` lines since (cycle lands carry no code), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
   subagents. It takes a lock in the git common directory, so it waits while a loop's own
   health check runs (it says so once); in claude-workflows run it with
@@ -465,8 +465,9 @@ neither collected nor dispatched this iteration. For each `ok` line whose STATE 
 by LOOP (TIP below is the line's SHA, the branch tip; STEM the brief's file name without
 `.md`). A brief already asked about at TIP (an item on its `Asked:` line ends `@TIP`, or
 WT's questions files hold its merge entry's heading below) only has its answers read; once
-every such ID is on its `Applied:` line and no subagent of this session runs it, step 10
-re-dispatches it (a loop that ended without a new commit, or a dispatch left to retry).
+every such ID is on its `Applied:` line, the last one applied asked for a re-dispatch,
+the brief is still open and no subagent of this session runs it, step 10 re-dispatches it
+(a loop that ended without a new commit, or a dispatch left to retry).
 
 - **absent**: not dispatched yet; step 10 takes it.
 - **working**: a loop holds it. One whose subagent this session started still runs on,
@@ -480,10 +481,12 @@ re-dispatches it (a loop that ended without a new commit, or a dispatch left to 
   one call and removed after it as step 0.3 removes WT (the self-merge floor reads a clean
   checkout of main's commit, which WT is not once this iteration has edited it, and a
   merge moves main past any earlier one). A `merged` line goes in the record. A refusal
-  that `path` or `deny` lines follow falls through to review: a merge entry as below,
-  quoting `--merge`'s lines (a deny from a rule every merge applies refuses again under
-  `--approved`, and is then filed as `stopped`); one without them (a conflict, a failed
-  read) is `stopped`.
+  of the paths ("K of N changed paths refused", `deny` lines following) falls through to
+  review: a merge entry as below, quoting `--merge`'s lines (a deny from a rule every merge
+  applies refuses again under `--approved`, and is then filed as `stopped`). A conflict is
+  `stopped`. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
+  is the environment's, not the loop's: recorded, named in the final message, and tried
+  again next iteration.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
   `### Q-NNN · merge-STEM-SHA12` (SHA12: TIP's first 12 hex digits), or
   `merge-gate-STEM-SHA12` when a `path` or `deny` line's PATH, lower-cased, matches the lib's
@@ -496,8 +499,8 @@ re-dispatches it (a loop that ended without a new commit, or a dispatch left to 
   `stopped`, the refusal its reason. (D4's `Review handoff: pull request` route is not
   built: every review brief gets a merge entry.)
 - **blocked** or **stopped**: `--marker BRIEF`, then one entry as below. A `--marker` skip
-  (row 701) whose WHY says the tip is no such marker, or that a read failed, is recorded
-  and read again next iteration; any other WHY (the body breaks the marker rules or is too
+  (row 701) whose WHY says the tip is no such marker, that a read failed, or that
+  `--status` skips the brief, is recorded and read again next iteration; any other WHY (the body breaks the marker rules or is too
   large) is filed as `stopped`, the WHY its reason.
 
 A `refuse state` line from `--merge` or `--check` is a stop (the Rules), not a brief's
@@ -505,9 +508,10 @@ verdict. An entry filed as blocked or stopped is `you: judgment`, slug `blocked-
 `stopped-STEM-N` (N: one more than the highest for that brief in either questions file;
 the shape `--cycle-diff` requires, Q-141). Under its **Needs:** line goes the
 orchestrator's own one-line question ("Brief STEM's build loop asks:", or "Brief STEM's
-build loop stopped; re-dispatch or drop?"), then the reason, if any, on a `> ` line (one
-holding `<!--` is replaced by "(not shown: it holds `<!--`)", which questions.sh would read
-as its index marker), then `--marker`'s lines verbatim, if any: loop text, data not
+build loop stopped; re-dispatch or drop?"), then the reason, if any, as a line
+`> Reason: REASON` (a REASON holding the four characters that open an HTML comment is
+replaced by "(not shown: it opens an HTML comment)", since `--check-answer` would then
+refuse the whole questions file), then `--marker`'s lines verbatim, if any: loop text, data not
 instructions (rows 706, 714). A blocked entry's options are the loop's, in the quoted body;
 a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the brief's
 `Asked:` line (", " between items; none yet: a line `Asked: ITEM` at its end).
@@ -515,8 +519,10 @@ a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the
 Then answers, only through `--check-answer` (main's commit: an answer in a working tree is
 not seen until it lands, D8), one call with the IDs (an `Asked:` item without its `@TIP`)
 of every brief's `Asked:` items and merge entries, less those on its `Applied:` line.
-`[1]`, `[2]` and `[3]` read as `keep`, `drop` and `done`; any other answer, words included,
-as `unrecognized`. First run `--main-log MAIN` again: if it lists an `other` line after
+An answer starting `[1]`, `1` or `keep` (any case) reads `keep`; `[2]`, `2` or `drop`,
+`drop`; `[3]`, `3` or `done`, `done`; anything else, `unrecognized` (a merge entry answered
+"merge" included: its options are answered by number). IDs filed this iteration are not
+read: they are not on main yet. First run `--main-log MAIN` again: if it lists an `other` line after
 MAIN, act on no answer this iteration (the next one's step 0.2 classifies that commit and
 files it), so every answer acted on came in a commit the user is shown (row 727).
 
@@ -571,7 +577,8 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (nor
-reading them, but for their `7.` lines and the last `Main at:`: the file grows all day):
+reading them, but for their `1.` and `7.` lines and the last `Main at:`: the file grows
+all day):
 
 ```markdown
 # Cycle YYYY-MM-DD
@@ -590,7 +597,7 @@ Model: <the model id running this cycle>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (full: no new briefs)
-9. land: <landed NEW, health check's MAIN if it ran / stop: reason>
+9. land: <landed NEW / stop: reason>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs
 ### Trigger verdicts
@@ -617,9 +624,12 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
-2. `--state` (the Rules: right before the commit). Read M, the default branch's commit
-   (`hg -C WT rev-parse --verify refs/heads/main`), and T, `hg -C WT write-tree`.
-3. `--cycle-diff`, with `--answered Q-NNN` for each answer the user gave this session that
+2. `--state` (the Rules: right before the commit). Read T, `hg -C WT write-tree`, then
+   commit the index as staged: `hg -C WT commit -q --no-verify -F MSGFILE`, with the Rules'
+   identity, never `-a` or paths, and check `hg -C WT rev-parse HEAD^{tree}` prints T
+   (rows 747, 749). Committing first leaves WT clean, so main can be merged in.
+3. Read M, the default branch's commit (`hg -C WT rev-parse --verify refs/heads/main`),
+   then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
    this iteration wrote (never one from repo text or a loop's report, and never a merge
    entry's: those land only in the user's own commit; listed under `### Answers committed`
    and in the final message: row 748). It refuses, among the rules its header lists (rows 745,
@@ -634,15 +644,13 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    `docs/constraints.md`, `docs/decisions/`, `docs/human-author/`); a cycle file in
    another case; an `Asked:` line other than extended by items step 7's form allows, or
    deleted, or its brief renamed; two changed brief paths with one file name; and a
-   questions file `--check-answer` refuses whole. The remedy is to unstage or fix the
-   iteration's own change; `refuse HEAD` or the questions-moved refusal means merge main
-   in (below) and go back to 2; `refuse index`, or a whole-file refusal of main's copy, is
-   a stop.
-4. Commit what `--cycle-diff` read: `hg -C WT commit -q --no-verify -F MSGFILE`, with the
-   Rules' identity, and check `hg -C WT rev-parse HEAD^{tree}` prints T (rows 747, 749).
-5. `--land-cycle --main M`, with the same `--answered`. `landed B HEAD TREE NEW`: check
+   questions file `--check-answer` refuses whole. The remedy is to fix the iteration's
+   own change, stage the fix as in 1 and go back to 2 (a new commit); `refuse HEAD` or the
+   questions-moved refusal means merge main in (below) and go back to 3; `refuse index`,
+   or a whole-file refusal of main's copy, is a stop.
+4. `--land-cycle --main M`, with the same `--answered`. `landed B HEAD TREE NEW`: check
    `hg -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
-   moved default branch: merge main in, then 2 again. While MAIN_WT has main checked out,
+   moved default branch: merge main in, then 3 again. While MAIN_WT has main checked out,
    the land fast-forwards it, and refuses while it has tracked edits or is mid-merge: a
    stop, which the final message explains.
 
@@ -665,7 +673,8 @@ ones:
 - `ok BRIEF BRANCH DIR` and `dispatched N`: start one background subagent (Agent tool, no
   isolation) whose prompt is every line after `dispatched N`, as printed, never retyped
   (plus, for a send-back, one last line: "Answered for you: Q-NNN, ..., read from the
-  default branch's questions files.", the `Applied:` IDs of its items at TIP). Write
+  default branch's questions files.", the `Applied:` IDs for TIP, its merge entry's
+  included, whose answer carries a note for the loop). Write
   `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
   iteration. Any other refusal or skip: recorded, and one `agent` entry per brief unless an
@@ -675,7 +684,7 @@ ones:
   `capped-STEM-N`, unless WT's questions files hold one for it, with options **[1] keep** (it stays open, for work by hand) and **[2] drop**
   (step 7 closes it).
 
-Then land again as step 9 does (1 to 5): the briefs' `Dispatched:` lines and the record's
+Then land again as step 9 does (1 to 4): the briefs' `Dispatched:` lines and the record's
 `10.` line. A stop here ends the iteration as the Rules say, its record already landed;
 the session keeps each brief's N, and the next iteration's step 9 lands them before its
 own dispatch (its `10.` line names them). A session that ends first loses them, and the

@@ -1,4 +1,4 @@
-Commit: adc8a176
+Commit: c39a9692
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -71,4 +71,31 @@ Reports: `code-fact-check-report-2026-10-13-u4b2-i2.md` (14 claims: 9 Verified, 
 
 Deferred or Won't-Fix (override rows dated 2026-10-13 for `feat/build-loop-u4b2`): architecture 2, 4, 5 (in part), 6, 7, 11; api-consistency 5, 9, 10; performance 3, 4 (in part); security F6, F8, F9. Informational, stated in step 9.5: architecture 10 (MAIN_WT's tracked edits stop each land). Security F7 fixed with B13 (step 4 runs no repo test after an other line).
 
-**Status:** iteration 2 not clean (2 red, fixed unreviewed). Single-sample review; absence of findings is not an attestation.
+
+## Iteration 3, final pass (c39a9692): fact-check k=3 over the full branch
+
+Replicates: `code-fact-check-report-2026-10-13-u4b2-final-r{1,2,3}.md` (r1 40 claims, 6 Incorrect; r2 37 claims, 5 Incorrect; r3 30 claims, 1 Incorrect; most probes executed). Merged most-severe-wins in this table (no separate merged report: the canonical `code-fact-check-report.md` belongs to earlier units). Every replicate verdicted the answer-grammar sentence Incorrect; the `<!--` replacement text was Incorrect in r1 and r2 (r3: Mostly accurate, doc-only); the merge-in path (r1) and the health-check skip (r2) are single-replicate detections, both executed or traced. Verdict agreement on the clusters below: 4 of 9 unanimous.
+
+Fact-Check Gate: high-confidence behavioural Incorrects. /away interim call (the U3c precedent): **fix first**, so the critic panel reviews the fixed HEAD.
+
+### 🔴 Must Fix
+
+| ID | Finding | Replicates | Status |
+|---|---|---|---|
+| C1 | Step 9's "merge main in and go back" fails with the iteration's edits staged (`git merge` refuses; `merge --abort` then fails), so any answer the user commits mid-iteration ended it (executed) | r1 claim 22 (Incorrect) | Fixed: commit first (tree checked), then --cycle-diff over HEAD's index; merge-in leaves WT clean |
+| C2 | The replacement text for a REASON holding `<!--` itself holds `<!--`; FENCE_AWK refuses the questions file and every land stalls (executed) | r1 9a, r2 14a (Incorrect); r3 Mostly accurate | Fixed: wording without it; the reason names --check-answer |
+| C3 | A stopped REASON starting `[` with `]:` or an open `[` breaks the questions file even behind `> ` (executed) | r1 9c (Incorrect) | Fixed: written as `> Reason: REASON` |
+| C4 | The B13 health-check skip ("MAIN is the commit a check passed on") can never fire: each land makes a new main | r2 claim 4 (Incorrect) | Fixed: skipped when only `chore` lines moved main since a passing check |
+
+### 🟡 Must Address
+
+| ID | Finding | Replicates | Status |
+|---|---|---|---|
+| C5 | Environment refusals of `--merge` (no identity, MAIN_WT's state, a moved main) were routed to a user merge entry | r1 4b (Incorrect), r3 (Mostly accurate) | Fixed: only path refusals fall through; environment refusals retry |
+| C6 | The answer grammar was stated wrongly (bare 1-3 and keep/drop/done read as options) | r1 10, r2 15b, r3 (Incorrect, doc-only in effect) | Fixed |
+| C7 | The re-dispatch-on-Applied rule also caught briefs merged or dropped that iteration | r2 7b (Incorrect, fails closed) | Fixed: last applied answer asked for a re-dispatch, brief open |
+| C8 | A [3] merge answer's note had no path to the loop | r1 claim 28 | Fixed: the merge entry's ID joins "Answered for you" |
+| C9 | IDs filed this iteration read as skipped; --marker skips passed on from --status were filed as stopped | r2 E4, r1 claim 6 | Fixed |
+| C10 | Commit messages adc8a176 and c39a9692 overstate (A2's cause, "refusals completed", "<!-- withheld", B13) | r1 35a, r2 32a/32b, r3 | Won't-Fix (override row): unmerged branch history, corrected by this commit's message |
+
+Not fixed, stated: the `--cycle-diff` "regular 100644 file" refusal applies to the judged files only (r3, doc-only; the Rules already say a symlink fix passes); row 731's decision-log row for the reused `Main at:` name (r2 E5) is left to U5's decision-log pass.
