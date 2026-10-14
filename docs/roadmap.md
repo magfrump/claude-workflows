@@ -53,6 +53,12 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
    First step: list what Q-117's and Q-130's checks need from the host, and which of
    those a container or second install prefix could provide side by side with main's.
+7. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
+   gate (merged on Q-145 [2]) goes red when an entry in a repo ancestor such as `/tmp`
+   vanishes mid-listing (`scripts/lib/dev-cycle-read.sh`, `find -H "${tops[@]}" -maxdepth 1`
+   fails closed). First step: skip an entry that no longer exists instead of failing; a
+   gate-code unit, so it lands on the user's approval. Revisit trigger (the user's): if re-runs
+   on this class cost more than an hour in total before it lands, reopen Q-145.
 
 ## Ideas
 
