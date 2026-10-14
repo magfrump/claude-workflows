@@ -70,8 +70,15 @@ fi
 # The enforcement set: what cc-isolated.sh's enforcement_files() hashes, as repo
 # paths. Keep in step with that function. Plus install.sh, which is not hashed but
 # runs on the host and chooses the diff the human reviews (decision 035).
-enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh|install\.sh$|egress/)'
-touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
+enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+# Host-only tools: cc-isolated.sh's host_tool_files() (decision log row 71). No
+# live probe can exercise them, so they carry their own trailer, `Host-tool-tested:`
+# (what was run on a host, or `no — <reason>`), and `Live-verified: no` stays a
+# list of debt a probe can pay. A commit touching both kinds needs both trailers.
+host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)$'
+boundary_touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
+host_touched="$(printf '%s\n' "$files" | grep -E "$host_tools" | sort -u)"
+touched="$(printf '%s\n%s\n' "$boundary_touched" "$host_touched" | grep -v '^$' | sort -u)"
 [ -n "$touched" ] || exit 0
 
 # The comment-only escape (Q-009). Read the same diff the commit would carry —
@@ -79,9 +86,10 @@ touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 # to the enforcement files, and let it through only if every added and removed
 # line is blank or a comment. `#` covers the Dockerfile, the shell scripts, the
 # python and the egress/*.txt lists; `//` covers the jsonc devcontainer.json.
+# $1: the newline-separated files to read (one trailer's set).
 comment_only_diff() {
   local diff_text line body stripped content=0 in_header=0 touched_files=()
-  mapfile -t touched_files <<< "$touched"
+  mapfile -t touched_files <<< "$1"
   [ "${#touched_files[@]}" -gt 0 ] || return 1
 
   diff_text="$(git diff --cached -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)" || return 1
@@ -125,34 +133,58 @@ comment_only_diff() {
   [ "$content" = 1 ]
 }
 
-if comment_only_diff; then exit 0; fi
+# Each set is judged on its own diff: a comment-only edit to a host tool needs no
+# trailer even when the same commit changes a boundary file, and vice versa.
+need=()
+if [ -n "$boundary_touched" ] && ! comment_only_diff "$boundary_touched"; then need+=("Live-verified"); fi
+if [ -n "$host_touched" ] && ! comment_only_diff "$host_touched"; then need+=("Host-tool-tested"); fi
+[ "${#need[@]}" -gt 0 ] || exit 0
 
-has_trailer() {
-  grep -Eq "(^|[[:space:]\"'])Live-verified:" <<< "$1"
-}
-
-if has_trailer "$cmd"; then exit 0; fi
-
-# -F <file> / --file <file> / --file=<file>: read the message file(s).
+# The message text: the command itself, plus any -F <file> / --file <file> /
+# --file=<file> it names.
+msg="$cmd"
 while read -r f; do
   [ -n "$f" ] || continue
   f="${f%\"}"; f="${f#\"}"; f="${f%\'}"; f="${f#\'}"
-  if [ -r "$f" ] && has_trailer "$(cat "$f")"; then exit 0; fi
+  if [ -r "$f" ]; then msg="$msg"$'\n'"$(cat "$f")"; fi
 done < <(printf '%s' "$cmd" | grep -Eo -- '(-F|--file)(=|[[:space:]]+)[^[:space:]]+' | sed -E 's/^(-F|--file)(=|[[:space:]]+)//')
 
-{
-  echo "BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification."
-  echo "Enforcement files in the commit:"
-  printf '  %s\n' "$touched"
-  echo
-  echo "Add a trailer to the commit message. Either the blessed hash a passing probe recorded"
-  echo "(cc-isolated --list shows it after cc-isolated --probe-only <repo>):"
-  echo "    Live-verified: <hash>"
-  echo "or an explicit statement that it has not run, and what will run it:"
-  echo "    Live-verified: no — <reason>; run cc-isolated --probe-only <repo> after install.sh"
-  echo
-  echo "bats and shellcheck cannot see a kernel; only a container built from this config can"
-  echo "(guides/devcontainer-setup.md, 'Changing the boundary'). Two outages came from"
-  echo "commits that carried 'needs a live check' and were blessed without one."
-} >&2
+has_trailer() {  # $1 = trailer name
+  grep -Eq "(^|[[:space:]\"'])$1:" <<< "$msg"
+}
+
+missing=()
+for t in "${need[@]}"; do has_trailer "$t" || missing+=("$t"); done
+[ "${#missing[@]}" -gt 0 ] || exit 0
+
+for t in "${missing[@]}"; do
+  if [ "$t" = "Live-verified" ]; then
+    {
+      echo "BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification."
+      echo "Enforcement files in the commit:"
+      printf '  %s\n' "$boundary_touched"
+      echo
+      echo "Add a trailer to the commit message. Either the blessed hash a passing probe recorded"
+      echo "(cc-isolated --list shows it after cc-isolated --probe-only <repo>):"
+      echo "    Live-verified: <hash>"
+      echo "or an explicit statement that it has not run, and what will run it:"
+      echo "    Live-verified: no — <reason>; run cc-isolated --probe-only <repo> after install.sh"
+      echo
+      echo "bats and shellcheck cannot see a kernel; only a container built from this config can"
+      echo "(guides/devcontainer-setup.md, 'Changing the boundary'). Two outages came from"
+      echo "commits that carried 'needs a live check' and were blessed without one."
+    } >&2
+  else
+    {
+      echo "BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host."
+      echo "Host tools in the commit:"
+      printf '  %s\n' "$host_touched"
+      echo
+      echo "Add a trailer naming what ran on a host (no live probe can exercise these):"
+      echo "    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>"
+      echo "or an explicit statement that nothing has, and what will:"
+      echo "    Host-tool-tested: no — <reason>; <what will run it>"
+    } >&2
+  fi
+done
 exit 2

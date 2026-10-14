@@ -272,3 +272,69 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   CC_LIVE_VERIFY_GATE_DISABLE=1 run bash "$HOOK" <<< "$(payload 'git commit -m x')"
   [ "$status" -eq 0 ]
 }
+
+# --- Host-only tools (decision log row 71): their own trailer, Host-tool-tested.
+
+stage_host_tool() {
+  echo 'echo pushed' >> devcontainer-config/cc-push.sh
+  git add devcontainer-config/cc-push.sh
+}
+
+@test "a host-tool commit needs Host-tool-tested, and Live-verified alone does not do" {
+  stage_host_tool
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Host-tool-tested:"* ]]
+  [[ "$output" == *"devcontainer-config/cc-push.sh"* ]]
+  [[ "$output" != *"Live-verified: <hash>"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x" -m "Host-tool-tested: no — bats only"')"
+  [ "$status" -eq 0 ]
+  printf 'fix: x\n\nHost-tool-tested: cc-push of a scratch repo\n' > "$TEST_TMPDIR/msg"
+  run bash "$HOOK" <<< "$(payload "git commit -F $TEST_TMPDIR/msg")"
+  [ "$status" -eq 0 ]
+}
+
+@test "a commit touching a boundary file and a host tool needs both trailers" {
+  stage_enforcement
+  stage_host_tool
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"live verification"* ]]
+  [[ "$output" != *"host-only tool"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"host-only tool"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "a comment-only host-tool edit beside a real boundary change needs only Live-verified" {
+  # Committed first: a NEW file is substantive whatever its text says.
+  echo 'gitdir_valid() { :; }' > devcontainer-config/cc-gitdir.sh
+  git add devcontainer-config/cc-gitdir.sh
+  git -c commit.gpgsign=false commit -qm base
+  echo '# a note' >> devcontainer-config/cc-gitdir.sh
+  git add devcontainer-config/cc-gitdir.sh
+  stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "every host_tool_files entry is gated by the host-tool trailer, none by Live-verified" {
+  local list f
+  list="$(bash -euo pipefail -c 'source "$1"; host_tool_files' _ \
+            "$BATS_TEST_DIRNAME/../../devcontainer-config/cc-isolated.sh")"
+  [[ "$list" == *cc-push.sh* ]]
+  for f in $list; do
+    echo 'echo x' > "devcontainer-config/$f"
+    git add "devcontainer-config/$f"
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+    [ "$status" -eq 2 ] || { echo "not gated as a host tool: $f"; return 1; }
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+    [ "$status" -eq 0 ] || { echo "host tool still needs Live-verified: $f"; return 1; }
+    git reset -q "devcontainer-config/$f"
+    rm -f "devcontainer-config/$f"
+  done
+}
