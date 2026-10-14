@@ -1,4 +1,4 @@
-Commit: f2cc21e6
+Commit: 43b8d7ed
 
 # Code Review Rubric: feat/build-loop-u4c
 
@@ -79,8 +79,29 @@ Breaking), architecture (`architecture-review-2026-10-13-u4c-i2.md`: 2 Coupling,
 | D6 | Rule: "no file or repository state" still covers a planted PATH binary | security i2 F3 | Fixed: "no repository file or state" |
 | D7 | Step 9 never says what `questions.sh check` exit 1 means | api i2 F5 | Fixed |
 | D8 | The GATE_CODE check lower-cases paths; the pathspec is case-sensitive | api i2 F4 | Won't-Fix (override row) |
-| D9 | A fork holding C compares unrelated gate code (noise); deleting C's objects drops the check to a record note | security i2 (not tested) | Won't-Fix (override row) |
+| D9 | A fork holding C compares unrelated gate code (noise); deleting C's objects drops the check to a record note (corrected by row 820: deleting C's commit object now skips silently) | security i2 (not tested) | Won't-Fix (override rows 819, 820) |
+
+## Final confirming pass (43b8d7ed): full branch, k=3, full panel
+
+Fact-check (k=3 merged, `code-fact-check-report-2026-10-13-u4c-final.md`): 41 clusters, no
+behavioural Incorrect; 1 new doc Incorrect (row 819 / D9), 3 Stale plan lines, 12 Mostly
+accurate; agreement ~80%. Critics: performance (1 Informational), architecture (2 Minor, 3
+Informational; no Structural or Coupling), api-consistency (1 Inconsistent introduced, 3 Minor,
+1 Informational), security (1 Medium introduced, 3 Low). Health check passed at 43b8d7ed.
+
+**Gate:** a Medium (security final F1) and an Inconsistent (api final F1) introduced by the
+range stop the merge and go to the user: Q-144, interim [1] (the Q-138 / Q-141 / Q-142 precedent).
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| E1 | `merge-base --is-ancestor` passes any merged branch's own commit, so an image released from a branch under review reads as on main and files the mechanical `image-lag` (executed: 6beca252) | security final F1 (Medium) | Interim fix: C is on main only on `rev-list --first-parent M` (executed: 774a0eef on, 6beca252 not) |
+| E2 | `image-off-main` unkeyed, its answer never read (a keep re-filed each iteration), never closed | api final F1 (Inconsistent), security final F3, architecture final 1 | Interim fix: `image-off-main-C12`, suppressed by any entry in WT's questions files (as the step 0 siblings), numbered options |
+| E3 | The orchestrator answering `image-lag` `done` itself breaks D8 (`--cycle-diff` refuses it without `--answered`) | security final F2 | Interim fix: listed in the final message for the user to answer |
+| E4 | No `commit=` line makes C empty and the silent skip fire before "note it" | fact-check claim 6, architecture final 2, api final F3 | Interim fix: the manifest is read first |
+| E5 | The paste does not check the working-tree install.sh | security final F4 (pre-existing) | Interim fix (row 821) |
+| E6 | Doc: row 819 / D9 consequence; plan :71, :77, :156, :394, :400, :432 and the as-built note; lib comment "built from main"; step 9's check exit 1; the pin test's name | fact-check claims 1, 3, 5-8; api final F4 | Fixed (row 820 amends 819) |
 
 ## Status
 
 Iteration 1 found no 🔴 and five 🟡, fixed in 33ad1767 (B2's commit-message half an Accepted-immutable row). Health check passed at 1bc823ea (run in the session; log not committed).
+Final confirming pass not clean (E1, E2): Q-144, interim [1] applied; a k=1 fact-check and security pass over the interim fix decides the merge.

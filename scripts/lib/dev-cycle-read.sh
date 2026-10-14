@@ -1960,9 +1960,9 @@ ownfile() {
   [[ "$3" == A && "$1" == docs/reviews/* && "$b" != */* && ( "$b" == "$2.md" || "$b" == *"-$2.md" ) ]]
 }
 # The gate's own files: a change to them lands only through a merge-gate-
-# review entry, never a self-merge. The scripts because the image copy built
-# from main runs every merge after the next release (plan D6, D5 item 3; Q-140
-# [1]); skills/dev-cycle/ because its SKILL.md holds the D6 snippet that runs
+# review entry, never a self-merge. The scripts because the image copy, built
+# from main on the host, runs every merge after the next release (plan D6, D5
+# item 3; Q-140 [1]); skills/dev-cycle/ because its SKILL.md holds the D6 snippet that runs
 # the gate (U4c; plan D4, F52). Both reach a session only from a release, so
 # here the floor is stricter than D5.
 # One list for floor and build-loop.sh's --approved, which tests it on its

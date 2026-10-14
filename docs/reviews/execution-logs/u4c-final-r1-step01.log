@@ -1,0 +1,29 @@
+# step 0.1 image checks, read-only, cwd=/workspace/.claude/wt-build-loop-u4c, MAIN_WT=/workspace, 2026-10-13T23:36:20-07:00
+C=774a0eef3ff85beb69695e014ab840f70648f193 A=/home/magfrump/claude-workflows M=2aaf97b43b6751c5c2061660ae41cb171c298ecb
+$ hg -C /workspace cat-file -e "C^{commit}"
+exit 0
+$ hg -C /workspace merge-base --is-ancestor C M
+exit 0
+$ hg -C /workspace diff --quiet C M -- PATHS
+exit 1
+$ ... --name-only
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+exit 0
+# literal pathspec check: scripts/lib/ with GIT_LITERAL_PATHSPECS=1
+scripts/lib/dev-cycle-read.sh
+exit 0
+# a C not in the repo (skip branch)
+fatal: Not a valid object name 0000000000000000000000000000000000000001^{commit}
+exit 128
+# is-ancestor with a commit not on main (off-main branch): HEAD of this worktree
+exit 1
+# is-ancestor with unknown object
+fatal: Not a valid commit name 0000000000000000000000000000000000000001
+exit 128
+# 2026-10-13T23:40:38-07:00 cwd=/workspace: all of scripts/ between C and M (f2cc21e6's 'named health-check.sh too')
+scripts/build-loop.sh
+scripts/health-check.sh
+scripts/lib/dev-cycle-read.sh
+exit 0

@@ -1,0 +1,43 @@
+# run 2026-10-14T06:38:26Z cwd=/workspace/.claude/wt-build-loop-u4c; block extracted from skills/dev-cycle/SKILL.md at 43b8d7ed with the test's awk
+--- image file vs C's blob (C from .manifest)
+same as C: scripts/build-loop.sh
+same as C: scripts/dev-cycle.sh
+same as C: scripts/questions.sh
+same as C: scripts/lib/dev-cycle-read.sh
+same as C: skills/dev-cycle/SKILL.md
+--- d6 build-loop.sh --help vs direct
+d6 exit=0
+direct exit=0
+/tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/fc-r2/h1 /tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/fc-r2/h2 differ: char 139, line 3
+--- d6 questions.sh open with QUESTIONS_LIVE/ARCHIVE pointed at a planted file
+0
+(count of Q-999 lines through d6; pipe status 0 1)
+1
+(count of Q-999 lines direct, env honoured)
+--- d6 with an unknown first argument
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh
+exit=1
+--- -w on image files as uid 1000
+unwritable build-loop.sh
+unwritable dev-cycle.sh
+unwritable questions.sh
+unwritable lib/dev-cycle-read.sh
+--- exported-function residual: an exported env() function reaches the block
+exit=1
+--- (appended 2026-10-14T06:38:34Z) help diff, h1=d6 h2=direct:
+3d2
+< bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+diff exit=1
+--- exported-function residual, run under bash: an exported function named stat reaches own()
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+The build-loop handoff's state and checks: what the dev cycle's orchestrator
+reads before it dispatches a build brief to a build loop, collects the
+exit=0
+--- (appended 2026-10-14T06:38:51Z) exported function named env, under bash: the block's launch runs it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse d6: a replace ref exists (F38)
+exit=2

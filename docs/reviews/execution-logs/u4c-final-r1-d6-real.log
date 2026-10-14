@@ -1,0 +1,42 @@
+# 2026-10-13T23:39:46-07:00: the real D6 block (extracted from SKILL.md at 43b8d7ed by T33's awk) against the real /opt/claude-workflows, in a throwaway repo /tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/fc-final-r1/repo
+$ (outside a repo) bash d6.bash build-loop.sh --help
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any of the parent directories): .git
+refuse d6: refs/replace could not be listed
+exit 2
+$ bash d6.bash build-loop.sh --help | head -2
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 141
+$ bash d6.bash questions.sh check (QUESTIONS_LIVE=/nonexistent/q.md QUESTIONS_ARCHIVE=/nonexistent/a.md exported)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+  ✓ questions: structure valid, indexes current
+exit 0
+$ same, run /opt questions.sh directly with the env (control)
+  ✗ missing: /nonexistent/q.md
+  ✗ missing: /nonexistent/a.md
+  ✗ no questions doc here — run `~/.claude/scripts/questions.sh init` first
+exit 1
+$ bash d6.bash nope
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh
+exit 1
+$ master and main both
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+refuse d6: the default branch is not exactly one of main and master
+exit 2
+$ dev-cycle.sh through the block, first lines
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit 141
+# rerun 2026-10-13T23:39:55-07:00, stderr dropped
+$ d6 build-loop.sh --help (first 2 lines) vs /opt direct
+The build-loop handoff's state and checks: what the dev cycle's orchestrator
+reads before it dispatches a build brief to a build loop, collects the
+identical to /opt direct: yes
+$ d6 dev-cycle.sh | head -3
+# Dev-cycle digest — 2026-10-13
+
+Window: since 2026-09-29 (from no cycle record found, so the default of 14 days (the previous cycle, if any, did not write its record)). Merges, commits and section 7's changed files: those on `main` at 02fca62 whose committer date (in the committer's time zone) is on or after 2026-09-29, filtered after a full walk. Triggers: all of them, from the working tree. Questions, roadmap, idea log: the working tree.

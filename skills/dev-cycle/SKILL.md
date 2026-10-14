@@ -284,19 +284,24 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    image older than this skill: its entry also gives the release paste below).
    Then the image lag (Q-140 [1]; the image is the gate, built from the host checkout's HEAD).
    C and A are the `commit=` and `assembled_from=` lines of `/opt/claude-workflows/.manifest`,
-   M main's commit. If `hg -C MAIN_WT cat-file -e 'C^{commit}'` fails, the image was not
-   built here: skip silently. Else, if `hg -C MAIN_WT merge-base --is-ancestor C M` exits 1,
-   the gate that runs was built off main: file one `you: judgment` entry `image-off-main`
-   naming C, unless one is open (options: rebuild from main, the paste below; or keep). Else run
+   M main's commit; with no file or either line, note it in the record and skip. If
+   `hg -C MAIN_WT cat-file -e 'C^{commit}'` fails, this repository does not hold the image's
+   commit: skip silently. Else C is on main only when it is one of the lines of
+   `hg -C MAIN_WT rev-list --first-parent M` (the history `--main-log` reads; a merged
+   branch's own commits are not on it). Not on main: the gate that runs is a commit no merge
+   to main landed; file one `you: judgment` entry `image-off-main-C12` (C's first 12 hex),
+   unless WT's questions files hold one: [1] rebuild from main (check main out on the host,
+   then the paste below), [2] keep this image. On main: run
    `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
    `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
    diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
-   ./devcontainer-config/install.sh` (host; then a new sandbox launch), interim: the image's
-   gate runs. Exit 0: an open `image-lag` entry is answered `done: the image holds main's
-   gate code` (this diff is the observation). A missing `.manifest` or line, or any other
-   exit: note it in the record. None of these stops the iteration.
+   git diff --quiet HEAD -- devcontainer-config/install.sh && ./devcontainer-config/install.sh`
+   (host; then a new sandbox launch), interim: the image's gate runs. Exit 0: the image holds
+   main's gate code; list any open `image-lag` or `image-off-main-*` entry in the final
+   message for the user to answer `done` (the orchestrator never answers one itself: D8).
+   Any other exit: note it in the record. None of these stops the iteration.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
    latest real, not future date of a regular file, as the digest picks its window: listed
@@ -710,7 +715,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
 
 1. Stage by name only paths `--check-write` or `--check-fix` printed `ok` for (rows 764,
    769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
-   filed or edited entries (`check` exiting 1 names entries to fix before staging). Before the record's last write, list under `### Paths landed`
+   filed or edited entries (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
    what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).

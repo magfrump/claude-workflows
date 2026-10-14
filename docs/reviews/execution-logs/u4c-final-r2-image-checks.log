@@ -1,0 +1,32 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# step 0.1 image checks, cwd=/workspace/.claude/wt-build-loop-u4c, run 2026-10-14T06:37:36Z, MAIN_WT=/workspace
+C=774a0eef3ff85beb69695e014ab840f70648f193 A=/home/magfrump/claude-workflows M=2aaf97b43b6751c5c2061660ae41cb171c298ecb
+cat-file -e exit=0
+is-ancestor C M exit=0
+diff --quiet exit=1
+--- name-only
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+name-only exit=0
+--- is-ancestor with a fake non-commit / unrelated cases
+is-ancestor M C exit=1
+fatal: Not a valid object name 0000000000000000000000000000000000000001^{commit}
+cat-file -e absent exit=128
+diff --quiet on unrelated path exit=0
+--- the diff with GIT_LITERAL_PATHSPECS: does scripts/lib/ match as a directory prefix?
+scripts/lib/dev-cycle-read.sh
+--- GATE_CODE paths changed between C and M (unrestricted diff filtered by GATE_CODE regex)
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+--- does the branch head (43b8d7ed) differ from C on those paths?
+scripts/build-loop.sh
+scripts/lib/dev-cycle-read.sh
+skills/dev-cycle/SKILL.md
+bash exit=0
+--- (appended 2026-10-14T06:44:02Z) the paste's check half, with /workspace standing in for A (A is a host path, absent here) and install.sh replaced by an echo
+ls: cannot access '/home/magfrump/claude-workflows': No such file or directory
+would run ./devcontainer-config/install.sh
+exit=0
+exit=1 (a checkout at 43b8d7ed, not M)
