@@ -1,4 +1,4 @@
-Commit: b88e418a
+Commit: ccc638d7
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -126,3 +126,11 @@ Stop-clause rationale (architecture 4); wait rule names the last land's NEW (arc
 #### Iteration-4 gate
 
 The loop is past its 3-iteration cap with this fix batch unreviewed. Per the Q-137 / Q-141 precedent: a confirming pass (k=1 fact-check + security) over b88e418a..HEAD decides the merge; a new Must Fix, or a Medium the range introduced, stops it and goes to the user.
+
+### Confirming pass (k=1 fact-check + security over b88e418a..ccc638d7)
+
+Reports: `code-fact-check-report-2026-10-13-u4b2-confirm.md` (19 claims: 12 Verified, 3 Mostly accurate, 1 Stale, 3 Incorrect; D2, D9, the second land, `Applied:` actions and the `other-commit-` slug verified by execution), `security-review-2026-10-13-u4b2-confirm.md` (5 Medium, 3 Low; D2 fixed, D1 and D5 partial).
+
+Introduced by the range, Medium: the `other` hold skipped self-merges (fact-check :260, security N1) and ended on any answer but `open`, with no options or slug for `refuse main-log` entries (N2); an approved merge refused for a cause that cannot clear was retried forever, unrecorded (fact-check :549, N7); the Rules named WT for the `--state` step 7 runs from MAIN_WT, recreating F2 if followed (fact-check Stale, N5); the stranded branch was merged by name (N4). Pre-existing or Low: the health-check skip vs `questions.sh check` (fact-check, N6), the iteration after an `other` running its tests (N3), pasted `[`-led lines (N8), the grammar's punctuation (doc).
+
+**Gate:** Mediums introduced by the range stop the merge: **Q-143** filed on main (f50d436e). Interim [1] (the Q-138 / Q-141 / Q-142 precedent), applied in the next commit: the hold covers self-merges, the health check and tests, and lasts until each entry reads `keep` (`[1] reviewed, build on it`); `main-log-refused-MAIN12` slug; approved refusals that cannot clear are filed `stopped`, the rest retried and named; the Rules name MAIN_WT; the stranded commit merged by id; `questions.sh index`/`check` before staging entries (the skip's stale-index case); pasted lines as `> Output:` without CR or comment opener; the grammar's punctuation listed. A second confirming pass (k=1 fact-check + security) decides the merge.

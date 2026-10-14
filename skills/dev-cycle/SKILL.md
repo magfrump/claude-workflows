@@ -45,7 +45,8 @@ gap.
   paths only, never `git add -A`. Commits and merges follow the Operating Modes rules in the
   global instructions (in /active mode, ask first); code fixes land through `pr-prep`.
 - **Scripts run through the D6 block** (D6). Every `build-loop.sh` and `dev-cycle.sh` call
-  runs from WT (step 0's first two from MAIN_WT, step 7's self-merge from its GT) as
+  runs from WT (step 0's first two from MAIN_WT; step 7's self-merge from its GT, after a
+  `--state` from MAIN_WT) as
   `cd WT && bash -s -- SCRIPT ARG... <<'D6'`, then the block below and a last
   line `D6`, pasted whole; never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
   claude-workflows it runs main's own committed scripts, elsewhere the root-owned image copy,
@@ -60,8 +61,9 @@ gap.
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
   `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines block
-  dispatch but are no stop), else the line and stderr go in one `agent` entry, each line
-  quoted as `> ` text with any HTML comment opener replaced; either way
+  dispatch, merges and tests (step 0.2) but are no stop), else the line and stderr go in
+  one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
+  return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
   `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
   planted state, so a stop is not called hostile. Until the D6 block is written, the
@@ -253,15 +255,18 @@ so the next one starts from the same `Main at:`:
    (SHA and subject) in the final message, so the user sees every commit read as their
    answer (row 727). Any `other` line, or a `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed), blocks this iteration's dispatch and every answer
-   step 7 would act on, and gets one `you: judgment` entry naming its SHA (slug
-   `other-commit-SHA12`) or quoting the line, unless an open one does (rows 720, 726). The
-   block holds in every later iteration while such an entry is open (`--check-answer`
-   prints `open`), so a commit the user has not seen never feeds a merge or a loop.
+   the history could not be listed), holds dispatch, every self-merge, every answer step 7
+   would act on, and the repo's health check and tests (steps 1 and 4), and gets one
+   `you: judgment` entry naming its SHA (slug `other-commit-SHA12`) or quoting the line
+   (slug `main-log-refused-MAIN12`), unless an open one does (rows 720, 726), with options
+   **[1] reviewed, build on it** and **[2] keep holding**. The hold lasts, in every later
+   iteration, until each such entry reads `keep` (`--check-answer`), so a commit the user
+   has not seen never feeds a merge, a test run or a loop.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
-   main), merge that branch into WT first (as step 9 merges main in), so its entries and
+   main), merge the commit the session made there (by its id, not the branch name) into WT
+   first (as step 9 merges main in), so its entries and
    `Asked:` items land now and are not filed again (D13: a failed land is retried); a
    conflict is a stop. Unmerged `chore/dev-cycle-*` branches are named in the final
    message. WT is removed (`hg -C MAIN_WT worktree remove --force WT`) once step 10's land is
@@ -295,8 +300,8 @@ last good one.
 - Quiesce (D14): no subagent this iteration started is still running; build loops and other
   sessions' agents keep running, and only a process this session started is ever stopped, by
   its PID or process group, never by a name or pattern. Then run the repo's health check
-  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped when
-  step 0.2 read an `other` line, whose unreviewed test code it would run (row 776; step 4
+  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped while
+  step 0.2's hold is on, as an unreviewed commit's test code would run (row 776; step 4
   then runs no repo test either), or when the previous iteration's `1.` line reads
   `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
   carry no code; this iteration's line then reads `unchanged since P`), to a file,
@@ -486,7 +491,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
-- **ready**, POLICY `self-merge`: `--merge BRIEF --expect TIP`, run from a gate checkout,
+- **ready**, POLICY `self-merge` (not while step 0.2's hold is on): `--merge BRIEF
+  --expect TIP`, run from a gate checkout,
   not WT: `--state` (from MAIN_WT, whose config the add copies), then
   `hg -C MAIN_WT worktree add --detach GT
   refs/heads/main`, GT at `.claude/wt-dev-cycle-gate-DATE-HHMM` in MAIN_WT, made for this
@@ -531,8 +537,8 @@ a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the
 Then answers, only through `--check-answer` (main's commit: an answer in a working tree is
 not seen until it lands, D8), one call with the IDs (an `Asked:` item without its `@TIP`)
 of every brief's `Asked:` items and merge entries, less those on its `Applied:` line.
-An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before punctuation
-or a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
+An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before one of
+`.,;:!)*` or a blank and a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
 (a merge entry answered "merge" included: its options are answered by number). IDs filed
 this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
 it lists an `other` line after MAIN, or step 0.2's block holds, act on no answer this
@@ -545,9 +551,10 @@ iteration, so every answer acted on came in a commit the user is shown (row 727)
 - A stopped entry: `keep` re-dispatches (a `capped-` one's changes nothing); `drop` closes
   the brief as step 6's check does; anything else goes to the record and the final message.
 - A merge entry: `keep` runs `--merge BRIEF --expect TIP --approved Q-NNN`, TIP the full
-  one the entry names, never the branch's live tip. A refusal of the paths, or a conflict,
-  is filed as `stopped`; any other (MAIN_WT's state, no identity, a moved main) is retried
-  next iteration, the ID left off `Applied:`. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
+  one the entry names, never the branch's live tip. A refusal that cannot clear (the
+  paths, a conflict, the tip or heading, a brief no longer open, an object that does not
+  hash) is filed as `stopped`; MAIN_WT's state, no identity or a moved main is retried
+  next iteration and named in the final message, the ID left off `Applied:`. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
   record and the final message.
 
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
@@ -636,7 +643,8 @@ back to the older one (or to the 14-day default), so never skip it.
 Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from WT:
 
 1. Stage by name only paths `--check-write` or `--check-fix` printed `ok` for (rows 764,
-   769, 771), never `-a`. Before the record's last write, list under `### Paths landed`
+   769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
+   filed or edited entries. Before the record's last write, list under `### Paths landed`
    what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
