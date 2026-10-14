@@ -60,8 +60,8 @@ gap.
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
-  `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines block
-  dispatch, merges and tests (step 0.2) but are no stop), else the line and stderr go in
+  `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines are step
+  0.2's `other` stop, which lands first), else the line and stderr go in
   one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
@@ -255,13 +255,15 @@ so the next one starts from the same `Main at:`:
    (SHA and subject) in the final message, so the user sees every commit read as their
    answer (row 727). Any `other` line, or a `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed), holds dispatch, every self-merge, every answer step 7
-   would act on, and the repo's health check and tests (steps 1 and 4), and gets one
-   `you: judgment` entry naming its SHA (slug `other-commit-SHA12`) or quoting the line
-   (slug `main-log-refused-MAIN12`), unless an open one does (rows 720, 726), with options
-   **[1] reviewed, build on it** and **[2] keep holding**. The hold lasts, in every later
-   iteration, until each such entry reads `keep` (`--check-answer`), so a commit the user
-   has not seen never feeds a merge, a test run or a loop.
+   the history could not be listed), gets one `you: judgment` entry naming its SHA (slug
+   `other-commit-SHA12`) or quoting the line (slug `main-log-refused-MAIN12`), unless WT's
+   questions files hold one (rows 720, 726), with options **[1] reviewed, build on it** and
+   **[2] not yet**. **The `other` stop**: while such a line is listed, or `--check-answer`
+   reads any entry with either slug in WT's `docs/working/questions.md` or
+   `questions-archive.md` as other than `keep`, the iteration makes WT (step 0.3), files the
+   entries, writes a record whose `1.` line reads `stopped: step 0.2`, lands as step 9 does
+   and ends: no tests, merges, answers or dispatch, so a commit the user has not seen never
+   feeds one.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
@@ -300,9 +302,8 @@ last good one.
 - Quiesce (D14): no subagent this iteration started is still running; build loops and other
   sessions' agents keep running, and only a process this session started is ever stopped, by
   its PID or process group, never by a name or pattern. Then run the repo's health check
-  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped while
-  step 0.2's hold is on, as an unreviewed commit's test code would run (row 776; step 4
-  then runs no repo test either), or when the previous iteration's `1.` line reads
+  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped
+  when the previous iteration's `1.` line reads
   `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
   carry no code; this iteration's line then reads `unchanged since P`), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
@@ -491,7 +492,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
-- **ready**, POLICY `self-merge` (not while step 0.2's hold is on): `--merge BRIEF
+- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, lists no `other`
+  or `refuse` line after MAIN; else no merge or answer this iteration): `--merge BRIEF
   --expect TIP`, run from a gate checkout,
   not WT: `--state` (from MAIN_WT, whose config the add copies), then
   `hg -C MAIN_WT worktree add --detach GT
@@ -541,8 +543,8 @@ An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before on
 `.,;:!)*` or a blank and a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
 (a merge entry answered "merge" included: its options are answered by number). IDs filed
 this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
-it lists an `other` line after MAIN, or step 0.2's block holds, act on no answer this
-iteration, so every answer acted on came in a commit the user is shown (row 727).
+it lists an `other` or `refuse` line after MAIN, act on no answer this iteration (the next
+step 0.2 stops on it), so every answer acted on came in a commit the user is shown (row 727).
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -551,10 +553,9 @@ iteration, so every answer acted on came in a commit the user is shown (row 727)
 - A stopped entry: `keep` re-dispatches (a `capped-` one's changes nothing); `drop` closes
   the brief as step 6's check does; anything else goes to the record and the final message.
 - A merge entry: `keep` runs `--merge BRIEF --expect TIP --approved Q-NNN`, TIP the full
-  one the entry names, never the branch's live tip. A refusal that cannot clear (the
-  paths, a conflict, the tip or heading, a brief no longer open, an object that does not
-  hash) is filed as `stopped`; MAIN_WT's state, no identity or a moved main is retried
-  next iteration and named in the final message, the ID left off `Applied:`. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
+  one the entry names, never the branch's live tip. MAIN_WT's state, no identity or a
+  moved main is retried next iteration and named in the final message, the ID left off
+  `Applied:`; any other refusal is filed as `stopped`, its lines the reason. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
   record and the final message.
 
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
@@ -684,9 +685,8 @@ conflict: `hg -C WT merge --abort`, then a stop.
 
 ### 10. Dispatch
 
-Only after step 9's land is verified, with no dispatch block from step 0.2 or from
-`--main-log MAIN` run again now (an `other` line after MAIN: the loops would start from
-it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry asking for
+Only after step 9's land is verified, with no `other` or `refuse` line from
+`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry asking for
 `docs/constraints.md`, unless an open one does: D2). Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
