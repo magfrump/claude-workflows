@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
+| [Q-144](#q-144--u4c-confirm-image-checks) | you: judgment | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -298,3 +299,23 @@ Also open from the same pass, Medium, not introduced by the range: the bootstrap
 - **Interim:** [1] (the Q-138 / Q-141 precedent), applied 2026-10-13 on `feat/build-loop-u4b1`; the second confirming pass runs next, and U4b1 merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
 - **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
 
+
+### Q-144 · u4c-confirm-image-checks
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after one more narrow fix, merge it as is, or drop the image checks to U5?
+
+- **Why it's yours:** the confirming pass that decides the merge found findings the range introduced, which by the rubric's gate stops the merge and comes to you (the Q-138 / Q-141 / Q-142 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4c.md` (final confirming pass, E1-E6) on `feat/build-loop-u4c`; `docs/reviews/security-review-2026-10-13-u4c-final.md` F1-F4; `docs/reviews/api-consistency-review-2026-10-13-u4c-final.md` F1.
+
+Step 0.1 (added in review, not in Q-140's options) checks the root-owned image against main: `image-off-main` when the image's commit is not on main, `image-lag` when main's gate code is ahead. `merge-base --is-ancestor` let an image released from a branch under review read as on main once that branch merged (executed with U4b2's 6beca252), and `image-off-main` was unkeyed, its `keep` never read, and never closed. Both are advisory: neither stops an iteration nor lands anything. The D6 block itself (Q-140 [1]) is unaffected and was clean in every pass.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | C is on main only on `rev-list --first-parent M`; `image-off-main-C12` keyed like the step-0 siblings with numbered options; a cleared `image-lag` listed for you to answer, never answered by the orchestrator; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more review pass |
+| **[2] Merge as is** | E1-E4 become override rows for U5 | None | An image released off main can be reported as a routine lag until U5 |
+| **[3] Drop the image checks to U5** | Revert step 0.1's image checks; U5's release entry owns the lag signal | A U5 design pass | The lag stays unobserved until U5 lands (i1 architecture's Coupling finding reopens) |
+
+- **Blocks:** U4c's merge, hence U5.
+- **Interim:** [1], applied 2026-10-14 at e58adc1f on `feat/build-loop-u4c`; the k=1 confirming pass runs next, and U4c merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
+- **If the answer differs:** [2] reverts e58adc1f's step 0.1 changes (skill text only); [3] removes step 0.1's image paragraph, its pin test and the plan's image-lag lines.
