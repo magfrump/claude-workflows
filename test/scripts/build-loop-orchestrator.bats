@@ -371,6 +371,18 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     done
 }
 
+@test "SKILL.md's merge-entry slug rule quotes the lib's GATE_CODE, which --approved's heading reads, on one line of its own (row 674, U4b2)" {
+    g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
+    [[ "$g" == *dev-cycle/* ]] || { echo "GATE_CODE: $g"; return 1; }
+    q=$'\x60'
+    [ "$(grep -cxF "  $q$g$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/lib/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+    # Step 10 also names the dispatch cap and the steal age (i2 architecture 8).
+    c="$(grep -o '^DISPATCH_CAP=[0-9]*; STEAL_AGE=[0-9]*$' "$REPO_ROOT/scripts/build-loop.sh")"
+    [[ "$c" =~ ^DISPATCH_CAP=([0-9]+)\;\ STEAL_AGE=([0-9]+)$ ]] || { echo "$c"; return 1; }
+    cap="${BASH_REMATCH[1]}"; h=$(( BASH_REMATCH[2] / 3600 ))
+    grep -qF "with DISPATCHED $cap (the cap" "$REPO_ROOT/skills/dev-cycle/SKILL.md" && grep -qF "\"under $h hours old\"" "$REPO_ROOT/skills/dev-cycle/SKILL.md"
+}
+
 @test "every git call dev-cycle.sh makes carries git_harden's pairs: a bogus log.date stops nothing, log.showSignature runs no gpg.program (rows 495, 505, U3b3)" {
     brief x "Status: open"
     # A signed-looking commit on main: git log under log.showSignature runs gpg.program for it.
