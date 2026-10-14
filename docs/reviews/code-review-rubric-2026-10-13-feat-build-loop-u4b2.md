@@ -1,4 +1,4 @@
-Commit: ccc638d7
+Commit: 484eaafc
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -134,3 +134,13 @@ Reports: `code-fact-check-report-2026-10-13-u4b2-confirm.md` (19 claims: 12 Veri
 Introduced by the range, Medium: the `other` hold skipped self-merges (fact-check :260, security N1) and ended on any answer but `open`, with no options or slug for `refuse main-log` entries (N2); an approved merge refused for a cause that cannot clear was retried forever, unrecorded (fact-check :549, N7); the Rules named WT for the `--state` step 7 runs from MAIN_WT, recreating F2 if followed (fact-check Stale, N5); the stranded branch was merged by name (N4). Pre-existing or Low: the health-check skip vs `questions.sh check` (fact-check, N6), the iteration after an `other` running its tests (N3), pasted `[`-led lines (N8), the grammar's punctuation (doc).
 
 **Gate:** Mediums introduced by the range stop the merge: **Q-143** filed on main (f50d436e). Interim [1] (the Q-138 / Q-141 / Q-142 precedent), applied in the next commit: the hold covers self-merges, the health check and tests, and lasts until each entry reads `keep` (`[1] reviewed, build on it`); `main-log-refused-MAIN12` slug; approved refusals that cannot clear are filed `stopped`, the rest retried and named; the Rules name MAIN_WT; the stranded commit merged by id; `questions.sh index`/`check` before staging entries (the skip's stale-index case); pasted lines as `> Output:` without CR or comment opener; the grammar's punctuation listed. A second confirming pass (k=1 fact-check + security) decides the merge.
+
+### Second confirming pass (k=1 fact-check + security over ccc638d7..484eaafc)
+
+Reports: `code-fact-check-report-2026-10-13-u4b2-confirm2.md` (19 claims: 11 Verified, 5 Mostly accurate, 3 Incorrect, all introduced), `security-review-2026-10-13-u4b2-confirm2.md` (C1-C8: 3 Medium, 5 Low). Closed: N3, N4, N5, N8 for its shapes; N6 in effect; the slugs, release rule, grammar, `> Output:` form, stranded-commit merge and `questions.sh index`/`check` verified by execution.
+
+Open, Medium, introduced by the range: **C1** the hold's option "[2] keep holding" reads `keep` when answered in words (`keep`, `Keep.`), releasing the hold (executed); **C2** no step names where the hold's entries are looked up (an archive move of a [2]-answered entry could lapse it); **E1** approved-merge refusals now fall into two closed lists, and many (not ahead, no branch, a rebase in progress, a missing blob, a failed write) get no action (executed); **E2** "never feeds a test run" overstates: the hold covers steps 1 and 4, not 2 and 4b. Medium, pre-existing: **C3** a self-merge is not re-checked against `--main-log MAIN` before it acts. Low: C4 (one-pass opener removal can rebuild `<!--`; NUL), C5, C6, C7 (= E2), C8 (step 10's agent entries outside the quoting rule), the Rules' summary of the hold.
+
+**Gate:** not clean. The merge stays stopped under Q-143, updated on main with these results; no further autonomous fix pass (each narrow pass has found the next shape of the same hold). Nothing here lets unapproved code land on its own: every open item fails closed or needs an `other` commit the user is asked about, and none can run before U4c writes the D6 block.
+
+**Status:** not merged. Single-sample review; absence of findings is not an attestation.
