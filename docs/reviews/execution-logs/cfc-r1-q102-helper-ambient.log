@@ -1,0 +1,24 @@
+ambient RUN_TESTS_JOBS=4
+-- helper form (STUB_JOBS unset): env -u RUN_TESTS_JOBS
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 8
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+-- without the -u (pre-fix helper form)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 4
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 4
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0

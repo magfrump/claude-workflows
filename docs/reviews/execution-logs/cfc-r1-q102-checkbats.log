@@ -1,0 +1,102 @@
+== RUN_TESTS_JOBS=[UNSET]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 8
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0
+== RUN_TESTS_JOBS=[]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 8
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 8
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0
+== RUN_TESTS_JOBS=[0]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='0' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[08]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='08' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[1000]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='1000' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[-1]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='-1' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[abc]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='abc' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[8 ]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+  ✗ RUN_TESTS_JOBS='8 ' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+FAIL=1
+rc=0
+== RUN_TESTS_JOBS=[1]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 1
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 1
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0
+== RUN_TESTS_JOBS=[16]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 16
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 16
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0
+== RUN_TESTS_JOBS=[999]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+── BATS tests ──
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --fast --jobs 999
+  ✓ Fast BATS suites passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+STUB --slow --jobs 999
+  ✓ Slow BATS suites passed
+FAIL=0
+rc=0

@@ -1,0 +1,32 @@
+== --jobs [0]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: 0
+rc=
+== --jobs [08]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: 08
+rc=
+== --jobs [1000]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: 1000
+rc=
+== --jobs [-1]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: -1
+rc=
+== --jobs [abc]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: abc
+rc=
+== --jobs [8 ]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--jobs takes a number from 1 to 999, got: 8 
+rc=
+== --jobs [1]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Unknown flag: --nonexistent-flag-after
+rc=
+== --jobs [999]
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Unknown flag: --nonexistent-flag-after
+rc=

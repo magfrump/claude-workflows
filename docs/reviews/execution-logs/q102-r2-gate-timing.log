@@ -1,0 +1,17 @@
+2026-10-14T19:59:27Z
+# run-log mtimes of the gate run on this branch (health-check.sh at 65c931e6), fast run log named by its start time
+total 312
+drwxr-xr-x 2 node node   4096 2026-10-14 12:52:21.760160077 -0700 .
+drwxr-xr-x 3 node node   4096 2026-10-14 12:49:20.322887167 -0700 ..
+-rw-r--r-- 1 node node 256352 2026-10-14 12:52:18.386387213 -0700 2026-10-14 19:49:27 UTC.log
+-rw-r--r-- 1 node node  46022 2026-10-14 12:54:54.675724566 -0700 2026-10-14 19:52:20 UTC.log
+# tail of the gate's own log /home/node/.claude/jobs/00bcf178/tmp/hc.log
+All checks passed.
+scripts/health-check.sh  885.57s user 310.65s system 314% cpu 6:20.01 total
+202:1..1514
+1717:  ✓ Fast BATS suites passed (excluding 4 report-dependent suite(s) not run)
+1737:1..298
+2036:  ✓ Slow BATS suites passed
+ 12:59:27 up  1:19,  0 user,  load average: 2.06, 3.63, 4.82
+16
+rc=0
