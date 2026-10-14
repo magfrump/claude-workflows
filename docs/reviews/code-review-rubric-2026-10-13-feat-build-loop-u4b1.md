@@ -1,4 +1,5 @@
-Commit: 923f7d26
+Commit: c67ffd62
+Loop closed at 6c22e5d3
 Loop-pass short-circuit: used at 458dc170
 
 # Code Review Rubric: feat/build-loop-u4b1
@@ -150,3 +151,18 @@ Decision: **escalate** to a confirming pass (the Q-137 precedent): k=1 fact-chec
 | E6 | The payload under set -e could exit 75 itself and read as a timeout. | fact-check claim 4, security F3 | Mostly accurate / Info | Won't-Fix (override row) |
 
 **Status:** merge stopped on E1 (Q-142); interim [1] applied in the next commit; next a second confirming pass (k=1 fact-check + security) over that fix.
+
+### Second confirming pass (c67ffd62, Q-142 interim [1])
+**Reports:** `code-fact-check-report-2026-10-13-u4b1-confirm2.md` (12 claims: 9 Verified, 2 Mostly accurate, 1 Incorrect), `security-review-2026-10-13-u4b1-confirm2.md` (1 Medium, 1 Low, 1 Info).
+
+| ID | Finding | Source | Severity | Status |
+|---|---|---|---|---|
+| G1 | E1 closed: `worktree remove --force` runs no planted filter (executed); refuses only a locked worktree. | security, fact-check | — | Confirmed |
+| G2 | E2's remainder: a path-limited `log -G` skips a merge on main that takes the records' directory from its second parent, so the guard prints nothing and the iteration bootstraps (executed). Not a new mechanism; the range's own text produced it. | fact-check 6b, security F1 | Incorrect (medium) / Medium | Fixed in 6c22e5d3: check_brief's flags (`--first-parent --diff-merges=first-parent -s --no-textconv ...`); executed (plain form prints nothing, flagged form prints the merge); lite review over c67ffd62..6c22e5d3: no findings |
+| G3 | The guard's `log` ran a planted textconv driver. | security F2 | Low | Fixed with G2 (`--no-textconv`) |
+| G4 | "Newest record" omitted the digest's exclusions; "(flock's timer)" wording. | fact-check 5, 8 | Mostly accurate | Fixed |
+| G5 | A rewrite of main to a history with no records still bootstraps (no anchor outside main). | security F1 residual | Medium (not introduced) | Defer to U4b2's record design (override row) |
+| G6 | The stop paragraph's parenthetical names `other` lines but not the non-bootstrap `refuse main-log:` line. | security F3 | Informational | Won't-Fix: step 0.2 states both; behaviour identical |
+
+**Decision:** merge under Q-142's interim [1]. The last fix (G2-G4) was verified by execution and a lite review, not a further full pass (the U2a4 / U3a3 precedent for a narrow post-pass fix). `scripts/health-check.sh` passed at 923f7d26 and runs again on 6c22e5d3 before the merge.
+Single-sample review; absence of findings is not an attestation.
