@@ -227,14 +227,15 @@ refuse main-log: $X is not on the default branch's first-parent history at $T"
 # The D6 snippet (U3b3; U4c, Q-140 [1]). Its one copy is SKILL.md's "The D6
 # block": the lines between the block's bash -s line and its D6 line.
 # d6_copy OPT [trust]: D6, that copy with D6_OPT set to OPT; with trust its
-# ownership check passes any path that exists, so a uid-owned OPT stands in
-# for the root-owned image. d6_setup: main holds this branch's four scripts,
+# ownership check passes any path that exists (and refuses a missing one with
+# the snippet's own words), so a uid-owned OPT stands in for the root-owned
+# image. d6_setup: main holds this branch's four scripts,
 # and so does a trusted stand-in at $U.
 d6_copy() {
     D6="$BATS_TEST_TMPDIR/d6.bash"
     awk '/^## The D6 block$/ { s = 1 } s && b && /^D6$/ { exit } b { print } s && /^cd WT && bash -s -- SCRIPT ARG\.\.\. <<.D6.$/ { b = 1 }' "$REPO_ROOT/skills/dev-cycle/SKILL.md" > "$D6"
     grep -qxF '  D6_OPT=/opt/claude-workflows' "$D6" && sed -i "s|^  D6_OPT=/opt/claude-workflows\$|  D6_OPT=$1|" "$D6" && grep -qxF "  D6_OPT=$1" "$D6" || return 1
-    [[ -z "${2:-}" ]] || { grep -q '^  own() { ' "$D6" && sed -i 's|^  own() { .*|  own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF '  own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
+    [[ "${2:-}" != trust ]] || { grep -q '^  own() { ' "$D6" && sed -i 's|^  own() { .*|  own() { [[ -e "$1" ]] \|\| no "$1 is missing"; }|' "$D6" && grep -qxF '  own() { [[ -e "$1" ]] || no "$1 is missing"; }' "$D6"; }
 }
 opt_copy() { mkdir -p "$1/scripts/lib" && cp "$REPO_ROOT"/scripts/{build-loop,dev-cycle,questions}.sh "$1/scripts/" && cp "$REPO_ROOT/scripts/lib/dev-cycle-read.sh" "$1/scripts/lib/"; }
 d6_setup() {
@@ -316,10 +317,11 @@ shim() {
     [ "$status" -eq 0 ] && [ "$output" = "$(bash "$O/scripts/build-loop.sh" --help)" ] || { show; return 1; }
 }
 
-@test "the D6 snippet refuses an image copy the uid owns, and never runs main's (T37, U3b3)" {
+@test "the D6 snippet refuses an image copy the uid owns or one missing a file (an older image), and never runs main's (T37, U3b3, U4c)" {
     mkdir -p scripts; printf 'echo main copy\n' > scripts/build-loop.sh; commit_all scripts
     U="$BATS_TEST_TMPDIR/opt"; opt_copy "$U"; d6_copy "$U"
     d6_is "refuse d6: $U/scripts/build-loop.sh is not root-owned, a plain path and unwritable here"
+    rm "$U/scripts/build-loop.sh"; d6_is "refuse d6: $U/scripts/build-loop.sh is missing"
 }
 
 @test "git_harden exports HARDEN's pairs after the caller's and a fixed environment, once however often it is called; the D6 snippet's git and SKILL.md's hg carry the same (rows 281, 311, 495, 704, 736, U3b3, U4b1)" {

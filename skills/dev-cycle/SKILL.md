@@ -33,19 +33,21 @@ one place every trigger is certain to be checked, so it checks all of them every
   and never checks out or switches a branch in a checkout it did not create. Stage named
   paths only, never `git add -A`. Commits and merges follow the Operating Modes rules in the
   global instructions (in /active mode, ask first); code fixes land through `pr-prep`.
-- **Scripts run through the D6 block** (D6). Every `build-loop.sh` and `dev-cycle.sh` call
+- **Scripts run through the D6 block** (D6). Every `build-loop.sh`, `dev-cycle.sh` and `questions.sh` call
   runs from WT (step 0's first two from MAIN_WT; step 7's self-merge from its GT, after a
   `--state` from MAIN_WT) as
   `cd WT && bash -s -- SCRIPT ARG... <<'D6'`, then the block below and a last
   line `D6`, pasted whole; never `~/.claude/scripts/`, a working-tree copy, or a `source`. In
   every repository, claude-workflows too, it runs the root-owned image copy (Q-140 [1]), so
-  nothing a build loop can write chooses or changes what runs as the gate, and a gate change
-  merged here runs from the next image release. Read a call's first line before its mode's
+  no file or repository state a build loop writes chooses which script runs as the gate (a
+  hostile process of this uid still reaches the shell itself, through PATH, exported
+  functions or the session's settings: the residual the plan and Q-103 accept), and a gate
+  change merged here runs from the next image release (step 0.1 checks the lag). Read a call's first line before its mode's
   output: `refuse d6: WHY` (exit 2) means nothing ran. A `build-loop.sh` answer is exit 0,
   or exit 2 with the lines its mode documents for it (refuse lines, `--main-log`'s `other`
   lines, `--check`'s verdict lines); any other exit (1 included), or a call the
   Bash tool timed out, means nothing was decided (a writing mode may have stopped part
-  way). `dev-cycle.sh`'s check modes follow the paths rule below, but a call of either
+  way). `dev-cycle.sh`'s check modes follow the paths rule below, but a call of any
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
@@ -55,8 +57,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
   `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
-  planted state, so a stop is not called hostile. `questions.sh` runs through the D6 block
-  too (its first argument), never as `~/.claude/scripts/questions.sh`, a uid-owned link.
+  planted state, so a stop is not called hostile. `questions.sh` never runs as
+  `~/.claude/scripts/questions.sh` (a uid-owned link; its own hints still print that path).
 - **Hardened git** (rows 704, 736). The orchestrator's own git commands (worktrees, staging,
   its commits, merging main into WT, ancestry checks) run in a `bash -s <<'G'` script that
   starts with this line, never as bare `git` in its shell (the Bash tool's shell is zsh, with
@@ -195,31 +197,35 @@ cd WT && bash -s -- SCRIPT ARG... <<'D6'
 # The D6 snippet (plan D6; Q-140 [1]): the one way the orchestrator runs
 # build-loop.sh (the gate), dev-cycle.sh (the digest) and questions.sh. It
 # always runs the root-owned image copy under D6_OPT by absolute path, never
-# main's copy, a working-tree copy or ~/.claude/scripts, so nothing this uid
-# can write chooses or changes what runs (Q-140: a choice read from the
-# repository let a loop that moved main, or rewrote the checkout's .git entry,
-# pick its own scripts). In claude-workflows a gate change runs from the next
-# image release. Run it from the checkout the script is to read (each step
-# names MAIN_WT or WT). Arguments: build-loop.sh, dev-cycle.sh or questions.sh,
-# then that script's own.
+# main's copy, a working-tree copy or ~/.claude/scripts, so no repository data
+# chooses which script runs (Q-140: a choice read from the repository let a
+# loop that moved main, or rewrote the checkout's .git entry, pick its own
+# scripts). It still trusts that entry and refs/heads/main for which repository
+# and branch the script reads (a moved main is --main-log's to report), and it
+# cannot guard against this uid's own shell (PATH, exported functions): the
+# plan's same-uid residual (Q-103). In claude-workflows a gate change runs from
+# the next image release. Run it from the checkout the script is to read (each
+# step names MAIN_WT, WT or GT). Arguments: build-loop.sh, dev-cycle.sh or
+# questions.sh, then that script's own.
 # Exit: the script's own status; 2 and one "refuse d6: WHY" line on stdout,
 # with nothing run, for a replace ref, info/grafts, a default branch that is
 # not exactly one plain main or master or whose ref names no commit itself, an
-# image-copy file that is not a regular file, or one of those files or a
-# directory above them that is not root-owned, a plain path and unwritable
-# here (the -w test makes a run as root refuse unless the mount is read-only),
+# image-copy file that is missing (an image older than this skill) or not a
+# regular file, or one of those files or a directory above them that is not
+# root-owned, a plain path and unwritable here (the -w test makes a run as root refuse unless the mount is read-only),
 # or a git read that fails (git may add a line on stderr); 1 for another first
 # argument. Its git carries the lib's HARDEN pairs and git_harden's
 # environment (G; a test pins the lists equal). These checks come before, not
 # instead of, build-loop.sh's own state and default-branch gates in its gated
-# modes (dev-cycle.sh, questions.sh and the read modes have none: row 548).
+# modes (dev-cycle.sh, questions.sh and the read modes have none; row 548 for
+# dev-cycle.sh).
 d6() {
   set -u -o pipefail
   D6_OPT=/opt/claude-workflows
   no() { echo "refuse d6: $*"; exit 2; }
   G=(env GIT_NO_REPLACE_OBJECTS=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_ALLOW_PROTOCOL=none GIT_LITERAL_PATHSPECS=1 GIT_OPTIONAL_LOCKS=0 GIT_ATTR_NOSYSTEM=1 git -c core.useReplaceRefs=false -c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.attributesFile=/dev/null -c core.commitGraph=false -c core.multiPackIndex=false -c log.date=default -c log.showSignature=false -c commit.gpgSign=false)
   g() { "${G[@]}" "$@"; }
-  own() { [[ ! -L "$1" && -e "$1" && "$(stat -c %u -- "$1")" == 0 && ! -w "$1" ]] || no "$1 is not root-owned, a plain path and unwritable here"; }
+  own() { [[ -e "$1" || -L "$1" ]] || no "$1 is missing"; [[ ! -L "$1" && "$(stat -c %u -- "$1")" == 0 && ! -w "$1" ]] || no "$1 is not root-owned, a plain path and unwritable here"; }
   local s="${1:-}" x m n sha f
   [[ "$s" == build-loop.sh || "$s" == dev-cycle.sh || "$s" == questions.sh ]] || { echo "d6: the first argument is build-loop.sh, dev-cycle.sh or questions.sh" >&2; exit 1; }
   shift
@@ -231,14 +237,14 @@ d6() {
   m="${m% }"; [[ "$m" == main || "$m" == master ]] || no "the default branch is not exactly one of main and master"
   ! g symbolic-ref -q "refs/heads/$m" >/dev/null || no "refs/heads/$m is a symbolic ref"
   sha="$(g rev-parse --verify -q "refs/heads/$m")" && [[ "$(g cat-file -t "$sha")" == commit ]] || no "refs/heads/$m names no commit"
-  # The four files the scripts run (each sources the lib from its own
-  # directory; dev-cycle.sh runs questions.sh beside it), then every
-  # directory from scripts/lib up to /.
+  # The four files the scripts run (build-loop.sh and dev-cycle.sh source the
+  # lib from their own directory; dev-cycle.sh runs questions.sh beside it),
+  # then every directory from scripts/lib up to /.
   for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do
     own "$D6_OPT/scripts/$f"; [[ -f "$D6_OPT/scripts/$f" ]] || no "$D6_OPT/scripts/$f is not a regular file"
   done
   x="$D6_OPT/scripts/lib"; while own "$x"; [[ "$x" != / ]]; do x="${x%/*}"; x="${x:-/}"; done
-  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED bash "$D6_OPT/scripts/$s" "$@"
+  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE bash "$D6_OPT/scripts/$s" "$@"
   exit "$?"
 }
 # Under bash -s the script is the heredoc on stdin: bash has read this whole
@@ -274,7 +280,12 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    command. `ok` goes on; refuse lines (planted `.git` state: replace refs, grafts, hooks or
    filter config, a default branch that is not one plain main or master...) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
-   exit is a stop as the Rules say.
+   exit is a stop as the Rules say. Then the image lag (Q-140 [1]): C is the `commit=` line of
+   `/opt/claude-workflows/.manifest`; when `hg -C MAIN_WT cat-file -e 'C^{commit}'` succeeds
+   (this repository built the image) and `hg -C MAIN_WT diff --quiet C refs/heads/main --
+   scripts/ skills/dev-cycle/` exits 1, the gate that runs is older than main's: file or
+   update one `you: terminal` entry `image-lag`, its paste `./devcontainer-config/install.sh`
+   run from the host, and go on.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
    latest real, not future date of a regular file, as the digest picks its window: listed
@@ -360,7 +371,8 @@ last good one.
   Otherwise, run `questions.sh init` (it creates only what is missing) and then
   `questions.sh archive` (it also reindexes) through the D6 block from WT, so
   answered entries leave the live file. If either fails, note it in the record and go on:
-  questions that cannot be read this cycle are reported, not guessed.
+  questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
+  is still a stop, as the Rules say).
 - `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
   live loop's, is never pruned). List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting (an
