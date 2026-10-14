@@ -27,7 +27,7 @@
 #   HEALTH_CHECK_JOBS        Test files check 5 runs at once, passed to the
 #                            runner as --jobs (Q-102 [1]). Unset or empty: 8,
 #                            or nproc when that is lower (nproc honours
-#                            OMP_NUM_THREADS); 1 runs serially.
+#                            OMP_NUM_THREADS and OMP_THREAD_LIMIT); 1 runs serially.
 #                            Otherwise the same grammar as run-tests.sh's
 #                            --jobs (1 to 999, digits only, no leading zero);
 #                            any other value fails check 5 before it runs a

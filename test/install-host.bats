@@ -1601,7 +1601,7 @@ stub_cp_then() {
   # loaded host (the gate runs files in parallel, Q-102) waits rather than
   # skipping. It still skips when the cwd stays readable after prctl: a
   # kernel where the hide does not work, a failed prctl (its return value is
-  # not checked), or a reader that may ptrace (root, CAP_SYS_PTRACE).
+  # not checked), or a reader that may ptrace (CAP_SYS_PTRACE).
   local marker="$BATS_TEST_TMPDIR/t92-hidden"
   (cd "$S" && exec python3 -c 'import ctypes, sys, time; ctypes.CDLL(None).prctl(4, 0, 0, 0, 0); open(sys.argv[1], "w").close(); time.sleep(300)' "$marker") \
     >/dev/null 2>&1 3>&- &

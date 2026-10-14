@@ -412,8 +412,9 @@ bats_args=()
 requested_jobs="$jobs"
 (( jobs > ${#files[@]} )) && jobs=${#files[@]}
 # bats reads BATS_NUMBER_OF_PARALLEL_JOBS when it is given no --jobs flag,
-# and BATS_NO_PARALLELIZE_ACROSS_FILES either way, so an inherited value
-# would run a --jobs 1 run in parallel, within files too.
+# so an inherited one would run a --jobs 1 run in parallel, within files
+# too; it reads BATS_NO_PARALLELIZE_ACROSS_FILES either way, and an
+# inherited one aborts a --jobs 1 run and serializes a --jobs N run.
 unset BATS_NUMBER_OF_PARALLEL_JOBS BATS_NO_PARALLELIZE_ACROSS_FILES
 if [[ "$jobs" -gt 1 ]]; then
   unset PARALLEL PARALLEL_CSH
