@@ -1,4 +1,4 @@
-Commit: 9777c1ff
+Commit: adc8a176
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -38,4 +38,37 @@ security-reviewer, performance-reviewer, api-consistency-reviewer, architecture-
 
 The rows this unit discharges (266, 269, 623, 673, 674, 680, 683, 701, 706, 714, 719-731, 745-761, 764, 769, 771, 772, 776, 777, 781, 784) were the brief's spec; none was contradicted.
 
-**Status:** iteration 1 not clean (4 red). Single-sample review; absence of findings is not an attestation.
+
+## Iteration 2 (adc8a176): fact-check k=1 over 9777c1ff..adc8a176; full panel (security, api-consistency, architecture, performance) over the full branch
+
+Reports: `code-fact-check-report-2026-10-13-u4b2-i2.md` (14 claims: 9 Verified, 3 Mostly accurate, 1 Stale, 1 Incorrect; A1-A3, A5, A6 verified fixed by execution), `security-review-2026-10-13-u4b2-i2.md` (6 Medium, 3 Low), `api-consistency-review-2026-10-13-u4b2-i2.md` (1 Breaking, 4 Inconsistent, 4 Minor, 3 Informational), `architecture-review-2026-10-13-u4b2-i2.md` (6 Coupling, 3 Minor, 2 Informational), `performance-review-2026-10-13-u4b2-i2.md` (1 High, 3 Medium, 1 Informational). Critics and fact-check ran in parallel this pass (critics read i1's fact-check report).
+
+### 🔴 Must Fix
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| B1 | A blocked entry answered past [3] or with a fact reads `unrecognized` and was never re-dispatched (D2's async Path B never resumed; executed by api-consistency) | api-consistency 1 (Breaking), architecture 1, security note | Fixed: any answer but open/skip re-dispatches a blocked brief |
+| B2 | The Rules said every script call runs from WT, contradicting step 7's gate checkout (following the Rules recreates A2) | fact-check claim 4 (Stale, behavioural) | Fixed: the D6 Rule names GT |
+
+### 🟡 Must Address
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| B3 | A stopped REASON written raw into an entry can hold `<!--`, which questions.sh reads as its index marker and drops later entries (executed) | security F1 | Fixed: REASON on a `> ` line, `<!--` withheld |
+| B4 | Answers read from main's live commit were acted on before the commit carrying them was classified | security F2 | Fixed: `--main-log MAIN` again before acting; an other line defers all answers |
+| B5 | GT's worktree add and the merge of main into WT ran with no `--state` since step 0.1 (a planted filter ran; executed); a `refuse state` from --merge was filed as a loop's stop | security F3 | Fixed: --state before each; refuse state is a stop |
+| B6 | Loop reports and task notifications were not listed as data; --answered could be taken from them or for a merge entry | security F4 | Fixed: Rules and step 9.3 |
+| B7 | Dispatch read only step 0.2's --main-log; an other commit merged into WT mid-iteration fed the loops | security F5 | Fixed: --main-log MAIN again before dispatch |
+| B8 | Self-merge refusals from rules every merge applies became merge entries that can never land | fact-check 5b, api-consistency 4 | Fixed in text: the entry says so; --approved's refusal files it stopped |
+| B9 | A re-dispatched loop ending with no commit, or a retryable dispatch refusal after Applied: was written, was never routed again | fact-check E2, E3 | Fixed: an applied, unowned brief goes back to step 10; every re-dispatch uses --prompt --steal |
+| B10 | "Slot" meant two things | api-consistency 3 | Fixed: D9's loop slots named apart from the Rules' "holds a slot" |
+| B11 | A failed land's entries are re-derived next iteration; a stalled loop could then be re-dispatched unasked | architecture 3, api-consistency 6 | Fixed: the session keeps a stalled brief out of step 10 until its entry is answered |
+| B12 | Step 1 filed a new `you: terminal` branch list every iteration | performance 1 | Fixed: the open entry is updated in place |
+| B13 | Wakes and health checks wasted on unchanged main and on retries refused for two hours | performance 2 | Fixed: health check skipped when MAIN already passed; a retry wakes when its wait runs out |
+| B14 | Step 9.3's refusal list still missed the whole-file questions refusal; `refuse index` is no slip | fact-check claim 7 | Fixed |
+| B15 | The late Dispatched: lines' landing, the record's 9. line, the second land's own Paths landed, capped `@-`, `@TIP` stripped for --check-answer, `unrecognized`/`done` on stopped entries, the PR route unstated | fact-check 10, api-consistency 2, 7, 8, 11, 12 | Fixed |
+| B16 | DISPATCH_CAP and STEAL_AGE copied with no pin | architecture 8 | Fixed: the GATE_CODE test also pins both |
+
+Deferred or Won't-Fix (override rows dated 2026-10-13 for `feat/build-loop-u4b2`): architecture 2, 4, 5 (in part), 6, 7, 11; api-consistency 5, 9, 10; performance 3, 4 (in part); security F6, F8, F9. Informational, stated in step 9.5: architecture 10 (MAIN_WT's tracked edits stop each land). Security F7 fixed with B13 (step 4 runs no repo test after an other line).
+
+**Status:** iteration 2 not clean (2 red, fixed unreviewed). Single-sample review; absence of findings is not an attestation.
