@@ -1,4 +1,4 @@
-Commit: c39a9692
+Commit: b88e418a
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -99,3 +99,30 @@ Fact-Check Gate: high-confidence behavioural Incorrects. /away interim call (the
 | C10 | Commit messages adc8a176 and c39a9692 overstate (A2's cause, "refusals completed", "<!-- withheld", B13) | r1 35a, r2 32a/32b, r3 | Won't-Fix (override row): unmerged branch history, corrected by this commit's message |
 
 Not fixed, stated: the `--cycle-diff` "regular 100644 file" refusal applies to the judged files only (r3, doc-only; the Rules already say a symlink fix passes); row 731's decision-log row for the reused `Main at:` name (r2 E5) is left to U5's decision-log pass.
+
+### Final-pass critic panel (at b88e418a, after the fact-check fixes)
+
+Reports: `security-review-2026-10-13-u4b2-final.md` (4 Medium, 1 Low), `api-consistency-review-2026-10-13-u4b2-final.md` (2 Inconsistent, 8 Minor, 1 Informational; none Breaking), `architecture-review-2026-10-13-u4b2-final.md` (2 Coupling, 5 Minor, 2 Informational; none Structural), `performance-review-2026-10-13-u4b2-final.md` (2 Medium, 2 Low, 1 Informational). No 🔴. Stage 2.5: the routed endorsement claims (commit-first judges the same content; the `> Reason:` line stays out of the readers' grammar; the second land meets `--land-cycle`'s record rule; the pin test; the merge heading against approval()) were each already executed by a final-pass replicate or a critic probe (fact-check r1-r3, security probe-reason.sh), so no separate submitted-claims pass ran; no ✅ rows are published.
+
+#### 🟡 Must Address
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| D1 | An `other` block lapsed one iteration later while its entry was open, and step 0.2's other lines did not hold answers | security F1 | Fixed: held while an `other-commit-SHA12` entry is open; answers held too |
+| D2 | The gate checkout's `--state` ran from WT, but `worktree add` copies MAIN_WT's config.worktree (a planted smudge ran; executed) | security F2 | Fixed: `--state` from MAIN_WT |
+| D3 | The `--main-log MAIN` re-read ran before `--check-answer` | security F3 | Fixed for answers (re-read after); dispatch half deferred (row) |
+| D4 | Only skill text forbids `--answered` for merge entries | security F4 | Deferred (gate code; row) |
+| D5 | Pasted refusal lines in agent entries were unquoted | security F5 | Fixed: Rules quote them, comment opener replaced |
+| D6 | Health-check skip read facts no record held; strict reading alternated, loose reading skipped unchecked merges | architecture 1, performance F1, api-consistency 4 | Fixed: `1.` line records `passed at MAIN` / `unchanged since P`, chained |
+| D7 | The re-dispatch rule needed what the applied answer meant, stored nowhere | architecture 2 | Fixed: `Applied:` items are `Q-NNN=ACTION` |
+| D8 | An approved `--merge` refused by the environment spent the user's [1] | api-consistency 1 | Fixed: retried, ID left off Applied |
+| D9 | D13's failed-land retry was closed as fixed but not built | api-consistency 2, architecture 9 | Fixed: a stranded chore branch is merged into the next WT |
+| D10 | Merged chore branches grew the terminal entry every iteration | performance F2 | Fixed: left out (counted); deletion is roadmap item (a) |
+
+#### 🟢 Consider (fixed unless noted)
+
+Stop-clause rationale (architecture 4); wait rule names the last land's NEW (architecture 5, performance F4); stall-held and capped briefs out of the queue (architecture 6); second land skipped when step 10 did nothing (performance F3); answer grammar's trailing rule (api-consistency 3); earlier blocks readable for steps 2 and 4b (api-consistency 5); the `9.` line written before step 10's land (api-consistency 6); other `--land-cycle` refusals a stop (api-consistency 7); `### Skipped inputs` (api-consistency 8); DISPATCHED 4 or more (api-consistency 10); "last" Main at: (api-consistency 11). Deferred with rows: architecture 3 (commit-first vs header/plan; the plan's as-built note records it), 7, 8; api-consistency 9; performance F5.
+
+#### Iteration-4 gate
+
+The loop is past its 3-iteration cap with this fix batch unreviewed. Per the Q-137 / Q-141 precedent: a confirming pass (k=1 fact-check + security) over b88e418a..HEAD decides the merge; a new Must Fix, or a Medium the range introduced, stops it and goes to the user.

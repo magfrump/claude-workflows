@@ -57,10 +57,11 @@ gap.
   Bash tool timed out, means nothing was decided (a writing mode may have stopped part
   way). `dev-cycle.sh`'s check modes follow the paths rule below, but a call of either
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
-  ends the iteration there, with no record (its `Main at:` would move the next SINCE), and
-  is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
+  ends the iteration there (one before step 9's land lands no record, so the next starts
+  from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
   `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines block
-  dispatch but are no stop), else the line and stderr go in one `agent` entry; either way
+  dispatch but are no stop), else the line and stderr go in one `agent` entry, each line
+  quoted as `> ` text with any HTML comment opener replaced; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
   `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
   planted state, so a stop is not called hostile. Until the D6 block is written, the
@@ -184,7 +185,7 @@ non-zero (no default branch, say) is recorded, and the step that needed it stops
 takes many arguments: batch a step's values into one call per mode. Pass a value to
 any check only if it uses letters, digits, `.`, `_`, `-`, `/`, `*` and `?` and nothing else,
 in single quotes; a value that fails this is skipped without running anything. Every skip,
-with its reason, goes in the record under `## Skipped inputs`. Never read, write or append through anything the digest's section 8
+with its reason, goes in the record under `### Skipped inputs`. Never read, write or append through anything the digest's section 8
 lists. The cycle's own scratch output (the health-check log, the kept digest) goes to the
 usual temp directory (`$TMPDIR`), not the repo.
 
@@ -232,7 +233,7 @@ so the next one starts from the same `Main at:`:
    filter config, a default branch that is not one plain main or master...) are a stop,
    quoted in one `you: judgment` entry unless an open one quotes the same lines. Any other
    exit is a stop as the Rules say.
-2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the newest `Main at:` line of the
+2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the
    latest real, not future date of a regular file, as the digest picks its window: listed
    with `hg -C MAIN_WT ls-tree` and read with `hg -C MAIN_WT show`,
@@ -252,12 +253,18 @@ so the next one starts from the same `Main at:`:
    (SHA and subject) in the final message, so the user sees every commit read as their
    answer (row 727). Any `other` line, or a `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed), blocks this iteration's dispatch and gets one
-   `you: judgment` entry naming its SHA or quoting the line, unless an open one does
-   (rows 720, 726).
+   the history could not be listed), blocks this iteration's dispatch and every answer
+   step 7 would act on, and gets one `you: judgment` entry naming its SHA (slug
+   `other-commit-SHA12`) or quoting the line, unless an open one does (rows 720, 726). The
+   block holds in every later iteration while such an entry is open (`--check-answer`
+   prints `open`), so a commit the user has not seen never feeds a merge or a loop.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
-   WT is removed (`hg -C MAIN_WT worktree remove --force WT`) once step 10's land is
+   When this session's previous iteration stopped after committing (its branch not in
+   main), merge that branch into WT first (as step 9 merges main in), so its entries and
+   `Asked:` items land now and are not filed again (D13: a failed land is retried); a
+   conflict is a stop. Unmerged `chore/dev-cycle-*` branches are named in the final
+   message. WT is removed (`hg -C MAIN_WT worktree remove --force WT`) once step 10's land is
    verified: every registered worktree costs disk and joins the import walks' reader set.
    `--force` skips the clean check, whose status run would execute a filter planted in the
    repository's config.
@@ -266,7 +273,7 @@ reads the window start, triggers, questions, roadmap and idea log from that work
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
 docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
-record's `## Skipped inputs`). If the digest says the repo has no
+record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
 - It says "records, or a directory above them, were skipped", or names a newer record that
@@ -290,8 +297,9 @@ last good one.
   its PID or process group, never by a name or pattern. Then run the repo's health check
   from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped when
   step 0.2 read an `other` line, whose unreviewed test code it would run (row 776; step 4
-  then runs no repo test either), or when an earlier iteration's health check passed and
-  step 0.2 listed only `chore` lines since (cycle lands carry no code), to a file,
+  then runs no repo test either), or when the previous iteration's `1.` line reads
+  `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
+  carry no code; this iteration's line then reads `unchanged since P`), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
   subagents. It takes a lock in the git common directory, so it waits while a loop's own
   health check runs (it says so once); in claude-workflows run it with
@@ -308,7 +316,9 @@ last good one.
 - `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
   live loop's, is never pruned). List merged branches; deleting them needs the
   user's approval, so put the list in one `you: terminal` entry rather than deleting (an
-  open one is updated in place, not filed again: every iteration adds a branch). Only a
+  open one is updated in place, not filed again), leaving out `chore/dev-cycle-*`
+  branches a record on main names in a `Branch:` line (only their count: deleting the
+  iteration branches is roadmap item (a)). Only a
   name that `--check-branch` prints `ok` for goes into that entry's paste block (git allows
   names such as `a$(id)`, which a paste would run); list any other name as plain text outside
   the block, for the user to handle. Skip any branch or worktree a brief holding a slot (as in
@@ -465,7 +475,8 @@ neither collected nor dispatched this iteration. For each `ok` line whose STATE 
 by LOOP (TIP below is the line's SHA, the branch tip; STEM the brief's file name without
 `.md`). A brief already asked about at TIP (an item on its `Asked:` line ends `@TIP`, or
 WT's questions files hold its merge entry's heading below) only has its answers read; once
-every such ID is on its `Applied:` line, the last one applied asked for a re-dispatch,
+every such ID is on its `Applied:` line, the last one applied asked for a re-dispatch (its
+item reads `Q-NNN=redispatch`, below),
 the brief is still open and no subagent of this session runs it, step 10 re-dispatches it
 (a loop that ended without a new commit, or a dispatch left to retry).
 
@@ -476,7 +487,8 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
 - **ready**, POLICY `self-merge`: `--merge BRIEF --expect TIP`, run from a gate checkout,
-  not WT: `--state` (from WT), then `hg -C MAIN_WT worktree add --detach GT
+  not WT: `--state` (from MAIN_WT, whose config the add copies), then
+  `hg -C MAIN_WT worktree add --detach GT
   refs/heads/main`, GT at `.claude/wt-dev-cycle-gate-DATE-HHMM` in MAIN_WT, made for this
   one call and removed after it as step 0.3 removes WT (the self-merge floor reads a clean
   checkout of main's commit, which WT is not once this iteration has edited it, and a
@@ -519,12 +531,12 @@ a stopped one's are **[1] re-dispatch** and **[2] drop**. Add `Q-NNN@TIP` to the
 Then answers, only through `--check-answer` (main's commit: an answer in a working tree is
 not seen until it lands, D8), one call with the IDs (an `Asked:` item without its `@TIP`)
 of every brief's `Asked:` items and merge entries, less those on its `Applied:` line.
-An answer starting `[1]`, `1` or `keep` (any case) reads `keep`; `[2]`, `2` or `drop`,
-`drop`; `[3]`, `3` or `done`, `done`; anything else, `unrecognized` (a merge entry answered
-"merge" included: its options are answered by number). IDs filed this iteration are not
-read: they are not on main yet. First run `--main-log MAIN` again: if it lists an `other` line after
-MAIN, act on no answer this iteration (the next one's step 0.2 classifies that commit and
-files it), so every answer acted on came in a commit the user is shown (row 727).
+An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before punctuation
+or a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
+(a merge entry answered "merge" included: its options are answered by number). IDs filed
+this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
+it lists an `other` line after MAIN, or step 0.2's block holds, act on no answer this
+iteration, so every answer acted on came in a commit the user is shown (row 727).
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -533,12 +545,15 @@ files it), so every answer acted on came in a commit the user is shown (row 727)
 - A stopped entry: `keep` re-dispatches (a `capped-` one's changes nothing); `drop` closes
   the brief as step 6's check does; anything else goes to the record and the final message.
 - A merge entry: `keep` runs `--merge BRIEF --expect TIP --approved Q-NNN`, TIP the full
-  one the entry names, never the branch's live tip; a refusal is filed as `stopped`.
-  `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
+  one the entry names, never the branch's live tip. A refusal of the paths, or a conflict,
+  is filed as `stopped`; any other (MAIN_WT's state, no identity, a moved main) is retried
+  next iteration, the ID left off `Applied:`. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
   record and the final message.
 
-Add each ID acted on to the brief's `Applied:` line (", " between IDs; none yet: a line
-`Applied: Q-NNN` at its end), so each answer is acted on once.
+Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
+none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged`, `drop`
+or `noted` (`unrecognized`), so each answer is acted on once and the action survives a
+restart.
 
 ### 8. Build briefs
 
@@ -546,7 +561,8 @@ Take the Now items whose first step needs no open choice (no open `you: judgment
 them), while the queue is shorter than `--settings`' `slots` line (D9's loop slots, not the
 Rules' "holds a slot", which keeps a brief's branch out of cleanup): open briefs whose
 loop step 7 read as absent or working, plus those it sends back to a loop, each counted
-once (a blocked, stopped or ready one waits on the user and is not counted).
+once (a blocked, stopped, capped or ready one, or a stalled one held, waits on the user and
+is not counted).
 For each, write `docs/working/briefs/YYYY-MM-DD-<slug>.md`, where the slug is lowercase
 letters, digits and hyphens only (a file name no brief has used before, in `briefs/` or
 `briefs/closed/`, nor by a brief this cycle has written: `--check-brief` prints `new` for
@@ -576,9 +592,9 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
 (`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
-iteration appending its own block below the earlier ones and never editing them (nor
-reading them, but for their `1.` and `7.` lines and the last `Main at:`: the file grows
-all day):
+iteration appending its own block below the earlier ones and never editing them (reading
+them only for what steps 1, 2, 4b and 7 take from the last ones: `1.`, `7.` and `Model:`
+lines, verdicts, the last `Main at:`; the file grows all day):
 
 ```markdown
 # Cycle YYYY-MM-DD
@@ -590,14 +606,14 @@ Main at: MAIN
 Model: <the model id running this cycle>
 ### Steps
 0. digest: done
-1. health and cleanup: <done / skipped: reason>
+1. health and cleanup: <done>; health check <passed at MAIN / unchanged since P / failed / skipped: reason>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
 6. roadmap: <done>
 7. collect: <per brief: STEM LOOP TIP, and what was done>
 8. briefs: <written this iteration, or none>; queue <k>/<slots> (full: no new briefs)
-9. land: <landed NEW / stop: reason>
+9. land: <NEW, written with the 10. line before step 10's land>
 10. dispatch: <per brief: STEM dispatched N, or why not>
 ### Skipped inputs
 ### Trigger verdicts
@@ -650,7 +666,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    or a whole-file refusal of main's copy, is a stop.
 4. `--land-cycle --main M`, with the same `--answered`. `landed B HEAD TREE NEW`: check
    `hg -C WT merge-base --is-ancestor HEAD refs/heads/main` (D13). `refuse HEAD` naming a
-   moved default branch: merge main in, then 3 again. While MAIN_WT has main checked out,
+   moved default branch: merge main in, then 3 again; any other refusal is a stop. While MAIN_WT has main checked out,
    the land fast-forwards it, and refuses while it has tracked edits or is mid-merge: a
    stop, which the final message explains.
 
@@ -679,13 +695,14 @@ ones:
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
   iteration. Any other refusal or skip: recorded, and one `agent` entry per brief unless an
   open one names it.
-- A brief `--status` read with DISPATCHED 4 (the cap, D1) is never dispatched again: one
+- A brief `--status` read with DISPATCHED 4 (the cap, D1) or more is never dispatched again: one
   entry as step 7 files them (its item `Q-NNN` alone when TIP is `-`), slug
   `capped-STEM-N`, unless WT's questions files hold one for it, with options **[1] keep** (it stays open, for work by hand) and **[2] drop**
   (step 7 closes it).
 
-Then land again as step 9 does (1 to 4): the briefs' `Dispatched:` lines and the record's
-`10.` line. A stop here ends the iteration as the Rules say, its record already landed;
+Then land again as step 9 does (1 to 4): the briefs' `Dispatched:` lines, step 10's
+entries and the record's `9.` and `10.` lines; when step 10 dispatched and filed nothing,
+skip this land (those two lines join the next iteration's block). A stop here ends the iteration as the Rules say, its record already landed;
 the session keeps each brief's N, and the next iteration's step 9 lands them before its
 own dispatch (its `10.` line names them). A session that ends first loses them, and the
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
@@ -702,6 +719,7 @@ repo text: whoever starts one by hand reads it first.
 
 Wait (D12): with a loop running, the next iteration starts when one finishes (its task
 notification), with a 1800 s fallback wakeup; with none, every 1200-1800 s, and only when
-the default branch moved since this iteration's land, a retry's wait ran out, or the
+the default branch moved past this iteration's last land (the NEW it printed), a retry's
+wait ran out, or the
 user wrote, run a full iteration (an answer lands as a move of main); otherwise the wakeup
 does nothing.
