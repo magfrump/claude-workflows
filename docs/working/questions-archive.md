@@ -81,6 +81,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-071](#q-071--skill-eval-suite-design) | The 50 `@needs-reports` suites can't stay green under this repo's editing rate. Their freshness stamp hashe... | 2026-09-26 |
 | [Q-072](#q-072--living-ledger-not-fed) | The review-eval goal is "recall against the living issue ledger", but `docs/working/canon-issue-ledger.md` ... | 2026-09-26 |
 | [Q-073](#q-073--skill-descriptions-truncated) | Skill descriptions run 957–2973 characters, and the live skill listing truncates them. In this session 7 ... | 2026-09-26 |
+| [Q-075](#q-075--si-loop-trust-before-resume) | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | - **Interim:** the guide's documented caveat only. | 2026-09-27 |
 | [Q-077](#q-077--cc-isolated-auto-approve-backstops) | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
 | [Q-078](#q-078--narrow-skill-report-stamp) | - **Interim:** the suites print NOT RUN. | 2026-09-27 |
@@ -2671,5 +2672,15 @@ Q-102's parallel gate is built and reviewed but red on a flake in gate code: the
 - **If the answer differs:** [2] merges the branch as it is; [3] deletes the branch.
 
 **Answer (2026-10-14, in session):** [2], "but revisit if it takes more than an hour". Read as: Q-102 merges now; the lib fix is roadmap Next; if re-runs on this flake class cost more than an hour in total before the fix lands, this reopens as a judgment (trigger in the roadmap item).
+
+
+### Q-075 · si-loop-trust-before-resume
+**Needs:** agent · **Opened:** 2026-09-27 · **Status:** ANSWERED
+
+Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their setup. Build the evidence for that: list every path, config, hook, credential and git ref the loop can write outside its own working docs, then run it once hermetically with every env-overridable destination redirected, and diff the setup before and after. **Answered 2026-10-14 by the evidence report `docs/working/si-trust-evidence-2026-10-14.md`.** The inventory and the hermetic run (claude stubbed, real bats) are done. The script's own writes stay inside its three redirectable roots, except for a repo-wide `git worktree prune`. The children are the open risk: from `/workspace` they are unconfined, and in worktrees they cannot commit at all. The live run with real children waits on that choice, filed as Q-146.
+
+- **Read:** `archive/docs/2026-09-18-handoff-self-improvement-loop.md` §4–§5 · memory [[prove-old-code-fails-hermetically]]
+- **Interim:** the loop stays dormant.
+- **If the answer differs:** n/a. The output is a report the user reads before the first real run.
 
 

@@ -28,8 +28,8 @@ The index below is generated — edit entries, not the table.
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
+| [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
-| [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
@@ -114,15 +114,6 @@ When should the skill eval reports be regenerated, so that the 50 `@needs-report
 After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only. If it reaches 2026-10-26 with fewer than 5 new entries, reopen L1 as a judgment: automate the harvest, or drop the "do not skip" line.
 
 - **Interim:** nothing changed. The read side (the RPI failure-pattern grep) works.
-
-### Q-075 · si-loop-trust-before-resume
-**Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
-
-Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their setup. Build the evidence for that: list every path, config, hook, credential and git ref the loop can write outside its own working docs, then run it once hermetically with every env-overridable destination redirected, and diff the setup before and after.
-
-- **Read:** `archive/docs/2026-09-18-handoff-self-improvement-loop.md` §4–§5 · memory [[prove-old-code-fails-hermetically]]
-- **Interim:** the loop stays dormant.
-- **If the answer differs:** n/a. The output is a report the user reads before the first real run.
 
 ### Q-079 · canon-instance-proposal-filter
 **Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
@@ -299,3 +290,27 @@ Also open from the same pass, Medium, not introduced by the range: the bootstrap
 - **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
 
 
+
+### Q-146 · si-children-commit-rights
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+How should the self-improvement loop's implementer children get the right to commit, given that the only grant in place today also gives arbitrary code execution?
+
+- **Why it's yours:** it sets the trust boundary for an unattended loop on your machine, and it decides whether the loop resumes at all (Q-068 [3]).
+- **Read:** `docs/working/si-trust-evidence-2026-10-14.md`: the verdict, F1, F2 and F5, and §5.
+
+The script's own writes are confined, and the probe shows it. The children are not:
+- With cwd `/workspace`, the project allowlist applies. `Bash(bats test:*)` together with `acceptEdits` lets a child write a test file and run it, and `git -C /workspace branch:*` lets it force-delete any branch (F1, F2).
+- In a worktree or clone, `.claude/` is gitignored, so no allowlist applies. A child cannot run `git commit` (checked live), and every task fails Gate 1a after its tokens are spent (F5).
+
+Under every option below, `REPO_DIR` points at a dedicated clone (§5.1), never at `/workspace`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Script commits for the child** | The implementer only edits files. After it exits, the script runs `git add -A && git commit` in the worktree with a fixed message, and Gate 1c's file-scope check sees the result. Children get no Bash grants at all | One reviewed change to `self-improvement.sh` (about 20 lines plus tests) | The child's commit message and Confidence line are lost (the summary falls back to the task description), and children still can't run tests or `git diff` while they work |
+| **[2] Narrow per-run settings** | The script writes a settings file granting exactly `git add`, `git commit`, `git diff` and `git status` (no `bats`, no `-C`) and passes it with `--settings` to every child | One reviewed change plus a host check that `--settings` stacks with the deny list as expected | The grant leaks wider than intended (the F1 shape again), or `--settings` precedence differs from the docs (unverified here: no egress) |
+| **[3] Keep the loop dormant** | Q-068's "resume" stays conditional; the evidence report is the record | Nothing | The repo's idea generator stays off; the dev cycle's Ideas list stays its only source |
+
+- **Blocks:** the live run with real children that Q-075 imagined, and so any resume of the loop.
+- **Interim:** [3]. Nothing runs, so nothing is at risk.
+- **If the answer differs:** [1] or [2] each become one build item (roadmap Next) followed by the live run in a dedicated clone. Neither undoes anything.
