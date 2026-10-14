@@ -29,7 +29,6 @@ The index below is generated — edit entries, not the table.
 | [Q-140](#q-140--d6-snippet-trust-root) | you: judgment | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
-| [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | you: judgment | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | agent | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -320,22 +319,3 @@ Also open from the same pass, Medium, not introduced by the range: the bootstrap
 - **Interim:** [1] (the Q-138 / Q-141 precedent), applied 2026-10-13 on `feat/build-loop-u4b1`; the second confirming pass runs next, and U4b1 merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
 - **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
 
-### Q-143 · u4b2-confirm-other-hold-gaps
-**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** OPEN
-
-U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the second pass: the hold's "[2] keep holding" reads `keep` and releases it; the hold's lookup files are unnamed; many approved-merge refusals get no action; the hold misses steps 2 and 4b's tests): one more narrow fix, merge as is, or rework the hold as a stop?
-
-- **Why it's yours:** the loop passed its 3-iteration cap, and two confirming passes each found Mediums the range introduced, which by the rubric's gate stops the merge (the Q-138 / Q-141 / Q-142 precedent). Interim [1] was applied once (484eaafc) and did not converge.
-- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4b2.md` (sections "Confirming pass" and "Second confirming pass") on `feat/build-loop-u4b2` (tip d00749ab); `docs/reviews/security-review-2026-10-13-u4b2-confirm2.md` C1-C8; `docs/reviews/code-fact-check-report-2026-10-13-u4b2-confirm2.md`.
-
-Every open item fails closed or needs an `other` commit on main that you are asked about, and none can run before U4c writes the D6 block (the skill cannot run as written until then).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] One more narrow fix** | Relabel the hold's [2] "not yet"; look its entries up in both questions files on main before step 1; the hold covers steps 2-4b; any approved-merge refusal outside the retry list is filed `stopped` once (`Q-NNN=stopped` on Applied:); a self-merge re-reads `--main-log MAIN` first; the comment opener removed until none is left, NUL out; step 10's agent entries quoted; then a third confirming pass; merge if clean | None now | Another pass may find the next shape, as the last two did |
-| **[2] Merge as is** | Land 484eaafc's text with C1-C8 and E1-E2 as override rows for U4c, which must land before the skill runs and re-reviews the skill | None | Until U4c, main's skill text has known holes in the hold (inert: nothing runs it yet) |
-| **[3] Rework the hold as a stop (recommended)** | Any `other` commit or `refuse main-log` line stops the whole iteration after step 0 (no merges, answers, tests or dispatch) until its entry is answered [1]; drops the hold's per-step rules, the source of every gap so far; then a confirming pass | Each non-answer commit you make on main pauses the loop until you answer its entry | Loops sit idle while you are away after a hand commit |
-
-- **Blocks:** U4b2's merge, hence U4c and U5.
-- **Interim:** none. Interim [1] was applied once (484eaafc) and its second confirming pass found new Mediums; the branch waits for your answer.
-- **If the answer differs:** [1] or [3] is a skill-text change on `feat/build-loop-u4b2` plus a confirming pass; [2] merges d00749ab and files the rows.
