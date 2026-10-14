@@ -1,4 +1,5 @@
-Commit: 484eaafc
+Commit: c8d90d62
+Loop closed at c8d90d62
 Loop-pass short-circuit: used at 9777c1ff
 
 # Code Review Rubric: feat/build-loop-u4b2
@@ -144,3 +145,13 @@ Open, Medium, introduced by the range: **C1** the hold's option "[2] keep holdin
 **Gate:** not clean. The merge stays stopped under Q-143, updated on main with these results; no further autonomous fix pass (each narrow pass has found the next shape of the same hold). Nothing here lets unapproved code land on its own: every open item fails closed or needs an `other` commit the user is asked about, and none can run before U4c writes the D6 block.
 
 **Status:** not merged. Single-sample review; absence of findings is not an attestation.
+
+## Third confirming pass (Q-143 [3], d00749ab..c8d90d62)
+
+The user answered Q-143 [3]: step 0.2's per-step hold became one stop (6beca252). k=1 fact-check over 6beca252, then security over both commits.
+
+Reports: `code-fact-check-report-2026-10-13-u4b2-confirm3.md` (17 claims: 11 Verified, 4 Mostly accurate, 1 Stale, 1 Unverifiable; none Incorrect). The Stale claim (step 0's "a stop ends with no record") and the gap it noted (the stop's record, as a new day's file, would move the digest's window past undigested merges) were fixed in c8d90d62: the stop appends its block to the newest record. `security-review-2026-10-13-u4b2-confirm3.md`: C1, C2, C3, E1 (its retry list), E2 closed; nothing at Medium or above introduced. That `--cycle-diff` and `--land-cycle` accept a block appended to an older day's record was read in `cycle_rules` (records take no rule) and `chore_record` (`A` or `M`).
+
+Open, Low, introduced: **F1** step 0.4's "last cycle you know ran" could take a stop iteration's day and reopen the window gap; **F2** an answered `keep` entry with the same slug covers a later event (a rollback to an approved rewrite tip; forging needs F19's writer); **F3** a `[1]` appended below `[2] not yet` reads drop (first answer line decides), and the stop's land does not say whether it writes session answers (both fail closed). Low, pre-existing: F4 (a `refuse main-log` for an unlistable history still lands `Main at: MAIN`), C4, C5(b), C6, C8. All are override rows for U4c, at the 400-line cap.
+
+**Gate:** clean (no Must Fix or Must Address introduced). **Status:** merged. Single-sample review; absence of findings is not an attestation.
