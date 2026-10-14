@@ -1,0 +1,8 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# 2026-10-14T07:06:12Z cwd=/tmp/claude-1000/-workspace/aa23838d-2cb3-421f-9cac-2409b16dbc18/scratchpad/pin.OIG0 (bash): assertions of /workspace/.claude/wt-build-loop-u4c/test/scripts/build-loop-orchestrator.bats:348-353 at e58adc1f; GATE_CODE widened with ^scripts/health-check\.sh$, test literal updated, SKILL.md unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+g=^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/|^scripts/health-check\.sh$
+assert1 (updated literal) pass
+assert2 pass
+assert3 pass: test passes with SKILL.md's PATHS line unchanged; scripts/health-check.sh is GATE_CODE but not in PATHS
+exit=0

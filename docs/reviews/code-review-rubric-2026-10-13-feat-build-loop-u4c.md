@@ -101,7 +101,28 @@ range stop the merge and go to the user: Q-144, interim [1] (the Q-138 / Q-141 /
 | E5 | The paste does not check the working-tree install.sh | security final F4 (pre-existing) | Interim fix (row 821) |
 | E6 | Doc: row 819 / D9 consequence; plan :71, :77, :156, :394, :400, :432 and the as-built note; lib comment "built from main"; step 9's check exit 1; the pin test's name | fact-check claims 1, 3, 5-8; api final F4 | Fixed (row 820 amends 819) |
 
+## Second confirming pass (e58adc1f): Q-144 interim [1], k=1 fact-check + security
+
+Fact-check (`code-fact-check-report-2026-10-14-u4c-confirm.md`): 24 claims, no behavioural
+Incorrect, no Inconsistent; 1 Incorrect in the pin test's name (E6 overstated it), 1 Stale, 5
+Mostly accurate. Security (`security-review-2026-10-14-u4c-confirm.md`): final F1-F4 and api F1
+closed (6beca252 now reads off main; 774a0eef and 3943ab1c on it), but **one Medium introduced
+by the interim**: E5's `git diff --quiet HEAD -- devcontainer-config/install.sh` ran on the host
+before install.sh's state gate, so a planted `core.fsmonitor` or clean filter ran (executed).
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| F1 | E5's host-side diff runs planted fsmonitor/filter config before install.sh's gate | confirm2 security F1 (Medium, introduced) | Reverted (row 822); the paste is again `test HEAD = M && install.sh` |
+| F2 | Any `image-off-main-C12` entry, even answered [1], suppresses refiling for that C if the rebuild never happens | confirm2 security F2 (Low) | Open: for Q-144 |
+| F3 | The pin test's name claims both directions | confirm2 fact-check 22b | Fixed: the name says what it checks |
+| F4 | Step 0.1 asked the user to answer `done`, not an `image-off-main` option; lib comment "built from main" | confirm2 fact-check | Fixed |
+
+**Gate:** two confirming passes have each found a Medium introduced by their range (the second
+by the interim fix itself), so U4c does not merge on the interim: it waits for Q-144's answer
+(the Q-143 precedent). The revert returns the paste to text the full panel reviewed at 43b8d7ed.
+
 ## Status
 
 Iteration 1 found no 🔴 and five 🟡, fixed in 33ad1767 (B2's commit-message half an Accepted-immutable row). Health check passed at 1bc823ea (run in the session; log not committed).
 Final confirming pass not clean (E1, E2): Q-144, interim [1] applied; a k=1 fact-check and security pass over the interim fix decides the merge.
+Second confirming pass not clean (F1, now reverted): U4c waits for Q-144.

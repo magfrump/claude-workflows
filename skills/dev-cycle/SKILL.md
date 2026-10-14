@@ -297,10 +297,10 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
    `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
    diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
-   git diff --quiet HEAD -- devcontainer-config/install.sh && ./devcontainer-config/install.sh`
-   (host; then a new sandbox launch), interim: the image's gate runs. Exit 0: the image holds
-   main's gate code; list any open `image-lag` or `image-off-main-*` entry in the final
-   message for the user to answer `done` (the orchestrator never answers one itself: D8).
+   ./devcontainer-config/install.sh` (host; then a new sandbox launch; install.sh's own state
+   gate runs before any other git call), interim: the image's gate runs. Exit 0: the image
+   holds main's gate code; list any open `image-lag` or `image-off-main-*` entry in the final
+   message as cleared, for the user to answer (the orchestrator never answers one: D8).
    Any other exit: note it in the record. None of these stops the iteration.
 2. **`--main-log SINCE`**, also from MAIN_WT. SINCE is the last `Main at:` line of the
    newest record on the default branch (`docs/working/cycles/cycle-YYYY-MM-DD.md`, the

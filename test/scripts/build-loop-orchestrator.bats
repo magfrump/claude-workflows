@@ -344,7 +344,7 @@ shim() {
     done
 }
 
-@test "SKILL.md step 0.1's image-lag paths are GATE_CODE's, on one line of their own: a GATE_CODE change fails here until this test's literal and that line move (U4c i2 architecture 1)" {
+@test "SKILL.md step 0.1's image-lag paths are GATE_CODE's, on one line of their own: a GATE_CODE change fails here until this test's literal is updated, and a listed path that is not gate code fails (U4c i2 architecture 1)" {
     g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
     P="scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/"
     [ "$g" = '^scripts/(build-loop|dev-cycle|questions)\.sh$|^scripts/lib/|^skills/dev-cycle/' ] || { echo "GATE_CODE changed: update step 0.1's PATHS line and this test: $g"; return 1; }

@@ -1,0 +1,10 @@
+# 2026-10-14T07:05:02Z cwd=/tmp/claude-1000/obj.DBAJ (throwaway repo, loose objects)
+C=ee4c063abc127b03caa51cbfe85c072b3eda1da3 M=493c210b99d21dbfc33a3202b89dee48e63257ee
+-- tree of C deleted
+cat-file exit=0
+rev-list exit=0
+member exit=0
+fatal: unable to read tree 7bac8886dcb7d439ef295fc7c562defc386bd109
+diff exit=128 (other exit -> record note)
+-- commit C deleted
+cat-file exit=128 (-> skip silently)
