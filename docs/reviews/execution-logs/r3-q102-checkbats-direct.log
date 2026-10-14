@@ -1,0 +1,13 @@
+2026-10-14T19:56:16Z
+[UNSET] FAIL=0  | stub: --fast --jobs 8;--slow --jobs 8;
+[] FAIL=0  | stub: --fast --jobs 8;--slow --jobs 8;
+[1] FAIL=0  | stub: --fast --jobs 1;--slow --jobs 1;
+[8] FAIL=0  | stub: --fast --jobs 8;--slow --jobs 8;
+[16] FAIL=0  | stub: --fast --jobs 16;--slow --jobs 16;
+[999] FAIL=0  | stub: --fast --jobs 999;--slow --jobs 999;
+[0]   ✗ RUN_TESTS_JOBS='0' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run FAIL=1  | stub: 
+[08]   ✗ RUN_TESTS_JOBS='08' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run FAIL=1  | stub: 
+[1000]   ✗ RUN_TESTS_JOBS='1000' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run FAIL=1  | stub: 
+[ 8]   ✗ RUN_TESTS_JOBS=' 8' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run FAIL=1  | stub: 
+[abc]   ✗ RUN_TESTS_JOBS='abc' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run FAIL=1  | stub: 
+exit=0

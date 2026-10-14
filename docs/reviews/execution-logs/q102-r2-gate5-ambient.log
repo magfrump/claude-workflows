@@ -1,0 +1,32 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..8
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 gate 5: the nested run skips the BATS gate (recursion guard) with a warning
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 gate 5: runs fast then slow when both are green
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 gate 5: RUN_TESTS_JOBS sets --jobs for both runs; 1 is serial
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 gate 5: a RUN_TESTS_JOBS outside run-tests.sh's grammar fails the gate and runs nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 gate 5: red fast blocks slow and fails the gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 gate 5: red slow after green fast fails the gate
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 gate 5: HEALTH_CHECK_SKIP_BATS=1 skips the runner with a warning, not a pass
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 8 gate 5: report suites the runner gated out are warned about with their count, never passed
+# (in test file test/scripts/health-check.bats, line 477)
+#   `[[ "$output" == *"FAIL=0"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+#
+# ── BATS tests ──
+#   ✗ RUN_TESTS_JOBS='abc' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run
+# FAIL=1
+rc=1

@@ -1,0 +1,21 @@
+Wed Oct 14 20:46:11 UTC 2026
+cwd=/tmp/tmp.c6obLtfJe8
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..4
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 no pid file
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 pid file, process already killed and reaped (T92 pass path)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 3 early failure leaves the process; teardown kills it
+# (in test file t.bats, line 16)
+#   `false' failed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 check the previous test's process is gone
+rc=1

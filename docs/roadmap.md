@@ -47,16 +47,18 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-6. **Q-102 [1] — parallel test gates by default.** Motive: answered 2026-10-12; every gate
-   costs ~7.5 min serial against ~2.5 min at `--jobs 8`. First step: health-check.sh and
-   pr-prep's test gate pass `--jobs` from a `RUN_TESTS_JOBS`-style variable (1 = serial),
-   falling back to serial without GNU parallel. A small reviewed unit.
-7. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
+6. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
    answered "not run" on 2026-10-12: installing a branch image refuses while any session
    runs, so it blocks the harness, and a forgotten test install is a security risk.
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
    First step: list what Q-117's and Q-130's checks need from the host, and which of
    those a container or second install prefix could provide side by side with main's.
+7. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
+   gate (merged on Q-145 [2]) goes red when an entry in a repo ancestor such as `/tmp`
+   vanishes mid-listing (`scripts/lib/dev-cycle-read.sh`, `find -H "${tops[@]}" -maxdepth 1`
+   fails closed). First step: skip an entry that no longer exists instead of failing; a
+   gate-code unit, so it lands on the user's approval. Revisit trigger (the user's): if re-runs
+   on this class cost more than an hour in total before it lands, reopen Q-145.
 
 ## Ideas
 

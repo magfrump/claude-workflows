@@ -135,6 +135,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-140](#q-140--d6-snippet-trust-root) | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 | [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
+| [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 <!-- index:end -->
 
 ## Answered
@@ -2513,6 +2514,8 @@ git -C /workspace branch -d feat/hook-refuse-redirects feat/run-tests-jobs feat/
 
 **Answer (2026-10-12, docs/human-author/answers-10-12-26.txt, 34cf382f):** [1] parallel by default, with an env override. Not applied yet: health-check.sh and pr-prep still run serially; the change is a small reviewed unit for the next dev cycle to brief.
 
+**Applied (2026-10-14, branch `feat/q102-parallel-gates`):** health-check.sh's gate 5 passes `--jobs` to both runs from `HEALTH_CHECK_JOBS` (named for the script that reads it; run-tests.sh ignores it). Unset or empty means 8, or nproc when lower; 1 is serial; any other value outside run-tests.sh's `--jobs` grammar fails the gate before any test runs, and the runner still falls back to serial without GNU parallel. The first gate at `--jobs 8` took 171 s fast + 154 s slow on a loaded host (one full-suite run: 140 s against 451 s serial, Q-090); moving the two slowest fast files to slow was tried and saved ~15 s, within load noise, so it was reverted (override log). pr-prep's step 5a names the default and the override.
+
 
 ### Q-130 · q125-live-run
 **Needs:** you: terminal · **Opened:** 2026-10-07 · **Status:** ANSWERED
@@ -2648,4 +2651,25 @@ Step 0.1 (added in review, not in Q-140's options) checks the root-owned image a
 - **Blocks:** U4c's merge, hence U5.
 - **Interim:** [1] was applied at e58adc1f. Its k=1 confirming pass closed E1-E4 (6beca252 now reads off main), but security found a Medium the interim itself introduced: a host-side `git diff` added to the paste ran before install.sh's state gate, so planted fsmonitor or filter config would run on the host. That line is reverted at 18fd4e1e, which restores the paste the full panel reviewed. Two confirming passes have each found an introduced Medium, so **U4c is not merged** and waits for your answer (the Q-143 precedent). Still open: confirm2 security F2 (Low): an answered `image-off-main-C12` suppresses refiling for that C even if the rebuild never happens.
 - **If the answer differs:** [1] merges 18fd4e1e as is, or after a k=1 security pass over 43b8d7ed..18fd4e1e if you want one; [2] reverts e58adc1f and 18fd4e1e's step 0.1 changes (skill text only), then merges; [3] removes step 0.1's image paragraph, its pin test and the plan's image-lag lines, then merges.
+
+### Q-145 · lib-ancestor-listing-vanish-race
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fails closed when any file in a repo ancestor (e.g. `/tmp`) vanishes mid-listing. Fix the lib first, or merge Q-102 anyway?
+
+- **Why it's yours:** the fix is in GATE_CODE (`scripts/lib/dev-cycle-read.sh`), which lands only on your approval; and merging a gate that flakes is the trade Q-102 [1] priced at "1 in about 13 runs", which this is worse than.
+- **Read:** branch `feat/q102-parallel-gates` (worktree `.claude/wt-q102-parallel-gates`, tip 4bbd6f6d), rubric `docs/reviews/code-review-rubric-2026-10-14-feat-q102-parallel-gates.md` ("Narrow check and gate"). The listing: `find -H "${tops[@]}" -maxdepth 1 ... || return 1` in `seeds`' walk, where `tops` holds every ancestor of the repo. The failures: `find: '/tmp/bats-run-*/bats.PID.out': No such file or directory` (another test file's output under `--jobs`) and `find: '/tmp/tmp.JTuucY5EGl'` (another session's temp file), in build-loop-check 968 and build-loop-merge 1059/1061; each passes alone. 2 of the last 2 gates at load 18-20 (the first gate, at load ~5, passed).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fix the lib, then merge Q-102** (recommended) | A separate reviewed unit: the ancestor listing skips an entry that no longer exists (it is gone, so it holds no instruction file) instead of failing; Q-102 merges once a gate is green | Approving one gate-code merge | The same race can likely hit the real gate when a repo's ancestor or config dir churns (`~/.claude` is written constantly; unverified) — [1] fixes that too |
+| **[2] Merge Q-102 now, fix later** | Parallel default lands; a red gate of this class is re-run (`scripts/run-tests.sh --failed`) or run with `HEALTH_CHECK_JOBS=1` | A re-run on some gates until the fix | Gates flake often under load; agents may misread the red as their own |
+| **[3] Drop the parallel default** | Close Q-102 [1] as not applied; callers stay serial | ~7.5 min per gate stays | Nothing breaks; the lib race stays latent |
+
+- **Blocks:** Q-102's merge.
+- **Interim:** branch unmerged; main's gate stays serial, so nothing is burning.
+- **If the answer differs:** [2] merges the branch as it is; [3] deletes the branch.
+
+**Answer (2026-10-14, in session):** [2], "but revisit if it takes more than an hour". Read as: Q-102 merges now; the lib fix is roadmap Next; if re-runs on this flake class cost more than an hour in total before the fix lands, this reopens as a judgment (trigger in the roadmap item).
+
 
