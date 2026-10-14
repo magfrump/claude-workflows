@@ -1,4 +1,4 @@
-Commit: 1bc823ea
+Commit: f2cc21e6
 
 # Code Review Rubric: feat/build-loop-u4c
 
@@ -62,6 +62,24 @@ a missing manifest or a failed command noted in the record; step 1 names the tim
 header says the default branch's ref; Rollback 1 scoped to gate-code reverts; the T33 wording on
 questions.sh's lib. Row 817's "only the D6 block, its Rules and step 0.1" also omits steps 0.4 and
 1 and the deleted fallback (Mostly accurate; its conclusion holds; rows are append-only).
+
+Critics over 1bc823ea..f2cc21e6 (performance skipped: the range adds two git calls per iteration):
+security (`security-review-2026-10-13-u4c-i2.md`: 1 Medium, 1 Low, 2 Informational; i1 F1-F4
+closed but the Rule's wording; new own() executed equal to the old on 11 paths), api-consistency
+(`api-consistency-review-2026-10-13-u4c-i2.md`: 3 Inconsistent, 2 Minor, 1 Informational, none
+Breaking), architecture (`architecture-review-2026-10-13-u4c-i2.md`: 2 Coupling, 2 Minor).
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| D1 | The image is built from the host checkout's HEAD, not main: a release run off main installs unreviewed gate code, which step 0.1 called "older" and prescribed the same rebuild for | security i2 F1 (Medium) | Fixed: `merge-base --is-ancestor C M` files `image-off-main` (you: judgment); the paste checks HEAD equals main's commit (`cd A && test "$(git rev-parse HEAD)" = M && install.sh`) |
+| D2 | Step 0.1's path list is an unpinned fourth copy of GATE_CODE, wrapped over lines | architecture i2 1, api i2 F4, security i2 F4 | Fixed: one line, pinned with GATE_CODE by a new test |
+| D3 | `image-lag` has no body, paste block, interim or close rule; overlaps U5's release entry | architecture i2 2, api i2 F1/F2, security i2 F2 | Fixed: body (C, M, changed names), paste, interim; exit 0 answers it `done`; plan :356 makes U5's release entry its body |
+| D4 | "older than main's" where the test is "differs"; `cat-file` failing (every other repository) read as "any other exit: note it" | architecture i2 3/4, api i2 F6 | Fixed |
+| D5 | A `--state` refusal for a missing image file is the same release remedy, filed as a stop entry | api i2 F3 | Fixed: the stop's entry gives the release paste |
+| D6 | Rule: "no file or repository state" still covers a planted PATH binary | security i2 F3 | Fixed: "no repository file or state" |
+| D7 | Step 9 never says what `questions.sh check` exit 1 means | api i2 F5 | Fixed |
+| D8 | The GATE_CODE check lower-cases paths; the pathspec is case-sensitive | api i2 F4 | Won't-Fix (override row) |
+| D9 | A fork holding C compares unrelated gate code (noise); deleting C's objects drops the check to a record note | security i2 (not tested) | Won't-Fix (override row) |
 
 ## Status
 
