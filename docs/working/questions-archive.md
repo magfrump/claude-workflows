@@ -134,6 +134,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-138](#q-138--u3a2-land-discovery-past-cap) | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
 | [Q-140](#q-140--d6-snippet-trust-root) | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
+| [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 <!-- index:end -->
 
 ## Answered
@@ -2625,4 +2626,26 @@ Today the snippet runs main's own scripts when main's first-parent root commit i
 - **Interim:** today's rule stays, documented as a known gap in the snippet's header and the plan note; nothing runs the snippet until U4.
 - **If the answer differs:** [1] deletes the verified reader and the root test (the snippet keeps its ref and ownership checks; about 30 lines and five tests go); [2] adds one check before the reader and a container setting.
 
+
+### Q-144 · u4c-confirm-image-checks
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answer (2026-10-14, in session):** [1], "do one more security pass, then merge". The third confirming pass (security, 43b8d7ed..18fd4e1e) found one more Medium: image-off-main's [1] told the user to check main out on the host, which runs planted hooks before install.sh's gate; fixed in a80955a2 (the option names only the paste; the claim is scoped to its `rev-parse`), and a narrow security check of that commit was clean. Merged at 308196e7.
+
+U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after one more narrow fix, merge it as is, or drop the image checks to U5?
+
+- **Why it's yours:** the confirming pass that decides the merge found findings the range introduced, which by the rubric's gate stops the merge and comes to you (the Q-138 / Q-141 / Q-142 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4c.md` (final confirming pass, E1-E6) on `feat/build-loop-u4c`; `docs/reviews/security-review-2026-10-13-u4c-final.md` F1-F4; `docs/reviews/api-consistency-review-2026-10-13-u4c-final.md` F1.
+
+Step 0.1 (added in review, not in Q-140's options) checks the root-owned image against main: `image-off-main` when the image's commit is not on main, `image-lag` when main's gate code is ahead. `merge-base --is-ancestor` let an image released from a branch under review read as on main once that branch merged (executed with U4b2's 6beca252), and `image-off-main` was unkeyed, its `keep` never read, and never closed. Both are advisory: neither stops an iteration nor lands anything. The D6 block itself (Q-140 [1]) is unaffected and was clean in every pass.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | C is on main only on `rev-list --first-parent M`; `image-off-main-C12` keyed like the step-0 siblings with numbered options; a cleared `image-lag` listed for you to answer, never answered by the orchestrator; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more review pass |
+| **[2] Merge as is** | E1-E4 become override rows for U5 | None | An image released off main can be reported as a routine lag until U5 |
+| **[3] Drop the image checks to U5** | Revert step 0.1's image checks; U5's release entry owns the lag signal | A U5 design pass | The lag stays unobserved until U5 lands (i1 architecture's Coupling finding reopens) |
+
+- **Blocks:** U4c's merge, hence U5.
+- **Interim:** [1] was applied at e58adc1f. Its k=1 confirming pass closed E1-E4 (6beca252 now reads off main), but security found a Medium the interim itself introduced: a host-side `git diff` added to the paste ran before install.sh's state gate, so planted fsmonitor or filter config would run on the host. That line is reverted at 18fd4e1e, which restores the paste the full panel reviewed. Two confirming passes have each found an introduced Medium, so **U4c is not merged** and waits for your answer (the Q-143 precedent). Still open: confirm2 security F2 (Low): an answered `image-off-main-C12` suppresses refiling for that C even if the rebuild never happens.
+- **If the answer differs:** [1] merges 18fd4e1e as is, or after a k=1 security pass over 43b8d7ed..18fd4e1e if you want one; [2] reverts e58adc1f and 18fd4e1e's step 0.1 changes (skill text only), then merges; [3] removes step 0.1's image paragraph, its pin test and the plan's image-lag lines, then merges.
 
