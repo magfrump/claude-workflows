@@ -371,6 +371,13 @@ A1="refuse d6: main's first-parent history, the trees down to scripts/lib/ or th
     done
 }
 
+@test "SKILL.md's merge-entry slug rule quotes the lib's GATE_CODE, which --approved's heading reads, on one line of its own (row 674, U4b2)" {
+    g="$(bash -c 'source "$1"; printf %s "$GATE_CODE"' _ "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")"
+    [[ "$g" == *dev-cycle/* ]] || { echo "GATE_CODE: $g"; return 1; }
+    q=$'\x60'
+    [ "$(grep -cxF "  $q$g$q" "$REPO_ROOT/skills/dev-cycle/SKILL.md")" -eq 1 ] || { grep -n 'scripts/lib/' "$REPO_ROOT/skills/dev-cycle/SKILL.md"; return 1; }
+}
+
 @test "every git call dev-cycle.sh makes carries git_harden's pairs: a bogus log.date stops nothing, log.showSignature runs no gpg.program (rows 495, 505, U3b3)" {
     brief x "Status: open"
     # A signed-looking commit on main: git log under log.showSignature runs gpg.program for it.
