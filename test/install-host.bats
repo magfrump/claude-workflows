@@ -1595,10 +1595,15 @@ stub_cp_then() {
   fake_repo
   python3 -c 'import ctypes' 2>/dev/null || skip "python3 ctypes unavailable"
   # prctl(PR_SET_DUMPABLE=4, 0) makes /proc/<pid>/cwd unreadable to the same uid.
-  (cd "$S" && exec python3 -c 'import ctypes, time; ctypes.CDLL(None).prctl(4, 0, 0, 0, 0); time.sleep(300)') \
+  # python3 writes the marker once prctl has returned, so a slow start on a
+  # loaded host (the gate runs files in parallel, Q-102) waits rather than
+  # skipping; the skip is only for a kernel where prctl does not hide the cwd.
+  local marker="$BATS_TEST_TMPDIR/t92-hidden"
+  (cd "$S" && exec python3 -c 'import ctypes, sys, time; ctypes.CDLL(None).prctl(4, 0, 0, 0, 0); open(sys.argv[1], "w").close(); time.sleep(300)' "$marker") \
     >/dev/null 2>&1 3>&- &
   local hidden=$!
-  for _i in $(seq 50); do readlink "/proc/$hidden/cwd" >/dev/null 2>&1 || break; sleep 0.1; done
+  for _i in $(seq 600); do [ -e "$marker" ] && break; sleep 0.1; done
+  [ -e "$marker" ] || { kill "$hidden" 2>/dev/null; echo "python3 did not reach prctl in 60 s" >&2; return 1; }
   ! readlink "/proc/$hidden/cwd" >/dev/null 2>&1 || { kill "$hidden"; skip "prctl did not hide the cwd here"; }
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
   kill "$hidden" 2>/dev/null || true

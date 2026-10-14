@@ -379,6 +379,15 @@ parallel_shim() {
   [ ! -f "$T/parallel.args" ]
 }
 
+@test "--jobs 1 stays serial when bats' own parallel variables are inherited" {
+  parallel_shim
+  in_runner LC_ALL="$WORKING_LOCALE" BATS_NUMBER_OF_PARALLEL_JOBS=4 -- \
+    --jobs 1 test/gamma.bats test/sub/beta.bats
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok 1 gamma clean output"* ]]
+  [ ! -f "$T/parallel.args" ]
+}
+
 @test "--jobs: a parallel run records a complete log that --failed re-runs from" {
   parallel_shim
   # A second file that fails until $T/fixed exists, so --failed re-runs two

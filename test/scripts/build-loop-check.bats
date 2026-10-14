@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# @category fast
+# @category slow
 # Contract tests for the build-loop gate: the reader lib's import walks
 # (scripts/lib/dev-cycle-read.sh isimported, import_targets, main_imports) and, from U2a4 and U2b, the self-merge floor and build-loop.sh --check.
 # Each test builds a throwaway repo under $BATS_TEST_TMPDIR

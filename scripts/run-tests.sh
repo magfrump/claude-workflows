@@ -140,7 +140,8 @@ while [[ $# -gt 0 ]]; do
     --failed) failed_only=true; shift ;;
     --jobs)
       # At most 3 digits, so the value never overflows bash arithmetic and
-      # parallel never sizes thousands of job slots.
+      # parallel never sizes thousands of job slots. health-check.sh checks
+      # HEALTH_CHECK_JOBS with this same regex: keep the two equal.
       if [[ ! "${2:-}" =~ ^[1-9][0-9]{0,2}$ ]]; then
         echo "--jobs takes a number from 1 to 999, got: ${2:-(nothing)}" >&2
         usage
@@ -410,6 +411,9 @@ bats_args=()
 # bats runs, with --plain so the user's parallel config cannot fail the check.
 requested_jobs="$jobs"
 (( jobs > ${#files[@]} )) && jobs=${#files[@]}
+# bats reads these when it is given no --jobs flag (or alongside it), so an
+# inherited value would run a --jobs 1 run in parallel, within files too.
+unset BATS_NUMBER_OF_PARALLEL_JOBS BATS_NO_PARALLELIZE_ACROSS_FILES
 if [[ "$jobs" -gt 1 ]]; then
   unset PARALLEL PARALLEL_CSH
   if [[ "$(parallel --plain --version 2>/dev/null)" == "GNU parallel"* ]]; then

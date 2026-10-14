@@ -201,28 +201,47 @@ STUB
 }
 
 # Run check_bats with the stub; prints FAIL=<n> last. Gate-5 guard unset here,
-# and RUN_TESTS_JOBS too unless STUB_JOBS is set, so an ambient value (the
-# outer gate's own) never reaches the gate under test.
+# and HEALTH_CHECK_JOBS too unless STUB_JOBS is set, so a value whoever ran
+# this suite exported never reaches the gate under test.
+# STUB_NPROC, when set, puts an nproc printing it first on PATH.
 _run_check_bats() {
   local stub
   stub="$(_stub_runner)"
   export STUB_LOG="$BATS_TEST_TMPDIR/stub.log"
   : > "$STUB_LOG"
-  local jobs_env=(-u RUN_TESTS_JOBS)
-  [[ -n "${STUB_JOBS+set}" ]] && jobs_env=(RUN_TESTS_JOBS="$STUB_JOBS")
-  run env -u HEALTH_CHECK_SKIP_BATS "${jobs_env[@]}" HEALTH_CHECK_RUN_TESTS="$stub" \
+  local jobs_env=(-u HEALTH_CHECK_JOBS) path="$PATH"
+  [[ -n "${STUB_JOBS+set}" ]] && jobs_env=(HEALTH_CHECK_JOBS="$STUB_JOBS")
+  if [[ -n "${STUB_NPROC:-}" ]]; then
+    mkdir -p "$BATS_TEST_TMPDIR/nproc-bin"
+    printf '#!/bin/sh\necho %s\n' "$STUB_NPROC" > "$BATS_TEST_TMPDIR/nproc-bin/nproc"
+    chmod +x "$BATS_TEST_TMPDIR/nproc-bin/nproc"
+    path="$BATS_TEST_TMPDIR/nproc-bin:$PATH"
+  fi
+  run env -u HEALTH_CHECK_SKIP_BATS "${jobs_env[@]}" PATH="$path" HEALTH_CHECK_RUN_TESTS="$stub" \
     bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
 }
 
 @test "gate 5: runs fast then slow when both are green" {
-  STUB_FAST_RC=0 STUB_SLOW_RC=0 _run_check_bats
+  STUB_NPROC=16 STUB_FAST_RC=0 STUB_SLOW_RC=0 _run_check_bats
   echo "$output"; cat "$STUB_LOG"
   [ "$status" -eq 0 ]
   [[ "$output" == *"FAIL=0"* ]]
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 8 skip=1\n--slow --jobs 8 skip=1')" ]
 }
 
-@test "gate 5: RUN_TESTS_JOBS sets --jobs for both runs; 1 is serial" {
+@test "gate 5: the default --jobs 8 is lowered to nproc; an empty HEALTH_CHECK_JOBS is the default" {
+  STUB_NPROC=4 _run_check_bats
+  echo "$output"; cat "$STUB_LOG"
+  [[ "$output" == *"FAIL=0"* ]]
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 4 skip=1\n--slow --jobs 4 skip=1')" ]
+  STUB_NPROC=16 STUB_JOBS= _run_check_bats
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 8 skip=1\n--slow --jobs 8 skip=1')" ]
+  # An explicit value is not capped.
+  STUB_NPROC=4 STUB_JOBS=16 _run_check_bats
+  [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 16 skip=1\n--slow --jobs 16 skip=1')" ]
+}
+
+@test "gate 5: HEALTH_CHECK_JOBS sets --jobs for both runs; 1 is serial" {
   STUB_JOBS=1 _run_check_bats
   echo "$output"; cat "$STUB_LOG"
   [[ "$output" == *"FAIL=0"* ]]
@@ -231,13 +250,13 @@ _run_check_bats() {
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 16 skip=1\n--slow --jobs 16 skip=1')" ]
 }
 
-@test "gate 5: a RUN_TESTS_JOBS outside run-tests.sh's grammar fails the gate and runs nothing" {
+@test "gate 5: a HEALTH_CHECK_JOBS outside run-tests.sh's grammar fails the gate and runs nothing" {
   local bad
   for bad in 0 08 1000 -1 abc '8 ' '1;true'; do
     STUB_JOBS="$bad" _run_check_bats
     echo "[$bad] $output"
     [[ "$output" == *"FAIL=1"* ]]
-    [[ "$output" == *"RUN_TESTS_JOBS='$bad' is not 1 to 999"* ]]
+    [[ "$output" == *"HEALTH_CHECK_JOBS='$bad' is not 1 to 999"* ]]
     [ ! -s "$STUB_LOG" ]
   done
 }
@@ -471,7 +490,7 @@ JSON
 exit 0
 STUB
   chmod +x "$stub"
-  run env -u HEALTH_CHECK_SKIP_BATS HEALTH_CHECK_RUN_TESTS="$stub" \
+  run env -u HEALTH_CHECK_SKIP_BATS -u HEALTH_CHECK_JOBS HEALTH_CHECK_RUN_TESTS="$stub" \
     bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
   echo "$output"
   [[ "$output" == *"FAIL=0"* ]]
