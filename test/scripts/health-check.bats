@@ -203,7 +203,8 @@ STUB
 # Run check_bats with the stub; prints FAIL=<n> last. Gate-5 guard unset here,
 # and HEALTH_CHECK_JOBS too unless STUB_JOBS is set, so a value whoever ran
 # this suite exported never reaches the gate under test.
-# STUB_NPROC, when set, puts an nproc printing it first on PATH.
+# An nproc printing STUB_NPROC (default 16, so the default --jobs is 8 on
+# any host) goes first on PATH.
 _run_check_bats() {
   local stub
   stub="$(_stub_runner)"
@@ -211,18 +212,16 @@ _run_check_bats() {
   : > "$STUB_LOG"
   local jobs_env=(-u HEALTH_CHECK_JOBS) path="$PATH"
   [[ -n "${STUB_JOBS+set}" ]] && jobs_env=(HEALTH_CHECK_JOBS="$STUB_JOBS")
-  if [[ -n "${STUB_NPROC:-}" ]]; then
-    mkdir -p "$BATS_TEST_TMPDIR/nproc-bin"
-    printf '#!/bin/sh\necho %s\n' "$STUB_NPROC" > "$BATS_TEST_TMPDIR/nproc-bin/nproc"
-    chmod +x "$BATS_TEST_TMPDIR/nproc-bin/nproc"
-    path="$BATS_TEST_TMPDIR/nproc-bin:$PATH"
-  fi
+  mkdir -p "$BATS_TEST_TMPDIR/nproc-bin"
+  printf '#!/bin/sh\necho %s\n' "${STUB_NPROC:-16}" > "$BATS_TEST_TMPDIR/nproc-bin/nproc"
+  chmod +x "$BATS_TEST_TMPDIR/nproc-bin/nproc"
+  path="$BATS_TEST_TMPDIR/nproc-bin:$PATH"
   run env -u HEALTH_CHECK_SKIP_BATS "${jobs_env[@]}" PATH="$path" HEALTH_CHECK_RUN_TESTS="$stub" \
     bash -c 'source "$1"; check_bats; echo "FAIL=$FAIL"' _ "$SCRIPT"
 }
 
 @test "gate 5: runs fast then slow when both are green" {
-  STUB_NPROC=16 STUB_FAST_RC=0 STUB_SLOW_RC=0 _run_check_bats
+  STUB_FAST_RC=0 STUB_SLOW_RC=0 _run_check_bats
   echo "$output"; cat "$STUB_LOG"
   [ "$status" -eq 0 ]
   [[ "$output" == *"FAIL=0"* ]]
@@ -234,7 +233,7 @@ _run_check_bats() {
   echo "$output"; cat "$STUB_LOG"
   [[ "$output" == *"FAIL=0"* ]]
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 4 skip=1\n--slow --jobs 4 skip=1')" ]
-  STUB_NPROC=16 STUB_JOBS='' _run_check_bats
+  STUB_JOBS='' _run_check_bats
   [ "$(cat "$STUB_LOG")" = "$(printf -- '--fast --jobs 8 skip=1\n--slow --jobs 8 skip=1')" ]
   # An explicit value is not capped.
   STUB_NPROC=4 STUB_JOBS=16 _run_check_bats

@@ -73,6 +73,8 @@ path_without() {
 }
 
 teardown() {
+  # T92's non-dumpable python3, if the test ended before killing it.
+  [ -f "$BATS_TEST_TMPDIR/t92-pid" ] && kill "$(cat "$BATS_TEST_TMPDIR/t92-pid")" 2>/dev/null
   # T16 makes the destination read-only; let bats clean it up.
   [ -d "$S/home/.claude" ] && chmod -R u+w "$S/home/.claude" 2>/dev/null || true
 }
@@ -1597,11 +1599,14 @@ stub_cp_then() {
   # prctl(PR_SET_DUMPABLE=4, 0) makes /proc/<pid>/cwd unreadable to the same uid.
   # python3 writes the marker once prctl has returned, so a slow start on a
   # loaded host (the gate runs files in parallel, Q-102) waits rather than
-  # skipping; the skip is only for a kernel where prctl does not hide the cwd.
+  # skipping. It still skips when the cwd stays readable after prctl: a
+  # kernel where the hide does not work, a failed prctl (its return value is
+  # not checked), or a reader that may ptrace (root, CAP_SYS_PTRACE).
   local marker="$BATS_TEST_TMPDIR/t92-hidden"
   (cd "$S" && exec python3 -c 'import ctypes, sys, time; ctypes.CDLL(None).prctl(4, 0, 0, 0, 0); open(sys.argv[1], "w").close(); time.sleep(300)' "$marker") \
     >/dev/null 2>&1 3>&- &
   local hidden=$!
+  echo "$hidden" > "$BATS_TEST_TMPDIR/t92-pid"
   for _i in $(seq 600); do [ -e "$marker" ] && break; sleep 0.1; done
   [ -e "$marker" ] || { kill "$hidden" 2>/dev/null; echo "python3 did not reach prctl in 60 s" >&2; return 1; }
   ! readlink "/proc/$hidden/cwd" >/dev/null 2>&1 || { kill "$hidden"; skip "prctl did not hide the cwd here"; }

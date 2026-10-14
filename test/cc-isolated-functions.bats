@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# @category slow
+# @category fast
 # Unit tests for the central multi-project launcher (decision 016):
 # devcontainer-config/cc-isolated.sh + the egress-profile composition in
 # devcontainer-config/init-firewall.sh.

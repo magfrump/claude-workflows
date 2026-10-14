@@ -26,7 +26,8 @@
 #                            Defaults to "$REPO_ROOT/scripts/run-tests.sh".
 #   HEALTH_CHECK_JOBS        Test files check 5 runs at once, passed to the
 #                            runner as --jobs (Q-102 [1]). Unset or empty: 8,
-#                            or nproc when that is lower; 1 runs serially.
+#                            or nproc when that is lower (nproc honours
+#                            OMP_NUM_THREADS); 1 runs serially.
 #                            Otherwise the same grammar as run-tests.sh's
 #                            --jobs (1 to 999, digits only, no leading zero);
 #                            any other value fails check 5 before it runs a
@@ -50,7 +51,7 @@
 #   3. CLAUDE.md/AGENTS.md/GEMINI.md reference the same workflows and skills
 #   4. All test fixtures have corresponding expected-verdicts entries
 #   5. BATS tests pass: run-tests.sh --fast, then --slow only if fast is green,
-#      both with --jobs $HEALTH_CHECK_JOBS (default 8, at most nproc)
+#      both with --jobs $HEALTH_CHECK_JOBS (default 8, or nproc when lower)
 #   6. shellcheck passes on all .sh/.bash files
 #   7. Workflow value-justification frontmatter is present
 #   8. Hook scripts in hooks/ are executable, and are wired into the live
@@ -414,7 +415,7 @@ check_bats() {
     if [[ -z "$jobs" ]]; then
         jobs=8
         cores="$(nproc 2>/dev/null || true)"
-        [[ "$cores" =~ ^[1-9][0-9]*$ ]] && (( cores < jobs )) && jobs=$cores
+        [[ "$cores" =~ ^[1-9][0-9]{0,2}$ ]] && (( cores < jobs )) && jobs=$cores
     fi
     if [[ ! "$jobs" =~ ^[1-9][0-9]{0,2}$ ]]; then
         fail "HEALTH_CHECK_JOBS='$jobs' is not 1 to 999 (digits only, no leading zero; 1 = serial) — BATS suites not run"
