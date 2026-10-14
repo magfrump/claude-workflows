@@ -61,7 +61,7 @@ gap.
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
   `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines are step
-  0.2's `other` stop, which lands first), else the line and stderr go in
+  0.2's `other` stop, which lands a record), else the line and stderr go in
   one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
@@ -226,8 +226,8 @@ the record in step order. Step 4 uses one read-only subagent per sampled merge. 
 
 ### 0. Start and digest
 
-Start every iteration in this order (D13); a stop below ends the iteration with no record,
-so the next one starts from the same `Main at:`:
+Start every iteration in this order (D13); a stop below (but step 0.2's `other` stop) ends
+the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
    checkout, MAIN_WT, which the cycle reads but never commits in), before any other git
@@ -261,8 +261,9 @@ so the next one starts from the same `Main at:`:
    **[2] not yet**. **The `other` stop**: while such a line is listed, or `--check-answer`
    reads any entry with either slug in WT's `docs/working/questions.md` or
    `questions-archive.md` as other than `keep`, the iteration makes WT (step 0.3), files the
-   entries, writes a record whose `1.` line reads `stopped: step 0.2`, lands as step 9 does
-   and ends: no tests, merges, answers or dispatch, so a commit the user has not seen never
+   entries, appends its block (`1.` line `stopped: step 0.2`) to the newest record, the
+   file SINCE came from (no new day's file, so the digest's window stays put), lands as
+   step 9 does and ends: no tests, merges, answers or dispatch, so a commit the user has not seen never
    feeds one.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
@@ -599,7 +600,7 @@ The briefs land with step 9, so they are on the default branch before step 10 di
 ### 9. Record and land
 
 Write the record `docs/working/cycles/cycle-YYYY-MM-DD.md`, dated as the digest dates
-(`date +%F`, local time; the branch name's DATE-HHMM is UTC): one file per day, each
+(`date +%F`, local time; the branch name's DATE-HHMM is UTC; step 0.2's stop excepted): one file per day, each
 iteration appending its own block below the earlier ones and never editing them (reading
 them only for what steps 1, 2, 4b and 7 take from the last ones: `1.`, `7.` and `Model:`
 lines, verdicts, the last `Main at:`; the file grows all day):
