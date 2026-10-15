@@ -1,8 +1,10 @@
-Commit: 9e0ff1a5
+Commit: 258f9ec4
 
 # Code Review Rubric
 
-**Scope:** fix/doc-drift-cycle1 (`main...HEAD`) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) open after the iteration-2 fix commit (see statuses); iteration 3 is the confirming pass
+**Scope:** fix/doc-drift-cycle1 (`main...HEAD`) | **Reviewed:** 2026-10-15 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation. Iteration 3's one amber (D1) was fixed after the confirming pass and checked by the fix-drift lite review and a narrow fact-check (below)
+
+Iteration 3 of 3 (stamp 258f9ec4, the confirming pass): full-branch scope, no --loop-pass, fact-check k=3, security + api-consistency, Stage 2.5 submitted-claims pass (2 security endorsements, both Verified, executed). Result: 0 red; one amber (D1, fact-check Mostly accurate) fixed in the iteration-3 fix commit; C5 deferred. Fix-drift lite check on 9e0ff1a5..258f9ec4: FINDINGS: NONE.
 
 Iteration 2 of 3 (stamp 9e0ff1a5): full-branch scope, k=3, security + api-consistency again; the iteration-2 rows are B1-B4 and C3-C4 below. Fix-drift lite check on 330138d8..9e0ff1a5: FINDINGS: NONE.
 
@@ -32,6 +34,7 @@ None.
 | B2 | The bare-form effects list omits the empty `CC_CONFIG_DIR` effect (build pointed at `/Dockerfile`), and says "shared" without "across projects". `guides/cc-isolated-usage.md:935`, `guides/devcontainer-setup.md:399-402` | Documentation | Mostly accurate | Fact-check iteration 2 Claim 5 (r1, r2) + api-consistency i2 F2 + security i2 #1 (Informational) | for-author | — | Fixed | Both guides: "among them base-only egress, an empty config hash, a `~/.claude` volume shared across projects, and a build pointed at `/Dockerfile`". |
 | B3 | Cached-layer reuse and the re-bless recreate "from those cached layers" hold only while nothing above `Dockerfile:403` changes. `guides/devcontainer-setup.md:387-393` | Documentation | Mostly accurate | Fact-check iteration 2 Claims 1-2 (r1, r2, r3) | for-author | — | Fixed | Qualified: reuse holds until something above changes (base image, apt list, a toolchain version, `TZ`, pruned cache); a re-bless reinstalls CC only when the change sits above the install layer. |
 | B4 | Commit bodies of 330138d8 (row pointer) and 9e0ff1a5 (unqualified cached-layer line). | Documentation | Mostly accurate | Fact-check iteration 2 Claim 10 | for-author | — | Fixed | Corrected in the iteration-2 fix commit's body; override-log row 2026-10-15. |
+| D1 | The cached-layer qualifier lists "a toolchain version" (elan and Lean sit below the install layer, `Dockerfile:451-454`) and "a pruned build cache" (not a Dockerfile change) as Dockerfile inputs above the install layer. `guides/devcontainer-setup.md:387-390` | Documentation | Mostly accurate | Fact-check iteration 3 Claim 1 (r1, r2) + security i3 (Informational) | for-author | — | Fixed | Reworded: "until an input to a layer above it changes (the base image, the apt list, `TZ`, or the version of a toolchain installed above it, such as uv, Rust, Android or .NET; elan and Lean sit below it) or the build cache is pruned". Checked after the confirming pass by the fix-drift lite review and a narrow fact-check (see the iteration-3 narrow report). |
 
 ---
 
@@ -43,6 +46,7 @@ None.
 | C2 | The dev-cycle row's Trigger cell quotes trigger phrases, unlike the table's other rows. `AGENTS.md:36` | api-consistency F3 (format half) | Minor | for-author | — | Won't-Fix (override-log row 2026-10-15) |
 | C3 | No documented way to refresh the image's cached CC layer (`guides/devcontainer-setup.md:387-398`) | security i2 #2 | Informational | for-author | — | Deferred (override-log row 2026-10-15; launcher change, out of scope) |
 | C4 | init-firewall.sh's hint says `--probe-only` "rebuilds", the guides say "recreates" (`init-firewall.sh:346,349`, outside the diff) | api-consistency i2 F3 | Informational | for-author | — | Deferred (override-log row 2026-10-15; same follow-up as A4) |
+| C5 | `guides/cc-isolated-usage.md:25` and `:941` still say "rebuild" where the new prose says "recreates" (outside the diff) | api-consistency i3 | Informational | for-author | — | Deferred (override-log row 2026-10-15; same follow-up as C4) |
 
 ---
 
@@ -61,8 +65,10 @@ None.
 |---|---|---|---|---|
 | AGENTS.md and GEMINI.md stay in sync below their headers and carry no @-import | ✅ Confirmed | `bats test/agents-gemini-sync.bats` → 3/3 ok (FC Claim 11, executed) | Fact-check | for-orchestrator-synthesis |
 | The guides' launcher recipe matches init-firewall.sh's hint | ✅ Confirmed | `devcontainer-config/init-firewall.sh:349` — "cc-isolated --probe-only <repo>    # rebuilds from the blessed config, re-probes" (FC Claim 4, static; scope covers wording parity) | Fact-check | for-orchestrator-synthesis |
+| The launcher exports all five `CC_*` inputs before every `devcontainer up`, and `--probe-only` always recreates then probes | ✅ Confirmed | `devcontainer-config/cc-isolated.sh:883` — `devcontainer up --remove-existing-container "${dc[@]}"` (FC submitted Claim 11, executed: harness with a recording `devcontainer` stub saw all five values on every `up`) | Fact-check (submitted by security-reviewer) | for-orchestrator-synthesis |
+| A failed probe stops `--probe-only` before success and stops a launch before claude starts | ✅ Confirmed | `devcontainer-config/cc-isolated.sh:66` — "set -euo pipefail" (FC submitted Claim 12, executed: failing-probe runs exited 1, no verified-live file, claude never started; control run started claude) | Fact-check (submitted by security-reviewer) | for-orchestrator-synthesis |
 
-The security critic's launcher-path endorsement (routed to code-fact-check) is pending execution verification: Stage 2.5 was deferred to the confirming pass because fixes follow this pass.
+Stage 2.5 ran on the confirming pass: `code-fact-check-submitted-claims-2026-10-15-doc-drift-cycle1.md` (Claims 11-12, both Verified, executed). Caveats it records: an unregistered project exports an empty `CC_EGRESS_PROFILE` (base-only egress, by design), and the set -e guarantee holds when the script is run directly, not when `main` is called inside an `if` or `||`.
 
 ---
 

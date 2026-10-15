@@ -385,9 +385,10 @@ Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift deci
   `sudo /usr/local/bin/init-firewall.sh` inside the container if a previously working
   host starts timing out.
 - **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is resolved when the install layer
-  is built, and Docker reuses that cached layer on later rebuilds until something
-  above it in the Dockerfile changes (the base image, the apt list, a toolchain
-  version, `TZ`, or a pruned build cache): nothing in the launcher passes
+  is built, and Docker reuses that cached layer on later rebuilds until an input to a
+  layer above it changes (the base image, the apt list, `TZ`, or the version of a
+  toolchain installed above it, such as uv, Rust, Android or .NET; elan and Lean sit
+  below it) or the build cache is pruned: nothing in the launcher passes
   `--build-no-cache`, and the egress profile and the config hash are the *last* layer
   in the Dockerfile, so projects on different profiles still share every heavy layer.
   A re-bless changes the baked config hash, so the next launch of each project
@@ -399,9 +400,9 @@ Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift deci
   `cc-isolated --probe-only <repo>` (always recreates it from the blessed config and
   re-probes), then `cc-isolated <repo>`. Not a bare
   `devcontainer up --remove-existing-container …` from your own shell: it drops the
-  variables the launcher exports, and each one dropped has its own effect (among
-  them base-only egress, an empty config hash, a `~/.claude` volume shared across projects, and a
-  build pointed at `/Dockerfile`), and the launcher's probe never runs (see the
+  variables the launcher exports, and each one dropped has its own effect (among them
+  base-only egress, an empty config hash, a `~/.claude` volume shared across projects,
+  and a build pointed at `/Dockerfile`), and the launcher's probe never runs (see the
   comment above `rebuild_hint` in `cc-isolated.sh`). Staleness >1 version for >2 weeks
   is a decision-015 Revisit trigger.
 - **One config, one blast radius:** a bad edit to the central config breaks every
