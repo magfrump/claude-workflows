@@ -6,6 +6,8 @@ Commit: 258f9ec4
 
 Iteration 3 of 3 (stamp 258f9ec4, the confirming pass): full-branch scope, no --loop-pass, fact-check k=3, security + api-consistency, Stage 2.5 submitted-claims pass (2 security endorsements, both Verified, executed). Result: 0 red; one amber (D1, fact-check Mostly accurate) fixed in the iteration-3 fix commit; C5 deferred. Fix-drift lite check on 9e0ff1a5..258f9ec4: FINDINGS: NONE.
 
+After the confirming pass: D1 fixed in ec1ea297. Fix-drift lite check on 258f9ec4..ec1ea297: FINDINGS: NONE (log kept outside the tree, in the session scratch directory). Narrow fact-check of the D1 fix: `code-fact-check-report-2026-10-15-doc-drift-cycle1-i3-narrow.md` (8 Verified, 2 Mostly accurate, 2 Unverifiable, 0 Incorrect). Its two Mostly accurate items are recorded in the override log (the parenthetical omits git-delta, shfmt and zsh-in-docker: Won't-Fix, the sentence states the rule and says "such as"; ec1ea297's Notes call C5 a script change: Accepted). The loop closed at its 3-iteration cap with no red and no open amber; no fourth iteration was started.
+
 Iteration 2 of 3 (stamp 9e0ff1a5): full-branch scope, k=3, security + api-consistency again; the iteration-2 rows are B1-B4 and C3-C4 below. Fix-drift lite check on 330138d8..9e0ff1a5: FINDINGS: NONE.
 
 Iteration 1 of 3 (stamp 330138d8): full-branch scope, not a loop pass; fact-check k=3 (opus); critics security-reviewer and api-consistency-reviewer (opus); delivery mode inline-diff-only (diff file plus self-read of enclosing files). Skill text was handed to agents by path, read in full by each agent, rather than pasted.
