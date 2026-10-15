@@ -26,6 +26,18 @@ roadmap's Ideas:
 6. Do nothing on direction: Next already holds five user-ranked items and the open judgments; this brainstorm adds no re-ranking.
 
 Dropped: seed 5 (bare-bats locale) as an idea on its own — the remedy is "use `run-tests.sh`", already the documented runner; noted in the cycle record instead. Seed 7 folded into the doc-drift brief.
+- Let the orchestrator merge into main (a permission rule), or plan a human merge paste per cycle (signal: cycle 2026-10-14, the auto-mode classifier refused the merge of fix/t69-stage-race)
+- Answered questions whose answer says "roadmap item next cycle" get no roadmap line unless the cycle copies it (signal: cycle 2026-10-14, Q-105 [3] and Q-106 [2] answered 2026-10-06, missing from the roadmap)
+
+## Brainstorm 2026-10-14
+
+Signals read: this cycle's steps 1–4b, the two seeds above, the idea source `docs/working/feature-ideas.md` (nothing new), the roadmap's Ideas and the plan's U5 items. Surviving ideas, as filed in the roadmap:
+
+1. Orchestrator merge rights, or a standing human-merge entry (seed 1). Changes: whether a cycle can land anything without the user.
+2. Dispatch the two 12-day-old briefs once `docs/constraints.md` exists. Changes: frees 2 slots.
+3. Q-105 [3] and Q-106 [2] follow-ups go to Next 4–5 (seed 2, applied directly rather than filed as an idea).
+4. Do nothing else: U5 files its own roadmap items (a)–(g), and adding more now would duplicate them.
+
 - Give the three 2026-10-02 briefs `Branch:` lines or close them, so `--status` stops skipping them (signal: all three skipped as "no Branch: line"; they hold every slot)
 - List unmerged `chore/dev-cycle-*` branches and the entry IDs they add in the digest (signal: Q-162 to Q-177 lived only on `chore/dev-cycle-2026-10-15-0357`; `next-id` printed Q-149, which is in use)
 - Prune worktrees whose branch is merged (signal: 35 registered worktrees, 12 on merged branches)
