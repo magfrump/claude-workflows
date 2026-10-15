@@ -21,11 +21,11 @@
 #       registered projects, blessed config, verified?
 #   cc-isolated --help
 #       this text
-# One workspace per run. Before `--`, a second workspace, or a word starting
-# with '#' (a pasted '# note': interactive zsh passes it as words unless
-# interactive_comments is set), is bad usage, exit 2; so is a --profile value
-# starting with '#' or '-'. After `--`, one word only, and only when no
-# workspace came before it. Name a directory called '#x' as ./#x or -- '#x'.
+# One workspace per run: a second workspace is bad usage, exit 2, and so, before
+# `--`, is a word starting with '#' (a pasted '# note': interactive zsh passes it
+# as words unless interactive_comments is set) or a --profile value starting
+# with '#' or '-'. After `--`, one word only, and only when no workspace came
+# before it. Name a directory called '#x' as ./#x or -- '#x'.
 # Push a session's commits with cc-push, never with host git in the checkout.
 #
 # EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
