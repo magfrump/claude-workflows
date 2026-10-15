@@ -284,7 +284,7 @@ and why recall is not at risk are owned by code-review's SKILL.md ("First-red sh
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or acknowledged with a discoverable TODO or a concrete revisit trigger, and listed in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
-- [ ] The size re-check ran after each iteration (the before-merge run is step 6c's): the unit is at most 800 changed code lines (step 1a's command, `BASE` as in step 1a), OR the user waived it, the unit is within the waiver's limit, and the PR description records the waiver as step 1a's is
+- [ ] The size re-check ran after each iteration (the before-merge run is step 6c's): the unit is at most 800 changed code lines (step 1a's command, `BASE` as in step 1a), OR the user waived it, the unit is within the waiver's limit, and the PR description records the waiver with its `Q-NNN` entry, as step 1a describes
 - [ ] Diff's files-touched match the plan's declared scope; if not, drift is flagged to the human for explicit acknowledgment
 - [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
