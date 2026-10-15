@@ -1,0 +1,11 @@
+start: 2026-10-15T02:58:32Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it3r.grK6Fx/repo (fresh mktemp, HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3r.grK6Fx/home LC_ALL=C GIT_CONFIG_NOSYSTEM=1)
+cmd: timeout 20 git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- devcontainer-config/egress/base.txt
+diff --git a/devcontainer-config/egress/base.txt b/devcontainer-config/egress/base.txt
+deleted file mode 100644
+index df967b9..0000000
+--- a/devcontainer-config/egress/base.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-base
+exit=0
+end: 2026-10-15T02:58:32Z

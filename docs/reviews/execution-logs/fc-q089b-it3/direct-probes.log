@@ -1,0 +1,19 @@
+start: 2026-10-15T02:58:02Z
+-- X1 external diff driver (diff.cm.command), staged real change, cwd /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz/repo-x1
+   git diff --cached -U0 (driver active):
+     | @@ -1 +1 @@
+     | +# looks like a comment
+   src: exit 2
+   mut-Md-cached-extdiff: exit 0
+   mut-Mb-cached-both: exit 0
+-- X2 textconv driver, unstaged real change, git commit -am, cwd /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz/repo-x2
+   src: exit 2
+   mut-Me-all-both: exit 0
+-- X3 -a rename probe: name lists with and without --no-renames, cwd /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz/repo-x3
+   git diff --name-only:
+     | devcontainer-config/base-moved.txt
+   git diff --name-only --no-renames:
+     | devcontainer-config/base-moved.txt
+     | devcontainer-config/egress/base.txt
+   git diff --cached --name-only --no-renames:
+end: 2026-10-15T02:58:03Z

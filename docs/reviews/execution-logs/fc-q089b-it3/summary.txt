@@ -1,0 +1,62 @@
+start: 2026-10-15T02:57:02Z cwd: /workspace/.claude/wt-q089b cmd: timeout 1500 bash docs/reviews/execution-logs/fc-q089b-it3/run-it3.sh /workspace/.claude/wt-q089b/docs/reviews/execution-logs/fc-q089b-it3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+probe root: /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz
+== count: 31
+clean                  total=31 notok=0 exit=0
+old-hook-79f22357      total=31 notok=1 exit=1
+    not ok 30 a repo-local textconv driver cannot make a real change read as comment-only
+    [M1-swap] 83c83
+    [M1-swap] < enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+    [M1-swap] ---
+    [M1-swap] > enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+M1-swap                total=31 notok=1 exit=1
+    not ok 8 every manifest-hashed file is in the enforcement set
+M1-swap-full           total=31 notok=2 exit=1
+    not ok 8 every manifest-hashed file is in the enforcement set
+    not ok 26 the hook's host_tools regex names exactly host_tool_files, no more
+    [Ma-all-renames] 77c77
+    [Ma-all-renames] <   files="$files"$'\n'"$(git diff --name-only --no-renames 2>/dev/null)"
+    [Ma-all-renames] ---
+    [Ma-all-renames] >   files="$files"$'\n'"$(git diff --name-only 2>/dev/null)"
+Ma-all-renames         total=31 notok=1 exit=1
+    not ok 29 a rename committed with -a (new name only intent-to-add) is still gated
+    [Mb-cached-both] 111c111
+    [Mb-cached-both] <   diff_text="$(git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
+    [Mb-cached-both] ---
+    [Mb-cached-both] >   diff_text="$(git diff --cached -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)" || return 1
+Mb-cached-both         total=31 notok=1 exit=1
+    not ok 30 a repo-local textconv driver cannot make a real change read as comment-only
+    [Mc-cached-textconv] 111c111
+    [Mc-cached-textconv] <   diff_text="$(git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
+    [Mc-cached-textconv] ---
+    [Mc-cached-textconv] >   diff_text="$(git diff --cached -U0 --no-color --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
+Mc-cached-textconv     total=31 notok=1 exit=1
+    not ok 30 a repo-local textconv driver cannot make a real change read as comment-only
+    [Md-cached-extdiff] 111c111
+    [Md-cached-extdiff] <   diff_text="$(git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
+    [Md-cached-extdiff] ---
+    [Md-cached-extdiff] >   diff_text="$(git diff --cached -U0 --no-color --no-textconv -- "${touched_files[@]}" 2>/dev/null)" || return 1
+Md-cached-extdiff      total=31 notok=0 exit=0
+    [Me-all-both] 113c113
+    [Me-all-both] <     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)"
+    [Me-all-both] ---
+    [Me-all-both] >     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)"
+Me-all-both            total=31 notok=0 exit=0
+    [Mf-endanchor] 91c91
+    [Mf-endanchor] < host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)'
+    [Mf-endanchor] ---
+    [Mf-endanchor] > host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)$'
+Mf-endanchor           total=31 notok=1 exit=1
+    not ok 31 a stray sibling of a host tool (cc-push.sh.orig) is gated as a host tool
+    [Mg-install-host] 83c83
+    [Mg-install-host] < enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+    [Mg-install-host] ---
+    [Mg-install-host] > enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
+Mg-install-host        total=31 notok=1 exit=1
+    not ok 9 install.sh is gated although it is not manifest-hashed (decision 035)
+Mg-install-host-full   total=31 notok=2 exit=1
+    not ok 9 install.sh is gated although it is not manifest-hashed (decision 035)
+    not ok 26 the hook's host_tools regex names exactly host_tool_files, no more
+removed /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz
+exit=0
+end: 2026-10-15T02:58:04Z

@@ -1,0 +1,23 @@
+start: 2026-10-15T02:58:03Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz/src version: 0.9.0
+cmd: timeout 60 shellcheck -x -e SC1091 -s bash -S warning <f>
+docs/reviews/execution-logs/fc-q089b-it2/docs-checks.sh exit=0
+docs/reviews/execution-logs/fc-q089b-it2/probe-launcher.sh exit=0
+docs/reviews/execution-logs/fc-q089b-it2/probe-roadmap.sh exit=0
+docs/reviews/execution-logs/fc-q089b-it2/probe2.sh exit=0
+docs/reviews/execution-logs/fc-q089b-it2/run-7d.sh exit=0
+docs/reviews/execution-logs/fc-q089b-it2/run-mut.sh exit=0
+docs/reviews/execution-logs/sec-q089b-it2/probe-it2.sh exit=0
+hooks/live-verify-gate.sh exit=0
+test/hooks/live-verify-gate.bats exit=0
+docs/reviews/execution-logs/sec-q089b-it2/probe-it2.sh (directive line removed) exit=1
+    
+    In /home/node/.claude/jobs/00bcf178/tmp/fc-it3.MvtTEz/tmpd/probe-it2-stripped.sh line 48:
+    cd "$P"; rm -rf "$P"/repo-*
+    ^-----^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+    
+    Did you mean: 
+    cd "$P" || exit; rm -rf "$P"/repo-*
+    
+    For more information:
+      https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... |...
+end: 2026-10-15T02:58:03Z

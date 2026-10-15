@@ -102,7 +102,7 @@ touched="$(printf '%s\n%s\n' "$boundary_touched" "$host_touched" | grep -v '^$' 
 # python and the egress/*.txt lists; `//` covers the jsonc devcontainer.json.
 # $1: the newline-separated files to read (one trailer's set).
 comment_only_diff() {
-  local diff_text line body stripped content=0 in_header=0 touched_files=()
+  local diff_text line body stripped content=0 in_header=0 slashes=0 touched_files=()
   mapfile -t touched_files <<< "$1"
   [ "${#touched_files[@]}" -gt 0 ] || return 1
 
@@ -124,7 +124,13 @@ comment_only_diff() {
     # skipping those let a real change (e.g. dropping a `--flag` line) pass as
     # comment-only whenever a comment was edited alongside it.
     case "$line" in
-      'diff --git '*) in_header=1; continue ;;
+      'diff --git '*)
+        in_header=1
+        # `//` is a comment only in the jsonc devcontainer.json: bash runs a
+        # `//usr/bin/x` line as a command, so for every other file it is code.
+        slashes=0
+        case "$line" in *'/devcontainer.json') slashes=1 ;; esac
+        continue ;;
       '@@'*) in_header=0; continue ;;
     esac
     if [ "$in_header" = 1 ]; then
@@ -139,7 +145,8 @@ comment_only_diff() {
     stripped="${body#"${body%%[![:space:]]*}"}"
     case "$stripped" in
       '') continue ;;              # blank or whitespace-only
-      '#'*|'//'*) continue ;;      # comment
+      '#'*) continue ;;            # comment
+      '//'*) [ "$slashes" = 1 ] && continue ;;  # jsonc comment, devcontainer.json only
     esac
     return 1                       # a real line changed
   done <<< "$diff_text"

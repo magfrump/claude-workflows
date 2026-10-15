@@ -64,7 +64,10 @@ Unranked. Each names the signal that motivates it.
   `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a
   `git -C <dir> commit` (how orchestrators commit into `.claude/wt-*`) is checked against
   the hook's cwd; a shebang edit passes as comment-only. Each fails closed at runtime (the
-  bless diff, `verify_host_tools`). `docs/reviews/security-review-2026-10-14-q089b.md`.
+  bless diff, `verify_host_tools`). Also (iteration-3 security F3, F4): a non-ASCII path is
+  quoted in `--name-only` output under the default `core.quotePath` and misses the anchors
+  (read with `-z`); `diff.relative` with the hook run from a subdirectory drops paths
+  (`--no-relative`). `docs/reviews/security-review-2026-10-14-q089b.md`, `-it3.md`.
 - **One owner for "the install dir" in cc-isolated (Q-089 A1 architecture F1, rubric C1).**
   Signal: bless/`--list` use `config_dir()` while the pre-source check uses the launcher's own
   dir; every hint now names the right dir, but an installed copy could assert the two agree

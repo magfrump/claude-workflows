@@ -269,9 +269,9 @@ Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
 `projects/*.profile`, and the staged
 `claude-home/`.
 
-**Host-only tools are not enforcement files for this sequence** (decision log row 71);
+**Host-only tools are not enforcement files for this sequence** (decision log row 71;
 they still count as enforcement files for code-review's mechanic 7 and RPI's
-bypass-family pre-mortem: `cc-exit-scan.sh`
+bypass-family pre-mortem). They are `cc-exit-scan.sh`
 (the session-exit scan the launcher sources), `cc-gitdir.sh` (the git-directory tests
 it and cc-push source) and `cc-push.sh`. They run on the host, after or outside the
 container, and the image never copies them, so no probe can exercise them and the

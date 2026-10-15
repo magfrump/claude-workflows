@@ -1,0 +1,75 @@
+### Mutant bats runs
+== bats clean 25d8f272: rc=0
+1..31
+83:enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
+91:host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh|install.sh$)'
+== bats M-F1 install.sh moved to host_tools (unescaped dot): rc=1
+1..31
+not ok 9 install.sh is gated although it is not manifest-hashed (decision 035)
+  files="$files"$'\n'"$(git diff --name-only 2>/dev/null)"
+== bats M-F2 drop --no-renames on -a call: rc=1
+1..31
+not ok 29 a rename committed with -a (new name only intent-to-add) is still gated
+== bats M-F3a drop --no-textconv: rc=1
+1..31
+not ok 30 a repo-local textconv driver cannot make a real change read as comment-only
+== bats M-F3b drop --no-ext-diff: rc=0
+1..31
+
+### P1 diff.external fake driver (prints a comment-only patch)
+diff --git a/devcontainer-config/egress/base.txt b/devcontainer-config/egress/base.txt
+@@ -1 +1 @@
+-# old
++# new
+P1 25d8f272, diff.external set, real widening: exit 2
+P1 mutant (no --no-ext-diff), diff.external set: exit 0
+P1b 25d8f272, diff.<x>.command via attributes: exit 2
+P1b mutant (no --no-ext-diff), diff.<x>.command: exit 0
+
+### P2 legit comment-only edits: flags vs no flags, and under git config variants
+P2 [default] comment-only (output with/without flags: same): exit 0
+P2 [default] + real jsonc change: exit 2
+P2 [diff.noprefix=true] comment-only (output with/without flags: same): exit 0
+P2 [diff.noprefix=true] + real jsonc change: exit 2
+P2 [diff.mnemonicPrefix=true] comment-only (output with/without flags: same): exit 0
+P2 [diff.mnemonicPrefix=true] + real jsonc change: exit 2
+P2 [color.diff=always] comment-only (output with/without flags: same): exit 0
+P2 [color.diff=always] + real jsonc change: exit 2
+P2 [color.ui=always] comment-only (output with/without flags: same): exit 0
+P2 [color.ui=always] + real jsonc change: exit 2
+P2 [diff.algorithm=patience] comment-only (output with/without flags: same): exit 0
+P2 [diff.algorithm=patience] + real jsonc change: exit 2
+P2 [diff.algorithm=histogram] comment-only (output with/without flags: same): exit 0
+P2 [diff.algorithm=histogram] + real jsonc change: exit 2
+P2 [core.quotePath=false] comment-only (output with/without flags: same): exit 0
+P2 [core.quotePath=false] + real jsonc change: exit 2
+P2 [diff.suppressBlankEmpty=true] comment-only (output with/without flags: same): exit 0
+P2 [diff.suppressBlankEmpty=true] + real jsonc change: exit 2
+P2 [diff.relative=true] comment-only (output with/without flags: same): exit 0
+P2 [diff.relative=true] + real jsonc change: exit 2
+P2 [diff.renames=copies] comment-only (output with/without flags: same): exit 0
+P2 [diff.renames=copies] + real jsonc change: exit 2
+P2 [diff.indentHeuristic=false] comment-only (output with/without flags: same): exit 0
+P2 [diff.indentHeuristic=false] + real jsonc change: exit 2
+P2 [diff.colorMoved=zebra] comment-only (output with/without flags: same): exit 0
+P2 [diff.colorMoved=zebra] + real jsonc change: exit 2
+P2 [diff.wsErrorHighlight=all] comment-only (output with/without flags: same): exit 0
+P2 [diff.wsErrorHighlight=all] + real jsonc change: exit 2
+
+### P3 // line in a shell enforcement file / host tool (pre-existing rule scope)
+P3 init-firewall.sh gains //usr/bin/curl line: exit 0
+P3 bash runs a // line: RAN-AS-COMMAND
+P3b cc-push.sh gains //bin/sh line: exit 0
+
+### P4 core.quotePath default and a non-ASCII egress name
+"devcontainer-config/egress/b\303\274.txt"
+P4 new egress/b<u-umlaut>.txt, quotePath default: exit 0
+P4 same, quotePath=false: exit 2
+
+### P5 diff.relative=true and a subdirectory cwd
+P5 subdir cwd, diff.relative unset: exit 2
+P5 root cwd, diff.relative=true: exit 2
+P5 subdir cwd, diff.relative=true: exit 0
+
+### cleanup
+removed /home/node/.claude/jobs/00bcf178/tmp/sec-it3.shNpVV
