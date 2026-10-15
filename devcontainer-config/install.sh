@@ -608,13 +608,21 @@ install_devcontainer() {
 
   echo
   echo "Done. Blessed, NOT verified: a bless is a review of files, not a test of a container."
-  echo "Next steps:"
-  echo "  touch ~/.ssh/canary                    # once, if you haven't — strengthens the H1 probe"
-  echo "  cc-isolated --probe-only <repo>        # REQUIRED after any boundary change: rebuilds from"
-  echo "                                         # this config and records it verified live on a pass"
-  echo "  cc-isolated                            # session for the repo containing \$PWD"
-  echo "  cc-isolated --register <repo> --profile python   # widen a project's egress"
-  echo "  cc-push --remote <url> <repo>          # push a session's commits via a host-only clone"
+  # Each command on a line of its own, its note on the line above: a pasted line
+  # carrying a trailing '# note' reaches the command as extra words in zsh (no
+  # interactive_comments by default), and cc-isolated refuses those (exit 2).
+  echo "Next steps (copy the command lines only):"
+  echo "  Once, if you haven't; it strengthens the H1 probe:"
+  echo "    touch ~/.ssh/canary"
+  echo "  REQUIRED after any boundary change: recreate the container from this config,"
+  echo "  probe it, and record it verified live on a pass:"
+  echo "    cc-isolated --probe-only <repo>"
+  echo "  A session for the repo containing \$PWD:"
+  echo "    cc-isolated"
+  echo "  Widen a project's egress:"
+  echo "    cc-isolated --register <repo> --profile python"
+  echo "  Push a session's commits via a host-only clone:"
+  echo "    cc-push --remote <url> <repo>"
   case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
     *) echo; echo "WARNING: $BIN_DIR is not on your PATH — add it, or call $DEST/cc-isolated.sh directly." ;;

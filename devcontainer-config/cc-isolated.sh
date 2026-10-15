@@ -3,17 +3,29 @@
 # central host-side devcontainer config (decision 016; supersedes the per-repo
 # scripts/devcontainer-session.sh from decision 015).
 #
-# Run from the HOST (your normal WSL terminal), never from inside a session:
-#   cc-isolated                          # session for the git repo containing $PWD
-#   cc-isolated ~/code/other-project     # session for an explicit repo
+# Run from the HOST (your normal WSL terminal), never from inside a session. Each
+# command is on a line of its own, its description indented below it:
+#   cc-isolated
+#       a session for the git repo containing $PWD
+#   cc-isolated ~/code/other-project
+#       a session for an explicit repo
 #   cc-isolated --register ~/code/api --profile python
-#                                        # SET that project's egress profile (REPLACES any
-#                                        # previous grant, never adds to it), then re-bless
-#   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
-#   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
-#                                        # boundary self-probe, record it verified live
-#   cc-isolated --list                   # registered projects, blessed config, verified?
-#   cc-isolated --help                   # this text
+#       SET that project's egress profile (REPLACES any previous grant, never
+#       adds to it), then re-bless
+#   cc-isolated --bless
+#       re-bless the installed config after YOU reviewed it
+#   cc-isolated --probe-only [WS]
+#       recreate WS's container from the blessed config, run the boundary
+#       self-probe, record it verified live on a pass
+#   cc-isolated --list
+#       registered projects, blessed config, verified?
+#   cc-isolated --help
+#       this text
+# One workspace per run: a second workspace is bad usage, exit 2, and so, before
+# `--`, is a word starting with '#' (a pasted '# note': interactive zsh passes it
+# as words unless interactive_comments is set) or a --profile value starting
+# with '#' or '-'. After `--`, one word only, and only when no workspace came
+# before it. Name a directory called '#x' as ./#x or -- '#x'.
 # Push a session's commits with cc-push, never with host git in the checkout.
 #
 # EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
@@ -58,8 +70,9 @@
 # second file next to the manifest — verified-live.sha256 — which is written ONLY by
 # a passing self-probe against a container whose image bakes the hash of the manifest
 # being blessed (CC_CONFIG_HASH build arg -> /etc/cc-config-hash). A launch on an
-# unverified config says so, rebuilds the container so the probe exercises the new
-# config rather than an old image, and refuses to start a session unless the baked
+# unverified config says so, recreates the container if it was built from another
+# config so the probe exercises the new config rather than an old image (--probe-only
+# always recreates), and refuses to start a session unless the baked
 # firewall script reached its completion marker. See guides/devcontainer-setup.md,
 # "Changing the boundary".
 
@@ -313,7 +326,8 @@ bless_manifest() {
     echo "Verified live:  yes (this exact config has passed a live self-probe before)"
   else
     echo "Verified live:  NO — a bless is a review, not a test. Nothing has run this config."
-    echo "  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node"
+    echo "  Next: cc-isolated --probe-only <repo>"
+    echo "        (recreates the container from it and probes as node)"
     echo "  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash."
   fi
 }
@@ -557,7 +571,14 @@ list_projects() {
 rebuild_hint() {
   local ws="$1" var assigns=""
   shift
-  echo "    cc-isolated $(printf '%q' "$ws")        # the supported path: rebuilds, re-probes, re-launches" >&2
+  # Two steps, not a bare relaunch: a plain launch recreates only when the baked
+  # config hash differs, so a fail-closed container built from the blessed config
+  # would be reused, not recovered. --probe-only always recreates, and exits
+  # non-zero on a failed probe, so the `&&` never starts a session after one.
+  # The explanation is on its own line, not a trailing `# ...`: interactive zsh
+  # without interactivecomments would pass those words to step 2 as arguments.
+  echo "    cc-isolated --probe-only $(printf '%q' "$ws") && cc-isolated $(printf '%q' "$ws")" >&2
+  echo "      (the supported path: recreates the container from the blessed config, re-probes, then launches)" >&2
   echo "  or by hand — ALL of these assignments are required, devcontainer.json reads them via localEnv:" >&2
   for var in CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_EGRESS_PROFILE CC_CONFIG_HASH; do
     assigns+="$var=$(printf '%q' "${!var:-}") "
@@ -663,7 +684,7 @@ probe_boundary() {
     echo "PROBE FAIL (image provenance): this container was NOT built from the central" >&2
     echo "  Dockerfile at $(config_dir) (missing /usr/local/share/cc-egress, or its baked" >&2
     echo "  egress profile is not '${want_profile:-<base only>}'). Refusing: the boundary in this image is" >&2
-    echo "  not the one you blessed. Rebuild with:" >&2
+    echo "  not the one you blessed. Recreate it with:" >&2
     rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
@@ -677,7 +698,7 @@ probe_boundary() {
   if [ -z "$want_hash" ] || [ "$have_hash" != "$want_hash" ]; then
     echo "PROBE FAIL (config identity): this container was built from config '${have_hash:-<none>}'," >&2
     echo "  but the blessed config is '${want_hash:-<none>}'. The boundary it runs is not the one" >&2
-    echo "  you blessed. Rebuild with:" >&2
+    echo "  you blessed. Recreate it with:" >&2
     rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
@@ -726,8 +747,35 @@ usage() {
   awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
+# One workspace per run. A pasted copyable line with a trailing '# note' reaches
+# the launcher as extra words: interactive zsh treats '#' as a comment only under
+# `setopt interactive_comments`, which is off by default. The parser used to keep
+# the LAST positional, so the note's last word became the workspace. Now a second
+# workspace, a word starting with '#', or a --profile value starting with '#' or
+# '-' is a usage error raised while parsing, before main's first refusal (the
+# host-tool check) or any action. Values are printed with %q: they are untrusted
+# text going to a terminal. $1: the message; the remaining arguments: hint lines.
+arg_usage_error() {
+  printf 'ERROR: %s\n' "$1" >&2
+  shift
+  [ $# -eq 0 ] || printf '  %s\n' "$@" >&2
+  usage >&2
+  exit 2
+}
+
+pasted_note_error() {  # $1: the word starting with '#'; $2: what it was read as
+  arg_usage_error "$(printf '%q is not %s; it looks like a pasted comment.' "$1" "$2")" \
+    "Interactive zsh passes a trailing '# ...' note as arguments unless" \
+    "'setopt interactive_comments' is on. Rerun without the note."
+}
+
+two_workspaces() {
+  arg_usage_error "$(printf 'two workspaces given: %q and %q. cc-isolated takes one.' "$1" "$2")" \
+    "A pasted line with a trailing note, or a path with an unquoted space, does this."
+}
+
 main() {
-  local ws_arg="" profiles="" action="launch"
+  local ws_arg="" ws_given=0 profiles="" action="launch"
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -742,13 +790,33 @@ main() {
           usage >&2
           exit 2
         fi
+        # A '#' value is a pasted note whose later words would be read as flags
+        # (`--profile '#' --bless` ran a bless); a '-' value is a flag swallowed.
+        case "$2" in
+          \#*) pasted_note_error "$2" "an egress profile" ;;
+          -*)  arg_usage_error "$(printf -- '--profile needs a value, not the flag %q.' "$2")" ;;
+        esac
         profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
       -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 2 ;;
-      *)            ws_arg="$1"; shift ;;
+      # Checked at the first word of a note, so the note's later words are never
+      # parsed as flags (`cc-isolated  # --bless` ran a bless). A '#' taken as
+      # --profile's value is refused above. A directory named so: ./#x or -- '#x'.
+      \#*)          pasted_note_error "$1" "a workspace" ;;
+      *)
+        [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
+        ws_arg="$1"; ws_given=1; shift ;;
     esac
   done
+  # After `--`: at most one word, and only when no workspace came before it
+  # (cc-push's rule). Everything after `--` used to be dropped, so `-- WS` opened
+  # $PWD (or the workspace named before `--`) instead of WS.
+  if [ $# -gt 0 ]; then
+    [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
+    [ $# -eq 1 ] || two_workspaces "$1" "$2"
+    ws_arg="$1"
+  fi
 
   if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
     echo "ERROR: host-tool check failed — refusing to launch, probe or register:" >&2
@@ -871,14 +939,15 @@ main() {
 
   if ! is_verified_live; then
     echo "NOTE: blessed config $CC_CONFIG_HASH has NOT been verified in a live container."
-    echo "      This run is that verification: the container is rebuilt from it, and the"
-    echo "      self-probe must pass (including the node-run firewall probes) before anything"
-    echo "      starts. A pass records the hash in $(verified_path)."
+    echo "      This run is that verification: the container is recreated if it was built"
+    echo "      from another config, and the self-probe must pass (including the node-run"
+    echo "      firewall probes) before anything starts. A pass records the hash in"
+    echo "      $(verified_path)."
   fi
 
   echo "Project: $ws  (id $pid, egress base${eff_profile:+,$eff_profile}, config $CC_CONFIG_HASH)"
   if [ "$action" = "probe" ]; then
-    # --probe-only is the verification command, so it always rebuilds: probing a
+    # --probe-only is the verification command, so it always recreates: probing a
     # container left over from an earlier config would verify the wrong boundary.
     devcontainer up --remove-existing-container "${dc[@]}"
     probe_boundary "$ws"

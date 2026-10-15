@@ -348,7 +348,18 @@ STUB
   [ "$status" -eq 0 ]
   # The supported path must come first: the by-hand form is the one that can be
   # run wrong, so it must never be the first thing a reader copies.
-  [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
+  # It is the guides' two-step recipe, never a bare relaunch: a plain launch
+  # recreates only on a config-hash mismatch, so in the fail-closed state it does
+  # not recover (override log, fix/doc-drift-cycle1 A4).
+  local ws; ws="$(printf '%q' "$TEST_TMPDIR/proj")"
+  # The whole first line is the command, nothing after it: interactive zsh
+  # without interactivecomments passes a trailing `# ...` to step 2 as arguments,
+  # and the last positional becomes the workspace, so step 2 fails or, if that
+  # word names a directory inside a git work tree, launches that tree's repo
+  # (security review 2026-10-15, rebuild-hint #1).
+  [ "$(echo "$output" | head -1)" = "    cc-isolated --probe-only $ws && cc-isolated $ws" ]
+  [[ "$(echo "$output" | sed -n 2p)" == *"recreates the container from the blessed config"* ]]
+  [[ "$output" != *"rebuilds"* ]]
 }
 
 @test "usage prints the whole header block, exit status included, and nothing past it" {
@@ -367,6 +378,111 @@ STUB
   run bash "$CONFIG_SRC/cc-isolated.sh" --nope
   [ "$status" -eq 2 ]
   [[ "$output" == *"unknown flag: --nope"*"EXIT STATUS"* ]]
+}
+
+# --- One workspace per run (roadmap Next 3; rebuild-hint rubric A7) -----------
+# A pasted line with a trailing '# note' reaches the launcher as extra words in
+# zsh without interactive_comments. The old parser kept the last positional, so
+# the note's last word became the workspace. Each refusal must come before any
+# devcontainer call and before --register writes anything.
+one_ws_setup() {
+  make_repo "$TEST_TMPDIR/a"
+  make_repo "$TEST_TMPDIR/b"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/b")"
+  export STUB_IMAGE_HASH STUB_FP
+}
+
+assert_refused_untouched() {
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"EXIT STATUS"* ]]
+  [ ! -s "$DC_LOG" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/a")" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/b")" ]
+}
+
+@test "a second workspace is a usage error in every mode that takes one, naming both" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b" form
+  for form in "" "--probe-only" "--register --profile python"; do
+    # shellcheck disable=SC2086  # $form is a list of flags on purpose
+    run bash "$CONFIG_SRC/cc-isolated.sh" $form "$a" "$b"
+    assert_refused_untouched
+    [[ "$output" == *"two workspaces given: $a and $b. cc-isolated takes one."*"or a path with an unquoted space"* ]]
+  done
+}
+
+@test "a pasted '# note' is refused at its first word, before its later words act as flags" {
+  one_ws_setup
+  # The note's words come after the workspace: refused, not launched on 'note'.
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/a" '#' note
+  assert_refused_untouched
+  [[ "$output" == *'\# is not a workspace; it looks like a pasted comment.'*'interactive_comments'* ]]
+  # No workspace before the note: '#' would have been the workspace and the
+  # note's --register (or --bless) would have run.
+  run bash "$CONFIG_SRC/cc-isolated.sh" '#' --register "$TEST_TMPDIR/a" --profile python
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only '#widen' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+}
+
+@test "a --profile value starting with '#' or '-' is a usage error, so a note cannot reach the flags" {
+  one_ws_setup
+  # Base: `--profile '#' --bless` ran a bless (exit 0) and `--profile '#' b` opened b.
+  rm -f "$(manifest_path)"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --profile '#' --bless
+  [ "$status" -eq 2 ]
+  [[ "$output" == *'\# is not an egress profile; it looks like a pasted comment.'* ]]
+  [ ! -f "$(manifest_path)" ]
+  bless_manifest >/dev/null
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only --profile '#' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/a" --profile --bless
+  assert_refused_untouched
+  [[ "$output" == *"--profile needs a value, not the flag --bless."* ]]
+}
+
+@test "after --: one workspace, and only when none came before it" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$a" -- "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$a" "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  # The one-word form names the workspace (it used to be dropped, opening $PWD).
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$b"
+  [ "$status" -eq 0 ]
+  grep -q "^devcontainer up --remove-existing-container --workspace-folder $b " "$DC_LOG"
+}
+
+@test "a directory named '#x' is still reachable as ./#x and after --" {
+  one_ws_setup
+  make_repo "$TEST_TMPDIR/#x"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/#x")"
+  cd "$TEST_TMPDIR"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only ./#x
+  [ "$status" -eq 0 ]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- '#x'
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "^devcontainer up --remove-existing-container --workspace-folder $TEST_TMPDIR/#x " "$DC_LOG")" -eq 2 ]
+}
+
+@test "install.sh's Next steps print no command line carrying a trailing '# note'" {
+  local block
+  block="$(sed -n '/echo "Next steps/,/^  case ":\$PATH:"/p' "$CONFIG_SRC/install.sh")"
+  [ -n "$block" ]
+  # Every echoed command line is the command alone (zsh would pass a note on).
+  run grep -E '^  echo "    (touch|cc-isolated|cc-push)' <<< "$block"
+  [ "${#lines[@]}" -eq 5 ]
+  run grep -E '^  echo ".*#' <<< "$block"
+  [ "$status" -eq 1 ]
+  # --probe-only recreates the container; it never "rebuilds" (C1, A7).
+  run grep -i 'rebuild' <<< "$block"
+  [ "$status" -eq 1 ]
 }
 
 @test "suggest_profiles proposes python for a python repo but never applies it" {
@@ -1143,6 +1259,7 @@ fake_payload_and_dest() {
 
 # A devcontainer stub that answers the in-container reads probe_boundary makes.
 # STUB_IMAGE_HASH → /etc/cc-config-hash; STUB_FP → the workspace fingerprint;
+# STUB_FW_BRICKED=1 → re-running the baked init-firewall.sh fails (fail-closed state).
 # STUB_FW_MISSING=1 → the firewall completion marker is absent. Every call is
 # logged to $DC_LOG so main()'s rebuild decision can be asserted.
 smart_devcontainer_stub() {
@@ -1156,6 +1273,7 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *init-firewall.sh*)      [ -z "${STUB_FW_BRICKED:-}" ] ;;
   *cc-project-id*)
     # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
     # with /home/node/.claude redirected to a test dir and the container's
@@ -1243,6 +1361,9 @@ h6_probe() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Verified live:  NO"* ]]
   [[ "$output" == *"--probe-only"* ]]
+  # The command is alone on its line (no trailing `# ...`, which interactive zsh
+  # without interactivecomments passes as arguments; security review 2026-10-15).
+  printf '%s\n' "$output" | grep -qx '  Next: cc-isolated --probe-only <repo>'
   [[ "$output" == *"Live-verified:"* ]]
   run is_verified_live
   [ "$status" -ne 0 ]
@@ -1373,7 +1494,33 @@ h6_probe() {
   grep -qxF "CC_PROJECT_NAME=proj" "$DC_LOG.up-env"
 }
 
-@test "--probe-only always rebuilds before probing" {
+# Regression (override log, fix/doc-drift-cycle1 A4): in the fail-closed state the
+# container was built from the blessed config, so a plain launch does not recreate
+# it, and the hint used to send the user straight back into that launch.
+@test "a launch on a fail-closed container does not recreate it, and the hint names --probe-only first" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  STUB_FW_BRICKED=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING STUB_FW_BRICKED
+  local ws; ws="$(printf '%q' "$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ERROR: init-firewall.sh failed"* ]]
+  [[ "$output" == *"Recreate it"*"cc-isolated --probe-only $ws && cc-isolated $ws"* ]]
+  # The unverified-config NOTE must not promise the recreate this launch skips.
+  [[ "$output" == *"has NOT been verified in a live container"* ]]
+  [[ "$output" != *"the container is rebuilt from it"* ]]
+  [[ "$output" == *"the container is recreated if it was built"* ]]
+  # The premise of the hint: this launch reused the container and never started claude.
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  run ! grep -q ' claude$' "$DC_LOG"
+}
+
+@test "--probe-only always recreates before probing" {
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
@@ -1384,6 +1531,24 @@ h6_probe() {
   [ "$status" -eq 0 ]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
   ! grep -q ' claude$' "$DC_LOG"
+}
+
+# The hint's `&&` relies on this: a failed probe after the forced recreate must
+# exit non-zero and write no receipt (security review 2026-10-15, rebuild-hint #2).
+# (--probe-only never runs claude at all, so that is not asserted here.)
+@test "--probe-only exits non-zero and records nothing when the probe fails" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (firewall)"* ]]
+  grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
+  [ ! -f "$(verified_path)" ]
 }
 
 # --- Exit scan: .git changes made during the session (Q-069 [3], Q-076) ---------
@@ -2122,6 +2287,172 @@ no_ran() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"+ hook $SCAN_WS/c.git/hooks/pre-receive "* ]]
   [[ "$output" == *"+ hook $SCAN_WS/d.git/hooks/update "* ]]
+}
+
+# rewrite_plant <target...>: a bare repo at each target before the launch
+# snapshot (BEFORE), a pre-receive hook in each after it, then the exit scan,
+# which must name every hook.
+rewrite_plant() {
+  local t
+  for t in "$@"; do git init -q --bare "$t"; done
+  BEFORE="$(git_exec_snapshot "$SCAN_WS")"
+  for t in "$@"; do plant_hook "$t/hooks" pre-receive; done
+  run git_exit_scan "$SCAN_WS" "$BEFORE"
+  [ "$status" -eq 1 ]
+  for t in "$@"; do [[ "$output" == *"+ hook $t/hooks/pre-receive "* ]]; done
+  no_ran
+}
+
+@test "exit scan Q-096: a remote rewritten by insteadOf is walked at the rewritten URL, not just the base" {
+  scan_repo
+  git -C "$SCAN_WS" remote add o https://example.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/mirror-.insteadOf" https://example.invalid/
+  rewrite_plant "$SCAN_WS/mirror-repo"
+  # A target created in the session, missing at launch, is a finding too.
+  git -C "$SCAN_WS" remote add o2 https://example.invalid/later
+  BEFORE="$(git_exec_snapshot "$SCAN_WS")"
+  git init -q --bare "$SCAN_WS/mirror-later"
+  run git_exit_scan "$SCAN_WS" "$BEFORE"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"~ remote $SCAN_WS/mirror-later  dir "* ]]
+}
+
+@test "exit scan Q-096: pushInsteadOf, a pushurl rewritten by insteadOf, a rewritten path-valued pushRemote" {
+  scan_repo
+  local br; br="$(git -C "$SCAN_WS" symbolic-ref --short HEAD)"
+  git -C "$SCAN_WS" config "branch.$br.pushRemote" alias/b
+  git -C "$SCAN_WS" config "url.$SCAN_WS/br-.insteadOf" alias/
+  git -C "$SCAN_WS" remote add p https://p.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/pm-.pushInsteadOf" https://p.invalid/
+  git -C "$SCAN_WS" remote add q https://q.invalid/x
+  git -C "$SCAN_WS" config remote.q.pushurl https://qq.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/qq-.insteadOf" https://qq.invalid/
+  rewrite_plant "$SCAN_WS/pm-repo" "$SCAN_WS/qq-repo" "$SCAN_WS/br-b"
+}
+
+@test "exit scan Q-096: overlapping prefixes: every matching rule is walked, not only git's longest" {
+  scan_repo
+  git -C "$SCAN_WS" remote add o https://o.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/short-.insteadOf" https://o.invalid/
+  git -C "$SCAN_WS" config "url.$SCAN_WS/long-.insteadOf" https://o.invalid/re
+  rewrite_plant "$SCAN_WS/short-repo" "$SCAN_WS/long-po"
+}
+
+@test "exit scan Q-096: a rewrite inside an embedded repo resolves in that repo's working tree" {
+  scan_repo
+  local e="$SCAN_WS/vendor/e"
+  git init -q "$e"
+  git -C "$e" remote add up up:r.git
+  git -C "$e" config url.mirrors/.insteadOf up:
+  rewrite_plant "$e/mirrors/r.git"
+}
+
+@test "exit scan Q-096: YOUR global rule rewrites a repo URL; a repo rule rewrites YOUR own remote" {
+  scan_repo
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global "url.$SCAN_WS/g-.insteadOf" gh:
+  git -C "$SCAN_WS" remote add o gh:repo
+  git config --global remote.mine.url https://mine.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/m-.insteadOf" https://mine.invalid/
+  rewrite_plant "$SCAN_WS/g-repo" "$SCAN_WS/m-repo"
+}
+
+@test "exit scan Q-096: a non-local rewritten URL is not walked; a relative one refuses the worktree note" {
+  scan_repo
+  git -C "$SCAN_WS" remote add o https://example.invalid/repo
+  git -C "$SCAN_WS" config url.ssh://host.invalid/.insteadOf https://example.invalid/
+  git -C "$SCAN_WS" config url.host.invalid:.insteadOf https://example.invalid/r
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  [[ $'\n'"$before" != *$'\n'F$'\t'remote$'\t'* ]]
+  # Your rule rewriting an ssh-form URL to a relative path: git resolves it in
+  # the new worktree's tree, so the worktree is a finding, not a note.
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global url.vendor/.insteadOf x:
+  git -C "$SCAN_WS" remote add v x:r.git
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  std_wt agent-x
+  run git_exit_scan "$SCAN_WS" "$before"
+  warns_listing_wt
+}
+
+@test "exit scan Q-096: the prefix match is byte-wise, as git's, under a UTF-8 locale" {
+  scan_repo
+  export LC_ALL=C.utf8
+  git -C "$SCAN_WS" remote add o $'\xc3\xa9vil'
+  # A value ending mid-character: git cuts after its byte; a character count would not.
+  git -C "$SCAN_WS" config "url.$SCAN_WS/x-.insteadOf" $'\xc3'
+  local t="$SCAN_WS/x-"$'\xa9vil' before
+  git init -q --bare "$t"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$t/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  # %q quotes the whole path as $'…' here, so no trailing space to match.
+  [[ "$output" == *"+ hook "*"vil/hooks/pre-receive"* ]]
+}
+
+@test "exit scan Q-096: under a UTF-8 locale a name ending mid-character does not hide the next entry" {
+  scan_repo
+  export LC_ALL=C.utf8
+  local before n
+  # A legacy remotes file whose first URL ends mid-character keeps its second.
+  mkdir "$SCAN_WS/.git/remotes"; printf 'URL: x\xc3\nURL: ./l.git\n' > "$SCAN_WS/.git/remotes/up"
+  git init -q --bare "$SCAN_WS/l.git"; before="$(git_exec_snapshot "$SCAN_WS")"
+  # Several, so at least one follows the odd name in find's order.
+  for n in $'a\xc3' pre-push pre-commit post-checkout; do plant_hook "$SCAN_WS/.git/hooks" "$n"; done
+  plant_hook "$SCAN_WS/l.git/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  for n in .git/hooks/pre-push .git/hooks/pre-commit .git/hooks/post-checkout l.git/hooks/pre-receive; do
+    [[ "$output" == *"+ hook $SCAN_WS/$n "* ]]; done
+}
+
+@test "exit scan Q-096: rules and URLs holding tabs are not merged with others" {
+  scan_repo
+  git -C "$SCAN_WS" remote add r $'b\tcEVIL'
+  git -C "$SCAN_WS" config "url.sub/a"$'\t'"b.insteadOf" c
+  git -C "$SCAN_WS" config url.sub/a.insteadOf $'b\tc'
+  mkdir -p "$SCAN_WS/sub"
+  rewrite_plant "$SCAN_WS/sub/aEVIL"
+}
+
+@test "exit scan Q-096: under a UTF-8 locale rules whose characters, not bytes, line up are kept apart" {
+  scan_repo
+  export LC_ALL=C.utf8
+  # Same character count and joined bytes, split differently: one key per rule.
+  git -C "$SCAN_WS" remote add o cEVIL
+  git -C "$SCAN_WS" config "url.sub/a"$'\xc3'".insteadOf" $'\xa9c'
+  git -C "$SCAN_WS" config "url.sub/a"$'\xc3\xa9'".insteadOf" c
+  local t="$SCAN_WS/sub/a"$'\xc3\xa9'"EVIL" before
+  mkdir -p "$SCAN_WS/sub"; git init -q --bare "$t"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$t/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook "*"EVIL/hooks/pre-receive"* ]]
+}
+
+@test "exit scan Q-096: past any insteadOf cap, the exit scan fails as unsafe" {
+  scan_repo
+  git -C "$SCAN_WS" remote add o https://o.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/a-.insteadOf" https://o.invalid/
+  git -C "$SCAN_WS" config "url.$SCAN_WS/b-.insteadOf" https://o.invalid/
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=1
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"more than 1 remote URL and insteadOf rule pairs to compare (1 URLs, 2 rules so far)"* ]]
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok / _snap_match (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=100000 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=1
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"more than 1 URLs rewritten by insteadOf rules to walk (1 URLs, 2 rules so far)"* ]]
+  # shellcheck disable=SC2034  # read by _snap_key (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000 GIT_EXIT_SCAN_MAX_REWRITE_BYTES=10
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"an insteadOf rule over 10 bytes ("*"): too long to compare"* ]]
 }
 
 @test "exit scan N3: a relative remote path with a colon after a slash is local, and walked" {
