@@ -38,6 +38,9 @@ before merging, since this session cannot merge into main (Q-162).
   route). Built (75d08a94) and stopped at the review cap with the guide's parity claims
   still wrong; landing waits on Q-171. How much parity the scan chases at all is Q-172,
   and the four split groups (R6 High) are Q-173.
+- **The launcher's rebuild hint** (`fix/rebuild-hint-recreate`, 47da5a4b; was Next 3).
+  Reviewed, loop closed at the cap; in `merge/ready-2026-10-15`, so it lands with Q-162, and its
+  probe is Q-167 (a).
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
@@ -71,13 +74,11 @@ before merging, since this session cannot merge into main (Q-162).
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **The launcher's rebuild hint misleads after the firewall fails closed** (bug). Motive:
-   the doc-drift review (A4, C4, C5). `rebuild_hint` in `cc-isolated.sh` tells the user that
-   a plain `cc-isolated <repo>` rebuilds, but a plain launch recreates only when the config
-   hash differs, so in that state it does not recover. `init-firewall.sh` and two lines of
-   the cc-isolated guide say "rebuild" where they mean "recreate". First step: point the
-   hint's first line at `--probe-only`, then a launch, as the guides now do. It touches
-   enforcement files, so the commit carries a `Host-tool-tested:` or `Live-verified:` trailer.
+3. **Reject a second workspace argument in `cc-isolated`.** Motive: the rebuild-hint review.
+   Interactive zsh passes a pasted trailing `# …` note as arguments, and "last positional wins"
+   then launches the wrong workspace; install.sh's "Next steps" lines still carry such notes
+   (override-log, deferred). First step: make a second positional a usage error (exit 2), and
+   drop the notes from install.sh's lines. Enforcement file, so a re-bless.
 4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
    Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
    "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
