@@ -137,6 +137,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 | [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
+| [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
 <!-- index:end -->
 
 ## Answered
@@ -2683,4 +2684,27 @@ Q-068 was answered "resume", but only once the user trusts `scripts/self-improve
 - **Interim:** the loop stays dormant.
 - **If the answer differs:** n/a. The output is a report the user reads before the first real run.
 
+
+### Q-148 · q089-escalate-merge
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fix loop's iteration-4 gate. How should it land? **Answered 2026-10-14: [1].** The four one-line fixes (88994fe9) got a clean k=1 narrow check. B's iteration 3 and its narrow check followed (70097ae0, 0fe9efb2), and the health check passed. Merged: A as 626dc300, B as df18413a. Still owed: the host check after install.sh.
+
+- **Why it's yours:** the loop hit its 3-iteration cap with only mechanical items left. Only you can authorize another iteration or a merge past the cap (workflows/review-fix-loop.md, `escalate`).
+- **Read:** the A1 rubric's "Iteration-4 gate" section, `docs/reviews/code-review-rubric-2026-10-14-feat-q089a1-host-tool-manifest.md`, on `feat/q089a2b-cc-push-self-check` · decision log row 71 · Q-147.
+- **The stack:**
+  - **A1+A2**, `feat/q089a2b-cc-push-self-check` at 3164f1d5: the code. It must land together, never A1 alone.
+  - **B**, `feat/q089b4-host-tool-gate` at 25d8f272 (worktree `.claude/wt-q089b`): the commit gate's `Host-tool-tested:` trailer, docs, row 71, Q-147. It is stacked on A at afe1ae59, and its own loop sits at iteration 2 of 3.
+- **Where the code stands:** it converged at iteration 2. The k=3 final pass found no code defect. What remains in A is F1, three test assertions that cannot fail as written, and F2, one shared comment that is false for cc-push. Each is a one-line fix.
+- **Not run:** a live host check. Every commit carries `Live-verified: no` and `Host-tool-tested: no`. After merging, re-run install.sh: it re-blesses once and a rebuild-and-probe follows. Then run `cc-isolated --list`, and edit an installed cc-gitdir.sh to see both refusals.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fix F1/F2, narrow check, merge** | Apply the 4 one-line fixes, run a k=1 fact-check on just those lines, then merge A and B in order if it's clean. B's loop finishes its iteration 3 first. | Nothing now; the host check after install.sh | A missed wording issue lands, and the next cycle catches it |
+| **[2] Another full iteration for A** | Authorize iteration 4 (and a new final pass) for A1+A2 | About 1M+ tokens | Probably more wording churn: every pass since iteration 2 has been that |
+| **[3] Shelve** | Leave the branches unmerged; host tools stay in the boundary manifest (Q-083 interim) | None | Q-083 [1] stays unimplemented, and the stack goes stale as main moves |
+
+- **Blocks:** Q-089's landing, and the roadmap Ideas filed from it.
+- **Interim:** nothing merged; main is untouched at 4ab9a51f. The loop paused, as the cap requires.
+- **If the answer differs:** [2] runs a full review round; [3] means the branches can be deleted at your say.
 

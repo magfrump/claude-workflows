@@ -25,28 +25,24 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
 
 ## Next
 
-1. **Q-089 — host-tool trust category.** Built and reviewed on `feat/q089a2b-cc-push-self-check` + `feat/q089b4-host-tool-gate`; landing waits on Q-148. Motive: every commit to a host-only tool
-   (`cc-push.sh`, the exit scan) must carry `Live-verified: no`, which dilutes the debt list
-   those trailers exist to track, and a changed host tool blocks cc-isolated launches until
-   it is re-blessed (Q-083 [1]). First step: the trust-manifest section.
-2. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
+1. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
    of the first three cycles after install, count multi-file merges to main whose message
    carries pr-prep's `← carried from RPI` line and whose branch committed a code-review
    rubric. Both are tracked; research/plan docs are gitignored and the usage log
    under-counts (Q-017), so neither can be counted.
    Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
    committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
-3. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-4. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
+3. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
    answered "not run" on 2026-10-12: installing a branch image refuses while any session
    runs, so it blocks the harness, and a forgotten test install is a security risk.
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
    First step: list what Q-117's and Q-130's checks need from the host, and which of
    those a container or second install prefix could provide side by side with main's.
-5. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
+4. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
    gate (merged on Q-145 [2]) goes red when an entry in a repo ancestor such as `/tmp`
    vanishes mid-listing (`scripts/lib/dev-cycle-read.sh`, `find -H "${tops[@]}" -maxdepth 1`
    fails closed). First step: skip an entry that no longer exists instead of failing; a
@@ -101,6 +97,10 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Q-089: host-only tools get their own trust category (decision log row 71). Units A1+A2
+  merged as 626dc300 and B as df18413a, on Q-148 [1]. Not live-verified: re-run install.sh, then
+  `cc-isolated --list`, and edit an installed `cc-gitdir.sh` to see both refusals. Q-145's
+  revisit clock: one 752 s health-check re-run on this landing (two `/tmp`-race failures).
 - Q-088's spike (answered 2026-10-07, failure: the weaker nested sandbox still needs user
   namespaces; record `docs/spikes/weaker-nested-sandbox-cc-isolated.md`); it had stayed in Next.
 - Q-075: evidence on the self-improvement loop's write surface, from an inventory, a hermetic
