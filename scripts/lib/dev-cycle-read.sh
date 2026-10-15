@@ -1504,9 +1504,9 @@ outside_seeds() {
   for ow_d in "${ow_a[@]}"; do [[ "$ow_d" != *$'\n'* ]] || return 1; done
 }
 # config_seeds NAME: appends outside_seeds' items (1) and (2) to array NAME. It
-# returns 1 when a find, grep, realpath or lower_all fails, but the top-level
-# listing (top_files) is tried up to three times, for an entry that vanishes
-# mid-listing (Q-145).
+# returns 1 when a find, grep, realpath or lower_all fails (the top-level
+# listing, top_files, after three tries, for an entry that vanishes
+# mid-listing: Q-145), or a top is no longer a directory after it.
 config_seeds() {
   local -n os_a="$1"; local d q r c i in rs=() cf=() tops=() fr=() pr=() mr=() fl=() rl=() cx=() kx=() lo=() pj=(); local -A os_s=() os_at=()
   mapfile -t rs <<<"$IMPORT_ROOTS"; mapfile -t cf <<<"$IMPORT_CONFIGS"
@@ -1541,17 +1541,19 @@ for f in sys.argv[1:]:
   fi
   # Top-level files, by isstart on their whole path. -H and -xtype, not -L: a
   # link to a file counts, and a link to an ancestor (a loop to find -L) is
-  # not followed; -xtype l is a dangling link. Every ancestor is a top, /tmp
-  # too, where other processes' files come and go: an entry find's readdir
-  # named can be gone when find stats it, and find then reports ENOENT and
-  # exits 1 (Q-145). top_files' -ignore_readdir_race skips such a file, but
+  # not followed; -xtype l is a dangling link. Each ancestor below no reader
+  # root is a top (/tmp, when a root lies under it), and other processes'
+  # files come and go there: an entry find's readdir named can be gone when
+  # find stats it, and find then reports ENOENT and exits 1 (Q-145). top_files' -ignore_readdir_race skips such a file, but
   # findutils 4.9 still reports a directory that vanished that way (a
   # session's mktemp -d), so a failed listing is run again, up to three times
   # in all, the first two with stderr dropped. Only a listing that completes
   # without any error is used, so a retry never hides an existing file: a
   # permission error, a link loop or a missing top fails every try and the
-  # walk, and the -d recheck fails a top that vanished even under a find that
-  # skipped a missing start point silently. A file renamed in during the
+  # walk, and the -d recheck fails a top that is no longer a directory: one
+  # that vanished under a find that skipped a missing start point silently,
+  # or a linked top whose target vanished, which find 4.9 lists as the link
+  # itself and exits 0 (i1 fact-check 6a). A file renamed in during the
   # listing may be missed, as with any directory read (readdir leaves a name
   # added mid-read unspecified); before Q-145 the rename's vanished temp name
   # failed the walk only when find had happened to read it.
