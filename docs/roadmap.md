@@ -73,6 +73,11 @@ Unranked. Each names the signal that motivates it.
 - **Build-loop future directions (plan D4, D5).** Signal: your 2026-10-04 walk-through. Send
   a refused self-merge back to its loop once before asking you; take the fixed floor itself
   from per-project settings.
+- **install.sh's archive honors replace refs.** Signal: U5's security review i2 F2:
+  `repo_git` does not switch replace refs off and `git_state_gate` does not check
+  `refs/replace/`, so `.manifest` can record a commit whose content the image does not
+  hold (`docs/reviews/security-review-2026-10-14-u5-i2.md`). Q-156's paste refuses replace
+  refs for its own release; a decision-035 boundary change, so its own unit.
 - **live-verify-gate: commits it does not see (Q-089 B security F3-F5).** Signal: a
   `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a
   `git -C <dir> commit` (how orchestrators commit into `.claude/wt-*`) is checked against

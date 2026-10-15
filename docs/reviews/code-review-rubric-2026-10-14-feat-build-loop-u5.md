@@ -1,8 +1,8 @@
-Commit: 42414307
+Commit: c63da94d
 
 # Code Review Rubric
 
-**Scope:** feat/build-loop-u5 vs main (b279a2ba), full branch, iteration 1 of 3 (`--loop-pass`, fact-check k=1) | **Reviewed:** 2026-10-14 | **Status: 🔴 DOES NOT PASS at 42414307** — 1 red item, fixed in 771a5d02; re-review pending
+**Scope:** feat/build-loop-u5 vs main (b279a2ba); iteration 1 full branch at 42414307, iteration 2 the fix range 42414307..c63da94d (`--loop-pass`, fact-check k=1) | **Reviewed:** 2026-10-14 | **Status: 🟡 PASSES WITH CONDITIONS at c63da94d** — 0 red; iteration 2's Must Address rows fixed in 659a1c61 and the Q-156 commit after it; final confirming pass pending
 
 Delivery mode: self-read (diff at a scratch path; enclosing scripts too large to inline). Fix commits: 771a5d02, 57e26f6b, 87ca421e (docs fix after the fix-drift check). Fix-drift lite check over 42414307..57e26f6b found 1 (never-line prose named 8 of 10 directories), fixed in the next commit; a second check over that commit found none.
 
@@ -91,5 +91,27 @@ Contextual critics: none triggered (no source change without tests, 12 files / ~
 |---|---|---|---|
 | docs/dev-cycle.md never line | :11, :36-40 | R1, A1 (fact-check 12; security F3, F4) | composed root already stated by A1: the plan's premise "code reaches sessions only through a release" is false here; one fix (widen the line) |
 | Q-156 paste | questions.md:480-484 | A2 (security F2, api F3) | distinct sources, same defect; no new root |
+
+---
+
+## Iteration 2 (incremental: 42414307..c63da94d; fact-check k=1, security, api-consistency)
+
+Prior findings verified: R1, A1-A6 resolved (fact-check i2, security i2 "closes iteration 1's findings in substance"); api-consistency i1 F2 half-fixed (Q-151) and F3/F4 partly, carried below. No re-fires of a fixed finding (security i2 F1 is a new mechanism in A2's fix: tree names vs archive output). Performance still skipped (copy-only).
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A8 | Settings prose: cycle-file branches "filed as stopped, not as a merge entry" under both policies; under self-merge they come as a merge entry first | 🟡 (Incorrect, doc) | Fact-check i2 claim 5b; claim 30b (onboarding) | Fixed (659a1c61) |
+| A9 | Q-156 tree pin bypassed by a replace ref or a root `.gitattributes` | 🟡 (Medium) | security i2 F1 | Fixed (paste exports GIT_NO_REPLACE_OBJECTS, refuses replace refs and grafts, compares `.gitattributes`) |
+| A10 | install.sh's archive honors replace refs; state gate misses them (pre-existing) | 🟡 (Medium) | security i2 F2 | Deferred: override row, roadmap Idea; Q-156 refuses for this release |
+| A11 | Never-line prose overstated coverage: docs/evaluation-rubric.md and docs/spikes/ read as authority, self-mergeable | 🟡 (Medium, low conf.) | security i2 F3 | Fixed (prose and Q-149 name them; listing them is the user's call in Q-149) |
+| C13 | Slots also cap dispatch | 🟢 | Fact-check i2 claim 6 | Fixed |
+| C14 | Paste compares all of global-instructions/ (fails closed) | 🟢 | Fact-check i2 claim 26 | Fixed (wording: "directories the release installs from") |
+| C15 | Withheld rule's reason wording; line shapes, bidi, non-UTF-8 | 🟢 | Fact-check i2 claim 28; security i2 F4 | Fixed (SKILL.md step 0.1) |
+| C16 | Commit bodies 771a5d02, c63da94d wording | 🟢 | Fact-check i2 claims 31, 34 | Won't-Fix (immutable; override row) |
+| C17 | Q-151 [1] "holds a slot" | 🟢 | api i2 F1 | Fixed |
+| C18 | Q-156's M is a branch commit, step 0.1's is main's | 🟢 | api i2 F2 | Fixed (entry says why; merge's released trees equal M's) |
+| C19 | Q-103 [1] "always-on rules" vs "the N rules" | 🟢 | api i2 F3 | Fixed |
+| C20 | Lists of both-policy refusals differ (idea log, cycles, own brief; onboarding lacks constraints) | 🟢 | api i2 F4 | Fixed |
+| C21 | Plan D5/F57 still describe the workflows/-only interim | 🟢 | api i2 F5 | Fixed (as-built note supersedes them) |
 
 Single-sample review; absence of findings is not an attestation.

@@ -118,7 +118,7 @@ The residual families. None blocks self-merge mechanically; each is a way around
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] review** | Every `ready` branch the always-on rules pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
+| **[1] review** | Every `ready` branch the N rules (both policies) pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
 | **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line; anything else falls to [1]'s entry | None for that work; with this repo's never line (Q-149) only docs, `README.md`, `runs/` and `archive/` off the floor can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
@@ -366,7 +366,7 @@ How wide should this repo's `Self-merge never:` line be: every directory that ta
 - **Why it's yours:** it decides which of this repo's files may land with no review once Q-103 allows self-merge.
 - **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md` · override row 682 · `docs/reviews/security-review-2026-10-14-u5-i1.md` F1, F3, F4
 
-The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff.
+The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff. Two docs off the floor are also read as authority and stay self-mergeable under every option: `docs/evaluation-rubric.md` (self-eval's rubric) and `docs/spikes/` (seeds later work loads); listing them too is a fourth choice, open to you as a note on [1].
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
@@ -402,7 +402,7 @@ Does a blocked build loop give up its slot while it waits for your answer? (Plan
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Frees the slot** (built) | Only a live loop holds a slot; a blocked item re-enters the queue on its existing branch once answered, ahead of new briefs | None | More work is in flight at once than the slot count suggests, so more answers wait on you |
+| **[1] Frees the slot** (built) | Only a live or queued loop counts against the slots; a blocked item re-enters the queue on its existing branch once answered, ahead of new briefs | None | More work is in flight at once than the slot count suggests, so more answers wait on you |
 | **[2] Holds the slot** | A blocked item counts against `Build-loop slots:` until answered | None | Blocked work starves the cap: with 3 blocked items nothing else runs |
 
 - **Interim:** [1], as built (D9).
@@ -467,7 +467,7 @@ Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` h
 
 - **Read:** `skills/dev-cycle/SKILL.md` step 0.1 (this entry's slug is the one step 0.1 files and rewrites) · decision log row 72 · plan D6 and F58
 
-The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is `771a5d028e8ef8a61253ad2f167ab421225d5af2`, the last commit on `feat/build-loop-u5` that changes anything the release installs; the branch's later commits change only `docs/`. At writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
+The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is `659a1c61f5b843ef574b90eb99a728ab84cf98d5`, the last commit on `feat/build-loop-u5` that changes anything the release installs; the branch's later commits change only `docs/`, so the merge's released trees equal M's. (Step 0.1's own rewrite of this entry uses main's commit as M.) At writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
 
 Gate code changed from C to M: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`.
 
@@ -488,10 +488,10 @@ First-parent commits after C (none is a `(build-loop self-merge)`: every one was
 
 Paths changed from C to M outside `docs/` (about 500 paths under `docs/` besides, nearly all `docs/reviews/`; the image carries none of `docs/`): `README.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `devcontainer-config/install.sh`, `guides/cc-isolated-usage.md`, `guides/devcontainer-setup.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `scripts/build-loop.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/run-tests.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-push.bats`, `test/hooks/live-verify-gate.bats`, `test/install-host.bats`, `test/lib/d6-snippet.bash` (deleted), `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/health-check.bats`, `test/scripts/run-tests.bats`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`.
 
-Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox). The check compares, with `rev-parse` alone, every directory the release installs (install.sh's payload and its own directory) at HEAD against M, so it refuses when main has moved those paths past what this entry lists, or when HEAD is not main:
+Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox). Before install.sh runs, with only `rev-parse` and `for-each-ref` (neither runs a hook or fsmonitor) and replace refs ignored, it checks that HEAD is main, that no replace ref or graft file exists (`git archive` in install.sh would honor either), and that the root `.gitattributes` and every directory the release installs from are the same tree at HEAD as at M; so it refuses when main has moved a released path past what this entry lists:
 
 ```bash
-cd /home/magfrump/claude-workflows && ( M=771a5d028e8ef8a61253ad2f167ab421225d5af2; test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" || { echo "release refused: HEAD is not main"; exit 1; }; for p in devcontainer-config global-instructions guides hooks patterns scripts skills workflows; do test "$(git rev-parse "HEAD:$p")" = "$(git rev-parse "$M:$p")" || { echo "release refused: $p differs from M"; exit 1; }; done ) && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && ( export GIT_NO_REPLACE_OBJECTS=1; M=659a1c61f5b843ef574b90eb99a728ab84cf98d5; test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" || { echo "release refused: HEAD is not main"; exit 1; }; test -z "$(git for-each-ref refs/replace/)" || { echo "release refused: replace refs present"; exit 1; }; test ! -e "$(git rev-parse --git-common-dir)/info/grafts" || { echo "release refused: info/grafts present"; exit 1; }; for p in .gitattributes devcontainer-config global-instructions guides hooks patterns scripts skills workflows; do test "$(git rev-parse "HEAD:$p")" = "$(git rev-parse "$M:$p")" || { echo "release refused: $p differs from M"; exit 1; }; done ) && ./devcontainer-config/install.sh
 ```
 
 - **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
