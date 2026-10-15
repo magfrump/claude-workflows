@@ -79,4 +79,4 @@ Quick-reference yes/no checks for each workflow phase. Use these to confirm a ph
 ### PR Description
 - [ ] Does the description explain what changed, how it works, and how to test it?
 - [ ] Are areas of uncertainty flagged for the reviewer?
-- [ ] Is the unit within pr-prep step 1a's size gate (≤ 400 changed code lines outside `docs/`), or split into stacked units, or waived by the user with the `Q-NNN` entry cited? Did it stay within the review-fix loop's size re-check (≤ 800 changed code lines outside `docs/` after each iteration and before merge, or within a waiver's limit), with the waiver cited by its `Q-NNN` entry?
+- [ ] Is the unit within pr-prep step 1a's size gate (≤ 400 changed code lines outside `docs/`), or split into stacked units, or waived by the user with the `Q-NNN` entry cited? Did it stay within the review-fix loop's size re-check (≤ 800 changed code lines outside `docs/` after each iteration and before merge, or within a waiver's limit), with any waiver cited by its `Q-NNN` entry?

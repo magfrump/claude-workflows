@@ -98,3 +98,18 @@ Size after iteration 2's fixes: 50 code lines against main. Fact-check k=3 merge
 | F19 | Earlier commit bodies superseded | fact-check C11 | 🟢 | Immutable; this rubric and later bodies carry the corrections |
 | F20 | Q-160 cited before its entry is on main | fact-check C12 | 🟢 | Open for the merger: land `chore/dev-cycle-2026-10-15-0357` (Q-160's entry) before or with this branch |
 | F21 | Self-eval's artifact counts (91/31) should be 76 rubrics, 19 with the header | fact-check C13 | 🟢 | Noted here; the self-eval report is left as written |
+
+## Narrow check (1a118c80, range 7d61c39b..1a118c80)
+
+k=1 fact-check (`code-fact-check-report-q160-narrow.md`): 20 claims; 12 Verified, 8 Mostly accurate, 0 Incorrect. Fix-drift: none. Fixed in the next commit:
+
+| ID | Finding | Status |
+|---|---|---|
+| N1 | Step 1a still read an unconditional /away split; F1's sentence also removed the split from re-entering units within the limit | Fixed: the exception covers only units that grew past the limit; step 1a carries the qualifier |
+| N2 | Step 1a's "~800" omitted the waiver's limit | Fixed |
+| N3 | Step 3 criterion let a waived unit pass without the description record; stray comma | Fixed |
+| N4 | Pre-ladder sentence said "every pass", first review included | Fixed: later passes; the first review is rule 2 and step 1a |
+| N5 | Rule 2 cited SKILL.md Step 1 for mechanic 6's wording | Fixed: cites mechanic 6 |
+| N6 | completion-signals implied a waiver always exists | Fixed: "any waiver" |
+| N7 | Override row said the docs/ exclusion was decided in Q-085 | Fixed: the agent's reading recorded in row 62 |
+| N8 | 1a118c80's body: Q-160 also sits on two merge/* branches | Immutable; the point (not on main) holds |
