@@ -1,12 +1,17 @@
-Commit: c86b8f3e
+Commit: 2141f7ee
+Loop closed at 2141f7ee
 
 # Code Review Rubric
 
-**Scope:** `chore/dev-cycle-2026-10-15-0357` vs main (docs only) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) awaiting resolution or justification (iteration 2's A14–A21 fixed in the second fix commit; final confirming pass pending)
+**Scope:** `chore/dev-cycle-2026-10-15-0357` vs main (docs only) | **Reviewed:** 2026-10-15 | **Status: ✅ PASSES REVIEW** — single-sample review; absence of findings is not an attestation
 
 Iteration 1: full-branch scope (`git diff main...16136a60`), `--loop-pass` (k=1 fact-check). Delivery mode: inline-diff-only (agents self-read the 80 KB diff). Reports: `code-fact-check-report-2026-10-15-0357.md`, `security-review-2026-10-15-0357.md`, `tech-debt-triage-review-2026-10-15-0357.md`. Fix: c86b8f3e; fix-drift lite check: no findings.
 
-Iteration 2: incremental scope `16136a60..c86b8f3e`, `--loop-pass` (k=1 fact-check + security). Prior items verified: A1–A13 resolved except A3, which was only partly resolved (the pin goes stale on landing: A14). New: A14–A21. Reports: `code-fact-check-report-2026-10-15-0357-i2.md`, `security-review-2026-10-15-0357-i2.md`.
+Iteration 2: incremental scope `16136a60..c86b8f3e`, `--loop-pass` (k=1 fact-check + security). Prior items verified: A1–A13 resolved except A3, which was only partly resolved (the pin goes stale on landing: A14). New: A14–A21. Reports: `code-fact-check-report-2026-10-15-0357-i2.md`, `security-review-2026-10-15-0357-i2.md`. Fix: ae810886; fix-drift lite check: 1 finding (an unqualified "a hash cannot move"), fixed in 2141f7ee.
+
+Iteration 3 of 3: the final confirming pass. Full-branch scope `git diff main...2141f7ee`, without `--loop-pass`: fact-check k=3 (merged into `code-fact-check-report-2026-10-15-0357-final.md`), security and tech-debt-triage (`security-review-2026-10-15-0357-final.md`, `tech-debt-triage-review-2026-10-15-0357-final.md`). It confirmed that A14–A21 hold, and the three replicates executed every paste's success and failure paths. New: A22–A28 (amber) and C9–C11. No 🔴.
+
+Loop outcome: exit condition 1 (clean convergence) at the cap. Every remaining amber carries a qualifying author note: a discoverable TODO, the tracked entry **Q-180** (`agent`), plus a hold line in the Interim of each paste it touches (Q-162, Q-163, Q-164, Q-167, Q-169, Q-176). No iteration 4 was started, and no `escalate`/`split`/`abandon` gate applies, because the exit condition held. The Q-180 entry and hold lines (commit after 2141f7ee) are the author notes themselves and change no reviewed paste.
 
 ---
 
@@ -40,6 +45,13 @@ None.
 | A19 | If test 7 runs, `git push` searches upward from `~/q092` and could push a home-directory repo | Security | Low | security i2 N5 | for-author | — | Fixed | `git init -q` in `~/q092` (no remote) |
 | A20 | Q-176's controls cover only the glob and exact rules, not the `:*` prefix rules; jq on the host is unstated | Docs | Mostly Accurate | Fact-check i2 check 4 | for-author | — | Fixed | Controls `rm -rf ./nothing-here` and `git push` added (nine commands); the paste checks `jq --version` |
 | A21 | Wording: Q-162:99 "adds the rebuild-hint and one-workspace merges" omits two docs-branch and nine cycle-record merges; Q-164 "409 lines in all" excludes `docs/reviews/`; Q-165 tip "adds review commits" also adds the spike doc | Docs | Mostly Accurate | Fact-check i2 | for-author | — | Fixed | Reworded |
+| A22 | The replace-ref guard misses `info/grafts`: a planted graft let a pinned merge pass the guard and land other content (executed) (`questions.md:89,117,148`) | Security | Medium | security final F1 | for-author | — | 🟡 Acknowledged | TODO: Q-180 (adds `info/grafts` and `shallow` refusals, as `scripts/build-loop.sh:622` does); each paste's Interim holds it until Q-180 is done |
+| A23 | The merge pastes don't say container or host; on the host, a planted hook or merge driver runs as the user (`questions.md:83,88,116,147`) | Security | Medium (Low confidence) | security final F2; fact-check final Claim 7 | for-author | — | 🟡 Acknowledged | TODO: Q-180 |
+| A24 | Q-169 says "Not verified" has 8 items; it has 12 at the pinned commit (`questions.md:266`) | Docs | Incorrect (doc only) | fact-check final Claim 1 | for-author | — | 🟡 Acknowledged | TODO: Q-180 |
+| A25 | Q-163 and Q-164 pastes abort on today's main or after landing, but carry no "not runnable" note (`questions.md:110-160`) | Docs | Stale | fact-check final Claim 2; tech-debt final F5 | for-author | — | 🟡 Acknowledged | Hold line added to each Interim (Q-180); re-pin in Q-180 |
+| A26 | Q-162's note omits `questions-archive.md`; "every pair conflicts only in override-log" overstates (`questions.md:83,85`) | Docs | Mostly Accurate | fact-check final Claims 3, 4 | for-author | — | 🟡 Acknowledged | TODO: Q-180 |
+| A27 | Q-170's "87 of 116" is 88 (`questions.md:276`) | Docs | Mostly Accurate | fact-check final Claim 5 | for-author | — | 🟡 Acknowledged | TODO: Q-180 |
+| A28 | Cycle 2's 42/25/38/4 tally reproduces only when cycle 1's three landings are excluded (`roadmap.md:77`, `cycle-2026-10-14.md:6,55`) | Docs | Mostly Accurate | fact-check final Claim 6 | for-author | — | 🟡 Acknowledged | TODO: Q-180 |
 | A13 | Q-175 says the move declines new coverage; on main the jq is inline in `link-claude-home.sh`, covered by `live-verify-gate.sh:83`, so [1] gives up coverage that exists today (`questions.md:354-362`) | Security | Medium | security F6 | for-author | — | Fixed | Entry and [1]'s cell say so; interim notes nothing has lost coverage while Q-106 is unmerged and that the review leans to [2] |
 
 ---
@@ -52,9 +64,12 @@ None.
 | C2 | Q-167(c)'s fenced block carries two `#` lines that default zsh runs as commands | security F8 | Informational | for-author | — | Fixed (moved out of the fence) |
 | C3 | User-routed asks grow 2 → 15; answer order lives only in prose | tech-debt F2 | Medium (advisory) | for-author | — | Deferred (override-log row 2026-10-15) |
 | C4 | Branch state copied into roadmap, Q-162 and the cycle record, and the copies drift | tech-debt F3 | Low (advisory) | for-author | row 84 (2026-09-28) | Deferred (override-log row 2026-10-15); this landing's drifted copies fixed (A2, A4, A5, A8) |
-| C5 | Roadmap Next 1's cycle-2 tally reproduces as 45/29/40/5 (adds 188e0a7d) under the record's stated window | Fact-check Claim 5 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Open — Q-179 decides row 66 on the cycle-3 tally, so the cycle-2 line is history |
-| C6 | "T69 fails 3/3 alone" passed 2/2 on main's tree here (a timing race) | Fact-check Claim 8 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Open — moot once Q-162 lands the fix |
-| C7 | Q-176's main-vs-branch hook behaviour on quoted spellings is read-only, not executed | Fact-check Claim 28 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | 🟢 Open — Q-176 is the live check that settles it |
+| C5 | Roadmap Next 1's cycle-2 tally reproduces as 45/29/40/5 (adds 188e0a7d) under the record's stated window | Fact-check Claim 5 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | Deferred (override row) — Q-179 decides row 66 on the cycle-3 tally, so the cycle-2 line is history |
+| C6 | "T69 fails 3/3 alone" passed 2/2 on main's tree here (a timing race) | Fact-check Claim 8 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | Won't-Fix (override row) — moot once Q-162 lands the fix |
+| C7 | Q-176's main-vs-branch hook behaviour on quoted spellings is read-only, not executed | Fact-check Claim 28 (Unverifiable) | Unverifiable | for-orchestrator-synthesis | — | Won't-Fix (override row) — Q-176 is the live check that settles it |
+| C9 | Q-167(b) line 3 `--profile '#' --bless` blesses without a prompt on a launcher older than the fix; use `--list` | security final F3 | Low | for-author | — | Deferred (Q-180) |
+| C10 | Q-176's `mkdir -p` accepts a planted `~/q092` (its `.git/config` ran a planted fsmonitor in a fake HOME) | security final F4 | Low | for-author | — | Deferred (Q-180) |
+| C11 | A rebuild of the ready branch means re-pinning four entries by hand, and only Q-162 said so | tech-debt final F5 | Low (advisory) | for-orchestrator-synthesis | — | Deferred (Q-180 names all four) |
 | C8 | Q-163's "(Q-156)" cites an ID defined only on `feat/build-loop-u5` (Q-164 says so; Q-163 does not) | Fact-check note | Low | for-author | — | Fixed |
 
 ---

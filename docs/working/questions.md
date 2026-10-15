@@ -50,6 +50,7 @@ The index below is generated — edit entries, not the table.
 | [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-160](#q-160--implement-q104-per-iteration-cap) | agent | Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 60... | 2026-10-14 |
 | [Q-168](#q-168--q096b-remote-names-unit) | agent | Q-096's iteration 2 found that the exit scan parses remote names and legacy `remotes/`/`branches/` files mo... | 2026-10-15 |
+| [Q-180](#q-180--harden-and-repin-host-pastes) | agent | The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advi... | 2026-10-15 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
@@ -100,7 +101,7 @@ for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktre
   - `fix/rebuild-hint-recreate` (47da5a4b; added 2026-10-15, built on this branch): after the firewall fails closed, the launcher's hint said a plain `cc-isolated <repo>` rebuilds, but a plain launch reuses that container and fails again (traced, with a regression test). The hint's first line is now `cc-isolated --probe-only WS && cc-isolated WS`. The copyable lines lose their trailing `# …` notes, because interactive zsh passes those as arguments and the last one becomes the workspace. "Rebuild" becomes "recreate" where the container is recreated. 131 code lines; only comments and `echo` text change in the scripts. Loop closed at the 3-iteration cap; the last fix had a narrow fact-check (rubric `docs/reviews/code-review-rubric-2026-10-15-fix-rebuild-hint-recreate.md`). 290/290 in its suites; health reds were 3 fast tests, each passing alone (the one outside the import walk, build-loop-merge's "--merge leaves main where another writer moved it", re-run 3/3 here); slow suites 300/300. Commits carry `Live-verified: no`; Q-167 holds the probe. Both scripts are in the trust manifest, so install re-blesses and each project's container is recreated once.
   - `fix/cc-isolated-one-workspace` (f6f37fad; added 2026-10-15, built on this branch): `cc-isolated` refuses, with exit 2 before any action, a second workspace, a `#` word before `--` (a pasted note) and a `--profile` value starting with `#` or `-`. Before this, `cc-isolated  # --bless` and `--profile '#' --bless` ran a bless. `--` takes one word. install.sh's "Next steps" lines lose their notes, and the `--help` and guide command references are reformatted. 260 code lines. Iteration 1 had independent critics; the closing passes were the builder's self-review after nested critics hung. An independent closing review run from the orchestrator was clean, 0 Must (`docs/reviews/independent-review-2026-10-15-one-workspace.md`): 17 claims held and ~45 crafted argv probes reached no action. Related suites 436/436 under `LC_ALL=C.UTF-8`; health reds were 3 import-walk tests, each passing alone; slow suites pass. Commits carry `Live-verified: no`; probe in Q-167 (b).
   - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The tip, a760a5e5, adds after that gate the rebuild-hint and one-workspace unit merges (each ran its own gate, above), two docs-branch merges and nine cycle-record merges; it holds exactly the units listed.
-- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. The rebuild and re-pin are agent work for the next cycle.
+- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. The rebuild and re-pin are agent work for the next cycle, together with the rest of Q-180. Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
 
 ### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
@@ -126,7 +127,7 @@ if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; t
 | **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
 
 - **Blocks:** Q-145's revisit clock (re-runs this cycle: U5 2, Q-110 1).
-- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`.
+- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`. Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** [2] `git branch -D fix/q145-ancestor-vanish`.
 
 ### Q-164 · merge-gate-feat-build-loop-u5-7c91b97455db
@@ -157,7 +158,7 @@ if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; t
 | **[3] changes needed** | Your note goes back to a loop | A note | — |
 
 - **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
-- **Interim:** unmerged. Cycles keep running by hand.
+- **Interim:** unmerged. Cycles keep running by hand. Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** [2] runs on the next iteration, which then asks again.
 
 ### Q-165 · branch-verify-approach
@@ -236,7 +237,7 @@ Step 2, inside the session at Claude's prompt, then exit the session:
 ! printf '#!/bin/sh\necho planted\n' > mirror-repo/hooks/pre-receive && chmod +x mirror-repo/hooks/pre-receive
 ```
 
-- **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say.
+- **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say. Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** any exit but 3, or a warning that does not name the hook, is a bug in Q-096; paste the output.
 
 ### Q-168 · q096b-remote-names-unit
@@ -264,7 +265,7 @@ Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed th
 - **Expect:** up to about an hour (image build, then Q-117's wait of up to 45 min for a pool rotation). Exit 0 with `RESULT Q-117 pass` and five `CHECK … ok` lines is a pass; 2 means no rotation was seen, so rerun later; 1 is a failure or refusal, named by step. On an interrupted teardown, rerun the same block with `--clean` as its last argument.
 - **Paste back:** the `script sha256` line, the `RESULT`, `CHECK`, `NOTE`, `TEARDOWN` and `REFUSED:` lines.
 - **Read:** the doc's step table (every command cited to file:line), "Not verified" (8 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
-- **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
+- **Interim:** Q-117 stays unverified; the egress fix stays unmerged. Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** if Q-165 is [4], this entry is dropped.
 
 ### Q-170 · decision-015-isolation-rerun
@@ -412,7 +413,7 @@ It needs `jq` on the host (the paste stops at `jq --version` without it). `~/q09
 
 Then exit, keep a copy of `~/q092/seen.log`, and `rm -rf ~/q092`, even if the session errored. Also run `claude --version` inside any `cc-isolated` session: the hook runs in the container, so the result counts for Q-092 only if the two versions match. Paste back both version lines, the nine results and `seen.log`. A result counts only if `seen.log` shows the hook saw that exact command: if Claude rewrote it (for example dropping the quotes), re-ask with the exact text. A "prompts" on 2, 3, 5, 7 or 9 means the hook did not see that spelling, so that test is void and is re-run. If a control is not denied, the whole check is void.
 
-- **Interim:** Q-092's two branches stay unmerged (Q-177).
+- **Interim:** Q-092's two branches stay unmerged (Q-177). Do not run this entry's paste until Q-180 is done.
 - **If the answer differs:** any "runs" on 2, 3, 5, 7 or 9 sends Q-177 to its options; all five "denied", every control denied, `seen.log` showing each exact command and matching versions land Q-092; anything else re-runs the void tests (at the container's version, if the versions differ).
 
 ### Q-177 · q092-merge
@@ -430,6 +431,22 @@ When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d
 
 - **Interim:** [1]'s condition; nothing merges until Q-176's result.
 - **If the answer differs:** [3] adds a unit before the merge.
+
+### Q-180 · harden-and-repin-host-pastes
+**Needs:** agent · **Opened:** 2026-10-15 · **Status:** OPEN
+
+The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advisory items left, all in host-paste text. Fix them together with the re-pin of the ready branch that Q-162 already calls for, then review that change before any of these pastes is run.
+
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-chore-dev-cycle-2026-10-15-0357.md` (iteration 3); `docs/reviews/security-review-2026-10-15-0357-final.md` F1–F4; `docs/reviews/code-fact-check-report-2026-10-15-0357-final-r{1,2,3}.md`; `docs/reviews/tech-debt-triage-review-2026-10-15-0357-final.md` F5.
+- **The work, in one unit:**
+  - Rebuild `merge/ready-2026-10-15` (and `merge/u5-and-q145`, `merge/build-loop-u5-resolved`) on main, then re-pin Q-162, Q-163 and Q-164, and re-pin Q-169 to the docs branch's own commit (its file is identical at d25254da).
+  - The replace-ref guard in Q-162, Q-163 and Q-164 also refuses `info/grafts` and `shallow`, as `scripts/build-loop.sh:622` and the dev-cycle skill's D6 snippet already do. A planted graft let a pinned merge pass the guard and land other content (security final F1, executed). The "a hash cannot move" wording follows.
+  - The merge pastes say they run in the container's `/workspace`, not the host checkout (security final F2).
+  - Q-167(b) line 3 becomes `cc-isolated --profile '#' --list`: on a launcher older than the fix, `--bless` blesses without a prompt (security final F3).
+  - Q-176 creates `~/q092` with `mkdir` without `-p`, so a planted directory stops it (security final F4).
+  - Wording: Q-169's "Not verified" has 12 items, not 8. Q-170's count is 88 of 116. Q-162's pre-landing conflict list adds `questions-archive.md`, and only Q-110, doc drift and Q-160 conflict with each other. The cycle-2 tally excludes cycle 1's three landings.
+- **Blocks:** the pastes of Q-162, Q-163, Q-164, Q-167, Q-169 and Q-176. Each says so in its Interim.
+- **Interim:** every merge paste aborts on today's main or once Q-178's landing is on main, and Q-169's extraction stops on a wrong hash, so nothing runs in the meantime.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
