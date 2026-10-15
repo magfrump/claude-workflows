@@ -10,7 +10,7 @@
 #                                        # SET that project's egress profile (REPLACES any
 #                                        # previous grant, never adds to it), then re-bless
 #   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
-#   cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
+#   cc-isolated --probe-only [WS]        # recreate WS's container from the blessed config, run the
 #                                        # boundary self-probe, record it verified live
 #   cc-isolated --list                   # registered projects, blessed config, verified?
 #   cc-isolated --help                   # this text
@@ -58,8 +58,9 @@
 # second file next to the manifest — verified-live.sha256 — which is written ONLY by
 # a passing self-probe against a container whose image bakes the hash of the manifest
 # being blessed (CC_CONFIG_HASH build arg -> /etc/cc-config-hash). A launch on an
-# unverified config says so, rebuilds the container so the probe exercises the new
-# config rather than an old image, and refuses to start a session unless the baked
+# unverified config says so, recreates the container if it was built from another
+# config so the probe exercises the new config rather than an old image (--probe-only
+# always recreates), and refuses to start a session unless the baked
 # firewall script reached its completion marker. See guides/devcontainer-setup.md,
 # "Changing the boundary".
 
@@ -313,7 +314,7 @@ bless_manifest() {
     echo "Verified live:  yes (this exact config has passed a live self-probe before)"
   else
     echo "Verified live:  NO — a bless is a review, not a test. Nothing has run this config."
-    echo "  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node"
+    echo "  Next: cc-isolated --probe-only <repo>   # recreates from it and probes as node"
     echo "  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash."
   fi
 }
@@ -561,7 +562,10 @@ rebuild_hint() {
   # config hash differs, so a fail-closed container built from the blessed config
   # would be reused, not recovered. --probe-only always recreates, and exits
   # non-zero on a failed probe, so the `&&` never starts a session after one.
-  echo "    cc-isolated --probe-only $(printf '%q' "$ws") && cc-isolated $(printf '%q' "$ws")   # the supported path: recreates from the blessed config, re-probes, then launches" >&2
+  # The explanation is on its own line, not a trailing `# ...`: interactive zsh
+  # without interactivecomments would pass those words to step 2 as arguments.
+  echo "    cc-isolated --probe-only $(printf '%q' "$ws") && cc-isolated $(printf '%q' "$ws")" >&2
+  echo "      (the supported path: recreates the container from the blessed config, re-probes, then launches)" >&2
   echo "  or by hand — ALL of these assignments are required, devcontainer.json reads them via localEnv:" >&2
   for var in CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_EGRESS_PROFILE CC_CONFIG_HASH; do
     assigns+="$var=$(printf '%q' "${!var:-}") "
@@ -875,9 +879,10 @@ main() {
 
   if ! is_verified_live; then
     echo "NOTE: blessed config $CC_CONFIG_HASH has NOT been verified in a live container."
-    echo "      This run is that verification: the container is rebuilt from it, and the"
-    echo "      self-probe must pass (including the node-run firewall probes) before anything"
-    echo "      starts. A pass records the hash in $(verified_path)."
+    echo "      This run is that verification: the container is recreated if it was built"
+    echo "      from another config, and the self-probe must pass (including the node-run"
+    echo "      firewall probes) before anything starts. A pass records the hash in"
+    echo "      $(verified_path)."
   fi
 
   echo "Project: $ws  (id $pid, egress base${eff_profile:+,$eff_profile}, config $CC_CONFIG_HASH)"

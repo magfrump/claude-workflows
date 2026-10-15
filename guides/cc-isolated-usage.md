@@ -838,8 +838,8 @@ Every launch refuses to `exec claude` unless all seven pass:
 files; it cannot know whether a container built from them works. Only a passing
 self-probe against a container whose baked hash *is* the blessed hash writes
 `~/.config/claude-devcontainer/verified-live.sha256`. `cc-isolated --list` shows
-both. Run the verification explicitly after any boundary change — it always rebuilds
-first, so it can never verify a leftover container:
+both. Run the verification explicitly after any boundary change — it always recreates
+the container first, so it can never verify a leftover container:
 
 ```bash
 cc-isolated --probe-only ~/code/api
@@ -952,7 +952,7 @@ different hostname). Add the exact name to the profile.
 | `host-tool manifest … is unreadable or malformed` | `host-tools.sha256` itself is the anomaly. Inspect it before any bless overwrites it; re-run `install.sh` to restore it. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
 | Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. A *subdomain* of a listed name is the common case: the resolver admits the zone, the proxy admits only the exact entry. Add the exact name. |
-| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch rebuilds and verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
+| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch recreates the container if it was built from another config, then verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
 | `Blessed config changed since this container was built — rebuilding` | Expected once per project after a re-bless. The container is recreated (repo and `~/.claude` volume are unaffected). |
 | `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate it from the host with the launcher: `cc-isolated --probe-only <repo>` (recreates the container from the blessed config and re-probes), then `cc-isolated <repo>`. Not a bare `devcontainer up --remove-existing-container …` from your own shell: it drops the variables the launcher exports, and each one dropped has its own effect (among them base-only egress and an empty config hash, see the "newly registered profile has no effect" row below; a `~/.claude` volume shared across projects; and a build pointed at `/Dockerfile`), and the launcher's probe never runs. |
 | `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
