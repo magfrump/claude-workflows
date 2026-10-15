@@ -33,6 +33,7 @@ The index below is generated — edit entries, not the table.
 | [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | you: judgment | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
 | [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Nex... | 2026-10-15 |
 | [Q-166](#q-166--staged-run-counts-as-live-verify) | you: judgment | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
+| [Q-170](#q-170--decision-015-isolation-rerun) | you: judgment | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-167](#q-167--q096-host-probe) | you: terminal | After Q-162's paste lands Q-096, install and bless, then run this on the host. A planted pre-receive hook i... | 2026-10-15 |
@@ -60,7 +61,7 @@ The index below is generated — edit entries, not the table.
 ### Q-162 · merges-and-cleanup-2026-10-14
 **Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
 
-This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15`, then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main plus five reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift, Q-160 and Q-096. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15`, then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main plus five reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift, Q-160 and Q-096. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
@@ -207,6 +208,26 @@ Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed th
 - **Read:** the doc's step table (every command cited to file:line), "Not verified" (8 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
 - **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
 - **If the answer differs:** if Q-165 is [4], this entry is dropped.
+
+### Q-170 · decision-015-isolation-rerun
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. The re-run recommends keeping Docker: none of the 6 session-breaking fixes since 2026-07-13 was Docker's. Which outcome?
+
+- **Why it's yours:** it amends a decision record's revisit trigger, and [A] adds a merge refusal for boundary changes.
+- **Read:** `docs/working/dd-015-step4-isolation-mechanism.md` (lands with Q-162). Motive test: of the 6 fixes, 4 came from this repo's own boundary changes, 1 from the devcontainer CLI's path handling and 1 from kernel netfilter, so no runtime swap removes the cause. 4 of the 6 merged without a live-container run, and since 2026-09-09 87 of 116 `devcontainer-config/` commits carry `Live-verified: no`. 18 candidates, 5 scored. Confidence 80%. §6 holds the exact amendment text for 015's trigger, which splits runtime-caused from boundary-layer breakage.
+- **Also tell me (V1, the one fact that could change the answer):** the dates and reasons you fell back to running sessions on the host since July (Q-121), because Docker Desktop incidents leave no commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[A] Keep Docker; amend 015; verify-before-merge** (recommended) | Apply §6's amendment now. Once `cc-verify` exists (Q-165), boundary merges without a `Live-verified:` hash are refused unless overridden with a logged reason | Approve one text amendment now | If Desktop is breaking sessions off the record, the runtime half of the trigger fires; podman is the named fallback |
+| **[B] Keep Docker; amend 015 only** | The amendment, with no merge refusal: churn is watched, not prevented | Approve one text amendment | The boundary half of the trigger keeps firing and routes back to [A]; sessions break meanwhile |
+| **[C] Spike rootless Docker or podman first** | One host paste covering the doc's checks V2–V7 and V12, then decide | One ~30-minute paste and reading the results | Spends a session on a runtime that removes none of the recorded causes |
+| **[D] Sidecar egress proxy** | Keep Docker; replace the in-container netfilter/DNS stack with an internal network and a proxy container | Reviewing a multi-day boundary rewrite plus its live run | A large unverified boundary change, the very thing behind 4 of the 6 breakages |
+
+- **Blocks:** nothing urgent. 015's trigger stays as it is until answered.
+- **Interim:** [B] in substance: nothing changes, and the cycle reads 015's trigger as the DD's split.
+- **If the answer differs:** [C] or [D] become roadmap items; the amendment is dropped.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
