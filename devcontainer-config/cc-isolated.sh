@@ -236,12 +236,12 @@ verify_host_tools() {
     return 0
   fi
   if [ ! -f "$m" ] || [ -L "$m" ]; then
-    echo "no host-tool manifest at $m (re-run install.sh, or cc-isolated --bless after reviewing)"
+    echo "no host-tool manifest at $m (re-run install.sh, or review the tools and bless this dir)"
     return 1
   fi
   # The manifest itself is the anomaly when it cannot be read or is not
   # sha256sum's own output; say so rather than call every tool changed.
-  if [ ! -r "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+  if [ ! -r "$m" ] || [ ! -s "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
     echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
     return 1
   fi
@@ -255,8 +255,13 @@ verify_host_tools() {
       continue
     fi
     want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
+    if [ -z "$want" ]; then
+      echo "host-tool manifest $m has no single entry for $f"
+      bad=1
+      continue
+    fi
     have="$(sha256sum < "$dir/$f" | cut -d' ' -f1)"
-    if [ -z "$want" ] || [ "$want" != "$have" ]; then
+    if [ "$want" != "$have" ]; then
       echo "$dir/$f changed since the last bless"
       bad=1
     fi
@@ -745,10 +750,10 @@ main() {
 
   if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
     echo "ERROR: host tools differ from the bless — refusing to launch, probe or register:" >&2
-    printf '  %s\n' "$HOST_TOOLS_ERR" >&2
+    while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$HOST_TOOLS_ERR" >&2
     # Never let this refusal hide a boundary change: run the boundary check too, and
     # show its diff, before pointing at a bless that would accept both.
-    local boundary_note="The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before)."
+    local line boundary_note="The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before)."
     if ! CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" check_manifest; then
       boundary_note="The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes."
     fi

@@ -808,8 +808,11 @@ STUB
   [ ! -e "$M/gitdir-ran" ]
   # Its own file too: a change to cc-push.sh refuses, --help included (exit 1).
   (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
-  # A tamper below the check (where all the push logic is) never runs.
-  printf 'touch %q\n' "$M/push-tamper-ran" >> "$d/cc-push.sh"
+  # A tamper directly below the check (the first line it guards) never runs. Not
+  # at the end of the file: cc-push exits at its main guard before reaching it.
+  awk -v t="touch $M/push-tamper-ran" '/^# shellcheck source=cc-gitdir.sh$/ { print t } { print }' \
+    "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh" > "$d/cc-push.sh"
+  grep -qx "touch $M/push-tamper-ran" "$d/cc-push.sh"
   run bash "$d/cc-push.sh" --help
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-push.sh changed since the last bless"* ]]

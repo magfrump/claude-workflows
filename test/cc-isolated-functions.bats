@@ -985,6 +985,8 @@ fake_payload_and_dest() {
   run bash "$d/cc-isolated.sh" "$ws"
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-exit-scan.sh changed"*"cc-gitdir.sh changed"* ]]
+  # Every reason line is indented under the ERROR line.
+  [[ "$output" == *$'\n  '*"cc-exit-scan.sh changed"*$'\n  '*"cc-gitdir.sh changed"* ]]
   [[ "$output" == *"also changed (cc-push refuses until re-blessed)"*"cc-push.sh changed"* ]]
   # A bless with no previous manifest says every entry is new.
   rm "$d/host-tools.sha256"
@@ -1001,13 +1003,30 @@ fake_payload_and_dest() {
   [[ "$output" == *"No projects registered"* ]]
 }
 
-@test "verify_host_tools: an unreadable or malformed host manifest is named as the problem" {
+@test "verify_host_tools: an unreadable, empty or malformed manifest, or a missing entry, is named as the problem" {
   bless_manifest >/dev/null
-  printf 'not a sha256sum line\r\n' >> "$(host_tools_path)"
+  local h
+  h="$(host_tools_path)"; cp "$h" "$TEST_TMPDIR/h.good"
+  printf 'not a sha256sum line\r\n' >> "$h"
   run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
   [ "$status" -eq 1 ]
   [[ "$output" == *"unreadable or malformed"* ]]
   [[ "$output" != *"changed since the last bless"* ]]
+  : > "$h"
+  run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unreadable or malformed"* ]]
+  grep -v ' cc-push.sh$' "$TEST_TMPDIR/h.good" > "$h"
+  run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"has no single entry for cc-push.sh"* ]]
+  if [ "$(id -u)" -ne 0 ]; then
+    cp "$TEST_TMPDIR/h.good" "$h"; chmod 000 "$h"
+    run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
+    chmod 644 "$h"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unreadable or malformed"* ]]
+  fi
 }
 
 @test "bless: a failure changes neither manifest" {

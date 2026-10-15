@@ -34,12 +34,13 @@
 #   2 bad usage (an unknown flag, a flag without its value, two checkouts).
 # One exception, before any of that: when this installed copy or the cc-gitdir.sh
 # beside it differs from what the bless recorded in host-tools.sha256 (or that
-# file is missing or a symlink), cc-push
+# file is missing, a symlink, unreadable or malformed), cc-push
 # exits 1 before parsing anything, --help included (decision log row 71). What
 # that guards: cc-gitdir.sh, and every line of this file below the check (all
 # the push logic). It cannot guard the lines above the check, nor an overwrite
 # that drops it: a tampered copy that skips its own check is caught only by
-# cc-isolated's warning at the next launch and by `cc-isolated --list`.
+# cc-isolated's warning at the next launch of the copy installed beside it,
+# and by `cc-isolated --list` for the config dir.
 #
 # WHY. The container writes the checkout's .git through the bind mount, so host git
 # run IN the checkout can run what the session planted: hooks, core.fsmonitor,
@@ -162,12 +163,12 @@ verify_host_tools() {
     return 0
   fi
   if [ ! -f "$m" ] || [ -L "$m" ]; then
-    echo "no host-tool manifest at $m (re-run install.sh, or cc-isolated --bless after reviewing)"
+    echo "no host-tool manifest at $m (re-run install.sh, or review the tools and bless this dir)"
     return 1
   fi
   # The manifest itself is the anomaly when it cannot be read or is not
   # sha256sum's own output; say so rather than call every tool changed.
-  if [ ! -r "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+  if [ ! -r "$m" ] || [ ! -s "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
     echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
     return 1
   fi
@@ -181,8 +182,13 @@ verify_host_tools() {
       continue
     fi
     want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
+    if [ -z "$want" ]; then
+      echo "host-tool manifest $m has no single entry for $f"
+      bad=1
+      continue
+    fi
     have="$(sha256sum < "$dir/$f" | cut -d' ' -f1)"
-    if [ -z "$want" ] || [ "$want" != "$have" ]; then
+    if [ "$want" != "$have" ]; then
       echo "$dir/$f changed since the last bless"
       bad=1
     fi
@@ -198,7 +204,7 @@ CC_PUSH_DIR="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
 if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
   {
     echo "ERROR: cc-push refuses to run:"
-    printf '  %s\n' "$host_tools_err"
+    while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$host_tools_err"
     echo "Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
     printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_PUSH_DIR"
   } >&2
