@@ -1160,10 +1160,16 @@ installed_then_changed() {
   run env -u CLAUDECODE bash "$INSTALL" --yes </dev/null
   [ "$status" -eq 0 ]
   printf '{"v":2}\n' > "$ROOT/devcontainer-config/devcontainer.json"; commit_all v2
-  feed="for _i in \$(seq 200); do [ -e '$ROOT/devcontainer-config/claude-home/.manifest' ] && break; sleep 0.1; done
-    sleep 1; for f in \"\$TMPDIR\"/cw-devc-stage.*/config/devcontainer.json; do printf 'TAMPERED\n' > \"\$f\"; done; printf 'y\nn\n'"
+  # Wait for the stage itself, not the checkout's claude-home/.manifest: the
+  # --yes run above already left that file, so waiting on it raced the
+  # staging and the tamper glob could match nothing. The tamper writes only
+  # into a file that exists and leaves $S/tamper.landed, so a missed tamper
+  # fails here instead of passing as "not installed".
+  feed="for _i in \$(seq 200); do compgen -G \"\$TMPDIR/cw-devc-stage.*/config/devcontainer.json\" >/dev/null && break; sleep 0.1; done
+    sleep 2; for f in \"\$TMPDIR\"/cw-devc-stage.*/config/devcontainer.json; do [ -f \"\$f\" ] && printf 'TAMPERED\n' > \"\$f\" && : > \"\$HOME/../tamper.landed\"; done; printf 'y\nn\n'"
   run_pty_feed "$feed" bash "$INSTALL"
   echo "$output"
+  [ -f "$S/tamper.landed" ]                     # the tamper really wrote the stage
   [ "$status" -eq 1 ]
   [[ "$output" == *'+{"v":2}'* ]]                  # the review showed the commit
   [[ "$output" == *'changed after review'* ]]
