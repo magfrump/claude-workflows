@@ -119,7 +119,7 @@ The residual families. None blocks self-merge mechanically; each is a way around
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
 | **[1] review** | Every `ready` branch the always-on rules pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
-| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line; anything else falls to [1]'s entry | None for that work; with this repo's never line (Q-149) only docs off the floor can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
+| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line; anything else falls to [1]'s entry | None for that work; with this repo's never line (Q-149) only docs, `README.md`, `runs/` and `archive/` off the floor can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
 - **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
@@ -370,7 +370,7 @@ The plan assumed code here reaches running sessions only through an image releas
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs off the floor | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
+| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs, `README.md`, `runs/` and `archive/` off the floor | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
 | **[2] `workflows/` only** | The plan's interim: code self-merges when its brief lists it | None for listed code | A self-merged script or test runs in the next health check, and a self-merged `install.sh` runs on your host at the next release, unreviewed |
 | **[3] None** | `Self-merge never: none` | None | Everything [2] risks, plus workflow changes that steer every later session here |
 

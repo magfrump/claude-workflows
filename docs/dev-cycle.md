@@ -45,7 +45,10 @@ blocks, that starts with its key; a trailing CR is ignored.
   own checkout, and the health check the orchestrator runs every iteration executes
   `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree, while the
   release paste runs `devcontainer-config/install.sh` on the host before you see its diff.
-  So in this repo self-merge can land only docs that are not on the floor.
+  `templates/` (a snippet other repos copy by hand) and `global-instructions/` (every
+  session's global instructions after a release; the floor already refuses its `CLAUDE.md`)
+  take effect outside the gate's view too. So in this repo self-merge can land only files
+  outside those directories and off the floor: docs, `README.md`, `runs/` and `archive/`.
 - **Review handoff.** No line. The pull-request route the design names is not built, and
   this repo has no PRs, so every review merge is one questions entry.
 
