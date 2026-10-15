@@ -130,6 +130,31 @@ Fact-check: 26 claims, 21 Verified, 3 Mostly Accurate, 1 Stale, 1 Incorrect; no 
 | P3-3 | --help refusal list omitted "not one object" and "not a command hook". | 🟢 | Fixed |
 | P3-4 | Plan row 3 still said `UNWIRES hook:`. | 🟢 (Stale) | Fixed |
 
+### Pass 3 security (range a4f3614a..6bb29868; `security-review-2026-10-15-q106-pass3.md`)
+
+N1, N2 (hook level), N3, N4 (names), N6, N7 verified resolved; no control deleted; T93-T103 pass.
+
+| # | Finding | Tier | Disposition |
+|---|---|---|---|
+| S3-F1 | WIRING_SHAPE constrains each hook, not its group: an object-valued `hooks`, an object `matcher`, extra group keys or a string `timeout` pass and are written. Impact depends on how Claude Code treats a settings.json that fails its schema (whole file rejected → deny rules and guards off; entry skipped → inert group); not checkable here. | 🟡 Medium (low confidence) | Open at the cap |
+| S3-F2 | The plain-letters mode check and the command regex use `$`, which in jq 1.6 matches before a final newline: a mode key `"allow\n"` prints unquoted and splits one list line (misdirection, not concealment). Fix: `\A…\z`. | 🟢 Low | Open at the cap |
+| S3-F3 | The by-name list compares hooks as sets: a second identical copy prints `(none — …)` though the hook will fire twice. | 🟢 Info | Open at the cap |
+
+## Iteration-4 gate (2026-10-15)
+
+## Iterations (3 completed)
+Pass 1: 0 🔴, 10 🟡 → fixed or routed. Pass 2: fact-check 2 Incorrect + security N1-N3 Medium → fixed. Pass 3: fact-check 1 Incorrect (doc) → fixed; security S3-F1 Medium.
+## Remaining Must Fix
+None.
+## Remaining Must Address
+S3-F1 (group-level wiring shape; low confidence, impact unverified). A4 (merge program outside the gate regex) and A5 (bidi through `vis`, pre-existing) are with the user.
+## Convergence diagnosis (one sentence)
+Each pass narrowed the same surface, an allowlist over an untrusted `wiring.json`, by one more level (hook command → document count and hook type → group keys), so the loop is converging on one check rather than churning, but it did not close inside three iterations.
+## Recommended action (ship-with-issues / split-PR / pause for redesign)
+Authorize one more iteration: tighten the group shape (keys `matcher`/`hooks` only, `hooks` an array, `matcher` a string, `timeout` a number), anchor both regexes with `\A…\z`, count duplicate hooks; then the final confirming pass (k=3, full panel). About 20 code lines; the unit is at 561 of ~800.
+
+**Decision: `escalate`** (/away default: the remaining work is one check inside `install_claude_home`, not a separable part, so `split` does not apply). No further fix work, re-review or loop test run until the user authorizes iteration 4.
+
 ## 🧩 Composition check
 
 | Cluster | File / lines | Fragments | Disposition |
