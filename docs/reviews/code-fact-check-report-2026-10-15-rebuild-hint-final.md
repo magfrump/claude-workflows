@@ -210,6 +210,10 @@ Correct for a fail-closed or stale container. When the build itself is wrong, th
 
 ---
 
+## Submitted Claims
+
+Stage 2.5 (k=1, opus): `code-fact-check-submitted-claims-2026-10-15-rebuild-hint.md`, `Commit: 2463017f`. Four security-reviewer endorsement claims, numbered 13-16 there, all **Verified**, verification mode **executed**: 13 the printed recipe's `printf %q` path re-parses identically in bash and zsh (space, `$(...)`, newline, `!`); 14 `--probe-only` exits non-zero and writes no receipt on a failed probe (mutant `probe_boundary || true` caught by the test); 15 only comment and echo lines changed in either enforcement script (48 lines read); 16 a plain launch on a fail-closed container does not recreate, does not start claude, exits non-zero and prints the two-step hint (old hint restored → test fails). Scope lines are in that report.
+
 ## Escalations
 
 - `docs/reviews/override-log.md:847` (r1, r2, r3) → orchestrator: widen the C4 row to plain launches and fix its line range (Claims 3, 4).
