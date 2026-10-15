@@ -36,6 +36,8 @@ None.
 | C5 | Plan F3 listed `${X:-push}` as exposed; the shape allowlist refuses it | security-reviewer (Informational) | Info | for-author | — | Fixed |
 | C7 | Pass 2: new test title said "only * is a wildcard" but checked brackets only (a `?`-unescaped mutant passed) | Fact-check pass 2 claim 13b (Mostly accurate) | Low | for-author | — | Fixed: `Bash(cat file?.txt)` case added |
 | C8 | Pass 2: b973e678's message credits F3's plan changes to the unit 2 security review (they came from unit 1's reviews) and omits F6b | Fact-check pass 2 claim 18 (Mostly accurate, commit message) | Low | for-author | — | Accepted: commit message, not rewritten; recorded here |
+| C9 | Final pass: 1a831ffe's message calls the de-quoted match test-only; it ran on every production call with a deny rule | Fact-check final (Incorrect, commit message) | Low | for-author | — | Accepted-immutable: commit message on a reviewed commit; the header RESIDUALS and this row state it correctly |
+| C10 | Final pass: plan Split sizes stale (now ~407/~436, 697), F6 wording stale after unit 2's non-string skip, F5 'pinned' overstated, stdout-test comment imprecise, test title not pinned for extglob | Fact-check final (Stale / Mostly accurate) | Low | for-author | — | Fixed (extglob case pins `cat aa` approved under `Bash(cat +(a))`) |
 | C6 | Removed `--deny` is silently swallowed by main's catch-all | api-consistency (Informational) | Info | for-author | #123 (2026-09-27, Won't-Fix: test-only options) | Won't-Fix: no caller exists; a test pins it; Claude Code applies deny regardless |
 
 ---
