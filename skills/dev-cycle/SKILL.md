@@ -299,8 +299,11 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    release is your review of what it ships (F58). It holds C, M, the changed names (the same
    diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
    log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
-   self-merge)`, which no one reviewed), every path changed from C to M outside `docs/` (the
-   image carries none of `docs/`: give its count), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
+   the flag is a pointer, not proof), every path changed from C to M outside `docs/` (the
+   image carries none of `docs/`: give its count), each subject or path holding `<`, `>`, a
+   CR or another control byte written as `(withheld: see SHA)` (questions.sh reads `<!--`
+   anywhere in a line), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -762,8 +765,9 @@ conflict: `hg -C WT merge --abort`, then a stop.
 ### 10. Dispatch
 
 Only after step 9's land is verified, with no `other` or `refuse` line from
-`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry asking for
-`docs/constraints.md`, unless an open one does: D2). Fill free slots (`--settings`'
+`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
+slug `constraints-doc-missing`, asking for `docs/constraints.md`, unless an open one with
+that slug exists: D2). Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
 

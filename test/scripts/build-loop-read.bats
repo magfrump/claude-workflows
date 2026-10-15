@@ -76,8 +76,8 @@ setup() { bl_setup; }
         || { echo "$output"; return 1; }
     # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
     [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
-    # The interim never line (workflows/ take effect on merge here, plan D5) and the slots line (U5).
-    [[ "$(line never)" == "never workflows/ set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
+    # The interim never line (every directory that takes effect here without a release: plan D5, F57, Q-149) and the slots line (U5).
+    [[ "$(line never)" == "never workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/ set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
     [[ "$(line slots)" == "slots 3 set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
 }
 
