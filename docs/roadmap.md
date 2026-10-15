@@ -48,6 +48,13 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    fails closed). First step: skip an entry that no longer exists instead of failing; a
    gate-code unit, so it lands on the user's approval. Revisit trigger (the user's): if re-runs
    on this class cost more than an hour in total before it lands, reopen Q-145.
+5. **Q-146 [1] — self-improvement.sh commits for its implementer.** Motive: in a worktree
+   or clone the children have no allowlist and cannot commit (F5), and the `/workspace`
+   allowlist gives arbitrary code execution (F1); see `docs/working/si-trust-evidence-2026-10-14.md`.
+   First step: after the implementer exits, the script runs `git add -A && git commit` in
+   the worktree, taking the child's message from a file it wrote (fall back to the task
+   description); children get no Bash grants. About 20 lines plus tests. Then the live run
+   Q-075 imagined, with `REPO_DIR` a dedicated clone (§5.1), never `/workspace`.
 
 ## Ideas
 

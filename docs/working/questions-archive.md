@@ -133,10 +133,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-136](#q-136--u2b2-landing) | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
 | [Q-137](#q-137--u2b3a-landing) | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
 | [Q-138](#q-138--u3a2-land-discovery-past-cap) | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
+| [Q-139](#q-139--workspace-hookspath-fails-state-gate) | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-140](#q-140--d6-snippet-trust-root) | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
+| [Q-141](#q-141--u4a-asked-binding-residue) | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
+| [Q-142](#q-142--u4b1-stop-path-worktree-remove) | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 | [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
+| [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
 <!-- index:end -->
 
@@ -2707,4 +2711,99 @@ Q-089 (host-only tools get their own trust category) is built and reviewed, and 
 - **Blocks:** Q-089's landing, and the roadmap Ideas filed from it.
 - **Interim:** nothing merged; main is untouched at 4ab9a51f. The loop paused, as the cap requires.
 - **If the answer differs:** [2] runs a full review round; [3] means the branches can be deleted at your say.
+
+### Q-139 · workspace-hookspath-fails-state-gate
+**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** ANSWERED
+
+`/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host spelling of this repo's own default hooks directory). The build-loop state gate refuses any `core.hooksPath`, so every gated mode (`--check`, `--merge`, `--start`, `--prompt`, `--state`, `--main-log`) refuses in this repo. Which way should the gate and the config meet? **Answered 2026-10-15: [1].** The value pointed at the default hooks directory, which holds only `.sample` files, so it had no effect. Unset in `/workspace/.git/config` the same day (`git config --get core.hooksPath` now exits 1); U4's first live run no longer stops at `--state` on it.
+
+- **Why it's yours:** the setting is your host config (no script in this repo sets it, as far as the sessions can see), and the choice is how much the gate trusts repo config it did not write.
+- **The threats in play** (a build loop runs as your user and can write `.git/config` and `.git/hooks/`):
+  - **T1, a planted hooks directory.** A loop sets `core.hooksPath` to a directory it wrote. The next plain git command anyone runs here (your commit, a pr-prep merge, the orchestrator's own git outside the script) runs the loop's hook as you, outside the loop's sandbox and after review. Refusing every `core.hooksPath` is how the gate catches this.
+  - **T2, a hook written into the default directory.** A loop writes `.git/hooks/pre-commit` with no config change at all. No option here touches T2: the gate does not read the hooks directory today, and the script's own git runs with hooks off (`core.hooksPath=/dev/null`). It is listed so that no option below is read as closing it.
+  - **T3, a look-alike path.** Under [2], a value that reads as this repo's hooks directory but resolves elsewhere (a symlink, another reader root's spelling, `..` parts) would pass the gate and be T1 again.
+- **Read:** `scripts/build-loop.sh` state_gate (STATE_KEYS_RE) and harden · merge message of `feat/build-loop-u3b1` (ef7a1122), Areas of uncertainty.
+
+| Option | What it means | Cost to you | Threat left open if it's wrong |
+|---|---|---|---|
+| **[1] Unset it on the host** | `git config --unset core.hooksPath` in `~/claude-workflows`; git then uses the same default hooks directory, so the same hooks run. | One terminal command. | None new: T1 stays fully guarded (any `core.hooksPath` is refused). If a host tool sets it again on purpose, the gate refuses again: lost availability, not safety. |
+| **[2] Let the gate accept this repo's own hooks directory** | state_gate passes a `core.hooksPath` whose real path is this repository's own `hooks` directory under the git common dir; anything else still refuses. | None now; a small follow-up unit with review. | T3: if the real-path check has a hole, a planted directory passes, and T1 runs a loop's hook in your next plain git command. |
+| **[3] Leave it until U4** | No change; decide when the orchestrator first runs here. | None now. | None new; every gated mode keeps refusing here, so the orchestrator's first iteration in this repo stops at `--state` until this is answered. |
+
+- **Blocks:** the orchestrator's first live run in this repo (U4); nothing before it.
+- **Interim:** [3]: no code or config change.
+- **If the answer differs:** [1] needs nothing from the sessions; [2] is a follow-up unit before U4 lands.
+- **Rewritten 2026-10-12** on your note (answers-10-12-26.txt): the threats are now named separately, and the last column says which threat each option leaves open.
+
+
+
+### Q-141 · u4a-asked-binding-residue
+**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** ANSWERED
+
+U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: merge U4a after one more narrow fix, merge it as is, or rework the binding? **Answered 2026-10-15: [1]**, kept as merged (15a0d688). The user also asked for C9's hook half to be closed: `--land-cycle` now has a test that plants every hook name and asserts none fires on either write path (8c8505a5, merged faf05a8f; it fails with `core.hooksPath=/dev/null` dropped from HARDEN). C9's reflog-text half and the D3/B14 path-shape rows stay override rows.
+
+- **Why it's yours:** the loop passed its 3-iteration cap and the confirming pass that was to decide the merge found a new Medium, which by the gate written in the rubric stops the merge and comes to you (the U3a2 / Q-138 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4a.md` (iteration-4 gate) on `feat/build-loop-u4a`; `docs/reviews/security-review-2026-10-13-u4a-confirm.md` F-A, F-B; `docs/reviews/code-fact-check-report-2026-10-13-u4a-confirm.md` claim 3b.
+
+An added Asked: ID must name an entry whose heading ends `-STEM-N` for the brief that adds it (so one brief cannot inherit another's answer). The check is anchored at a hyphen, so `keep-or-drop-2026-10-02-foo-2026-10-01-x-1`, an entry for a brief whose name ends in brief x's name, passes on brief x's line (executed by both the fact-check and security). Only the cycle names briefs and writes Asked: lines; no loop can. Also open, Low: the new path allowlist compares the path as spelled, so a fix to `readme.md` or `Docs/x.md` that --check-fix allows is refused (fails closed).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | The slug's prefix may hold only letters and hyphens (`^[a-z]+(-[a-z]+)*-STEM-N$`; a stem starts with a date's digit, so no other stem fits), the allowlist compares lower-cased; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more pass of review cost; U4b inherits the slug contract |
+| **[2] Merge as is** | F-A and F-B become override rows (the cycle alone names briefs); U4b proceeds | None | A cycle that names a follow-up brief after its parent could apply the parent's answer to it |
+| **[3] Rework the binding** | Bind each Asked: ID by a `Brief:` line in the entry body instead of the slug, defined in U4b's entry grammar | A follow-up unit's review | U4a merges later; U4b's entry grammar grows |
+
+- **Blocks:** U4a's merge, hence U4b.
+- **Interim:** [1] (the Q-138 precedent), applied 2026-10-13: fixed in daa09b5f; the second confirming pass found no new Must Fix or Must Address; U4a merged at 15a0d688. The entry stays open for your answer.
+- **If the answer differs:** [2] reverts the narrow fix (two lines and a test); [3] adds a follow-up unit after U4b's entry grammar.
+
+
+
+### Q-142 · u4b1-stop-path-worktree-remove
+**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** ANSWERED
+
+U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration's worktree without `--force`, whose clean check runs a filter planted in the repository's config): merge U4b1 after one more narrow fix, merge it as is, or rework how the orchestrator cleans up? **Answered 2026-10-15: [1]**, kept as merged (2837bcdc). G5, B11, B12 and D11 stay override rows.
+
+- **Why it's yours:** the loop passed its 3-iteration cap and the confirming pass that decides the merge found a Medium the range introduced, which by the rubric's gate stops the merge (the Q-138 / Q-141 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4b1.md` (iteration-4 gate) on `feat/build-loop-u4b1`; `docs/reviews/security-review-2026-10-13-u4b1-confirm.md` F1, F2; `docs/reviews/code-fact-check-report-2026-10-13-u4b1-confirm.md` claims 7, 8, 11, 13.
+
+Also open from the same pass, Medium, not introduced by the range: the bootstrap guard read the current tree, so one commit deleting every record's `Main at:` line reopened the bootstrap (no check of what moved main). Neither matters until U4c writes the D6 block and U4b2 writes `Main at:` lines; the skill text is the only change either needs.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | `worktree remove --force` on both removal paths (no status run; uncommitted edits in WT are discarded), the bootstrap only when main's history never held a `Main at:` line (`git log -G`), `--main-log`'s other lines a dispatch block, not a stop; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more review pass; a stop discards the iteration's uncommitted cycle edits |
+| **[2] Merge as is** | Both become override rows for U4b2/U4c | None | Until fixed, a stop could run a planted filter as the orchestrator, once the D6 block lands |
+| **[3] Rework cleanup** | Leave WT in place on any stop and list it for removal by the user (a `you: terminal` entry), no removal by the orchestrator at all | A paste per stopped iteration | Worktrees pile up between your pastes (disk, slower import walks) |
+
+- **Blocks:** U4b1's merge, hence U4b2.
+- **Interim:** [1] (the Q-138 / Q-141 precedent), applied 2026-10-13 on `feat/build-loop-u4b1`; the second confirming pass runs next, and U4b1 merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
+- **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
+
+
+
+
+### Q-146 · si-children-commit-rights
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+How should the self-improvement loop's implementer children get the right to commit, given that the only grant in place today also gives arbitrary code execution? **Answered 2026-10-15: [1].** The script commits for the child, with `REPO_DIR` a dedicated clone. Roadmap Next gains the build item; it should keep the child's message by having the child write it to a file the script commits with `-F`.
+
+- **Why it's yours:** it sets the trust boundary for an unattended loop on your machine, and it decides whether the loop resumes at all (Q-068 [3]).
+- **Read:** `docs/working/si-trust-evidence-2026-10-14.md`: the verdict, F1, F2 and F5, and §5.
+
+The script's own writes are confined, and the probe shows it. The children are not:
+- With cwd `/workspace`, the project allowlist applies. `Bash(bats test:*)` together with `acceptEdits` lets a child write a test file and run it, and `git -C /workspace branch:*` lets it force-delete any branch (F1, F2).
+- In a worktree or clone, `.claude/` is gitignored, so no allowlist applies. A child cannot run `git commit` (checked live), and every task fails Gate 1a after its tokens are spent (F5).
+
+Under every option below, `REPO_DIR` points at a dedicated clone (§5.1), never at `/workspace`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Script commits for the child** | The implementer only edits files. After it exits, the script runs `git add -A && git commit` in the worktree with a fixed message, and Gate 1c's file-scope check sees the result. Children get no Bash grants at all | One reviewed change to `self-improvement.sh` (about 20 lines plus tests) | The child's commit message and Confidence line are lost (the summary falls back to the task description), and children still can't run tests or `git diff` while they work |
+| **[2] Narrow per-run settings** | The script writes a settings file granting exactly `git add`, `git commit`, `git diff` and `git status` (no `bats`, no `-C`) and passes it with `--settings` to every child | One reviewed change plus a host check that `--settings` stacks with the deny list as expected | The grant leaks wider than intended (the F1 shape again), or `--settings` precedence differs from the docs (unverified here: no egress) |
+| **[3] Keep the loop dormant** | Q-068's "resume" stays conditional; the evidence report is the record | Nothing | The repo's idea generator stays off; the dev cycle's Ideas list stays its only source |
+
+- **Blocks:** the live run with real children that Q-075 imagined, and so any resume of the loop.
+- **Interim:** [3]. Nothing runs, so nothing is at risk.
+- **If the answer differs:** [1] or [2] each become one build item (roadmap Next) followed by the live run in a dedicated clone. Neither undoes anything.
+
 
