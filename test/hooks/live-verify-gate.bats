@@ -130,6 +130,12 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
     git add "devcontainer-config/$f"
     run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
     [ "$status" -eq 2 ] || { echo "not gated: $f"; return 1; }
+    # Gated as a boundary file, not a host tool: Host-tool-tested alone does not
+    # pass it, Live-verified does (a swap into the host regex fails here).
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+    [ "$status" -eq 2 ] || { echo "boundary file passes on Host-tool-tested: $f"; return 1; }
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+    [ "$status" -eq 0 ] || { echo "boundary file not satisfied by Live-verified: $f"; return 1; }
     git reset -q "devcontainer-config/$f"
     rm -f "devcontainer-config/$f"
   done
@@ -318,6 +324,10 @@ stage_host_tool() {
   echo '# a note' >> devcontainer-config/cc-gitdir.sh
   git add devcontainer-config/cc-gitdir.sh
   stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"live verification"* ]]
+  [[ "$output" != *"host-only tool"* ]]
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
   [ "$status" -eq 0 ]
 }
@@ -337,4 +347,27 @@ stage_host_tool() {
     git reset -q "devcontainer-config/$f"
     rm -f "devcontainer-config/$f"
   done
+}
+
+@test "the hook's host_tools regex names exactly host_tool_files, no more" {
+  # The direction the per-entry test above cannot see: an extra name in the
+  # regex, or a name dropped from host_tool_files, would leave it green.
+  local regex_names list
+  regex_names="$(grep -E "^host_tools='" "$HOOK" | grep -oE '[a-z-]+\\\.sh' | sed 's/\\\././' | LC_ALL=C sort)"
+  list="$(bash -euo pipefail -c 'source "$1"; host_tool_files' _ \
+            "$BATS_TEST_DIRNAME/../../devcontainer-config/cc-isolated.sh" | LC_ALL=C sort)"
+  [ -n "$regex_names" ]
+  [ "$regex_names" = "$list" ] || { echo "regex: $regex_names / host_tool_files: $list"; return 1; }
+}
+
+@test "a comment-only boundary edit beside a real host-tool change needs only Host-tool-tested" {
+  stage_host_tool
+  echo '# a note' >> devcontainer-config/egress/base.txt
+  git add devcontainer-config/egress/base.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"host-only tool"* ]]
+  [[ "$output" != *"live verification"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 0 ]
 }

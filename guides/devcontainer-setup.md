@@ -263,7 +263,8 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
 
 Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
 `Dockerfile`, `devcontainer.json`, `init-firewall.sh`, `cc-sni-proxy.py`,
-`link-claude-home.sh`, `cc-isolated.sh`, everything under `egress/`, and the staged
+`link-claude-home.sh`, `cc-isolated.sh`, the `egress/*.txt` lists, every registered
+`projects/*.profile`, and the staged
 `claude-home/`.
 
 **Host-only tools are not enforcement files** (decision log row 71): `cc-exit-scan.sh`
@@ -275,7 +276,8 @@ sequence below does not apply. The bless hashes them into their own file,
 the container and the verified-live receipt alone: it needs a re-bless after review,
 not a rebuild or a probe. Each entry point checks the host tools it executes before
 sourcing them. The launcher checks `cc-exit-scan.sh` and `cc-gitdir.sh`. When either
-has changed it refuses everything except `--bless` and `--list`, and it still runs
+has changed it refuses every action except `--bless` and `--list` (`--help` and usage
+errors are answered first), and it still runs
 the boundary check and shows that diff, so a re-bless never accepts a boundary
 change unseen. A changed `cc-push.sh` gets a warning. `cc-push` checks itself and
 `cc-gitdir.sh`, and refuses to run, `--help` included. `cc-isolated --list` shows

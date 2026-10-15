@@ -1,0 +1,16 @@
+start: 2026-10-15T00:50:05Z
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/mut
+## M1: gate host_tools regex gains an extra name (cc-extra.sh) not in host_tool_files
+78:host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh|cc-extra\.sh)$'
+cmd: timeout 300 bats test/hooks/live-verify-gate.bats
+1..25
+exit=0
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/mut
+## M2: host_tool_files drops cc-gitdir.sh (gate regex unchanged)
+host_tool_files() {
+  echo "cc-exit-scan.sh"
+  echo "cc-push.sh"
+}
+cmd: timeout 300 bats test/hooks/live-verify-gate.bats
+1..25
+exit=0

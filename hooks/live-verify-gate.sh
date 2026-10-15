@@ -20,6 +20,12 @@
 # unasked, which is exactly how the debt accrued. `git log --grep 'Live-verified: no'`
 # then lists the outstanding debt.
 #
+# HOST TOOLS (decision log row 71). cc-exit-scan.sh, cc-gitdir.sh and cc-push.sh
+# run on the host and no live probe can exercise them, so they carry their own
+# trailer, `Host-tool-tested:` (what ran on a host, or `no — <reason>`), and a
+# `Live-verified:` trailer does not satisfy them. A commit touching both kinds
+# needs both trailers. Each set gets the comment-only narrowing below on its own.
+#
 # NARROWING (Q-009). The gate fired on a diff that only rewrote comments: the
 # admitted set was byte-identical, so no probe was possible and none would have
 # said anything. So a change confined to comment and blank lines is let through.
@@ -32,9 +38,11 @@
 # direction.
 #
 # Behavior:
-#   - not a `git commit`, no enforcement file staged, trailer present → exit 0
-#   - enforcement file staged, its diff touches only comment/blank lines → exit 0
-#   - enforcement file staged, no trailer                              → exit 2 (blocks;
+#   - not a `git commit`, or no enforcement file or host tool staged   → exit 0
+#   - each staged set whose diff touches only comment/blank lines     → needs no trailer
+#   - every remaining set carries its trailer (Live-verified: for
+#     enforcement files, Host-tool-tested: for host tools)             → exit 0
+#   - a remaining set lacks its trailer                                → exit 2 (blocks;
 #     stderr is fed back to the model)
 #   - jq/git missing, malformed input, `--amend --no-edit`             → exit 0
 #
@@ -71,7 +79,8 @@ fi
 # paths. Keep in step with that function. Plus install.sh, which is not hashed but
 # runs on the host and chooses the diff the human reviews (decision 035).
 enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
-# Host-only tools: cc-isolated.sh's host_tool_files() (decision log row 71). No
+# Host-only tools: cc-isolated.sh's host_tool_files() (decision log row 71); keep in
+# step with that function too (a bats test pins both lists in both directions). No
 # live probe can exercise them, so they carry their own trailer, `Host-tool-tested:`
 # (what was run on a host, or `no — <reason>`), and `Live-verified: no` stays a
 # list of debt a probe can pay. A commit touching both kinds needs both trailers.
@@ -83,7 +92,8 @@ touched="$(printf '%s\n%s\n' "$boundary_touched" "$host_touched" | grep -v '^$' 
 
 # The comment-only escape (Q-009). Read the same diff the commit would carry —
 # the index, plus the worktree when -a/--all widened `files` above — restricted
-# to the enforcement files, and let it through only if every added and removed
+# to one set's files (enforcement or host tools, whichever the caller passes), and
+# let that set through only if every added and removed
 # line is blank or a comment. `#` covers the Dockerfile, the shell scripts, the
 # python and the egress/*.txt lists; `//` covers the jsonc devcontainer.json.
 # $1: the newline-separated files to read (one trailer's set).
