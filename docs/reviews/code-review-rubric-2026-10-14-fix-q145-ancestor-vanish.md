@@ -1,10 +1,10 @@
-Commit: 0d573a7b
+Commit: 29b807dc
 Loop-pass short-circuit: used at 3a8164d5
 
 # Code Review Rubric: fix/q145-ancestor-vanish
 
 **Scope:** `main...HEAD` (full branch both passes; no earlier rubric, and iteration 2 re-reviewed the whole branch because d2dc88c9 rewrote the change) · **Delivery mode:** inline-diff-only (the lib is ~100 KB; agents read config_seeds, top_files and nul_list themselves) · **Fact-check:** k=1 per loop pass (decision 031): `code-fact-check-report-2026-10-14-q145-i1.md`, `-i2.md`
-**Status:** iteration 2 fixes in the fix-batch commit; final confirming pass pending.
+**Status:** loop at its 3-iteration cap. Final confirming pass (k=3 fact-check at 29b807dc, critics at c4bab9ca): 0 🔴; its 🟡 findings (comment wording, one test gap) fixed in c4bab9ca and narrow-checked clean (k=1, 11/11 Verified); two Informational follow-ups fixed in 2a24dd79 and the last commit. 🟡 A2 stays acknowledged (override row). Not closed with `Loop closed at`: the closing pass found ambers, and a fourth full pass needs the iteration-4 gate (orchestrator's merge question). Single-sample review; absence of findings is not an attestation.
 
 ## Iteration 1 (3a8164d5): short-circuited at fact-check
 
@@ -59,3 +59,20 @@ One qualifying cluster: top_files / the config_seeds call site (fact-check Claim
 ## ⏭️ Skipped Core Critics
 
 Iteration 1: security, performance, api-consistency (loop-pass short-circuit, behavioral red confirmed). Iteration 2: none.
+
+## Iteration 3: final confirming pass (fact-check k=3 at 29b807dc; critics at c4bab9ca)
+
+Fact-check merged most-severe-wins (`code-fact-check-report-2026-10-14-q145-final.md`; replicates `-final-r{1,2,3}.md`): 26 clusters, 18 Verified, 5 Mostly accurate, 1 Incorrect (immutable commit ba5d2d1d), 2 Unverifiable; agreement 73%. No high-confidence Incorrect on code, so no gate pause. The comment findings were fixed (c4bab9ca) before the critics ran, so the critics reviewed c4bab9ca. Critics: security (F1 carried, acknowledged; 1 new Informational), performance (1 new Informational; prior Low accepted), api-consistency (1 new Informational). Narrow check of 29b807dc..c4bab9ca: 11/11 Verified (`code-fact-check-report-2026-10-14-q145-narrow.md`). Health check at 2a24dd79: one failure, install-host T69 (install.sh's prompt-wait race under load 12-16; unrelated, no use of the lib), which passed 92/92 when install-host.bats was re-run alone. The first health run, at c4bab9ca, failed shellcheck SC2034 on top_files' nameref; fixed in 2a24dd79.
+
+| ID | Finding | Source | Status |
+|---|---|---|---|
+| F1 | ba5d2d1d's message says every vanished entry is skipped | fact-check Claim 1 (Incorrect, immutable) | Accepted-immutable row |
+| F2 | Comment wording: config_seeds header (a directory entry fails a try), retry clause (only when a later try is clean), what main did with a delete-and-re-create gap, walk-header pointer, test comment on the shim clause | fact-check Claims 3-7 (Mostly accurate) | Fixed in c4bab9ca; narrow-checked |
+| F3 | top_files' "with NAME empty" half was unpinned (r3's surviving mutant) | fact-check Claim 8 annotation | Fixed: new top_files unit test kills it (c4bab9ca) |
+| F4 | SC2034 on `tf_a=()` failed health gate 6 | health check | Fixed in 2a24dd79 |
+| F5 | NAME `tf_d` left the caller's array untouched (local declared before nul_list) | api final (Informational) | Fixed in 2a24dd79: local after nul_list; header names the forbidden names |
+| F6 | A try that fails only at the -d recheck prints nothing, though the comment said the third try's message is shown | security final F2 (Informational) | Fixed: comment says the third try's find message, if any, and that a recheck-only failure prints none |
+| F7 | The recheck inside the retried helper costs three listings (~12 ms more) on a walk that fails anyway | performance final (Informational) | Accepted, no action |
+| A2 | Non-atomic save skipped when its gap spans find's stat | security F1 (carried) | Still acknowledged (override row); the merge decision is where to confirm it |
+
+Escalations: r3 routed claim 5 (the delete-and-re-create window) to security; the final security pass reviewed it and carried A2 unchanged.
