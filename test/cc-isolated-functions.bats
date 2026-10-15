@@ -410,8 +410,7 @@ assert_refused_untouched() {
     # shellcheck disable=SC2086  # $form is a list of flags on purpose
     run bash "$CONFIG_SRC/cc-isolated.sh" $form "$a" "$b"
     assert_refused_untouched
-    [[ "$output" == *"two workspaces given: $a and $b. cc-isolated takes one."* ]]
-    [[ "$output" == *"interactive_comments"* ]]
+    [[ "$output" == *"two workspaces given: $a and $b. cc-isolated takes one."*"or a path with an unquoted space"* ]]
   done
 }
 
@@ -420,13 +419,29 @@ assert_refused_untouched() {
   # The note's words come after the workspace: refused, not launched on 'note'.
   run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/a" '#' note
   assert_refused_untouched
-  [[ "$output" == *'\# is not a workspace; it looks like a pasted comment (a directory named so: ./\#).'* ]]
+  [[ "$output" == *'\# is not a workspace; it looks like a pasted comment.'*'interactive_comments'* ]]
   # No workspace before the note: '#' would have been the workspace and the
   # note's --register (or --bless) would have run.
   run bash "$CONFIG_SRC/cc-isolated.sh" '#' --register "$TEST_TMPDIR/a" --profile python
   assert_refused_untouched
   run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only '#widen' "$TEST_TMPDIR/b"
   assert_refused_untouched
+}
+
+@test "a --profile value starting with '#' or '-' is a usage error, so a note cannot reach the flags" {
+  one_ws_setup
+  # Base: `--profile '#' --bless` ran a bless (exit 0) and `--profile '#' b` opened b.
+  rm -f "$(manifest_path)"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --profile '#' --bless
+  [ "$status" -eq 2 ]
+  [[ "$output" == *'\# is not an egress profile; it looks like a pasted comment.'* ]]
+  [ ! -f "$(manifest_path)" ]
+  bless_manifest >/dev/null
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only --profile '#' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/a" --profile --bless
+  assert_refused_untouched
+  [[ "$output" == *"--profile needs a value, not the flag --bless."* ]]
 }
 
 @test "after --: one workspace, and only when none came before it" {

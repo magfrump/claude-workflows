@@ -346,7 +346,8 @@ fail_closed_on_abort() {
     # --probe-only always recreates the container from the blessed config and re-probes.
     # The explanations are not trailing `# ...` comments on the command lines:
     # interactive zsh without interactivecomments passes those words to
-    # cc-isolated as arguments, and the last positional becomes the workspace.
+    # cc-isolated as arguments (cc-isolated now refuses them, exit 2; it used to
+    # take the last positional as the workspace).
     echo "       If this container can no longer bootstrap, recreate it from the HOST" >&2
     echo "       with the launcher (the ~/.claude volume and the repo are unaffected)." >&2
     echo "       The first command recreates it from the blessed config and re-probes;" >&2

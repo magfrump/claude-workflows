@@ -608,7 +608,7 @@ install_devcontainer() {
 
   echo
   echo "Done. Blessed, NOT verified: a bless is a review of files, not a test of a container."
-  # Each command on a line of its own, its note on the line below: a pasted line
+  # Each command on a line of its own, its note on the line above: a pasted line
   # carrying a trailing '# note' reaches the command as extra words in zsh (no
   # interactive_comments by default), and cc-isolated refuses those (exit 2).
   echo "Next steps (copy the command lines only):"

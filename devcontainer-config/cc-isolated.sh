@@ -3,21 +3,29 @@
 # central host-side devcontainer config (decision 016; supersedes the per-repo
 # scripts/devcontainer-session.sh from decision 015).
 #
-# Run from the HOST (your normal WSL terminal), never from inside a session:
-#   cc-isolated                          # session for the git repo containing $PWD
-#   cc-isolated ~/code/other-project     # session for an explicit repo
+# Run from the HOST (your normal WSL terminal), never from inside a session. Each
+# command is on a line of its own, its description indented below it:
+#   cc-isolated
+#       a session for the git repo containing $PWD
+#   cc-isolated ~/code/other-project
+#       a session for an explicit repo
 #   cc-isolated --register ~/code/api --profile python
-#                                        # SET that project's egress profile (REPLACES any
-#                                        # previous grant, never adds to it), then re-bless
-#   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
-#   cc-isolated --probe-only [WS]        # recreate WS's container from the blessed
-#                                        # config, run the boundary self-probe, record
-#                                        # it verified live on a pass
-#   cc-isolated --list                   # registered projects, blessed config, verified?
-#   cc-isolated --help                   # this text
-# One workspace per run. A second one, or a word starting with '#' (a pasted
-# '# note': zsh passes it as words unless interactive_comments is set), is bad
-# usage, exit 2; name a directory called '#x' as ./#x.
+#       SET that project's egress profile (REPLACES any previous grant, never
+#       adds to it), then re-bless
+#   cc-isolated --bless
+#       re-bless the installed config after YOU reviewed it
+#   cc-isolated --probe-only [WS]
+#       recreate WS's container from the blessed config, run the boundary
+#       self-probe, record it verified live on a pass
+#   cc-isolated --list
+#       registered projects, blessed config, verified?
+#   cc-isolated --help
+#       this text
+# One workspace per run. Before `--`, a second workspace, or a word starting
+# with '#' (a pasted '# note': interactive zsh passes it as words unless
+# interactive_comments is set), is bad usage, exit 2; so is a --profile value
+# starting with '#' or '-'. After `--`, one word only, and only when no
+# workspace came before it. Name a directory called '#x' as ./#x or -- '#x'.
 # Push a session's commits with cc-push, never with host git in the checkout.
 #
 # EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
@@ -743,19 +751,27 @@ usage() {
 # the launcher as extra words: interactive zsh treats '#' as a comment only under
 # `setopt interactive_comments`, which is off by default. The parser used to keep
 # the LAST positional, so the note's last word became the workspace. Now a second
-# workspace, or a word starting with '#', is a usage error raised while parsing,
-# before any check or action runs. Values are printed with %q: they are untrusted
-# text going to a terminal.
-workspace_usage_error() {
+# workspace, a word starting with '#', or a --profile value starting with '#' or
+# '-' is a usage error raised while parsing, before main's first refusal (the
+# host-tool check) or any action. Values are printed with %q: they are untrusted
+# text going to a terminal. $1: the message; the remaining arguments: hint lines.
+arg_usage_error() {
   printf 'ERROR: %s\n' "$1" >&2
-  echo "  A pasted line ending in a '# ...' note does this: interactive zsh passes the" >&2
-  echo "  note as arguments unless 'setopt interactive_comments'. Rerun without the note." >&2
+  shift
+  [ $# -eq 0 ] || printf '  %s\n' "$@" >&2
   usage >&2
   exit 2
 }
 
+pasted_note_error() {  # $1: the word starting with '#'; $2: what it was read as
+  arg_usage_error "$(printf '%q is not %s; it looks like a pasted comment.' "$1" "$2")" \
+    "Interactive zsh passes a trailing '# ...' note as arguments unless" \
+    "'setopt interactive_comments' is on. Rerun without the note."
+}
+
 two_workspaces() {
-  workspace_usage_error "$(printf 'two workspaces given: %q and %q. cc-isolated takes one.' "$1" "$2")"
+  arg_usage_error "$(printf 'two workspaces given: %q and %q. cc-isolated takes one.' "$1" "$2")" \
+    "A pasted line with a trailing note, or a path with an unquoted space, does this."
 }
 
 main() {
@@ -774,20 +790,28 @@ main() {
           usage >&2
           exit 2
         fi
+        # A '#' value is a pasted note whose later words would be read as flags
+        # (`--profile '#' --bless` ran a bless); a '-' value is a flag swallowed.
+        case "$2" in
+          \#*) pasted_note_error "$2" "an egress profile" ;;
+          -*)  arg_usage_error "$(printf -- '--profile needs a value, not the flag %q.' "$2")" ;;
+        esac
         profiles="$2"; shift 2 ;;
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
       -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 2 ;;
-      # Checked at the first word of a note, so a note's later words can never act
-      # as flags (`cc-isolated  # --bless` would otherwise run a bless).
-      \#*)          workspace_usage_error "$(printf '%q is not a workspace; it looks like a pasted comment (a directory named so: ./%q).' "$1" "$1")" ;;
+      # Checked at the first word of a note, so the note's later words are never
+      # parsed as flags (`cc-isolated  # --bless` ran a bless). A '#' taken as
+      # --profile's value is refused above. A directory named so: ./#x or -- '#x'.
+      \#*)          pasted_note_error "$1" "a workspace" ;;
       *)
         [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
         ws_arg="$1"; ws_given=1; shift ;;
     esac
   done
   # After `--`: at most one word, and only when no workspace came before it
-  # (cc-push's rule). It used to drop everything after `--`, opening $PWD instead.
+  # (cc-push's rule). Everything after `--` used to be dropped, so `-- WS` opened
+  # $PWD (or the workspace named before `--`) instead of WS.
   if [ $# -gt 0 ]; then
     [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
     [ $# -eq 1 ] || two_workspaces "$1" "$2"
