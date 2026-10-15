@@ -274,9 +274,13 @@ sequence below does not apply. The bless hashes them into their own file,
 `host-tools.sha256`, beside `manifest.sha256`. Changing one leaves the blessed config,
 the container and the verified-live receipt alone: it needs a re-bless after review,
 not a rebuild or a probe. Each entry point checks the host tools it executes before
-sourcing them. The launcher checks `cc-exit-scan.sh` and `cc-gitdir.sh`, and refuses
-everything except `--bless` and `--list` when either has changed. `cc-push` checks
-itself and `cc-gitdir.sh`, and refuses to run. Their commits carry
+sourcing them. The launcher checks `cc-exit-scan.sh` and `cc-gitdir.sh`. When either
+has changed it refuses everything except `--bless` and `--list`, and it still runs
+the boundary check and shows that diff, so a re-bless never accepts a boundary
+change unseen. A changed `cc-push.sh` gets a warning. `cc-push` checks itself and
+`cc-gitdir.sh`, and refuses to run, `--help` included. `cc-isolated --list` shows
+which entry points would refuse, and `--bless` prints what changed before
+accepting it. Their commits carry
 `Host-tool-tested:` (what ran on a host, or `no — <reason>`), not `Live-verified:`.
 
 1. **Unit layer, in the editing session.** `bats test/init-firewall-rules.bats
