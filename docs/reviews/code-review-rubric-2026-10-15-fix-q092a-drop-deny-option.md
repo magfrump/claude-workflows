@@ -1,10 +1,14 @@
-Commit: dbb15ec6
+Commit: 80e16256
+Loop closed at 80e16256
 
 # Code Review Rubric
 
-**Scope:** fix/q092a-drop-deny-option; pass 1 full unit `00a27a2f..1a831ffe`, pass 2 delta `1a831ffe..dbb15ec6` (`--loop-pass`, k=1; fact-check at b973e678, critics at dbb15ec6: security, performance, api-consistency no findings) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 4 amber fixed in the next commit
+**Scope:** fix/q092a-drop-deny-option; pass 1 full unit `00a27a2f..1a831ffe`, pass 2 delta `1a831ffe..dbb15ec6` (`--loop-pass`, k=1; fact-check at b973e678, critics at dbb15ec6: security, performance, api-consistency no findings) | **Reviewed:** 2026-10-15 | **Status: ✅ PASSES** — 0 red, 0 open amber (single-sample review; absence of findings is not an attestation)
 
 Q-092 unit 1 of 2: drop the hook's `--deny` test option and the de-quoted deny match. Delivery mode: self-read (agents ran `git diff`). Critics: security, performance, api-consistency (architecture ran on unit 2, which carries the structural change). Reports: `code-fact-check-report-q092a-2026-10-15.md`, `security-review-q092a-2026-10-15.md`, `performance-review-q092a-2026-10-15.md`, `api-consistency-review-q092a-2026-10-15.md`.
+
+
+**Pass history.** Pass 1 (`00a27a2f..1a831ffe`, k=1, full critic panel): 4 amber, fixed in b973e678. Pass 2 (`1a831ffe..dbb15ec6`, k=1): fact-check 2 Mostly accurate (fixed in dbb15ec6 / recorded), critics no findings. Final confirming pass (`00a27a2f..5ba83a3a`, k=3, `code-fact-check-report-q092a-final.md`): 0 behavioural defects, doc/test items fixed in cebb32cd. Terminal critics at cebb32cd (`security-review-q092a-final-2026-10-15.md`, `critics-q092a-final-2026-10-15.md`): no findings. The k=1 fact-check of the cebb32cd delta stalled twice and was stopped by the coordinator; the builder ran it inline instead (self-review, weaker than an independent critic): the extglob mutant (`+ ( )` left live in add_deny_rule) fails test 14, plan sizes re-measured (413 / 451 / 706, fixed in the plan), the stdout-test comment matches the exits (4 on non-JSON stdin). The loop did not get two consecutive independent clean passes; the last independent passes (terminal critics) were clean.
 
 ---
 
