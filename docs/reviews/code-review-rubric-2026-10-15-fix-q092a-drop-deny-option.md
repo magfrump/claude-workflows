@@ -1,8 +1,8 @@
-Commit: 1a831ffe
+Commit: b973e678
 
 # Code Review Rubric
 
-**Scope:** fix/q092a-drop-deny-option, full unit `00a27a2f..1a831ffe` (loop pass 1, `--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 4 amber fixed in the next commit
+**Scope:** fix/q092a-drop-deny-option; pass 1 full unit `00a27a2f..1a831ffe`, pass 2 delta `1a831ffe..b973e678` (`--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 4 amber fixed in the next commit
 
 Q-092 unit 1 of 2: drop the hook's `--deny` test option and the de-quoted deny match. Delivery mode: self-read (agents ran `git diff`). Critics: security, performance, api-consistency (architecture ran on unit 2, which carries the structural change). Reports: `code-fact-check-report-q092a-2026-10-15.md`, `security-review-q092a-2026-10-15.md`, `performance-review-q092a-2026-10-15.md`, `api-consistency-review-q092a-2026-10-15.md`.
 
@@ -34,6 +34,8 @@ None.
 | C3 | Residual list named only the `""` split; backslash, whole-word and exact-rule quoting (`git "push"`, `cat "secret"`) belong to the same family | Fact-check, security-reviewer | Low | for-author | — | Fixed |
 | C4 | Header line 15 (`--permissions` "instead of reading from settings files") and the "relative value is used as written" line were already wrong | Fact-check | Low | for-author | — | Fixed |
 | C5 | Plan F3 listed `${X:-push}` as exposed; the shape allowlist refuses it | security-reviewer (Informational) | Info | for-author | — | Fixed |
+| C7 | Pass 2: new test title said "only * is a wildcard" but checked brackets only (a `?`-unescaped mutant passed) | Fact-check pass 2 claim 13b (Mostly accurate) | Low | for-author | — | Fixed: `Bash(cat file?.txt)` case added |
+| C8 | Pass 2: b973e678's message credits F3's plan changes to the unit 2 security review (they came from unit 1's reviews) and omits F6b | Fact-check pass 2 claim 18 (Mostly accurate, commit message) | Low | for-author | — | Accepted: commit message, not rewritten; recorded here |
 | C6 | Removed `--deny` is silently swallowed by main's catch-all | api-consistency (Informational) | Info | for-author | #123 (2026-09-27, Won't-Fix: test-only options) | Won't-Fix: no caller exists; a test pins it; Claude Code applies deny regardless |
 
 ---

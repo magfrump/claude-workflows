@@ -213,13 +213,17 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 @test "a prefix deny rule blocks an extracted command inside a pipeline; only * is a wildcard" {
   # Pins the per-extracted-command check and add_deny_rule's escaping, which
   # the raw check alone does not exercise (security review q092a, finding 1).
-  echo '{"permissions":{"allow":["Bash(ls:*)","Bash(rm:*)","Bash(cat:*)"],"deny":["Bash(rm -rf:*)","Bash(cat notes[1].txt)"]}}' \
+  echo '{"permissions":{"allow":["Bash(ls:*)","Bash(rm:*)","Bash(cat:*)"],"deny":["Bash(rm -rf:*)","Bash(cat notes[1].txt)","Bash(cat file?.txt)"]}}' \
     > "$PROJECT/.claude/settings.json"
   run run_hook 'ls | rm -rf x'
   [[ "$output" != *'"permissionDecision":"allow"'* ]]
   run run_hook 'cat notes[1].txt'
   [[ "$output" != *'"permissionDecision":"allow"'* ]]
   run run_hook 'cat notes1.txt'
+  [[ "$output" == *'"permissionDecision":"allow"'* ]]
+  run run_hook 'cat file?.txt'
+  [[ "$output" != *'"permissionDecision":"allow"'* ]]
+  run run_hook 'cat file1.txt'
   [[ "$output" == *'"permissionDecision":"allow"'* ]]
 }
 
