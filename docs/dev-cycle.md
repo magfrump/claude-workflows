@@ -6,20 +6,60 @@ by hand. Change either by editing this file.
 
 Build-loop policy: review (interim; Q-103)
 
-Read by the build-loop handoff (roadmap item "Build-loop handoff"; not built yet), not by the
-dev-cycle skill itself. `self-merge`: a build loop the cycle hands an item to lands its branch
-through pr-prep on its own, but only for work that stays out of what later runs follow unreviewed
-(skills, workflows, scripts, tests, guides, instruction files and similar; the handoff seed,
-`docs/working/seed-build-loop-handoff.md`, lists them); other work still stops for review. `review`: the loop runs pr-prep's review-fix loop
-and stops; the cycle then asks the user (a PR, or one "merge <branch>?" entry where the
-project has no PRs) and merges once approved.
+Build-loop slots: 3
 
-The handoff design counts the setting as made only when the file has exactly one line, outside code
-blocks, reading exactly `Build-loop policy: self-merge` or `Build-loop policy: review` (a
-trailing CR is ignored). Anything else counts as unset, which means `review`.
+Self-merge never: workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/
 
-Interim note: the "(interim; Q-103)" on the policy line keeps it unset until Q-103 is
-answered.
+The scripts read the three lines above, and the two reader lines below, from the default
+branch's commit, never from a working tree (a build loop can write any working tree); the
+orchestrator reads them through `scripts/build-loop.sh --settings`, whose header gives each
+line's exact form. Each key may appear on one line only, outside code blocks (a copy is
+found by its letters alone, so a bold or listed copy counts too); the never and reader
+lines need a blank line or the file's end after them; a trailing CR is ignored.
+
+- **Policy.** Under `self-merge`, when a build loop marks its branch `handoff: ready`, the
+  orchestrator lands it through the gate (`build-loop.sh --merge`) with no review, but only
+  when every changed path is listed in the brief's `Paths:` line or is one of the brief's
+  own files (named by its stem), and none is on the gate's fixed floor (instruction files
+  and what they `@`-import, any dot path, the gate's own code, files later runs read as
+  truth such as `docs/decisions/` and `docs/constraints.md`, symlinks and gitlinks) or
+  matches the never line. A self-merge refused for a path falls through to review; a
+  conflict is filed as stopped, and an environment refusal is retried. Under `review`, the
+  orchestrator files one merge entry (`merge-STEM-SHA12`, or `merge-gate-STEM-SHA12` when
+  the change touches the gate's own code) holding `--check`'s output, and merges only on
+  your `[1] merge`. Under both policies the N rules refuse a change to
+  `docs/constraints.md`, this file, the cycle's own files (the questions files, the
+  roadmap, the idea log, the cycle records) or any brief beyond the brief's own Status
+  line, and any symlink, gitlink or `.git*` path: under review such a branch is filed as stopped; under self-merge it first comes to
+  you as a merge entry, whose `[1] merge` the gate then refuses, so it ends as stopped. A brief self-merges only when its own `Policy:` line also
+  reads `self-merge`. Only the exact line with `self-merge` or `review` sets the policy,
+  and `self-merge` also needs a valid never line (its `none` form for an empty list).
+  Anything else counts as unset, which means `review`: the "(interim; Q-103)" above keeps
+  it unset until Q-103 is answered.
+- **Slots.** From 1 to 9 (anything else, or no line, means 3): how many build loops run at
+  once. Step 10 dispatches into the slots less the loops this session runs, and step 8 writes new
+  briefs only while the queue is shorter than the slots. The queue counts open briefs whose loop is absent (not yet
+  dispatched) or working, plus those sent back to a loop; a blocked, stopped, capped or
+  ready-for-review one, or a stalled one held, waits on you and is not counted.
+- **Never line.** Globs that self-merge never lands, even when a brief lists them: `*` and
+  `?` match within one path part, a glob matches the path or any directory above it, and
+  paths compare lower-cased. A malformed line turns self-merge off. Here it holds every
+  code and process directory whose files take effect in this repo without a release
+  (interim; Q-149):
+  sessions in this repo read `workflows/`, `skills/`, `guides/` and `patterns/` from their
+  own checkout, and the health check the orchestrator runs every iteration executes
+  `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree, while the
+  release paste runs `devcontainer-config/install.sh` on the host before you see its diff.
+  `templates/` (a snippet other repos copy by hand) and `global-instructions/` (every
+  session's global instructions after a release; the floor already refuses its `CLAUDE.md`)
+  take effect outside the gate's view too. So in this repo self-merge can land only files
+  outside those directories and off the floor: docs the floor does not protect, `README.md`,
+  `runs/`, `archive/`, and any path under a new top-level name.
+  Some of those docs are read as authority too (`docs/evaluation-rubric.md`, which
+  self-eval scores against, and `docs/spikes/`, whose seeds later work loads); Q-149 asks
+  whether to list them.
+- **Review handoff.** No line. The pull-request route the design names is not built, and
+  this repo has no PRs, so every review merge is one questions entry.
 
 Reader roots: /home/magfrump/claude-workflows /workspace
 

@@ -14,9 +14,6 @@ user's order).
 Being built by hand in this cycle (2026-10-14), each on its own branch and worktree. Each stops
 before merging, since this session cannot merge into main (Q-162).
 
-- **U5, the build-loop handoff's last unit** (`feat/build-loop-u5`). Motive: U1–U4 are on
-  main, but the docs, Q-103's re-route, the release entry and the brief's `done` are
-  still owed (plan items 11–13). Built and reviewed; waits on Q-164 (gate code, escalate).
 - **Q-110 — the health check's NOT RUN summary under-counts** (`fix/q110-not-run-undercount`).
   Motive: reproduced again this cycle (runner 50, summary 4). Fixed and reviewed; waits on
   Q-162's paste.
@@ -28,8 +25,6 @@ before merging, since this session cannot merge into main (Q-162).
 
 ## In flight
 
-- **Build-loop handoff**: the cycle starts autonomous build loops for its briefs; Q-103
-  waits on it. Brief: `docs/working/briefs/2026-10-02-build-loop-handoff.md`
 - **Doc drift from cycle 2026-10-02** (bug: undocumented is broken): two guides still advise
   a bare `devcontainer up --remove-existing-container`; AGENTS.md/GEMINI.md omit `dev-cycle`.
   Brief: `docs/working/briefs/2026-10-02-doc-drift-cycle1.md`
@@ -58,18 +53,42 @@ before merging, since this session cannot merge into main (Q-162).
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
    First step: list what Q-117's and Q-130's checks need from the host, and which of
    those a container or second install prefix could provide side by side with main's.
-4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
+4. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
+   full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
+   cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
+   first day of iterations here (after Q-156's release), total each iteration's tokens and
+   wall time from its records and bring the numbers to you.
+5. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
    Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
    "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
    enforcement file, so the plan opens with the bypass pre-mortem.
-5. **Re-run decision 015's step 4 as a divergent design (Q-105 [3]).** Motive: 015 T2 fired
-   last cycle; Q-105 was answered [3] on 2026-10-06, with the same lost follow-up. First step:
-   a `divergent-design` doc seeded with 015's constraints and the breakage record.
 
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
 
+- **A process for writing a repo's constraints doc** (owner attention: routed to you, never
+  dispatched). Signal: the orchestrator dispatches nothing in a repo without a hard
+  constraint in `docs/constraints.md` (plan D2), and this repo has none (Q-155).
+- **Merged-branch deletion in the health step.** Signal: your answer 2 ("safe branch
+  deletion doesn't need to wait"); every orchestrator iteration and loop leaves a branch.
+  Needs C4 (Q-153), since the global instructions forbid it today.
+- **An audit-dimension menu, extendable per project.** Signal: your answer 3 (audits get an
+  explicit trigger and a menu of dimensions, like the review critics); step 4b names
+  triggers, and its only named dimension is D2's constraints one.
+- **Brainstorm confidence routing.** Signal: your answer 4 (ideas with no downside at 90%+
+  confidence go to the roadmap, ~70% ones to the questions doc); the hard-constraints half
+  is now D2's `docs/constraints.md`.
+- **The rest of the build-loop audit.** Signal: plan D13 built only `--main-log`'s check of
+  what moved main; re-running the N and S rules over past gate merges is not built.
+- **Build-loop future directions (plan D4, D5).** Signal: your 2026-10-04 walk-through. Send
+  a refused self-merge back to its loop once before asking you; take the fixed floor itself
+  from per-project settings.
+- **install.sh's archive honors replace refs.** Signal: U5's security review i2 F2:
+  `repo_git` does not switch replace refs off and `git_state_gate` does not check
+  `refs/replace/` (nor a `core.attributesFile` in the repository's or worktree's config, U5 final and narrow security F1), so `.manifest` can record a commit whose content the image does not
+  hold (`docs/reviews/security-review-2026-10-14-u5-i2.md`). Q-156's paste refuses replace
+  refs for its own release; a decision-035 boundary change, so its own unit.
 - **live-verify-gate: commits it does not see (Q-089 B security F3-F5).** Signal: a
   `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a
   `git -C <dir> commit` (how orchestrators commit into `.claude/wt-*`) is checked against
@@ -118,10 +137,20 @@ Unranked. Each names the signal that motivates it.
   held 2 of 3 slots for 12 days unstarted (log row 68's cap clause). Since U4, a dispatcher
   exists, but dispatch stays off here until `docs/constraints.md` exists (D2; U5 files it).
 
+- **Re-run decision 015's step 4 as a divergent design (Q-105 [3]).** Signal: 015 T2 fired in
+  cycle 2026-10-02; Q-105 was answered [3] on 2026-10-06, but the follow-up never reached the
+  roadmap. Here because Next holds five. First step: a `divergent-design` doc seeded with 015's
+  constraints and the breakage record.
+
 ## Done
 
 Items finished since the last cycle, with the merge.
 
+- Build-loop handoff: the dev cycle is an orchestrator loop that dispatches its briefs to
+  build loops and merges what the gate allows (decision log row 72; units U0a to U5, the
+  last merged with `feat/build-loop-u5`). Brief:
+  `docs/working/briefs/2026-10-02-build-loop-handoff.md`. Runs here only after the release
+  (Q-156) and once `docs/constraints.md` exists (Q-155); Q-103 (the policy) is yours.
 - Q-089: host-only tools get their own trust category (decision log row 71). Units A1+A2
   merged as 626dc300 and B as df18413a, on Q-148 [1]. Not live-verified: re-run install.sh, then
   `cc-isolated --list`, and edit an installed `cc-gitdir.sh` to see both refusals. Q-145's
