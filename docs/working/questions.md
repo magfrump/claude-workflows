@@ -25,11 +25,19 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-103](#q-103--dev-cycle-build-loop-policy) | you: judgment | The build-loop handoff is built: may build loops in claude-workflows land their own branches through the ga... | 2026-10-01 |
 | [Q-139](#q-139--workspace-hookspath-fails-state-gate) | you: judgment | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
+| [Q-149](#q-149--self-merge-never-workflows) | you: judgment | Keep `Self-merge never: workflows/` in this repo's `docs/dev-cycle.md`, or drop it? | 2026-10-14 |
+| [Q-150](#q-150--build-loop-c1-questions-writer) | you: judgment | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
+| [Q-151](#q-151--build-loop-c2-blocked-slot) | you: judgment | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
+| [Q-152](#q-152--build-loop-c3-blocked-wait) | you: judgment | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
+| [Q-153](#q-153--merged-branch-deletion-rule) | you: judgment | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
+| [Q-155](#q-155--constraints-doc-missing) | you: judgment | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
+| [Q-156](#q-156--image-lag) | you: terminal | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
@@ -42,7 +50,6 @@ The index below is generated — edit entries, not the table.
 | [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
-| [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 <!-- index:end -->
 
@@ -74,21 +81,35 @@ In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test ru
 - **Interim:** trust the runner's own NOT RUN list, not the summary line.
 
 ### Q-103 · dev-cycle-build-loop-policy
-**Needs:** deferred · **Opened:** 2026-10-01 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** OPEN
 
-Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or must each stop for your review?
+The build-loop handoff is built: may build loops in claude-workflows land their own branches through the gate (`self-merge`), or must each finished branch stop for your review (`review`)?
 
-- **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed.
-- **Read:** `docs/working/seed-build-loop-handoff.md` · `docs/dev-cycle.md` · decision log row 68
-- **Deferred 2026-10-01:** the handoff was split out of `feat/dev-cycle`; nothing reads this setting until it lands. Becomes `you: judgment` then.
+- **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed. Re-routed from `deferred` on 2026-10-14, when the handoff landed (U5).
+- **Read:** decision log row 72 · `docs/working/plan-build-loop-handoff.md`, "What the gate can and cannot do" and the bypass-family table (F1–F59) · `docs/dev-cycle.md`
+
+**What the gate can and cannot do.** Loops run as your uid, with a shell, in worktrees that share `/workspace/.git`. No script can contain a loop that turns hostile with its shell: it could run plain `git merge` or `git push`, write any working tree under `/workspace`, or plant `.git` state. The design makes the honest path safe and checkable, and makes the commonest honest slip, a git command run in the wrong directory, fail loudly instead of landing (D13). Content reaches main only through a gate that decides from main's committed state and the exact merge result, and the gate that runs is the root-owned image copy, which no loop can edit (D6, Q-140 [1]). Each iteration checks that main moved only by the orchestrator's merges, the gate's merges and answer-only commits (D13). With no human reading briefs (D10), the gate and your review of `ready` work are the checks on what lands.
+
+The residual families. None blocks self-merge mechanically; each is a way around the gate for a loop that already has a shell and the session's tools, not a hole in the gate's own rules:
+
+- **F11, `@`-imports (partly).** The floor refuses instruction files and what they import, by a walk of main's commit and then of the gate's checkout. Precondition: the walk reads the checkout, so the gate runs it in a clean checkout at `MAIN_SHA` (`checkout_gate` refuses anything else). Known gaps (known issue A5): start files under a symlinked directory, in a submodule or in an untracked nested repo; case-insensitive names; checkout conversions; prompt files read by a session started outside the top level; instruction files outside the repo the container cannot see. A Claude Code upgrade that changes its import grammar reopens it.
+- **F19, plain git to main (partly).** An honest wrong-directory commit fails, and any commit on main that is not the orchestrator's, the gate's or answers-only is reported at the next iteration (`--main-log`). A deliberate `git push`, or a commit shaped like an answers commit, is not caught.
+- **F21, text injection (partly).** Briefs are written and read from main's commit, and every prompt says repo text is evidence. Under self-merge the allowlist bounds what lands; under review you read the result. What a steered loop does outside git is bounded only by the sandbox.
+- **F29, a checked-out main (partly).** The gate refuses a worktree with main checked out unless it is on main, clean and mid no rebase, bisect or merge. Left: that worktree switches branch between the check and the fast-forward.
+- **F35, the session's other tools (not covered).** The loop prompt forbids pushing, publishing, starting build loops, background agents and schedules, but a loop subagent shares the orchestrator's permission mode.
+- **F37, two orchestrators (partly).** A worktree lock and an atomic branch create stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it when one lands.
+- **F58, releases (partly).** Self-mergeable code reaches running sessions only through an image release, and your review of the release is the gate. The release entry (`image-lag`) lists every commit and changed path since the image's commit and flags self-merges.
+- **F59, constraint drift (partly).** A loop decides alone when one option dominates. Step 4's drift check samples one such decision per sampled merge, and a finding triggers the deep audit's constraints dimension.
+- **R8, racing the gate's temp files.** A same-uid writer can race the gate's GATE_TMP between its writes and its reads: `git/config`, `git/info/`, `git/refs/`, `git/HEAD`, `work/.gitattributes`, `err` and `diff` (override row 509).
+- **Also routed here during the build:** a loop editing the worktree registry in the shared common dir (U2b3a); objects re-hashed once per run, so one rewritten in place afterwards, and objects not re-hashed at all (the tip's parent, merge bases) (U3a1); a planted `core.bare` with the index deleted (U3a2, Low); a same-uid shell's PATH, exported functions or settings around the D6 block (U4c).
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] review** | Each loop runs pr-prep's review-fix loop and stops; the next cycle files one "merge <branch>?" entry (no PRs here) and merges once you approve | One decision per finished item | Finished work queues up behind you; at most 3 items in flight |
-| **[2] self-merge** | Each loop lands its branch through pr-prep's local merge on its own, but only for work outside what later runs follow unreviewed (the seed's list: hooks, enforcement and harness settings, instruction files, skills/, workflows/, scripts/, guides/, patterns/, templates/, test/, devcontainer-config/); anything else still stops for review | None for that work, which here is mostly docs; most work in this repo still comes to you as under [1] | A bad change that pr-prep's automated review misses lands on main; afterwards the next cycle's health check, spot-check (2 sampled merges by default) and code-without-docs check might catch it |
+| **[1] review** | Every `ready` branch gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
+| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line (here `workflows/`, Q-149); anything else falls to [1]'s entry | None for that work; most work in this repo touches gate code, instruction files or skills' `SKILL.md`, which still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
 
-- **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`. Nothing reads it until the handoff unit lands; its design counts that line as unset, which means `review`.
-- **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]) and delete the paragraph starting "Interim note:".
+- **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
+- **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -324,3 +345,140 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 - **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
 - **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
 
+### Q-149 · self-merge-never-workflows
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Keep `Self-merge never: workflows/` in this repo's `docs/dev-cycle.md`, or drop it?
+
+- **Why it's yours:** it decides which of this repo's own process docs may land with no review once Q-103 allows self-merge.
+- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md`
+
+Scripts, skills, hooks and guides reach running sessions here only through an image release you cut. Workflows are the exception: every later session in this repo reads `workflows/` from its own checkout, so a merged workflow change takes effect at once.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep** | A workflow change always comes to you as a merge entry, even under self-merge | One review per workflow change | Workflow fixes queue behind you |
+| **[2] Drop** | The line becomes `Self-merge never: none`; a brief whose `Paths:` lists a workflow can land it unreviewed | None | A bad workflow change steers every later session here until someone notices |
+
+- **Blocks:** nothing while the policy is `review` (Q-103): the never line only narrows self-merge.
+- **Interim:** [1], the line as written in U5.
+- **If the answer differs:** [2] is a one-line edit to `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible).
+
+### Q-150 · build-loop-c1-questions-writer
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Should the orchestrator stay the only writer of the questions files, with build loops carrying their questions in a `handoff: blocked` marker, or should loops write entries themselves? (Plan C1.)
+
+- **Read:** plan D11 and F41 in `docs/working/plan-build-loop-handoff.md` · `docs/working/handoff-build-loop-handoff.md` C1
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Orchestrator only** (built) | A loop ends with a `blocked` marker; the orchestrator files its question as an entry, the body quoted line by line (`--marker`) | None | A loop's question appears one orchestrator iteration later than it could |
+| **[2] Loops write directly** | Each loop edits the questions files on its own branch | A new gate unit to review | Up to slots+1 sessions edit one file, minting colliding IDs, and a loop's text can plant an answer line the readers take as yours (F41, reproduced) |
+
+- **Interim:** [1], as built (D11).
+- **If the answer differs:** [2] reopens D11 and F41: `--marker`, `--cycle-diff` and the N rules change, in a reviewed unit.
+
+### Q-151 · build-loop-c2-blocked-slot
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.)
+
+- **Read:** plan D9 · `docs/working/handoff-build-loop-handoff.md` C2
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Frees the slot** (built) | Only a live loop holds a slot; a blocked item re-enters the queue on its existing branch once answered, ahead of new briefs | None | More work is in flight at once than the slot count suggests, so more answers wait on you |
+| **[2] Holds the slot** | A blocked item counts against `Build-loop slots:` until answered | None | Blocked work starves the cap: with 3 blocked items nothing else runs |
+
+- **Interim:** [1], as built (D9).
+- **If the answer differs:** [2] is a change to the skill's step 10 slot count.
+
+### Q-152 · build-loop-c3-blocked-wait
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart it? (Plan C3.)
+
+- **Read:** plan D12 · `skills/dev-cycle/SKILL.md`, the wait rule at the end of step 10 · `docs/working/handoff-build-loop-handoff.md` C3
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Poll** (built) | It wakes every 1200–1800 s and runs a full cycle only when main moved past its last land (a committed answer moves it), a retry's wait ran out or you wrote; otherwise the wakeup does nothing | None | A little spend per idle wakeup while you are away |
+| **[2] Stop** | The `/loop` ends; you start `/loop /dev-cycle` again after answering | One command per return | Answered work sits until you remember to restart |
+
+- **Interim:** [1], as built (D12).
+- **If the answer differs:** [2] replaces the skill's wait rule with an end-of-loop line.
+
+### Q-153 · merged-branch-deletion-rule
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+May the dev cycle delete merged branches without asking, which your global instructions forbid today ("deleting branches" needs approval in every mode)? (Plan C4.)
+
+- **Why it's yours:** it changes your own global instructions, and your answer 2 ("safe branch deletion doesn't need to wait") conflicts with them as written.
+- **Read:** `docs/working/handoff-build-loop-handoff.md` C4 and answer 2 · roadmap Ideas, "Merged-branch deletion"
+
+Every orchestrator iteration leaves a `chore/dev-cycle-DATE-HHMM` branch and every loop a feature branch, so they pile up.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Narrow the global rule** | Merged branches, `git branch -d` only (git refuses an unmerged one), need no approval, in every project | None after the edit | A branch merged by mistake loses its name in every project (the commits stay reachable from main) |
+| **[2] This project only** | The same exception, written for claude-workflows alone | None here | Other projects keep asking |
+| **[3] Keep asking** | Nothing deletes branches; they wait for you | A cleanup pass now and then | Branch lists grow by one or more per iteration |
+
+- **Blocks:** roadmap item "Merged-branch deletion".
+- **Interim:** [3]: nothing deletes a branch.
+- **If the answer differs:** [1] or [2] is an instruction edit plus the roadmap item's health-step change.
+
+### Q-155 · constraints-doc-missing
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, or leave dispatch off until a process for writing one exists?
+
+- **Why it's yours:** the hard constraints steer every design choice a loop makes alone (D2), so they must be yours, not inferred.
+- **Read:** plan D2 · `skills/dev-cycle/SKILL.md` "Constraints" · `scripts/build-loop.sh` header, the `constraints` line of `--settings` · roadmap Ideas, "A process for writing a repo's constraints doc"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Write it now** | You write `H1: …` lines, each with a `success:` line, and any `S1: …` soft ones, and commit them on main | An hour or so of your time | Loops decide by constraints you wrote in a hurry; the drift check and deep audit surface the misses |
+| **[2] Wait for the process** | Dispatch stays off until the roadmap item yields a way to write one | None now | The orchestrator runs every step but dispatch, so briefs pile up unbuilt |
+
+- **Blocks:** dispatch in this repo (step 10).
+- **Interim:** [2]. `--settings` prints `constraints missing`, and step 10 files nothing more while this entry is open.
+- **If the answer differs:** nothing to redo.
+
+### Q-156 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed dev-cycle skill and the gate it runs (the image copy, Q-140 [1]) carry the build-loop handoff as built.
+
+- **Read:** `skills/dev-cycle/SKILL.md` step 0.1 (this entry's slug is the one step 0.1 files and rewrites) · decision log row 72 · plan D6 and F58
+
+The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is main after the merge of `feat/build-loop-u5`; at writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
+
+Gate code changed from C to M: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`.
+
+First-parent commits after C (none is a `(build-loop self-merge)`: every one was merged by hand or committed in session), then this branch's merge:
+
+- 308196e7 Merge branch 'feat/build-loop-u4c': the D6 block always runs the root-owned image copy (Q-140 [1]); step 0.1's image checks (Q-144 [1])
+- 5cad0964 docs(checkpoint): U4c merged at 308196e7 on Q-144 [1]; Q-144 answered and archived; next a release, then U5
+- 33555624 docs(questions): Q-145, the lib's ancestor listing races with /tmp churn; blocks Q-102's merge
+- f66fd9f2 Merge branch 'feat/q102-parallel-gates': health-check runs its test gate in parallel by default (Q-102 [1], Q-145 [2])
+- 4ab9a51f docs(working): Q-075 evidence on what self-improvement.sh can write; Q-146 filed
+- 6d9a2962 docs(questions): Q-147 and Q-148 on main, so the open Q-089 asks are visible before its branches land
+- ed4976bf docs(roadmap): drop Q-088 from Next (answered 2026-10-07), note Q-089 waiting on Q-148
+- 626dc300 Merge branch 'feat/q089a2b-cc-push-self-check': host-only tools get their own trust manifest; cc-push checks itself (Q-089 units A1+A2, Q-148 [1])
+- df18413a Merge branch 'feat/q089b4-host-tool-gate': host tools carry Host-tool-tested, not Live-verified (Q-089 unit B, Q-148 [1])
+- d7e140ea docs(questions, roadmap): Q-148 answered [1] and archived; Q-089 merged (626dc300, df18413a)
+- b279a2ba docs(reviews): carry the first Q-089 loop's review history to main before its branch is deleted
+- the merge of `feat/build-loop-u5` (this unit: docs, settings, questions; SKILL.md step 0.1's release listing)
+
+Paths changed from C to M outside `docs/` (about 500 paths under `docs/` besides, nearly all `docs/reviews/`; the image carries none of `docs/`): `README.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `devcontainer-config/install.sh`, `guides/cc-isolated-usage.md`, `guides/devcontainer-setup.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `scripts/build-loop.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/run-tests.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-push.bats`, `test/hooks/live-verify-gate.bats`, `test/install-host.bats`, `test/lib/d6-snippet.bash` (deleted), `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/health-check.bats`, `test/scripts/run-tests.bats`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`.
+
+Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox):
+
+```bash
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" && ./devcontainer-config/install.sh
+```
+
+- **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
+- **If main has moved past the U5 merge** when you paste, the release ships those commits too; the next cycle's step 0.1 rewrites this body with the exact M and list.

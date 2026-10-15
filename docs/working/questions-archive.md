@@ -138,6 +138,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
 <!-- index:end -->
 
 ## Answered
@@ -2707,4 +2708,22 @@ Q-089 (host-only tools get their own trust category) is built and reviewed, and 
 - **Blocks:** Q-089's landing, and the roadmap Ideas filed from it.
 - **Interim:** nothing merged; main is untouched at 4ab9a51f. The loop paused, as the cap requires.
 - **If the answer differs:** [2] runs a full review round; [3] means the branches can be deleted at your say.
+
+### Q-154 · build-loop-c5-cycle-cost
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answer (2026-10-04, in session; plan D12):** a full cycle every iteration for now; move to a light pass of steps 7, 8 and 10 between full cycles once the costs are visible. Filed answered in U5, as the plan says; roadmap Next "Revisit the light pass" tracks it.
+
+Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.)
+
+- **Read:** plan D12 and F53 · `docs/reviews/pre-mortem-build-loop-handoff-rev3.md` F53
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Full cycle every iteration** | Health check, every trigger, review-fix loop on the chore branch, each time a loop finishes | None | Spend per iteration is high while loops finish often |
+| **[2] Light pass between full cycles** | Steps 7, 8 and 10 with a mechanical land; a full cycle every N hours | None | A trigger waits up to N hours to be seen |
+
+- **Interim:** [1], answered.
+- **If the answer differs:** n/a.
+
 
