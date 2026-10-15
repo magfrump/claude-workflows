@@ -723,8 +723,8 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 
 @test "the ancestor listing skips a file that vanishes between find's readdir and its stat, retries one for a vanished directory, and still fails closed on a permission error or a vanished top (Q-145)" {
     # The race, made deterministic with the real find: a shim adds, to the -H top-level
-    # listing only, a clause that runs at the first entry of the fixture's ancestor and
-    # deletes every other vic* there. find read all their names before that first visit,
+    # listing only, a clause that runs at each entry under the fixture's ancestor; the first
+    # run deletes every other vic* there. find read all their names before that first visit,
     # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
     # exit status. With SHIM_ONCE it races only on the first listing of a walk. With SHIM_RMTOP
     # it instead removes the ancestor's .claude, a top config_seeds already found to be a
@@ -774,6 +774,17 @@ EOF
             [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "$( [ "$m" = drop ] && echo "0 0 0 " || echo "1 1 1 ")" ] || { echo "$m: want three failed tries: $(cat "$a/shim/log")"; return 1; }
         done
     done
+}
+
+@test "top_files lists a directory's files, links and a linked DIR itself, and fails with its array empty when a DIR is no longer a directory (Q-145 final fact-check r3)" {
+    d="$BATS_TEST_TMPDIR/tf" && mkdir -p "$d/real/sub" && echo > "$d/real/f" && ln -s nowhere "$d/real/dangle" && ln -s real "$d/link" && ln -s gone "$d/dead"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; d="$2"
+        fl=(stale); top_files fl "$d/real" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        fl=(stale); top_files fl "$d/link" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        # A linked DIR whose target is gone: find lists the link and exits 0; the -d recheck fails it.
+        fl=(stale); if top_files fl "$d/real" "$d/dead"; then echo "dead: passed"; else echo "dead: failed, ${#fl[@]} left"; fi' _ "$LIB" "$d"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    [ "$output" = $'ok:real/dangle\nok:real/f\nok:link\nok:link/dangle\nok:link/f\ndead: failed, 0 left' ] || { echo "$output"; return 1; }
 }
 
 @test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes, or reads a prompt copy that has bases of its own) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
