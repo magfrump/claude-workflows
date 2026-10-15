@@ -37,8 +37,8 @@ that a Bash deny rule names and whose words the allow list covers:
 | F2 | Hook emits `ask` (#39344) on a deny-matching command | n/a | n/a: no path emits `ask` (see Motive); pinned by a new test | **Covered** |
 | F3 | Quote or backslash spellings (`.cred""entials.json`, `.c\redentials.json`, `git "push"`, `cat "secret"` vs `Bash(cat secret)`; `${X:-push}` is refused by the shape allowlist anyway) | hook's de-quoted match fell through → prompt | hook allows; caught only if Claude Code's own matcher normalizes quotes | **Not verified.** CC 2.1.300 builds `fullyUnquoted` forms of a command (seen in the binary), but where they feed the deny matcher was not traced. Live check queued. Accepted, see below |
 | F4 | Compound command with a denied subcommand (`ls && rm -rf x` vs `Bash(rm -rf:*)`) | hook checked each extracted command | CC's matcher must split; documented CC behaviour for allow rules is operator-aware | **Not verified for deny.** Live check queued. The wired rule `Bash(*.credentials.json*)` has leading/trailing `*` and matches the raw string anywhere, so the shipped rule is unaffected |
-| F5 | Glob / brace / ANSI-C / earlier-variable spellings (`.c*`, `.jso[n]`, `$F`) | approved by the hook (accepted residual, pinned) | same | **Not covered, unchanged** (Q-070 [1] residual; the sandbox is the real fix, Q-125) |
-| F6 | Malformed or ill-shaped settings file | no approval (DENY_ALL) | no approval for bad JSON or a bad `permissions`, `allow`, `deny` or `ask` (U2 makes each, when present, an array of NUL-free strings) | **Partly covered.** Security review q092b: Claude Code 2.1.300 can ignore a whole settings file for an invalid value; for a value outside those keys the hook still approves from the file's allow rules while its deny rules are gone. Before Q-092 the reader still saw the deny rule. Residual, stated in the header |
+| F5 | Glob / brace / ANSI-C / earlier-variable spellings (`.c*`, `.jso[n]`, `$F`) | approved by the hook (accepted residual; the `.c*` glob and `$F` spellings are pinned by tests) | same | **Not covered, unchanged** (Q-070 [1] residual; the sandbox is the real fix, Q-125) |
+| F6 | Malformed or ill-shaped settings file | no approval (DENY_ALL) | no approval for bad JSON or a bad `permissions`, `allow`, `deny` or `ask` (U2 makes each, when present, an array whose strings hold no NUL; non-string entries are skipped, as Claude Code drops them) | **Partly covered.** Security review q092b: Claude Code 2.1.300 can ignore a whole settings file for an invalid value; for a value outside those keys the hook still approves from the file's allow rules while its deny rules are gone. Before Q-092 the reader still saw the deny rule. Residual, stated in the header |
 | F6b | Settings file Claude Code drops for a reason the hook does not check (e.g. a bad `defaultMode`, a BOM) | the hook's deny reader still matched its deny rules | no backstop | **Not covered**; accepted, see F6 |
 | F7 | Relative or newline-bearing `CLAUDE_CONFIG_DIR` | no approval | no approval (kept: a wrongly resolved file could add allow rules) | **Covered** |
 | F8 | Another hook's `ask` (guard-trusted-writes, SOFT+tainted Bash) overriding a Bash deny | reader could not affect it (it only withholds this hook's own allow) | same | **Out of scope, unchanged**; reported |
@@ -78,8 +78,10 @@ plus docs; the change removes a coupling the 2026-09-27 review asked to remove).
 
 ## Split (decision log 62 cap)
 
-The whole change counts 652 code lines (deletions count in full), so it is two
-stacked units, each under 400:
+At the split the whole change counted 652 code lines (deletions count in full),
+so it became two stacked units, each under 400 then (~365 and ~373). After the
+review loops, U1 counts ~407 and U2 ~436 against U1 (697 for the stack), inside
+decision 62's ~800 in-loop tolerance:
 
 - **U1** `fix/q092a-drop-deny-option` (base `merge/ready-2026-10-15`): drop
   `--deny` and the de-quoted match; tests move off `--deny` into their final
