@@ -527,6 +527,26 @@ rec() { mkdir -p docs/working/cycles && printf '%s\n' "$@" >> docs/working/cycle
         && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
 }
 
+# plant_hooks: every hook name git knows, executable in the hooks directory, each appending its name to $FIRED.
+FIRED="$BATS_TEST_TMPDIR/fired"
+plant_hooks() { local h d; d="$(git rev-parse --path-format=absolute --git-common-dir)/hooks"; mkdir -p "$d"
+    for h in applypatch-msg pre-applypatch post-applypatch pre-commit pre-merge-commit prepare-commit-msg commit-msg post-commit pre-rebase post-checkout post-merge pre-push pre-receive update proc-receive post-receive post-update reference-transaction push-to-checkout pre-auto-gc post-rewrite sendemail-validate fsmonitor-watchman post-index-change; do
+        printf '#!/bin/sh\necho %s >> "%s"\n' "$h" "$FIRED" > "$d/$h"; chmod +x "$d/$h"; done; }
+
+@test "--land-cycle runs no hook planted in the hooks directory, by compare-and-swap or by the fast-forward where main is checked out (C9, T2, Q-141)" {
+    qa; B=chore/dev-cycle-2026-10-12; plant_hooks
+    # The control: the fixture's own plain git runs them (so an empty $FIRED below is not a dead hook).
+    git update-ref refs/heads/probe HEAD; grep -qx reference-transaction "$FIRED" || { cat "$FIRED"; return 1; }
+    rec "Branch: $B"; M="$(git rev-parse main)"; rm -f "$FIRED"
+    bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $B "* ]] && [ "$(git rev-parse main^1)" = "$M" ] && [ ! -e "$FIRED" ] || { show; cat "$FIRED"; return 1; }
+    # Main checked out in the first worktree: the land fast-forwards it there.
+    git checkout -q main; git worktree add -q -b chore/dev-cycle-2026-10-13-0900 "$BATS_TEST_TMPDIR/wt" main; cd "$BATS_TEST_TMPDIR/wt"
+    rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; rm -f "$FIRED"
+    bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD^1)" = "$M" ] && [ ! -e "$FIRED" ] || { show; cat "$FIRED"; return 1; }
+}
+
 @test "--land-cycle judges the merge, not the index: a rename git pairs into a new questions file carries main's answer, and a conflict refuses (row 753, U4a)" {
     mkdir -p docs/working; printf '%s\n' '# Draft' '### Q-001 · x' "$N OPEN" '' 'Which?' '| **[1] a** | b |' '| **[2] c** | d |' 'Notes.' > docs/working/draft.md
     echo base > x.md; commit_all draft; git checkout -q -b chore/dev-cycle-2026-10-12; git mv docs/working/draft.md docs/working/questions.md; cd_is ok; commit_all move

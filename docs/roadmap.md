@@ -77,6 +77,9 @@ before merging, since this session cannot merge into main (Q-162).
    Cycle 2 (2026-10-14): 42 multi-file landings; 25/42 carry the line, 38/42 committed a
    rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432). About 36 are
    units of the one build-loop plan.
+   Cycle 3 (2026-10-15, window closed): 45 multi-file merges since 2026-10-02; 26 carry
+   the line, 41 committed a rubric, 4 have neither (all 10-02 to 10-06). The verdict is
+   Q-179.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
@@ -93,6 +96,13 @@ before merging, since this session cannot merge into main (Q-162).
    design is done (`docs/dd-015-step4`, f050b487, lands with Q-162): keep Docker, since none of
    the 6 breakages was Docker's. First step, once Q-170 is answered: apply §6's amendment
    to 015's revisit triggers.
+6. **Q-146 [1] — self-improvement.sh commits for its implementer.** Motive: in a worktree
+   or clone the children have no allowlist and cannot commit (F5), and the `/workspace`
+   allowlist gives arbitrary code execution (F1); see `docs/working/si-trust-evidence-2026-10-14.md`.
+   First step: after the implementer exits, the script runs `git add -A && git commit` in
+   the worktree, taking the child's message from a file it wrote (fall back to the task
+   description); children get no Bash grants. About 20 lines plus tests. Then the live run
+   Q-075 imagined, with `REPO_DIR` a dedicated clone (§5.1), never `/workspace`.
 
 ## Ideas
 
@@ -150,6 +160,8 @@ Unranked. Each names the signal that motivates it.
 - **Scoped deep audit** (step 4b). Signal: cycle 2026-10-02's deep-audit triggers fired —
   8 router skills and the dev-cycle skill added in the window, and no earlier cycle record
   to compare the model with. Scope and timing are the user's; runs on its own branch.
+  Fired again 2026-10-15: `skills/dev-cycle/SKILL.md` rewritten as the orchestrator
+  (U4b1, U4b2, U4c), plus code-review, pr-prep, RPI and onboarding changes in the window.
 - **Health check under-counts NOT RUN suites (Q-110).** Signal: the runner printed 50
   report-dependent suites NOT RUN; the health-check summary said 4 (cycle 2026-10-02).
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
@@ -174,6 +186,18 @@ Unranked. Each names the signal that motivates it.
 - **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
   conflicts on `code-fact-check-report-r*.md` (undated, so any two branches collide) and
   add/add conflicts on `*-review-<date>.md` (any two branches reviewed the same day).
+- **Pre-handoff briefs hold every slot and are never collected.** Signal: `--status` skips
+  all three 2026-10-02 briefs ("no Branch: line"), so they hold the 3 slots for 13 days while
+  their work goes on in by-hand branches (cycle 2026-10-15). Give each its `Branch:` line,
+  or set it done or dropped where its work lands.
+- **The digest shows unlanded cycle branches.** Signal: `chore/dev-cycle-2026-10-15-0357`
+  held Q-162 to Q-177 and a cycle record, none on main, so the digest and `next-id` could not
+  see them (Q-178). List unmerged `chore/dev-cycle-*` branches with the entry IDs they add.
+- **Prune worktrees on merged branches.** Signal: 35 registered worktrees, 12 of them on
+  branches already merged. Each one costs disk and joins the import walks' reader set.
+- **Set a locale the image has.** Signal: every D6 call prints three
+  `setlocale: LC_ALL: cannot change locale (en_US.UTF-8)` warnings into the output the
+  orchestrator reads.
 
 - **Let the orchestrator merge, or plan for a human merge each cycle.** Signal: cycle
   2026-10-14. The auto-mode classifier refused this session's merge into main, so every

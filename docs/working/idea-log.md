@@ -37,3 +37,18 @@ Signals read: this cycle's steps 1–4b, the two seeds above, the idea source `d
 2. Dispatch the two 12-day-old briefs once `docs/constraints.md` exists. Changes: frees 2 slots.
 3. Q-105 [3] and Q-106 [2] follow-ups go to Next 4–5 (seed 2, applied directly rather than filed as an idea).
 4. Do nothing else: U5 files its own roadmap items (a)–(g), and adding more now would duplicate them.
+
+- Give the three 2026-10-02 briefs `Branch:` lines or close them, so `--status` stops skipping them (signal: all three skipped as "no Branch: line"; they hold every slot)
+- List unmerged `chore/dev-cycle-*` branches and the entry IDs they add in the digest (signal: Q-162 to Q-177 lived only on `chore/dev-cycle-2026-10-15-0357`; `next-id` printed Q-149, which is in use)
+- Prune worktrees whose branch is merged (signal: 35 registered worktrees, 12 on merged branches)
+- Set a locale the image has, so the scripts stop printing setlocale warnings (signal: three `LC_ALL` warnings on every D6 call)
+
+## Brainstorm 2026-10-15
+
+Triggers: roadmap Now holds 0 items ready for a brief; 13 days since the last brainstorm.
+
+1. Close or migrate the pre-handoff briefs (seed 1). Changes: frees the 3 slots for dispatch once U5 lands.
+2. Show unlanded cycle branches in the digest (seed 2). Changes: no parallel stream of asks goes unseen; next-id stops colliding.
+3. Prune worktrees on merged branches (seed 3). Changes: smaller reader set for the import walks, less disk.
+4. Fix the image locale (seed 4). Changes: cleaner gate output.
+5. Do nothing on direction: Next keeps the user's order. Q-178 (land the 0357 stream) is the step that unblocks the most.
