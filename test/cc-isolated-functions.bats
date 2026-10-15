@@ -2152,14 +2152,17 @@ rewrite_plant() {
   [[ "$output" == *"~ remote $SCAN_WS/mirror-later  dir "* ]]
 }
 
-@test "exit scan Q-096: pushInsteadOf, and a pushurl rewritten by insteadOf" {
+@test "exit scan Q-096: pushInsteadOf, a pushurl rewritten by insteadOf, a rewritten path-valued pushRemote" {
   scan_repo
+  local br; br="$(git -C "$SCAN_WS" symbolic-ref --short HEAD)"
+  git -C "$SCAN_WS" config "branch.$br.pushRemote" alias/b
+  git -C "$SCAN_WS" config "url.$SCAN_WS/br-.insteadOf" alias/
   git -C "$SCAN_WS" remote add p https://p.invalid/repo
   git -C "$SCAN_WS" config "url.$SCAN_WS/pm-.pushInsteadOf" https://p.invalid/
   git -C "$SCAN_WS" remote add q https://q.invalid/x
   git -C "$SCAN_WS" config remote.q.pushurl https://qq.invalid/repo
   git -C "$SCAN_WS" config "url.$SCAN_WS/qq-.insteadOf" https://qq.invalid/
-  rewrite_plant "$SCAN_WS/pm-repo" "$SCAN_WS/qq-repo"
+  rewrite_plant "$SCAN_WS/pm-repo" "$SCAN_WS/qq-repo" "$SCAN_WS/br-b"
 }
 
 @test "exit scan Q-096: overlapping prefixes: every matching rule is walked, not only git's longest" {
@@ -2168,14 +2171,6 @@ rewrite_plant() {
   git -C "$SCAN_WS" config "url.$SCAN_WS/short-.insteadOf" https://o.invalid/
   git -C "$SCAN_WS" config "url.$SCAN_WS/long-.insteadOf" https://o.invalid/re
   rewrite_plant "$SCAN_WS/short-repo" "$SCAN_WS/long-po"
-}
-
-@test "exit scan Q-096: a path-valued branch pushRemote, rewritten, is walked" {
-  scan_repo
-  local br; br="$(git -C "$SCAN_WS" symbolic-ref --short HEAD)"
-  git -C "$SCAN_WS" config "branch.$br.pushRemote" alias/b
-  git -C "$SCAN_WS" config "url.$SCAN_WS/br-.insteadOf" alias/
-  rewrite_plant "$SCAN_WS/br-b"
 }
 
 @test "exit scan Q-096: a rewrite inside an embedded repo resolves in that repo's working tree" {
@@ -2187,12 +2182,14 @@ rewrite_plant() {
   rewrite_plant "$e/mirrors/r.git"
 }
 
-@test "exit scan Q-096: YOUR global insteadOf rule applies to a URL in repo config" {
+@test "exit scan Q-096: YOUR global rule rewrites a repo URL; a repo rule rewrites YOUR own remote" {
   scan_repo
   export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
   git config --global "url.$SCAN_WS/g-.insteadOf" gh:
   git -C "$SCAN_WS" remote add o gh:repo
-  rewrite_plant "$SCAN_WS/g-repo"
+  git config --global remote.mine.url https://mine.invalid/repo
+  git -C "$SCAN_WS" config "url.$SCAN_WS/m-.insteadOf" https://mine.invalid/
+  rewrite_plant "$SCAN_WS/g-repo" "$SCAN_WS/m-repo"
 }
 
 @test "exit scan Q-096: a non-local rewritten URL is not walked; a relative one refuses the worktree note" {
@@ -2213,19 +2210,11 @@ rewrite_plant() {
   warns_listing_wt
 }
 
-@test "exit scan Q-096: YOUR own remote, rewritten by a launch-time rule to a planted target, is walked" {
-  scan_repo
-  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
-  git config --global remote.mine.url https://mine.invalid/repo
-  git -C "$SCAN_WS" config "url.$SCAN_WS/m-.insteadOf" https://mine.invalid/
-  rewrite_plant "$SCAN_WS/m-repo"
-}
-
 @test "exit scan Q-096: the prefix match is byte-wise, as git's, under a UTF-8 locale" {
   scan_repo
   export LC_ALL=C.utf8
   git -C "$SCAN_WS" remote add o $'\xc3\xa9vil'
-  # A value ending mid-character: git matches it, a character-wise test would not.
+  # A value ending mid-character: git cuts after its byte; a character count would not.
   git -C "$SCAN_WS" config "url.$SCAN_WS/x-.insteadOf" $'\xc3'
   local t="$SCAN_WS/x-"$'\xa9vil' before
   git init -q --bare "$t"
@@ -2241,12 +2230,16 @@ rewrite_plant() {
   scan_repo
   export LC_ALL=C.utf8
   local before n
-  before="$(git_exec_snapshot "$SCAN_WS")"
+  # A legacy remotes file whose first URL ends mid-character keeps its second.
+  mkdir "$SCAN_WS/.git/remotes"; printf 'URL: x\xc3\nURL: ./l.git\n' > "$SCAN_WS/.git/remotes/up"
+  git init -q --bare "$SCAN_WS/l.git"; before="$(git_exec_snapshot "$SCAN_WS")"
   # Several, so at least one follows the odd name in find's order.
   for n in $'a\xc3' pre-push pre-commit post-checkout; do plant_hook "$SCAN_WS/.git/hooks" "$n"; done
+  plant_hook "$SCAN_WS/l.git/hooks" pre-receive
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
-  for n in pre-push pre-commit post-checkout; do [[ "$output" == *"+ hook $SCAN_WS/.git/hooks/$n "* ]]; done
+  for n in .git/hooks/pre-push .git/hooks/pre-commit .git/hooks/post-checkout l.git/hooks/pre-receive; do
+    [[ "$output" == *"+ hook $SCAN_WS/$n "* ]]; done
 }
 
 @test "exit scan Q-096: rules and URLs holding tabs are not merged with others" {
@@ -2274,7 +2267,7 @@ rewrite_plant() {
   [[ "$output" == *"+ hook "*"EVIL/hooks/pre-receive"* ]]
 }
 
-@test "exit scan Q-096: past either insteadOf cap, the exit scan fails as unsafe" {
+@test "exit scan Q-096: past any insteadOf cap, the exit scan fails as unsafe" {
   scan_repo
   git -C "$SCAN_WS" remote add o https://o.invalid/repo
   git -C "$SCAN_WS" config "url.$SCAN_WS/a-.insteadOf" https://o.invalid/
@@ -2294,7 +2287,7 @@ rewrite_plant() {
   GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000 GIT_EXIT_SCAN_MAX_REWRITE_BYTES=10
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"a remote URL or insteadOf rule over 10 bytes: too long to compare"* ]]
+  [[ "$output" == *"an insteadOf rule over 10 bytes ("*"): too long to compare"* ]]
 }
 
 @test "exit scan N3: a relative remote path with a colon after a slash is local, and walked" {

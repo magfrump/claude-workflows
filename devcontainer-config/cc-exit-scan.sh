@@ -403,8 +403,8 @@ _snap_key() {
   _snap_k="${#1}:$1$2"
   [ -n "${3:-}" ] || return 0
   [ "${#1}" -gt "$GIT_EXIT_SCAN_MAX_REWRITE_BYTES" ] || [ "${#2}" -gt "$GIT_EXIT_SCAN_MAX_REWRITE_BYTES" ] || return 0
-  _snap_fail 'a remote URL or insteadOf rule over %s bytes: too long to compare, treat the checkout as unsafe' \
-    "$GIT_EXIT_SCAN_MAX_REWRITE_BYTES"
+  _snap_fail 'a remote URL, its working tree or an insteadOf rule over %s bytes (%s and %s): too long to compare, treat the checkout as unsafe' \
+    "$GIT_EXIT_SCAN_MAX_REWRITE_BYTES" "${#1}" "${#2}"
 }
 
 # _snap_url <url> <working tree>: a remote URL git may push to. Walked now
@@ -515,7 +515,7 @@ _snap_config() {
         esac ;;
       url.*.insteadof|url.*.pushinsteadof)
         # url.<base>.insteadOf rewrites matching URLs to <base>: the base alone
-        # here, every URL it rewrites in git_exec_snapshot (_snap_rewrite).
+        # here, every URL it rewrites in git_exec_snapshot (_snap_match).
         t="${key#url.}"; t="${t%.*}"
         case "$t" in ""|.) _snap_wrel "$key" "$f" ./ ;; esac   # a base "" or "." starts a relative path
         _snap_rule "$t" "$val" || return 1
@@ -828,7 +828,7 @@ git_exec_snapshot() {
     done < "$list"
   fi
   # Remote names that no remote defines are URLs or paths to git (remote.c), and
-  # every URL meets every insteadOf rule (_snap_rewrite). Walking one can reach
+  # every URL meets every insteadOf rule (_snap_match). Walking one can reach
   # configs that name more, hence the growing indexes: a new URL meets the rules
   # already seen, a new rule meets the URLs already seen, so each pair meets once.
   i=0 u=0 r=0
