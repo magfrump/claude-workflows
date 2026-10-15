@@ -721,14 +721,15 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
-@test "the ancestor listing skips an entry that vanishes between find's readdir and its stat, and still fails closed on a permission error or a vanished top (Q-145)" {
+@test "the ancestor listing skips a file that vanishes between find's readdir and its stat, retries one for a vanished directory, and still fails closed on a permission error or a vanished top (Q-145)" {
     # The race, made deterministic with the real find: a shim adds, to the -H top-level
     # listing only, a clause that runs at the first entry of the fixture's ancestor and
     # deletes every other vic* there. find read all their names before that first visit,
-    # so it stats each deleted one later and gets ENOENT. With T_RMTOP it instead removes
-    # the ancestor's .claude, a top config_seeds already found to be a directory, first;
-    # T_RMTOP=drop also drops it from the start points, as a find that skipped a missing
-    # start point silently would, which leaves the -d recheck to catch it.
+    # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
+    # exit status. With T_ONCE it races only on the first listing of a walk. With T_RMTOP
+    # it instead removes the ancestor's .claude, a top config_seeds already found to be a
+    # directory, first; T_RMTOP=drop also drops it from the start points, as a find that
+    # skipped a missing start point silently would, which leaves the -d recheck to catch it.
     a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
     printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
     cat > "$a/shim/find" <<EOF
@@ -736,21 +737,35 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
 [[ "\${1:-}" == -H ]] || exec "$real" "\$@"
 [[ -z "\${T_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
 args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do [[ "\${T_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1"); shift; done
-exec "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -f "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"
+if [[ -n "\${T_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
+else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
+rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
 EOF
     chmod +x "$a/shim/find"
     for w in tree main; do
-        for i in 1 2 3 4; do echo > "$a/vic$i"; done
+        # Files: -ignore_readdir_race skips each, so no listing fails and none is retried.
+        for i in 1 2 3 4; do echo > "$a/vic$i"; done; rm -f "$a/shim/log" "$a/shim/fired"
         PATH="$a/shim:$PATH" imps "$w" docs/a.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/a.md imported; want docs/other.md -
         # The race ran: at most the first-visited victim is left.
         [ "$(compgen -G "$a/vic*" | wc -l)" -le 1 ] || { echo "no race: $(ls "$a")"; return 1; }
-        rm -f "$a"/vic*
+        ! grep -qvx 0 "$a/shim/log" || { echo "a listing failed: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
+        # Directories: findutils still reports one, so the first listing fails and the retry,
+        # without the race, completes; the failed try's message is dropped.
+        for i in 1 2 3; do mkdir "$a/vic$i"; done; echo > "$a/vic4"; rm -f "$a/shim/log" "$a/shim/fired"
+        PATH="$a/shim:$PATH" T_ONCE=1 imps "$w" docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/other.md -
+        [ "$(head -2 "$a/shim/log" | tr '\n' ' ')" = "1 0 " ] || { echo "want a failed try, then a clean one: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
     done
-    # Any other error in the same listing fails closed: an unreadable top, and a top that vanished.
+    # Any other error in the same listing fails closed, after three tries: an unreadable top,
+    # and a top that vanished.
     for w in tree main; do
-        mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
+        mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
+        [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "1 1 1 " ] || { echo "want three failed tries: $(cat "$a/shim/log")"; return 1; }
         for m in 1 drop; do
             mkdir -p "$a/.claude"; PATH="$a/shim:$PATH" T_RMTOP="$m" imps "$w" docs/a.md; want walk failed
             [ ! -e "$a/.claude" ] || { echo "the top was not removed"; return 1; }
