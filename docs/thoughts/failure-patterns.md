@@ -312,4 +312,4 @@ When citing a matched pattern in a research doc, commit message, or hypothesis, 
 - **FP-170** 2026-09-17 symptom:truncation-splits-multibyte-char-grep-reports-file-as-binary cause:encoding fix:structural-parse ref:e96912d
 - **FP-171** 2026-09-17 symptom:zero-padded-id-read-as-octal-hands-out-a-used-id cause:encoding fix:structural-parse ref:e96912d
 - **FP-172** 2026-09-24 symptom:failed-generation-leaves-empty-report-and-absence-only-checks-pass-every-negative-control cause:vacuous-assertion fix:fail-closed-on-empty-input ref:a2972bf
-- **FP-173** 2026-10-14 symptom:find-over-shared-ancestor-dir-exits-nonzero-when-another-process-deletes-an-entry-mid-listing-gate-flakes-under-parallel-load cause:overbroad-guard fix:narrow-the-guard ref:d2dc88c9
+- **FP-174** 2026-10-14 symptom:find-over-shared-ancestor-dir-exits-nonzero-when-another-process-deletes-an-entry-mid-listing-gate-flakes-under-parallel-load cause:overbroad-guard fix:narrow-the-guard ref:d2dc88c9
