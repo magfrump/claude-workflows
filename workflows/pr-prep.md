@@ -241,6 +241,8 @@ either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the tests the fixes affect. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits. Inside the loop, run the affected suites and re-check earlier failures, not the full gate. In claude-workflows that is `scripts/run-tests.sh <files>` and `scripts/run-tests.sh --failed`. The full gate belongs to [step 5a](#5-verify-and-annotate-parallelizable), which owns how to run it and how to triage a red result.
 
+**Size re-check.** After the tests and before the re-review, re-run step 1a's count. Past ~800 lines, stop and ask the user for a waiver ([review-fix-loop.md § Size re-check](review-fix-loop.md#size-re-check-after-any-iteration) owns the rule).
+
 **Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
 
 ```bash
@@ -453,7 +455,7 @@ Decisions referenced: [list of NNN decision IDs whose invariants this PR touches
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
-**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, opening the PR if no draft was made, or, on the local-merge path, running the merge), answer these three questions about the description as written:
+**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, opening the PR if no draft was made, or, on the local-merge path, running the merge), answer these three questions about the description as written. First, run the [size re-check](review-fix-loop.md#size-re-check-after-any-iteration) one last time: past ~800 lines with no waiver from the user, do not publish or merge.
 
 1. **Why, not just what.** Does the description explain *why* this change exists — the problem it solves or the motivation behind it — and not only enumerate what files/lines changed?
 2. **Specific tests.** Does the description list the specific tests added or run (by name, file, or scenario), rather than vague phrases like "tested locally" or "all tests pass"?

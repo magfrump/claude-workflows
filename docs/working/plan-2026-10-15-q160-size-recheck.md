@@ -17,12 +17,12 @@
 
 All four match Q-160. Note: 73589cd7's and 626dc300's first commits are not the whole unit (U2a4's feature commit and Q-089's A2 came after), so "grew during review" overstates part of each figure; the trigger still fires on 581d41d8 and dfa75374.
 
-**Interim practice.** Q-120 [1] (U2a3b at 794) cited "Q-104 [2]'s ~800" and waived it; `docs/working/merge-msg-build-loop-u2a3b.md` records 841 lines under that waiver. Q-131 (U2a4, 540) asked for a waiver "against the 400 cap": the rule was read inconsistently because it existed only in an answered question. Q-113 (U1b, 417) was an entry-gate waiver, opened before Q-104 was answered, so it is not an application of Q-104 [2].
+**Interim practice.** Q-120 [1] (U2a3b at 794) cited "Q-104 [2]'s ~800" and waived it; `docs/working/merge-msg-build-loop-u2a3b.md` records 841 lines under that waiver. Q-131 (U2a4, 540) asked for a waiver "against the 400 cap": the rule was read inconsistently because it existed only in an answered question. Q-113 (U1b, 417 after its Q-112 review fixes) and Q-114 (U1c, 426) were opened 2026-10-05, before Q-104 was answered (10-06), so they are not applications of Q-104 [2]; they were measured against the 400 cap.
 
 **Where the rule goes.** `workflows/review-fix-loop.md` owns the loop's control rules (its intro says each rule is stated in one place, others link). The re-check runs between iterations, so it belongs there, beside the early split trigger. pr-prep step 1a (entry gate) and step 3e (loop summary) link to it.
 
 **Restatements to update** (grep for 400 / size gate / row 62 outside `docs/working`, `docs/reviews`, `archive`, `runs`):
-- `workflows/pr-prep.md` step 1a, step 1 and step 3 completion criteria, step 3e
+- `workflows/pr-prep.md` step 1a, step 3c, step 3e, step 3 completion criteria, step 6c (step 1's criterion stays: it is the entry check)
 - `guides/pr-prep-quick-ref.md` (size gate line; loop exit criteria)
 - `guides/completion-signals.md` (PR description size line)
 - `skills/code-review/references/chat-synthesis.md` next-action rule 2 ("split PR" when over 400 with a red; after the first iteration the limit is ~800)

@@ -137,12 +137,15 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — The unit is over its size limit (changed lines outside
-   `docs/`, counted with `workflows/pr-prep.md` step 1a's command, so review
-   artifacts don't count): >400 on its first review (step 1a's gate), or >800
-   on a later pass of the review-fix loop (its size re-check, which tolerates
-   growth during review). The user has not waived that limit for this unit,
-   AND ≥1 🔴 item exists (and rule 1 did not match). A waived
+2. **split PR** — On the unit's first review, the unit is over the size gate
+   in `workflows/pr-prep.md` step 1a (>400 changed lines outside `docs/`,
+   counted with that step's command, so review artifacts don't count), the
+   user has not waived the cap for this unit, AND ≥1 🔴 item exists (and rule
+   1 did not match). Rule 2 does not apply on later passes of the review-fix
+   loop. Growth during review falls under the loop's own size re-check
+   (`workflows/review-fix-loop.md` § Size re-check): it tolerates up to ~800
+   lines, and past that the loop stops for the user's waiver. No next action
+   here, `merge` included, overrides that stop. A waived
    unit with a 🔴 falls through to the rules below. Large diffs combined with red findings multiply review risk
    per iteration; split before iterating on fixes.
 3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,
@@ -176,7 +179,7 @@ rule 4 and *n* ≤ 2 is rule 5, so every clean-of-red rubric derives a final lin
 - 0 🔴, 5 🟡, 4 with notes naming a TODO or revisit trigger → rule 5 (1 open amber) → `Recommended next action: merge.`
 - 0 🔴, 3 🟡 with notes saying only "acceptable for now" → rule 4 (notes not qualifying, 3 open) → `Recommended next action: fix red items then re-review.`
 - 2 🔴 both in security, 200-line diff → rule 4 → `Recommended next action: fix red items then re-review.`
-- 1 🔴 in security, 800-line diff → rule 2 → `Recommended next action: split PR.`
+- 1 🔴 in security, 800-line diff, first review → rule 2 → `Recommended next action: split PR.`
 - 1 🔴 security + 1 🔴 performance + 1 🔴 api-consistency, 300-line diff → rule 3 (3 domains) → `Recommended next action: escalate to /pre-mortem.`
 - 4 🔴 all in security, 200-line diff → rule 3 (≥3 reds total) → `Recommended next action: escalate to /pre-mortem.`
 - 1 🔴 from architecture-review tagged Structural → rule 1 → `Recommended next action: block on architectural review.`
