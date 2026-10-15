@@ -1589,10 +1589,16 @@ for f in sys.argv[1:]:
 # that vanished included: config_seeds retries, Q-145) or a DIR is no longer
 # a directory after the listing: one that vanished under a find that skips a
 # missing start point silently, or a linked DIR whose target vanished, which
-# find 4.9 lists as the link itself and exits 0 (i1 fact-check 6a).
+# find 4.9 lists as the link itself and exits 0 (i1 fact-check 6a). NAME must
+# not be nl_a (nul_list's nameref), tf_d or tf_a (its own locals).
 top_files() {
-  local tf_d; nul_list "$1" find -H "${@:2}" -maxdepth 1 -ignore_readdir_race '(' -xtype f -o -xtype l ')' -print0 || return 1
-  for tf_d in "${@:2}"; do [[ -d "$tf_d" ]] || { local -n tf_a="$1"; tf_a=(); return 1; }; done
+  nul_list "$1" find -H "${@:2}" -maxdepth 1 -ignore_readdir_race '(' -xtype f -o -xtype l ')' -print0 || return 1
+  local tf_d; for tf_d in "${@:2}"; do
+    [[ ! -d "$tf_d" ]] || continue
+    local -n tf_a="$1"
+    # shellcheck disable=SC2034  # tf_a is the caller's array, emptied by name
+    tf_a=(); return 1
+  done
 }
 # c1_seeds NAME: appends outside_seeds' item (3), C1, to array NAME: each
 # other root's start files (IMPORT_OTHER) that hold an @ byte or are links,
