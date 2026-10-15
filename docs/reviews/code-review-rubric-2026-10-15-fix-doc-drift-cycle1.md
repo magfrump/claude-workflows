@@ -1,10 +1,12 @@
-Commit: 330138d8
+Commit: 9e0ff1a5
 
 # Code Review Rubric
 
-**Scope:** fix/doc-drift-cycle1 (`main...HEAD`, 1 commit, 12 non-docs lines) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) awaiting resolution or justification after the iteration-1 fix commit (see statuses)
+**Scope:** fix/doc-drift-cycle1 (`main...HEAD`) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 0 amber item(s) open after the iteration-2 fix commit (see statuses); iteration 3 is the confirming pass
 
-Iteration 1 of 3: full-branch scope, not a loop pass; fact-check k=3 (opus); critics security-reviewer and api-consistency-reviewer (opus); delivery mode inline-diff-only (diff file plus self-read of enclosing files). Skill text was handed to agents by path, read in full by each agent, rather than pasted.
+Iteration 2 of 3 (stamp 9e0ff1a5): full-branch scope, k=3, security + api-consistency again; the iteration-2 rows are B1-B4 and C3-C4 below. Fix-drift lite check on 330138d8..9e0ff1a5: FINDINGS: NONE.
+
+Iteration 1 of 3 (stamp 330138d8): full-branch scope, not a loop pass; fact-check k=3 (opus); critics security-reviewer and api-consistency-reviewer (opus); delivery mode inline-diff-only (diff file plus self-read of enclosing files). Skill text was handed to agents by path, read in full by each agent, rather than pasted.
 
 ---
 
@@ -26,6 +28,10 @@ None.
 | A3 | The dev-cycle row's step list omits claim spot-check and the conditional deep-audit check and brainstorm that global row 12 lists; "Output is triage" understates (it also dispatches build loops and lands merges). `AGENTS.md:36`, `GEMINI.md:36` | Documentation | Mostly accurate | Fact-check Claim 10 (r1, r2, r3) + api-consistency F3 (step-list half) + security F3 (Low) | for-author | — | Fixed | Row now carries row 12's step list plus "as orchestrator it also collects, lands and dispatches build loops"; questions go to questions.md. Sync test green. |
 | A4 | `rebuild_hint`'s first line (`cc-isolated.sh:560`, printed at `:915` for a bricked firewall) says a plain `cc-isolated WS` rebuilds; a plain launch recreates only on hash mismatch, so the launcher's printed advice contradicts the guides' recipe. | API Consistency | Inconsistent | api-consistency F1 + fact-check escalation (r1, r2) | for-author | — | Deferred | Out of the brief's scope (scripts). Revisit trigger: a follow-up unit changing rebuild_hint (question raised in this unit's report), or a user stuck after following the printed hint. Override-log row 2026-10-15. |
 | A5 | Commit 330138d8's Notes claim the edited passages were re-checked against the code; that missed A1. | Documentation | Mostly accurate | Fact-check Claim 12 (r1) | for-author | — | Fixed | Corrected in the fix commit body; override-log row 2026-10-15. |
+| B1 | The PROBE FAIL row's "see the row below" points six rows down (`:941`); the adjacent row is OAuth. 9e0ff1a5 dropped the row name 330138d8 had. `guides/cc-isolated-usage.md:935` | Documentation | Mostly accurate | Fact-check iteration 2 Claim 6 (r1, r2, r3) + api-consistency i2 F1 (Minor) | for-author | — | Fixed | Names the "newly registered profile has no effect" row. |
+| B2 | The bare-form effects list omits the empty `CC_CONFIG_DIR` effect (build pointed at `/Dockerfile`), and says "shared" without "across projects". `guides/cc-isolated-usage.md:935`, `guides/devcontainer-setup.md:399-402` | Documentation | Mostly accurate | Fact-check iteration 2 Claim 5 (r1, r2) + api-consistency i2 F2 + security i2 #1 (Informational) | for-author | — | Fixed | Both guides: "among them base-only egress, an empty config hash, a `~/.claude` volume shared across projects, and a build pointed at `/Dockerfile`". |
+| B3 | Cached-layer reuse and the re-bless recreate "from those cached layers" hold only while nothing above `Dockerfile:403` changes. `guides/devcontainer-setup.md:387-393` | Documentation | Mostly accurate | Fact-check iteration 2 Claims 1-2 (r1, r2, r3) | for-author | — | Fixed | Qualified: reuse holds until something above changes (base image, apt list, a toolchain version, `TZ`, pruned cache); a re-bless reinstalls CC only when the change sits above the install layer. |
+| B4 | Commit bodies of 330138d8 (row pointer) and 9e0ff1a5 (unqualified cached-layer line). | Documentation | Mostly accurate | Fact-check iteration 2 Claim 10 | for-author | — | Fixed | Corrected in the iteration-2 fix commit's body; override-log row 2026-10-15. |
 
 ---
 
@@ -35,6 +41,8 @@ None.
 |---|---|---|---|---|---|---|
 | C1 | devcontainer-setup cites `rebuild_hint` as the rationale while the usage guide cites a troubleshooting row, and rebuild_hint itself prints the other recipe. `guides/devcontainer-setup.md:392-394` | api-consistency F2 | Minor | for-author | — | Fixed (now cites the comment above rebuild_hint, which holds the rationale) |
 | C2 | The dev-cycle row's Trigger cell quotes trigger phrases, unlike the table's other rows. `AGENTS.md:36` | api-consistency F3 (format half) | Minor | for-author | — | Won't-Fix (override-log row 2026-10-15) |
+| C3 | No documented way to refresh the image's cached CC layer (`guides/devcontainer-setup.md:387-398`) | security i2 #2 | Informational | for-author | — | Deferred (override-log row 2026-10-15; launcher change, out of scope) |
+| C4 | init-firewall.sh's hint says `--probe-only` "rebuilds", the guides say "recreates" (`init-firewall.sh:346,349`, outside the diff) | api-consistency i2 F3 | Informational | for-author | — | Deferred (override-log row 2026-10-15; same follow-up as A4) |
 
 ---
 
