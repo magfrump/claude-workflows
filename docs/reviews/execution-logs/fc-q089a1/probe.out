@@ -1,0 +1,45 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== P1: --help with a tampered cc-exit-scan.sh (claim: refuses everything but --bless/--list)
+bless rc=0
+--help rc=0
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p1/cfg/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p1/cfg, then re-bless (it prints what changed):
+--register rc=1
+== P2: refusal when host-tools.sha256 is missing, boundary unchanged (boundary_note text)
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p2/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — refusing to run the session-exit scan's code.
+  Also changed (cc-push refuses until re-blessed): no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p2/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p2/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p2/cfg cc-isolated --bless
+  The boundary config is unchanged: after the re-bless, no rebuild or probe is needed.
+rc=1
+== P3: blessed_hash before/after A1 on the same installed files (claim: changes once on next install.sh)
+Blessed config: 4550ab996414d17d
+base manifest entries=10
+3
+Changed since the last bless (manifest.sha256):
+< 933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+< 568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+< 0bc1e12c5f7f8744fbabe899e85667b1d5e13aa7febb7787f4813eb3587fab82  cc-isolated.sh
+< cbcbd92fb438cc3cb24afcdae07a29cf8af16d5722f445f9f4ca027cc63f475e  cc-push.sh
+> e0aaef4440d7a3b1b45d0a475d6cbaa8d2a2ba47601c7bec387cfffba9627a15  cc-isolated.sh
+Blessed config: de595abc22a2e5d5
+a1 manifest entries=7
+0
+Blessed config: de595abc22a2e5d5
+Changed since the last bless (host-tools.sha256):
+Blessed config: de595abc22a2e5d5
+== P4: bless failure (missing host tool) leaves manifest.sha256 unchanged too
+ERROR: host tool missing: cc-gitdir.sh
+ERROR: nothing blessed.
+rc=1
+manifest unchanged
+host-tools unchanged
+no temp files
+== P5: does --list's 'Host tools: CHANGED' hint name the dir? (custom CLAUDE_DEVC_CONFIG_DIR)
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p5/cfg/cc-gitdir.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p5/cfg/cc-gitdir.sh changed since the last bless
+
+== P6: launcher via PATH symlink resolves its own dir
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p6/cfg/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+rc=141

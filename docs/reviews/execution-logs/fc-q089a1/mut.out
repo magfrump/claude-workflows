@@ -1,0 +1,10 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1
+1..1
+not ok 1 --list still reports everything when the config dir's parent is missing (set -e)
+# (in test file test/cc-isolated-functions.bats, line 988)
+#   `[ "$status" -eq 0 ]' failed
+mutant rc=1
+1..1
+ok 1 --list still reports everything when the config dir's parent is missing (set -e)
+original rc=0

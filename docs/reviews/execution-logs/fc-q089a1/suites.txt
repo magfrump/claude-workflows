@@ -1,0 +1,8 @@
+Probe root: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK (src/ = git archive f2533b33)
+Env (all runs): env -i PATH=/usr/bin:/bin HOME=$P/home TMPDIR=$P/tmp CLAUDE_DEVC_CONFIG_DIR=$P/home/cfg LC_ALL=C, under timeout 600, cwd $P/src
+Run 1 2026-10-15T00:23:38Z..00:25:58Z (plain archive extract, not a git repo)
+  bats test/cc-isolated-functions.bats -> exit 0, 180/180 ok        (cc-isolated-functions.log)
+  bats test/install-host.bats          -> exit 1, 91/92 (T9 fails: `git archive HEAD` in a non-git extract) (install-host.log)
+Run 2 2026-10-15T00:26:09Z..00:27:49Z (same extract after `git init` + one commit of the extract)
+  bats test/install-host.bats          -> exit 0, 92/92 ok          (install-host-gitinit.log)
+Probes: probe.sh (ts probe.ts, rc probe.rc, out probe.out), probe2.sh (probe2.*), mut.sh (mut.*), all args = probe root.

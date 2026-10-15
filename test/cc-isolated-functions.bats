@@ -936,7 +936,8 @@ fake_payload_and_dest() {
   run bash "$d/cc-isolated.sh" "$ws"
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-exit-scan.sh changed since the last bless"* ]]
-  [[ "$output" == *"no rebuild or probe is needed"* ]]
+  [[ "$output" == *"changes no boundary state"* ]]
+  [[ "$output" == *"CLAUDE_DEVC_CONFIG_DIR="*" --bless"* ]]
   run bash "$d/cc-isolated.sh" --list
   [ "$status" -eq 0 ]
   [ ! -e "$mark" ]
@@ -965,7 +966,7 @@ fake_payload_and_dest() {
   [[ "$output" == *"installed config changed since last bless"* ]]
   [[ "$output" == *"init-firewall.sh"* ]]
   [[ "$output" == *"BOUNDARY config changed too"* ]]
-  [[ "$output" != *"no rebuild or probe is needed"* ]]
+  [[ "$output" != *"changes no boundary state"* ]]
   run bash "$d/cc-isolated.sh" --bless
   [ "$status" -eq 0 ]
   [[ "$output" == *"Changed since the last bless (manifest.sha256)"*"init-firewall.sh"* ]]
@@ -975,7 +976,7 @@ fake_payload_and_dest() {
   run bash "$d/cc-isolated.sh" "$ws"
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-exit-scan.sh changed"*"cc-gitdir.sh changed"* ]]
-  [[ "$output" == *"Also changed (cc-push refuses until re-blessed)"*"cc-push.sh changed"* ]]
+  [[ "$output" == *"also changed (cc-push refuses until re-blessed)"*"cc-push.sh changed"* ]]
   # A bless with no previous manifest says every entry is new.
   rm "$d/host-tools.sha256"
   run bash "$d/cc-isolated.sh" --bless
@@ -987,8 +988,17 @@ fake_payload_and_dest() {
   CLAUDE_DEVC_CONFIG_DIR="$TEST_TMPDIR/no/such/cfg" run bash "$CONFIG_SRC/cc-isolated.sh" --list
   [ "$status" -eq 0 ]
   [[ "$output" == *"No blessed config"* ]]
-  [[ "$output" == *"Host tools: CHANGED"*"launches refuse: no host-tool manifest"* ]]
+  [[ "$output" == *"No blessed host tools"*"--bless"* ]]
   [[ "$output" == *"No projects registered"* ]]
+}
+
+@test "verify_host_tools: an unreadable or malformed host manifest is named as the problem" {
+  bless_manifest >/dev/null
+  printf 'not a sha256sum line\r\n' >> "$(host_tools_path)"
+  run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unreadable or malformed"* ]]
+  [[ "$output" != *"changed since the last bless"* ]]
 }
 
 @test "bless: a failure changes neither manifest" {
@@ -1001,12 +1011,15 @@ fake_payload_and_dest() {
   [ "$status" -ne 0 ]
   [ "$(cat "$(manifest_path)")" = "$m" ]
   [ "$(cat "$(host_tools_path)")" = "$h" ]
-  echo 'FROM node:22' > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
+  # A Dockerfile that differs from the blessed one, so a rewritten boundary
+  # manifest would show (fact-check: restoring the same bytes could not).
+  echo 'FROM node:23' > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
   rm "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   run bless_manifest
   [ "$status" -ne 0 ]
   [[ "$output" == *"host tool missing: cc-gitdir.sh"* ]]
   [ "$(cat "$(host_tools_path)")" = "$h" ]
+  [ "$(cat "$(manifest_path)")" = "$m" ]
   if compgen -G "$CLAUDE_DEVC_CONFIG_DIR/.manifest.*" >/dev/null || compgen -G "$CLAUDE_DEVC_CONFIG_DIR/.host-tools.*" >/dev/null; then
     echo "temp files left behind"; return 1
   fi
@@ -1018,15 +1031,15 @@ fake_payload_and_dest() {
   mkdir -p "$ws"
   bash "$d/cc-isolated.sh" --bless >/dev/null
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools cc-exit-scan.sh cc-gitdir.sh cc-push.sh - match the bless"* ]]
+  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)"* ]]
   cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
   echo 'echo x' >> "$d/cc-push.sh"
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools: CHANGED"*"launches warn (cc-push changed) but run"*"cc-push refuses: "*"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" == *"Host tools — CHANGED"*"launches warn (cc-push changed) but run"*"cc-push refuses: "*"cc-push.sh changed since the last bless"* ]]
   [[ "$output" != *"launches refuse"* ]]
   run bash "$d/cc-isolated.sh" "$ws"
   [[ "$output" == *"WARNING:"*"cc-push.sh changed since the last bless"* ]]
-  [[ "$output" != *"refusing to run the session-exit scan"* ]]
+  [[ "$output" != *"refusing to launch"* ]]
   # A scan-only change: launches refuse, cc-push (which does not run the scan) does not.
   cp "$TEST_TMPDIR/cc-push.blessed" "$d/cc-push.sh"; echo '# z' >> "$d/cc-exit-scan.sh"
   run bash "$d/cc-isolated.sh" --list

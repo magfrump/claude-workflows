@@ -220,8 +220,9 @@ compute_host_tools_manifest() {
 # compares the two byte for byte). Host-only tools are not boundary config
 # (decision log row 71): install.sh's bless hashes them into host-tools.sha256,
 # beside manifest.sha256, and each entry point checks the files it is about to
-# execute against that file BEFORE sourcing them. DIR is the script's own
-# resolved directory. Only a repo checkout is left unchecked, and it must say so
+# execute against that file BEFORE sourcing them. DIR is the directory to check:
+# an entry point's own resolved directory (`--list` passes config_dir()). Only a
+# repo checkout is left unchecked, and it must say so
 # positively: install.sh beside the script (install.sh is never installed, it is
 # not in PAYLOAD), no manifest of either kind, and not the config dir. Anything
 # else is checked, so deleting manifests is not enough to opt an installed copy
@@ -236,6 +237,12 @@ verify_host_tools() {
   fi
   if [ ! -f "$m" ] || [ -L "$m" ]; then
     echo "no host-tool manifest at $m (re-run install.sh, or cc-isolated --bless after reviewing)"
+    return 1
+  fi
+  # The manifest itself is the anomaly when it cannot be read or is not
+  # sha256sum's own output; say so rather than call every tool changed.
+  if [ ! -r "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+    echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
     return 1
   fi
   # Every file is checked and every mismatch named, so the refusal lists all of
@@ -293,7 +300,7 @@ bless_manifest() {
   echo "Blessed $(manifest_path) ($(wc -l < "$(manifest_path)") entries):"
   cat "$(manifest_path)"
   echo
-  echo "Blessed host tools in $(host_tools_path) (not boundary config; no probe needed):"
+  echo "Blessed host tools in $(host_tools_path) ($(wc -l < "$(host_tools_path)") entries; not boundary config, no probe needed):"
   cat "$(host_tools_path)"
   echo
   echo "Blessed config: $(blessed_hash)"
@@ -480,17 +487,21 @@ list_projects() {
   # Each entry point's file list: the launcher refuses on the two files it
   # executes (and only warns on cc-push); cc-push refuses on itself and
   # cc-gitdir.sh. Checked in config_dir(); an entry point checks its own dir,
-  # which differs only for a custom install run without CLAUDE_DEVC_CONFIG_DIR.
+  # which differs whenever the command run is not the copy in config_dir() (a
+  # repo checkout, or CLAUDE_DEVC_CONFIG_DIR naming another dir or unset for a
+  # custom install).
   local cfg_real lerr="" perr=""
   # Not a bare assignment: readlink -f fails when the dir's parent is missing,
   # and under set -e that would end --list silently.
   cfg_real="$(readlink -f -- "$(config_dir)")" || cfg_real="$(config_dir)"
   lerr="$(verify_host_tools "$cfg_real" cc-exit-scan.sh cc-gitdir.sh)" || true
   perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh)" || true
-  if [ -z "$lerr" ] && [ -z "$perr" ]; then
-    echo "Host tools $(host_tool_files | tr '\n' ' ')- match the bless"
+  if [ ! -e "$(host_tools_path)" ]; then
+    echo "No blessed host tools (review them, then run: $(bless_cmd))."
+  elif [ -z "$lerr" ] && [ -z "$perr" ]; then
+    echo "Host tools — match the bless ($(host_tool_files | tr '\n' ' ' | sed 's/ $//'))"
   else
-    echo "Host tools: CHANGED (review, then: cc-isolated --bless)"
+    echo "Host tools — CHANGED (review, then run: $(bless_cmd))"
     if [ -n "$lerr" ]; then
       printf '  launches refuse: %s\n' "${lerr//$'\n'/; }"
     else
@@ -691,7 +702,8 @@ probe_boundary() {
 # file. readlink -f: the command on PATH is a symlink to the installed copy.
 # Both it and the cc-gitdir.sh it sources are host tools, checked against
 # host-tools.sha256 first: sourcing runs a file's top level. When the check fails
-# the scan is not loaded, and main refuses everything but --bless and --list.
+# the scan is not loaded, and main refuses every action but --bless and --list
+# (--help and usage errors are answered first; neither touches the scan).
 CC_ISOLATED_DIR="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
 HOST_TOOLS_ERR=""
 if HOST_TOOLS_ERR="$(verify_host_tools "$CC_ISOLATED_DIR" cc-exit-scan.sh cc-gitdir.sh)"; then
@@ -732,19 +744,20 @@ main() {
   done
 
   if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
-    echo "ERROR: $HOST_TOOLS_ERR — refusing to run the session-exit scan's code." >&2
+    echo "ERROR: host tools differ from the bless — refusing to launch, probe or register:" >&2
+    printf '  %s\n' "$HOST_TOOLS_ERR" >&2
     # Never let this refusal hide a boundary change: run the boundary check too, and
     # show its diff, before pointing at a bless that would accept both.
-    local boundary_note="The boundary config is unchanged: after the re-bless, no rebuild or probe is needed."
+    local boundary_note="The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before)."
     if ! CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" check_manifest; then
       boundary_note="The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes."
     fi
     local push_err
     if ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)"; then
-      echo "  Also changed (cc-push refuses until re-blessed): $push_err" >&2
+      printf '  also changed (cc-push refuses until re-blessed): %s\n' "${push_err//$'\n'/; }" >&2
     fi
     echo "  Review the host tools in $CC_ISOLATED_DIR, then re-bless (it prints what changed):" >&2
-    printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_ISOLATED_DIR" >&2
+    printf '    %s\n' "$(CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" bless_cmd)" >&2
     echo "  $boundary_note" >&2
     exit 1
   fi
