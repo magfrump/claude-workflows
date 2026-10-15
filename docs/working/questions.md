@@ -25,6 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-178](#q-178--land-unlanded-cycle-branch-0357) | you: judgment | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
+| [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
@@ -43,6 +45,40 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-178 · land-unlanded-cycle-branch-0357
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another session) holds 13 commits that main does not: the 2026-10-14 cycle record and the open entries Q-162 to Q-177, among them 9 `you: judgment` and 3 `you: terminal`. Those include the merge entries Q-163 (Q-145) and Q-164 (U5), and the `merge/ready-2026-10-15` paste Q-162. None of them is on main, so main's questions file does not show them. How should it land?
+
+- **Why it's yours:** the orchestrator lands only its own iteration's branch. A branch another session wrote reaches main only through you or a pr-prep pass you ask for.
+- **Read:** `git log --oneline main..chore/dev-cycle-2026-10-15-0357` · `git diff --stat main...chore/dev-cycle-2026-10-15-0357` (docs only: questions, archive, roadmap, idea log, `cycle-2026-10-14.md`) · this iteration's record `docs/working/cycles/cycle-2026-10-15.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] land via pr-prep** | A fresh session merges main into the branch, resolves the questions and roadmap conflicts with this iteration's land, reviews the result and merges it to main | One answer | Entries no one reviewed as a set reach main. They are asks, not code, so nothing executes |
+| **[2] you land it** | You review and merge it by hand | A merge with conflicts in two files, on your time | None beyond your time |
+| **[3] drop it** | Leave it unmerged. Later cycles re-file what they meet again | None now | Its 16 asks and two merge entries are lost until rediscovered |
+
+- **Blocks:** the merges Q-163 and Q-164 ask about; through Q-164, U5 (the dispatcher) and U5's constraints ask Q-155. Through Q-162, the merged-branch cleanup.
+- **Interim:** this iteration filed none of those entries again. IDs Q-149 to Q-177 are in use on unlanded branches, so this entry starts at Q-178. It did not file a merged-branch paste or a `docs/constraints.md` ask, because Q-162 and Q-155 cover them.
+- **If the answer differs:** [3] means the next cycle re-files the constraints ask and the merged-branch paste.
+
+### Q-179 · row-66-router-uptake-verdict
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without pr-prep's `← carried from RPI` line or a committed code-review rubric". Over the window, 4 of 45 multi-file merges since 2026-10-02 had neither: 188e0a7d, 52053432, b8807e76 and 0fbf9742, all small fixes from 10-02 to 10-06. None of the 41 since then lacks both. Taken alone, the RPI line is missing on 19 of 45 merges, but 15 of those 19 committed a rubric. Does row 66's decision stand?
+
+- **Why it's yours:** the trigger, read literally, fired (4 > 0), and it reopens a choice: whether selection, not discovery, is the bottleneck.
+- **Read:** `docs/decisions/log.md` row 66 · roadmap Next 1 · this iteration's record, "Trigger verdicts"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] close, routers work** | Record the tally on row 66 and move roadmap Next 1 to Done. The four misses came in the first four days | One answer | A selection problem stays hidden until another trigger catches it |
+| **[2] reopen row 66** | Treat the line-alone misses (19/45) as a selection problem and open a DD on router selection | A DD review | Work on a problem the rubric numbers say is solved |
+
+- **Blocks:** roadmap Next 1 (measure router uptake).
+- **Interim:** Next 1 carries the cycle-3 tally and stays open. Row 66 is unchanged, because decision records are outside the cycle's writes.
 
 ### Q-107 · claude-home-payload-second-consumer
 **Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
