@@ -39,9 +39,11 @@
     "Bash(*.credentials.json*) is the Bash backstop for the credentials file (Q-070/Q-077).",
     "Read() rules do not cover Bash, and cc-isolated has no sandbox to deny the read, so",
     "without it `curl -d @$HOME/.claude/.credentials.json` nested where the auto-approve hook",
-    "does not look (e.g. inside $(( ))) ran with no prompt. auto-approve-allowed-commands.sh",
-    "also reads Bash deny rules. What its check does and does not stop (it is a string",
-    "match) is stated once, in that hook's header: WHAT THE DENY CHECK GUARANTEES."
+    "does not look (e.g. inside $(( ))) ran with no prompt. Claude Code applies it even",
+    "after auto-approve-allowed-commands.sh says allow (host test Q-082), so that hook does",
+    "not read deny rules (Q-092). It is a string match: a spelling without the literal name",
+    "(a glob such as ~/.claude/.c*) gets past it; see that hook's header, DENY RULES ARE",
+    "CLAUDE CODE'S."
   ],
 
   "hooks": {

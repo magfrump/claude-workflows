@@ -153,7 +153,9 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
   `env`, `xargs`, ...) or bash builtins other than `cd`, `pwd`, `echo`, `true`,
   `false` and `type`, whatever the allow rules say. Those, and commands it cannot
   parse, fall through to the normal prompt.
-  It also checks `Bash(...)` deny rules, which makes it part of the credentials
-  backstop where no sandbox runs (cc-isolated has none). That check is a string match
-  with known residuals; the hook header's WHAT THE DENY CHECK GUARANTEES and RULE
-  SYNTAX sections are the one statement of what it covers.
+  It emits only `allow` or nothing, and it does not read deny rules: Claude Code
+  applies `permissions.deny` even after a hook `allow` (host test Q-082), so the
+  credentials backstop is the `Bash(*.credentials.json*)` deny rule alone where no
+  sandbox runs (cc-isolated has none). That rule is a string match, so a spelling
+  without the literal name (a glob such as `~/.claude/.c*`) gets past it. The hook
+  header's DENY RULES ARE CLAUDE CODE'S and RULE SYNTAX sections say what is left.

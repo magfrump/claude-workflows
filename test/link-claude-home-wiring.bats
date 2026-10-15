@@ -265,8 +265,9 @@ EOF
 
 @test "the merged settings carry the Bash deny rule for the credentials file (Q-077)" {
   # cc-isolated has no sandbox, so Read(.credentials.json) is the only other
-  # rule on that file and it does not cover Bash. The auto-approve hook reads
-  # this rule and never approves a match (test/auto-approve-allowed-commands.bats).
+  # rule on that file and it does not cover Bash. Claude Code applies it even
+  # after the auto-approve hook says allow (host test Q-082), so the hook no
+  # longer reads it (Q-092).
   bash "$LINKER"
   [ "$(jq '[.permissions.deny[] | select(. == "Bash(*.credentials.json*)")] | length' "$DEST/settings.json")" -eq 1 ]
   # Idempotent like every other rule.
