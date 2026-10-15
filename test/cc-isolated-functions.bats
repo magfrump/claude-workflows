@@ -832,27 +832,206 @@ fake_payload_and_dest() {
   [ "$status" -eq 0 ]
 }
 
-@test "every regular file in install.sh's PAYLOAD is hashed by enforcement_files" {
-  # REGRESSION: cc-sni-proxy.py shipped in neither list, then in only one. The two
+@test "every regular file in install.sh's PAYLOAD is hashed by enforcement_files or host_tool_files" {
+  # REGRESSION: cc-sni-proxy.py shipped in neither list, then in only one. The
   # lists are hand-maintained; this pins them together. Directories (egress,
   # claude-home) are covered by globs or deliberately excluded (see the comment
-  # above enforcement_files).
-  local payload_line items item copied
+  # above enforcement_files). Decision log row 71: host tools are hashed into their
+  # own file, so the two lists must be disjoint, the host list is exactly the three
+  # tools (moving a boundary file there would drop its Live-verified gate), and no
+  # file the image COPYs may be a host tool.
+  local payload_line items item copied enf host
   payload_line="$(grep -m1 '^PAYLOAD=(' "$CONFIG_SRC/install.sh")"
   [[ "$payload_line" == *")" ]] || { echo "PAYLOAD spans lines; update this test"; return 1; }
   items="${payload_line#PAYLOAD=(}"; items="${items%)}"
-  run enforcement_files
+  enf="$(enforcement_files)"
+  host="$(host_tool_files)"
+  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  for item in $host; do
+    if echo "$enf" | grep -qx "$item"; then echo "in both lists: $item"; return 1; fi
+  done
   for item in $items; do
     case "$item" in
       egress|claude-home) continue ;;   # covered by the glob / sorted walk below
     esac
-    echo "$output" | grep -qx "$item" || { echo "PAYLOAD item not hashed: $item"; return 1; }
+    printf '%s\n%s\n' "$enf" "$host" | grep -qx "$item" || { echo "PAYLOAD item not hashed: $item"; return 1; }
   done
+  while read -r copied; do
+    if echo "$host" | grep -qx "${copied%/}"; then echo "the image COPYs host tool $copied"; return 1; fi
+  done < <(grep -E '^COPY ' "$CONFIG_SRC/Dockerfile" | awk '{print $2}')
   # The other direction F1 broke on: every Dockerfile COPY source must be in PAYLOAD.
   while read -r copied; do
     copied="${copied%/}"
     case " $items " in *" $copied "*) ;; *) echo "Dockerfile COPYs $copied but PAYLOAD lacks it"; return 1 ;; esac
   done < <(grep -E '^COPY ' "$CONFIG_SRC/Dockerfile" | awk '{print $2}')
+}
+
+@test "bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone" {
+  bless_manifest >/dev/null
+  [ -f "$(host_tools_path)" ]
+  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  if grep -E 'cc-(push|exit-scan|gitdir)\.sh' "$(manifest_path)"; then return 1; fi
+  local before
+  before="$(blessed_hash)"
+  echo 'echo changed' >> "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  run check_manifest
+  [ "$status" -eq 0 ]
+  [ "$(blessed_hash)" = "$before" ]
+  # ...while the host-tool check sees it.
+  run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-push.sh changed since the last bless"* ]]
+}
+
+@test "verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out" {
+  local d="$TEST_TMPDIR/inst"
+  mkdir -p "$d"
+  echo 'a' > "$d/cc-push.sh"; echo 'b' > "$d/cc-gitdir.sh"
+  # No manifest is not enough to count as a repo checkout (deleted manifests, or a
+  # custom install dir the environment does not name): refused.
+  run verify_host_tools "$d" cc-push.sh cc-gitdir.sh
+  [ "$status" -eq 1 ]
+  # A repo checkout says so positively: install.sh beside it, which is never installed.
+  echo '#!/bin/bash' > "$d/install.sh"
+  run verify_host_tools "$d" cc-push.sh cc-gitdir.sh
+  [ "$status" -eq 0 ]
+  # A manifest beside it makes it an installed copy whatever else is there: refused.
+  touch "$d/manifest.sha256"
+  run verify_host_tools "$d" cc-push.sh cc-gitdir.sh
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no host-tool manifest"* ]]
+  (cd "$d" && sha256sum cc-push.sh cc-gitdir.sh > host-tools.sha256)
+  run verify_host_tools "$d" cc-push.sh cc-gitdir.sh
+  [ "$status" -eq 0 ]
+  echo 'tampered' > "$d/cc-gitdir.sh"
+  run verify_host_tools "$d" cc-push.sh cc-gitdir.sh
+  [ "$status" -eq 1 ]
+  # A file the manifest does not list, or lists twice, is refused.
+  (cd "$d" && sha256sum cc-push.sh cc-gitdir.sh > host-tools.sha256)
+  run verify_host_tools "$d" cc-exit-scan.sh
+  [ "$status" -eq 1 ]
+  (cd "$d" && sha256sum cc-push.sh cc-push.sh cc-gitdir.sh > host-tools.sha256)
+  run verify_host_tools "$d" cc-push.sh
+  [ "$status" -eq 1 ]
+  # A symlinked tool is refused even when its target hashes right.
+  (cd "$d" && sha256sum cc-push.sh cc-gitdir.sh > host-tools.sha256)
+  mv "$d/cc-gitdir.sh" "$d/real-gitdir.sh"; ln -s real-gitdir.sh "$d/cc-gitdir.sh"
+  run verify_host_tools "$d" cc-gitdir.sh
+  [ "$status" -eq 1 ]
+  # The config dir itself is never a repo checkout: no manifest there is refused.
+  local c="$TEST_TMPDIR/cfg2"
+  mkdir -p "$c"; echo 'a' > "$c/cc-push.sh"
+  CLAUDE_DEVC_CONFIG_DIR="$c" run verify_host_tools "$c" cc-push.sh
+  [ "$status" -eq 1 ]
+}
+
+@test "launch: a tampered cc-exit-scan.sh is never sourced; --bless still works and clears it" {
+  # An installed layout: the real launcher and host tools beside the stubs.
+  local d="$CLAUDE_DEVC_CONFIG_DIR" ws="$TEST_TMPDIR/ws" mark="$TEST_TMPDIR/scan-ran"
+  cp "$CONFIG_SRC/cc-isolated.sh" "$CONFIG_SRC/cc-exit-scan.sh" "$CONFIG_SRC/cc-gitdir.sh" "$d/"
+  mkdir -p "$ws"
+  run bash "$d/cc-isolated.sh" --bless
+  [ "$status" -eq 0 ]
+  printf 'touch %q\n' "$mark" >> "$d/cc-exit-scan.sh"
+  run bash "$d/cc-isolated.sh" "$ws"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-exit-scan.sh changed since the last bless"* ]]
+  [[ "$output" == *"no rebuild or probe is needed"* ]]
+  run bash "$d/cc-isolated.sh" --list
+  [ "$status" -eq 0 ]
+  [ ! -e "$mark" ]
+  local before
+  before="$(awk '{print $1}' "$d/manifest.sha256" | sha256sum)"
+  run bash "$d/cc-isolated.sh" --bless
+  [ "$status" -eq 0 ]
+  [ ! -e "$mark" ]
+  # The re-bless changed only the host-tool manifest; the next run loads the scan.
+  [ "$(awk '{print $1}' "$d/manifest.sha256" | sha256sum)" = "$before" ]
+  run bash "$d/cc-isolated.sh" "$ws"
+  [[ "$output" != *"changed since the last bless"* ]]
+  [ -e "$mark" ]
+}
+
+@test "launch: a host-tool refusal still shows a boundary change made alongside it, and bless prints both" {
+  local d="$CLAUDE_DEVC_CONFIG_DIR" ws="$TEST_TMPDIR/ws"
+  cp "$CONFIG_SRC/cc-isolated.sh" "$CONFIG_SRC/cc-exit-scan.sh" "$CONFIG_SRC/cc-gitdir.sh" "$d/"
+  mkdir -p "$ws"
+  bash "$d/cc-isolated.sh" --bless >/dev/null
+  echo '# x' >> "$d/cc-exit-scan.sh"
+  echo 'iptables -P INPUT ACCEPT' >> "$d/init-firewall.sh"
+  run bash "$d/cc-isolated.sh" "$ws"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-exit-scan.sh changed since the last bless"* ]]
+  [[ "$output" == *"installed config changed since last bless"* ]]
+  [[ "$output" == *"init-firewall.sh"* ]]
+  [[ "$output" == *"BOUNDARY config changed too"* ]]
+  [[ "$output" != *"no rebuild or probe is needed"* ]]
+  run bash "$d/cc-isolated.sh" --bless
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Changed since the last bless (manifest.sha256)"*"init-firewall.sh"* ]]
+  [[ "$output" == *"Changed since the last bless (host-tools.sha256)"*"cc-exit-scan.sh"* ]]
+  # Every changed tool is named, cc-push included, before the bless is suggested.
+  echo '# y' >> "$d/cc-gitdir.sh"; echo '# y' >> "$d/cc-push.sh"; echo '# y' >> "$d/cc-exit-scan.sh"
+  run bash "$d/cc-isolated.sh" "$ws"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-exit-scan.sh changed"*"cc-gitdir.sh changed"* ]]
+  [[ "$output" == *"Also changed (cc-push refuses until re-blessed)"*"cc-push.sh changed"* ]]
+  # A bless with no previous manifest says every entry is new.
+  rm "$d/host-tools.sha256"
+  run bash "$d/cc-isolated.sh" --bless
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No previous host-tools.sha256"* ]]
+}
+
+@test "--list still reports everything when the config dir's parent is missing (set -e)" {
+  CLAUDE_DEVC_CONFIG_DIR="$TEST_TMPDIR/no/such/cfg" run bash "$CONFIG_SRC/cc-isolated.sh" --list
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"No blessed config"* ]]
+  [[ "$output" == *"Host tools: CHANGED"*"launches refuse: no host-tool manifest"* ]]
+  [[ "$output" == *"No projects registered"* ]]
+}
+
+@test "bless: a failure changes neither manifest" {
+  bless_manifest >/dev/null
+  local m h
+  m="$(cat "$(manifest_path)")"; h="$(cat "$(host_tools_path)")"
+  echo changed >> "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  rm "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
+  run bless_manifest
+  [ "$status" -ne 0 ]
+  [ "$(cat "$(manifest_path)")" = "$m" ]
+  [ "$(cat "$(host_tools_path)")" = "$h" ]
+  echo 'FROM node:22' > "$CLAUDE_DEVC_CONFIG_DIR/Dockerfile"
+  rm "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
+  run bless_manifest
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"host tool missing: cc-gitdir.sh"* ]]
+  [ "$(cat "$(host_tools_path)")" = "$h" ]
+  if compgen -G "$CLAUDE_DEVC_CONFIG_DIR/.manifest.*" >/dev/null || compgen -G "$CLAUDE_DEVC_CONFIG_DIR/.host-tools.*" >/dev/null; then
+    echo "temp files left behind"; return 1
+  fi
+}
+
+@test "--list reports host-tool state; a changed cc-push warns at launch but does not refuse" {
+  local d="$CLAUDE_DEVC_CONFIG_DIR" ws="$TEST_TMPDIR/ws"
+  cp "$CONFIG_SRC/cc-isolated.sh" "$CONFIG_SRC/cc-exit-scan.sh" "$CONFIG_SRC/cc-gitdir.sh" "$d/"
+  mkdir -p "$ws"
+  bash "$d/cc-isolated.sh" --bless >/dev/null
+  run bash "$d/cc-isolated.sh" --list
+  [[ "$output" == *"Host tools cc-exit-scan.sh cc-gitdir.sh cc-push.sh - match the bless"* ]]
+  cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
+  echo 'echo x' >> "$d/cc-push.sh"
+  run bash "$d/cc-isolated.sh" --list
+  [[ "$output" == *"Host tools: CHANGED"*"launches warn (cc-push changed) but run"*"cc-push refuses: "*"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" != *"launches refuse"* ]]
+  run bash "$d/cc-isolated.sh" "$ws"
+  [[ "$output" == *"WARNING:"*"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" != *"refusing to run the session-exit scan"* ]]
+  # A scan-only change: launches refuse, cc-push (which does not run the scan) does not.
+  cp "$TEST_TMPDIR/cc-push.blessed" "$d/cc-push.sh"; echo '# z' >> "$d/cc-exit-scan.sh"
+  run bash "$d/cc-isolated.sh" --list
+  [[ "$output" == *"launches refuse: "*"cc-exit-scan.sh changed"* ]]
+  [[ "$output" != *"cc-push refuses"* ]]
 }
 
 @test "claude-home files are hashed file by file when present" {
