@@ -125,7 +125,7 @@ Choose exactly one bracketed value. The choice is **mechanically derived from th
 
 #### Next-action derivation
 
-Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the unit's size as counted by `workflows/pr-prep.md` step 1a's command (changed lines outside `docs/`). On every later pass of the review-fix loop (the first review falls under rule 2 and pr-prep step 1a), the loop's size re-check (`workflows/review-fix-loop.md` § Size re-check) comes before this ladder: past its limit (~800 lines, or a waiver's), the loop stops for the user's waiver, and no next action below, `merge` included, overrides that stop.
+Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the rubric the synthesis just produced (counts of 🔴 / 🟡 rows and which critics ran, including the `## ⏭️ Skipped Core Critics` section) and the unit's size as counted by `workflows/pr-prep.md` step 1a's command (changed lines outside `docs/`).
 
 1. **block on architectural review** — Either: (a) Step 5 auto-selected
    `architecture-review` but it was excluded (via `--exclude architecture-review`)
@@ -137,15 +137,14 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — On the unit's first review (no canonical rubric for the
-   branch before this pass, or the newest one is closed: the first-pass test of
-   code-review's SKILL.md first-red short-circuit, mechanic 6), the unit is over the size gate
+2. **split PR** — On the unit's first review, the unit is over the size gate
    in `workflows/pr-prep.md` step 1a (>400 changed lines outside `docs/`,
    counted with that step's command, so review artifacts don't count), the
-   user has waived neither the cap nor the size re-check for this unit, AND
-   ≥1 🔴 item exists (and rule 1 did not match). Rule 2 does not apply on
-   later passes of the review-fix loop, where growth falls under the size
-   re-check (above). A waived
+   user has not waived the cap for this unit, AND ≥1 🔴 item exists (and rule
+   1 did not match). Rule 2 does not apply on later passes of the review-fix
+   loop: growth during review falls under the loop's size re-check
+   (`workflows/review-fix-loop.md` § Size re-check), which stops the loop past
+   its limit whatever next action this ladder derives. A waived
    unit with a 🔴 falls through to the rules below. Large diffs combined with red findings multiply review risk
    per iteration; split before iterating on fixes.
 3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,
