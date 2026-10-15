@@ -1,0 +1,9 @@
+== S1 shebang change on cc-push.sh (comment-only by the gate's rule)
+S1   exit=0  cmd=git commit -m x
+== S2 shebang change on init-firewall.sh
+S2   exit=0  cmd=git commit -m x
+== D1 cd into another repo then commit (hook cwd is elsewhere)
+D1   exit=0  cmd=cd /home/node/.claude/jobs/00bcf178/tmp/sec-q089b.VzwpA5/repo2-d1 && git commit -m x
+== N1 --no-renames shows both sides of a rename (candidate fix)
+   devcontainer-config/fw.sh
+   devcontainer-config/init-firewall.sh

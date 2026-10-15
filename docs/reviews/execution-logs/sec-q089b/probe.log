@@ -1,0 +1,38 @@
+== R1 rename a boundary file away (init-firewall.sh -> fw.sh)
+   name-only: devcontainer-config/fw.sh
+R1   exit=0  cmd=git commit -m x
+== R2 rename a host tool away (cc-push.sh -> x.sh)
+   name-only: devcontainer-config/x.sh
+R2   exit=0  cmd=git commit -m x
+== R3 delete a host tool
+R3   exit=2  cmd=git commit -m x
+       BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+== R4 move host tool content into a boundary file path? (rename cc-push.sh over a new name in egress/)
+   name-only: devcontainer-config/egress/new.txt
+R4   exit=2  cmd=git commit -m x -m "Host-tool-tested: no"
+       BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.
+== P1 pathspec commit of an unstaged boundary change (not -a)
+P1   exit=0  cmd=git commit -m x devcontainer-config/egress/base.txt
+P1b  exit=0  cmd=git commit -m x -- devcontainer-config/cc-push.sh
+== P2 --include / -o variants with unstaged host change
+P2   exit=0  cmd=git commit -o -m x devcontainer-config/cc-push.sh
+P2b  exit=0  cmd=git commit -i -m x devcontainer-config/cc-push.sh
+== T1 one trailer value names the other (cross-satisfaction)
+T1   exit=0  cmd=git commit -m x -m "Host-tool-tested: no — see Live-verified: later"
+T1b  exit=2  cmd=git commit -m x -m "Live-verified:Host-tool-tested: x"
+       BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+== T2 trailer in an earlier chained command, not the message
+T2   exit=0  cmd=echo "Live-verified: Host-tool-tested:" >/dev/null; git commit -m x
+== C1 both sets touched, both comment-only
+C1   exit=0  cmd=git commit -m x
+== C2 boundary comment-only + host substantive, no trailer
+C2   exit=2  cmd=git commit -m x
+       BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+C2b  exit=0  cmd=git commit -m x -m "Host-tool-tested: no"
+== C3 host comment edit that also comments OUT a real host line
+C3   exit=2  cmd=git commit -m x
+       BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+== K1 case variant of host tool path (not a real tool on Linux)
+K1   exit=0  cmd=git commit -m x
+== G1 git -C other-repo commit from a different cwd
+G1   exit=0  cmd=git -C /home/node/.claude/jobs/00bcf178/tmp/sec-q089b.VzwpA5/repo-g1 commit -m x

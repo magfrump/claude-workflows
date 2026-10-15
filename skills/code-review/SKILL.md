@@ -743,9 +743,10 @@ failure).
    creates it copies any marker line from the previous dated file, so the marker carries forward,
    unless that file is closed (`Loop closed at`), which starts a new loop per Step 1.
 7. **Security on enforcement files.** If the reviewed diff touches an enforcement file (a path
-   matched by the `enforcement` regex in `hooks/live-verify-gate.sh`, which mirrors
-   `devcontainer-config/cc-isolated.sh`'s `enforcement_files()`, the owner of the list, plus
-   `install.sh`),
+   matched by the `enforcement` or the `host_tools` regex in `hooks/live-verify-gate.sh`, which
+   mirror `devcontainer-config/cc-isolated.sh`'s `enforcement_files()` and `host_tool_files()`,
+   the owners of the lists, plus `install.sh`; host tools carry their own trailer but are
+   still enforcement files here, decision log row 71),
    run the security critic even on a pass that short-circuits, whatever Stage 1.5 would decide.
    Its findings enter the rubric at their mapped tier, amber included. Only the other critics
    are skipped.

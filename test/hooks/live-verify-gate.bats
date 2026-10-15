@@ -308,10 +308,10 @@ stage_host_tool() {
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
   [ "$status" -eq 2 ]
   [[ "$output" == *"live verification"* ]]
-  [[ "$output" != *"host-only tool"* ]]
+  [[ "$output" != *"changes a host tool"* ]]
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"host-only tool"* ]]
+  [[ "$output" == *"changes a host tool"* ]]
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox" -m "Host-tool-tested: no — bats"')"
   [ "$status" -eq 0 ]
 }
@@ -327,7 +327,7 @@ stage_host_tool() {
   run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
   [ "$status" -eq 2 ]
   [[ "$output" == *"live verification"* ]]
-  [[ "$output" != *"host-only tool"* ]]
+  [[ "$output" != *"changes a host tool"* ]]
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
   [ "$status" -eq 0 ]
 }
@@ -366,8 +366,15 @@ stage_host_tool() {
   git add devcontainer-config/egress/base.txt
   run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"host-only tool"* ]]
+  [[ "$output" == *"changes a host tool"* ]]
   [[ "$output" != *"live verification"* ]]
   run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
   [ "$status" -eq 0 ]
+}
+
+@test "renaming a gated file to an ungated name is still gated" {
+  git mv devcontainer-config/egress/base.txt devcontainer-config/base-moved.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"devcontainer-config/egress/base.txt"* ]]
 }

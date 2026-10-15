@@ -25,7 +25,7 @@ The public surface here is a commit-message contract plus the gate's regex, whic
 | `Host-tool-tested: no — …` (debt list) | log query | `git log --grep 'Live-verified: no'` | `guides/devcontainer-setup.md:249` | Inconsistent (Minor): the sibling debt query is not documented. See F4. |
 | `host_tools` (regex var) | gate variable | `enforcement` | `hooks/live-verify-gate.sh:73` | Consistent with `host_tool_files()` (cc-isolated.sh:199). Anchoring differs from `enforcement`. See F5. |
 | `boundary_touched` / `host_touched` | gate variable | `touched`, `files` | `hooks/live-verify-gate.sh` (pre-diff) | Consistent. Private locals, listed for completeness. |
-| `BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.` | error message | `BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.` | `hooks/live-verify-gate.sh:162` | Consistent shape. The list header uses a different noun. See F6. |
+| `BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.` | error message | `BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.` | `hooks/live-verify-gate.sh:179` | Consistent shape. The list header uses a different noun. See F6. |
 | "host-only tool(s)" / "host tool(s)" | doc term | `host_tool_files()`, "enforcement files" | `devcontainer-config/cc-isolated.sh:192-203`; `guides/devcontainer-setup.md:262-269` | Mixed: both terms appear, sometimes in the same block. See F6. |
 
 ## Findings
@@ -139,7 +139,7 @@ The end-anchored host regex is arguably the more precise one: a stray `cc-push.s
 #### F6. "host-only tool" and "host tool" are used interchangeably, including within one message
 
 **Severity:** Informational
-**Location:** `hooks/live-verify-gate.sh:162-164`; `guides/devcontainer-setup.md:250, 269`; `guides/cc-isolated-usage.md:829, 927`
+**Location:** `hooks/live-verify-gate.sh:179-181`; `guides/devcontainer-setup.md:250, 269`; `guides/cc-isolated-usage.md:829, 927`
 **Move:** 2
 **Confidence:** Medium
 
@@ -157,7 +157,7 @@ The boundary half pairs its first line with "Enforcement files in the commit:", 
 #### F7. The host-tool BLOCKED message drops the sibling's "why" paragraph
 
 **Severity:** Informational
-**Location:** `hooks/live-verify-gate.sh:161-170`
+**Location:** `hooks/live-verify-gate.sh:178-187`
 **Move:** 4 (error consistency)
 **Confidence:** Medium
 
@@ -184,8 +184,8 @@ The message is fed back to the model (exit 2 stderr), and the sibling's reason l
 | 3 | Row 71 cites Q-147, absent on this branch | Minor | `docs/decisions/log.md:94` | High |
 | 4 | No documented `Host-tool-tested: no` debt query; old host-tool debt stays in the `Live-verified: no` list | Minor | `guides/devcontainer-setup.md:249-251` | Medium |
 | 5 | `host_tools` end-anchored, `enforcement` not | Minor | `hooks/live-verify-gate.sh:73,78` | High |
-| 6 | "host-only tool" vs "host tool" mixed | Informational | `hooks/live-verify-gate.sh:162-164`; guides | Medium |
-| 7 | Host BLOCKED message lacks the sibling's pointer/why line | Informational | `hooks/live-verify-gate.sh:161-170` | Medium |
+| 6 | "host-only tool" vs "host tool" mixed | Informational | `hooks/live-verify-gate.sh:179-181`; guides | Medium |
+| 7 | Host BLOCKED message lacks the sibling's pointer/why line | Informational | `hooks/live-verify-gate.sh:178-187` | Medium |
 
 ## Overall Assessment
 

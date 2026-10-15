@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1010  # recorded reviewer probe, kept as run; gate 6 only
 # Hermetic behaviour probes for unit B. $1 = log dir. Everything lives under this
 # script's directory; HOME is redirected there.
 P="$(cd "$(dirname "$0")" && pwd)"

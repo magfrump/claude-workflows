@@ -68,11 +68,13 @@ printf '%s' "$cmd" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]+-[A-Za-z][^[:sp
 printf '%s' "$cmd" | grep -Eq -- '--amend' && printf '%s' "$cmd" | grep -Eq -- '--no-edit' && exit 0
 
 # Files this commit would carry: the index, plus tracked modifications when -a/--all.
-files="$(git diff --cached --name-only 2>/dev/null)" || exit 0
+# --no-renames: a rename is listed as both paths, so moving a gated file to an
+# ungated name is still gated (with rename detection only the destination shows).
+files="$(git diff --cached --name-only --no-renames 2>/dev/null)" || exit 0
 commit_all=0
 if printf '%s' "$cmd" | grep -Eq -- '(^|[[:space:]])(-a|--all|-[a-zA-Z]*a[a-zA-Z]*)([[:space:]]|$)'; then
   commit_all=1
-  files="$files"$'\n'"$(git diff --name-only 2>/dev/null)"
+  files="$files"$'\n'"$(git diff --name-only --no-renames 2>/dev/null)"
 fi
 
 # The enforcement set: what cc-isolated.sh's enforcement_files() hashes, as repo
@@ -84,7 +86,9 @@ enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.
 # live probe can exercise them, so they carry their own trailer, `Host-tool-tested:`
 # (what was run on a host, or `no — <reason>`), and `Live-verified: no` stays a
 # list of debt a probe can pay. A commit touching both kinds needs both trailers.
-host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)$'
+# Not end-anchored, like `enforcement`: a stray sibling such as cc-push.sh.orig is
+# gated too (it was, while the tools sat in `enforcement`).
+host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)'
 boundary_touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 host_touched="$(printf '%s\n' "$files" | grep -E "$host_tools" | sort -u)"
 touched="$(printf '%s\n%s\n' "$boundary_touched" "$host_touched" | grep -v '^$' | sort -u)"
@@ -186,7 +190,7 @@ for t in "${missing[@]}"; do
     } >&2
   else
     {
-      echo "BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host."
+      echo "BLOCKED: this commit changes a host tool but says nothing about testing it on a host."
       echo "Host tools in the commit:"
       printf '  %s\n' "$host_touched"
       echo
@@ -194,6 +198,10 @@ for t in "${missing[@]}"; do
       echo "    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>"
       echo "or an explicit statement that nothing has, and what will:"
       echo "    Host-tool-tested: no — <reason>; <what will run it>"
+      echo
+      echo "These run on the host after or outside the container, so cc-isolated --probe-only"
+      echo "cannot exercise them (guides/devcontainer-setup.md, host-tools note; decision log #71)."
+      echo "git log --grep 'Host-tool-tested: no' lists the outstanding host-tool debt."
     } >&2
   fi
 done

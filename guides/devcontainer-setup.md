@@ -247,8 +247,10 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
   Either the hash `--list` shows after a passing probe, or `Live-verified: no — <why,
   and what will run it>`. The gate does not judge the answer; it refuses to let the
   question go unasked. `git log --grep 'Live-verified: no'` lists the outstanding debt.
-  Host-only tools get a trailer of their own, `Host-tool-tested:`, so that list holds
-  only debt a probe can pay (see the host-tools note below).
+  Host-only tools get a trailer of their own, `Host-tool-tested:`, so from row 71 on
+  that list gains only debt a probe can pay (host-tool commits before it, from Q-076 on,
+  stay in it); `git log --grep 'Host-tool-tested: no'` lists the host-tool debt (see the
+  host-tools note below).
 
 ### What each layer can and cannot prove
 
