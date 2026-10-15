@@ -81,14 +81,14 @@ Log row 66's three-cycle window has closed. Its trigger was "multi-file merges t
 ### Q-162 · merges-and-cleanup-2026-10-14
 **Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
 
-This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15` by its reviewed tip, a760a5e5 (a branch name can move; a hash cannot, once the paste has checked that no replace refs exist), then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main (as of b279a2ba) plus seven reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block into the container's shell (a `!` command in a cc-isolated session, or a shell in that container), never in your host checkout: it runs git in `/workspace`, where an agent session can plant hooks and config. It merges `merge/ready-2026-10-15-r2` by its reviewed tip, 09a2876f (a branch name can move; the hash names fixed content once the paste has checked that no replace refs, `info/grafts` or `shallow` file exists, and the merge itself ignores replace refs), then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main (as of b71a4e9e) plus seven reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), and the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because five of those nine merges (Q-110, doc drift, Q-160 and the two docs branches) conflict with an earlier one, each only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164: their pastes stop unless this merge is on main.
 
-**Not runnable yet (2026-10-15):** main has moved past this pin. After Q-178's landing of the 0357 cycle branch, merging a760a5e5 conflicts in `docs/reviews/override-log.md` (and, before it, in the questions, roadmap and idea-log files), so the paste below aborts and deletes nothing. The next cycle rebuilds `merge/ready-2026-10-15` on main, keeping both sides' appends, and replaces the hash in the paste; run it only after that.
+**Rebuilt 2026-10-15 (Q-180):** the first pin, a760a5e5, was built on b279a2ba and conflicted once Q-178 landed the 0357 cycle branch (in the override log, and before that landing in the questions, questions-archive, roadmap and idea-log files). `merge/ready-2026-10-15-r2` re-merges the same nine unit tips onto main b71a4e9e. Its diff from a760a5e5 is exactly main's own change since then, and its override-log rows are exactly the union of a760a5e5's and main's. `merge/ready-2026-10-15` (a760a5e5) is superseded; deleting it is yours.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-{ test -z "$(git for-each-ref refs/replace/)" || { echo "replace refs present: stop"; false; }; } && \
-{ git merge --no-ff a760a5e5057ef3f0abd13145e7d945ef500b8abd -m "Merge branch 'merge/ready-2026-10-15': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule and the 2026-10-14 cycle record (override-log appends resolved)" || { git merge --abort; echo "conflict: merge aborted, nothing deleted"; false; }; } && \
+{ test -z "$(git for-each-ref refs/replace/)" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" || { echo "replace refs, info/grafts or shallow present: stop"; false; }; } && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null merge --no-ff 09a2876ff5ea6f7e5b86eea723c2aa0094759145 -m "Merge branch 'merge/ready-2026-10-15-r2': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule, the branch-verify and decision-015 docs (override-log appends resolved)" || { git merge --abort; echo "conflict: merge aborted, nothing deleted"; false; }; } && \
 for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktree remove .claude/wt-build-loop-$u && git branch -d feat/build-loop-$u; done
 ```
 
@@ -100,8 +100,9 @@ for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktre
   - `fix/q096-exit-scan-insteadof-target` (8717fd72; added 2026-10-15): the exit scan walks every URL an `insteadOf` or `pushInsteadOf` rule rewrites a remote to, your own config's remotes and rules included, and every matching rule, not only git's longest. It matches by byte. Three caps fail closed: 4 KiB per URL, 100k comparisons and 2,000 targets. Every `read` runs under `LC_ALL=C`, which also fixes an older UTF-8 hiding bug. 399 lines, under the 400 cap. Loop closed after 3 iterations and a final pass (`docs/reviews/code-review-rubric-2026-10-15-q096-exit-scan-insteadof-target.md`); the security critic's probe-confirmed bypasses in iterations 1–2 are fixed. Commits carry `Host-tool-tested: no`. Its host probe is Q-167. A family of older, loose remote-name parsing routes was split off as Q-168 and listed in the guide as a known route.
   - `fix/rebuild-hint-recreate` (47da5a4b; added 2026-10-15, built on this branch): after the firewall fails closed, the launcher's hint said a plain `cc-isolated <repo>` rebuilds, but a plain launch reuses that container and fails again (traced, with a regression test). The hint's first line is now `cc-isolated --probe-only WS && cc-isolated WS`. The copyable lines lose their trailing `# …` notes, because interactive zsh passes those as arguments and the last one becomes the workspace. "Rebuild" becomes "recreate" where the container is recreated. 131 code lines; only comments and `echo` text change in the scripts. Loop closed at the 3-iteration cap; the last fix had a narrow fact-check (rubric `docs/reviews/code-review-rubric-2026-10-15-fix-rebuild-hint-recreate.md`). 290/290 in its suites; health reds were 3 fast tests, each passing alone (the one outside the import walk, build-loop-merge's "--merge leaves main where another writer moved it", re-run 3/3 here); slow suites 300/300. Commits carry `Live-verified: no`; Q-167 holds the probe. Both scripts are in the trust manifest, so install re-blesses and each project's container is recreated once.
   - `fix/cc-isolated-one-workspace` (f6f37fad; added 2026-10-15, built on this branch): `cc-isolated` refuses, with exit 2 before any action, a second workspace, a `#` word before `--` (a pasted note) and a `--profile` value starting with `#` or `-`. Before this, `cc-isolated  # --bless` and `--profile '#' --bless` ran a bless. `--` takes one word. install.sh's "Next steps" lines lose their notes, and the `--help` and guide command references are reformatted. 260 code lines. Iteration 1 had independent critics; the closing passes were the builder's self-review after nested critics hung. An independent closing review run from the orchestrator was clean, 0 Must (`docs/reviews/independent-review-2026-10-15-one-workspace.md`): 17 claims held and ~45 crafted argv probes reached no action. Related suites 436/436 under `LC_ALL=C.UTF-8`; health reds were 3 import-walk tests, each passing alone; slow suites pass. Commits carry `Live-verified: no`; probe in Q-167 (b).
-  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The tip, a760a5e5, adds after that gate the rebuild-hint and one-workspace unit merges (each ran its own gate, above), two docs-branch merges and nine cycle-record merges; it holds exactly the units listed.
-- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. The rebuild and re-pin are agent work for the next cycle, together with the rest of Q-180. Do not run this entry's paste until Q-180 is done.
+  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The first tip, a760a5e5, added after that gate the rebuild-hint and one-workspace unit merges (each ran its own gate, above), two docs-branch merges and nine cycle-record merges.
+  - **Gate for the rebuilt tip** (09a2876f, 2026-10-15): the fast suites had one red, build-loop-merge's T23 test, whose log shows the Q-145 `/tmp` race (`find: '/tmp/bats-run-…': No such file or directory`); it passes 3/3 alone. The slow suites, run separately: 300/300. Shellcheck and the other checks passed.
+- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. Q-180 rebuilt the branch and hardened this paste (its review: `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`).
 - **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
 
 ### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
@@ -111,13 +112,14 @@ Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It
 
 - **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
 - **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
-- **Paste for [1]:** it merges the branch alone, or `merge/u5-and-q145` at a04d9776 (both units, the override-log appends resolved) if U5 is already on main. Both are pinned by hash.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/q145-r2` at 35e13638 (Q-162's branch plus this unit, the override-log appends resolved), or `merge/u5-and-q145-r2` at 6c841192 (that plus U5) if U5 is already on main. Both are pinned by hash, and both orders of Q-163 and Q-164 were run against main and land the same tree. The unit's own tip, c035f2e7, is unchanged inside them.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-{ test -z "$(git for-each-ref refs/replace/)" || { echo "replace refs present: stop"; false; }; } && \
-if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=a04d97762518389f053c3c609a3dfcc4531d553b; else B=c035f2e77f8c083156b397fb32e164dd17cc6b44; fi && \
-{ git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+{ test -z "$(git for-each-ref refs/replace/)" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" || { echo "replace refs, info/grafts or shallow present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=35e1363882321fe15444b13a245f89bd1bc22054; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
 | Option | What it means | Cost to you | If it's wrong |
@@ -127,7 +129,7 @@ if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; t
 | **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
 
 - **Blocks:** Q-145's revisit clock (re-runs this cycle: U5 2, Q-110 1).
-- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`. Do not run this entry's paste until Q-180 is done.
+- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`.
 - **If the answer differs:** [2] `git branch -D fix/q145-ancestor-vanish`.
 
 ### Q-164 · merge-gate-feat-build-loop-u5-7c91b97455db
@@ -142,13 +144,14 @@ Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455
   - Size: 26 code lines outside `docs/`, 409 lines outside `docs/reviews/`.
   - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
   - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
-- **Paste for [1]:** it merges `merge/build-loop-u5-resolved` at 0f94bb77 (this cycle's chore branch, Q-110 and U5, with the questions, roadmap and override-log conflicts resolved; U5's reviewed tip is unchanged inside it), or `merge/u5-and-q145` at a04d9776 if Q-145 is already on main, each pinned by hash. Then Q-156's release paste.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/build-loop-u5-resolved-r2` at 7326d715 (Q-162's branch plus U5, by the earlier reviewed resolution e088c7e3, with the questions, roadmap and override-log conflicts resolved again: main's Next 3–6 kept and U5's C5 item added as 7, both Ideas lists kept, U5's decision-015 idea dropped since main's Next 5 holds it, indexes regenerated; U5's entries Q-103 and Q-149..Q-156 are byte-identical to e088c7e3's), or `merge/u5-and-q145-r2` at 6c841192 if Q-145 is already on main, each pinned by hash. Then Q-156's release paste.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-{ test -z "$(git for-each-ref refs/replace/)" || { echo "replace refs present: stop"; false; }; } && \
-if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=a04d97762518389f053c3c609a3dfcc4531d553b; else B=0f94bb7702073f78992b8eba25ac131473b49825; fi && \
-{ git merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+{ test -z "$(git for-each-ref refs/replace/)" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" || { echo "replace refs, info/grafts or shallow present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=7326d7159fe390fdb7780966fb3392ecf3a995ee; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
 | Option | What it means | Cost to you | If it's wrong |
@@ -158,7 +161,7 @@ if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; t
 | **[3] changes needed** | Your note goes back to a loop | A note | — |
 
 - **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
-- **Interim:** unmerged. Cycles keep running by hand. Do not run this entry's paste until Q-180 is done.
+- **Interim:** unmerged. Cycles keep running by hand.
 - **If the answer differs:** [2] runs on the next iteration, which then asks again.
 
 ### Q-165 · branch-verify-approach
@@ -214,12 +217,12 @@ cc-isolated --probe-only ~/code/ANY-REPO && cc-isolated --list | grep -i 'verifi
 
 Paste back the hash `--list` prints, for a `Live-verified: <hash>` record.
 
-**(b) The one-workspace rule** (clears its `Live-verified: no`). Paste these lines as written in default zsh; each of the first three must print an ERROR and `exit=2` with nothing done:
+**(b) The one-workspace rule** (clears its `Live-verified: no`). Paste these lines as written in default zsh; each of the first three must print an ERROR and `exit=2` with nothing done (on a launcher older than the fix, the third prints the project list instead: the install has not taken effect, so stop there):
 
 ```
 cc-isolated ~/code/a ~/code/b; echo "exit=$?"
 cc-isolated --list  # registered projects; echo "exit=$?"
-cc-isolated --profile '#' --bless; echo "exit=$?"
+cc-isolated --profile '#' --list; echo "exit=$?"
 cc-isolated --probe-only -- ~/code/ANY-REPO
 ```
 
@@ -237,7 +240,7 @@ Step 2, inside the session at Claude's prompt, then exit the session:
 ! printf '#!/bin/sh\necho planted\n' > mirror-repo/hooks/pre-receive && chmod +x mirror-repo/hooks/pre-receive
 ```
 
-- **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say. Do not run this entry's paste until Q-180 is done.
+- **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say.
 - **If the answer differs:** any exit but 3, or a warning that does not name the hook, is a bug in Q-096; paste the output.
 
 ### Q-168 · q096b-remote-names-unit
@@ -257,15 +260,15 @@ Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed th
 - **The paste:** the single ```bash block in `docs/working/spike-cc-verify-q117.md` (498 lines with its fences). Take it from the reviewed commit, not the working tree, and check its hash before running:
 
   ```
-  cd ~/claude-workflows && mkdir -p ~/cc-verify && git -c core.useReplaceRefs=false show a760a5e5057ef3f0abd13145e7d945ef500b8abd:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' > ~/cc-verify/q117-spike.txt && sha256sum ~/cc-verify/q117-spike.txt
+  cd ~/claude-workflows && mkdir -p ~/cc-verify && git -c core.useReplaceRefs=false show d25254dae30fe05fd385b3ff430104fb63c39158:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' > ~/cc-verify/q117-spike.txt && sha256sum ~/cc-verify/q117-spike.txt
   ```
 
   Run it on the host, in your checkout (replace `~/claude-workflows` if it lives elsewhere), not in a container. The hash must be `032cc9a81e4e1c9266ec3ad3b5fe7053d9876eb21f5ffa7f0a35f2ccfed4afb7`; otherwise stop. Then paste the contents of `~/cc-verify/q117-spike.txt` (under the `denyWrite` below), editing only its last line, the checkout path. Its first output line must be `script sha256 a65f4c30ba1b8907`; any other value means it is not the reviewed block, so press Ctrl-C.
 - **Before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`, or run it while no agent that can write `~/cc-verify` is running. A same-uid writer there is the one threat left open (residuals A17 and A18: it could redirect the stage extraction's writes, or edit the stage into host code execution during the build).
 - **Expect:** up to about an hour (image build, then Q-117's wait of up to 45 min for a pool rotation). Exit 0 with `RESULT Q-117 pass` and five `CHECK … ok` lines is a pass; 2 means no rotation was seen, so rerun later; 1 is a failure or refusal, named by step. On an interrupted teardown, rerun the same block with `--clean` as its last argument.
 - **Paste back:** the `script sha256` line, the `RESULT`, `CHECK`, `NOTE`, `TEARDOWN` and `REFUSED:` lines.
-- **Read:** the doc's step table (every command cited to file:line), "Not verified" (8 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
-- **Interim:** Q-117 stays unverified; the egress fix stays unmerged. Do not run this entry's paste until Q-180 is done.
+- **Read:** the doc's step table (every command cited to file:line), "Not verified" (12 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
+- **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
 - **If the answer differs:** if Q-165 is [4], this entry is dropped.
 
 ### Q-170 · decision-015-isolation-rerun
@@ -274,7 +277,7 @@ Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed th
 Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. The re-run recommends keeping Docker: none of the 6 session-breaking fixes since 2026-07-13 was Docker's. Which outcome?
 
 - **Why it's yours:** it amends a decision record's revisit trigger, and [A] adds a merge refusal for boundary changes.
-- **Read:** `docs/working/dd-015-step4-isolation-mechanism.md` (lands with Q-162). Motive test: of the 6 fixes, 4 came from this repo's own boundary changes, 1 from the devcontainer CLI's path handling and 1 from kernel netfilter, so no runtime swap removes the cause. 4 of the 6 merged without a live-container run, and since 2026-09-09 87 of 116 `devcontainer-config/` commits carry `Live-verified: no`. 18 candidates, 5 scored. Confidence 80%. §6 holds the exact amendment text for 015's trigger, which splits runtime-caused from boundary-layer breakage.
+- **Read:** `docs/working/dd-015-step4-isolation-mechanism.md` (lands with Q-162). Motive test: of the 6 fixes, 4 came from this repo's own boundary changes, 1 from the devcontainer CLI's path handling and 1 from kernel netfilter, so no runtime swap removes the cause. 4 of the 6 merged without a live-container run, and since 2026-09-09 88 of 116 `devcontainer-config/` commits carry `Live-verified: no`. 18 candidates, 5 scored. Confidence 80%. §6 holds the exact amendment text for 015's trigger, which splits runtime-caused from boundary-layer breakage.
 - **Also tell me (V1, the one fact that could change the answer):** the dates and reasons you fell back to running sessions on the host since July (Q-121), because Docker Desktop incidents leave no commit.
 
 | Option | What it means | Cost to you | If it's wrong |
@@ -384,7 +387,7 @@ Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is out
 Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them (the review's MA1 names all four; the check below tries each shape). This check settles it with a throwaway hook that approves only the nine test commands below and stays silent on anything else, so every other command prompts as usual; it needs no merge. Run on the host:
 
 ```
-mkdir -p ~/q092/.claude && cd ~/q092 && git init -q && jq --version && echo canary > x.q092-canary && echo secret > secret && cat > ~/q092/.claude/allow-tests.sh <<'EOF' && cat > ~/q092/.claude/settings.local.json <<'JSON' && claude --version && claude
+mkdir ~/q092 && mkdir ~/q092/.claude && cd ~/q092 && git init -q && jq --version && echo canary > x.q092-canary && echo secret > secret && cat > ~/q092/.claude/allow-tests.sh <<'EOF' && cat > ~/q092/.claude/settings.local.json <<'JSON' && claude --version && claude
 #!/bin/sh
 c=$(jq -r '.tool_input.command // empty')
 printf '%s\n---\n' "$c" >> "$HOME/q092/seen.log"
@@ -400,7 +403,7 @@ EOF
 JSON
 ```
 
-It needs `jq` on the host (the paste stops at `jq --version` without it). `~/q092` is its own git repository with no remote, so a `git push` that runs pushes nothing. In that session, check that `/hooks` lists the hook. Answer **no** to any prompt for a command not on this list. Then ask Claude to run each of these one at a time, exactly as written, and note for each whether it **runs**, **prompts** or is **denied**:
+It needs `jq` on the host (the paste stops at `jq --version` without it). It also stops if `~/q092` already exists, so nothing planted there is reused: look at what is in it before removing it. `~/q092` is its own git repository with no remote, so a `git push` that runs pushes nothing. In that session, check that `/hooks` lists the hook. Answer **no** to any prompt for a command not on this list. Then ask Claude to run each of these one at a time, exactly as written, and note for each whether it **runs**, **prompts** or is **denied**:
 1. `cat x.q092-canary` (control for the glob rule: must be denied)
 2. `cat x.q092-ca""nary`
 3. `cat x.q092-c\anary`
@@ -413,7 +416,7 @@ It needs `jq` on the host (the paste stops at `jq --version` without it). `~/q09
 
 Then exit, keep a copy of `~/q092/seen.log`, and `rm -rf ~/q092`, even if the session errored. Also run `claude --version` inside any `cc-isolated` session: the hook runs in the container, so the result counts for Q-092 only if the two versions match. Paste back both version lines, the nine results and `seen.log`. A result counts only if `seen.log` shows the hook saw that exact command: if Claude rewrote it (for example dropping the quotes), re-ask with the exact text. A "prompts" on 2, 3, 5, 7 or 9 means the hook did not see that spelling, so that test is void and is re-run. If a control is not denied, the whole check is void.
 
-- **Interim:** Q-092's two branches stay unmerged (Q-177). Do not run this entry's paste until Q-180 is done.
+- **Interim:** Q-092's two branches stay unmerged (Q-177).
 - **If the answer differs:** any "runs" on 2, 3, 5, 7 or 9 sends Q-177 to its options; all five "denied", every control denied, `seen.log` showing each exact command and matching versions land Q-092; anything else re-runs the void tests (at the container's version, if the versions differ).
 
 ### Q-177 · q092-merge

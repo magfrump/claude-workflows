@@ -74,7 +74,8 @@ before merging, since this session cannot merge into main (Q-162).
    under-counts (Q-017), so neither can be counted.
    Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
    committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
-   Cycle 2 (2026-10-14): 42 multi-file landings; 25/42 carry the line, 38/42 committed a
+   Cycle 2 (2026-10-14): 42 multi-file landings after cac2ba0c (cycle 1's own three
+   landings excluded); 25/42 carry the line, 38/42 committed a
    rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432). About 36 are
    units of the one build-loop plan.
    Cycle 3 (2026-10-15, window closed): 45 multi-file merges since 2026-10-02; 26 carry
