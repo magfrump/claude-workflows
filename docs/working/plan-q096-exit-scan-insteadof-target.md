@@ -24,7 +24,7 @@ Assume this shipped and a session still pushed through a rewrite to a hook it pl
 | B11 | Relative rewritten target (base `""`, `.`, `sub/`), resolved in a worktree added later | covered | `_snap_remote` leaves a W record for a relative target, which refuses the note |
 | B12 | Target missing at launch, created in the session | covered | `_snap_file` records `missing`; creation is a change |
 | B13 | `..` in the URL's rest climbing out of the base into the checkout, or `file://`/`file://localhost` forms | covered | `_snap_remote`'s existing `realpath -m` and `file://` handling |
-| B14 | Stall the scan with thousands of URLs × rules (quadratic), or with many matches each costing forks | covered | `GIT_EXIT_SCAN_MAX_REWRITE_PAIRS` (100,000 comparisons, checked before each batch) and `GIT_EXIT_SCAN_MAX_REWRITE_TARGETS` (2,000 distinct rewritten URLs); over either the snapshot fails closed (exit 4 at exit, exit 1 at launch). Long values still slow each comparison: the guide's "A slow scan" route |
+| B14 | Stall the scan with thousands of URLs × rules (quadratic), or with many matches each costing forks | covered | `GIT_EXIT_SCAN_MAX_REWRITE_PAIRS` (100,000 comparisons, checked before each batch) and `GIT_EXIT_SCAN_MAX_REWRITE_TARGETS` (2,000 rewritten URLs, one per URL-and-rule match, before dedupe); over either the snapshot fails closed (exit 4 at exit, exit 1 at launch). Long values still slow each comparison: the guide's "A slow scan" route |
 | B15 | Empty `insteadOf` value (matches every URL) | covered | an empty prefix is a match (`[[ "$u" == "$p"* ]]` with `p` empty) |
 | B16 | Case games (`HTTPS://` vs `https://`) | covered | git's match is case-sensitive; so is ours |
 | B17 | Target outside the checkout | not covered, by design | not container-writable (existing `_snap_remote` rule) |
@@ -41,7 +41,7 @@ Assume this shipped and a session still pushed through a rewrite to a hook it pl
 | B29 | Remote-name and legacy-file resolution looser than git (B24 family; pre-existing) | not covered: split unit | guide known route "Remote names and legacy remote files, read loosely" |
 | B21 | A remote defined in YOUR global/system config, rewritten by a launch-time rule to a target the session plants (found by the iteration-1 fact-check) | covered (iteration 1) | `_snap_host_config` queues your `remote.*.url`/`pushurl` with `_snap_url` |
 
-No uncovered family needs a design change: B17–B20 are outside what a config scan can or must see, and B18 stays a listed known route.
+No uncovered family needs a design change: B17–B20 are outside what a config scan can or must see, and B18 stays a listed known route. B24/B29 (added in review) were split to `fix/q096b-exit-scan-remote-names` and are a listed known route meanwhile.
 
 Round-1 triggers: `/pre-mortem` — fired (enforcement file); this table is the adversarial pass, backed by the hermetic experiment in the research doc (acting as the spike). `/architecture-review` — not triggered (one module, `devcontainer-config/`, plus its test and guide).
 
@@ -74,7 +74,7 @@ Within estimate.
 
 ## Test specification
 
-Each new bats case plants a pre-receive hook in the rewritten target after the launch snapshot and expects `git_exit_scan` status 1 naming the hook, and `no_ran`. The non-local case expects no `remote` record for the rewritten https URL. The cap case sets `GIT_EXIT_SCAN_MAX_REWRITES` low and expects the snapshot to fail with "too many". Run `bats test/cc-isolated-functions.bats` and, before landing, `scripts/health-check.sh`.
+Each new bats case plants a pre-receive hook in the rewritten target after the launch snapshot and expects `git_exit_scan` status 1 naming the hook, and `no_ran`. The non-local case expects no `remote` record for the rewritten https URL. (As built: some cases check findings without `no_ran`.) The cap case lowers each of `GIT_EXIT_SCAN_MAX_REWRITE_PAIRS`, `_TARGETS` and `_BYTES` in turn and expects `git_exit_scan` status 2 with "too many" (pairs, targets) or "too long" (bytes). Run `bats test/cc-isolated-functions.bats` and, before landing, `scripts/health-check.sh`.
 
 ## Risks
 

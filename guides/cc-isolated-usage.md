@@ -318,9 +318,9 @@ configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
-resolved in the working tree of the repo whose config names them). Each of
-those remote URLs, local or not, and each `remote.*.url`/`pushurl` in your own
-config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
+resolved in the working tree of the repo whose config names them). Every remote
+URL it meets, local or not (legacy files' included, `insteadOf` bases not), and
+each `remote.*.url`/`pushurl` in your own config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
 rule whose value it starts with — from any config the scan reads, your own
 global and system config included — and the rewritten URL is walked the same
 way: git uses only the longest matching rule, the scan walks every match.
@@ -345,8 +345,8 @@ one such line). A file
 it would hash that is over 64 MiB (a sparse file counts at its apparent size),
 or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
 unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
-before its first line is read, and so do a remote URL or `insteadOf` rule over
-4,096 bytes, more than 100,000 URL-and-rule comparisons, or more than 2,000
+before its first line is read, and so do a remote URL (or its working tree) or
+`insteadOf` rule over 4,096 bytes, more than 100,000 URL-and-rule comparisons, or more than 2,000
 rewritten URLs to walk (one per URL-and-rule match). (At launch any of these
 refuses the launch instead, exit 1.)
 
@@ -376,7 +376,8 @@ any other change in the session, a working tree deleted without a prune, and **a
 checkout whose config holds a relative `core.hooksPath` or
 `core.attributesFile` (husky's `.husky/_`) or a relative local remote** (a
 remote of `.` is fine; an `insteadOf` base of `.` or `""` is not, nor a remote
-any `insteadOf` rule, yours included, rewrites to a relative path), which git
+any `insteadOf` rule, yours included, rewrites to a relative path, nor a
+relative remote URL in your own config), which git
 would resolve in the new worktree's tree, unscanned. That includes the config
 of any repo embedded in the checkout. A relative `core.hooksPath` or
 `core.attributesFile` in your own config is walked in each new worktree, also
@@ -424,7 +425,9 @@ opens or closes a route.
   with no `url` (git pushes to its name), an empty `branches` file, a legacy
   file whose name holds a `/` (git never reads it), a name defined in another
   repo of the checkout, a legacy URL's spaces or CR (trimmed differently, also
-  by locale), and `file://host/` or percent-encoded `file://` URLs.
+  by locale), `file://host/` or percent-encoded `file://` URLs, a path-valued
+  `pushRemote`/`pushDefault` in your own config, and a local remote that is a
+  `gitdir:` file (git follows it; the scan records only the file).
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses

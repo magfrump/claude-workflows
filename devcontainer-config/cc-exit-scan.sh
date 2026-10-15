@@ -58,9 +58,9 @@ logical_workspace() {
 # local path inside the checkout (remote.*.url/pushurl, remote.pushDefault,
 # branch.*.remote/pushRemote naming a path, url.<base>.insteadOf bases, legacy
 # remotes files; a relative path resolved in the working tree of the repo whose
-# config names it), walked as a git dir: a push to it runs its hooks. Each of those
-# URLs, and every remote.*.url/pushurl in your own config, is also rewritten by
-# every url.<base>.insteadOf / pushInsteadOf rule whose value prefixes it (in any
+# config names it), walked as a git dir: a push to it runs its hooks. Every remote
+# URL met, local or not (not the insteadOf bases), and your own remote URLs, is
+# also rewritten by every url.<base>.insteadOf / pushInsteadOf rule whose value prefixes it (in any
 # config read here, yours included; git takes only the longest, the scan walks
 # them all), and the result walked the same way. And your own
 # global/system config, read with its includes evaluated for each git dir
@@ -87,7 +87,7 @@ logical_workspace() {
 # core.hooksPath, core.attributesFile or local remote (a remote of "." excepted,
 # but not an insteadOf base of "." or "", nor a remote any insteadOf rule
 # rewrites to a relative path) in repo config (the checkout's or an embedded
-# repo's) would
+# repo's), or a relative remote URL in your own config, would
 # resolve in the new worktree's own tree, unscanned: those leave W records, and
 # any W record refuses the note. (Your own config's relative hooksPath is walked
 # in each new worktree, including one whose .git names the container path, as
@@ -388,9 +388,9 @@ _snap_remote() {
 }
 
 # Caps on the insteadOf pass, against a session planting many or huge URLs and
-# rules to stall the scan: bytes in one URL, rule base or value (_snap_key);
-# pairs compared (_snap_pairs_ok); rewritten URLs to walk, each a few forks
-# (_snap_match). Over any of them the snapshot fails (fail closed).
+# rules to stall the scan: bytes in a URL, its working tree, a rule base or value
+# (_snap_key); pairs compared (_snap_pairs_ok); rewritten URLs to walk, counted per
+# match, each up to a git-dir walk (_snap_match). Over any of them the snapshot fails (fail closed).
 GIT_EXIT_SCAN_MAX_REWRITE_BYTES=4096
 GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=100000
 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000
@@ -597,6 +597,7 @@ _snap_cond() {
 # core.attributesFile there resolves inside the checkout; walk those. Entries are
 # not recorded (the container cannot write these files, and they are yours to
 # change mid-session), except in an include target that is inside the checkout.
+# Rewrite rules and remote URLs are queued for the insteadOf pass.
 _snap_host_config() {
   local gd="$1" lgd="$2" wt="$3" file="${4:-}" depth="${5:-0}" out origin rec key val t cond
   local -a src=()
