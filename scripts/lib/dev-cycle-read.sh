@@ -1578,8 +1578,9 @@ for f in sys.argv[1:]:
   done
 }
 # top_files NAME DIR...: array NAME gets the files and links (-xtype f or l)
-# directly in each DIR, read through nul_list, and each DIR itself when it is
-# a link (-H follows a link only as a DIR). An entry gone between find's
+# directly in each DIR, read through nul_list; find also prints a DIR that is
+# itself a link (at depth 0, where -xtype sees the link: -H follows it only to
+# list its entries), so such a DIR is in NAME too. An entry gone between find's
 # readdir and its stat of a file is skipped (-ignore_readdir_race, GNU find).
 # It fails, with NAME empty, when find reports any error (a directory entry
 # that vanished included: config_seeds retries, Q-145) or a DIR is no longer
