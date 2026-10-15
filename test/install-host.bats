@@ -1624,3 +1624,129 @@ stub_cp_then() {
   [[ "$output" == *'working directory cannot be read'* ]]
   [[ "$output" != *'BLESS-STUB'* ]]
 }
+
+# Q-106 [2]. with_merge: the real merge program and a small wiring.json (one hook
+# group, one deny rule); without it the fake payload skips the merge.
+with_merge() {
+  cp "$BATS_TEST_DIRNAME/../hooks/lib/wiring-merge.jq" "$ROOT/hooks/lib/"
+  printf '%s\n' '{"_comment":["c"],"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]},"permissions":{"deny":["Edit(/{{CLAUDE_DIR}}/settings*.json)"]}}' \
+    > "$ROOT/hooks/wiring.json"
+  commit_all merge
+}
+
+# user_settings: host hardening, a STALE group of ours (also runs old.sh), a
+# foreign group, a user deny rule and our legacy single-slash rule; mode 600.
+user_settings() {
+  local d="$CLAUDE_HOME_DIR"
+  printf '{"user":"settings","sandbox":{"enabled":true},"permissions":{"allow":["Bash(ls:*)"],"deny":["Read(./.env)","Edit(%s/settings*.json)"]},"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"bash %s/hooks/h.sh"},{"type":"command","command":"bash %s/hooks/old.sh"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"bash /opt/mine.sh"}]}]}}\n' \
+    "$d" "$d" "$d" > "$d/settings.json"
+  chmod 600 "$d/settings.json"
+}
+
+@test "T93 the merge is reviewed before the prompt; n leaves settings.json alone; y applies it by provenance, mode kept, old file backed up (Q-106)" {
+  need_script; fake_repo; with_merge; symlink_install; user_settings
+  local d="$CLAUDE_HOME_DIR" sf="$CLAUDE_HOME_DIR/settings.json"
+  cp "$sf" "$S/settings.orig"
+  run_pty 'n\nn\n' bash "$INSTALL"
+  [[ "$output" == *'settings.json: the hooks/wiring.json merge this install applies'*'Aborted. Nothing was changed. (host ~/.claude)'* ]]
+  cmp "$sf" "$S/settings.orig"
+  [ ! -e "$d/.cw-new.settings.json" ]
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  review="${output%%Install these files*}"
+  [[ "$review" == *'settings.json: the hooks/wiring.json merge this install applies'*'+      "Edit(//'*"-            \"command\": \"bash $d/hooks/old.sh\""* ]]
+  [[ "$output" == *"Merged hooks/wiring.json into $sf"* ]]
+  [[ "$output" != *'REMINDER'* ]]
+  # Host hardening and everything not ours survive; the stale group is replaced
+  # (FP-161), the foreign one kept; our legacy rule is pruned, the user's kept.
+  [ "$(jq -c '[.user, .sandbox, .permissions.allow]' "$sf")" = '["settings",{"enabled":true},["Bash(ls:*)"]]' ]
+  [ "$(jq -c '.permissions.deny' "$sf")" = "[\"Read(./.env)\",\"Edit(/$d/settings*.json)\"]" ]
+  [ "$(jq -c '[.hooks.PreToolUse[].hooks[].command]' "$sf")" = "[\"bash /opt/mine.sh\",\"bash $d/hooks/h.sh\"]" ]
+  [ "$(jq 'has("_comment")' "$sf")" = false ]
+  [ "$(stat -c %a "$sf")" = 600 ]
+  bk=$(echo "$d"/.claude-workflows-backup/*)
+  cmp "$bk/settings.json" "$S/settings.orig"
+  [ ! -e "$d/.cw-new.settings.json" ]
+}
+
+@test "T94 a merged settings.json is left alone on rerun; a settings-only drift is reviewed and fixed without a swap (Q-106)" {
+  need_script; fake_repo; with_merge; symlink_install; user_settings
+  local sf="$CLAUDE_HOME_DIR/settings.json"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  before=$(snap "$CLAUDE_HOME_DIR")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'Nothing to install into'* ]]
+  [ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]
+  # The user deletes our deny rule by hand; only settings.json differs now.
+  jq '.permissions.deny = ["Read(./.env)"]' "$sf" > "$S/s.json" && cat "$S/s.json" > "$sf"
+  manifest_before=$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "${output%%Install these files*}" == *'+      "Edit(//'* ]]
+  jq -e --arg r "Edit(/$CLAUDE_HOME_DIR/settings*.json)" '.permissions.deny | index($r)' "$sf"
+  [[ "$output" != *"Installed into"* ]]
+  [ "$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")" = "$manifest_before" ]
+  newest=$(ls -td "$CLAUDE_HOME_DIR"/.claude-workflows-backup/*/ | head -1)
+  [ "$(ls -A "$newest" | sort | tr '\n' ' ')" = '.install-stamp settings.json ' ]
+}
+
+@test "T95 settings.json or its merged copy edited while the prompt waits: nothing is replaced (Q-106)" {
+  need_script; fake_repo; with_merge; symlink_install; user_settings
+  local sf="$CLAUDE_HOME_DIR/settings.json"
+  export TAMPER='[ -e "$CLAUDE_HOME_DIR/settings.json" ] && printf "{\"edited\":1}\n" > "$CLAUDE_HOME_DIR/settings.json"'
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
+  [ -e "$S/tamper.landed" ]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'or its merged copy, changed after review'* ]]
+  [ "$(cat "$sf")" = '{"edited":1}' ]
+  [ -L "$CLAUDE_HOME_DIR/skills" ]
+  rm -f "$S/tamper.landed"; user_settings; cp "$sf" "$S/settings.orig"
+  export TAMPER='[ -e "$CLAUDE_HOME_DIR/.cw-new.settings.json" ] && printf "{\"swapped\":1}\n" > "$CLAUDE_HOME_DIR/.cw-new.settings.json"'
+  run_pty_feed "$FEED_TAMPER" bash "$INSTALL"
+  echo "$output"
+  [ -e "$S/tamper.landed" ]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'or its merged copy, changed after review'* ]]
+  cmp "$sf" "$S/settings.orig"
+  [ -L "$CLAUDE_HOME_DIR/skills" ]
+}
+
+@test "T96 an unparseable or symlinked settings.json is never written; the files still install, with the reminder (Q-106)" {
+  need_script; fake_repo; with_merge; symlink_install
+  local sf="$CLAUDE_HOME_DIR/settings.json"
+  printf '{"broken": \n' > "$sf"; cp "$sf" "$S/settings.orig"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *"settings.json: NOT merged: $sf: it is not one valid JSON object"* ]]
+  [[ "$output" == *'REMINDER'*'NOT merged'* ]]
+  [ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]
+  cmp "$sf" "$S/settings.orig"
+  rm -rf "$CLAUDE_HOME_DIR"; symlink_install
+  printf '{"target":1}\n' > "$S/target.json"; rm -f "$sf"; ln -s "$S/target.json" "$sf"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *"NOT merged: $sf: it is a symlink"* ]]
+  [ -L "$sf" ] && [ "$(cat "$S/target.json")" = '{"target":1}' ]
+}
+
+@test "T97 a hostile wiring value of the wrong type (defaultMode) fails the merge; settings.json is untouched (Q-106)" {
+  need_script; fake_repo; with_merge; symlink_install; user_settings
+  printf '%s\n' '{"permissions":{"defaultMode":"bypassPermissions"}}' > "$ROOT/hooks/wiring.json"; commit_all hostile
+  cp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [[ "$output" == *'NOT merged'*'the merge program failed on it'* ]]
+  [ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]
+  cmp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
+}
+
+@test "T98 with no settings.json, the merge creates one, mode 600, from the wiring alone (Q-106)" {
+  need_script; fake_repo; with_merge
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  local sf="$CLAUDE_HOME_DIR/settings.json"
+  [ "$(jq -c '[.hooks.PreToolUse[].hooks[].command, .permissions.deny]' "$sf")" = "[\"bash $CLAUDE_HOME_DIR/hooks/h.sh\",[\"Edit(/$CLAUDE_HOME_DIR/settings*.json)\"]]" ]
+  [ "$(stat -c %a "$sf")" = 600 ]
+}

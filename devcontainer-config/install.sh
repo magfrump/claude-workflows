@@ -6,7 +6,8 @@
 #      (decision 016);
 #   2. the global Claude Code files in ~/.claude for bare-host sessions
 #      (decision 037): CLAUDE.md, skills, workflows, guides, patterns, hooks,
-#      scripts.
+#      scripts; plus the container's hooks/wiring.json merge into
+#      ~/.claude/settings.json, inside that review and y (Q-106 [2]).
 #
 # Run from the HOST:  ./devcontainer-config/install.sh
 #
@@ -18,7 +19,7 @@
 #
 # The exception is this script itself, which is NOT inert: it runs on the host
 # from the repo and decides which diff the human reads and what gets written, now
-# including ~/.claude. An edit to it is covered by nothing but the commit-time
+# including ~/.claude and its settings.json. An edit to it is covered by nothing but the commit-time
 # Live-verified gate (decision 035). Review changes to it as boundary changes.
 #
 # So: read the diff. It is the rebuild gate.
@@ -41,7 +42,10 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      old symlinks and files the repo lacks, are moved to
      <dest>/.claude-workflows-backup/<UTC stamp>/. The backups of the last 3
      installs are kept; the current run's is never removed.
-     settings.json is never written; hook wiring stays a manual merge.
+     hooks/wiring.json is merged into <dest>/settings.json by the container's
+     merge (Q-106): shown in the review, applied by the same y, old file to
+     the backup. Never written when it is a symlink or not one JSON object,
+     jq is missing, or the merge fails (the review says why).
 
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
@@ -706,10 +710,15 @@ payload_hash() {
   } | sha256sum | cut -d' ' -f1
 }
 
+# file_hash <path>: the sha256 of the file's bytes, or "absent".
+file_hash() {
+  if [ -e "$1" ]; then sha256sum < "$1" | cut -d' ' -f1; else echo absent; fi
+}
+
 # rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
 rm_new_copies() {
   local n
-  for n in "${CLAUDE_HOME_NAMES[@]}" manifest; do
+  for n in "${CLAUDE_HOME_NAMES[@]}" manifest settings.json; do
     # A copied tree with a read-only subdir must not survive to block every
     # later run (review pass 4); a link is removed, never chmod-ed through.
     if [ -e "${1:?}/.cw-new.$n" ] && [ ! -L "$1/.cw-new.$n" ]; then chmod -R u+w "$1/.cw-new.$n" 2>/dev/null || true; fi
@@ -810,7 +819,7 @@ install_claude_home() {
     host_refuse "$bkroot resolves inside the repo checkout."
   fi
   local name
-  for name in "${CLAUDE_HOME_NAMES[@]}" manifest; do
+  for name in "${CLAUDE_HOME_NAMES[@]}" manifest settings.json; do
     if [ -L "$dest/.cw-new.$name" ]; then
       host_refuse "$dest/.cw-new.$name is a symlink left from elsewhere; remove it and rerun."
     fi
@@ -860,7 +869,7 @@ install_claude_home() {
   # 1. Copy every entry beside its target. Any failure: undo and stop before a
   #    single live entry is touched.
   rm_new_copies "$dest"
-  for name in "${CLAUDE_HOME_NAMES[@]}" manifest; do
+  for name in "${CLAUDE_HOME_NAMES[@]}" manifest settings.json; do
     # cp -R into a leftover directory would nest the copy inside it.
     if [ -e "$dest/.cw-new.$name" ] || [ -L "$dest/.cw-new.$name" ]; then
       host_refuse "could not remove the leftover $dest/.cw-new.$name from an earlier run; remove it by hand."
@@ -977,6 +986,43 @@ install_claude_home() {
     echo "(diff: $view is the destination as it is now, links left out; ${new}* are the copies to install)"
     if ! review_diff "$view" "$new" "${diffnames[@]}"; then changed=1; fi
   fi
+  # settings.json (Q-106 [2]): the container's merge program, run from the
+  # hash-checked copies, so the y covers its result; written only after the y.
+  # umask 077: settings can hold secrets. jq's stderr never reaches the terminal.
+  local settings="$dest/settings.json" snew="${new}settings.json" s_why="" s_old_hash="" s_new_hash=""
+  local s_view="$HOST_TMP/settings.view" files_changed="$changed" rc=0
+  if [ -L "$settings" ] || { [ -e "$settings" ] && [ ! -f "$settings" ]; }; then
+    s_why="it is a symlink or not a regular file, and install.sh never writes through one"
+  elif ! command -v jq >/dev/null 2>&1; then
+    s_why="jq is not installed"
+  elif [ ! -f "${new}hooks/wiring.json" ] || [ ! -f "${new}hooks/lib/wiring-merge.jq" ]; then
+    s_why="the payload has no hooks/wiring.json or hooks/lib/wiring-merge.jq"
+  elif [ -e "$settings" ] && ! jq -se 'length == 1 and (.[0] | type == "object")' "$settings" >/dev/null 2>&1; then
+    s_why="it is not one valid JSON object; fix it by hand and rerun"
+  elif ! (umask 077   # one read of the live file: s_old_hash is that copy's hash
+          if [ -e "$settings" ]; then cp "$settings" "$s_view.raw" && jq . "$s_view.raw"; else echo '{}'; fi > "$s_view"
+          jq --arg dir "$dest" --slurpfile w "${new}hooks/wiring.json" \
+             -f "${new}hooks/lib/wiring-merge.jq" "$s_view" > "$snew") 2>/dev/null \
+       || [ ! -s "$snew" ]; then
+    s_why="the merge program failed on it (a wiring.json value of the wrong type?)"
+  fi
+  if [ -n "$s_why" ]; then
+    rm -f "$snew"
+    echo "settings.json: NOT merged: $settings: $s_why." | vis_or_die
+  else
+    [ -e "$settings" ] || : > "$s_view"   # a new file: every line is "+"
+    diff -u --label "$settings (now, as jq prints it)" --label "$settings (after the wiring merge)" \
+      "$s_view" "$snew" > "$s_view.diff" 2>&1 || rc=$?
+    case "$rc" in
+      0) rm -f "$snew" ;;   # already merged: nothing to write
+      1) echo "settings.json: the hooks/wiring.json merge this install applies (Q-106; jq rewrites the file's layout):"
+         vis_or_die < "$s_view.diff"
+         s_old_hash="$(file_hash "$s_view.raw")"; s_new_hash="$(file_hash "$snew")"
+         changed=1 ;;
+      *) echo "ERROR: could not diff $settings for the review. Nothing was installed." >&2
+         exit 1 ;;
+    esac
+  fi
   if [ "$changed" -eq 0 ]; then
     echo "(none — the destination already matches the repo)"
   fi
@@ -1010,16 +1056,28 @@ install_claude_home() {
     echo "       files the review showed. Nothing was replaced. Rerun install.sh." >&2
     exit 1
   fi
+  # Q-106: an edit to settings.json since its review, or to the merged copy,
+  # refuses the install rather than writing a result the user did not see.
+  if [ -n "$s_new_hash" ] && { [ -L "$settings" ] || [ -L "$snew" ] \
+       || [ "$(file_hash "$settings")" != "$s_old_hash" ] || [ "$(file_hash "$snew")" != "$s_new_hash" ]; }; then
+    rm_new_copies "$dest"
+    echo "ERROR: $settings, or its merged copy, changed after review." >&2
+    echo "       Nothing was replaced. Rerun install.sh to review the merge again." >&2
+    exit 1
+  fi
 
   # 2. Move whatever is there now (link or real, never with a trailing slash)
   #    into a fresh backup dir. 3. Swap the new copies in. Steps 2-3 are one
   #    transaction (R4): any failure runs host_rollback, which reads the
   #    moved/swapped lists below (bash locals are visible to called functions).
-  local stamp backup="" any=0 moved=() swapped=()
+  #    A settings-only change (Q-106) swaps no entry: swap_names stays empty.
+  local stamp backup="" any=0 moved=() swapped=() swap_names=()
+  if [ "$files_changed" -eq 1 ]; then swap_names=("${CLAUDE_HOME_NAMES[@]}"); fi
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+  for name in "${swap_names[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then any=1; fi
   done
+  if [ -n "$s_new_hash" ] && [ -e "$settings" ]; then any=1; fi
   if [ "$any" -eq 1 ]; then
     backup="$bkroot/$stamp"
     if [ -e "$backup" ]; then backup="$backup.$$"; fi
@@ -1030,13 +1088,13 @@ install_claude_home() {
     fi
   fi
   trap '' INT TERM HUP   # a Ctrl-C mid-swap would skip the rollback
-  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+  for name in "${swap_names[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
       mv "$dest/$name" "$backup/$name" || host_rollback
       moved+=("$name")
     fi
   done
-  for name in "${CLAUDE_HOME_NAMES[@]}"; do
+  for name in "${swap_names[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
       echo "ERROR: $dest/$name reappeared during the install." >&2
       host_rollback
@@ -1051,14 +1109,31 @@ install_claude_home() {
   # writing through, so a planted symlink cannot redirect the write.
   # installed_parent is best-effort: under a pty wrapper it names whatever shell
   # the wrapper ran (bash, sh), so it is a hint, not evidence of a human (A2).
-  {
-    echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
-    echo "installed_at=$stamp"
-  } >> "$dest/.cw-new.manifest"
-  rm -f "$dest/.claude-workflows-manifest"
-  mv "$dest/.cw-new.manifest" "$dest/.claude-workflows-manifest"
+  if [ "$files_changed" -eq 1 ]; then
+    {
+      echo "installed_parent=$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ' || echo unknown)"
+      echo "installed_at=$stamp"
+    } >> "$dest/.cw-new.manifest"
+    rm -f "$dest/.claude-workflows-manifest"
+    mv "$dest/.cw-new.manifest" "$dest/.claude-workflows-manifest"
+    echo "Installed into $dest."
+  fi
 
-  echo "Installed into $dest."
+  # Q-106: back up right before the rename, so an edit since the check is kept
+  # there; mv replaces a planted link. The entries stay installed on a failure.
+  if [ -n "$s_new_hash" ]; then
+    if [ -n "$backup" ] && [ -e "$settings" ]; then
+      if ! cp -p "$settings" "$backup/settings.json" || ! chmod --reference="$settings" "$snew"; then
+        echo "ERROR: could not back up $settings; it was not changed. Rerun install.sh." >&2
+        exit 1
+      fi
+    fi
+    if ! mv -f "$snew" "$settings"; then
+      echo "ERROR: could not write $settings; it was not changed. Rerun install.sh." >&2
+      exit 1
+    fi
+    echo "Merged hooks/wiring.json into $settings${backup:+ (the previous file is in $backup)}."
+  fi
   if [ -n "$backup" ]; then
     echo "Previous entries moved to $backup (delete it when satisfied)."
     # A6: keep this run's backup plus the 2 most recent earlier ones. Reached
@@ -1087,11 +1162,11 @@ install_claude_home() {
       done | LC_ALL=C sort -t "$(printf '\t')" -k1,1nr -k2,2r | tail -n +3 | cut -f2)
     echo "Backups: this one plus the 2 most recent earlier installs' are kept in $bkroot ($pruned older removed)."
   fi
-  if [ "$wiring_changed" -eq 1 ]; then
+  if [ "$wiring_changed" -eq 1 ] && [ -n "$s_why" ]; then   # the merge could not run
     echo
-    echo "REMINDER: hooks/wiring.json changed (or was not installed before). Copying the"
-    echo "hooks does not wire them. Redo guides/bare-host-hook-wiring.md §2 to merge it"
-    echo "into $dest/settings.json."
+    echo "REMINDER: hooks/wiring.json changed (or was not installed before), and"
+    echo "settings.json was NOT merged (see the review above). Fix that and rerun, or"
+    echo "merge it by hand: guides/bare-host-hook-wiring.md §2, into $dest/settings.json."
   fi
 }
 

@@ -89,12 +89,15 @@ echo "link-claude-home: linked $linked entr$([ "$linked" -eq 1 ] && echo y || ec
 #
 # Set CC_SKIP_HOOK_WIRING=1 to leave settings.json alone entirely.
 WIRING="$SRC/hooks/wiring.json"
+MERGE="$SRC/hooks/lib/wiring-merge.jq"
 SETTINGS="$DEST/settings.json"
 
 if [ "${CC_SKIP_HOOK_WIRING:-}" = "1" ]; then
   echo "link-claude-home: CC_SKIP_HOOK_WIRING=1 — leaving $SETTINGS unwired."
 elif [ ! -f "$WIRING" ]; then
   echo "link-claude-home: no $WIRING — hooks linked but not wired." >&2
+elif [ ! -f "$MERGE" ]; then
+  echo "link-claude-home: no $MERGE — hooks linked but not wired." >&2
 elif ! command -v jq >/dev/null 2>&1; then
   echo "link-claude-home: jq not found — hooks linked but not wired." >&2
 else
@@ -105,61 +108,12 @@ else
   if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
     echo "link-claude-home: $SETTINGS is not valid JSON — refusing to touch it." >&2
   else
-    # Merge semantics, per event key (hooks) and per mode (permissions):
-    #   (existing - ours) + ours
-    # Re-running is exactly idempotent: our entries are removed and re-appended,
-    # and everything we did not author is preserved in place. `_comment` is
-    # dropped so documentation never lands in settings.
-    #
-    # For hooks, "ours" is identified by PROVENANCE (every command in the group
-    # runs something under $DEST/hooks/), not by deep equality against the
-    # current wiring. Deep equality only removes a group that is byte-identical
-    # to what we are about to write, so the first time a group GAINS or LOSES a
-    # hook the previous version does not match, survives the subtraction, and is
-    # left beside the new one — the event ends up with two groups on the same
-    # matcher and every hook they share fires twice. That is not hypothetical:
-    # it is what wiring live-verify-gate.sh into the existing Bash group does to
-    # every settings.json written before 2d679ce. Provenance subtraction removes
-    # the stale group and still leaves foreign groups alone, because a foreign
-    # group runs a command from somewhere other than our payload.
-    #
-    # permissions.deny is merged for the same reason the hooks are, and it is
-    # not optional decoration: guard-trusted-writes.py deliberately DEFERS on
-    # its HARD tier for Edit/Write rather than returning "ask" (a hook "ask"
-    # silently overrides deny — Claude Code issue #39344), so the deny rules
-    # are what actually blocks that path. Wiring the hook alone left the HARD
-    # tier a no-op for the file tools (decision 023 amendment B).
+    # The merge program, (existing - ours) + ours with hook groups matched by
+    # provenance (FP-161), is hooks/lib/wiring-merge.jq: one copy, which
+    # install.sh's host target also runs (Q-106 [2]). Its header has the why.
     tmp="$SETTINGS.link-tmp.$$"
-    if jq --arg dir "$DEST" --slurpfile w "$WIRING" '
-          ($w[0]
-           | with_entries(select(.key | startswith("_") | not))
-           | walk(if type == "string"
-                  then gsub("\\{\\{CLAUDE_DIR\\}\\}"; $dir)
-                  else . end)) as $wiring
-          | .hooks //= {}
-          | reduce (($wiring.hooks // {}) | keys_unsorted[]) as $ev (
-              .;
-              .hooks[$ev] = (((.hooks[$ev] // [])
-                              | map(select(((.hooks // []) | length) > 0
-                                           and ((.hooks // [])
-                                                | all((.command // "")
-                                                      | contains($dir + "/hooks/")))
-                                           | not)))
-                             + $wiring.hooks[$ev])
-            )
-          | .permissions //= {}
-          | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (
-              .;
-              # Also drop the legacy single-slash form of each rule, e.g.
-              # Edit(/home/node/.claude/settings*.json). A single leading
-              # slash is relative to the settings file, so those rules
-              # matched nothing (Q-049). wiring.json now emits //abs.
-              .permissions[$mode] =
-                (((.permissions[$mode] // []) - $wiring.permissions[$mode]
-                  - ($wiring.permissions[$mode] | map(sub("\\(//"; "(/"))))
-                 + $wiring.permissions[$mode])
-            )
-        ' "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
+    if jq --arg dir "$DEST" --slurpfile w "$WIRING" -f "$MERGE" \
+         "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
       mv -f "$tmp" "$SETTINGS"
       echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") hook command(s)" \
            "and $(jq -r '[.permissions[]?[]?] | length' "$SETTINGS") permission rule(s) into $SETTINGS"

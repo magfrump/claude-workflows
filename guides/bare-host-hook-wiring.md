@@ -4,8 +4,11 @@
 container start `devcontainer-config/link-claude-home.sh` merges `hooks/wiring.json`
 into `~/.claude/settings.json` (decision 023 and its amendments). This guide is the
 procedure for a **bare host**: a plain checkout whose global files `install.sh` has
-copied into `~/.claude`, per the README's Claude Code setup (decision 037). There the
-wiring is a manual edit of a guarded file that no repo artifact tracks.
+copied into `~/.claude`, per the README's Claude Code setup (decision 037). Since
+Q-106 [2] (2026-10-15), `install.sh`'s `~/.claude` target runs the same merge, from
+the same program (`hooks/lib/wiring-merge.jq`), and shows its result in that target's
+review before the y (§2). The hardening in §3 is still a manual edit of a guarded file
+that no repo artifact tracks.
 
 It replaces the three `docs/working/wire-*.md` docs, archived 2026-08-06. Their JSON
 snippets were superseded by `hooks/wiring.json`. The bare-host notes below were carried
@@ -40,8 +43,21 @@ every matching tool call.
 ## 2. Merge `hooks/wiring.json` into `~/.claude/settings.json`
 
 `hooks/wiring.json` is the canonical wiring. It has two sections, `hooks` (event,
-matcher, command) and `permissions.deny`. Print it with the `{{CLAUDE_DIR}}` token
-resolved and the comment dropped:
+matcher, command) and `permissions.deny`.
+
+**`install.sh` does this merge (Q-106 [2]).** The `~/.claude` review ends with a
+`settings.json:` diff of your file (as `jq` prints it) against the merged result, and
+the y applies both. Groups whose commands all run something under `~/.claude/hooks/`
+are replaced by the current wiring's (FP-161); each wiring rule is added once, its
+legacy single-slash form dropped (Q-049); everything else is kept. A `-` line on a
+hook command means the install unwires it. The old file goes to
+`~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written when the
+file is a symlink or not one JSON object, `jq` is missing, or the merge fails: the
+review says why, and a `REMINDER` follows if `wiring.json` changed. An edit to the
+file between the review and the y refuses the install.
+
+To merge by hand, print the wiring with the `{{CLAUDE_DIR}}` token resolved and the
+comment dropped:
 
 ```sh
 jq --arg dir "$HOME/.claude" \
@@ -75,10 +91,8 @@ denied too; Bash writes to a linked hook's checkout path are NOT gated by this h
 pre-existing gap alongside N2/A8. Running `install.sh` replaces the links with copies,
 after which no checkout file is a live global file and this restriction no longer applies.
 
-When `wiring.json` changes, redo the merge and remove the entries it replaced. Your
-hand-merged copy will not notice the change on its own. `install.sh` does not write
-`settings.json`, but it prints a `REMINDER` pointing here whenever the installed
-`hooks/wiring.json` is missing or differs from the repo's.
+When `wiring.json` changes, the next `install.sh` run merges it again (above). After
+a hand merge, rerun `install.sh`: its review shows anything your merge left out.
 
 ## 3. Hardening that `wiring.json` does not carry (still manual)
 
