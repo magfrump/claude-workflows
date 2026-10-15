@@ -316,15 +316,15 @@ local-path remote — `config`, `config.worktree`, `commondir`,
 `rebase-apply/` and `sequencer/` state, and every symlink. It follows what those
 configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
-(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
+(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`
+naming a path or a remote with no `url`, which git pushes to by name,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
 resolved in the working tree of the repo whose config names them). Each of
-those remote URLs, local or not, is also rewritten by every
-`url.<base>.insteadOf` and `pushInsteadOf` rule whose value it starts with —
-from any config the scan reads, your own global and system config included —
-and the rewritten URL is walked the same way: git uses only the longest
-matching rule, the scan walks every match. More than 100,000 URL-and-rule
-comparisons fails the scan (exit 4) rather than stalling it.
+those remote URLs, local or not, and each `remote.*.url`/`pushurl` in your own
+config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
+rule whose value it starts with — from any config the scan reads, your own
+global and system config included — and the rewritten URL is walked the same
+way: git uses only the longest matching rule, the scan walks every match.
 Your own global and system config is read with its includes evaluated for each
 git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
@@ -346,7 +346,9 @@ one such line). A file
 it would hash that is over 64 MiB (a sparse file counts at its apparent size),
 or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
 unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
-before its first line is read.
+before its first line is read, and so do more than 100,000 URL-and-rule
+comparisons or more than 2,000 distinct rewritten URLs to walk. (At launch any
+of these refuses the launch instead, exit 1.)
 
 **Linked worktrees left behind (Q-094).** When the only differences are
 worktrees added (`git worktree add`, as agent worktrees are) or removed
@@ -441,7 +443,11 @@ opens or closes a route.
 - **`~` forms.** Only a leading `~/` in a config path value
   (`core.hooksPath`, `include.path`, `core.attributesFile`, an `includeIf`
   pattern) is expanded to your home. `~user/…`, a bare `~`, and a `~` in a
-  local remote URL are taken as relative paths, not as git expands them.
+  local remote URL (or one an `insteadOf` rule rewrites to) are taken as
+  relative paths, not as git expands them.
+- **A URL you type.** `git push <url>` (or `git fetch <url>`) uses a URL no
+  config holds, and an `insteadOf` rule can rewrite it to a local path inside
+  the checkout; the scan only sees URLs in config and legacy remotes files.
 - **Tracked `.gitattributes` and `.gitmodules`.** Not scanned. An attribute
   selects a driver that config defines; the repository configs are scanned,
   but your own global config's entries are not recorded, so an attribute that

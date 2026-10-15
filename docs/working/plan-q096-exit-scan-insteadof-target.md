@@ -24,13 +24,18 @@ Assume this shipped and a session still pushed through a rewrite to a hook it pl
 | B11 | Relative rewritten target (base `""`, `.`, `sub/`), resolved in a worktree added later | covered | `_snap_remote` leaves a W record for a relative target, which refuses the note |
 | B12 | Target missing at launch, created in the session | covered | `_snap_file` records `missing`; creation is a change |
 | B13 | `..` in the URL's rest climbing out of the base into the checkout, or `file://`/`file://localhost` forms | covered | `_snap_remote`'s existing `realpath -m` and `file://` handling |
-| B14 | Stall the scan with thousands of URLs × rules (quadratic) | covered | `GIT_EXIT_SCAN_MAX_REWRITES` comparisons, then the snapshot fails closed (exit 4) |
-| B15 | Empty `insteadOf` value (matches every URL) | covered | an empty prefix is a match (bash `${u#""}`) |
+| B14 | Stall the scan with thousands of URLs × rules (quadratic), or with many matches each costing forks | covered | `GIT_EXIT_SCAN_MAX_REWRITE_PAIRS` (100,000 comparisons, checked before each batch) and `GIT_EXIT_SCAN_MAX_REWRITE_TARGETS` (2,000 distinct rewritten URLs); over either the snapshot fails closed (exit 4 at exit, exit 1 at launch). Long values still slow each comparison: the guide's "A slow scan" route |
+| B15 | Empty `insteadOf` value (matches every URL) | covered | an empty prefix is a match (`[[ "$u" == "$p"* ]]` with `p` empty) |
 | B16 | Case games (`HTTPS://` vs `https://`) | covered | git's match is case-sensitive; so is ours |
 | B17 | Target outside the checkout | not covered, by design | not container-writable (existing `_snap_remote` rule) |
 | B18 | `~` in a base | not covered | existing known route "`~` forms" (a `~` in a local remote is taken as relative) |
 | B19 | `submodule.*.url` rewrites (fetch/clone, not push) | not covered, unchanged | `submodule.*` keys are already findings when changed; a fetch runs no hooks in its source |
-| B20 | URL typed on the command line (`git push <url>`) | not covered | not config; no scan can see it |
+| B20 | URL typed on the command line (`git push <url>`) | not covered | not config; no scan can see it. Listed in the guide's known routes (added in review iteration 1) |
+| B22 | A rule value ending mid-UTF-8-character: git compares bytes, bash in a UTF-8 locale compares characters (iteration-1 security) | covered (iteration 1) | `_snap_match` matches and cuts under `local LC_ALL=C` |
+| B23 | Tab-joined dedupe keys: a base or value holding a tab collides with another pair, which is dropped (iteration-1 security) | covered (iteration 1) | length-prefixed keys |
+| B24 | A remote section with no `url` (or a legacy remotes file with no `URL:` line): git pushes to the NAME as a URL, the scan treated the name as defined (iteration-1 security; pre-existing) | covered (iteration 1) | a name counts as defined only with `url`/`vcs`, or once a legacy file yields a URL |
+| B25 | bash `read` in a UTF-8 locale swallows the NUL/newline after an incomplete multibyte character, merging two entries so the second is never seen (found while testing B22; pre-existing, every reader in the file) | covered (iteration 1) | every `read` in `cc-exit-scan.sh` runs as `LC_ALL=C IFS= read` |
+| B21 | A remote defined in YOUR global/system config, rewritten by a launch-time rule to a target the session plants (found by the iteration-1 fact-check) | covered (iteration 1) | `_snap_host_config` queues your `remote.*.url`/`pushurl` with `_snap_url` |
 
 No uncovered family needs a design change: B17–B20 are outside what a config scan can or must see, and B18 stays a listed known route.
 

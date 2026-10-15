@@ -59,9 +59,10 @@ logical_workspace() {
 # branch.*.remote/pushRemote naming a path, url.<base>.insteadOf bases, legacy
 # remotes files; a relative path resolved in the working tree of the repo whose
 # config names it), walked as a git dir: a push to it runs its hooks. Each of those
-# URLs is also rewritten by every url.<base>.insteadOf / pushInsteadOf rule whose
-# value prefixes it (in any config read here, yours included; git takes only the
-# longest, the scan walks them all), and the result walked the same way. And your own
+# URLs, and every remote.*.url/pushurl in your own config, is also rewritten by
+# every url.<base>.insteadOf / pushInsteadOf rule whose value prefixes it (in any
+# config read here, yours included; git takes only the longest, the scan walks
+# them all), and the result walked the same way. And your own
 # global/system config, read with its includes evaluated for each git dir
 # (includeIf gitdir:/gitdir/i: matched here against the physical git dir and the
 # one under the path you launched on, symlinks kept, as git matches both;
@@ -92,8 +93,9 @@ logical_workspace() {
 # `git worktree repair` would point it here; its records refuse the note too.)
 #
 # FAIL CLOSED. A directory that cannot be listed, a file that cannot be read, a
-# config git cannot parse, or a file too large to hash (over 64 MiB, or past 1 GiB
-# in all: _snap_size_ok) makes the snapshot fail: at launch the launcher refuses
+# config git cannot parse, a file too large to hash (over 64 MiB, or past 1 GiB
+# in all: _snap_size_ok), or too many insteadOf comparisons or rewritten URLs
+# (_snap_pairs, _snap_rewrite) makes the snapshot fail: at launch the launcher refuses
 # to start, at exit it returns 4. Git needs only search permission to run a hook,
 # so an unlistable hooks dir must never read as "empty". A Ctrl-C during the exit
 # scan also exits 4, saying the scan did not finish.
@@ -116,6 +118,11 @@ logical_workspace() {
 # through scan_vis. The error text of read, readlink, stat and cd is dropped (the
 # reason names the path itself); find's and git config's own error text is kept
 # inside the reason, reduced to that one printable line.
+#
+# EVERY `read` RUNS UNDER LC_ALL=C. In a UTF-8 locale bash's read swallows a
+# delimiter (NUL or newline) that follows an incomplete multibyte character, so a
+# file or value ending in such a byte would merge with the next entry, which the
+# scan would then never see.
 #
 # LIMITS: what a clean scan does not rule out is listed once, in
 # guides/cc-isolated-usage.md, "Known routes it does not see" — update it there
@@ -151,7 +158,9 @@ scan_git_dirs() {
 
 # The _snap_* helpers below run inside git_exec_snapshot and share its locals
 # (bash dynamic scoping): _snap (the records), _snap_seen (walked dirs), _snap_ws,
-# _snap_gd, _snap_common, _snap_tmp, _snap_names/_snap_rnames (remote names). Each
+# _snap_gd, _snap_common, _snap_tmp, _snap_names/_snap_rnames (remote names),
+# and the insteadOf pass's queues (_snap_urls/_snap_ubases, _snap_rbases/
+# _snap_rpfx, _snap_rwseen, the _snap_rwn/_snap_rwt counters). Each
 # returns 1 after printing a reason on stderr when something cannot be read.
 # (_snap_hash_str, _snap_file_is and _snap_unq, further down, are silent helpers
 # of scan_std_worktrees, which declares the _snap_bytes _snap_file_is needs.)
@@ -220,7 +229,7 @@ _snap_first_line() {
       "$1" "$s" "$GIT_EXIT_SCAN_MAX_FILE_BYTES"
     return 1
   fi
-  { IFS= read -r line < "$1"; } 2>/dev/null || true
+  { LC_ALL=C IFS= read -r line < "$1"; } 2>/dev/null || true
   printf '%s' "$line"
 }
 
@@ -323,7 +332,7 @@ _snap_hooks() {
   _snap_seen["h:$real"]=1
   list="$_snap_tmp/h.${#_snap_seen[@]}"
   _snap_find "$list" "$real" -mindepth 1 -maxdepth 1 ! -name '*.sample' || return 1
-  while IFS= read -r -d '' f; do
+  while LC_ALL=C IFS= read -r -d '' f; do
     _snap_file hook "$f" || return 1
   done < "$list"
 }
@@ -381,7 +390,9 @@ _snap_remote() {
 # _snap_url <url> <working tree>: a remote URL git may push to. Walked now
 # (_snap_remote) and queued for the insteadOf rules (_snap_rewrite), once each.
 _snap_url() {
-  local k="u:$1"$'\t'"$2"
+  # Length-prefixed keys: a tab-joined key would let a URL or base holding a tab
+  # collide with another pair and be dropped.
+  local k="u:${#1}:$1$2"
   [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
   _snap_rwseen["$k"]=1
   _snap_urls+=("$1"); _snap_ubases+=("$2")
@@ -391,32 +402,67 @@ _snap_url() {
 # _snap_rule <base> <value>: queue url.<base>.insteadOf (or pushInsteadOf) =
 # <value>: git rewrites a URL starting with <value> to <base> + the rest.
 _snap_rule() {
-  local k="r:$1"$'\t'"$2"
+  local k="r:${#1}:$1$2"
   [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
   _snap_rwseen["$k"]=1
   _snap_rbases+=("$1"); _snap_rpfx+=("$2")
 }
 
-# _snap_rewrite <url index> <rule index>: when the rule's value prefixes the URL
-# (git's alias_url: plain, case-sensitive; an empty value matches every URL),
-# walk the rewritten URL in the URL's working tree. A rewritten URL is never
-# queued as a URL: git rewrites once. Past GIT_EXIT_SCAN_MAX_REWRITES comparisons
-# the snapshot fails (a session can plant thousands of URLs and rules to stall it).
-GIT_EXIT_SCAN_MAX_REWRITES=100000
+# Caps on the insteadOf pass (a session can plant thousands of URLs and rules to
+# stall the scan): URL-and-rule pairs compared, checked before each batch
+# (_snap_pairs), and distinct rewritten URLs walked, each of which can cost a few
+# forks (_snap_rewrite). Over either, the snapshot fails (fail closed).
+GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=100000
+GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000
+
+# _snap_pairs <n>: count <n> more comparisons against the pair cap.
+_snap_pairs() {
+  _snap_rwn=$((_snap_rwn + $1))
+  [ "$_snap_rwn" -gt "$GIT_EXIT_SCAN_MAX_REWRITE_PAIRS" ] || return 0
+  _snap_fail 'more than %s remote URL and insteadOf rule pairs to compare (%s URLs, %s rules so far): too many, treat the checkout as unsafe' \
+    "$GIT_EXIT_SCAN_MAX_REWRITE_PAIRS" "${#_snap_urls[@]}" "${#_snap_rbases[@]}"
+}
+
+# _snap_match <url index> <rule index> <count> <step>: for <count> pairs
+# starting at those indexes (one of them stepping by <step>: 0 or 1), add the
+# rewritten URL of each pair where the rule's value is a prefix of the URL to
+# _snap_hit_t, with the URL's working tree in _snap_hit_b. git's alias_url
+# compares bytes (case-sensitive; an empty value matches every URL), so the match
+# and the cut run under LC_ALL=C: in a UTF-8 locale bash would compare
+# characters, and a value ending mid-character would never match.
+_snap_match() {
+  local LC_ALL=C ui="$1" ri="$2" n="$3" k u p
+  for ((k = 0; k < n; k++)); do
+    u="${_snap_urls[ui]}"; p="${_snap_rpfx[ri]}"
+    if [[ "$u" == "$p"* ]]; then
+      _snap_hit_t+=("${_snap_rbases[ri]}${u:${#p}}"); _snap_hit_b+=("${_snap_ubases[ui]}")
+    fi
+    if [ "$4" = 0 ]; then ri=$((ri + 1)); else ui=$((ui + 1)); fi
+  done
+}
+
+# _snap_walk_hits: _snap_rewrite every pair _snap_match found. Walking can queue
+# more URLs and rules, never more hits.
+_snap_walk_hits() {
+  local h
+  for ((h = 0; h < ${#_snap_hit_t[@]}; h++)); do
+    _snap_rewrite "${_snap_hit_t[h]}" "${_snap_hit_b[h]}" || return 1
+  done
+}
+
+# _snap_rewrite <rewritten URL> <working tree>: walk it like any remote, once.
+# It is never queued as a URL: git rewrites once.
 _snap_rewrite() {
-  local u="${_snap_urls[$1]}" p="${_snap_rpfx[$2]}" t k
-  _snap_rwn=$((_snap_rwn + 1))
-  if [ "$_snap_rwn" -gt "$GIT_EXIT_SCAN_MAX_REWRITES" ]; then
-    _snap_fail 'more than %s remote URL and insteadOf rule pairs to compare: too many, treat the checkout as unsafe' \
-      "$GIT_EXIT_SCAN_MAX_REWRITES"
-    return 1
-  fi
-  [[ "$u" == "$p"* ]] || return 0
-  t="${_snap_rbases[$2]}${u:${#p}}"
-  k="t:$t"$'\t'"${_snap_ubases[$1]}"
+  local t="$1" k="t:${#1}:$1$2"
   [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
   _snap_rwseen["$k"]=1
-  _snap_remote "$t" "${_snap_ubases[$1]}"
+  _snap_rwt=$((_snap_rwt + 1))
+  if [ "$_snap_rwt" -gt "$GIT_EXIT_SCAN_MAX_REWRITE_TARGETS" ]; then
+    _snap_fail 'more than %s distinct URLs rewritten by insteadOf rules to walk: too many, treat the checkout as unsafe' \
+      "$GIT_EXIT_SCAN_MAX_REWRITE_TARGETS"
+    return 1
+  fi
+  _snap_remote "$t" "$2"
 }
 
 # _snap_config <file>: every entry (as C records), and what the entries point at.
@@ -433,7 +479,7 @@ _snap_config() {
     _snap_fail 'could not read config %s: %s' "$f" "$(cat "$out.err")"
     return 1
   fi
-  while IFS= read -r -d '' rec; do
+  while LC_ALL=C IFS= read -r -d '' rec; do
     key="${rec%%$'\n'*}"
     val=""
     [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
@@ -457,8 +503,10 @@ _snap_config() {
         _snap_names+=("$val")
         _snap_nbases+=("$base") ;;
       remote.*.*)
+        # A remote git counts as defined (remote.c, valid_remote) has a url or
+        # vcs; with neither, git pushes to its NAME as a URL (worklist below).
         name="${key#remote.}"; name="${name%.*}"
-        [ -z "$name" ] || _snap_rnames["$name"]=1
+        case "$key" in remote.*.url|remote.*.vcs) [ -z "$name" ] || _snap_rnames["$name"]=1 ;; esac
         case "$key" in
           remote.*.url|remote.*.pushurl) _snap_url "$val" "$base" || return 1 ;;
         esac ;;
@@ -556,13 +604,15 @@ _snap_host_config() {
     _snap_fail 'could not read your git config%s: %s' "${file:+ $file}" "$(cat "$out.err")"
     return 1
   fi
-  while IFS= read -r -d '' origin && IFS= read -r -d '' rec; do
+  while LC_ALL=C IFS= read -r -d '' origin && LC_ALL=C IFS= read -r -d '' rec; do
     key="${rec%%$'\n'*}"
     val=""
     [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
-    # Your rewrite rules apply to the repo's URLs too (an empty value matches all).
+    # Your rewrite rules apply to the repo's URLs too (an empty value matches all),
+    # and the repo's rules (or yours) to your remotes' URLs.
     case "$key" in
       url.*.insteadof|url.*.pushinsteadof) t="${key#url.}"; _snap_rule "${t%.*}" "$val" ;;
+      remote.*.url|remote.*.pushurl) _snap_url "$val" "$wt" || return 1 ;;
     esac
     [ -n "$val" ] || continue
     origin="${origin#file:}"
@@ -631,7 +681,7 @@ _snap_nested() {
   _snap_seen["n:$real"]=1
   list="$_snap_tmp/n.${#_snap_seen[@]}"
   _snap_find "$list" "$real" -mindepth 2 -name HEAD || return 1
-  while IFS= read -r -d '' f; do
+  while LC_ALL=C IFS= read -r -d '' f; do
     g="${f%/*}"
     if looks_like_gitdir "$g"; then _snap_gitdir "$g" || return 1; fi
   done < "$list"
@@ -666,20 +716,22 @@ _snap_gitdir() {
     [ -d "$real/$d" ] || continue
     list="$_snap_tmp/r.${#_snap_seen[@]}.$d"
     _snap_find "$list" "$real/$d" -mindepth 1 ! -type d || return 1
-    while IFS= read -r -d '' f; do
+    while LC_ALL=C IFS= read -r -d '' f; do
       _snap_file legacy-remote "$f" || return 1
+      # The name counts as defined only once a URL is read from the file; a file
+      # with none leaves git pushing to the name itself (worklist below).
       name="${f#"$real/$d/"}"
-      _snap_rnames["$name"]=1
       [ -f "$f" ] || continue
       # Read in one go (the hash above proved it readable); a read error's text
       # would name the container-chosen path raw.
       body="$(cat -- "$f" 2>/dev/null)" || { _snap_fail 'cannot read %s' "$f"; return 1; }
-      while IFS= read -r line || [ -n "$line" ]; do
+      while LC_ALL=C IFS= read -r line || [ -n "$line" ]; do
         if [ "$d" = branches ]; then
+          _snap_rnames["$name"]=1
           _snap_url "${line%%#*}" "$(_snap_worktree_of "$real/config")" || return 1
           break
         fi
-        case "$line" in URL:*) line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
+        case "$line" in URL:*) _snap_rnames["$name"]=1; line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
       done <<< "$body"
     done < "$list"
   done
@@ -688,7 +740,7 @@ _snap_gitdir() {
     [ -d "$real/$d" ] || continue
     list="$_snap_tmp/s.${#_snap_seen[@]}.$d"
     _snap_find "$list" "$real/$d" ! -type d || return 1
-    while IFS= read -r -d '' f; do
+    while LC_ALL=C IFS= read -r -d '' f; do
       _snap_file sequencer "$f" || return 1
     done < "$list"
   done
@@ -696,7 +748,7 @@ _snap_gitdir() {
   # for git dirs too. Hooks were recorded above.
   list="$_snap_tmp/l.${#_snap_seen[@]}"
   _snap_find "$list" "$real" -type l || return 1
-  while IFS= read -r -d '' f; do
+  while LC_ALL=C IFS= read -r -d '' f; do
     [ "${f%/*}" != "$real/hooks" ] || continue
     _snap_file link "$f" || return 1
     if [ -n "$_snap_linkdir" ] && _snap_inside_ws "$_snap_linkdir"; then
@@ -726,9 +778,10 @@ _snap_dotgit() {
 # reason goes through _snap_fail, so none can hold a line break.
 git_exec_snapshot() {
   local ws="$1" _snap_lws="${2:-}" dirs _snap="" _snap_gd _snap_common _snap_ws _snap_tmp _snap_linkdir="" rc=0 list f g i
-  local _snap_bytes=0 _snap_rwn=0 u r j
+  local _snap_bytes=0 _snap_rwn=0 _snap_rwt=0 u r
   local -A _snap_seen=() _snap_rnames=() _snap_rwseen=()
   local -a _snap_names=() _snap_nbases=() _snap_urls=() _snap_ubases=() _snap_rbases=() _snap_rpfx=()
+  local -a _snap_hit_t=() _snap_hit_b=()
   if ! dirs="$(scan_git_dirs "$ws")"; then
     _snap_fail 'cannot locate the git directory of %s from its .git entry' "$ws"
     return 1
@@ -765,7 +818,7 @@ git_exec_snapshot() {
     _snap_find "$list" "$_snap_ws" -mindepth 2 -name .git
   } || rc=1
   if [ "$rc" -eq 0 ]; then
-    while IFS= read -r -d '' f; do
+    while LC_ALL=C IFS= read -r -d '' f; do
       [ "$f" != "$_snap_ws/.git" ] || continue
       _snap_dotgit "$f" || { rc=1; break; }
       g="$(_snap_dotgit_target "$f")" || { rc=1; break; }
@@ -786,10 +839,18 @@ git_exec_snapshot() {
       i=$((i + 1))
       [ -z "$f" ] || [ -n "${_snap_rnames["$f"]:-}" ] || _snap_url "$f" "$g" || rc=1
     elif [ "$u" -lt "${#_snap_urls[@]}" ]; then
-      for ((j = 0; j < r; j++)); do _snap_rewrite "$u" "$j" || { rc=1; break; }; done
+      # URL u against rules 0..r-1.
+      _snap_pairs "$r" || { rc=1; break; }
+      _snap_hit_t=() _snap_hit_b=()
+      _snap_match "$u" 0 "$r" 0
+      _snap_walk_hits || rc=1
       u=$((u + 1))
     elif [ "$r" -lt "${#_snap_rbases[@]}" ]; then
-      for ((j = 0; j < u; j++)); do _snap_rewrite "$j" "$r" || { rc=1; break; }; done
+      # Rule r against URLs 0..u-1.
+      _snap_pairs "$u" || { rc=1; break; }
+      _snap_hit_t=() _snap_hit_b=()
+      _snap_match 0 "$r" "$u" 1
+      _snap_walk_hits || rc=1
       r=$((r + 1))
     else
       break
@@ -935,7 +996,7 @@ scan_std_worktrees() {
   diff="$(LC_ALL=C awk 'FNR == NR { b[$0] = 1; next } { a[$0] = 1 }
     END { for (k in a) if (!(k in b)) print "+" k; for (k in b) if (!(k in a)) print "-" k }' \
     <(printf '%s\n' "$before") <(printf '%s\n' "$after"))" || return 1
-  while IFS= read -r line; do
+  while LC_ALL=C IFS= read -r line; do
     [ -n "$line" ] || continue
     case "$line" in
       [+-]F$'\t'dotgit$'\t'*) left["$line"]=1; dot["${line%$'\t'*}"]="$line" ;;
