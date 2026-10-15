@@ -146,8 +146,9 @@ safe_path
 # compares the two byte for byte). Host-only tools are not boundary config
 # (decision log row 71): install.sh's bless hashes them into host-tools.sha256,
 # beside manifest.sha256, and each entry point checks the files it is about to
-# execute against that file BEFORE sourcing them. DIR is the script's own
-# resolved directory. Only a repo checkout is left unchecked, and it must say so
+# execute against that file BEFORE sourcing them. DIR is the directory to check:
+# an entry point's own resolved directory (`--list` passes config_dir()). Only a
+# repo checkout is left unchecked, and it must say so
 # positively: install.sh beside the script (install.sh is never installed, it is
 # not in PAYLOAD), no manifest of either kind, and not the config dir. Anything
 # else is checked, so deleting manifests is not enough to opt an installed copy
@@ -162,6 +163,12 @@ verify_host_tools() {
   fi
   if [ ! -f "$m" ] || [ -L "$m" ]; then
     echo "no host-tool manifest at $m (re-run install.sh, or cc-isolated --bless after reviewing)"
+    return 1
+  fi
+  # The manifest itself is the anomaly when it cannot be read or is not
+  # sha256sum's own output; say so rather than call every tool changed.
+  if [ ! -r "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+    echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
     return 1
   fi
   # Every file is checked and every mismatch named, so the refusal lists all of
