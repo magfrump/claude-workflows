@@ -300,10 +300,12 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
    log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
    self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
-   the flag is a pointer, not proof), every path changed from C to M outside `docs/` (the
-   image carries none of `docs/`: give its count), each subject or path holding `<`, `>`, a
-   CR or another control byte written as `(withheld: see SHA)` (questions.sh reads `<!--`
-   anywhere in a line), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
+   line, each in backticks, comma-separated (the image carries none of `docs/`: give its
+   count), each subject or path holding `<`, `>`, a backtick, a CR, another control or bidi
+   character, or bytes that are not UTF-8 written as `(withheld: see SHA)` (questions.sh
+   finds its `<!-- index:` markers anywhere in a line, and `--check-answer` refuses an
+   unclosed `<!--`), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run

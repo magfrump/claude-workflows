@@ -26,21 +26,25 @@ blocks, that starts with its key; a trailing CR is ignored.
   conflict is filed as stopped, and an environment refusal is retried. Under `review`, the
   orchestrator files one merge entry (`merge-STEM-SHA12`, or `merge-gate-STEM-SHA12` when
   the change touches the gate's own code) holding `--check`'s output, and merges only on
-  your `[1] merge`. Under both policies a change to `docs/constraints.md`, this file, the
-  questions files, the roadmap or another brief is refused, and such a branch is filed as
-  stopped, not as a merge entry. A brief self-merges only when its own `Policy:` line also
+  your `[1] merge`. Under both policies the N rules refuse a change to
+  `docs/constraints.md`, this file, the cycle's own files (the questions files, the
+  roadmap, the idea log, the cycle records) or any brief beyond the brief's own Status
+  line: under review such a branch is filed as stopped; under self-merge it first comes to
+  you as a merge entry, whose `[1] merge` the gate then refuses, so it ends as stopped. A brief self-merges only when its own `Policy:` line also
   reads `self-merge`. Only the exact line with `self-merge` or `review` sets the policy,
   and `self-merge` also needs a valid never line (its `none` form for an empty list).
   Anything else counts as unset, which means `review`: the "(interim; Q-103)" above keeps
   it unset until Q-103 is answered.
-- **Slots.** From 1 to 9 (anything else, or no line, means 3): how many briefs the queue
-  holds for build loops at once. The queue counts open briefs whose loop is absent (not yet
+- **Slots.** From 1 to 9 (anything else, or no line, means 3): how many build loops run at
+  once. Step 10 dispatches only into slots no running loop fills, and step 8 writes new
+  briefs only while the queue is shorter than the slots. The queue counts open briefs whose loop is absent (not yet
   dispatched) or working, plus those sent back to a loop; a blocked, stopped or
   ready-for-review one waits on you and is not counted.
 - **Never line.** Globs that self-merge never lands, even when a brief lists them: `*` and
   `?` match within one path part, a glob matches the path or any directory above it, and
   paths compare lower-cased. A malformed line turns self-merge off. Here it holds every
-  directory whose files take effect in this repo without a release (interim; Q-149):
+  code and process directory whose files take effect in this repo without a release
+  (interim; Q-149):
   sessions in this repo read `workflows/`, `skills/`, `guides/` and `patterns/` from their
   own checkout, and the health check the orchestrator runs every iteration executes
   `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree, while the
@@ -49,6 +53,9 @@ blocks, that starts with its key; a trailing CR is ignored.
   session's global instructions after a release; the floor already refuses its `CLAUDE.md`)
   take effect outside the gate's view too. So in this repo self-merge can land only files
   outside those directories and off the floor: docs, `README.md`, `runs/` and `archive/`.
+  Some of those docs are read as authority too (`docs/evaluation-rubric.md`, which
+  self-eval scores against, and `docs/spikes/`, whose seeds later work loads); Q-149 asks
+  whether to list them.
 - **Review handoff.** No line. The pull-request route the design names is not built, and
   this repo has no PRs, so every review merge is one questions entry.
 
