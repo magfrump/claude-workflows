@@ -1,8 +1,8 @@
-Commit: b973e678
+Commit: dbb15ec6
 
 # Code Review Rubric
 
-**Scope:** fix/q092a-drop-deny-option; pass 1 full unit `00a27a2f..1a831ffe`, pass 2 delta `1a831ffe..b973e678` (`--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 4 amber fixed in the next commit
+**Scope:** fix/q092a-drop-deny-option; pass 1 full unit `00a27a2f..1a831ffe`, pass 2 delta `1a831ffe..dbb15ec6` (`--loop-pass`, k=1; fact-check at b973e678, critics at dbb15ec6: security, performance, api-consistency no findings) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 4 amber fixed in the next commit
 
 Q-092 unit 1 of 2: drop the hook's `--deny` test option and the de-quoted deny match. Delivery mode: self-read (agents ran `git diff`). Critics: security, performance, api-consistency (architecture ran on unit 2, which carries the structural change). Reports: `code-fact-check-report-q092a-2026-10-15.md`, `security-review-q092a-2026-10-15.md`, `performance-review-q092a-2026-10-15.md`, `api-consistency-review-q092a-2026-10-15.md`.
 
