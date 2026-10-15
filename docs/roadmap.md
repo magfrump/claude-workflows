@@ -39,8 +39,9 @@ before merging, since this session cannot merge into main (Q-162).
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
-  runs main's launcher on a staged merge tree (Q-165, Q-166). First step: the hand spike
-  paste on Q-117, being written and reviewed.
+  runs main's launcher on a staged merge tree (Q-165, Q-166). The hand spike paste on
+  Q-117 is written and reviewed (Q-169; its doc lands with Q-162). Next: the `cc-verify`
+  unit, if Q-165 picks [1]; its extractor refuses links at every path component (residual A17).
 
 ## In flight
 
