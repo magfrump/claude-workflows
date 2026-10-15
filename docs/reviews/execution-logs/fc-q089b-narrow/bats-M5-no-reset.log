@@ -1,0 +1,41 @@
+name: M5-no-reset
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-narrow.vyf4is/mut-M5-no-reset
+start: 2026-10-15T03:05:50Z
+cmd: timeout 300 bats test/hooks/live-verify-gate.bats  (HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-narrow.vyf4is/home LC_ALL=C)
+hook sha256: bb616726011cfef1
+1..34
+ok 1 blocks a commit of an enforcement file with no Live-verified trailer
+ok 2 passes when the -m message carries the trailer
+ok 3 passes when the trailer is an explicit 'no' with a reason
+ok 4 reads the trailer from a -F message file
+ok 5 blocks when the -F message file lacks the trailer
+ok 6 ignores commits that touch no enforcement file
+ok 7 counts unstaged tracked changes when -a is given
+ok 8 every manifest-hashed file is in the enforcement set
+ok 9 install.sh is gated although it is not manifest-hashed (decision 035)
+ok 10 ignores non-commit git commands and non-git commands
+ok 11 leaves an --amend --no-edit alone
+ok 12 a comment-only edit to an egress list passes without a trailer
+ok 13 a diff that changes a comment AND a real line still blocks
+ok 14 commenting OUT an existing allowlist line still blocks
+ok 15 removing a --flag line alongside a comment edit still blocks
+ok 16 a pure whitespace or blank-line change passes
+ok 17 adding a NEW enforcement file whose content is all comments still blocks
+ok 18 the -a path honors the narrowing too
+ok 19 a // comment-only change to devcontainer.json passes
+ok 20 the gate is wired into the live settings.json # skip no settings.json at /home/node/.claude/jobs/00bcf178/tmp/fc-narrow.vyf4is/home/.claude/settings.json — not a wired container
+ok 21 malformed input, missing command, and the disable switch all exit 0
+ok 22 a host-tool commit needs Host-tool-tested, and Live-verified alone does not do
+ok 23 a commit touching a boundary file and a host tool needs both trailers
+ok 24 a comment-only host-tool edit beside a real boundary change needs only Live-verified
+ok 25 every host_tool_files entry is gated by the host-tool trailer, none by Live-verified
+ok 26 the hook's host_tools regex names exactly host_tool_files, no more
+ok 27 a comment-only boundary edit beside a real host-tool change needs only Host-tool-tested
+ok 28 renaming a gated file to an ungated name is still gated
+ok 29 a rename committed with -a (new name only intent-to-add) is still gated
+ok 30 a repo-local textconv driver cannot make a real change read as comment-only
+ok 31 a stray sibling of a host tool (cc-push.sh.orig) is gated as a host tool
+ok 32 a // line is a comment only in devcontainer.json: in a script it is code and is gated
+ok 33 a configured external diff driver cannot make a real change read as comment-only
+ok 34 with -a, a textconv or external diff driver cannot make an unstaged real change read as comment-only
+exit=0

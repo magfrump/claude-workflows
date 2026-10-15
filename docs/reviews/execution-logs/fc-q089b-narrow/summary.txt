@@ -1,0 +1,43 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+probe root: /home/node/.claude/jobs/00bcf178/tmp/fc-narrow.vyf4is
+== count: 34
+clean                    total=34 notok=0 exit=0
+    [M1-slashes-everywhere] 149c149
+    [M1-slashes-everywhere] <       '//'*) [ "$slashes" = 1 ] && continue ;;  # jsonc comment, devcontainer.json only
+    [M1-slashes-everywhere] ---
+    [M1-slashes-everywhere] >       '//'*) continue ;;  # jsonc comment, devcontainer.json only
+M1-slashes-everywhere    total=34 notok=1 exit=1
+    not ok 32 a // line is a comment only in devcontainer.json: in a script it is code and is gated
+    [M2-all-both] 113c113
+    [M2-all-both] <     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)"
+    [M2-all-both] ---
+    [M2-all-both] >     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)"
+M2-all-both              total=34 notok=1 exit=1
+    not ok 34 with -a, a textconv or external diff driver cannot make an unstaged real change read as comment-only
+    [M3-all-extdiff] 113c113
+    [M3-all-extdiff] <     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)"
+    [M3-all-extdiff] ---
+    [M3-all-extdiff] >     diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color --no-textconv -- "${touched_files[@]}" 2>/dev/null)"
+M3-all-extdiff           total=34 notok=1 exit=1
+    not ok 34 with -a, a textconv or external diff driver cannot make an unstaged real change read as comment-only
+    [M4-cached-extdiff] 111c111
+    [M4-cached-extdiff] <   diff_text="$(git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
+    [M4-cached-extdiff] ---
+    [M4-cached-extdiff] >   diff_text="$(git diff --cached -U0 --no-color --no-textconv -- "${touched_files[@]}" 2>/dev/null)" || return 1
+M4-cached-extdiff        total=34 notok=1 exit=1
+    not ok 33 a configured external diff driver cannot make a real change read as comment-only
+    [M5-no-reset] 131d130
+    [M5-no-reset] <         slashes=0
+M5-no-reset              total=34 notok=0 exit=0
+    [M6-swap] 83c83
+    [M6-swap] < enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+    [M6-swap] ---
+    [M6-swap] > enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+M6-swap                  total=34 notok=2 exit=1
+    not ok 8 every manifest-hashed file is in the enforcement set
+    not ok 32 a // line is a comment only in devcontainer.json: in a script it is code and is gated
+M6-swap-full             total=34 notok=2 exit=1
+    not ok 8 every manifest-hashed file is in the enforcement set
+    not ok 26 the hook's host_tools regex names exactly host_tool_files, no more
+removed /home/node/.claude/jobs/00bcf178/tmp/fc-narrow.vyf4is
+exit=0

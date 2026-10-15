@@ -1,0 +1,44 @@
+start: 2026-10-15T03:06:37Z
+-- D0 does bash run a //usr/bin/x line as a command?
+RAN
+   exit 0
+-- D1 jsonc // comment added to devcontainer.json, staged: src exit 0
+   + unstaged edit of that comment, -a: src exit 0
+   removing/rewording an existing // line (staged): src exit 0
+-- D2 one staged diff: // comment in devcontainer.json AND // line in init-firewall.sh
+     | diff --git a/devcontainer-config/devcontainer.json b/devcontainer-config/devcontainer.json
+     | index 6147a50..f2437a3 100644
+     | --- a/devcontainer-config/devcontainer.json
+     | +++ b/devcontainer-config/devcontainer.json
+     | @@ -1,0 +2 @@
+     | +  // a note
+     | diff --git a/devcontainer-config/init-firewall.sh b/devcontainer-config/init-firewall.sh
+     | index 68d8222..64f9975 100644
+     | --- a/devcontainer-config/init-firewall.sh
+     | +++ b/devcontainer-config/init-firewall.sh
+     | @@ -2,0 +3 @@ echo hi
+     | +//usr/bin/curl x.invalid
+   src: exit 2   M5-no-reset: exit 0   M1: exit 0
+-- D3 script // staged, devcontainer.json // unstaged, -a: src exit 2  M5: exit 2
+-- D4 devcontainer.json // staged, script // unstaged, -a: src exit 2  M5: exit 0
+-- D5 path ending /devcontainer.json elsewhere in the touched set (egress/devcontainer.json), // line added
+   name-only: devcontainer-config/egress/devcontainer.json
+   src: exit 0  (0 = // leniency applied)
+   host-tool set, cc-push.sh.d/devcontainer.json: src exit 0
+   enforcement_files egress glob in cc-isolated.sh:
+     | 4:144:    for f in egress/*.txt; do [ ! -e "$f" ] || echo "$f"; done | LC_ALL=C sort
+     | 7:440:    if [ ! -r "$(config_dir)/egress/$p.txt" ]; then
+     | 9:443:      for avail in "$(config_dir)"/egress/*.txt; do
+     | 16:660:      test -r /usr/local/share/cc-egress/base.txt &&
+-- D6 quoted path header: a gated file whose name forces quoting
+   name-only: "devcontainer-config/egress/t\"q.txt"
+     | diff --git "a/devcontainer-config/egress/t\"q.txt" "b/devcontainer-config/egress/t\"q.txt"
+   src (// in a quoted non-json path): exit 0
+-- D7 roadmap F3: non-ASCII path under default core.quotePath
+   name-only: "devcontainer-config/egress/caf\303\251.txt"
+   src: exit 0  (0 = missed by the anchors)
+   name-only -z: devcontainer-config/egress/café.txt
+-- D8 roadmap F4: diff.relative, hook cwd a subdirectory
+   name-only from src/: []  with --no-relative: [devcontainer-config/egress/base.txt]
+   src hook from src/: exit 0  (0 = dropped)
+end: 2026-10-15T03:06:40Z
