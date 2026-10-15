@@ -183,7 +183,7 @@ verify_host_tools() {
     fi
     want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
     if [ -z "$want" ]; then
-      echo "host-tool manifest $m has no single entry for $f"
+      echo "host-tool manifest $m has no entry, or more than one, for $f"
       bad=1
       continue
     fi
@@ -205,7 +205,7 @@ if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)
   {
     echo "ERROR: cc-push refuses to run:"
     while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$host_tools_err"
-    echo "Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
+    echo "  Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
     printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_PUSH_DIR"
   } >&2
   exit 1

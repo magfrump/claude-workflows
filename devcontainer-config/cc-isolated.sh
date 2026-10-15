@@ -256,7 +256,7 @@ verify_host_tools() {
     fi
     want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
     if [ -z "$want" ]; then
-      echo "host-tool manifest $m has no single entry for $f"
+      echo "host-tool manifest $m has no entry, or more than one, for $f"
       bad=1
       continue
     fi
@@ -512,7 +512,9 @@ list_projects() {
     else
       echo "  launches warn (cc-push changed) but run"
     fi
-    if [ -n "$perr" ]; then printf '  cc-push refuses: %s\n' "${perr//$'\n'/; }"; fi
+    # An intact cc-push refuses on this; a copy that dropped its own check would
+    # not, so the line says what to do rather than predicting what cc-push does.
+    if [ -n "$perr" ]; then printf '  cc-push: CHANGED — do not run it until re-blessed (an intact copy refuses): %s\n' "${perr//$'\n'/; }"; fi
   fi
   echo
   pd="$(projects_dir)"
@@ -749,7 +751,7 @@ main() {
   done
 
   if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
-    echo "ERROR: host tools differ from the bless — refusing to launch, probe or register:" >&2
+    echo "ERROR: host-tool check failed — refusing to launch, probe or register:" >&2
     while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$HOST_TOOLS_ERR" >&2
     # Never let this refusal hide a boundary change: run the boundary check too, and
     # show its diff, before pointing at a bless that would accept both.
@@ -758,8 +760,9 @@ main() {
       boundary_note="The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes."
     fi
     local push_err
-    if ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)"; then
-      printf '  also changed (cc-push refuses until re-blessed): %s\n' "${push_err//$'\n'/; }" >&2
+    # Only a cc-push.sh-specific reason: a manifest-level one is already above.
+    if ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)" && [[ "$push_err" == *cc-push.sh* ]]; then
+      printf '  also changed — do not run cc-push until re-blessed: %s\n' "${push_err//$'\n'/; }" >&2
     fi
     echo "  Review the host tools in $CC_ISOLATED_DIR, then re-bless (it prints what changed):" >&2
     printf '    %s\n' "$(CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" bless_cmd)" >&2

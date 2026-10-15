@@ -1,0 +1,17 @@
+2026-10-15T01:07:32Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/m1 mutant=m1 cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'installed copy: cc-push checks itself' test/cc-push.bats
+204,212d203
+< if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
+<   {
+<     echo "ERROR: cc-push refuses to run:"
+<     while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$host_tools_err"
+<     echo "Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
+<     printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_PUSH_DIR"
+<   } >&2
+<   exit 1
+< fi
+1..1
+not ok 1 installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)
+# (in test file test/cc-push.bats, line 806)
+#   `[ "$status" -eq 1 ]' failed
+[exit=1]

@@ -4,6 +4,8 @@ Commit: 840f39b0
 
 **Scope:** feat/q089a2-cc-push-self-check (`f2533b33..840f39b0`, 1 commit, 93 lines; stacked on A1) | **Reviewed:** 2026-10-14 | **Status: 🟡 DOES NOT PASS** — 0 red, 3 amber, fixed in the iteration-1 fix commit, pending iteration 2
 
+**Merge constraint:** A2 lands together with A1 (A2's branch contains it) and then B, in one landing; their review loops stay separate, and fix commits that touch the shared `verify_host_tools` block land on A2's branch (f737ba71). See the A1 rubric.
+
 Iteration 1 of 3 of a new loop. The unit was re-cut from the reviewed feat/q089-host-tool-trust after its iteration-4 gate decision `split` (see that rubric). Run with `--loop-pass`, fact-check k=1, delivery self-read.
 - **Critics run:** security-reviewer, api-consistency-reviewer.
 - **Skipped:** performance-reviewer (no hot path; the check was measured at 13.5 ms per call in the parent loop) and architecture-review (no structural change beyond the duplicate already reviewed there).

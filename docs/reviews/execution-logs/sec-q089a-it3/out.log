@@ -1,0 +1,82 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+[Q1-baseline-help] rc=0
+    cc-push — push the commits a cc-isolated session made, without running anything
+    the session could have planted in the checkout (Q-076).
+    
+    Run from the HOST, never inside a session, and after the session's container
+    has stopped (docker stop <name>; cc-push checks):
+      cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+      cc-push ~/code/app                                      # later: same remote
+      cc-push                                                 # the checkout containing $PWD
+1
+[Q2-binary-mode-line] rc=1
+    ERROR: cc-push refuses to run:
+      host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+933BCABE85390A2DAEF35E892C50C5E449B18CC309E2BC5C5FF5A20412C4A8DE  cc-Exit-sCAn.sh
+[Q3a-uppercase-hex-C] rc=1
+    ERROR: cc-push refuses to run:
+      host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+utf8 locale: C.utf8
+[Q3b-uppercase-hex-utf8] rc=1
+    ERROR: cc-push refuses to run:
+      host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+[Q4-fifo-manifest] rc=1
+    ERROR: cc-push refuses to run:
+      no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+[Q5-dir-manifest] rc=1
+    ERROR: cc-push refuses to run:
+      no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+[Q6-tamper-above-check] rc=1
+    ERROR: cc-push refuses to run:
+      /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/cc-push.sh changed since the last bless
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+    Q6 above-check line RAN (expected, documented)
+[Q7a-no-shim] rc=1
+    ERROR: cc-push refuses to run:
+      /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/cc-gitdir.sh changed since the last bless
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst cc-isolated --bless
+    Q7a payload not run
+[Q7b-exported-fn-shim] rc=0
+    cc-push — push the commits a cc-isolated session made, without running anything
+    the session could have planted in the checkout (Q-076).
+    
+    Run from the HOST, never inside a session, and after the session's container
+    has stopped (docker stop <name>; cc-push checks):
+      cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+      cc-push ~/code/app                                      # later: same remote
+      cc-push                                                 # the checkout containing $PWD
+    Q7b payload RAN (exported-function bypass)
+0
+[Q10a-list] rc=0
+    No blessed config (run devcontainer-config/install.sh).
+    Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/cc-isolated.sh --bless)
+      launches warn (cc-push changed) but run
+      cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/inst/cc-push.sh changed since the last bless
+    
+    No projects registered (all run with the base egress profile).
+[Q10b-dropped-check-runs] rc=0
+    cc-push — push the commits a cc-isolated session made, without running anything
+    the session could have planted in the checkout (Q-076).
+    
+    Run from the HOST, never inside a session, and after the session's container
+    has stopped (docker stop <name>; cc-push checks):
+      cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+      cc-push ~/code/app                                      # later: same remote
+      cc-push                                                 # the checkout containing $PWD
+[Q12-hint-quoting] rc=1
+    ERROR: cc-push refuses to run:
+      /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/in st'x/cc-gitdir.sh changed since the last bless
+    Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/in st'x, then re-bless (it prints what changed):
+        CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/sec-it3.1aa0KG/in\ st\'x cc-isolated --bless

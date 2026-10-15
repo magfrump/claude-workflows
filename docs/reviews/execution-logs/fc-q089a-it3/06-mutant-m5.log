@@ -1,0 +1,11 @@
+2026-10-15T01:08:05Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/m5 mutant=m5 cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'verify_host_tools: an unreadable, empty' test/cc-isolated-functions.bats
+244c244
+<   if [ ! -r "$m" ] || [ ! -s "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+---
+>   if [ ! -r "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+1..1
+not ok 1 verify_host_tools: an unreadable, empty or malformed manifest, or a missing entry, is named as the problem
+# (in test file test/cc-isolated-functions.bats, line 1018)
+#   `[[ "$output" == *"unreadable or malformed"* ]]' failed
+[exit=1]

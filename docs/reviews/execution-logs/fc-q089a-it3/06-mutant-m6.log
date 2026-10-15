@@ -1,0 +1,13 @@
+2026-10-15T01:08:07Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/m6 mutant=m6 cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'verify_host_tools: an unreadable, empty' test/cc-isolated-functions.bats
+258,262d257
+<     if [ -z "$want" ]; then
+<       echo "host-tool manifest $m has no single entry for $f"
+<       bad=1
+<       continue
+<     fi
+1..1
+not ok 1 verify_host_tools: an unreadable, empty or malformed manifest, or a missing entry, is named as the problem
+# (in test file test/cc-isolated-functions.bats, line 1022)
+#   `[[ "$output" == *"has no single entry for cc-push.sh"* ]]' failed
+[exit=1]

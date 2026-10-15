@@ -987,7 +987,7 @@ fake_payload_and_dest() {
   [[ "$output" == *"cc-exit-scan.sh changed"*"cc-gitdir.sh changed"* ]]
   # Every reason line is indented under the ERROR line.
   [[ "$output" == *$'\n  '*"cc-exit-scan.sh changed"*$'\n  '*"cc-gitdir.sh changed"* ]]
-  [[ "$output" == *"also changed (cc-push refuses until re-blessed)"*"cc-push.sh changed"* ]]
+  [[ "$output" == *"also changed — do not run cc-push until re-blessed"*"cc-push.sh changed"* ]]
   # A bless with no previous manifest says every entry is new.
   rm "$d/host-tools.sha256"
   run bash "$d/cc-isolated.sh" --bless
@@ -1019,7 +1019,7 @@ fake_payload_and_dest() {
   grep -v ' cc-push.sh$' "$TEST_TMPDIR/h.good" > "$h"
   run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
   [ "$status" -eq 1 ]
-  [[ "$output" == *"has no single entry for cc-push.sh"* ]]
+  [[ "$output" == *"has no entry, or more than one, for cc-push.sh"* ]]
   if [ "$(id -u)" -ne 0 ]; then
     cp "$TEST_TMPDIR/h.good" "$h"; chmod 000 "$h"
     run verify_host_tools "$CLAUDE_DEVC_CONFIG_DIR" cc-push.sh
@@ -1063,7 +1063,7 @@ fake_payload_and_dest() {
   cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
   echo 'echo x' >> "$d/cc-push.sh"
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools — CHANGED"*"launches warn (cc-push changed) but run"*"cc-push refuses: "*"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" == *"Host tools — CHANGED"*"launches warn (cc-push changed) but run"*"cc-push: CHANGED — do not run it until re-blessed"*"cc-push.sh changed since the last bless"* ]]
   [[ "$output" != *"launches refuse"* ]]
   run bash "$d/cc-isolated.sh" "$ws"
   [[ "$output" == *"WARNING:"*"cc-push.sh changed since the last bless"* ]]

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2010  # recorded reviewer probe, kept as run; gate 6 only
 # fc-q089a1 probes. $1 = probe root (mktemp -d). Aborts without it.
 set -u
 P="${1:?probe root}"; [ -d "$P/src" ] || { echo "no $P/src"; exit 99; }
