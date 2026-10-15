@@ -1488,8 +1488,8 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"cc-isolated --probe-only"* ]]
   [[ "$output" != *"devcontainer up"* ]]
-  # --probe-only recreates the container (cached image layers are reused), the
-  # word the guides use (override log, fix/doc-drift-cycle1 C4).
+  # --probe-only recreates the container, the word the guides use (override
+  # log, fix/doc-drift-cycle1 C4).
   [[ "$output" == *"recreates it from the blessed config"*"cc-isolated --probe-only <repo>"* ]]
   [[ "$output" != *"rebuilds"* ]]
   # Each command line is the command alone: a trailing `# ...` is passed as

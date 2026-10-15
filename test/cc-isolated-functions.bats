@@ -355,8 +355,8 @@ STUB
   # The whole first line is the command, nothing after it: interactive zsh
   # without interactivecomments passes a trailing `# ...` to step 2 as arguments,
   # and the last positional becomes the workspace, so step 2 fails or, if that
-  # word names a git repo in the cwd, launches it (security review 2026-10-15,
-  # rebuild-hint #1).
+  # word names a directory inside a git work tree, launches that tree's repo
+  # (security review 2026-10-15, rebuild-hint #1).
   [ "$(echo "$output" | head -1)" = "    cc-isolated --probe-only $ws && cc-isolated $ws" ]
   [[ "$(echo "$output" | sed -n 2p)" == *"recreates the container from the blessed config"* ]]
   [[ "$output" != *"rebuilds"* ]]
@@ -1256,6 +1256,9 @@ h6_probe() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Verified live:  NO"* ]]
   [[ "$output" == *"--probe-only"* ]]
+  # The command is alone on its line (no trailing `# ...`, which interactive zsh
+  # without interactivecomments passes as arguments; security review 2026-10-15).
+  printf '%s\n' "$output" | grep -qx '  Next: cc-isolated --probe-only <repo>'
   [[ "$output" == *"Live-verified:"* ]]
   run is_verified_live
   [ "$status" -ne 0 ]
@@ -1406,6 +1409,7 @@ h6_probe() {
   # The unverified-config NOTE must not promise the recreate this launch skips.
   [[ "$output" == *"has NOT been verified in a live container"* ]]
   [[ "$output" != *"the container is rebuilt from it"* ]]
+  [[ "$output" == *"the container is recreated if it was built"* ]]
   # The premise of the hint: this launch reused the container and never started claude.
   run ! grep -q -- '--remove-existing-container' "$DC_LOG"
   run ! grep -q ' claude$' "$DC_LOG"
@@ -1425,7 +1429,8 @@ h6_probe() {
 }
 
 # The hint's `&&` relies on this: a failed probe after the forced recreate must
-# exit non-zero and never start claude (security review 2026-10-15, rebuild-hint #2).
+# exit non-zero and write no receipt (security review 2026-10-15, rebuild-hint #2).
+# (--probe-only never runs claude at all, so that is not asserted here.)
 @test "--probe-only exits non-zero and records nothing when the probe fails" {
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null

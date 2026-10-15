@@ -12,7 +12,7 @@
 #   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
 #   cc-isolated --probe-only [WS]        # recreate WS's container from the blessed
 #                                        # config, run the boundary self-probe, record
-#                                        # it verified live
+#                                        # it verified live on a pass
 #   cc-isolated --list                   # registered projects, blessed config, verified?
 #   cc-isolated --help                   # this text
 # Push a session's commits with cc-push, never with host git in the checkout.
