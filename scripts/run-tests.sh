@@ -19,7 +19,8 @@
 #   RUN_TESTS_NOT_RUN_FILE  When set, the number of report-dependent suites
 #                           gated out is written to this file. It is
 #                           unset before bats runs, so the suites (and any
-#                           runner a suite starts) never see it.
+#                           runner a suite starts) do not inherit the
+#                           caller's value.
 #
 # Flags:
 #   --fast    Run only fast tests (pure function tests, <1s each)

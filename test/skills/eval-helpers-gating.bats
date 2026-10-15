@@ -71,7 +71,7 @@ ran() { grep -c "/$1\$" "$T/bats-args"; }
   [[ "$output" != *"alpha-eval.bats [alpha]"* ]]
 }
 
-@test "the suites never see RUN_TESTS_NOT_RUN_FILE, so a nested run cannot overwrite the caller's count" {
+@test "the suites do not inherit RUN_TESTS_NOT_RUN_FILE, so a nested run cannot overwrite the caller's count" {
   # Q-110: a suite that runs the runner again (as this file does below, with
   # no override) inherited the caller's file and overwrote its count: the
   # health check printed 4 where the runner had listed 50. The stub bats
