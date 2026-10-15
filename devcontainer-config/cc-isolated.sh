@@ -15,6 +15,9 @@
 #                                        # it verified live on a pass
 #   cc-isolated --list                   # registered projects, blessed config, verified?
 #   cc-isolated --help                   # this text
+# One workspace per run. A second one, or a word starting with '#' (a pasted
+# '# note': zsh passes it as words unless interactive_comments is set), is bad
+# usage, exit 2; name a directory called '#x' as ./#x.
 # Push a session's commits with cc-push, never with host git in the checkout.
 #
 # EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
@@ -736,8 +739,27 @@ usage() {
   awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
+# One workspace per run. A pasted copyable line with a trailing '# note' reaches
+# the launcher as extra words: interactive zsh treats '#' as a comment only under
+# `setopt interactive_comments`, which is off by default. The parser used to keep
+# the LAST positional, so the note's last word became the workspace. Now a second
+# workspace, or a word starting with '#', is a usage error raised while parsing,
+# before any check or action runs. Values are printed with %q: they are untrusted
+# text going to a terminal.
+workspace_usage_error() {
+  printf 'ERROR: %s\n' "$1" >&2
+  echo "  A pasted line ending in a '# ...' note does this: interactive zsh passes the" >&2
+  echo "  note as arguments unless 'setopt interactive_comments'. Rerun without the note." >&2
+  usage >&2
+  exit 2
+}
+
+two_workspaces() {
+  workspace_usage_error "$(printf 'two workspaces given: %q and %q. cc-isolated takes one.' "$1" "$2")"
+}
+
 main() {
-  local ws_arg="" profiles="" action="launch"
+  local ws_arg="" ws_given=0 profiles="" action="launch"
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -756,9 +778,21 @@ main() {
       --help|-h)    usage; exit 0 ;;
       --)           shift; break ;;
       -*)           echo "ERROR: unknown flag: $1" >&2; usage >&2; exit 2 ;;
-      *)            ws_arg="$1"; shift ;;
+      # Checked at the first word of a note, so a note's later words can never act
+      # as flags (`cc-isolated  # --bless` would otherwise run a bless).
+      \#*)          workspace_usage_error "$(printf '%q is not a workspace; it looks like a pasted comment (a directory named so: ./%q).' "$1" "$1")" ;;
+      *)
+        [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
+        ws_arg="$1"; ws_given=1; shift ;;
     esac
   done
+  # After `--`: at most one word, and only when no workspace came before it
+  # (cc-push's rule). It used to drop everything after `--`, opening $PWD instead.
+  if [ $# -gt 0 ]; then
+    [ "$ws_given" = 0 ] || two_workspaces "$ws_arg" "$1"
+    [ $# -eq 1 ] || two_workspaces "$1" "$2"
+    ws_arg="$1"
+  fi
 
   if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
     echo "ERROR: host-tool check failed — refusing to launch, probe or register:" >&2

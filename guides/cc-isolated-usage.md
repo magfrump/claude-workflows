@@ -36,7 +36,12 @@ cc-push --help                    # usage header, exit codes included
 ```
 
 `cc-push` takes one checkout (`cc-push A B` and `cc-push A -- B` are usage
-errors). Both tools follow `install.sh`'s exit-status convention (decision log
+errors), and `cc-isolated` one workspace, under the same rule. `cc-isolated`
+also refuses a word starting with `#` before `--`. Copy the command, not its
+`# …` note: interactive zsh passes the note as arguments unless
+`setopt interactive_comments` is on, and the launcher used to take the note's
+last word as the workspace; now the line exits 2 and names the values. A
+directory whose name starts with `#` is `./#name` or `-- '#name'`. Both tools follow `install.sh`'s exit-status convention (decision log
 #58): 1 for an error, or for a prompt you declined; 2 for bad usage.
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
