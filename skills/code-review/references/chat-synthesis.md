@@ -137,7 +137,9 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — On the unit's first review, the unit is over the size gate
+2. **split PR** — On the unit's first review (no rubric for the branch yet, or
+   only a closed one: the first-pass test code-review's SKILL.md uses for the
+   short-circuit), the unit is over the size gate
    in `workflows/pr-prep.md` step 1a (>400 changed lines outside `docs/`,
    counted with that step's command, so review artifacts don't count), the
    user has not waived the cap for this unit, AND ≥1 🔴 item exists (and rule
