@@ -1555,12 +1555,13 @@ for f in sys.argv[1:]:
   # file: an error that persists across the three tries (a permission error, a
   # link loop, a missing top, a top that is no longer a directory) fails the
   # walk; a transient one of any kind is retried away when a later try is clean,
-  # its message dropped (three in a row fail the walk, the third's message
-  # shown). Not covered, as with any directory read: a file renamed in during
-  # the listing (readdir leaves a name added mid-read unspecified), or one
-  # deleted and re-created there (a non-atomic save), which find may not see, or
-  # now skips when the gap spans its stat (i2 security F1); before Q-145 such a
-  # gap failed the walk when it was still open at find's stat of the name
+  # its message dropped (three in a row fail the walk, with the third's find
+  # message, if any: a top that fails only top_files' -d recheck prints none;
+  # final security F2). Not covered, as with any directory read: a file renamed
+  # in during the listing (readdir leaves a name added mid-read unspecified), or
+  # one deleted and re-created there (a non-atomic save), which find may not
+  # see, or now skips when the gap spans its stat (i2 security F1); before Q-145
+  # such a gap failed the walk when it was still open at find's stat of the name
   # readdir had returned, and was missed silently when it spanned the readdir.
   if [[ ${#tops[@]} -gt 0 ]]; then
     top_files fl "${tops[@]}" 2>/dev/null || top_files fl "${tops[@]}" 2>/dev/null || top_files fl "${tops[@]}" || return 1
