@@ -726,18 +726,19 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # listing only, a clause that runs at the first entry of the fixture's ancestor and
     # deletes every other vic* there. find read all their names before that first visit,
     # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
-    # exit status. With T_ONCE it races only on the first listing of a walk. With T_RMTOP
+    # exit status. With SHIM_ONCE it races only on the first listing of a walk. With SHIM_RMTOP
     # it instead removes the ancestor's .claude, a top config_seeds already found to be a
-    # directory, first; T_RMTOP=drop also drops it from the start points, as a find that
-    # skipped a missing start point silently would, which leaves the -d recheck to catch it.
+    # directory, first; SHIM_RMTOP=drop also drops it from the start points, as a find that
+    # skipped a missing start point silently would, which leaves top_files' -d recheck to
+    # catch it. (SHIM_*, not T_*: the shim reads them, not imps.)
     a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
     printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
     cat > "$a/shim/find" <<EOF
 #!/usr/bin/env bash
 [[ "\${1:-}" == -H ]] || exec "$real" "\$@"
-[[ -z "\${T_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
-args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do [[ "\${T_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1"); shift; done
-if [[ -n "\${T_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
+[[ -z "\${SHIM_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
+args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1"); shift; done
+if [[ -n "\${SHIM_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
 else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
 rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
 EOF
@@ -755,7 +756,7 @@ EOF
         # Directories: findutils still reports one, so the first listing fails and the retry,
         # without the race, completes; the failed try's message is dropped.
         for i in 1 2 3; do mkdir "$a/vic$i"; done; echo > "$a/vic4"; rm -f "$a/shim/log" "$a/shim/fired"
-        PATH="$a/shim:$PATH" T_ONCE=1 imps "$w" docs/a.md docs/other.md
+        PATH="$a/shim:$PATH" SHIM_ONCE=1 imps "$w" docs/a.md docs/other.md
         [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
         want walk ok; want docs/a.md imported; want docs/other.md -
         [ "$(head -2 "$a/shim/log" | tr '\n' ' ')" = "1 0 " ] || { echo "want a failed try, then a clean one: $(cat "$a/shim/log")"; return 1; }
@@ -767,8 +768,10 @@ EOF
         mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
         [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "1 1 1 " ] || { echo "want three failed tries: $(cat "$a/shim/log")"; return 1; }
         for m in 1 drop; do
-            mkdir -p "$a/.claude"; PATH="$a/shim:$PATH" T_RMTOP="$m" imps "$w" docs/a.md; want walk failed
+            mkdir -p "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" SHIM_RMTOP="$m" imps "$w" docs/a.md; want walk failed
             [ ! -e "$a/.claude" ] || { echo "the top was not removed"; return 1; }
+            # find reports the missing top (1); with it dropped, find succeeds (0) and the recheck fails each try.
+            [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "$( [ "$m" = drop ] && echo "0 0 0 " || echo "1 1 1 ")" ] || { echo "$m: want three failed tries: $(cat "$a/shim/log")"; return 1; }
         done
     done
 }

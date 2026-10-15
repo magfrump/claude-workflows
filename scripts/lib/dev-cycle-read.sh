@@ -830,7 +830,8 @@ prompt_bases() {
 # an entry that vanishes between find's readdir and its stat (another process's
 # temp file in /tmp) is skipped, or the listing is retried, up to three tries,
 # since a name no longer there holds nothing to load; only an error-free listing
-# is used, so any other error there still fails the walk (Q-145). A seed
+# is used, so any error that persists across the tries still fails the walk
+# (Q-145). A seed
 # swapped for a FIFO stalls it, as a checkout file can. The seeds cost: over
 # this repository's 8 registered worktrees, 50 seeds and 2 to 3.5 s per walk,
 # against 0.5 to 0.85 s without; each seed holding an @ costs 12 to 15 ms, and
@@ -1504,9 +1505,9 @@ outside_seeds() {
   for ow_d in "${ow_a[@]}"; do [[ "$ow_d" != *$'\n'* ]] || return 1; done
 }
 # config_seeds NAME: appends outside_seeds' items (1) and (2) to array NAME. It
-# returns 1 when a find, grep, realpath or lower_all fails (the top-level
-# listing, top_files, after three tries, for an entry that vanishes
-# mid-listing: Q-145), or a top is no longer a directory after it.
+# returns 1 when a find, grep, realpath or lower_all fails; the top-level
+# listing (top_files) fails it only when all three of its tries fail (an
+# entry that vanishes mid-listing fails one: Q-145).
 config_seeds() {
   local -n os_a="$1"; local d q r c i in rs=() cf=() tops=() fr=() pr=() mr=() fl=() rl=() cx=() kx=() lo=() pj=(); local -A os_s=() os_at=()
   mapfile -t rs <<<"$IMPORT_ROOTS"; mapfile -t cf <<<"$IMPORT_CONFIGS"
@@ -1544,22 +1545,22 @@ for f in sys.argv[1:]:
   # not followed; -xtype l is a dangling link. Each ancestor below no reader
   # root is a top (/tmp, when a root lies under it), and other processes'
   # files come and go there: an entry find's readdir named can be gone when
-  # find stats it, and find then reports ENOENT and exits 1 (Q-145). top_files' -ignore_readdir_race skips such a file, but
-  # findutils 4.9 still reports a directory that vanished that way (a
-  # session's mktemp -d), so a failed listing is run again, up to three times
-  # in all, the first two with stderr dropped. Only a listing that completes
-  # without any error is used, so a retry never hides an existing file: a
-  # permission error, a link loop or a missing top fails every try and the
-  # walk, and the -d recheck fails a top that is no longer a directory: one
-  # that vanished under a find that skipped a missing start point silently,
-  # or a linked top whose target vanished, which find 4.9 lists as the link
-  # itself and exits 0 (i1 fact-check 6a). A file renamed in during the
-  # listing may be missed, as with any directory read (readdir leaves a name
-  # added mid-read unspecified); before Q-145 the rename's vanished temp name
-  # failed the walk only when find had happened to read it.
+  # find stats it, and find then reports ENOENT and exits 1 (Q-145).
+  # top_files skips such a file (-ignore_readdir_race), but findutils 4.9
+  # still reports a directory that vanished that way (a session's mktemp -d),
+  # so a failed listing is run again, up to three times in all, the first two
+  # with stderr dropped. Only a listing that completes without any error is
+  # used, so a retry never hides an existing file: an error that persists
+  # across the three tries (a permission error, a link loop, a missing top,
+  # a top that is no longer a directory) fails the walk; a transient one of
+  # any kind is retried away, its message dropped. Not covered, as with any
+  # directory read: a file renamed in during the listing (readdir leaves a
+  # name added mid-read unspecified), or one deleted and re-created there (a
+  # non-atomic save), which find may not see, or now skips when the gap
+  # spans its stat (i2 security F1); before Q-145 such a gap failed the walk
+  # only when it fell between find's readdir and its stat.
   if [[ ${#tops[@]} -gt 0 ]]; then
     top_files fl "${tops[@]}" 2>/dev/null || top_files fl "${tops[@]}" 2>/dev/null || top_files fl "${tops[@]}" || return 1
-    for d in "${tops[@]}"; do [[ -d "$d" ]] || return 1; done
     [[ ${#fl[@]} -eq 0 ]] || nul_list lo lower_all "${fl[@]}" && [[ ${#lo[@]} -eq ${#fl[@]} ]] || return 1
     for i in "${!fl[@]}"; do isstart "${lo[i]}" && { cx+=("${fl[i]}"); kx+=(f); }; done
   fi
@@ -1576,12 +1577,19 @@ for f in sys.argv[1:]:
     [[ -z "$in" ]] || os_a+=("${kx[i]}${cx[i]}")
   done
 }
-# top_files NAME DIR...: array NAME gets the files and links (-xtype f or l,
-# links followed only as DIRs: -H) directly in each DIR, NUL-separated through
-# nul_list; an entry gone between find's readdir and its stat of a file is
-# skipped (-ignore_readdir_race, GNU find). It fails when find reports any
-# error, a vanished directory entry included (config_seeds retries: Q-145).
-top_files() { nul_list "$1" find -H "${@:2}" -maxdepth 1 -ignore_readdir_race '(' -xtype f -o -xtype l ')' -print0; }
+# top_files NAME DIR...: array NAME gets the files and links (-xtype f or l)
+# directly in each DIR, read through nul_list, and each DIR itself when it is
+# a link (-H follows a link only as a DIR). An entry gone between find's
+# readdir and its stat of a file is skipped (-ignore_readdir_race, GNU find).
+# It fails, with NAME empty, when find reports any error (a directory entry
+# that vanished included: config_seeds retries, Q-145) or a DIR is no longer
+# a directory after the listing: one that vanished under a find that skips a
+# missing start point silently, or a linked DIR whose target vanished, which
+# find 4.9 lists as the link itself and exits 0 (i1 fact-check 6a).
+top_files() {
+  local tf_d; nul_list "$1" find -H "${@:2}" -maxdepth 1 -ignore_readdir_race '(' -xtype f -o -xtype l ')' -print0 || return 1
+  for tf_d in "${@:2}"; do [[ -d "$tf_d" ]] || { local -n tf_a="$1"; tf_a=(); return 1; }; done
+}
 # c1_seeds NAME: appends outside_seeds' item (3), C1, to array NAME: each
 # other root's start files (IMPORT_OTHER) that hold an @ byte or are links,
 # but the ones its skip names. It returns 1 when a find, grep or lower_all fails.
