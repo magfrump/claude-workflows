@@ -146,8 +146,10 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 
 @test "the hook's stdout is empty or exactly the allow decision: never ask, deny or defer" {
   # Q-092's precondition: deny precedence differs only for a hook "ask"
-  # (#39344). Stdout alone (stderr dropped), over every exit path of main.
-  # Statically: the source spells exactly one decision.
+  # (#39344). Stdout alone (stderr dropped), over main's exit paths for
+  # approved, refused, unparseable, unlisted, empty and malformed input (the
+  # jq-missing exit is not reached). Statically: the source spells exactly one
+  # decision.
   [ "$(grep -o '"permissionDecision":"[a-z]*"' "$HOOK" | sort -u)" = '"permissionDecision":"allow"' ]
   jq -n '{permissions:{allow:["Bash(ls:*)","Bash(cat:*)"],deny:["Bash(*.credentials.json*)"]}}' \
     > "$PROJECT/.claude/settings.json"
@@ -205,6 +207,19 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   echo '{"permissions":{"allow":["Bash(ls:*)","Bash(grep:*)"]}}' > "$PROJECT/.claude/settings.json"
 
   run run_hook 'ls -la | grep credentials'
+  [[ "$output" == *'"permissionDecision":"allow"'* ]]
+}
+
+@test "a prefix deny rule blocks an extracted command inside a pipeline; only * is a wildcard" {
+  # Pins the per-extracted-command check and add_deny_rule's escaping, which
+  # the raw check alone does not exercise (security review q092a, finding 1).
+  echo '{"permissions":{"allow":["Bash(ls:*)","Bash(rm:*)","Bash(cat:*)"],"deny":["Bash(rm -rf:*)","Bash(cat notes[1].txt)"]}}' \
+    > "$PROJECT/.claude/settings.json"
+  run run_hook 'ls | rm -rf x'
+  [[ "$output" != *'"permissionDecision":"allow"'* ]]
+  run run_hook 'cat notes[1].txt'
+  [[ "$output" != *'"permissionDecision":"allow"'* ]]
+  run run_hook 'cat notes1.txt'
   [[ "$output" == *'"permissionDecision":"allow"'* ]]
 }
 
@@ -346,7 +361,8 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 }
 
 @test "a NUL inside a --permissions rule drops that rule only" {
-  run_hook_rules 'curl x' '["Bash(ls\u0000:*)","Bash(zz)"]'
+  # Split rather than dropped, the second half would approve curl.
+  run_hook_rules 'curl x' '["Bash(zz)\u0000Bash(curl:*)"]'
   not_approved
   run_hook_rules 'ls -la' '["Bash(ls\u0000:*)","Bash(ls:*)"]'
   approved
@@ -384,9 +400,11 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   not_approved
 }
 
-@test "rule table: Bash(ls *) approves nothing" {
+@test "rule table: Bash(ls *) is a literal prefix, not a glob" {
   run_hook_rules 'ls -la' '["Bash(ls *)"]'
   not_approved
+  run_hook_rules 'ls * -la' '["Bash(ls *)"]'
+  approved
 }
 
 @test "rule table: a bare Bash rule is ignored" {
