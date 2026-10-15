@@ -2,34 +2,42 @@
 
 - **Goal**: One host paste that live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages the merge of main and the branch, and runs main's installed cc-isolated against that stage on a scratch clone. The same run checks the research doc's four unverified claims (§7).
 - **Project state**: roadmap Next 3, step 1 of the DD's recommendation ([4] as [5]'s first step), on `docs/branch-verify-without-install` · inputs: `research-branch-verify-without-install.md`, `dd-branch-verify-without-install.md` · blocked on a host run (the user's `you: terminal` paste)
-- **Task status**: paused (paste written and reviewed; nothing has run on the host)
+- **Task status**: paused (paste written; review loop iteration 2 passed; nothing has run on the host)
 
-Last verified: 2026-10-15 against main b279a2ba, `fix/egress-dnsmasq-ipset` b26d4b8b (their merge tree today: `65e65962b12e…`).
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/install.sh`, `devcontainer-config/devcontainer.json`, `guides/cc-isolated-usage.md`, `docs/working/questions-archive.md` (Q-117)
+Last verified: 2026-10-15 against main b279a2ba and `fix/egress-dnsmasq-ipset` b26d4b8b23aa (pinned in the paste); their merge tree is `65e65962b12e…`.
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/install.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/Dockerfile`, `guides/cc-isolated-usage.md`, `docs/working/questions-archive.md` (Q-117)
+Review: `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md`
 
 ## What it does, and what it never touches
 
-The paste writes one script, `~/cc-verify/spike-q117.sh`, and runs it. Everything the script creates is named from the run and kept under `~/cc-verify/`:
+The paste writes one script, `~/cc-verify/spike-q117.sh`, and runs it. Everything the script creates is kept under `~/cc-verify/` and named from the run:
 
 | Created | Name | Removed by |
 |---|---|---|
-| bare scratch clone of your checkout (objects only) | `~/cc-verify/src-<RUN>.git` | the EXIT trap |
+| bare scratch clone of your checkout (objects and refs only, no template hooks) | `~/cc-verify/src-<RUN>.git` | the EXIT trap |
 | the stage (main + branch, laid out like install.sh's payload) | `~/cc-verify/stage-<TREE8>` | the trap |
 | scratch workspace | `~/cc-verify/VERIFY-<TREE8>` | the trap |
-| one container | label `cc-project=<PID>`, PID = sha256 of the scratch path | the trap (`docker rm -f`) |
+| one container | label `cc-project=<PID>`, where PID is the project id of `~/cc-verify/VERIFY-<TREE8>` | the trap (`docker rm -f`) |
 | two volumes | `cc-<PID>-bashhistory`, `cc-<PID>-claude-config` | the trap |
-| one image | whatever the devcontainer CLI builds for that workspace | the trap, but only if its id was not present before the run, plus any image whose tag names `verify-<TREE8>` |
-| run record | `~/cc-verify/run-<RUN>.env` (written before anything else) | the trap, last, and only when every removal succeeded |
+| one image | the one the container ran | the trap, only if it was absent before the run and no other container uses it; also any image whose tag names `verify-<TREE8>` |
+| run record | `~/cc-verify/run-<RUN>.env`, holding only `RUN=` and `T8=` | the trap, last, and only when every removal succeeded |
 | log | `~/cc-verify/log-<RUN>.txt` | kept on purpose; no tool reads it |
 
-It never writes `~/.config/claude-devcontainer`, `~/.local/bin`, `~/.claude`, your checkout's working tree, or any container, volume or image it did not create. It runs no branch code on the host, and needs no session to close: there is no install, so install.sh's agent gate never runs. The run proves each of these claims by checking: the before/after snapshot (`CHECK` lines), the path-keyed identity checks in step 4, and the launcher writing `projects/<PID>.profile` under the *stage*.
+**What the run checks at runtime** (the `CHECK` lines). It compares, before and after:
+- a hash over every file in `~/.config/claude-devcontainer`;
+- the hashes of `manifest.sha256`, `host-tools.sha256` and `verified-live.sha256`;
+- where `~/.local/bin/cc-isolated` and `cc-push` point;
+- every container, volume and image tag that existed before the run.
+
+Step 4 also checks the path-keyed identity, and step 6 has the launcher write `projects/<PID>.profile` under the *stage*.
+
+**What holds by construction, not by a check.** No command in the script writes `~/.claude` or your checkout's working tree. Its only operations on the checkout are `git rev-parse` and a `git clone` *from* it. It runs no branch code on the host. It needs no session to close: there is no install, so install.sh's agent gate never runs.
 
 ## The paste (one block, for a `you: terminal` entry)
 
-Run it from a terminal on the host. Edit only the checkout path on the last line. It takes up to about an hour: the image build, then Q-117's own wait (up to 45 min) for a dl.google.com pool rotation.
+Run it from a terminal on the host. The last line is the only one to edit: replace `~/claude-workflows` if your checkout lives elsewhere. The block holds no shell comments outside the script, so it pastes the same into bash and zsh. It takes up to about an hour: the image build, then Q-117's own wait (up to 45 min) for a dl.google.com pool rotation. Do not open a shell or run git inside `~/cc-verify` while it runs, or afterwards if a teardown is reported incomplete: branch code can write the workspace's `.git`.
 
 ```bash
-# --- HOST: your own terminal. Other sessions may keep running. EDIT the checkout path on the last line. ---
 mkdir -p ~/cc-verify && cat > ~/cc-verify/spike-q117.sh <<'CCVERIFY'
 #!/usr/bin/env bash
 # spike-q117.sh: live-verify fix/egress-dnsmasq-ipset (Q-117) WITHOUT installing it.
@@ -42,6 +50,9 @@ mkdir -p ~/cc-verify && cat > ~/cc-verify/spike-q117.sh <<'CCVERIFY'
 # with CLAUDE_DEVC_CONFIG_DIR=<stage>. Main's config dir, its bin links and every
 # other project's container and volumes are never written. Teardown runs on exit.
 set -euo pipefail
+# Opt-in credentials devcontainer.json forwards from this shell (devcontainer.json, "GH_TOKEN"
+# and "OPENROUTER_API_KEY" in containerEnv) never reach a container running branch code.
+unset GH_TOKEN OPENROUTER_API_KEY
 
 V="$HOME/cc-verify"
 MAIN_CFG="$HOME/.config/claude-devcontainer"
@@ -49,6 +60,18 @@ MAIN_BIN="$HOME/.local/bin"
 LAUNCHER="$MAIN_CFG/cc-isolated.sh"
 BASE=main
 BRANCH=fix/egress-dnsmasq-ipset
+# The branch commit this paste was reviewed against. A moved branch refuses: ask for a new paste.
+EXPECT_BR=b26d4b8b23aa05130bc9340c0c4c81ecba75897f
+# The only paths the merge may change relative to main (the branch's own diff).
+BRANCH_PATHS='devcontainer-config/init-firewall.sh
+docs/decisions/038-sni-resolve-time-ipset.md
+docs/reviews/security-review-2026-10-05-egress-sni-resolve-time-ipset.md
+docs/working/egress-android-build.md
+test/init-firewall-rules.bats'
+# Staged files that reach the host's docker daemon (build and run configuration): they must
+# be byte-identical to main's installed copies. Everything else in the stage is either
+# built into the image (the code under test) or a host tool this spike never executes.
+PINNED=(devcontainer.json Dockerfile)
 PROFILE=android
 EXPECT_PAYLOAD='PAYLOAD=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress claude-home)'
 EXPECT_HOME_SRC='CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)'
@@ -56,27 +79,43 @@ DC_ITEMS=(devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isola
 HOME_DIRS=(skills workflows guides patterns hooks scripts)
 
 die() { printf 'REFUSED: %s\n' "$*" >&2; exit 1; }
+# vis: drop control bytes (all but tab and newline) from text that branch code or the
+# container produced, so it cannot rewrite the terminal or forge RESULT/CHECK lines.
+vis() { LC_ALL=C tr -d '\000-\010\013-\037\177'; }
+# relay: vis, then show each line indented under "  | " on stderr (so nothing the container
+# prints can start a line with RESULT or CHECK) and pass it unindented on stdout.
+relay() { local l; vis | while IFS= read -r l || [ -n "$l" ]; do printf '  | %s\n' "$l" >&2; printf '%s\n' "$l"; done; }
 say() { printf '== %s\n' "$*"; }
 
 # --- teardown: removes only what this run created, named from its own ids ------------
-# Paths are derived from RUN and T8, never read from a file; PID and IMG are format-checked.
-RUN="" T8="" PID="" IMG="" IMG_NEW=0 SNAP=0
+# Everything is derived from RUN and T8 (format-checked); no path, project id or image id
+# is read from a file. The project id is the hash of ~/cc-verify/VERIFY-<T8>, a path only
+# this script creates, so no run record can name another project's container or volume.
+VP="" RUN="" T8="" PID="" SNAP=0
+verify_pid() {  # project_id of ~/cc-verify/VERIFY-<T8> (cc-isolated.sh:372-374)
+  printf '%s' "$VP/VERIFY-$1" | sha256sum | cut -c1-12
+}
 teardown() {
-  local fail=0 c v i tags
-  if [[ "$PID" =~ ^[0-9a-f]{12}$ ]]; then
-    for c in $(docker ps -aq --no-trunc --filter "label=cc-project=$PID" </dev/null); do
+  local fail=0 c v i tags pid img imgs=""
+  if [[ "$T8" =~ ^[0-9a-f]{8}$ ]] && [ -n "$VP" ]; then
+    pid="$(verify_pid "$T8")"
+    for c in $(docker ps -aq --no-trunc --filter "label=cc-project=$pid" </dev/null); do
+      img="$(docker inspect -f '{{.Image}}' "$c" </dev/null 2>/dev/null || true)"
+      if [[ "$img" =~ ^sha256:[0-9a-f]{64}$ ]]; then imgs="$imgs $img"; fi
       docker rm -f "$c" >/dev/null </dev/null || { echo "TEARDOWN: could not remove container $c" >&2; fail=1; }
     done
-    for v in "cc-$PID-bashhistory" "cc-$PID-claude-config"; do
+    for v in "cc-$pid-bashhistory" "cc-$pid-claude-config"; do
       if docker volume inspect "$v" >/dev/null 2>&1 </dev/null; then
         docker volume rm "$v" >/dev/null </dev/null || { echo "TEARDOWN: could not remove volume $v" >&2; fail=1; }
       fi
     done
-  fi
-  if [ "$IMG_NEW" = 1 ] && [[ "$IMG" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-    docker image rm -f "$IMG" >/dev/null </dev/null || { echo "TEARDOWN: could not remove image $IMG" >&2; fail=1; }
-  fi
-  if [[ "$T8" =~ ^[0-9a-f]{8}$ ]]; then
+    # An image this run's container ran is removed only if it was not present before the
+    # run (when the before snapshot exists) and no remaining container uses it.
+    for img in $imgs; do
+      if [ -f "$V/snap-$RUN-before/images" ] && grep -q " $img\$" "$V/snap-$RUN-before/images"; then continue; fi
+      if [ -n "$(docker ps -aq --filter "ancestor=$img" </dev/null)" ]; then echo "TEARDOWN: image $img still in use; not removed" >&2; continue; fi
+      docker image rm -f "$img" >/dev/null </dev/null || { echo "TEARDOWN: could not remove image $img" >&2; fail=1; }
+    done
     # The devcontainer CLI tags its images after the workspace folder (unverified); a tag
     # naming this run's folder is this run's, whoever else is building meanwhile.
     while read -r i tags; do
@@ -104,6 +143,7 @@ snapshot() {   # snapshot <before|after>
     else echo "absent $f" >> "$d/main"; fi
   done
   for f in cc-isolated cc-push; do echo "$f -> $(readlink -f "$MAIN_BIN/$f" 2>/dev/null || echo absent)" >> "$d/main"; done
+  echo "config tree $( (cd "$MAIN_CFG" && find . \( -type f -o -type l \) -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) | sha256sum)" >> "$d/main"
 }
 
 compare() {    # after teardown: did anything outside this run change?
@@ -149,6 +189,8 @@ on_exit() {
 
 # --- --clean: remove a crashed run's leftovers ---------------------------------------
 if [ "${1:-}" = "--clean" ]; then
+  [ -d "$V" ] || { echo "nothing to clean: no $V"; exit 0; }
+  VP="$(cd "$V" && pwd -P)"
   shopt -s nullglob
   files=("$V"/run-*.env)
   [ "${#files[@]}" -gt 0 ] || { echo "nothing to clean in $V"; exit 0; }
@@ -156,11 +198,8 @@ if [ "${1:-}" = "--clean" ]; then
   for f in "${files[@]}"; do
     RUN="$(sed -n 's/^RUN=\([0-9]*-[0-9]*\)$/\1/p' "$f" | head -1)"
     T8="$(sed -n 's/^T8=\([0-9a-f]\{8\}\)$/\1/p' "$f" | head -1)"
-    PID="$(sed -n 's/^PID=\([0-9a-f]\{12\}\)$/\1/p' "$f" | head -1)"
-    IMG="$(sed -n 's/^IMG=\(sha256:[0-9a-f]\{64\}\)$/\1/p' "$f" | head -1)"
-    IMG_NEW=0; [ -n "$IMG" ] && IMG_NEW=1
     [ "$f" = "$V/run-$RUN.env" ] || { echo "skipping malformed $f (remove it by hand)" >&2; rc=1; continue; }
-    echo "cleaning run $RUN (tree ${T8:-?}, project ${PID:-?})"
+    echo "cleaning run $RUN (tree ${T8:-?}${T8:+, project $(verify_pid "$T8")})"
     teardown || rc=1
     rm -rf -- "$V/snap-$RUN-before" "$V/snap-$RUN-after"
   done
@@ -181,6 +220,7 @@ done
 docker info >/dev/null 2>&1 </dev/null || die "docker is not reachable."
 REPO_TOP="$(git -C "$1" rev-parse --show-toplevel 2>/dev/null)" || die "$1 is not inside a git repository."
 mkdir -p "$V"
+VP="$(cd "$V" && pwd -P)"
 shopt -s nullglob
 left=("$V"/run-*.env)
 shopt -u nullglob
@@ -195,21 +235,28 @@ LOG="$V/log-$RUN.txt"
 # --- 1. merge check, in a bare scratch clone (objects only: no hooks, no local config) -
 say "1. merge check: $BASE + $BRANCH"
 SRCGIT="$V/src-$RUN.git"
-git clone -q --bare --no-local -- "$REPO_TOP" "$SRCGIT" </dev/null || die "could not clone $REPO_TOP."
-G=(git -C "$SRCGIT" -c core.hooksPath=/dev/null -c core.fsmonitor=false)
+git -c core.hooksPath=/dev/null clone -q --bare --no-local --template= -- "$REPO_TOP" "$SRCGIT" </dev/null || die "could not clone $REPO_TOP."
+G=(git --no-optional-locks -C "$SRCGIT" -c core.hooksPath=/dev/null -c core.fsmonitor=false)
 MAIN_SHA="$("${G[@]}" rev-parse --verify -q "refs/heads/$BASE^{commit}")" || die "no local branch $BASE in $REPO_TOP."
 BR_SHA="$("${G[@]}" rev-parse --verify -q "refs/heads/$BRANCH^{commit}")" || die "no local branch $BRANCH in $REPO_TOP."
+[ "$BR_SHA" = "$EXPECT_BR" ] || die "$BRANCH is at $BR_SHA, not the reviewed $EXPECT_BR. Ask for a refreshed paste."
 set +e
 mt="$("${G[@]}" merge-tree --write-tree --name-only "$MAIN_SHA" "$BR_SHA" 2>&1 </dev/null)"
 mrc=$?
 set -e
 case "$mrc" in
   0) ;;
-  1) printf '%s\n' "$mt" >&2; die "$BRANCH does not merge cleanly with $BASE (conflicts above). Merge $BASE into the branch first." ;;
-  *) printf '%s\n' "$mt" >&2; die "git merge-tree --write-tree failed (exit $mrc; it needs git >= 2.38)." ;;
+  1) printf '%s\n' "$mt" | vis >&2; die "$BRANCH does not merge cleanly with $BASE (conflicts above). Merge $BASE into the branch first." ;;
+  *) printf '%s\n' "$mt" | vis >&2; die "git merge-tree --write-tree failed (exit $mrc; it needs git >= 2.38)." ;;
 esac
 TREE="$(printf '%s\n' "$mt" | head -1)"
-[[ "$TREE" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || die "merge-tree printed no tree id: $TREE"
+[[ "$TREE" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || die "merge-tree printed no tree id."
+# The merge may change only the branch's own paths: everything else is main's, as committed.
+changed="$("${G[@]}" diff-tree -r --name-only "$MAIN_SHA" "$TREE")" || die "could not diff $BASE against the merged tree."
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  grep -qxF -- "$f" <<< "$BRANCH_PATHS" || die "the merge changes $(printf %q "$f"), which is not one of the branch's reviewed paths."
+done <<< "$changed"
 t8="${TREE:0:8}"
 S="$V/stage-$t8"
 W="$V/VERIFY-$t8"
@@ -221,9 +268,12 @@ printf 'T8=%s\n' "$T8" >> "$V/run-$RUN.env"
 
 # --- 2. stage the merged tree the way install.sh lays out its payload ------------------
 say "2. stage -> $S"
-"${G[@]}" show "$TREE:devcontainer-config/install.sh" | grep -qxF "$EXPECT_PAYLOAD" \
+# Read into a variable first: `git show | grep -q` under pipefail can fail with SIGPIPE when
+# grep exits early on a file larger than the pipe buffer (review fact-check claim 6).
+inst="$("${G[@]}" show "$TREE:devcontainer-config/install.sh")" || die "no devcontainer-config/install.sh in the merged tree."
+grep -qxF "$EXPECT_PAYLOAD" <<< "$inst" \
   || die "install.sh's PAYLOAD in the merged tree is not the list this spike stages; update the spike."
-"${G[@]}" show "$TREE:devcontainer-config/install.sh" | grep -qxF "$EXPECT_HOME_SRC" \
+grep -qxF "$EXPECT_HOME_SRC" <<< "$inst" \
   || die "install.sh's CLAUDE_HOME_SRC in the merged tree is not the list this spike stages; update the spike."
 mkdir "$S.raw"
 "${G[@]}" archive --format=tar "$TREE" -- devcontainer-config global-instructions/CLAUDE.md "${HOME_DIRS[@]}" \
@@ -246,11 +296,13 @@ say "3. devcontainer.json gate"
 if grep -n 'initializeCommand' "$S/devcontainer.json"; then
   die "the staged devcontainer.json names initializeCommand, which runs ON THE HOST."
 fi
-if ! cmp -s "$MAIN_CFG/devcontainer.json" "$S/devcontainer.json"; then
-  diff -u "$MAIN_CFG/devcontainer.json" "$S/devcontainer.json" || true
-  die "the staged devcontainer.json differs from main's installed copy (diff above). This spike refuses any change there (runArgs, mounts, lifecycle commands): reinstall main, or review it by hand."
-fi
-echo "   identical to $MAIN_CFG/devcontainer.json (runArgs, mounts, lifecycle commands unchanged)"
+for i in "${PINNED[@]}"; do
+  if ! cmp -s "$MAIN_CFG/$i" "$S/$i"; then
+    diff -u "$MAIN_CFG/$i" "$S/$i" | vis || true
+    die "the staged $i differs from main's installed copy (diff above). This spike refuses any change to what reaches the docker daemon (runArgs, mounts, lifecycle commands, base image, build steps). If main's install is behind main, reinstall main first."
+  fi
+done
+echo "   devcontainer.json and Dockerfile identical to main's installed copies (runArgs, mounts, lifecycle commands, base image unchanged)"
 echo "   staged files that differ from main's install (expect init-firewall.sh; more if main's install is behind main):"
 for i in "${DC_ITEMS[@]}" claude-home; do
   [ "$i" = claude-home ] && [ ! -e "$MAIN_CFG/claude-home" ] && { echo "     claude-home (none installed)"; continue; }
@@ -259,11 +311,11 @@ done
 
 # --- 4. scratch workspace with its own path-keyed identity -----------------------------
 say "4. workspace -> $W"
-git clone -q --no-local -- "$SRCGIT" "$W" </dev/null
-WS="$(git -C "$W" rev-parse --show-toplevel)"
-PID="$(printf '%s' "$WS" | sha256sum | cut -c1-12)"            # = project_id, cc-isolated.sh:372-374
+git -c core.hooksPath=/dev/null -c core.fsmonitor=false clone -q --no-local --template= -- "$SRCGIT" "$W" </dev/null
+WS="$(git -C "$W" -c core.hooksPath=/dev/null -c core.fsmonitor=false rev-parse --show-toplevel)"
+[ "$WS" = "$VP/VERIFY-$T8" ] || die "workspace toplevel is $WS, not $VP/VERIFY-$T8."
+PID="$(verify_pid "$T8")"                                        # = project_id(WS), cc-isolated.sh:372-374
 HPID="$(printf '%s' "$REPO_TOP" | sha256sum | cut -c1-12)"
-printf 'PID=%s\n' "$PID" >> "$V/run-$RUN.env"
 [ "$(basename "$WS")" = "VERIFY-$T8" ] || die "workspace basename is $(basename "$WS"), not VERIFY-$T8."
 [ "$PID" != "$HPID" ] || die "verify project id equals $REPO_TOP's ($HPID)."
 [ -z "$(docker ps -aq --filter "label=cc-project=$PID" </dev/null)" ] || die "a container already carries label cc-project=$PID."
@@ -276,21 +328,28 @@ snapshot before
 SNAP=1
 say "6. register $PROFILE in the stage (main's launcher, CLAUDE_DEVC_CONFIG_DIR=stage); log: $LOG"
 CLAUDE_DEVC_CONFIG_DIR="$S" "$LAUNCHER" --register "$WS" --profile "$PROFILE" >"$LOG" 2>&1 </dev/null \
-  || { tail -n 20 "$LOG" >&2; die "--register failed (log above)."; }
+  || { tail -n 20 "$LOG" | vis >&2; die "--register failed (log above)."; }
 [ "$(cat "$S/projects/$PID.profile" 2>/dev/null)" = "$PROFILE" ] \
   || die "the launcher did not write $S/projects/$PID.profile: its project id differs from this spike's."
-HASH="$(sha256sum < "$S/manifest.sha256" | cut -c1-16)"       # = blessed_hash, cc-isolated.sh:89-94
+# What the bless hashed must still be main's copies: a stage edit between step 3 and the bless
+# would otherwise be blessed, and check_manifest would then confirm it.
+for i in "${PINNED[@]}"; do
+  want="$(sha256sum < "$MAIN_CFG/$i" | cut -d' ' -f1)"
+  have="$(awk -v f="$i" '$2 == f { print $1 }' "$S/manifest.sha256")"
+  [ "$have" = "$want" ] || die "the stage's blessed $i is not main's installed copy (changed after step 3)."
+done
+HASH="$(sha256sum < "$S/manifest.sha256" | cut -c1-16)"       # = blessed_hash, cc-isolated.sh:88-93
 echo "   stage blessed: config $HASH"
 say "7. --probe-only (builds the image, boots the branch firewall, runs the self-probe)"
-CLAUDE_DEVC_CONFIG_DIR="$S" "$LAUNCHER" --probe-only "$WS" </dev/null 2>&1 | tee -a "$LOG" \
+CLAUDE_DEVC_CONFIG_DIR="$S" "$LAUNCHER" --probe-only "$WS" </dev/null 2>&1 | relay >> "$LOG" \
   || die "--probe-only failed (output above)."
 [ "$(tr -d '[:space:]' < "$S/verified-live.sha256" 2>/dev/null)" = "$HASH" ] \
   || die "no verified-live receipt for $HASH in the stage."
 cids="$(docker ps -aq --no-trunc --filter "label=cc-project=$PID" </dev/null)"
 [ "$(printf '%s\n' "$cids" | grep -c .)" = 1 ] || die "expected exactly one container labelled cc-project=$PID, found: $cids"
-IMG="$(docker inspect -f '{{.Image}}' "$cids" </dev/null)"
-if ! grep -q " $IMG\$" "$V/snap-$RUN-before/images"; then IMG_NEW=1; printf 'IMG=%s\n' "$IMG" >> "$V/run-$RUN.env"; fi
-echo "   container ${cids:0:12}, image ${IMG:7:12} (new: $IMG_NEW)"
+img="$(docker inspect -f '{{.Image}}' "$cids" </dev/null)"
+new=yes; if grep -q " $img\$" "$V/snap-$RUN-before/images"; then new=no; fi
+echo "   container ${cids:0:12}, image ${img:7:12} (new: $new)"
 
 # --- 8. Q-117's container block, verbatim (questions-archive.md, Q-117) -------------------
 say "8. Q-117 container block (up to ~45 min: waits for a dl.google.com pool rotation)"
@@ -312,7 +371,7 @@ Q117BLOCK
 )"
 export CC_PROJECT_ID="$PID" CC_PROJECT_NAME="VERIFY-$T8" CC_EGRESS_PROFILE="$PROFILE" CC_CONFIG_DIR="$S" CC_CONFIG_HASH="$HASH"
 out="$(devcontainer exec --workspace-folder "$WS" --override-config "$S/devcontainer.json" \
-         --id-label "cc-project=$PID" bash -c "$Q117" </dev/null 2>&1 | tee /dev/stderr)" \
+         --id-label "cc-project=$PID" bash -c "$Q117" </dev/null 2>&1 | relay)" \
   || die "devcontainer exec of the Q-117 block failed."
 
 # --- 9. verdict (Q-117's own pass rule) --------------------------------------------------
@@ -323,8 +382,9 @@ printf '%s\n' "$out" | grep -qx 'dnsmasq instances (expect 2): 2' || v=fail
 printf '%s\n' "$out" | grep -qx 'fetch 1 (expect 200): 200' || v=fail
 printf '%s\n' "$out" | grep -qx 'fetch 2 (expect 200): 200' || v=fail
 printf '%s\n' "$out" | grep -qx 'FAIL lines for dl.google.com (expect 0): 0' || v=fail
-if [ -z "$first" ] || [ "$first" = NONE ]; then v=fail
-elif printf ' %s ' "$pool" | grep -qF " $first "; then v=no-rotation; fi
+if [ -z "$first" ] || [ "$first" = NONE ]; then v=fail; fi
+# "Rerun later" only when nothing else failed: a FAIL line or a bad fetch stays a fail.
+if [ "$v" = pass ] && printf ' %s ' "$pool" | grep -qF " $first "; then v=no-rotation; fi
 echo "RESULT Q-117 $v (tree $TREE, config $HASH)"
 case "$v" in
   pass) exit 0 ;;
@@ -332,45 +392,45 @@ case "$v" in
   *) exit 1 ;;
 esac
 CCVERIFY
-bash ~/cc-verify/spike-q117.sh ~/claude-workflows    # EDIT: your host checkout of claude-workflows
+bash ~/cc-verify/spike-q117.sh ~/claude-workflows
 ```
 
 If anything kills the run before its trap fires (a `kill -9`, a closed terminal, a power cut), run `bash ~/cc-verify/spike-q117.sh --clean`. The next run refuses to start until you have. Afterwards `rm -r ~/cc-verify` removes the script and the kept logs.
 
 ## Expected output on success
 
-These are the lines that matter, in order; long launcher output in between is elided (`…`). `<…>` stands for run-specific values.
+These are the lines that matter, in order. Long output in between is elided (`…`), and `<…>` stands for run-specific values. Every line the launcher or the container prints is shown indented under `  | `, with control bytes removed. So only the script's own lines can start with `RESULT`, `CHECK` or `REFUSED`.
 
 ```
 == 1. merge check: main + fix/egress-dnsmasq-ipset
-   main=<12 hex>  fix/egress-dnsmasq-ipset=<12 hex>  merged tree=<40 hex>
-== 2. stage -> ~/cc-verify/stage-<TREE8>
+   main=<12 hex>  fix/egress-dnsmasq-ipset=b26d4b8b23aa  merged tree=<40 hex>
+== 2. stage -> <home>/cc-verify/stage-<TREE8>
 == 3. devcontainer.json gate
-   identical to ~/.config/claude-devcontainer/devcontainer.json (runArgs, mounts, lifecycle commands unchanged)
+   devcontainer.json and Dockerfile identical to main's installed copies (runArgs, mounts, lifecycle commands, base image unchanged)
    staged files that differ from main's install (expect init-firewall.sh; more if main's install is behind main):
      init-firewall.sh
      claude-home
-== 4. workspace -> ~/cc-verify/VERIFY-<TREE8>
+== 4. workspace -> <home>/cc-verify/VERIFY-<TREE8>
    project id <PID> (your checkout's is <other 12 hex>); container label cc-project=<PID>; volumes cc-<PID>-*
 == 5. snapshot before
-== 6. register android in the stage (main's launcher, CLAUDE_DEVC_CONFIG_DIR=stage); log: ~/cc-verify/log-<RUN>.txt
+== 6. register android in the stage (main's launcher, CLAUDE_DEVC_CONFIG_DIR=stage); log: <home>/cc-verify/log-<RUN>.txt
    stage blessed: config <16 hex>
 == 7. --probe-only (builds the image, boots the branch firewall, runs the self-probe)
-NOTE: blessed config <16 hex> has NOT been verified in a live container.
-…  (devcontainer build and start output)
-Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared · image from central Dockerfile · config <16 hex> · firewall complete).
-Recorded config <16 hex> as verified live in ~/cc-verify/stage-<TREE8>/verified-live.sha256.
-   container <12 hex>, image <12 hex> (new: 1)
+  | NOTE: blessed config <16 hex> has NOT been verified in a live container.
+  | …  (devcontainer build and start output)
+  | Boundary self-probe passed (canary invisible · egress default-deny · workspace identity · volume not shared · image from central Dockerfile · config <16 hex> · firewall complete).
+  | Recorded config <16 hex> as verified live in <home>/cc-verify/stage-<TREE8>/verified-live.sha256.
+   container <12 hex>, image <12 hex> (new: yes)
 == 8. Q-117 container block (up to ~45 min: waits for a dl.google.com pool rotation)
-firewall marker: <the marker's content>
-dnsmasq instances (expect 2): 2
-fetch 1 (expect 200): 200
-first ALLOW address: <A>
-waiting for the pool to drop <A> (polls every 30 s, gives up after 45 min)...
-pool now: <addresses, not including A>
-fetch 2 (expect 200): 200
-FAIL lines for dl.google.com (expect 0): 0
-<up to 5 proxy-log lines for dl.google.com>
+  | firewall marker: <the marker's content>
+  | dnsmasq instances (expect 2): 2
+  | fetch 1 (expect 200): 200
+  | first ALLOW address: <A>
+  | waiting for the pool to drop <A> (polls every 30 s, gives up after 45 min)...
+  | pool now: <addresses, not including A>
+  | fetch 2 (expect 200): 200
+  | FAIL lines for dl.google.com (expect 0): 0
+  | <up to 5 proxy-log lines for dl.google.com>
 RESULT Q-117 pass (tree <40 hex>, config <16 hex>)
 == teardown
 CHECK main install untouched: ok
@@ -382,12 +442,13 @@ CHECK verify container gone: ok
 RESULT spike-q117 exit=0
 ```
 
-`claude-home` shows under "differ" whenever main's installed payload predates the merged tree's (its `.manifest` alone differs). A `NOTE created during the run and still present` block lists containers, volumes or images that appeared during the run and that the trap did not recognise as its own. That is either another session's work or a leftover from the build (the devcontainer CLI's image naming is unverified, below). It is a note, not a failure.
+`claude-home` shows under "differ" whenever main's installed payload predates the merged tree's; its `.manifest` alone differs. A `NOTE created during the run and still present` block lists containers, volumes or images that appeared during the run and that the trap did not recognise as its own: either another session's work, or a build leftover (the devcontainer CLI's image naming is unverified, below). It is a note, not a failure.
 
 Exit status, also printed as `RESULT spike-q117 exit=<n>`:
 - `0`: Q-117 passed and every CHECK is ok.
-- `2`: the pool did not rotate within 45 min. This is Q-117's own "run again later" case.
-- `1`: anything else: a refusal, a Q-117 fail, a failed CHECK, or an incomplete teardown, which also prints the `--clean` fallback.
+- `2`: nothing failed, but the pool did not rotate within 45 min. Q-117's own rule says run again later.
+- `130`: interrupted (Ctrl-C, TERM, HUP). The trap still tears down.
+- `1`: anything else: a refusal, a Q-117 fail, a failed CHECK, or an incomplete teardown (which also prints the `--clean` fallback).
 
 **What to paste back:** the `RESULT` lines, every `CHECK` line, and the `NOTE` block if one appeared. On a refusal, the `REFUSED:` line.
 
@@ -395,51 +456,64 @@ Exit status, also printed as `RESULT spike-q117 exit=<n>`:
 
 | Step | Command in the script | Why it is right (source) |
 |---|---|---|
-| preflight | refuses with `CLAUDECODE` set, with `CLAUDE_DEVC_CONFIG_DIR` already set, or without `git docker devcontainer …` | `CLAUDECODE` mirrors install.sh's target-2 rule (decision 037). An inherited `CLAUDE_DEVC_CONFIG_DIR` would change which config is "main's" (cc-isolated.sh:68-70). |
+| preflight | `unset GH_TOKEN OPENROUTER_API_KEY` | devcontainer.json forwards both from the launching shell into the container (`containerEnv`). A container running branch code gets neither. |
+| preflight | refuses with `CLAUDECODE` set, with `CLAUDE_DEVC_CONFIG_DIR` already set, or without `git docker devcontainer …`; checks `docker info` | `CLAUDECODE` mirrors install.sh's target-2 rule (decision 037). An inherited `CLAUDE_DEVC_CONFIG_DIR` would change which config is "main's" (cc-isolated.sh:68-70). |
 | preflight | `cc-isolated` on PATH must resolve to `~/.config/claude-devcontainer/cc-isolated.sh` | install.sh links it there (install.sh:598, defaults :1310-1311). |
-| preflight | a leftover `run-*.env` refuses the run | so a crashed run is cleaned before a new one reuses names |
-| 1 | `git clone --bare --no-local` of your checkout; every later git call with `-c core.hooksPath=/dev/null -c core.fsmonitor=false` | A bare clone copies objects and refs only: no `.git/config` filters, merge drivers, attributes or hooks. Those are what install.sh's `git_state_gate` refuses in the checkout (install.sh:209-252; decision 037 "The checkout's git state"). The flags match `repo_git` (install.sh:180-182). |
-| 1 | `git merge-tree --write-tree --name-only main fix/egress-dnsmasq-ipset`: exit 1 refuses with the conflict list, any other non-zero refuses as "needs git ≥ 2.38" | The first-match check. Nothing outside `~/cc-verify` exists yet, and the trap removes the clone. Verified in the sandbox: today it is clean (tree `65e65962…`), and `feat/q125-cc-isolated-sandbox` is refused on `hooks/live-verify-gate.sh`. |
-| 2 | refuses unless the merged tree's `install.sh` has exactly the `PAYLOAD=(…)` and `CLAUDE_HOME_SRC=(…)` lines the spike stages | install.sh:110 and :135. The egress branch does not touch install.sh. |
-| 2 | `git archive <tree> -- devcontainer-config global-instructions/CLAUDE.md skills … scripts \| tar -x`; refuses any symlink | Same sources and the same no-symlink rule as `extract_commit` (install.sh:257-317, the symlink refusal at :288). |
-| 2 | layout: the 10 PAYLOAD files and dirs at the stage root, `claude-home/` built from `CLAUDE.md` and the six dirs, a `.manifest`, `chmod +x` on three scripts | Matches `install_devcontainer` (install.sh:471-508), `assemble`'s `.manifest` keys (:356-361) and install.sh:596. The Dockerfile copies `claude-home/` (Dockerfile:500), `egress/` (:486) and the scripts (:487-491) from the build context, which is `CC_CONFIG_DIR` (devcontainer.json:24-26). |
-| 3 | refuses if the staged `devcontainer.json` contains `initializeCommand`, or differs **at all** from `~/.config/claude-devcontainer/devcontainer.json` (shows `diff -u`) | Stricter than "refuse runArgs/mounts/initializeCommand changes". devcontainer.json is JSONC, so a line diff cannot reliably tell those keys from others. Any difference refuses. main's copy has no `initializeCommand`, and its runArgs (devcontainer.json:58-69) and mounts (:77-80) are the reviewed ones. The egress branch does not change the file. |
-| 4 | `git clone --no-local` into `~/cc-verify/VERIFY-<TREE8>`; PID = `printf %s <toplevel> \| sha256sum \| cut -c1-12` | `resolve_workspace` uses `git rev-parse --show-toplevel` (cc-isolated.sh:354-367), and `project_id` is that exact pipeline (cc-isolated.sh:372-374). The display name is `basename` of the workspace (cc-isolated.sh:814 → devcontainer.json:22), so it reads `VERIFY-<TREE8>`. |
-| 4 | refuses if PID equals your checkout's, or any container already has label `cc-project=<PID>`, or any `cc-<PID>-*` volume exists | The launcher selects the container by `--id-label cc-project=$pid` (cc-isolated.sh:836) and names volumes `cc-${CC_PROJECT_ID}-…` (devcontainer.json:78-79). A fresh PID means `--remove-existing-container` (cc-isolated.sh:883) can only hit this run's container. |
-| 5 | snapshot `docker ps -a`, `docker volume ls`, `docker image ls`, sha256 of main's `manifest.sha256`, `host-tools.sha256`, `verified-live.sha256`, and `readlink -f` of `~/.local/bin/cc-isolated` and `cc-push` | DD constraint H2's observable. |
-| 6 | `CLAUDE_DEVC_CONFIG_DIR=<stage> ~/.config/claude-devcontainer/cc-isolated.sh --register <ws> --profile android` | Flag syntax: cc-isolated.sh:9-11 and :736, guide `cc-isolated-usage.md:23,537`. `register_project` checks `$(config_dir)/egress/android.txt`, writes `$(config_dir)/projects/<pid>.profile` and re-blesses (cc-isolated.sh:434-480). `bless_manifest` writes only under `config_dir` (cc-isolated.sh:281-319). The script then checks that `stage/projects/<PID>.profile` exists, which proves the launcher computed the same PID. |
-| 6 | stage hash = `sha256sum < stage/manifest.sha256 \| cut -c1-16` | = `blessed_hash` (cc-isolated.sh:88-93). |
-| 7 | `CLAUDE_DEVC_CONFIG_DIR=<stage> …/cc-isolated.sh --probe-only <ws>`, then requires `stage/verified-live.sha256` = that hash | The probe action always rebuilds (cc-isolated.sh:880-885), runs `probe_boundary` (:577-705), and only a full pass calls `record_verified_live` into `config_dir` (:113-115, :702). Main's launcher loads host code only from its own directory (cc-isolated.sh:714-718; the pre-Q-089 launcher also did, `source "$(dirname …BASH_SOURCE…)/cc-exit-scan.sh"`). So the stage's copies of `cc-isolated.sh` and the host tools are hashed but never executed. They are staged because `enforcement_files`/`host_tool_files` (cc-isolated.sh:128-151, :199-203) and the bless need them present. |
-| 7 | exactly one container with the label; records its image id, and marks it removable only if that id is not in the "before" snapshot | `docker inspect -f '{{.Image}}'` |
+| preflight | a leftover `run-*.env` refuses the run | so a crashed run is cleaned before a new one reuses its names |
+| 1 | `git -c core.hooksPath=/dev/null clone --bare --no-local --template=` of your checkout. Later git calls go through `git --no-optional-locks -C <clone> -c core.hooksPath=/dev/null -c core.fsmonitor=false` | The clone copies objects and refs: no `.git/config` filters or merge drivers, no `info/attributes`, no hooks (`--template=` copies none). Those are what install.sh's `git_state_gate` refuses in the checkout (install.sh:209-252; decision 037 "The checkout's git state"). The flags match `repo_git` (install.sh:180-182). The run record and this clone are the only things created before the merge check, and the trap removes both. |
+| 1 | the branch must resolve to the reviewed commit `b26d4b8b23aa…` (`EXPECT_BR`) | Ties the run to what this doc reviewed. A ref moved in the checkout's `.git`, which a cc-isolated container can write, refuses the run (review security F2). |
+| 1 | `git merge-tree --write-tree --name-only main <branch>`: exit 1 refuses and lists the conflicts; any other non-zero refuses as "needs git ≥ 2.38" | The first-match check. Verified in the sandbox: today the merge is clean (tree `65e65962…`, the same tree a real `git merge` produces), and `feat/q125-cc-isolated-sandbox` is refused on `hooks/live-verify-gate.sh`. |
+| 1 | `git diff-tree -r --name-only <main> <tree>` may list only the branch's five paths | Everything else in the stage is main's committed content. `main` itself is still resolved by name. What reaches the docker daemon from it is pinned in step 3. |
+| 2 | refuses unless the merged tree's `install.sh` has exactly the `PAYLOAD=(…)` and `CLAUDE_HOME_SRC=(…)` lines the spike stages, read into a variable first (no `git show \| grep -q` under pipefail) | install.sh:110 and :135. The variable avoids SIGPIPE: install.sh is larger than a pipe buffer, and the review reproduced spurious refusals with the pipe (fact-check claim 6). |
+| 2 | `git archive <tree> -- devcontainer-config global-instructions/CLAUDE.md skills … scripts \| tar -x`; refuses any symlink | The same sources and the same no-symlink rule as `extract_commit` (install.sh:257-317, the symlink refusal at :288). |
+| 2 | layout: the 10 PAYLOAD files and dirs at the stage root, `claude-home/` built from `CLAUDE.md` and the six dirs, a `.manifest`, `chmod +x` on three scripts | Matches `install_devcontainer` (install.sh:471-508), `assemble`'s `.manifest` keys (:356-361) and install.sh:596. The Dockerfile copies `claude-home/` (Dockerfile:500), `egress/` (:486) and the scripts (:487-491) from the build context, which is `CC_CONFIG_DIR` (devcontainer.json:24-26). The review checked that the current launcher and the pre-Q-089 launcher both bless and check a stage built this way. |
+| 3 | refuses if the staged `devcontainer.json` names `initializeCommand`, or if the staged `devcontainer.json` **or `Dockerfile`** differs at all from main's installed copy (shows `diff -u`) | These two files are what the docker daemon runs with. devcontainer.json carries runArgs (devcontainer.json:58-69), mounts (:77-80) and lifecycle commands. The Dockerfile is pinned too because its base image's `devcontainer.metadata` label can add privileged, capAdd, securityOpt and mounts to the run config, and its `# syntax=` line and `RUN` options reach BuildKit (review security F1). Whole-file identity is stricter than "refuse runArgs/mounts changes": devcontainer.json is JSONC, so a line diff cannot reliably isolate keys. The other staged files are either built into the image as the code under test (`init-firewall.sh`, `cc-sni-proxy.py`, `link-claude-home.sh`, `egress/`, `claude-home/`) or host tools this spike never executes (below). |
+| 4 | `git … clone --no-local --template=` (hooks and fsmonitor off) into `~/cc-verify/VERIFY-<TREE8>`; its toplevel must equal `<physical ~/cc-verify>/VERIFY-<TREE8>`; PID = `printf %s <that path> \| sha256sum \| cut -c1-12` | `resolve_workspace` uses `git rev-parse --show-toplevel` (cc-isolated.sh:354-367), and `project_id` is that exact pipeline (cc-isolated.sh:372-374). The display name is `basename` of the workspace (cc-isolated.sh:814 → devcontainer.json:22), so it reads `VERIFY-<TREE8>`. |
+| 4 | refuses if PID equals your checkout's, if any container already carries label `cc-project=<PID>`, or if any `cc-<PID>-*` volume exists | The launcher selects the container by `--id-label cc-project=$pid` (cc-isolated.sh:836) and names volumes `cc-${CC_PROJECT_ID}-…` (devcontainer.json:78-79). With a fresh PID, `--remove-existing-container` (cc-isolated.sh:883) can only hit this run's container. |
+| 5 | snapshot (the list under "What the run checks") | DD constraint H2's observable, widened to the whole config dir after review (fact-check claim 3) |
+| 6 | `CLAUDE_DEVC_CONFIG_DIR=<stage> ~/.config/claude-devcontainer/cc-isolated.sh --register <ws> --profile android` | Flag syntax: cc-isolated.sh:9-11 and :736; guide `cc-isolated-usage.md:23,537`. `register_project` checks `$(config_dir)/egress/android.txt`, writes `$(config_dir)/projects/<pid>.profile` and re-blesses (cc-isolated.sh:434-480). `bless_manifest` writes only under `config_dir` (cc-isolated.sh:281-319). The script then requires `stage/projects/<PID>.profile`, which proves the launcher computed the same PID. |
+| 6 | after the bless, the stage manifest's `devcontainer.json` and `Dockerfile` hashes must equal main's installed copies'; stage hash = `sha256sum < stage/manifest.sha256 \| cut -c1-16` | Closes the window between step 3 and the bless (review security F3). From then on, `check_manifest` at `--probe-only` (cc-isolated.sh:332-350) holds the stage to what was blessed. The hash is `blessed_hash` (cc-isolated.sh:88-93). |
+| 7 | `CLAUDE_DEVC_CONFIG_DIR=<stage> …/cc-isolated.sh --probe-only <ws>`; then requires `stage/verified-live.sha256` = that hash | The probe action always rebuilds (cc-isolated.sh:880-885) and runs `probe_boundary` (:577-705). Only a full pass calls `record_verified_live` into `config_dir` (:113-115, :702). Main's launcher loads host code only from its own directory (cc-isolated.sh:714-718), and so did the pre-Q-089 launcher (`source "$(dirname …BASH_SOURCE…)/cc-exit-scan.sh"`). So the stage's copies of `cc-isolated.sh` and the host tools are hashed but never executed. They are staged because `enforcement_files`/`host_tool_files` (cc-isolated.sh:128-151, :199-203) and the bless need them present. The review confirmed that the launcher, run against the stage, executes no staged file and writes only under it. |
+| 7 | exactly one container with the label; reports whether its image is new | `docker inspect -f '{{.Image}}'` |
 | 8 | exports `CC_PROJECT_ID CC_PROJECT_NAME CC_EGRESS_PROFILE CC_CONFIG_DIR CC_CONFIG_HASH`, then `devcontainer exec --workspace-folder <ws> --override-config <stage>/devcontainer.json --id-label cc-project=<PID> bash -c "$Q117"` | Exactly the five variables `rebuild_hint` says the by-hand CLI needs (cc-isolated.sh:561-563), and the same `dc` args the launcher uses (:834-836). `bash -c` with the block as one argument is how the probe runs in-container scripts (cc-isolated.sh:608). stdin is `/dev/null`, so nothing reads the rest of the script. |
-| 8 | Q-117's container block, verbatim | questions-archive.md:2463-2475 (checked byte for byte). It runs as `remoteUser: node` (devcontainer.json:71). node can read the proxy log: on the branch, `/run/cc-sni-proxy` is 0755 (`init-firewall.sh:1392-1393` on the branch) and the log is opened 0644 (`cc-sni-proxy.py:260`). The `ALLOW sni=… -> <ip>:<port>` field order is the proxy's (`cc-sni-proxy.py:207`). dl.google.com is only in `egress/android.txt`. |
-| 9 | verdict = Q-117's own rule: 2 instances, both fetches 200, 0 FAIL lines, the first ALLOW address absent from "pool now"; exit 2 when it never rotated | questions-archive.md:2478 |
-| trap | removes the label's containers, the two named volumes, the recorded image (only if new), images tagged `verify-<TREE8>`, then the stage, workspace and clone. Paths are rebuilt from `RUN` and `TREE8`, never read from a file. `--clean` reads only format-checked `RUN`/`T8`/`PID`/`IMG` from `run-*.env`. | So a planted `run-*.env` cannot steer `rm -rf` outside `~/cc-verify`, or `docker rm` outside one 12-hex label |
+| 8 | Q-117's container block, verbatim | questions-archive.md:2463-2475 (byte for byte). It runs as `remoteUser: node` (devcontainer.json:71). node can read the proxy log: on the branch, `/run/cc-sni-proxy` is 0755 (`init-firewall.sh:1392-1393` on the branch) and the log is opened 0644 (`cc-sni-proxy.py:260`). The `ALLOW sni=… -> <ip>:<port>` field order is the proxy's (`cc-sni-proxy.py:207`). dl.google.com is only in `egress/android.txt`. |
+| 7-8 | launcher and container output goes through `relay`: control bytes (all but tab and newline) are dropped, and each line is shown under `  \| ` | Branch code builds and boots this container, so its output cannot rewrite the terminal, set the clipboard through OSC 52, or print a line that looks like the script's `RESULT`/`CHECK` (review security F8). |
+| 9 | verdict = Q-117's own rule: 2 instances, both fetches 200, 0 FAIL lines, the first ALLOW address absent from "pool now". `no-rotation` (exit 2) applies only when nothing else failed | questions-archive.md:2478. The ordering was fixed in review: a real failure used to report as "rerun later" (fact-check claim 9a). |
+| trap / `--clean` | Removes the label's containers, then the two named volumes, then the containers' images (only if new and unused), then images tagged `verify-<TREE8>`, then the stage, workspace and clone. Every name is derived from `RUN` and `TREE8`, format-checked; the project id is recomputed from `~/cc-verify/VERIFY-<TREE8>`. | A planted `run-*.env` can name only a `VERIFY-<8 hex>` path under `~/cc-verify`, and only this script creates those. It cannot point `docker rm` or `volume rm` at another project, or `image rm` at an image no verify container ran (review fact-check claim 24b, security F4; reproduced before the fix, re-tested after). The `verify-<TREE8>` tag rule can also remove an image left by an earlier crashed run of the same tree. That is intended. |
 
 ## What was tested here, without a host
 
-The sandbox has no docker, and nothing ran for real. The script was run end to end in a scratch `HOME` with fake `docker` and `devcontainer` commands on PATH. The fake devcontainer records `up`, creates a labelled container, two volumes and an image, and answers the probe's in-container checks. The real main launcher from `main` was installed into the fake `~/.config/claude-devcontainer` and blessed there, so steps 6-7 ran main's real `--register`, `bless_manifest`, `check_manifest` and `probe_boundary` against the stage. Results:
+The sandbox has no docker, and nothing ran for real. The script was run end to end in a scratch `HOME`, with fake `docker` and `devcontainer` commands on PATH. The fake devcontainer records `up`, creates a labelled container, two volumes and an image, and answers the probe's in-container checks. The real main launcher from `main` was installed into the fake `~/.config/claude-devcontainer` and blessed there. So steps 6-7 ran main's real `--register`, `bless_manifest`, `check_manifest` and `probe_boundary` against the stage. After the review fixes:
 
-- pass path: `RESULT Q-117 pass`, every `CHECK` ok, exit 0. A pre-existing "harness" container, volume and image survived. Main's manifests and bin link were unchanged.
-- a branch that conflicts (`feat/q125-cc-isolated-sandbox` swapped in): refused at step 1 on `hooks/live-verify-gate.sh`, with no docker call made.
-- a `devcontainer.json` difference (`--privileged` added on one side): diff shown, refused at step 3.
-- a Q-117 failure (3 FAIL lines): `RESULT Q-117 fail`, teardown and CHECKs ok, exit 1. No rotation: exit 2.
-- `kill -9` during step 8: container, volumes, image, stage, clone and run record left behind. The next run refused, `--clean` removed exactly those, and the harness's objects survived.
-- `bash -n` and `shellcheck -S warning` are clean.
+- **Pass path:** `RESULT Q-117 pass`, every `CHECK` ok, exit 0. A pre-existing "harness" container, volume and image survived. Main's config dir, manifests and bin link were unchanged.
+- **Refusals:**
+  - a branch that conflicts (`feat/q125-cc-isolated-sandbox` swapped in, with its own `EXPECT_BR`): refused at step 1 on `hooks/live-verify-gate.sh`, with no docker call besides the preflight `docker info`;
+  - a moved branch (`EXPECT_BR` mismatch): refused at step 1;
+  - a `devcontainer.json` difference (`--privileged` added) and a `Dockerfile` difference: each refused at step 3, with the diff shown.
+- **Failures:** 3 FAIL lines gave `RESULT Q-117 fail` with teardown and CHECKs ok, exit 1. That stayed `fail`, not `no-rotation`, even when the pool also did not rotate. No rotation alone gave exit 2.
+- **Forged output:** a container line `RESULT Q-117 pass`, and one carrying ESC/CR bytes, were shown indented and stripped. The real verdict line followed, unchanged.
+- **Planted run record:** a `run-*.env` naming the harness's project id and image removed nothing.
+- **Crash:** `kill -9` during step 8 left the container, volumes, image, stage, clone and run record. The next run refused, `--clean` removed exactly those, and the harness's objects survived.
+- `bash -n` and `shellcheck -S warning` are clean. The paste round-trips byte for byte into `~/cc-verify/spike-q117.sh` under bash and `zsh -f`.
 
 ## Not verified (needs the host run)
 
-1. **Image naming** (research §7). The trap removes the container's image by id when it is new, and any image whose tag contains `verify-<TREE8>`, on the assumption that the devcontainer CLI tags images after the lower-cased workspace folder. If that is wrong, the build's base image may be left behind: it shows under `NOTE … still present`, nothing deletes it, and you remove it by id. If the CLI *retags* an image that existed before, `CHECK no pre-existing image tag moved or removed` fails. That would be the claim refuted.
-2. **Main's launcher on a stage dir** (research §7): steps 6-7 are the test. Exercised against the real launcher in the sandbox, but not with the real CLI and dockerd.
-3. **The devcontainer CLI and the five exported variables** for `exec`: taken from `rebuild_hint` (cc-isolated.sh:561-563), not observed. A failure shows as `REFUSED: devcontainer exec of the Q-117 block failed.`
-4. **`devcontainer exec` passes the inner exit status back**, and `docker image ls --format '{{.ID}} {{.Repository}}:{{.Tag}}'` behaves as in current docker. Both assumed.
+1. **Image naming** (research §7). The trap removes the image the verify container ran (if new and unused), plus any image whose tag contains `verify-<TREE8>`. The second rule assumes the devcontainer CLI tags images after the lower-cased workspace folder. If that is wrong, an intermediate base image may be left behind: it shows under `NOTE … still present`, nothing deletes it, and you remove it by id. If the CLI *retags* an image that existed before, `CHECK no pre-existing image tag moved or removed` fails. That would be the claim refuted.
+2. **Main's launcher on a stage dir** (research §7): steps 6-7 are the test. They were exercised against the real launcher in the sandbox, but not with the real CLI and dockerd.
+3. **The devcontainer CLI's `exec`** with the five exported variables, taken from `rebuild_hint` (cc-isolated.sh:561-563) and not observed. A failure shows as `REFUSED: devcontainer exec of the Q-117 block failed.`
+4. **`devcontainer exec` passes the inner exit status back.** Assumed. So is `docker ps --filter ancestor=<image id>` listing the containers that use an image.
 5. **git ≥ 2.38 on the host**, for `merge-tree --write-tree`. Without it, step 1 refuses.
-6. **`devcontainer read-configuration`** (research §7): not used. The whole-file identity rule in step 3 replaces it.
-7. **The build's network and time.** Base layers are probably cache-shared with main's image, since the Dockerfile is identical apart from the `CC_EGRESS_PROFILE`/`CC_CONFIG_HASH` args in the per-project tail. Not measured.
+6. **`devcontainer read-configuration`** (research §7): not used. The whole-file pin in step 3 replaces it.
+7. **The CLI merging a base image's `devcontainer.metadata` label** into the run config is taken from the dev container spec, not observed. The Dockerfile pin makes it moot here.
+8. **The build's network and time.** Base layers are probably cache-shared with main's image, because the Dockerfile is identical. Not measured.
 
 ## Residual risks (accepted for a spike)
 
-- **Stage swapped between review and build.** A same-uid process could rewrite a stage file after step 3. Main's launcher hashes the stage's enforcement files at bless and at `--probe-only` (cc-isolated.sh:332-350), which covers `devcontainer.json`, `Dockerfile` and `init-firewall.sh`. A swap-and-revert inside that window stays open, as for install target 1 (decision 037). cc-isolated agents cannot reach `~/cc-verify`.
-- **A filter driver in your global `~/.gitconfig`** assigned by a committed `.gitattributes` would run during `git archive` and `git clone`. This is the residual install.sh also carries (decision 037).
+- **The verdict is attested by the code under test.** The branch's `init-firewall.sh` runs as root in the container before the Q-117 block, so a hostile branch could fake the block's output. Main's own probe has the same trust shape. What the paste guarantees is that the branch reaches only the container, not the host. The review is what judges the branch's code (review security F5).
+- **`main` is resolved by name** from the checkout's `.git`, which a cc-isolated container can write. Pinning the branch, the five-path rule and the step-3 pins mean a planted `main` can change only what is built *into* the image: it cannot change how the container is run or built. The verdict would then be about the wrong code, not a host compromise.
+- **The stage after `check_manifest`.** A same-uid process could rewrite a stage file between the launcher's `check_manifest` and the docker build reading it. That is the same swap window decision 037 accepts for install target 1. cc-isolated agents cannot reach `~/cc-verify`.
+- **git and global config.** A filter or merge driver defined in your global `~/.gitconfig`, and assigned by a committed `.gitattributes`, would run during `git archive`, `merge-tree` or `git clone`. That is install.sh's residual too (decision 037). `git clone --no-local` runs `upload-pack` against your checkout, which reads that repository's config; `uploadpack.packObjectsHook` is honoured only from protected (global/system) config.
+- **8-bit control bytes** (C1, e.g. 0x9b CSI) are not stripped, because stripping them would mangle UTF-8 text. Only terminals in 8-bit mode act on them.
+- **A leftover `VERIFY-<TREE8>`** after an incomplete teardown has a `.git` that branch code could have written. Do not run git or a git-aware prompt there; run `--clean` (review security F7).
 - **An agent running the paste.** The `CLAUDECODE` refusal stops accidents only. An agent with host docker access already has more than this script gives it.
-- **The verdict covers the merge tree, not the branch tip.** That is deliberate (DD H6). Merging must produce the same tree for the verdict to carry over. With no main commits in between, a clean `git merge` gives exactly this tree.
+- **The verdict covers the merge tree, not the branch tip.** That is deliberate (DD H6). A clean `git merge` of this branch into an unchanged main produces exactly this tree.
