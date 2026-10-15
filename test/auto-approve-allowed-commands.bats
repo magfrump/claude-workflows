@@ -225,12 +225,17 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 }
 
 @test "an unparseable project settings.json fails closed even when settings.local.json is well formed" {
-  # The global file sorts first and holds a rule, so jq prints it before the
-  # project file's error: load_rules must discard it.
   echo '{"permissions":{"allow":["Bash(cat:*)"]}}' > "$HOME/.claude/settings.json"
   echo '{"permissions":{"allow":["Bash(cat:*)"],}' > "$PROJECT/.claude/settings.json"
   echo '{"permissions":{"allow":["Bash(cat:*)"]}}' > "$PROJECT/.claude/settings.local.json"
 
+  run run_hook 'cat notes.txt'
+  not_approved
+
+  # A shape error, unlike a parse error, comes after jq has printed the global
+  # file's rule (it reads every document first, then emits file by file), so
+  # load_rules must discard that partial output.
+  echo '{"permissions":{"allow":"Bash(cat:*)"}}' > "$PROJECT/.claude/settings.json"
   run run_hook 'cat notes.txt'
   not_approved
 }

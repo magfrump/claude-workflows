@@ -1,10 +1,14 @@
-Commit: c9ff3e84
+Commit: d6395450
+Loop closed at d6395450
 
 # Code Review Rubric
 
-**Scope:** fix/q092-drop-hook-deny-reader, unit 2 `1a831ffe..ed06dec1` (stacked on unit 1); pass 1 `1a831ffe..ed06dec1`, pass 2 delta `ed06dec1..c9ff3e84` (fact-check at 72b8c825, critics at c9ff3e84) (`--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 3 amber addressed in the next commit
+**Scope:** fix/q092-drop-hook-deny-reader, unit 2 `1a831ffe..ed06dec1` (stacked on unit 1); pass 1 `1a831ffe..ed06dec1`, pass 2 delta `ed06dec1..c9ff3e84` (fact-check at 72b8c825, critics at c9ff3e84) (`--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: ✅ PASSES** — 0 red, 0 open amber; terminal pass partly self-review (see pass history) (single-sample review; absence of findings is not an attestation)
 
 Q-092 unit 2 of 2: drop the settings-file deny reader. Delivery mode: self-read. Critics: security, performance, api-consistency, architecture (auto-selected: removes a module responsibility and a CLI behaviour). Reports: `code-fact-check-report-q092b-2026-10-15.md`, `security-review-q092b-2026-10-15.md`, `performance-review-q092b-2026-10-15.md`, `api-consistency-review-q092b-2026-10-15.md`, `architecture-review-q092b-2026-10-15.md`.
+
+
+**Pass history.** Pass 1 (`1a831ffe..ed06dec1`, k=1, five critics): 3 amber, fixed in 72b8c825. Pass 2 (`ed06dec1..c9ff3e84`, k=1): fact-check 1 Mostly accurate, security 1 Info, API 1 Minor, perf 1 Info; all fixed in fdae7834 / 0444b1ac. Final confirming fact-check (`fix/q092a-drop-deny-option..73698a91`, k=3, `code-fact-check-report-q092b-final.md`): 0 Incorrect; doc items and one untested guard fixed in 52353da8. **Terminal critics did not run independently:** the security critic, the performance/API/architecture critic and the delta fact-check each produced nothing for over an hour, on the first dispatch and again after a tighter re-dispatch, and the coordinator stopped them. The builder then ran a security pass (every pre-mortem family re-probed against d6395450) and a fact-check of the claims since 73698a91 inline: `inline-self-review-q092b-2026-10-15.md`. **These passes are self-review, weaker than independent critics.** They found one real gap (finding C16, fixed). The loop did not get two consecutive independent clean passes.
 
 ---
 
@@ -43,6 +47,8 @@ None.
 | C13 | Final pass: log row 53 cited Q-081 as open (answered; now Q-125), and its "now also" list overstated what is new; the guide pointed at RULE SYNTAX for what deny leaves; ROLE's "exit 0" ignored malformed stdin (exit 4/5, empty stdout) | Fact-check final (Stale / Mostly accurate) | Low | for-author | — | Fixed |
 | C14 | Final pass: load_rules discarding partial jq output was untested (mutant passed) | Fact-check final r2 | Low | for-author | — | Fixed: the unparseable-project test now has a rule in the global file, which jq prints first |
 | C15 | Final pass: ed06dec1's message says a non-array-of-strings deny fails closed; at that commit null/false passed | Fact-check final (Mostly accurate, commit message) | Info | for-author | — | Accepted-immutable: superseded by fdae7834 and 0444b1ac |
+| C16 | Inline self-review: 52353da8 claimed the edited test pins load_rules discard of partial jq output; a mutant without the discard still passed, because a parse error stops jq before any output | Builder inline fact-check (self-review) | Low | for-author | — | Fixed: the test adds a shape-error project file, which errors after the global rule has printed; the mutant now fails. The commit message stays as written (Accepted-immutable) |
+| C17 | Terminal critics (security, performance/API/architecture, delta fact-check) stalled twice and were stopped | Coordinator | Info | for-orchestrator-synthesis | — | Recorded as not run; replaced by inline self-review |
 | C8 | `guard-trusted-writes.py` can emit `ask` on Bash (SOFT target, tainted session), which per #39344 can turn a deny into a prompt; "never asks" is true of this hook only | api-consistency (out of lane), plan F8 | Info | for-author | — | Out of scope; reported as a question |
 
 ---
