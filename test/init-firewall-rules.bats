@@ -1490,6 +1490,11 @@ STUB
   [[ "$output" != *"devcontainer up"* ]]
   # --probe-only recreates the container (cached image layers are reused), the
   # word the guides use (override log, fix/doc-drift-cycle1 C4).
-  [[ "$output" == *"--probe-only <repo>"*"# recreates it from the blessed config"* ]]
+  [[ "$output" == *"recreates it from the blessed config"*"cc-isolated --probe-only <repo>"* ]]
   [[ "$output" != *"rebuilds"* ]]
+  # Each command line is the command alone: a trailing `# ...` is passed as
+  # arguments by interactive zsh without interactivecomments (security review
+  # 2026-10-15, rebuild-hint i2 #1).
+  printf '%s\n' "$output" | grep -qx ' *cc-isolated --probe-only <repo>'
+  printf '%s\n' "$output" | grep -qx ' *cc-isolated <repo>'
 }

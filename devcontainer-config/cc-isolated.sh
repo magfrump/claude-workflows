@@ -10,8 +10,9 @@
 #                                        # SET that project's egress profile (REPLACES any
 #                                        # previous grant, never adds to it), then re-bless
 #   cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
-#   cc-isolated --probe-only [WS]        # recreate WS's container from the blessed config, run the
-#                                        # boundary self-probe, record it verified live
+#   cc-isolated --probe-only [WS]        # recreate WS's container from the blessed
+#                                        # config, run the boundary self-probe, record
+#                                        # it verified live
 #   cc-isolated --list                   # registered projects, blessed config, verified?
 #   cc-isolated --help                   # this text
 # Push a session's commits with cc-push, never with host git in the checkout.
@@ -314,7 +315,8 @@ bless_manifest() {
     echo "Verified live:  yes (this exact config has passed a live self-probe before)"
   else
     echo "Verified live:  NO — a bless is a review, not a test. Nothing has run this config."
-    echo "  Next: cc-isolated --probe-only <repo>   # recreates from it and probes as node"
+    echo "  Next: cc-isolated --probe-only <repo>"
+    echo "        (recreates the container from it and probes as node)"
     echo "  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash."
   fi
 }

@@ -344,10 +344,15 @@ fail_closed_on_abort() {
     # shell it drops the launcher's localEnv inputs and rebuilds with base-only
     # egress and an empty config hash (see rebuild_hint in cc-isolated.sh).
     # --probe-only always recreates the container from the blessed config and re-probes.
+    # The explanations are not trailing `# ...` comments on the command lines:
+    # interactive zsh without interactivecomments passes those words to
+    # cc-isolated as arguments, and the last positional becomes the workspace.
     echo "       If this container can no longer bootstrap, recreate it from the HOST" >&2
-    echo "       with the launcher (the ~/.claude volume and the repo are unaffected):" >&2
-    echo "         cc-isolated --probe-only <repo>    # recreates it from the blessed config, re-probes" >&2
-    echo "         cc-isolated <repo>                 # then start the session" >&2
+    echo "       with the launcher (the ~/.claude volume and the repo are unaffected)." >&2
+    echo "       The first command recreates it from the blessed config and re-probes;" >&2
+    echo "       the second starts the session:" >&2
+    echo "         cc-isolated --probe-only <repo>" >&2
+    echo "         cc-isolated <repo>" >&2
   fi
 }
 trap fail_closed_on_abort EXIT

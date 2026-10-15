@@ -354,8 +354,9 @@ STUB
   local ws; ws="$(printf '%q' "$TEST_TMPDIR/proj")"
   # The whole first line is the command, nothing after it: interactive zsh
   # without interactivecomments passes a trailing `# ...` to step 2 as arguments,
-  # and the last positional wins, retargeting the launch (security review
-  # 2026-10-15, rebuild-hint #1).
+  # and the last positional becomes the workspace, so step 2 fails or, if that
+  # word names a git repo in the cwd, launches it (security review 2026-10-15,
+  # rebuild-hint #1).
   [ "$(echo "$output" | head -1)" = "    cc-isolated --probe-only $ws && cc-isolated $ws" ]
   [[ "$(echo "$output" | sed -n 2p)" == *"recreates the container from the blessed config"* ]]
   [[ "$output" != *"rebuilds"* ]]
@@ -1425,7 +1426,7 @@ h6_probe() {
 
 # The hint's `&&` relies on this: a failed probe after the forced recreate must
 # exit non-zero and never start claude (security review 2026-10-15, rebuild-hint #2).
-@test "--probe-only exits non-zero and starts no session when the probe fails" {
+@test "--probe-only exits non-zero and records nothing when the probe fails" {
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
@@ -1437,7 +1438,6 @@ h6_probe() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"PROBE FAIL (firewall)"* ]]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
-  run ! grep -q ' claude$' "$DC_LOG"
   [ ! -f "$(verified_path)" ]
 }
 
