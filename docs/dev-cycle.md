@@ -6,20 +6,40 @@ by hand. Change either by editing this file.
 
 Build-loop policy: review (interim; Q-103)
 
-Read by the build-loop handoff (roadmap item "Build-loop handoff"; not built yet), not by the
-dev-cycle skill itself. `self-merge`: a build loop the cycle hands an item to lands its branch
-through pr-prep on its own, but only for work that stays out of what later runs follow unreviewed
-(skills, workflows, scripts, tests, guides, instruction files and similar; the handoff seed,
-`docs/working/seed-build-loop-handoff.md`, lists them); other work still stops for review. `review`: the loop runs pr-prep's review-fix loop
-and stops; the cycle then asks the user (a PR, or one "merge <branch>?" entry where the
-project has no PRs) and merges once approved.
+Build-loop slots: 3
 
-The handoff design counts the setting as made only when the file has exactly one line, outside code
-blocks, reading exactly `Build-loop policy: self-merge` or `Build-loop policy: review` (a
-trailing CR is ignored). Anything else counts as unset, which means `review`.
+Self-merge never: workflows/
 
-Interim note: the "(interim; Q-103)" on the policy line keeps it unset until Q-103 is
-answered.
+The dev cycle's orchestrator reads the three lines above, and the two reader lines below,
+only through `scripts/build-loop.sh --settings`, from the default branch's commit, never
+from a working tree (a build loop can write any working tree); the script's header gives
+each line's exact form. A line counts only when it is the one line in the file, outside
+code blocks, that starts with its key; a trailing CR is ignored.
+
+- **Policy.** Under `self-merge`, when a build loop marks its branch `handoff: ready`, the
+  orchestrator lands it through the gate (`build-loop.sh --merge`) with no review, but only
+  when every changed path is listed in the brief's `Paths:` line or is one of the loop's own
+  files, and none is on the gate's fixed floor (instruction files and what they `@`-import,
+  any dot path, the gate's own code, files later runs read as truth such as
+  `docs/decisions/` and `docs/constraints.md`, symlinks and gitlinks) or matches the never
+  line. A refused self-merge falls through to review. Under `review`, the orchestrator files
+  one merge entry (`merge-STEM-SHA12`, or `merge-gate-STEM-SHA12` when the change touches
+  the gate's own code) holding `--check`'s output, and merges only on your `[1] merge`. A
+  brief self-merges only when its own `Policy:` line also reads `self-merge`. Only the
+  exact line with `self-merge` or `review` sets the policy, and `self-merge` also needs a
+  valid never line (its `none` form for an empty list). Anything else counts as unset,
+  which means `review`: the "(interim; Q-103)" above keeps it unset until Q-103 is answered.
+- **Slots.** From 1 to 9 (anything else, or no line, means 3): how many build loops run at
+  once. Only a live dispatched loop holds a slot; a blocked, stopped or ready-for-review
+  one does not.
+- **Never line.** Globs that self-merge never lands, even when a brief lists them: `*` and
+  `?` match within one path part, a glob matches the path or any directory above it, and
+  paths compare lower-cased. A malformed line turns self-merge off. Here it holds
+  `workflows/` (interim; Q-149): every later session in this repo reads the workflows from
+  its own checkout, so a workflow change takes effect on merge, while scripts, skills,
+  hooks and guides reach running sessions only through an image release you cut.
+- **Review handoff.** No line. The pull-request route the design names is not built, and
+  this repo has no PRs, so every review merge is one questions entry.
 
 Reader roots: /home/magfrump/claude-workflows /workspace
 

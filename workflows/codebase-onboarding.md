@@ -450,11 +450,14 @@ If possible, have someone familiar with the codebase review the orientation doc.
 
 If no reviewer is available, treat the Known Unknowns section as a list of things to verify during your first RPI research phase.
 
-Also settle the project's **build-loop policy** with the user: may the autonomous build loops the dev-cycle's build-loop handoff will start (a planned unit; the skill writes build briefs today) merge on their own (`self-merge`; it covers only work outside what later runs follow unreviewed, such as skills, scripts, tests and instruction files, so in a repo made of those most work still stops for review), or must each stop for the user's review (`review`: a PR, or a "merge <branch>?" questions entry where the project has no PRs)? It depends on the project's structure and who reviews its changes, so it is the user's call, not inferred. Record it as `Build-loop policy: <value>` in `docs/dev-cycle.md`, creating the file from the template in the dev-cycle skill's "Project settings" if missing. Until it is set, it counts as `review`.
+Also settle the project's **build-loop policy** with the user: may the autonomous build loops the dev cycle starts for its briefs merge on their own (`self-merge`; it covers only paths a brief lists that are outside what takes effect on merge with no later review, such as instruction files, dot paths and the gate's own code, plus any the project adds to `Self-merge never:`), or must each stop for the user's review (`review`: one "merge?" entry in the questions doc per finished branch)? It depends on the project's structure and who reviews its changes, so it is the user's call, not inferred. Record it as `Build-loop policy: <value>` in `docs/dev-cycle.md`, creating the file from the template in the dev-cycle skill's "Project settings" if missing. Until it is set, it counts as `review`.
+
+Also ask the user for the project's **constraints doc**, `docs/constraints.md`: hard constraints (`H1: …`, each with a `success:` line naming an observable outcome) and soft ones (`S1: …`). Every build loop's design choices are seeded with it, and the dev cycle dispatches no build loop in a repo without one that holds a hard constraint. Writing it is the user's work, not inferred from the code; a process for writing one is a roadmap item in claude-workflows ("A process for writing a repo's constraints doc"). Without it, record its absence in Known Unknowns.
 
 **Done when...**
 - [ ] A codebase-familiar reviewer has approved the orientation doc, OR Known Unknowns are flagged for verification during the first RPI research phase
 - [ ] `docs/dev-cycle.md` records the build-loop policy the user chose
+- [ ] `docs/constraints.md` exists, or its absence is in Known Unknowns
 - [ ] Any reviewer corrections have been incorporated into the document
 - [ ] The onboarding doc is ready to serve as input for RPI research phases
 

@@ -295,8 +295,12 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
-   `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
-   diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   `image-lag` (an open one has its body rewritten), which is also the release entry: the
+   release is your review of what it ships (F58). It holds C, M, the changed names (the same
+   diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
+   log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
+   self-merge)`, which no one reviewed), every path changed from C to M outside `docs/` (the
+   image carries none of `docs/`: give its count), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run

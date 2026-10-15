@@ -76,6 +76,9 @@ setup() { bl_setup; }
         || { echo "$output"; return 1; }
     # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
     [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
+    # The interim never line (workflows/ take effect on merge here, plan D5) and the slots line (U5).
+    [[ "$(line never)" == "never workflows/ set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
+    [[ "$(line slots)" == "slots 3 set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
 }
 
 @test "--settings reads main's commit: the working tree and other branches never decide (T4)" {
