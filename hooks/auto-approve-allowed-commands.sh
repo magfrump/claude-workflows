@@ -14,8 +14,6 @@
 #   --debug                 Enable debug output to stderr
 #   --permissions JSON      Use custom permissions instead of reading from settings files
 #                           JSON format: '["Bash(ls:*)", "Bash(grep:*)"]'
-#   --deny JSON             Use custom deny rules instead of reading permissions.deny
-#                           from the settings files (same format)
 #
 # Examples:
 #   # Normal usage (reads permissions from settings files)
@@ -67,20 +65,19 @@
 # was approved; with the wired deny rule it falls through to the prompt.
 #
 # WHAT THE DENY CHECK GUARANTEES. The hook never approves a command when a Bash
-# deny rule matches any of: the raw command, any extracted command, or the
-# de-quoted form of either (every `'`, `"` and `\` removed, and `${NAME:-word}`
-# rendered as `word`, also for `-`, `=`, `+` with or without the `:`). It FAILS
-# CLOSED on its inputs: if any settings file below exists but cannot be read,
-# does not hold exactly one JSON object, or has permissions, permissions.allow
-# or permissions.deny of the wrong shape (or --deny is not a JSON array of
-# strings), no command is approved on that call.
+# deny rule matches the raw command or any extracted command. It FAILS CLOSED
+# on its inputs: if any settings file below exists but cannot be read, does not
+# hold exactly one JSON object, or has permissions, permissions.allow or
+# permissions.deny of the wrong shape, no command is approved on that call.
+# The de-quoted match and the --deny test option are gone (Q-092, unit 1 of 2):
+# Q-082 showed Claude Code applies its own deny rules after a hook "allow".
 # RESIDUALS (accepted, Q-070 [1]; the sandbox follow-up is the real fix). Deny
 # rules are string matches over the command text, so a spelling in which the
-# denied string never appears gets past them: a glob (`~/.claude/.c*`,
-# `.credentials.jso[n]`), brace or ANSI-C spellings (`.js{on,}`,
-# `$'\x2e'credentials.json`), a variable set by an earlier command, a decoded
-# path, or reading the parent directory. They stop the literal spelling and its
-# quoted variants, not a determined injection. Settings sources Claude Code
+# denied string never appears gets past them: a quote split
+# (`.cred""entials.json`), a glob (`~/.claude/.c*`, `.credentials.jso[n]`),
+# brace or ANSI-C spellings (`.js{on,}`, `$'\x2e'credentials.json`), a variable
+# set by an earlier command, a decoded path, or reading the parent directory.
+# They stop the literal spelling, not a determined injection. Settings sources Claude Code
 # honors but this hook does not read (managed settings, --settings files)
 # contribute no deny rules here. The glob and earlier-variable spellings are
 # pinned by tests.
@@ -125,9 +122,6 @@ NUL_DELIM=false
 REFUSE_CONSTRUCTS=false
 # Custom permissions for testing (JSON array like: '["Bash(ls:*)", "Bash(cat:*)"]')
 CUSTOM_PERMISSIONS=""
-# Custom deny rules for testing (same format). Set => the settings files' deny lists are ignored.
-CUSTOM_DENY=""
-CUSTOM_DENY_SET=false
 
 debug() {
   if $DEBUG; then
@@ -265,25 +259,23 @@ add_deny_rule() {
   DENY_GLOBS+=("$glob")
 }
 
-# Fill ALLOW_PREFIXES, DENY_GLOBS and DENY_ALL. --permissions / --deny replace
-# the settings files' allow / deny lists (testing); the files are read only if
-# one of the two is still needed. Each reader's status comes from `wait $!`,
-# as for the command parser in main (mapfile's own status is always 0); bash
-# older than 4.4 makes that `wait` fail, which also fails closed.
+# Fill ALLOW_PREFIXES, DENY_GLOBS and DENY_ALL. --permissions replaces the
+# settings files' allow lists (testing); their deny lists are always read. The
+# reader's status comes from `wait $!`, as for the command parser in main
+# (mapfile's own status is always 0); bash older than 4.4 makes that `wait`
+# fail, which also fails closed.
 load_rules() {
   local -a records=()
   local rec
-  if [[ -z "$CUSTOM_PERMISSIONS" ]] || ! $CUSTOM_DENY_SET; then
-    mapfile -d '' records < <(read_settings_rules)
-    if ! wait $!; then
-      debug "A settings file could not be read or parsed: denying everything"
-      DENY_ALL=true
-    fi
+  mapfile -d '' records < <(read_settings_rules)
+  if ! wait $!; then
+    debug "A settings file could not be read or parsed: denying everything"
+    DENY_ALL=true
   fi
   for rec in "${records[@]}"; do
     if [[ "$rec" == A$'\t'* && -z "$CUSTOM_PERMISSIONS" ]]; then
       add_allow_rule "${rec#A$'\t'}"
-    elif [[ "$rec" == D$'\t'* ]] && ! $CUSTOM_DENY_SET; then
+    elif [[ "$rec" == D$'\t'* ]]; then
       add_deny_rule "${rec#D$'\t'}"
     fi
   done
@@ -295,45 +287,23 @@ load_rules() {
       | jq -j '.[]? | select(type == "string" and (explode | any(. == 0) | not)) | . + "\u0000"' 2>/dev/null)
     for rec in "${records[@]}"; do add_allow_rule "$rec"; done
   fi
-  if $CUSTOM_DENY_SET; then
-    # Unreadable --deny fails closed, like an unreadable settings file.
-    mapfile -d '' records < <(printf '%s' "$CUSTOM_DENY" | jq -j \
-      'if type != "array" then error("not an array") else .[] end
-       | if type != "string" then error("non-string rule")
-         elif explode | any(. == 0) then error("NUL inside a rule string")
-         else . + "\u0000" end' 2>/dev/null)
-    if ! wait $!; then
-      debug "--deny is not a JSON array of strings: denying everything"
-      DENY_ALL=true
-    fi
-    for rec in "${records[@]}"; do add_deny_rule "$rec"; done
-  fi
 }
 
-# `${NAME:-word}`-style expansions (also `-`, `=`, `+`, with or without `:`).
-# Deny matching renders each as its word, since that is what runs when NAME is
-# unset; over-matching only means a prompt.
-PARAM_DEFAULT_RE='\$\{[A-Za-z_][A-Za-z0-9_]*:?[-=+]([^{}]*)\}'
-
-# True when a deny rule matches the string or its de-quoted form (header: WHAT
-# THE DENY CHECK GUARANTEES), or when DENY_ALL is set. The right-hand side of
-# == is left unquoted on purpose, so bash matches it as a glob; add_deny_rule
-# has already escaped everything but `*`, so `*` is the only live wildcard.
+# True when a deny rule matches the string (header: WHAT THE DENY CHECK
+# GUARANTEES), or when DENY_ALL is set. The right-hand side of == is left
+# unquoted on purpose, so bash matches it as a glob; add_deny_rule has already
+# escaped everything but `*`, so `*` is the only live wildcard.
 matches_deny() {
-  local str="$1" dq glob
+  local str="$1" glob
   if $DENY_ALL; then
     debug "DENY: a deny source could not be read"
     return 0
   fi
-  dq=${str//[\'\"\\]/}
-  while [[ "$dq" =~ $PARAM_DEFAULT_RE ]]; do
-    dq=${dq/"${BASH_REMATCH[0]}"/"${BASH_REMATCH[1]}"}
-  done
   for glob in "${DENY_GLOBS[@]}"; do
     [[ -z "$glob" ]] && continue
     # shellcheck disable=SC2053
-    if [[ "$str" == $glob || "$dq" == $glob ]]; then
-      debug "DENY RULE: '$str' (de-quoted: '$dq') matches glob '$glob'"
+    if [[ "$str" == $glob ]]; then
+      debug "DENY RULE: '$str' matches glob '$glob'"
       return 0
     fi
   done
@@ -378,11 +348,6 @@ main() {
         ;;
       --permissions)
         CUSTOM_PERMISSIONS="$2"
-        shift 2
-        ;;
-      --deny)
-        CUSTOM_DENY="$2"
-        CUSTOM_DENY_SET=true
         shift 2
         ;;
       *)
