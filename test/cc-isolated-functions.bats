@@ -925,6 +925,15 @@ fake_payload_and_dest() {
   [ "$status" -eq 1 ]
 }
 
+@test "verify_host_tools is the same code in cc-isolated.sh and cc-push.sh" {
+  local a b
+  a="$(sed -n '/^# --- verify_host_tools/,/^# --- end verify_host_tools/p' "$CONFIG_SRC/cc-isolated.sh" | tail -n +2)"
+  b="$(sed -n '/^# --- verify_host_tools/,/^# --- end verify_host_tools/p' "$CONFIG_SRC/cc-push.sh" | tail -n +2)"
+  [ -n "$a" ]
+  [[ "$a" == *"verify_host_tools() {"* ]]
+  [ "$a" = "$b" ]
+}
+
 @test "launch: a tampered cc-exit-scan.sh is never sourced; --bless still works and clears it" {
   # An installed layout: the real launcher and host tools beside the stubs.
   local d="$CLAUDE_DEVC_CONFIG_DIR" ws="$TEST_TMPDIR/ws" mark="$TEST_TMPDIR/scan-ran"

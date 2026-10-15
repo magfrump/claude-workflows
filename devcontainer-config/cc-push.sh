@@ -32,6 +32,11 @@
 #     failed fetch, a push the remote rejected (git's own exit status is never
 #     passed through), an interruption — or declined at the prompt (n, or Ctrl-C);
 #   2 bad usage (an unknown flag, a flag without its value, two checkouts).
+# One exception, before any of that: when this installed copy or the cc-gitdir.sh
+# beside it differs from what the bless recorded in host-tools.sha256 (or that
+# file is missing or a symlink), cc-push
+# exits 1 before parsing anything, --help included (decision log row 71): nothing
+# unchecked runs.
 #
 # WHY. The container writes the checkout's .git through the bind mount, so host git
 # run IN the checkout can run what the session planted: hooks, core.fsmonitor,
@@ -134,10 +139,58 @@ safe_path() {
 }
 safe_path
 
+# --- verify_host_tools: KEEP IN STEP with the copy in cc-isolated.sh (a test
+# compares the two byte for byte). Host-only tools are not boundary config
+# (decision log row 71): install.sh's bless hashes them into host-tools.sha256,
+# beside manifest.sha256, and each entry point checks the files it is about to
+# execute against that file BEFORE sourcing them. DIR is the script's own
+# resolved directory. Only a repo checkout is left unchecked, and it must say so
+# positively: install.sh beside the script (install.sh is never installed, it is
+# not in PAYLOAD), no manifest of either kind, and not the config dir. Anything
+# else is checked, so deleting manifests is not enough to opt an installed copy
+# out. Prints the reason and returns 1 on any mismatch.
+verify_host_tools() {
+  local dir="$1" m f want have cfg
+  shift
+  m="$dir/host-tools.sha256"
+  cfg="$(readlink -f -- "${CLAUDE_DEVC_CONFIG_DIR:-$HOME/.config/claude-devcontainer}" 2>/dev/null || true)"
+  if [ -f "$dir/install.sh" ] && [ ! -e "$m" ] && [ ! -e "$dir/manifest.sha256" ] && [ "$dir" != "$cfg" ]; then
+    return 0
+  fi
+  if [ ! -f "$m" ] || [ -L "$m" ]; then
+    echo "no host-tool manifest at $m (re-run install.sh, or cc-isolated --bless after reviewing)"
+    return 1
+  fi
+  # Every file is checked and every mismatch named, so the refusal lists all of
+  # what the bless it points to would accept.
+  local bad=0
+  for f in "$@"; do
+    if [ ! -f "$dir/$f" ] || [ -L "$dir/$f" ]; then
+      echo "$dir/$f is missing or a symlink"
+      bad=1
+      continue
+    fi
+    want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
+    have="$(sha256sum < "$dir/$f" | cut -d' ' -f1)"
+    if [ -z "$want" ] || [ "$want" != "$have" ]; then
+      echo "$dir/$f changed since the last bless"
+      bad=1
+    fi
+  done
+  return "$bad"
+}
+# --- end verify_host_tools
+
 # gitdir_valid, looks_like_gitdir: plain file tests, next to this file (readlink
-# -f: cc-push on PATH is a symlink to the installed copy).
+# -f: cc-push on PATH is a symlink to the installed copy). Checked first: a
+# tampered cc-gitdir.sh would run at source time.
+CC_PUSH_DIR="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
+if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
+  echo "ERROR: $host_tools_err — cc-push refuses to run. Review it, then: cc-isolated --bless" >&2
+  exit 1
+fi
 # shellcheck source=cc-gitdir.sh
-source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-gitdir.sh"
+source "$CC_PUSH_DIR/cc-gitdir.sh"
 
 # usage: the comment block above, from line 2 to the first line that is not a
 # comment, so it cannot end mid-sentence when the block grows.
