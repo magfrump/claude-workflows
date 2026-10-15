@@ -113,3 +113,16 @@ k=1 fact-check (`code-fact-check-report-q160-narrow.md`): 20 claims; 12 Verified
 | N6 | completion-signals implied a waiver always exists | Fixed: "any waiver" |
 | N7 | Override row said the docs/ exclusion was decided in Q-085 | Fixed: the agent's reading recorded in row 62 |
 | N8 | 1a118c80's body: Q-160 also sits on two merge/* branches | Immutable; the point (not on main) holds |
+
+## Narrow check 2 (8834b1a1, range 1a118c80..8834b1a1)
+
+k=1 fact-check (`code-fact-check-report-q160-narrow2.md`): 11 claims; 7 Verified, 4 Mostly accurate, 0 Incorrect. Fix-drift: none. N1-N7 fixed. Each fix round since the final pass has surfaced edge cases in the precedence and pre-ladder wording, so these are left open and escalated to the user instead of fixed:
+
+| ID | Finding | Tier | Status |
+|---|---|---|---|
+| O1 | Step 3 criterion's waived branch omits two record items the loop doc requires (answer quoted verbatim, which check it waives) (`workflows/pr-prep.md:287`) | 🟢 | Open (escalated) |
+| O2 | A resumed session on a 400-800 line unit with an open rubric goes through step 1a's /away split, while the same loop in its original session tolerates it (`workflows/review-fix-loop.md:63`) | 🟡 | Open (escalated) |
+| O3 | Pre-ladder sentence says "later pass"; a loop ending on its first pass with an entry-waived unit over 800 and no red derives `merge` (6c still stops it) (`chat-synthesis.md:128`) | 🟡 | Open (escalated) |
+| O4 | Rule 2's first-pass test omits mechanic 6's unreadable-history case (`chat-synthesis.md:140-142`) | 🟢 | Open (escalated) |
+
+Loop outcome: escalated after the final confirming pass and two narrow checks; no 🔴 at any point after iteration 1.
