@@ -17,7 +17,9 @@
 #
 # Environment:
 #   RUN_TESTS_NOT_RUN_FILE  When set, the number of report-dependent suites
-#                           gated out is written to this file.
+#                           gated out is written to this file. It is
+#                           unset before bats runs, so the suites (and any
+#                           runner a suite starts) never see it.
 #
 # Flags:
 #   --fast    Run only fast tests (pure function tests, <1s each)
@@ -357,6 +359,13 @@ fi
 if [[ -n "${RUN_TESTS_NOT_RUN_FILE:-}" ]]; then
   echo "${#not_run[@]}" > "$RUN_TESTS_NOT_RUN_FILE"
 fi
+# The file is this run's answer to its caller, so bats and the suites must not
+# inherit the path: a suite that runs the runner again (eval-helpers-gating.bats
+# does, with no override) would otherwise overwrite the caller's count with its
+# fixture's (Q-110: the health check said 4 where this run listed 50). Refusing
+# an inherited value instead cannot work, since the health check itself passes
+# it through the environment.
+unset RUN_TESTS_NOT_RUN_FILE
 
 if [[ ${#not_run[@]} -gt 0 ]]; then
   echo "=== NOT RUN: ${#not_run[@]} report-dependent suite(s) — no generated reports for their skill ==="

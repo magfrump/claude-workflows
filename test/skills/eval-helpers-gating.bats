@@ -71,6 +71,20 @@ ran() { grep -c "/$1\$" "$T/bats-args"; }
   [[ "$output" != *"alpha-eval.bats [alpha]"* ]]
 }
 
+@test "the suites never see RUN_TESTS_NOT_RUN_FILE, so a nested run cannot overwrite the caller's count" {
+  # Q-110: a suite that runs the runner again (as this file does below, with
+  # no override) inherited the caller's file and overwrote its count: the
+  # health check printed 4 where the runner had listed 50. The stub bats
+  # stands in for any such suite: it writes to the inherited path when it has
+  # one, and records whether it had one.
+  printf '#!/usr/bin/env bash\necho "${RUN_TESTS_NOT_RUN_FILE-unset}" > "%s/bats-env"\n[ -z "${RUN_TESTS_NOT_RUN_FILE:-}" ] || echo 99 > "$RUN_TESTS_NOT_RUN_FILE"\n' \
+    "$T" > "$T/bin/bats"
+  run env RUN_TESTS_NOT_RUN_FILE="$T/nr" bash "$T/scripts/run-tests.sh" --fast
+  [ "$status" -eq 0 ]
+  [ "$(cat "$T/nr")" = 4 ]
+  [ "$(cat "$T/bats-env")" = unset ]
+}
+
 @test "a stamp or .failed marker alone is not a report" {
   touch "$T/test/skills/alpha/output/tc-1.md.stamp" "$T/test/skills/alpha/output/tc-1.md.failed"
   run bash "$T/scripts/run-tests.sh" --fast
