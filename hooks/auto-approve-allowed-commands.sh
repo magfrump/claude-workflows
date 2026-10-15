@@ -149,9 +149,8 @@ read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
   then error("each settings file must hold exactly one JSON document") else . end
 | $docs[] | .[1]
 | if type != "object" then error("settings file is not a JSON object") else . end
-| .permissions
-| if . == null then empty
-  elif type != "object" then error("permissions is not an object")
+| if has("permissions") then .permissions else empty end
+| if type != "object" then error("permissions is not an object")
   else
     (["allow", "deny", "ask"][] as $k | select(has($k)) | .[$k]
      | if type == "array" and all(.[]; type == "string" and (explode | any(. == 0) | not))

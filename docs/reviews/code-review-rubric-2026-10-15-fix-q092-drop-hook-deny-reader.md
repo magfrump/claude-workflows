@@ -1,8 +1,8 @@
-Commit: ed06dec1
+Commit: 72b8c825
 
 # Code Review Rubric
 
-**Scope:** fix/q092-drop-hook-deny-reader, unit 2 `1a831ffe..ed06dec1` (stacked on unit 1; loop pass 1, `--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 3 amber addressed in the next commit
+**Scope:** fix/q092-drop-hook-deny-reader, unit 2 `1a831ffe..ed06dec1` (stacked on unit 1); pass 1 `1a831ffe..ed06dec1`, pass 2 delta `ed06dec1..72b8c825` (`--loop-pass`, k=1) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes applied, re-review pending** — 0 red, 3 amber addressed in the next commit
 
 Q-092 unit 2 of 2: drop the settings-file deny reader. Delivery mode: self-read. Critics: security, performance, api-consistency, architecture (auto-selected: removes a module responsibility and a CLI behaviour). Reports: `code-fact-check-report-q092b-2026-10-15.md`, `security-review-q092b-2026-10-15.md`, `performance-review-q092b-2026-10-15.md`, `api-consistency-review-q092b-2026-10-15.md`, `architecture-review-q092b-2026-10-15.md`.
 
@@ -35,6 +35,8 @@ None.
 | C5 | Removed `--deny` silently swallowed; with no deny reader a stale caller gets no deny from the hook | api-consistency, architecture (Info) | Info | for-author | #123 | Won't-Fix: no caller; Claude Code applies deny |
 | C6 | `--permissions` skips the settings files' fail-closed check too | api-consistency (Info) | Info | for-author | #123 | Won't-Fix: test-only option, documented |
 | C7 | Glob spelling getting past Claude Code's matcher is unverified | Fact-check claim 3 (Unverifiable) | Info | for-author | — | Accepted (plan F3/F4/F5); live check in the unit report |
+| C9 | Pass 2: FAILS CLOSED said "a permissions that is not an object" but `permissions: null` was accepted | Fact-check pass 2 claim 9 (Mostly accurate) | Low | for-author | — | Fixed: a present `permissions` must be an object (null fails closed); test case added |
+| C10 | Pass 2: which values make Claude Code drop a whole file is untraced | Fact-check pass 2 claim 11b (Unverifiable) | Info | for-author | — | Accepted: the stated residual (A1); question in the unit report |
 | C8 | `guard-trusted-writes.py` can emit `ask` on Bash (SOFT target, tainted session), which per #39344 can turn a deny into a prompt; "never asks" is true of this hook only | api-consistency (out of lane), plan F8 | Info | for-author | — | Out of scope; reported as a question |
 
 ---

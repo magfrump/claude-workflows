@@ -206,7 +206,7 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 @test "settings files of the wrong shape fail closed" {
   echo '{"permissions":{"allow":["Bash(ls:*)"]}}' > "$PROJECT/.claude/settings.json"
   local bad
-  for bad in '{"permissions":[]}' '{"permissions":{"deny":"Bash"}}' \
+  for bad in '{"permissions":[]}' '{"permissions":null}' '{"permissions":{"deny":"Bash"}}' \
     '{"permissions":{"deny":[1]}}' '{"permissions":{"deny":{}}}' '{"permissions":{"allow":{}}}' \
     '{"permissions":{"deny":null}}' '{"permissions":{"deny":false}}' '{"permissions":{"allow":[5]}}' \
     '{"permissions":{"allow":null}}' '{"permissions":{"ask":"Bash"}}' '{"permissions":{"ask":[1]}}' \
