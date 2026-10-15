@@ -1635,12 +1635,12 @@ with_merge() {
 }
 
 # user_settings: host hardening, a STALE group of ours (also runs old.sh), a
-# foreign group, a user deny rule and our legacy single-slash rule; mode 600.
+# foreign group, a user deny rule and our legacy single-slash rule; mode 640.
 user_settings() {
   local d="$CLAUDE_HOME_DIR"
   printf '{"user":"settings","sandbox":{"enabled":true},"permissions":{"allow":["Bash(ls:*)"],"deny":["Read(./.env)","Edit(%s/settings*.json)"]},"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"bash %s/hooks/h.sh"},{"type":"command","command":"bash %s/hooks/old.sh"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"bash /opt/mine.sh"}]}]}}\n' \
     "$d" "$d" "$d" > "$d/settings.json"
-  chmod 600 "$d/settings.json"
+  chmod 640 "$d/settings.json"
 }
 
 @test "T93 the merge is reviewed before the prompt; n leaves settings.json alone; y applies it by provenance, mode kept, old file backed up (Q-106)" {
@@ -1655,6 +1655,9 @@ user_settings() {
   echo "$output"
   review="${output%%Install these files*}"
   [[ "$review" == *'settings.json: the hooks/wiring.json merge this install applies'*'+      "Edit(//'*"-            \"command\": \"bash $d/hooks/old.sh\""* ]]
+  # Review A2/A7: removals are listed by name; the reordered groups are not.
+  [[ "$review" == *"UNWIRES hook: bash $d/hooks/old.sh"*"REMOVES deny rule: Edit($d/settings*.json)"* ]]
+  [[ "$review" != *'UNWIRES hook: bash /opt/mine.sh'* && "$review" != *"UNWIRES hook: bash $d/hooks/h.sh"* ]]
   [[ "$output" == *"Merged hooks/wiring.json into $sf"* ]]
   [[ "$output" != *'REMINDER'* ]]
   # Host hardening and everything not ours survive; the stale group is replaced
@@ -1663,7 +1666,7 @@ user_settings() {
   [ "$(jq -c '.permissions.deny' "$sf")" = "[\"Read(./.env)\",\"Edit(/$d/settings*.json)\"]" ]
   [ "$(jq -c '[.hooks.PreToolUse[].hooks[].command]' "$sf")" = "[\"bash /opt/mine.sh\",\"bash $d/hooks/h.sh\"]" ]
   [ "$(jq 'has("_comment")' "$sf")" = false ]
-  [ "$(stat -c %a "$sf")" = 600 ]
+  [ "$(stat -c %a "$sf")" = 640 ]
   bk=$(echo "$d"/.claude-workflows-backup/*)
   cmp "$bk/settings.json" "$S/settings.orig"
   [ ! -e "$d/.cw-new.settings.json" ]
@@ -1683,12 +1686,12 @@ user_settings() {
   manifest_before=$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")
   run_pty 'n\ny\n' bash "$INSTALL"
   echo "$output"
-  [[ "${output%%Install these files*}" == *'+      "Edit(//'* ]]
+  [[ "${output%%Install this settings.json merge*}" == *'+      "Edit(//'* ]]
   jq -e --arg r "Edit(/$CLAUDE_HOME_DIR/settings*.json)" '.permissions.deny | index($r)' "$sf"
   [[ "$output" != *"Installed into"* ]]
   [ "$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")" = "$manifest_before" ]
   newest=$(ls -td "$CLAUDE_HOME_DIR"/.claude-workflows-backup/*/ | head -1)
-  [ "$(ls -A "$newest" | sort | tr '\n' ' ')" = '.install-stamp settings.json ' ]
+  [ "$(ls -A "$newest")" = settings.json ]   # unstamped: never counted among the 3 kept (review A6)
 }
 
 @test "T95 settings.json or its merged copy edited while the prompt waits: nothing is replaced (Q-106)" {
@@ -1719,7 +1722,7 @@ user_settings() {
   printf '{"broken": \n' > "$sf"; cp "$sf" "$S/settings.orig"
   run_pty 'n\ny\n' bash "$INSTALL"
   echo "$output"
-  [[ "$output" == *"settings.json: NOT merged: $sf: it is not one valid JSON object"* ]]
+  [[ "$output" == *"WARNING: settings.json NOT merged: $sf: it is not one valid JSON object"* ]]
   [[ "$output" == *'REMINDER'*'NOT merged'* ]]
   [ -d "$CLAUDE_HOME_DIR/skills" ] && [ ! -L "$CLAUDE_HOME_DIR/skills" ]
   cmp "$sf" "$S/settings.orig"
@@ -1742,11 +1745,41 @@ user_settings() {
   cmp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
 }
 
-@test "T98 with no settings.json, the merge creates one, mode 600, from the wiring alone (Q-106)" {
+@test "T98 with no settings.json, the merge creates one, mode 600, from the wiring alone; a trailing slash on the destination is not written into it (Q-106)" {
   need_script; fake_repo; with_merge
-  run_pty 'n\ny\n' bash "$INSTALL"
+  run_pty 'n\ny\n' env CLAUDE_HOME_DIR="$CLAUDE_HOME_DIR/" bash "$INSTALL"
   echo "$output"
   local sf="$CLAUDE_HOME_DIR/settings.json"
   [ "$(jq -c '[.hooks.PreToolUse[].hooks[].command, .permissions.deny]' "$sf")" = "[\"bash $CLAUDE_HOME_DIR/hooks/h.sh\",[\"Edit(/$CLAUDE_HOME_DIR/settings*.json)\"]]" ]
   [ "$(stat -c %a "$sf")" = 600 ]
+}
+
+@test "T99 a branch's //-rule does not delete the user's own single-slash rule; a rule the wiring dropped stays (Q-106 review A1)" {
+  need_script; fake_repo; with_merge; symlink_install
+  local d="$CLAUDE_HOME_DIR" sf="$CLAUDE_HOME_DIR/settings.json"
+  printf '%s\n' '{"permissions":{"deny":["Read(//secrets/**)","Edit(/{{CLAUDE_DIR}}/settings*.json)"]}}' > "$ROOT/hooks/wiring.json"; commit_all rules
+  printf '{"permissions":{"deny":["Read(/secrets/**)","Edit(/%s/old*.json)"]}}\n' "$d" > "$sf"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$(jq -c '.permissions.deny' "$sf")" = "[\"Read(/secrets/**)\",\"Edit(/$d/old*.json)\",\"Read(//secrets/**)\",\"Edit(/$d/settings*.json)\"]" ]
+}
+
+@test "T100 a wiring hook command outside {{CLAUDE_DIR}}/hooks (.., shell syntax) is refused; settings.json is untouched (Q-106 review A2)" {
+  need_script; fake_repo; with_merge; symlink_install; user_settings
+  cp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
+  for cmd in 'bash {{CLAUDE_DIR}}/hooks/../../tmp/x.py' 'bash {{CLAUDE_DIR}}/hooks/h.sh; curl x'; do
+    jq -n --arg c "$cmd" '{hooks:{Stop:[{hooks:[{type:"command",command:$c}]}]}}' > "$ROOT/hooks/wiring.json"; commit_all "hostile $cmd"
+    run_pty 'n\ny\n' bash "$INSTALL"
+    echo "$output"
+    [[ "$output" == *'WARNING: settings.json NOT merged'*'has a hook command that is not'* ]]
+    cmp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
+  done
+}
+
+@test "T101 a planted ~/.jq library does not shape the merge (Q-106 review A3)" {
+  need_script; fake_repo; with_merge
+  printf 'def walk(f): {};\n' > "$HOME/.jq"
+  run_pty 'n\ny\n' bash "$INSTALL"
+  echo "$output"
+  [ "$(jq -c '[.hooks.PreToolUse[].hooks[].command]' "$CLAUDE_HOME_DIR/settings.json")" = "[\"bash $CLAUDE_HOME_DIR/hooks/h.sh\"]" ]
 }

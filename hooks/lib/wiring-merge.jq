@@ -9,7 +9,9 @@
 # Usage: jq --arg dir <config dir> --slurpfile w <wiring.json> -f wiring-merge.jq <settings.json>
 # <config dir> is the directory whose hooks/ the wiring runs (the {{CLAUDE_DIR}}
 # token resolves to it). jq has no builtin that runs a command or writes a file;
-# the caller writes the output.
+# the caller writes the output. Callers run jq with HOME and the environment
+# emptied: jq 1.6 loads $HOME/.jq as a library, which would let unreviewed
+# code redefine builtins such as walk (Q-106 review A3).
 #
 # Semantics, per event key (hooks) and per mode (permissions):
 # (existing - ours) + ours, so a rerun is exactly idempotent and everything we
@@ -18,7 +20,7 @@
 #   under $dir/hooks/. Deep equality left a stale group beside its new version
 #   the first time a group gained a hook, so shared hooks fired twice (FP-161).
 # - A permission rule is removed only when it equals one of ours (re-added) or
-#   is its legacy single-slash form, which matched nothing (Q-049); a rule the
+#   is its legacy single-slash form under $dir, which matched nothing (Q-049); a rule the
 #   wiring no longer carries is never removed. The deny rules are what blocks
 #   guard-trusted-writes.py's HARD tier for the file tools (decision 023
 #   amendment B). A mode whose value is not an array (e.g. "defaultMode")
@@ -42,10 +44,12 @@
 | .permissions //= {}
 | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (
     .;
-    # Also drop each rule's legacy single-slash form (relative to the
-    # settings file, so it matched nothing; wiring.json emits //abs).
+    # Also drop the legacy single-slash form (relative to the settings file,
+    # so it matched nothing; wiring.json emits //abs) of each rule under $dir
+    # only: a branch's Read(//x) must not delete a user's own Read(/x).
     .permissions[$mode] =
       (((.permissions[$mode] // []) - $wiring.permissions[$mode]
-        - ($wiring.permissions[$mode] | map(sub("\\(//"; "(/"))))
+        - ($wiring.permissions[$mode]
+           | map(select(contains("(/" + $dir + "/")) | sub("\\(//"; "(/"))))
        + $wiring.permissions[$mode])
   )

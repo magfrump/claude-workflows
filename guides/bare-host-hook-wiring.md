@@ -49,12 +49,16 @@ matcher, command) and `permissions.deny`.
 `settings.json:` diff of your file (as `jq` prints it) against the merged result, and
 the y applies both. Groups whose commands all run something under `~/.claude/hooks/`
 are replaced by the current wiring's (FP-161); each wiring rule is added once, its
-legacy single-slash form dropped (Q-049); everything else is kept. A `-` line on a
-hook command means the install unwires it. The old file goes to
-`~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written when the
-file is a symlink or not one JSON object, `jq` is missing, or the merge fails: the
-review says why, and a `REMINDER` follows if `wiring.json` changed. An edit to the
-file between the review and the y refuses the install.
+legacy single-slash form under `~/.claude` dropped (Q-049); everything else is kept.
+Above the diff, the review lists by name each hook command the merge unwires
+(`UNWIRES hook:`), each rule it removes (`REMOVES deny rule:`) and each non-deny rule
+it adds (`ADDS allow rule:`). Read that list, not the `-` lines: the merge moves our
+groups to the end, so a group that stays wired also shows as `-`/`+`. The old file
+goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written
+when the file is a symlink or not one JSON object, `jq` is missing, `wiring.json`
+names a hook command other than `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or the
+merge fails: the review says why, and a `REMINDER` follows if `wiring.json` changed.
+An edit to the file between the review and the y refuses the install.
 
 To merge by hand, print the wiring with the `{{CLAUDE_DIR}}` token resolved and the
 comment dropped:
@@ -66,8 +70,9 @@ jq --arg dir "$HOME/.claude" \
 ```
 
 Merge the output into `~/.claude/settings.json` by hand:
-- For each event key under `hooks`, add these matcher groups beside any you already
-  have.
+- For each event key under `hooks`, remove any older copy of these groups (every
+  command under `~/.claude/hooks/`), then add these beside your own; an old copy left
+  in place fires its hooks twice (FP-161).
 - Add the `permissions.deny` rules to your existing list.
 
 Then check that the file still parses: `jq . ~/.claude/settings.json >/dev/null && echo OK`.

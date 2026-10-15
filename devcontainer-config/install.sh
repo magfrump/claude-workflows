@@ -45,7 +45,8 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      hooks/wiring.json is merged into <dest>/settings.json by the container's
      merge (Q-106): shown in the review, applied by the same y, old file to
      the backup. Never written when it is a symlink or not one JSON object,
-     jq is missing, or the merge fails (the review says why).
+     jq is missing, wiring.json names a hook outside <dest>/hooks, or the
+     merge fails (the review says why and lists what it unwires or removes).
 
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
@@ -83,7 +84,7 @@ not a determined agent: a pty wrapper and `env -u CLAUDECODE` get past it.
 The hard barrier is a sandbox that denies agents write access to ~/.claude.
 
 Needs git, perl (the review's control-byte filter), pgrep and a mounted /proc (Linux);
-refuses without them.
+refuses without them. Without jq the settings.json merge is skipped.
 
 Both targets are refused, before anything is staged, when the checkout's own
 .git holds a filter.*, core.fsmonitor, include* or hook.* key (in config or
@@ -715,6 +716,19 @@ file_hash() {
   if [ -e "$1" ]; then sha256sum < "$1" | cut -d' ' -f1; else echo absent; fi
 }
 
+# sjq <args...>: jq for the settings merge (Q-106), with HOME and the environment
+# emptied, so no ~/.jq library (jq 1.6 loads it) or env value shapes the result
+# (review A3), and with its stderr dropped, so it never reaches the terminal.
+sjq() { env -i PATH="$PATH" HOME=/nonexistent jq "$@" 2>/dev/null; }
+ONE_OBJ='length == 1 and (.[0] | type == "object")'
+# Every wiring hook group has a hook, and every command is `bash|python3
+# {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell syntax: anything else would
+# run code from outside the reviewed payload yet count as "ours" (review A2), or
+# land as a group no later merge removes.
+WIRING_SHAPE='[.hooks[]?[]? | (.hooks // []) | length > 0
+   and all(.command | type == "string" and (contains("..") | not)
+           and test("^(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+$"))] | all'
+
 # rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
 rm_new_copies() {
   local n
@@ -988,34 +1002,51 @@ install_claude_home() {
   fi
   # settings.json (Q-106 [2]): the container's merge program, run from the
   # hash-checked copies, so the y covers its result; written only after the y.
-  # umask 077: settings can hold secrets. jq's stderr never reaches the terminal.
+  # umask 077: settings can hold secrets; the merged copy then gets the live
+  # file's mode. The live file is read once, into $s_view.raw: the check, the
+  # hash and the merge all read that copy. jq runs as sjq (above).
   local settings="$dest/settings.json" snew="${new}settings.json" s_why="" s_old_hash="" s_new_hash=""
-  local s_view="$HOST_TMP/settings.view" files_changed="$changed" rc=0
+  local s_view="$HOST_TMP/settings.view" files_changed="$changed" rc=0 s_dir s_mode=600
+  s_dir="$(cd "$dest" && pwd)"   # no trailing slash in the paths it writes (review C1)
   if [ -L "$settings" ] || { [ -e "$settings" ] && [ ! -f "$settings" ]; }; then
     s_why="it is a symlink or not a regular file, and install.sh never writes through one"
   elif ! command -v jq >/dev/null 2>&1; then
     s_why="jq is not installed"
   elif [ ! -f "${new}hooks/wiring.json" ] || [ ! -f "${new}hooks/lib/wiring-merge.jq" ]; then
     s_why="the payload has no hooks/wiring.json or hooks/lib/wiring-merge.jq"
-  elif [ -e "$settings" ] && ! jq -se 'length == 1 and (.[0] | type == "object")' "$settings" >/dev/null 2>&1; then
+  elif ! sjq -e "$WIRING_SHAPE" "${new}hooks/wiring.json" >/dev/null; then
+    s_why="hooks/wiring.json has a hook command that is not 'bash|python3 {{CLAUDE_DIR}}/hooks/<path>' without '..'"
+  elif [ -e "$settings" ] && ! { s_mode="$(stat -c %a "$settings")" && (umask 077; cp "$settings" "$s_view.raw"); }; then
+    s_why="it could not be read"
+  elif [ -e "$s_view.raw" ] && ! sjq -se "$ONE_OBJ" "$s_view.raw" >/dev/null; then
     s_why="it is not one valid JSON object; fix it by hand and rerun"
-  elif ! (umask 077   # one read of the live file: s_old_hash is that copy's hash
-          if [ -e "$settings" ]; then cp "$settings" "$s_view.raw" && jq . "$s_view.raw"; else echo '{}'; fi > "$s_view"
-          jq --arg dir "$dest" --slurpfile w "${new}hooks/wiring.json" \
-             -f "${new}hooks/lib/wiring-merge.jq" "$s_view" > "$snew") 2>/dev/null \
-       || [ ! -s "$snew" ]; then
+  elif ! (umask 077
+          if [ -e "$s_view.raw" ]; then sjq . "$s_view.raw"; else echo '{}'; fi > "$s_view"
+          sjq --arg dir "$s_dir" --slurpfile w "${new}hooks/wiring.json" \
+              -f "${new}hooks/lib/wiring-merge.jq" "$s_view" > "$snew") \
+       || ! sjq -se "$ONE_OBJ" "$snew" >/dev/null || ! chmod "$s_mode" "$snew"; then
     s_why="the merge program failed on it (a wiring.json value of the wrong type?)"
   fi
   if [ -n "$s_why" ]; then
     rm -f "$snew"
-    echo "settings.json: NOT merged: $settings: $s_why." | vis_or_die
+    echo "WARNING: settings.json NOT merged: $settings: $s_why." | vis_or_die
   else
+    # Review A2/A7: what the y would unwire, remove or newly allow, listed by
+    # name. A reorder shows as -/+ in the diff below but never here.
+    sjq -rn --slurpfile o "$s_view" --slurpfile n "$snew" '
+      def cmds: [.hooks[]?[]?.hooks[]?.command]; def rules(m): [.permissions[m]?[]?];
+      $o[0] as $a | $n[0] as $b
+      | ((($a | cmds) - ($b | cmds))[] | "  UNWIRES hook: " + .),
+        (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVES \($m) rule: " + .),
+        (($b.permissions // {} | keys[] | select(. != "deny")) as $m
+         | (($b | rules($m)) - ($a | rules($m)))[] | "  ADDS \($m) rule: " + .)' > "$s_view.sum" || true
     [ -e "$settings" ] || : > "$s_view"   # a new file: every line is "+"
     diff -u --label "$settings (now, as jq prints it)" --label "$settings (after the wiring merge)" \
       "$s_view" "$snew" > "$s_view.diff" 2>&1 || rc=$?
     case "$rc" in
       0) rm -f "$snew" ;;   # already merged: nothing to write
       1) echo "settings.json: the hooks/wiring.json merge this install applies (Q-106; jq rewrites the file's layout):"
+         vis_or_die < "$s_view.sum"
          vis_or_die < "$s_view.diff"
          s_old_hash="$(file_hash "$s_view.raw")"; s_new_hash="$(file_hash "$snew")"
          changed=1 ;;
@@ -1040,7 +1071,10 @@ install_claude_home() {
     wiring_changed=1
   fi
 
-  if ! confirm "Install these files into $dest?"; then
+  local q="Install these files into $dest?"
+  if [ "$files_changed" -eq 0 ]; then q="Install this settings.json merge into $settings?"
+  elif [ -n "$s_new_hash" ]; then q="Install these files and the settings.json merge into $dest?"; fi
+  if ! confirm "$q"; then
     rm_new_copies "$dest"
     echo "Aborted. Nothing was changed. (host ~/.claude)"
     DECLINED=1
@@ -1077,7 +1111,6 @@ install_claude_home() {
   for name in "${swap_names[@]}"; do
     if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then any=1; fi
   done
-  if [ -n "$s_new_hash" ] && [ -e "$settings" ]; then any=1; fi
   if [ "$any" -eq 1 ]; then
     backup="$bkroot/$stamp"
     if [ -e "$backup" ]; then backup="$backup.$$"; fi
@@ -1119,22 +1152,30 @@ install_claude_home() {
     echo "Installed into $dest."
   fi
 
-  # Q-106: back up right before the rename, so an edit since the check is kept
-  # there; mv replaces a planted link. The entries stay installed on a failure.
+  # Q-106: back up right before the rename (the backup dir is made here if no
+  # entry needed one), so an edit since the check is kept there; -P copies a
+  # planted link as a link and mv replaces it. The entries stay installed on a failure.
   if [ -n "$s_new_hash" ]; then
-    if [ -n "$backup" ] && [ -e "$settings" ]; then
-      if ! cp -p "$settings" "$backup/settings.json" || ! chmod --reference="$settings" "$snew"; then
-        echo "ERROR: could not back up $settings; it was not changed. Rerun install.sh." >&2
+    local s_fail="it was not changed"
+    if [ "$files_changed" -eq 1 ]; then s_fail="$s_fail; the files above WERE installed${backup:+, their previous versions are in $backup}"; fi
+    if [ -e "$settings" ] || [ -L "$settings" ]; then
+      if [ -z "$backup" ]; then backup="$bkroot/$stamp"; if [ -e "$backup" ]; then backup="$backup.$$"; fi; fi
+      if ! mkdir -p "$backup" || ! cp -pP "$settings" "$backup/settings.json"; then
+        echo "ERROR: could not back up $settings, so $s_fail. Rerun install.sh." >&2
         exit 1
       fi
     fi
     if ! mv -f "$snew" "$settings"; then
-      echo "ERROR: could not write $settings; it was not changed. Rerun install.sh." >&2
+      echo "ERROR: could not write $settings, so $s_fail. Rerun install.sh." >&2
       exit 1
     fi
-    echo "Merged hooks/wiring.json into $settings${backup:+ (the previous file is in $backup)}."
+    echo "Merged hooks/wiring.json into $settings."
   fi
-  if [ -n "$backup" ]; then
+  if [ -n "$backup" ] && [ "$files_changed" -eq 0 ]; then
+    # Review A6: not stamped, so it never counts among (or prunes) the 3 kept.
+    echo "The previous settings.json is in $backup (delete it when satisfied)."
+  fi
+  if [ -n "$backup" ] && [ "$files_changed" -eq 1 ]; then
     echo "Previous entries moved to $backup (delete it when satisfied)."
     # A6: keep this run's backup plus the 2 most recent earlier ones. Reached
     # only after a complete swap, so a failed or rolled-back run prunes nothing.

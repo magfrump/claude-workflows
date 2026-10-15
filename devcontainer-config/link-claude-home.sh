@@ -112,7 +112,7 @@ else
     # provenance (FP-161), is hooks/lib/wiring-merge.jq: one copy, which
     # install.sh's host target also runs (Q-106 [2]). Its header has the why.
     tmp="$SETTINGS.link-tmp.$$"
-    if jq --arg dir "$DEST" --slurpfile w "$WIRING" -f "$MERGE" \
+    if env -i PATH="$PATH" HOME=/nonexistent jq --arg dir "$DEST" --slurpfile w "$WIRING" -f "$MERGE" \
          "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
       mv -f "$tmp" "$SETTINGS"
       echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") hook command(s)" \
