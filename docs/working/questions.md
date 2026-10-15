@@ -42,6 +42,7 @@ The index below is generated — edit entries, not the table.
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | After Q-162's paste lands, run `./devcontainer-config/install.sh` in your host checkout (review the diff it... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. It live-veri... | 2026-10-15 |
+| [Q-176](#q-176--q092-deny-matcher-live-check) | you: terminal | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
@@ -56,6 +57,7 @@ The index below is generated — edit entries, not the table.
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
 | [Q-173](#q-173--exit-scan-split-groups) | deferred | Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git comma... | 2026-10-15 |
+| [Q-177](#q-177--q092-merge) | deferred | When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-dr... | 2026-10-15 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 <!-- index:end -->
@@ -346,6 +348,41 @@ Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is out
 
 - **Interim:** [1].
 - **If the answer differs:** [2] or [3] becomes a small unit after Q-106 lands.
+
+### Q-176 · q092-deny-matcher-live-check
+**Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them. This check settles it with a throwaway always-allow hook; it needs no merge. Run on the host:
+
+```
+mkdir -p ~/q092/.claude && cd ~/q092 && echo canary > x.q092-canary && printf '%s\n' '{' '  "permissions": { "deny": ["Bash(*.q092-canary*)", "Bash(rm -rf:*)"] },' '  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command",' '    "command": "echo '"'"'{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'"'"'" } ] } ] }' '}' > .claude/settings.local.json && claude --version && claude
+```
+
+In that session, check that `/hooks` lists the hook. Then ask Claude to run each of these one at a time, and note for each whether it **runs**, **prompts** or is **denied**:
+1. `cat x.q092-ca""nary`
+2. `cat x.q092-c\anary`
+3. `echo hi && rm -rf ./nothing-here`
+
+Then exit and `rm -rf ~/q092`. Paste back the version line and the three results.
+
+- **Interim:** Q-092's two branches stay unmerged (Q-177).
+- **If the answer differs:** any "runs" sends Q-177 to its options; all "denied" lands Q-092.
+
+### Q-177 · q092-merge
+**Needs:** deferred · **Opened:** 2026-10-15 · **Status:** OPEN
+
+When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-drop-hook-deny-reader` (aeda94b2)?
+
+- **Read:** both rubrics (`docs/reviews/code-review-rubric-2026-10-15-fix-q092a-drop-deny-option.md`, `…-fix-q092-drop-hook-deny-reader.md`) and the independent closing review `docs/reviews/independent-review-2026-10-15-q092b.md` on U2. The hook never emits `ask`, and tests pin its stdout, so Q-082's "deny beats a hook allow" applies to every path. The independent reviewer found no way to make the hook allow outside the allow rules, and all fail-closed cases held. Hook suite 35/35; health check passed clean. U1 had an independent clean terminal pass; U2's terminal pass was self-review, then the independent closing review (MA1: this live check, now Q-176). Sizes 413 + 451 lines.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge if Q-176 is all "denied"** | The loop adds both units to the ready branch | Nothing more | — |
+| **[2] Q-176 shows a spelling that runs: accept it** | Merge anyway: the same class as the `.c*` glob residual; Q-125's sandbox is the real fix | One answer | A quoted credential read runs without a prompt where no sandbox exists (cc-isolated until Q-125) |
+| **[3] Q-176 shows a spelling that runs: keep a quote check** | Before merging, the hook's shape allowlist refuses words containing quotes or backslashes mid-word | An enforcement-file unit | Some legitimate quoted commands prompt again |
+
+- **Interim:** [1]'s condition; nothing merges until Q-176's result.
+- **If the answer differs:** [3] adds a unit before the merge.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN

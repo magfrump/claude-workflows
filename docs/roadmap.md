@@ -44,6 +44,10 @@ before merging, since this session cannot merge into main (Q-162).
 - **One workspace per `cc-isolated` call** (`fix/cc-isolated-one-workspace`, f6f37fad; was
   Next 3). Reviewed; the independent closing review was clean. In `merge/ready-2026-10-15`;
   probe Q-167 (b).
+- **Q-092 — drop the auto-approve hook's deny reader** (`fix/q092a-drop-deny-option`
+  d27a3891, then `fix/q092-drop-hook-deny-reader` aeda94b2). Built and reviewed, including an
+  independent closing review. Merge waits on the host check of Claude Code's deny matcher
+  (Q-176, Q-177).
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
@@ -111,6 +115,18 @@ Unranked. Each names the signal that motivates it.
   flags (it fails safe today, at find_checkout). The guide example blocks still end in
   `# note`, which now exits 2 when pasted. First step: cc-push's guard (a host tool, so
   `Host-tool-tested:`), plus converting the guides' notes to own-line comments.
+- **`guard-trusted-writes.py`'s `ask` can turn a Bash deny into a prompt.** Signal: Q-092's
+  pre-mortem (F8). On a web-tainted session it emits `ask` for a Bash write to a SOFT-tier
+  target, and per #39344 an `ask` overrides a matching deny. "Never asks" holds for the
+  auto-approve hook only. First step: confirm with Q-176's setup whether an `ask` beats a deny
+  on 2.1.300, then decide whether the guard should emit `deny` there instead.
+- **Claude Code can drop a whole settings file the hook accepts.** Signal: Q-092 (F6b, A1). A
+  BOM, a NaN literal or another key's bad value can make Claude Code ignore a file, which takes
+  its deny rules with it while the hook still approves from its allow rules. First step: trace
+  which values do this, then have the hook refuse them.
+- **The hook reads project settings from its working directory's git root.** Signal: Q-092's
+  independent review (C6, pre-existing). A session that has `cd`'d into another repo gets that
+  repo's allow rules. First step: confirm against how Claude Code itself picks the project.
 - **Show bidi and zero-width characters in install review diffs.** Signal: Q-106's review
   (rubric A5). `vis` passes U+202A–202E, U+2066–2069 and zero-width characters, so on some
   terminals a crafted line in a review diff can display reordered. Pre-existing; Q-106 only
