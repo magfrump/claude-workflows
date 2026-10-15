@@ -768,8 +768,8 @@ conflict: `hg -C WT merge --abort`, then a stop.
 
 Only after step 9's land is verified, with no `other` or `refuse` line from
 `--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
-slug `constraints-doc-missing`, asking for `docs/constraints.md`, unless an open one with
-that slug exists: D2). Fill free slots (`--settings`'
+slug `constraints-doc-missing`, asking for `docs/constraints.md`, unless WT's questions
+files hold one with that slug, open or answered: D2). Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
 
