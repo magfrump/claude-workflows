@@ -20,7 +20,8 @@
 #   under $dir/hooks/. Deep equality left a stale group beside its new version
 #   the first time a group gained a hook, so shared hooks fired twice (FP-161).
 # - A permission rule is removed only when it equals one of ours (re-added) or
-#   is its legacy single-slash form under $dir, which matched nothing (Q-049); a rule the
+#   is the legacy single-slash form of one of our Read/Edit/Write rules under
+#   $dir, which matched nothing (Q-049); a rule the
 #   wiring no longer carries is never removed. The deny rules are what blocks
 #   guard-trusted-writes.py's HARD tier for the file tools (decision 023
 #   amendment B). A mode whose value is not an array (e.g. "defaultMode")
@@ -45,11 +46,13 @@
 | reduce (($wiring.permissions // {}) | keys_unsorted[]) as $mode (
     .;
     # Also drop the legacy single-slash form (relative to the settings file,
-    # so it matched nothing; wiring.json emits //abs) of each rule under $dir
-    # only: a branch's Read(//x) must not delete a user's own Read(/x).
+    # so it matched nothing; wiring.json emits //abs) of each file-tool rule
+    # under $dir only: a branch's Read(//x) or Bash(//...) must not delete a
+    # user's own Read(/x) or Bash(/...), which may be real rules.
     .permissions[$mode] =
       (((.permissions[$mode] // []) - $wiring.permissions[$mode]
         - ($wiring.permissions[$mode]
-           | map(select(contains("(/" + $dir + "/")) | sub("\\(//"; "(/"))))
+           | map(select(test("^(Read|Edit|Write)\\(//") and contains("(/" + $dir + "/"))
+                 | sub("\\(//"; "(/"))))
        + $wiring.permissions[$mode])
   )

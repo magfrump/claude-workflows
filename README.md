@@ -59,7 +59,8 @@ line marked `WIRED in settings` before you answer y: that hook is referenced fro
 your `settings.json` and will stop running. Each of the seven entries it
 replaces, old links included, is moved to
 `~/.claude/.claude-workflows-backup/<UTC stamp>/`. The backups of the last 3
-installs are kept (the current run's is never removed).
+installs are kept (the current run's is never removed; one holding only
+`settings.json` is kept and not counted).
 Delete them when you're satisfied. Your memory, projects and logs are never
 touched.
 

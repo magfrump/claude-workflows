@@ -93,7 +93,31 @@ Fact-check: 38 claims, 2 Incorrect, 1 Stale, 8 Mostly Accurate; no behavioral re
 | P2-5 | --help put "lists what it unwires" on the refusal path; guide skip list missed empty group and missing program. | 🟢 | Fixed |
 | P2-6 | link-claude-home.sh's two count-only jq calls still load `~/.jq`; they only feed a message. | 🟢 | Accepted |
 
-Size after pass-2 fixes: 519 code lines against 184396ea.
+Size after pass-2 fact-check fixes: 519 code lines against 184396ea.
+
+### Pass 2 critics (range 05b13d11..f14cf11a): security, performance, API consistency
+
+Architecture skipped this pass: the fixes change no module structure (pass 1 found 0 Structural / 0 Coupling). Reports: `security-review-2026-10-15-q106-pass2.md`, `performance-review-2026-10-15-q106-pass2.md`, `api-consistency-review-2026-10-15-q106-pass2.md`. Pass-1 security F1, F2, F3, F6, F7, F9 verified resolved (F1, F2 with the remainders below); F4, F5 still with the user.
+
+| # | Finding | Tier | Disposition |
+|---|---|---|---|
+| N1 | `wiring.json` with two documents (hostile first, `{}` last) passed WIRING_SHAPE: `jq -e` judges the last, the merge reads the first (executed). | 🟡 Medium | Fixed: checked with `jq -s`, exactly one object; T100 |
+| N2 | WIRING_SHAPE checked only `.command`; an `http`/`prompt` hook with a well-formed command passed. | 🟡 Medium | Fixed: `type == "command"`, keys only type/command/timeout; T100 |
+| N3 | The scoped legacy prune still deleted a user's single-slash Bash rule (a real rule). | 🟡 Medium | Fixed: prune only Read/Edit/Write rules; T99 |
+| N4 | By-name list printed raw; a newline in a rule forged lines. | 🟢 Low | Fixed: names print as JSON strings |
+| N5 | Symlink test and stat/cp are separate lookups; a swap between could show a link target in the review (the write is still refused). | 🟢 Low | Accepted (same-uid write inside `~/.claude`, denyWrite-covered) |
+| N6 | No line for added hooks. | 🟢 Info | Fixed: `ADD hook:` lines |
+| N7 / API-1 | First install over a settings-only `~/.claude` said "Previous entries moved" and stamped the backup; a full install no longer said settings.json was backed up. | 🟢 Minor | Fixed: stamp, count and message gated on entries moved; settings backup always announced; T103 |
+| API-2 | Third-person markers beside base-form ones. | 🟢 Minor | Fixed: `UNWIRE`/`ADD`/`REMOVE` |
+| API-3 | Empty by-name list printed nothing. | 🟢 Minor | Fixed: `(none — …)` line |
+| API-4 | Empty-group refusal blamed "a hook command"; help spelled `<dest>/hooks`. | 🟢 Minor | Fixed: message and help |
+| API-5 | README/help silent on settings-only backups; rotation comment's reason stale. | 🟢 Info | Fixed |
+| API-6 | 037 Consequences line lacked a Superseded marker. | 🟢 Minor | Fixed |
+| API-7 | Post-swap ERROR was one long line. | 🟢 Info | Fixed: continuation line |
+| Perf-1 | Settings-only backups are never pruned (a few KiB each). | 🟢 Info | Accepted (the price of never pruning a full backup) |
+| Perf-2 | The summary jq runs before the diff (~15 ms wasted on a merged rerun). | 🟢 Info | Accepted |
+
+Size after pass-2 fixes: 558 code lines against 184396ea.
 
 ## 🧩 Composition check
 

@@ -45,10 +45,12 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      hooks/wiring.json is merged into <dest>/settings.json by the container's
      merge (Q-106): shown in the review, applied by the same y, old file to
      the backup. Never written when it is a symlink, unreadable or not one JSON object,
-     jq is missing, a wiring.json hook command is not `bash|python3
-     <dest>/hooks/<path>`, or the merge fails; the review says why. A merge
-     that runs is listed by name: each hook it unwires, rule it removes or
-     non-deny rule it adds.
+     jq is missing, the payload lacks the merge program, a wiring.json hook
+     is not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (or a group is
+     empty), or the merge fails; the review says why. A merge that runs is
+     listed by name: each hook it unwires or adds, each rule it removes or
+     newly allows. A backup holding only settings.json is not counted
+     among the 3 kept.
 
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
@@ -723,13 +725,16 @@ file_hash() {
 # (review A3), and with its stderr dropped, so it never reaches the terminal.
 sjq() { env -i PATH="$PATH" HOME=/nonexistent jq "$@" 2>/dev/null; }
 ONE_OBJ='length == 1 and (.[0] | type == "object")'
-# Every wiring hook group has a hook, and every command is `bash|python3
-# {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell syntax: anything else would
-# run code from outside the reviewed payload yet count as "ours" (review A2), or
-# land as a group no later merge removes.
-WIRING_SHAPE='[.hooks[]?[]? | (.hooks // []) | length > 0
-   and all(.command | type == "string" and (contains("..") | not)
-           and test("^(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+$"))] | all'
+# wiring.json is exactly one object (jq -e judges only the last of several, the
+# merge reads the first: review pass 2, N1); every hook group has a hook; and
+# every hook is a `command` hook (no other keys but timeout: N2) running `bash|
+# python3 {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell syntax. Anything
+# else would run code from outside the reviewed payload yet count as "ours"
+# (review A2), or land as a group no later merge removes. Used with jq -s.
+WIRING_SHAPE='length == 1 and (.[0] | type == "object") and ([.[0].hooks[]?[]? | (.hooks // []) | length > 0
+   and all(.type == "command" and ((keys - ["type", "command", "timeout"]) == [])
+           and (.command | type == "string" and (contains("..") | not)
+                and test("^(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+$")))] | all)'
 
 # rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
 rm_new_copies() {
@@ -1016,8 +1021,8 @@ install_claude_home() {
     s_why="jq is not installed"
   elif [ ! -f "${new}hooks/wiring.json" ] || [ ! -f "${new}hooks/lib/wiring-merge.jq" ]; then
     s_why="the payload has no hooks/wiring.json or hooks/lib/wiring-merge.jq"
-  elif ! sjq -e "$WIRING_SHAPE" "${new}hooks/wiring.json" >/dev/null; then
-    s_why="hooks/wiring.json has a hook command that is not 'bash|python3 {{CLAUDE_DIR}}/hooks/<path>' without '..'"
+  elif ! sjq -se "$WIRING_SHAPE" "${new}hooks/wiring.json" >/dev/null; then
+    s_why="hooks/wiring.json is not one object whose every hook is a command hook running 'bash|python3 {{CLAUDE_DIR}}/hooks/<path>' (no '..', no empty group)"
   elif [ -e "$settings" ] && ! { s_mode="$(stat -c %a "$settings")" && (umask 077; cp "$settings" "$s_view.raw"); }; then
     s_why="it could not be read"
   elif [ -e "$s_view.raw" ] && ! sjq -se "$ONE_OBJ" "$s_view.raw" >/dev/null; then
@@ -1033,19 +1038,23 @@ install_claude_home() {
     rm -f "$snew"
     echo "WARNING: settings.json NOT merged: $settings: $s_why." | vis_or_die
   else
-    # Review A2/A7: what the y would unwire, remove or newly allow, listed by
-    # name. A hook is keyed by event, matcher and command, so a command moved
-    # to another event or matcher is listed too; a reorder never is.
+    # Review A2/A7: each hook the y would unwire or add, and each rule it would
+    # remove or newly allow (other than deny), listed by name. A hook is keyed
+    # by event, matcher and command, so a move to another event or matcher is
+    # listed; a reorder never is. Names print as JSON strings, so a newline in
+    # one cannot forge another line (review pass 2, N4).
     sjq -rn --slurpfile o "$s_view" --slurpfile n "$snew" '
       def cmds: [.hooks // {} | to_entries[] | .key as $e | .value[]? | (.matcher // "*") as $m
                  | .hooks[]? | "\($e) [\($m)] \(.command)"];
       def rules(m): [.permissions[m]?[]?];
       $o[0] as $a | $n[0] as $b
-      | ((($a | cmds) - ($b | cmds))[] | "  UNWIRES hook: " + .),
-        (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVES \($m) rule: " + .),
-        (($b.permissions // {} | keys[] | select(. != "deny")) as $m
-         | (($b | rules($m)) - ($a | rules($m)))[] | "  ADDS \($m) rule: " + .)' > "$s_view.sum" \
-      || echo "  WARNING: the by-name list could not be computed; read the whole diff." > "$s_view.sum"
+      | [((($a | cmds) - ($b | cmds))[] | "  UNWIRE hook: " + tojson),
+         ((($b | cmds) - ($a | cmds))[] | "  ADD hook: " + tojson),
+         (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVE \($m) rule: " + tojson),
+         (($b.permissions // {} | keys[] | select(. != "deny")) as $m
+          | (($b | rules($m)) - ($a | rules($m)))[] | "  ADD \($m) rule: " + tojson)]
+      | if length == 0 then "  (none — no hook unwired or added, no rule removed or newly allowed)" else .[] end' \
+      > "$s_view.sum" || echo "  WARNING: the by-name list could not be computed; read the whole diff." > "$s_view.sum"
     [ -e "$settings" ] || : > "$s_view"   # a new file: every line is "+"
     diff -u --label "$settings (now, as jq prints it)" --label "$settings (after the wiring merge)" \
       "$s_view" "$snew" > "$s_view.diff" 2>&1 || rc=$?
@@ -1167,21 +1176,22 @@ install_claude_home() {
     if [ -e "$settings" ] || [ -L "$settings" ]; then
       if [ -z "$backup" ]; then backup="$bkroot/$stamp"; if [ -e "$backup" ]; then backup="$backup.$$"; fi; fi
       if ! mkdir -p "$backup" || ! cp -pP "$settings" "$backup/settings.json"; then
-        echo "ERROR: could not back up $settings, so $s_fail. Rerun install.sh." >&2
+        echo "ERROR: could not back up $settings, so $s_fail." >&2
+        echo "       Rerun install.sh." >&2
         exit 1
       fi
+      echo "The previous settings.json is in $backup (delete it when satisfied)."
     fi
     if ! mv -f "$snew" "$settings"; then
-      echo "ERROR: could not write $settings, so $s_fail. Rerun install.sh." >&2
+      echo "ERROR: could not write $settings, so $s_fail." >&2
+      echo "       Rerun install.sh." >&2
       exit 1
     fi
     echo "Merged hooks/wiring.json into $settings."
   fi
-  if [ -n "$backup" ] && [ "$files_changed" -eq 0 ]; then
-    # Review A6: not stamped, so it never counts among (or prunes) the 3 kept.
-    echo "The previous settings.json is in $backup (delete it when satisfied)."
-  fi
-  if [ -n "$backup" ] && [ "$files_changed" -eq 1 ]; then
+  # Stamped, counted and pruned only when entries moved (review A6, pass 2 N7):
+  # a backup holding only settings.json never takes one of the 3 slots.
+  if [ -n "$backup" ] && [ "${#moved[@]}" -gt 0 ]; then
     echo "Previous entries moved to $backup (delete it when satisfied)."
     # A6: keep this run's backup plus the 2 most recent earlier ones. Reached
     # only after a complete swap, so a failed or rolled-back run prunes nothing.
@@ -1189,8 +1199,8 @@ install_claude_home() {
     # only copy of what it replaced, when earlier names sorted later (a clock
     # that ran ahead). So: this run's backup is never a candidate; the others
     # are ordered by the epoch each completed install wrote into its own backup
-    # (.install-stamp); a directory without that stamp was not made by a
-    # completed install and is never removed.
+    # (.install-stamp); a directory without that stamp (a settings.json-only
+    # backup, or one not made by a completed install) is never removed.
     printf 'installed_epoch=%s\n' "$(date -u +%s)" > "$backup/.install-stamp"
     local old d e pruned=0
     while IFS= read -r old; do
