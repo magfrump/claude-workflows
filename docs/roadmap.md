@@ -79,10 +79,9 @@ before merging, since this session cannot merge into main (Q-162).
    then launches the wrong workspace; install.sh's "Next steps" lines still carry such notes
    (override-log, deferred). First step: make a second positional a usage error (exit 2), and
    drop the notes from install.sh's lines. Enforcement file, so a re-bless.
-4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
-   Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
-   "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
-   enforcement file, so the plan opens with the bypass pre-mortem.
+4. **Automate the host settings.json merge (Q-106 [2]).** Built
+   (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
+   gate with one Medium open (Q-174); gate coverage of the moved merge program is Q-175.
 5. **Decision 015's re-run: apply the outcome (Q-170).** Motive: Q-105 [3]. The divergent
    design is done (`docs/dd-015-step4`, f050b487, lands with Q-162): keep Docker, since none of
    the 6 breakages was Docker's. First step, once Q-170 is answered: apply §6's amendment
@@ -97,6 +96,10 @@ Unranked. Each names the signal that motivates it.
   `failure-patterns.md`), so each landing needs a hand-built `merge/*` branch. A
   `merge=union` attribute for those files would land the rows without a merge branch.
   `.gitattributes` is a truth file and install.sh's archive reads it, so this is your call.
+- **Show bidi and zero-width characters in install review diffs.** Signal: Q-106's review
+  (rubric A5). `vis` passes U+202A–202E, U+2066–2069 and zero-width characters, so on some
+  terminals a crafted line in a review diff can display reordered. Pre-existing; Q-106 only
+  extends it to the settings diff. First step: extend `vis` in install.sh, with a test.
 - **A launcher flag to refresh the cached Claude Code layer.** Signal: the doc-drift review
   (C3). A recreated container goes back to the image's Claude Code version until
   auto-update runs; something like `--probe-only --no-cache` would rebuild that layer.

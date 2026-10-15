@@ -36,6 +36,8 @@ The index below is generated — edit entries, not the table.
 | [Q-170](#q-170--decision-015-isolation-rerun) | you: judgment | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
 | [Q-171](#q-171--q168-landing-at-cap) | you: judgment | Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The fi... | 2026-10-15 |
 | [Q-172](#q-172--exit-scan-parity-boundary) | you: judgment | How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every revi... | 2026-10-15 |
+| [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, on `merge/ready-2026-10-15`). install.sh's h... | 2026-10-15 |
+| [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | After Q-162's paste lands, run `./devcontainer-config/install.sh` in your host checkout (review the diff it... | 2026-10-15 |
@@ -293,6 +295,46 @@ Q-168's final pass split off four groups, each shown end to end (exit scan retur
 
 - **Read:** Q-168's rubric, the R3–R6 and A14–A17 rows
 - **Interim:** documented as known routes once Q-171's iteration lands; cc-push stays the safe path.
+
+### Q-174 · q106-iteration-4-gate
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, on `merge/ready-2026-10-15`). install.sh's host target now runs the container's provenance merge on your `~/.claude/settings.json`, inside its review and gated by your y. Its review loop stopped at the iteration-4 gate with one Medium open. Authorize a 4th iteration?
+
+- **Why it's yours:** the iteration-4 gate, and the change writes your host hardening.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` and plan `docs/working/plan-q106-host-settings-merge.md` (pre-mortem) on the branch.
+  - **One merge program:** `hooks/lib/wiring-merge.jq`, shared with `link-claude-home.sh` and run with an empty HOME and environment.
+  - **Review before your y:** a `settings.json:` diff plus a by-name UNWIRE/ADD/REMOVE list.
+  - **Refuses:** a symlinked, unreadable or non-object file, a missing jq, any `wiring.json` hook that is not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or a file that changed since the review.
+  - **Recovery:** a backup is taken before the rename, with the mode kept.
+  - **Also closes Q-108:** 037's stale lines are corrected, and the "035's regex lands" trigger is discharged.
+  - **Size:** 561 code lines (under 800).
+  - **Tests:** T93–T103 11/11, link-claude-home 16/16. The health check's only reds are the Q-145 race, each passing alone; slow suites pass.
+  - **S3-F1 (open, Medium, low confidence):** the wiring shape check covers each hook but not the group around it. An object-valued `hooks`, an object `matcher` or extra group keys would pass and be written.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Authorize iteration 4** (recommended) | Tighten the group shape (only `matcher`/`hooks`, typed), anchor the regexes with `\A…\z`, count duplicate hooks: about 20 lines, then the k=3 confirming pass, then into Q-162's branch | One later merge | Agent time spent on a check that may not matter |
+| **[2] Merge as is** | Land c6d7544f with S3-F1–F3 listed in the merge message | One merge now | A hostile branch's malformed group lands in settings.json after your y; if Claude Code rejects a schema-invalid file, deny rules stop applying until it is fixed |
+| **[3] Host check first** | A small paste: does Claude Code reject the whole file or skip one malformed group? The answer picks [1] or [2] | One paste | Only delay |
+
+- **After it merges:** the branch's host verification block (in the rubric's report; it installs into a temp dir with a copy of your settings.json, never the real one) joins Q-167.
+- **Interim:** unmerged; the installer keeps printing the manual-merge reminder.
+- **If the answer differs:** [2] merges as is; [3] adds one terminal entry.
+
+### Q-175 · q106-merge-program-gate-coverage
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'s `enforcement` regex. The trust manifest still hashes it, and both installs show it in their reviews. Should the commit gate cover it?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept it in the `hooks/**` class** | Same status as `wiring.json` and `guard-trusted-writes.py` | Nothing | A change to the merge program commits without a `Live-verified:` trailer |
+| **[2] Add it to the enforcement regex** | A small gate-code change with its test | One gate-code review | Every commit touching the program owes a container probe |
+| **[3] Its own trailer** | Like `Host-tool-tested:` | A new category to maintain | More trailers to remember |
+
+- **Interim:** [1].
+- **If the answer differs:** [2] or [3] becomes a small unit after Q-106 lands.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
