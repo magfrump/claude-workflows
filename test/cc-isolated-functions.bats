@@ -380,6 +380,111 @@ STUB
   [[ "$output" == *"unknown flag: --nope"*"EXIT STATUS"* ]]
 }
 
+# --- One workspace per run (roadmap Next 3; rebuild-hint rubric A7) -----------
+# A pasted line with a trailing '# note' reaches the launcher as extra words in
+# zsh without interactive_comments. The old parser kept the last positional, so
+# the note's last word became the workspace. Each refusal must come before any
+# devcontainer call and before --register writes anything.
+one_ws_setup() {
+  make_repo "$TEST_TMPDIR/a"
+  make_repo "$TEST_TMPDIR/b"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/b")"
+  export STUB_IMAGE_HASH STUB_FP
+}
+
+assert_refused_untouched() {
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"EXIT STATUS"* ]]
+  [ ! -s "$DC_LOG" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/a")" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/b")" ]
+}
+
+@test "a second workspace is a usage error in every mode that takes one, naming both" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b" form
+  for form in "" "--probe-only" "--register --profile python"; do
+    # shellcheck disable=SC2086  # $form is a list of flags on purpose
+    run bash "$CONFIG_SRC/cc-isolated.sh" $form "$a" "$b"
+    assert_refused_untouched
+    [[ "$output" == *"two workspaces given: $a and $b. cc-isolated takes one."*"or a path with an unquoted space"* ]]
+  done
+}
+
+@test "a pasted '# note' is refused at its first word, before its later words act as flags" {
+  one_ws_setup
+  # The note's words come after the workspace: refused, not launched on 'note'.
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/a" '#' note
+  assert_refused_untouched
+  [[ "$output" == *'\# is not a workspace; it looks like a pasted comment.'*'interactive_comments'* ]]
+  # No workspace before the note: '#' would have been the workspace and the
+  # note's --register (or --bless) would have run.
+  run bash "$CONFIG_SRC/cc-isolated.sh" '#' --register "$TEST_TMPDIR/a" --profile python
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only '#widen' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+}
+
+@test "a --profile value starting with '#' or '-' is a usage error, so a note cannot reach the flags" {
+  one_ws_setup
+  # Base: `--profile '#' --bless` ran a bless (exit 0) and `--profile '#' b` opened b.
+  rm -f "$(manifest_path)"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --profile '#' --bless
+  [ "$status" -eq 2 ]
+  [[ "$output" == *'\# is not an egress profile; it looks like a pasted comment.'* ]]
+  [ ! -f "$(manifest_path)" ]
+  bless_manifest >/dev/null
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only --profile '#' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/a" --profile --bless
+  assert_refused_untouched
+  [[ "$output" == *"--profile needs a value, not the flag --bless."* ]]
+}
+
+@test "after --: one workspace, and only when none came before it" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$a" -- "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$a" "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  # The one-word form names the workspace (it used to be dropped, opening $PWD).
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$b"
+  [ "$status" -eq 0 ]
+  grep -q "^devcontainer up --remove-existing-container --workspace-folder $b " "$DC_LOG"
+}
+
+@test "a directory named '#x' is still reachable as ./#x and after --" {
+  one_ws_setup
+  make_repo "$TEST_TMPDIR/#x"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/#x")"
+  cd "$TEST_TMPDIR"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only ./#x
+  [ "$status" -eq 0 ]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- '#x'
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "^devcontainer up --remove-existing-container --workspace-folder $TEST_TMPDIR/#x " "$DC_LOG")" -eq 2 ]
+}
+
+@test "install.sh's Next steps print no command line carrying a trailing '# note'" {
+  local block
+  block="$(sed -n '/echo "Next steps/,/^  case ":\$PATH:"/p' "$CONFIG_SRC/install.sh")"
+  [ -n "$block" ]
+  # Every echoed command line is the command alone (zsh would pass a note on).
+  run grep -E '^  echo "    (touch|cc-isolated|cc-push)' <<< "$block"
+  [ "${#lines[@]}" -eq 5 ]
+  run grep -E '^  echo ".*#' <<< "$block"
+  [ "$status" -eq 1 ]
+  # --probe-only recreates the container; it never "rebuilds" (C1, A7).
+  run grep -i 'rebuild' <<< "$block"
+  [ "$status" -eq 1 ]
+}
+
 @test "suggest_profiles proposes python for a python repo but never applies it" {
   make_repo "$TEST_TMPDIR/proj"
   touch "$TEST_TMPDIR/proj/pyproject.toml"

@@ -16,27 +16,35 @@ is already done.
 
 ## Command reference
 
-```bash
-cc-isolated                       # session for the git repo containing $PWD
-cc-isolated ~/code/other-project  # session for an explicit repo
-cc-isolated --list                # blessed config hash + verified-live status, host-tool state, registered projects
-cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
-cc-isolated --bless               # re-bless the installed config after YOU reviewed it
-cc-isolated --probe-only [REPO]   # RECREATE REPO's container from the blessed config, run the
-                                  # self-probe, record the config verified live on a pass
-cc-isolated --help                # usage header, exit status included
-cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone; first
-                                  # time. --remote is sticky: stored in the clone, reused
-cc-push [REPO]                    # later pushes (REPO defaults to the checkout holding $PWD)
-cc-push --branch NAME [REPO]      # a branch other than the one HEAD names
-cc-push --yes [REPO]              # no [y/N] prompt (the preview still prints)
-cc-push --clone DIR [REPO]        # a host-only clone other than the default
-cc-push --allow-running [REPO]    # go on although the session's container runs (warns)
-cc-push --help                    # usage header, exit codes included
-```
+A table rather than a code block with `# …` notes, so a copied command carries
+no note (see the paragraph after it).
+
+| Command | What it does |
+|---|---|
+| `cc-isolated` | session for the git repo containing `$PWD` |
+| `cc-isolated ~/code/other-project` | session for an explicit repo |
+| `cc-isolated --list` | blessed config hash + verified-live status, host-tool state, registered projects |
+| `cc-isolated --register ~/code/api --profile python` | widen egress, then re-bless |
+| `cc-isolated --bless` | re-bless the installed config after YOU reviewed it |
+| `cc-isolated --probe-only [REPO]` | RECREATE REPO's container from the blessed config, run the self-probe, record the config verified live on a pass |
+| `cc-isolated --help` | usage header, exit status included |
+| `cc-push --remote <url> [REPO]` | push a session's commits via a host-only clone; first time. `--remote` is sticky: stored in the clone, reused |
+| `cc-push [REPO]` | later pushes (REPO defaults to the checkout holding `$PWD`) |
+| `cc-push --branch NAME [REPO]` | a branch other than the one HEAD names |
+| `cc-push --yes [REPO]` | no [y/N] prompt (the preview still prints) |
+| `cc-push --clone DIR [REPO]` | a host-only clone other than the default |
+| `cc-push --allow-running [REPO]` | go on although the session's container runs (warns) |
+| `cc-push --help` | usage header, exit codes included |
 
 `cc-push` takes one checkout (`cc-push A B` and `cc-push A -- B` are usage
-errors). Both tools follow `install.sh`'s exit-status convention (decision log
+errors), and `cc-isolated` one workspace, under the same rule. Before `--`,
+`cc-isolated` also refuses a word starting with `#`, and a `--profile` value
+starting with `#` or `-`. Copy the command, not a `# …` note after it (other
+blocks in these guides still carry them): interactive zsh passes the note as
+arguments unless `setopt interactive_comments` is on, and the launcher used to
+take the note's last word as the workspace; now the line exits 2 and names the
+offending value. A directory whose name starts with `#` is `./#name` or
+`-- '#name'`. Both tools follow `install.sh`'s exit-status convention (decision log
 #58): 1 for an error, or for a prompt you declined; 2 for bad usage.
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
