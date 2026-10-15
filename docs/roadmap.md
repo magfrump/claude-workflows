@@ -25,6 +25,19 @@ before merging, since this session cannot merge into main (Q-162).
   on your approval: built and reviewed, waits on Q-163.
 - **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
   cycle's health-check red. Waits on Q-162's paste.
+- **Doc drift** (`fix/doc-drift-cycle1`, c8e87a69; added 2026-10-15). Motive: the In flight
+  brief below. Reviewed, loop closed; waits on Q-162's paste (`merge/ready-2026-10-15`).
+- **Q-160 — the in-loop size re-check** (`fix/q160-iteration-cap`, 4a44d2f3; added
+  2026-10-15). Motive: log row 62 fired again. Reviewed, simplified, narrow-checked; waits on
+  Q-162's paste.
+- **Q-096 — exit scan follows insteadOf targets** (`fix/q096-exit-scan-insteadof-target`;
+  added 2026-10-15). Motive: the In flight brief below. Built; review iteration 2 is under
+  way after the first security pass found five Mediums.
+- **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
+  22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
+  done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
+  runs main's launcher on a staged merge tree (Q-165, Q-166). First step: the hand spike
+  paste on Q-117, being written and reviewed.
 
 ## In flight
 
@@ -52,12 +65,13 @@ before merging, since this session cannot merge into main (Q-162).
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
-   answered "not run" on 2026-10-12: installing a branch image refuses while any session
-   runs, so it blocks the harness, and a forgotten test install is a security risk.
-   Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
-   First step: list what Q-117's and Q-130's checks need from the host, and which of
-   those a container or second install prefix could provide side by side with main's.
+3. **The launcher's rebuild hint misleads after the firewall fails closed** (bug). Motive:
+   the doc-drift review (A4, C4, C5). `rebuild_hint` in `cc-isolated.sh` tells the user that
+   a plain `cc-isolated <repo>` rebuilds, but a plain launch recreates only when the config
+   hash differs, so in that state it does not recover. `init-firewall.sh` and two lines of
+   the cc-isolated guide say "rebuild" where they mean "recreate". First step: point the
+   hint's first line at `--probe-only`, then a launch, as the guides now do. It touches
+   enforcement files, so the commit carries a `Host-tool-tested:` or `Live-verified:` trailer.
 4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
    Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
    "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
@@ -69,6 +83,15 @@ before merging, since this session cannot merge into main (Q-162).
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **Union-merge the append-only review logs.** Signal: on 2026-10-15 every pair of finished
+  units conflicted only in `docs/reviews/override-log.md` (and earlier in
+  `failure-patterns.md`), so each landing needs a hand-built `merge/*` branch. A
+  `merge=union` attribute for those files would land the rows without a merge branch.
+  `.gitattributes` is a truth file and install.sh's archive reads it, so this is your call.
+- **A launcher flag to refresh the cached Claude Code layer.** Signal: the doc-drift review
+  (C3). A recreated container goes back to the image's Claude Code version until
+  auto-update runs; something like `--probe-only --no-cache` would rebuild that layer.
 
 - **live-verify-gate: commits it does not see (Q-089 B security F3-F5).** Signal: a
   `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a

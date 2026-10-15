@@ -31,6 +31,8 @@ The index below is generated — edit entries, not the table.
 | [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | you: judgment | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
 | [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | you: judgment | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
+| [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Nex... | 2026-10-15 |
+| [Q-166](#q-166--staged-run-counts-as-live-verify) | you: judgment | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -55,21 +57,21 @@ The index below is generated — edit entries, not the table.
 ### Q-162 · merges-and-cleanup-2026-10-14
 **Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
 
-This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges the two reviewed fixes and this cycle's record, then deletes the twelve build-loop branches already merged into main, along with their worktrees. Q-163 and Q-164 (gate code) are separate and go after this block.
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15`, then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main plus four reviewed units and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift and Q-160. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-git merge --no-ff fix/t69-stage-race -m "Merge branch 'fix/t69-stage-race': T69 waits for the devcontainer stage (cycle 2026-10-14 health-check red)" && \
-git merge --no-ff fix/q110-not-run-undercount -m "Merge branch 'fix/q110-not-run-undercount': the runner's suites do not inherit RUN_TESTS_NOT_RUN_FILE (Q-110)" && \
-git merge --no-ff chore/dev-cycle-2026-10-15-0357 -m "Merge branch 'chore/dev-cycle-2026-10-15-0357': dev cycle 2026-10-14, run by hand" && \
+git merge --no-ff merge/ready-2026-10-15 -m "Merge branch 'merge/ready-2026-10-15': T69, Q-110, doc drift, Q-160 and the 2026-10-14 cycle record (override-log appends resolved)" && \
 for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktree remove .claude/wt-build-loop-$u && git branch -d feat/build-loop-$u; done
 ```
 
 - **Read:**
   - `fix/t69-stage-race` (4ee81106): T69 in `test/install-host.bats` failed 3 out of 3 runs alone on main b279a2ba. Its feed waited for a file the test's own `--yes` run had already left, so the tamper hit no stage. The old test fails and the new one passes 4/4. The test file is the only change.
   - `fix/q110-not-run-undercount` (f5b7e49d): the runner unsets `RUN_TESTS_NOT_RUN_FILE` after writing it. A regression test fails on the old runner. Review loop closed (`docs/reviews/code-review-rubric-2026-10-14-fix-q110-not-run-undercount.md`). Its gate went red only on the `/tmp` race Q-145 fixes; the slow suites passed 300/300. Q-110 closes once this lands.
+  - `fix/doc-drift-cycle1` (c8e87a69; added 2026-10-15): the 2026-10-02 doc-drift brief. Both guides now recommend `cc-isolated --probe-only` then `cc-isolated` over a bare `devcontainer up --remove-existing-container` and say why. devcontainer-setup's claim that a recreate picks up a newer Claude Code was wrong (Docker reuses the cached layer) and is corrected. The guides index names cc-push and the exit scan, and AGENTS.md and GEMINI.md list dev-cycle. 6 files, +26/−10. Loop closed at the 3-iteration cap (`docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md`); the last wording fix had a narrow check, not a full pass. agents-gemini-sync 3/3.
+  - `fix/q160-iteration-cap` (4a44d2f3; added 2026-10-15): Q-104 [2] is written into `workflows/review-fix-loop.md` § Size re-check. After each iteration and at pr-prep 6c the unit is re-measured; past ~800 lines (or a waiver's limit) the loop stops for a waiver, /away included, and the agent does not split the unit itself. 43 code lines. Its first loop escalated on four wording corner cases. I took the simplify option, which cut the clauses that produced them, and a narrow check passed after it (`docs/reviews/code-review-rubric-2026-10-15-fix-q160-iteration-cap.md`). Log row 62 gets a new revisit trigger the agent chose, "2+ waivers past the in-loop re-check within 14 days". Say so if you want a different one. The health check went red only on the Q-145 `/tmp` race in suites this branch does not touch.
 - **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh.
-- **If the answer differs:** leave out any line you do not want. Every merge stands on its own except the chore merge, which only records the cycle.
+- **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
 
 ### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -83,7 +85,7 @@ Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
 if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=merge/u5-and-q145; else B=c035f2e77f8c083156b397fb32e164dd17cc6b44; fi && \
-git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)"
+{ git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
 | Option | What it means | Cost to you | If it's wrong |
@@ -101,7 +103,7 @@ git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's a
 
 Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1904)? It edits `skills/dev-cycle/SKILL.md` (gate code), and its review loop ended in `escalate`.
 
-- **Why it's yours:** GATE_CODE, and the review-fix loop's iteration-4 gate. The last fix, 3718bcd0 (Q-156's paste refuses `core.attributesFile` in any repository config scope, in the reviewer's own executed check form), has not been re-reviewed.
+- **Why it's yours:** GATE_CODE, and the review-fix loop's iteration-4 gate. The last fix, 3718bcd0 (Q-156's paste refuses `core.attributesFile` in any repository config scope, in the reviewer's own executed check form), had no full review pass. Option [2]'s narrow check was run on 2026-10-15. The paste's exact test was executed in a throwaway repo on git 2.39.5 with the value in each place it can come from. It refused the local, worktree, included, `includeIf`-included, environment (`GIT_CONFIG_COUNT`) and empty lowercase-key cases, and passed with nothing set or a global value. One residual is by design: a global config that includes a file inside the repo reports as global and passes, and a sandbox cannot write your global config.
 - **Read:**
   - The merge message `docs/working/merge-msg-build-loop-u5.md` and the rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch.
   - What it does: `docs/dev-cycle.md` describes the handoff as built, with a wider `Self-merge never:` line (Q-149 asks how wide). It adds decision-log row 72 and roadmap items (a)–(g), files Q-149..Q-156 (C1–C5, the constraints doc, the image-lag release entry), re-routes Q-103 to you, and marks the handoff brief done.
@@ -113,18 +115,58 @@ Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
 if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=merge/u5-and-q145; else B=merge/build-loop-u5-resolved; fi && \
-git merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)"
+{ git merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
 | **[1] merge** | Handoff closes; Q-149..Q-156 and Q-103 become live asks; Q-156's release puts the D6 block in the image | One paste, then the release | A defect in the unreviewed Q-156 paste fix shows when you run it. It is a refusal check, so it fails closed |
-| **[2] one more narrow pass first** | A k=1 check of 3718bcd0, then merge | About 20 min of agent time | Nothing; it only delays the release |
+| **[2] one more narrow pass first** | Done 2026-10-15 (see Why it's yours): the check held | — | — |
 | **[3] changes needed** | Your note goes back to a loop | A note | — |
 
 - **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
 - **Interim:** unmerged. Cycles keep running by hand.
 - **If the answer differs:** [2] runs on the next iteration, which then asks again.
+
+### Q-165 · branch-verify-approach
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+How should a branch's container config be verified on the host without installing it over main (roadmap Next 3: Q-117, Q-125/Q-130 and Q-098 wait on this)?
+
+- **Why it's yours:** it adds a host tool that drives docker, a new trust surface, and the choice sets how the three blocked merges get unblocked.
+- **Read:** `docs/working/research-branch-verify-without-install.md` and `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install` (22a4bb1f). What they found:
+  - No check needs main's install, but install.sh's `agent_gate` is global, so even a second install prefix blocks while any session runs.
+  - Both blocked branches are hundreds of commits behind main and would roll back Q-089's host-tools split if installed as they are.
+  - Container and volume names are keyed on the workspace path. A `--probe-only` of `~/claude-workflows` therefore recreates the harness's own container.
+  - Main's launcher loads its code only from its own directory. So main's `cc-isolated` run with `CLAUDE_DEVC_CONFIG_DIR` set to a staged merge tree, on a scratch clone, runs no branch code on the host and installs nothing.
+  - The gap: a branch's `devcontainer.json` (`initializeCommand`, `runArgs`, `mounts`) reaches docker without an install diff, so it needs an allowlist refusal plus a diff stop.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] `cc-verify` host tool** (recommended, 70%) | A hand spike on Q-117 first, then a ~300-line `devcontainer-config/cc-verify.sh` (a host tool, so it carries a `Host-tool-tested:` trailer) | One paste for the spike, then one command per verify | A second host script assumes the launcher's layout; a test pins that assumption |
+| **[2] `cc-isolated --verify`** | The same behaviour inside the launcher | The same per verify, but the launcher change first needs its own install and probe | It grows a 944-line enforcement file and is slower to unblock |
+| **[3] Hand paste only** | Stop after the spike and reuse the paste for each verify | A ~30-line paste per verify, with teardown and the diff check done by hand | Teardown or the `devcontainer.json` check gets skipped one day |
+| **[4] Park** | Keep Q-117, Q-125 and Q-098 unmerged | Nothing | The egress fix and the sandbox stay off indefinitely |
+
+- **Blocks:** roadmap Next 3, and through it Q-125's merge, Q-098 and `fix/egress-dnsmasq-ipset`.
+- **Interim:** the spike paste (step one of [1], and safe under [2] and [3]) is being written and reviewed on the same branch. It reaches you as a `you: terminal` entry once it passes review.
+- **If the answer differs:** [4] drops the spike; [2] reuses the spike's findings for the launcher change.
+
+### Q-166 · staged-run-counts-as-live-verify
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count as the live-verified host run that Q-117 and Q-125 need before merging?
+
+- **Read:** `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes** | Merge on a passing staged run, with the trailer `Live-verified: <hash> — cc-verify of tree <id>`. Main's post-merge install re-probes on first launch anyway | Nothing extra | A difference between the staged and installed config shows only at that first launch; revert as in Q-125's rollback plan |
+| **[2] Yes, plus a post-merge check** | As [1], but Q-117 and Q-125 close only after main's first post-merge `--probe-only` passes | One probe at your next normal install | Little: the entries just stay open a bit longer |
+| **[3] No** | A staged run is evidence, not the gate; the install-over-main run stays | The blocking install you already declined | Back to the problem in Q-117's answer |
+
+- **Interim:** [2].
+- **If the answer differs:** only the closing step of Q-117 and Q-125 changes.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -133,6 +175,7 @@ Log row 62's trigger fired again: units grew during review from 102 to 842 code 
 
 - **Read:** Q-104 in `docs/working/questions-archive.md` · `workflows/pr-prep.md` step 1a · `workflows/review-fix-loop.md` (early split trigger) · `docs/working/merge-msg-build-loop-u2a3b.md` (cites "Q-104 [2]'s ~800")
 - **Interim:** applied by hand per loop (waivers Q-113, Q-120, Q-131). Nothing enforces it, so it holds only while each loop remembers.
+- **Built 2026-10-15:** `fix/q160-iteration-cap` (4a44d2f3), merged by Q-162's paste. This entry closes when it lands.
 
 ### Q-161 · revive-hermeticity-layer2-after-q125
 **Needs:** trigger · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -260,6 +303,7 @@ The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never 
 - **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
 - **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
 - **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
+- **In progress 2026-10-15:** being built on `fix/q096-exit-scan-insteadof-target` (in review). The first security pass found five Mediums, all confirmed by probe. One is pre-existing: a remote with no `url` is pushed to as a path, and the scan skips it. The commit carries `Host-tool-tested: no` (decision log row 71), not `Live-verified`.
 
 ### Q-097 · exit-scan-older-routes
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
