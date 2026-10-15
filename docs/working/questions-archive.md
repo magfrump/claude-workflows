@@ -106,6 +106,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-104](#q-104--unit-growth-during-review) | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
 | [Q-105](#q-105--devcontainer-breakage-definition) | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
+| [Q-107](#q-107--claude-home-payload-second-consumer) | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
@@ -2720,5 +2721,15 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 
 **Answer (2026-10-14, dev cycle):** done. Built and merged on Q-148 [1]: A1+A2 as 626dc300, B as df18413a (`host_tool_files()`, `host-tools.sha256`, the `Host-tool-tested:` trailer, `verify_host_tools` in cc-push, decision log row 71). Q-147 (source guard) and roadmap Ideas (B F3–F5, A1 F1) carry the remainder; the host check after install.sh is still owed (roadmap Done).
 
+
+
+### Q-107 · claude-home-payload-second-consumer
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** ANSWERED
+
+Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is owed". 037's host target (built in 6793b79a, recorded in 29cdd160) now installs the same `CLAUDE_HOME_SRC` assembly as the devcontainer target (`devcontainer-config/install.sh`: `assemble` at lines 498 and 857). Check whether the shared `assemble()` over `git archive` already meets [11]'s seam. If it does, record that in 036. If not, file the seam work on the roadmap.
+
+- **Read:** `docs/decisions/036-cc-isolated-repo-split.md` (candidate [11], Revisit triggers) · `assemble()` in `devcontainer-config/install.sh`
+- **Interim:** both targets share `assemble()`, which is not a `cp -r` encoding one consumer's layout. The risk 036 named is at least partly covered.
+- **Resolved 2026-10-15 (agent): not met.** In 036, [11] means assembly moves out of `install.sh` into a workflows-owned `make payload`/`build-payload.sh`. `CLAUDE_HOME_SRC` and `assemble()` are still in `devcontainer-config/install.sh` (:135, :329-362; callers :498 and :858), and `link-claude-home.sh:50` keeps an untested second copy of the names. The trigger's named harm (a `cp -r` encoding one consumer's layout for two) is mitigated: both targets share one `git archive` assembly and one layout. Q-106's branch does not change this. The seam work is in roadmap Ideas, low priority, with the ENTRIES/CLAUDE_HOME_SRC parity test as its first step. No change to decision 036.
 
 

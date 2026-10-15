@@ -96,6 +96,13 @@ Unranked. Each names the signal that motivates it.
   `failure-patterns.md`), so each landing needs a hand-built `merge/*` branch. A
   `merge=union` attribute for those files would land the rows without a merge branch.
   `.gitattributes` is a truth file and install.sh's archive reads it, so this is your call.
+- **Move claude-home payload assembly behind a workflows-owned entrypoint (036 [11]).**
+  Signal: Q-107. 036's second-consumer trigger fired, but the seam is not met. The seven
+  source paths are in `install.sh:135`, and a second, untested copy of the names is in
+  `link-claude-home.sh:50`. The named harm is already mitigated (one shared `git archive`
+  assembly), so this is low priority. First step, the cheap half: a test that `ENTRIES`
+  equals the names from `CLAUDE_HOME_SRC`, or have the linker read `.manifest`. The full move
+  to `scripts/build-payload.sh` is about half a day plus a host live-verify.
 - **Show bidi and zero-width characters in install review diffs.** Signal: Q-106's review
   (rubric A5). `vis` passes U+202A–202E, U+2066–2069 and zero-width characters, so on some
   terminals a crafted line in a review diff can display reordered. Pre-existing; Q-106 only
