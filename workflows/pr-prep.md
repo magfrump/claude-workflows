@@ -93,7 +93,7 @@ git diff --numstat "$BASE"...HEAD -- ':(top)' ':(top,exclude)docs/' | awk '{ n +
 
 The count checks nothing about `BASE`: set it to the branch directly below this unit (or `main`). A wrong `BASE`, such as one above this unit in the stack, can print a small or zero count and pass the gate, so check it before trusting a low number (Q-085 review R1; the user chose the plain command over a guarded one).
 
-Added and removed lines both count, deletions included (a pure dead-code deletion counts in full; user decision 2026-09-28, since deletions still need review); binary files count 0. The gate fires above 400: the "~" marks a round number, not a tolerance band. Over it, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. In /away mode, split without asking and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line, as the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) does; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
+Added and removed lines both count, deletions included (a pure dead-code deletion counts in full; user decision 2026-09-28, since deletions still need review); binary files count 0. The gate fires above 400: the "~" marks a round number, not a tolerance band. Over it, the unit **must split** into stacked units that merge in order: each lower unit runs its own review-fix loop and merges once green, so the units above it review against a settled base. The cap applies to every unit, not only to enforcement files (decision log 62, Q-085 [3]). Only the user can waive it. This gate checks the unit once, at entry; the review-fix loop re-runs the same count after each iteration and before merge, and tolerates growth to ~800 lines, or the limit a waiver sets ([size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge), Q-104 [2]). In /away mode, split without asking and record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line, as the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) does; a split is cheap to undo, a blocked loop is not. If you believe the unit can't be split, ask for the waiver there instead of starting the loop on the oversized unit. Look for split points such as:
 - A preparatory refactor that can land independently
 - Infrastructure/model changes separate from UI changes
 - A minimal first PR that adds the feature behind a flag, with polish in a follow-up
@@ -241,6 +241,8 @@ either fixed something silently or waived something silently.
 
 **c. Run tests.** After fixing findings, re-run the tests the fixes affect. Fixes often surface latent bugs — a tightened assertion may expose a helper bug, a scoping fix may reveal a silent false pass. Fix test breakage as separate commits. Inside the loop, run the affected suites and re-check earlier failures, not the full gate. In claude-workflows that is `scripts/run-tests.sh <files>` and `scripts/run-tests.sh --failed`. The full gate belongs to [step 5a](#5-verify-and-annotate-parallelizable), which owns how to run it and how to triage a red result.
 
+**Size re-check.** After the tests, before the drift check below and the re-review, re-run step 1a's count. Past ~800 lines (or the limit a waiver set), stop and ask the user for a waiver ([review-fix-loop.md § Size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge) owns the rule).
+
 **Fix-commit drift check (decision 031, L=fix-drift).** After fixes and tests, before the re-review pass, run the lite reviewer over just the fix commits:
 
 ```bash
@@ -269,7 +271,7 @@ and why recall is not at risk are owned by code-review's SKILL.md ("First-red sh
 
 **Tracking iteration scope:** Note in the review artifact whether each iteration used full or incremental scope, and how many prior findings were verified as resolved vs. still-open. This supports evaluating whether incremental re-review reduces review output length and duplicate findings over time.
 
-**e. Exit or repeat (hard cap: 3 iterations).** Exit when no Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger. Otherwise repeat; each loop should be strictly smaller than the last. The exit conditions, the per-iteration header, the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) (checked after every iteration), the iteration-4 `escalate | split | abandon` gate and the escalation template are owned by [review-fix-loop.md § Hard cap](review-fix-loop.md#hard-cap-3-iterations). Do not begin a fourth iteration without that gate's written decision.
+**e. Exit or repeat (hard cap: 3 iterations).** Exit when no Must Fix items remain and every Must Address item is resolved or acknowledged with a discoverable TODO or a concrete revisit trigger. Otherwise repeat; each loop should be strictly smaller than the last. The exit conditions, the per-iteration header, the [early split trigger](review-fix-loop.md#early-split-trigger-after-any-iteration) and the [size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge) (both checked after every iteration; the size re-check again before merge), the iteration-4 `escalate | split | abandon` gate and the escalation template are owned by [review-fix-loop.md § Hard cap](review-fix-loop.md#hard-cap-3-iterations). Do not begin a fourth iteration without that gate's written decision.
 
 **Tracking:** Record the loop's outcome in the PR description (the merge commit message on the local-merge path):
 
@@ -282,6 +284,7 @@ and why recall is not at risk are owned by code-review's SKILL.md ("First-red sh
 - [ ] No Must Fix findings remain open
 - [ ] All Must Address findings are resolved or acknowledged with a discoverable TODO or a concrete revisit trigger, and listed in the PR description
 - [ ] Final review loop introduced no new Must Fix or Must Address findings
+- [ ] The size re-check ran after each iteration (the before-merge run is step 6c's): the unit is at most 800 changed code lines (step 1a's command, `BASE` as in step 1a), OR the user waived it, the unit is within the waiver's limit, and the PR description records the waiver with its `Q-NNN` entry, as step 1a describes
 - [ ] Diff's files-touched match the plan's declared scope; if not, drift is flagged to the human for explicit acknowledgment
 - [ ] Loop outcome noted in PR description: convergence summary (`Review converged in N iterations; M Must Fix resolved, K Must Address acknowledged.`) if converged cleanly, or escalation summary if ceiling hit at 3
 - [ ] If ceiling hit: remaining findings documented in PR description, or escalated to human review
@@ -452,7 +455,7 @@ Decisions referenced: [list of NNN decision IDs whose invariants this PR touches
 
 For UI changes, capture before/after screenshots or a short recording and include them in the description. The reviewer may not be able to run the UI locally — visual evidence eliminates a round-trip.
 
-**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, opening the PR if no draft was made, or, on the local-merge path, running the merge), answer these three questions about the description as written:
+**c. Description gate (micro-check).** Before publishing the description (marking the draft PR ready for review, opening the PR if no draft was made, or, on the local-merge path, running the merge), answer these three questions about the description as written. First, run the [size re-check](review-fix-loop.md#size-re-check-after-any-iteration-and-before-merge) one last time: past ~800 lines, or past the limit a waiver set, do not publish or merge.
 
 1. **Why, not just what.** Does the description explain *why* this change exists — the problem it solves or the motivation behind it — and not only enumerate what files/lines changed?
 2. **Specific tests.** Does the description list the specific tests added or run (by name, file, or scenario), rather than vague phrases like "tested locally" or "all tests pass"?
@@ -461,6 +464,7 @@ For UI changes, capture before/after screenshots or a short recording and includ
 If any answer is **no**, revise the description before opening the PR. This gate is fast (under a minute) and catches the most common reviewer complaints: "I can't tell why this exists," "I don't know what was actually verified," and "what did you decide that I should double-check?"
 
 **Completion criteria:**
+- [ ] The final size re-check ran before publishing (or merging): at most 800 code lines, or within a cited waiver's limit
 - [ ] Skeleton was generated from commits and review artifacts (not written from scratch)
 - [ ] All six sections are present (What this does, How it works, How to test, Areas of uncertainty, Decisions made, Review evidence)
 - [ ] Reviewer's path — start here is filled with 1–3 actual file paths in read-order, each with a one-sentence intent (not a category or placeholder)
