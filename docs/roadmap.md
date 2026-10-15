@@ -80,9 +80,10 @@ before merging, since this session cannot merge into main (Q-162).
    Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
    "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
    enforcement file, so the plan opens with the bypass pre-mortem.
-5. **Re-run decision 015's step 4 as a divergent design (Q-105 [3]).** Motive: 015 T2 fired
-   last cycle; Q-105 was answered [3] on 2026-10-06, with the same lost follow-up. First step:
-   a `divergent-design` doc seeded with 015's constraints and the breakage record.
+5. **Decision 015's re-run: apply the outcome (Q-170).** Motive: Q-105 [3]. The divergent
+   design is done (`docs/dd-015-step4`, f050b487, lands with Q-162): keep Docker, since none of
+   the 6 breakages was Docker's. First step, once Q-170 is answered: apply §6's amendment
+   to 015's revisit triggers.
 
 ## Ideas
 
