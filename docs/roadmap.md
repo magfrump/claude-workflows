@@ -35,7 +35,9 @@ before merging, since this session cannot merge into main (Q-162).
   waits on Q-162's paste, then its host probe (Q-167).
 - **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`;
   added 2026-10-15). Motive: split off from Q-096's review (older routes, now a listed known
-  route). First step: rebase onto Q-096's tip, then RPI with the bypass pre-mortem.
+  route). Built (75d08a94) and stopped at the review cap with the guide's parity claims
+  still wrong; landing waits on Q-171. How much parity the scan chases at all is Q-172,
+  and the four split groups (R6 High) are Q-173.
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
