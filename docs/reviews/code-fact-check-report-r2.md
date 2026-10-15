@@ -1,346 +1,513 @@
-Commit: 832932a
+Commit: 46342d66
 
 # Code Fact-Check Report
 
-**Repository:** /workspace/.claude/wt-agents-md (branch `fix/agents-md-no-imports`)
-**Scope:** `git diff main...HEAD -- . ':(exclude)docs/reviews'` (AGENTS.md, docs/decisions/log.md, scripts/health-check.sh, test/agents-gemini-sync.bats) plus the commit messages in `git log main..HEAD`. Final confirming pass, replicate 2 of 3.
-**Checked:** 2026-09-29
-**Total claims checked:** 18
-**Summary:** 10 verified, 7 mostly accurate, 0 stale, 1 incorrect, 0 unverifiable
+**Repository:** /workspace/.claude/wt-q180 (branch `chore/q180-repin-pastes`, HEAD 46342d66, vs main b71a4e9e)
+**Scope:** full branch diff `git diff main...HEAD` (docs/roadmap.md, docs/working/checkpoint-build-loop-handoff.md, docs/working/questions.md) plus the two commit messages in `git log main..HEAD`; claims checked against the branches and commits they name. Replicate 2.
+**Checked:** 2026-10-15
+**Total claims checked:** 27
+**Summary:** 24 verified, 2 mostly accurate, 0 stale, 0 incorrect, 1 unverifiable
+
+Hallucination log: `docs/reviews/hallucination-patterns.md` read; no logged pattern resembles any claim here (the closest, a miscounted test tally, does not match: every count below recounted equal).
+
+Execution environment for all `executed` claims: bash 5 / zsh in the review container, git as installed, scratch directory `/tmp/claude-1000/-workspace/736a173d-70f8-4751-993a-da117d91dc21/scratchpad/cfc-r2/` (abbreviated `$S` below; all logs live there because this run may write only this report). Every probe ran under `timeout`; the detached worktree and scratch clones were removed before reporting, and no process was left running.
 
 ---
 
-**Ground truth for "what Claude Code imports".** `claude --version` prints `2.1.284 (Claude Code)` (`docs/reviews/execution-logs/fc-final2-r2-misc.txt`). I did not read the binary myself: the harness's auto-mode classifier denied my grep of `claude.exe`. So the grammar below is the extractor excerpt a previous replicate captured from the same 2.1.284 binary, committed in 832932a. This is secondhand but reproducible:
+## Claim 1: "Cycle 2 (2026-10-14): 42 multi-file landings after cac2ba0c (cycle 1's own three landings excluded); 25/42 carry the line, 38/42 committed a rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432)"
 
-```js
-// docs/reviews/execution-logs/fc-final-r2-misc.txt:28 (claude.exe 2.1.284, function yRn), excerpt
-let S=/(?:^|\s)@((?:[^\s\\]|\\ )+)/g ... let F=M.indexOf("#");if(F!==-1)M=M.substring(0,F);if(!M)continue;
-... if(!fC(M)&&(M.startsWith("./")||M.startsWith("~/")||M.startsWith("/")&&M!=="/"||
-   !M.startsWith("@")&&!M.match(/^[#%^&*()]+/)&&M.match(/^[a-zA-Z0-9._-]/))) ...
-function g(h){for(let S of h){if(S.type==="code"||S.type==="codespan")continue;
- if(S.type==="html"){ ... strip <!--...--> then s(W) ...}
- if(S.type==="text")s(S.text||"");if(S.tokens)g(S.tokens);if(S.items)g(S.items)}}
-(excerpt ends inside yRn; the rest of the function is `return g(e),[...r]}`, read)
+**Location:** `docs/roadmap.md:77-80`
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the four figures and four hashes as first-parent merges of b279a2ba after cac2ba0c touching more than one file, "line" = `← carried from RPI` in the body, "rubric" = an A/M `docs/reviews/code-review-rubric*` path; does not establish the "About 36" estimate or the cycle-3 figures.
+
+cac2ba0c is the *latest* of cycle 1's three landings on the first-parent line (`git log --first-parent b279a2ba`: `cac2ba0c 2026-10-02 18:20`, `188e0a7d 16:51`, `90364c73 14:43`), so "after cac2ba0c" alone excludes all three, matching the parenthetical. Command `bash $S/uptake.sh b279a2ba cac2ba0c` (cwd the worktree, exit 0, 2026-10-15T14:05) printed:
+
+```
+tip=b279a2ba since=cac2ba0c skip=[] n=42 line=25 rubric=38 neither: df18413a 0fbf9742 b8807e76 52053432
 ```
 
-So the regex runs on each marked `text` token (plus comment-stripped HTML). `^` means the start of that token. `code` tokens are skipped, and in marked these include indented blocks and `~~~` fences as well as backtick fences. Three details the branch's descriptions leave out: a bare `@/` is excluded, a `#fragment` is stripped, and there is an extra `fC(M)` filter whose body I did not see. No `marked` package was available offline, so every statement below about how marked tokenizes a construct (link text, strikethrough, tables, inline HTML) is inferred from marked's documented token model. None of it was executed.
+**Evidence:** `docs/roadmap.md:77-80`; `$S/uptake.sh` (output quoted above, captured in this session's transcript; rerunnable)
 
 ---
 
-## Claim 1: "AGENTS.md uses bare filenames, matching GEMINI.md below the header." (commit 5ee8315)
+## Claim 2: "U4c merged at 308196e7 (Q-144 [1]); U5 built and reviewed on `feat/build-loop-u5` (tip 7c91b974 …), not merged … it lands inside `merge/build-loop-u5-resolved-r2` 7326d715 or `merge/u5-and-q145-r2` 6c841192"
 
-**Location:** `AGENTS.md:9-18`
+**Location:** `docs/working/checkpoint-build-loop-handoff.md:2-3`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the merge commit, its subject's Q-144 tag, U5's tip and non-merge state, and ancestry of 7c91b974 in both named branches; does not establish the review history inside U5's rubric beyond its loop-outcome line.
+
+`git log -1 308196e7`: `Merge branch 'feat/build-loop-u4c': … step 0.1's image checks (Q-144 [1])`, an ancestor of main. `git rev-parse feat/build-loop-u5` = `7c91b97455db…`; `git merge-base --is-ancestor 7c91b974 main` fails (not merged). 7326d715's second parent is e088c7e3, whose second parent is 7c91b974; 6c841192's second parent is 7326d715. The rubric's "Loop outcome" line says the final pass "met exit condition 2" and a narrow k=1 check followed (`docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md:140-144` at 7c91b974), consistent with "loop ended escalate, narrow check held".
+
+**Evidence:** `docs/working/checkpoint-build-loop-handoff.md:2-3`; `git log --first-parent 09a2876f..6c841192`; rubric at 7c91b974 `:140-144`
+
+---
+
+## Claim 3: "Order for the user's pastes, all in the container's `/workspace`: land `chore/q180-repin-pastes` …, then Q-162 (`merge/ready-2026-10-15-r2`, 09a2876f), then Q-164 [1] and, if wanted, Q-163, in either order, then Q-156's release"
+
+**Location:** `docs/working/checkpoint-build-loop-handoff.md:10`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the whole of AGENTS.md below line 3 matching GEMINI.md, and main→branch changing only the `@./workflows/` prefixes; does not establish that bare names resolve to the repo's copies rather than the installed `~/.claude/workflows` (override-log row 152).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the branch's own Q-162/163/164 paste blocks run verbatim (only `cd /workspace` re-targeted and the deletion loop replaced by an echo) in scratch clones under bash and zsh, chore branch landed first; does not establish Q-156's release paste or behaviour on a /workspace with planted config (see Claim 9b).
 
-`cmp <(tail -n +4 AGENTS.md) <(tail -n +4 GEMINI.md)` printed `identical`. `diff <(git show main:AGENTS.md | sed 's|@\./workflows/||g') AGENTS.md` printed `no other difference`. The line now reads `- **research-plan-implement.md** — The default development loop.` (`AGENTS.md:9`). Command: `timeout 60 docs/reviews/execution-logs/fc-final2-r2-misc.sh`, run from the worktree root at 2026-09-29T07:51:50Z, exit 0.
+Command: `bash $S/paste-run.sh {bash,zsh} $S/pr-{bash,zsh}` (cwd scratchpad, 2026-10-15T14:06:16, runner exit 0 both). Excerpt of `$S/paste-run.log`:
 
-**Evidence:** `AGENTS.md:9-18`, `GEMINI.md:9-18`, `docs/reviews/execution-logs/fc-final2-r2-misc.sh`, `docs/reviews/execution-logs/fc-final2-r2-misc.txt`
+```
+--- Q-163 before Q-162:  Q-162's merge is not on main: run it first   exit=1
+--- Q-164 before Q-162:  Q-162's merge is not on main: run it first   exit=1
+--- Q-162:  Merge made by the 'ort' strategy.  DELETION-STEP-REACHED   exit=0
+--- Q-164:  Auto-merging docs/roadmap.md / Auto-merging docs/working/questions.md … exit=0 merged 2nd parent=7326d715
+--- Q-163:  exit=0 merged 2nd parent=6c841192
+final tree e12d4a6a…  expected (6c841192 merged with chore): e12d4a6a…
+```
 
----
+The reverse order (Q-163 then Q-164) was run with merge-tree/commit-tree in `$S/orders.sh` (log `$S/orders.log`, exit 0, 14:01:16), including the chore-first variant: every step merged cleanly and both orders give tree 55bca2bf, equal to 6c841192's.
 
-## Claim 2: Row 65: "Its workflow list now matches GEMINI.md byte for byte below the header … The sections AGENTS.md shares with the global instructions (Context Packing, Shared Thoughts, General Principles) stay … `hooks/log-usage.sh` cannot see `@` loads"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the byte comparison, the three shared headings in both files, and log-usage.sh's stated coverage; does not establish that no other hook or log records `@` loads.
-
-The byte comparison is Claim 1's executed `cmp`. The headings are present in both files: `AGENTS.md:41 ## Context Packing`, `:52 ## Shared Thoughts`, `:65 ## General Principles`, and `global-instructions/CLAUDE.md:126`, `:153`, `:303` with the same titles. log-usage.sh states `# COVERAGE: only Skill, Read and Agent tool calls are seen. A workflow or skill read through Bash (`cat`), an `@` import, … produces no event` (`hooks/log-usage.sh:7-9`).
-
-**Evidence:** `docs/decisions/log.md:88`, `AGENTS.md:41-65`, `global-instructions/CLAUDE.md:126-303`, `hooks/log-usage.sh:7-14`, `docs/reviews/execution-logs/fc-final2-r2-misc.txt`
+**Evidence:** `docs/working/questions.md:88-92,117-123,149-155`; `$S/paste-run.sh`, `$S/paste-run.log`, `$S/orders.sh`, `$S/orders.log`
 
 ---
 
-## Claim 3: Row 65: "Claude Code's own grammar as read from the v2.1.284 binary during review (`@` at a token start or after whitespace, then `./`, `~/`, `/` or `[A-Za-z0-9._-]`; fenced blocks and code spans skipped)"
+## Claim 4: "The first Q-162 paste on 2026-10-15 aborted on the override-log conflict, as its note said (a760a5e5 predated Q-178's landing); main was left clean."
 
-**Location:** `docs/decisions/log.md:88`
+**Location:** `docs/working/checkpoint-build-loop-handoff.md:10` (also commit 46342d66's body)
 **Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** executed
+**Scope:** Covers that merging a760a5e5 into main conflicts only in the override log and that the main checkout shows no merge in progress and no merge on main's reflog; does not establish from a log that the user's paste actually ran (the event itself left only indirect traces).
+
+`git merge-tree --write-tree --name-only main a760a5e5` exits 1 with `CONFLICT (content): Merge conflict in docs/reviews/override-log.md` and no other path. `/workspace/.git/MERGE_HEAD` does not exist, `/workspace/.git/ORIG_HEAD` holds `b71a4e9e…` (what an aborted merge at main leaves), and `git reflog refs/heads/main` tops out at `b71a4e9e … merge chore/dev-cycle-2026-10-15-0357`. Medium, because ORIG_HEAD is also written by other commands (paraphrased — no quote available because the claim is about a past interactive event that left no log of its own).
+
+**Evidence:** `docs/working/checkpoint-build-loop-handoff.md:10`; `/workspace/.git/ORIG_HEAD`; `git reflog refs/heads/main`
+
+---
+
+## Claim 5: "U5 was built and reviewed on 2026-10-14 (rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch)"
+
+**Location:** `docs/working/checkpoint-build-loop-handoff.md:48`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the file's presence at 7c91b974 and absence on main; does not establish the "Q-149..Q-155 and Q-103 become the live asks" projection, which is a plan, not a fact.
+
+`git ls-tree 7c91b974 docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` lists blob `88ade200…`; the same `ls-tree` on main prints nothing.
+
+**Evidence:** `docs/working/checkpoint-build-loop-handoff.md:48`
+
+---
+
+## Claim 6: "Paste the block into the container's shell … never in your host checkout: it runs git in `/workspace`, where an agent session can plant hooks and config." (and Q-163/Q-164: "run it in the container's shell, as for Q-162")
+
+**Location:** `docs/working/questions.md:84`, `:115`, `:147`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that each of the three pastes begins `cd /workspace` and now carries the container-shell instruction (closing prior finding F2); does not establish that hooks and config are the only agent-plantable inputs (see Claim 9b).
+
+Each block's first line is `cd /workspace && test "$(git branch --show-current)" = main && \` (`docs/working/questions.md:89`, `:118`, `:150`), and the prose lines quoted above appear at `:84`, `:115`, `:147`.
+
+**Evidence:** `docs/working/questions.md:84,89,115,118,147,150`
+
+---
+
+## Claim 7: "`merge/ready-2026-10-15-r2` … 09a2876f … That branch is main (as of b71a4e9e) plus seven reviewed units, the branch-verify research and spike docs …, and the decision-015 divergent design …, each merged with `--no-ff`"
+
+**Location:** `docs/working/questions.md:84`, `:86`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the nine first-parent merges of 09a2876f over b71a4e9e and their second parents, and that each of a760a5e5's ten cycle-record merges is already on main; does not establish that each unit tip is the reviewed one (taken from the brief's list).
+
+`git log --first-parent --format='%h %p %s' main..09a2876f` gives nine merges whose second parents are, in order, 4ee81106, f5b7e49d, c8e87a69, 4a44d2f3, 8717fd72, d25254da, f050b487, 47da5a4b, f6f37fad, with first parent of the oldest `b71a4e9e`; `merge-base 09a2876f main` = b71a4e9e. Of a760a5e5's chore merges, second parents de9590ad, 8781b882, b9b4d59a, 5f0f00d9, 7550465b, d4445c9a, e1ad59fd, 3356974b, 782036de and 92f3b080 are all ancestors of main.
+
+**Evidence:** `docs/working/questions.md:84,86`; `git log --first-parent main..09a2876f`, `git log --first-parent 92f3b080..a760a5e5`
+
+---
+
+## Claim 8: "five of those nine merges (Q-110, doc drift, Q-160 and the two docs branches) conflict with an earlier one, each only in the append-only `docs/reviews/override-log.md`"
+
+**Location:** `docs/working/questions.md:84`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers a replay of each of the nine merges with `git merge-tree --write-tree` on its actual first parent, and that each recorded merge tree differs from git's automatic result only in the override log; does not establish the row ordering chosen inside the resolutions.
+
+Replay (cwd the worktree, 14:00, exit 0): `4ee81106 rc=0`, `f5b7e49d rc=1 docs/reviews/override-log.md`, `c8e87a69 rc=1 …override-log.md`, `4a44d2f3 rc=1 …override-log.md`, `8717fd72 rc=0`, `d25254da rc=1 …override-log.md`, `f050b487 rc=1 …override-log.md`, `47da5a4b rc=0`, `f6f37fad rc=0`. Diffing each recorded merge against its merge-tree result lists only `docs/reviews/override-log.md` for exactly those five commits, nothing for the other four.
+
+**Evidence:** `docs/working/questions.md:84`; replay loop output in this session's transcript (rerunnable from the commit list in Claim 7)
+
+---
+
+## Claim 9a: "once the paste has checked that no replace refs, `info/grafts` or `shallow` file exists, and the merge itself ignores replace refs" (the guard's mechanics)
+
+**Location:** `docs/working/questions.md:84`, guard at `:90`, `:119`, `:151`
+**Type:** Behavioral / Error-handling
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the guard line verbatim under bash and zsh: replace refs, empty and dangling-symlink `info/grafts` and `shallow`, a linked worktree, `GIT_GRAFT_FILE`, and the failure arm's `git merge --abort`; does not establish behaviour under `GIT_REPLACE_REF_BASE` beyond what is noted, or the merge-driver residual (Claim 9b).
+
+The guard:
+
+```sh
+# docs/working/questions.md:90
+{ test -z "$(git for-each-ref refs/replace/)" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" || { echo "replace refs, info/grafts or shallow present: stop"; false; }; } && \
+```
+
+`bash|zsh $S/guard-probe.sh` (14:02:09, exit 0 both; `$S/guard-probe.log`): clean repo PASS; empty grafts, empty shallow, dangling-symlink grafts or shallow, and a replace ref each print the stop line, from the main worktree and from a linked worktree. In a linked worktree `--git-path info/grafts` and `--git-path shallow` resolve to the common dir (`…/r/.git/info/grafts`, `…/r/.git/shallow`), which is where git reads them (a per-worktree `shallow` is not read: `is-shallow: false`). `GIT_GRAFT_FILE=$P/gf` is honoured by `--git-path` (prints `$P/gf`), so that route is refused too. `GIT_REPLACE_REF_BASE=refs/alt/` passes the guard (`refs/replace/` is empty) and redirects lookups in the unguarded `merge-base --is-ancestor` selection, but `GIT_NO_REPLACE_OBJECTS=1` restores the real object for the merge (`log` of A shows `b` under the base, `a` with NO_REPLACE). Failure arm (`$S/abort-probe.log`, 14:06:58): on a real conflict it aborts, leaves no MERGE_HEAD and returns 1; on a non-conflict failure (dirty tracked file) `git merge --abort` prints `fatal: There is no merge to abort`, the line still prints "conflict: merge aborted, nothing deleted" and returns 1, so nothing merges or is deleted; only the word "conflict" is wrong in that case.
+
+**Evidence:** `docs/working/questions.md:90-91,119-122,151-154`; `$S/guard-probe.sh`, `$S/guard-probe.log`, `$S/abort-probe.sh`, `$S/abort-probe.log`
+
+---
+
+## Claim 9b: "a branch name can move; the hash names fixed content once the paste has checked … and the merge itself ignores replace refs" (the guarantee the sentence gives for what the paste lands)
+
+**Location:** `docs/working/questions.md:84`
+**Type:** Invariant
 **Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** static
-**Scope:** Covers the regex and prefix rule against the captured 2.1.284 excerpt; does not establish the body of `fC`, other Claude Code versions, or any runtime marked behavior (not executed offline).
-
-Against the excerpt above, the core is right: `(?:^|\s)@` plus the `./` / `~/` / `/` / `^[a-zA-Z0-9._-]` branches, and `code` and `codespan` are skipped. Three points need tightening. First, "fenced blocks" undersells the skip: Claude Code skips every `code` token, so indented code blocks and `~~~` fences are skipped too (paraphrased — no quote available because the fact that indented and tilde blocks are `code` tokens comes from marked's token model, not a string in the excerpt). Second, the summary drops `M!=="/"` (a bare `@/` is not an import), the `#`-fragment strip, the `fC(M)` filter, and the stripping of `<!-- -->` comments. Third, "token" means a marked `text` token, which also begins at link text, strikethrough, table cells and after inline HTML, not only at line starts and emphasis (inferred from marked's token model). The precise version: "`@` at the start of a marked text token or after whitespace …; code blocks of every kind, code spans and HTML comments skipped; bare `@/` excluded."
-
-**Evidence:** `docs/decisions/log.md:88`, `docs/reviews/execution-logs/fc-final-r2-misc.txt:28`, `docs/reviews/execution-logs/fc-final2-r2-misc.txt`
-
----
-
-## Claim 4: Row 65 and the test name: the test "fails on an `@` import in AGENTS.md or `global-instructions/CLAUDE.md`, using Claude Code's own grammar … with a synthetic-case test pinning what the finder matches"; `@test "the import finder matches Claude Code's import grammar"`
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers the finder's output on 30 adversarial probes and the pinned synthetic cases; does not establish how Claude Code tokenizes the under-matched forms at runtime (marked not available; inferred), or whether any such form is likely in the two guarded files (none is present today).
-
-The finder is an approximation of the grammar, not the grammar itself. The executed probes (`fc-final2-r2-probes.txt`) show it errs in both directions.
-
-- **Under-matching (forms Claude Code would import, inferred from marked's token model):** `~~@x~~` → `-`, `[@./x.md](http://e)` → `-`, `[a](b)@x` → `-`, `>@x` → `-`, `|@x|` → `-`, `<b>@x</b>` → `-`. In each case the `@` begins a marked text token (strikethrough, link text, the text after a link, blockquote content, a table cell, the text after an inline HTML tag), but the finder's preceding-character class is only `(^|[[:space:]*_])` (`test/agents-gemini-sync.bats:50`).
-- **Over-matching (forms Claude Code would not import):** `a*@x`, `snake_@x`, `<!-- @x -->`, `see @/ here`, a `~~~` fence, an indented code block, and a nested ```` fence holding a ```js line. All are flagged (Claims 10 and 11).
-
-The synthetic test does pin exactly what the finder matches (Claim 12), so that half of the row is accurate. What needs tightening is "using Claude Code's own grammar" and the test name. The precise wording: "an approximation of Claude Code's grammar that treats only line starts, whitespace, `*` and `_` as token starts." Under-matching is the risky direction for a guard. The missed forms are rare in a workflow list, which is why I scored this Mostly accurate rather than Incorrect.
-
-Command: `timeout 60 docs/reviews/execution-logs/fc-final2-r2-probes.sh > docs/reviews/execution-logs/fc-final2-r2-probes.txt`, run from the worktree root at 2026-09-29T07:49:44Z, exit 0. The script `eval`s `find_imports` extracted verbatim from the bats file.
-
-**Evidence:** `docs/decisions/log.md:88`, `test/agents-gemini-sync.bats:46-53`, `docs/reviews/execution-logs/fc-final2-r2-probes.sh`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`, `docs/reviews/execution-logs/fc-final-r2-misc.txt:28`
-
----
-
-## Claim 5: Row 65: "the nine `@./workflows/*.md` entries put ~358 KB (~89K tokens at chars/4) of workflow text into every session and subagent here"
-
-**Location:** `docs/decisions/log.md:88`
-**Type:** Configuration / Behavioral
-**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the file count, the byte and character totals of main's nine imported files, and a subagent receiving them; does not establish Claude Code's exact tokenizer count (chars/4 is the stated heuristic).
+**Legibility-target:** for-author
+**Scope:** Covers whether the paste's merge form lands only the pinned content when /workspace's own config is agent-written; does not establish exploitability end to end in the real container or any fix.
 
-The probes script reports `files: 9 bytes: 358414 chars: 355598 chars/4: 88899` (`fc-final2-r2-probes.txt`), which gives ~358 KB and ~89K. For "and subagent": this replicate is a subagent, and its injected context contains "Contents of /workspace/AGENTS.md (project instructions…)" followed by the contents of each `workflows/*.md` file (paraphrased — no quote available because the evidence is this agent's own injected system context, not a repository file).
+The literal statement holds: with no replace refs, grafts or shallow, the hash names one commit graph and tree, and alternates do not change that mapping (paraphrased — no quote available because this is git's content-addressing model, not repo code). But the sentence is the reason the paste is safe to run, and the paste runs in `/workspace`, whose config the same entry says an agent can plant. `git -c core.hooksPath=/dev/null` turns off hooks only. `bash $S/driver-probe.sh $S/dp` (14:02:21, exit 0; `$S/driver-probe.log`) ran the paste's exact merge form in a repo with `merge.evil.driver` in `.git/config` and `f merge=evil` in `.git/info/attributes`:
 
-**Evidence:** `docs/decisions/log.md:88`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+```
+Merge made by the 'ort' strategy.   merge exit=0
+merged f:  planted-content
+merge tree == ort tree without driver? no
+driver.log: driver-ran      fsm.log lines: 4   (core.fsmonitor also ran)
+```
+
+In the documented order (chore branch first), Q-164's merge three-way merges `docs/roadmap.md` and `docs/working/questions.md` (`Auto-merging docs/roadmap.md`, `Auto-merging docs/working/questions.md` in `$S/paste-run.log`), so a planted driver would decide what lands in those two files. Gate code changes on one side only and is not passed through a driver. A precise version: "the hash names fixed content …; what lands can still differ through repo-config merge drivers or filters, so the guard does not cover a planted `.git/config`" (or add `-c` overrides / a config check for `merge.*.driver`).
+
+**Evidence:** `docs/working/questions.md:84,91,122,154`; `$S/driver-probe.sh`, `$S/driver-probe.log`, `$S/paste-run.log`
 
 ---
 
-## Claim 6: "Handles three syntaxes: CLAUDE.md: `research-plan-implement.md` / AGENTS.md, GEMINI.md: **research-plan-implement.md** / legacy AGENTS.md: **@./workflows/research-plan-implement.md**"
+## Claim 10: "then deletes the twelve build-loop branches already merged into main, along with their worktrees"
 
-**Location:** `scripts/health-check.sh:203-207`
+**Location:** `docs/working/questions.md:84`, loop at `:92`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the extraction regex accepting all three delimiters and the optional prefix, and the current files using those styles; does not establish the caller's filtering against `workflows/`.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers that each of the twelve `feat/build-loop-<u>` branches named in the loop is an ancestor of main and has a clean worktree at `.claude/wt-build-loop-<u>`; does not establish the loop's behaviour if a removal fails midway (it stops that iteration's `&&` only).
 
-The regex is `grep -oE '(\*\*|`)(@\./workflows/)?[a-z][-a-z0-9]*\.md(\*\*|`)'`, followed by `sed 's/\*\*//g; s/`//g; s|@\./workflows/||'` (`scripts/health-check.sh:213-214`). `GLOBAL_MD="global-instructions/CLAUDE.md"` (`:54`) uses backticks (`global-instructions/CLAUDE.md:24` `` `research-plan-implement.md` ``, with 0 bold `.md` names). AGENTS.md and GEMINI.md use bold (`AGENTS.md:9`, `GEMINI.md:9`). main's AGENTS.md has 9 `**@./workflows` lines.
+For u3a1, u3a2, u3a3, u3b1, u3b2, u3b3, u3c, u3d, u4a, u4b1, u4b2, u4c: `merge-base --is-ancestor <branch> main` succeeds, the worktree exists, is on that branch, and `status --porcelain` is empty (output: `u3a1 merged wt on=feat/build-loop-u3a1 dirty=0` … `u4c merged wt on=feat/build-loop-u4c dirty=0`).
 
-**Evidence:** `scripts/health-check.sh:54`, `scripts/health-check.sh:203-216`, `global-instructions/CLAUDE.md:24`, `AGENTS.md:9`
+**Evidence:** `docs/working/questions.md:92`
 
 ---
 
-## Claim 7: "Strips the first 3 lines (tool-specific headers) from each file, then diffs."
+## Claim 11: "Run it before Q-163 and Q-164: their pastes stop unless this merge is on main."
 
-**Location:** `test/agents-gemini-sync.bats:4`
+**Location:** `docs/working/questions.md:84`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the sync test body; does not establish that the first three lines are the only tool-specific ones.
-
-`agents_body=$(tail -n +4 "$AGENTS")` / `gemini_body=$(tail -n +4 "$GEMINI")`, then `diff <(echo "$agents_body") <(echo "$gemini_body")` (`test/agents-gemini-sync.bats:20-23`). No prefix stripping remains.
-
-**Evidence:** `test/agents-gemini-sync.bats:15-28`
-
----
-
-## Claim 8: "Claude Code loads AGENTS.md as this repo's project instructions (the root CLAUDE.md moved to global-instructions/, decision log row 47) … pulled ~89K tokens … global-instructions/CLAUDE.md loads in every project"
-
-**Location:** `test/agents-gemini-sync.bats:30-35`
-**Type:** Architectural / Reference
-**Verdict:** Verified
-**Confidence:** Medium
 **Verification mode:** executed
-**Scope:** Covers the root CLAUDE.md being absent, row 47's move, the ~89K figure, and AGENTS.md reaching this subagent's context; does not establish Claude Code's precedence rules if a root CLAUDE.md came back (only direct observation in 2.1.284).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers both pastes run before Q-162 under bash and zsh; does not establish behaviour if 09a2876f reached main by some other route (the check accepts any ancestry, which is the intent).
 
-`ls ./CLAUDE.md` fails with `No such file or directory` (`fc-final2-r2-misc.txt`). Row 47 reads `**The global instructions file moves out of the repo root to `global-instructions/CLAUDE.md`.** … `~/.claude/CLAUDE.md` still resolves to the same content` (`docs/decisions/log.md:70`), so the global file loads everywhere. ~89K is from Claim 5. That AGENTS.md is loaded as project instructions is observed directly in this subagent's context (paraphrased — no quote available because the evidence is this agent's injected system context). Confidence is Medium because that last point is harness behavior, observed but not in-repo (override-log row 153 records the same limitation).
+```sh
+# docs/working/questions.md:120
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+```
 
-**Evidence:** `test/agents-gemini-sync.bats:30-35`, `docs/decisions/log.md:70`, `docs/reviews/execution-logs/fc-final2-r2-misc.txt`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+Run before Q-162, each paste printed that line and exited 1 with HEAD unchanged (`$S/paste-run.log`, both shells).
+
+**Evidence:** `docs/working/questions.md:120,152`; `$S/paste-run.log`
 
 ---
 
-## Claim 9: "The finder mirrors Claude Code's own import extractor …: an `@` at the start of a text token or after whitespace, followed by `./`, `~/`, `/` or a character in [A-Za-z0-9._-]. So `@README`, `@x.md`, `@dir/x` and even `@alice` are imports, while `(@./x)`, `foo@bar` and email addresses are not."
+## Claim 12: "Its diff from a760a5e5 is exactly main's own change since then"
 
-**Location:** `test/agents-gemini-sync.bats:37-41`
+**Location:** `docs/working/questions.md:86`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers content: outside the override log `git diff a760a5e5 09a2876f` is byte-identical to `git diff 92f3b080 main` (92f3b080 being a760a5e5's last main-side input), and in the override log the same 15 lines are added; does not establish row *position*: main's 15 rows sit at a different place relative to a760a5e5's rows, so the two patches are not byte-identical as whole files.
+
+`cmp` of the two path-limited patches excluding `docs/reviews/override-log.md`: `REST-IDENTICAL`; `cmp` of their `+`/`-` lines inside the override log: `SAME-ADDED-LINES` (15). The whole patches first differ at the override-log hunk header (`@@ -825,6 +825,21 @@` vs `@@ -825,3 +825,18 @@`).
+
+**Evidence:** `docs/working/questions.md:86`; `$S/d1.patch`, `$S/d2.patch`, `$S/o1`, `$S/o2`, `$S/x1`, `$S/x2`
+
+---
+
+## Claim 13: "its override-log rows are exactly the union of a760a5e5's and main's"
+
+**Location:** `docs/working/questions.md:86`
+**Type:** Invariant
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the set of distinct lines (853 in each); does not establish ordering, and the only repeated line is the blank line (13 copies), so no row is duplicated.
+
+`sort -u` of a760a5e5's and main's files equals `sort -u` of 09a2876f's (`UNION-SET-EQUAL`, 853 lines); `uniq -c | awk '$1>1'` on 09a2876f's sorted file shows only `13 ` (blank).
+
+**Evidence:** `docs/working/questions.md:86`; `$S/a.txt`, `$S/m.txt`, `$S/r.txt`, `$S/u.txt`, `$S/ru.txt`
+
+---
+
+## Claim 14: "The first tip, a760a5e5, added after that gate the rebuild-hint and one-workspace unit merges …, two docs-branch merges and nine cycle-record merges."
+
+**Location:** `docs/working/questions.md:103`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the first-parent merges of a760a5e5 after 3fe6d6e3; does not establish the 3fe6d6e3 gate result itself (unchanged text).
+
+After 3fe6d6e3 the first-parent line has rebuild-hint (c29d1acf), one-workspace (fc4c6840), two docs merges (a53e1bc2, 11184f2b) and nine `chore/dev-cycle-2026-10-15-0357` merges (7e9c039c, 9660d4f6, 184396ea, 00a27a2f, 5e6e9266, 1d67d12c, 7a9cf412, 302c3810, a760a5e5).
+
+**Evidence:** `docs/working/questions.md:103`; `git log --first-parent 92f3b080..a760a5e5`
+
+---
+
+## Claim 15: "Gate for the rebuilt tip (09a2876f …): the fast suites had one red, build-loop-merge's T23 test, whose log shows the Q-145 `/tmp` race …; it passes 3/3 alone. The slow suites, run separately: 300/300. Shellcheck and the other checks passed."
+
+**Location:** `docs/working/questions.md:104`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two logs' content and an independent 3/3 re-run of that test at 09a2876f; does not establish from the logs themselves which commit they ran at (they carry no commit stamp).
+
+`health-ready-r2.log` has one `not ok` (`not ok 1103 --merge refuses a file or link where the merge adds a directory … (T23, U3a2; i1 security)`, with `# find: '/tmp/bats-run-0FMk9A/bats.1565803.out': No such file or directory` at `:1310`) and one `✗` (`:1772`, fast suites; slow skipped). `slow-ready-r2.log`: `1..300`, 300 `ok`, 0 `not ok`. Re-run: `timeout 600 bats -f 'merge refuses a file or link where the merge adds a directory' test/scripts/build-loop-merge.bats` in a detached worktree at 09a2876f, three times, exit 0 each (14:00:22, :24, :26), `ok 1 …`.
+
+**Evidence:** `docs/working/questions.md:104`; `/tmp/claude-1000/-workspace/736a173d-70f8-4751-993a-da117d91dc21/scratchpad/health-ready-r2.log:1301-1310,1772`; `/tmp/claude-1000/-workspace/736a173d-70f8-4751-993a-da117d91dc21/scratchpad/slow-ready-r2.log`; `$S/t23-run1.log`, `$S/t23-run2.log`, `$S/t23-run3.log`
+
+---
+
+## Claim 16: "Q-180 rebuilt the branch and hardened this paste (its review: `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`)"
+
+**Location:** `docs/working/questions.md:105`
+**Type:** Reference
+**Verdict:** Unverifiable
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the file's presence at 46342d66; does not establish whether this review will write that path.
+
+The path does not exist at 46342d66 or in the worktree (`git ls-tree -r --name-only HEAD docs/reviews | grep -i q180` prints nothing). It is a forward reference to the rubric this review produces. It needs that file committed before landing.
+
+**Evidence:** `docs/working/questions.md:105`
+
+---
+
+## Claim 17: Q-163: "It merges `merge/q145-r2` at 35e13638 (Q-162's branch plus this unit …), or `merge/u5-and-q145-r2` at 6c841192 (that plus U5) if U5 is already on main … both orders of Q-163 and Q-164 were run against main and land the same tree. The unit's own tip, c035f2e7, is unchanged inside them."
+
+**Location:** `docs/working/questions.md:115`, paste `:117-123`
 **Type:** Behavioral / Reference
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers the grammar sentence against the captured excerpt and the named examples against the finder; does not establish `fC`'s effect on any example, or runtime marked tokenization.
-
-The grammar sentence matches the excerpt ("start of a text token" is the accurate phrasing, and better than row 65's). The examples behave as stated both in the finder (`@README` and `@alice` match, `(@./x.md)` and `someone@example.com` do not; `fc-final2-r2-probes.txt`) and under the excerpt's rules. What needs tightening is "mirrors": as Claim 4 shows, the finder does not treat link text, strikethrough, table cells or text after inline HTML as token starts, and it flags a bare `@/`, which the excerpt excludes with `M!=="/"`. The precise version: "approximates".
-
-**Evidence:** `test/agents-gemini-sync.bats:37-41`, `test/agents-gemini-sync.bats:50`, `docs/reviews/execution-logs/fc-final-r2-misc.txt:28`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
-
----
-
-## Claim 10: "Emphasis markers (`**@./x**`) do not start a new token in the markdown text, so `*` and `_` count as token starts here."
-
-**Location:** `test/agents-gemini-sync.bats:42-43`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Covers the conclusion (emphasis-wrapped `@` is an import and the finder catches `**@x**`, `*@x*`, `_@x_`); does not establish the finder's handling of `*`/`_` outside emphasis, which over-matches.
-
-The conclusion holds. The wording of the mechanism reads backwards: in marked, `**` opens a `strong` token whose child `text` token begins at the `@`. That is exactly why the excerpt's `^` matches (`if(S.tokens)g(S.tokens)`, excerpt above). The markers do not appear in the text token; they do start a new token. The finder accepts any `*` or `_` before `@`, so it also flags `a*@x` and `snake_@x` (`fc-final2-r2-probes.txt`: `1:a*@x`, `1:snake_@x`). Claude Code would read those as plain text with no token start (inferred from CommonMark flanking rules). This is over-matching, the safe direction. The precise version: "Emphasis markers are not part of the text token that follows them, so …".
-
-**Evidence:** `test/agents-gemini-sync.bats:42-43`, `test/agents-gemini-sync.bats:50`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
-
----
-
-## Claim 11: "Fenced code blocks and inline code spans (single or double backtick) are blanked first, keeping line numbers: Claude Code skips both."
-
-**Location:** `test/agents-gemini-sync.bats:43-45`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers backtick fences, one-line spans, CRLF, and line-number preservation; does not establish handling of every CommonMark fence and span form (several are listed as over-matches below).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers branch composition, the `if … is-ancestor 7c91b974` selection in both cases, conflicts (override log only, resolved) and both orders; does not establish the Q-145 fix's correctness.
 
-What works: backtick fences are blanked, including CRLF fences (`crlf-fence -`). Single- and double-backtick spans are removed, and so is a triple-backtick inline span (`nested-triple-span -`). Line numbers are kept (`tilde-fence 2:…`, `indented-code 3:…`). The awk rule is `/^[[:space:]]*```/ { fence = !fence; print ""; next }` (`test/agents-gemini-sync.bats:48`).
+35e13638 = merge(09a2876f, c035f2e7); 6c841192 = merge(35e13638, 7326d715). Each conflicts only in the override log, and each recorded tree differs from git's automatic one only there. The selection `if git merge-base --is-ancestor 7c91b974… HEAD; then B=6c841192…; else B=35e13638…; fi` (`:121`) picked 35e13638 when U5 was absent and 6c841192 after Q-164 had landed 7326d715 (`$S/paste-run.log`, `$S/orders.log`); both orders end at tree 55bca2bf (= 6c841192's) on main, e12d4a6a with the chore branch first. c035f2e7 is 35e13638's second parent, so its content is unchanged inside.
 
-What is not blanked, although Claude Code skips it as `code`/`codespan`:
-- `~~~` fences (`tilde-fence 2:@./in/tilde.md`)
-- indented code blocks (`indented-code 3:    @./in/indented.md`)
-- a ```js line inside a ```` fence, which toggles the fence off (`fence-info-inside 3:@./a.md`)
-- spans broken across lines (`span-multiline 2:@x` c`)
-
-"Fenced code blocks" is therefore true only for backtick fences. Every mismatch over-matches, so the guard fails loudly rather than silently. Other adversarial rows behaved correctly: `tab-before` and `crlf` match, and `@@x`, `@#x`, `@(x)` and `\@x` do not.
-
-**Evidence:** `test/agents-gemini-sync.bats:43-49`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+**Evidence:** `docs/working/questions.md:115,121`; `$S/orders.log`, `$S/paste-run.log`
 
 ---
 
-## Claim 12: The synthetic test's cases: 11 positive lines, all imports; every negative a non-import under the stated grammar; the finder matches all positives and no negatives.
+## Claim 18: Q-164: "`merge/build-loop-u5-resolved-r2` at 7326d715 (Q-162's branch plus U5, by the earlier reviewed resolution e088c7e3, with the questions, roadmap and override-log conflicts resolved again: main's Next 3–6 kept and U5's C5 item added as 7, both Ideas lists kept, U5's decision-015 idea dropped since main's Next 5 holds it, indexes regenerated; U5's entries Q-103 and Q-149..Q-156 are byte-identical to e088c7e3's), or `merge/u5-and-q145-r2` at 6c841192 if Q-145 is already on main"
 
-**Location:** `test/agents-gemini-sync.bats:53-81`
+**Location:** `docs/working/questions.md:147`, paste `:149-155`
+**Type:** Reference / Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers parentage, the conflicted paths, the roadmap resolution, entry byte-equality and index validity, and the c035f2e7 selection; does not establish that "questions" in the prose includes `questions-archive.md`, which also conflicted and was resolved (Q-154 lives there).
+
+7326d715's parents are 09a2876f and e088c7e3. `merge-tree 09a2876f e088c7e3` conflicts in override-log, roadmap, questions-archive and questions, and the recorded tree differs from the automatic one in exactly those four. Roadmap at 7326d715: Next items 1–6 are main's (`5. **Decision 015's re-run: apply the outcome (Q-170).**`), plus `7. **Revisit the light pass between full cycles (C5, Q-154).**`; `grep -c 'Re-run decision 015'` = 0; diff main→7326d715 in Ideas is additions only. sha256 of each entry (heading to next `### Q-`): Q-103, Q-149–Q-153, Q-155, Q-156 in questions.md and Q-154 in questions-archive.md are identical across e088c7e3, 7326d715 and 6c841192 (e.g. `Q-103 e0e912961785`, `Q-154 cf6070d6e9da`). `questions.sh check` at 7326d715, 6c841192, 35e13638 and 46342d66: `structure valid, indexes current`, exit 0 (`$S/qcheck.log`). The selection `if … --is-ancestor c035f2e7… HEAD; then B=6c841192…; else B=7326d715…` picked 7326d715 first and 6c841192 after Q-163 (`$S/orders.log`).
+
+**Evidence:** `docs/working/questions.md:147,153`; `$S/qcheck.log`, `$S/orders.log`
+
+---
+
+## Claim 19a: "each of the first three must print an ERROR and `exit=2` with nothing done" for line 3 `cc-isolated --profile '#' --list` (on the fixed launcher)
+
+**Location:** `docs/working/questions.md:220`, `:225`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each pinned case under the stated grammar and the finder's output on them; does not establish that the cases cover the under-matched token starts (Claim 4), and the positive assertion checks a count, not per-line identity (sound here because grep -n emits at most one line per input line).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers f6f37fad's launcher run with a scratch HOME and config dir; does not establish the installed host copy.
 
-`pos lines: 11; matched: 11`, with lines 1–11 each listed. `neg lines: 7 … matched: 0` (`fc-final2-r2-probes.txt`). Under the excerpt's rules:
+```bash
+# devcontainer-config/cc-isolated.sh:795-797 (f6f37fad), excerpt of main()'s option loop (continues to :811 — read)
+        case "$2" in
+          \#*) pasted_note_error "$2" "an egress profile" ;;
+          -*)  arg_usage_error "$(printf -- '--profile needs a value, not the flag %q.' "$2")" ;;
+```
 
-- **Positives:** line 1 is a strong token whose text starts `@./`. Lines 2–5 and 8–10 start their lines with `[A-Za-z0-9._/-]`. `@~/…` (line 6), `@../y.md` (line 7) and `@alice` (line 11) follow a space.
-- **Negatives** (`:69-75`), each checked individually:
-  - `someone@example.com`: the `@` follows `e`.
-  - `` `@./x.md` `` and ``` ``@./y.md`` ```: codespans.
-  - `the @ sign alone`: the `@` is followed by a space, so the regex's `+` has nothing to capture.
-  - `foo@bar/baz`: the `@` follows `o`.
-  - `(@./x.md)`, `"@../y.md"`, `[@/abs/z.md]`: the `@` follows `(`, `"` or `[` inside one text token. The unresolved `[…]` reference falls back to text and merges (inferred from marked).
-  - the fenced line: a `code` token.
+`HOME=$S/home-f6f37fad bash …/cc-isolated.sh --profile '#' --list` (14:03:40) printed `ERROR: \# is not an egress profile; it looks like a pasted comment.`, the usage text, `exit=2`, and created nothing under HOME (`$S/cc-profile-probe.log`).
 
-The assertions are `-eq 11` (`:78`) and `[ -z "$output" ]` (`:80`). The targeted bats run passed: `ok 2 the import finder matches Claude Code's import grammar` (`fc-final2-r2-bats.txt`).
-
-**Evidence:** `test/agents-gemini-sync.bats:53-81`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`, `docs/reviews/execution-logs/fc-final2-r2-bats.txt`
+**Evidence:** `devcontainer-config/cc-isolated.sh:758-811` (f6f37fad); `$S/cc-profile-probe.log`
 
 ---
 
-## Claim 13: "The no-imports test fails if a guarded file is missing" (commit 2f5fba3), and the test fails on an import in either file.
+## Claim 19b: "(on a launcher older than the fix, the third prints the project list instead: the install has not taken effect, so stop there)"
 
-**Location:** `test/agents-gemini-sync.bats:83-94`
-**Type:** Error-handling
-**Verdict:** Verified
+**Location:** `docs/working/questions.md:220`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers a missing global instructions file and the no-match / match branches; does not establish behavior for a present but unreadable-by-awk file beyond the `-r` check.
+**Legibility-target:** for-author
+**Scope:** Covers main's launcher on lines 1–3 with a scratch HOME (no devcontainer CLI); does not establish line 1's behaviour on a host where the CLI is installed and `~/code/b` exists.
 
-The code is `[ -r "$f" ] || { echo "$f is missing or unreadable"; failed=1; continue; }` … `[ "$failed" -eq 0 ]` (`:86`, `:93`). I ran a copy of the bats file in a scratch dir holding AGENTS.md and GEMINI.md but no `global-instructions/`. Result: `not ok 1 … '[ "$failed" -eq 0 ]' failed … global-instructions/CLAUDE.md is missing or unreadable`, exit 1. In the worktree all three tests pass, exit 0. On the other branch, `if matches=$(find_imports "$f")` takes grep's exit status (the last command in the pipeline). main's AGENTS.md yields 9 matches, which trips it (Claim 15). Commands: `timeout 120 bats test/agents-gemini-sync.bats` (cwd worktree) and `timeout 60 bats -f 'no @-imports' test/agents-gemini-sync.bats` (cwd scratch copy), 2026-09-29T07:50:41Z. The scratch dir was removed afterwards.
+Line 3 on main's launcher lists, as stated: `--profile` stores `profiles="$2"` with no check (`devcontainer-config/cc-isolated.sh:745` at main), `--list` sets `action="list"`, and `list) list_projects; exit 0` (`:790`). Run: `No projects registered …`, `exit=0` (`$S/cc-profile-probe.log`). But the third line is not the first sign. Line 2 (`cc-isolated --list  # registered projects; …`) also lists and exits 0 on the old launcher, because `#` falls to `*) ws_arg="$1"` (`:749`) and `--list` ignores it (`$S/cc-lines-probe.log`: main prints `No blessed config …`). Line 1 (`~/code/a ~/code/b`) takes the last word as the workspace and goes on toward a launch; it stopped here only at `ERROR: devcontainer CLI not found`. Precise version: "on a launcher older than the fix, the first line tries a launch and the second and third print the project list: stop at the first line that does not print an ERROR."
 
-**Evidence:** `test/agents-gemini-sync.bats:83-94`, `docs/reviews/execution-logs/fc-final2-r2-bats.txt`
+**Evidence:** `devcontainer-config/cc-isolated.sh:732-751,790` (main); `$S/cc-profile-probe.log`, `$S/cc-lines-probe.log`
 
 ---
 
-## Claim 14a: "The synthetic test pins 11 positives (incl. @README, @alice)" (commit 2f5fba3)
+## Claim 20: Q-169 paste pinned to `d25254dae30fe05fd385b3ff430104fb63c39158`; "The hash must be `032cc9a8…afb7`"; "498 lines with its fences"
 
-**Location:** `test/agents-gemini-sync.bats:55-67`
+**Location:** `docs/working/questions.md:263-267`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the positive count and the two named cases; does not establish anything about the negatives (14b).
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the paste's own extraction command run at d25254da (and at a760a5e5 and 09a2876f for comparison); does not establish the script's inner `script sha256 a65f4c30…` line (unchanged text).
 
-The heredoc has 11 lines, including `@README` (`:57`) and `ping @alice about it` (`:66`). The finder matched all 11 (`fc-final2-r2-probes.txt`).
+The paste's `git -c core.useReplaceRefs=false show <c>:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f'` gives sha256 `032cc9a81e4e1c9266ec3ad3b5fe7053d9876eb21f5ffa7f0a35f2ccfed4afb7` and 496 lines (498 with fences) at d25254da, a760a5e5 and 09a2876f alike. The doc has one ```` ```bash ```` fence. d25254da is the docs branch's tip and an ancestor of 09a2876f.
 
-**Evidence:** `test/agents-gemini-sync.bats:55-67`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+**Evidence:** `docs/working/questions.md:263-267`; `$S/q117-d25254dae30fe05fd385b3ff430104fb63c39158.txt`
 
 ---
 
-## Claim 14b: "… and 6 negatives" (commit 2f5fba3)
+## Claim 21: "'Not verified' (12 items only this run can show)"
 
-**Location:** `test/agents-gemini-sync.bats:68-76`
+**Location:** `docs/working/questions.md:270`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the numbered top-level items under the doc's "Not verified" heading at d25254da; does not count item 8's two sub-bullets separately.
+
+`docs/working/spike-cc-verify-q117.md:664` (d25254da) is `## Not verified (needs the host run)`, followed by items `1. **Image naming**` … `12. **The build's network, time and cache.**`.
+
+**Evidence:** `docs/working/spike-cc-verify-q117.md:664-690` (d25254da)
+
+---
+
+## Claim 22: "since 2026-09-09 88 of 116 `devcontainer-config/` commits carry `Live-verified: no`"
+
+**Location:** `docs/working/questions.md:280`
 **Type:** Configuration
-**Verdict:** Mostly accurate
+**Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the count only; does not affect the test, which asserts zero matches regardless of the number.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers non-merge commits touching `devcontainer-config/` since 2026-09-09 reachable from the DD's commit f050b487, with body lines starting `Live-verified: no`; does not establish the count at later refs (88 of 110 on main, 95 of 123 at 09a2876f), and the doc this entry points to still says 87 (`dd-015-step4-isolation-mechanism.md:34`).
 
-The negative heredoc holds `neg lines: 7` (`fc-final2-r2-probes.txt`). That is 4 prose lines (`:69-72`) plus a 3-line fence (`:73-75`), so 5 lines carry a case and 9 distinct `@` forms are exercised. No natural count gives 6. The precise version: "7 negative lines (9 non-import forms)". The miscount is harmless because nothing reads the number.
+`bash -c 'for h in $(git log --no-merges --since=2026-09-09 --format=%H f050b487 -- devcontainer-config/); …grep -q "^Live-verified: no"…'` printed `f050b487 no-merges total=116 lvno=88` (14:04). Without `--no-merges` the total is 118, so the 116 is the non-merge count, as in the DD (`of the 116 non-merge commits touching devcontainer-config/, **87 carry`).
 
-**Evidence:** `test/agents-gemini-sync.bats:68-76`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+**Evidence:** `docs/working/questions.md:280`; `docs/working/dd-015-step4-isolation-mechanism.md:34` (09a2876f)
 
 ---
 
-## Claim 15: "the old AGENTS.md still yields 9 matches; GEMINI.md, README.md and every workflow file yield none … Log row 65 states the grammar instead of 'any'." (commit 2f5fba3)
+## Claim 23: "`mkdir ~/q092 && mkdir ~/q092/.claude && …`" and "It also stops if `~/q092` already exists, so nothing planted there is reused"
 
-**Location:** commit 2f5fba3
+**Location:** `docs/working/questions.md:390`, `:406`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the files listed at this commit; does not establish that files outside that list lack `@` forms.
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two `mkdir` steps (a stand-in subdirectory name was used because the harness blocks Bash writes naming `.claude` settings files) for absent, directory, symlink-to-directory, dangling symlink and regular-file `~/q092` under bash and zsh; does not establish anything about a same-uid writer racing after the `mkdir` succeeds.
 
-The probes script prints `main:AGENTS.md: 9`, then `GEMINI.md: 0` and `README.md: 0`, then `0` for each of the ten `workflows/*.md` files (including `review-fix-loop.md`). The branch's AGENTS.md and global instructions also yield 0. Row 65 now gives the grammar in parentheses, and the word "any" does not appear in its guard sentence (`docs/decisions/log.md:88`).
+`bash|zsh $S/mkdir-probe.sh` (14:04:11, exit 0; `$S/mkdir-probe.log`): absent → proceeds; existing dir, symlink to dir, dangling symlink (target not created), regular file → stops; main's old `mkdir -p` on an existing dir → proceeds. That confirms prior finding F4 is closed.
 
-**Evidence:** `docs/reviews/execution-logs/fc-final2-r2-probes.txt`, `docs/decisions/log.md:88`
-
----
-
-## Claim 16: "find_imports mirrors the extractor … `@` at a token start or after whitespace (plus emphasis markers) …; fenced blocks and single/double code spans are blanked first, line numbers kept." (commit 2f5fba3)
-
-**Location:** commit 2f5fba3
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** Medium
-**Verification mode:** executed
-**Scope:** Same evidence as Claims 4, 10 and 11; does not establish runtime marked tokenization.
-
-This restates the test comment. As Claims 4, 10 and 11 show, the finder approximates the extractor rather than mirroring it. It under-matches the token starts at link text, strikethrough, tables, inline HTML, `>` and `)`, and it over-matches bare `@/`, intraword `*`/`_`, HTML comments, `~~~` and indented code, and multi-line spans (paraphrased — no quote available because the evidence is the probe table across Claims 4, 10 and 11). The commit's own `Notes:` line ("if CC widens it, this guard under-matches silently") shows the author knew it approximates, but not that it already under-matches for 2.1.284.
-
-**Evidence:** `test/agents-gemini-sync.bats:46-51`, `docs/reviews/execution-logs/fc-final2-r2-probes.txt`
+**Evidence:** `docs/working/questions.md:390,406`; `$S/mkdir-probe.sh`, `$S/mkdir-probe.log`
 
 ---
 
-## Claim 17: Commit 5ee8315 "~358 KB (~85K tokens)" and commit 7b43db2 subject "catch every @-import form"
+## Claim 24: Commit 53bd1a56's message (re-pins, guard, ancestor check, Q-167(b)/Q-176/Q-169 changes, wording, gate)
 
-**Location:** commits 5ee8315, 7b43db2
-**Type:** Configuration / Behavioral
-**Verdict:** Incorrect
+**Location:** commit `53bd1a56` body
+**Type:** Reference
+**Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the two historical statements; does not reopen them. Both are already settled as `Accepted-immutable` (override-log rows 154-155) and corrected by later commits.
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers each bullet against the diff and the claims above (branch hashes, "the old ones are kept", F1–F4 changes, 12 items, 88 of 116, gate); does not re-verify "Confidence: high", which is a judgment.
 
-355,598 chars / 4 = 88,899, not ~85K (`fc-final2-r2-probes.txt`). 7b43db2's finder missed `@README`-style bare names, which 2f5fba3 added (its message quotes `@README`, `@package.json`, `@x.MD`). Both corrections are already on the branch: 7b43db2 states "~85K -> ~89K", and the current code and row 65 give ~89K. I report these only so the replicate is complete.
+The four `-r2` hashes match `git branch --list 'merge/*'`, and the old `merge/ready-2026-10-15` a760a5e5, `merge/build-loop-u5-resolved` 0f94bb77 and `merge/u5-and-q145` a04d9776 still exist. "Each says it runs in the container (F2)" holds for Q-162/163/164 (Claim 6). "Both orders were run against main and land the same tree" is Claim 17. The other bullets are Claims 15 and 19–23. "Q-163/164 gained the Q-162-first ancestor check" matches `:120` and `:152`.
 
-**Evidence:** `docs/reviews/execution-logs/fc-final2-r2-probes.txt`, `docs/reviews/override-log.md:154-155`
+**Evidence:** `git log -1 53bd1a56`; `docs/working/questions.md:84-155`
+
+---
+
+## Claim 25: Commit 46342d66's message: "It now records the paste order (Q-180's branch, Q-162, Q-164/Q-163, Q-156) and that the first Q-162 paste aborted cleanly on the stale pin."
+
+**Location:** commit `46342d66` body
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** Medium
+**Verification mode:** static
+**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the checkpoint diff carrying both statements; the "aborted cleanly" event rests on Claim 4's indirect evidence.
+
+The checkpoint's Blocked-on line carries the order and the abort sentence (`docs/working/checkpoint-build-loop-handoff.md:10`); see Claims 3 and 4.
+
+**Evidence:** `git log -1 46342d66`; `docs/working/checkpoint-build-loop-handoff.md:10`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 17** (commits 5ee8315, 7b43db2): ~85K should be ~89K, and "every @-import form" overclaims. Both are settled as Accepted-immutable (override-log 154-155), so there is no action.
+- none
+
+### Stale
+- none
 
 ### Mostly Accurate
-- **Claim 3** (`docs/decisions/log.md:88`): the grammar summary omits the skipping of indented and `~~~` code, bare `@/` exclusion, `#` stripping, `fC`, and HTML comments; "token" means a marked text token.
-- **Claim 4** (`docs/decisions/log.md:88`, `test/agents-gemini-sync.bats:53`): "using Claude Code's own grammar" and the test name overclaim. The finder under-matches `~~@x~~`, `[@x](u)`, `)@x`, `>@x`, `|@x|` and `<b>@x` (inferred) and over-matches several forms. Suggested wording: "approximates".
-- **Claim 9** (`test/agents-gemini-sync.bats:37`): replace "mirrors" with "approximates".
-- **Claim 10** (`test/agents-gemini-sync.bats:42-43`): the mechanism wording reads inverted (markers do open a token and are excluded from the text token); the finder also over-matches intraword `*` and `_`.
-- **Claim 11** (`test/agents-gemini-sync.bats:43-45`): only backtick fences are blanked; `~~~`, indented code, nested ```` fences and multi-line spans are not (all over-match).
-- **Claim 14b** (commit 2f5fba3): "6 negatives" should be 7 lines / 9 forms.
-- **Claim 16** (commit 2f5fba3): "mirrors" should be "approximates" (immutable history, so this can only be fixed going forward).
+- **Claim 9b** (`docs/working/questions.md:84`): the hash pin plus the guard does not fix what lands. Repo-config merge drivers (and `core.fsmonitor`) still run under the paste's merge form, and in the documented order Q-164 three-way merges questions.md and roadmap.md. Narrow the sentence, or add a check or `-c` override for `merge.*.driver`/filters.
+- **Claim 19b** (`docs/working/questions.md:220`): on a pre-fix launcher, line 2 already prints the project list and line 1 heads for a launch, so "the third prints the project list" is not the first signal. Say to stop at the first line that does not print an ERROR.
 
----
+### Unverifiable
+- **Claim 16** (`docs/working/questions.md:105`): the cited rubric `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md` does not exist at 46342d66. Commit it before landing.
+
+Minor notes (no verdict change): the failure arm prints "conflict" for a non-conflict merge failure too (Claim 9a). Q-170's "88" now disagrees with the DD doc's "87", which the entry tells the reader to open (Claim 22). Q-164's "questions … conflicts" also covers questions-archive.md (Claim 18).
 
 ## Goal-Alignment Note
-
-- **Answered:** Every brief item. The grammar was checked against the captured 2.1.284 extractor excerpt: Mostly accurate, with omissions listed. The finder was executed on the synthetic cases and 30 adversarial probes (tabs, `**@x**`, `_@x_`, `~~~`, indented code, nested backticks, CRLF and more). It over-matches in the safe direction on code blocks, comments and intraword `*`/`_`, and under-matches on non-emphasis token starts (inferred from marked). Synthetic counts: 11 Verified; "6 negatives" is actually 7 lines / 9 forms. Each negative is a non-import. The missing-file failure was Verified by execution. 2f5fba3's 9/none claims were Verified. Row 65 as a whole: its facts and ~89K are Verified, its grammar/guard wording is Mostly accurate. The extract_workflows comment is Verified. The targeted bats file passed 3/3.
-- **Out of scope:** I did not run the full suite or health-check, as the brief instructed.
-- **Escalate:** My direct read of the Claude Code binary was denied by the auto-mode classifier, and per that denial I did not pursue it further. The grammar rests on the extractor excerpt a prior replicate committed (`fc-final-r2-misc.txt:28`); the version, 2.1.284, I confirmed myself. `marked` is not installed offline, so the under-match cases (link text, `~~`, tables, inline HTML, `>`, `)`) are inferred, not executed. Whether to widen the finder's token-start class or narrow the wording is the author's call. I created untracked files `docs/reviews/execution-logs/fc-final2-r2-{probes,misc}.{sh,txt}` and `fc-final2-r2-bats.txt`. No tracked file other than this report was edited. All probe processes ran under `timeout` and have exited.
+- Success criterion (restated verbatim): a markdown report at the output path you were given, structured per your skill.
+- Answered: yes. All 12 brief claim groups checked, most by execution; F1–F4 confirmed closed.
+- Out of scope: the real container and host (probes ran on scratch repos and launchers with a scratch HOME); Q-156's release paste.
+- Escalate: Claim 9b's residual (planted merge drivers/fsmonitor in /workspace's config still act under the hardened pastes) for the security critic to weigh; Claim 16's missing rubric before landing.
+- Decisions I made: verdicted the hash sentence in two parts (literal mechanics Verified, implied landing guarantee Mostly accurate); treated "exactly main's change" as content equality and noted the row-position difference in Scope.

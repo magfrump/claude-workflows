@@ -145,6 +145,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
 | [Q-178](#q-178--land-unlanded-cycle-branch-0357) | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
+| [Q-180](#q-180--harden-and-repin-host-pastes) | The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advi... | 2026-10-15 |
 <!-- index:end -->
 
 ## Answered
@@ -2853,5 +2854,21 @@ Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 0
 - **If the answer differs:** [3] means the next cycle re-files the constraints ask and the merged-branch paste.
 
 **Answered 2026-10-15 (in session): [1] land via pr-prep.** A fresh session merges main into `chore/dev-cycle-2026-10-15-0357`, resolves the conflicts with the 2026-10-15 cycle land, reviews the result and merges it to main.
+
+
+### Q-180 · harden-and-repin-host-pastes
+**Needs:** agent · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advisory items left, all in host-paste text. Fix them together with the re-pin of the ready branch that Q-162 already calls for, then review that change before any of these pastes is run.
+
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-chore-dev-cycle-2026-10-15-0357.md` (iteration 3); `docs/reviews/security-review-2026-10-15-0357-final.md` F1–F4; `docs/reviews/code-fact-check-report-2026-10-15-0357-final-r{1,2,3}.md`; `docs/reviews/tech-debt-triage-review-2026-10-15-0357-final.md` F5.
+- **The work, in one unit:**
+  - Rebuild `merge/ready-2026-10-15` (and `merge/u5-and-q145`, `merge/build-loop-u5-resolved`) on main, then re-pin Q-162, Q-163 and Q-164, and re-pin Q-169 to the docs branch's own commit (its file is identical at d25254da).
+  - The replace-ref guard in Q-162, Q-163 and Q-164 also refuses `info/grafts` and `shallow`, as `scripts/build-loop.sh:622` and the dev-cycle skill's D6 snippet already do. A planted graft let a pinned merge pass the guard and land other content (security final F1, executed). The "a hash cannot move" wording follows.
+  - The merge pastes say they run in the container's `/workspace`, not the host checkout (security final F2).
+  - Q-167(b) line 3 becomes `cc-isolated --profile '#' --list`: on a launcher older than the fix, `--bless` blesses without a prompt (security final F3).
+  - Q-176 creates `~/q092` with `mkdir` without `-p`, so a planted directory stops it (security final F4).
+  - Wording: Q-169's "Not verified" has 12 items, not 8. Q-170's count is 88 of 116. Q-162's pre-landing conflict list adds `questions-archive.md`, and only Q-110, doc drift and Q-160 conflict with each other. The cycle-2 tally excludes cycle 1's three landings.
+- **Resolved 2026-10-15 (agent): done on `chore/q180-repin-pastes`.** The four merge branches were rebuilt on main b71a4e9e as new `-r2` branches (the old ones kept for you to delete): `merge/ready-2026-10-15-r2` 09a2876f, `merge/build-loop-u5-resolved-r2` 7326d715, `merge/q145-r2` 35e13638, `merge/u5-and-q145-r2` 6c841192. Q-162, Q-163 and Q-164 are re-pinned to them; Q-163 and Q-164 stop unless Q-162's merge is on main. The guard grew past this list after review: it now refuses everything `scripts/build-loop.sh`'s state gate refuses, plus `fsck.` keys and an object `git fsck` rejects. The pastes name what no guard can check (a moved main, the shell, a running agent). Every item above is applied; the review is `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`. The "Do not run until Q-180 is done" holds are removed from each Interim.
 
 

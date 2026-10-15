@@ -26,7 +26,7 @@ before merging, since this session cannot merge into main (Q-162).
 - **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
   cycle's health-check red. Waits on Q-162's paste.
 - **Doc drift** (`fix/doc-drift-cycle1`, c8e87a69; added 2026-10-15). Motive: the In flight
-  brief below. Reviewed, loop closed; waits on Q-162's paste (`merge/ready-2026-10-15`).
+  brief below. Reviewed, loop closed; waits on Q-162's paste (`merge/ready-2026-10-15-r2`).
 - **Q-160 — the in-loop size re-check** (`fix/q160-iteration-cap`, 4a44d2f3; added
   2026-10-15). Motive: log row 62 fired again. Reviewed, simplified, narrow-checked; waits on
   Q-162's paste.
@@ -39,10 +39,10 @@ before merging, since this session cannot merge into main (Q-162).
   still wrong; landing waits on Q-171. How much parity the scan chases at all is Q-172,
   and the four split groups (R6 High) are Q-173.
 - **The launcher's rebuild hint** (`fix/rebuild-hint-recreate`, 47da5a4b; was Next 3).
-  Reviewed, loop closed at the cap; in `merge/ready-2026-10-15`, so it lands with Q-162, and its
+  Reviewed, loop closed at the cap; in `merge/ready-2026-10-15-r2`, so it lands with Q-162, and its
   probe is Q-167 (a).
 - **One workspace per `cc-isolated` call** (`fix/cc-isolated-one-workspace`, f6f37fad; was
-  Next 3). Reviewed; the independent closing review was clean. In `merge/ready-2026-10-15`;
+  Next 3). Reviewed; the independent closing review was clean. In `merge/ready-2026-10-15-r2`;
   probe Q-167 (b).
 - **Q-092 — drop the auto-approve hook's deny reader** (`fix/q092a-drop-deny-option`
   d27a3891, then `fix/q092-drop-hook-deny-reader` aeda94b2). Built and reviewed, including an
