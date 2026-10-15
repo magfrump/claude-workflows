@@ -60,6 +60,15 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
 
 Unranked. Each names the signal that motivates it.
 
+- **live-verify-gate: commits it does not see (Q-089 B security F3-F5).** Signal: a
+  `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a
+  `git -C <dir> commit` (how orchestrators commit into `.claude/wt-*`) is checked against
+  the hook's cwd; a shebang edit passes as comment-only. Each fails closed at runtime (the
+  bless diff, `verify_host_tools`). `docs/reviews/security-review-2026-10-14-q089b.md`.
+- **One owner for "the install dir" in cc-isolated (Q-089 A1 architecture F1, rubric C1).**
+  Signal: bless/`--list` use `config_dir()` while the pre-source check uses the launcher's own
+  dir; every hint now names the right dir, but an installed copy could assert the two agree
+  and refuse once on a mismatch.
 - **Scoped deep audit** (step 4b). Signal: cycle 2026-10-02's deep-audit triggers fired —
   8 router skills and the dev-cycle skill added in the window, and no earlier cycle record
   to compare the model with. Scope and timing are the user's; runs on its own branch.
