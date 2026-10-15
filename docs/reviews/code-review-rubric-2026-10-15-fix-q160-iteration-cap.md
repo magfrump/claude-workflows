@@ -126,3 +126,13 @@ k=1 fact-check (`code-fact-check-report-q160-narrow2.md`): 11 claims; 7 Verified
 | O4 | Rule 2's first-pass test omits mechanic 6's unreadable-history case (`chat-synthesis.md:140-142`) | 🟢 | Open (escalated) |
 
 Loop outcome: escalated after the final confirming pass and two narrow checks; no 🔴 at any point after iteration 1.
+
+## Simplification (a8dc5c81, 294a7d62; range 3c2d1174..294a7d62): coordinator decision Q-A [3]
+
+Cut the size re-check back to its core rule: re-measure with step 1a's command after each iteration (3c) and at 6c; past ~800 or the waiver's limit the loop stops for a waiver entry, /away included, and the agent does not split the unit itself. Removed: the precedence and re-entry paragraph, the waiver-limit fallbacks, the GitHub-path re-run, the homes for counts with no following commit, the squash rule, chat-synthesis's pre-ladder sentence and rule 2's first-pass-test parenthetical. Kept: pr-prep pointers, rule 2 first-review-only, the `Size:` line, the early split trigger's and iteration-4 gate's one-clause links. Size: 43 code lines against main.
+
+O1-O4 are resolved by removal: the clauses they were found in (step 3 criterion's record list, step 1a's re-entry qualifier and the re-entry paragraph, the pre-ladder sentence, rule 2's first-pass parenthetical) are gone.
+
+Fix-drift on a8dc5c81: 3 findings. 1 (waiver-scope details removed) and 2 (step 1a's re-entry caveat removed) are the intended removals (override rows). 3 (step 3 criterion wording unclear) fixed in 294a7d62. Narrow k=1 fact-check (`code-fact-check-report-q160-simplify.md`): 10 claims; 9 Verified, 1 Mostly accurate (the Q-160-reading list missed the waiver limit and the `Size:` line), fixed in the next commit by restoring "everything else ... is Q-160's reading". No dangling references to removed clauses; ladder keeps five actions; anchors resolve.
+
+Loop outcome: closed by the coordinator's Q-A [3] decision after the simplification's narrow check. Known issues for the merge message: the size re-check is done by hand (override row); step 1a's `docs/` exclusion (override row).

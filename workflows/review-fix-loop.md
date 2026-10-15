@@ -58,7 +58,7 @@ In /active mode, propose the split and wait. In /away mode and autonomous loops,
 
 Past the limit, the loop stops on this unit: no further fix commits, drift check, re-review or merge until the user answers a waiver entry (`Needs: you: judgment`) in `docs/working/questions.md`. This holds in /away mode too, and the agent does not split the unit itself; splitting can be one of the entry's options, for the user to choose. A granted waiver sets the new limit. Record it as step 1a records its waiver, in the PR description (the merge commit message on the local-merge path), citing the `Q-NNN` entry with the user's answer quoted verbatim.
 
-Q-104 [2] gives the re-measure, the ~800 tolerance and the waiver. The 6c point, /away mode and the agent not splitting the unit itself are Q-160's reading of it (decision log 62).
+Q-104 [2] gives the re-measure, the ~800 tolerance and the waiver. Everything else in this section is Q-160's reading of it, for example the 6c point, /away mode, the agent not splitting the unit itself, the waiver setting the new limit and the `Size:` line (decision log 62).
 
 Why: the entry gate checks a unit once, and units then grew during review. `feat/dev-cycle-digest` went from 396 to 1861 lines over 37 passes (Q-104); U2a3b went from 102 to 842 and U2a3c from 217 to 538 (Q-160).
 
