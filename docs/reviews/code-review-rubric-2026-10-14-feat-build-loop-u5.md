@@ -2,7 +2,7 @@ Commit: c63da94d
 
 # Code Review Rubric
 
-**Scope:** feat/build-loop-u5 vs main (b279a2ba); iteration 1 full branch at 42414307, iteration 2 the fix range 42414307..c63da94d (`--loop-pass`, fact-check k=1) | **Reviewed:** 2026-10-14 | **Status: 🟡 PASSES WITH CONDITIONS at c63da94d** — 0 red; iteration 2's Must Address rows fixed in 659a1c61 and the Q-156 commit after it; final confirming pass pending
+**Scope:** feat/build-loop-u5 vs main (b279a2ba); iteration 1 full branch at 42414307, iteration 2 the fix range 42414307..c63da94d (`--loop-pass`, fact-check k=1) | **Reviewed:** 2026-10-14 | **Status: 🟡 PASSES WITH CONDITIONS at c63da94d** — 0 red; iteration 2's Must Address rows fixed in 659a1c61 and b5eaedf6 but A10, deferred (override row); final confirming pass recorded below
 
 Delivery mode: self-read (diff at a scratch path; enclosing scripts too large to inline). Fix commits: 771a5d02, 57e26f6b, 87ca421e (docs fix after the fix-drift check). Fix-drift lite check over 42414307..57e26f6b found 1 (never-line prose named 8 of 10 directories), fixed in the next commit; a second check over that commit found none.
 
@@ -113,5 +113,30 @@ Prior findings verified: R1, A1-A6 resolved (fact-check i2, security i2 "closes 
 | C19 | Q-103 [1] "always-on rules" vs "the N rules" | 🟢 | api i2 F3 | Fixed |
 | C20 | Lists of both-policy refusals differ (idea log, cycles, own brief; onboarding lacks constraints) | 🟢 | api i2 F4 | Fixed |
 | C21 | Plan D5/F57 still describe the workflows/-only interim | 🟢 | api i2 F5 | Fixed (as-built note supersedes them) |
+
+---
+
+## Iteration 3: final confirming pass (full branch at b5eaedf6; fact-check k=3, security, api-consistency; no `--loop-pass`)
+
+Fact-check replicates r1/r2/r3: 44/47/50 claims. Merged most-severe-wins (merged report: `code-fact-check-report-2026-10-14-u5-final.md`): 2 Incorrect clusters, both doc-class (🟡 under policy T): Q-156's "git archive would honor" a graft (r3 Incorrect, r1 Mostly accurate, r2 —); commit b5eaedf6's "three override rows" (r1 Incorrect, r2/r3 Mostly accurate). No behavioral red. Earlier iterations' fixes all hold (all three critics and replicates).
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A12 | Q-156: grafts do not change `git archive` output; only replace refs do | 🟡 (Incorrect, doc) | Fact-check r3 36b, r1 32 | Fixed (narrow batch) |
+| A13 | install.sh's archive follows a local `core.attributesFile`; the paste did not check it | 🟡 (Medium) | security final F1 | Paste half fixed (narrow batch: `config --local --get` test); install.sh half deferred (override row, roadmap) |
+| A14 | Step 10 re-filed `constraints-doc-missing` after a [2] answer | 🟡 (Inconsistent) | api final F1 | Fixed (8cff4877) |
+| A15 | Commit bodies b5eaedf6, 659a1c61 | 🟡 (Incorrect, commit body) | Fact-check r1 41, r2 45, r3 46-47 | Won't-Fix (immutable; override row) |
+| C22 | "Only docs, README.md, runs/, archive/" omits new top-level names; Q-103 [2] omits own files and non-path refusals | 🟢 | Fact-check r1 14, 26; r3 28 | Fixed (narrow batch) |
+| C23 | Slots: step 10 subtracts this session's loops; capped and stalled briefs uncounted | 🟢 | Fact-check r1 10b, r2 11, r3 10 | Fixed |
+| C24 | Q-149 "one-line edit"; Q-151 [2] names only step 10 | 🟢 | Fact-check r1 27, 28b; r2 31b; r3 32 | Fixed |
+| C25 | Q-156 "If the paste refuses" names one cause; label not the grammar's | 🟢 | Fact-check r2 36, r3 38; api final F3 | Fixed |
+| C26 | Q-103 F11 gap list partly closed by checkout_gate; FIFO and swap omitted | 🟢 | Fact-check r2 26 | Fixed |
+| C27 | "Also routed" header vs two items without override rows | 🟢 | Fact-check r2 29b | Fixed |
+| C28 | Both-policy refusal list omits symlinks, gitlinks, `.git*` | 🟢 | api final F2 | Fixed |
+| C29 | Rubric status called A10 fixed | 🟢 | Fact-check r1 17, r2 18 | Fixed |
+| C30 | "Docs" vs the floor's protected docs | 🟢 | api final F4 | Fixed ("docs the floor does not protect") |
+| C31 | Settings copy counting is letters-only and the never line needs a blank next line | 🟢 | Fact-check r1 4 | Fixed |
+
+**Loop outcome.** No Must Fix at any pass after iteration 1. The final pass met exit condition 2 (no Must Fix; Must Address found). Iteration-4 gate not reached. Because every remaining item had a mechanical fix, the Q-141 precedent applied: one narrow fix batch (8cff4877 and the commit after it), then a narrow k=1 fact-check and security check of that batch. Its result is below.
 
 Single-sample review; absence of findings is not an attestation.
