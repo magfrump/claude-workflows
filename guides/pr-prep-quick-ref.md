@@ -50,6 +50,7 @@ For each finding:
 
 - [ ] No **Must Fix** items remain
 - [ ] All **Must Address** items resolved or explicitly acknowledged
+- [ ] **Size re-check** — after each iteration and before merge, re-run step 1a's count: growth to 800 lines is tolerated; past it, stop and ask the user for a waiver (a `Q-NNN` entry), in /away mode too
 - [ ] Findings are converging (if not converging after 3–4 loops, the problem is architectural — use divergent-design or RPI instead)
 
 ---

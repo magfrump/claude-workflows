@@ -137,10 +137,12 @@ Evaluate the rules top-to-bottom; the first matching rule wins. Inputs are the r
    Architectural questions are a wider conversation than a line-fix — rerun with
    architecture-review enabled, or address the structural finding in a separate
    design pass before any other action.
-2. **split PR** — The unit is over the size gate in `workflows/pr-prep.md`
-   step 1a (>400 changed lines outside `docs/`, counted with that step's
-   command, so review artifacts don't count), the user has not waived the cap
-   for this unit, AND ≥1 🔴 item exists (and rule 1 did not match). A waived
+2. **split PR** — The unit is over its size limit (changed lines outside
+   `docs/`, counted with `workflows/pr-prep.md` step 1a's command, so review
+   artifacts don't count): >400 on its first review (step 1a's gate), or >800
+   on a later pass of the review-fix loop (its size re-check, which tolerates
+   growth during review). The user has not waived that limit for this unit,
+   AND ≥1 🔴 item exists (and rule 1 did not match). A waived
    unit with a 🔴 falls through to the rules below. Large diffs combined with red findings multiply review risk
    per iteration; split before iterating on fixes.
 3. **escalate to /pre-mortem** — 🔴 items span 3+ distinct critic domains (e.g.,

@@ -5,7 +5,7 @@ router: "none — runs only inside pr-prep step 3, never on its own (see Relatio
 
 # Review → Fix → Revalidate Loop
 
-This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the early split trigger, the fix-drift check, and the two re-fire filters (divergence detection and re-flagged settled decisions). [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written. The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md)), the override-log format and verdicts ([override-log reference](../skills/code-review/references/override-log.md)), and `--loop-pass`. Each rule is stated in one place; the others link to it.
+This document owns the review-fix loop's control rules: the iteration cap and its exit conditions, the early split trigger, the size re-check, the fix-drift check, and the two re-fire filters (divergence detection and re-flagged settled decisions). [pr-prep Step 3](pr-prep.md#3-review-fix-loop) owns the step sequence of each iteration (generate → triage and fix → test → re-review → exit) and when override-log rows are written. The code-review skill owns the tier definitions ([rubric](../skills/code-review/references/rubric.md)), the override-log format and verdicts ([override-log reference](../skills/code-review/references/override-log.md)), and `--loop-pass`. Each rule is stated in one place; the others link to it.
 
 ## Loop dynamics
 
@@ -51,6 +51,14 @@ If neither condition holds at the end of iteration 3, you have hit the cap. Do n
 Do not wait for the cap to split. After triaging any iteration, count its Must Fix findings and fact-check Incorrect verdicts. If there are at least 3 and one item or one file group holds about 75% or more of them, and the unit has other parts that can merge without it, split that part off now. It moves to its own branch and loop with a fresh counter, and the rest continues toward exit on this loop's counter. Batches are already reviewed per item ([decision log 59](../docs/decisions/log.md)); this trigger covers one item that turns out to contain a hard part.
 
 In /active mode, propose the split and wait. In /away mode and autonomous loops, split without asking. Record the split as an interim in `docs/working/questions.md` and in the commit body's `Notes:` line. A split is cheap to reverse; a blocking question is not. In the Q-076 batch, every Incorrect in three iterations was in Q-076. Reviewers had isolated it and offered a split by 21:50, but it was put as a blocking question only at the cap (00:09) and answered at 01:10, and the other items waited on it.
+
+### Size re-check (after any iteration)
+
+[pr-prep step 1a](pr-prep.md#1-gate-checks) caps a unit at ~400 code lines before the loop starts, and fixes can grow it after that. After each iteration's fix commits, and again before the unit merges, re-run step 1a's command with the same `BASE`. Growth up to ~800 lines (twice the entry cap) is tolerated. The check fires above 800, and as in step 1a the "~" marks a round number, not a tolerance band. Record the count in that iteration's review artifact (`Size: N code lines against <BASE>`), so a later pass and the audit trail can see the growth.
+
+Past 800, the loop stops on this unit: no further fix commits, re-review or merge until the user answers a waiver entry (`Needs: you: judgment`) in `docs/working/questions.md`. The entry's options can include splitting the unit. This holds in /away mode too: unlike the early split trigger, the agent does not decide this one (decision log 62, Q-104 [2]). Work on other units goes on. Record a granted waiver as step 1a records one, in the PR description (the merge commit message on the local-merge path), citing the `Q-NNN` entry with the user's answer quoted. A waiver granted for the entry count does not lift this check unless its answer says so.
+
+Why: the entry gate checks a unit once, and units then grew during review. `feat/dev-cycle-digest` went from 396 to 1861 lines over 37 passes (Q-104); U2a3b went from 102 to 842 and U2a3c from 217 to 538 (Q-160).
 
 ### Iteration 4: cap-exceeded decision gate
 
