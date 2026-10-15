@@ -139,4 +139,18 @@ Fact-check replicates r1/r2/r3: 44/47/50 claims. Merged most-severe-wins (merged
 
 **Loop outcome.** No Must Fix at any pass after iteration 1. The final pass met exit condition 2 (no Must Fix; Must Address found). Iteration-4 gate not reached. Because every remaining item had a mechanical fix, the Q-141 precedent applied: one narrow fix batch (8cff4877 and the commit after it), then a narrow k=1 fact-check and security check of that batch. Its result is below.
 
+### Narrow check of the fix batch (b5eaedf6..1a3d432a; fact-check k=1, security)
+
+Fact-check: 21 claims, 17 Verified, 1 Incorrect, 2 Mostly accurate (`code-fact-check-report-2026-10-14-u5-narrow.md`). Security: one Medium (`security-review-2026-10-14-u5-narrow.md`). Nothing runs before install.sh's gate (planted hooks, fsmonitor, pagers and filters did not fire under the guard). Step 10's change and the settings prose had no findings.
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A16 | Q-156: a `core.attributesFile` in `config.worktree` (with `extensions.worktreeConfig`) passes `config --local` and changes the archive; the prose claimed the whole checkout config | 🟡 (Medium; Incorrect, doc) | security narrow F1; fact-check narrow 15c | Fixed: the check reads every scope with includes and refuses any but global or system (executed in a throwaway repo: local, worktree and include refused; clean and global pass) |
+| C32 | "HEAD is main" compares commits | 🟢 | fact-check narrow 15b | Fixed ("at main's commit") |
+| C33 | Q-149's redo list missed Q-103's F58 bullet and last "also routed" item | 🟢 | fact-check narrow 12 | Fixed |
+| C34 | Q-155's interim still said "while this entry is open" | 🟢 | security narrow, focus 2 | Fixed |
+| C35 | Commit 1a3d432a's body overstates Q-149 | 🟡 (commit body) | fact-check narrow 19 | Won't-Fix (immutable; override row) |
+
+**Loop decision (iteration cap): `escalate`.** The narrow check after the final pass found one more Medium in the same class as final F1 (what shapes `git archive` around Q-156's paste). It is fixed with the reviewer's own executed form, but this is a fix found after the final pass, so it has not been re-reviewed. The merge decision goes to the orchestrator that launched this unit (it stops before merging). The underlying install.sh class (replace refs, `core.attributesFile` in any repository scope) is deferred to its own unit (roadmap Ideas, override rows); install.sh's payload diff is the backstop meanwhile.
+
 Single-sample review; absence of findings is not an attestation.
