@@ -41,6 +41,9 @@ before merging, since this session cannot merge into main (Q-162).
 - **The launcher's rebuild hint** (`fix/rebuild-hint-recreate`, 47da5a4b; was Next 3).
   Reviewed, loop closed at the cap; in `merge/ready-2026-10-15`, so it lands with Q-162, and its
   probe is Q-167 (a).
+- **One workspace per `cc-isolated` call** (`fix/cc-isolated-one-workspace`, f6f37fad; was
+  Next 3). Reviewed; the independent closing review was clean. In `merge/ready-2026-10-15`;
+  probe Q-167 (b).
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
@@ -74,11 +77,11 @@ before merging, since this session cannot merge into main (Q-162).
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **Reject a second workspace argument in `cc-isolated`.** Motive: the rebuild-hint review.
-   Interactive zsh passes a pasted trailing `# …` note as arguments, and "last positional wins"
-   then launches the wrong workspace; install.sh's "Next steps" lines still carry such notes
-   (override-log, deferred). First step: make a second positional a usage error (exit 2), and
-   drop the notes from install.sh's lines. Enforcement file, so a re-bless.
+3. **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
+   registers an empty grant** (bug). Motive: the one-workspace unit's independent review
+   found both; they predate it. `--profile ../egress/python` is written as-is. First step:
+   validate the profile name against the egress profile directory's names, refuse an empty
+   grant, and quote the unregistered-project NOTE's path with `%q`. Enforcement file.
 4. **Automate the host settings.json merge (Q-106 [2]).** Built
    (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
    gate with one Medium open (Q-174); gate coverage of the moved merge program is Q-175.
@@ -103,6 +106,11 @@ Unranked. Each names the signal that motivates it.
   assembly), so this is low priority. First step, the cheap half: a test that `ENTRIES`
   equals the names from `CLAUDE_HOME_SRC`, or have the linker read `.manifest`. The full move
   to `scripts/build-payload.sh` is about half a day plus a host live-verify.
+- **cc-push refuses a `#` word, and the remaining guide notes go.** Signal: the
+  one-workspace review (C8, A3, K1–K6). `cc-push # --yes` reads the note's later words as
+  flags (it fails safe today, at find_checkout). The guide example blocks still end in
+  `# note`, which now exits 2 when pasted. First step: cc-push's guard (a host tool, so
+  `Host-tool-tested:`), plus converting the guides' notes to own-line comments.
 - **Show bidi and zero-width characters in install review diffs.** Signal: Q-106's review
   (rubric A5). `vis` passes U+202A–202E, U+2066–2069 and zero-width characters, so on some
   terminals a crafted line in a review diff can display reordered. Pre-existing; Q-106 only
