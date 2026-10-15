@@ -295,8 +295,17 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
-   `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
-   diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   `image-lag` (an open one has its body rewritten), which is also the release entry: the
+   release is your review of what it ships (F58). It holds C, M, the changed names (the same
+   diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
+   log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
+   self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
+   the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
+   line, each in backticks, comma-separated (the image carries none of `docs/`: give its
+   count), each subject or path holding `<`, `>`, a backtick, a CR, another control or bidi
+   character, or bytes that are not UTF-8 written as `(withheld: see SHA)` (questions.sh
+   finds its `<!-- index:` markers anywhere in a line, and `--check-answer` refuses an
+   unclosed `<!--`), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -758,8 +767,9 @@ conflict: `hg -C WT merge --abort`, then a stop.
 ### 10. Dispatch
 
 Only after step 9's land is verified, with no `other` or `refuse` line from
-`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry asking for
-`docs/constraints.md`, unless an open one does: D2). Fill free slots (`--settings`'
+`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
+slug `constraints-doc-missing`, asking for `docs/constraints.md`, unless WT's questions
+files hold one with that slug, open or answered: D2). Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
 

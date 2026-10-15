@@ -144,6 +144,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
 | [Q-178](#q-178--land-unlanded-cycle-branch-0357) | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
 <!-- index:end -->
 
@@ -2726,6 +2727,22 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 
 **Answer (2026-10-14, dev cycle):** done. Built and merged on Q-148 [1]: A1+A2 as 626dc300, B as df18413a (`host_tool_files()`, `host-tools.sha256`, the `Host-tool-tested:` trailer, `verify_host_tools` in cc-push, decision log row 71). Q-147 (source guard) and roadmap Ideas (B F3–F5, A1 F1) carry the remainder; the host check after install.sh is still owed (roadmap Done).
 
+### Q-154 · build-loop-c5-cycle-cost
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answer (2026-10-04, in session; plan D12; filed 2026-10-14):** [1], a full cycle every iteration for now; move to a light pass of steps 7, 8 and 10 between full cycles once the costs are visible. Filed answered in U5, as the plan says; roadmap Next "Revisit the light pass" tracks it.
+
+Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.)
+
+- **Read:** plan D12 and F53 · `docs/reviews/pre-mortem-build-loop-handoff-rev3.md` F53
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Full cycle every iteration** | Health check, every trigger, review-fix loop on the chore branch, each time a loop finishes | None | Spend per iteration is high while loops finish often |
+| **[2] Light pass between full cycles** | Steps 7, 8 and 10 with a mechanical land; a full cycle every N hours | None | A trigger waits up to N hours to be seen |
+
+- **Interim:** [1], answered.
+- **If the answer differs:** n/a.
 
 
 ### Q-107 · claude-home-payload-second-consumer

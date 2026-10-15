@@ -1,0 +1,156 @@
+Commit: c63da94d
+
+# Code Review Rubric
+
+**Scope:** feat/build-loop-u5 vs main (b279a2ba); iteration 1 full branch at 42414307, iteration 2 the fix range 42414307..c63da94d (`--loop-pass`, fact-check k=1) | **Reviewed:** 2026-10-14 | **Status: 🟡 PASSES WITH CONDITIONS at c63da94d** — 0 red; iteration 2's Must Address rows fixed in 659a1c61 and b5eaedf6 but A10, deferred (override row); final confirming pass recorded below
+
+Delivery mode: self-read (diff at a scratch path; enclosing scripts too large to inline). Fix commits: 771a5d02, 57e26f6b, 87ca421e (docs fix after the fix-drift check). Fix-drift lite check over 42414307..57e26f6b found 1 (never-line prose named 8 of 10 directories), fixed in the next commit; a second check over that commit found none.
+
+---
+
+## 🔴 Must Fix
+
+| # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|---|---|
+| R1 | Self-merge could land `devcontainer-config/install.sh` and the host tools, which the release paste runs on the host before its diff is shown; the never line held only `workflows/` | Security | High | security-reviewer F1 | `docs/dev-cycle.md:11` | for-author | row 682 (routed to U5) | Fixed (771a5d02: never line widened to every directory live without a release) |
+
+---
+
+## 🟡 Must Address
+
+| # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
+|---|---|---|---|---|---|---|---|---|
+| A1 | "Scripts reach sessions only through a release": health-check.sh, run-tests.sh, test/ and what they source run from the orchestrator's worktree every iteration (`docs/dev-cycle.md:38-40`, Q-149) | Docs / Security | Incorrect | Fact-check claims 12, 28; security F3, F4 | for-author | row 682 | Fixed (771a5d02, 57e26f6b) | — |
+| A2 | Q-156's paste guard compared HEAD with refs/heads/main, a tautology on main; fallback could not fire before the release | Security / API | Medium | security F2; api-consistency F3 | for-author | — | Fixed (57e26f6b: fixed M, per-directory tree compare with rev-parse) | — |
+| A3 | Q-103's R8 list omitted `$GATE_TMP/answer` | Docs | Incorrect | Fact-check claim 25 | for-author | row 684 | Fixed (57e26f6b) | — |
+| A4 | Q-103's "also routed here" list incomplete (rows 548, 668, 682, 749, 750, 784, 786, 787, 797, 801, 802) | Docs | Incorrect | Fact-check claim 26 | for-author | those rows | Fixed (57e26f6b) | — |
+| A5 | Plan as-built note says D10 names row 72; D10 said 70 | Docs | Incorrect | Fact-check claim 18 | for-author | — | Fixed (57e26f6b) | — |
+| A6 | Onboarding presents `Self-merge never:` as optional; self-merge needs a valid line | API | Inconsistent | api-consistency F1 | for-author | — | Fixed (771a5d02) | — |
+| A7 | Commit 2846f9fa's body inherits A4's gap | Docs | Mostly accurate | Fact-check claim 42 | for-author | — | Won't-Fix (immutable history; override row) | Corrected in 57e26f6b's body |
+
+---
+
+## 🟢 Consider
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| C1 | "only through --settings": the scripts' gated modes read the lines too | Fact-check claim 6 | Low | for-author | — | Fixed |
+| C2 | "A refused self-merge falls through to review": only path refusals | Fact-check claim 8 | Low | for-author | — | Fixed |
+| C3 | Slot counting: step 8 counts absent and working briefs; "holds a slot" clashes with the skill's other meaning | Fact-check claim 10; api-consistency F2 | Low | for-author | — | Fixed |
+| C4 | F37: after a merge-in the land skips questions.sh check | Fact-check claim 24 | Low | for-author | — | Fixed |
+| C5 | Review merges cannot land constraints/cycle files; such branches end stopped | api-consistency F4 | Low | for-author | — | Fixed |
+| C6 | Step 10's constraints entry had no slug | api-consistency F5 | Low | for-author | — | Fixed (SKILL.md step 10) |
+| C7 | Q-153 slug outside the build-loop-cN family | api-consistency F6 | Low | for-author | — | Fixed |
+| C8 | "the loop's own files" vs the script's "the brief's own files" | api-consistency F7 | Low | for-author | — | Fixed |
+| C9 | Q-154 answer lacks `[1]`; answer date before Opened | api-consistency F8 | Informational | for-author | — | Fixed |
+| C10 | Step 0.1 copies subjects and paths into questions.md unscrubbed (`<!--` breaks questions.sh index) | security F5 | Low | for-author | — | Fixed (withheld rule) |
+| C11 | Release flag keys on a subject suffix, not --main-log's class | security F6 | Informational | for-author | — | Fixed (worded as a pointer, not proof) |
+| C12 | Both pastes run the working-tree install.sh, not M's blob | security F7 | Informational | for-author | decision 035 | Won't-Fix (override row) |
+
+---
+
+## ↩️ Considered Overrides
+
+| Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
+|---|---|---|---|---|
+| `feat/build-loop-u1b` / 2026-10-05 (row 244) | docs/dev-cycle.md's policy text stale | 🟢 → Defer to U5 | "The plan gives that rewrite to U5" | Discharged: rewritten in this unit |
+| `feat/build-loop-u3a3` / 2026-10-10 (row 682) | health-check.sh self-mergeable, outside floor | 🟡 → Defer (routed to U5's never line) | Revisit at U5 | Discharged: never line widened; Q-149 asks the width |
+| `feat/build-loop-u3a3` / 2026-10-10 (row 684) | `answer` file race | 🟢 → Defer to Q-103 list | Revisit at U5 | Discharged: added to Q-103's R8 |
+| rows 548, 668, 749, 750, 784, 786, 787, 797, 801, 802 | residuals routed to Q-103 | Defer | Revisit at Q-103's re-route | Discharged: listed in Q-103 |
+
+---
+
+## ✅ Confirmed Good
+
+| Item | Verdict | Evidence | Source | Legibility-target |
+|---|---|---|---|---|
+| The new docs/dev-cycle.md parses as intended: policy review unset, slots 3, never list set; no prose line counted as a copy, also with policy flipped to self-merge | ✅ Confirmed (executed) | `build-loop.sh --settings` in a throwaway repo; `test/scripts/build-loop-read.bats` "own docs/dev-cycle.md" passes | Fact-check (executed); security endorsement | for-orchestrator-synthesis |
+| Q-156's commit and path lists match git from C=8d0e660e | ✅ Confirmed (executed) | `git log --first-parent 8d0e660e..b279a2ba` (11), `git diff --name-only 8d0e660e HEAD -- . ':!docs/'` (28) | Fact-check; api-consistency | for-orchestrator-synthesis |
+
+---
+
+## ⚠️ Unverified Findings
+
+All findings' evidence resolved.
+
+---
+
+## ⏭️ Skipped Core Critics
+
+| Critic | Reason | Signal |
+|---|---|---|
+| performance-reviewer | Diff is copy-only: markdown plus two test assertion lines, no logic, query or dependency change | `git diff --stat main...HEAD`: 16 code lines outside docs/, all in a bats assertion, SKILL.md prose and a workflow doc |
+
+Contextual critics: none triggered (no source change without tests, 12 files / ~300 lines, no manifest, no UI, no module structure change).
+
+---
+
+## 🧩 Composition check
+
+| Cluster | Span | Fragments | Disposition |
+|---|---|---|---|
+| docs/dev-cycle.md never line | :11, :36-40 | R1, A1 (fact-check 12; security F3, F4) | composed root already stated by A1: the plan's premise "code reaches sessions only through a release" is false here; one fix (widen the line) |
+| Q-156 paste | questions.md:480-484 | A2 (security F2, api F3) | distinct sources, same defect; no new root |
+
+---
+
+## Iteration 2 (incremental: 42414307..c63da94d; fact-check k=1, security, api-consistency)
+
+Prior findings verified: R1, A1-A6 resolved (fact-check i2, security i2 "closes iteration 1's findings in substance"); api-consistency i1 F2 half-fixed (Q-151) and F3/F4 partly, carried below. No re-fires of a fixed finding (security i2 F1 is a new mechanism in A2's fix: tree names vs archive output). Performance still skipped (copy-only).
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A8 | Settings prose: cycle-file branches "filed as stopped, not as a merge entry" under both policies; under self-merge they come as a merge entry first | 🟡 (Incorrect, doc) | Fact-check i2 claim 5b; claim 30b (onboarding) | Fixed (659a1c61) |
+| A9 | Q-156 tree pin bypassed by a replace ref or a root `.gitattributes` | 🟡 (Medium) | security i2 F1 | Fixed (paste exports GIT_NO_REPLACE_OBJECTS, refuses replace refs and grafts, compares `.gitattributes`) |
+| A10 | install.sh's archive honors replace refs; state gate misses them (pre-existing) | 🟡 (Medium) | security i2 F2 | Deferred: override row, roadmap Idea; Q-156 refuses for this release |
+| A11 | Never-line prose overstated coverage: docs/evaluation-rubric.md and docs/spikes/ read as authority, self-mergeable | 🟡 (Medium, low conf.) | security i2 F3 | Fixed (prose and Q-149 name them; listing them is the user's call in Q-149) |
+| C13 | Slots also cap dispatch | 🟢 | Fact-check i2 claim 6 | Fixed |
+| C14 | Paste compares all of global-instructions/ (fails closed) | 🟢 | Fact-check i2 claim 26 | Fixed (wording: "directories the release installs from") |
+| C15 | Withheld rule's reason wording; line shapes, bidi, non-UTF-8 | 🟢 | Fact-check i2 claim 28; security i2 F4 | Fixed (SKILL.md step 0.1) |
+| C16 | Commit bodies 771a5d02, c63da94d wording | 🟢 | Fact-check i2 claims 31, 34 | Won't-Fix (immutable; override row) |
+| C17 | Q-151 [1] "holds a slot" | 🟢 | api i2 F1 | Fixed |
+| C18 | Q-156's M is a branch commit, step 0.1's is main's | 🟢 | api i2 F2 | Fixed (entry says why; merge's released trees equal M's) |
+| C19 | Q-103 [1] "always-on rules" vs "the N rules" | 🟢 | api i2 F3 | Fixed |
+| C20 | Lists of both-policy refusals differ (idea log, cycles, own brief; onboarding lacks constraints) | 🟢 | api i2 F4 | Fixed |
+| C21 | Plan D5/F57 still describe the workflows/-only interim | 🟢 | api i2 F5 | Fixed (as-built note supersedes them) |
+
+---
+
+## Iteration 3: final confirming pass (full branch at b5eaedf6; fact-check k=3, security, api-consistency; no `--loop-pass`)
+
+Fact-check replicates r1/r2/r3: 44/47/50 claims. Merged most-severe-wins (merged report: `code-fact-check-report-2026-10-14-u5-final.md`): 2 Incorrect clusters, both doc-class (🟡 under policy T): Q-156's "git archive would honor" a graft (r3 Incorrect, r1 Mostly accurate, r2 —); commit b5eaedf6's "three override rows" (r1 Incorrect, r2/r3 Mostly accurate). No behavioral red. Earlier iterations' fixes all hold (all three critics and replicates).
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A12 | Q-156: grafts do not change `git archive` output; only replace refs do | 🟡 (Incorrect, doc) | Fact-check r3 36b, r1 32 | Fixed (narrow batch) |
+| A13 | install.sh's archive follows a local `core.attributesFile`; the paste did not check it | 🟡 (Medium) | security final F1 | Paste half fixed (narrow batch: `config --local --get` test); install.sh half deferred (override row, roadmap) |
+| A14 | Step 10 re-filed `constraints-doc-missing` after a [2] answer | 🟡 (Inconsistent) | api final F1 | Fixed (8cff4877) |
+| A15 | Commit bodies b5eaedf6, 659a1c61 | 🟡 (Incorrect, commit body) | Fact-check r1 41, r2 45, r3 46-47 | Won't-Fix (immutable; override row) |
+| C22 | "Only docs, README.md, runs/, archive/" omits new top-level names; Q-103 [2] omits own files and non-path refusals | 🟢 | Fact-check r1 14, 26; r3 28 | Fixed (narrow batch) |
+| C23 | Slots: step 10 subtracts this session's loops; capped and stalled briefs uncounted | 🟢 | Fact-check r1 10b, r2 11, r3 10 | Fixed |
+| C24 | Q-149 "one-line edit"; Q-151 [2] names only step 10 | 🟢 | Fact-check r1 27, 28b; r2 31b; r3 32 | Fixed |
+| C25 | Q-156 "If the paste refuses" names one cause; label not the grammar's | 🟢 | Fact-check r2 36, r3 38; api final F3 | Fixed |
+| C26 | Q-103 F11 gap list partly closed by checkout_gate; FIFO and swap omitted | 🟢 | Fact-check r2 26 | Fixed |
+| C27 | "Also routed" header vs two items without override rows | 🟢 | Fact-check r2 29b | Fixed |
+| C28 | Both-policy refusal list omits symlinks, gitlinks, `.git*` | 🟢 | api final F2 | Fixed |
+| C29 | Rubric status called A10 fixed | 🟢 | Fact-check r1 17, r2 18 | Fixed |
+| C30 | "Docs" vs the floor's protected docs | 🟢 | api final F4 | Fixed ("docs the floor does not protect") |
+| C31 | Settings copy counting is letters-only and the never line needs a blank next line | 🟢 | Fact-check r1 4 | Fixed |
+
+**Loop outcome.** No Must Fix at any pass after iteration 1. The final pass met exit condition 2 (no Must Fix; Must Address found). Iteration-4 gate not reached. Because every remaining item had a mechanical fix, the Q-141 precedent applied: one narrow fix batch (8cff4877 and the commit after it), then a narrow k=1 fact-check and security check of that batch. Its result is below.
+
+### Narrow check of the fix batch (b5eaedf6..1a3d432a; fact-check k=1, security)
+
+Fact-check: 21 claims, 17 Verified, 1 Incorrect, 2 Mostly accurate (`code-fact-check-report-2026-10-14-u5-narrow.md`). Security: one Medium (`security-review-2026-10-14-u5-narrow.md`). Nothing runs before install.sh's gate (planted hooks, fsmonitor, pagers and filters did not fire under the guard). Step 10's change and the settings prose had no findings.
+
+| # | Finding | Tier | Source | Status |
+|---|---|---|---|---|
+| A16 | Q-156: a `core.attributesFile` in `config.worktree` (with `extensions.worktreeConfig`) passes `config --local` and changes the archive; the prose claimed the whole checkout config | 🟡 (Medium; Incorrect, doc) | security narrow F1; fact-check narrow 15c | Fixed: the check reads every scope with includes and refuses any but global or system (executed in a throwaway repo: local, worktree and include refused; clean and global pass) |
+| C32 | "HEAD is main" compares commits | 🟢 | fact-check narrow 15b | Fixed ("at main's commit") |
+| C33 | Q-149's redo list missed Q-103's F58 bullet and last "also routed" item | 🟢 | fact-check narrow 12 | Fixed |
+| C34 | Q-155's interim still said "while this entry is open" | 🟢 | security narrow, focus 2 | Fixed |
+| C35 | Commit 1a3d432a's body overstates Q-149 | 🟡 (commit body) | fact-check narrow 19 | Won't-Fix (immutable; override row) |
+
+**Loop decision (iteration cap): `escalate`.** The narrow check after the final pass found one more Medium in the same class as final F1 (what shapes `git archive` around Q-156's paste). It is fixed with the reviewer's own executed form, but this is a fix found after the final pass, so it has not been re-reviewed. The merge decision goes to the orchestrator that launched this unit (it stops before merging). The underlying install.sh class (replace refs, `core.attributesFile` in any repository scope) is deferred to its own unit (roadmap Ideas, override rows); install.sh's payload diff is the backstop meanwhile.
+
+Single-sample review; absence of findings is not an attestation.
