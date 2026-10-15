@@ -384,17 +384,24 @@ Do not maintain both. Two copies of `init-firewall.sh` is exactly the drift deci
   (openrouter.ai is on Cloudflare) can go stale mid-session; rerun
   `sudo /usr/local/bin/init-firewall.sh` inside the container if a previously working
   host starts timing out.
-- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is baked at build time. A
-  re-bless changes the baked config hash, so the next launch of each project
-  recreates its container automatically; to pick up a newer CC *without* a config
-  change, recreate it with the launcher: `cc-isolated --probe-only <repo>` (always
-  rebuilds from the blessed config and re-probes), then `cc-isolated <repo>`. Not a
-  bare `devcontainer up --remove-existing-container …` from your own shell: it drops
-  the launcher's `localEnv` inputs and bakes base-only egress and an empty config
-  hash (see `rebuild_hint` in `cc-isolated.sh`). Staleness >1
-  version for >2 weeks is a decision-015 Revisit trigger. The egress profile and the
-  config hash are the *last* layer in the Dockerfile, so projects on different
-  profiles still share every heavy layer.
+- **Image lifecycle:** `CLAUDE_CODE_VERSION=latest` is resolved when the install
+  layer is built, and Docker reuses that cached layer on later rebuilds: nothing in
+  the launcher passes `--build-no-cache`, and the egress profile and the config hash
+  are the *last* layer in the Dockerfile, so projects on different profiles still
+  share every heavy layer. A re-bless changes the baked config hash, so the next
+  launch of each project recreates its container automatically, from those cached
+  layers. Newer CC versions arrive through Claude Code's own auto-update inside the
+  container, or `claude update` there (see the auto-update row in
+  `cc-isolated-usage.md`'s troubleshooting table); a recreated container starts
+  again from the image's version. To recreate a container by hand, use the launcher:
+  `cc-isolated --probe-only <repo>` (always recreates it from the blessed config and
+  re-probes), then `cc-isolated <repo>`. Not a bare
+  `devcontainer up --remove-existing-container …` from your own shell: it drops the
+  variables the launcher exports, and each one dropped has its own effect
+  (base-only egress, an empty config hash, the shared `cc--claude-config` volume),
+  and the launcher's probe never runs (see the comment above `rebuild_hint` in
+  `cc-isolated.sh`). Staleness >1 version
+  for >2 weeks is a decision-015 Revisit trigger.
 - **One config, one blast radius:** a bad edit to the central config breaks every
   project at once. After changing it, verify with `cc-isolated --probe-only <repo>`
   on more than one project before relying on it — see "Changing the boundary".
