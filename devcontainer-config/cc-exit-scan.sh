@@ -120,10 +120,8 @@ logical_workspace() {
 # reason names the path itself); find's and git config's own error text is kept
 # inside the reason, reduced to that one printable line.
 #
-# EVERY `read` RUNS UNDER LC_ALL=C. In a UTF-8 locale bash's read swallows a
-# delimiter (NUL or newline) that follows an incomplete multibyte character, so a
-# file or value ending in such a byte would merge with the next entry, which the
-# scan would then never see.
+# EVERY `read` RUNS UNDER LC_ALL=C: in a UTF-8 locale it swallows a NUL or newline
+# after an incomplete multibyte character, hiding the next entry from the scan.
 #
 # LIMITS: what a clean scan does not rule out is listed once, in
 # guides/cc-isolated-usage.md, "Known routes it does not see" — update it there
@@ -389,19 +387,16 @@ _snap_remote() {
   done
 }
 
-# Caps on the insteadOf pass (a session can plant thousands of URLs and rules,
-# or huge ones, to stall the scan): bytes in one URL, rule base or value
-# (_snap_key: comparison cost grows with length); pairs compared, charged before
-# each batch (_snap_pairs_ok); and rewritten URLs to walk, each of which can cost
-# a few forks, checked while a batch is matched (_snap_match). Over any of them
-# the snapshot fails (fail closed).
+# Caps on the insteadOf pass, against a session planting many or huge URLs and
+# rules to stall the scan: bytes in one URL, rule base or value (_snap_key);
+# pairs compared (_snap_pairs_ok); rewritten URLs to walk, each a few forks
+# (_snap_match). Over any of them the snapshot fails (fail closed).
 GIT_EXIT_SCAN_MAX_REWRITE_BYTES=4096
 GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=100000
 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000
 
-# _snap_key <a> <b> [check]: set _snap_k to a key for the pair, length-prefixed
-# so no byte in <a> (a tab, say) can make two pairs collide, and counted in bytes
-# (LC_ALL=C: in a UTF-8 locale ${#a} counts characters, which collide too). With
+# _snap_key <a> <b> [check]: _snap_k, a key for the pair prefixed by <a>'s length
+# in bytes (LC_ALL=C; characters collide), so no byte can join two pairs. With
 # <check>, fail when <a> or <b> is over GIT_EXIT_SCAN_MAX_REWRITE_BYTES.
 _snap_key() {
   local LC_ALL=C
@@ -462,9 +457,8 @@ _snap_match() {
   done
 }
 
-# _snap_walk_hits: walk every rewritten URL _snap_match found, like any remote,
-# once each. Walking can queue more URLs and rules, never more hits. A rewritten
-# URL is never queued as a URL: git rewrites once.
+# _snap_walk_hits: walk each rewritten URL _snap_match found, like any remote,
+# once; never queued as a URL (git rewrites once), and walking adds no hits.
 _snap_walk_hits() {
   local h
   for ((h = 0; h < ${#_snap_hit_t[@]}; h++)); do
@@ -514,10 +508,8 @@ _snap_config() {
         _snap_names+=("$val")
         _snap_nbases+=("$base") ;;
       remote.*.*)
-        # A remote git counts as defined (remote.c, valid_remote) has a url or
-        # vcs; with neither, git pushes to its NAME as a URL (worklist below).
         name="${key#remote.}"; name="${name%.*}"
-        case "$key" in remote.*.url|remote.*.vcs) [ -z "$name" ] || _snap_rnames["$name"]=1 ;; esac
+        [ -z "$name" ] || _snap_rnames["$name"]=1
         case "$key" in
           remote.*.url|remote.*.pushurl) _snap_url "$val" "$base" || return 1 ;;
         esac ;;
@@ -619,8 +611,7 @@ _snap_host_config() {
     key="${rec%%$'\n'*}"
     val=""
     [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
-    # Your rewrite rules apply to the repo's URLs too (an empty value matches all),
-    # and the repo's rules (or yours) to your remotes' URLs.
+    # Your rewrite rules apply to repo URLs, and any rule to your remotes' URLs.
     case "$key" in
       url.*.insteadof|url.*.pushinsteadof) t="${key#url.}"; _snap_rule "${t%.*}" "$val" || return 1 ;;
       remote.*.url|remote.*.pushurl) _snap_url "$val" "$wt" || return 1 ;;
@@ -729,20 +720,18 @@ _snap_gitdir() {
     _snap_find "$list" "$real/$d" -mindepth 1 ! -type d || return 1
     while LC_ALL=C IFS= read -r -d '' f; do
       _snap_file legacy-remote "$f" || return 1
-      # The name counts as defined only once a URL is read from the file; a file
-      # with none leaves git pushing to the name itself (worklist below).
       name="${f#"$real/$d/"}"
+      _snap_rnames["$name"]=1
       [ -f "$f" ] || continue
       # Read in one go (the hash above proved it readable); a read error's text
       # would name the container-chosen path raw.
       body="$(cat -- "$f" 2>/dev/null)" || { _snap_fail 'cannot read %s' "$f"; return 1; }
       while LC_ALL=C IFS= read -r line || [ -n "$line" ]; do
         if [ "$d" = branches ]; then
-          _snap_rnames["$name"]=1
           _snap_url "${line%%#*}" "$(_snap_worktree_of "$real/config")" || return 1
           break
         fi
-        case "$line" in URL:*) _snap_rnames["$name"]=1; line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
+        case "$line" in URL:*) line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
       done <<< "$body"
     done < "$list"
   done

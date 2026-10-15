@@ -316,8 +316,7 @@ local-path remote — `config`, `config.worktree`, `commondir`,
 `rebase-apply/` and `sequencer/` state, and every symlink. It follows what those
 configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
-(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`
-naming a path or a remote with no `url`, which git pushes to by name,
+(`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
 resolved in the working tree of the repo whose config names them). Each of
 those remote URLs, local or not, and each `remote.*.url`/`pushurl` in your own
@@ -423,8 +422,7 @@ opens or closes a route.
   git does: a remote with no `url` (git pushes to its name), an empty
   `branches` file, a name defined in another repo of the checkout, untrimmed
   spaces or a CR in a legacy URL, and `file://host/` or percent-encoded
-  `file://` URLs can each name a path the scan does not walk. Each needs that
-  state present at launch.
+  `file://` URLs can each name a path the scan does not walk (if present at launch).
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses

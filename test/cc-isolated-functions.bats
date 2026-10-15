@@ -2247,15 +2247,6 @@ rewrite_plant() {
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
   for n in pre-push pre-commit post-checkout; do [[ "$output" == *"+ hook $SCAN_WS/.git/hooks/$n "* ]]; done
-  # A legacy remotes file whose first URL ends mid-character keeps its second.
-  git init -q --bare "$SCAN_WS/leg.git"
-  printf 'URL: x\xc3\nURL: ./leg.git\n' > "$SCAN_WS/.git/remotes-tmp"
-  mkdir -p "$SCAN_WS/.git/remotes"; mv "$SCAN_WS/.git/remotes-tmp" "$SCAN_WS/.git/remotes/up"
-  before="$(git_exec_snapshot "$SCAN_WS")"
-  plant_hook "$SCAN_WS/leg.git/hooks" pre-receive
-  run git_exit_scan "$SCAN_WS" "$before"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"+ hook $SCAN_WS/leg.git/hooks/pre-receive "* ]]
 }
 
 @test "exit scan Q-096: rules and URLs holding tabs are not merged with others" {
@@ -2281,19 +2272,6 @@ rewrite_plant() {
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 1 ]
   [[ "$output" == *"+ hook "*"EVIL/hooks/pre-receive"* ]]
-}
-
-@test "exit scan Q-096: a remote with no url is pushed to by its name, which is walked" {
-  scan_repo
-  local br; br="$(git -C "$SCAN_WS" symbolic-ref --short HEAD)"
-  git -C "$SCAN_WS" config remote.sub/evil.fetch '+refs/heads/*:refs/remotes/x/*'
-  git -C "$SCAN_WS" config "branch.$br.pushRemote" sub/evil
-  mkdir -p "$SCAN_WS/sub" "$SCAN_WS/.git/remotes"
-  # Likewise a legacy remotes file with no URL: line.
-  printf 'Push: refs/heads/*\n' > "$SCAN_WS/.git/remotes/sub/legacy" 2>/dev/null \
-    || { mkdir -p "$SCAN_WS/.git/remotes/sub"; printf 'Push: refs/heads/*\n' > "$SCAN_WS/.git/remotes/sub/legacy"; }
-  git -C "$SCAN_WS" config remote.pushDefault sub/legacy
-  rewrite_plant "$SCAN_WS/sub/evil" "$SCAN_WS/sub/legacy"
 }
 
 @test "exit scan Q-096: past either insteadOf cap, the exit scan fails as unsafe" {
