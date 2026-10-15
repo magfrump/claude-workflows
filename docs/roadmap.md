@@ -11,7 +11,33 @@ user's order).
 
 ## Now
 
-Nothing waiting outside a brief: this cycle's three ready items moved to In flight.
+Being built by hand in this cycle (2026-10-14), each on its own branch and worktree. Each stops
+before merging, since this session cannot merge into main (Q-162).
+
+- **U5, the build-loop handoff's last unit** (`feat/build-loop-u5`). Motive: U1–U4 are on
+  main, but the docs, Q-103's re-route, the release entry and the brief's `done` are
+  still owed (plan items 11–13). Built and reviewed; waits on Q-164 (gate code, escalate).
+- **Q-110 — the health check's NOT RUN summary under-counts** (`fix/q110-not-run-undercount`).
+  Motive: reproduced again this cycle (runner 50, summary 4). Fixed and reviewed; waits on
+  Q-162's paste.
+- **Q-145 — the lib's ancestor listing skips vanished entries** (`fix/q145-ancestor-vanish`;
+  was Next 4). Motive and revisit trigger as filed under Q-145. A gate-code unit: it lands
+  on your approval: built and reviewed, waits on Q-163.
+- **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
+  cycle's health-check red. Waits on Q-162's paste.
+- **Doc drift** (`fix/doc-drift-cycle1`, c8e87a69; added 2026-10-15). Motive: the In flight
+  brief below. Reviewed, loop closed; waits on Q-162's paste (`merge/ready-2026-10-15`).
+- **Q-160 — the in-loop size re-check** (`fix/q160-iteration-cap`, 4a44d2f3; added
+  2026-10-15). Motive: log row 62 fired again. Reviewed, simplified, narrow-checked; waits on
+  Q-162's paste.
+- **Q-096 — exit scan follows insteadOf targets** (`fix/q096-exit-scan-insteadof-target`;
+  added 2026-10-15). Motive: the In flight brief below. Built; review iteration 2 is under
+  way after the first security pass found five Mediums.
+- **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
+  22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
+  done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
+  runs main's launcher on a staged merge tree (Q-165, Q-166). First step: the hand spike
+  paste on Q-117, being written and reviewed.
 
 ## In flight
 
@@ -32,26 +58,40 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    under-counts (Q-017), so neither can be counted.
    Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
    committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
+   Cycle 2 (2026-10-14): 42 multi-file landings; 25/42 carry the line, 38/42 committed a
+   rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432). About 36 are
+   units of the one build-loop plan.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **Verify a branch without installing it on the host.** Motive: Q-117 and Q-130 were
-   answered "not run" on 2026-10-12: installing a branch image refuses while any session
-   runs, so it blocks the harness, and a forgotten test install is a security risk.
-   Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
-   First step: list what Q-117's and Q-130's checks need from the host, and which of
-   those a container or second install prefix could provide side by side with main's.
-4. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
-   gate (merged on Q-145 [2]) goes red when an entry in a repo ancestor such as `/tmp`
-   vanishes mid-listing (`scripts/lib/dev-cycle-read.sh`, `find -H "${tops[@]}" -maxdepth 1`
-   fails closed). First step: skip an entry that no longer exists instead of failing; a
-   gate-code unit, so it lands on the user's approval. Revisit trigger (the user's): if re-runs
-   on this class cost more than an hour in total before it lands, reopen Q-145.
+3. **The launcher's rebuild hint misleads after the firewall fails closed** (bug). Motive:
+   the doc-drift review (A4, C4, C5). `rebuild_hint` in `cc-isolated.sh` tells the user that
+   a plain `cc-isolated <repo>` rebuilds, but a plain launch recreates only when the config
+   hash differs, so in that state it does not recover. `init-firewall.sh` and two lines of
+   the cc-isolated guide say "rebuild" where they mean "recreate". First step: point the
+   hint's first line at `--probe-only`, then a launch, as the guides now do. It touches
+   enforcement files, so the commit carries a `Host-tool-tested:` or `Live-verified:` trailer.
+4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
+   Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
+   "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
+   enforcement file, so the plan opens with the bypass pre-mortem.
+5. **Re-run decision 015's step 4 as a divergent design (Q-105 [3]).** Motive: 015 T2 fired
+   last cycle; Q-105 was answered [3] on 2026-10-06, with the same lost follow-up. First step:
+   a `divergent-design` doc seeded with 015's constraints and the breakage record.
 
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **Union-merge the append-only review logs.** Signal: on 2026-10-15 every pair of finished
+  units conflicted only in `docs/reviews/override-log.md` (and earlier in
+  `failure-patterns.md`), so each landing needs a hand-built `merge/*` branch. A
+  `merge=union` attribute for those files would land the rows without a merge branch.
+  `.gitattributes` is a truth file and install.sh's archive reads it, so this is your call.
+- **A launcher flag to refresh the cached Claude Code layer.** Signal: the doc-drift review
+  (C3). A recreated container goes back to the image's Claude Code version until
+  auto-update runs; something like `--probe-only --no-cache` would rebuild that layer.
 
 - **live-verify-gate: commits it does not see (Q-089 B security F3-F5).** Signal: a
   `git commit <path>`, `-o` or `-i` commits unstaged gated changes with no trailer; a
@@ -92,6 +132,14 @@ Unranked. Each names the signal that motivates it.
 - **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
   conflicts on `code-fact-check-report-r*.md` (undated, so any two branches collide) and
   add/add conflicts on `*-review-<date>.md` (any two branches reviewed the same day).
+
+- **Let the orchestrator merge, or plan for a human merge each cycle.** Signal: cycle
+  2026-10-14. The auto-mode classifier refused this session's merge into main, so every
+  finished branch waits on a paste (Q-162), and `--land-cycle` cannot run here either.
+  The remedy is a permission rule only you can add, or a standing per-cycle merge entry.
+- **Dispatch the two briefs held since 2026-10-02.** Signal: the doc-drift and Q-096 briefs
+  held 2 of 3 slots for 12 days unstarted (log row 68's cap clause). Since U4, a dispatcher
+  exists, but dispatch stays off here until `docs/constraints.md` exists (D2; U5 files it).
 
 ## Done
 

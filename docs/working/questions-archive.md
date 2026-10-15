@@ -93,6 +93,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-086](#q-086--install-gnu-parallel) | `bats --jobs` needs GNU `parallel`, which is not in the image. The full suite runs serially in 742 s on a 1... | 2026-09-27 |
 | [Q-087](#q-087--final-confirming-pass-replicates) | Should the final confirming pass of a review-fix loop run the fact-check at k=3 instead of decision 031's k... | 2026-09-28 |
 | [Q-088](#q-088--spike-weaker-nested-sandbox) | Spike, per Q-081 [2]: can Claude Code's `sandbox.enableWeakerNestedSandbox` run Bash sandboxed inside cc-is... | 2026-09-28 |
+| [Q-089](#q-089--host-tools-trust-category) | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-090](#q-090--run-tests-jobs) | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
@@ -2707,4 +2708,17 @@ Q-089 (host-only tools get their own trust category) is built and reviewed, and 
 - **Blocks:** Q-089's landing, and the roadmap Ideas filed from it.
 - **Interim:** nothing merged; main is untouched at 4ab9a51f. The loop paused, as the cap requires.
 - **If the answer differs:** [2] runs a full review round; [3] means the branches can be deleted at your say.
+
+### Q-089 · host-tools-trust-category
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-manifest section and commit trailer (e.g. `Host-tool-tested:`) instead of `Live-verified:`; `cc-push` verifies its own hash before running; `check_manifest` stops blocking cc-isolated launches when only a host tool changed; decision log row 45 is amended.
+
+- **Read:** `docs/reviews/q076-architecture-review-2026-09-27.md` Finding 3 · decision log 45 · `hooks/live-verify-gate.sh` · `enforcement_files` in `devcontainer-config/cc-isolated.sh`.
+- **Constraint:** this changes enforcement files, so per RPI step 3 the plan's pre-mortem lists the bypass families (e.g. a tampered cc-push that skips its own check, a manifest section swap) and marks each covered or not before implementing. The unit counts against the ~400-line cap (decision log 62).
+- **Interim:** host tools stay in the enforcement set (Q-083's interim [2]).
+
+**Answer (2026-10-14, dev cycle):** done. Built and merged on Q-148 [1]: A1+A2 as 626dc300, B as df18413a (`host_tool_files()`, `host-tools.sha256`, the `Host-tool-tested:` trailer, `verify_host_tools` in cc-push, decision log row 71). Q-147 (source guard) and roadmap Ideas (B F3–F5, A1 F1) carry the remainder; the host check after install.sh is still owed (roadmap Done).
+
+
 
