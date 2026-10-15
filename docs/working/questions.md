@@ -29,6 +29,7 @@ The index below is generated — edit entries, not the table.
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
+| [Q-148](#q-148--q089-escalate-merge) | you: judgment | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-089](#q-089--host-tools-trust-category) | agent | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
@@ -39,6 +40,7 @@ The index below is generated — edit entries, not the table.
 | [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
 | [Q-110](#q-110--health-check-not-run-undercount) | agent | In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 r... | 2026-10-02 |
 | [Q-125](#q-125--build-cc-isolated-sandbox) | agent | Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default with `unshare` and `clone`... | 2026-10-07 |
+| [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-103](#q-103--dev-cycle-build-loop-policy) | deferred | Once the build-loop handoff exists, may its build loops merge their own branches in claude-workflows, or mu... | 2026-10-01 |
@@ -314,3 +316,34 @@ Under every option below, `REPO_DIR` points at a dedicated clone (§5.1), never 
 - **Blocks:** the live run with real children that Q-075 imagined, and so any resume of the loop.
 - **Interim:** [3]. Nothing runs, so nothing is at risk.
 - **If the answer differs:** [1] or [2] each become one build item (roadmap Next) followed by the live run in a dedicated clone. Neither undoes anything.
+
+### Q-147 · q089-loop-split-source-guard
+**Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `split`: the static source-set test (rubric A6/R2/R4) moves to its own unit, `feat/q089-source-guard` (at fa059477). The rest of unit A starts a new loop. That source-guard unit needs a fresh loop that first narrows the test's claim to "plain spellings, accidental drift". Pass 4 showed grep can't cover every bash form.
+
+- **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
+- **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
+
+### Q-148 · q089-escalate-merge
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fix loop's iteration-4 gate. How should it land?
+
+- **Why it's yours:** the loop hit its 3-iteration cap with only mechanical items left. Only you can authorize another iteration or a merge past the cap (workflows/review-fix-loop.md, `escalate`).
+- **Read:** the A1 rubric's "Iteration-4 gate" section, `docs/reviews/code-review-rubric-2026-10-14-feat-q089a1-host-tool-manifest.md`, on `feat/q089a2b-cc-push-self-check` · decision log row 71 · Q-147.
+- **The stack:**
+  - **A1+A2**, `feat/q089a2b-cc-push-self-check` at 3164f1d5: the code. It must land together, never A1 alone.
+  - **B**, `feat/q089b4-host-tool-gate` at 25d8f272 (worktree `.claude/wt-q089b`): the commit gate's `Host-tool-tested:` trailer, docs, row 71, Q-147. It is stacked on A at afe1ae59, and its own loop sits at iteration 2 of 3.
+- **Where the code stands:** it converged at iteration 2. The k=3 final pass found no code defect. What remains in A is F1, three test assertions that cannot fail as written, and F2, one shared comment that is false for cc-push. Each is a one-line fix.
+- **Not run:** a live host check. Every commit carries `Live-verified: no` and `Host-tool-tested: no`. After merging, re-run install.sh: it re-blesses once and a rebuild-and-probe follows. Then run `cc-isolated --list`, and edit an installed cc-gitdir.sh to see both refusals.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Fix F1/F2, narrow check, merge** | Apply the 4 one-line fixes, run a k=1 fact-check on just those lines, then merge A and B in order if it's clean. B's loop finishes its iteration 3 first. | Nothing now; the host check after install.sh | A missed wording issue lands, and the next cycle catches it |
+| **[2] Another full iteration for A** | Authorize iteration 4 (and a new final pass) for A1+A2 | About 1M+ tokens | Probably more wording churn: every pass since iteration 2 has been that |
+| **[3] Shelve** | Leave the branches unmerged; host tools stay in the boundary manifest (Q-083 interim) | None | Q-083 [1] stays unimplemented, and the stack goes stale as main moves |
+
+- **Blocks:** Q-089's landing, and the roadmap Ideas filed from it.
+- **Interim:** nothing merged; main is untouched at 4ab9a51f. The loop paused, as the cap requires.
+- **If the answer differs:** [2] runs a full review round; [3] means the branches can be deleted at your say.
