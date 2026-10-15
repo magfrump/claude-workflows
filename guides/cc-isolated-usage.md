@@ -22,7 +22,7 @@ cc-isolated ~/code/other-project  # session for an explicit repo
 cc-isolated --list                # blessed config hash + verified-live status, host-tool state, registered projects
 cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
 cc-isolated --bless               # re-bless the installed config after YOU reviewed it
-cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
+cc-isolated --probe-only [REPO]   # RECREATE REPO's container from the blessed config, run the
                                   # self-probe, record the config verified live on a pass
 cc-isolated --help                # usage header, exit status included
 cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone; first
@@ -838,8 +838,8 @@ Every launch refuses to `exec claude` unless all seven pass:
 files; it cannot know whether a container built from them works. Only a passing
 self-probe against a container whose baked hash *is* the blessed hash writes
 `~/.config/claude-devcontainer/verified-live.sha256`. `cc-isolated --list` shows
-both. Run the verification explicitly after any boundary change — it always rebuilds
-first, so it can never verify a leftover container:
+both. Run the verification explicitly after any boundary change — it always recreates
+the container first, so it can never verify a leftover container:
 
 ```bash
 cc-isolated --probe-only ~/code/api
@@ -952,7 +952,7 @@ different hostname). Add the exact name to the profile.
 | `host-tool manifest … is unreadable or malformed` | `host-tools.sha256` itself is the anomaly. Inspect it before any bless overwrites it; re-run `install.sh` to restore it. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
 | Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. A *subdomain* of a listed name is the common case: the resolver admits the zone, the proxy admits only the exact entry. Add the exact name. |
-| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch rebuilds and verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
+| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch recreates the container if it was built from another config, then verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
 | `Blessed config changed since this container was built — rebuilding` | Expected once per project after a re-bless. The container is recreated (repo and `~/.claude` volume are unaffected). |
 | `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate it from the host with the launcher: `cc-isolated --probe-only <repo>` (recreates the container from the blessed config and re-probes), then `cc-isolated <repo>`. Not a bare `devcontainer up --remove-existing-container …` from your own shell: it drops the variables the launcher exports, and each one dropped has its own effect (among them base-only egress and an empty config hash, see the "newly registered profile has no effect" row below; a `~/.claude` volume shared across projects; and a build pointed at `/Dockerfile`), and the launcher's probe never runs. |
 | `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
@@ -960,7 +960,7 @@ different hostname). Add the exact name to the profile.
 | `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |
-| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which rebuilds with both set. The error messages now print the assignments inline for the by-hand form. |
+| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which recreates it with both set. The error messages now print the assignments inline for the by-hand form. |
 | Probe fails on image provenance after migrating from the 015 launcher | A leftover `.devcontainer/Dockerfile` in the target repo shadows the central one. Delete `.devcontainer/` **before** verifying (see `devcontainer-setup.md` → Migrating). |
 
 ## Related

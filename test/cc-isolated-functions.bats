@@ -348,7 +348,18 @@ STUB
   [ "$status" -eq 0 ]
   # The supported path must come first: the by-hand form is the one that can be
   # run wrong, so it must never be the first thing a reader copies.
-  [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
+  # It is the guides' two-step recipe, never a bare relaunch: a plain launch
+  # recreates only on a config-hash mismatch, so in the fail-closed state it does
+  # not recover (override log, fix/doc-drift-cycle1 A4).
+  local ws; ws="$(printf '%q' "$TEST_TMPDIR/proj")"
+  # The whole first line is the command, nothing after it: interactive zsh
+  # without interactivecomments passes a trailing `# ...` to step 2 as arguments,
+  # and the last positional becomes the workspace, so step 2 fails or, if that
+  # word names a directory inside a git work tree, launches that tree's repo
+  # (security review 2026-10-15, rebuild-hint #1).
+  [ "$(echo "$output" | head -1)" = "    cc-isolated --probe-only $ws && cc-isolated $ws" ]
+  [[ "$(echo "$output" | sed -n 2p)" == *"recreates the container from the blessed config"* ]]
+  [[ "$output" != *"rebuilds"* ]]
 }
 
 @test "usage prints the whole header block, exit status included, and nothing past it" {
@@ -1143,6 +1154,7 @@ fake_payload_and_dest() {
 
 # A devcontainer stub that answers the in-container reads probe_boundary makes.
 # STUB_IMAGE_HASH → /etc/cc-config-hash; STUB_FP → the workspace fingerprint;
+# STUB_FW_BRICKED=1 → re-running the baked init-firewall.sh fails (fail-closed state).
 # STUB_FW_MISSING=1 → the firewall completion marker is absent. Every call is
 # logged to $DC_LOG so main()'s rebuild decision can be asserted.
 smart_devcontainer_stub() {
@@ -1156,6 +1168,7 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *init-firewall.sh*)      [ -z "${STUB_FW_BRICKED:-}" ] ;;
   *cc-project-id*)
     # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
     # with /home/node/.claude redirected to a test dir and the container's
@@ -1243,6 +1256,9 @@ h6_probe() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Verified live:  NO"* ]]
   [[ "$output" == *"--probe-only"* ]]
+  # The command is alone on its line (no trailing `# ...`, which interactive zsh
+  # without interactivecomments passes as arguments; security review 2026-10-15).
+  printf '%s\n' "$output" | grep -qx '  Next: cc-isolated --probe-only <repo>'
   [[ "$output" == *"Live-verified:"* ]]
   run is_verified_live
   [ "$status" -ne 0 ]
@@ -1373,7 +1389,33 @@ h6_probe() {
   grep -qxF "CC_PROJECT_NAME=proj" "$DC_LOG.up-env"
 }
 
-@test "--probe-only always rebuilds before probing" {
+# Regression (override log, fix/doc-drift-cycle1 A4): in the fail-closed state the
+# container was built from the blessed config, so a plain launch does not recreate
+# it, and the hint used to send the user straight back into that launch.
+@test "a launch on a fail-closed container does not recreate it, and the hint names --probe-only first" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  STUB_FW_BRICKED=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING STUB_FW_BRICKED
+  local ws; ws="$(printf '%q' "$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ERROR: init-firewall.sh failed"* ]]
+  [[ "$output" == *"Recreate it"*"cc-isolated --probe-only $ws && cc-isolated $ws"* ]]
+  # The unverified-config NOTE must not promise the recreate this launch skips.
+  [[ "$output" == *"has NOT been verified in a live container"* ]]
+  [[ "$output" != *"the container is rebuilt from it"* ]]
+  [[ "$output" == *"the container is recreated if it was built"* ]]
+  # The premise of the hint: this launch reused the container and never started claude.
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  run ! grep -q ' claude$' "$DC_LOG"
+}
+
+@test "--probe-only always recreates before probing" {
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
@@ -1384,6 +1426,24 @@ h6_probe() {
   [ "$status" -eq 0 ]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
   ! grep -q ' claude$' "$DC_LOG"
+}
+
+# The hint's `&&` relies on this: a failed probe after the forced recreate must
+# exit non-zero and write no receipt (security review 2026-10-15, rebuild-hint #2).
+# (--probe-only never runs claude at all, so that is not asserted here.)
+@test "--probe-only exits non-zero and records nothing when the probe fails" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (firewall)"* ]]
+  grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
+  [ ! -f "$(verified_path)" ]
 }
 
 # --- Exit scan: .git changes made during the session (Q-069 [3], Q-076) ---------
