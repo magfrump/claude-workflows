@@ -40,6 +40,9 @@ None.
 | C10 | Pass 2: which values make Claude Code drop a whole file is untraced | Fact-check pass 2 claim 11b (Unverifiable) | Info | for-author | — | Accepted: the stated residual (A1); question in the unit report |
 | C11 | Pass 2: RESIDUAL named only a BOM; jq 1.6 also accepts NaN/Infinity literals that a strict JSON parser rejects | security-reviewer pass 2 (Info) | Info | for-author | — | Fixed: "anything Claude Code rejects that this check accepts" |
 | C12 | Pass 2: `explode \| any(. == 0)` per string is slow at scale (6000 rules: 528 ms); `test("\u0000")` is ~10x faster; `contains` is wrong on jq 1.6 | performance-reviewer pass 2 (Info) | Info | for-author | — | Fixed: uses `test`, with a comment on `contains` |
+| C13 | Final pass: log row 53 cited Q-081 as open (answered; now Q-125), and its "now also" list overstated what is new; the guide pointed at RULE SYNTAX for what deny leaves; ROLE's "exit 0" ignored malformed stdin (exit 4/5, empty stdout) | Fact-check final (Stale / Mostly accurate) | Low | for-author | — | Fixed |
+| C14 | Final pass: load_rules discarding partial jq output was untested (mutant passed) | Fact-check final r2 | Low | for-author | — | Fixed: the unparseable-project test now has a rule in the global file, which jq prints first |
+| C15 | Final pass: ed06dec1's message says a non-array-of-strings deny fails closed; at that commit null/false passed | Fact-check final (Mostly accurate, commit message) | Info | for-author | — | Accepted-immutable: superseded by fdae7834 and 0444b1ac |
 | C8 | `guard-trusted-writes.py` can emit `ask` on Bash (SOFT target, tainted session), which per #39344 can turn a deny into a prompt; "never asks" is true of this hook only | api-consistency (out of lane), plan F8 | Info | for-author | — | Out of scope; reported as a question |
 
 ---

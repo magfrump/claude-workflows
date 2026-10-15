@@ -48,8 +48,9 @@
 # (mean of 20 approved `git status` calls, 110 -> 136 ms, 2026-09-28).
 #
 # ROLE: AN ALLOW-ONLY CONVENIENCE LAYER (Q-092). The hook emits one decision,
-# "allow", or nothing (exit 0 with no output, so Claude Code's own rules and
-# prompt decide). It never emits "ask", "deny" or "defer". That is what lets it
+# "allow", or nothing (no output, so Claude Code's own rules and prompt
+# decide; exit 0 on any input Claude Code sends, 4 or 5 on stdin that is not a
+# JSON object, never 2). It never emits "ask", "deny" or "defer". That lets it
 # leave deny rules to Claude Code: a hook "ask" overrides permissions.deny
 # (Claude Code issue #39344), but a hook "allow" does not (host test Q-082,
 # 2026-09-28; decision log row 53). Q-082 did not record the Claude Code

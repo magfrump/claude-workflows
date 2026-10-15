@@ -159,7 +159,8 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
     out=$(printf '%s' "$cmd" | jq -Rs '{tool_input:{command:.}}' | bash "$HOOK" 2>/dev/null) || true
     [[ -z "$out" || "$out" == "$ALLOW_JSON" ]] || { echo "[$cmd] -> $out"; return 1; }
   done
-  # No allow rules, a malformed settings file, input with no command.
+  # A malformed settings file (so no allow rules), input with no command, and
+  # input that is not JSON (exit 4, still no stdout).
   echo '{not json' > "$HOME/.claude/settings.json"
   out=$(printf '%s' '{"tool_input":{"command":"ls"}}' | bash "$HOOK" 2>/dev/null) || true
   [ -z "$out" ]
@@ -224,7 +225,9 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
 }
 
 @test "an unparseable project settings.json fails closed even when settings.local.json is well formed" {
-  echo '{}' > "$HOME/.claude/settings.json"
+  # The global file sorts first and holds a rule, so jq prints it before the
+  # project file's error: load_rules must discard it.
+  echo '{"permissions":{"allow":["Bash(cat:*)"]}}' > "$HOME/.claude/settings.json"
   echo '{"permissions":{"allow":["Bash(cat:*)"],}' > "$PROJECT/.claude/settings.json"
   echo '{"permissions":{"allow":["Bash(cat:*)"]}}' > "$PROJECT/.claude/settings.local.json"
 

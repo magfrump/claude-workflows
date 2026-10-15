@@ -158,4 +158,4 @@ The hook test suites cover the same ground offline: `bats test/hooks/` and
   credentials backstop is the `Bash(*.credentials.json*)` deny rule alone where no
   sandbox runs (cc-isolated has none). That rule is a string match, so a spelling
   without the literal name (a glob such as `~/.claude/.c*`) gets past it. The hook
-  header's DENY RULES ARE CLAUDE CODE'S and RULE SYNTAX sections say what is left.
+  header's DENY RULES ARE CLAUDE CODE'S and FAILS CLOSED sections say what is left.
