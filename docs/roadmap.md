@@ -30,9 +30,12 @@ before merging, since this session cannot merge into main (Q-162).
 - **Q-160 — the in-loop size re-check** (`fix/q160-iteration-cap`, 4a44d2f3; added
   2026-10-15). Motive: log row 62 fired again. Reviewed, simplified, narrow-checked; waits on
   Q-162's paste.
-- **Q-096 — exit scan follows insteadOf targets** (`fix/q096-exit-scan-insteadof-target`;
-  added 2026-10-15). Motive: the In flight brief below. Built; review iteration 2 is under
-  way after the first security pass found five Mediums.
+- **Q-096 — exit scan follows insteadOf targets** (`fix/q096-exit-scan-insteadof-target`,
+  8717fd72; added 2026-10-15). Motive: the In flight brief below. Reviewed, loop closed;
+  waits on Q-162's paste, then its host probe (Q-167).
+- **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`;
+  added 2026-10-15). Motive: split off from Q-096's review (older routes, now a listed known
+  route). First step: rebase onto Q-096's tip, then RPI with the bypass pre-mortem.
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
   22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
