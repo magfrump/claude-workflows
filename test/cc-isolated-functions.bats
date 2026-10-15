@@ -908,8 +908,10 @@ fake_payload_and_dest() {
   [ "$status" -eq 1 ]
   # A file the manifest does not list, or lists twice, is refused.
   (cd "$d" && sha256sum cc-push.sh cc-gitdir.sh > host-tools.sha256)
+  echo 'c' > "$d/cc-exit-scan.sh"   # present, so the no-entry branch decides
   run verify_host_tools "$d" cc-exit-scan.sh
   [ "$status" -eq 1 ]
+  [[ "$output" == *"has no entry, or more than one, for cc-exit-scan.sh"* ]]
   (cd "$d" && sha256sum cc-push.sh cc-push.sh cc-gitdir.sh > host-tools.sha256)
   run verify_host_tools "$d" cc-push.sh
   [ "$status" -eq 1 ]
@@ -918,11 +920,14 @@ fake_payload_and_dest() {
   mv "$d/cc-gitdir.sh" "$d/real-gitdir.sh"; ln -s real-gitdir.sh "$d/cc-gitdir.sh"
   run verify_host_tools "$d" cc-gitdir.sh
   [ "$status" -eq 1 ]
-  # The config dir itself is never a repo checkout: no manifest there is refused.
+  # The config dir itself is never a repo checkout, even with install.sh beside
+  # the script and no manifest: only the config-dir clause refuses this one.
   local c="$TEST_TMPDIR/cfg2"
-  mkdir -p "$c"; echo 'a' > "$c/cc-push.sh"
+  mkdir -p "$c"; echo 'a' > "$c/cc-push.sh"; echo '#!/bin/bash' > "$c/install.sh"
+  c="$(readlink -f "$c")"
   CLAUDE_DEVC_CONFIG_DIR="$c" run verify_host_tools "$c" cc-push.sh
   [ "$status" -eq 1 ]
+  [[ "$output" == *"no host-tool manifest"* ]]
 }
 
 @test "verify_host_tools is the same code in cc-isolated.sh and cc-push.sh" {
@@ -1072,7 +1077,7 @@ fake_payload_and_dest() {
   cp "$TEST_TMPDIR/cc-push.blessed" "$d/cc-push.sh"; echo '# z' >> "$d/cc-exit-scan.sh"
   run bash "$d/cc-isolated.sh" --list
   [[ "$output" == *"launches refuse: "*"cc-exit-scan.sh changed"* ]]
-  [[ "$output" != *"cc-push refuses"* ]]
+  [[ "$output" != *"cc-push: CHANGED"* ]]
 }
 
 @test "claude-home files are hashed file by file when present" {

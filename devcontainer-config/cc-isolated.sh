@@ -245,8 +245,8 @@ verify_host_tools() {
     echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
     return 1
   fi
-  # Every file is checked and every mismatch named, so the refusal lists all of
-  # what the bless it points to would accept.
+  # Every file it is given is checked and every mismatch named. (A caller that
+  # checks only some host tools does not see the others: the bless prints them.)
   local bad=0
   for f in "$@"; do
     if [ ! -f "$dir/$f" ] || [ -L "$dir/$f" ]; then

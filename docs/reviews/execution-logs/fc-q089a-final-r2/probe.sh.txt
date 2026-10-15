@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# fc-q089a-final-r2: suites, mutants and behaviour probes on git archive afe1ae59.
+# $1 = probe root (an existing mktemp -d). Aborts without it.
+set -u
+R="${1:?probe root required}"
+[ -d "$R" ] || { echo "no probe root $R"; exit 2; }
+cd "$R" || exit 2
+export LC_ALL=C
+export HOME="$R/home" TMPDIR="$R/tmp" CC_PUSH_CLONES_DIR="$R/clones"
+export CLAUDE_DEVC_CONFIG_DIR="$R/unused-cfg"
+mkdir -p "$HOME" "$TMPDIR" "$R/stub"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$R/stub/devcontainer"; chmod +x "$R/stub/devcontainer"
+export PATH="$R/stub:$PATH"
+src() { rm -rf "$R/src"; mkdir -p "$R/src"; git -C /workspace/.claude/wt-q089 archive afe1ae59 devcontainer-config test | tar -x -C "$R/src"; }
+step() { echo; echo "=== $* ($(date -u +%FT%TZ))"; }
+
+step "S1 suites at afe1ae59"
+src
+( cd "$R/src" && timeout 900 bats test/cc-isolated-functions.bats > "$R/s1-iso.tap" 2>&1; echo "iso exit=$?"; \
+  timeout 600 bats test/cc-push.bats > "$R/s1-push.tap" 2>&1; echo "push exit=$?" )
+for t in iso push; do printf '%s: plan %s ok %s notok %s\n' "$t" "$(head -1 "$R/s1-$t.tap")" "$(grep -c '^ok' "$R/s1-$t.tap")" "$(grep -c '^not ok' "$R/s1-$t.tap")"; done
+grep '^not ok' "$R"/s1-*.tap
+
+step "S2 bats --count at each branch commit"
+for c in f2533b33 b3b37e16 4be0445d 2cb03f23 cc2640b7 f737ba71 afe1ae59; do
+  rm -rf "$R/c"; mkdir -p "$R/c"; git -C /workspace/.claude/wt-q089 archive "$c" test | tar -x -C "$R/c"
+  printf '%s iso=%s push=%s\n' "$c" "$(bats --count "$R/c/test/cc-isolated-functions.bats")" "$(bats --count "$R/c/test/cc-push.bats")"
+done
+
+run_one() { # $1 file, $2 test-name regex
+  ( cd "$R/src" && timeout 300 bats -f "$2" "$1" 2>&1 | tail -n 15 )
+}
+
+step "M1 drop the not-the-config-dir clause (both copies); run the repo-checkout test"
+src
+for f in cc-isolated.sh cc-push.sh; do
+  python3 -I - "$R/src/devcontainer-config/$f" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = ' && [ "$dir" != "$cfg" ]; then'
+assert s.count(old) == 1, s.count(old)
+open(p, 'w').write(s.replace(old, '; then'))
+PY
+done
+grep -c '"$dir" != "$cfg"' "$R/src/devcontainer-config/cc-isolated.sh"
+run_one test/cc-isolated-functions.bats 'repo checkout unchecked'
+
+step "M2 --list flags cc-push on a scan-only change (perr also checks cc-exit-scan.sh)"
+src
+python3 -I - "$R/src/devcontainer-config/cc-isolated.sh" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = 'perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh)" || true'
+assert s.count(old) == 1
+open(p, 'w').write(s.replace(old, 'perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh cc-exit-scan.sh)" || true'))
+PY
+run_one test/cc-isolated-functions.bats 'reports host-tool state'
+
+step "P1 config dir with install.sh beside it and no manifests, named by CLAUDE_DEVC_CONFIG_DIR (real code)"
+src
+d="$R/p1cfg"; mkdir -p "$d"; echo a > "$d/cc-push.sh"; echo '#!/bin/bash' > "$d/install.sh"
+( source "$R/src/devcontainer-config/cc-isolated.sh"
+  CLAUDE_DEVC_CONFIG_DIR="$d" verify_host_tools "$d" cc-push.sh; echo "named, resolved: rc=$?"
+  CLAUDE_DEVC_CONFIG_DIR="$R/unused-cfg" verify_host_tools "$d" cc-push.sh; echo "not named: rc=$?" )
+
+step "P2 upgrade: install with old-style manifest (host tools in it), no host-tools.sha256; launch, then install.sh's bless line"
+src
+d="$R/p2cfg"; mkdir -p "$d/egress" "$R/ws"
+cp "$R/src/devcontainer-config/"{devcontainer.json,Dockerfile,init-firewall.sh,cc-sni-proxy.py,link-claude-home.sh,cc-isolated.sh,cc-exit-scan.sh,cc-gitdir.sh,cc-push.sh} "$d/"
+cp "$R/src/devcontainer-config/egress/"*.txt "$d/egress/"
+( cd "$d" && sha256sum devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh egress/*.txt | LC_ALL=C sort -k2 > manifest.sha256 )
+echo "-- launch before bless:"; CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" "$R/ws"; echo "rc=$?"
+echo "-- install.sh line 607 form:"; CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 "$d/cc-isolated.sh" --bless; echo "rc=$?"
+ls "$d"/host-tools.sha256 && cat "$d/host-tools.sha256"
+echo "-- --list after:"; CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" --list | head -4
+
+step "P3 refusal when manifest.sha256 is absent but host-tools check fails: which boundary note?"
+d="$R/p3cfg"; mkdir -p "$d"; cp -r "$R/p2cfg/." "$d/"; rm -f "$d/manifest.sha256" "$d/host-tools.sha256"
+CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" "$R/ws"; echo "rc=$?"
+
+step "P4 --register after a cc-push-only change: warns, then blesses it"
+d="$R/p2cfg"; echo '# p4 change' >> "$d/cc-push.sh"
+CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" --list | sed -n '2,4p'
+git -C "$R/ws" init -q 2>/dev/null
+CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" --register "$R/ws" --profile python; echo "rc=$?"
+CLAUDE_DEVC_CONFIG_DIR="$d" timeout 60 bash "$d/cc-isolated.sh" --list | sed -n '2,4p'
+
+step "P5 parity block: lines compared (sed range minus first line) and first lines"
+for f in cc-isolated.sh cc-push.sh; do sed -n '/^# --- verify_host_tools/,/^# --- end verify_host_tools/p' "$R/src/devcontainer-config/$f" | head -1; done
+step "done"

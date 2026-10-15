@@ -1,0 +1,7 @@
+bless exit=0
+--help exit=0
+--bogus exit=2
+ERROR: host-tool check failed — refusing to launch, probe or register:
+--register exit=141
+ERROR: host-tool check failed — refusing to launch, probe or register:
+--probe-only exit=141

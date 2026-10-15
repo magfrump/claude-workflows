@@ -1,0 +1,28 @@
+Exit-code re-probe (07-behave.log piped through head, which hid exit codes).
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu (layout from behave.sh, afe1ae59 files)
+env: LC_ALL=C HOME=$d/home TMPDIR=$d/tmp CLAUDE_DEVC_CONFIG_DIR=$d/cfg CC_PUSH_CLONES_DIR=$d/clones PATH=$d/stub:$PATH (stub devcontainer)
+Command (one shell line): restore cc-push.sh, --bless, append '# t' to cfg/cc-exit-scan.sh, run
+  bash cfg/cc-isolated.sh --bogus ; bash cfg/cc-isolated.sh --help ; restore the scan; then for each
+  host-tools.sha256 state (missing / symlink to a good copy / chmod 000 / 'junk' / freshly blessed)
+  run bash cfg/cc-push.sh --help ; finally cc-push --help through a PATH symlink.
+uid: 1000 (non-root, so chmod 000 is effective)
+Output:
+2026-10-15T01:38:10Z
+bogus exit=2 ERROR: unknown flag: --bogus
+help exit=0
+cc-push --help [missing] exit=1 first=ERROR: cc-push refuses to run:
+cc-push --help [symlink] exit=1 first=ERROR: cc-push refuses to run:
+cc-push --help [unreadable] exit=1 first=ERROR: cc-push refuses to run:
+cc-push --help [malformed] exit=1 first=ERROR: cc-push refuses to run:
+cc-push --help [ok] exit=0 first=cc-push — push the commits a cc-isolated session made, without running anything
+PATH-symlink cc-push --help exit=0
+
+Note on 04-hist-*.log: the per-commit loop printed exit=$? after a command
+substitution, so its printed exits were not bats's. Pass/fail is read from the
+logs themselves (count of ^ok / ^not ok against the 1..N plan line):
+  f2533b33 cc-isolated-functions 180/180; b3b37e16 181/181; 4be0445d 181/182
+  (not ok 76, the parity test); 4be0445d cc-push 48/48; cc2640b7 cc-push 48/48,
+  cc-isolated-functions 182/182 (rc=0, captured properly); f737ba71 182/182 and 48/48;
+  install-host at f2533b33 92/92 (rc=0), run in a temp clone (git required by T9).
+03-afe1ae59-install-host-archive-not-a-repo.log: 91/92, T9 fails only because a
+git archive is not a repository (its git archive HEAD call); not evidence about the code.

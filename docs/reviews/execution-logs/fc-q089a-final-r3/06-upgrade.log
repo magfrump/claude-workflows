@@ -1,0 +1,53 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== 2026-10-15T01:36:30Z dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8
+--- old bless
+exit=0
+Dockerfile
+cc-exit-scan.sh
+cc-gitdir.sh
+cc-isolated.sh
+cc-push.sh
+cc-sni-proxy.py
+devcontainer.json
+egress
+init-firewall.sh
+link-claude-home.sh
+manifest.sha256
+1
+--- new launcher before bless (expect refusal; launch action)
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8/dest/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8/dest <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8/dest /home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8/dest/cc-isolated.sh --bless
+2,5c2
+< ea822746aef0d13b81fd2b0a1981ba7f77ebaaa3fb187af8b3215191a20aece8  cc-exit-scan.sh
+< 8e5d0a65bb5fc666c8d4c92dc7c99ab1fcd71a9fea68fa1241f407b251f8affd  cc-gitdir.sh
+< 0bc1e12c5f7f8744fbabe899e85667b1d5e13aa7febb7787f4813eb3587fab82  cc-isolated.sh
+< cbcbd92fb438cc3cb24afcdae07a29cf8af16d5722f445f9f4ca027cc63f475e  cc-push.sh
+---
+exit=141
+--- install.sh-style bless
+exit=0
+1:Changed since the last bless (manifest.sha256):
+8:No previous host-tools.sha256: every entry below is new to this bless.
+28:Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr3-upg.mydBI8/dest/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+Dockerfile
+cc-exit-scan.sh
+cc-gitdir.sh
+cc-isolated.sh
+cc-push.sh
+cc-sni-proxy.py
+devcontainer.json
+egress
+host-tools.sha256
+init-firewall.sh
+link-claude-home.sh
+manifest.sha256
+--- --list after
+Blessed config 7ff3b31a101a46f9 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+
+--- cc-push --help after (installed copy)
+exit=0

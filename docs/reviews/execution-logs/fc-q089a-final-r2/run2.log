@@ -1,0 +1,10 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== S1b whole-tree archive, cc-isolated-functions (2026-10-15T01:34:50Z)
+iso exit=0
+plan 1..182 ok 182 notok 0
+=== P1b (2026-10-15T01:36:18Z)
+no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p1cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+config dir named: rc=1
+not named: rc=0
+=== done (2026-10-15T01:36:18Z)
+exit=0
