@@ -2,7 +2,7 @@
 
 - **Goal**: One host paste that live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages the merge of main and the branch, and runs main's installed cc-isolated against that stage on a scratch clone. The same run checks the research doc's four unverified claims (§7).
 - **Project state**: roadmap Next 3, step 1 of the DD's recommendation ([4] as [5]'s first step), on `docs/branch-verify-without-install` · inputs: `research-branch-verify-without-install.md`, `dd-branch-verify-without-install.md` · blocked on a host run (the user's `you: terminal` paste)
-- **Task status**: paused (paste written; review loop iteration 2 passed; nothing has run on the host)
+- **Task status**: paused (paste written and reviewed in two iterations, outcome in the rubric linked below; nothing has run on the host)
 
 Last verified: 2026-10-15 against main b279a2ba and `fix/egress-dnsmasq-ipset` b26d4b8b23aa (pinned in the paste); their merge tree is `65e65962b12e…`.
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/install.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/Dockerfile`, `guides/cc-isolated-usage.md`, `docs/working/questions-archive.md` (Q-117)
@@ -19,9 +19,11 @@ The paste writes one script, `~/cc-verify/spike-q117.sh`, and runs it. Everythin
 | scratch workspace | `~/cc-verify/VERIFY-<TREE8>` | the trap |
 | one container | label `cc-project=<PID>`, where PID is the project id of `~/cc-verify/VERIFY-<TREE8>` | the trap (`docker rm -f`) |
 | two volumes | `cc-<PID>-bashhistory`, `cc-<PID>-claude-config` | the trap |
-| one image | the one the container ran | the trap, only if it was absent before the run and no other container uses it; also any image whose tag names `verify-<TREE8>` |
+| one image | the one the container ran, plus any `vsc-verify-<TREE8>-…` build tag | the trap, only with proof the image is this run's: its id is absent from the run's before-snapshot (and, for the container's image, no other container uses it). Without that proof it is reported and kept. |
+| raw extract | `~/cc-verify/stage-<TREE8>.raw` (only during step 2) | step 2, or the trap |
+| before/after snapshots | `~/cc-verify/snap-<RUN>-before`, `…-after` | the trap after a complete teardown; after an incomplete one, the before-snapshot stays so `--clean` can still prove which image is new |
 | run record | `~/cc-verify/run-<RUN>.env`, holding only `RUN=` and `T8=` | the trap, last, and only when every removal succeeded |
-| log | `~/cc-verify/log-<RUN>.txt` | kept on purpose; no tool reads it |
+| log | `~/cc-verify/log-<RUN>.txt` | kept on purpose. The script reads its tail only to show a `--register` failure; nothing else reads it. |
 
 **What the run checks at runtime** (the `CHECK` lines). It compares, before and after:
 - a hash over every file in `~/.config/claude-devcontainer`;
@@ -109,19 +111,27 @@ teardown() {
         docker volume rm "$v" >/dev/null </dev/null || { echo "TEARDOWN: could not remove volume $v" >&2; fail=1; }
       fi
     done
-    # An image this run's container ran is removed only if it was not present before the
-    # run (when the before snapshot exists) and no remaining container uses it.
+    # Images are removed only with proof they are this run's: the run's before snapshot must
+    # exist and not list the image id. Without that proof (a --clean after the snapshot was
+    # lost) they are reported and kept.
+    local before="$V/snap-$RUN-before/images"
     for img in $imgs; do
-      if [ -f "$V/snap-$RUN-before/images" ] && grep -q " $img\$" "$V/snap-$RUN-before/images"; then continue; fi
+      if [ ! -f "$before" ]; then echo "TEARDOWN: kept image $img (no before-snapshot proves it new; remove it by hand if it is the verify build)" >&2; continue; fi
+      if grep -q " $img\$" "$before"; then continue; fi
       if [ -n "$(docker ps -aq --filter "ancestor=$img" </dev/null)" ]; then echo "TEARDOWN: image $img still in use; not removed" >&2; continue; fi
       docker image rm -f "$img" >/dev/null </dev/null || { echo "TEARDOWN: could not remove image $img" >&2; fail=1; }
     done
-    # The devcontainer CLI tags its images after the workspace folder (unverified); a tag
-    # naming this run's folder is this run's, whoever else is building meanwhile.
-    while read -r i tags; do
-      [ -n "$i" ] || continue
-      case "$tags" in *verify-"$T8"*) docker image rm -f "$i" >/dev/null </dev/null || fail=1 ;; esac
-    done < <(docker image ls --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' </dev/null | tr 'A-Z' 'a-z')
+    # The devcontainer CLI is expected to name its image vsc-<lower-cased folder>-... (unverified).
+    # A tag of that exact prefix whose image id is new since the snapshot is this run's build
+    # leftover; it is untagged by name (no -f), so other tags on the same id survive.
+    if [ -f "$before" ]; then
+      while read -r i tags; do
+        [ -n "$i" ] || continue
+        case "$tags" in vsc-verify-"$T8"-*|vsc-verify-"$T8":*) ;; *) continue ;; esac
+        if grep -q " $i\$" "$before"; then continue; fi
+        docker image rm "$tags" >/dev/null </dev/null || { echo "TEARDOWN: could not untag $tags" >&2; fail=1; }
+      done < <(docker image ls --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' </dev/null)
+    fi
     rm -rf -- "$V/stage-$T8" "$V/stage-$T8.raw" "$V/VERIFY-$T8" || fail=1
   fi
   if [[ "$RUN" =~ ^[0-9]+-[0-9]+$ ]]; then
@@ -166,7 +176,7 @@ compare() {    # after teardown: did anything outside this run change?
   else echo "CHECK verify container gone: ok"; fi
   x="$(comm -13 "$b/containers" "$a/containers"; comm -13 "$b/volumes" "$a/volumes"; comm -13 "$b/images" "$a/images")"
   [ -z "$x" ] || { echo "NOTE created during the run and still present (another session's, or a build leftover; not removed):"; printf '  %s\n' "$x"; }
-  rm -rf -- "$b" "$a"
+  rm -rf -- "$a"
   return "$bad"
 }
 
@@ -178,8 +188,11 @@ on_exit() {
     teardown || trc=1
     if [ "$SNAP" = 1 ]; then compare || crc=1; fi
     if [ "$trc" = 1 ] || [ -e "$V/run-$RUN.env" ]; then
+      # The before snapshot stays: it is what lets --clean prove an image is this run's.
       echo "TEARDOWN INCOMPLETE. Fallback: bash $V/spike-q117.sh --clean" >&2
       rc=1
+    else
+      rm -rf -- "$V/snap-$RUN-before"
     fi
     [ "$crc" = 0 ] || rc=1
   fi
@@ -200,8 +213,7 @@ if [ "${1:-}" = "--clean" ]; then
     T8="$(sed -n 's/^T8=\([0-9a-f]\{8\}\)$/\1/p' "$f" | head -1)"
     [ "$f" = "$V/run-$RUN.env" ] || { echo "skipping malformed $f (remove it by hand)" >&2; rc=1; continue; }
     echo "cleaning run $RUN (tree ${T8:-?}${T8:+, project $(verify_pid "$T8")})"
-    teardown || rc=1
-    rm -rf -- "$V/snap-$RUN-before" "$V/snap-$RUN-after"
+    if teardown; then rm -rf -- "$V/snap-$RUN-before" "$V/snap-$RUN-after"; else rc=1; fi
   done
   exit "$rc"
 fi
@@ -246,8 +258,8 @@ mrc=$?
 set -e
 case "$mrc" in
   0) ;;
-  1) printf '%s\n' "$mt" | vis >&2; die "$BRANCH does not merge cleanly with $BASE (conflicts above). Merge $BASE into the branch first." ;;
-  *) printf '%s\n' "$mt" | vis >&2; die "git merge-tree --write-tree failed (exit $mrc; it needs git >= 2.38)." ;;
+  1) printf '%s\n' "$mt" | vis | sed 's/^/  | /' >&2; die "$BRANCH does not merge cleanly with $BASE (conflicts above). Merge $BASE into the branch first." ;;
+  *) printf '%s\n' "$mt" | vis | sed 's/^/  | /' >&2; die "git merge-tree --write-tree failed (exit $mrc; it needs git >= 2.38)." ;;
 esac
 TREE="$(printf '%s\n' "$mt" | head -1)"
 [[ "$TREE" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || die "merge-tree printed no tree id."
@@ -298,7 +310,7 @@ if grep -n 'initializeCommand' "$S/devcontainer.json"; then
 fi
 for i in "${PINNED[@]}"; do
   if ! cmp -s "$MAIN_CFG/$i" "$S/$i"; then
-    diff -u "$MAIN_CFG/$i" "$S/$i" | vis || true
+    diff -u "$MAIN_CFG/$i" "$S/$i" | vis | sed 's/^/  | /' || true
     die "the staged $i differs from main's installed copy (diff above). This spike refuses any change to what reaches the docker daemon (runArgs, mounts, lifecycle commands, base image, build steps). If main's install is behind main, reinstall main first."
   fi
 done
@@ -328,7 +340,7 @@ snapshot before
 SNAP=1
 say "6. register $PROFILE in the stage (main's launcher, CLAUDE_DEVC_CONFIG_DIR=stage); log: $LOG"
 CLAUDE_DEVC_CONFIG_DIR="$S" "$LAUNCHER" --register "$WS" --profile "$PROFILE" >"$LOG" 2>&1 </dev/null \
-  || { tail -n 20 "$LOG" | vis >&2; die "--register failed (log above)."; }
+  || { tail -n 20 "$LOG" | vis | sed 's/^/  | /' >&2; die "--register failed (log above)."; }
 [ "$(cat "$S/projects/$PID.profile" 2>/dev/null)" = "$PROFILE" ] \
   || die "the launcher did not write $S/projects/$PID.profile: its project id differs from this spike's."
 # What the bless hashed must still be main's copies: a stage edit between step 3 and the bless
@@ -399,7 +411,7 @@ If anything kills the run before its trap fires (a `kill -9`, a closed terminal,
 
 ## Expected output on success
 
-These are the lines that matter, in order. Long output in between is elided (`…`), and `<…>` stands for run-specific values. Every line the launcher or the container prints is shown indented under `  | `, with control bytes removed. So only the script's own lines can start with `RESULT`, `CHECK` or `REFUSED`.
+These are the lines that matter, in order. Long output in between is elided (`…`), and `<…>` stands for run-specific values. Every line the script did not write itself is shown indented under `  | ` with control bytes removed: the launcher's and the container's output, git's conflict listing, the step-3 diff and a `--register` failure's log tail. So only the script's own lines can start with `RESULT`, `CHECK` or `REFUSED`.
 
 ```
 == 1. merge check: main + fix/egress-dnsmasq-ipset
@@ -442,9 +454,9 @@ CHECK verify container gone: ok
 RESULT spike-q117 exit=0
 ```
 
-`claude-home` shows under "differ" whenever main's installed payload predates the merged tree's; its `.manifest` alone differs. A `NOTE created during the run and still present` block lists containers, volumes or images that appeared during the run and that the trap did not recognise as its own: either another session's work, or a build leftover (the devcontainer CLI's image naming is unverified, below). It is a note, not a failure.
+`claude-home` always shows under "differ": the spike's `.manifest` records the merge tree and "cc-verify spike", where install.sh's records a commit and the checkout path. More entries appear when main's install is behind main. A `NOTE created during the run and still present` block lists containers, volumes or images that appeared during the run and that the trap did not recognise as its own: either another session's work, or a build leftover (the devcontainer CLI's image naming is unverified, below). It is a note, not a failure.
 
-Exit status, also printed as `RESULT spike-q117 exit=<n>`:
+Exit status. Once the run has started, it is also printed as `RESULT spike-q117 exit=<n>`; preflight refusals and `--clean` exit without that line:
 - `0`: Q-117 passed and every CHECK is ok.
 - `2`: nothing failed, but the pool did not rotate within 45 min. Q-117's own rule says run again later.
 - `130`: interrupted (Ctrl-C, TERM, HUP). The trap still tears down.
@@ -479,7 +491,7 @@ Exit status, also printed as `RESULT spike-q117 exit=<n>`:
 | 8 | Q-117's container block, verbatim | questions-archive.md:2463-2475 (byte for byte). It runs as `remoteUser: node` (devcontainer.json:71). node can read the proxy log: on the branch, `/run/cc-sni-proxy` is 0755 (`init-firewall.sh:1392-1393` on the branch) and the log is opened 0644 (`cc-sni-proxy.py:260`). The `ALLOW sni=… -> <ip>:<port>` field order is the proxy's (`cc-sni-proxy.py:207`). dl.google.com is only in `egress/android.txt`. |
 | 7-8 | launcher and container output goes through `relay`: control bytes (all but tab and newline) are dropped, and each line is shown under `  \| ` | Branch code builds and boots this container, so its output cannot rewrite the terminal, set the clipboard through OSC 52, or print a line that looks like the script's `RESULT`/`CHECK` (review security F8). |
 | 9 | verdict = Q-117's own rule: 2 instances, both fetches 200, 0 FAIL lines, the first ALLOW address absent from "pool now". `no-rotation` (exit 2) applies only when nothing else failed | questions-archive.md:2478. The ordering was fixed in review: a real failure used to report as "rerun later" (fact-check claim 9a). |
-| trap / `--clean` | Removes the label's containers, then the two named volumes, then the containers' images (only if new and unused), then images tagged `verify-<TREE8>`, then the stage, workspace and clone. Every name is derived from `RUN` and `TREE8`, format-checked; the project id is recomputed from `~/cc-verify/VERIFY-<TREE8>`. | A planted `run-*.env` can name only a `VERIFY-<8 hex>` path under `~/cc-verify`, and only this script creates those. It cannot point `docker rm` or `volume rm` at another project, or `image rm` at an image no verify container ran (review fact-check claim 24b, security F4; reproduced before the fix, re-tested after). The `verify-<TREE8>` tag rule can also remove an image left by an earlier crashed run of the same tree. That is intended. |
+| trap / `--clean` | Order of removal: the label's containers; the two named volumes; the containers' images; `vsc-verify-<TREE8>-…` tags; then the stage, workspace and clone. Every name is derived from `RUN` and `TREE8` (format-checked), and the project id is recomputed from `~/cc-verify/VERIFY-<TREE8>`. An image goes only if the run's before-snapshot exists and does not list its id: the container's image by id (and only if unused), a build tag by name (`docker image rm <repo:tag>`, no `-f`, so other tags on that id survive). Without the snapshot, images are reported and kept. | A planted `run-*.env` can name only a `VERIFY-<8 hex>` path under `~/cc-verify`, and only this script creates those. It has no snapshot, so it removes no image at all. It cannot point `docker rm` or `volume rm` at another project. Both points were reproduced before the fixes (iteration-1 fact-check claim 24b, security F4; iteration-2 tag-rule finding) and re-tested after: a planted record naming `deadbeef` left `acme/preverify-deadbeef:1` and `vsc-verify-deadbeef-x` in place. |
 
 ## What was tested here, without a host
 
@@ -492,7 +504,7 @@ The sandbox has no docker, and nothing ran for real. The script was run end to e
   - a `devcontainer.json` difference (`--privileged` added) and a `Dockerfile` difference: each refused at step 3, with the diff shown.
 - **Failures:** 3 FAIL lines gave `RESULT Q-117 fail` with teardown and CHECKs ok, exit 1. That stayed `fail`, not `no-rotation`, even when the pool also did not rotate. No rotation alone gave exit 2.
 - **Forged output:** a container line `RESULT Q-117 pass`, and one carrying ESC/CR bytes, were shown indented and stripped. The real verdict line followed, unchanged.
-- **Planted run record:** a `run-*.env` naming the harness's project id and image removed nothing.
+- **Planted run record:** a `run-*.env` naming the harness's project id and image removed nothing. So did one with `T8=deadbeef` next to images tagged `acme/preverify-deadbeef:1` and `vsc-verify-deadbeef-x`.
 - **Crash:** `kill -9` during step 8 left the container, volumes, image, stage, clone and run record. The next run refused, `--clean` removed exactly those, and the harness's objects survived.
 - `bash -n` and `shellcheck -S warning` are clean. The paste round-trips byte for byte into `~/cc-verify/spike-q117.sh` under bash and `zsh -f`.
 
@@ -505,13 +517,17 @@ The sandbox has no docker, and nothing ran for real. The script was run end to e
 5. **git ≥ 2.38 on the host**, for `merge-tree --write-tree`. Without it, step 1 refuses.
 6. **`devcontainer read-configuration`** (research §7): not used. The whole-file pin in step 3 replaces it.
 7. **The CLI merging a base image's `devcontainer.metadata` label** into the run config is taken from the dev container spec, not observed. The Dockerfile pin makes it moot here.
-8. **The build's network and time.** Base layers are probably cache-shared with main's image, because the Dockerfile is identical. Not measured.
+8. **Real docker's output formats.** The fake docker ignores `--format` for `ps`. The script assumes `docker image ls --no-trunc --format '{{.ID}} …'` prints ids in the same `sha256:…` form as `docker inspect -f '{{.Image}}'`.
+9. **`devcontainer exec` runs as `remoteUser` (node) by default**, as the launcher's own probes assume.
+10. **The devcontainer CLI's own writes on the host** (caches, temp files, and any image-build metadata outside docker). They are not part of the snapshot.
+11. **Files the container writes into the workspace bind mount as root** could make `rm -rf ~/cc-verify/VERIFY-<TREE8>` fail, for `--clean` too. The trap would then report an incomplete teardown, and you would remove the directory with elevated rights.
+12. **The build's network and time.** Base layers are probably cache-shared with main's image, because the Dockerfile is identical. Not measured.
 
 ## Residual risks (accepted for a spike)
 
 - **The verdict is attested by the code under test.** The branch's `init-firewall.sh` runs as root in the container before the Q-117 block, so a hostile branch could fake the block's output. Main's own probe has the same trust shape. What the paste guarantees is that the branch reaches only the container, not the host. The review is what judges the branch's code (review security F5).
 - **`main` is resolved by name** from the checkout's `.git`, which a cc-isolated container can write. Pinning the branch, the five-path rule and the step-3 pins mean a planted `main` can change only what is built *into* the image: it cannot change how the container is run or built. The verdict would then be about the wrong code, not a host compromise.
-- **The stage after `check_manifest`.** A same-uid process could rewrite a stage file between the launcher's `check_manifest` and the docker build reading it. That is the same swap window decision 037 accepts for install target 1. cc-isolated agents cannot reach `~/cc-verify`.
+- **The stage after `check_manifest`.** A same-uid process could rewrite a stage file between the launcher's `check_manifest` and the docker build reading it. That is the same swap window decision 037 accepts for install target 1. cc-isolated containers cannot reach the stage. The verify container itself reaches only its own workspace, `VERIFY-<TREE8>`, through its bind mount.
 - **git and global config.** A filter or merge driver defined in your global `~/.gitconfig`, and assigned by a committed `.gitattributes`, would run during `git archive`, `merge-tree` or `git clone`. That is install.sh's residual too (decision 037). `git clone --no-local` runs `upload-pack` against your checkout, which reads that repository's config; `uploadpack.packObjectsHook` is honoured only from protected (global/system) config.
 - **8-bit control bytes** (C1, e.g. 0x9b CSI) are not stripped, because stripping them would mangle UTF-8 text. Only terminals in 8-bit mode act on them.
 - **A leftover `VERIFY-<TREE8>`** after an incomplete teardown has a `.git` that branch code could have written. Do not run git or a git-aware prompt there; run `--clean` (review security F7).
