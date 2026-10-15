@@ -49,7 +49,7 @@ before merging, since this session cannot merge into main (Q-162).
   independent closing review. Merge waits on the host check of Claude Code's deny matcher
   (Q-176, Q-177).
 - **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
-  22a4bb1f). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
+  tip d25254da). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
   done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
   runs main's launcher on a staged merge tree (Q-165, Q-166). The hand spike paste on
   Q-117 is written and reviewed (Q-169; its doc lands with Q-162). Next: the `cc-verify`
@@ -115,7 +115,7 @@ Unranked. Each names the signal that motivates it.
   `.gitattributes` is a truth file and install.sh's archive reads it, so this is your call.
 - **Move claude-home payload assembly behind a workflows-owned entrypoint (036 [11]).**
   Signal: Q-107. 036's second-consumer trigger fired, but the seam is not met. The seven
-  source paths are in `install.sh:135`, and a second, untested copy of the names is in
+  source paths are in `install.sh:135`, and a second copy of the names, with no parity test, is in
   `link-claude-home.sh:50`. The named harm is already mitigated (one shared `git archive`
   assembly), so this is low priority. First step, the cheap half: a test that `ENTRIES`
   equals the names from `CLAUDE_HOME_SRC`, or have the linker read `.manifest`. The full move

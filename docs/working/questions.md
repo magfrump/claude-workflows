@@ -27,12 +27,12 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | you: judgment | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
 | [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | you: judgment | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
-| [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Nex... | 2026-10-15 |
+| [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Now... | 2026-10-15 |
 | [Q-166](#q-166--staged-run-counts-as-live-verify) | you: judgment | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
 | [Q-170](#q-170--decision-015-isolation-rerun) | you: judgment | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
 | [Q-171](#q-171--q168-landing-at-cap) | you: judgment | Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The fi... | 2026-10-15 |
 | [Q-172](#q-172--exit-scan-parity-boundary) | you: judgment | How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every revi... | 2026-10-15 |
-| [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, on `merge/ready-2026-10-15`). install.sh's h... | 2026-10-15 |
+| [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15`... | 2026-10-15 |
 | [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
@@ -80,11 +80,11 @@ Log row 66's three-cycle window has closed. Its trigger was "multi-file merges t
 ### Q-162 · merges-and-cleanup-2026-10-14
 **Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
 
-This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15`, then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main plus five reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges `merge/ready-2026-10-15` by its reviewed tip, a760a5e5 (a branch name can move, a hash cannot), then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main (as of b279a2ba) plus seven reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), and this cycle's record, each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because every pair of these units conflicts only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164. Their pastes abort on a conflict, and once main moves, the loop rebuilds their merge branches.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-git merge --no-ff merge/ready-2026-10-15 -m "Merge branch 'merge/ready-2026-10-15': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule and the 2026-10-14 cycle record (override-log appends resolved)" && \
+{ git merge --no-ff a760a5e5057ef3f0abd13145e7d945ef500b8abd -m "Merge branch 'merge/ready-2026-10-15': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule and the 2026-10-14 cycle record (override-log appends resolved)" || { git merge --abort; echo "conflict: merge aborted, nothing deleted"; false; }; } && \
 for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktree remove .claude/wt-build-loop-$u && git branch -d feat/build-loop-$u; done
 ```
 
@@ -96,7 +96,7 @@ for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktre
   - `fix/q096-exit-scan-insteadof-target` (8717fd72; added 2026-10-15): the exit scan walks every URL an `insteadOf` or `pushInsteadOf` rule rewrites a remote to, your own config's remotes and rules included, and every matching rule, not only git's longest. It matches by byte. Three caps fail closed: 4 KiB per URL, 100k comparisons and 2,000 targets. Every `read` runs under `LC_ALL=C`, which also fixes an older UTF-8 hiding bug. 399 lines, under the 400 cap. Loop closed after 3 iterations and a final pass (`docs/reviews/code-review-rubric-2026-10-15-q096-exit-scan-insteadof-target.md`); the security critic's probe-confirmed bypasses in iterations 1–2 are fixed. Commits carry `Host-tool-tested: no`. Its host probe is Q-167. A family of older, loose remote-name parsing routes was split off as Q-168 and listed in the guide as a known route.
   - `fix/rebuild-hint-recreate` (47da5a4b; added 2026-10-15, built on this branch): after the firewall fails closed, the launcher's hint said a plain `cc-isolated <repo>` rebuilds, but a plain launch reuses that container and fails again (traced, with a regression test). The hint's first line is now `cc-isolated --probe-only WS && cc-isolated WS`. The copyable lines lose their trailing `# …` notes, because interactive zsh passes those as arguments and the last one becomes the workspace. "Rebuild" becomes "recreate" where the container is recreated. 131 code lines; only comments and `echo` text change in the scripts. Loop closed at the 3-iteration cap; the last fix had a narrow fact-check (rubric `docs/reviews/code-review-rubric-2026-10-15-fix-rebuild-hint-recreate.md`). 290/290 in its suites; health reds were 3 fast tests, each passing alone (the one outside the import walk, build-loop-merge's "--merge leaves main where another writer moved it", re-run 3/3 here); slow suites 300/300. Commits carry `Live-verified: no`; Q-167 holds the probe. Both scripts are in the trust manifest, so install re-blesses and each project's container is recreated once.
   - `fix/cc-isolated-one-workspace` (f6f37fad; added 2026-10-15, built on this branch): `cc-isolated` refuses, with exit 2 before any action, a second workspace, a `#` word before `--` (a pasted note) and a `--profile` value starting with `#` or `-`. Before this, `cc-isolated  # --bless` and `--profile '#' --bless` ran a bless. `--` takes one word. install.sh's "Next steps" lines lose their notes, and the `--help` and guide command references are reformatted. 260 code lines. Iteration 1 had independent critics; the closing passes were the builder's self-review after nested critics hung. An independent closing review run from the orchestrator was clean, 0 Must (`docs/reviews/independent-review-2026-10-15-one-workspace.md`): 17 claims held and ~45 crafted argv probes reached no action. Related suites 436/436 under `LC_ALL=C.UTF-8`; health reds were 3 import-walk tests, each passing alone; slow suites pass. Commits carry `Live-verified: no`; probe in Q-167 (b).
-  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300.
+  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The tip, a760a5e5, adds the rebuild-hint and one-workspace merges after that gate; each of those units ran its own gate (above), and the tip holds exactly the units listed.
 - **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh.
 - **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
 
@@ -107,17 +107,17 @@ Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It
 
 - **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
 - **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
-- **Paste for [1]:** it merges the branch alone, or `merge/u5-and-q145` (both units, the override-log appends resolved) if U5 is already on main.
+- **Paste for [1]:** it merges the branch alone, or `merge/u5-and-q145` at a04d9776 (both units, the override-log appends resolved) if U5 is already on main. Both are pinned by hash.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=merge/u5-and-q145; else B=c035f2e77f8c083156b397fb32e164dd17cc6b44; fi && \
+if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=a04d97762518389f053c3c609a3dfcc4531d553b; else B=c035f2e77f8c083156b397fb32e164dd17cc6b44; fi && \
 { git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] merge** | The paste above. The gate stops flaking on `/tmp` churn once the image is rebuilt (Q-156) | One paste | The delete-and-re-create window lets one listing miss an instruction file that a non-atomic save is rewriting |
+| **[1] merge** | The paste above. The gate stops flaking on `/tmp` churn once the image is rebuilt (Q-156, filed on `feat/build-loop-u5`; it reaches main with Q-164) | One paste | The delete-and-re-create window lets one listing miss an instruction file that a non-atomic save is rewriting |
 | **[2] drop** | Branch deleted; gates keep flaking under load (3 re-runs this cycle alone) | Re-runs | Q-145's one-hour revisit trigger keeps counting |
 | **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
 
@@ -134,14 +134,14 @@ Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455
 - **Read:**
   - The merge message `docs/working/merge-msg-build-loop-u5.md` and the rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch.
   - What it does: `docs/dev-cycle.md` describes the handoff as built, with a wider `Self-merge never:` line (Q-149 asks how wide). It adds decision-log row 72 and roadmap items (a)–(g), files Q-149..Q-156 (C1–C5, the constraints doc, the image-lag release entry), re-routes Q-103 to you, and marks the handoff brief done.
-  - Size: 26 code lines outside `docs/`, 410 lines in all.
+  - Size: 26 code lines outside `docs/`, 409 lines in all.
   - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
   - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
-- **Paste for [1]:** it merges `merge/build-loop-u5-resolved` (this cycle's chore branch, Q-110 and U5, with the questions, roadmap and override-log conflicts resolved; U5's reviewed tip is unchanged inside it), or `merge/u5-and-q145` if Q-145 is already on main. Then Q-156's release paste.
+- **Paste for [1]:** it merges `merge/build-loop-u5-resolved` at 0f94bb77 (this cycle's chore branch, Q-110 and U5, with the questions, roadmap and override-log conflicts resolved; U5's reviewed tip is unchanged inside it), or `merge/u5-and-q145` at a04d9776 if Q-145 is already on main, each pinned by hash. Then Q-156's release paste.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
-if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=merge/u5-and-q145; else B=merge/build-loop-u5-resolved; fi && \
+if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=a04d97762518389f053c3c609a3dfcc4531d553b; else B=0f94bb7702073f78992b8eba25ac131473b49825; fi && \
 { git merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
 ```
 
@@ -158,10 +158,10 @@ if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; t
 ### Q-165 · branch-verify-approach
 **Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
 
-How should a branch's container config be verified on the host without installing it over main (roadmap Next 3: Q-117, Q-125/Q-130 and Q-098 wait on this)?
+How should a branch's container config be verified on the host without installing it over main (roadmap Now, "Verify a branch without installing it": Q-117, Q-125/Q-130 and Q-098 wait on this)?
 
 - **Why it's yours:** it adds a host tool that drives docker, a new trust surface, and the choice sets how the three blocked merges get unblocked.
-- **Read:** `docs/working/research-branch-verify-without-install.md` and `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install` (22a4bb1f). What they found:
+- **Read:** `docs/working/research-branch-verify-without-install.md` and `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install` (22a4bb1f; the branch tip, d25254da, adds the spike's review commits). What they found:
   - No check needs main's install, but install.sh's `agent_gate` is global, so even a second install prefix blocks while any session runs.
   - Both blocked branches are hundreds of commits behind main and would roll back Q-089's host-tools split if installed as they are.
   - Container and volume names are keyed on the workspace path. A `--probe-only` of `~/claude-workflows` therefore recreates the harness's own container.
@@ -175,7 +175,7 @@ How should a branch's container config be verified on the host without installin
 | **[3] Hand paste only** | Stop after the spike and reuse the paste for each verify | A ~30-line paste per verify, with teardown and the diff check done by hand | Teardown or the `devcontainer.json` check gets skipped one day |
 | **[4] Park** | Keep Q-117, Q-125 and Q-098 unmerged | Nothing | The egress fix and the sandbox stay off indefinitely |
 
-- **Blocks:** roadmap Next 3, and through it Q-125's merge, Q-098 and `fix/egress-dnsmasq-ipset`.
+- **Blocks:** the roadmap Now item "Verify a branch without installing it", and through it Q-125's merge, Q-098 and `fix/egress-dnsmasq-ipset`.
 - **Interim:** the spike paste (step one of [1], and safe under [2] and [3]) is written and reviewed: Q-169.
 - **If the answer differs:** [4] drops the spike; [2] reuses the spike's findings for the launcher change.
 
@@ -188,7 +188,7 @@ If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on th
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Yes** | Merge on a passing staged run, with the trailer `Live-verified: <hash> — cc-verify of tree <id>`. Main's post-merge install re-probes on first launch anyway | Nothing extra | A difference between the staged and installed config shows only at that first launch; revert as in Q-125's rollback plan |
+| **[1] Yes** | Merge on a passing staged run, with the trailer `Live-verified: <hash> — cc-verify of tree <id>`. Main's post-merge install re-probes on first launch anyway | Nothing extra | A difference between the staged and installed config shows only at that first launch; revert as in Q-125's rollback plan. For Q-125 that difference is real: a staged run never executes its `install.sh` `PAYLOAD` or `cc-isolated.sh` `enforcement_files()` changes (Q-117 changes only `init-firewall.sh`) |
 | **[2] Yes, plus a post-merge check** | As [1], but Q-117 and Q-125 close only after main's first post-merge `--probe-only` passes | One probe at your next normal install | Little: the entries just stay open a bit longer |
 | **[3] No** | A staged run is evidence, not the gate; the install-over-main run stays | The blocking install you already declined | Back to the problem in Q-117's answer |
 
@@ -200,7 +200,7 @@ If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on th
 
 After Q-162's paste lands, run `./devcontainer-config/install.sh` in your host checkout (review the diff it shows; it blesses), then run the two probes below.
 
-**(a) The rebuild hint** (clears the rebuild-hint commits' `Live-verified: no`): `cc-isolated --list` should show "Verified live: NO" and `Next: cc-isolated --probe-only <repo>` alone on its line. Then:
+**(a) The rebuild hint** (clears the rebuild-hint commits' `Live-verified: no`): the install's bless output should show `Verified live:  NO — a bless is a review, not a test.` followed by `Next: cc-isolated --probe-only <repo>` alone on its line, and `cc-isolated --list` should show `Blessed config <hash> — verified live: NO (run: cc-isolated --probe-only <repo>)`. Then:
 
 ```
 cc-isolated --probe-only ~/code/ANY-REPO && cc-isolated --list | grep -i 'verified live'
@@ -223,8 +223,12 @@ The last must pass its probe; then `cc-isolated --list` shows it verified live.
 
 ```
 T="$(mktemp -d)" && git init -q "$T/proj" && cd "$T/proj" && git -c user.name=p -c user.email=p@p commit -q --allow-empty -m init && git remote add o https://example.invalid/repo && git config "url.$T/proj/mirror-.insteadOf" https://example.invalid/ && git init -q --bare "$T/proj/mirror-repo" && cc-isolated "$T/proj"; echo "cc-isolated exit=$?   (expect 3, naming hook …/mirror-repo/hooks/pre-receive)"; cd "$HOME" && rm -rf "$T"
-# Step 2, inside the session at Claude's prompt, then exit the session:
-#   ! printf '#!/bin/sh\necho planted\n' > mirror-repo/hooks/pre-receive && chmod +x mirror-repo/hooks/pre-receive
+```
+
+Step 2, inside the session at Claude's prompt, then exit the session:
+
+```
+! printf '#!/bin/sh\necho planted\n' > mirror-repo/hooks/pre-receive && chmod +x mirror-repo/hooks/pre-receive
 ```
 
 - **Interim:** bats-only verification (193/193), as the commits' `Host-tool-tested: no` trailers say.
@@ -244,7 +248,13 @@ Q-096's iteration 2 found that the exit scan parses remote names and legacy `rem
 
 Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. It live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages main merged with the branch, runs main's installed `cc-isolated` on a scratch clone under `~/cc-verify/run-<RUN>.d/`, runs Q-117's container block, and tears everything down.
 
-- **The paste:** the single ```bash block in `docs/working/spike-cc-verify-q117.md` (498 lines with its fences; sha256 of the block 032cc9a8…afb7). Edit only its last line, the checkout path. Its first output line must be `script sha256 a65f4c30ba1b8907`; any other value means it is not the reviewed block, so press Ctrl-C.
+- **The paste:** the single ```bash block in `docs/working/spike-cc-verify-q117.md` (498 lines with its fences). Take it from the reviewed commit, not the working tree, and check its hash before running:
+
+  ```
+  cd /workspace && git show a760a5e5057ef3f0abd13145e7d945ef500b8abd:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' > ~/q117-spike.txt && sha256sum ~/q117-spike.txt
+  ```
+
+  The hash must be `032cc9a81e4e1c9266ec3ad3b5fe7053d9876eb21f5ffa7f0a35f2ccfed4afb7`; otherwise stop. Then paste the file's contents, editing only its last line, the checkout path. Its first output line must be `script sha256 a65f4c30ba1b8907`; any other value means it is not the reviewed block, so press Ctrl-C.
 - **Before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`, or run it while no agent that can write `~/cc-verify` is running. A same-uid writer there is the one threat left open (residuals A17 and A18: it could redirect the stage extraction's writes, or edit the stage into host code execution during the build).
 - **Expect:** up to about an hour (image build, then Q-117's wait of up to 45 min for a pool rotation). Exit 0 with `RESULT Q-117 pass` and five `CHECK … ok` lines is a pass; 2 means no rotation was seen, so rerun later; 1 is a failure or refusal, named by step. On an interrupted teardown, rerun the same block with `--clean` as its last argument.
 - **Paste back:** the `script sha256` line, the `RESULT`, `CHECK`, `NOTE`, `TEARDOWN` and `REFUSED:` lines.
@@ -325,7 +335,7 @@ Q-168's final pass split off four groups, each shown end to end (exit scan retur
 ### Q-174 · q106-iteration-4-gate
 **Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
 
-Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, on `merge/ready-2026-10-15`). install.sh's host target now runs the container's provenance merge on your `~/.claude/settings.json`, inside its review and gated by your y. Its review loop stopped at the iteration-4 gate with one Medium open. Authorize a 4th iteration?
+Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15` commit, 184396ea; it is not in the ready branch Q-162 merges). install.sh's host target now runs the container's provenance merge on your `~/.claude/settings.json`, inside its review and gated by your y. Its review loop stopped at the iteration-4 gate with one Medium open. Authorize a 4th iteration?
 
 - **Why it's yours:** the iteration-4 gate, and the change writes your host hardening.
 - **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` and plan `docs/working/plan-q106-host-settings-merge.md` (pre-mortem) on the branch.
@@ -351,35 +361,53 @@ Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, on `merge/ready-2
 ### Q-175 · q106-merge-program-gate-coverage
 **Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
 
-Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'s `enforcement` regex. The trust manifest still hashes it, and both installs show it in their reviews. Should the commit gate cover it?
+Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'s `enforcement` regex. On main that jq is inline in `link-claude-home.sh`, which the regex covers (`hooks/live-verify-gate.sh:83`), so the move takes away coverage the program has today. The trust manifest still hashes it, and both installs show it in their reviews. Should the commit gate cover it?
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Accept it in the `hooks/**` class** | Same status as `wiring.json` and `guard-trusted-writes.py` | Nothing | A change to the merge program commits without a `Live-verified:` trailer |
+| **[1] Accept it in the `hooks/**` class** | Same status as `wiring.json` and `guard-trusted-writes.py` | Nothing | A change to the merge program commits without a `Live-verified:` trailer, which it cannot today |
 | **[2] Add it to the enforcement regex** | A small gate-code change with its test | One gate-code review | Every commit touching the program owes a container probe |
 | **[3] Its own trailer** | Like `Host-tool-tested:` | A new category to maintain | More trailers to remember |
 
-- **Interim:** [1].
+- **Interim:** [1] in name only: Q-106 is unmerged (Q-174), so nothing has lost coverage yet. The security review of this entry (`docs/reviews/security-review-2026-10-15-0357.md` F6) leans to [2].
 - **If the answer differs:** [2] or [3] becomes a small unit after Q-106 lands.
 
 ### Q-176 · q092-deny-matcher-live-check
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
 
-Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them. This check settles it with a throwaway always-allow hook; it needs no merge. Run on the host:
+Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them (the review's MA1 names all four; the check below tries each shape). This check settles it with a throwaway hook that approves only the seven test commands below and stays silent on anything else, so every other command prompts as usual; it needs no merge. Run on the host:
 
 ```
-mkdir -p ~/q092/.claude && cd ~/q092 && echo canary > x.q092-canary && printf '%s\n' '{' '  "permissions": { "deny": ["Bash(*.q092-canary*)", "Bash(rm -rf:*)"] },' '  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command",' '    "command": "echo '"'"'{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'"'"'" } ] } ] }' '}' > .claude/settings.local.json && claude --version && claude
+mkdir -p ~/q092/.claude && cd ~/q092 && echo canary > x.q092-canary && echo secret > secret && cat > .claude/allow-tests.sh <<'EOF'
+#!/bin/sh
+c=$(jq -r '.tool_input.command // empty')
+case "$c" in
+  'cat x.q092-canary'|'cat x.q092-ca""nary'|'cat x.q092-c\anary'|'echo hi && rm -rf ./nothing-here'|'cat secret'|'cat "secret"'|'git "push"')
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}' ;;
+esac
+EOF
+cat > .claude/settings.local.json <<'EOF'
+{
+  "permissions": { "deny": ["Bash(*.q092-canary*)", "Bash(rm -rf:*)", "Bash(git push:*)", "Bash(cat secret)"] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "sh \"$HOME/q092/.claude/allow-tests.sh\"" } ] } ] }
+}
+EOF
+claude --version && claude
 ```
 
-In that session, check that `/hooks` lists the hook. Then ask Claude to run each of these one at a time, and note for each whether it **runs**, **prompts** or is **denied**:
-1. `cat x.q092-ca""nary`
-2. `cat x.q092-c\anary`
-3. `echo hi && rm -rf ./nothing-here`
+In that session, check that `/hooks` lists the hook. Answer **no** to any prompt for a command not on this list. Then ask Claude to run each of these one at a time, exactly as written, and note for each whether it **runs**, **prompts** or is **denied**:
+1. `cat x.q092-canary` (control: must be denied)
+2. `cat x.q092-ca""nary`
+3. `cat x.q092-c\anary`
+4. `echo hi && rm -rf ./nothing-here`
+5. `cat secret` (control: must be denied)
+6. `cat "secret"`
+7. `git "push"`
 
-Then exit and `rm -rf ~/q092`. Paste back the version line and the three results.
+Then exit and `rm -rf ~/q092`, even if the session errored. Also run `claude --version` inside any `cc-isolated` session: the hook runs in the container, so the result counts for Q-092 only if the two versions match. Paste back both version lines and the seven results. If a control is not denied, the check is void.
 
 - **Interim:** Q-092's two branches stay unmerged (Q-177).
-- **If the answer differs:** any "runs" sends Q-177 to its options; all "denied" lands Q-092.
+- **If the answer differs:** any "runs" sends Q-177 to its options; all "denied" with matching versions lands Q-092; different versions mean the check is re-run at the container's version.
 
 ### Q-177 · q092-merge
 **Needs:** deferred · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -390,7 +418,7 @@ When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Merge if Q-176 is all "denied"** | The loop adds both units to the ready branch | Nothing more | — |
+| **[1] Merge if Q-176 is all "denied"** | The loop adds both units to the ready branch | Nothing more | A spelling Q-176 did not try runs without a prompt, as in [2] |
 | **[2] Q-176 shows a spelling that runs: accept it** | Merge anyway: the same class as the `.c*` glob residual; Q-125's sandbox is the real fix | One answer | A quoted credential read runs without a prompt where no sandbox exists (cc-isolated until Q-125) |
 | **[3] Q-176 shows a spelling that runs: keep a quote check** | Before merging, the hook's shape allowlist refuses words containing quotes or backslashes mid-word | An enforcement-file unit | Some legitimate quoted commands prompt again |
 
