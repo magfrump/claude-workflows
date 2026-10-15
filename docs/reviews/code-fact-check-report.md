@@ -1,717 +1,701 @@
 # Code Fact-Check Report
 
 **Repository:** claude-workflows (worktree `/workspace/.claude/wt-q106`, branch `feat/q106-host-settings-merge`)
-**Scope:** branch diff `git diff 184396ea..HEAD` (9 files: `README.md`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `docs/decisions/037-bare-host-copy-install.md`, `docs/working/plan-q106-host-settings-merge.md`, `guides/bare-host-hook-wiring.md`, `hooks/lib/wiring-merge.jq`, `test/install-host.bats`, `test/link-claude-home-wiring.bats`) plus the message of commit 188f5c3c; delivery mode self-read
+**Scope:** range `git diff 05b13d11..HEAD` (commits f7680e0d, d53d2bf4, a4f3614a; code and docs files: `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `docs/decisions/037-bare-host-copy-install.md`, `docs/working/plan-q106-host-settings-merge.md`, `guides/bare-host-hook-wiring.md`, `guides/claude-config-security-checkup.md`, `hooks/lib/wiring-merge.jq`, `test/install-host.bats`), the messages of d53d2bf4 and a4f3614a, and the rubric's "Iteration 1 fix dispositions" table; `184396ea..05b13d11` read as context only; delivery mode self-read
 **Checked:** 2026-10-15
-**Total claims checked:** 39
-**Summary:** 27 verified, 9 mostly accurate, 0 stale, 3 incorrect, 0 unverifiable
-**Commit:** 188f5c3c
+**Total claims checked:** 38
+**Summary:** 27 verified, 8 mostly accurate, 1 stale, 2 incorrect, 0 unverifiable
+**Commit:** a4f3614a
 **Replication:** k=1 (loop pass, decision 031)
 
-Hallucination-pattern log read first (`docs/reviews/hallucination-patterns.md`, 5 entries). No claim here matches a logged pattern. The closest class is the "measured value quoted from an artifact set" entries; Claim 37 (`Size: 400`) is that kind of claim, and it recomputes exactly.
+Hallucination-pattern log read first (`docs/reviews/hallucination-patterns.md`, 5 entries). No claim asserts a symbol or API that does not exist. Claim 32b ("each new or changed assertion fails on 05b13d11") closely resembles the logged "All 85 tests … pass" class: a claim about test results that the tests do not bear out. It is a behavioural over-claim, not a fabricated symbol, and the rules for this pass allow no edits to tracked files except this report, so no log entry was added. The caller decides.
 
-**Execution logs.** The rules allow no tracked-file edits except this report, so the raw output is kept outside the repo in `/home/node/.claude/jobs/00bcf178/tmp/q106/fc/logs/` (written `$L/` below). The probe scripts are next to it in `/home/node/.claude/jobs/00bcf178/tmp/q106/fc/` (`$P/`). Every install run used bats' own temp HOME (`BATS_TEST_TMPDIR`), never the real HOME or `~/.claude`. Every run was wrapped in `timeout 600`, and none was left running.
+**Execution logs.** Raw output lives outside the repo in `/home/node/.claude/jobs/00bcf178/tmp/q106/fc2/logs/` (`$L/` below). The scripts sit next to it in `/home/node/.claude/jobs/00bcf178/tmp/q106/fc2/` (`$P/`). Each install run used bats' own temp HOME (`export HOME="$S/home"`, `test/install-host.bats:25`), never the real HOME or `~/.claude`. Each run was wrapped in `timeout`, ran in the foreground, and had exited before this report was written.
 
-- `$P/run-tests.sh` (cwd `/workspace/.claude/wt-q106`, start 2026-10-15T11:24:07Z) does two things:
-  - It runs `LC_ALL=C bats -f 'T9[3-8]' test/install-host.bats` (exit 0, 6/6 ok, `$L/head-t93-98.txt`) and `LC_ALL=C bats test/link-claude-home-wiring.bats` (exit 0, 16/16 ok, `$L/head-link-wiring.txt`).
-  - It runs the same T93-T98 against **184396ea's** `install.sh`, in a tree holding HEAD's test file and HEAD's `wiring-merge.jq` (`$P/oldtree`, start 11:24:24Z). Each test exits 1 (`$L/old-t93.txt` … `$L/old-t98.txt`).
-- `$P/cmp.sh` (11:29:15Z, exit 0, `$L/cmp.txt`) compares the old inline jq program with the new file.
-- `$P/jqprobe.sh` (11:25:13Z, exit 0, `$L/jqprobe.txt`) runs jq-only probes A–H of `hooks/lib/wiring-merge.jq`.
-- `$P/probe-tests.sh` (11:25:34Z, `$L/probe-tests.txt`) runs probes P1–P4. They are added to a temp copy of `install-host.bats` that drives HEAD's `install.sh`, and they reuse its helpers. P1–P3 pass. P4's status assertion failed only because the devcontainer "n" makes the run exit 1. Its mode capture is valid: `$L/probe-p4.txt`, `$L/p4-modes.txt`, `$L/p4-review-output.txt`, rerun at about 11:25:58Z.
-- `$P/mutate.sh` (11:26:35Z, exit 1 as expected, `$L/mutate-chmod.txt`) runs T93 and P1 with `chmod --reference` removed from install.sh.
-- The size count and the jq builtins list ran at 11:29:15Z (exit 0, `$L/size-and-builtins.txt`).
+- `$P/run_tests.sh` (cwd `/workspace/.claude/wt-q106`, start 2026-10-15T11:55:35Z, end 11:56:04Z):
+  - `LC_ALL=C bats -f 'T9[3-9]|T10[01]' test/install-host.bats`: exit 0, 9/9 ok (`$L/head-install-host.txt`).
+  - `LC_ALL=C bats test/link-claude-home-wiring.bats`: exit 0, 16/16 ok (`$L/head-link.txt`).
+  - It builds `$P/oldtree` (`git archive HEAD`, then 05b13d11's `install.sh`, `wiring-merge.jq` and `link-claude-home.sh` copied over it) and runs each of HEAD's T93, T94, T96, T98, T99, T100 and T101 there (cwd `$P/oldtree`). Each exits 1 (`$L/old-T*.txt`). The first failing lines are T93 :1659, T94 :1694, T96 :1725, T98 :1753, T99 :1764, T100 :1774 and T101 :1784.
+- `$P/t93_variant.sh` (cwd `$P/oldtree`, 2026-10-15T11:56:22Z): HEAD's T93 with line 1659 deleted, run against 05b13d11's code. Exit 0 (`$L/old-T93-minus1659.txt`).
+- `$P/probe_jq.sh` (cwd `$P/probe`, 2026-10-15T11:56:51Z): exit 0 (`$L/probe_jq.txt`). It extracts `sjq`, `ONE_OBJ` and `WIRING_SHAPE` verbatim from `install.sh`, and the summary program verbatim from `install.sh:1037-1042`, then runs them against the real `hooks/wiring.json` and crafted inputs. It also runs `hooks/lib/wiring-merge.jq` and jq 1.6's `~/.jq` loading against a fake HOME.
+- `$P/gate.sh` (cwd `/workspace/.claude/wt-q106`, 2026-10-15T11:58:15Z): `bats -f 'install.sh is gated although it is not manifest-hashed' test/hooks/live-verify-gate.bats`, exit 0 (`$L/gate.txt`).
 
 ---
 
-## Claim 1: "The devcontainer and the `~/.claude` target both merge it (Q-106: shown in the review, applied by the y) … Your memory, projects and logs are never touched."
+## Claim 1: "Never written when it is a symlink, unreadable or not one JSON object, jq is missing, wiring.json names a hook outside <dest>/hooks, or the merge fails (the review says why and lists what it unwires or removes)."
 
-**Location:** `README.md:63-70`
+**Location:** `devcontainer-config/install.sh:47-49`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the --help list of skip reasons against the `s_why` chain at `:1011-1029`; does not establish the wording of each skip message, and does not cover the empty-group refusal, which the help leaves out.
+
+The listed skip reasons all exist in `install_claude_home`: a symlink or non-regular file (`:1011`), jq missing (`:1013`), the shape refusal (`:1017`), unreadable (`:1019-1020`, `s_why="it could not be read"`), not one object (`:1021`) and merge failure (`:1023-1028`). Two parts are imprecise:
+
+- "names a hook outside <dest>/hooks" understates the check. `WIRING_SHAPE` (`:728-730`) also refuses a command inside `{{CLAUDE_DIR}}/hooks` that contains `..` or any character outside `[A-Za-z0-9_./-]`, an interpreter other than `bash` or `python3`, and a group with no hooks: `` `(.hooks // []) | length > 0 and all(.command | type == "string" and (contains("..") | not) and test("^(bash|python3) …` ``.
+- The parenthetical "the review says why and lists what it unwires or removes" sits in the refusal sentence, but the list prints only on the merged path. The refusal branch prints the reason alone: `rm -f "$snew"; echo "WARNING: settings.json NOT merged: $settings: $s_why." | vis_or_die` (`:1031-1032`). The `UNWIRES`/`REMOVES` summary is computed in the `else` branch (`:1033-1042`) and printed only in `case 1)` (`:1049`).
+
+**Evidence:** `devcontainer-config/install.sh:47-49`, `devcontainer-config/install.sh:728-730`, `devcontainer-config/install.sh:1011-1056`
+
+---
+
+## Claim 2: "Without jq the settings.json merge is skipped."
+
+**Location:** `devcontainer-config/install.sh:87`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the host merge being shown before the prompt, applied only on y, and settings.json now dropped from the "never touched" list. It does not establish the memory/projects/logs non-touch beyond what the pre-existing suite asserts (`symlink_install` user state).
-**Legibility-target:** for-orchestrator-synthesis
+**Verification mode:** static
+**Scope:** Covers the host target's settings block; does not establish what the container side (`link-claude-home.sh:101-102`) does, though it also skips.
 
-T93 asserts the review text before the prompt, and that a decline leaves the file byte-identical: `[[ "$output" == *'settings.json: the hooks/wiring.json merge this install applies'*'Aborted. Nothing was changed. (host ~/.claude)'* ]]` then `cmp "$sf" "$S/settings.orig"` (`test/install-host.bats:1651-1652`). On y it asserts `*"Merged hooks/wiring.json into $sf"*` (`test/install-host.bats:1658`). It passes on HEAD and fails on 184396ea.
+`elif ! command -v jq >/dev/null 2>&1; then s_why="jq is not installed"` (`devcontainer-config/install.sh:1013-1014`). A non-empty `s_why` leads to `WARNING: settings.json NOT merged` and no `snew` (`:1030-1032`). The files target still proceeds.
 
-**Evidence:** `README.md:63-70`, `test/install-host.bats:1646-1673`, `$L/head-t93-98.txt`, `$L/old-t93.txt`
-
----
-
-## Claim 2: "hooks/wiring.json is merged into <dest>/settings.json by the container's merge (Q-106): shown in the review, applied by the same y, old file to the backup. Never written when it is a symlink or not one JSON object, jq is missing, or the merge fails (the review says why)."
-
-**Location:** `devcontainer-config/install.sh:45-48`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the review/y/backup path (T93) and the symlink, unparseable and merge-failure skips (T96, T97); jq-missing is covered statically. It does not establish two things. First, the help omits two further skips: not a regular file, and the payload lacking the files. Second, the one-object check (`:1000`) and the copy the merge reads (`:1003`) are separate reads, and the merged copy is never re-checked for being one object. A file swapped to two JSON values between those two commands produces a two-value merge result (probe G), which the review would show and the y would write.
-**Legibility-target:** for-orchestrator-synthesis
-
-The skip chain is quoted from `devcontainer-config/install.sh:994-1008`:
-
-```sh
-if [ -L "$settings" ] || { [ -e "$settings" ] && [ ! -f "$settings" ]; }; then
-  s_why="it is a symlink or not a regular file, and install.sh never writes through one"
-elif ! command -v jq >/dev/null 2>&1; then
-  s_why="jq is not installed"
-elif [ ! -f "${new}hooks/wiring.json" ] || [ ! -f "${new}hooks/lib/wiring-merge.jq" ]; then
-...
-elif [ -e "$settings" ] && ! jq -se 'length == 1 and (.[0] | type == "object")' "$settings" >/dev/null 2>&1; then
-```
-
-When `s_why` is set, `rm -f "$snew"` and a `NOT merged` line are printed (`:1009-1011`), and `s_new_hash` stays empty, so the write block at `:1124` never runs. T96 checks the unparseable and symlink cases, and T97 checks the merge-failure case. All pass. Probe G (`$L/jqprobe.txt`) shows that `{} {"x":1}` input yields two merged output objects.
-
-**Evidence:** `devcontainer-config/install.sh:994-1025`, `devcontainer-config/install.sh:1124-1136`, `test/install-host.bats:1716-1742`, `$L/head-t93-98.txt`, `$L/jqprobe.txt`
+**Evidence:** `devcontainer-config/install.sh:1013-1014`, `devcontainer-config/install.sh:1030-1032`
 
 ---
 
-## Claim 3: "run from the hash-checked copies, so the y covers its result; written only after the y."
+## Claim 3: "sjq <args...>: jq for the settings merge (Q-106), with HOME and the environment emptied, so no ~/.jq library (jq 1.6 loads it) or env value shapes the result (review A3), and with its stderr dropped, so it never reaches the terminal."
 
-**Location:** `devcontainer-config/install.sh:989-990`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the live `settings.json`: it is written only by the `mv` at `:1131`, which comes after `confirm`. It does not establish that nothing is written before the y. The staging copies `.cw-new.settings.json` and `settings.view*` are written before the prompt. "Hash-checked" means compared to the review-time hash after the y, not checked before the merge runs.
-**Legibility-target:** for-orchestrator-synthesis
-
-The merge reads `"${new}hooks/wiring.json"` and `-f "${new}hooks/lib/wiring-merge.jq"` (`:1004-1005`). These are the `.cw-new.` copies hashed into `reviewed_hash` at `:904` and re-checked at `:1053`. The only write to the live file is `if ! mv -f "$snew" "$settings"; then` (`:1131`), after `if ! confirm "Install these files into $dest?"` (`:1043`). T93's n run leaves the file byte-identical.
-
-**Evidence:** `devcontainer-config/install.sh:904`, `devcontainer-config/install.sh:1002-1005`, `devcontainer-config/install.sh:1043-1058`, `devcontainer-config/install.sh:1131`, `$L/head-t93-98.txt`
-
----
-
-## Claim 4: "umask 077: settings can hold secrets."
-
-**Location:** `devcontainer-config/install.sh:991`
+**Location:** `devcontainer-config/install.sh:719-722`
 **Type:** Behavioral / Invariant
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the files the subshell creates (`settings.view`, `settings.view.raw`, `.cw-new.settings.json`, all 0600). It does not cover `settings.view.diff`. That file holds the settings lines too, is created outside the subshell at the default umask (0644), and is protected only by its 0700 `mktemp -d` parent.
-**Legibility-target:** for-author
-
-The umask sits inside the subshell only: `elif ! (umask 077   # one read of the live file ...` (`:1002`) through `"$s_view" > "$snew") 2>/dev/null` (`:1005`). The diff is written afterwards, outside it: `"$s_view" "$snew" > "$s_view.diff" 2>&1 || rc=$?` (`:1015`). Probe P4 recorded `600 .cw-new.settings.json`, `600 settings.view`, `600 settings.view.raw`, `644 settings.view.diff` and `700 .cw-stage.*` (`$L/p4-modes.txt`). Precise version: "umask 077 for the copies of settings.json; the review diff relies on the stage dir's 0700."
-
-**Evidence:** `devcontainer-config/install.sh:1002-1015`, `$L/p4-modes.txt`, `$L/probe-p4.txt`
-
----
-
-## Claim 5: "jq's stderr never reaches the terminal."
-
-**Location:** `devcontainer-config/install.sh:991`
-**Type:** Error-handling
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the three jq invocations in the settings block: the validity check, `jq .`, and the merge. It does not establish anything about jq calls elsewhere in install.sh.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers jq 1.6's `$HOME/.jq` auto-load and the `env -i` wrapper for every settings-block jq call in `install.sh`; does not establish that jq's `$ORIGIN/../lib` module paths are excluded (the merge program uses no `import`/`include`, so they are never consulted).
 
-The validity check ends `>/dev/null 2>&1` (`:1000`). The subshell holding `jq .` and the merge ends `) 2>/dev/null` (`:1005`). Probe P2 used a failing wiring (`defaultMode`): the output contains `the merge program failed on it` and no `jq: error` (`$L/p2-output.txt`). The same wiring run under jq directly prints `jq: error (at s-empty.json:1): Cannot iterate over string` (probe C).
+`sjq() { env -i PATH="$PATH" HOME=/nonexistent jq "$@" 2>/dev/null; }` (`:722`). Every jq call in the settings block goes through `sjq` (`:1017`, `:1021`, `:1024-1027`, `:1036`). A grep for bare `jq` in `install.sh` finds only comments, `command -v jq` and strings (paraphrased — no quote available because the claim covers the absence of other call sites; the grep output is reproduced by `$P/s2.sh`). HOME is set to `/nonexistent`, not left unset. That matters: the probe shows jq 1.6 loading a fake `~/.jq` that redefines `walk` (`{}` out), while `env -i … HOME=/nonexistent jq` gives `{"a":{"b":1}}` (`$L/probe_jq.txt`). T101 passes at HEAD and fails on 05b13d11 at `:1784`.
 
-**Evidence:** `devcontainer-config/install.sh:1000-1005`, `$L/p2-output.txt`, `$L/probe-tests.txt`, `$L/jqprobe.txt`
-
----
-
-## Claim 6: "one read of the live file: s_old_hash is that copy's hash"
-
-**Location:** `devcontainer-config/install.sh:1002`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers that the diff's old side and `s_old_hash` both derive from one `cp` of the live file. It does not establish that the earlier validity check (`:1000`) read the same bytes (see Claim 2's residue).
-**Legibility-target:** for-orchestrator-synthesis
-
-`cp "$settings" "$s_view.raw" && jq . "$s_view.raw"` feeds `$s_view` (`:1003`), and the hash is `s_old_hash="$(file_hash "$s_view.raw")"` (`:1020`). For an absent file `file_hash` returns `absent` (`:715`), because the fresh stage holds no `.raw`.
-
-**Evidence:** `devcontainer-config/install.sh:713-716`, `devcontainer-config/install.sh:1003`, `devcontainer-config/install.sh:1020`
+**Evidence:** `devcontainer-config/install.sh:719-722`, `devcontainer-config/install.sh:1017-1042`, `test/install-host.bats:1780-1786`, `$L/probe_jq.txt`, `$L/head-install-host.txt`, `$L/old-T101.txt`
 
 ---
 
-## Claim 7: "an edit to settings.json since its review, or to the merged copy, refuses the install rather than writing a result the user did not see."
+## Claim 4: "Every wiring hook group has a hook, and every command is `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell syntax"
 
-**Location:** `devcontainer-config/install.sh:1059-1060`
-**Type:** Behavioral
+**Location:** `devcontainer-config/install.sh:724-730`
+**Type:** Invariant
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers edits made before the check at `:1061-1062`, which runs after the y and the agent gate. It does not establish refusal for an edit made after that check. That window is Claim 9's subject: such an edit goes to the backup, not to a refusal.
-**Legibility-target:** for-orchestrator-synthesis
-
-```sh
-if [ -n "$s_new_hash" ] && { [ -L "$settings" ] || [ -L "$snew" ] \
-     || [ "$(file_hash "$settings")" != "$s_old_hash" ] || [ "$(file_hash "$snew")" != "$s_new_hash" ]; }; then
-  rm_new_copies "$dest"
-```
-(excerpt ends `:1063`; the block continues to `:1067` with the error and `exit 1`, read)
-
-This runs before the swap at `:1091`. T95 tampers with each file while the prompt waits. It asserts `status 1`, the message, the edited content kept, and `[ -L "$CLAUDE_HOME_DIR/skills" ]` (nothing swapped). It passes.
-
-**Evidence:** `devcontainer-config/install.sh:1059-1067`, `test/install-host.bats:1695-1714`, `$L/head-t93-98.txt`, `$L/old-t95.txt`
-
----
-
-## Claim 8: "A settings-only change (Q-106) swaps no entry: swap_names stays empty."
-
-**Location:** `devcontainer-config/install.sh:1073`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the swap and manifest being skipped when `files_changed=0`. It does not establish anything about the backup rotation, which still counts a settings-only backup as one of the three kept.
-**Legibility-target:** for-orchestrator-synthesis
-
-`files_changed="$changed"` is captured before the settings block (`:993`), and `if [ "$files_changed" -eq 1 ]; then swap_names=("${CLAUDE_HOME_NAMES[@]}"); fi` (`:1075`). The manifest update is gated the same way (`:1112`). T94's drift run asserts no `Installed into`, an unchanged manifest, and a newest backup holding exactly `.install-stamp settings.json`. It passes.
-
-**Evidence:** `devcontainer-config/install.sh:993`, `devcontainer-config/install.sh:1074-1080`, `devcontainer-config/install.sh:1112-1120`, `test/install-host.bats:1675-1693`, `$L/head-t93-98.txt`
-
----
-
-## Claim 9: "back up right before the rename, so an edit since the check is kept there"
-
-**Location:** `devcontainer-config/install.sh:1122`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the usual case: the file existed at the check, so `backup` was created and `cp -p` copies whatever is there at write time. It does not hold when the file was absent at review and check, no entry swapped (`files_changed=0`), and the file is created after `:1080`. Then `backup` is empty, the `cp` is skipped, and `mv -f` overwrites the newly created file with no copy kept. Nothing tests this window.
-**Legibility-target:** for-author
-
-The backup dir exists only if `any=1`: `if [ -n "$s_new_hash" ] && [ -e "$settings" ]; then any=1; fi` (`:1080`). The copy is guarded by `if [ -n "$backup" ] && [ -e "$settings" ]; then` (`:1125`), and then `if ! mv -f "$snew" "$settings"; then` (`:1131`) runs unconditionally. Precise version: "an edit since the check is kept there, provided a backup dir was made (the file existed at `:1080` or entries were swapped)."
-
-**Evidence:** `devcontainer-config/install.sh:1074-1089`, `devcontainer-config/install.sh:1122-1136`
-
----
-
-## Claim 10: "mv replaces a planted link. The entries stay installed on a failure."
-
-**Location:** `devcontainer-config/install.sh:1123`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers `mv -f` over a symlink replacing the link itself while leaving the target untouched (probe H), and the backup/write failures exiting without a rollback. It does not establish that the link's target escapes being read. `cp -p "$settings"` and `chmod --reference="$settings"` (`:1126`) both follow a planted link, so the target's bytes go to the backup and its mode is applied.
-**Legibility-target:** for-orchestrator-synthesis
-
-Probe H: `ln -s tgt lnk; mv -f newf lnk` leaves `lnk` a regular file (`-`) containing `new`, with `tgt` still `target` (`$L/jqprobe.txt`). Both failure branches are `echo "ERROR: ..." >&2; exit 1` (`:1127-1128`, `:1132-1133`), after the swap at `:1091-1104`, with no `host_rollback` call.
-
-**Evidence:** `devcontainer-config/install.sh:1124-1136`, `$L/jqprobe.txt`
-
----
-
-## Claim 11: "The merge program … is hooks/lib/wiring-merge.jq: one copy, which install.sh's host target also runs" (caller claim 1: the jq is byte-for-byte the program link-claude-home.sh had at 184396ea, and the linker's behavior is otherwise unchanged)
-
-**Location:** `devcontainer-config/link-claude-home.sh:110-116`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers program identity (code lines identical after a uniform 10-space dedent, comments excluded) and the linker's 16-test suite passing. Not established:
-- The linker gains one new branch: a missing filter file skips the wiring with a message. It is a consequence of reading the file, and untested.
-- The two comment blocks differ in wording; the inner legacy-form comment was reworded.
-- The image payload's `hooks/lib/` is checked only statically: `CLAUDE_HOME_SRC` includes all of `hooks`.
-**Legibility-target:** for-orchestrator-synthesis
-
-`$P/cmp.sh` extracts the 28-line inline program from `git show 184396ea:devcontainer-config/link-claude-home.sh`, drops comment lines, and dedents. It prints `STRICT identical after uniform 10-space dedent` (`$L/cmp.txt`). The new call is `jq --arg dir "$DEST" --slurpfile w "$WIRING" -f "$MERGE" \` followed by `"$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then` (`link-claude-home.sh:115-116`). The surrounding validity check, mv and failure branches are unchanged in the diff. The added branch is `elif [ ! -f "$MERGE" ]; then echo "link-claude-home: no $MERGE — hooks linked but not wired." >&2` (`:99-100`). The payload source list is `CLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills workflows guides patterns hooks scripts)` (`install.sh:139`).
-
-**Evidence:** `devcontainer-config/link-claude-home.sh:91-127`, `devcontainer-config/install.sh:139`, `$L/cmp.txt`, `$L/head-link-wiring.txt`
-
----
-
-## Claim 12: "The first revisit trigger fired when Q-049 was answered (2026-09-23). The user answered Q-106 [2] on 2026-10-06 … superseding the sub-decision "`settings.json` stays a manual merge" above and the "settings merge is still manual" line under Consequences."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:100`
-**Type:** Reference
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the two dates and the existence of both superseded lines. It does not establish whether other docs still carry the old manual-merge wording. Only `docs/working/` history docs do; they were not verdicted.
-**Legibility-target:** for-orchestrator-synthesis
-
-The archive reads: "Q-049 was answered on 2026-09-23 (aa21535d …) … **Answered 2026-10-06: [2], automate via link-claude-home's provenance jq.**" (`docs/working/questions-archive.md:2051`). The superseded lines are at `037-bare-host-copy-install.md:37` ("**`settings.json` stays a manual merge.**") and `:58` ("The settings merge is still manual").
-
-**Evidence:** `docs/working/questions-archive.md:2048-2051`, `docs/decisions/037-bare-host-copy-install.md:37`, `docs/decisions/037-bare-host-copy-install.md:58`
-
----
-
-## Claim 13a: "It inherits the target's skip rules (`--yes`, no TTY, `CLAUDECODE`). The current file's copy and the merged copy are hashed; after the y and the agent gate, a change to either refuses the install. … A settings-only change swaps no entry."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:103`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the skip-rule ordering, the hash re-check order and the settings-only path. It does not establish that the existing skip tests exercise the merge (see Claim 19).
-**Legibility-target:** for-orchestrator-synthesis
-
-The skip rules `return 0` at `install.sh:784-795`, before any staging. `agent_gate` (`:1051`) precedes the settings check (`:1061`). T95 and T94 pass (Claims 7, 8).
-
-**Evidence:** `devcontainer-config/install.sh:784-795`, `devcontainer-config/install.sh:1051-1067`, `$L/head-t93-98.txt`
-
----
-
-## Claim 13b: "The old file is copied into the run's backup immediately before the rename, so an edit made after that check is in the backup."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:103`
-**Type:** Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Same as Claim 9. It holds when a backup dir was made, and fails for a file created after `:1080` that was absent at review, when no entries swapped.
-**Legibility-target:** for-author
-
-Same code as Claim 9: `if [ -n "$backup" ] && [ -e "$settings" ]; then` (`install.sh:1125`), where `backup` is set only when `any=1` (`:1080-1081`).
-
-**Evidence:** `devcontainer-config/install.sh:1080-1089`, `devcontainer-config/install.sh:1125-1131`
-
----
-
-## Claim 14: "**Not written** when the file is a symlink, is not one JSON object, `jq` is missing, or the merge fails (a non-list `wiring.json` mode such as `defaultMode`). The review says why, and the old `REMINDER` is printed when `wiring.json` changed."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:104`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the skip cases (T96, T97) and the reminder being printed only on a skip with a changed wiring. It does not establish that the reminder's text is the "old" one: it was reworded to say settings.json was NOT merged.
-**Legibility-target:** for-orchestrator-synthesis
-
-`if [ "$wiring_changed" -eq 1 ] && [ -n "$s_why" ]; then   # the merge could not run` (`install.sh:1165`). T96 asserts `*'REMINDER'*'NOT merged'*`. T97 asserts `*'NOT merged'*'the merge program failed on it'*`. Both pass.
-
-**Evidence:** `devcontainer-config/install.sh:1165-1170`, `test/install-host.bats:1716-1742`, `$L/head-t93-98.txt`
-
----
-
-## Claim 15: "a committed `wiring.json` that … adds a group outside `<dest>/hooks/` (which later merges then treat as foreign) … A user group mixing one of our commands with a foreign one is kept beside ours, as in the container. The merge program now sits outside `live-verify-gate.sh`'s regex, though the trust manifest still hashes it in the devcontainer payload."
-
-**Location:** `docs/decisions/037-bare-host-copy-install.md:105`
-**Type:** Behavioral / Architectural
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the mixed-group double wiring (probe F), the provenance predicate, the gate regex text, and the manifest's `claude-home` walk. It does not establish that the manifest hash is checked at runtime on every path; `cc-isolated.sh` was read only as far as `enforcement_files`.
-**Legibility-target:** for-orchestrator-synthesis
-
-Probe F: settings with `[h.sh, /opt/x.sh]` in one group comes out with that group intact plus a second group holding `h.sh` (`$L/jqprobe.txt`). The provenance predicate is `all((.command // "") | contains($dir + "/hooks/"))` (`hooks/lib/wiring-merge.jq:36-38`). The gate regex is `enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'` (`hooks/live-verify-gate.sh:83`), which has no `hooks/`. The manifest walk is `if [ -d claude-home ]; then find claude-home \( -type f -o -type l \) | LC_ALL=C sort; fi` (`devcontainer-config/cc-isolated.sh:149`).
-
-**Evidence:** `hooks/lib/wiring-merge.jq:32-41`, `hooks/live-verify-gate.sh:83`, `devcontainer-config/cc-isolated.sh:128-149`, `$L/jqprobe.txt`
-
----
-
-## Claim 16: Pre-mortem row 1: "test asserts `sandbox`, `allow`, an unrelated key and a foreign group survive" — covered (test)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:38`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers T93's assertions for those four items. It does not establish survival of other host keys (`env`, `sandbox` sub-keys beyond `enabled`); that rests on the jq touching only `.hooks[ev]` and `.permissions[mode]`.
-**Legibility-target:** for-orchestrator-synthesis
-
-`[ "$(jq -c '[.user, .sandbox, .permissions.allow]' "$sf")" = '["settings",{"enabled":true},["Bash(ls:*)"]]' ]` and `… = "[\"bash /opt/mine.sh\",\"bash $d/hooks/h.sh\"]" ]` (`test/install-host.bats:1662,1664`). Passes.
-
-**Evidence:** `test/install-host.bats:1660-1665`, `$L/head-t93-98.txt`
-
----
-
-## Claim 17: Pre-mortem row 2: "A rule absent from the new wiring is never subtracted. Test asserts a user rule and a stale rule both survive" — covered (test)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:39`
-**Type:** Reference / Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers what the tests assert about deny rules. It does not dispute the behavior: probe D shows the merge keeps a stale rule (`Bash(rm:*)`, absent from the wiring). It refutes only the "covered (test)" claim.
-**Legibility-target:** for-author
-
-No test has a stale rule (a rule of ours that the new wiring no longer carries). `user_settings` deny holds `"Read(./.env)"` (a user rule) and `"Edit(%s/settings*.json)"`, which T93's own comment calls "our legacy single-slash rule" and which is **pruned**, not kept (`test/install-host.bats:1638-1640`, `:1663`). T94 sets deny to `["Read(./.env)"]` only (`:1683`). The wiring fixture has a single rule (`:1631`). A regression that subtracted rules absent from the wiring would pass T93-T98. What to fix: add a rule such as `Bash(rm:*)` to `user_settings` and assert that it survives, or change the row to "covered for the user rule; stale rule by the jq's text only".
-
-**Evidence:** `test/install-host.bats:1628-1641`, `test/install-host.bats:1660-1664`, `test/install-host.bats:1683`, `$L/jqprobe.txt` (probe D)
-
----
-
-## Claim 18: Pre-mortem row 6: "Non-array modes make jq fail: merge skipped, settings untouched, message (test)"
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:43`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a non-array mode in the **wiring** (T97). It does not establish anything about non-array modes in settings.json: `defaultMode` there merges normally (P3), and a settings `deny` string fails (probe B).
-**Legibility-target:** for-orchestrator-synthesis
-
-T97 writes a wiring whose only content is a string-valued `permissions.defaultMode` (`test/install-host.bats:1736`). It asserts the failure message and `cmp` against the original. Passes, and fails on 184396ea.
-
-**Evidence:** `test/install-host.bats:1734-1742`, `$L/head-t93-98.txt`, `$L/old-t97.txt`
-
----
-
-## Claim 19: Pre-mortem row 8: "The merge sits after the existing skip rules; T1/T2/T4/T22 keep the snapshot equal, and a new test asserts a declined review leaves settings.json byte-identical" — covered
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:45`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** static
-**Scope:** Covers the placement (code order) and T93's decline assertion. It does not establish that T1/T2/T4/T22 would catch a merge moved above the skip rules. Their fixture (`fake_repo` without `with_merge`) has no `hooks/lib/wiring-merge.jq`, so the merge always skips there with "the payload has no …", and the snapshot stays equal either way.
-**Legibility-target:** for-author
-
-`fake_repo` writes `"$ROOT/hooks/lib/x.sh"` and `{"hooks":{}}` as the wiring (`test/install-host.bats:105-106`). Only `with_merge` copies the jq in (`:1630`), and T1/T2/T4/T22 do not call it. Each asserts `[ "$(snap "$CLAUDE_HOME_DIR")" = "$before" ]`. Precise version: "placement by code order; the skip tests run without the merge program, so they do not test it."
-
-**Evidence:** `test/install-host.bats:94-121`, `test/install-host.bats:181-230`, `test/install-host.bats:457`, `test/install-host.bats:1628-1633`, `devcontainer-config/install.sh:784-795`
-
----
-
-## Claim 20: Pre-mortem rows 9-10: "The current file's hash is re-checked after the y: any change refuses the whole install (test)"; "Hashed at review, re-checked after the y (same test as #9)"
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:46-47`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers both tamper targets in T95. It does not test the residual window after the check (row 9 states it as recoverable; see Claim 9).
-**Legibility-target:** for-orchestrator-synthesis
-
-T95's two halves tamper with `settings.json` and with `.cw-new.settings.json` respectively. Each asserts `[ -e "$S/tamper.landed" ]`, `status 1` and the refusal message (`test/install-host.bats:1698-1713`). Passes.
-
-**Evidence:** `test/install-host.bats:1695-1714`, `$L/head-t93-98.txt`
-
----
-
-## Claim 21: Pre-mortem row 11: "Never written; review says why; target untouched (test). `.cw-new.settings.json` planted as a link is refused like the other `.cw-new.*` names" — covered (test)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:48`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the symlinked-settings half (T96) and the planted-link refusal in code. It does not establish test coverage of the planted `.cw-new.settings.json` link: no test plants one.
-**Legibility-target:** for-author
-
-T96: `[[ "$output" == *"NOT merged: $sf: it is a symlink"* ]]` and `[ -L "$sf" ] && [ "$(cat "$S/target.json")" = '{"target":1}' ]` (`test/install-host.bats:1729-1731`). The refusal code is `for name in "${CLAUDE_HOME_NAMES[@]}" manifest settings.json; do if [ -L "$dest/.cw-new.$name" ]; then host_refuse ...` (`install.sh:822-824`). A grep of `test/install-host.bats` for `.cw-new.settings.json` finds only `[ ! -e … ]` checks and T95's write (paraphrased — no quote available because the claim is about the absence of a test, shown by grep).
-
-**Evidence:** `devcontainer-config/install.sh:822-826`, `test/install-host.bats:1716-1732`, `$L/head-t93-98.txt`
-
----
-
-## Claim 22: Pre-mortem row 12: "The old file is copied into `.claude-workflows-backup/<stamp>/settings.json` … (test asserts the backup)"
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:49`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the backup copy. It does not establish test coverage of "A failed rename leaves the old file in place and says so" (static only: `install.sh:1131-1133`).
-**Legibility-target:** for-orchestrator-synthesis
-
-`bk=$(echo "$d"/.claude-workflows-backup/*)` then `cmp "$bk/settings.json" "$S/settings.orig"` (`test/install-host.bats:1667-1668`). Passes.
-
-**Evidence:** `test/install-host.bats:1666-1669`, `$L/head-t93-98.txt`
-
----
-
-## Claim 23: Pre-mortem row 13: "`jq -e .` first: refused, untouched, message, reminder (test)"
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:50`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the refusal, message and reminder (T96). It does not match the mechanism named: the check is a stricter one-object test, not `jq -e .`.
-**Legibility-target:** for-author
-
-The code is `jq -se 'length == 1 and (.[0] | type == "object")' "$settings"` (`install.sh:1000`). T96 asserts `*"settings.json: NOT merged: $sf: it is not one valid JSON object"*` and `*'REMINDER'*'NOT merged'*` (`test/install-host.bats:1722-1723`). Precise version: "a one-JSON-object check (`jq -se`) first".
-
-**Evidence:** `devcontainer-config/install.sh:1000-1001`, `test/install-host.bats:1716-1726`, `$L/head-t93-98.txt`
-
----
-
-## Claim 24a: Pre-mortem row 14 (first half): "Created under umask 077" — covered (test)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:51`
-**Type:** Reference / Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers a new settings.json landing at 600 (T98) and the merged copy being 600 while the prompt waits (P4). It does not cover the diff file (Claim 4).
-**Legibility-target:** for-orchestrator-synthesis
-
-T98: `[ "$(stat -c %a "$sf")" = 600 ]` with no prior settings.json (`test/install-host.bats:1752`). P4 recorded `600 .cw-new.settings.json`.
-
-**Evidence:** `test/install-host.bats:1745-1753`, `$L/p4-modes.txt`, `$L/head-t93-98.txt`
-
----
-
-## Claim 24b: Pre-mortem row 14 (second half): "given the old file's mode before the rename (test asserts 600 kept)" — covered (test)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:51`
-**Type:** Reference / Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers whether a test exercises mode keeping. It does not dispute the behavior: P1 shows a 0644 file stays 644. It refutes the "covered (test)" claim.
-**Legibility-target:** for-author
-
-T93 sets `chmod 600 "$d/settings.json"` (`test/install-host.bats:1641`) and asserts `[ "$(stat -c %a "$sf")" = 600 ]` (`:1666`). The umask already makes the merged copy 600, so that assertion holds with or without `chmod --reference`. Mutation run: with `|| ! chmod --reference="$settings" "$snew"` removed from install.sh, **T93 still passes** and P1 (a 0644 original) fails (`$L/mutate-chmod.txt`: `ok 1 T93 …`, `not ok 2 P1 …`). What to fix: start T93's (or a new test's) settings at a mode other than 600, such as 644, and assert that mode afterwards. T93's title ("mode kept") carries the same overclaim.
-
-**Evidence:** `devcontainer-config/install.sh:1126`, `test/install-host.bats:1636-1641`, `test/install-host.bats:1666`, `$L/mutate-chmod.txt`, `$L/p1-output.txt`
-
----
-
-## Claim 25: Pre-mortem row 15: "Same program text, read from the payload; the existing 16 link-claude-home-wiring tests run against it; a missing filter file says so and leaves settings alone" — covered (existing suite)
-
-**Location:** `docs/working/plan-q106-host-settings-merge.md:52`
-**Type:** Reference / Behavioral
-**Verdict:** Mostly accurate
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the program identity, the count of 16 (16 at both 184396ea and HEAD), and 16/16 passing. It does not establish suite coverage of the missing-filter branch: none of the 16 tests removes the filter.
-**Legibility-target:** for-author
-
-`grep -c '^@test' test/link-claude-home-wiring.bats` gives 16 at both commits. HEAD's run is `1..16`, all ok (`$L/head-link-wiring.txt`). The branch exists at `link-claude-home.sh:99-100` (Claim 11). The suite's setup always copies the filter: `cp "$REPO_ROOT/hooks/lib/wiring-merge.jq" "$SRC/hooks/lib/"` (`test/link-claude-home-wiring.bats:39`).
-
-**Evidence:** `test/link-claude-home-wiring.bats:33-40`, `devcontainer-config/link-claude-home.sh:99-100`, `$L/head-link-wiring.txt`
-
----
-
-## Claim 26: "Groups whose commands all run something under `~/.claude/hooks/` are replaced by the current wiring's (FP-161); each wiring rule is added once, its legacy single-slash form dropped (Q-049); everything else is kept."
-
-**Location:** `guides/bare-host-hook-wiring.md:50-52`
-**Type:** Behavioral
-**Verdict:** Verified
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the provenance replacement, the rule add/prune, and the survival of foreign groups, user rules and other keys (T93; probes A, D). Not established:
-- Groups are replaced only for the event keys the wiring carries.
-- A user's own group whose commands all run user scripts under `~/.claude/hooks/` counts as "ours" and is removed (probe E). The definition states this, but a reader may not expect it.
-- jq rewrites the file's layout.
-**Legibility-target:** for-orchestrator-synthesis
-
-T93 asserts the stale group (h.sh + old.sh) is gone, `/opt/mine.sh` kept, `h.sh` re-added, and deny `["Read(./.env)","Edit(/$d/settings*.json)"]` (legacy dropped, `//` form added once) (`test/install-host.bats:1663-1664`). Probe E: a settings group with only `bash /h/.claude/hooks/my-own.sh` comes out without it (`$L/jqprobe.txt`).
-
-**Evidence:** `hooks/lib/wiring-merge.jq:32-51`, `test/install-host.bats:1660-1665`, `$L/jqprobe.txt`, `$L/head-t93-98.txt`
-
----
-
-## Claim 27: "A `-` line on a hook command means the install unwires it."
-
-**Location:** `guides/bare-host-hook-wiring.md:52-53`
-**Type:** Behavioral
-**Verdict:** Incorrect
-**Confidence:** High
-**Verification mode:** executed
-**Scope:** Covers the reading of the review's `diff -u` output for the T93 fixture. It does not establish how often a reorder produces such lines on real settings files. It happens whenever an "ours" group sits before a foreign group in the same event, because the merge appends ours at the end.
-**Legibility-target:** for-author
-
-The merge is `(existing − ours) + ours`, so our group moves to the end of the event's array. `diff -u` of the reordered JSON shows `-` lines on commands that stay wired. The review the installer printed in P4 (same fixture as T93) has:
+**Scope:** Covers what `WIRING_SHAPE` accepts and refuses for `.hooks` commands, and that the real `hooks/wiring.json` passes; does not establish anything about wiring `permissions` rules, which the check does not constrain (they surface only as `ADDS` lines), nor the container path, which does not run the check (claim 34).
 
 ```
--            "command": "bash /opt/mine.sh"
-+            "command": "bash /tmp/bats-run-oEfxlg/test/1/home/.claude/hooks/h.sh"
+WIRING_SHAPE='[.hooks[]?[]? | (.hooks // []) | length > 0
+   and all(.command | type == "string" and (contains("..") | not)
+           and test("^(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+$"))] | all'
 ```
-(`$L/p4-review-output.txt`, hunk `@@ -32,7 +28,7 @@`)
+(`devcontainer-config/install.sh:728-730`)
 
-There is also an earlier `-            "command": "bash …/hooks/h.sh"` line. Yet T93 asserts that both `bash /opt/mine.sh` and `bash $d/hooks/h.sh` are wired after the install (`test/install-host.bats:1664`). A reader following the guide would conclude that the foreign hook and our own hook are being unwired. What to fix: say that a command unwires only if it has a `-` line and no matching `+` line anywhere in the diff. Alternatively, have the review list the hook commands removed (set difference) alongside the diff.
+Probe results (`$L/probe_jq.txt`):
 
-**Evidence:** `devcontainer-config/install.sh:1014-1019`, `hooks/lib/wiring-merge.jq:33-41`, `test/install-host.bats:1664`, `$L/p4-review-output.txt`
+- The real `hooks/wiring.json` gives `true`.
+- Accepted: `bash {{CLAUDE_DIR}}/hooks/h.sh` and `python3 {{CLAUDE_DIR}}/hooks/a/b.py`.
+- Refused: `../x`, `h.sh; curl x`, `h.sh x` (a space), a null command, an empty `hooks` list, and a group with no `hooks` key.
+- A newline mid-string is refused in either order (`h.sh\ncurl evil` and `curl evil\nh.sh`), so jq 1.6's `^…$` does not act as a per-line anchor here.
+
+Two edge acceptances do not contradict the comment:
+
+- A single trailing newline (`h.sh\n`) passes. It adds no second command.
+- A group whose `hooks` is an object rather than a list passes, but `all(...)` still checks each value's `.command`.
+
+**Evidence:** `devcontainer-config/install.sh:724-730`, `devcontainer-config/install.sh:1017-1018`, `hooks/wiring.json`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 28: "The old file goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written when the file is a symlink or not one JSON object, `jq` is missing, or the merge fails: the review says why, and a `REMINDER` follows if `wiring.json` changed. An edit to the file between the review and the y refuses the install."
+## Claim 5: "umask 077: settings can hold secrets; the merged copy then gets the live file's mode. The live file is read once, into $s_view.raw: the check, the hash and the merge all read that copy."
 
-**Location:** `guides/bare-host-hook-wiring.md:53-57`
+**Location:** `devcontainer-config/install.sh:1005-1007`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the content reads of `settings.json` between the review and the prompt; does not establish atomicity of the separate `stat` (metadata) read against the `cp`, and does not cover the post-y hash, which reads the live file on purpose to detect edits.
+
+- Read once: `s_mode="$(stat -c %a "$settings")" && (umask 077; cp "$settings" "$s_view.raw")` (`:1019`).
+- Checked: `sjq -se "$ONE_OBJ" "$s_view.raw"` (`:1021`).
+- Merged: `sjq . "$s_view.raw"` then `> "$s_view"`, and the merge reads `"$s_view"` (`:1024-1026`).
+- Hashed: `s_old_hash="$(file_hash "$s_view.raw")"` (`:1051`).
+- Mode: `|| ! chmod "$s_mode" "$snew"` (`:1027`), with `s_mode=600` as the default for a new file (`:1009`).
+
+The rename at `:1168` (`mv -f "$snew" "$settings"`) carries that mode. T93 (640 kept) and T98 (new file 600) pass at HEAD.
+
+**Evidence:** `devcontainer-config/install.sh:1005-1029`, `devcontainer-config/install.sh:1051`, `devcontainer-config/install.sh:1168`, `$L/head-install-host.txt`
+
+---
+
+## Claim 6: "no trailing slash in the paths it writes (review C1)"
+
+**Location:** `devcontainer-config/install.sh:1010`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the backup (T93), the skips plus the reminder (T96, T97), and the refusal (T95). It does not establish refusal for an edit after the post-y check, or the backup edge in Claim 9. The dir may also be named `<stamp>.<pid>` on a stamp collision (`install.sh:1083`).
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers `--arg dir` for the host merge when `CLAUDE_HOME_DIR` ends in `/`; does not establish symlink resolution (bash `pwd` is logical, so a symlinked destination keeps its link path), nor the container's `$DEST`.
 
-See Claims 7, 14 and 22 for the quoted code and assertions. All of T93, T95, T96 and T97 pass on HEAD and fail on 184396ea.
+`s_dir="$(cd "$dest" && pwd)"` (`:1010`), passed as `sjq --arg dir "$s_dir"` (`:1025`). T98 runs with `CLAUDE_HOME_DIR="$CLAUDE_HOME_DIR/"` (`test/install-host.bats:1750`). It passes at HEAD and fails on 05b13d11 at `:1753`, where the old `--arg dir "$dest"` wrote `…//hooks/h.sh`.
 
-**Evidence:** `devcontainer-config/install.sh:1059-1067`, `devcontainer-config/install.sh:1122-1136`, `devcontainer-config/install.sh:1165-1170`, `$L/head-t93-98.txt`
+**Evidence:** `devcontainer-config/install.sh:1010`, `devcontainer-config/install.sh:1025`, `test/install-host.bats:1748-1756`, `$L/old-T98.txt`
 
 ---
 
-## Claim 29: "When `wiring.json` changes, the next `install.sh` run merges it again (above). After a hand merge, rerun `install.sh`: its review shows anything your merge left out."
+## Claim 7a: "A reorder shows as -/+ in the diff below but never here."
 
-**Location:** `guides/bare-host-hook-wiring.md:94-95`
+**Location:** `devcontainer-config/install.sh:1035`
 **Type:** Behavioral
 **Verdict:** Verified
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers a hand-edited file missing a wiring rule: T94 deletes our deny rule, and the rerun's review shows it as `+`. It does not establish recognition of hand-merged groups written with a different path spelling than `$dest` (for example a non-default `CLAUDE_HOME_DIR`). Those groups would be kept as foreign and a duplicate appended.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers reordered groups and rules; does not establish behavior for duplicates (array subtraction removes every equal element, so collapsing a duplicated command is not listed either).
 
-T94: `jq '.permissions.deny = ["Read(./.env)"]' …`, then `[[ "${output%%Install these files*}" == *'+      "Edit(//'* ]]` (`test/install-host.bats:1683-1686`). Passes.
+`((($a | cmds) - ($b | cmds))[] | "  UNWIRES hook: " + .)` (`:1039`) is a set-style difference, so order cannot produce a line. The probe swaps the two `PreToolUse` groups and gets no output (`$L/probe_jq.txt`, "reorder only"). T93's negative assertion (`:1660`) also passes at HEAD.
 
-**Evidence:** `test/install-host.bats:1675-1693`, `$L/head-t93-98.txt`
+**Evidence:** `devcontainer-config/install.sh:1036-1042`, `test/install-host.bats:1660`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 30: "Two callers run it: devcontainer-config/link-claude-home.sh, at every container start (decision 023), from the image's root-owned payload; devcontainer-config/install.sh's host target (Q-106 [2]), from the reviewed, hash-checked copy it is about to install, before the y."
+## Claim 7b: "Review A2/A7: what the y would unwire, remove or newly allow, listed by name."
 
-**Location:** `hooks/lib/wiring-merge.jq:3-7`
+**Location:** `devcontainer-config/install.sh:1034`
+**Type:** Behavioral / Error-handling
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers hook commands that disappear from the settings file and rules that disappear from, or newly appear in, any `permissions` mode; does not establish a list entry when a command stays in the file but stops firing where it did (matcher retargeted, or moved to another event), nor any notice when the summary program fails.
+
+```
+def cmds: [.hooks[]?[]?.hooks[]?.command]; def rules(m): [.permissions[m]?[]?];
+$o[0] as $a | $n[0] as $b
+| ((($a | cmds) - ($b | cmds))[] | "  UNWIRES hook: " + .),
+  (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVES \($m) rule: " + .),
+  (($b.permissions // {} | keys[] | select(. != "deny")) as $m
+   | (($b | rules($m)) - ($a | rules($m)))[] | "  ADDS \($m) rule: " + .)' > "$s_view.sum" || true
+```
+(`devcontainer-config/install.sh:1037-1042`)
+
+`cmds` flattens every event and drops matchers, so the list keys on the command string only. Probe results (`$L/probe_jq.txt`):
+
+- `python3 /h/.claude/hooks/guard.py` with its matcher changed from `Edit|Write` to `Nope` prints nothing.
+- The same command moved from `PreToolUse` to `Stop` prints nothing.
+
+In both cases the hook no longer guards what it did, and only the diff shows it. That is the hostile-branch case of plan row 3.
+
+The summary's failure is also silent:
+
+- A user `settings.json` whose hook `command` is a number makes the program exit 5 with no output (`$L/probe_jq.txt`, "numeric command").
+- `sjq` drops stderr and `|| true` swallows the exit, so the review shows the diff with no by-name list and no note that the list is missing.
+
+Legacy-form labelling is literal, not wrong. A replaced single-slash deny rule shows as `REMOVES deny rule: Edit(/h/.claude/settings*.json)`, with no paired line for its `//` replacement, because `ADDS` excludes `deny` (`:1041`). It does not list a reorder (claim 7a).
+
+**Evidence:** `devcontainer-config/install.sh:1034-1042`, `devcontainer-config/install.sh:1049`, `$L/probe_jq.txt`
+
+---
+
+## Claim 8: "back up right before the rename (the backup dir is made here if no entry needed one), so an edit since the check is kept there; -P copies a planted link as a link and mv replaces it."
+
+**Location:** `devcontainer-config/install.sh:1155-1157`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the settings write tail; does not establish behavior under a concurrent writer between `cp -pP` and `mv` (an edit in that window is lost from the live file but not from the backup only if it landed before the `cp`).
+
+```
+if [ -e "$settings" ] || [ -L "$settings" ]; then
+  if [ -z "$backup" ]; then backup="$bkroot/$stamp"; if [ -e "$backup" ]; then backup="$backup.$$"; fi; fi
+  if ! mkdir -p "$backup" || ! cp -pP "$settings" "$backup/settings.json"; then
+```
+(`devcontainer-config/install.sh:1161-1163`), followed by `if ! mv -f "$snew" "$settings"` (`:1168`).
+
+**Evidence:** `devcontainer-config/install.sh:1155-1173`
+
+---
+
+## Claim 9: "Review A6: not stamped, so it never counts among (or prunes) the 3 kept."
+
+**Location:** `devcontainer-config/install.sh:1175`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers settings-only runs (`files_changed=0`); does not cover a first install with `files_changed=1` and no earlier entries, where the lazily made backup holds only `settings.json` yet is stamped, pruned against and announced as "Previous entries moved to".
+
+The stamp and the prune sit only in `if [ -n "$backup" ] && [ "$files_changed" -eq 1 ]; then` (`:1178`, stamp at `:1188`). The prune skips unstamped directories: `[ -f "$d/.install-stamp" ] || continue` (`:1199`). T94's `[ "$(ls -A "$newest")" = settings.json ]` passes at HEAD and fails on 05b13d11 at `:1694`.
+
+**Evidence:** `devcontainer-config/install.sh:1174-1205`, `test/install-host.bats:1694`, `$L/old-T94.txt`
+
+---
+
+## Claim 10: Both callers run the merge with HOME and the environment emptied (d53d2bf4 "A3"; 037 :102; wiring-merge.jq :12-14), container side
+
+**Location:** `devcontainer-config/link-claude-home.sh:115`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the merge invocation; does not cover the two count-only jq calls at `:118-119`, which still run plain `jq` (their output reaches only the "wired N hook command(s)" message), and does not establish that the container still wires in a real container (the commit's own `Live-verified: no` owes that).
+
+`if env -i PATH="$PATH" HOME=/nonexistent jq --arg dir "$DEST" --slurpfile w "$WIRING" -f "$MERGE" \` (`devcontainer-config/link-claude-home.sh:115`). By contrast `echo "link-claude-home: wired $(jq -r '[.hooks[][]?.hooks[]?] | length' "$SETTINGS") …"` (`:118`) is unwrapped. `test/link-claude-home-wiring.bats` passes 16/16.
+
+**Evidence:** `devcontainer-config/link-claude-home.sh:108-119`, `$L/head-link.txt`
+
+---
+
+## Claim 11: "Both run jq with HOME and the environment emptied … both callers stay in the gate, and neither reads it from the checkout."
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:102`
 **Type:** Architectural
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** static
-**Scope:** Covers the two in-repo callers and their sources. It does not establish that no out-of-repo script runs the file. "Hash-checked" here means re-checked after the y (Claim 3).
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the two callers' jq wrapper (claims 3, 10), their presence in the gate regex and the merge-program source paths; does not establish that `wiring-merge.jq` itself is gated (it is not, as the same entry's Residuals line says).
 
-A repo grep for `wiring-merge` outside tests and docs finds only `link-claude-home.sh:92` (`MERGE="$SRC/hooks/lib/wiring-merge.jq"`) and `install.sh:998-1005` (`-f "${new}hooks/lib/wiring-merge.jq"`). The payload is root-owned: `chown -R root:root /opt/claude-workflows` (`devcontainer-config/Dockerfile:516`).
+The gate regex includes both callers: `enforcement='^devcontainer-config/(…|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'` (`hooks/live-verify-gate.sh:83`). Each caller reads the merge program from a staged or packaged copy:
 
-**Evidence:** `devcontainer-config/link-claude-home.sh:92`, `devcontainer-config/install.sh:998-1005`, `devcontainer-config/Dockerfile:499`, `devcontainer-config/Dockerfile:516`
+- Host: `-f "${new}hooks/lib/wiring-merge.jq"` (`install.sh:1026`), where `new="$dest/.cw-new."` (`:906`) holds the copies made from the `git archive` stage (`:892-895`).
+- Container: `MERGE="$SRC/hooks/lib/wiring-merge.jq"` (`link-claude-home.sh:92`).
+
+**Evidence:** `docs/decisions/037-bare-host-copy-install.md:102`, `hooks/live-verify-gate.sh:83`, `devcontainer-config/install.sh:892-906`, `devcontainer-config/install.sh:1026`, `devcontainer-config/link-claude-home.sh:92`
 
 ---
 
-## Claim 31: "jq has no builtin that runs a command or writes a file; the caller writes the output."
+## Claim 12: "The host target refuses a wiring.json whose hook commands are not bash or python3 {{CLAUDE_DIR}}/hooks/<path> without `..`. The review lists by name each hook command the merge unwires and each rule it removes or newly allows. A settings-only backup is not stamped…"
 
-**Location:** `hooks/lib/wiring-merge.jq:11-12`
+**Location:** `docs/decisions/037-bare-host-copy-install.md:103`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the amendment's four statements against claims 4, 7b, 9 and 31; does not establish more than those claims do.
+
+The prune, refusal and stamping statements match the code (claims 31, 4, 9). The by-name sentence carries claim 7b's residue: a retargeted matcher or an event move is not listed (`cmds: [.hooks[]?[]?.hooks[]?.command]`, `install.sh:1037`).
+
+**Evidence:** `docs/decisions/037-bare-host-copy-install.md:103`, `devcontainer-config/install.sh:1037-1042`
+
+---
+
+## Claim 13: "Not written when the file is a symlink, is not one JSON object, `jq` is missing, or the merge fails"
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:105`
+**Type:** Behavioral
+**Verdict:** Stale
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the enumerated skip list against `install.sh:1011-1029`; does not establish the REMINDER sentence, which still holds (`:1206-1211`).
+
+This bullet was not edited in d53d2bf4, and the code now has two more skip reasons:
+
+- the shape refusal: `elif ! sjq -e "$WIRING_SHAPE" …; then s_why="hooks/wiring.json has a hook command that is not …"` (`install.sh:1017-1018`);
+- unreadable: `s_why="it could not be read"` (`:1020`).
+
+The next bullet (`:103`) mentions the refusal. The --help (`install.sh:47-49`) and guide §2 (`:58`) lists were both updated.
+
+**Evidence:** `docs/decisions/037-bare-host-copy-install.md:105`, `devcontainer-config/install.sh:1017-1020`
+
+---
+
+## Claim 14: "a committed `wiring.json` that drops a hook, or adds allow rules, is caught only by reading the review (its by-name list) … The merge program now sits outside `live-verify-gate.sh`'s regex"
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:106`
+**Type:** Behavioral / Architectural
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the residual's mechanism and the gate-regex fact; does not establish the trust-manifest hashing clause (unchanged context, not re-checked here).
+
+- Gate regex: Verified. `wiring-merge.jq` matches neither `enforcement` nor `host_tools` (`hooks/live-verify-gate.sh:83`, `:91`).
+- "its by-name list": catches a dropped command but not a hook neutered by a matcher or event change (claim 7b), which only the diff shows.
+
+**Evidence:** `docs/decisions/037-bare-host-copy-install.md:106`, `hooks/live-verify-gate.sh:83-91`, `devcontainer-config/install.sh:1037`
+
+---
+
+## Claim 15: "the regex landed in addae610 (2026-09-26) and `test/hooks/live-verify-gate.bats` ("install.sh is gated although it is not manifest-hashed") pins install.sh's coverage" / "The first revisit trigger fired when Q-049 was answered (2026-09-23)"
+
+**Location:** `docs/decisions/037-bare-host-copy-install.md:100`, `docs/decisions/037-bare-host-copy-install.md:108`
+**Type:** Reference
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the commit date, the test's existence, name and pass status, and Q-049's answer date; does not establish what the test asserts beyond its name. The Q-108 paragraph is context (unchanged in this range), checked on request.
+
+- The commit: `git log -1 addae610` prints `addae610 2026-09-26 fix(hooks): gate install.sh commits on Live-verified, as decision 035 chose`.
+- The test: `@test "install.sh is gated although it is not manifest-hashed (decision 035)"` (`test/hooks/live-verify-gate.bats:146`). The doc quotes the name without the "(decision 035)" suffix. It passes (`$L/gate.txt`).
+- Q-049: `**Answered 2026-09-23, run 3: single-slash rules match nothing; …**` (`docs/working/questions-archive.md:1241`).
+
+**Evidence:** `test/hooks/live-verify-gate.bats:146`, `docs/working/questions-archive.md:1241`, `$L/gate.txt`
+
+---
+
+## Claim 16a: Rubric dispositions "Fixed" for A1, A3, A6, A9, A10, C1
+
+**Location:** `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md:63-73`
 **Type:** Behavioral
 **Verdict:** Verified
-**Confidence:** Medium
+**Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers jq 1.6, the version in this sandbox. Its I/O builtins are `debug`, `stderr`, `halt_error` (stderr writes), `input`, `inputs`, `input_filename`, `env` (reads), and no `system` or exec. It does not establish this for the host's jq version, which was not available. `import`/`include` directives can read module files, and stderr writes exist but are discarded by both callers.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers each listed fix being present in the code, and its named test passing at HEAD and failing on 05b13d11 where one is named; does not establish that T93 discriminates A9 (its 640 assertion also passes on 05b13d11, claim 32b).
 
-`jq -nr 'builtins | sort | .[]'` under `jq-1.6`, filtered for I/O-like names, gives `debug/0 env/0 halt/0 halt_error/0 halt_error/1 input/0 input_filename/0 input_line_number/0 inputs/0 stderr/0`, and no `system` or `exec` appears anywhere in the list (`$L/size-and-builtins.txt`).
+- A1: scoped prune `map(select(contains("(/" + $dir + "/")) | sub(…))` (`wiring-merge.jq:53`). T99 passes at HEAD and fails on old code.
+- A3: `env -i … HOME=/nonexistent` (claims 3, 10). T101 passes at HEAD and fails on old code.
+- A6: claim 9. T94 passes at HEAD and fails on old code.
+- A9: mode read at review (`install.sh:1019`, `:1027`).
+- A10: one read, `ONE_OBJ` re-check of `$snew` (`:1027`), lazy `mkdir -p "$backup"` and `cp -pP` (`:1162-1163`).
+- C1: claim 6.
 
-**Evidence:** `$L/size-and-builtins.txt`
+**Evidence:** `hooks/lib/wiring-merge.jq:47-55`, `devcontainer-config/install.sh:1009-1029`, `devcontainer-config/install.sh:1158-1177`, `$L/head-install-host.txt`, `$L/old-T94.txt`, `$L/old-T99.txt`, `$L/old-T101.txt`
 
 ---
 
-## Claim 32: "(existing - ours) + ours, so a rerun is exactly idempotent and everything we did not author stays in place."
+## Claim 16b: Rubric A2 "Fixed: host refuses wiring commands not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (no `..`, no shell syntax, no empty group); the review lists `UNWIRES hook:` / `REMOVES … rule:` / `ADDS … rule:`; the prompt names the settings merge"
 
-**Location:** `hooks/lib/wiring-merge.jq:15-16`
-**Type:** Invariant
+**Location:** `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md:64`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers idempotence (T94 rerun: "Nothing to install", snapshot equal) and survival of foreign groups and user rules. It does not hold literally for groups the user authored whose commands all run something under `$dir/hooks/`. Those are "ours" by provenance and are removed (probe E). The rest of the header defines "ours" that way, so the precise version is "everything not ours by provenance stays in place".
-**Legibility-target:** for-author
+**Scope:** Covers the refusal (claim 4), the summary (claim 7b) and the prompt text (`install.sh:1074-1076`); does not establish that the list closes the composed A2+A7 root ("the review gives no explicit list of removed hook commands"), because matcher and event changes stay `-`/`+`-only.
 
-Probe E removed a user group running only `bash /h/.claude/hooks/my-own.sh` (`$L/jqprobe.txt`). T94 asserts `*'Nothing to install into'*` and an equal snapshot on rerun (`test/install-host.bats:1679-1681`). The plan accepts the provenance case as residual row 4.
+The refusal and the prompt are present: `q="Install this settings.json merge into $settings?"` and `q="Install these files and the settings.json merge into $dest?"` (`install.sh:1075-1076`). T100 passes at HEAD and fails on 05b13d11 at `:1774`. The list has claim 7b's gap.
 
-**Evidence:** `hooks/lib/wiring-merge.jq:15-19`, `test/install-host.bats:1675-1681`, `$L/jqprobe.txt`
+**Evidence:** `devcontainer-config/install.sh:1017`, `devcontainer-config/install.sh:1037-1042`, `devcontainer-config/install.sh:1074-1076`, `$L/old-T100.txt`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 33: "a rule the wiring no longer carries is never removed."
+## Claim 17: Plan row 2: "Rules are subtracted only when equal to one of ours (re-added) or the legacy single-slash form of one of ours **under `$dir`** … A rule absent from the new wiring is never subtracted. T99 asserts both"
 
-**Location:** `hooks/lib/wiring-merge.jq:21-22`
+**Location:** `docs/working/plan-q106-host-settings-merge.md:39`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers permission rules in modes the wiring carries. It does not cover hook groups, which are removed by provenance whether or not the wiring still carries them.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the jq subtraction and T99's two assertions; does not cover a wiring rule containing `..` after `$dir/`, which is still textually "under `$dir`" (`contains`, not a path check).
 
-The subtraction removes only `$wiring.permissions[$mode]` and its `sub("\\(//"; "(/")` forms (`wiring-merge.jq:48-50`). Probe D: settings deny `["Bash(rm:*)","Read(./.env)"]` comes out as `["Bash(rm:*)","Read(./.env)","Edit(//h/.claude/settings*.json)"]` (`$L/jqprobe.txt`).
+`(((.permissions[$mode] // []) - $wiring.permissions[$mode] - ($wiring.permissions[$mode] | map(select(contains("(/" + $dir + "/")) | sub("\\(//"; "(/")))) + $wiring.permissions[$mode])` (`hooks/lib/wiring-merge.jq:51-54`).
 
-**Evidence:** `hooks/lib/wiring-merge.jq:43-51`, `$L/jqprobe.txt`
+- The probe keeps a user's `Read(/secrets/**)` beside the wiring's `Read(//secrets/**)` and drops `Edit(/h/.claude/settings*.json)`.
+- The sibling-prefix `/h/.claude-x` is not pruned.
+- T99 asserts `Read(/secrets/**)` and `Edit(/$d/old*.json)` both survive (`test/install-host.bats:1770`).
+
+**Evidence:** `hooks/lib/wiring-merge.jq:47-55`, `test/install-host.bats:1763-1771`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 34: "A mode whose value is not an array (e.g. "defaultMode") makes jq fail, and both callers then leave the settings file alone."
+## Claim 18: Plan row 3: "The review lists each unwired command by name (`UNWIRES hook:`), and removed and newly allowed rules, above the diff (T93); reorders do not appear there"
 
-**Location:** `hooks/lib/wiring-merge.jq:24-25`
-**Type:** Error-handling
+**Location:** `docs/working/plan-q106-host-settings-merge.md:40`
+**Type:** Behavioral
 **Verdict:** Mostly accurate
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the wiring-side reading, a non-array mode in wiring.json (probe C, T97), and a settings mode that the wiring also carries holding a non-array (probe B). Both callers' skip-on-failure paths are covered as well. It does not hold for a non-array mode that only settings.json has. The `defaultMode` the example names is the common real-world case, and in settings.json it merges without error (probe A, P3).
-**Legibility-target:** for-author
+**Scope:** Covers the list for dropped commands and reorders; does not establish coverage of the row's own threat when the hostile wiring keeps `guard-trusted-writes.py`'s command but changes its matcher or event.
 
-The reduce iterates over `($wiring.permissions // {}) | keys_unsorted[]` (`wiring-merge.jq:44`), so only the wiring's modes are touched. Probe outputs (`$L/jqprobe.txt`):
-- A: settings `"defaultMode":"acceptEdits"` gives exit 0 with defaultMode kept.
-- B: settings `"deny":"Read(./.env)"` gives `string … and array … cannot be subtracted`, exit 5.
-- C: a wiring with `defaultMode` set to a string (the bypass mode name, as in T97) gives `Cannot iterate over string`, exit 5.
+The statements about T93 and reorders hold (`test/install-host.bats:1659-1660`, claim 7a). The row's threat is a hostile branch unwiring the guard. A wiring that keeps the command string but sets its matcher to `Nope` produces no `UNWIRES` line (claim 7b probe). The row's "covered by review only" is right, but only the diff, not the list, carries that case.
 
-P3 runs install.sh with a settings `defaultMode` and gets `Merged hooks/wiring.json into`, with defaultMode kept (`$L/p3-output.txt`). The callers' failure paths are `rm -f "$tmp"; echo "link-claude-home: hook merge failed — $SETTINGS left unchanged."` (`link-claude-home.sh:121-123`) and `s_why=…` (`install.sh:1007`). Precise version: "A wiring.json mode whose value is not an array (e.g. "defaultMode"), or a settings.json value for one of the wiring's modes that is not an array, makes jq fail".
-
-**Evidence:** `hooks/lib/wiring-merge.jq:43-51`, `devcontainer-config/link-claude-home.sh:115-124`, `devcontainer-config/install.sh:1002-1008`, `$L/jqprobe.txt`, `$L/p3-output.txt`
+**Evidence:** `docs/working/plan-q106-host-settings-merge.md:40`, `devcontainer-config/install.sh:1037-1039`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 35: "Tests T93-T98 (install-host.bats) each fail on 184396ea's install.sh."
+## Claim 19: Plan row 5: "install.sh refuses the merge unless every command is `bash` or `python3` `{{CLAUDE_DIR}}/hooks/<path>` with no `..` and every group has a hook (… T100)"
 
-**Location:** `git:188f5c3c` (commit message body)
+**Location:** `docs/working/plan-q106-host-settings-merge.md:42`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers each test failing against the old install.sh, with HEAD's test file and HEAD's `wiring-merge.jq` present. It does not establish that each fails *for the reason its title names*. T93 fails at its first review assertion, and T98 at the settings content check.
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the refusal (claim 4); does not establish that T100 tests every refused shape (it tests only `..` and `; curl x`; empty groups, other interpreters and paths outside hooks are covered only by this pass's probe).
 
-Each old run exits 1. The first failing assertions are: T93 `:1651` (the review text), T94 `:1686`, T95 `:1702`, T96 `:1722`, T97 `:1740`, T98 `:1750` (`$L/old-t93.txt` … `$L/old-t98.txt`).
+`for cmd in 'bash {{CLAUDE_DIR}}/hooks/../../tmp/x.py' 'bash {{CLAUDE_DIR}}/hooks/h.sh; curl x'; do` (`test/install-host.bats:1776`).
 
-**Evidence:** `$L/old-t93.txt`, `$L/old-t94.txt`, `$L/old-t95.txt`, `$L/old-t96.txt`, `$L/old-t97.txt`, `$L/old-t98.txt`
+**Evidence:** `devcontainer-config/install.sh:728-730`, `test/install-host.bats:1774-1783`, `$L/probe_jq.txt`
 
 ---
 
-## Claim 36: "The old file is copied into the run's backup right before the rename, with its mode kept (umask 077 for the merged copy)."
+## Claim 20: Plan row 7: "Both callers run jq with HOME and the environment emptied (review loop 1, security F3; T101)"
 
-**Location:** `git:188f5c3c` (commit message body)
+**Location:** `docs/working/plan-q106-host-settings-merge.md:44`
 **Type:** Behavioral
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the mode being kept for an existing file (P1: 644 stays 644), the merged copy at 600 (P4), and the backup (T93). It does not establish ownership being kept (not claimed), or test-suite coverage of mode keeping (Claim 24b).
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Same as claims 3 and 10; T101 exercises only the host caller.
 
-`if ! cp -p "$settings" "$backup/settings.json" || ! chmod --reference="$settings" "$snew"; then` (`install.sh:1126`). P1 passes with `$L/p1-output.txt` showing the merge; its mode capture was 644.
+See claims 3 and 10. T101 passes at HEAD and fails on 05b13d11 (`$L/old-T101.txt`).
 
-**Evidence:** `devcontainer-config/install.sh:1124-1131`, `$L/probe-tests.txt`, `$L/p1-output.txt`, `$L/p4-modes.txt`
+**Evidence:** `devcontainer-config/install.sh:722`, `devcontainer-config/link-claude-home.sh:115`, `$L/old-T101.txt`
 
 ---
 
-## Claim 37: "Size: 400 code lines against merge/ready-2026-10-15 (184396ea)"
+## Claim 21: Plan row 8: "T1/T2/T4/T22 run without the merge program, so they would not catch a merge moved above them"
 
-**Location:** `git:188f5c3c` (commit message body)
+**Location:** `docs/working/plan-q106-host-settings-merge.md:45`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers whether those four tests call `with_merge`; does not establish what else they assert.
+
+None of the bodies of T1, T2, T4 or T22 calls `with_merge` (paraphrased — no quote available because the claim covers absence; `awk` over those four test bodies counts 0 `with_merge` lines, `$P/s2.sh`). `with_merge` is what copies the program in: `cp "$BATS_TEST_DIRNAME/../hooks/lib/wiring-merge.jq" "$ROOT/hooks/lib/"` (`test/install-host.bats:1631`).
+
+**Evidence:** `test/install-host.bats:1630-1635`
+
+---
+
+## Claim 22: Plan row 11: "A planted `.cw-new.settings.json` link is refused like the other `.cw-new.*` names (code; untested)"
+
+**Location:** `docs/working/plan-q106-host-settings-merge.md:48`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the guard and the absence of a test; does not establish the refusal at run time.
+
+`for name in "${CLAUDE_HOME_NAMES[@]}" manifest settings.json; do if [ -L "$dest/.cw-new.$name" ]; then host_refuse …` (`install.sh:836-838`). The only test references to `.cw-new.settings.json` are absence checks and T95's tamper (`test/install-host.bats:1653`, `:1672`, `:1709`).
+
+**Evidence:** `devcontainer-config/install.sh:836-840`, `test/install-host.bats:1653`, `test/install-host.bats:1709`
+
+---
+
+## Claim 23: Plan row 14: "Created under umask 077, then given the live file's mode read at review (T93 asserts 640 kept; T98: a new file is 600)"
+
+**Location:** `docs/working/plan-q106-host-settings-merge.md:51`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the mechanism and that both assertions exist and pass; does not establish that T93 distinguishes read-at-review from 05b13d11's copy-at-write (`chmod --reference`), which also keeps 640.
+
+The mechanism is in claim 5. `[ "$(stat -c %a "$sf")" = 640 ]` (`test/install-host.bats:1670`) and `[ "$(stat -c %a "$sf")" = 600 ]` (`:1755`) pass at HEAD. T93 without line 1659 also passes on 05b13d11 (`$L/old-T93-minus1659.txt`).
+
+**Evidence:** `devcontainer-config/install.sh:1019`, `devcontainer-config/install.sh:1027`, `test/install-host.bats:1670`, `test/install-host.bats:1755`, `$L/old-T93-minus1659.txt`
+
+---
+
+## Claim 24: Plan row 15: "the 16 link-claude-home-wiring tests run against it. The missing-filter branch is untested"
+
+**Location:** `docs/working/plan-q106-host-settings-merge.md:52`
 **Type:** Configuration
 **Verdict:** Verified
 **Confidence:** High
 **Verification mode:** executed
-**Scope:** Covers the count from pr-prep step 1a's command against 184396ea. It does not establish anything about the gate's tolerance: exactly 400 sits at the cap, and "the gate fires above 400".
-**Legibility-target:** for-orchestrator-synthesis
+**Scope:** Covers the test count and the absence of a test that removes the filter; does not establish the missing-filter branch's behavior.
 
-`git diff --numstat 184396ea...188f5c3c -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'` prints `400` (`$L/size-and-builtins.txt`). The command is from `workflows/pr-prep.md:91`.
+`grep -c '^@test' test/link-claude-home-wiring.bats` gives 16, and the run passes 16/16 (`$L/head-link.txt`). The suite's only reference to the filter copies it in: `cp "$REPO_ROOT/hooks/lib/wiring-merge.jq" "$SRC/hooks/lib/"` (`test/link-claude-home-wiring.bats:39`).
 
-**Evidence:** `workflows/pr-prep.md:86-91`, `$L/size-and-builtins.txt`
+**Evidence:** `test/link-claude-home-wiring.bats:39`, `$L/head-link.txt`
+
+---
+
+## Claim 25: "Above the diff, the review lists by name each hook command the merge unwires (`UNWIRES hook:`), each rule it removes (`REMOVES deny rule:`) and each non-deny rule it adds (`ADDS allow rule:`)."
+
+**Location:** `guides/bare-host-hook-wiring.md:53-55`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the three line kinds and their placement above the diff; does not establish that "unwires" includes matcher or event changes, which it does not.
+
+The placement is right: `vis_or_die < "$s_view.sum"` comes before `vis_or_die < "$s_view.diff"` (`install.sh:1049-1050`). The `REMOVES` label carries each mode's name, so `REMOVES allow rule:` and others can appear as well as `deny`: `"  REMOVES \($m) rule: "` (`:1040`). The "unwires" residue is claim 7b's.
+
+**Evidence:** `devcontainer-config/install.sh:1037-1050`, `$L/probe_jq.txt`
+
+---
+
+## Claim 26a: "the merge moves our groups to the end, so a group that stays wired also shows as `-`/`+`"
+
+**Location:** `guides/bare-host-hook-wiring.md:55-56`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the merge's ordering; does not establish the diff tool's exact hunk shape.
+
+`.hooks[$ev] = (((.hooks[$ev] // []) | map(select(… | not))) + $wiring.hooks[$ev])` (`hooks/lib/wiring-merge.jq:36-43`): the user's groups first, ours appended.
+
+**Evidence:** `hooks/lib/wiring-merge.jq:34-44`
+
+---
+
+## Claim 26b: "Read that list, not the `-` lines"
+
+**Location:** `guides/bare-host-hook-wiring.md:55`
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers whether the list alone surfaces every change that stops one of our hooks firing; does not establish how often such a wiring change occurs.
+
+The instruction treats the by-name list as a full replacement for reading the hook `-` lines, and it is not one. The list compares command strings flattened across events, with matchers ignored: `def cmds: [.hooks[]?[]?.hooks[]?.command]` (`install.sh:1037`). A committed `wiring.json` that keeps `guard-trusted-writes.py`'s command but changes its matcher to one that never matches, or moves it to another event, prints no `UNWIRES` line. The probe prints nothing for both cases (`$L/probe_jq.txt`). That change shows only as `-`/`+` lines in the diff, which the guide tells the reader to skip. A reader who follows the guide accepts a neutered guard. The precise version is: read the list for dropped commands, and also check the `matcher` and event of each of our groups in the diff.
+
+**Evidence:** `devcontainer-config/install.sh:1037-1039`, `guides/bare-host-hook-wiring.md:53-56`, `$L/probe_jq.txt`
+
+---
+
+## Claim 27: "Nothing is written when the file is a symlink, unreadable or not one JSON object, `jq` is missing, `wiring.json` names a hook command other than `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or the merge fails"
+
+**Location:** `guides/bare-host-hook-wiring.md:57-59`
+**Type:** Behavioral
+**Verdict:** Mostly accurate
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the guide's skip list against `install.sh:1011-1029`; does not establish the REMINDER wording.
+
+All listed reasons exist (claim 1). Two refusals are not named:
+
+- an empty hook group, refused by `(.hooks // []) | length > 0` (`install.sh:728`);
+- a payload missing `wiring.json` or the merge program (`:1015-1016`).
+
+The `..` exclusion is implied by `<path>` but not stated, whereas the help and the refusal message both say "without '..'" (`:1018`).
+
+**Evidence:** `guides/bare-host-hook-wiring.md:57-59`, `devcontainer-config/install.sh:1011-1029`
+
+---
+
+## Claim 28: "remove any older copy of these groups (every command under `~/.claude/hooks/`), then add these beside your own; an old copy left in place fires its hooks twice (FP-161)"
+
+**Location:** `guides/bare-host-hook-wiring.md:73-75`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers agreement with the merge's provenance rule; does not establish Claude Code's double-firing behavior (cited to FP-161, not re-run).
+
+This matches the program's rule: drop a group whose every command `contains($dir + "/hooks/")`, then append ours (`hooks/lib/wiring-merge.jq:37-43`). The program's header says `the first time a group gained a hook, so shared hooks fired twice (FP-161)` (`:21`).
+
+**Evidence:** `hooks/lib/wiring-merge.jq:19-21`, `hooks/lib/wiring-merge.jq:34-44`
+
+---
+
+## Claim 29: "On a bare host `install.sh` merges the same wiring after its review (Q-106)"
+
+**Location:** `guides/claude-config-security-checkup.md:46-47`
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers that the host target merges `hooks/wiring.json` from the installed payload after the y; does not establish that every bare host has jq (without it the merge is skipped, claim 2).
+
+`sjq --arg dir "$s_dir" --slurpfile w "${new}hooks/wiring.json" -f "${new}hooks/lib/wiring-merge.jq"` (`install.sh:1025-1026`) is reviewed before the prompt, and `mv -f "$snew" "$settings"` runs after it (`:1168`).
+
+**Evidence:** `devcontainer-config/install.sh:1023-1029`, `devcontainer-config/install.sh:1158-1173`
+
+---
+
+## Claim 30: "Callers run jq with HOME and the environment emptied: jq 1.6 loads $HOME/.jq as a library, which would let unreviewed code redefine builtins such as walk (Q-106 review A3)."
+
+**Location:** `hooks/lib/wiring-merge.jq:12-14`
+**Type:** Behavioral / Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers jq 1.6 (the installed `jq-1.6`) and both callers' merge invocations; does not cover the count-only jq calls in `link-claude-home.sh:118-119` (claim 10), and does not cover other jq versions.
+
+Probe (`$L/probe_jq.txt`): `HOME=fakehome jq -nc '{a:{b:1}} | walk(.)'` with `def walk(f): {};` in `fakehome/.jq` prints `{}`. Under `env -i PATH="$PATH" HOME=/nonexistent` it prints `{"a":{"b":1}}`. The program does call `walk(...)` (`hooks/lib/wiring-merge.jq:30`).
+
+**Evidence:** `hooks/lib/wiring-merge.jq:12-14`, `hooks/lib/wiring-merge.jq:28-32`, `$L/probe_jq.txt`
+
+---
+
+## Claim 31: "is its legacy single-slash form under $dir, which matched nothing (Q-049)" / "of each rule under $dir only: a branch's Read(//x) must not delete a user's own Read(/x)."
+
+**Location:** `hooks/lib/wiring-merge.jq:23`, `hooks/lib/wiring-merge.jq:47-49`
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the `select` filter and its effect; does not establish path normalization (it is a substring test on `"(/" + $dir + "/"`, so it relies on `$dir` having no trailing slash, which claim 6 ensures on the host).
+
+`map(select(contains("(/" + $dir + "/")) | sub("\\(//"; "(/"))` (`hooks/lib/wiring-merge.jq:53`). See claim 17's probe. T99 passes at HEAD and fails on 05b13d11 at `:1764`.
+
+**Evidence:** `hooks/lib/wiring-merge.jq:45-55`, `$L/probe_jq.txt`, `$L/old-T99.txt`
+
+---
+
+## Claim 32a: "Tests: T93/T94/T96/T98 strengthened; T99-T101 new" (each fails on 05b13d11)
+
+**Location:** commit `d53d2bf4` (message body, "Tests:" paragraph)
+**Type:** Behavioral
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers each named test as a whole passing at HEAD and failing against 05b13d11's `install.sh` + `wiring-merge.jq`; does not establish the per-assertion claim (32b).
+
+Command: `$P/run_tests.sh`, cwd `$P/oldtree`, 2026-10-15T11:55:35Z–11:56:04Z. All seven exit 1 on old code. First failing lines are T93 :1659, T94 :1694, T96 :1725, T98 :1753, T99 :1764, T100 :1774 and T101 :1784. All nine T93–T101 pass at HEAD.
+
+**Evidence:** `test/install-host.bats:1655-1786`, `$L/stamp.txt`, `$L/old-T93.txt`, `$L/old-T94.txt`, `$L/old-T96.txt`, `$L/old-T98.txt`, `$L/old-T99.txt`, `$L/old-T100.txt`, `$L/old-T101.txt`, `$L/head-install-host.txt`
+
+---
+
+## Claim 32b: "each new or changed assertion fails on 05b13d11 (checked by running them against its install.sh and wiring-merge.jq)"
+
+**Location:** commit `d53d2bf4` (message body, "Tests:" paragraph)
+**Type:** Behavioral
+**Verdict:** Incorrect
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the new and changed assertions in T93 and T94; does not cover T96/T98–T101 assertion-by-assertion (each test's first changed assertion fails, and the rest were not isolated).
+
+Three new or changed assertions pass on 05b13d11:
+
+- T93's new negative assertion `[[ "$review" != *'UNWIRES hook: bash /opt/mine.sh'* && … ]]` (`test/install-host.bats:1660`). Old code prints no `UNWIRES` line at all, so a `!=` match holds trivially.
+- T93's changed `[ "$(stat -c %a "$sf")" = 640 ]` (`:1670`, with `user_settings`'s `chmod 640`). Old code's `chmod --reference="$settings"` also kept 640.
+
+  Run: `$P/t93_variant.sh` deletes only line 1659 and runs T93 against old code (cwd `$P/oldtree`, 2026-10-15T11:56:22Z). It exits 0, so lines 1660 and 1670 both pass there (`$L/old-T93-minus1659.txt`).
+- T94's changed `[[ "${output%%Install this settings.json merge*}" == *'+      "Edit(//'* ]]` (`:1689`). When the old prompt text is absent, `%%` strips nothing and the full output still contains the diff line. The old T94 run fails first at `:1694`, so `:1689` passed (`$L/old-T94.txt`).
+
+The tests as wholes do fail on old code (32a).
+
+**Evidence:** `test/install-host.bats:1659-1670`, `test/install-host.bats:1689-1694`, `$L/old-T93-minus1659.txt`, `$L/old-T94.txt`
+
+---
+
+## Claim 33: "Size: 501 code lines against merge/ready-2026-10-15 (184396ea)"
+
+**Location:** commit `d53d2bf4` (message body)
+**Type:** Configuration
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** executed
+**Scope:** Covers the count by pr-prep step 1a's command at d53d2bf4; does not establish anything else.
+
+`git diff --numstat 184396ea...d53d2bf4 -- ':(top)' ':(top,exclude)docs/' | awk '{ n += $1 + $2 } END { print n+0 }'` prints `501` (cwd `/workspace/.claude/wt-q106`, 2026-10-15). The same command against HEAD (a4f3614a) also prints `501`.
+
+**Evidence:** `workflows/pr-prep.md:88-92`
+
+---
+
+## Claim 34: "The wiring-shape check is host-only; the container keeps the old acceptance (its settings.json is a default, not a boundary)."
+
+**Location:** commit `d53d2bf4` (message body, Notes)
+**Type:** Architectural
+**Verdict:** Verified
+**Confidence:** High
+**Verification mode:** static
+**Scope:** Covers the presence of a shape check in each caller; does not assess the parenthetical rationale.
+
+`link-claude-home.sh` checks only `jq -e . "$SETTINGS"` (`:108`) before the merge at `:115`. It has no `WIRING_SHAPE` or command test (paraphrased — no quote available because the claim covers the absence of a check; `grep -n jq devcontainer-config/link-claude-home.sh` lists every jq use, `$P/s2.sh`).
+
+**Evidence:** `devcontainer-config/link-claude-home.sh:101-119`
 
 ---
 
 ## Claims Requiring Attention
 
 ### Incorrect
-- **Claim 17** (`docs/working/plan-q106-host-settings-merge.md:39`): no test has a stale rule (one of ours that the new wiring dropped); the "legacy" rule in the fixture is pruned. Add a stale rule to `user_settings` and assert that it survives, or narrow the row.
-- **Claim 24b** (`docs/working/plan-q106-host-settings-merge.md:51`): T93's `600` assertion does not test mode keeping. With `chmod --reference` removed, T93 still passes (the umask yields 600). Start from a 644 file in a test, and fix T93's "mode kept" title.
-- **Claim 27** (`guides/bare-host-hook-wiring.md:52-53`): `-` lines also come from reordering. In T93's own review, `bash /opt/mine.sh` and our `h.sh` have `-` lines and both stay wired. Reword the guide: a command is unwired only if it has a `-` line and no matching `+` line. Or have the review list the removed commands.
+- **Claim 26b** (`guides/bare-host-hook-wiring.md:55`): "Read that list, not the `-` lines". The list keys on command strings only, so a matcher retarget or an event move of `guard-trusted-writes.py` prints no `UNWIRES` line. Tell readers to also check our groups' matcher and event in the diff, or make the summary compare (event, matcher, command).
+- **Claim 32b** (commit `d53d2bf4`): "each new or changed assertion fails on 05b13d11". T93 `:1660` (negative UNWIRES) and `:1670` (mode 640), and T94 `:1689` (prompt-prefixed diff), all pass on 05b13d11. Narrow the commit claim to "each test fails", or make those assertions discriminate.
+
+### Stale
+- **Claim 13** (`docs/decisions/037-bare-host-copy-install.md:105`): the "Not written" list omits the new shape refusal and the unreadable skip.
 
 ### Mostly Accurate
-- **Claim 4** (`devcontainer-config/install.sh:991`): the umask does not cover `settings.view.diff`, which is 0644 inside the 0700 stage.
-- **Claim 9** (`devcontainer-config/install.sh:1122`): no backup is taken if the file was absent at review and check, no entries swapped, and the file was created after `:1080`.
-- **Claim 13b** (`docs/decisions/037-bare-host-copy-install.md:103`): same edge as Claim 9.
-- **Claim 19** (`docs/working/plan-q106-host-settings-merge.md:45`): T1/T2/T4/T22 run without the merge program, so they cannot catch a merge placed above the skip rules.
-- **Claim 21** (`docs/working/plan-q106-host-settings-merge.md:48`): the planted `.cw-new.settings.json` link refusal is in the code but untested.
-- **Claim 23** (`docs/working/plan-q106-host-settings-merge.md:50`): the check is `jq -se 'length == 1 and …object'`, not `jq -e .`.
-- **Claim 25** (`docs/working/plan-q106-host-settings-merge.md:52`): the existing suite never exercises the missing-filter branch.
-- **Claim 32** (`hooks/lib/wiring-merge.jq:15-16`): "we did not author" should be "not ours by provenance". User groups running scripts under `$dir/hooks/` are removed.
-- **Claim 34** (`hooks/lib/wiring-merge.jq:24-25`): a non-array mode fails only when it is in the wiring, or in a settings mode the wiring carries. A settings `defaultMode` (the example given) merges fine.
+- **Claim 1** (`devcontainer-config/install.sh:47-49`): --help. The "lists what it unwires" parenthetical sits on the refusal path, where nothing is listed, and "names a hook outside <dest>/hooks" understates the shape check.
+- **Claim 7b** (`devcontainer-config/install.sh:1034`): the by-name list misses matcher and event changes, and a failing summary program (`|| true`, stderr dropped) silently leaves no list.
+- **Claim 12** (`docs/decisions/037-bare-host-copy-install.md:103`): carries claim 7b's residue.
+- **Claim 14** (`docs/decisions/037-bare-host-copy-install.md:106`): "its by-name list" carries claim 7b's residue.
+- **Claim 16b** (rubric `:64`, A2 "Fixed"): the list part has claim 7b's gap.
+- **Claim 18** (plan row 3, `:40`): the row's own threat (guard unwired by a hostile branch) is list-visible only when the command string is dropped.
+- **Claim 25** (`guides/bare-host-hook-wiring.md:53-55`): `REMOVES` covers every mode, not just deny, and "unwires" carries claim 7b's residue.
+- **Claim 27** (`guides/bare-host-hook-wiring.md:57-59`): leaves out the empty-group and missing-payload refusals and the `..` exclusion.
 
----
-
-## Goal-Alignment Note
-- Success criterion (restated verbatim): a report at /workspace/.claude/wt-q106/docs/reviews/code-fact-check-report.md in the code-fact-check skill's format, with `**Commit:** <HEAD short sha>` and `**Replication:** k=1 (loop pass, decision 031)` header lines.
-- Answered: yes. All six caller-flagged claim groups are verdicted, the requested suites were run (6/6, 16/16), and T93-T98 were each run against 184396ea's install.sh.
-- Out of scope:
-  - Quality, security or design judgments, for example whether the multi-value TOCTOU in Claim 2's residue matters; this is verification only.
-  - The working-doc history files still saying "manual merge" were not verdicted.
-- Escalate: the three Incorrect claims (17, 24b, 27). Claim 27 is user-facing guidance on how to read the review, and the security reviewer may want Claim 2's two-read residue.
-- Decisions I made:
-  - Execution logs stay outside the repo (`/home/node/.claude/jobs/00bcf178/tmp/q106/fc/logs/`) because tracked-file edits were limited to this report.
-  - I did not append to `docs/reviews/hallucination-patterns.md`, for the same reason. None of the Incorrects is a fabricated symbol or API anyway: they are coverage overclaims and one diff-reading claim.
+### Unverifiable
+- (none)

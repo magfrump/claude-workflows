@@ -52,11 +52,14 @@ are replaced by the current wiring's (FP-161); each wiring rule is added once, i
 legacy single-slash form under `~/.claude` dropped (Q-049); everything else is kept.
 Above the diff, the review lists by name each hook command the merge unwires
 (`UNWIRES hook:`), each rule it removes (`REMOVES deny rule:`) and each non-deny rule
-it adds (`ADDS allow rule:`). Read that list, not the `-` lines: the merge moves our
-groups to the end, so a group that stays wired also shows as `-`/`+`. The old file
+it adds (`ADDS allow rule:`). A hook there is named by event, matcher and command
+(`UNWIRES hook: PreToolUse [Bash] python3 …`), so a hook moved to another matcher
+is listed too. Read that list first: the merge moves our groups to the end, so in the
+diff a group that stays wired also shows as `-`/`+`. The old file
 goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written
 when the file is a symlink, unreadable or not one JSON object, `jq` is missing, `wiring.json`
-names a hook command other than `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or the
+names a hook command other than `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (or has an
+empty group), the payload lacks the merge program, or the
 merge fails: the review says why, and a `REMINDER` follows if `wiring.json` changed.
 An edit to the file between the review and the y refuses the install.
 

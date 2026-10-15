@@ -1,4 +1,4 @@
-Commit: 05b13d11
+Commit: a4f3614a
 
 # Code Review Rubric: feat/q106-host-settings-merge
 
@@ -79,6 +79,21 @@ None.
 | C6, C8, C9 | Accepted / later | — |
 
 Size after iteration 1: 501 code lines against 184396ea (limit ~800).
+
+## Loop pass 2 (range 05b13d11..a4f3614a, fact-check k=1)
+
+Fact-check: 38 claims, 2 Incorrect, 1 Stale, 8 Mostly Accurate; no behavioral red. Critics for this pass run after the fixes below, over 05b13d11..HEAD.
+
+| # | Finding | Tier | Disposition |
+|---|---|---|---|
+| P2-1 | The by-name list keyed hooks by command only: a hook kept by command but moved to another matcher or event printed no `UNWIRES`, and the guide said to read the list instead of the diff (plan row 3's threat). | 🟡 (doc Incorrect; code gap) | Fixed: keyed by event, matcher and command; guide reworded; T102 (fails on a4f3614a) |
+| P2-2 | d53d2bf4's "each new or changed assertion fails on 05b13d11" overstates: T93's negative UNWIRES check and 640 check, and T94's `%%` split, pass on the old code (each test as a whole fails). | 🟡 (commit-message Incorrect) | Accepted-immutable for the message; T94's check made explicit. The 640 check cannot tell A9 from the old `chmod --reference`; stated here |
+| P2-3 | Decision 037's "Not written" bullet missed the shape refusal and the unreadable skip. | 🟡 (Stale) | Fixed |
+| P2-4 | A failing summary program was silent (`|| true`). | 🟡 (Mostly Accurate) | Fixed: prints a WARNING line telling the reader to read the whole diff |
+| P2-5 | --help put "lists what it unwires" on the refusal path; guide skip list missed empty group and missing program. | 🟢 | Fixed |
+| P2-6 | link-claude-home.sh's two count-only jq calls still load `~/.jq`; they only feed a message. | 🟢 | Accepted |
+
+Size after pass-2 fixes: 519 code lines against 184396ea.
 
 ## 🧩 Composition check
 

@@ -45,8 +45,10 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      hooks/wiring.json is merged into <dest>/settings.json by the container's
      merge (Q-106): shown in the review, applied by the same y, old file to
      the backup. Never written when it is a symlink, unreadable or not one JSON object,
-     jq is missing, wiring.json names a hook outside <dest>/hooks, or the
-     merge fails (the review says why and lists what it unwires or removes).
+     jq is missing, a wiring.json hook command is not `bash|python3
+     <dest>/hooks/<path>`, or the merge fails; the review says why. A merge
+     that runs is listed by name: each hook it unwires, rule it removes or
+     non-deny rule it adds.
 
 Both targets install COMMITTED content (HEAD, via git archive): every
 devcontainer-config/ PAYLOAD item and the seven ~/.claude sources. Uncommitted
@@ -1032,14 +1034,18 @@ install_claude_home() {
     echo "WARNING: settings.json NOT merged: $settings: $s_why." | vis_or_die
   else
     # Review A2/A7: what the y would unwire, remove or newly allow, listed by
-    # name. A reorder shows as -/+ in the diff below but never here.
+    # name. A hook is keyed by event, matcher and command, so a command moved
+    # to another event or matcher is listed too; a reorder never is.
     sjq -rn --slurpfile o "$s_view" --slurpfile n "$snew" '
-      def cmds: [.hooks[]?[]?.hooks[]?.command]; def rules(m): [.permissions[m]?[]?];
+      def cmds: [.hooks // {} | to_entries[] | .key as $e | .value[]? | (.matcher // "*") as $m
+                 | .hooks[]? | "\($e) [\($m)] \(.command)"];
+      def rules(m): [.permissions[m]?[]?];
       $o[0] as $a | $n[0] as $b
       | ((($a | cmds) - ($b | cmds))[] | "  UNWIRES hook: " + .),
         (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVES \($m) rule: " + .),
         (($b.permissions // {} | keys[] | select(. != "deny")) as $m
-         | (($b | rules($m)) - ($a | rules($m)))[] | "  ADDS \($m) rule: " + .)' > "$s_view.sum" || true
+         | (($b | rules($m)) - ($a | rules($m)))[] | "  ADDS \($m) rule: " + .)' > "$s_view.sum" \
+      || echo "  WARNING: the by-name list could not be computed; read the whole diff." > "$s_view.sum"
     [ -e "$settings" ] || : > "$s_view"   # a new file: every line is "+"
     diff -u --label "$settings (now, as jq prints it)" --label "$settings (after the wiring merge)" \
       "$s_view" "$snew" > "$s_view.diff" 2>&1 || rc=$?

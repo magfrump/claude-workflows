@@ -1656,8 +1656,8 @@ user_settings() {
   review="${output%%Install these files*}"
   [[ "$review" == *'settings.json: the hooks/wiring.json merge this install applies'*'+      "Edit(//'*"-            \"command\": \"bash $d/hooks/old.sh\""* ]]
   # Review A2/A7: removals are listed by name; the reordered groups are not.
-  [[ "$review" == *"UNWIRES hook: bash $d/hooks/old.sh"*"REMOVES deny rule: Edit($d/settings*.json)"* ]]
-  [[ "$review" != *'UNWIRES hook: bash /opt/mine.sh'* && "$review" != *"UNWIRES hook: bash $d/hooks/h.sh"* ]]
+  [[ "$review" == *"UNWIRES hook: PreToolUse [Bash] bash $d/hooks/old.sh"*"REMOVES deny rule: Edit($d/settings*.json)"* ]]
+  [[ "$review" != *'UNWIRES hook: PreToolUse [Bash] bash /opt/mine.sh'* && "$review" != *"UNWIRES hook: PreToolUse [Bash] bash $d/hooks/h.sh"* ]]
   [[ "$output" == *"Merged hooks/wiring.json into $sf"* ]]
   [[ "$output" != *'REMINDER'* ]]
   # Host hardening and everything not ours survive; the stale group is replaced
@@ -1686,7 +1686,7 @@ user_settings() {
   manifest_before=$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")
   run_pty 'n\ny\n' bash "$INSTALL"
   echo "$output"
-  [[ "${output%%Install this settings.json merge*}" == *'+      "Edit(//'* ]]
+  [[ "$output" == *'+      "Edit(//'*'Install this settings.json merge into'* ]]
   jq -e --arg r "Edit(/$CLAUDE_HOME_DIR/settings*.json)" '.permissions.deny | index($r)' "$sf"
   [[ "$output" != *"Installed into"* ]]
   [ "$(cat "$CLAUDE_HOME_DIR/.claude-workflows-manifest")" = "$manifest_before" ]
@@ -1774,6 +1774,15 @@ user_settings() {
     [[ "$output" == *'WARNING: settings.json NOT merged'*'has a hook command that is not'* ]]
     cmp "$CLAUDE_HOME_DIR/settings.json" "$S/settings.orig"
   done
+}
+
+@test "T102 a hook kept by command but moved to another matcher is listed as unwired (Q-106 review pass 2)" {
+  need_script; fake_repo; with_merge
+  run_pty 'n\ny\n' bash "$INSTALL"
+  sed -i 's/"matcher":"Bash"/"matcher":"Nope"/' "$ROOT/hooks/wiring.json"; commit_all rematch
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  [[ "${output%%Install these files*}" == *"UNWIRES hook: PreToolUse [Bash] bash $CLAUDE_HOME_DIR/hooks/h.sh"* ]]
 }
 
 @test "T101 a planted ~/.jq library does not shape the merge (Q-106 review A3)" {
