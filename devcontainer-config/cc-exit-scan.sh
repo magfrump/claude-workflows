@@ -58,7 +58,10 @@ logical_workspace() {
 # local path inside the checkout (remote.*.url/pushurl, remote.pushDefault,
 # branch.*.remote/pushRemote naming a path, url.<base>.insteadOf bases, legacy
 # remotes files; a relative path resolved in the working tree of the repo whose
-# config names it), walked as a git dir: a push to it runs its hooks. And your own
+# config names it), walked as a git dir: a push to it runs its hooks. Each of those
+# URLs is also rewritten by every url.<base>.insteadOf / pushInsteadOf rule whose
+# value prefixes it (in any config read here, yours included; git takes only the
+# longest, the scan walks them all), and the result walked the same way. And your own
 # global/system config, read with its includes evaluated for each git dir
 # (includeIf gitdir:/gitdir/i: matched here against the physical git dir and the
 # one under the path you launched on, symlinks kept, as git matches both;
@@ -80,8 +83,9 @@ logical_workspace() {
 # dir, never the private one (tested on git 2.39.5; the one exception,
 # config.worktree under extensions.worktreeConfig, refuses the note). A relative
 # core.hooksPath, core.attributesFile or local remote (a remote of "." excepted,
-# but not an insteadOf base of "." or "") in repo config (the checkout's or an
-# embedded repo's) would
+# but not an insteadOf base of "." or "", nor a remote any insteadOf rule
+# rewrites to a relative path) in repo config (the checkout's or an embedded
+# repo's) would
 # resolve in the new worktree's own tree, unscanned: those leave W records, and
 # any W record refuses the note. (Your own config's relative hooksPath is walked
 # in each new worktree, including one whose .git names the container path, as
@@ -374,6 +378,47 @@ _snap_remote() {
   done
 }
 
+# _snap_url <url> <working tree>: a remote URL git may push to. Walked now
+# (_snap_remote) and queued for the insteadOf rules (_snap_rewrite), once each.
+_snap_url() {
+  local k="u:$1"$'\t'"$2"
+  [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
+  _snap_rwseen["$k"]=1
+  _snap_urls+=("$1"); _snap_ubases+=("$2")
+  _snap_remote "$1" "$2"
+}
+
+# _snap_rule <base> <value>: queue url.<base>.insteadOf (or pushInsteadOf) =
+# <value>: git rewrites a URL starting with <value> to <base> + the rest.
+_snap_rule() {
+  local k="r:$1"$'\t'"$2"
+  [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
+  _snap_rwseen["$k"]=1
+  _snap_rbases+=("$1"); _snap_rpfx+=("$2")
+}
+
+# _snap_rewrite <url index> <rule index>: when the rule's value prefixes the URL
+# (git's alias_url: plain, case-sensitive; an empty value matches every URL),
+# walk the rewritten URL in the URL's working tree. A rewritten URL is never
+# queued as a URL: git rewrites once. Past GIT_EXIT_SCAN_MAX_REWRITES comparisons
+# the snapshot fails (a session can plant thousands of URLs and rules to stall it).
+GIT_EXIT_SCAN_MAX_REWRITES=100000
+_snap_rewrite() {
+  local u="${_snap_urls[$1]}" p="${_snap_rpfx[$2]}" t k
+  _snap_rwn=$((_snap_rwn + 1))
+  if [ "$_snap_rwn" -gt "$GIT_EXIT_SCAN_MAX_REWRITES" ]; then
+    _snap_fail 'more than %s remote URL and insteadOf rule pairs to compare: too many, treat the checkout as unsafe' \
+      "$GIT_EXIT_SCAN_MAX_REWRITES"
+    return 1
+  fi
+  [[ "$u" == "$p"* ]] || return 0
+  t="${_snap_rbases[$2]}${u:${#p}}"
+  k="t:$t"$'\t'"${_snap_ubases[$1]}"
+  [ -z "${_snap_rwseen["$k"]:-}" ] || return 0
+  _snap_rwseen["$k"]=1
+  _snap_remote "$t" "${_snap_ubases[$1]}"
+}
+
 # _snap_config <file>: every entry (as C records), and what the entries point at.
 _snap_config() {
   local f="$1" base="${2:-}" real out rec key val t name
@@ -415,12 +460,14 @@ _snap_config() {
         name="${key#remote.}"; name="${name%.*}"
         [ -z "$name" ] || _snap_rnames["$name"]=1
         case "$key" in
-          remote.*.url|remote.*.pushurl) _snap_remote "$val" "$base" || return 1 ;;
+          remote.*.url|remote.*.pushurl) _snap_url "$val" "$base" || return 1 ;;
         esac ;;
       url.*.insteadof|url.*.pushinsteadof)
-        # url.<base>.insteadOf rewrites matching URLs to <base>.
+        # url.<base>.insteadOf rewrites matching URLs to <base>: the base alone
+        # here, every URL it rewrites in git_exec_snapshot (_snap_rewrite).
         t="${key#url.}"; t="${t%.*}"
         case "$t" in ""|.) _snap_wrel "$key" "$f" ./ ;; esac   # a base "" or "." starts a relative path
+        _snap_rule "$t" "$val"
         _snap_remote "$t" "$base" || return 1 ;;
     esac
   done < "$out"
@@ -513,6 +560,10 @@ _snap_host_config() {
     key="${rec%%$'\n'*}"
     val=""
     [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
+    # Your rewrite rules apply to the repo's URLs too (an empty value matches all).
+    case "$key" in
+      url.*.insteadof|url.*.pushinsteadof) t="${key#url.}"; _snap_rule "${t%.*}" "$val" ;;
+    esac
     [ -n "$val" ] || continue
     origin="${origin#file:}"
     case "$key" in
@@ -625,10 +676,10 @@ _snap_gitdir() {
       body="$(cat -- "$f" 2>/dev/null)" || { _snap_fail 'cannot read %s' "$f"; return 1; }
       while IFS= read -r line || [ -n "$line" ]; do
         if [ "$d" = branches ]; then
-          _snap_remote "${line%%#*}" "$(_snap_worktree_of "$real/config")" || return 1
+          _snap_url "${line%%#*}" "$(_snap_worktree_of "$real/config")" || return 1
           break
         fi
-        case "$line" in URL:*) line="${line#URL:}"; _snap_remote "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
+        case "$line" in URL:*) line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
       done <<< "$body"
     done < "$list"
   done
@@ -675,9 +726,9 @@ _snap_dotgit() {
 # reason goes through _snap_fail, so none can hold a line break.
 git_exec_snapshot() {
   local ws="$1" _snap_lws="${2:-}" dirs _snap="" _snap_gd _snap_common _snap_ws _snap_tmp _snap_linkdir="" rc=0 list f g i
-  local _snap_bytes=0
-  local -A _snap_seen=() _snap_rnames=()
-  local -a _snap_names=() _snap_nbases=()
+  local _snap_bytes=0 _snap_rwn=0 u r j
+  local -A _snap_seen=() _snap_rnames=() _snap_rwseen=()
+  local -a _snap_names=() _snap_nbases=() _snap_urls=() _snap_ubases=() _snap_rbases=() _snap_rpfx=()
   if ! dirs="$(scan_git_dirs "$ws")"; then
     _snap_fail 'cannot locate the git directory of %s from its .git entry' "$ws"
     return 1
@@ -723,14 +774,26 @@ git_exec_snapshot() {
       [ -z "$g" ] || _snap_host_config "$g" "$f" "${f%/*}" || { rc=1; break; }
     done < "$list"
   fi
-  # Remote names that no remote defines are URLs or paths to git (remote.c).
-  # Walking one can reach configs that name more, hence the growing index.
-  i=0
-  while [ "$rc" -eq 0 ] && [ "$i" -lt "${#_snap_names[@]}" ]; do
-    f="${_snap_names[$i]}"
-    g="${_snap_nbases[$i]}"
-    i=$((i + 1))
-    [ -z "$f" ] || [ -n "${_snap_rnames["$f"]:-}" ] || _snap_remote "$f" "$g" || rc=1
+  # Remote names that no remote defines are URLs or paths to git (remote.c), and
+  # every URL meets every insteadOf rule (_snap_rewrite). Walking one can reach
+  # configs that name more, hence the growing indexes: a new URL meets the rules
+  # already seen, a new rule meets the URLs already seen, so each pair meets once.
+  i=0 u=0 r=0
+  while [ "$rc" -eq 0 ]; do
+    if [ "$i" -lt "${#_snap_names[@]}" ]; then
+      f="${_snap_names[$i]}"
+      g="${_snap_nbases[$i]}"
+      i=$((i + 1))
+      [ -z "$f" ] || [ -n "${_snap_rnames["$f"]:-}" ] || _snap_url "$f" "$g" || rc=1
+    elif [ "$u" -lt "${#_snap_urls[@]}" ]; then
+      for ((j = 0; j < r; j++)); do _snap_rewrite "$u" "$j" || { rc=1; break; }; done
+      u=$((u + 1))
+    elif [ "$r" -lt "${#_snap_rbases[@]}" ]; then
+      for ((j = 0; j < u; j++)); do _snap_rewrite "$j" "$r" || { rc=1; break; }; done
+      r=$((r + 1))
+    else
+      break
+    fi
   done
   rm -rf "$_snap_tmp"
   [ "$rc" -eq 0 ] || return 1

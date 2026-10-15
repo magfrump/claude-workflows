@@ -318,7 +318,13 @@ configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
-resolved in the working tree of the repo whose config names them).
+resolved in the working tree of the repo whose config names them). Each of
+those remote URLs, local or not, is also rewritten by every
+`url.<base>.insteadOf` and `pushInsteadOf` rule whose value it starts with —
+from any config the scan reads, your own global and system config included —
+and the rewritten URL is walked the same way: git uses only the longest
+matching rule, the scan walks every match. More than 100,000 URL-and-rule
+comparisons fails the scan (exit 4) rather than stalling it.
 Your own global and system config is read with its includes evaluated for each
 git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
@@ -367,7 +373,8 @@ same directory). Anything else warns as before, worktree lines included — also
 any other change in the session, a working tree deleted without a prune, and **any
 checkout whose config holds a relative `core.hooksPath` or
 `core.attributesFile` (husky's `.husky/_`) or a relative local remote** (a
-remote of `.` is fine; an `insteadOf` base of `.` or `""` is not), which git
+remote of `.` is fine; an `insteadOf` base of `.` or `""` is not, nor a remote
+any `insteadOf` rule, yours included, rewrites to a relative path), which git
 would resolve in the new worktree's tree, unscanned. That includes the config
 of any repo embedded in the checkout. A relative `core.hooksPath` or
 `core.attributesFile` in your own config is walked in each new worktree, also
@@ -407,9 +414,6 @@ opens or closes a route.
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time. If you stop it, treat the checkout as unscanned.
-- **A URL rewritten by `url.<base>.insteadOf`.** The base is walked, never the
-  rewritten URL, so a remote rewritten to a local path the session plants runs
-  that repository's hooks on push.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
