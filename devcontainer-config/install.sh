@@ -44,7 +44,7 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      installs are kept; the current run's is never removed.
      hooks/wiring.json is merged into <dest>/settings.json by the container's
      merge (Q-106): shown in the review, applied by the same y, old file to
-     the backup. Never written when it is a symlink or not one JSON object,
+     the backup. Never written when it is a symlink, unreadable or not one JSON object,
      jq is missing, wiring.json names a hook outside <dest>/hooks, or the
      merge fails (the review says why and lists what it unwires or removes).
 

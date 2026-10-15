@@ -55,7 +55,7 @@ Above the diff, the review lists by name each hook command the merge unwires
 it adds (`ADDS allow rule:`). Read that list, not the `-` lines: the merge moves our
 groups to the end, so a group that stays wired also shows as `-`/`+`. The old file
 goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written
-when the file is a symlink or not one JSON object, `jq` is missing, `wiring.json`
+when the file is a symlink, unreadable or not one JSON object, `jq` is missing, `wiring.json`
 names a hook command other than `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or the
 merge fails: the review says why, and a `REMINDER` follows if `wiring.json` changed.
 An edit to the file between the review and the y refuses the install.
