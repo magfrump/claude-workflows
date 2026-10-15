@@ -1,0 +1,7 @@
+2026-10-15T00:26:02Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p8b cmd: duplicate the cc-push.sh line in host-tools.sha256 (via a temp copy), then timeout 20 bash cc-push.sh --help
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+13295e52823f00261080841ab92827c9e292f6f019a80e9d10a5cf68f6ef0b30  cc-push.sh
+13295e52823f00261080841ab92827c9e292f6f019a80e9d10a5cf68f6ef0b30  cc-push.sh
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p8b/cc-push.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+exit=

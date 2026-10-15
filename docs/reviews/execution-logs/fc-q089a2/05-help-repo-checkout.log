@@ -1,0 +1,117 @@
+2026-10-15T00:26:47Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/src cmd: timeout 20 bash devcontainer-config/cc-push.sh --help (env redirected, LC_ALL=C)
+cc-push — push the commits a cc-isolated session made, without running anything
+the session could have planted in the checkout (Q-076).
+
+Run from the HOST, never inside a session, and after the session's container
+has stopped (docker stop <name>; cc-push checks):
+  cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+  cc-push ~/code/app                                      # later: same remote
+  cc-push                                                 # the checkout containing $PWD
+  cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
+
+Options:
+  --remote URL     the real remote, stored in the host-only clone (never read from
+                   the checkout). Needed the first time. It is STICKY: given
+                   again, it replaces the stored one, and every later cc-push of
+                   this checkout uses the new one.
+  --branch NAME    the branch to push (default: the one the checkout's HEAD names).
+  --clone DIR      the host-only clone (default: $CC_PUSH_CLONES_DIR/<name>-<id>,
+                   CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
+                   or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
+  --yes            push without asking (the preview is still printed).
+                   Without --branch, the checkout's HEAD (which the session
+                   controls) picks the branch: pass --branch when scripting.
+  --allow-running  go on although a cc-isolated container for this checkout is
+                   running, or docker cannot say (loud warning; see below).
+  -h, --help       this text.
+One checkout at a time: a second one, before or after `--`, is a usage error.
+
+Exit codes (the host tools' convention, as install.sh; decision log #58):
+  0 pushed, or nothing to push;
+  1 an error — a checkout, git or container state cc-push refuses (below), a
+    failed fetch, a push the remote rejected (git's own exit status is never
+    passed through), an interruption — or declined at the prompt (n, or Ctrl-C);
+  2 bad usage (an unknown flag, a flag without its value, two checkouts).
+One exception, before any of that: when this installed copy or the cc-gitdir.sh
+beside it differs from what the bless recorded in host-tools.sha256 (or that
+file is missing or a symlink), cc-push
+exits 1 before parsing anything, --help included (decision log row 71): nothing
+unchecked runs.
+
+WHY. The container writes the checkout's .git through the bind mount, so host git
+run IN the checkout can run what the session planted: hooks, core.fsmonitor,
+filter drivers, remote.*.receivepack, a remote repointed at a repo with hooks, an
+`exec` line in a rebase todo list — and, with no .git change at all, a hook that
+was already there and runs a tracked file the session edited (husky, the
+pre-commit framework). cc-isolated's exit scan is a tripwire for some of that,
+not a guarantee. cc-push runs no git command in the checkout: it keeps a BARE
+clone that only the host writes, and in it:
+  1. resolve the branch: --branch, or the one the checkout's HEAD names
+     (`git ls-remote --symref`, which starts upload-pack like the fetch below);
+  2. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git`
+     refs/heads/<branch> only, into refs/cc/heads/<branch>: no other branch the
+     session made is copied to host disk. For a local path git starts
+     upload-pack in that directory, and --strict makes it use exactly that
+     directory or fail (it never tries <dir>/.git or another repository
+     instead). upload-pack READS there: refs, objects and config (the
+     checkout's config, and your global config). It runs no hook, no fsmonitor,
+     no filter, and ignores uploadpack.packObjectsHook from repo config. Nothing
+     is checked out.
+  3. `git fetch origin` — the real remote, as configured in the clone.
+  4. a preview of what the push adds (log, and a diff stat when origin already
+     has the branch), printed as plain text;
+  5. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+Every git command cc-push runs passes core.hooksPath=/dev/null and
+core.fsmonitor=false, so your own global config cannot point hooks at anything
+either. So no hook runs on push, git-lfs's pre-push included: cc-push does not
+upload LFS objects (push them from a normal clone once you trust the content).
+
+WHAT IT REFUSES BEFORE THE FETCH.
+  - A git older than the fixed releases of the May 2024 git security update:
+    2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1, or any 2.46 and
+    later. That update hardened what a local clone or fetch trusts in the
+    repository it reads from; cc-push's promises rest on it. (This list is
+    from git's release notes as recalled, not checked against them offline.)
+  - A running cc-isolated container for this checkout (docker ps, label
+    cc-project=<id>, the id cc-isolated.sh's project_id gives). While one
+    runs it can change the checkout between cc-push's checks and its fetch.
+    Without docker, or when docker does not answer, cc-push cannot tell, so it
+    refuses as well. --allow-running overrides both, with a warning.
+  - What upload-pack would read beyond the checkout. With plain file tests (no
+    git; cc-gitdir.sh, next to this file), cc-push requires that
+    <checkout>/.git is a directory git accepts as a git directory (a HEAD that
+    is `ref: refs/...`, a detached commit id or a symlink into refs/, and
+    searchable objects/ and refs/ directories: git 2.39's is_git_directory),
+    and that the checkout root itself does not look like a git directory (a
+    HEAD next to objects/, or a commondir file). When .git is not valid,
+    git's discovery falls back to treating the root as a bare repository,
+    which the session can plant. It also refuses a .git that is not a real
+    directory (a `gitdir:` file or a symlink: a linked worktree or submodule,
+    or a redirect to any repository on this machine), or that holds a
+    commondir, objects/info/alternates or objects/info/http-alternates file
+    (each names another object store; the one exception is a commondir that
+    is a regular file holding exactly `.` or `.\n`, which names .git itself
+    and which some host tool keeps writing: Q-093), a symlink outside
+    hooks/, a FIFO, socket or device (a read of one never ends), or a config /
+    config.worktree with an [include] or [includeIf] section (git would read
+    whatever path it names, a FIFO included). Otherwise upload-pack could
+    fetch history from another repository you can read and cc-push would
+    offer it for push. Run cc-push on the main checkout.
+  - A partial clone (remote.*.promisor or extensions.partialClone in .git's
+    config, read as text): upload-pack there cannot send the objects the clone
+    never downloaded, so the fetch would fail after packing everything else.
+What is left: upload-pack reading the checkout's own refs, objects and
+(include-free) config. The complete list of what cc-isolated's tools do not
+catch is in guides/cc-isolated-usage.md, "Known routes it does not see".
+
+EVERY STRING FROM THE CHECKOUT (branch names, commit text, git's messages,
+including the stderr of every git call that can name a checkout ref) is
+printed through vis: anything but printable ASCII shows as '?'.
+
+KEEP THE CLONE HOOK-FREE. It holds container-authored content. It is bare, so
+nothing is checked out and no tool installs hooks into it; if you ever check out
+a working tree from it and run husky/pre-commit/lefthook there, the fetched
+content runs on your next commit. Do your host-side work in a normal clone of the
+real remote, after the push, like any other collaborator's commits.
+exit=0

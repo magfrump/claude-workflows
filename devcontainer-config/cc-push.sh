@@ -35,8 +35,11 @@
 # One exception, before any of that: when this installed copy or the cc-gitdir.sh
 # beside it differs from what the bless recorded in host-tools.sha256 (or that
 # file is missing or a symlink), cc-push
-# exits 1 before parsing anything, --help included (decision log row 71): nothing
-# unchecked runs.
+# exits 1 before parsing anything, --help included (decision log row 71). What
+# that guards: cc-gitdir.sh, and every line of this file below the check (all
+# the push logic). It cannot guard the lines above the check, nor an overwrite
+# that drops it: a tampered copy that skips its own check is caught only by
+# cc-isolated's warning at the next launch and by `cc-isolated --list`.
 #
 # WHY. The container writes the checkout's .git through the bind mount, so host git
 # run IN the checkout can run what the session planted: hooks, core.fsmonitor,
@@ -186,7 +189,12 @@ verify_host_tools() {
 # tampered cc-gitdir.sh would run at source time.
 CC_PUSH_DIR="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
 if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
-  echo "ERROR: $host_tools_err — cc-push refuses to run. Review it, then: cc-isolated --bless" >&2
+  {
+    echo "ERROR: cc-push refuses to run:"
+    printf '  %s\n' "$host_tools_err"
+    echo "Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
+    printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_PUSH_DIR"
+  } >&2
   exit 1
 fi
 # shellcheck source=cc-gitdir.sh

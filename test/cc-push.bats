@@ -804,14 +804,17 @@ STUB
   printf 'touch %q\n' "$M/gitdir-ran" >> "$d/cc-gitdir.sh"
   run bash "$d/cc-push.sh" --remote "$T/upstream.git" --yes "$T/co"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"ERROR:"*"cc-gitdir.sh changed since the last bless"*"refuses to run"* ]]
+  [[ "$output" == *"ERROR: cc-push refuses to run:"*"cc-gitdir.sh changed since the last bless"* ]]
   [ ! -e "$M/gitdir-ran" ]
   # Its own file too: a change to cc-push.sh refuses, --help included (exit 1).
   (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
-  printf '\n# edited\n' >> "$d/cc-push.sh"
+  # A tamper below the check (where all the push logic is) never runs.
+  printf 'touch %q\n' "$M/push-tamper-ran" >> "$d/cc-push.sh"
   run bash "$d/cc-push.sh" --help
   [ "$status" -eq 1 ]
   [[ "$output" == *"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" == *"CLAUDE_DEVC_CONFIG_DIR=$d cc-isolated --bless"* ]]
+  [ ! -e "$M/push-tamper-ran" ]
   cp "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh" "$d/"
   # Deleting the host manifest does not turn the installed copy into a repo checkout.
   (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
