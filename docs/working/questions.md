@@ -30,11 +30,11 @@ The index below is generated — edit entries, not the table.
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
-| [Q-149](#q-149--self-merge-never-workflows) | you: judgment | Keep `Self-merge never: workflows/` in this repo's `docs/dev-cycle.md`, or drop it? | 2026-10-14 |
+| [Q-149](#q-149--self-merge-never-scope) | you: judgment | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
 | [Q-150](#q-150--build-loop-c1-questions-writer) | you: judgment | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
 | [Q-151](#q-151--build-loop-c2-blocked-slot) | you: judgment | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
 | [Q-152](#q-152--build-loop-c3-blocked-wait) | you: judgment | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
-| [Q-153](#q-153--merged-branch-deletion-rule) | you: judgment | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
+| [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | you: judgment | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
 | [Q-155](#q-155--constraints-doc-missing) | you: judgment | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-156](#q-156--image-lag) | you: terminal | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
@@ -97,16 +97,29 @@ The residual families. None blocks self-merge mechanically; each is a way around
 - **F21, text injection (partly).** Briefs are written and read from main's commit, and every prompt says repo text is evidence. Under self-merge the allowlist bounds what lands; under review you read the result. What a steered loop does outside git is bounded only by the sandbox.
 - **F29, a checked-out main (partly).** The gate refuses a worktree with main checked out unless it is on main, clean and mid no rebase, bisect or merge. Left: that worktree switches branch between the check and the fast-forward.
 - **F35, the session's other tools (not covered).** The loop prompt forbids pushing, publishing, starting build loops, background agents and schedules, but a loop subagent shares the orchestrator's permission mode.
-- **F37, two orchestrators (partly).** A worktree lock and an atomic branch create stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it when one lands.
-- **F58, releases (partly).** Self-mergeable code reaches running sessions only through an image release, and your review of the release is the gate. The release entry (`image-lag`) lists every commit and changed path since the image's commit and flags self-merges.
+- **F37, two orchestrators (partly).** A worktree lock and an atomic branch create stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it, at the land or, after a merge-in of main (which skips step 1's check), at the next health check.
+- **F58, releases (partly).** Code the image carries reaches running sessions through a release, and your review of the release is the gate. The release entry (`image-lag`) lists every commit and changed path since the image's commit and flags self-merge subjects. The release paste runs `devcontainer-config/install.sh` before it shows its diff, so that directory is on this repo's never line (Q-149).
 - **F59, constraint drift (partly).** A loop decides alone when one option dominates. Step 4's drift check samples one such decision per sampled merge, and a finding triggers the deep audit's constraints dimension.
-- **R8, racing the gate's temp files.** A same-uid writer can race the gate's GATE_TMP between its writes and its reads: `git/config`, `git/info/`, `git/refs/`, `git/HEAD`, `work/.gitattributes`, `err` and `diff` (override row 509).
-- **Also routed here during the build:** a loop editing the worktree registry in the shared common dir (U2b3a); objects re-hashed once per run, so one rewritten in place afterwards, and objects not re-hashed at all (the tip's parent, merge bases) (U3a1); a planted `core.bare` with the index deleted (U3a2, Low); a same-uid shell's PATH, exported functions or settings around the D6 block (U4c).
+- **R8, racing the gate's temp files.** A same-uid writer can race the gate's GATE_TMP between its writes and its reads: `git/config`, `git/info/`, `git/refs/`, `git/HEAD`, `work/.gitattributes`, `err`, `diff`, and `answer`, the file holding `--approved`'s verdict on the merge entry (override rows 509, 684).
+- **Also routed here during the build** (override-log rows in `docs/reviews/override-log.md`, by line):
+  - a loop editing the worktree registry in the shared common dir (U2b3a);
+  - objects re-hashed once per run, so one rewritten in place afterwards, and objects not re-hashed at all (the tip's parent, merge bases) (U3a1);
+  - a planted `core.bare` with the index deleted (U3a2, Low), and a hand-edited rebase todo holding an `update-ref` main line (row 668);
+  - a same-uid shell's PATH, exported functions or settings around the D6 block (U4c);
+  - a loop pointing `origin/HEAD` at its own branch, which `dev-cycle.sh`'s reader settings then read (row 548);
+  - planted hooks in the common git dir around the orchestrator's own commit, and a FIFO swapped for the health-check lock (rows 749, 750);
+  - a rewrite of main to a history that never held a cycle record, which bootstraps `--main-log` again (row 784);
+  - the dispatch count written after the dispatch, so a session ending between the two admits one dispatch past the cap (row 786);
+  - after a restart, `--prompt --steal` taking another live session's loop that has not committed for two hours (row 787);
+  - merge entries flagging floor paths by class, not the floor's own reasons, so an `@`-imported doc reaches you unflagged (row 797);
+  - `--start`/`--prompt` reading main after step 10's last `--main-log` (a window of seconds) (row 801);
+  - `--cycle-diff`/`--land-cycle` accepting any `--answered` ID, so only skill text stops a merge entry being landed as answered (row 802);
+  - the health check that [2]'s last column relies on is itself code the gate could land, which is why this repo's never line holds `scripts/`, `test/`, `hooks/` and `devcontainer-config/` (row 682, Q-149).
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] review** | Every `ready` branch gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
-| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line (here `workflows/`, Q-149); anything else falls to [1]'s entry | None for that work; most work in this repo touches gate code, instruction files or skills' `SKILL.md`, which still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
+| **[1] review** | Every `ready` branch the always-on rules pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
+| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line and off the floor and the never line; anything else falls to [1]'s entry | None for that work; with this repo's never line (Q-149) only docs off the floor can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
 - **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
@@ -345,24 +358,25 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 - **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
 - **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
 
-### Q-149 · self-merge-never-workflows
+### Q-149 · self-merge-never-scope
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
 
-Keep `Self-merge never: workflows/` in this repo's `docs/dev-cycle.md`, or drop it?
+How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a release (as written), only `workflows/`, or nothing?
 
-- **Why it's yours:** it decides which of this repo's own process docs may land with no review once Q-103 allows self-merge.
-- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md`
+- **Why it's yours:** it decides which of this repo's files may land with no review once Q-103 allows self-merge.
+- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md` · override row 682 · `docs/reviews/security-review-2026-10-14-u5-i1.md` F1, F3, F4
 
-Scripts, skills, hooks and guides reach running sessions here only through an image release you cut. Workflows are the exception: every later session in this repo reads `workflows/` from its own checkout, so a merged workflow change takes effect at once.
+The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Keep** | A workflow change always comes to you as a merge entry, even under self-merge | One review per workflow change | Workflow fixes queue behind you |
-| **[2] Drop** | The line becomes `Self-merge never: none`; a brief whose `Paths:` lists a workflow can land it unreviewed | None | A bad workflow change steers every later session here until someone notices |
+| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs off the floor | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
+| **[2] `workflows/` only** | The plan's interim: code self-merges when its brief lists it | None for listed code | A self-merged script or test runs in the next health check, and a self-merged `install.sh` runs on your host at the next release, unreviewed |
+| **[3] None** | `Self-merge never: none` | None | Everything [2] risks, plus workflow changes that steer every later session here |
 
 - **Blocks:** nothing while the policy is `review` (Q-103): the never line only narrows self-merge.
-- **Interim:** [1], the line as written in U5.
-- **If the answer differs:** [2] is a one-line edit to `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible).
+- **Interim:** [1], fail-closed.
+- **If the answer differs:** a one-line edit to `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible) and its test line in `test/scripts/build-loop-read.bats`.
 
 ### Q-150 · build-loop-c1-questions-writer
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -409,7 +423,7 @@ When every thread is blocked on you, should the orchestrator loop keep polling, 
 - **Interim:** [1], as built (D12).
 - **If the answer differs:** [2] replaces the skill's wait rule with an end-of-loop line.
 
-### Q-153 · merged-branch-deletion-rule
+### Q-153 · build-loop-c4-merged-branch-deletion
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
 
 May the dev cycle delete merged branches without asking, which your global instructions forbid today ("deleting branches" needs approval in every mode)? (Plan C4.)
@@ -453,7 +467,7 @@ Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` h
 
 - **Read:** `skills/dev-cycle/SKILL.md` step 0.1 (this entry's slug is the one step 0.1 files and rewrites) · decision log row 72 · plan D6 and F58
 
-The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is main after the merge of `feat/build-loop-u5`; at writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
+The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is `771a5d028e8ef8a61253ad2f167ab421225d5af2`, the last commit on `feat/build-loop-u5` that changes anything the release installs; the branch's later commits change only `docs/`. At writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
 
 Gate code changed from C to M: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`.
 
@@ -470,15 +484,15 @@ First-parent commits after C (none is a `(build-loop self-merge)`: every one was
 - df18413a Merge branch 'feat/q089b4-host-tool-gate': host tools carry Host-tool-tested, not Live-verified (Q-089 unit B, Q-148 [1])
 - d7e140ea docs(questions, roadmap): Q-148 answered [1] and archived; Q-089 merged (626dc300, df18413a)
 - b279a2ba docs(reviews): carry the first Q-089 loop's review history to main before its branch is deleted
-- the merge of `feat/build-loop-u5` (this unit: docs, settings, questions; SKILL.md step 0.1's release listing)
+- the merge of `feat/build-loop-u5` (this unit: docs, settings, questions; SKILL.md step 0.1's release listing and step 10's constraints slug)
 
 Paths changed from C to M outside `docs/` (about 500 paths under `docs/` besides, nearly all `docs/reviews/`; the image carries none of `docs/`): `README.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `devcontainer-config/install.sh`, `guides/cc-isolated-usage.md`, `guides/devcontainer-setup.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `scripts/build-loop.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/run-tests.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-push.bats`, `test/hooks/live-verify-gate.bats`, `test/install-host.bats`, `test/lib/d6-snippet.bash` (deleted), `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/health-check.bats`, `test/scripts/run-tests.bats`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`.
 
-Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox):
+Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox). The check compares, with `rev-parse` alone, every directory the release installs (install.sh's payload and its own directory) at HEAD against M, so it refuses when main has moved those paths past what this entry lists, or when HEAD is not main:
 
 ```bash
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && ( M=771a5d028e8ef8a61253ad2f167ab421225d5af2; test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" || { echo "release refused: HEAD is not main"; exit 1; }; for p in devcontainer-config global-instructions guides hooks patterns scripts skills workflows; do test "$(git rev-parse "HEAD:$p")" = "$(git rev-parse "$M:$p")" || { echo "release refused: $p differs from M"; exit 1; }; done ) && ./devcontainer-config/install.sh
 ```
 
 - **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
-- **If main has moved past the U5 merge** when you paste, the release ships those commits too; the next cycle's step 0.1 rewrites this body with the exact M and list.
+- **If the paste refuses:** main changed a released path after M. That change is not in the lists above; read `git log --first-parent M..main` before rewriting this entry with a new M.

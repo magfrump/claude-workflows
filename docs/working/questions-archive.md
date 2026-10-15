@@ -2712,7 +2712,7 @@ Q-089 (host-only tools get their own trust category) is built and reviewed, and 
 ### Q-154 · build-loop-c5-cycle-cost
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
 
-**Answer (2026-10-04, in session; plan D12):** a full cycle every iteration for now; move to a light pass of steps 7, 8 and 10 between full cycles once the costs are visible. Filed answered in U5, as the plan says; roadmap Next "Revisit the light pass" tracks it.
+**Answer (2026-10-04, in session; plan D12; filed 2026-10-14):** [1], a full cycle every iteration for now; move to a light pass of steps 7, 8 and 10 between full cycles once the costs are visible. Filed answered in U5, as the plan says; roadmap Next "Revisit the light pass" tracks it.
 
 Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.)
 
