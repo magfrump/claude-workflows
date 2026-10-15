@@ -119,6 +119,17 @@ Architecture skipped this pass: the fixes change no module structure (pass 1 fou
 
 Size after pass-2 fixes: 558 code lines against 184396ea.
 
+## Loop pass 3 (range a4f3614a..2298d18e, fact-check k=1)
+
+Fact-check: 26 claims, 21 Verified, 3 Mostly Accurate, 1 Stale, 1 Incorrect; no behavioral red. Every pass-2 "Fixed" row confirmed except N4 (partly).
+
+| # | Finding | Tier | Disposition |
+|---|---|---|---|
+| P3-1 | Plan row 5 "T100 covers each": no test covered the empty-group refusal. | 🟡 (doc Incorrect) | Fixed: empty-group case added to T100 (it covers existing code, so it passes on 2298d18e) |
+| P3-2 | N4 partly fixed: the permission-mode label printed raw, so a mode key holding a newline could forge a list line. | 🟡 (Mostly Accurate) | Fixed: a mode name prints plain only when it is letters, else JSON-quoted (untested; the diff below shows it escaped either way) |
+| P3-3 | --help refusal list omitted "not one object" and "not a command hook". | 🟢 | Fixed |
+| P3-4 | Plan row 3 still said `UNWIRES hook:`. | 🟢 (Stale) | Fixed |
+
 ## 🧩 Composition check
 
 | Cluster | File / lines | Fragments | Disposition |
