@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# fc-q089a-final-r2 run 2: whole-tree suite rerun and P1 redo. $1 = probe root.
+set -u
+R="${1:?probe root required}"; [ -d "$R" ] || exit 2
+export LC_ALL=C HOME="$R/home" TMPDIR="$R/tmp" CC_PUSH_CLONES_DIR="$R/clones" CLAUDE_DEVC_CONFIG_DIR="$R/unused-cfg"
+export PATH="$R/stub:$PATH"
+echo "=== S1b whole-tree archive, cc-isolated-functions ($(date -u +%FT%TZ))"
+rm -rf "$R/full"; mkdir -p "$R/full"; git -C /workspace/.claude/wt-q089 archive afe1ae59 | tar -x -C "$R/full"
+( cd "$R/full" && timeout 900 bats test/cc-isolated-functions.bats > "$R/s1b-iso.tap" 2>&1; echo "iso exit=$?" )
+printf 'plan %s ok %s notok %s\n' "$(head -1 "$R/s1b-iso.tap")" "$(grep -c '^ok' "$R/s1b-iso.tap")" "$(grep -c '^not ok' "$R/s1b-iso.tap")"
+grep -A8 '^not ok' "$R/s1b-iso.tap" | head -40
+echo "=== P1b ($(date -u +%FT%TZ))"
+d="$R/p1cfg"
+( source "$R/full/devcontainer-config/cc-isolated.sh"; set +e
+  CLAUDE_DEVC_CONFIG_DIR="$d" verify_host_tools "$d" cc-push.sh; echo "config dir named: rc=$?"
+  CLAUDE_DEVC_CONFIG_DIR="$R/unused-cfg" verify_host_tools "$d" cc-push.sh; echo "not named: rc=$?" )
+echo "=== done ($(date -u +%FT%TZ))"

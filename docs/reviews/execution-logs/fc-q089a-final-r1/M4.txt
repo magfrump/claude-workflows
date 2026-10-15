@@ -1,0 +1,13 @@
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = "en_US:en",
+	LC_ALL = "en_US.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+1..1
+not ok 1 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+# (in test file test/cc-isolated-functions.bats, line 915)
+#   `[ "$status" -eq 1 ]' failed
+bats exit=1

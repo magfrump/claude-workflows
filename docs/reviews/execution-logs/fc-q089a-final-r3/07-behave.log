@@ -1,0 +1,51 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== 2026-10-15T01:37:58Z dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu
+--- B1 tampered scan: --help / unknown flag / --probe-only / --register
+"Changing the boundary".
+[exit=0]
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --bogus
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --probe-only /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/ws
+ERROR: host-tool check failed — refusing to launch, probe or register:
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --register /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/ws --profile python
+ERROR: host-tool check failed — refusing to launch, probe or register:
+--- B2 missing host manifest: refusal has no 'also changed' line (manifest-level reason)
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/ws
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+[exit=1]
+--- B3 malformed host manifest: same
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/ws
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+[exit=1]
+--- B4 cc-push exits 1 before parsing (--help) when manifest is: missing / symlink / unreadable / malformed / ok
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh --help
+--- B5 cc-push via PATH symlink resolves its own dir
+$ cc-push --help
+--- B6 changed cc-push: launch warns; probe/register also warn; bless/list do not
+2:WARNING: /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+4:  launches warn (cc-push changed) but run
+5:  cc-push: CHANGED — do not run it until re-blessed (an intact copy refuses): /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-push.sh changed since the last bless
+--- B7 boundary-unchanged re-bless keeps blessed_hash
+manifest.sha256 identical after host-tool-only re-bless
+--- B8 bless_cmd with CLAUDE_DEVC_CONFIG_DIR unset (default dir) in --list
+No blessed host tools (review them, then run: /home/node/.claude/jobs/00bcf178/tmp/fcr3-beh.nr3Agu/cfg/cc-isolated.sh --bless).
+[exit=0]

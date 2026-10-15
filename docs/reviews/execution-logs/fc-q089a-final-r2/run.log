@@ -1,0 +1,166 @@
+2026-10-15T01:32:51Z
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+
+=== S1 suites at afe1ae59 (2026-10-15T01:32:51Z)
+iso exit=1
+push exit=0
+iso: plan 1..182 ok 177 notok 5
+push: plan 1..48 ok 48 notok 0
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/s1-iso.tap:not ok 68 Gate 1h loads the review skill from the baked payload, not the branch
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/s1-iso.tap:not ok 69 Gate 1h pins an explicit reviewer model
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/s1-iso.tap:not ok 70 Gate 1h archives review artifacts before the worktree is torn down
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/s1-iso.tap:not ok 71 Gate 1h fails closed on reviewer error and on an unparseable verdict
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/s1-iso.tap:not ok 72 Gate 1h passes a per-run nonce the branch cannot know
+
+=== S2 bats --count at each branch commit (2026-10-15T01:34:25Z)
+f2533b33 iso=180 push=47
+b3b37e16 iso=181 push=47
+4be0445d iso=182 push=48
+2cb03f23 iso=182 push=48
+cc2640b7 iso=182 push=48
+f737ba71 iso=182 push=48
+afe1ae59 iso=182 push=48
+
+=== M1 drop the not-the-config-dir clause (both copies); run the repo-checkout test (2026-10-15T01:34:32Z)
+0
+1..1
+ok 1 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+
+=== M2 --list flags cc-push on a scan-only change (perr also checks cc-exit-scan.sh) (2026-10-15T01:34:33Z)
+1..1
+ok 1 --list reports host-tool state; a changed cc-push warns at launch but does not refuse
+
+=== P1 config dir with install.sh beside it and no manifests, named by CLAUDE_DEVC_CONFIG_DIR (real code) (2026-10-15T01:34:34Z)
+no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p1cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+
+=== P2 upgrade: install with old-style manifest (host tools in it), no host-tools.sha256; launch, then install.sh's bless line (2026-10-15T01:34:34Z)
+-- launch before bless:
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/cc-isolated.sh --bless
+2,3d1
+< 933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+< 568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+5d2
+< 0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/cc-isolated.sh --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+rc=1
+-- install.sh line 607 form:
+Changed since the last bless (manifest.sha256):
+< 933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+< 568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+< 0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+
+No previous host-tools.sha256: every entry below is new to this bless.
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+
+Blessed config: 7ff3b31a101a46f9
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+rc=0
+/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/host-tools.sha256
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+-- --list after:
+Blessed config 7ff3b31a101a46f9 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+
+No projects registered (all run with the base egress profile).
+
+=== P3 refusal when manifest.sha256 is absent but host-tools check fails: which boundary note? (2026-10-15T01:34:35Z)
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+ERROR: no blessed manifest at /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg/manifest.sha256
+Review the files in /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg yourself, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg/cc-isolated.sh --bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p3cfg/cc-isolated.sh --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+rc=1
+
+=== P4 --register after a cc-push-only change: warns, then blesses it (2026-10-15T01:34:35Z)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/cc-isolated.sh --bless)
+  launches warn (cc-push changed) but run
+  cc-push: CHANGED — do not run it until re-blessed (an intact copy refuses): /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/cc-push.sh changed since the last bless
+WARNING: /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+Registered /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/ws
+  project-id: 4916d9a10512
+  egress:     base  ->  base,python
+
+Re-blessing (the profile file is boundary config, so it joins the manifest)…
+Changed since the last bless (manifest.sha256):
+> 27ecf4a6835cb2fdf5207078d77fbe88e63c2e81c12a24c77b26c75f769ba242  projects/4916d9a10512.profile
+
+Changed since the last bless (host-tools.sha256):
+< 0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+> 3ae36f748a702542621a705a772c222ff62a67dc8cf6b627be3f7972cc5868ee  cc-push.sh
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/manifest.sha256 (17 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+27ecf4a6835cb2fdf5207078d77fbe88e63c2e81c12a24c77b26c75f769ba242  projects/4916d9a10512.profile
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fcr2.OUcOVA/p2cfg/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+3ae36f748a702542621a705a772c222ff62a67dc8cf6b627be3f7972cc5868ee  cc-push.sh
+
+Blessed config: c0c1566f5bbb0c1a
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+
+Next launch rebuilds the image for the new profile.
+rc=0
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+
+PROJECT-ID      EGRESS (base + …)
+
+=== P5 parity block: lines compared (sed range minus first line) and first lines (2026-10-15T01:34:35Z)
+# --- verify_host_tools: KEEP IN STEP with the copy in cc-push.sh (a test
+# --- verify_host_tools: KEEP IN STEP with the copy in cc-isolated.sh (a test
+
+=== done (2026-10-15T01:34:35Z)
+exit=0

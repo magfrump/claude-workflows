@@ -72,3 +72,34 @@ No prior overrides matched this diff.
 None.
 
 Line count: 392 at loop start (cap 400, checked before the loop per decision log 62). It is 418 after this fix round.
+
+---
+
+## Iterations 2-3 and the final confirming pass (A1+A2 jointly, 2026-10-14)
+
+- **Iteration 2:** fact-checks only (A1: 1 Incorrect; A2: 2 Incorrect). Its critics were skipped by mistake, so iteration 3 ran the full panel over both fix rounds. Fixes: f737ba71.
+- **Iteration 3:** fact-check had 1 Incorrect, bookkeeping only. Security: 1 Low, 1 Info. API consistency: 3 Minor, 3 Info. No red, no amber. Fixes: afe1ae59.
+- **Final confirming pass** at afe1ae59: full branch `4ab9a51f..afe1ae59`, fact-check k=3 (reports `code-fact-check-report-q089a-final-r{1,2,3}.md`). No code defect. Most-severe-wins merge:
+  - 🟡 **F1 (tests that cannot fail, Incorrect + Stale, r1+r2+r3):**
+    - `test/cc-isolated-functions.bats:921-926`: the "config dir is never a repo checkout" case has no install.sh in `$c`, so deleting the `"$dir" != "$cfg"` clause passes (r1 24b, r2 20).
+    - `:909-912`: the "file the manifest does not list" case hits the missing-file branch first (r1 24c).
+    - `:1075`: `!= *"cc-push refuses"*` can no longer fail after afe1ae59's rename (r1 29b, r2 27, r3 32).
+  - 🟡 **F2 (comment, r1 7b):** the shared verify_host_tools comment "the refusal lists all of what the bless it points to would accept" is false for cc-push, which checks two files while the bless covers three.
+  - 🟢 Mostly accurate:
+    - the bless split comment: an interrupt exits 130, and a first-rename failure leaves both manifests old;
+    - "The BOUNDARY config changed too" also prints with no manifest.sha256;
+    - cc-push's "caught only by …" omits the refusal's "also changed" line and `--register`;
+    - `--register` re-blesses a changed cc-push in the same command that warns (r2 claim 15: a design question);
+    - afe1ae59 says "probe scripts", but only one got the disable line.
+  - Incorrect, already corrected later on the branch: the messages of 4be0445d and 2cb03f23 (r3 37-39, r1 33). Branch commits are not rewritten.
+- The **critic panel** for the final pass was not run.
+
+## Iteration-4 gate: decision `escalate` (2026-10-14)
+
+Iteration 3 was the last under the cap and the final confirming pass is not clean, so the loop pauses. The separable part was already split out at the earlier gate (Q-147), so the /away default is `escalate`. Filed as Q-148.
+
+## Iterations (3 completed, plus the final pass)
+- **Remaining Must Fix:** none.
+- **Remaining Must Address:** F1 (three one-line test fixes) and F2 (one comment, in both copies).
+- **Convergence diagnosis:** the runtime code converged at iteration 2; each pass since has found only test-strength and wording drift that the previous pass's fixes introduced.
+- **Recommended action:** ship-with-issues after the F1/F2 one-line fixes, with a k=1 narrow check of that fix.

@@ -1,0 +1,32 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== probe p1 (2026-10-15T01:36:00Z) dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-mut-p1.9Vb9jC
+mutation: sed -i 's|perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh)"|perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh cc-exit-scan.sh)"|' devcontainer-config/cc-isolated.sh && grep -n 'perr="' devcontainer-config/cc-isolated.sh
+498:  local cfg_real lerr="" perr=""
+503:  perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh cc-exit-scan.sh)" || true
+1..1
+ok 1 --list reports host-tool state; a changed cc-push warns at launch but does not refuse
+bats exit=0
+=== probe p2 (2026-10-15T01:36:02Z) dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-mut-p2.YvlCyu
+mutation: sed -i 's#cfg_real="$(readlink -f -- "$(config_dir)")" || cfg_real="$(config_dir)"#cfg_real="$(readlink -f -- "$(config_dir)")"#' devcontainer-config/cc-isolated.sh && grep -n 'cfg_real="' devcontainer-config/cc-isolated.sh
+501:  cfg_real="$(readlink -f -- "$(config_dir)")"
+1..1
+not ok 1 --list still reports everything when the config dir's parent is missing (set -e)
+# (in test file test/cc-isolated-functions.bats, line 1000)
+#   `[ "$status" -eq 0 ]' failed
+bats exit=1
+=== probe p3 (2026-10-15T01:36:04Z) dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-mut-p3.4DyiJ7
+mutation: sed -i 's#if ! compute_manifest > "$new_m" || ! compute_host_tools_manifest > "$new_h"; then#if ! compute_manifest > "$(manifest_path)" || ! compute_host_tools_manifest > "$new_h"; then#' devcontainer-config/cc-isolated.sh && grep -n 'if ! compute_manifest' devcontainer-config/cc-isolated.sh
+286:  if ! compute_manifest > "$(manifest_path)" || ! compute_host_tools_manifest > "$new_h"; then
+1..1
+not ok 1 bless: a failure changes neither manifest
+# (in test file test/cc-isolated-functions.bats, line 1050)
+#   `[ "$(cat "$(manifest_path)")" = "$m" ]' failed
+bats exit=1
+=== probe p4 (2026-10-15T01:36:06Z) dir=/home/node/.claude/jobs/00bcf178/tmp/fcr3-mut-p4.TrYi8L
+mutation: sed -i 's#^if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then#if false; then#' devcontainer-config/cc-push.sh && grep -n '^if false; then' devcontainer-config/cc-push.sh
+204:if false; then
+1..1
+not ok 1 installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)
+# (in test file test/cc-push.bats, line 806)
+#   `[ "$status" -eq 1 ]' failed
+bats exit=1
