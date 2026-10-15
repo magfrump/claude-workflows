@@ -1,0 +1,260 @@
+2026-10-15T00:48:35Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe cmd: timeout 400 bash probe.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== P0 initial bless of the install dir via the hint form
+$ env CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir timeout 60 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-isolated.sh --bless
+No previous manifest.sha256: every entry below is new to this bless.
+
+No previous host-tools.sha256: every entry below is new to this bless.
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+8bf5664c48ddef6d20448c1e124fceffcb164f2f0045174e3a7858b1cf933e22  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+6110e6423a9a81bc26da242e27022149e400209b676f4f450a946c5c2fb938d6  cc-push.sh
+
+Blessed config: 8aa508249d3ffc00
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+[exit=0]
+
+== P1 refusal layout: cc-gitdir.sh changed, install dir with a space
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-gitdir.sh changed since the last bless
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+[exit=1]
+
+gitdir-ran exists? no
+== P2 the printed hint, run verbatim (cc-isolated on PATH), clears the refusal and prints what changed
+hint: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+$ env PATH=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/bin:/home/node/.elan/bin:/opt/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/opt/dotnet:/usr/local/share/npm-global/bin timeout 60 bash -c CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+Changed since the last bless (host-tools.sha256):
+< 568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+> ea5381eb6acc2c6dbeb8a06c9d87890de93aae5ee368e74cd81be4a293f2237d  cc-gitdir.sh
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+8bf5664c48ddef6d20448c1e124fceffcb164f2f0045174e3a7858b1cf933e22  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+ea5381eb6acc2c6dbeb8a06c9d87890de93aae5ee368e74cd81be4a293f2237d  cc-gitdir.sh
+6110e6423a9a81bc26da242e27022149e400209b676f4f450a946c5c2fb938d6  cc-push.sh
+
+Blessed config: 8aa508249d3ffc00
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+[exit=0]
+
+== P3 missing manifest: reason line carries its own bare hint
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+[exit=1]
+
+== P4 malformed manifest (CRLF line) and unreadable manifest
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+[exit=1]
+
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+[exit=1]
+
+== P5 tamper above the check runs, then cc-push still refuses
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh changed since the last bless
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+[exit=1]
+
+above-ran exists? yes
+== P6 an overwrite that drops the check runs unrefused; the launcher warns, --list reports
+drop-ran exists? no
+$ env CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir PATH=/usr/bin:/bin timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-isolated.sh --probe-only /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/ws
+WARNING: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+ERROR: devcontainer CLI not found. Install on the HOST with:
+    npm install -g @devcontainers/cli
+[exit=1]
+
+$ env CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-isolated.sh --list
+Blessed config 8aa508249d3ffc00 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-isolated.sh --bless)
+  launches warn (cc-push changed) but run
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh changed since the last bless
+
+No projects registered (all run with the base egress profile).
+[exit=0]
+
+-- launcher run from another dir (repo checkout) does not see the installed cc-push
+$ env CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/cfg PATH=/usr/bin:/bin timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/src/devcontainer-config/cc-isolated.sh --probe-only /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/ws
+ERROR: devcontainer CLI not found. Install on the HOST with:
+    npm install -g @devcontainers/cli
+[exit=1]
+
+== P7 header text as --help prints it (rows covering the exception)
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh --help
+cc-push — push the commits a cc-isolated session made, without running anything
+the session could have planted in the checkout (Q-076).
+
+Run from the HOST, never inside a session, and after the session's container
+has stopped (docker stop <name>; cc-push checks):
+  cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+  cc-push ~/code/app                                      # later: same remote
+  cc-push                                                 # the checkout containing $PWD
+  cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
+
+Options:
+  --remote URL     the real remote, stored in the host-only clone (never read from
+                   the checkout). Needed the first time. It is STICKY: given
+                   again, it replaces the stored one, and every later cc-push of
+                   this checkout uses the new one.
+  --branch NAME    the branch to push (default: the one the checkout's HEAD names).
+  --clone DIR      the host-only clone (default: $CC_PUSH_CLONES_DIR/<name>-<id>,
+                   CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
+                   or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
+  --yes            push without asking (the preview is still printed).
+                   Without --branch, the checkout's HEAD (which the session
+                   controls) picks the branch: pass --branch when scripting.
+  --allow-running  go on although a cc-isolated container for this checkout is
+                   running, or docker cannot say (loud warning; see below).
+  -h, --help       this text.
+One checkout at a time: a second one, before or after `--`, is a usage error.
+
+Exit codes (the host tools' convention, as install.sh; decision log #58):
+  0 pushed, or nothing to push;
+  1 an error — a checkout, git or container state cc-push refuses (below), a
+    failed fetch, a push the remote rejected (git's own exit status is never
+    passed through), an interruption — or declined at the prompt (n, or Ctrl-C);
+  2 bad usage (an unknown flag, a flag without its value, two checkouts).
+One exception, before any of that: when this installed copy or the cc-gitdir.sh
+beside it differs from what the bless recorded in host-tools.sha256 (or that
+file is missing or a symlink), cc-push
+exits 1 before parsing anything, --help included (decision log row 71). What
+that guards: cc-gitdir.sh, and every line of this file below the check (all
+the push logic). It cannot guard the lines above the check, nor an overwrite
+that drops it: a tampered copy that skips its own check is caught only by
+cc-isolated's warning at the next launch and by `cc-isolated --list`.
+
+WHY. The container writes the checkout's .git through the bind mount, so host git
+run IN the checkout can run what the session planted: hooks, core.fsmonitor,
+filter drivers, remote.*.receivepack, a remote repointed at a repo with hooks, an
+`exec` line in a rebase todo list — and, with no .git change at all, a hook that
+was already there and runs a tracked file the session edited (husky, the
+pre-commit framework). cc-isolated's exit scan is a tripwire for some of that,
+not a guarantee. cc-push runs no git command in the checkout: it keeps a BARE
+clone that only the host writes, and in it:
+  1. resolve the branch: --branch, or the one the checkout's HEAD names
+     (`git ls-remote --symref`, which starts upload-pack like the fetch below);
+  2. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git`
+     refs/heads/<branch> only, into refs/cc/heads/<branch>: no other branch the
+     session made is copied to host disk. For a local path git starts
+     upload-pack in that directory, and --strict makes it use exactly that
+     directory or fail (it never tries <dir>/.git or another repository
+     instead). upload-pack READS there: refs, objects and config (the
+     checkout's config, and your global config). It runs no hook, no fsmonitor,
+     no filter, and ignores uploadpack.packObjectsHook from repo config. Nothing
+     is checked out.
+  3. `git fetch origin` — the real remote, as configured in the clone.
+  4. a preview of what the push adds (log, and a diff stat when origin already
+     has the branch), printed as plain text;
+  5. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+Every git command cc-push runs passes core.hooksPath=/dev/null and
+core.fsmonitor=false, so your own global config cannot point hooks at anything
+either. So no hook runs on push, git-lfs's pre-push included: cc-push does not
+upload LFS objects (push them from a normal clone once you trust the content).
+
+WHAT IT REFUSES BEFORE THE FETCH.
+  - A git older than the fixed releases of the May 2024 git security update:
+    2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1, or any 2.46 and
+    later. That update hardened what a local clone or fetch trusts in the
+    repository it reads from; cc-push's promises rest on it. (This list is
+    from git's release notes as recalled, not checked against them offline.)
+  - A running cc-isolated container for this checkout (docker ps, label
+    cc-project=<id>, the id cc-isolated.sh's project_id gives). While one
+    runs it can change the checkout between cc-push's checks and its fetch.
+    Without docker, or when docker does not answer, cc-push cannot tell, so it
+    refuses as well. --allow-running overrides both, with a warning.
+  - What upload-pack would read beyond the checkout. With plain file tests (no
+    git; cc-gitdir.sh, next to this file), cc-push requires that
+    <checkout>/.git is a directory git accepts as a git directory (a HEAD that
+    is `ref: refs/...`, a detached commit id or a symlink into refs/, and
+    searchable objects/ and refs/ directories: git 2.39's is_git_directory),
+    and that the checkout root itself does not look like a git directory (a
+    HEAD next to objects/, or a commondir file). When .git is not valid,
+    git's discovery falls back to treating the root as a bare repository,
+    which the session can plant. It also refuses a .git that is not a real
+    directory (a `gitdir:` file or a symlink: a linked worktree or submodule,
+    or a redirect to any repository on this machine), or that holds a
+    commondir, objects/info/alternates or objects/info/http-alternates file
+    (each names another object store; the one exception is a commondir that
+    is a regular file holding exactly `.` or `.\n`, which names .git itself
+    and which some host tool keeps writing: Q-093), a symlink outside
+    hooks/, a FIFO, socket or device (a read of one never ends), or a config /
+    config.worktree with an [include] or [includeIf] section (git would read
+    whatever path it names, a FIFO included). Otherwise upload-pack could
+    fetch history from another repository you can read and cc-push would
+    offer it for push. Run cc-push on the main checkout.
+  - A partial clone (remote.*.promisor or extensions.partialClone in .git's
+    config, read as text): upload-pack there cannot send the objects the clone
+    never downloaded, so the fetch would fail after packing everything else.
+What is left: upload-pack reading the checkout's own refs, objects and
+(include-free) config. The complete list of what cc-isolated's tools do not
+catch is in guides/cc-isolated-usage.md, "Known routes it does not see".
+
+EVERY STRING FROM THE CHECKOUT (branch names, commit text, git's messages,
+including the stderr of every git call that can name a checkout ref) is
+printed through vis: anything but printable ASCII shows as '?'.
+
+KEEP THE CLONE HOOK-FREE. It holds container-authored content. It is bare, so
+nothing is checked out and no tool installs hooks into it; if you ever check out
+a working tree from it and run husky/pre-commit/lefthook there, the fetched
+content runs on your next commit. Do your host-side work in a normal clone of the
+real remote, after the push, like any other collaborator's commits.
+[exit=0]
+
+probe.sh exit=0

@@ -1,0 +1,7 @@
+[--help] rc=0 first: cc-isolated — launch an isolated Claude Code session in ANY project, from a
+[--bogus] rc=2 first: ERROR: unknown flag: --bogus
+[--profile] rc=2 first: ERROR: --profile needs a value, e.g. --profile python (comma-separate several).
+[--list] rc=0 first: Blessed config 8e85c68afeb27132 — verified live: yes
+[--register /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q4/ws] rc=1 first: ERROR: host tools differ from the bless — refusing to launch, probe or register:
+[--probe-only /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q4/ws] rc=1 first: ERROR: host tools differ from the bless — refusing to launch, probe or register:
+[/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q4/ws] rc=1 first: ERROR: host tools differ from the bless — refusing to launch, probe or register:

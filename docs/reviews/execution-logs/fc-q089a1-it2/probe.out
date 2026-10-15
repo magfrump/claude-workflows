@@ -1,0 +1,88 @@
+== Q1: refusal layout, two changed files + cc-push changed; launcher dir != CLAUDE_DEVC_CONFIG_DIR
+[rc=1]
+ERROR: host tools differ from the bless M-bM-^@M-^T refusing to launch, probe or register:$
+  /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/cc-exit-scan.sh changed since the last bless$
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/cc-gitdir.sh changed since the last bless$
+  also changed (cc-push refuses until re-blessed): /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/cc-push.sh changed since the last bless$
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst, then re-bless (it prints what changed):$
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/cc-isolated.sh --bless$
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).$
+-- run the printed bless hint verbatim (line 2 of the hint block)
+hint: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/cc-isolated.sh --bless
+[hint rc=0]
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q1/inst/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+other dir untouched
+== Q2: manifest-format check against every shape
+-- a: as written by bless
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh$
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh$
+cbcbd92fb438cc3cb24afcdae07a29cf8af16d5722f445f9f4ca027cc63f475e  cc-push.sh$
+[rc=0]
+-- b: empty file
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-exit-scan.sh changed since the last bless
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-gitdir.sh changed since the last bless
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-push.sh changed since the last bless
+[rc=1]
+-- c: no trailing newline
+[rc=0]
+-- d: trailing blank line
+host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+[rc=1]
+-- e: CRLF
+host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+[rc=1]
+-- f: duplicate entry
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-exit-scan.sh changed since the last bless
+[rc=1]
+-- g: one entry dropped
+/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-exit-scan.sh changed since the last bless
+[rc=1]
+-- h: mode 000 as uid 1000
+host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+[rc=1]
+-- i: sha256sum binary-mode '*' marker
+host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+[rc=1]
+-- j: uppercase hex
+933BCABE85390A2DAEF35E892C50C5E449B18  cc309E2BC5C5FF5A20412C4A8DE  CC-Exit-sCAn.sh
+host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+[rc=1]
+-- k: does bless's own output pass for every PAYLOAD host tool name?
+all names match [A-Za-z0-9._-]+
+== Q3: --list shapes
+-- a: match
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+
+No projects registered (all run with the base egress profile).
+-- b: missing manifest
+No blessed host tools (review them, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless).
+
+No projects registered (all run with the base egress profile).
+-- c: dangling symlink manifest
+No blessed host tools (review them, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless).
+
+No projects registered (all run with the base egress profile).
+-- d: symlink to a good manifest
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless)
+  launches refuse: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+  cc-push refuses: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+-- e: CHANGED (scan + cc-push)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-exit-scan.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-push.sh changed since the last bless
+
+-- f: malformed
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless)
+  launches refuse: host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+  cc-push refuses: host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+
+-- g: unset CLAUDE_DEVC_CONFIG_DIR (default dir under redirected HOME)
+No blessed host tools (review them, then run: /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES/q2/cfg/cc-isolated.sh --bless).
+== Q4: boundary_note — a re-bless with the boundary unchanged leaves blessed_hash and verified-live intact
+Blessed config: 8e85c68afeb27132
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+Changed since the last bless (host-tools.sha256):
+Blessed config: 8e85c68afeb27132
+Verified live:  yes (this exact config has passed a live self-probe before)
+manifest.sha256 byte-identical

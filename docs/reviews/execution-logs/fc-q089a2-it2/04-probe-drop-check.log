@@ -1,0 +1,8 @@
+2026-10-15T00:48:52Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe cmd: timeout 60 bash probe6b.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== P6b overwrite that replaces the check (lines 198-206) with a touch; run --help
+[exit=0] stderr: 
+drop-ran exists? yes
+[restored, exit=0]
+exit=0

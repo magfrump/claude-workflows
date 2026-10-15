@@ -1,0 +1,25 @@
+281:  if ! compute_manifest > "$new_m" || ! { cp "$new_m" "$(manifest_path)"; compute_host_tools_manifest > "$new_h"; }; then
+== new test (b3b37e16) vs mutant
+1..1
+not ok 1 bless: a failure changes neither manifest
+# (in test file mut/test/cc-isolated-functions.bats, line 1022)
+#   `[ "$(cat "$(manifest_path)")" = "$m" ]' failed
+[rc=1]
+== old test (f2533b33) vs mutant
+1..1
+ok 1 bless: a failure changes neither manifest
+[rc=0]
+== new test vs unmutated code
+1..1
+ok 1 bless: a failure changes neither manifest
+[rc=0]
+== malformed-manifest test vs mutant that drops the format check
+1..1
+not ok 1 verify_host_tools: an unreadable or malformed host manifest is named as the problem
+# (in test file mut/test/cc-isolated-functions.bats, line 999)
+#   `[ "$status" -eq 1 ]' failed
+[rc=1]
+== same test vs mutant that drops only the readability check
+1..1
+ok 1 verify_host_tools: an unreadable or malformed host manifest is named as the problem
+[rc=0]
