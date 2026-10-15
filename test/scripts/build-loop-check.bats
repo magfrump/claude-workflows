@@ -721,6 +721,72 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
+@test "the ancestor listing skips a file that vanishes between find's readdir and its stat, retries one for a vanished directory, and still fails closed on a permission error or a vanished top (Q-145)" {
+    # The race, made deterministic with the real find: a shim adds, to the -H top-level
+    # listing only, a clause that runs at each entry under the fixture's ancestor; the first
+    # run deletes every other vic* there. find read all their names before that first visit,
+    # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
+    # exit status. With SHIM_ONCE it races only on the first listing of a walk. With SHIM_RMTOP
+    # it instead removes the ancestor's .claude, a top config_seeds already found to be a
+    # directory, first; SHIM_RMTOP=drop also drops it from the start points, as a find that
+    # skipped a missing start point silently would, which leaves top_files' -d recheck to
+    # catch it. (SHIM_*, not T_*: the shim reads them, not imps.)
+    a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
+    printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
+    cat > "$a/shim/find" <<EOF
+#!/usr/bin/env bash
+[[ "\${1:-}" == -H ]] || exec "$real" "\$@"
+[[ -z "\${SHIM_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
+args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1"); shift; done
+if [[ -n "\${SHIM_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
+else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
+rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
+EOF
+    chmod +x "$a/shim/find"
+    for w in tree main; do
+        # Files: -ignore_readdir_race skips each, so no listing fails and none is retried.
+        for i in 1 2 3 4; do echo > "$a/vic$i"; done; rm -f "$a/shim/log" "$a/shim/fired"
+        PATH="$a/shim:$PATH" imps "$w" docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/other.md -
+        # The race ran: at most the first-visited victim is left.
+        [ "$(compgen -G "$a/vic*" | wc -l)" -le 1 ] || { echo "no race: $(ls "$a")"; return 1; }
+        ! grep -qvx 0 "$a/shim/log" || { echo "a listing failed: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
+        # Directories: findutils still reports one, so the first listing fails and the retry,
+        # without the race, completes; the failed try's message is dropped.
+        for i in 1 2 3; do mkdir "$a/vic$i"; done; echo > "$a/vic4"; rm -f "$a/shim/log" "$a/shim/fired"
+        PATH="$a/shim:$PATH" SHIM_ONCE=1 imps "$w" docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/other.md -
+        [ "$(head -2 "$a/shim/log" | tr '\n' ' ')" = "1 0 " ] || { echo "want a failed try, then a clean one: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
+    done
+    # Any other error in the same listing fails closed, after three tries: an unreadable top,
+    # and a top that vanished.
+    for w in tree main; do
+        mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
+        [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "1 1 1 " ] || { echo "want three failed tries: $(cat "$a/shim/log")"; return 1; }
+        for m in 1 drop; do
+            mkdir -p "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" SHIM_RMTOP="$m" imps "$w" docs/a.md; want walk failed
+            [ ! -e "$a/.claude" ] || { echo "the top was not removed"; return 1; }
+            # find reports the missing top (1); with it dropped, find succeeds (0) and the recheck fails each try.
+            [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "$( [ "$m" = drop ] && echo "0 0 0 " || echo "1 1 1 ")" ] || { echo "$m: want three failed tries: $(cat "$a/shim/log")"; return 1; }
+        done
+    done
+}
+
+@test "top_files lists a directory's files, links and a linked DIR itself, and fails with its array empty when a DIR is no longer a directory (Q-145 final fact-check r3)" {
+    d="$BATS_TEST_TMPDIR/tf" && mkdir -p "$d/real/sub" && echo > "$d/real/f" && ln -s nowhere "$d/real/dangle" && ln -s real "$d/link" && ln -s gone "$d/dead"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; d="$2"
+        fl=(stale); top_files fl "$d/real" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        fl=(stale); top_files fl "$d/link" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        # A linked DIR whose target is gone: find lists the link and exits 0; the -d recheck fails it.
+        fl=(stale); if top_files fl "$d/real" "$d/dead"; then echo "dead: passed"; else echo "dead: failed, ${#fl[@]} left"; fi' _ "$LIB" "$d"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    [ "$output" = $'ok:real/dangle\nok:real/f\nok:link\nok:link/dangle\nok:link/f\ndead: failed, 0 left' ] || { echo "$output"; return 1; }
+}
+
 @test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes, or reads a prompt copy that has bases of its own) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
     mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
     for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
