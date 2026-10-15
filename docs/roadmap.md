@@ -11,7 +11,19 @@ user's order).
 
 ## Now
 
-Nothing waiting outside a brief: this cycle's three ready items moved to In flight.
+Being built by hand in this cycle (2026-10-14), each on its own branch and worktree. Each stops
+before merging, since this session cannot merge into main (Q-162).
+
+- **U5, the build-loop handoff's last unit** (`feat/build-loop-u5`). Motive: U1–U4 are on
+  main, but the docs, Q-103's re-route, the release entry and the brief's `done` are
+  still owed (plan items 11–13). First step: the plan's U5 items.
+- **Q-110 — the health check's NOT RUN summary under-counts** (`fix/q110-not-run-undercount`).
+  Motive: reproduced again this cycle (runner 50, summary 4). First step: the reproduction.
+- **Q-145 — the lib's ancestor listing skips vanished entries** (`fix/q145-ancestor-vanish`;
+  was Next 4). Motive and revisit trigger as filed under Q-145. A gate-code unit: it lands
+  on your approval, as a merge entry.
+- **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
+  cycle's health-check red. Waits on Q-162's paste.
 
 ## In flight
 
@@ -32,6 +44,9 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    under-counts (Q-017), so neither can be counted.
    Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
    committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
+   Cycle 2 (2026-10-14): 42 multi-file landings; 25/42 carry the line, 38/42 committed a
+   rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432). About 36 are
+   units of the one build-loop plan.
 2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
@@ -42,12 +57,13 @@ Nothing waiting outside a brief: this cycle's three ready items moved to In flig
    Q-125's merge and Q-098 wait on this; the egress fix (`fix/egress-dnsmasq-ipset`) too.
    First step: list what Q-117's and Q-130's checks need from the host, and which of
    those a container or second install prefix could provide side by side with main's.
-4. **Q-145 — the lib's ancestor listing skips vanished entries.** Motive: Q-102's parallel
-   gate (merged on Q-145 [2]) goes red when an entry in a repo ancestor such as `/tmp`
-   vanishes mid-listing (`scripts/lib/dev-cycle-read.sh`, `find -H "${tops[@]}" -maxdepth 1`
-   fails closed). First step: skip an entry that no longer exists instead of failing; a
-   gate-code unit, so it lands on the user's approval. Revisit trigger (the user's): if re-runs
-   on this class cost more than an hour in total before it lands, reopen Q-145.
+4. **Automate the host settings.json merge (Q-106 [2]).** Motive: decision 037 T1 fired;
+   Q-106 was answered [2] on 2026-10-06 (via the provenance jq), with a roadmap item due
+   "next cycle" that never landed. First step: RPI over install.sh's host target. It is an
+   enforcement file, so the plan opens with the bypass pre-mortem.
+5. **Re-run decision 015's step 4 as a divergent design (Q-105 [3]).** Motive: 015 T2 fired
+   last cycle; Q-105 was answered [3] on 2026-10-06, with the same lost follow-up. First step:
+   a `divergent-design` doc seeded with 015's constraints and the breakage record.
 
 ## Ideas
 
@@ -92,6 +108,14 @@ Unranked. Each names the signal that motivates it.
 - **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
   conflicts on `code-fact-check-report-r*.md` (undated, so any two branches collide) and
   add/add conflicts on `*-review-<date>.md` (any two branches reviewed the same day).
+
+- **Let the orchestrator merge, or plan for a human merge each cycle.** Signal: cycle
+  2026-10-14. The auto-mode classifier refused this session's merge into main, so every
+  finished branch waits on a paste (Q-162), and `--land-cycle` cannot run here either.
+  The remedy is a permission rule only you can add, or a standing per-cycle merge entry.
+- **Dispatch the two briefs held since 2026-10-02.** Signal: the doc-drift and Q-096 briefs
+  held 2 of 3 slots for 12 days unstarted (log row 68's cap clause). Since U4, a dispatcher
+  exists, but dispatch stays off here until `docs/constraints.md` exists (D2; U5 files it).
 
 ## Done
 
