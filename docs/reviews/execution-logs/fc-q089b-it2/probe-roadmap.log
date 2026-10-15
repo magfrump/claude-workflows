@@ -1,0 +1,20 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+start: 2026-10-15T01:36:02Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/p3
+## F3 unstaged gated change, path-limited / -o / -i
+$ [cwd p3] gate <<< git commit devcontainer-config/egress/base.txt -m x
+exit=0
+$ [cwd p3] gate <<< git commit -o devcontainer-config/egress/base.txt -m x
+exit=0
+$ [cwd p3] gate <<< git commit -i devcontainer-config/egress/base.txt -m x
+exit=0
+## F4 staged gated change, git -C from another cwd
+$ [cwd p3] gate <<< git commit -m x
+BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.
+exit=2
+$ [cwd elsewhere] gate <<< git -C /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/p3 commit -m x
+exit=0
+## F5 shebang edit
+-#!/usr/bin/env bash
++#!/tmp/evil
+$ [cwd p3] gate <<< git commit -m x
+exit=0

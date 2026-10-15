@@ -1,0 +1,18 @@
+$ git diff --cached --name-only
+devcontainer-config/base-moved.txt
+$ git diff --cached --name-only --no-renames
+devcontainer-config/base-moved.txt
+devcontainer-config/egress/base.txt
+$ git diff --cached -U0 --no-color -- devcontainer-config/egress/base.txt
+diff --git a/devcontainer-config/egress/base.txt b/devcontainer-config/egress/base.txt
+deleted file mode 100644
+index df967b9..0000000
+--- a/devcontainer-config/egress/base.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-base
+$ (both paths) git diff --cached -U0 -- both
+diff --git a/devcontainer-config/egress/base.txt b/devcontainer-config/base-moved.txt
+similarity index 100%
+rename from devcontainer-config/egress/base.txt
+rename to devcontainer-config/base-moved.txt

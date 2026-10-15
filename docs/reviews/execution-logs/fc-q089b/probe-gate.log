@@ -1,0 +1,78 @@
+start: 2026-10-15T00:50:04Z
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/gaterepo
+## G1: host-tool-only real change, no trailer (header line 35 says 'no enforcement file staged -> exit 0')
+$ gate <<< git commit -m x
+BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+exit=2
+## G1b: same, with Live-verified only (header line 35 'trailer present -> exit 0')
+$ gate <<< git commit -m x -m "Live-verified: no - n/a"
+BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+exit=2
+## G2: comment-only boundary edit + real host change, Host-tool-tested only ('and vice versa')
+$ gate <<< git commit -m x -m "Host-tool-tested: no - bats"
+exit=0
+## G3: same, Live-verified only
+$ gate <<< git commit -m x -m "Live-verified: no - n/a"
+BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+exit=2
+## G4: real boundary + real host, no trailer: both messages
+$ gate <<< git commit -m x
+BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.
+Enforcement files in the commit:
+  devcontainer-config/egress/base.txt
+
+Add a trailer to the commit message. Either the blessed hash a passing probe recorded
+(cc-isolated --list shows it after cc-isolated --probe-only <repo>):
+    Live-verified: <hash>
+or an explicit statement that it has not run, and what will run it:
+    Live-verified: no — <reason>; run cc-isolated --probe-only <repo> after install.sh
+
+bats and shellcheck cannot see a kernel; only a container built from this config can
+(guides/devcontainer-setup.md, 'Changing the boundary'). Two outages came from
+commits that carried 'needs a live check' and were blessed without one.
+BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+exit=2
+## G5: comment-only host edit alone
+$ gate <<< git commit -m x
+exit=0
+## G6: host tool via -a only
+$ gate <<< git commit -m x
+exit=0
+$ gate <<< git commit -am x
+BLOCKED: this commit changes a host-only tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+exit=2

@@ -1,0 +1,351 @@
+start: 2026-10-15T00:50:22Z
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt
+devcontainer on PATH: none
+## L0: bless + list (clean)
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+No previous manifest.sha256: every entry below is new to this bless.
+
+No previous host-tools.sha256: every entry below is new to this bless.
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+8bf5664c48ddef6d20448c1e124fceffcb164f2f0045174e3a7858b1cf933e22  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+6110e6423a9a81bc26da242e27022149e400209b676f4f450a946c5c2fb938d6  cc-push.sh
+
+Blessed config: 8aa508249d3ffc00
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+exit=0
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --list
+Blessed config 8aa508249d3ffc00 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)
+
+No projects registered (all run with the base egress profile).
+exit=0
+blessed_hash=8aa508249d3ffc00
+## L1: cc-gitdir.sh changed
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/ws
+ERROR: host tools differ from the bless — refusing to launch, probe or register:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+exit=1
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --probe-only /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/ws
+ERROR: host tools differ from the bless — refusing to launch, probe or register:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+exit=1
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --help
+cc-isolated — launch an isolated Claude Code session in ANY project, from a
+central host-side devcontainer config (decision 016; supersedes the per-repo
+scripts/devcontainer-session.sh from decision 015).
+
+Run from the HOST (your normal WSL terminal), never from inside a session:
+  cc-isolated                          # session for the git repo containing $PWD
+  cc-isolated ~/code/other-project     # session for an explicit repo
+  cc-isolated --register ~/code/api --profile python
+                                       # SET that project's egress profile (REPLACES any
+                                       # previous grant, never adds to it), then re-bless
+  cc-isolated --bless                  # re-bless the installed config after YOU reviewed it
+  cc-isolated --probe-only [WS]        # (re)build WS from the blessed config, run the
+                                       # boundary self-probe, record it verified live
+  cc-isolated --list                   # registered projects, blessed config, verified?
+  cc-isolated --help                   # this text
+Push a session's commits with cc-push, never with host git in the checkout.
+
+EXIT STATUS (the host tools' convention, decision log #58, plus two scan codes):
+  0  success; after a session: the exit scan found nothing (or only standard
+     linked worktrees, with a note on stderr), and claude's own
+     exit status is passed through — so a 1-4 from claude itself reads like
+     one of the codes below;
+  1  an error, including a launch refused because the scan's baseline could
+     not be taken (the checkout's .git unreadable, not a git dir git accepts,
+     or the root already looking like one) — 1 at launch; at exit an
+     unreadable .git is 4, and an invalid .git or a repository at the root
+     is a finding, 3;
+  2  bad usage;
+  3  the exit scan found a change the session made to what host git reads
+     (replaces claude's status);
+  4  the exit scan could not read everything, or was interrupted (replaces it).
+A clean scan is not permission to run git in the checkout:
+guides/cc-isolated-usage.md, "Known routes it does not see".
+
+WHY THE CONFIG LIVES OUTSIDE THE REPO (decision 016, H2). Under decision 015 the
+boundary config was committed inside each repo, which meant it was bind-mounted
+read-write into the container: a session could edit the boundary it ran under, and
+only the trust manifest (checked at the next rebuild) caught it. Here the config is
+installed to ~/.config/claude-devcontainer/ and passed via `--override-config`, so
+it is in no bind mount at all. Target repos get zero new files. The manifest stays
+as defence-in-depth against HOST-side tampering (e.g. a malicious npm postinstall
+running as you), not against the agent — the agent can no longer see these files.
+
+WHY THE WORKSPACE IS AN ARGUMENT, NOT $BASH_SOURCE. The 015 launcher derived its
+workspace from its own path, so running it from another repo silently opened a
+session on the WRONG repo. Here the workspace comes from the argument or $PWD, and
+the probe asserts in-container that /workspace really is the repo you asked for.
+
+Plant the canary once on the host:  touch ~/.ssh/canary
+
+BLESSED IS NOT VERIFIED. A bless hashes the installed config; it says nothing about
+whether a container built from that config actually works. Two boundary changes
+(decision log #40, #41) shipped with "needs a live-container check before bless" in
+their commit messages and were blessed without one; the bats suites cannot see a
+kernel, so four review passes could not catch it either, and sessions had no DNS
+for six days while every root-run probe passed (#44). So the launcher now keeps a
+second file next to the manifest — verified-live.sha256 — which is written ONLY by
+a passing self-probe against a container whose image bakes the hash of the manifest
+being blessed (CC_CONFIG_HASH build arg -> /etc/cc-config-hash). A launch on an
+unverified config says so, rebuilds the container so the probe exercises the new
+config rather than an old image, and refuses to start a session unless the baked
+firewall script reached its completion marker. See guides/devcontainer-setup.md,
+"Changing the boundary".
+exit=0
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --list
+Blessed config 8aa508249d3ffc00 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+
+No projects registered (all run with the base egress profile).
+exit=0
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer cc-isolated --bless
+exit=1
+## L1b: plus a boundary change
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/ws
+ERROR: host tools differ from the bless — refusing to launch, probe or register:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+6c6
+< e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+---
+> 1a66e9efc9d2ec73d436831d02ab1578857371fcd732c43999ffd8248577263b  egress/base.txt
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+exit=1
+## L2: re-bless after cc-gitdir change: blessed_hash unchanged?
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+Changed since the last bless (host-tools.sha256):
+< 568336c56d988ea1094b5acd428e3d35443dbdbcfee16191c679a737c9eaf64a  cc-gitdir.sh
+> b535de8376087bbc549832219234ae35c24a0e4fdcdb937800d3a7ad1ab440ed  cc-gitdir.sh
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+8bf5664c48ddef6d20448c1e124fceffcb164f2f0045174e3a7858b1cf933e22  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+
+Blessed host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+b535de8376087bbc549832219234ae35c24a0e4fdcdb937800d3a7ad1ab440ed  cc-gitdir.sh
+6110e6423a9a81bc26da242e27022149e400209b676f4f450a946c5c2fb938d6  cc-push.sh
+
+Blessed config: 8aa508249d3ffc00
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>   # rebuilds from it and probes as node
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+exit=0
+blessed_hash=8aa508249d3ffc00 (was 8aa508249d3ffc00)
+## L3: cc-push.sh only changed
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/ws
+WARNING: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+ERROR: devcontainer CLI not found. Install on the HOST with:
+    npm install -g @devcontainers/cli
+exit=1
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --list
+Blessed config 8aa508249d3ffc00 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless)
+  launches warn (cc-push changed) but run
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh changed since the last bless
+
+No projects registered (all run with the base egress profile).
+exit=0
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh changed since the last bless
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer cc-isolated --bless
+exit=1
+## L4: malformed host-tools.sha256
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/ws
+ERROR: host tools differ from the bless — refusing to launch, probe or register:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+  also changed (cc-push refuses until re-blessed): host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+exit=1
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer cc-isolated --bless
+exit=1
+## L5: deleted manifests in installed dir (no install.sh)
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/home/.config/claude-devcontainer cc-isolated --bless
+exit=1
+## L6: repo checkout (install.sh beside, no manifests, not config dir) is unchecked
+$ bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/src/devcontainer-config/cc-push.sh --help
+cc-push — push the commits a cc-isolated session made, without running anything
+the session could have planted in the checkout (Q-076).
+
+Run from the HOST, never inside a session, and after the session's container
+has stopped (docker stop <name>; cc-push checks):
+  cc-push --remote git@github.com:me/app.git ~/code/app   # first push: sets the remote
+  cc-push ~/code/app                                      # later: same remote
+  cc-push                                                 # the checkout containing $PWD
+  cc-push --branch feat/x ~/code/app                      # a branch other than HEAD's
+
+Options:
+  --remote URL     the real remote, stored in the host-only clone (never read from
+                   the checkout). Needed the first time. It is STICKY: given
+                   again, it replaces the stored one, and every later cc-push of
+                   this checkout uses the new one.
+  --branch NAME    the branch to push (default: the one the checkout's HEAD names).
+  --clone DIR      the host-only clone (default: $CC_PUSH_CLONES_DIR/<name>-<id>,
+                   CC_PUSH_CLONES_DIR defaulting to $XDG_DATA_HOME/cc-isolated/clones,
+                   or ~/.local/share/cc-isolated/clones when XDG_DATA_HOME is unset).
+  --yes            push without asking (the preview is still printed).
+                   Without --branch, the checkout's HEAD (which the session
+                   controls) picks the branch: pass --branch when scripting.
+  --allow-running  go on although a cc-isolated container for this checkout is
+                   running, or docker cannot say (loud warning; see below).
+  -h, --help       this text.
+One checkout at a time: a second one, before or after `--`, is a usage error.
+
+Exit codes (the host tools' convention, as install.sh; decision log #58):
+  0 pushed, or nothing to push;
+  1 an error — a checkout, git or container state cc-push refuses (below), a
+    failed fetch, a push the remote rejected (git's own exit status is never
+    passed through), an interruption — or declined at the prompt (n, or Ctrl-C);
+  2 bad usage (an unknown flag, a flag without its value, two checkouts).
+One exception, before any of that: when this installed copy or the cc-gitdir.sh
+beside it differs from what the bless recorded in host-tools.sha256 (or that
+file is missing or a symlink), cc-push
+exits 1 before parsing anything, --help included (decision log row 71). What
+that guards: cc-gitdir.sh, and every line of this file below the check (all
+the push logic). It cannot guard the lines above the check, nor an overwrite
+that drops it: a tampered copy that skips its own check is caught only by
+cc-isolated's warning at the next launch and by `cc-isolated --list`.
+
+WHY. The container writes the checkout's .git through the bind mount, so host git
+run IN the checkout can run what the session planted: hooks, core.fsmonitor,
+filter drivers, remote.*.receivepack, a remote repointed at a repo with hooks, an
+`exec` line in a rebase todo list — and, with no .git change at all, a hook that
+was already there and runs a tracked file the session edited (husky, the
+pre-commit framework). cc-isolated's exit scan is a tripwire for some of that,
+not a guarantee. cc-push runs no git command in the checkout: it keeps a BARE
+clone that only the host writes, and in it:
+  1. resolve the branch: --branch, or the one the checkout's HEAD names
+     (`git ls-remote --symref`, which starts upload-pack like the fetch below);
+  2. `git fetch --upload-pack='git-upload-pack --strict' <checkout>/.git`
+     refs/heads/<branch> only, into refs/cc/heads/<branch>: no other branch the
+     session made is copied to host disk. For a local path git starts
+     upload-pack in that directory, and --strict makes it use exactly that
+     directory or fail (it never tries <dir>/.git or another repository
+     instead). upload-pack READS there: refs, objects and config (the
+     checkout's config, and your global config). It runs no hook, no fsmonitor,
+     no filter, and ignores uploadpack.packObjectsHook from repo config. Nothing
+     is checked out.
+  3. `git fetch origin` — the real remote, as configured in the clone.
+  4. a preview of what the push adds (log, and a diff stat when origin already
+     has the branch), printed as plain text;
+  5. `git push origin refs/cc/heads/<branch>:refs/heads/<branch>` from the clone.
+Every git command cc-push runs passes core.hooksPath=/dev/null and
+core.fsmonitor=false, so your own global config cannot point hooks at anything
+either. So no hook runs on push, git-lfs's pre-push included: cc-push does not
+upload LFS objects (push them from a normal clone once you trust the content).
+
+WHAT IT REFUSES BEFORE THE FETCH.
+  - A git older than the fixed releases of the May 2024 git security update:
+    2.39.4, 2.40.2, 2.41.1, 2.42.2, 2.43.4, 2.44.1, 2.45.1, or any 2.46 and
+    later. That update hardened what a local clone or fetch trusts in the
+    repository it reads from; cc-push's promises rest on it. (This list is
+    from git's release notes as recalled, not checked against them offline.)
+  - A running cc-isolated container for this checkout (docker ps, label
+    cc-project=<id>, the id cc-isolated.sh's project_id gives). While one
+    runs it can change the checkout between cc-push's checks and its fetch.
+    Without docker, or when docker does not answer, cc-push cannot tell, so it
+    refuses as well. --allow-running overrides both, with a warning.
+  - What upload-pack would read beyond the checkout. With plain file tests (no
+    git; cc-gitdir.sh, next to this file), cc-push requires that
+    <checkout>/.git is a directory git accepts as a git directory (a HEAD that
+    is `ref: refs/...`, a detached commit id or a symlink into refs/, and
+    searchable objects/ and refs/ directories: git 2.39's is_git_directory),
+    and that the checkout root itself does not look like a git directory (a
+    HEAD next to objects/, or a commondir file). When .git is not valid,
+    git's discovery falls back to treating the root as a bare repository,
+    which the session can plant. It also refuses a .git that is not a real
+    directory (a `gitdir:` file or a symlink: a linked worktree or submodule,
+    or a redirect to any repository on this machine), or that holds a
+    commondir, objects/info/alternates or objects/info/http-alternates file
+    (each names another object store; the one exception is a commondir that
+    is a regular file holding exactly `.` or `.\n`, which names .git itself
+    and which some host tool keeps writing: Q-093), a symlink outside
+    hooks/, a FIFO, socket or device (a read of one never ends), or a config /
+    config.worktree with an [include] or [includeIf] section (git would read
+    whatever path it names, a FIFO included). Otherwise upload-pack could
+    fetch history from another repository you can read and cc-push would
+    offer it for push. Run cc-push on the main checkout.
+  - A partial clone (remote.*.promisor or extensions.partialClone in .git's
+    config, read as text): upload-pack there cannot send the objects the clone
+    never downloaded, so the fetch would fail after packing everything else.
+What is left: upload-pack reading the checkout's own refs, objects and
+(include-free) config. The complete list of what cc-isolated's tools do not
+catch is in guides/cc-isolated-usage.md, "Known routes it does not see".
+
+EVERY STRING FROM THE CHECKOUT (branch names, commit text, git's messages,
+including the stderr of every git call that can name a checkout ref) is
+printed through vis: anything but printable ASCII shows as '?'.
+
+KEEP THE CLONE HOOK-FREE. It holds container-authored content. It is bare, so
+nothing is checked out and no tool installs hooks into it; if you ever check out
+a working tree from it and run husky/pre-commit/lefthook there, the fetched
+content runs on your next commit. Do your host-side work in a normal clone of the
+real remote, after the push, like any other collaborator's commits.
+exit=0

@@ -1,0 +1,6 @@
+start: 2026-10-15T01:33:47Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/src
+$ jq empty hooks/wiring.json
+exit=0
+$ python3 json.load hooks/wiring.json
+ok
+exit=0

@@ -1,0 +1,6 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+at-7d25ea12        total=27 notok=0 exit=0
+at-88432f39        total=25 notok=0 exit=0
+at-7d25ea12-mut    total=27 notok=2 exit=1
+    not ok 8 every manifest-hashed file is in the enforcement set
+    not ok 26 the hook's host_tools regex names exactly host_tool_files, no more

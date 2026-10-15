@@ -1,0 +1,31 @@
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/at-88432f39 start: 2026-10-15T01:36:40Z
+cmd: timeout 300 bats test/hooks/live-verify-gate.bats
+73:enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|install\.sh$|egress/)'
+78:host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)$'
+1..25
+ok 1 blocks a commit of an enforcement file with no Live-verified trailer
+ok 2 passes when the -m message carries the trailer
+ok 3 passes when the trailer is an explicit 'no' with a reason
+ok 4 reads the trailer from a -F message file
+ok 5 blocks when the -F message file lacks the trailer
+ok 6 ignores commits that touch no enforcement file
+ok 7 counts unstaged tracked changes when -a is given
+ok 8 every manifest-hashed file is in the enforcement set
+ok 9 install.sh is gated although it is not manifest-hashed (decision 035)
+ok 10 ignores non-commit git commands and non-git commands
+ok 11 leaves an --amend --no-edit alone
+ok 12 a comment-only edit to an egress list passes without a trailer
+ok 13 a diff that changes a comment AND a real line still blocks
+ok 14 commenting OUT an existing allowlist line still blocks
+ok 15 removing a --flag line alongside a comment edit still blocks
+ok 16 a pure whitespace or blank-line change passes
+ok 17 adding a NEW enforcement file whose content is all comments still blocks
+ok 18 the -a path honors the narrowing too
+ok 19 a // comment-only change to devcontainer.json passes
+ok 20 the gate is wired into the live settings.json
+ok 21 malformed input, missing command, and the disable switch all exit 0
+ok 22 a host-tool commit needs Host-tool-tested, and Live-verified alone does not do
+ok 23 a commit touching a boundary file and a host tool needs both trailers
+ok 24 a comment-only host-tool edit beside a real boundary change needs only Live-verified
+ok 25 every host_tool_files entry is gated by the host-tool trailer, none by Live-verified
+exit=0

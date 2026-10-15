@@ -247,6 +247,10 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
   Either the hash `--list` shows after a passing probe, or `Live-verified: no — <why,
   and what will run it>`. The gate does not judge the answer; it refuses to let the
   question go unasked. `git log --grep 'Live-verified: no'` lists the outstanding debt.
+  Host-only tools get a trailer of their own, `Host-tool-tested:`, so from row 71 on
+  that list gains only debt a probe can pay (host-tool commits before it, from Q-076 on,
+  stay in it); `git log --grep 'Host-tool-tested: no'` lists the host-tool debt (see the
+  host-tools note below).
 
 ### What each layer can and cannot prove
 
@@ -261,9 +265,29 @@ for six days while every root-run probe reported a healthy boundary (#43 refuted
 
 Enforcement files are what `enforcement_files()` in `cc-isolated.sh` hashes:
 `Dockerfile`, `devcontainer.json`, `init-firewall.sh`, `cc-sni-proxy.py`,
-`link-claude-home.sh`, `cc-isolated.sh`, `cc-exit-scan.sh` (the session-exit scan
-it sources), `cc-gitdir.sh` (the git-directory tests it and cc-push source),
-`cc-push.sh`, everything under `egress/`, and the staged `claude-home/`.
+`link-claude-home.sh`, `cc-isolated.sh`, the `egress/*.txt` lists, every registered
+`projects/*.profile`, and the staged
+`claude-home/`.
+
+**Host-only tools are not enforcement files for this sequence** (decision log row 71;
+they still count as enforcement files for code-review's mechanic 7 and RPI's
+bypass-family pre-mortem). They are `cc-exit-scan.sh`
+(the session-exit scan the launcher sources), `cc-gitdir.sh` (the git-directory tests
+it and cc-push source) and `cc-push.sh`. They run on the host, after or outside the
+container, and the image never copies them, so no probe can exercise them and the
+sequence below does not apply. The bless hashes them into their own file,
+`host-tools.sha256`, beside `manifest.sha256`. Changing one leaves the blessed config,
+the container and the verified-live receipt alone: it needs a re-bless after review,
+not a rebuild or a probe. Each entry point checks the host tools it executes before
+sourcing them. The launcher checks `cc-exit-scan.sh` and `cc-gitdir.sh`. When either
+has changed it refuses every action except `--bless` and `--list` (`--help` and usage
+errors are answered first), and it still runs
+the boundary check and shows that diff, so a re-bless never accepts a boundary
+change unseen. A changed `cc-push.sh` gets a warning. `cc-push` checks itself and
+`cc-gitdir.sh`, and refuses to run, `--help` included. `cc-isolated --list` shows
+which entry points would refuse, and `--bless` prints what changed before
+accepting it. Their commits carry
+`Host-tool-tested:` (what ran on a host, or `no — <reason>`), not `Live-verified:`.
 
 1. **Unit layer, in the editing session.** `bats test/init-firewall-rules.bats
    test/cc-isolated-functions.bats test/hooks/live-verify-gate.bats`, `shellcheck

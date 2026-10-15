@@ -1,0 +1,40 @@
+cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-q089b.fMBZEt/src
+start: 2026-10-15T00:49:11Z
+cmd: timeout 600 bats -f 'host_tool|verify_host_tools|PAYLOAD|host-tools' test/cc-isolated-functions.bats; bats test/cc-push.bats
+1..5
+ok 1 every regular file in install.sh's PAYLOAD is hashed by enforcement_files or host_tool_files
+ok 2 bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone
+ok 3 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+ok 4 verify_host_tools is the same code in cc-isolated.sh and cc-push.sh
+ok 5 verify_host_tools: an unreadable or malformed host manifest is named as the problem
+exit=0
+1..28
+ok 1 cc-push pushes the checkout's branch from a host-only bare clone
+ok 2 cc-push without --remote on first use refuses and creates nothing
+ok 3 cc-push refuses a clone inside the checkout, or a directory it did not create
+ok 4 cc-push --branch pushes a branch other than HEAD's; an unknown one is refused
+ok 5 cc-push never forces: a rewritten branch is refused by the remote
+ok 6 E2c: a .git gitdir: file (redirect to another host repo) is refused, nothing fetched or pushed
+ok 7 a .git that is a symlink to another repo is refused
+ok 8 P2a: objects/info/alternates naming another host repo is refused, its commit not pushed
+ok 9 http-alternates and a commondir file are refused too
+ok 10 Q-093: every other commondir is refused (spellings, empty, absolute self, dir, FIFO, symlink)
+ok 11 a symlinked object store (aliasing another repo's objects) is refused
+ok 12 a symlinked hook is not a reason to refuse (upload-pack never reads hooks/)
+ok 13 E2b: an include.path naming a FIFO is refused at once, not hung on
+ok 14 includeIf, an upper-case [ Include ], a header after another on one line, and config.worktree are refused
+ok 15 a FIFO as packed-refs inside .git is refused without blocking
+ok 16 a newline in the name of a refused .git entry cannot forge a line
+ok 17 --help prints the whole header, exit codes included
+ok 18 cc-push refuses a .git without HEAD, and does not fall back to a repository planted at the root
+ok 19 cc-push refuses a .git whose HEAD is garbage
+ok 20 cc-push refuses a checkout root holding HEAD, objects/ and refs/ (a planted bare repository)
+ok 21 cc-push refuses a checkout root holding a commondir file
+ok 22 a running cc-isolated container for the checkout: refused (exit 1), nothing fetched
+ok 23 docker that does not answer: refused unless --allow-running
+ok 24 no docker at all: refused unless --allow-running
+ok 25 only the pushed branch is fetched: an unrelated branch never reaches the host clone
+ok 26 cc-push refuses to run on a git below the fixed releases, before touching the checkout
+ok 27 a partial clone is refused up front, with the reason
+ok 28 installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)
+exit=0

@@ -1,0 +1,3 @@
+start: 2026-10-15T01:33:24Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/src cmd: timeout 60 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/src/scripts/questions.sh check
+  ✓ questions: structure valid, indexes current
+exit=0

@@ -1,0 +1,19 @@
+workdir /home/node/.claude/jobs/00bcf178/tmp/fcnarrow.RoLC0y
+2026-10-15T02:56:07Z
+rc=0 base-cci.log: 182 ok / 0 not ok; plan 1..182
+rc=0 base-push.log: 48 ok / 0 not ok; plan 1..48
+/home/node/.claude/jobs/00bcf178/tmp/fcnarrow.RoLC0y/m1/devcontainer-config/cc-isolated.sh:0
+/home/node/.claude/jobs/00bcf178/tmp/fcnarrow.RoLC0y/m1/devcontainer-config/cc-push.sh:0
+rc=1 m1-cci.log: 181 ok / 1 not ok; plan 1..182
+not ok 75 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+rc=1 m2-cci.log: 180 ok / 2 not ok; plan 1..182
+not ok 75 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+not ok 80 verify_host_tools: an unreadable, empty or malformed manifest, or a missing entry, is named as the problem
+rc=1 m3-cci.log: 181 ok / 1 not ok; plan 1..182
+not ok 82 --list reports host-tool state; a changed cc-push warns at launch but does not refuse
+rc=0 m1-old.log: 182 ok / 0 not ok; plan 1..182
+rc=1 m2-old.log: 181 ok / 1 not ok; plan 1..182
+not ok 80 verify_host_tools: an unreadable, empty or malformed manifest, or a missing entry, is named as the problem
+rc=0 m3-old.log: 182 ok / 0 not ok; plan 1..182
+2026-10-15T03:01:30Z
+real HOME untouched check: none

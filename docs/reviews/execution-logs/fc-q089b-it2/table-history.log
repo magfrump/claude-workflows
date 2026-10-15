@@ -1,0 +1,12 @@
+== 88432f39
+/dev/stdin:92 rows=12 cols=3 mismatched=[]
+/dev/stdin:923 rows=19 cols=2 mismatched=[]
+== 7d25ea12
+/dev/stdin:92 rows=12 cols=3 mismatched=[]
+/dev/stdin:923 rows=19 cols=2 mismatched=[(927, 1)]
+== 2b183802
+/dev/stdin:92 rows=12 cols=3 mismatched=[]
+/dev/stdin:923 rows=20 cols=2 mismatched=[]
+== 79f22357
+/dev/stdin:92 rows=12 cols=3 mismatched=[]
+/dev/stdin:923 rows=20 cols=2 mismatched=[]

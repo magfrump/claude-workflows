@@ -19,7 +19,7 @@ is already done.
 ```bash
 cc-isolated                       # session for the git repo containing $PWD
 cc-isolated ~/code/other-project  # session for an explicit repo
-cc-isolated --list                # blessed config hash + verified-live status, registered projects
+cc-isolated --list                # blessed config hash + verified-live status, host-tool state, registered projects
 cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
 cc-isolated --bless               # re-bless the installed config after YOU reviewed it
 cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
@@ -236,7 +236,10 @@ preview always prints the remote it will push to).
 Exit codes: 0 pushed (or nothing to push); 1 an error (a refused checkout,
 container or git version, a failed fetch, a rejected push, an interruption —
 git's own status is never passed through) or declined at the prompt (`n`, or
-Ctrl-C); 2 bad usage.
+Ctrl-C); 2 bad usage. One exception comes first: when the installed `cc-push.sh` or
+the `cc-gitdir.sh` beside it differs from the bless (`host-tools.sha256`, decision
+log row 71), cc-push prints `ERROR: cc-push refuses to run:` and exits 1 before
+parsing anything, so `--help` exits 1 too and prints no usage.
 
 No hook runs on the push, so **git-lfs's `pre-push` upload does not run
 either**: `cc-push` does not upload LFS objects. Push those from a normal clone
@@ -823,7 +826,8 @@ cc-isolated --probe-only ~/code/api
 The repo-side half of the same gate is `hooks/live-verify-gate.sh`: a `git commit`
 that includes any manifest-hashed file under `devcontainer-config/` is blocked unless
 its message carries a `Live-verified:` trailer — the hash `--list` shows after a
-passing probe, or `Live-verified: no — <reason>`. The full loop is in
+passing probe, or `Live-verified: no — <reason>`. The host-only tools
+(`cc-exit-scan.sh`, `cc-gitdir.sh`, `cc-push.sh`) carry `Host-tool-tested:` instead. The full loop is in
 [`devcontainer-setup.md`](devcontainer-setup.md) → "Changing the boundary".
 
 Profile entries are `domain[:port[,port...]]`; a domain needs two or more labels (a
@@ -920,6 +924,10 @@ different hostname). Add the exact name to the profile.
 |---------|-------------|
 | `devcontainer CLI not found` | `npm install -g @devcontainers/cli` on the host. |
 | `no blessed manifest` / `installed config changed` | Review `~/.config/claude-devcontainer/` by hand, then `cc-isolated --bless`. Re-run `install.sh` after any canonical-config change. |
+| `ERROR: host-tool check failed — refusing to launch, probe or register` | A host tool (`cc-exit-scan.sh` or `cc-gitdir.sh`) changed since the last bless, or `host-tools.sha256` is missing, unreadable or malformed (the indented lines say which); the launcher will not source the scan. Review the named files, then run the bless command the message prints (it names the dir). If the boundary config changed too, its diff is shown above: review that as well. `--list` shows which entry points refuse. |
+| `ERROR: cc-push refuses to run:` … `no host-tool manifest`, right after upgrading | Expected once on an install that predates host-tools.sha256 (decision log row 71): re-run `install.sh`, or review the tools and run the bless command cc-push prints. |
+| `WARNING: … cc-push.sh changed since the last bless` at launch | The launch goes on (the launcher does not run cc-push), but do not run `cc-push` until you have reviewed it and re-blessed. |
+| `host-tool manifest … is unreadable or malformed` | `host-tools.sha256` itself is the anomaly. Inspect it before any bless overwrites it; re-run `install.sh` to restore it. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
 | Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. A *subdomain* of a listed name is the common case: the resolver admits the zone, the proxy admits only the exact entry. Add the exact name. |
 | `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch rebuilds and verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |

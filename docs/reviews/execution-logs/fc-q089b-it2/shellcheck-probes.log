@@ -1,0 +1,99 @@
+start: 2026-10-15T01:33:47Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/src version: 0.9.0
+== docs/reviews/execution-logs/fc-q089b/run-bats.sh (as committed)
+
+In docs/reviews/execution-logs/fc-q089b/run-bats.sh line 5:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== docs/reviews/execution-logs/fc-q089b/run-bats.sh (disable line removed)
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 5:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== diff vs stripped (non-comment lines)
+identical code lines
+== docs/reviews/execution-logs/fc-q089b/run-m3.sh (as committed)
+
+In docs/reviews/execution-logs/fc-q089b/run-m3.sh line 6:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== docs/reviews/execution-logs/fc-q089b/run-m3.sh (disable line removed)
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 6:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== diff vs stripped (non-comment lines)
+identical code lines
+== docs/reviews/execution-logs/fc-q089b/run-probes.sh (as committed)
+
+In docs/reviews/execution-logs/fc-q089b/run-probes.sh line 7:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== docs/reviews/execution-logs/fc-q089b/run-probes.sh (disable line removed)
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 6:
+[ -d "$P/src" ] && [ -d "$L" ] || { echo "missing dirs"; exit 1; }
+                ^-- SC2015 (info): Note that A && B || C is not if-then-else. C may run when A is true.
+
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 112:
+echo done
+     ^-- SC1010 (warning): Use semicolon or linefeed before 'done' (or quote to make it literal).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC1010 -- Use semicolon or linefeed before ...
+  https://www.shellcheck.net/wiki/SC2015 -- Note that A && B || C is not if-t...
+exit=1
+== diff vs stripped (non-comment lines)
+identical code lines
+== docs/reviews/execution-logs/sec-q089b/probe.sh (as committed)
+exit=0
+== docs/reviews/execution-logs/sec-q089b/probe.sh (disable line removed)
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 74:
+fresh g1; echo widened >> devcontainer-config/egress/base.txt; git add -A; cd "$P"
+                                                                           ^-----^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+
+Did you mean: 
+fresh g1; echo widened >> devcontainer-config/egress/base.txt; git add -A; cd "$P" || exit
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... |...
+exit=1
+== diff vs stripped (non-comment lines)
+identical code lines
+== docs/reviews/execution-logs/sec-q089b/probe2.sh (as committed)
+exit=0
+== docs/reviews/execution-logs/sec-q089b/probe2.sh (disable line removed)
+
+In /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/tmpd/stripped.sh line 24:
+fresh d1; echo widened >> devcontainer-config/egress/base.txt; git add -A; cd "$P"
+                                                                           ^-----^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.
+
+Did you mean: 
+fresh d1; echo widened >> devcontainer-config/egress/base.txt; git add -A; cd "$P" || exit
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... |...
+exit=1
+== diff vs stripped (non-comment lines)
+identical code lines
