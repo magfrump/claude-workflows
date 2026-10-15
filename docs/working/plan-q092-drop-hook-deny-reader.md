@@ -80,7 +80,7 @@ plus docs; the change removes a coupling the 2026-09-27 review asked to remove).
 
 At the split the whole change counted 652 code lines (deletions count in full),
 so it became two stacked units, each under 400 then (~365 and ~373). After the
-review loops, U1 counts ~407 and U2 ~436 against U1 (697 for the stack), inside
+review loops, U1 counts ~413 and U2 ~451 against U1 (706 for the stack), inside
 decision 62's ~800 in-loop tolerance:
 
 - **U1** `fix/q092a-drop-deny-option` (base `merge/ready-2026-10-15`): drop
