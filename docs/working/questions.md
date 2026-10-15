@@ -29,6 +29,8 @@ The index below is generated — edit entries, not the table.
 | [Q-141](#q-141--u4a-asked-binding-residue) | you: judgment | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
 | [Q-142](#q-142--u4b1-stop-path-worktree-remove) | you: judgment | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-146](#q-146--si-children-commit-rights) | you: judgment | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
+| [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | you: judgment | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
+| [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | you: judgment | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -53,17 +55,64 @@ The index below is generated — edit entries, not the table.
 ### Q-162 · merges-and-cleanup-2026-10-14
 **Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** OPEN
 
-This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges the reviewed branches, then deletes the twelve build-loop branches already merged into main, along with their worktrees:
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block from `/workspace` with `main` checked out. It merges the two reviewed fixes and this cycle's record, then deletes the twelve build-loop branches already merged into main, along with their worktrees. Q-163 and Q-164 (gate code) are separate and go after this block.
 
 ```
 cd /workspace && test "$(git branch --show-current)" = main && \
 git merge --no-ff fix/t69-stage-race -m "Merge branch 'fix/t69-stage-race': T69 waits for the devcontainer stage (cycle 2026-10-14 health-check red)" && \
+git merge --no-ff fix/q110-not-run-undercount -m "Merge branch 'fix/q110-not-run-undercount': the runner's suites do not inherit RUN_TESTS_NOT_RUN_FILE (Q-110)" && \
+git merge --no-ff chore/dev-cycle-2026-10-15-0357 -m "Merge branch 'chore/dev-cycle-2026-10-15-0357': dev cycle 2026-10-14, run by hand" && \
 for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git worktree remove .claude/wt-build-loop-$u && git branch -d feat/build-loop-$u; done
 ```
 
-- **Read:** `fix/t69-stage-race` (4ee81106): T69 in `test/install-host.bats` failed 3 out of 3 runs alone on main b279a2ba. Its feed waited for a file the test's own `--yes` run had already left, so the tamper hit no stage. The old test fails and the new one passes 4/4. The test file is the only change.
-- **Interim:** main's health check stays red on T69 until the merge; that red is the test, not install.sh. The worktrees cost disk and join the import walks' reader set.
-- **If the answer differs:** nothing to redo. More branches join this block as this cycle's loops finish (U5, Q-110). Q-145 gets its own merge entry, since it changes gate code.
+- **Read:**
+  - `fix/t69-stage-race` (4ee81106): T69 in `test/install-host.bats` failed 3 out of 3 runs alone on main b279a2ba. Its feed waited for a file the test's own `--yes` run had already left, so the tamper hit no stage. The old test fails and the new one passes 4/4. The test file is the only change.
+  - `fix/q110-not-run-undercount` (f5b7e49d): the runner unsets `RUN_TESTS_NOT_RUN_FILE` after writing it. A regression test fails on the old runner. Review loop closed (`docs/reviews/code-review-rubric-2026-10-14-fix-q110-not-run-undercount.md`). Its gate went red only on the `/tmp` race Q-145 fixes; the slow suites passed 300/300. Q-110 closes once this lands.
+- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh.
+- **If the answer differs:** leave out any line you do not want. Every merge stands on its own except the chore merge, which only records the cycle.
+
+### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`scripts/lib/dev-cycle-read.sh`), which lands only on your approval.
+
+- **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
+- **Paste for [1]:** `cd /workspace && test "$(git branch --show-current)" = main && git merge --no-ff c035f2e77f8c083156b397fb32e164dd17cc6b44 -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)"`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The paste above. The gate stops flaking on `/tmp` churn once the image is rebuilt (Q-156) | One paste | The delete-and-re-create window lets one listing miss an instruction file that a non-atomic save is rewriting |
+| **[2] drop** | Branch deleted; gates keep flaking under load (3 re-runs this cycle alone) | Re-runs | Q-145's one-hour revisit trigger keeps counting |
+| **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
+
+- **Blocks:** Q-145's revisit clock (re-runs this cycle: U5 2, Q-110 1).
+- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`.
+- **If the answer differs:** [2] `git branch -D fix/q145-ancestor-vanish`.
+
+### Q-164 · merge-gate-feat-build-loop-u5-7c91b97455db
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
+
+Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1904)? It edits `skills/dev-cycle/SKILL.md` (gate code), and its review loop ended in `escalate`.
+
+- **Why it's yours:** GATE_CODE, and the review-fix loop's iteration-4 gate. The last fix, 3718bcd0 (Q-156's paste refuses `core.attributesFile` in any repository config scope, in the reviewer's own executed check form), has not been re-reviewed.
+- **Read:**
+  - The merge message `docs/working/merge-msg-build-loop-u5.md` and the rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch.
+  - What it does: `docs/dev-cycle.md` describes the handoff as built, with a wider `Self-merge never:` line (Q-149 asks how wide). It adds decision-log row 72 and roadmap items (a)–(g), files Q-149..Q-156 (C1–C5, the constraints doc, the image-lag release entry), re-routes Q-103 to you, and marks the handoff brief done.
+  - Size: 26 code lines outside `docs/`, 410 lines in all.
+  - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
+  - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
+- **Paste for [1]:** merge the pre-resolved branch, which is this cycle's chore branch plus U5 with the questions and roadmap conflicts resolved. U5's reviewed tip is unchanged inside it. `cd /workspace && test "$(git branch --show-current)" = main && git merge --no-ff merge/build-loop-u5-resolved -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)"`. Then Q-156's release paste.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Handoff closes; Q-149..Q-156 and Q-103 become live asks; Q-156's release puts the D6 block in the image | One paste, then the release | A defect in the unreviewed Q-156 paste fix shows when you run it. It is a refusal check, so it fails closed |
+| **[2] one more narrow pass first** | A k=1 check of 3718bcd0, then merge | About 20 min of agent time | Nothing; it only delays the release |
+| **[3] changes needed** | Your note goes back to a loop | A note | — |
+
+- **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
+- **Interim:** unmerged. Cycles keep running by hand.
+- **If the answer differs:** [2] runs on the next iteration, which then asks again.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN

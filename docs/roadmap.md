@@ -16,12 +16,13 @@ before merging, since this session cannot merge into main (Q-162).
 
 - **U5, the build-loop handoff's last unit** (`feat/build-loop-u5`). Motive: U1–U4 are on
   main, but the docs, Q-103's re-route, the release entry and the brief's `done` are
-  still owed (plan items 11–13). First step: the plan's U5 items.
+  still owed (plan items 11–13). Built and reviewed; waits on Q-164 (gate code, escalate).
 - **Q-110 — the health check's NOT RUN summary under-counts** (`fix/q110-not-run-undercount`).
-  Motive: reproduced again this cycle (runner 50, summary 4). First step: the reproduction.
+  Motive: reproduced again this cycle (runner 50, summary 4). Fixed and reviewed; waits on
+  Q-162's paste.
 - **Q-145 — the lib's ancestor listing skips vanished entries** (`fix/q145-ancestor-vanish`;
   was Next 4). Motive and revisit trigger as filed under Q-145. A gate-code unit: it lands
-  on your approval, as a merge entry.
+  on your approval: built and reviewed, waits on Q-163.
 - **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
   cycle's health-check red. Waits on Q-162's paste.
 
