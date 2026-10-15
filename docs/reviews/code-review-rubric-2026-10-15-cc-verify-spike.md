@@ -1,11 +1,18 @@
-Commit: 12fcb61c
+Commit: 53770142
 Loop-pass short-circuit: used at 12fcb61c
 
 # Code Review Rubric
 
-**Scope:** `22a4bb1f..12fcb61c` (docs/working/spike-cc-verify-q117.md and its embedded host script) | **Reviewed:** 2026-10-15 | **Status: 🔴 DOES NOT PASS** — 5 red item(s) unresolved (iteration 1; fixes follow in the next commit)
+**Scope:** `docs/working/spike-cc-verify-q117.md` and its embedded host script; iteration 1 `22a4bb1f..12fcb61c`, iteration 2 (the final pass) the whole file at 190fa1a4 (fact-check) and 53770142 (critics) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 1 amber item(s) awaiting resolution or justification
 
-Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-red short-circuit, because the fact-check confirmed behavioral reds. The security critic ran anyway, because the brief requires it. Performance and api-consistency were skipped this pass. Delivery mode: self-read (agents read the doc, the script and the code directly). Skill deviation: agents read their SKILL.md from the repo themselves instead of having it pasted in.
+## Run history
+
+| Iteration | Commit | Fact-check | Critics | Outcome |
+|---|---|---|---|---|
+| 1 (`--loop-pass`) | 12fcb61c | k=1, opus: 33 claims, 5 Incorrect (3 behavioral) | security only (short-circuit; required by the brief): 1 Critical, 1 High, 6 Medium | 5 🔴, 9 🟡, fixed in 190fa1a4 |
+| 2 (final, k=3) | 190fa1a4 → 53770142 | k=3, opus: 36-37 claims each, 4 Incorrect clusters (3 unanimous), 7 Mostly Accurate; agreement ≈ 89% | at 53770142: security (1 High, 3 Medium, 1 Info), performance (1 Medium, 2 Low, 1 Info), api-consistency (1 High-confidence Inconsistent, 1 Minor, 7 convention gaps) | fact-check findings fixed in 53770142; critic findings fixed in the next commit (see A-cap) |
+
+Delivery mode: self-read (agents read the doc, the script and the code, and ran a copy of the stub harness). Skill deviations: agents read their SKILL.md from the repo themselves instead of having it pasted in. Iteration 2's critics reviewed 53770142, which included the fixes for that pass's fact-check findings, rather than 190fa1a4, so that the last review saw the final code. The merged fact-check report lists Verified clusters in a table instead of full claim sections.
 
 ---
 
@@ -13,11 +20,13 @@ Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-re
 
 | # | Finding | Domain | Severity | Source | Location | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|---|---|
-| R1 | Step 2's `git show … \| grep -qxF` runs under pipefail. install.sh (65,632 bytes) is larger than a pipe buffer, so SIGPIPE makes ~5% of runs refuse with a wrong reason | Correctness | Incorrect (high), behavioral | Fact-check claim 6 | `spike-q117.sh:191-194` | for-author | row 507 (merge-tree/git exit status trust): related class, inherited as a hint | 🔴 Unresolved |
-| R2 | The verdict's `elif … no-rotation` overwrote an earlier `fail`, so a real Q-117 failure exited 2 ("rerun later") | Correctness | Incorrect (high), behavioral | Fact-check claim 9a | `spike-q117.sh:293-294` | for-author | — | 🔴 Unresolved |
-| R3 | A planted `run-*.env` steered `--clean`: any `IMG=` was force-removed, and any `PID=` removed that project's containers and claude-config volume (reproduced) | Security | Incorrect (high) + security Medium (F4) | Fact-check claim 24b, security-reviewer F4 | `spike-q117.sh:121-135, 29-58` | for-author | — | 🔴 Unresolved |
-| R4 | The step-3 gate pinned only devcontainer.json. The branch's Dockerfile could choose a base image whose `devcontainer.metadata` label grants privileged, capAdd or mounts, giving host root with no human diff | Security | Critical | security-reviewer F1 | doc:244-258 | for-author | — | 🔴 Unresolved |
-| R5 | Nothing tied the run to the reviewed tree: main and the branch were resolved by name from a `.git` that cc-isolated containers can write | Security | High | security-reviewer F2 | doc:198-216 | for-author | row 509 (racing writer plants state in a gate repo): same class, inherited as a hint | 🔴 Unresolved |
+| R1 | `git show … \| grep -qxF` under pipefail: SIGPIPE on install.sh (65,632 B) refused spuriously | Correctness | Incorrect (high), behavioral | FC1 claim 6 | step 2 | for-author | row 507 hint | Fixed (190fa1a4; old form failed 50/50-200/200 in iteration-2 replicates, new 0) |
+| R2 | The verdict's `no-rotation` overwrote `fail` | Correctness | Incorrect (high), behavioral | FC1 claim 9a | step 9 | for-author | — | Fixed (190fa1a4) |
+| R3 | A planted run record steered `--clean` to other projects' containers, volumes and any image | Security | Incorrect (high) / Medium | FC1 24b, security F4 | teardown | for-author | — | Fixed (190fa1a4 containers and volumes; 53770142 images) |
+| R4 | The Dockerfile was not pinned: a base image's `devcontainer.metadata` could grant privileged | Security | Critical | security F1 | step 3 | for-author | — | Fixed (190fa1a4; final security pass: complete) |
+| R5 | No pin to the reviewed tree | Security | High | security F2 | step 1 | for-author | row 509 hint | Fixed (190fa1a4 `EXPECT_BR` + five-path rule; final pass: complete) |
+| R6 | A `~/cc-verify` writer plants a run record so the refusal lures the user into running a swapped `~/cc-verify/spike-q117.sh` | Security | High | security final F1 | paste / `--clean` fallback | for-author | — | Fixed (next commit: the script is passed to `bash -c` and never written to disk; the fallback is "re-paste with `--clean`"; `denyWrite` for `~/cc-verify` recommended in the doc) |
+| R7 | The planted-record image path: the unanchored `*verify-<T8>*` tag rule with `-f` and no guard | Security | Incorrect (high), behavioral | FC2 claims 2-3 (unanimous) | teardown | for-author | — | Fixed (53770142: before-snapshot proof, `vsc-verify-<T8>` prefix, untag by name without `-f`) |
 
 ---
 
@@ -25,15 +34,22 @@ Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-re
 
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
-| A1 | A stage edit between the step-3 gate and the launcher's bless gets blessed, and `check_manifest` then confirms it | Security | Medium | security-reviewer F3 | for-author | — | 🟡 Open | — |
-| A2 | `GH_TOKEN`/`OPENROUTER_API_KEY` from the user's shell are forwarded into a container running branch code | Security | Medium | security-reviewer F6 | for-author | — | 🟡 Open | — |
-| A3 | Container output reaches the terminal unfiltered: escape sequences, OSC 52, forged RESULT/CHECK lines | Security | Medium | security-reviewer F8 | for-author | — | 🟡 Open | — |
-| A4 | The verdict is attested by the code under test (the branch's root-run firewall script) | Security | Medium | security-reviewer F5 | for-author | — | 🟡 Open | — |
-| A5 | A leftover `VERIFY-<tree8>` has a `.git` that branch code could write | Security | Medium | security-reviewer F7 | for-author | — | 🟡 Open | — |
-| A6 | The doc claims the CHECK lines prove the whole "never writes" list; they cover only main's manifests, bin links and the docker lists | Docs | Incorrect (doc) | Fact-check claim 3 | for-author | — | 🟡 Open | — |
-| A7 | Step 4's `git clone`/`rev-parse` lack the hooksPath/fsmonitor flags (a global or template post-checkout hook runs) | Security / Docs | Incorrect | Fact-check claim 11b | for-author | — | 🟡 Open | — |
-| A8 | In interactive zsh, the paste's trailing `# EDIT` comment became arguments, so the script refused with usage | Correctness | Mostly accurate | Fact-check claim 29 | for-author | — | 🟡 Open | — |
-| A9 | Smaller inaccuracies: Ctrl-C exits 130, not 1 (9b); a script comment cites :89-94 instead of :88-93 (8); `repo_git` also passes `--no-optional-locks` (11c); the tag cleanup can remove an earlier same-tree leftover (2); "What was tested" and the commit message wording (25, 28) | Docs | Mostly accurate | Fact-check | for-author | — | 🟡 Open | — |
+| A1 | A stage edit between the gate and the bless gets blessed | Security | Medium | security F3 | for-author | — | Fixed (190fa1a4) | — |
+| A2 | `GH_TOKEN`/`OPENROUTER_API_KEY` forwarded into the branch container | Security | Medium | security F6 | for-author | — | Fixed (190fa1a4) | — |
+| A3 | Unfiltered terminal output | Security | Medium | security F8, final F3 | for-author | — | Fixed (190fa1a4 relay; 53770142 the remaining three outputs indented; next commit `grep -q` for `initializeCommand`) | — |
+| A4 | Verdict attested by the code under test | Security | Medium | security F5 | for-author | — | Acknowledged | Residual in the doc. Revisit trigger: if the spike's verdict is ever used as a merge gate for a branch nobody reviewed. |
+| A5 | A leftover `VERIFY` `.git` | Security | Medium | security F7 | for-author | — | Acknowledged | Doc warning plus `--clean`. Revisit trigger: if a teardown is reported incomplete on the host. |
+| A6 | The CHECK lines overclaimed the never-writes list | Docs | Incorrect | FC1 claim 3 | for-author | — | Fixed (190fa1a4) | — |
+| A7 | Step-4 clone flags | Security | Incorrect | FC1 11b | for-author | — | Fixed (190fa1a4) | — |
+| A8 | The zsh trailing comment | Correctness | Mostly accurate | FC1 29 | for-author | — | Fixed (190fa1a4; the paste now runs in bash, zsh, `zsh -i` and `bash -i`) | — |
+| A9 | Iteration-1 wording items | Docs | Mostly accurate | FC1 | for-author | — | Fixed (190fa1a4) | — |
+| A10 | Premature status line; `claude-home` always differs; the created table, the Not-verified list, "cannot reach ~/cc-verify" | Docs | Incorrect / Mostly accurate | FC2 claims 1, 4, 8-10 | for-author | — | Fixed (53770142) | — |
+| A11 | `--clean` after a lost snapshot could remove a pre-existing image | Security | Mostly accurate | FC2 claim 5 | for-author | — | Fixed (53770142: the snapshot is kept after an incomplete teardown; no snapshot means nothing is removed) | — |
+| A12 | Log and snapshot paths are predictable and were written through symlinks (executed: victim file overwritten) | Security | Medium | security final F2 | for-author | — | Fixed (next commit: `mkdir run-<RUN>.d`, `set -o noclobber`) | — |
+| A13 | Step 8 re-read the stage's devcontainer.json after `check_manifest` | Security | Medium | security final F4 | for-author | — | Fixed (next commit: exec reads main's installed copy) | — |
+| A14 | Statuses outside the documented set: a failing tar gave exit 2 ("rerun later") | API / Correctness | Inconsistent (High confidence) | api final F1 | for-author | — | Fixed (next commit: any status other than 0/1/130 or the verdict's 2 becomes 1 with `REFUSED: unexpected failure during step …`) | — |
+| A15 | Another session's rebuild fails two CHECKs (false alarm, exit 1) | Performance | Medium | performance final F1 | for-author | — | Fixed (next commit: container and tag disappearances are NOTEs) | — |
+| A-cap | The fixes for the final pass's critic findings (R6, A12-A15, and the API F4/F7/F8 and performance F2/F3 doc items) landed after the final pass, at the 2-iteration cap, and no pass has reviewed them | Process | — | orchestrator | for-author | — | 🟡 Open | Qualifying: re-tested in the stub harness (bash, zsh, `zsh -i`, `bash -i`; pass, FAIL, no-rotation, tar status 2, planted record plus snapshot, crash plus pasted `--clean`, noclobber against planted symlinks). Revisit trigger: run a k=1 security + fact-check pass on the fix commit before the `you: terminal` entry is filed, or treat the host run's output (any REFUSED/TEARDOWN/NOTE line not explained by the doc) as the trigger. |
 
 ---
 
@@ -41,8 +57,15 @@ Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-re
 
 | # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
 |---|---|---|---|---|---|---|
-| C1 | Untested gate bypasses: BuildKit `# syntax=` frontends, `RUN --network=host`, upload-pack config during `clone --no-local`, `attr.tree` merge drivers | security-reviewer (open questions) | Informational | for-author | — | 🟢 Open |
-| C2 | The devcontainer CLI's image naming is unverifiable here | Fact-check claim 5 | Unverifiable | for-author | — | 🟢 Open |
+| C1 | Untested gate bypasses (BuildKit frontends, `RUN --network=host`, upload-pack config, `attr.tree` merge drivers); the Dockerfile pin closes the first two | security iteration 1 | Informational | for-author | — | Deferred (doc residuals) |
+| C2 | devcontainer CLI image naming unverifiable here | FC1 claim 5 | Unverifiable | for-author | — | Deferred (host run) |
+| C3 | A planted record plus a planted snapshot can untag a `vsc-verify-<8 hex>` image | security final F5 | Informational | for-author | — | Won't-Fix (doc residual; closed by `denyWrite`) |
+| C4 | The BuildKit build cache is not cleaned or reported | performance final F2 | Low | for-author | — | Fixed (doc) |
+| C5 | TERM to the script waits for the current step | performance final F3 | Low | for-author | — | Fixed (doc) |
+| C6 | The second clone copies objects again (~1 s, 30 MB) | performance final F4 | Informational | for-author | — | Won't-Fix |
+| C7 | Host-tool conventions: exit codes per row 58, `--help`, `ERROR:` prefixes, both `CLAUDE_DEVC_*` variables, line grammar, a `~/cc-verify` override | api final F2-F6, F9 | Minor | for-author | — | F4 Fixed (next commit), F6 partly (verdict `FAIL` upper-case); the rest Deferred to the `cc-verify` unit (doc section "Toward the cc-verify tool") |
+| C8 | Not-verified #1 still described the old tag rule; "what to paste back" omitted the TEARDOWN lines | api final F7, F8 | Minor | for-author | — | Fixed (next commit) |
+| C9 | The workspace checks out the checkout's HEAD branch unpinned; whether the CLI reads the workspace's `.devcontainer/` is unverified | security final (untested) | Informational | for-author | — | Deferred (host run; the launcher's image-provenance probe refuses a repo Dockerfile build) |
 
 ---
 
@@ -50,8 +73,10 @@ Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-re
 
 | Override (PR ref / Date) | Prior finding | Original → Override | Reason | This run's treatment |
 |---|---|---|---|---|
-| `feat/build-loop-u2b1a2` / 2026-10-08 (row 507) | merge-tree exit status trusted; a missing tip tree object exits 0 | 🔴 → Defer (Q-133 [3]) | landed as a known issue | Hint only. This script's clone has every object, and R1 is a different exit-status trap; not re-flagged. |
-| `feat/build-loop-u2b1a2` / 2026-10-08 (row 509) | a racing same-uid writer plants a merge driver or attributes in a gate repo | 🔴 → Defer (Q-133 [3]) | landed as a known issue | Same class as R5 and the git-config residual; recorded as a residual in the doc. |
+| `feat/build-loop-u2b1a2` / 2026-10-08 (row 507) | merge-tree exit status trusted | 🔴 → Defer (Q-133 [3]) | known issue | Hint only; not re-flagged. The spike's clone is complete, and R1 is a different trap. |
+| `feat/build-loop-u2b1a2` / 2026-10-08 (row 509) | racing writer plants state in a gate repo | 🔴 → Defer (Q-133 [3]) | known issue | Same class as R5 and the git-config residual; recorded as a doc residual. |
+
+This run appended one `Accepted-immutable` row (2026-10-15) for the commit-message Incorrects in 190fa1a4 and 12fcb61c, corrected in 53770142's body.
 
 ---
 
@@ -59,9 +84,10 @@ Iteration 1 was a `--loop-pass` run: fact-check at k=1 (opus), then the first-re
 
 | Item | Verdict | Evidence | Source | Legibility-target |
 |---|---|---|---|---|
-| Main's launcher loads host code only from its own directory | ✅ Confirmed | `cc-isolated.sh:714-718` — "CC_ISOLATED_DIR=…readlink -f…BASH_SOURCE"; pre-Q-089 `source "$(dirname …)/cc-exit-scan.sh"` at :562 (executed: run against a stage, no staged file executed, all writes under the stage) | Fact-check claims 12-13 (executed) | for-orchestrator-synthesis |
-| Q-117 block is verbatim | ✅ Confirmed | `questions-archive.md:2463-2475`, byte-identical (executed: diff) | Fact-check | for-orchestrator-synthesis |
-| `rm -rf` stays inside `~/cc-verify` | ✅ Confirmed | teardown paths derived from `$V/stage-$T8`, `$V/VERIFY-$T8`, `$V/src-$RUN.git` with format-checked RUN/T8 (executed with planted records) | Fact-check claim 24a, security endorsement | for-orchestrator-synthesis |
+| Main's launcher, run against the stage, executes no staged file and writes only under the stage (current and pre-Q-089 launcher) | ✅ Confirmed | `cc-isolated.sh:714-718` "CC_ISOLATED_DIR=… readlink -f … BASH_SOURCE"; tripwires in every staged script never fired; `find -newer` found nothing outside `~/cc-verify` (executed, 3 replicates) | FC2 claim 25 | for-orchestrator-synthesis |
+| The Q-117 block is verbatim | ✅ Confirmed | `questions-archive.md:2463-2475`, `cmp` identical (executed) | FC1, FC2 | for-orchestrator-synthesis |
+| A planted run record cannot reach other projects' containers or volumes | ✅ Confirmed | the project id is recomputed from `$VP/VERIFY-$T8`; planted records naming the harness's id left its container and volume (executed: FC2 r1-r3, security final) | FC2 claim 10, security final | for-orchestrator-synthesis |
+| Every file:line citation in the step table lands | ✅ Confirmed | all three iteration-2 replicates | FC2 | for-orchestrator-synthesis |
 
 ---
 
@@ -75,8 +101,10 @@ All findings' evidence resolved.
 
 | Critic | Reason | Signal |
 |---|---|---|
-| performance-reviewer | loop-pass short-circuit (behavioral red confirmed) | fact-check claims 6, 9a, 24b |
-| api-consistency-reviewer | loop-pass short-circuit (behavioral red confirmed) | fact-check claims 6, 9a, 24b |
+| performance-reviewer (iteration 1 only) | loop-pass short-circuit | FC1 claims 6, 9a, 24b |
+| api-consistency-reviewer (iteration 1 only) | loop-pass short-circuit | FC1 claims 6, 9a, 24b |
+
+All core critics ran in iteration 2.
 
 ---
 
@@ -84,8 +112,9 @@ All findings' evidence resolved.
 
 | Cluster | File / lines | Fragments | Disposition |
 |---|---|---|---|
-| 1 | `spike-q117.sh` `--clean` / teardown | FC-24b, security F4 | distinct defects already merged as R3: each states its mechanism completely |
-| 2 | doc step 3 / the start of step 1 | security F1, F2 | distinct defects: F1 is the missing pin, F2 the moving input; one fix (a tree pin) covers both for this branch, as F2 says |
+| 1 | teardown / `--clean` | FC1-24b, security F4, FC2-2/3/5, security final F1/F5 | distinct defects: steering by record (fixed), image tag rule (fixed), script-file lure (fixed), planted snapshot (residual); each states its own mechanism |
+| 2 | step 3 / step 1 | security F1, F2 | distinct defects; one tree pin covers both for this branch |
+| 3 | `on_exit` status / verdict | FC1-9a, api final F1 | distinct defects: the verdict overwrite (fixed) vs. statuses passing straight through (fixed); both concern exit 2 meaning "rerun later" |
 
 ---
 
