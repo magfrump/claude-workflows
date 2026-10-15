@@ -1,4 +1,4 @@
-Commit: 57f4c871
+Commit: 7d61c39b
 Loop-pass short-circuit: used at a94e01c7
 
 # Code Review Rubric: fix/q160-iteration-cap
@@ -6,7 +6,7 @@ Loop-pass short-circuit: used at a94e01c7
 **Scope:** `main...HEAD` (full branch, first pass) · **Delivery mode:** self-read (diff ~33 KB, markdown only; agents read the diff and enclosing files themselves) ·
 **Fact-check:** k=1 loop pass, `docs/reviews/code-fact-check-report-q160-i1.md` · **Self-eval:** `docs/reviews/self-eval-review-fix-loop-2026-10-15-fix-q160-iteration-cap.md`
 
-Size after iteration 0 (entry, step 1a): 28 code lines against main.
+Entry size (step 1a): 28 code lines against main.
 
 ## Iteration 1 (a94e01c7): loop pass, short-circuited at fact-check
 
@@ -53,7 +53,7 @@ security-reviewer, performance-reviewer, api-consistency-reviewer: loop-pass sho
 
 ## Iteration 2 (57f4c871, range a94e01c7..57f4c871): loop pass
 
-Size after iteration 1: 41 code lines against main (step 1a's command). Fact-check k=1 (`code-fact-check-report-q160-i2.md`): 18 claims; 14 Verified, 4 Mostly accurate, 0 Incorrect. Prior R1, A2, A3, C1, C5 resolved; A1 and C6 partly. Short-circuit already used, so the panel ran: api-consistency (`api-consistency-review-2026-10-15-fix-q160-iteration-cap.md`: 1 Inconsistent, 5 Minor, 2 Informational). Security and performance skipped by Stage 1.5: markdown-only diff, no string literal in a shell, regex, auth or path context changed, no fact-check claim in their domains.
+Size after iteration 1's fixes: 41 code lines against main (step 1a's command). Fact-check k=1 (`code-fact-check-report-q160-i2.md`): 18 claims; 14 Verified, 4 Mostly accurate, 0 Incorrect. Prior R1, A2, A3, C1, C5 resolved; A1 and C6 partly. Short-circuit already used, so the panel ran: api-consistency (`api-consistency-review-2026-10-15-fix-q160-iteration-cap.md`: 1 Inconsistent, 5 Minor, 2 Informational). Security and performance skipped by Stage 1.5: markdown-only diff, no string literal in a shell, regex, auth or path context changed, no fact-check claim in their domains.
 
 | ID | Finding | Source | Tier | Status |
 |---|---|---|---|---|
@@ -70,3 +70,31 @@ Size after iteration 1: 41 code lines against main (step 1a's command). Fact-che
 | I11 | Precedence stated only in the re-check; early split trigger and gate read unqualified; overlap with step 1a at entry | fact-check Claim 16 | 🟡 | Fixed: both qualified with a link; the precedence covers growth during review only, entry stays step 1a's |
 | I12 | Log row 61 (early split trigger) reads unqualified | fact-check Claim 16 | 🟢 | Won't-Fix: row 62's amendment and the loop doc carry it (override row) |
 | I13 | Override rows appended at the bottom with a verdict outside the reference list | fact-check Claim 9 | 🟢 | Won't-Fix: matches the 2026-10-14 rows' practice (override row) |
+
+## Iteration 3 (7d61c39b): final confirming pass, full panel, full branch
+
+Size after iteration 2's fixes: 50 code lines against main. Fact-check k=3 merged (`code-fact-check-report-q160-final.md`, replicates `-final-r{1,2,3}.md`): 0 Incorrect, 3 Stale, 10 Mostly accurate, 1 Unverifiable; all figures, sizes, anchors and the Q-104 quote Verified. Critics, none skipped: security (`security-review-2026-10-15-fix-q160-iteration-cap.md`: 2 Medium, 1 Informational), performance (`performance-review-2026-10-15-fix-q160-iteration-cap.md`: 1 Medium, 1 Low), api-consistency (`api-consistency-review-2026-10-15-fix-q160-iteration-cap-final.md`: iteration-2 F1-F8 held; 2 Minor, 2 Informational). No 🔴: exit condition 2 holds at the cap. The ambers below were fixed after the pass and checked by the narrow pass recorded under it.
+
+| ID | Finding | Source | Tier | Status |
+|---|---|---|---|---|
+| F1 | Re-entering pr-prep (new loop, resumed session) let step 1a's /away split take a unit that grew past 800 under review | security M1 | 🟡 | Fixed: step 1a's split covers only a unit no loop has run on; any rubric for the branch marks it |
+| F2 | Moving files into `docs/` lowers the count | security M2 (low confidence) | 🟡 | Won't-Fix: step 1a's pre-existing scope (Q-085, override row 144); override row with trigger |
+| F3 | "No next action overrides the stop" sat inside rule 2, skipped by first-match; a re-check waiver did not stop rule 2 on a fresh loop | security Info | 🟢 | Fixed: the override sentence precedes the ladder; rule 2 needs neither waiver |
+| F4 | A waiver naming no limit leaves zero headroom (one question per iteration) | performance M1 | 🟡 | Fixed: the waive option proposes a limit with headroom; choosing it grants that limit |
+| F5 | Stacked units above a stopped one wait too | performance L1 | 🟢 | Fixed: one clause |
+| F6 | Restatements name 800 where a waiver's limit applies; 6c unbounded after a waiver | api N1 | 🟡 | Fixed: "~800 or a waiver's limit" in pr-prep 3c, 6c and criteria, quick-ref, completion-signals, chat-synthesis, precedence, gate |
+| F7 | Counts with no following commit have no home | api N2 | 🟢 | Fixed: waiver entry or PR description |
+| F8 | Rubric kept two lines in the retired `Size after iteration N` shape | api N3 | 🟢 | Fixed: reworded |
+| F9 | completion-signals "after review fixes" | api N4 | 🟢 | Fixed |
+| F10 | /away reading stated as fact | fact-check C1 | 🟢 | Fixed: loop doc and row 62 name "Same as [1], but" and call it Q-160's reading |
+| F11 | Rule 2's first-review test paraphrased loosely | fact-check C2 | 🟢 | Fixed: SKILL.md Step 1's wording |
+| F12 | Step 3 criterion claims the before-merge run | fact-check C3 | 🟢 | Fixed: points at 6c |
+| F13 | GitHub path: pushes after 6c not re-checked | fact-check C4 | 🟢 | Fixed: re-run before merging if commits landed after 6c |
+| F14 | Squash can drop `Size:` lines | fact-check C5 | 🟢 | Fixed: carried into the squashed body |
+| F15 | Gate: separable parts past the limit | fact-check C6 | 🟢 | Fixed: otherwise `escalate` |
+| F16 | "Q-160's reading" list incomplete | fact-check C7 | 🟢 | Fixed: "everything else ... for example" |
+| F17 | Plan stale and side claims | fact-check C8, C9 | 🟢 | Fixed |
+| F18 | Override row names the retired rubric line | fact-check C10 | 🟢 | Fixed |
+| F19 | Earlier commit bodies superseded | fact-check C11 | 🟢 | Immutable; this rubric and later bodies carry the corrections |
+| F20 | Q-160 cited before its entry is on main | fact-check C12 | 🟢 | Open for the merger: land `chore/dev-cycle-2026-10-15-0357` (Q-160's entry) before or with this branch |
+| F21 | Self-eval's artifact counts (91/31) should be 76 rubrics, 19 with the header | fact-check C13 | 🟢 | Noted here; the self-eval report is left as written |
