@@ -348,7 +348,13 @@ STUB
   [ "$status" -eq 0 ]
   # The supported path must come first: the by-hand form is the one that can be
   # run wrong, so it must never be the first thing a reader copies.
-  [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
+  # It is the guides' two-step recipe, never a bare relaunch: a plain launch
+  # recreates only on a config-hash mismatch, so in the fail-closed state it does
+  # not recover (override log, fix/doc-drift-cycle1 A4).
+  local ws; ws="$(printf '%q' "$TEST_TMPDIR/proj")"
+  [[ "$(echo "$output" | head -1)" == *"cc-isolated --probe-only $ws && cc-isolated $ws "* ]]
+  [[ "$(echo "$output" | head -1)" == *"recreates"* ]]
+  [[ "$(echo "$output" | head -1)" != *"rebuilds"* ]]
 }
 
 @test "usage prints the whole header block, exit status included, and nothing past it" {
@@ -1143,6 +1149,7 @@ fake_payload_and_dest() {
 
 # A devcontainer stub that answers the in-container reads probe_boundary makes.
 # STUB_IMAGE_HASH → /etc/cc-config-hash; STUB_FP → the workspace fingerprint;
+# STUB_FW_BRICKED=1 → re-running the baked init-firewall.sh fails (fail-closed state).
 # STUB_FW_MISSING=1 → the firewall completion marker is absent. Every call is
 # logged to $DC_LOG so main()'s rebuild decision can be asserted.
 smart_devcontainer_stub() {
@@ -1156,6 +1163,7 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *init-firewall.sh*)      [ -z "${STUB_FW_BRICKED:-}" ] ;;
   *cc-project-id*)
     # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
     # with /home/node/.claude redirected to a test dir and the container's
@@ -1371,6 +1379,28 @@ h6_probe() {
   grep -qxF "CC_CONFIG_HASH=$(blessed_hash)" "$DC_LOG.up-env"
   grep -qxF "CC_PROJECT_ID=$(project_id "$ws")" "$DC_LOG.up-env"
   grep -qxF "CC_PROJECT_NAME=proj" "$DC_LOG.up-env"
+}
+
+# Regression (override log, fix/doc-drift-cycle1 A4): in the fail-closed state the
+# container was built from the blessed config, so a plain launch does not recreate
+# it, and the hint used to send the user straight back into that launch.
+@test "a launch on a fail-closed container does not recreate it, and the hint names --probe-only first" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  STUB_FW_BRICKED=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING STUB_FW_BRICKED
+  local ws; ws="$(printf '%q' "$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ERROR: init-firewall.sh failed"* ]]
+  [[ "$output" == *"Recreate it"*"cc-isolated --probe-only $ws && cc-isolated $ws "* ]]
+  # The premise of the hint: this launch reused the container and never started claude.
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  run ! grep -q ' claude$' "$DC_LOG"
 }
 
 @test "--probe-only always rebuilds before probing" {

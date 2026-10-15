@@ -343,10 +343,10 @@ fail_closed_on_abort() {
     # Not a bare `devcontainer up --remove-existing-container`: run from a normal
     # shell it drops the launcher's localEnv inputs and rebuilds with base-only
     # egress and an empty config hash (see rebuild_hint in cc-isolated.sh).
-    # --probe-only always rebuilds from the blessed config and re-probes.
+    # --probe-only always recreates the container from the blessed config and re-probes.
     echo "       If this container can no longer bootstrap, recreate it from the HOST" >&2
     echo "       with the launcher (the ~/.claude volume and the repo are unaffected):" >&2
-    echo "         cc-isolated --probe-only <repo>    # rebuilds from the blessed config, re-probes" >&2
+    echo "         cc-isolated --probe-only <repo>    # recreates it from the blessed config, re-probes" >&2
     echo "         cc-isolated <repo>                 # then start the session" >&2
   fi
 }

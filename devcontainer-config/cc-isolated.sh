@@ -557,7 +557,11 @@ list_projects() {
 rebuild_hint() {
   local ws="$1" var assigns=""
   shift
-  echo "    cc-isolated $(printf '%q' "$ws")        # the supported path: rebuilds, re-probes, re-launches" >&2
+  # Two steps, not a bare relaunch: a plain launch recreates only when the baked
+  # config hash differs, so a fail-closed container built from the blessed config
+  # would be reused, not recovered. --probe-only always recreates, and exits
+  # non-zero on a failed probe, so the `&&` never starts a session after one.
+  echo "    cc-isolated --probe-only $(printf '%q' "$ws") && cc-isolated $(printf '%q' "$ws")   # the supported path: recreates from the blessed config, re-probes, then launches" >&2
   echo "  or by hand — ALL of these assignments are required, devcontainer.json reads them via localEnv:" >&2
   for var in CC_PROJECT_ID CC_PROJECT_NAME CC_CONFIG_DIR CC_EGRESS_PROFILE CC_CONFIG_HASH; do
     assigns+="$var=$(printf '%q' "${!var:-}") "
@@ -663,7 +667,7 @@ probe_boundary() {
     echo "PROBE FAIL (image provenance): this container was NOT built from the central" >&2
     echo "  Dockerfile at $(config_dir) (missing /usr/local/share/cc-egress, or its baked" >&2
     echo "  egress profile is not '${want_profile:-<base only>}'). Refusing: the boundary in this image is" >&2
-    echo "  not the one you blessed. Rebuild with:" >&2
+    echo "  not the one you blessed. Recreate it with:" >&2
     rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
@@ -677,7 +681,7 @@ probe_boundary() {
   if [ -z "$want_hash" ] || [ "$have_hash" != "$want_hash" ]; then
     echo "PROBE FAIL (config identity): this container was built from config '${have_hash:-<none>}'," >&2
     echo "  but the blessed config is '${want_hash:-<none>}'. The boundary it runs is not the one" >&2
-    echo "  you blessed. Rebuild with:" >&2
+    echo "  you blessed. Recreate it with:" >&2
     rebuild_hint "$ws" "${dc[@]}"
     failures=$((failures + 1))
   fi
@@ -878,7 +882,7 @@ main() {
 
   echo "Project: $ws  (id $pid, egress base${eff_profile:+,$eff_profile}, config $CC_CONFIG_HASH)"
   if [ "$action" = "probe" ]; then
-    # --probe-only is the verification command, so it always rebuilds: probing a
+    # --probe-only is the verification command, so it always recreates: probing a
     # container left over from an earlier config would verify the wrong boundary.
     devcontainer up --remove-existing-container "${dc[@]}"
     probe_boundary "$ws"

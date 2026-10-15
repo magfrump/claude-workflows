@@ -22,7 +22,7 @@ cc-isolated ~/code/other-project  # session for an explicit repo
 cc-isolated --list                # blessed config hash + verified-live status, host-tool state, registered projects
 cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
 cc-isolated --bless               # re-bless the installed config after YOU reviewed it
-cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
+cc-isolated --probe-only [REPO]   # RECREATE REPO's container from the blessed config, run the
                                   # self-probe, record the config verified live on a pass
 cc-isolated --help                # usage header, exit status included
 cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone; first
@@ -960,7 +960,7 @@ different hostname). Add the exact name to the profile.
 | `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |
-| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which rebuilds with both set. The error messages now print the assignments inline for the by-hand form. |
+| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which recreates it with both set. The error messages now print the assignments inline for the by-hand form. |
 | Probe fails on image provenance after migrating from the 015 launcher | A leftover `.devcontainer/Dockerfile` in the target repo shadows the central one. Delete `.devcontainer/` **before** verifying (see `devcontainer-setup.md` → Migrating). |
 
 ## Related
