@@ -74,12 +74,15 @@
 # FAILS CLOSED on its inputs: if any settings file below exists but cannot be
 # read, does not hold exactly one JSON object, or has a permissions that is not
 # an object, or a permissions.allow, .deny or .ask (present at all) that is not
-# an array of NUL-free strings, no command is approved on that call. deny and
-# ask are shape-checked, never read: Claude Code can ignore a whole settings
-# file for an invalid value, and a file it drops should not feed allow rules
-# here. RESIDUAL: a value the hook does not check (another key, a BOM) can
-# still make Claude Code drop the file, and its deny rules with it, while its
-# allow rules approve here; the deny reader used to cover that case.
+# an array or holds a string with a NUL, no command is approved on that call.
+# deny and ask are shape-checked, never read: Claude Code can ignore a whole
+# settings file for an invalid value, and a file it drops should not feed
+# allow rules here. Non-string entries are skipped, not refused: Claude Code
+# drops those with a warning and keeps the file. RESIDUAL: anything Claude Code
+# rejects that this check accepts (another key's value, a BOM, jq-only literals
+# such as NaN) can still make Claude Code drop the file, and its deny rules
+# with it, while its allow rules approve here; the deny reader used to cover
+# that case.
 #
 # SETTINGS SOURCES. ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json, resolved
 # like devcontainer-config/link-claude-home.sh's DEST (an empty value falls
@@ -141,8 +144,11 @@ settings_files() {
 # a jq error, and the caller then approves nothing. Output records are
 # NUL-terminated allow rules, so a rule string containing a newline stays one
 # record. permissions.allow, .deny and .ask, when present (even as null or
-# false), must each be an array of strings with no NUL; only allow is emitted.
-# Deny rules are Claude Code's (header: DENY RULES ARE CLAUDE CODE'S).
+# false), must each be an array, and no string in them may hold a NUL;
+# non-string entries are skipped, as Claude Code drops them with a warning.
+# Only allow is emitted; deny rules are Claude Code's (header: DENY RULES ARE
+# CLAUDE CODE'S). test("\u0000"), not contains(): jq 1.6's contains() matches
+# a NUL needle against every string.
 read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
 [inputs | [input_filename, .]] as $docs
 | if ($docs | map(.[0])) != $ARGS.positional
@@ -153,9 +159,11 @@ read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
 | if type != "object" then error("permissions is not an object")
   else
     (["allow", "deny", "ask"][] as $k | select(has($k)) | .[$k]
-     | if type == "array" and all(.[]; type == "string" and (explode | any(. == 0) | not))
-       then empty else error("permissions.\($k) is not an array of NUL-free strings") end),
-    (.allow // [])[]
+     | if type != "array" then error("permissions.\($k) is not an array")
+       elif any(.[]; type == "string" and test("\u0000"))
+         then error("NUL inside a permissions.\($k) rule")
+       else empty end),
+    ((.allow // [])[] | select(type == "string"))
   end
 | . + "\u0000"
 JQEOF

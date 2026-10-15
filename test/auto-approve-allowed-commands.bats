@@ -207,14 +207,20 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   echo '{"permissions":{"allow":["Bash(ls:*)"]}}' > "$PROJECT/.claude/settings.json"
   local bad
   for bad in '{"permissions":[]}' '{"permissions":null}' '{"permissions":{"deny":"Bash"}}' \
-    '{"permissions":{"deny":[1]}}' '{"permissions":{"deny":{}}}' '{"permissions":{"allow":{}}}' \
-    '{"permissions":{"deny":null}}' '{"permissions":{"deny":false}}' '{"permissions":{"allow":[5]}}' \
-    '{"permissions":{"allow":null}}' '{"permissions":{"ask":"Bash"}}' '{"permissions":{"ask":[1]}}' \
+    '{"permissions":{"deny":{}}}' '{"permissions":{"allow":{}}}' \
+    '{"permissions":{"deny":null}}' '{"permissions":{"deny":false}}' \
+    '{"permissions":{"allow":null}}' '{"permissions":{"ask":"Bash"}}' \
     '[]' '{}{}' ''; do
     printf '%s' "$bad" > "$HOME/.claude/settings.json"
     run run_hook 'ls -la'
     not_approved || { echo "approved with global settings: $bad"; return 1; }
   done
+}
+
+@test "non-string rule entries are skipped, as Claude Code drops them, not refused" {
+  echo '{"permissions":{"allow":[5,"Bash(ls:*)"],"deny":[1],"ask":[{}]}}' > "$PROJECT/.claude/settings.json"
+  run run_hook 'ls -la'
+  approved
 }
 
 @test "an unparseable project settings.json fails closed even when settings.local.json is well formed" {
