@@ -1,8 +1,9 @@
-Commit: a54bb3b0
+Commit: 85973b7a
+Loop closed at 85973b7a
 
 # Code Review Rubric
 
-**Scope:** `fix/cc-isolated-one-workspace`, `5e6e9266..a54bb3b0` (full branch; iteration 1, `--loop-pass`) | **Reviewed:** 2026-10-15 | **Status: 🟡 fixes pending re-review** — 0 red; 4 amber fixed in the iteration-1 fix commit, awaiting the next pass
+**Scope:** `fix/cc-isolated-one-workspace`, `5e6e9266..HEAD` (iteration 1: independent critics on a54bb3b0; iteration 2 and final: INLINE SELF-REVIEW by the builder, see below) | **Reviewed:** 2026-10-15 | **Status: 🟢 PASSES (self-review caveat)** — 0 red, 0 open amber (A3 acknowledged with a revisit trigger); single-sample review; absence of findings is not an attestation, and the last two passes are the builder's own
 
 Reports: `code-fact-check-report-2026-10-15-one-workspace.md` (k=1), `security-review-2026-10-15-one-workspace.md`, `api-consistency-review-2026-10-15-one-workspace.md`, `performance-review-2026-10-15-one-workspace.md`. Delivery mode: inline-diff-only. Plan: `docs/working/plan-2026-10-15-cc-isolated-one-workspace.md`.
 
@@ -41,9 +42,25 @@ None. (Fact-check's two Incorrects are a comment and a plan claim, 🟡 under ti
 | C10 | Older messages print values raw (`unknown flag: $1`, `resolve_workspace`): ESC bytes reach the terminal if the user types `$'…'` | security info 2 + api-consistency F6 | Informational | for-author | — | Defer, pre-existing; revisit trigger: the next change to those messages |
 | C11 | New tests cost 1.4 s of a 57 s file, each under 1 s | performance | Informational | for-orchestrator-synthesis | — | No action |
 
+## Iterations 2 and final: inline self-review (critics stalled)
+
+The iteration-2 fact-check agent stalled (no output after ~06:03, stopped), its one re-dispatch (tighter brief, probes capped at 300 s) produced no report in 30 minutes and was stopped by the coordinator, who reported that nested critic agents hang in this session and told the builder not to spawn more. **The iteration-2 pass and the final confirming pass therefore ran inline, by the builder, on 5a821383 and its follow-up.** This is self-review: the same model that wrote the change checked it, so it is weaker than independent critics and k=3 replication did not happen. The iteration-2 security, api-consistency and performance critics were never dispatched (they wait on Stage 1). Evidence used: the stopped re-run's probe logs (`/home/node/.claude/jobs/00bcf178/tmp/one-ws/cfc-i2b/exitcodes.log`, `probes.log`, `bats.log`: every refused form exits 2 with the expected message; the targeted bats tests pass), plus the builder's own reads and runs.
+
+| Pass | Checked | Result |
+|---|---|---|
+| Fact-check (inline) | --help header vs parser; comments on `arg_usage_error`, `pasted_note_error`, `two_workspaces`, the `--profile` and `\#*)` cases, the `--` block; guide table vs the old block (14 command rows before, 14 after); guide paragraph; install.sh/init-firewall.sh comments; commit 5a821383 and this rubric's Fixed statuses; plan F5; override-log row | One imprecision: the header's "Before `--`, a second workspace, or a word starting with '#'…" read as if a second workspace after `--` were allowed → **S1, Fixed** in the iteration-2 commit. Everything else matched the code |
+| Security (inline) | Every mode's grammar (launch, `--probe-only`, `--register`/`--profile`, `--bless`, `--list`, `--help`, `--`); a note's words reaching flags via `--profile` (now refused) or after `--` (two_workspaces, exit 2); `-- '#'` (exit 1 from resolve_workspace, no action); usage errors before the host-tool refusal; %q on new values; no egress profile name starts with `-` or `#` (egress/*.txt), so the `--profile` refusal blocks no real profile; install.sh lines | No new finding. **S2 (Consider, Won't-Fix):** if the whole install.sh block is pasted, its prose lines with an apostrophe ("a project's", "a session's") open a quote and the result is a "command not found", never a cc-isolated run; the block's heading says to copy the command lines only |
+| API consistency (inline) | New errors use `ERROR:` + hints + usage on stderr + exit 2 (decision log #58), raised before any refusal (row 71); `--profile` messages match the existing "--profile needs a value" wording; the header's new layout is not parsed by any test or script (`rg` for its old lines) | No new finding |
+| Performance | Not re-run; iteration 1 found nothing and the fix adds one `case` per `--profile` | — |
+
+| # | Finding | Source | Severity | Legibility-target | Considered overrides | Status |
+|---|---|---|---|---|---|---|
+| S1 | --help header sentence scoped "a second workspace" to before `--` | inline fact-check (self-review) | Minor | for-author | — | Fixed |
+| S2 | Pasting install.sh's whole Next-steps block: prose lines with apostrophes open a quote (harmless "command not found") | inline security (self-review) | Informational | for-author | — | Won't-Fix |
+
 ## ⏭️ Skipped Core Critics
 
-None. Contextual: none triggered (tests changed with source; 6 files, under 500 lines; no manifests or UI; no module-structure change).
+Iteration 1: none. Iterations 2 and final: security, api-consistency and performance were not run as independent critics (critic agents stalled; replaced by the inline self-review above). Contextual: none triggered (tests changed with source; 6 files, under 500 lines; no manifests or UI; no module-structure change).
 
 ## 🧩 Composition check
 
