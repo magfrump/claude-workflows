@@ -52,7 +52,11 @@
 # prompt decide). It never emits "ask", "deny" or "defer". That is what lets it
 # leave deny rules to Claude Code: a hook "ask" overrides permissions.deny
 # (Claude Code issue #39344), but a hook "allow" does not (host test Q-082,
-# 2026-09-28; decision log row 53). cc-isolated has no sandbox (Q-081, Q-125),
+# 2026-09-28; decision log row 53). Q-082 did not record the Claude Code
+# version (Q-091 saw 2.1.284 on the host that day) and the image installs
+# @latest: re-run Q-082's test when a Claude Code release changes how a
+# PreToolUse permissionDecision combines with permission rules, or before
+# relying on this after a major version. cc-isolated has no sandbox (Q-081, Q-125),
 # so there the shape allowlist above still decides which allow-listed commands
 # run without a prompt.
 #
@@ -60,17 +64,22 @@
 # itself and never approve a match, raw or de-quoted. Q-082 made that redundant
 # for "allow", so it is gone and each deny rule has one interpreter. Left to
 # Claude Code's matcher, not verified on a host: whether a rule catches a
-# quote-split spelling (`.cred""entials.json`, `git "push"`) or a denied
+# quote or backslash spelling (`.cred""entials.json`, `.c\redentials.json`,
+# `git "push"`, `cat "secret"` against `Bash(cat secret)`) or a denied
 # subcommand inside a list (`ls && rm -rf x` against `Bash(rm -rf:*)`). The
 # hook used to send both to the prompt. A spelling that never contains the
 # denied string (`~/.claude/.c*`, a variable set by an earlier command) got
 # past both matchers before and still does (Q-070 [1]; a sandbox is the fix).
 #
 # FAILS CLOSED on its inputs: if any settings file below exists but cannot be
-# read, does not hold exactly one JSON object, or has permissions,
-# permissions.allow or permissions.deny of the wrong shape, no command is
-# approved on that call. permissions.deny is shape-checked but not read: Claude
-# Code may reject such a file, and then its allow rules should not count here.
+# read, does not hold exactly one JSON object, or has a permissions that is not
+# an object, or a permissions.allow, .deny or .ask (present at all) that is not
+# an array of NUL-free strings, no command is approved on that call. deny and
+# ask are shape-checked, never read: Claude Code can ignore a whole settings
+# file for an invalid value, and a file it drops should not feed allow rules
+# here. RESIDUAL: a value the hook does not check (another key, a BOM) can
+# still make Claude Code drop the file, and its deny rules with it, while its
+# allow rules approve here; the deny reader used to cover that case.
 #
 # SETTINGS SOURCES. ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json, resolved
 # like devcontainer-config/link-claude-home.sh's DEST (an empty value falls
@@ -87,7 +96,8 @@
 #                path under it; `Bash(a/b)` and `Bash(python3 d)` do cover
 #                `a/b/x` and `python3 d/x`)
 #   Bash(rm:*)   word prefix: `rm x`, not `rmdir`
-#   Bash(ls *)   the literal text `ls *`: approves nothing (use `Bash(ls:*)`)
+#   Bash(ls *)   literal prefix, not a glob: `ls *` and `ls * -la` (bash then
+#                expands that `*`), never `ls -la` (use `Bash(ls:*)`)
 #   Bash         ignored
 
 set -euo pipefail
@@ -130,9 +140,9 @@ settings_files() {
 # none, `{}{}` yields two). Any parse error, wrong shape or missing document is
 # a jq error, and the caller then approves nothing. Output records are
 # NUL-terminated allow rules, so a rule string containing a newline stays one
-# record; a NUL inside one is an error. Non-string allow entries are skipped.
-# permissions.deny is checked for shape only (an array of strings) and emits
-# nothing: deny rules are Claude Code's (header: DENY RULES ARE CLAUDE CODE'S).
+# record. permissions.allow, .deny and .ask, when present (even as null or
+# false), must each be an array of strings with no NUL; only allow is emitted.
+# Deny rules are Claude Code's (header: DENY RULES ARE CLAUDE CODE'S).
 read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
 [inputs | [input_filename, .]] as $docs
 | if ($docs | map(.[0])) != $ARGS.positional
@@ -142,13 +152,12 @@ read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
 | .permissions
 | if . == null then empty
   elif type != "object" then error("permissions is not an object")
-  elif ((.deny // []) | type != "array" or any(.[]; type != "string"))
-    then error("permissions.deny is not an array of strings")
   else
-    (.allow // []) | if type == "array" then .[] | select(type == "string")
-                     else error("permissions.allow is not an array") end
+    (["allow", "deny", "ask"][] as $k | select(has($k)) | .[$k]
+     | if type == "array" and all(.[]; type == "string" and (explode | any(. == 0) | not))
+       then empty else error("permissions.\($k) is not an array of NUL-free strings") end),
+    (.allow // [])[]
   end
-| if explode | any(. == 0) then error("NUL inside a rule string") else . end
 | . + "\u0000"
 JQEOF
 
