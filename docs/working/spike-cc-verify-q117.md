@@ -2,7 +2,7 @@
 
 - **Goal**: One host paste that live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages the merge of main and the branch, and runs main's installed cc-isolated against that stage on a scratch clone. The same run checks the research doc's four unverified claims (§7).
 - **Project state**: roadmap Next 3, step 1 of the DD's recommendation ([4] as [5]'s first step), on `docs/branch-verify-without-install` · inputs: `research-branch-verify-without-install.md`, `dd-branch-verify-without-install.md` · blocked on a host run (the user's `you: terminal` paste)
-- **Task status**: paused (paste written and reviewed in two iterations, outcome in the rubric linked below; nothing has run on the host)
+- **Task status**: paused (paste written and reviewed; A-cap still open on directory-swap residuals, see the rubric; nothing has run on the host)
 
 Last verified: 2026-10-15 against main b279a2ba and `fix/egress-dnsmasq-ipset` b26d4b8b23aa (pinned in the paste); their merge tree is `65e65962b12e…`.
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/install.sh`, `devcontainer-config/devcontainer.json`, `devcontainer-config/Dockerfile`, `guides/cc-isolated-usage.md`, `docs/working/questions-archive.md` (Q-117)
@@ -25,10 +25,13 @@ The paste hands the script to `bash -c` as text; it is never written to disk, so
 | run record | `~/cc-verify/run-<RUN>.env`, holding only `RUN=` and `T8=`, written with `xwrite` (below) | the trap, last, and only when every removal succeeded |
 | run directory and log | `~/cc-verify/run-<RUN>.d/` (created with `mkdir`, which fails if anything is already at that path) holding `log.txt` | kept on purpose. The script reads the log's tail only to show a `--register` failure; nothing else reads it. |
 
-**How it writes files.** Nothing is written by reopening a predictable path:
-- Snapshots, the run record and the stage's `.manifest` go through `xwrite`. It writes to a new `mktemp` file (O_EXCL) through a descriptor checked to be that regular file, then `mv -T`s it into place. A rename replaces a planted link instead of following it.
-- The log is created the same way and then kept open on fd 3, so every later log write lands in that file even if its path is swapped.
+**How it writes files.** The *last* component of every path it writes is protected:
+- The before-snapshot, the run record and the stage's `.manifest` go through `xwrite`. It writes to a new `mktemp` file (O_EXCL) through a descriptor checked to be that regular file, then `mv -T`s it into place. A rename replaces a planted link instead of following it.
+- The log is created the same way and then kept open on fd 3; its tail is read back through fd 3.
+- The after-state is compared in memory, so nothing is written after teardown.
 - The stage is assembled by `mv -T`, not `cp`, and must hold no symlink afterwards.
+
+Parent directories are still looked up by name. So a same-uid process that can write `~/cc-verify` can still swap a directory for a link and redirect the stage assembly or a write. Some of these swaps need no race. They are listed under Residual risks, and they are why `denyWrite` for `~/cc-verify` is strongly recommended (review A-cap pass 2, F2 and F3).
 
 `set -o noclobber` is only a backstop. It does not cover `>>`, and `>` still follows a link to a FIFO or a device (review A-cap pass, security F1 and fact-check claims 3b/3c).
 
@@ -44,7 +47,7 @@ Step 4 also checks the path-keyed identity, and step 6 has the launcher write `p
 
 ## The paste (one block, for a `you: terminal` entry)
 
-Run it from a terminal on the host. The last line is the only one to edit: replace `~/claude-workflows` if your checkout lives elsewhere. The block holds no shell comments outside the script, so it pastes the same into bash and zsh. Its first output line is `script sha256 cad246995be322c6`; any other value means the pasted block is not this reviewed one, so stop it with Ctrl-C. It takes up to about an hour: the image build, then Q-117's own wait (up to 45 min) for a dl.google.com pool rotation. Do not open a shell or run git inside `~/cc-verify` while it runs, or afterwards if a teardown is reported incomplete: branch code can write the workspace's `.git`. **Recommended before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`. Without that, a same-uid agent can still race the script's millisecond windows (see Residual risks).
+Run it from a terminal on the host. The last line is the only one to edit: replace `~/claude-workflows` if your checkout lives elsewhere. The block holds no shell comments outside the script, so it pastes the same into bash and zsh. Its first output line is `script sha256 0543b52a14d9c6a5`; any other value means the pasted block is not this reviewed one, so stop it with Ctrl-C. It takes up to about an hour: the image build, then Q-117's own wait (up to 45 min) for a dl.google.com pool rotation. Do not open a shell or run git inside `~/cc-verify` while it runs, or afterwards if a teardown is reported incomplete: branch code can write the workspace's `.git`. **Recommended before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`. Without that, a same-uid agent that can write `~/cc-verify` can still redirect parts of the run through directory swaps. That reaches files outside `~/cc-verify`, main's config dir included. See Residual risks.
 
 ```bash
 bash -c "$(cat <<'CCVERIFY'
@@ -98,14 +101,15 @@ die() { DIED=1; printf 'REFUSED: %s\n' "$*" >&2; exit 1; }
 # xwrite <path>: write stdin to <path> without following anything planted there. The data
 # goes to a new O_EXCL temp file (mktemp) through a descriptor checked to be that regular
 # file, and rename(2), which replaces a link rather than following it, puts it in place.
+xdie() { printf 'REFUSED: %s\n' "$*" >&2; exit 97; }   # die for xwrite, which runs in a pipeline subshell
 xwrite() {
   local t fd
-  t="$(mktemp "$(dirname "$1")/.xw.XXXXXX")" || die "could not create a temp file beside $1"
+  t="$(mktemp "$(dirname "$1")/.xw.XXXXXX")" || xdie "could not create a temp file beside $1"
   exec {fd}>>"$t"
-  if [ -L "$t" ] || [ ! -f "$t" ] || [ ! "$t" -ef "/proc/self/fd/$fd" ]; then exec {fd}>&-; die "$t changed under the script."; fi
+  if [ -L "$t" ] || [ ! -f "$t" ] || [ ! "$t" -ef "/proc/self/fd/$fd" ]; then exec {fd}>&-; xdie "$t changed under the script."; fi
   cat >&"$fd"
   exec {fd}>&-
-  mv -fT -- "$t" "$1" || die "could not put $1 in place."
+  mv -fT -- "$t" "$1" || xdie "could not put $1 in place."
 }
 # openlog <path>: create the log the same way and keep it open on fd 3 for every later write.
 openlog() {
@@ -198,7 +202,7 @@ main_state() {  # what "main install untouched" compares
   for f in cc-isolated cc-push; do echo "$f -> $(readlink -f "$MAIN_BIN/$f" 2>/dev/null || echo absent)"; done
   echo "config tree $( (cd "$MAIN_CFG" && find . \( -type f -o -type l \) -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) | sha256sum)"
 }
-snapshot() {   # snapshot <before|after>, inside the run's own directory
+snapshot() {   # snapshot before, inside the run's own directory
   local d="$V/run-$RUN.d/snap-$1"
   mkdir "$d"
   docker ps -a --no-trunc --format '{{.ID}} {{.Names}}' </dev/null | sort | xwrite "$d/containers"
@@ -207,20 +211,23 @@ snapshot() {   # snapshot <before|after>, inside the run's own directory
   main_state | xwrite "$d/main"
 }
 
-compare() {    # after teardown: did anything outside this run change?
-  local b="$V/run-$RUN.d/snap-before" a="$V/run-$RUN.d/snap-after" bad=0 x
-  snapshot after
-  if cmp -s "$b/main" "$a/main"; then echo "CHECK main install untouched: ok"
-  else echo "CHECK main install untouched: FAIL"; diff "$b/main" "$a/main" || true; bad=1; fi
-  x="$(comm -23 "$b/volumes" "$a/volumes")"
+compare() {    # after teardown: did anything outside this run change? (after-state kept in memory)
+  local b="$V/run-$RUN.d/snap-before" bad=0 x ac av ai am
+  ac="$(docker ps -a --no-trunc --format '{{.ID}} {{.Names}}' </dev/null | sort)"
+  av="$(docker volume ls -q </dev/null | sort)"
+  ai="$(docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' </dev/null | sort)"
+  am="$(main_state)"
+  if [ "$(cat "$b/main" 2>/dev/null)" = "$am" ]; then echo "CHECK main install untouched: ok"
+  else echo "CHECK main install untouched: FAIL"; diff "$b/main" <(printf '%s\n' "$am") || true; bad=1; fi
+  x="$(comm -23 "$b/volumes" <(printf '%s\n' "$av" | grep -v '^$'))"
   if [ -z "$x" ]; then echo "CHECK no pre-existing volume removed: ok"
   else echo "CHECK no pre-existing volume removed: FAIL"; printf '  %s\n' "$x"; bad=1; fi
   # Containers and image tags also change when another session's launcher recreates its
   # container (cc-isolated.sh:883, :895), so a disappearance is reported, not failed. This
   # script's only `docker rm` targets label cc-project=<PID>, fresh at step 4.
-  x="$(comm -23 "$b/containers" "$a/containers")"
+  x="$(comm -23 "$b/containers" <(printf '%s\n' "$ac" | grep -v '^$'))"
   [ -z "$x" ] || { echo "NOTE pre-existing containers gone after the run (another session's rebuild? this script removes only label cc-project=$PID):"; printf '  %s\n' "$x"; }
-  x="$(comm -23 "$b/images" "$a/images" | grep -v '^<none>:<none> ' || true)"
+  x="$(comm -23 "$b/images" <(printf '%s\n' "$ai" | grep -v '^$') | grep -v '^<none>:<none> ' || true)"
   [ -z "$x" ] || { echo "NOTE pre-existing image tags moved or gone (another session's rebuild; a vsc-verify-* one would refute the research §7 image-naming claim):"; printf '  %s\n' "$x"; }
   if [ -n "$IMGTAGS_CHECKED" ]; then
     if [ -z "$RETAG" ]; then echo "CHECK verify image carried no pre-existing tag: ok"
@@ -230,9 +237,8 @@ compare() {    # after teardown: did anything outside this run change?
   else echo "CHECK verify volumes gone: ok"; fi
   if [ -n "$(docker ps -aq --filter "label=cc-project=$PID" </dev/null)" ]; then echo "CHECK verify container gone: FAIL"; bad=1
   else echo "CHECK verify container gone: ok"; fi
-  x="$(comm -13 "$b/containers" "$a/containers"; comm -13 "$b/volumes" "$a/volumes"; comm -13 "$b/images" "$a/images")"
+  x="$(comm -13 "$b/containers" <(printf '%s\n' "$ac" | grep -v '^$'); comm -13 "$b/volumes" <(printf '%s\n' "$av" | grep -v '^$'); comm -13 "$b/images" <(printf '%s\n' "$ai" | grep -v '^$'))"
   [ -z "$x" ] || { echo "NOTE created during the run and still present (another session's, or a build leftover; not removed):"; printf '  %s\n' "$x"; }
-  rm -rf -- "$a"
   return "$bad"
 }
 
@@ -246,6 +252,7 @@ on_exit() {
   if [ "$rc" = 2 ] && [ "$NOROT" != 1 ]; then rc=99; fi
   case "$rc" in
     0|1|2|130) ;;
+    97) rc=1; DIED=1 ;;   # xwrite already printed its REFUSED line
     *) printf 'REFUSED: unexpected failure during step "%s" (status %s).\n' "$STEP" "$orig" >&2; rc=1 ;;
   esac
   if [ "$rc" = 1 ] && [ "$DIED" != 1 ] && [ "$VERDICT" != 1 ]; then
@@ -282,7 +289,7 @@ if [ "${1:-}" = "--clean" ]; then
     T8="$(sed -n 's/^T8=\([0-9a-f]\{8\}\)$/\1/p' "$f" | head -1)"
     [ "$f" = "$V/run-$RUN.env" ] || { echo "skipping malformed $f (remove it by hand)" >&2; rc=1; continue; }
     echo "cleaning run $RUN (tree ${T8:-?}${T8:+, project $(verify_pid "$T8")})"
-    if teardown; then rm -rf -- "$V/run-$RUN.d/snap-before" "$V/run-$RUN.d/snap-after"; else rc=1; fi
+    if teardown; then rm -rf -- "$V/run-$RUN.d/snap-before"; else rc=1; fi
   done
   exit "$rc"
 fi
@@ -417,7 +424,7 @@ snapshot before
 SNAP=1
 say "6. register $PROFILE in the stage (main's launcher, CLAUDE_DEVC_CONFIG_DIR=stage); log: $LOG"
 CLAUDE_DEVC_CONFIG_DIR="$S" "$LAUNCHER" --register "$WS" --profile "$PROFILE" >&3 2>&1 </dev/null \
-  || { tail -n 20 "$LOG" | vis | sed 's/^/  | /' >&2; die "--register failed (log above)."; }
+  || { tail -n 20 /dev/fd/3 | vis | sed 's/^/  | /' >&2; die "--register failed (log above)."; }
 [ "$(cat "$S/projects/$PID.profile" 2>/dev/null)" = "$PROFILE" ] \
   || die "the launcher did not write $S/projects/$PID.profile: its project id differs from this spike's."
 # What the bless hashed must still be main's copies: a stage edit between step 3 and the bless
@@ -441,7 +448,7 @@ new=yes; if grep -q " $img\$" "$V/run-$RUN.d/snap-before/images"; then new=no; f
 # A tag that existed before the run and now names this run's image means the CLI reused an
 # existing image name (research §7): reported as a CHECK, and teardown keeps that tag.
 for t in $(docker image inspect -f '{{range .RepoTags}}{{.}} {{end}}' "$img" </dev/null 2>/dev/null || true); do
-  if awk -v t="$t" '$1 == t { f = 1 } END { exit !f }' "$V/run-$RUN.d/snap-before/images"; then RETAG="$RETAG $t"; fi
+  if awk -v t="$t" -v i="$img" '$1 == t && $2 != i { f = 1 } END { exit !f }' "$V/run-$RUN.d/snap-before/images"; then RETAG="$RETAG $t"; fi
 done
 IMGTAGS_CHECKED=1
 echo "   container ${cids:0:12}, image ${img:7:12} (new: $new)"
@@ -500,7 +507,7 @@ If anything kills the run before its trap fires (a `kill -9`, a closed terminal,
 These are the lines that matter, in order. Long output in between is elided (`…`), and `<…>` stands for run-specific values. Every line the script did not write itself is shown indented under `  | ` with control bytes removed: the launcher's and the container's output, git's conflict listing, the step-3 diff and a `--register` failure's log tail. So only the script's own lines can start with `RESULT`, `CHECK` or `REFUSED`.
 
 ```
-   script sha256 cad246995be322c6
+   script sha256 0543b52a14d9c6a5
 == 1. merge check: main + fix/egress-dnsmasq-ipset
    main=<12 hex>  fix/egress-dnsmasq-ipset=b26d4b8b23aa  merged tree=<40 hex>
 == 2. stage -> <home>/cc-verify/stage-<TREE8>
@@ -577,7 +584,7 @@ Exit status. Once the run has started, it is also printed as `RESULT spike-q117 
 | 8 | Q-117's container block, verbatim | questions-archive.md:2463-2475 (byte for byte). It runs as `remoteUser: node` (devcontainer.json:71). node can read the proxy log: on the branch, `/run/cc-sni-proxy` is 0755 (`init-firewall.sh:1392-1393` on the branch) and the log is opened 0644 (`cc-sni-proxy.py:260`). The `ALLOW sni=… -> <ip>:<port>` field order is the proxy's (`cc-sni-proxy.py:207`). dl.google.com is only in `egress/android.txt`. |
 | 7-8 | launcher and container output goes through `relay`: control bytes (all but tab and newline) are dropped, and each line is shown under `  \| ` | Branch code builds and boots this container, so its output cannot rewrite the terminal, set the clipboard through OSC 52, or print a line that looks like the script's `RESULT`/`CHECK` (review security F8). |
 | 9 | verdict = Q-117's own rule: 2 instances, both fetches 200, 0 FAIL lines, the first ALLOW address absent from "pool now". `no-rotation` (exit 2) applies only when nothing else failed | questions-archive.md:2478. The ordering was fixed in review: a real failure used to report as "rerun later" (fact-check claim 9a). |
-| trap / `--clean` | Order of removal: the label's containers; the two named volumes; the containers' images; `vsc-verify-<TREE8>-…` tags; then the stage, workspace and clone. Every name is derived from `RUN` and `TREE8` (format-checked), and the project id is recomputed from `~/cc-verify/VERIFY-<TREE8>`. An image goes only if the run's before-snapshot exists and does not list its id, and nothing is ever removed with `-f`. For the container's image, the trap untags its `vsc-verify-<TREE8>` names, then removes the id only if it is unused and no other tag is left. Otherwise it reports `TEARDOWN: kept image … it also carries …`. Build tags are untagged by name. At step 7, a pre-existing tag now naming the verify image sets `CHECK verify image carried no pre-existing tag: FAIL`, which refutes the image-naming claim (A-cap fact-check claim 9b). Without the snapshot, images are reported and kept. | A planted `run-*.env` can name only a `VERIFY-<8 hex>` path under `~/cc-verify`, and only this script creates those. It has no snapshot, so it removes no image at all. It cannot point `docker rm` or `volume rm` at another project. Both points were reproduced before the fixes (iteration-1 fact-check claim 24b, security F4; iteration-2 tag-rule finding) and re-tested after: a planted record naming `deadbeef` left `acme/preverify-deadbeef:1` and `vsc-verify-deadbeef-x` in place. |
+| trap / `--clean` | Order of removal: the label's containers; the two named volumes; the containers' images; `vsc-verify-<TREE8>-…` tags; then the stage, workspace and clone. Every name is derived from `RUN` and `TREE8` (format-checked), and the project id is recomputed from `~/cc-verify/VERIFY-<TREE8>`. An image goes only if the run's before-snapshot exists and does not list its id, and nothing is ever removed with `-f`. For the container's image, the trap untags its `vsc-verify-<TREE8>` names, then removes the id only if it is unused and no other tag is left. Otherwise it reports `TEARDOWN: kept image … it also carries …`. Build tags are untagged by name. At step 7, a tag that named a *different* image before the run and now names the verify image sets `CHECK verify image carried no pre-existing tag: FAIL`, which refutes the image-naming claim (A-cap fact-check claim 9b). A tag that already named the same reused image does not count (A-cap pass 2, F6). Without the snapshot, images are reported and kept. | A planted `run-*.env` can name only a `VERIFY-<8 hex>` path under `~/cc-verify`, and only this script creates those. It has no snapshot, so it removes no image at all. It cannot point `docker rm` or `volume rm` at another project. Both points were reproduced before the fixes (iteration-1 fact-check claim 24b, security F4; iteration-2 tag-rule finding) and re-tested after: a planted record naming `deadbeef` left `acme/preverify-deadbeef:1` and `vsc-verify-deadbeef-x` in place. |
 
 ## What was tested here, without a host
 
@@ -592,13 +599,16 @@ The sandbox has no docker, and nothing ran for real. The script was run end to e
 - **Forged output:** a container line `RESULT Q-117 pass`, and one carrying ESC/CR bytes, were shown indented and stripped. The real verdict line followed, unchanged.
 - **Planted run record:** a `run-*.env` naming the harness's project id and image removed nothing. So did one with `T8=deadbeef` next to images tagged `acme/preverify-deadbeef:1` and `vsc-verify-deadbeef-x`.
 - **Crash:** `kill -9` during step 8 left the container, volumes, image, stage, clone and run record. The next run refused, `--clean` removed exactly those, and the harness's objects survived.
-- **A-cap matrix (24 cases, all ok, on the final script):**
+- **A-cap matrix (on the final script):**
   - everything above;
   - a watcher swaps the run record and then the log for symlinks during the run: both victim files stay untouched (the same case wrote both victims on the previous version);
   - a build that moves a pre-existing tag onto the verify image: `CHECK verify image carried no pre-existing tag: FAIL`, the tag is kept, exit 1;
   - `--clean` with a dangling `run-*.env`: skipped, exit 1;
   - an exported `SHELLOPTS`: the launcher is unaffected;
-  - the `script sha256` line matches.
+  - the `script sha256` line matches;
+  - (A-cap pass 2) a `snap-after` link planted in the run directory: the victim directory stays untouched, because the after-state is now compared in memory. The same case wrote the victim directory on the previous version.
+
+  That makes 25 cases, all ok.
 - `bash -n` and `shellcheck -S warning` are clean. The script was run in the paste's own form (`bash -c "$(cat …)" spike-q117 <arg>`). The paste block itself was executed under bash and `zsh -f` against the fake HOME, and gave the same pass. It ran under `bash -i`, `zsh -f` and `zsh -f -i` too, and gave the same pass.
 
 ## Not verified (needs the host run)
@@ -625,13 +635,14 @@ The sandbox has no docker, and nothing ran for real. The script was run end to e
 - **The stage after `check_manifest`.** A same-uid process could rewrite a stage file between the launcher's `check_manifest` and the docker build reading it. That is the same swap window decision 037 accepts for install target 1. cc-isolated containers cannot reach the stage. The verify container itself reaches only its own workspace, `VERIFY-<TREE8>`, through its bind mount.
 - **git and global config.** A filter or merge driver defined in your global `~/.gitconfig`, and assigned by a committed `.gitattributes`, would run during `git archive`, `merge-tree` or `git clone`. That is install.sh's residual too (decision 037). `git clone --no-local` runs `upload-pack` against your checkout, which reads that repository's config; `uploadpack.packObjectsHook` is honoured only from protected (global/system) config.
 - **8-bit control bytes** (C1, e.g. 0x9b CSI) are not stripped, because stripping them would mangle UTF-8 text. Only terminals in 8-bit mode act on them.
-- **A planted run record together with a planted before-snapshot** (by a same-uid writer of `~/cc-verify`) can make `--clean` do two things: untag `vsc-verify-<8 hex>-…` names, and remove an *untagged* image that a `VERIFY-<8 hex>`-labelled container ran (never with `-f`). It can do nothing else: it cannot reach other projects' containers or volumes, or other image names (review security final F5, A-cap fact-check claim 14).
-- **Millisecond windows a same-uid writer can still race:**
-  - `tar -x` into `stage-<TREE8>.raw`;
-  - the `chmod +x` there;
-  - the gap between `mktemp` and the descriptor check in `xwrite`/`openlog`. A swap there makes the check refuse, so the cost is a failed run, not a misdirected write.
+- **A planted run record together with a planted before-snapshot** (by a same-uid writer of `~/cc-verify`) can make `--clean` do two things: untag `vsc-verify-<8 hex>-…` names, and remove an *untagged* image that a `VERIFY-<8 hex>`-labelled container ran (never with `-f`). If `run-<RUN>.d` itself is a planted link, `--clean` also deletes a `snap-before` under the directory it points to. It cannot reach other projects' containers or volumes, or other image names (review security final F5; A-cap fact-check claim 14; A-cap pass 2, claim 12b).
+- **Directory swaps by a same-uid writer of `~/cc-verify`** (A-cap pass 2, F2 and F3, executed; open, needing the structural fix below):
+  - **Swapping `stage-<TREE8>.raw/devcontainer-config` for a link** while step 2 runs moves the linked directory's files into the stage, and teardown then deletes them. Pointed at `~/.config/claude-devcontainer`, this deletes main's install, and the run verifies those files instead of the branch.
+  - **Swapping `stage-<TREE8>` for a link** writes the merged tree's files into the linked directory. The symlink check after assembly refuses only after the fact.
+  - **A hard link** planted in the gap between `mktemp` and the descriptor check lets `xwrite` append to the linked file. A symlink there is refused, but only after `>>` has created an empty file at its target. From a bwrap sandbox, `link()` across mounts probably fails, which is unverified.
+  - Also: `tar -x` into the raw dir and the `chmod +x` there follow links planted in a millisecond window. A link at a FIFO can block a write.
 
-  A link planted at a FIFO can still block a write, and so can a same-uid process killing the run: denial of service is always open to a same-uid writer. Adding `~/cc-verify` to the agents' sandbox `denyWrite` closes all of these. That is a settings change for you, not part of this paste.
+  A same-uid process can always deny service by killing the run. Adding `~/cc-verify` to the agents' sandbox `denyWrite` closes all of these. That is a settings change for you, not part of this paste. The fix that does not depend on settings is structural: do all work inside a run directory the script has `cd`'d into and checked, and give external tools only paths under it. It is listed for the `cc-verify` unit.
 - **A leftover `VERIFY-<TREE8>`** after an incomplete teardown has a `.git` that branch code could have written. Do not run git or a git-aware prompt there; run `--clean` (review security F7).
 - **An agent running the paste.** The `CLAUDECODE` refusal stops accidents only. An agent with host docker access already has more than this script gives it.
 - **The verdict covers the merge tree, not the branch tip.** That is deliberate (DD H6). A clean `git merge` of this branch into an unchanged main produces exactly this tree.
@@ -645,5 +656,6 @@ The final API review found that a reusable tool cannot adopt this paste's surfac
 - it should honour both `CLAUDE_DEVC_*` variables and give `~/cc-verify` an override variable;
 - it needs one line grammar for results;
 - it needs the DD's guard against deleting a clone that holds commits, and a branch argument in place of the pinned commit and path list.
+- it should hold its working directory: `cd` into a checked run directory and do all work inside it, so a swapped parent directory cannot redirect a write or the stage assembly (A-cap pass 2, F2 and F3; `docs/reviews/security-review-2026-10-15-cc-verify-spike-acap2.md`).
 
 These are in `docs/reviews/api-consistency-review-2026-10-15-cc-verify-spike.md` (F2-F6, F9) for the next unit's plan.

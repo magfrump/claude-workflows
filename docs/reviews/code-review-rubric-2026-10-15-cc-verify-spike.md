@@ -1,9 +1,9 @@
-Commit: 53770142
+Commit: ccd00518
 Loop-pass short-circuit: used at 12fcb61c
 
 # Code Review Rubric
 
-**Scope:** `docs/working/spike-cc-verify-q117.md` and its embedded host script; iteration 1 `22a4bb1f..12fcb61c`, iteration 2 (the final pass) the whole file at 190fa1a4 (fact-check) and 53770142 (critics) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 1 amber item(s) awaiting resolution or justification
+**Scope:** `docs/working/spike-cc-verify-q117.md` and its embedded host script; iteration 1 `22a4bb1f..12fcb61c`, iteration 2 (the final pass) the whole file at 190fa1a4 (fact-check) and 53770142 (critics) | **Reviewed:** 2026-10-15 | **Status: 🟡 CONDITIONAL PASS** — 2 amber item(s) awaiting resolution or justification (A-cap, A16)
 
 ## Run history
 
@@ -11,6 +11,8 @@ Loop-pass short-circuit: used at 12fcb61c
 |---|---|---|---|---|
 | 1 (`--loop-pass`) | 12fcb61c | k=1, opus: 33 claims, 5 Incorrect (3 behavioral) | security only (short-circuit; required by the brief): 1 Critical, 1 High, 6 Medium | 5 🔴, 9 🟡, fixed in 190fa1a4 |
 | 2 (final, k=3) | 190fa1a4 → 53770142 | k=3, opus: 36-37 claims each, 4 Incorrect clusters (3 unanimous), 7 Mostly Accurate; agreement ≈ 89% | at 53770142: security (1 High, 3 Medium, 1 Info), performance (1 Medium, 2 Low, 1 Info), api-consistency (1 High-confidence Inconsistent, 1 Minor, 7 convention gaps) | fact-check findings fixed in 53770142; critic findings fixed in the next commit (see A-cap) |
+| A-cap narrow pass | 53770142..2ea3498d | k=1, opus: 24 claims, 4 Incorrect (noclobber misses `>>` and links to FIFOs/devices; `image rm -f` deletes a moved pre-existing tag; commit F2 claim) | security: 1 Medium (append via planted symlink, reproduced), 1 Low, 4 Info | fixed in ccd00518 (xwrite/openlog, fd 3, `mv -T` stage, tag-aware teardown without `-f`, RETAG CHECK, `set +e` trap, `--clean` record check, `export -n SHELLOPTS`, script fingerprint) |
+| A-cap pass 2 (one narrow check on the non-trivial fix) | 2ea3498d..ccd00518 | inline claims check: 17 claims, 4 Incorrect | security: 3 Medium (planted `snap-after` → xwrite renames into any dir; stage assembly follows swapped parent dirs, can delete main's config; hard link through xwrite), 1 Low, 4 Info | F1 (after-state in memory), F4, F6, F7 fixed in the next commit (trivial; matrix 25/25); F2/F3 open → A16 |
 
 Delivery mode: self-read (agents read the doc, the script and the code, and ran a copy of the stub harness). Skill deviations: agents read their SKILL.md from the repo themselves instead of having it pasted in. Iteration 2's critics reviewed 53770142, which included the fixes for that pass's fact-check findings, rather than 190fa1a4, so that the last review saw the final code. The merged fact-check report lists Verified clusters in a table instead of full claim sections.
 
@@ -49,7 +51,8 @@ Delivery mode: self-read (agents read the doc, the script and the code, and ran 
 | A13 | Step 8 re-read the stage's devcontainer.json after `check_manifest` | Security | Medium | security final F4 | for-author | — | Fixed (next commit: exec reads main's installed copy) | — |
 | A14 | Statuses outside the documented set: a failing tar gave exit 2 ("rerun later") | API / Correctness | Inconsistent (High confidence) | api final F1 | for-author | — | Fixed (next commit: any status other than 0/1/130 or the verdict's 2 becomes 1 with `REFUSED: unexpected failure during step …`) | — |
 | A15 | Another session's rebuild fails two CHECKs (false alarm, exit 1) | Performance | Medium | performance final F1 | for-author | — | Fixed (next commit: container and tag disappearances are NOTEs) | — |
-| A-cap | The fixes for the final pass's critic findings (R6, A12-A15, and the API F4/F7/F8 and performance F2/F3 doc items) landed after the final pass, at the 2-iteration cap, and no pass has reviewed them | Process | — | orchestrator | for-author | — | 🟡 Open | Qualifying: re-tested in the stub harness (bash, zsh, `zsh -i`, `bash -i`; pass, FAIL, no-rotation, tar status 2, planted record plus snapshot, crash plus pasted `--clean`, noclobber against planted symlinks). Revisit trigger: run a k=1 security + fact-check pass on the fix commit before the `you: terminal` entry is filed, or treat the host run's output (any REFUSED/TEARDOWN/NOTE line not explained by the doc) as the trigger. |
+| A-cap | The fixes for the final pass's critic findings landed after the final pass, at the 2-iteration cap | Process | — | orchestrator | for-author | — | Partly closed | The A-cap narrow pass (security + k=1 fact-check on 53770142..2ea3498d) reviewed them. Its findings were fixed in ccd00518, and one more narrow check reviewed ccd00518. Of that check's findings, F1, F4, F6 and F7 are fixed (trivial; matrix 25/25); F2 and F3 remain as A16. Not closed clean. |
+| A16 | Directory swaps by a same-uid writer of `~/cc-verify`: stage assembly follows a swapped `stage-*.raw/…` or `stage-*` (can move main's config files into the stage and delete them, or write the branch's files elsewhere); a hard link planted in xwrite's mktemp→check gap gets appended to; a planted `run-<RUN>.d` link lets `--clean` delete a `snap-before` elsewhere | Security | Medium | security A-cap pass 2 F2, F3; claim 12b | for-author | — | 🟡 Open | Qualifying, revisit trigger: closed by adding `~/cc-verify` to the agents' sandbox `denyWrite` (the user's settings; recommended in the doc), or by the structural fix (hold a checked run directory as the working directory and do all work inside it), listed under "Toward the cc-verify tool" for the next unit. Reopen if the host run prints any REFUSED/TEARDOWN line about a changed path, or if `~/cc-verify` turns out writable from an agent sandbox. |
 
 ---
 
@@ -65,6 +68,8 @@ Delivery mode: self-read (agents read the doc, the script and the code, and ran 
 | C6 | The second clone copies objects again (~1 s, 30 MB) | performance final F4 | Informational | for-author | — | Won't-Fix |
 | C7 | Host-tool conventions: exit codes per row 58, `--help`, `ERROR:` prefixes, both `CLAUDE_DEVC_*` variables, line grammar, a `~/cc-verify` override | api final F2-F6, F9 | Minor | for-author | — | F4 Fixed (next commit), F6 partly (verdict `FAIL` upper-case); the rest Deferred to the `cc-verify` unit (doc section "Toward the cc-verify tool") |
 | C8 | Not-verified #1 still described the old tag rule; "what to paste back" omitted the TEARDOWN lines | api final F7, F8 | Minor | for-author | — | Fixed (next commit) |
+| C10 | fd 3 and xwrite descriptors are inherited by the launcher and the devcontainer CLI (trusted host code; not passed into containers, by reasoning) | security A-cap pass 2 F5 | Informational | for-author | — | Won't-Fix |
+| C11 | "Cannot skip teardown" does not hold for SIGPIPE or a second Ctrl-C after the trap is reset | security A-cap pass 2 F8 | Informational | for-author | — | Deferred (doc says use `--clean` after an interrupted teardown) |
 | C9 | The workspace checks out the checkout's HEAD branch unpinned; whether the CLI reads the workspace's `.devcontainer/` is unverified | security final (untested) | Informational | for-author | — | Deferred (host run; the launcher's image-provenance probe refuses a repo Dockerfile build) |
 
 ---
