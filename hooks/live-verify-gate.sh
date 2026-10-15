@@ -106,9 +106,11 @@ comment_only_diff() {
   mapfile -t touched_files <<< "$1"
   [ "${#touched_files[@]}" -gt 0 ] || return 1
 
-  diff_text="$(git diff --cached -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)" || return 1
+  # --no-textconv --no-ext-diff: a repo-local diff driver (.gitattributes plus
+  # diff.<x>.textconv) could otherwise render a real change as comment lines.
+  diff_text="$(git diff --cached -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)" || return 1
   if [ "$commit_all" = "1" ]; then
-    diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color -- "${touched_files[@]}" 2>/dev/null)"
+    diff_text="$diff_text"$'\n'"$(git diff -U0 --no-color --no-textconv --no-ext-diff -- "${touched_files[@]}" 2>/dev/null)"
   fi
 
   # A rename, a mode change, an added or deleted enforcement file, or a binary

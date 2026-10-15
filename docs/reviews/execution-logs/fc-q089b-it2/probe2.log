@@ -1,0 +1,37 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+start: 2026-10-15T01:33:00Z cwd: /home/node/.claude/jobs/00bcf178/tmp/fc-it2.xDBuze/p2 git version 2.39.5
+## P1 stray cc-push.sh.orig staged, no trailer then Host-tool-tested
+BLOCKED: this commit changes a host tool but says nothing about testing it on a host.
+Host tools in the commit:
+  devcontainer-config/cc-push.sh.orig
+
+Add a trailer naming what ran on a host (no live probe can exercise these):
+    Host-tool-tested: <what you ran, e.g. cc-push of a scratch repo after install.sh>
+or an explicit statement that nothing has, and what will:
+    Host-tool-tested: no — <reason>; <what will run it>
+
+These run on the host after or outside the container, so cc-isolated --probe-only
+cannot exercise them (guides/devcontainer-setup.md, host-tools note; decision log #71).
+git log --grep 'Host-tool-tested: no' lists the outstanding host-tool debt.
+exit=2
+exit=0
+## P2 unstaged rename (intent-to-add), commit -a
+$ git diff --name-only
+devcontainer-config/moved.txt
+$ git diff --name-only --no-renames
+devcontainer-config/egress/base.txt
+devcontainer-config/moved.txt
+BLOCKED: this commit changes the cc-isolated boundary but says nothing about live verification.
+Enforcement files in the commit:
+  devcontainer-config/egress/base.txt
+
+Add a trailer to the commit message. Either the blessed hash a passing probe recorded
+(cc-isolated --list shows it after cc-isolated --probe-only <repo>):
+    Live-verified: <hash>
+or an explicit statement that it has not run, and what will run it:
+    Live-verified: no — <reason>; run cc-isolated --probe-only <repo> after install.sh
+
+bats and shellcheck cannot see a kernel; only a container built from this config can
+(guides/devcontainer-setup.md, 'Changing the boundary'). Two outages came from
+commits that carried 'needs a live check' and were blessed without one.
+exit=2

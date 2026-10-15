@@ -1,0 +1,21 @@
+# bash probe-it2.sh <probe dir>   (gate from git archive 79f22357; HOME redirected, LC_ALL=C, GIT_CONFIG_NOSYSTEM=1, each hook run under timeout 20)
+R1 worktree name-only (renames on):
+  devcontainer-config/base-moved.txt
+R1 worktree name-only --no-renames:
+  devcontainer-config/base-moved.txt
+  devcontainer-config/egress/base.txt
+R1 hook 79f22357, commit -a, no trailer: exit 2
+R1 mutant (no --no-renames on -a call), commit -a: exit 0
+R2 textconv, real egress widening, no trailer: exit 0
+R2 control (textconv removed), no trailer: exit 2
+  enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.sh|cc-sni-proxy\.py|link-claude-home\.sh|cc-isolated\.sh|egress/)'
+  host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh|install.sh$)'
+R3 mutant, install.sh, no trailer: exit 2
+R3 mutant, install.sh, Host-tool-tested only: exit 0
+R3 original, install.sh, Host-tool-tested only: exit 2
+R3b extractor on mutant host_tools line:
+  cc-exit-scan.sh
+  cc-gitdir.sh
+  cc-push.sh
+R4 cc-push.sh.orig, Live-verified only: exit 2
+R4 cc-push.sh.orig, Host-tool-tested only: exit 0

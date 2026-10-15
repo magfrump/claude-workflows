@@ -4,7 +4,9 @@
 #
 # The gate blocks a `git commit` that carries a cc-isolated enforcement file
 # (what the trust manifest hashes) unless the commit message names its live
-# verification status with a `Live-verified:` trailer. Everything else — other
+# verification status with a `Live-verified:` trailer, and one that carries a
+# host-only tool (cc-exit-scan.sh, cc-gitdir.sh, cc-push.sh; decision log row 71)
+# unless it carries a `Host-tool-tested:` trailer. Everything else — other
 # commands, other files, malformed input — must be a silent exit 0.
 #
 # Two things beyond that behaviour are pinned here (Q-009):
@@ -147,6 +149,12 @@ Live-verified: no — sandbox has no Docker; run cc-isolated --probe-only after 
   run bash "$HOOK" <<< "$(payload 'git commit -m "fix(install): x"')"
   [ "$status" -eq 2 ]
   [[ "$output" == *"devcontainer-config/install.sh"* ]]
+  # A boundary file, not a host tool (it is not in enforcement_files, so the
+  # per-file loop does not cover it): Host-tool-tested alone does not pass it.
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 0 ]
   # The anchor is exact: a sibling whose name merely starts with install.sh is not.
   git reset -q devcontainer-config/install.sh
   echo x > devcontainer-config/install.sh.bak
@@ -377,4 +385,29 @@ stage_host_tool() {
   run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
   [ "$status" -eq 2 ]
   [[ "$output" == *"devcontainer-config/egress/base.txt"* ]]
+}
+
+@test "a rename committed with -a (new name only intent-to-add) is still gated" {
+  mv devcontainer-config/egress/base.txt devcontainer-config/base-moved.txt
+  git add -N devcontainer-config/base-moved.txt
+  run bash "$HOOK" <<< "$(payload 'git commit -am "x"')"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"devcontainer-config/egress/base.txt"* ]]
+}
+
+@test "a repo-local textconv driver cannot make a real change read as comment-only" {
+  echo 'devcontainer-config/egress/*.txt diff=cm' > .gitattributes
+  git config diff.cm.textconv "sed s/^/#/"
+  stage_enforcement
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x"')"
+  [ "$status" -eq 2 ]
+}
+
+@test "a stray sibling of a host tool (cc-push.sh.orig) is gated as a host tool" {
+  echo x > devcontainer-config/cc-push.sh.orig
+  git add devcontainer-config/cc-push.sh.orig
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Live-verified: no — n/a"')"
+  [ "$status" -eq 2 ]
+  run bash "$HOOK" <<< "$(payload 'git commit -m "x" -m "Host-tool-tested: no — n/a"')"
+  [ "$status" -eq 0 ]
 }
