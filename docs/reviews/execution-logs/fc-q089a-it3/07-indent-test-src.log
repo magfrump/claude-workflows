@@ -1,0 +1,5 @@
+2026-10-15T01:08:24Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/src tree=src cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'launch: a host-tool refusal still shows a boundary change' test/cc-isolated-functions.bats
+1..1
+ok 1 launch: a host-tool refusal still shows a boundary change made alongside it, and bless prints both
+[exit=0]

@@ -1,0 +1,8 @@
+2026-10-15T00:49:48Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe cmd: empty host-tools.sha256, then timeout 30 bash 'inst dir/cc-push.sh' --help (HOME/TMPDIR/CC_PUSH_CLONES_DIR redirected, LC_ALL=C)
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-push.sh changed since the last bless
+/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir/cc-gitdir.sh changed since the last bless
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst dir, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/inst\ dir cc-isolated --bless
+exit=1

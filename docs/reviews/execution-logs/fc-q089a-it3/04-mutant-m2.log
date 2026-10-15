@@ -1,0 +1,11 @@
+2026-10-15T01:07:33Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/m2 mutant=m2 cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'installed copy: cc-push checks itself' test/cc-push.bats
+204c204
+< if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
+---
+> if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-gitdir.sh)"; then
+1..1
+not ok 1 installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)
+# (in test file test/cc-push.bats, line 817)
+#   `[ "$status" -eq 1 ]' failed
+[exit=1]

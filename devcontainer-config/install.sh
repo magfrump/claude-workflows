@@ -598,7 +598,8 @@ install_devcontainer() {
   ln -sf "$DEST/cc-isolated.sh" "$BIN_DIR/cc-isolated"
   echo "Linked $BIN_DIR/cc-isolated -> $DEST/cc-isolated.sh"
   # cc-push is the way to push a session's commits (Q-076): it fetches into a
-  # host-only clone and pushes from there. The manifest hashes it like the launcher.
+  # host-only clone and pushes from there. The bless hashes it into host-tools.sha256
+  # (a host tool, decision log row 71), which cc-push checks before sourcing cc-gitdir.sh.
   ln -sf "$DEST/cc-push.sh" "$BIN_DIR/cc-push"
   echo "Linked $BIN_DIR/cc-push -> $DEST/cc-push.sh"
   echo

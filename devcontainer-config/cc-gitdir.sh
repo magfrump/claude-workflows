@@ -1,8 +1,9 @@
 # cc-gitdir.sh — is this directory a git directory? Plain file tests, no git run
 # (Q-076). Sourced by cc-push.sh and cc-exit-scan.sh from the directory they are
 # installed in; not run on its own. It defines functions only. It ships with the
-# launcher: install.sh's PAYLOAD installs it, enforcement_files() hashes it into
-# the trust manifest, and hooks/live-verify-gate.sh gates commits to it.
+# launcher: install.sh's PAYLOAD installs it; it is a host tool (decision log row
+# 71), hashed into host-tools.sha256. Both entry points check it against that
+# file before it is sourced: cc-push for itself, the launcher for cc-exit-scan.sh.
 #
 # WHY. Both tools look only at <checkout>/.git. Git does not: when .git is not a
 # valid git directory, discovery goes on to ask whether the checkout ROOT is one

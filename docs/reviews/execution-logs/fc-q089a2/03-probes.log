@@ -1,0 +1,31 @@
+2026-10-15T00:25:55Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN cmd: timeout 300 bash /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-probe.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+--- P1 prologue tamper, --help: exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p1/cc-push.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+P1 RESULT: prologue code RAN before the refusal
+--- P2 post-check tamper, --help: exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p2/cc-push.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+P2 RESULT: post-check line did not run
+P2 RESULT: EOF line did not run
+--- P3 self-skipping tamper, --help: exit=0
+P3 RESULT: self-skipping tamper ran unrefused
+--- P4 manifest symlink: exit=1
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p4/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — cc-push refuses to run. Review it, then: cc-isolated --bless
+--- P5a install.sh beside, no manifests: exit=0
+--- P5b install.sh + manifest.sha256, no host manifest: exit=1
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p5/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — cc-push refuses to run. Review it, then: cc-isolated --bless
+--- P5c install.sh beside but dir is CLAUDE_DEVC_CONFIG_DIR: exit=1
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p5/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — cc-push refuses to run. Review it, then: cc-isolated --bless
+--- P6 via symlink, tampered gitdir: exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p6/cc-gitdir.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+--- P7 both changed: exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p7/cc-push.sh changed since the last bless
+/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p7/cc-gitdir.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+grep: /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p8/host-tools.sha256: input file is also the output
+--- P8 duplicate entry: exit=0
+cc-push — push the commits a cc-isolated session made, without running anything
+0
+--- P9 mutant exemption, test's final step (no install.sh in dir): exit=1
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2.1HvdyN/probes/p9/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — cc-push refuses to run. Review it, then: cc-isolated --bless
+exit=0

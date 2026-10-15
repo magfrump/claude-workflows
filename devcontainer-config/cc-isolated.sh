@@ -115,9 +115,10 @@ record_verified_live() {
 }
 
 # Files whose integrity gates a container (re)build. All of them execute host-side
-# or define the boundary. Keep this list in step with install.sh's PAYLOAD: a file
-# that is installed but not hashed is a boundary artefact nobody blessed (the SNI
-# proxy shipped that way once; a bats test now pins PAYLOAD ⊆ this list).
+# or define the boundary. Keep this list and host_tool_files (below) in step with
+# install.sh's PAYLOAD: a file that is installed but not hashed is an artefact
+# nobody blessed (the SNI proxy shipped that way once; a bats test now pins
+# PAYLOAD ⊆ this list ∪ host_tool_files, the two disjoint).
 # claude-home/ — the baked skills/hooks payload (scripts 0555, the rest 0444 inside
 # the image) — is hashed file by file via a sorted walk; that includes the
 # .manifest install.sh writes, so re-running install.sh re-blesses by design. Paths are relative to config_dir. The per-project .profile
@@ -133,9 +134,6 @@ enforcement_files() {
   echo "cc-sni-proxy.py"
   echo "link-claude-home.sh"
   echo "cc-isolated.sh"
-  echo "cc-exit-scan.sh"
-  echo "cc-gitdir.sh"
-  echo "cc-push.sh"
   # Sorted globs so the manifest is order-stable. An empty projects/ dir is normal
   # (no project has widened its egress yet), hence the -e guard on each match.
   local f
@@ -190,11 +188,125 @@ compute_manifest() {
   ) | LC_ALL=C sort -k2
 }
 
+# Host-only tools (decision log row 71, amending row 45's scope). They run on the
+# host, after or outside the container, so no live probe can exercise them and the
+# image never copies them: they are not boundary config. They stay in install.sh's
+# PAYLOAD and are hashed into their own file, host-tools.sha256, so a change to one
+# leaves blessed_hash (the baked config identity), the verified-live receipt and the
+# container alone. Each entry point checks the ones it executes (verify_host_tools,
+# below and in cc-push.sh). Commits that change them carry `Host-tool-tested:`, not
+# `Live-verified:` (hooks/live-verify-gate.sh).
+host_tool_files() {
+  echo "cc-exit-scan.sh"
+  echo "cc-gitdir.sh"
+  echo "cc-push.sh"
+}
+
+host_tools_path() {
+  echo "$(config_dir)/host-tools.sha256"
+}
+
+compute_host_tools_manifest() {
+  local -a files
+  local f
+  mapfile -t files < <(host_tool_files)
+  for f in "${files[@]}"; do
+    [ -f "$(config_dir)/$f" ] || { echo "ERROR: host tool missing: $f" >&2; return 1; }
+  done
+  (cd "$(config_dir)" && sha256sum "${files[@]}")
+}
+
+# --- verify_host_tools: KEEP IN STEP with the copy in cc-push.sh (a test
+# compares the two byte for byte). Host-only tools are not boundary config
+# (decision log row 71): install.sh's bless hashes them into host-tools.sha256,
+# beside manifest.sha256, and each entry point checks the files it is about to
+# execute against that file BEFORE sourcing them. DIR is the directory to check:
+# an entry point's own resolved directory (`--list` passes config_dir()). Only a
+# repo checkout is left unchecked, and it must say so
+# positively: install.sh beside the script (install.sh is never installed, it is
+# not in PAYLOAD), no manifest of either kind, and not the config dir. Anything
+# else is checked, so deleting manifests is not enough to opt an installed copy
+# out. Prints the reason and returns 1 on any mismatch.
+verify_host_tools() {
+  local dir="$1" m f want have cfg
+  shift
+  m="$dir/host-tools.sha256"
+  cfg="$(readlink -f -- "${CLAUDE_DEVC_CONFIG_DIR:-$HOME/.config/claude-devcontainer}" 2>/dev/null || true)"
+  if [ -f "$dir/install.sh" ] && [ ! -e "$m" ] && [ ! -e "$dir/manifest.sha256" ] && [ "$dir" != "$cfg" ]; then
+    return 0
+  fi
+  if [ ! -f "$m" ] || [ -L "$m" ]; then
+    echo "no host-tool manifest at $m (re-run install.sh, or review the tools and bless this dir)"
+    return 1
+  fi
+  # The manifest itself is the anomaly when it cannot be read or is not
+  # sha256sum's own output; say so rather than call every tool changed.
+  if [ ! -r "$m" ] || [ ! -s "$m" ] || grep -qvE '^[0-9a-f]{64}  [A-Za-z0-9._-]+$' "$m"; then
+    echo "host-tool manifest $m is unreadable or malformed: inspect it before any bless overwrites it"
+    return 1
+  fi
+  # Every file it is given is checked and every mismatch named. (A caller that
+  # checks only some host tools does not see the others: the bless prints them.)
+  local bad=0
+  for f in "$@"; do
+    if [ ! -f "$dir/$f" ] || [ -L "$dir/$f" ]; then
+      echo "$dir/$f is missing or a symlink"
+      bad=1
+      continue
+    fi
+    want="$(awk -v f="$f" '$2 == f { n++; h = $1 } END { if (n == 1) print h }' "$m")"
+    if [ -z "$want" ]; then
+      echo "host-tool manifest $m has no entry, or more than one, for $f"
+      bad=1
+      continue
+    fi
+    have="$(sha256sum < "$dir/$f" | cut -d' ' -f1)"
+    if [ "$want" != "$have" ]; then
+      echo "$dir/$f changed since the last bless"
+      bad=1
+    fi
+  done
+  return "$bad"
+}
+# --- end verify_host_tools
+
+# Both manifests are computed into temp files first and moved into place only when
+# both succeed, so a bless that fails to compute either changes neither. The two
+# same-directory renames can still split (one fails, or an interrupt lands between
+# them): host-tools.sha256 is then new and manifest.sha256 old, so a launch refuses
+# if the boundary changed too, and otherwise the host tools stand blessed although
+# bless exited 1. Re-run the bless either way. What changed since the previous
+# bless is printed first: the bless is the review, and a host-tool refusal that
+# points here must not let a boundary change through unseen.
 bless_manifest() {
+  local new_m new_h
   mkdir -p "$(config_dir)"
-  compute_manifest > "$(manifest_path)"
+  new_m="$(mktemp "$(config_dir)/.manifest.XXXXXX")" || return 1
+  new_h="$(mktemp "$(config_dir)/.host-tools.XXXXXX")" || { rm -f "$new_m"; return 1; }
+  if ! compute_manifest > "$new_m" || ! compute_host_tools_manifest > "$new_h"; then
+    rm -f "$new_m" "$new_h"
+    echo "ERROR: nothing blessed." >&2
+    return 1
+  fi
+  local -a olds=("$(manifest_path)" "$(host_tools_path)") news=("$new_m" "$new_h")
+  local i
+  for i in 0 1; do
+    if [ ! -f "${olds[$i]}" ]; then
+      echo "No previous $(basename "${olds[$i]}"): every entry below is new to this bless."
+      echo
+    elif ! cmp -s "${olds[$i]}" "${news[$i]}"; then
+      echo "Changed since the last bless ($(basename "${olds[$i]}")):"
+      diff "${olds[$i]}" "${news[$i]}" | grep '^[<>]' || true
+      echo
+    fi
+  done
+  mv -f "$new_h" "$(host_tools_path)"
+  mv -f "$new_m" "$(manifest_path)"
   echo "Blessed $(manifest_path) ($(wc -l < "$(manifest_path)") entries):"
   cat "$(manifest_path)"
+  echo
+  echo "Blessed host tools in $(host_tools_path) ($(wc -l < "$(host_tools_path)") entries; not boundary config, no probe needed):"
+  cat "$(host_tools_path)"
   echo
   echo "Blessed config: $(blessed_hash)"
   if is_verified_live; then
@@ -206,13 +318,23 @@ bless_manifest() {
   fi
 }
 
+# The bless command for the dir being checked: names CLAUDE_DEVC_CONFIG_DIR when it
+# is set, so a hint printed for a non-default dir does not bless the default one.
+bless_cmd() {
+  if [ -n "${CLAUDE_DEVC_CONFIG_DIR:-}" ]; then
+    printf 'CLAUDE_DEVC_CONFIG_DIR=%q %s --bless' "$CLAUDE_DEVC_CONFIG_DIR" "$0"
+  else
+    printf '%s --bless' "$0"
+  fi
+}
+
 # Returns 0 if the installed config matches the blessed manifest.
 check_manifest() {
   local manifest expected actual
   manifest="$(manifest_path)"
   if [ ! -f "$manifest" ]; then
     echo "ERROR: no blessed manifest at $manifest" >&2
-    echo "Review the files in $(config_dir) yourself, then run: $0 --bless" >&2
+    echo "Review the files in $(config_dir) yourself, then run: $(bless_cmd)" >&2
     return 1
   fi
   expected="$(cat "$manifest")"
@@ -221,7 +343,7 @@ check_manifest() {
     echo "ERROR: installed config changed since last bless — refusing to build/launch." >&2
     echo "Something host-side rewrote the boundary config. Review it by hand, then re-bless:" >&2
     echo "    diff -r $(config_dir) <your canonical devcontainer-config/>" >&2
-    echo "    $0 --bless" >&2
+    echo "    $(bless_cmd)" >&2
     diff <(echo "$expected") <(echo "$actual") >&2 || true
     return 1
   fi
@@ -366,6 +488,33 @@ list_projects() {
     fi
   else
     echo "No blessed config (run devcontainer-config/install.sh)."
+  fi
+  # Each entry point's file list: the launcher refuses on the two files it
+  # executes (and only warns on cc-push); cc-push refuses on itself and
+  # cc-gitdir.sh. Checked in config_dir(); an entry point checks its own dir,
+  # which differs whenever the command run is not the copy in config_dir() (a
+  # repo checkout, or CLAUDE_DEVC_CONFIG_DIR naming another dir or unset for a
+  # custom install).
+  local cfg_real lerr="" perr=""
+  # Not a bare assignment: readlink -f fails when the dir's parent is missing,
+  # and under set -e that would end --list silently.
+  cfg_real="$(readlink -f -- "$(config_dir)")" || cfg_real="$(config_dir)"
+  lerr="$(verify_host_tools "$cfg_real" cc-exit-scan.sh cc-gitdir.sh)" || true
+  perr="$(verify_host_tools "$cfg_real" cc-push.sh cc-gitdir.sh)" || true
+  if [ ! -e "$(host_tools_path)" ]; then
+    echo "No blessed host tools (review them, then run: $(bless_cmd))."
+  elif [ -z "$lerr" ] && [ -z "$perr" ]; then
+    echo "Host tools — match the bless ($(host_tool_files | tr '\n' ' ' | sed 's/ $//'))"
+  else
+    echo "Host tools — CHANGED (review, then run: $(bless_cmd))"
+    if [ -n "$lerr" ]; then
+      printf '  launches refuse: %s\n' "${lerr//$'\n'/; }"
+    else
+      echo "  launches warn (cc-push changed) but run"
+    fi
+    # An intact cc-push refuses on this; a copy that dropped its own check would
+    # not, so the line says what to do rather than predicting what cc-push does.
+    if [ -n "$perr" ]; then printf '  cc-push: CHANGED — do not run it until re-blessed (an intact copy refuses): %s\n' "${perr//$'\n'/; }"; fi
   fi
   echo
   pd="$(projects_dir)"
@@ -558,8 +707,18 @@ probe_boundary() {
 # The session-exit scan (git_exec_snapshot, git_exit_scan, scan_interrupted,
 # logical_workspace and their helpers) lives in cc-exit-scan.sh, next to this
 # file. readlink -f: the command on PATH is a symlink to the installed copy.
-# shellcheck source=cc-exit-scan.sh
-source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-exit-scan.sh"
+# Both it and the cc-gitdir.sh it sources are host tools, checked against
+# host-tools.sha256 first: sourcing runs a file's top level. When the check fails
+# the scan is not loaded, and main refuses every action but --bless and --list
+# (--help and usage errors are answered first; neither touches the scan).
+CC_ISOLATED_DIR="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
+HOST_TOOLS_ERR=""
+if HOST_TOOLS_ERR="$(verify_host_tools "$CC_ISOLATED_DIR" cc-exit-scan.sh cc-gitdir.sh)"; then
+  # shellcheck source=cc-exit-scan.sh
+  source "$CC_ISOLATED_DIR/cc-exit-scan.sh"
+else
+  HOST_TOOLS_ERR="${HOST_TOOLS_ERR:-host-tool check failed}"
+fi
 
 # usage: the header comment block, from line 2 to the first line that is not a
 # comment (cc-push's approach), so it cannot end mid-sentence when the block grows.
@@ -590,6 +749,34 @@ main() {
       *)            ws_arg="$1"; shift ;;
     esac
   done
+
+  if [ -n "$HOST_TOOLS_ERR" ] && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
+    echo "ERROR: host-tool check failed — refusing to launch, probe or register:" >&2
+    while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$HOST_TOOLS_ERR" >&2
+    # Never let this refusal hide a boundary change: run the boundary check too, and
+    # show its diff, before pointing at a bless that would accept both.
+    local line boundary_note="The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before)."
+    if ! CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" check_manifest; then
+      boundary_note="The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes."
+    fi
+    local push_err
+    # Only a cc-push.sh-specific reason: a manifest-level one is already above.
+    if ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)" && [[ "$push_err" == *cc-push.sh* ]]; then
+      printf '  also changed — do not run cc-push until re-blessed: %s\n' "${push_err//$'\n'/; }" >&2
+    fi
+    echo "  Review the host tools in $CC_ISOLATED_DIR, then re-bless (it prints what changed):" >&2
+    printf '    %s\n' "$(CLAUDE_DEVC_CONFIG_DIR="$CC_ISOLATED_DIR" bless_cmd)" >&2
+    echo "  $boundary_note" >&2
+    exit 1
+  fi
+  # cc-push is not executed by the launcher, so a change to it never blocks a launch,
+  # but the launcher still says so: cc-push's self-check cannot catch a tampered
+  # cc-push that skips it.
+  local push_err
+  if [ "$action" != "bless" ] && [ "$action" != "list" ] \
+     && ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)"; then
+    echo "WARNING: $push_err — do not run cc-push until you have reviewed it and re-blessed." >&2
+  fi
 
   if ! command -v devcontainer >/dev/null 2>&1 && [ "$action" != "bless" ] && [ "$action" != "list" ]; then
     echo "ERROR: devcontainer CLI not found. Install on the HOST with:" >&2

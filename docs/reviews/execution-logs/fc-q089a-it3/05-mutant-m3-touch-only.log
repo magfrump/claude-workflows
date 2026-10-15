@@ -1,0 +1,11 @@
+2026-10-15T01:07:43Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/m3 mutant=m3 (m2 source; test lines 817-819 status/output asserts deleted) cmd: env HOME=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/home TMPDIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/tmp CC_PUSH_CLONES_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/clones CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/cfg LC_ALL=C timeout 300 bats -f 'installed copy: cc-push checks itself' test/cc-push.bats
+817,819d816
+<   [ "$status" -eq 1 ]
+<   [[ "$output" == *"cc-push.sh changed since the last bless"* ]]
+<   [[ "$output" == *"CLAUDE_DEVC_CONFIG_DIR=$d cc-isolated --bless"* ]]
+1..1
+not ok 1 installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)
+# (in test file test/cc-push.bats, line 817)
+#   `[ ! -e "$M/push-tamper-ran" ]' failed
+[exit=1]

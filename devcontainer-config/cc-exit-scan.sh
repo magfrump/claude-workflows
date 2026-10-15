@@ -1,8 +1,9 @@
 # cc-exit-scan.sh — cc-isolated's session-exit scan (Q-069 [3], Q-076), sourced by
 # cc-isolated.sh from the directory it is installed in; not run on its own. It
 # defines functions and constants only. It ships with the launcher: install.sh's
-# PAYLOAD installs it, enforcement_files() hashes it into the trust manifest, and
-# hooks/live-verify-gate.sh gates commits to it.
+# PAYLOAD installs it; it is a host tool (decision log row 71), so the bless hashes
+# it into host-tools.sha256, not the boundary manifest, and cc-isolated.sh checks it
+# against that file before sourcing it.
 # shellcheck shell=bash
 
 # gitdir_valid, gitdir_head_kind, looks_like_gitdir: plain file tests, next to this

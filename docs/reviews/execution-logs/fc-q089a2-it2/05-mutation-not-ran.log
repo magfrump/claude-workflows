@@ -1,0 +1,10 @@
+2026-10-15T00:49:34Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe cmd: timeout 120 bash probe8.sh /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+mutant has a verify call? 0
+args=[--help] exit=0 marker=absent
+args=[--bogus-flag] exit=2 marker=absent
+args=[--remote /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/none.git --yes /home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/no-such-checkout] exit=1 marker=absent
+-- same tamper placed directly below where the check was (line 198)
+exit=0 marker=RAN
+exit=0

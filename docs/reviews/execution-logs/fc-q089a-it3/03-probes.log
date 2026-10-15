@@ -1,0 +1,116 @@
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G cmd: timeout 600 bash /workspace/.claude/wt-q089/docs/reviews/execution-logs/fc-q089a-it3/probe.sh /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+2026-10-15T01:07:17Z
+== P1 parity: the two marked blocks, byte for byte
+IDENTICAL (52 lines after the marker)
+
+== P2 manifest messages via the installed cc-push
+-- empty
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- missing entry for cc-push.sh
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 has no single entry for cc-push.sh
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- duplicated entry for cc-gitdir.sh
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 has no single entry for cc-gitdir.sh
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- unreadable (uid 1000)
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- missing manifest
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- manifest a symlink
+$ timeout 30 bash /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh --help
+ERROR: cc-push refuses to run:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless
+[exit=1]
+
+-- restored
+-- grep for any remaining bare 'cc-isolated --bless' inside the reason strings of either copy
+/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/src/devcontainer-config/cc-isolated.sh:239:    echo "no host-tool manifest at $m (re-run install.sh, or review the tools and bless this dir)"
+/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/src/devcontainer-config/cc-push.sh:166:    echo "no host-tool manifest at $m (re-run install.sh, or review the tools and bless this dir)"
+== P3 launcher refusal indent: two launcher tools and cc-push changed
+[exit=1]
+-- stderr, cat -A:
+ERROR: host tools differ from the bless M-bM-^@M-^T refusing to launch, probe or register:$
+  /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-exit-scan.sh changed since the last bless$
+  /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-gitdir.sh changed since the last bless$
+  also changed (cc-push refuses until re-blessed): /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh changed since the last bless$
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):$
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-isolated.sh --bless$
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).$
+-- launcher refusal with empty+missing-entry manifest:
+ERROR: host tools differ from the bless M-bM-^@M-^T refusing to launch, probe or register:$
+  host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it$
+  also changed (cc-push refuses until re-blessed): host-tool manifest /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/host-tools.sha256 is unreadable or malformed: inspect it before any bless overwrites it$
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):$
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-isolated.sh --bless$
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).$
+
+-- cc-push refusal (two reasons) stderr, cat -A:
+ERROR: cc-push refuses to run:$
+  /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-push.sh changed since the last bless$
+  /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst/cc-gitdir.sh changed since the last bless$
+Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst, then re-bless (it prints what changed):$
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc-it3.CZsD1G/inst cc-isolated --bless$
+
+== P4 the while-read loop in isolation, under set -euo pipefail
+-- input one:   one$
+after loop rc=0$
+-- input $'one\ntwo':   one$
+  two$
+after loop rc=0$
+-- input $'one\ntwo\n':   one$
+  two$
+  $
+after loop rc=0$
+-- input '':   $
+after loop rc=0$
+-- does main's later 'local line' scope the loop's line? (same shape as cc-isolated main)
+global line after f: []
+== P5 tamper placement: does the moved touch detect a removed check?
+-- mutant diff:
+204,212d203
+< if ! host_tools_err="$(verify_host_tools "$CC_PUSH_DIR" cc-push.sh cc-gitdir.sh)"; then
+<   {
+<     echo "ERROR: cc-push refuses to run:"
+<     while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$host_tools_err"
+<     echo "Review the host tools in $CC_PUSH_DIR, then re-bless (it prints what changed):"
+<     printf '    CLAUDE_DEVC_CONFIG_DIR=%q cc-isolated --bless\n' "$CC_PUSH_DIR"
+<   } >&2
+<   exit 1
+< fi
+variant=orig place=below-check rc=1 tamper-ran=no
+variant=orig place=end-of-file rc=1 tamper-ran=no
+variant=nocheck place=below-check rc=0 tamper-ran=yes
+variant=nocheck place=end-of-file rc=0 tamper-ran=no
+2026-10-15T01:07:19Z
+[probe exit=0]

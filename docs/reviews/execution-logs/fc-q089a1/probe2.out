@@ -1,0 +1,13 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+-- --list (repo-checkout launcher, env -> tampered dir)
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p5/cfg/cc-gitdir.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc-a1.D6wSfK/p5/cfg/cc-gitdir.sh changed since the last bless
+-- launch (same)
+rc=1
+0
+WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+Plant it once with: touch ~/.ssh/canary
+NOTE: blessed config de595abc22a2e5d5 has NOT been verified in a live container.
+      This run is that verification: the container is rebuilt from it, and the
+      self-probe must pass (including the node-run firewall probes) before anything

@@ -793,3 +793,36 @@ STUB
   [ ! -e "$T/planted-ran" ]
   [ "$(git -C "$T/upstream.git" rev-parse refs/heads/main)" = "$SESSION_HEAD" ]
 }
+
+@test "installed copy: cc-push checks itself and cc-gitdir.sh before sourcing, and refuses on a change (row 71)" {
+  local d="$T/inst"
+  mkdir -p "$d"
+  cp "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh" "$BATS_TEST_DIRNAME/../devcontainer-config/cc-gitdir.sh" "$d/"
+  (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
+  run bash "$d/cc-push.sh" --help
+  [ "$status" -eq 0 ]
+  printf 'touch %q\n' "$M/gitdir-ran" >> "$d/cc-gitdir.sh"
+  run bash "$d/cc-push.sh" --remote "$T/upstream.git" --yes "$T/co"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"ERROR: cc-push refuses to run:"*"cc-gitdir.sh changed since the last bless"* ]]
+  [ ! -e "$M/gitdir-ran" ]
+  # Its own file too: a change to cc-push.sh refuses, --help included (exit 1).
+  (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
+  # A tamper directly below the check (the first line it guards) never runs. Not
+  # at the end of the file: cc-push exits at its main guard before reaching it.
+  awk -v t="touch $M/push-tamper-ran" '/^# shellcheck source=cc-gitdir.sh$/ { print t } { print }' \
+    "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh" > "$d/cc-push.sh"
+  grep -qx "touch $M/push-tamper-ran" "$d/cc-push.sh"
+  run bash "$d/cc-push.sh" --help
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cc-push.sh changed since the last bless"* ]]
+  [[ "$output" == *"CLAUDE_DEVC_CONFIG_DIR=$d cc-isolated --bless"* ]]
+  [ ! -e "$M/push-tamper-ran" ]
+  cp "$BATS_TEST_DIRNAME/../devcontainer-config/cc-push.sh" "$d/"
+  # Deleting the host manifest does not turn the installed copy into a repo checkout.
+  (cd "$d" && sha256sum cc-gitdir.sh cc-push.sh > host-tools.sha256)
+  touch "$d/manifest.sha256"; rm "$d/host-tools.sha256"
+  run bash "$d/cc-push.sh" --help
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no host-tool manifest"* ]]
+}

@@ -1,0 +1,86 @@
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== bless 1
+exit=0
+== cc-push --help with scan+push changed
+ERROR: cc-push refuses to run:
+  /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-push.sh changed since the last bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg cc-isolated --bless
+exit=1
+== launcher launch with scan+push changed
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-exit-scan.sh changed since the last bless
+  also changed — do not run cc-push until re-blessed: /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-push.sh changed since the last bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-isolated.sh --bless
+  The boundary config is unchanged: the re-bless changes no boundary state, so it causes no rebuild (a config not yet verified live is still probed at its next launch, as before).
+exit=1
+== --list
+Blessed config 7ff3b31a101a46f9 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools — CHANGED (review, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-isolated.sh --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-exit-scan.sh changed since the last bless
+  cc-push: CHANGED — do not run it until re-blessed (an intact copy refuses): /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/cc-push.sh changed since the last bless
+
+No projects registered (all run with the base egress profile).
+exit=0
+== bless 2 (what it accepts)
+Changed since the last bless (host-tools.sha256):
+< 933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+> 50479e0e4f8f2ffa8e12f1c38464f73745e19e8bc66a24287f9bf47f0ab998da  cc-exit-scan.sh
+< 0b24f1b3a99266faae02f30fcba267a0804baba5e2afae43365411b97af7c270  cc-push.sh
+> 0bbd7e80f624731646fe16dff5cdc27f37ab96be6cd0d8740045004a9b5011a2  cc-push.sh
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/cfg/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+exit=141
+== upgrade path: old layout blessed by the 4ab9a51f launcher, new payload copied, bless as install.sh:607 does
+old bless exit=0
+/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up/manifest.sha256
+-- new launcher before bless (launch):
+ERROR: host-tool check failed — refusing to launch, probe or register:
+  no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up/host-tools.sha256 (re-run install.sh, or review the tools and bless this dir)
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up/cc-isolated.sh --bless
+2,5c2
+< ea822746aef0d13b81fd2b0a1981ba7f77ebaaa3fb187af8b3215191a20aece8  cc-exit-scan.sh
+< 8e5d0a65bb5fc666c8d4c92dc7c99ab1fcd71a9fea68fa1241f407b251f8affd  cc-gitdir.sh
+< 0bc1e12c5f7f8744fbabe899e85667b1d5e13aa7febb7787f4813eb3587fab82  cc-isolated.sh
+< cbcbd92fb438cc3cb24afcdae07a29cf8af16d5722f445f9f4ca027cc63f475e  cc-push.sh
+---
+> 4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up/cc-isolated.sh --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+exit=1
+-- bless:
+Changed since the last bless (manifest.sha256):
+< ea822746aef0d13b81fd2b0a1981ba7f77ebaaa3fb187af8b3215191a20aece8  cc-exit-scan.sh
+< 8e5d0a65bb5fc666c8d4c92dc7c99ab1fcd71a9fea68fa1241f407b251f8affd  cc-gitdir.sh
+< 0bc1e12c5f7f8744fbabe899e85667b1d5e13aa7febb7787f4813eb3587fab82  cc-isolated.sh
+< cbcbd92fb438cc3cb24afcdae07a29cf8af16d5722f445f9f4ca027cc63f475e  cc-push.sh
+> 4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+
+No previous host-tools.sha256: every entry below is new to this bless.
+
+Blessed /home/node/.claude/jobs/00bcf178/tmp/fcfinal.wNrXNM/_tmp/probe1.GWSPSu/up/manifest.sha256 (16 entries):
+8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+4cc066fd35478f3505ed624e351e67718ec24e486da0bb569c528e561f3a38d1  cc-isolated.sh
+7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+exit=141
+-- cc-push --help after:
+exit=0
+-- launch after:
+done

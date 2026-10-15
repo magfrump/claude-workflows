@@ -1,0 +1,7 @@
+Probe root: /home/node/.claude/jobs/00bcf178/tmp/fc-a1-it2.3M42ES (src/ = git archive b3b37e16; removed after the run)
+Env (all runs): env -i PATH=/usr/bin:/bin, HOME=$P/home, TMPDIR=$P/tmp, LC_ALL=C, devcontainer stubbed (exit 0); CLAUDE_DEVC_CONFIG_DIR=$P/home/cfg or a per-probe dir under $P
+Run uid: 1000 (node), not root
+bats test/cc-isolated-functions.bats (cwd $P/src, timeout 600) 2026-10-15T00:47:55Z..00:50:10Z -> exit 0, 1..181, 181 ok, 0 not ok   (cc-isolated-functions.log, bats.ts, bats.rc)
+probe.sh  $P  (timeout 300) 2026-10-15T00:50:46Z -> exit 0  (probe.out, probe.rc, probe.ts)
+mut.sh    $P  (timeout 500) 2026-10-15T00:51:30Z -> exit 0  (mut.out, mut.rc, mut.ts)
+probe2.sh $P  (timeout 300, after probe.sh)         -> exit 0  (probe2.out, probe2.rc, probe2.ts)

@@ -1,0 +1,20 @@
+2026-10-15T00:47:55Z
+cwd=/home/node/.claude/jobs/00bcf178/tmp/fc-q089a2-it2.SlCGpe/src
+cmd: diff of the two verify_host_tools blocks (first line dropped), then cmp of full blocks
+lines: 48 48
+tail-diff exit=0
+1c1
+< # --- verify_host_tools: KEEP IN STEP with the copy in cc-push.sh (a test
+---
+> # --- verify_host_tools: KEEP IN STEP with the copy in cc-isolated.sh (a test
+full-diff exit=1
+cmd: timeout 300 bats -f 'byte|parity|step|same' test/cc-isolated-functions.bats
+1..7
+ok 1 project_id differs for same-basename repos at different paths
+ok 2 project_id is stable for the same path
+ok 3 ws_fingerprint is stable for the same repo
+ok 4 verify_host_tools is the same code in cc-isolated.sh and cc-push.sh
+ok 5 launch: a .git git accepts but the tools do not (HEAD over 255 bytes) refuses the launch (exit 1)
+ok 6 exit scan: control bytes in a planted value are shown as '?', not sent to the terminal
+ok 7 exit scan (f): an unreadable hook with control bytes in its name is reported through '?'
+exit=0
