@@ -33,6 +33,7 @@ Skills are focused, single-purpose process docs in `skills/`. Unlike workflows (
 | Evaluating tradeoffs across many options | `matrix-analysis` / `what-if-analysis` | Sub-procedures for divergent-design when the option space is wide. |
 | **Framing a decision** before choosing — explicit request, or DD's Double Diamond variant failed to produce a coherent framing (contradictory DD constraints go to the Double Diamond first) | `design-space-situating` | Places the decision on eight design-space dimensions and surfaces misframing. Output feeds DD's diagnosis or RPI's plan. |
 | Triaging tech debt, planning a dependency upgrade, or scoping test strategy | `tech-debt-triage`, `dependency-upgrade`, `test-strategy` | Use when the corresponding planning question comes up. |
+| **Maintenance or planning pass over the repo** — "run the dev cycle", "maintenance pass", "what should we work on next", "update the roadmap" | `dev-cycle` | User-started outer loop over research-plan-implement and pr-prep: health and cleanup, revisit triggers, watched questions, roadmap (`docs/roadmap.md`), then build briefs for its top items. Output is triage in `docs/working/questions.md`. |
 
 Other skills in `skills/` cover architecture review, performance review, API consistency, arithmetic eval, and self-eval. Browse the directory when a task wants a focused checklist rather than a full workflow.
 
