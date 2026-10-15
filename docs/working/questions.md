@@ -78,7 +78,13 @@ Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It
 
 - **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
 - **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
-- **Paste for [1]:** `cd /workspace && test "$(git branch --show-current)" = main && git merge --no-ff c035f2e77f8c083156b397fb32e164dd17cc6b44 -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)"`
+- **Paste for [1]:** it merges the branch alone, or `merge/u5-and-q145` (both units, the override-log appends resolved) if U5 is already on main.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=merge/u5-and-q145; else B=c035f2e77f8c083156b397fb32e164dd17cc6b44; fi && \
+git merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)"
+```
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
@@ -102,7 +108,13 @@ Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455
   - Size: 26 code lines outside `docs/`, 410 lines in all.
   - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
   - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
-- **Paste for [1]:** merge the pre-resolved branch, which is this cycle's chore branch plus U5 with the questions and roadmap conflicts resolved. U5's reviewed tip is unchanged inside it. `cd /workspace && test "$(git branch --show-current)" = main && git merge --no-ff merge/build-loop-u5-resolved -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)"`. Then Q-156's release paste.
+- **Paste for [1]:** it merges `merge/build-loop-u5-resolved` (this cycle's chore branch, Q-110 and U5, with the questions, roadmap and override-log conflicts resolved; U5's reviewed tip is unchanged inside it), or `merge/u5-and-q145` if Q-145 is already on main. Then Q-156's release paste.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=merge/u5-and-q145; else B=merge/build-loop-u5-resolved; fi && \
+git merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)"
+```
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
