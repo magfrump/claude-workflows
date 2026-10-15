@@ -330,8 +330,8 @@ git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
 `onbranch:` and `hasconfig:` taken as matching), so a relative
 `core.hooksPath` or `core.attributesFile` there is walked in the top-level
-working tree and in every embedded repo. Those are the only entries of your own
-config it follows; the rest is not recorded. It also records whether git would
+working tree and in every embedded repo. Those, your `insteadOf` rules and your
+remote URLs are the only entries of your own config it follows; none is recorded. It also records whether git would
 accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
 id or a link — not which branch, so switching branches is not a finding) and
 whether the checkout root looks like a repository; a change in either is a
@@ -346,9 +346,10 @@ one such line). A file
 it would hash that is over 64 MiB (a sparse file counts at its apparent size),
 or more than 1 GiB to hash in all, fails the scan (exit 4: treat the checkout as
 unsafe) rather than stalling it; so does a `.git` file or `commondir` over 64 MiB,
-before its first line is read, and so do more than 100,000 URL-and-rule
-comparisons or more than 2,000 distinct rewritten URLs to walk. (At launch any
-of these refuses the launch instead, exit 1.)
+before its first line is read, and so do a remote URL or `insteadOf` rule over
+4,096 bytes, more than 100,000 URL-and-rule comparisons, or more than 2,000
+rewritten URLs to walk (one per URL and working tree). (At launch any of these
+refuses the launch instead, exit 1.)
 
 **Linked worktrees left behind (Q-094).** When the only differences are
 worktrees added (`git worktree add`, as agent worktrees are) or removed
@@ -415,7 +416,15 @@ opens or closes a route.
   repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
-  take a long time. If you stop it, treat the checkout as unscanned.
+  take a long time; at the `insteadOf` caps, rewritten URLs alone add about
+  30 s. If you stop it, treat the checkout as unscanned.
+- **Remote names and legacy remote files, read loosely.** The scan resolves a
+  remote name and a legacy `.git/remotes`/`.git/branches` URL more simply than
+  git does: a remote with no `url` (git pushes to its name), an empty
+  `branches` file, a name defined in another repo of the checkout, untrimmed
+  spaces or a CR in a legacy URL, and `file://host/` or percent-encoded
+  `file://` URLs can each name a path the scan does not walk. Each needs that
+  state present at launch.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses

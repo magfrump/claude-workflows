@@ -2237,7 +2237,7 @@ rewrite_plant() {
   [[ "$output" == *"+ hook "*"vil/hooks/pre-receive"* ]]
 }
 
-@test "exit scan: under a UTF-8 locale a name ending mid-character does not hide the next entry" {
+@test "exit scan Q-096: under a UTF-8 locale a name ending mid-character does not hide the next entry" {
   scan_repo
   export LC_ALL=C.utf8
   local before n
@@ -2267,6 +2267,22 @@ rewrite_plant() {
   rewrite_plant "$SCAN_WS/sub/aEVIL"
 }
 
+@test "exit scan Q-096: under a UTF-8 locale rules whose characters, not bytes, line up are kept apart" {
+  scan_repo
+  export LC_ALL=C.utf8
+  # Same character count and joined bytes, split differently: one key per rule.
+  git -C "$SCAN_WS" remote add o cEVIL
+  git -C "$SCAN_WS" config "url.sub/a"$'\xc3'".insteadOf" $'\xa9c'
+  git -C "$SCAN_WS" config "url.sub/a"$'\xc3\xa9'".insteadOf" c
+  local t="$SCAN_WS/sub/a"$'\xc3\xa9'"EVIL" before
+  mkdir -p "$SCAN_WS/sub"; git init -q --bare "$t"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$t/hooks" pre-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook "*"EVIL/hooks/pre-receive"* ]]
+}
+
 @test "exit scan Q-096: a remote with no url is pushed to by its name, which is walked" {
   scan_repo
   local br; br="$(git -C "$SCAN_WS" symbolic-ref --short HEAD)"
@@ -2286,16 +2302,21 @@ rewrite_plant() {
   git -C "$SCAN_WS" config "url.$SCAN_WS/a-.insteadOf" https://o.invalid/
   git -C "$SCAN_WS" config "url.$SCAN_WS/b-.insteadOf" https://o.invalid/
   local before; before="$(git_exec_snapshot "$SCAN_WS")"
-  # shellcheck disable=SC2034  # read by _snap_pairs (sourced)
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok (sourced)
   GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=1
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 2 ]
   [[ "$output" == *"more than 1 remote URL and insteadOf rule pairs to compare (1 URLs, 2 rules so far)"* ]]
-  # shellcheck disable=SC2034  # read by _snap_pairs / _snap_rewrite (sourced)
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok / _snap_match (sourced)
   GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=100000 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=1
   run git_exit_scan "$SCAN_WS" "$before"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"more than 1 distinct URLs rewritten by insteadOf rules to walk"* ]]
+  [[ "$output" == *"more than 1 URLs rewritten by insteadOf rules to walk (1 URLs, 2 rules so far)"* ]]
+  # shellcheck disable=SC2034  # read by _snap_key (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=2000 GIT_EXIT_SCAN_MAX_REWRITE_BYTES=10
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"a remote URL or insteadOf rule over 10 bytes: too long to compare"* ]]
 }
 
 @test "exit scan N3: a relative remote path with a colon after a slash is local, and walked" {
