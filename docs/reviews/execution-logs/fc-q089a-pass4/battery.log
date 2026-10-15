@@ -1,0 +1,17 @@
+b01-if-source: caught
+b02-elif-dot: caught
+b03-while-source: caught
+b04-bang-dot: caught
+b05-builtin-source: caught
+b06-command-dot: caught
+b07-time-source: caught
+b08-eval: caught
+b09-backtick: caught
+b10-two-on-line: caught
+b11-sibling-in-comment: caught
+b12-nonsibling: caught
+b13-dot: caught
+b14-midline: caught
+b15-dynamic: caught
+## 20 clean runs of the unmodified test
+clean: 20/20 pass

@@ -1,0 +1,2 @@
+pipeline failures out of 2000: 8
+bats single-test failures out of 25: 1

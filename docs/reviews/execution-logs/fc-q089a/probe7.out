@@ -1,0 +1,5 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bless C rc=0
+P7a tampered scan, manifests present, env unset, --list: rc=0 ran=no
+P7b tampered scan, BOTH deleted, env unset, --list: rc=0 ran=yes
+P7c tampered scan, BOTH deleted, env=C, --list: rc=0 ran=no

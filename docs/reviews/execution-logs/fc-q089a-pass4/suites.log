@@ -1,0 +1,4 @@
+head cc-isolated-functions: rc=0 ok=181 notok=0 plan=1..181
+head cc-push: rc=0 ok=48 notok=0 plan=1..48
+main cc-isolated-functions: rc=0 ok=173 notok=0 plan=1..173
+main cc-push: rc=0 ok=47 notok=0 plan=1..47

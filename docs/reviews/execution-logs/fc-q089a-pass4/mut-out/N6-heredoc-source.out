@@ -1,0 +1,5 @@
+1..1
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/N6-heredoc-source/test/cc-isolated-functions.bats, line 1061)
+#   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+# non-canonical source line in cc-exit-scan.sh: source this text

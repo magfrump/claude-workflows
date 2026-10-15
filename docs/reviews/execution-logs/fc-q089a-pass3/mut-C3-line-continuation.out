@@ -1,0 +1,14 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/C3-line-continuation/test/cc-isolated-functions.bats, line 1046)
+#   `echo "unparsed source line in $f:"; grep -vE '/[a-z-]+\.sh"' <<< "$lines"; return 1' failed
+# unparsed source line in cc-exit-scan.sh:
+# source \

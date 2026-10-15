@@ -1,0 +1,113 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### P-a: only cc-exit-scan.sh changed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Host tools: CHANGED — /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-exit-scan.sh changed since the last bless (launches and cc-push refuse; review, then: cc-isolated --bless)
+cc-push --help exit=0 stderr=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### P-b: only cc-gitdir.sh changed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Host tools: CHANGED — /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-gitdir.sh changed since the last bless (launches and cc-push refuse; review, then: cc-isolated --bless)
+cc-push --help exit=1 stderr=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-gitdir.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+launch exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### P-c: only cc-push.sh changed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Host tools: CHANGED — /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-push.sh changed since the last bless (cc-push refuses, launches warn; review, then: cc-isolated --bless)
+cc-push --help exit=1 stderr=bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-push.sh changed since the last bless — cc-push refuses to run. Review it, then: cc-isolated --bless
+WARNING: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/ws is not inside a git repository.
+(launch: no refusal expected)
+### P-d: cc-exit-scan.sh AND cc-push.sh changed: does --list name cc-push?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Host tools: CHANGED — /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-exit-scan.sh changed since the last bless (launches and cc-push refuse; review, then: cc-isolated --bless)
+
+No projects registered (all run with the base egress profile).
+### P-e: cc-gitdir.sh missing + cc-exit-scan.sh changed: does the loop continue past the missing file?
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+launch exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-exit-scan.sh changed since the last bless
+/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-gitdir.sh is missing or a symlink — refusing to run the session-exit scan's code.
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg cc-isolated --bless
+  The boundary config is unchanged: after the re-bless, no rebuild or probe is needed.
+### P-e2: cc-exit-scan.sh a symlink (to the blessed copy), cc-gitdir.sh changed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+launch exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-exit-scan.sh is missing or a symlink
+/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-gitdir.sh changed since the last bless — refusing to run the session-exit scan's code.
+### P-f: manifest missing: early return unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+launch exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### P-g: custom install dir, CLAUDE_DEVC_CONFIG_DIR unset; boundary changed in the launcher's dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+launch exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/custom/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/custom <your canonical devcontainer-config/>
+    /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/custom/cc-isolated.sh --bless
+6c6
+< b875f928546aee7855cb1db9afc8ab3f1a8a34d43de5bbd62f7076d7ba9f3917  init-firewall.sh
+---
+> a0951701a6ec5f1973c2e74b0d67b08d4a38fdd91005d4f2238b6e14781b51cb  init-firewall.sh
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/custom, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/custom cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+--- then the suggested bless, and a relaunch
+Changed since the last bless (manifest.sha256):
+< b875f928546aee7855cb1db9afc8ab3f1a8a34d43de5bbd62f7076d7ba9f3917  init-firewall.sh
+> a0951701a6ec5f1973c2e74b0d67b08d4a38fdd91005d4f2238b6e14781b51cb  init-firewall.sh
+Changed since the last bless (host-tools.sha256):
+< 933bcabe85390a2daef35e892c50c5e449b18cc309e2bc5c5ff5a20412c4a8de  cc-exit-scan.sh
+> 4afa8555248c30d56cc1e45672a86b518a92e085315a0c3aeb37ce3099936eb8  cc-exit-scan.sh
+relaunch exit=1
+0
+### P-h: first mktemp fails (config dir read-only)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bless exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+mktemp: failed to create file via template '/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/.manifest.XXXXXX': Permission denied
+manifests unchanged
+no temp files
+### P-i: second mktemp fails (PATH shim), via --bless and via --register
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+shim: mktemp failing on host-tools
+sha256sum: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/manifest.sha256: No such file or directory
+sha256sum: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/host-tools.sha256: No such file or directory
+bless exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+shim: mktemp failing on host-tools
+sha256sum: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/manifest.sha256: No such file or directory
+sha256sum: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/host-tools.sha256: No such file or directory
+manifests unchanged
+no temp files
+register exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — refusing to run the session-exit scan's code.
+ERROR: no blessed manifest at /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/manifest.sha256
+Review the files in /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg yourself, then run: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/cc-isolated.sh --bless
+  Also changed (cc-push refuses until re-blessed): no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt/cfg cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+no temp files
+### P-j: bash temp-env assignment on a function call (scoping, leak, nested $(...))
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+in f: inner / nested: inner
+f failed as expected
+after: outer
+in f: inner / nested: inner
+after (was unset): UNSET
+--- same under --posix (not how the script runs)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+posix after: outer
+### done

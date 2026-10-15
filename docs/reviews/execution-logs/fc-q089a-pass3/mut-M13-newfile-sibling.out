@@ -1,0 +1,14 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/M13-newfile-sibling/test/cc-isolated-functions.bats, line 1056)
+#   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+# grep: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/mut/M13-newfile-sibling/test/../devcontainer-config/cc-evil.sh: No such file or directory
+# cc-isolated.sh sources cc-evil.sh unchecked

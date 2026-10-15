@@ -1,0 +1,6 @@
+head cc-isolated-functions exit=1
+head cc-push exit=1
+head install-host exit=1
+main cc-isolated-functions exit=1
+main cc-push exit=1
+main install-host exit=1

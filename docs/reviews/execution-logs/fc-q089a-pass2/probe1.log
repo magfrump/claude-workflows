@@ -1,0 +1,78 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== bless
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+exit=0
+== A: host tool changed only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 cc-isolated --bless
+  The boundary config is unchanged: after the re-bless, no rebuild or probe is needed.
+exit=1
+== B: host tool changed + manifest.sha256 deleted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+ERROR: no blessed manifest at /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/manifest.sha256
+Review the files in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 yourself, then run: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-isolated.sh --bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+exit=1
+== C: host tool changed + enforcement file missing (compute_manifest fails inside check_manifest)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+ERROR: enforcement file missing: Dockerfile
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 <your canonical devcontainer-config/>
+    /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-isolated.sh --bless
+1,16c1
+< 8caea9950c7d3002acf917aea4b934e9574bc74033aeb787bbab6f4834b6d37b  Dockerfile
+< 62e4ea142d2f7136b9d0d80934559e6d9cfc7cc6cccd9d2ca00d932fdd9db741  cc-isolated.sh
+< 7a664494b101508056ea94f546dc615baa39f6887d69a4f15f238f9727a0e4b3  cc-sni-proxy.py
+< 0e89faee7bc53e71e0089f595fba2a774b8edeededc00da36bb644b6f85f6b8b  devcontainer.json
+< a63d8f5549d94b96d8a730c5e4e070e88f2d0b76ae1a8f0937c2b52c1a851805  egress/android.txt
+< e1413df1d93dab7bef793815e2c452cc1164108ea2036cd7bae7604572e91a7f  egress/base.txt
+< 104a744efc0f215cca7a46c10b47343263f62e2cc9fc3291b3a0e810d6628cf9  egress/claude-config.txt
+< 7d5bb34bb892965bf4b2f142d7fbfd15f6137cedab083c1821c2a475c9970b03  egress/dotnet.txt
+< 31e2a73bb84c2cb7dfab8e57e25f06625ffcadb479ed295807bb941984ca56e0  egress/lean.txt
+< 675335380c9bd15d95067ec824af77e4a9f419b7a8e2c888ceda8e3ac308dcf1  egress/llm.txt
+< fb4eb69f9dbb0c1ec990cb14603dabf813419d435185a042e9dba3ca8a4613cf  egress/python.txt
+< 398675d8671ebbd57f410d25272f166560f4ff2ef4fcdfe7cfcb84e1a4bfff1d  egress/rust.txt
+< 13bf130a051e66cdd3b1c7334280fe35e51e0c6bf6a52730e9517da89b721588  egress/scholar.txt
+< bbec4e98cb8eced5c476cba409b886225000a987e789062f66fb60bb82482722  egress/vscode.txt
+< e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+< 54474e6b9ca425e88175083a3832d5892596f46f82bb264466c1a8893288618e  link-claude-home.sh
+---
+> 
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+exit=1
+== D: --list after cc-push.sh-only change
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Blessed config 75420747c93cb450 — verified live: NO (run: cc-isolated --probe-only <repo>)
+Host tools: CHANGED — /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-push.sh changed since the last bless (launches refuse; review, then: cc-isolated --bless)
+
+launch:
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+WARNING: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-push.sh changed since the last bless — do not run cc-push until you have reviewed it and re-blessed.
+ERROR: devcontainer CLI not found. Install on the HOST with:
+== E: launch with no env var set, from custom dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-gitdir.sh changed since the last bless — refusing to run the session-exit scan's code.
+ERROR: no blessed manifest at /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/home1/.config/claude-devcontainer/manifest.sha256
+Review the files in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/home1/.config/claude-devcontainer yourself, then run: /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1/cc-isolated.sh --bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/inst1 cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+exit=1
+== F: repo checkout dir (head/devcontainer-config) is unchecked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+repo verify rc=0
+== G: CLAUDE_DEVC_CONFIG_DIR pointed at the repo checkout itself
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fcp2.7t5h9E/head/devcontainer-config/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+rc=1

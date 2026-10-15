@@ -1,0 +1,11 @@
+### boundary-changed: scan changed, Dockerfile changed
+bless exit=1
+shim: mv to manifest.sha256 failing
+leftover: .manifest.41FKjB
+next launch exit=1
+ERROR: installed config changed since last bless — refusing to build/launch.
+### boundary-unchanged: scan changed
+bless exit=1
+shim: mv to manifest.sha256 failing
+leftover: .manifest.zUEgbR
+next launch exit=1

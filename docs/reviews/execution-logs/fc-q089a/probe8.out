@@ -1,0 +1,4 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+P8a clean installed cc-push --help rc=0
+cc-push: refusing to run: /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w8/inst/cc-push.sh changed since the last bless
+P8b self-edited cc-push --help rc=1

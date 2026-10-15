@@ -1,0 +1,21 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== A: second mktemp fails
+exit=1
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+.manifest.LrR5mz
+manifest unchanged
+== B: second mv (manifest) fails
+exit=1
+
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+.manifest.jkcIPU
+manifest unchanged
+host-tools CHANGED
+== C: leftover temp file affects compute_manifest?
+rebless exit=0
+0
+.manifest.jkcIPU

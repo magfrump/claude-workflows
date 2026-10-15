@@ -1,0 +1,383 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+1..173
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 1 resolve_workspace returns the git toplevel for a path inside a repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 2 resolve_workspace fails loudly outside a git repo instead of guessing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 3 resolve_workspace fails on a nonexistent directory
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 4 resolve_workspace defaults to $PWD when given no argument
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 5 project_id differs for same-basename repos at different paths
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 6 project_id is stable for the same path
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 7 ws_fingerprint differs between two different repos
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 8 ws_fingerprint is stable for the same repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 9 compute_manifest covers the config files and the egress profiles
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 10 compute_manifest fails when an enforcement file is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 11 check_manifest fails with instructions when nothing is blessed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 12 check_manifest passes after bless with unchanged files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 13 check_manifest fails after the firewall script is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 14 check_manifest fails when the launcher itself is tampered with
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 15 check_manifest fails when an egress profile gains a domain
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 16 check_manifest fails when an unblessed project profile appears
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 17 re-bless after a reviewed change makes check_manifest pass again
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 18 an unregistered project gets the base profile only
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 19 register_project records the profile and re-blesses
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 20 register_project rejects an unknown profile before writing anything
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 21 register_project prints the profile transition, not just the result
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 22 register_project names a profile the replacement drops
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 23 register_project says so when the profile is unchanged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 24 rebuild_hint carries both localEnv assignments into the by-hand command
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 25 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 26 --profile with no value is a usage error, not a silent exit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 27 rebuild_hint names the launcher before the by-hand form
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 28 usage prints the whole header block, exit status included, and nothing past it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 29 usage errors exit 2 (an unknown flag), with the help on stderr
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 30 suggest_profiles proposes python for a python repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 31 suggest_profiles proposes rust for a cargo repo but never applies it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 32 suggest_profiles proposes lean for a repo with the toolchain pin
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 33 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 34 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 35 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 36 suggest_profiles proposes android for a repo with just the gradle wrapper
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 37 suggest_profiles proposes dotnet for a Unity project root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 38 suggest_profiles proposes dotnet for a repo with a top-level csproj
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 39 suggest_profiles is silent for a plain repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 40 base profile alone yields the base allowlist and nothing else
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 41 a python project gets PyPI on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 42 one project's profile does not widen another's (H5)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 43 profiles compose
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 44 an android project gets Google Maven, Maven Central, and Gradle on top of base
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 45 a dotnet project gets NuGet on top of base, and only NuGet
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 46 an unknown profile is a hard failure, not a silently narrower allowlist
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 47 a missing profile file degrades to base, not to empty
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 48 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 49 devcontainer.json anchors build.context to the config dir, not the repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 50 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 51 Dockerfile copies the claude-home payload into the image
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 52 the payload is baked outside /home/node/.claude (a volume would shadow it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 53 the payload is root-owned and not writable by node
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 54 hook scripts in the payload stay executable
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 55 postStartCommand links the payload after the firewall, not before
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 56 install.sh stages the payload from the repo root
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 57 install.sh aborts when a payload source is missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 58 install.sh names every missing payload source, not just the first
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 59 install.sh assembles the payload when every source is present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 60 install.sh stages committed content only: uncommitted changes are listed, not staged
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 61 install.sh treats a payload source that exists but was never committed as missing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 62 install.sh review diff shows the CONTENT of a new file inside a payload dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 63 install.sh review diff shows a new top-level payload item, not nothing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 64 install.sh aborts before the prompt when the review diff itself fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 65 link-claude-home refuses to clobber a real file in the volume
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 66 link-claude-home links the payload and is idempotent
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 67 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 68 Gate 1h loads the review skill from the baked payload, not the branch
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 69 Gate 1h pins an explicit reviewer model
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 70 Gate 1h archives review artifacts before the worktree is torn down
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 71 Gate 1h fails closed on reviewer error and on an unparseable verdict
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 72 Gate 1h passes a per-run nonce the branch cannot know
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 73 every regular file in install.sh's PAYLOAD is hashed by enforcement_files
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 74 claude-home files are hashed file by file when present
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 75 compute_manifest covers claude-home even when projects/ is empty, under errexit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 76 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 77 a symlinked enforcement file is hashed by content as well as by target
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 78 compute_manifest fails when enforcement_files fails
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 79 H6 passes and stamps the host's project id on a correct container
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 80 H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 81 H6 fails on a volume stamped for another project even if the container agrees with it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 82 H6 fails on an empty stamp left by an earlier empty-env run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 83 blessed_hash needs a manifest, is stable, and changes when the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 84 a fresh bless is NOT verified live, and says so
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 85 the receipt names the blessed hash and is void once the boundary changes
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 86 --list reports the blessed hash and its verification state
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 87 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 88 probe_boundary passes and writes the receipt when the container carries the blessed hash
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 89 probe_boundary fails on a container built from another config, and writes no receipt
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 90 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 91 a launch rebuilds a container whose baked config is not the blessed one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 92 a launch on a matching, verified container does not rebuild
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 93 --probe-only always rebuilds before probing
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 94 exit scan: a clean session is silent and returns 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 95 exit scan: snapshots that differ with nothing to show fail closed (status 2), never 0
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 96 exit scan: a hook planted in .git/hooks is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 97 exit scan: a *.sample hook is ignored (git never runs one)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 98 exit scan: a planted core.hooksPath and a hook in it are both named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 99 exit scan: a planted core.fsmonitor is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 100 exit scan: a planted filter driver is named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 101 exit scan: planted include and includeIf keys are named; the target is read, not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 102 exit scan: a planted core.sshCommand (what host git push runs) is named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 103 exit scan: items present at launch are baseline, not findings
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 104 exit scan: a pre-existing hook or key that CHANGED is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 105 exit scan: a linked worktree is scanned through its commondir, config.worktree included
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 106 exit scan: a repointed .git file is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 107 exit scan gitdir: a .git made invalid (HEAD removed) during the session is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 108 exit scan gitdir: a .git invalid at launch is still a finding at exit
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 109 exit scan gitdir: a repository planted at the checkout root (HEAD, objects/, refs/) is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 110 exit scan gitdir: a commondir file planted at the checkout root is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 111 launch_gitdir_ok: a normal checkout passes; a .git without HEAD, or a root that looks like a git dir, fails with the reason
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 112 launch: a repository already planted at the checkout root refuses the launch (exit 1), never becomes the baseline
+# (in test file test/cc-isolated-functions.bats, line 1409)
+#   `[[ "$output" == *"refusing to launch on $ws: $ws itself looks like a git directory"* ]]' failed
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+# Plant it once with: touch ~/.ssh/canary
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-exit-scan.sh: line 766: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: refusing to launch on /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/tmp/tmp.MS15N419xh/proj: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-gitdir.sh: line 77: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/tmp/tmp.MS15N419xh/proj itself looks like a git directory (a HEAD next to objects/, or a commondir file), which host git can read as a repository.
+#   The session-exit scan compares against the checkout as it is at launch, so
+#   this state would become its baseline and go unreported. Restore .git
+#   (compare with a fresh clone) or remove what is at the checkout root, then
+#   rerun. Do not run host git in the checkout meanwhile.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 113 launch: a .git git accepts but the tools do not (HEAD over 255 bytes) refuses the launch (exit 1)
+# (in test file test/cc-isolated-functions.bats, line 1422)
+#   `[[ "$output" == *"refusing to launch on $ws: $ws/.git is not a valid git directory"* ]]' failed
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/tmp/tmp.IXGP1aZJg8/proj
+# bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+# Plant it once with: touch ~/.ssh/canary
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-exit-scan.sh: line 766: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# ERROR: refusing to launch on /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/tmp/tmp.IXGP1aZJg8/proj: /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-gitdir.sh: line 77: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/tmp/tmp.IXGP1aZJg8/proj/.git is not a valid git directory (its HEAD, objects/ or refs/ is missing or broken), so host git would look for a repository elsewhere, such as the checkout root.
+#   The session-exit scan compares against the checkout as it is at launch, so
+#   this state would become its baseline and go unreported. Restore .git
+#   (compare with a fresh clone) or remove what is at the checkout root, then
+#   rerun. Do not run host git in the checkout meanwhile.
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 114 exit scan gitdir: switching and creating branches is not a finding (HEAD's kind, not its ref)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 115 exit scan gitdir: a session that makes .git invalid ends the launcher with exit 3
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 116 exit scan size cap: a huge (sparse) .git file fails the scan fast as unsafe, unread
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 117 exit scan: control bytes in a planted value are shown as '?', not sent to the terminal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 118 exit scan: an unreadable .git is reported (status 2), not passed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 119 exit scan (a): remote.origin.receivepack is named; the hooks-only safe push would run it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 120 exit scan (b): a pushurl repointed at a bare repo in the checkout names it and its hook
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 121 exit scan (b): a hook planted in a local remote that was already in the checkout is named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 122 exit scan (c): a submodule git dir's config, hooks and attributes are named, and not run
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 123 exit scan (c): nested submodule git dirs (modules/a/modules/b) are walked too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 124 exit scan (c): an embedded repo's .git in the working tree is scanned (host status recurses into it)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 125 exit scan (d): a hooks dir made traversable but not listable fails closed (status 2)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 126 exit scan (d): an unlistable hooks dir at launch refuses the baseline, not an empty one
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 127 exit scan (d): a changed hooks dir mode, a removed hook and a symlinked hooks dir are named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 128 exit scan (d): a hook that is a symlink is recorded with its target, whose change is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 129 exit scan (e): keys outside any list are still named (a changed config is the finding)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 130 exit scan (e): an attributesFile or include target inside the checkout that changes is named
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 131 exit scan (e): a relative core.hooksPath in YOUR global config is walked inside the checkout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 132 exit scan (e): even an inert config change (user.name) is reported, not allowlisted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 133 exit scan (f): an unreadable hook with control bytes in its name is reported through '?'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 134 exit scan (f): a launch whose baseline fails prints the container-chosen name through '?'
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 135 exit scan N5: a branch named config is not parsed as git config (launch not refused)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 136 exit scan N6: a normal commit on a branch with a hooks component is not a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 137 exit scan N7: a checkout under a directory named hooks: a normal commit is not a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 138 exit scan N13: a newline in an unreadable hook's name cannot forge a line in the warning
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 139 exit scan: an unlistable directory in the working tree is named as such, not as .git
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 140 exit scan P1: a relative hooksPath from YOUR global includeIf gitdir: is walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 141 exit scan P1: gitdir/i: matches case-insensitively and a relative pattern matches anywhere
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 142 exit scan P6: a nested worktree whose common dir is a bare repo in the checkout
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 143 exit scan N2: remote.pushDefault and branch.*.pushRemote naming a path are walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 144 exit scan N2: url.<base>.insteadOf and file://localhost/ remotes inside the checkout are walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 145 exit scan N3: a relative remote path with a colon after a slash is local, and walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 146 exit scan N4: legacy .git/remotes and .git/branches files are recorded and their targets walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 147 exit scan N11: YOUR relative global hooksPath is walked inside a submodule's working tree
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 148 exit scan N12: an exec line added to an in-progress rebase's todo list is a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 149 exit scan keys include every alternative of install.sh's refusal list
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 150 a launch whose session plants a hook exits 3 and names it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 151 a launch refuses to start when .git cannot be snapshotted
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 152 exit scan E6: a newline in a repointed common dir's name cannot forge a line (exit and launch)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 153 exit scan E6: an unreadable .git file's read error is not printed raw
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 154 logical_workspace: the checkout by the (symlinked) route it was reached on
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 155 exit scan E8: YOUR includeIf gitdir: naming the checkout by a symlinked route is walked
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 156 exit scan E8: a launch from a symlinked route passes that route to both snapshots
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 157 exit scan relremote: an embedded repo's relative local remote resolves in that repo
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 158 exit scan size cap: a huge (sparse) planted hook fails the scan fast as unsafe, unhashed
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 159 exit scan size cap: past the total to hash, the scan fails as unsafe
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 160 a Ctrl-C during the exit scan exits 4, saying the scan did not finish
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+not ok 161 exit scan Q-094: a new worktree in git's standard layout is one note and status 0; plus a plant, a warning
+# (in test file test/cc-isolated-functions.bats, line 2233)
+#   `[ "$(printf '%s\n' "$output" | wc -l)" -eq 1 ]' failed
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-gitdir.sh: line 77: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/main/devcontainer-config/cc-exit-scan.sh: line 701: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 162 exit scan Q-094: the container's /workspace form is accepted unless it is another host dir
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 163 exit scan Q-094: YOUR relative hooksPath is walked in a container-form worktree too
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 164 exit scan Q-094: a removed standard worktree is a note; a half-removed one warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 165 exit scan Q-094: a removal whose old working tree now looks like a git dir warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 166 _snap_unq: inverts printf %q's backslash form; other forms decline
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 167 exit scan Q-094: a removed git dir pairs only with the .git that pointed at it
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 168 exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 169 exit scan Q-094: a private dir git would also accept (commondir variants, hooks, config, links) warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 170 exit scan Q-094: a .git file or back-pointer that is not git's own warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 171 exit scan Q-094: an odd name, an embedded repo, or a nested repo's worktree warns
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 172 exit scan Q-094: a relative hooksPath, attributesFile or remote keeps a new worktree a finding
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+ok 173 exit scan Q-094: a session that leaves an agent worktree ends the launcher with claude's status and a note

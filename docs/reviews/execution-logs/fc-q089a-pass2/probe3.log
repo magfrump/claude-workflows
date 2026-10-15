@@ -1,0 +1,30 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+== M0 unmodified
+ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+== M1 drop cc-gitdir.sh from launcher list
+660:if HOST_TOOLS_ERR="$(verify_host_tools "$CC_ISOLATED_DIR" cc-exit-scan.sh)"; then
+715:     && ! push_err="$(verify_host_tools "$CC_ISOLATED_DIR" cc-push.sh)"; then
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file test/cc-isolated-functions.bats, line 1042)
+#   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+# cc-isolated.sh sources cc-gitdir.sh unchecked
+== M2 scan sources a new helper with the dot form
+source "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-gitdir.sh"
+. "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")/cc-new.sh"
+ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+== M3 launcher sources a new helper inside a one-line if
+663:  if true; then source "$CC_ISOLATED_DIR/cc-new.sh"; fi
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file test/cc-isolated-functions.bats, line 1043)
+#   `host_tool_files | grep -qx "$src" || { echo "$src is not a host tool"; return 1; }' failed
+# hi
+== M4 plain source line of a new helper in the scan (control: should fail)
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file test/cc-isolated-functions.bats, line 1042)
+#   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+# hi
+== M5 helper with a digit/underscore in its name
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file test/cc-isolated-functions.bats, line 1032)
+#   `echo "unparsed source line in $f"; return 1' failed
+# hi

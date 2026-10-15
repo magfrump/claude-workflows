@@ -1,0 +1,11 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Changed since the last bless (manifest.sha256):
+< e3f781a7e72360eaa5c57112628241019fc0cd48e85372c638897e5eaaf08bd4  init-firewall.sh
+> 608102a8106e007d6e53381556d57e697cc379f618787fe53bbd3859f7a478a3  init-firewall.sh
+
+Changed since the last bless (host-tools.sha256):
+< 3b7a6de775c5901ff5e876a8409197c64ac03f6673b5ea78c1f6bfdafc68fedc  cc-push.sh
+> a98fb32f93c02f66545bfb6288bcf89989886958ade2e288ba8e6082804ceba9  cc-push.sh
+
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)

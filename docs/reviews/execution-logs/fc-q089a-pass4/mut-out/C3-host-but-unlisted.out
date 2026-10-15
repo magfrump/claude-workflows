@@ -1,0 +1,5 @@
+1..1
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/C3-host-but-unlisted/test/cc-isolated-functions.bats, line 1070)
+#   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+# cc-isolated.sh sources cc-evil.sh unchecked

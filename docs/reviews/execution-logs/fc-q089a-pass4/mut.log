@@ -1,0 +1,38 @@
+## controls
+CLEAN: TEST PASSES (form not caught)
+K1-linestart: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+## forms named in the brief
+N1-and-dot: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N2-or-source: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N3-brace-dot: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N4-cont-dot: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N5-cont-source-word: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N6-heredoc-source: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+N7-dbl-bracket-string: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+## other forms
+O1-backslash-dot: TEST PASSES (form not caught)
+O2-quoted-dot: TEST PASSES (form not caught)
+O3-squoted-source: TEST PASSES (form not caught)
+O4-dquote-split: TEST PASSES (form not caught)
+O5-assign-prefix-dot: TEST PASSES (form not caught)
+O6-case-arm-dot: TEST PASSES (form not caught)
+O7-time-p-dot: TEST PASSES (form not caught)
+O8-command-p-dot: TEST PASSES (form not caught)
+O9-ansi-c: TEST PASSES (form not caught)
+O10-var-cmd: TEST PASSES (form not caught)
+O11-hash-line-in-string: TEST PASSES (form not caught)
+O12-coproc-dot: TEST PASSES (form not caught)
+O13-tab-dot: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+O14-noglob-dot-bracket: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+## canonical-looking lines that name the wrong file (inside the never-called function; cc-evil.sh exists as an empty sibling)
+C1-canon-nonhost: test fails (caught) -- #   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+C2-canon-push: test fails (caught) -- #   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+1
+C3-host-but-unlisted: test fails (caught) -- #   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+1
+C4-listed-not-host: test fails (caught) -- #   `grep -qx "$src" <<< "$(host_tool_files)" || { echo "$src is not a host tool"; return 1; }' failed
+C5-listed-and-host: TEST PASSES (form not caught)
+C6-canon-parent: test fails (caught) -- #   `[[ "$line" =~ $canon ]] || { echo "non-canonical source line in $f: $line"; return 1; }' failed
+C7-canon-push-dir-from-scan: TEST PASSES (form not caught)
+C8-canon-missing-file: test fails (caught) -- #   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+## done

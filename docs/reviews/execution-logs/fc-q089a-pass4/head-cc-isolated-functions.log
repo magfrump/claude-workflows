@@ -1,0 +1,182 @@
+1..181
+ok 1 resolve_workspace returns the git toplevel for a path inside a repo
+ok 2 resolve_workspace fails loudly outside a git repo instead of guessing
+ok 3 resolve_workspace fails on a nonexistent directory
+ok 4 resolve_workspace defaults to $PWD when given no argument
+ok 5 project_id differs for same-basename repos at different paths
+ok 6 project_id is stable for the same path
+ok 7 ws_fingerprint differs between two different repos
+ok 8 ws_fingerprint is stable for the same repo
+ok 9 compute_manifest covers the config files and the egress profiles
+ok 10 compute_manifest fails when an enforcement file is missing
+ok 11 check_manifest fails with instructions when nothing is blessed
+ok 12 check_manifest passes after bless with unchanged files
+ok 13 check_manifest fails after the firewall script is tampered with
+ok 14 check_manifest fails when the launcher itself is tampered with
+ok 15 check_manifest fails when an egress profile gains a domain
+ok 16 check_manifest fails when an unblessed project profile appears
+ok 17 re-bless after a reviewed change makes check_manifest pass again
+ok 18 an unregistered project gets the base profile only
+ok 19 register_project records the profile and re-blesses
+ok 20 register_project rejects an unknown profile before writing anything
+ok 21 register_project prints the profile transition, not just the result
+ok 22 register_project names a profile the replacement drops
+ok 23 register_project says so when the profile is unchanged
+ok 24 rebuild_hint carries both localEnv assignments into the by-hand command
+ok 25 rebuild_hint's by-hand command, when run, sets every launcher-set localEnv var and keeps args intact
+ok 26 --profile with no value is a usage error, not a silent exit
+ok 27 rebuild_hint names the launcher before the by-hand form
+ok 28 usage prints the whole header block, exit status included, and nothing past it
+ok 29 usage errors exit 2 (an unknown flag), with the help on stderr
+ok 30 suggest_profiles proposes python for a python repo but never applies it
+ok 31 suggest_profiles proposes rust for a cargo repo but never applies it
+ok 32 suggest_profiles proposes lean for a repo with the toolchain pin
+ok 33 suggest_profiles proposes lean for a lakefile.toml repo (current Lake format)
+ok 34 suggest_profiles proposes lean for a lakefile.lean repo (older Lake format)
+ok 35 suggest_profiles proposes android for a gradle repo (Kotlin DSL)
+ok 36 suggest_profiles proposes android for a repo with just the gradle wrapper
+ok 37 suggest_profiles proposes dotnet for a Unity project root
+ok 38 suggest_profiles proposes dotnet for a repo with a top-level csproj
+ok 39 suggest_profiles is silent for a plain repo
+ok 40 base profile alone yields the base allowlist and nothing else
+ok 41 a python project gets PyPI on top of base
+ok 42 one project's profile does not widen another's (H5)
+ok 43 profiles compose
+ok 44 an android project gets Google Maven, Maven Central, and Gradle on top of base
+ok 45 a dotnet project gets NuGet on top of base, and only NuGet
+ok 46 an unknown profile is a hard failure, not a silently narrower allowlist
+ok 47 a missing profile file degrades to base, not to empty
+ok 48 devcontainer.json anchors build.dockerfile to the config dir, not the repo
+ok 49 devcontainer.json anchors build.context to the config dir, not the repo
+ok 50 the launcher exports CC_CONFIG_DIR (else the build paths resolve to /)
+ok 51 Dockerfile copies the claude-home payload into the image
+ok 52 the payload is baked outside /home/node/.claude (a volume would shadow it)
+ok 53 the payload is root-owned and not writable by node
+ok 54 hook scripts in the payload stay executable
+ok 55 postStartCommand links the payload after the firewall, not before
+ok 56 install.sh stages the payload from the repo root
+ok 57 install.sh aborts when a payload source is missing
+ok 58 install.sh names every missing payload source, not just the first
+ok 59 install.sh assembles the payload when every source is present
+ok 60 install.sh stages committed content only: uncommitted changes are listed, not staged
+ok 61 install.sh treats a payload source that exists but was never committed as missing
+ok 62 install.sh review diff shows the CONTENT of a new file inside a payload dir
+ok 63 install.sh review diff shows a new top-level payload item, not nothing
+ok 64 install.sh aborts before the prompt when the review diff itself fails
+ok 65 link-claude-home refuses to clobber a real file in the volume
+ok 66 link-claude-home links the payload and is idempotent
+ok 67 link-claude-home is a no-op when the payload is absent (non-cc-isolated host)
+ok 68 Gate 1h loads the review skill from the baked payload, not the branch
+ok 69 Gate 1h pins an explicit reviewer model
+ok 70 Gate 1h archives review artifacts before the worktree is torn down
+ok 71 Gate 1h fails closed on reviewer error and on an unparseable verdict
+ok 72 Gate 1h passes a per-run nonce the branch cannot know
+ok 73 every regular file in install.sh's PAYLOAD is hashed by enforcement_files or host_tool_files
+ok 74 bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone
+ok 75 verify_host_tools: repo checkout unchecked; an installed dir must match, and cannot opt out
+ok 76 verify_host_tools is the same code in cc-isolated.sh and cc-push.sh
+ok 77 launch: a tampered cc-exit-scan.sh is never sourced; --bless still works and clears it
+ok 78 launch: a host-tool refusal still shows a boundary change made alongside it, and bless prints both
+ok 79 bless: a failure changes neither manifest
+ok 80 --list reports host-tool state; a changed cc-push warns at launch but does not refuse
+ok 81 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+ok 82 claude-home files are hashed file by file when present
+ok 83 compute_manifest covers claude-home even when projects/ is empty, under errexit
+ok 84 a symlink in claude-home is blessed by its target and a repoint trips the manifest
+ok 85 a symlinked enforcement file is hashed by content as well as by target
+ok 86 compute_manifest fails when enforcement_files fails
+ok 87 H6 passes and stamps the host's project id on a correct container
+ok 88 H6 fails when the container's CC_PROJECT_ID is empty (no empty stamp)
+ok 89 H6 fails on a volume stamped for another project even if the container agrees with it
+ok 90 H6 fails on an empty stamp left by an earlier empty-env run
+ok 91 blessed_hash needs a manifest, is stable, and changes when the boundary changes
+ok 92 a fresh bless is NOT verified live, and says so
+ok 93 the receipt names the blessed hash and is void once the boundary changes
+ok 94 --list reports the blessed hash and its verification state
+ok 95 devcontainer.json passes CC_CONFIG_HASH as a build arg and the Dockerfile bakes it last
+ok 96 probe_boundary passes and writes the receipt when the container carries the blessed hash
+ok 97 probe_boundary fails on a container built from another config, and writes no receipt
+ok 98 probe_boundary fails when init-firewall.sh never completed (closed ≠ verified)
+ok 99 a launch rebuilds a container whose baked config is not the blessed one
+ok 100 a launch on a matching, verified container does not rebuild
+ok 101 --probe-only always rebuilds before probing
+ok 102 exit scan: a clean session is silent and returns 0
+ok 103 exit scan: snapshots that differ with nothing to show fail closed (status 2), never 0
+ok 104 exit scan: a hook planted in .git/hooks is named, and not run
+ok 105 exit scan: a *.sample hook is ignored (git never runs one)
+ok 106 exit scan: a planted core.hooksPath and a hook in it are both named
+ok 107 exit scan: a planted core.fsmonitor is named, and not run
+ok 108 exit scan: a planted filter driver is named, and not run
+ok 109 exit scan: planted include and includeIf keys are named; the target is read, not run
+ok 110 exit scan: a planted core.sshCommand (what host git push runs) is named
+ok 111 exit scan: items present at launch are baseline, not findings
+ok 112 exit scan: a pre-existing hook or key that CHANGED is a finding
+ok 113 exit scan: a linked worktree is scanned through its commondir, config.worktree included
+ok 114 exit scan: a repointed .git file is a finding
+ok 115 exit scan gitdir: a .git made invalid (HEAD removed) during the session is a finding
+ok 116 exit scan gitdir: a .git invalid at launch is still a finding at exit
+ok 117 exit scan gitdir: a repository planted at the checkout root (HEAD, objects/, refs/) is a finding
+ok 118 exit scan gitdir: a commondir file planted at the checkout root is a finding
+ok 119 launch_gitdir_ok: a normal checkout passes; a .git without HEAD, or a root that looks like a git dir, fails with the reason
+ok 120 launch: a repository already planted at the checkout root refuses the launch (exit 1), never becomes the baseline
+ok 121 launch: a .git git accepts but the tools do not (HEAD over 255 bytes) refuses the launch (exit 1)
+ok 122 exit scan gitdir: switching and creating branches is not a finding (HEAD's kind, not its ref)
+ok 123 exit scan gitdir: a session that makes .git invalid ends the launcher with exit 3
+ok 124 exit scan size cap: a huge (sparse) .git file fails the scan fast as unsafe, unread
+ok 125 exit scan: control bytes in a planted value are shown as '?', not sent to the terminal
+ok 126 exit scan: an unreadable .git is reported (status 2), not passed
+ok 127 exit scan (a): remote.origin.receivepack is named; the hooks-only safe push would run it
+ok 128 exit scan (b): a pushurl repointed at a bare repo in the checkout names it and its hook
+ok 129 exit scan (b): a hook planted in a local remote that was already in the checkout is named
+ok 130 exit scan (c): a submodule git dir's config, hooks and attributes are named, and not run
+ok 131 exit scan (c): nested submodule git dirs (modules/a/modules/b) are walked too
+ok 132 exit scan (c): an embedded repo's .git in the working tree is scanned (host status recurses into it)
+ok 133 exit scan (d): a hooks dir made traversable but not listable fails closed (status 2)
+ok 134 exit scan (d): an unlistable hooks dir at launch refuses the baseline, not an empty one
+ok 135 exit scan (d): a changed hooks dir mode, a removed hook and a symlinked hooks dir are named
+ok 136 exit scan (d): a hook that is a symlink is recorded with its target, whose change is a finding
+ok 137 exit scan (e): keys outside any list are still named (a changed config is the finding)
+ok 138 exit scan (e): an attributesFile or include target inside the checkout that changes is named
+ok 139 exit scan (e): a relative core.hooksPath in YOUR global config is walked inside the checkout
+ok 140 exit scan (e): even an inert config change (user.name) is reported, not allowlisted
+ok 141 exit scan (f): an unreadable hook with control bytes in its name is reported through '?'
+ok 142 exit scan (f): a launch whose baseline fails prints the container-chosen name through '?'
+ok 143 exit scan N5: a branch named config is not parsed as git config (launch not refused)
+ok 144 exit scan N6: a normal commit on a branch with a hooks component is not a finding
+ok 145 exit scan N7: a checkout under a directory named hooks: a normal commit is not a finding
+ok 146 exit scan N13: a newline in an unreadable hook's name cannot forge a line in the warning
+ok 147 exit scan: an unlistable directory in the working tree is named as such, not as .git
+ok 148 exit scan P1: a relative hooksPath from YOUR global includeIf gitdir: is walked
+ok 149 exit scan P1: gitdir/i: matches case-insensitively and a relative pattern matches anywhere
+ok 150 exit scan P6: a nested worktree whose common dir is a bare repo in the checkout
+ok 151 exit scan N2: remote.pushDefault and branch.*.pushRemote naming a path are walked
+ok 152 exit scan N2: url.<base>.insteadOf and file://localhost/ remotes inside the checkout are walked
+ok 153 exit scan N3: a relative remote path with a colon after a slash is local, and walked
+ok 154 exit scan N4: legacy .git/remotes and .git/branches files are recorded and their targets walked
+ok 155 exit scan N11: YOUR relative global hooksPath is walked inside a submodule's working tree
+ok 156 exit scan N12: an exec line added to an in-progress rebase's todo list is a finding
+ok 157 exit scan keys include every alternative of install.sh's refusal list
+ok 158 a launch whose session plants a hook exits 3 and names it
+ok 159 a launch refuses to start when .git cannot be snapshotted
+ok 160 exit scan E6: a newline in a repointed common dir's name cannot forge a line (exit and launch)
+ok 161 exit scan E6: an unreadable .git file's read error is not printed raw
+ok 162 logical_workspace: the checkout by the (symlinked) route it was reached on
+ok 163 exit scan E8: YOUR includeIf gitdir: naming the checkout by a symlinked route is walked
+ok 164 exit scan E8: a launch from a symlinked route passes that route to both snapshots
+ok 165 exit scan relremote: an embedded repo's relative local remote resolves in that repo
+ok 166 exit scan size cap: a huge (sparse) planted hook fails the scan fast as unsafe, unhashed
+ok 167 exit scan size cap: past the total to hash, the scan fails as unsafe
+ok 168 a Ctrl-C during the exit scan exits 4, saying the scan did not finish
+ok 169 exit scan Q-094: a new worktree in git's standard layout is one note and status 0; plus a plant, a warning
+ok 170 exit scan Q-094: the container's /workspace form is accepted unless it is another host dir
+ok 171 exit scan Q-094: YOUR relative hooksPath is walked in a container-form worktree too
+ok 172 exit scan Q-094: a removed standard worktree is a note; a half-removed one warns
+ok 173 exit scan Q-094: a removal whose old working tree now looks like a git dir warns
+ok 174 _snap_unq: inverts printf %q's backslash form; other forms decline
+ok 175 exit scan Q-094: a removed git dir pairs only with the .git that pointed at it
+ok 176 exit scan Q-094: large snapshots under pipefail neither lose the note nor skip the W refusal
+ok 177 exit scan Q-094: a private dir git would also accept (commondir variants, hooks, config, links) warns
+ok 178 exit scan Q-094: a .git file or back-pointer that is not git's own warns
+ok 179 exit scan Q-094: an odd name, an embedded repo, or a nested repo's worktree warns
+ok 180 exit scan Q-094: a relative hooksPath, attributesFile or remote keeps a new worktree a finding
+ok 181 exit scan Q-094: a session that leaves an agent worktree ends the launcher with claude's status and a note

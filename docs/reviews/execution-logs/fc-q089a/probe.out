@@ -1,0 +1,48 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+=== P1 upgrade: old (main) install blessed, then unit A files + install.sh's bless command
+old bless rc=0
+old manifest lists host tools: 3
+host-tools.sha256 before new bless: absent
+new bless rc=0
+Blessed config: e5461178fb2c126b
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+host-tools.sha256 after: cc-exit-scan.sh cc-gitdir.sh cc-push.sh 
+blessed_hash old=3bdb298a21fb0de7 new=e5461178fb2c126b changed=yes
+=== P2 host-tool-only edit + re-bless: blessed_hash and receipt unchanged
+launch via ~/.local/bin symlink rc=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer (cc-exit-scan.sh, cc-gitdir.sh), then:
+    cc-isolated --bless
+  A host-tool change does not alter the blessed config: no rebuild or probe is needed.
+  action [--probe-only] rc=1 first: ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+  action [--register /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/ws --profile python] rc=1 first: ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+  action [--help] rc=0 first: cc-isolated — launch an isolated Claude Code session in ANY project, from a
+  action [--list] rc=0 first: Blessed config e5461178fb2c126b — verified live: yes
+  action [--bogus] rc=2 first: ERROR: unknown flag: --bogus
+rebless rc=0
+Blessed config: e5461178fb2c126b
+Verified live:  yes (this exact config has passed a live self-probe before)
+blessed_hash now e5461178fb2c126b (was e5461178fb2c126b)
+launch after rebless rc=1 first: ERROR: devcontainer CLI not found. Install on the HOST with:
+=== P3 default layout opt-out attempts (dir == cfg)
+delete host-tools only: cc-push rc=1 cc-push: refusing to run: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+delete both, env unset: cc-push rc=1 cc-push: refusing to run: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+delete both, env unset: launcher --list rc=0
+delete both, env unset: launcher launch rc=1 ERROR: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing) — refusing to run the session-exit scan's code.
+delete both, env=D/ (trailing slash): cc-push rc=1 cc-push: refusing to run: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+=== P4 custom dir at install (C), env unset at run time
+bless C rc=0
+tampered, manifests present, env unset: rc=1 cc-push: refusing to run: /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/custom/cc-gitdir.sh changed since the last bless ran=no
+tampered, host-tools deleted, env unset: rc=1 ran=no
+tampered, BOTH deleted, env unset: rc=0 ran=yes
+tampered, BOTH deleted, env=C: rc=1 ran=no
+=== P5 config dir reached through a symlink (default path is a link to R)
+bless via link rc=0
+both deleted, cfg is a symlink to dir: cc-push rc=1 cc-push: refusing to run: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/real-cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+=== P6 repo checkout (no manifests, not cfg): unchecked; sourcing with a failed check
+repo cc-push --help rc=0
+sourced ok, HOST_TOOLS_ERR=[]
+function
+sourced installed copy with mismatch: survived, HOST_TOOLS_ERR=[/home/node/.claude/jobs/00bcf178/tmp/fc-q089A.jPV8xH/w/home/.config/claude-devcontainer/cc-gitdir.sh changed since the last bless]
+git_exit_scan undefined
+=== done

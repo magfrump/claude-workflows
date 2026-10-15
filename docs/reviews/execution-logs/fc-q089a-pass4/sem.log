@@ -1,0 +1,15 @@
+O1-backslash-dot: sources EVIL
+O2-quoted-dot: sources EVIL
+O3-squoted-source: sources EVIL
+O4-dquote-split: sources EVIL
+O5-assign-prefix-dot: sources EVIL
+O6-case-arm-dot: sources EVIL
+O7-time-p-dot: sources EVIL
+O8-command-p-dot: sources EVIL
+O9-ansi-c: sources EVIL
+O10-var-cmd: sources EVIL
+O11-hash-line-in-string: sources EVIL
+O12-coproc-dot: does NOT source ()
+--- C7: the scan's canonical-spelled $CC_PUSH_DIR, launcher context (unset), under set -u
+C7-unset: does NOT source (bash: line 1: CC_PUSH_DIR: unbound variable)
+C7-exported: sources EVIL

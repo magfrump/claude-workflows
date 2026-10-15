@@ -1,0 +1,5 @@
+1..1
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/C4-listed-not-host/test/cc-isolated-functions.bats, line 1073)
+#   `grep -qx "$src" <<< "$(host_tool_files)" || { echo "$src is not a host tool"; return 1; }' failed
+# cc-evil.sh is not a host tool

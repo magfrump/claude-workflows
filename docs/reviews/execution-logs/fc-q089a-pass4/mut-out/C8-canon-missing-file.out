@@ -1,0 +1,6 @@
+1..1
+not ok 1 every file an entry point sources, directly or through what it sources, is in its verify_host_tools list
+# (in test file mut/C8-canon-missing-file/test/cc-isolated-functions.bats, line 1070)
+#   `case " $args " in *" $src "*) ;; *) echo "$entry sources $src unchecked"; return 1 ;; esac' failed
+# grep: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/mut/C8-canon-missing-file/test/../devcontainer-config/cc-nosuch.sh: No such file or directory
+# cc-isolated.sh sources cc-nosuch.sh unchecked

@@ -1,0 +1,22 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### Q1: config dir with a colon in its path: re-bless shows the diff
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Changed since the last bless (host-tools.sha256):
+< 13295e52823f00261080841ab92827c9e292f6f019a80e9d10a5cf68f6ef0b30  cc-push.sh
+> 1502a7c63c938e94860d1b2abc3a5368a4bce621d0c50cca15e006cc1de7bbe8  cc-push.sh
+### Q2: cc-push with host-tools.sha256 missing / a symlink (installed dir)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+missing: exit=1
+symlink: exit=1
+### Q3: cc-push from a repo checkout (install.sh beside it, no manifests)
+repo checkout: exit=0
+### Q4: the refusal's check_manifest hint '$0 --bless' with CLAUDE_DEVC_CONFIG_DIR unset (custom dir)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+    /home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt3/custom/cc-isolated.sh --bless
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc3.AWENWv/rt3/custom cc-isolated --bless
+--- running the first hint verbatim (env unset):
+exit=1
+ERROR: enforcement file missing: devcontainer.json
+ERROR: nothing blessed.
+custom manifest unchanged after it: 
+### done

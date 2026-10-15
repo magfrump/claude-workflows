@@ -1,0 +1,113 @@
+### L0: nothing changed
+--list exit=0
+Host tools cc-exit-scan.sh cc-gitdir.sh cc-push.sh - match the bless
+
+### L1: scan only
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-exit-scan.sh changed since the last bless
+
+### L2: gitdir only
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-gitdir.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-gitdir.sh changed since the last bless
+
+### L3: push only
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches warn (cc-push changed) but run
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-push.sh changed since the last bless
+
+### L4: push + scan
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-exit-scan.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-push.sh changed since the last bless
+
+### L5: all three
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-exit-scan.sh changed since the last bless; /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-gitdir.sh changed since the last bless
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-push.sh changed since the last bless; /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-gitdir.sh changed since the last bless
+
+### L6: host-tools.sha256 missing
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+  cc-push refuses: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+
+### L7: cc-push.sh missing
+--list exit=0
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches warn (cc-push changed) but run
+  cc-push refuses: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/cfg/cc-push.sh is missing or a symlink
+
+### L8: config dir whose parent does not exist (var unset, HOME/.config absent)
+--list exit=1
+No blessed config (run devcontainer-config/install.sh).
+--- same at d2fe61bb
+--list exit=1
+No blessed config (run devcontainer-config/install.sh).
+### L8-parent: same --list at d2fe61bb's form (statement inside if)
+if-form: continues, dir=[]
+assign-form exit=1
+### L9: custom install dir, var unset, scan changed in launcher dir; --list reads config_dir (default)
+Host tools: CHANGED (review, then: cc-isolated --bless)
+  launches refuse: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+  cc-push refuses: no host-tool manifest at /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/home/.config/claude-devcontainer/host-tools.sha256 (re-run install.sh, or cc-isolated --bless after reviewing)
+
+launch exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom9/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+### B1: bless_cmd with a dir containing a space and a quote; $0 with a space
+launch exit=1
+WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+Plant it once with: touch ~/.ssh/canary
+ERROR: no blessed manifest at /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir/manifest.sha256
+Review the files in /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir yourself, then run: CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my\ cfg\'s\ dir /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir/cc-isolated.sh --bless
+--- run the hint's command line verbatim (eval of the printed text, after a re-mk)
+launch exit=1
+WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+Plant it once with: touch ~/.ssh/canary
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my\ cfg\'s\ dir /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir/cc-isolated.sh --bless
+1c1
+< 244009ed31328fef80085d15fe6789c9e189b71496fcf17852e7bb1645aaba96  Dockerfile
+---
+> 11de095c569531eb9ee9970ddf461161a293332288fdc44cba3baee8bb21ed7f  Dockerfile
+hint: [CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my\ cfg\'s\ dir /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/my cfg's dir/cc-isolated.sh --bless]
+eval hint exit=2
+relaunch exit=1 (boundary refusal gone?)
+1
+--- var unset: hint form
+_ --bless
+--- var set to empty
+_ --bless
+/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/home/.config/claude-devcontainer
+### B2: refusal path, custom dir var unset: scan + Dockerfile changed: both bless commands
+launch exit=1
+ERROR: /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2/cc-exit-scan.sh changed since the last bless — refusing to run the session-exit scan's code.
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+    diff -r /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2 <your canonical devcontainer-config/>
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2 /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2/cc-isolated.sh --bless
+1c1
+< 244009ed31328fef80085d15fe6789c9e189b71496fcf17852e7bb1645aaba96  Dockerfile
+---
+> 11de095c569531eb9ee9970ddf461161a293332288fdc44cba3baee8bb21ed7f  Dockerfile
+  Also changed (cc-push refuses until re-blessed): /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2/cc-push.sh changed since the last bless
+  Review the host tools in /home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2, then re-bless (it prints what changed):
+    CLAUDE_DEVC_CONFIG_DIR=/home/node/.claude/jobs/00bcf178/tmp/fc4.ou7RpU/rt/custom-b2 cc-isolated --bless
+  The BOUNDARY config changed too (above). Review that diff as well: the re-bless accepts both, and the next launch then rebuilds and probes.
+### B3: launch-time check_manifest (main), var set to D, Dockerfile changed
+launch exit=1
+WARNING: no ~/.ssh/canary on the host — the H1 probe is weaker without it.
+Plant it once with: touch ~/.ssh/canary
+ERROR: installed config changed since last bless — refusing to build/launch.
+Something host-side rewrote the boundary config. Review it by hand, then re-bless:
+### B4: --register: does it print a bless hint?
+register exit=0
+0
+### done

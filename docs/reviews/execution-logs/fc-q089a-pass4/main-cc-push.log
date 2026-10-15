@@ -1,0 +1,48 @@
+1..47
+ok 1 cc-push pushes the checkout's branch from a host-only bare clone
+ok 2 cc-push runs nothing planted in the checkout (full plant set)
+ok 3 cc-push, second run: reuses the clone and its remote; a later session commit is pushed
+ok 4 cc-push without --remote on first use refuses and creates nothing
+ok 5 cc-push declined at the prompt pushes nothing and exits 1
+ok 6 cc-push refuses a clone inside the checkout, or a directory it did not create
+ok 7 cc-push shows container-written commit text with control bytes as '?'
+ok 8 cc-push --branch pushes a branch other than HEAD's; an unknown one is refused
+ok 9 cc-push never forces: a rewritten branch is refused by the remote
+ok 10 E2c: a .git gitdir: file (redirect to another host repo) is refused, nothing fetched or pushed
+ok 11 a .git that is a symlink to another repo is refused
+ok 12 P2a: objects/info/alternates naming another host repo is refused, its commit not pushed
+ok 13 http-alternates and a commondir file are refused too
+ok 14 Q-093: a commondir holding exactly '.' or '.\n' is accepted and the push goes ahead
+ok 15 Q-093: every other commondir is refused (spellings, empty, absolute self, dir, FIFO, symlink)
+ok 16 a symlinked object store (aliasing another repo's objects) is refused
+ok 17 a symlinked hook is not a reason to refuse (upload-pack never reads hooks/)
+ok 18 E2b: an include.path naming a FIFO is refused at once, not hung on
+ok 19 includeIf, an upper-case [ Include ], a header after another on one line, and config.worktree are refused
+ok 20 a FIFO as packed-refs inside .git is refused without blocking
+ok 21 a newline in the name of a refused .git entry cannot forge a line
+ok 22 E4: a branch name with C1 CSI (U+009B and a raw 0x9b byte) and RLO (U+202E) never reaches the terminal raw
+ok 23 E4: a remote rejection naming the branch is shown through vis too
+ok 24 E5: a git fatal (unwritable clone parent) exits 1, never git's 128
+ok 25 unrelated history: the preview says so and the rejected push exits 1, not 128
+ok 26 --help prints the whole header, exit codes included
+ok 27 gitdir_valid agrees with git on valid, broken-HEAD, missing-dir and commondir-linked git dirs
+ok 28 gitdir_valid and gitdir_head_kind: stricter than git only where git reads past 255 bytes; a FIFO HEAD does not block
+ok 29 looks_like_gitdir: HEAD next to objects/, or a commondir file; not a normal checkout root
+ok 30 cc-push refuses a .git without HEAD, and does not fall back to a repository planted at the root
+ok 31 cc-push refuses a .git whose HEAD is garbage
+ok 32 cc-push refuses a checkout root holding HEAD, objects/ and refs/ (a planted bare repository)
+ok 33 cc-push refuses a checkout root holding a commondir file
+ok 34 cc-push fetches from <checkout>/.git by name, with git-upload-pack --strict
+ok 35 cc-push's project_id is cc-isolated's (the container label it asks docker for)
+ok 36 a running cc-isolated container for the checkout: refused (exit 1), nothing fetched
+ok 37 --allow-running goes on past a running container, with a warning
+ok 38 docker that does not answer: refused unless --allow-running
+ok 39 no docker at all: refused unless --allow-running
+ok 40 only the pushed branch is fetched: an unrelated branch never reaches the host clone
+ok 41 git_version_ok: the May 2024 fixed releases and later pass, earlier ones do not
+ok 42 cc-push refuses to run on a git below the fixed releases, before touching the checkout
+ok 43 usage errors exit 2: unknown flag, a flag without its value, two checkouts (with or without --)
+ok 44 Ctrl-C at the prompt is a decline: exit 1, not 130, nothing pushed
+ok 45 a partial clone is refused up front, with the reason
+ok 46 err_vis: only stderr goes through vis, stdout is captured untouched, the status is kept
+ok 47 PATH: a program the session wrote is never run by name, from a relative or checkout PATH entry

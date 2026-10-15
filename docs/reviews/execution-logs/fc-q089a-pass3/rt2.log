@@ -1,0 +1,18 @@
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+### --bless with the second mktemp failing
+bless exit=1
+shim: mktemp failing on host-tools
+stdout lines: 0
+manifests unchanged
+no temp files
+### --register with the second mktemp failing
+register exit=1
+  egress:     base  ->  base,python
+
+Re-blessing (the profile file is boundary config, so it joins the manifest)…
+shim: mktemp failing on host-tools
+0
+no temp files
+manifests unchanged (profile file written: 2a20da92943c.profile)
+### done
