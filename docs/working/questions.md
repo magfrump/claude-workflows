@@ -29,7 +29,6 @@ The index below is generated — edit entries, not the table.
 | [Q-149](#q-149--self-merge-never-scope) | you: judgment | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
 | [Q-150](#q-150--build-loop-c1-questions-writer) | you: judgment | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
 | [Q-151](#q-151--build-loop-c2-blocked-slot) | you: judgment | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
-| [Q-152](#q-152--build-loop-c3-blocked-wait) | you: judgment | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
 | [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Now... | 2026-10-15 |
 | [Q-166](#q-166--staged-run-counts-as-live-verify) | you: judgment | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
 | [Q-170](#q-170--decision-015-isolation-rerun) | you: judgment | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
@@ -40,7 +39,7 @@ The index below is generated — edit entries, not the table.
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. It live-veri... | 2026-10-15 |
+| [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
 | [Q-176](#q-176--q092-deny-matcher-live-check) | you: terminal | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
@@ -610,19 +609,4 @@ Does a blocked build loop give up its slot while it waits for your answer? (Plan
 
 - **Interim:** [1], as built (D9).
 - **If the answer differs:** [2] is a change to the skill's slot counts in steps 8 and 10.
-
-### Q-152 · build-loop-c3-blocked-wait
-**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
-
-When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart it? (Plan C3.)
-
-- **Read:** plan D12 · `skills/dev-cycle/SKILL.md`, the wait rule at the end of step 10 · `docs/working/handoff-build-loop-handoff.md` C3
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Poll** (built) | It wakes every 1200–1800 s and runs a full cycle only when main moved past its last land (a committed answer moves it), a retry's wait ran out or you wrote; otherwise the wakeup does nothing | None | A little spend per idle wakeup while you are away |
-| **[2] Stop** | The `/loop` ends; you start `/loop /dev-cycle` again after answering | One command per return | Answered work sits until you remember to restart |
-
-- **Interim:** [1], as built (D12).
-- **If the answer differs:** [2] replaces the skill's wait rule with an end-of-loop line.
 

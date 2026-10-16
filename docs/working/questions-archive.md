@@ -144,6 +144,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-152](#q-152--build-loop-c3-blocked-wait) | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
 | [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
 | [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
 | [Q-155](#q-155--constraints-doc-missing) | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
@@ -3071,4 +3072,22 @@ cd /home/magfrump/claude-workflows && ( export GIT_NO_REPLACE_OBJECTS=1; M=8cff4
 
 - **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
 - **If the answer differs:** each refusal names its cause. `differs from M`: main changed a released path after M, which the lists above do not cover; read `git log --first-parent M..main` before rewriting this entry with a new M. `HEAD is not main`: put the host checkout at main's commit first, knowing that a checkout runs any hook a sandbox planted. Replace refs, grafts or `core.attributesFile`: planted state; remove it and find out who wrote it before releasing.
+
+### Q-152 · build-loop-c3-blocked-wait
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart it? (Plan C3.)
+
+**Answered 2026-10-16: [2] stop.** "Continuing to poll waiting for human intervention without a human present is wasted effort, not open-ended work." `skills/dev-cycle/SKILL.md`'s wait rule now ends the `/loop` when every thread waits on you, and its final message says to restart `/loop /dev-cycle` after answering. A running build loop still wakes the orchestrator, and a dispatch left to retry still gets one timed wakeup, because neither waits on you. It takes effect at the next image release.
+
+- **Read:** plan D12 · `skills/dev-cycle/SKILL.md`, the wait rule at the end of step 10 · `docs/working/handoff-build-loop-handoff.md` C3
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Poll** (built) | It wakes every 1200–1800 s and runs a full cycle only when main moved past its last land (a committed answer moves it), a retry's wait ran out or you wrote; otherwise the wakeup does nothing | None | A little spend per idle wakeup while you are away |
+| **[2] Stop** | The `/loop` ends; you start `/loop /dev-cycle` again after answering | One command per return | Answered work sits until you remember to restart |
+
+- **Interim:** [1], as built (D12).
+- **If the answer differs:** [2] replaces the skill's wait rule with an end-of-loop line.
+
 
