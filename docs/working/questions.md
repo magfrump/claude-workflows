@@ -63,6 +63,7 @@ The index below is generated — edit entries, not the table.
 | [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-160](#q-160--implement-q104-per-iteration-cap) | agent | Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 60... | 2026-10-14 |
 | [Q-168](#q-168--q096b-remote-names-unit) | agent | Q-096's iteration 2 found that the exit scan parses remote names and legacy `remotes/`/`branches/` files mo... | 2026-10-15 |
+| [Q-186](#q-186--questions-base-refused-odd-fence) | agent | Main's `docs/working/questions.md` fails `--check-answer` as a whole, so `--cycle-diff` refuses every cycle... | 2026-10-15 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
 | [Q-173](#q-173--exit-scan-split-groups) | deferred | Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git comma... | 2026-10-15 |
@@ -891,3 +892,17 @@ Commit `83b653d215897a8305bf103c005271ce9593b000`, by the repository owner's ide
 - **Blocks:** every dev-cycle step past 0.2.
 - **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
 - **If the answer differs:** nothing to redo.
+
+### Q-186 · questions-base-refused-odd-fence
+**Needs:** agent · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's `docs/working/questions.md` fails `--check-answer` as a whole, so `--cycle-diff` refuses every cycle land: fix the fence in Q-169 on main.
+
+- **Read:** Q-169's "The paste" bullet (lines 266-270 at 83b653d2; added by c86b8f3e, reached main in f265d7f2) · `skills/dev-cycle/SKILL.md` step 9.3
+
+> Output: refuse docs/working/questions.md: --check-answer refuses its base copy whole (odd 268 fence)
+
+The fence at line 268 is indented under a list item; the gate's reader accepts only plain column-0 fences. Mechanical fix: move Q-169's paste block out of the list so its two fence lines start at column 0. A cycle land cannot carry the fix (the refusal reads main's copy), so it lands as a hand commit on main; iteration 2026-10-16-0510's branch, holding Q-181 to Q-186, lands on the next iteration after that.
+
+- **Blocks:** every dev-cycle land, and so every step past 0.
+- **Interim:** iteration 2026-10-16-0510 stopped at step 9.3; its commits wait on `chore/dev-cycle-2026-10-16-0510`.
