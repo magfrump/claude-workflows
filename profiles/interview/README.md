@@ -52,8 +52,9 @@ See [practice-task.md](practice-task.md) for timed practice tasks and a debrief 
 
 ## Files
 
-- `CLAUDE.md`: the session instructions (symlinked into the profile, so edits apply immediately)
-- `settings.json`: model, effort, permissions (copied; re-run `install.sh` after editing)
+- `CLAUDE.md`: the session instructions
+- `settings.json`: model, effort, permissions
+- Both are copied into the profile, so re-run `install.sh` after editing either. Copies rather than symlinks, so a branch switch in this checkout can't change the profile.
 - `requirements.txt`: the interviewers' file, verbatim
 - `requirements-extras.txt`: `accelerate` (needed by `Trainer`), `scikit-learn`, `matplotlib`, `tqdm`; skip with `--no-extras`
 - `install.sh`, `preflight.sh`, `warm-cache.py`: setup, go/no-go, cache warming

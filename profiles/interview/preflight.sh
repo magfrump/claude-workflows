@@ -107,7 +107,13 @@ fi
 echo "== Claude Code profile ($CONFIG_DIR)"
 if command -v claude >/dev/null 2>&1; then pass "claude $(claude --version 2>/dev/null | head -1)"; else fail "claude not on PATH"; fi
 if command -v cci >/dev/null 2>&1; then pass "cci on PATH"; else warn "cci not on PATH (use ~/.local/bin/cci)"; fi
-if [ -e "$CONFIG_DIR/CLAUDE.md" ]; then pass "CLAUDE.md -> $(readlink "$CONFIG_DIR/CLAUDE.md" || echo "$CONFIG_DIR/CLAUDE.md")"; else fail "no CLAUDE.md in profile (run install.sh)"; fi
+if [ ! -f "$CONFIG_DIR/CLAUDE.md" ]; then
+  fail "no CLAUDE.md in profile (run install.sh)"
+elif cmp -s "$HERE/CLAUDE.md" "$CONFIG_DIR/CLAUDE.md"; then
+  pass "CLAUDE.md matches $HERE/CLAUDE.md"
+else
+  warn "profile CLAUDE.md differs from $HERE/CLAUDE.md (re-run install.sh if you edited it)"
+fi
 if [ -f "$CONFIG_DIR/settings.json" ]; then pass "settings.json present"; else fail "no settings.json in profile (run install.sh)"; fi
 if [ -f "$CONFIG_DIR/.credentials.json" ]; then
   pass "credentials present"

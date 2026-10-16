@@ -3,8 +3,10 @@
 #
 # Creates three things, all outside this repo, all idempotent:
 #   ~/.claude-interview/   a separate Claude Code config dir: the slim CLAUDE.md
-#                          (symlinked to this repo, so edits here take effect)
-#                          and settings.json (copied: Claude Code writes to it)
+#                          and settings.json, both COPIED (re-run after edits).
+#                          Not symlinked: other sessions switch this checkout's
+#                          branch, which would make a symlinked CLAUDE.md vanish
+#                          from the profile, possibly right before the call.
 #   ~/interview-env/       Python venv with the interviewers' requirements.txt
 #                          (+ requirements-extras.txt unless --no-extras)
 #   ~/.local/bin/cci       launcher: activates the venv, points
@@ -43,15 +45,17 @@ fi
 
 # --- Claude Code profile ------------------------------------------------------
 mkdir -p "$CONFIG_DIR"
-ln -sfn "$HERE/CLAUDE.md" "$CONFIG_DIR/CLAUDE.md"
-
-settings="$CONFIG_DIR/settings.json"
-if [ -f "$settings" ] && ! cmp -s "$HERE/settings.json" "$settings"; then
-  cp -f "$settings" "$settings.bak"
-  echo "install.sh: existing settings.json differed; saved it as settings.json.bak"
-fi
-cp -f "$HERE/settings.json" "$settings"
-echo "profile:  $CONFIG_DIR (CLAUDE.md -> $HERE/CLAUDE.md)"
+for f in CLAUDE.md settings.json; do
+  dest="$CONFIG_DIR/$f"
+  [ -L "$dest" ] && rm -f "$dest"   # an older install symlinked CLAUDE.md
+  # Claude Code writes runtime changes into settings.json; keep them.
+  if [ -f "$dest" ] && ! cmp -s "$HERE/$f" "$dest"; then
+    cp -f "$dest" "$dest.bak"
+    echo "install.sh: existing $f differed; saved it as $f.bak"
+  fi
+  cp -f "$HERE/$f" "$dest"
+done
+echo "profile:  $CONFIG_DIR (CLAUDE.md, settings.json copied from $HERE)"
 
 # --- Python venv --------------------------------------------------------------
 if [ "$venv" -eq 1 ]; then
