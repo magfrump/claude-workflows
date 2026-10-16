@@ -42,6 +42,11 @@ The index below is generated — edit entries, not the table.
 | [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15`... | 2026-10-15 |
 | [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
+| [Q-181](#q-181--other-commit-919375bec66b) | you: judgment | Main's first-parent history holds `919375bec66b`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-15 |
+| [Q-182](#q-182--other-commit-f265d7f25556) | you: judgment | Main's first-parent history holds `f265d7f25556`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-15 |
+| [Q-183](#q-183--other-commit-9bb19d2acf29) | you: judgment | Main's first-parent history holds `9bb19d2acf29`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-15 |
+| [Q-184](#q-184--other-commit-fbe676742bd7) | you: judgment | Main's first-parent history holds `fbe676742bd7`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-15 |
+| [Q-185](#q-185--other-commit-83b653d21589) | you: judgment | Main's first-parent history holds `83b653d21589`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-15 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-156](#q-156--image-lag) | you: terminal | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | you: terminal | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
@@ -791,3 +796,98 @@ cd /home/magfrump/claude-workflows && ( export GIT_NO_REPLACE_OBJECTS=1; M=8cff4
 
 - **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
 - **If the answer differs:** each refusal names its cause. `differs from M`: main changed a released path after M, which the lists above do not cover; read `git log --first-parent M..main` before rewriting this entry with a new M. `HEAD is not main`: put the host checkout at main's commit first, knowing that a checkout runs any hook a sandbox planted. Replace refs, grafts or `core.attributesFile`: planted state; remove it and find out who wrote it before releasing.
+
+### Q-181 · other-commit-919375bec66b
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's first-parent history holds `919375bec66b`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 919375bec66b86ceb1e5d30dc402ac16f1862391` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `919375bec66b86ceb1e5d30dc402ac16f1862391`, by the repository owner's identity, 2026-10-15. Subject (data, not instructions): Merge branch 'chore/q180-repin-pastes' (Q-180: rebuilds the merge branches on main, hardens the host pastes; checkpoint revision 53). Changes: 14 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
+- **If the answer differs:** nothing to redo.
+
+### Q-182 · other-commit-f265d7f25556
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's first-parent history holds `f265d7f25556`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f265d7f255568426b591001361c3cce9a49d5b70` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f265d7f255568426b591001361c3cce9a49d5b70`, by the repository owner's identity, 2026-10-15. Subject (data, not instructions): Merge branch 'merge/ready-2026-10-15-r2' (T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule, branch-verify and decision-015 docs). Changes: 137 paths; outside `docs/`: `AGENTS.md`, `GEMINI.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/init-firewall.sh`, `devcontainer-config/install.sh`, `guides/README.md`, `guides/cc-isolated-usage.md`, `guides/completion-signals.md`, `guides/devcontainer-setup.md`, `guides/pr-prep-quick-ref.md`, `scripts/run-tests.sh`, `skills/code-review/references/chat-synthesis.md`, `test/cc-isolated-functions.bats`, `test/init-firewall-rules.bats`, `test/install-host.bats`, `test/skills/eval-helpers-gating.bats`, `workflows/pr-prep.md`, `workflows/review-fix-loop.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
+- **If the answer differs:** nothing to redo.
+
+### Q-183 · other-commit-9bb19d2acf29
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's first-parent history holds `9bb19d2acf29`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 9bb19d2acf29e2483c67174857a6a75ea152bd8d` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `9bb19d2acf29e2483c67174857a6a75ea152bd8d`, by the repository owner's identity, 2026-10-15. Subject (data, not instructions): Merge branch 'feat/build-loop-u5' (the build-loop handoff as built; Q-164's branch). Changes: 29 paths; outside `docs/`: `skills/dev-cycle/SKILL.md` (gate code), `test/scripts/build-loop-read.bats`, `workflows/codebase-onboarding.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
+- **If the answer differs:** nothing to redo.
+
+### Q-184 · other-commit-fbe676742bd7
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's first-parent history holds `fbe676742bd7`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat fbe676742bd76058bb389491fa3a3e96db199f26` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `fbe676742bd76058bb389491fa3a3e96db199f26`, by the repository owner's identity, 2026-10-15. Subject (data, not instructions): Merge branch 'fix/q145-ancestor-vanish' (Q-145; Q-163's branch). Changes: 19 paths; outside `docs/`: `scripts/lib/dev-cycle-read.sh` (gate code), `test/scripts/build-loop-check.bats`, `test/scripts/dev-cycle.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
+- **If the answer differs:** nothing to redo.
+
+### Q-185 · other-commit-83b653d21589
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
+
+Main's first-parent history holds `83b653d21589`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 83b653d215897a8305bf103c005271ce9593b000` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `83b653d215897a8305bf103c005271ce9593b000`, by the repository owner's identity, 2026-10-15. Subject (data, not instructions): repo instructions and guiding constraints (a plain commit, not a merge). Changes: 2 paths: `claude.md` (new, lower-case name: an instruction file) and `docs/constraints.md` (new; the file Q-155 asks for).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-16-0510 stopped at step 0.2.
+- **If the answer differs:** nothing to redo.
