@@ -144,7 +144,13 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
 | [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
+| [Q-155](#q-155--constraints-doc-missing) | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
+| [Q-156](#q-156--image-lag) | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
+| [Q-162](#q-162--merges-and-cleanup-2026-10-14) | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
+| [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
+| [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
 | [Q-178](#q-178--land-unlanded-cycle-branch-0357) | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
 | [Q-180](#q-180--harden-and-repin-host-pastes) | The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advi... | 2026-10-15 |
 <!-- index:end -->
@@ -2888,4 +2894,181 @@ The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration c
   - Wording: Q-169's "Not verified" has 12 items, not 8. Q-170's count is 88 of 116. Q-162's pre-landing conflict list adds `questions-archive.md`, and only Q-110, doc drift and Q-160 conflict with each other. The cycle-2 tally excludes cycle 1's three landings.
 - **Resolved 2026-10-15 (agent): done on `chore/q180-repin-pastes`.** The three merge branches were rebuilt on main b71a4e9e as new `-r2` branches (the old ones kept for you to delete), and `merge/q145-r2` is new: `merge/ready-2026-10-15-r2` 09a2876f, `merge/build-loop-u5-resolved-r2` 7326d715, `merge/q145-r2` 35e13638, `merge/u5-and-q145-r2` 6c841192. Q-162, Q-163 and Q-164 are re-pinned to them; Q-163 and Q-164 stop unless Q-162's merge is on main. The guard grew past this list after review: it now refuses the state gate's config keys (`scripts/build-loop.sh` STATE_KEYS_RE, without `log.showsignature`, which the merge never reads) and its file checks, plus `fsck.`, `pager.` and `core.pager` keys and an object `git fsck` rejects; it does not check `origin/HEAD`, which a pinned merge does not read. The pastes name what no guard can check (a moved main, the shell, a running agent). Every item above is applied; the review is `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`. The "Do not run until Q-180 is done" holds are removed from each Interim.
 
+
+### Q-162 · merges-and-cleanup-2026-10-14
+**Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block into the container's shell (a `!` command in a cc-isolated session, or a shell in that container), never in a host shell. The container's `/workspace` is a bind mount of your host checkout, so this is not about which files are touched but which git runs: an agent session can plant hooks and config in `.git`, and they run as whoever runs git there (a host `git status`, or a zsh prompt that runs it on `cd`, runs a planted `core.fsmonitor` on the host). On the host this guard refuses anyway, because your global config sets `core.hooksPath`. Run it while no agent session or subagent is working, take the block from the committed text (in the container shell: `git --no-pager -c core.useReplaceRefs=false show main:docs/working/questions.md`), not the working tree an agent can edit, and first look over `git --no-pager --no-replace-objects log --oneline --first-parent b71a4e9e..HEAD`: it should list only merges you made (plain `git show` and `git log` follow a planted replace ref, and page through a planted pager). It merges `merge/ready-2026-10-15-r2` by its reviewed tip, 09a2876f. The guard refuses replace refs, grafts, shallow, `info/attributes`, alternates, any filter, merge or diff driver, include, `hook.` key, pager, fsmonitor, attributes file, hooks path, gpg, fsck or partial-clone setting in your git config, and an object that fails `git fsck` (the config check must stay before `fsck`, which would run a planted fsmonitor); the merge also ignores replace refs, and every git command in the paste that writes runs with hooks off. So the merged side is the reviewed commit. The paste does not check what main itself holds (an agent that can commit there can put a change on main before you paste: hence the log check) or the shell it runs in (an alias or function for `git` or `test`, or an exported `GIT_*` variable such as `GIT_CONFIG` or `GIT_SHALLOW_FILE`, defeats any guard written into a paste). It then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main (as of b71a4e9e) plus seven reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), and the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because five of those nine merges (Q-110, doc drift, Q-160 and the two docs branches) conflict with main's new rows, each only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164: their pastes stop unless this merge is on main.
+
+**Answered 2026-10-16: run.** The merge landed as f265d7f2. The `wt-build-loop-u3a1 … is not a working tree` errors were for worktrees already removed, and none of the twelve u3/u4 branches is left.
+
+**Rebuilt 2026-10-15 (Q-180):** the first pin, a760a5e5, was built on b279a2ba and conflicted once Q-178 landed the 0357 cycle branch (in the override log, and before that landing in the questions, questions-archive, roadmap and idea-log files). `merge/ready-2026-10-15-r2` re-merges the same nine unit tips onto main b71a4e9e. Its diff from a760a5e5 adds exactly what main added since then (in the override log, main's new rows sit before a760a5e5's rather than after), and its override-log rows are exactly the union of a760a5e5's and main's. `merge/ready-2026-10-15` (a760a5e5) is superseded; deleting it is yours.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff 09a2876ff5ea6f7e5b86eea723c2aa0094759145 -m "Merge branch 'merge/ready-2026-10-15-r2': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule, the branch-verify and decision-015 docs (override-log appends resolved)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted, nothing deleted"; false; }; } && \
+for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git -c core.hooksPath=/dev/null worktree remove .claude/wt-build-loop-$u && git -c core.hooksPath=/dev/null branch -d feat/build-loop-$u; done
+```
+
+- **Read:**
+  - `fix/t69-stage-race` (4ee81106): T69 in `test/install-host.bats` failed 3 out of 3 runs alone on main b279a2ba. Its feed waited for a file the test's own `--yes` run had already left, so the tamper hit no stage. The old test fails and the new one passes 4/4. The test file is the only change.
+  - `fix/q110-not-run-undercount` (f5b7e49d): the runner unsets `RUN_TESTS_NOT_RUN_FILE` after writing it. A regression test fails on the old runner. Review loop closed (`docs/reviews/code-review-rubric-2026-10-14-fix-q110-not-run-undercount.md`). Its gate went red only on the `/tmp` race Q-145 fixes; the slow suites passed 300/300. Q-110 closes once this lands.
+  - `fix/doc-drift-cycle1` (c8e87a69; added 2026-10-15): the 2026-10-02 doc-drift brief. Both guides now recommend `cc-isolated --probe-only` then `cc-isolated` over a bare `devcontainer up --remove-existing-container` and say why. devcontainer-setup's claim that a recreate picks up a newer Claude Code was wrong (Docker reuses the cached layer) and is corrected. The guides index names cc-push and the exit scan, and AGENTS.md and GEMINI.md list dev-cycle. 6 files, +26/−10. Loop closed at the 3-iteration cap (`docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md`); the last wording fix had a narrow check, not a full pass. agents-gemini-sync 3/3.
+  - `fix/q160-iteration-cap` (4a44d2f3; added 2026-10-15): Q-104 [2] is written into `workflows/review-fix-loop.md` § Size re-check. After each iteration and at pr-prep 6c the unit is re-measured; past ~800 lines (or a waiver's limit) the loop stops for a waiver, /away included, and the agent does not split the unit itself. 43 code lines. Its first loop escalated on four wording corner cases. I took the simplify option, which cut the clauses that produced them, and a narrow check passed after it (`docs/reviews/code-review-rubric-2026-10-15-fix-q160-iteration-cap.md`). Log row 62 gets a new revisit trigger the agent chose, "2+ waivers past the in-loop re-check within 14 days". Say so if you want a different one. The health check went red only on the Q-145 `/tmp` race in suites this branch does not touch.
+  - `fix/q096-exit-scan-insteadof-target` (8717fd72; added 2026-10-15): the exit scan walks every URL an `insteadOf` or `pushInsteadOf` rule rewrites a remote to, your own config's remotes and rules included, and every matching rule, not only git's longest. It matches by byte. Three caps fail closed: 4 KiB per URL, 100k comparisons and 2,000 targets. Every `read` runs under `LC_ALL=C`, which also fixes an older UTF-8 hiding bug. 399 lines, under the 400 cap. Loop closed after 3 iterations and a final pass (`docs/reviews/code-review-rubric-2026-10-15-q096-exit-scan-insteadof-target.md`); the security critic's probe-confirmed bypasses in iterations 1–2 are fixed. Commits carry `Host-tool-tested: no`. Its host probe is Q-167. A family of older, loose remote-name parsing routes was split off as Q-168 and listed in the guide as a known route.
+  - `fix/rebuild-hint-recreate` (47da5a4b; added 2026-10-15, built on this branch): after the firewall fails closed, the launcher's hint said a plain `cc-isolated <repo>` rebuilds, but a plain launch reuses that container and fails again (traced, with a regression test). The hint's first line is now `cc-isolated --probe-only WS && cc-isolated WS`. The copyable lines lose their trailing `# …` notes, because interactive zsh passes those as arguments and the last one becomes the workspace. "Rebuild" becomes "recreate" where the container is recreated. 131 code lines; only comments and `echo` text change in the scripts. Loop closed at the 3-iteration cap; the last fix had a narrow fact-check (rubric `docs/reviews/code-review-rubric-2026-10-15-fix-rebuild-hint-recreate.md`). 290/290 in its suites; health reds were 3 fast tests, each passing alone (the one outside the import walk, build-loop-merge's "--merge leaves main where another writer moved it", re-run 3/3 here); slow suites 300/300. Commits carry `Live-verified: no`; Q-167 holds the probe. Both scripts are in the trust manifest, so install re-blesses and each project's container is recreated once.
+  - `fix/cc-isolated-one-workspace` (f6f37fad; added 2026-10-15, built on this branch): `cc-isolated` refuses, with exit 2 before any action, a second workspace, a `#` word before `--` (a pasted note) and a `--profile` value starting with `#` or `-`. Before this, `cc-isolated  # --bless` and `--profile '#' --bless` ran a bless. `--` takes one word. install.sh's "Next steps" lines lose their notes, and the `--help` and guide command references are reformatted. 260 code lines. Iteration 1 had independent critics; the closing passes were the builder's self-review after nested critics hung. An independent closing review run from the orchestrator was clean, 0 Must (`docs/reviews/independent-review-2026-10-15-one-workspace.md`): 17 claims held and ~45 crafted argv probes reached no action. Related suites 436/436 under `LC_ALL=C.UTF-8`; health reds were 3 import-walk tests, each passing alone; slow suites pass. Commits carry `Live-verified: no`; probe in Q-167 (b).
+  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The first tip, a760a5e5, added after that gate the rebuild-hint and one-workspace unit merges (each ran its own gate, above), two docs-branch merges and nine cycle-record merges.
+  - **Gate for the rebuilt tip** (09a2876f, 2026-10-15): the fast suites had one red, build-loop-merge's T23 test, whose log shows the Q-145 `/tmp` race (`find: '/tmp/bats-run-…': No such file or directory`); it passes 3/3 alone. The slow suites, run separately: 300/300. Shellcheck and the other checks passed.
+- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. Q-180 rebuilt the branch and hardened this paste (its review: `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`).
+- **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
+
+
+### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`scripts/lib/dev-cycle-read.sh`), which lands only on your approval.
+
+**Answered 2026-10-16: [1], done.** Merged as fbe67674.
+
+- **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/q145-r2` at 35e13638 (Q-162's branch plus this unit, the override-log appends resolved), or `merge/u5-and-q145-r2` at 6c841192 (that plus U5) if U5 is already on main. Both are pinned by hash, and both orders of Q-163 and Q-164 were run against main and land the same tree. The unit's own tip, c035f2e7, is unchanged inside them.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=35e1363882321fe15444b13a245f89bd1bc22054; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The paste above. The gate stops flaking on `/tmp` churn once the image is rebuilt (Q-156, filed on `feat/build-loop-u5`; it reaches main with Q-164) | One paste | The delete-and-re-create window lets one listing miss an instruction file that a non-atomic save is rewriting |
+| **[2] drop** | Branch deleted; gates keep flaking under load (3 re-runs this cycle alone) | Re-runs | Q-145's one-hour revisit trigger keeps counting |
+| **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
+
+- **Blocks:** Q-145's revisit clock (re-runs this cycle: U5 2, Q-110 1).
+- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`.
+- **If the answer differs:** [2] `git branch -D fix/q145-ancestor-vanish`.
+
+
+### Q-164 · merge-gate-feat-build-loop-u5-7c91b97455db
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1904)? It edits `skills/dev-cycle/SKILL.md` (gate code), and its review loop ended in `escalate`.
+
+**Answered 2026-10-16: [1], done.** Merged as 9bb19d2a.
+
+- **Why it's yours:** GATE_CODE, and the review-fix loop's iteration-4 gate. The last fix, 3718bcd0 (Q-156's paste refuses `core.attributesFile` in any repository config scope, in the reviewer's own executed check form), had no full review pass. Option [2]'s narrow check was run on 2026-10-15. The paste's exact test was executed in a throwaway repo on git 2.39.5 with the value in each place it can come from. It refused the local, worktree, included, `includeIf`-included, environment (`GIT_CONFIG_COUNT`) and empty lowercase-key cases, and passed with nothing set or a global value. One residual is by design: a global config that includes a file inside the repo reports as global and passes, and a sandbox cannot write your global config.
+- **Read:**
+  - The merge message `docs/working/merge-msg-build-loop-u5.md` and the rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch.
+  - What it does: `docs/dev-cycle.md` describes the handoff as built, with a wider `Self-merge never:` line (Q-149 asks how wide). It adds decision-log row 72 and roadmap items (a)–(g), files Q-149..Q-156 (C1–C5, the constraints doc, the image-lag release entry), re-routes Q-103 to you, and marks the handoff brief done.
+  - Size: 26 code lines outside `docs/`, 409 lines outside `docs/reviews/`.
+  - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
+  - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/build-loop-u5-resolved-r2` at 7326d715 (Q-162's branch plus U5, by the earlier reviewed resolution e088c7e3, with the questions, questions-archive, roadmap and override-log conflicts resolved again: main's Next 3–6 kept and U5's C5 item added as 7, both Ideas lists kept, the decision-015 idea (added by the 2026-10-14 cycle commit 63af3551, which e088c7e3 carried) dropped since main's Next 5 holds it, indexes regenerated; U5's entries Q-103 and Q-149..Q-156 are byte-identical to e088c7e3's), or `merge/u5-and-q145-r2` at 6c841192 if Q-145 is already on main, each pinned by hash. Then Q-156's release paste.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=7326d7159fe390fdb7780966fb3392ecf3a995ee; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Handoff closes; Q-149..Q-156 and Q-103 become live asks; Q-156's release puts the D6 block in the image | One paste, then the release | A defect in the unreviewed Q-156 paste fix shows when you run it. It is a refusal check, so it fails closed |
+| **[2] one more narrow pass first** | Done 2026-10-15 (see Why it's yours): the check held | — | — |
+| **[3] changes needed** | Your note goes back to a loop | A note | — |
+
+- **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
+- **Interim:** unmerged. Cycles keep running by hand.
+- **If the answer differs:** [2] runs on the next iteration, which then asks again.
+
+
+### Q-153 · build-loop-c4-merged-branch-deletion
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+May the dev cycle delete merged branches without asking, which your global instructions forbid today ("deleting branches" needs approval in every mode)? (Plan C4.)
+
+**Answered 2026-10-16: [1] narrow the global rule.** `global-instructions/CLAUDE.md` now exempts `git branch -d` of an already-merged branch from the approval rule, in every project. It reaches sessions at the next image release, since the image was built at fbe67674, before this edit. Still open: the roadmap item "Merged-branch deletion", which needs the health-step change.
+
+- **Why it's yours:** it changes your own global instructions, and your answer 2 ("safe branch deletion doesn't need to wait") conflicts with them as written.
+- **Read:** `docs/working/handoff-build-loop-handoff.md` C4 and answer 2 · roadmap Ideas, "Merged-branch deletion"
+
+Every orchestrator iteration leaves a `chore/dev-cycle-DATE-HHMM` branch and every loop a feature branch, so they pile up.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Narrow the global rule** | Merged branches, `git branch -d` only (git refuses an unmerged one), need no approval, in every project | None after the edit | A branch merged by mistake loses its name in every project (the commits stay reachable from main) |
+| **[2] This project only** | The same exception, written for claude-workflows alone | None here | Other projects keep asking |
+| **[3] Keep asking** | Nothing deletes branches; they wait for you | A cleanup pass now and then | Branch lists grow by one or more per iteration |
+
+- **Blocks:** roadmap item "Merged-branch deletion".
+- **Interim:** [3]: nothing deletes a branch.
+- **If the answer differs:** [1] or [2] is an instruction edit plus the roadmap item's health-step change.
+
+
+### Q-155 · constraints-doc-missing
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, or leave dispatch off until a process for writing one exists?
+
+**Answered 2026-10-16: [1], done.** You wrote `docs/constraints.md` (H1–H4, S1–S11) on main in 83b653d2, so dispatch is no longer held on it.
+
+- **Why it's yours:** the hard constraints steer every design choice a loop makes alone (D2), so they must be yours, not inferred.
+- **Read:** plan D2 · `skills/dev-cycle/SKILL.md` "Constraints" · `scripts/build-loop.sh` header, the `constraints` line of `--settings` · roadmap Ideas, "A process for writing a repo's constraints doc"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Write it now** | You write `H1: …` lines, each with a `success:` line, and any `S1: …` soft ones, and commit them on main | An hour or so of your time | Loops decide by constraints you wrote in a hurry; the drift check and deep audit surface the misses |
+| **[2] Wait for the process** | Dispatch stays off until the roadmap item yields a way to write one | None now | The orchestrator runs every step but dispatch, so briefs pile up unbuilt |
+
+- **Blocks:** dispatch in this repo (step 10).
+- **Interim:** [2]. `--settings` prints `constraints missing`, and step 10 files no second entry while one with this slug exists, open or answered.
+- **If the answer differs:** nothing to redo.
+
+
+### Q-156 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed dev-cycle skill and the gate it runs (the image copy, Q-140 [1]) carry the build-loop handoff as built.
+
+**Answered 2026-10-16: released.** The guarded paste refused (`devcontainer-config differs from M`) because Q-162–Q-164 had moved released paths past M. The image was then rebuilt from main: `/opt/claude-workflows/.manifest` reads `commit=fbe67674…`, `dirty=no`, and `git diff --quiet fbe67674 main -- <GATE_CODE paths>` exits 0, so the image holds main's gate code and step 0.1 reports no lag. That install did not run the paste's planted-state guard. Checked afterwards, on 2026-10-16: there were no replace refs, grafts, shallow file, `info/attributes`, alternates, repository `core.attributesFile`, or filter/driver/hook/pager config.
+
+- **Read:** `skills/dev-cycle/SKILL.md` step 0.1 (this entry's slug is the one step 0.1 files and rewrites) · decision log row 72 · plan D6 and F58
+
+The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is `8cff4877aa30a9417b48bd792ef60319502d7e78`, the last commit on `feat/build-loop-u5` that changes anything the release installs; the branch's later commits change only `docs/`, so the merge's released trees equal M's. (Step 0.1's own rewrite of this entry uses main's commit as M.) At writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
+
+Gate code changed from C to M: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`.
+
+First-parent commits after C (none is a `(build-loop self-merge)`: every one was merged by hand or committed in session), then this branch's merge:
+
+- 308196e7 Merge branch 'feat/build-loop-u4c': the D6 block always runs the root-owned image copy (Q-140 [1]); step 0.1's image checks (Q-144 [1])
+- 5cad0964 docs(checkpoint): U4c merged at 308196e7 on Q-144 [1]; Q-144 answered and archived; next a release, then U5
+- 33555624 docs(questions): Q-145, the lib's ancestor listing races with /tmp churn; blocks Q-102's merge
+- f66fd9f2 Merge branch 'feat/q102-parallel-gates': health-check runs its test gate in parallel by default (Q-102 [1], Q-145 [2])
+- 4ab9a51f docs(working): Q-075 evidence on what self-improvement.sh can write; Q-146 filed
+- 6d9a2962 docs(questions): Q-147 and Q-148 on main, so the open Q-089 asks are visible before its branches land
+- ed4976bf docs(roadmap): drop Q-088 from Next (answered 2026-10-07), note Q-089 waiting on Q-148
+- 626dc300 Merge branch 'feat/q089a2b-cc-push-self-check': host-only tools get their own trust manifest; cc-push checks itself (Q-089 units A1+A2, Q-148 [1])
+- df18413a Merge branch 'feat/q089b4-host-tool-gate': host tools carry Host-tool-tested, not Live-verified (Q-089 unit B, Q-148 [1])
+- d7e140ea docs(questions, roadmap): Q-148 answered [1] and archived; Q-089 merged (626dc300, df18413a)
+- b279a2ba docs(reviews): carry the first Q-089 loop's review history to main before its branch is deleted
+- the merge of `feat/build-loop-u5` (this unit: docs, settings, questions; SKILL.md step 0.1's release listing and step 10's constraints slug)
+
+Paths changed from C to M outside `docs/` (about 500 paths under `docs/` besides, nearly all `docs/reviews/`; the image carries none of `docs/`): `README.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `devcontainer-config/install.sh`, `guides/cc-isolated-usage.md`, `guides/devcontainer-setup.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `scripts/build-loop.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/run-tests.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-push.bats`, `test/hooks/live-verify-gate.bats`, `test/install-host.bats`, `test/lib/d6-snippet.bash` (deleted), `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/health-check.bats`, `test/scripts/run-tests.bats`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`.
+
+Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox). Before install.sh runs, with only `rev-parse`, `for-each-ref` and `config --get-all` (none runs a hook or fsmonitor) and replace refs ignored, it checks that HEAD is at main's commit, that no replace ref exists (install.sh's `git archive` would honor one) and no graft file, that no config but your global or system one (the repository's, its worktree's or anything they include) sets `core.attributesFile` (whose `export-ignore` or `export-subst` would change what the archive writes), and that the root `.gitattributes` and every directory the release installs from are the same tree at HEAD as at M; so it refuses when main has moved a released path past what this entry lists:
+
+```bash
+cd /home/magfrump/claude-workflows && ( export GIT_NO_REPLACE_OBJECTS=1; M=8cff4877aa30a9417b48bd792ef60319502d7e78; test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" || { echo "release refused: HEAD is not main"; exit 1; }; test -z "$(git for-each-ref refs/replace/)" || { echo "release refused: replace refs present"; exit 1; }; test ! -e "$(git rev-parse --git-common-dir)/info/grafts" || { echo "release refused: info/grafts present"; exit 1; }; test -z "$(git config --includes --show-scope --get-all core.attributesFile | grep -Ev '^(global|system)[[:space:]]')" || { echo "release refused: core.attributesFile set"; exit 1; }; for p in .gitattributes devcontainer-config global-instructions guides hooks patterns scripts skills workflows; do test "$(git rev-parse "HEAD:$p")" = "$(git rev-parse "$M:$p")" || { echo "release refused: $p differs from M"; exit 1; }; done ) && ./devcontainer-config/install.sh
+```
+
+- **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
+- **If the answer differs:** each refusal names its cause. `differs from M`: main changed a released path after M, which the lists above do not cover; read `git log --first-parent M..main` before rewriting this entry with a new M. `HEAD is not main`: put the host checkout at main's commit first, knowing that a checkout runs any hook a sandbox planted. Replace refs, grafts or `core.attributesFile`: planted state; remove it and find out who wrote it before releasing.
 
