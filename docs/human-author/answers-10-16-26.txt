@@ -1,0 +1,55 @@
+Q-179:
+[1] close this, mostly because workflows have been merged into skills which is a more complete answer to the underlying question.
+
+Q-162:
+Ran this, had some error messages like "wt-build-loop-u3a1 is not a working tree"
+
+Q-163: [1] done
+
+Q-164: [1] done
+
+Q-165:
+[1], recalling that the verify tool needs to take the config it verifies as an argument
+
+Q-165: [2]
+
+Q-170:
+[A]
+When I fell back to running host sessions, it was because I installed a new devcontainer config that was unable to launch cc-isolated.
+I remember some of those instances were egress problems blocking claude, and one was the startup check failing.
+
+Q-171:
+I'm inclined toward [2]; if there are red findings that predate the unit it's more important to fix those first than it is to land new work.
+
+Q-176:
+1. denied
+2. model refusal, then allowed
+3. allowed
+4. denied
+5. denied
+6. denied
+7. allowed
+8. denied
+9. allowed but error: no configured push destination
+
+Q-103: [2]
+claude-workflows is allowed to self-merge, as this is a single author repo.
+
+Q-149:
+I think the desired end-state here would be migrating away from symlinks fully and separating working repo files from referenced image files as with the global claude.md
+I think [2] is a better interim since I don't want this much merging blocked on my manual actions.
+
+Q-150: [1]
+
+Q-151: [1]
+
+Q-152: [2]
+When I'm away it's often for several hours, in fact that's the time I'm mostly likely to want an open ended loop.
+
+Q-153: [1]
+
+Q-155: [1] is done
+
+Q-156:
+"release refused: devcontainer-config differs from M"
+
