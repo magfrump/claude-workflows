@@ -217,7 +217,7 @@ The user is not at their desk, or has not specified. Maximize progress within sa
 - Making judgment calls on ambiguous-but-low-risk implementation details
 
 **Still require user approval (regardless of mode):**
-- Force-push, `git reset --hard`, deleting branches, dropping database tables
+- Force-push, `git reset --hard`, deleting branches (except `git branch -d` of a branch already merged, which git refuses for an unmerged one), dropping database tables
 - Any destructive or irreversible operation
 - Decisions where guessing wrong would waste significant work
 
