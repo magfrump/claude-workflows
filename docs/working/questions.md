@@ -39,6 +39,8 @@ The index below is generated — edit entries, not the table.
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-194](#q-194--decision-031-t4-fix-drift-miss) | you: judgment | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
 | [Q-195](#q-195--merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0) | you: judgment | Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/brie... | 2026-10-17 |
+| [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | you: judgment | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
+| [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -63,6 +65,56 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-198 · merge-2026-10-17-claude-md-import-guard-cc2a8054e517
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+
+Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/2026-10-17-claude-md-import-guard.md`, roadmap In flight)?
+
+- **What it does:** `test/agents-gemini-sync.bats` runs one shared `check_no_imports FILE...` (on the existing `find_imports`) over `AGENTS.md`, the root `CLAUDE.md` and `global-instructions/CLAUDE.md`; a missing, unreadable or importing file fails, naming the file. A new case adds `@./x.md` to a scratch copy of the root file and checks the failure names it. The header comment now says the root file is what Claude Code loads here. The root file itself is unchanged: its claim is now true. The loop reports 4/4 passing, hermeticity-lint clean, and a mutation probe where the old test passed and the new one fails; review found no red or amber. Accepted gap: nothing fails if the root file is later dropped from the list.
+- **Read:** `git log 2fad41c1..cc2a8054e5176b7d44b85c4fa0cde2b289dc3164` · `docs/working/research-2026-10-17-claude-md-import-guard.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-claude-md-import-guard.md cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 b00c81882ee1b4dc0d5fa0f75703ab92b6231f74`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md M docs/working/briefs/2026-10-17-claude-md-import-guard.md`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md A docs/working/research-2026-10-17-claude-md-import-guard.md`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md M test/agents-gemini-sync.bats`
+- **Path notes:** none is an instruction or prompt file, a dot path or gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly cc2a8054 | Reading a test diff | A false alarm on a guarded file; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The root file's guard claim stays false |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
+
+### Q-197 · merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+
+Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs/2026-10-17-q146-si-script-commits.md`, roadmap In flight; Q-146 [1])?
+
+- **What it does:** a new `scripts/lib/si-commit.sh` (`si_commit_child_work WT DESC REPO_DIR`) stages the implementer child's changes, leaving out `.si-commit-msg`, and commits them with `-F` on that file or the task description, with hooks and fsmonitor off and the git dir pinned to the repo's own worktree record (a child-written `.git` cannot redirect it; a symlinked message file or `.git` is refused). `scripts/self-improvement.sh` (+~30 lines) sources it, tells the child to write `.si-commit-msg` and never run git, and Gate 1a rejects a failed or empty commit by name. The children get no new grant. Docs: `guides/validation-gates.md` Gate 1a and `si-trust-evidence-2026-10-14.md` §5 item 2. 15 + 5 new bats cases; the loop reports the full suite at 1881/0, hermeticity-lint and shellcheck clean; ~330 code lines. Review: three rounds; rounds 1 and 2 each found a reproduced git-dir redirect (fsmonitor run as the script; a commit onto a sibling worktree's branch), both fixed; round 3 clean.
+- **Read:** `git log 673edb37..1b9f2659c28dd73ccf3198bbb87b97d09d48ea45` (the loop started at d2cd20c3) · `docs/working/research-2026-10-17-q146-si-script-commits.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-q146-si-script-commits.md 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 f6cab47c15ac19ec81cf5e066a46e9af4a9b4d2b`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M docs/working/briefs/2026-10-17-q146-si-script-commits.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A docs/working/research-2026-10-17-q146-si-script-commits.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M docs/working/si-trust-evidence-2026-10-14.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M guides/validation-gates.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A scripts/lib/si-commit.sh`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M scripts/self-improvement.sh`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M test/scripts/self-improvement-clean-state.bats`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A test/si-commit-child-work.bats`
+- **Path notes:** `scripts/lib/si-commit.sh` matches GATE_CODE's `^scripts/lib/` (hence `merge-gate-`), though it is the self-improvement loop's helper, not the gate's; self-merge's floor would refuse it, and the image carries it only from the next release. No instruction or prompt file or dot path.
+- **Follow-on (not run):** the Q-146 live run, one self-improvement round with real children and `REPO_DIR` a dedicated clone, never `/workspace`; filed once this merges. Pre-existing and out of scope: Gate 1e already runs child-written bats as the script (noted in the research doc).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 1b9f2659 | Reading the diff, the git-dir pinning above all | A redirect the review missed lets a child steer one commit; the loop stays dormant until the live run anyway |
+| **[2] drop** | The brief closes; the branch stays for you | None | The loop stays unable to commit in a worktree (F5) |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; the self-improvement loop stays dormant (Q-146).
 
 ### Q-196 · host-check-cc-isolated-profile-names
 **Needs:** you: terminal · **Opened:** 2026-10-17 · **Status:** OPEN
