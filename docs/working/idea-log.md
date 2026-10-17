@@ -52,3 +52,15 @@ Triggers: roadmap Now holds 0 items ready for a brief; 13 days since the last br
 3. Prune worktrees on merged branches (seed 3). Changes: smaller reader set for the import walks, less disk.
 4. Fix the image locale (seed 4). Changes: cleaner gate output.
 5. Do nothing on direction: Next keeps the user's order. Q-178 (land the 0357 stream) is the step that unblocks the most.
+- The digest flags roadmap Now items whose named branch or commit is already on main (signal: cycle 2026-10-17, 8 of 11 Now items had landed in f265d7f2 and fbe67674 two days earlier and still read "waits on Q-162's paste")
+- Measure the D6 block's share of an orchestrator iteration's tokens before the light-pass decision (signal: cycle 2026-10-17, about 30 D6 calls of ~55 pasted lines each in one iteration; bears on Next 7, Q-154)
+- Briefs for enforcement-file bugs carry the host check in the ready marker, as the Q-096 brief did (signal: cycle 2026-10-17, roadmap Next 3 needed a `Live-verified: no` route to be briefable)
+
+## Brainstorm 2026-10-17
+
+Triggers: roadmap Now held 0 items ready for a brief (every listed item had landed or waits on an open entry).
+
+1. Brief the two Next items whose choice is made and needs no open entry: Q-146 [1] (Next 6) and the `cc-isolated --profile` bug (Next 3). Changes: two build loops start now that `docs/constraints.md` exists.
+2. Digest check for landed Now items (seed 1). Changes: Now stops reading stale between cycles.
+3. Measure the D6 paste cost (seed 2). Changes: gives Next 7 (Q-154) a number.
+4. Do nothing on direction: Next keeps the user's order; items 1, 2, 4, 5 and 7 wait on open entries or settlement.

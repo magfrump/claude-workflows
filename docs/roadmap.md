@@ -11,54 +11,36 @@ user's order).
 
 ## Now
 
-Being built by hand in this cycle (2026-10-14), each on its own branch and worktree. Each stops
-before merging, since this session cannot merge into main (Q-162).
+Built by hand, each on its own branch; each waits on an open entry (cycle 2026-10-17).
 
-- **Q-110 — the health check's NOT RUN summary under-counts** (`fix/q110-not-run-undercount`).
-  Motive: reproduced again this cycle (runner 50, summary 4). Fixed and reviewed; waits on
-  Q-162's paste.
-- **Q-145 — the lib's ancestor listing skips vanished entries** (`fix/q145-ancestor-vanish`;
-  was Next 4). Motive and revisit trigger as filed under Q-145. A gate-code unit: it lands
-  on your approval: built and reviewed, waits on Q-163.
-- **T69's stage race** (`fix/t69-stage-race`, 4ee81106; built and verified). Motive: this
-  cycle's health-check red. Waits on Q-162's paste.
-- **Doc drift** (`fix/doc-drift-cycle1`, c8e87a69; added 2026-10-15). Motive: the In flight
-  brief below. Reviewed, loop closed; waits on Q-162's paste (`merge/ready-2026-10-15-r2`).
-- **Q-160 — the in-loop size re-check** (`fix/q160-iteration-cap`, 4a44d2f3; added
-  2026-10-15). Motive: log row 62 fired again. Reviewed, simplified, narrow-checked; waits on
-  Q-162's paste.
-- **Q-096 — exit scan follows insteadOf targets** (`fix/q096-exit-scan-insteadof-target`,
-  8717fd72; added 2026-10-15). Motive: the In flight brief below. Reviewed, loop closed;
-  waits on Q-162's paste, then its host probe (Q-167).
-- **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`;
-  added 2026-10-15). Motive: split off from Q-096's review (older routes, now a listed known
-  route). Built (75d08a94) and stopped at the review cap with the guide's parity claims
-  still wrong; landing waits on Q-171. How much parity the scan chases at all is Q-172,
-  and the four split groups (R6 High) are Q-173.
-- **The launcher's rebuild hint** (`fix/rebuild-hint-recreate`, 47da5a4b; was Next 3).
-  Reviewed, loop closed at the cap; in `merge/ready-2026-10-15-r2`, so it lands with Q-162, and its
-  probe is Q-167 (a).
-- **One workspace per `cc-isolated` call** (`fix/cc-isolated-one-workspace`, f6f37fad; was
-  Next 3). Reviewed; the independent closing review was clean. In `merge/ready-2026-10-15-r2`;
-  probe Q-167 (b).
+- **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
+  75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap with
+  the guide's parity claims still wrong; landing waits on Q-171. How much parity the scan
+  chases at all is Q-172, and the four split groups (R6 High) are Q-173.
 - **Q-092 — drop the auto-approve hook's deny reader** (`fix/q092a-drop-deny-option`
   d27a3891, then `fix/q092-drop-hook-deny-reader` aeda94b2). Built and reviewed, including an
   independent closing review. Merge waits on the host check of Claude Code's deny matcher
   (Q-176, Q-177).
-- **Verify a branch without installing it** (was Next 3; `docs/branch-verify-without-install`,
-  tip d25254da). Motive: Q-117, Q-125 and Q-098 wait on it. Research and divergent design are
-  done: no check needs main's install, and the recommendation is a `cc-verify` host tool that
-  runs main's launcher on a staged merge tree (Q-165, Q-166). The hand spike paste on
-  Q-117 is written and reviewed (Q-169; its doc lands with Q-162). Next: the `cc-verify`
-  unit, if Q-165 picks [1]; its extractor refuses links at every path component (residual A17).
+- **Verify a branch without installing it.** Motive: Q-117, Q-125 and Q-098 wait on it. The
+  research, divergent design and spike doc are on main (d25254da); the recommendation is a
+  `cc-verify` host tool (Q-165, Q-166), and the hand spike paste is Q-169. Next: the
+  `cc-verify` unit, once Q-165 is answered; its extractor refuses links at every path
+  component (residual A17).
+- **The repo rules file overstates its guard test** (bug: undocumented is broken). Motive:
+  cycle 2026-10-17's trigger pass. `CLAUDE.md` (83b653d2, 4272a32b) says
+  `test/agents-gemini-sync.bats` checks that it imports nothing, but the test's `@`-import
+  check covers only `AGENTS.md` and `global-instructions/CLAUDE.md`, and its comment that
+  Claude Code loads `AGENTS.md` as this repo's instructions is stale. First step: add the
+  root `CLAUDE.md` to the test's import check and fix the comment (an instruction file and
+  a test, so not an in-cycle fix).
 
 ## In flight
 
-- **Doc drift from cycle 2026-10-02** (bug: undocumented is broken): two guides still advise
-  a bare `devcontainer up --remove-existing-container`; AGENTS.md/GEMINI.md omit `dev-cycle`.
-  Brief: `docs/working/briefs/2026-10-02-doc-drift-cycle1.md`
-- **Q-096 — exit scan follows insteadOf targets**: a known route around the exit scan,
-  unblocked by Q-094's merge. Brief: `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`
+- **Q-146 [1] — self-improvement.sh commits for its implementer** (was Next 6). Brief:
+  `docs/working/briefs/2026-10-17-q146-si-script-commits.md`
+- **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
+  registers an empty grant** (bug; was Next 3). Brief:
+  `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
 
 ## Next
 
@@ -80,26 +62,14 @@ before merging, since this session cannot merge into main (Q-162).
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
-   registers an empty grant** (bug). Motive: the one-workspace unit's independent review
-   found both; they predate it. `--profile ../egress/python` is written as-is. First step:
-   validate the profile name against the egress profile directory's names, refuse an empty
-   grant, and quote the unregistered-project NOTE's path with `%q`. Enforcement file.
-4. **Automate the host settings.json merge (Q-106 [2]).** Built
+3. **Automate the host settings.json merge (Q-106 [2]).** Built
    (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
    gate with one Medium open (Q-174); gate coverage of the moved merge program is Q-175.
-5. **Decision 015's re-run: apply the outcome (Q-170).** Motive: Q-105 [3]. The divergent
-   design is done (`docs/dd-015-step4`, f050b487, lands with Q-162): keep Docker, since none of
+4. **Decision 015's re-run: apply the outcome (Q-170).** Motive: Q-105 [3]. The divergent
+   design is done (`docs/dd-015-step4`, f050b487, on main): keep Docker, since none of
    the 6 breakages was Docker's. First step, once Q-170 is answered: apply §6's amendment
    to 015's revisit triggers.
-6. **Q-146 [1] — self-improvement.sh commits for its implementer.** Motive: in a worktree
-   or clone the children have no allowlist and cannot commit (F5), and the `/workspace`
-   allowlist gives arbitrary code execution (F1); see `docs/working/si-trust-evidence-2026-10-14.md`.
-   First step: after the implementer exits, the script runs `git add -A && git commit` in
-   the worktree, taking the child's message from a file it wrote (fall back to the task
-   description); children get no Bash grants. About 20 lines plus tests. Then the live run
-   Q-075 imagined, with `REPO_DIR` a dedicated clone (§5.1), never `/workspace`.
-7. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
+5. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
@@ -146,9 +116,6 @@ Unranked. Each names the signal that motivates it.
   (C3). A recreated container goes back to the image's Claude Code version until
   auto-update runs; something like `--probe-only --no-cache` would rebuild that layer.
 
-- **A process for writing a repo's constraints doc** (owner attention: routed to you, never
-  dispatched). Signal: the orchestrator dispatches nothing in a repo without a hard
-  constraint in `docs/constraints.md` (plan D2), and this repo has none (Q-155).
 - **Merged-branch deletion in the health step.** Signal: your answer 2 ("safe branch
   deletion doesn't need to wait"); every orchestrator iteration and loop leaves a branch.
   Needs C4 (Q-153), since the global instructions forbid it today.
@@ -185,8 +152,7 @@ Unranked. Each names the signal that motivates it.
   to compare the model with. Scope and timing are the user's; runs on its own branch.
   Fired again 2026-10-15: `skills/dev-cycle/SKILL.md` rewritten as the orchestrator
   (U4b1, U4b2, U4c), plus code-review, pr-prep, RPI and onboarding changes in the window.
-- **Health check under-counts NOT RUN suites (Q-110).** Signal: the runner printed 50
-  report-dependent suites NOT RUN; the health-check summary said 4 (cycle 2026-10-02).
+  Not fired 2026-10-17: five skill and workflow files changed, 53 lines added in all.
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health
@@ -209,15 +175,14 @@ Unranked. Each names the signal that motivates it.
 - **Review artifacts collide across branches.** Signal: merging the row-66 branch hit
   conflicts on `code-fact-check-report-r*.md` (undated, so any two branches collide) and
   add/add conflicts on `*-review-<date>.md` (any two branches reviewed the same day).
-- **Pre-handoff briefs hold every slot and are never collected.** Signal: `--status` skips
-  all three 2026-10-02 briefs ("no Branch: line"), so they hold the 3 slots for 13 days while
-  their work goes on in by-hand branches (cycle 2026-10-15). Give each its `Branch:` line,
-  or set it done or dropped where its work lands.
 - **The digest shows unlanded cycle branches.** Signal: `chore/dev-cycle-2026-10-15-0357`
   held Q-162 to Q-177 and a cycle record, none on main, so the digest and `next-id` could not
   see them (Q-178). List unmerged `chore/dev-cycle-*` branches with the entry IDs they add.
-- **Prune worktrees on merged branches.** Signal: 35 registered worktrees, 12 of them on
-  branches already merged. Each one costs disk and joins the import walks' reader set.
+- **The digest flags landed Now items.** Signal: cycle 2026-10-17 found 8 of 11 Now items
+  already merged (f265d7f2, fbe67674) two days earlier, still reading "waits on Q-162's
+  paste". List Now items whose named branch or commit is on main.
+- **Measure the D6 paste's share of an iteration's tokens.** Signal: cycle 2026-10-17 made
+  about 30 D6 calls of ~55 pasted lines each. Gives Next 5 (Q-154) a number.
 - **Set a locale the image has.** Signal: every D6 call prints three
   `setlocale: LC_ALL: cannot change locale (en_US.UTF-8)` warnings into the output the
   orchestrator reads.
@@ -226,18 +191,28 @@ Unranked. Each names the signal that motivates it.
   2026-10-14. The auto-mode classifier refused this session's merge into main, so every
   finished branch waits on a paste (Q-162), and `--land-cycle` cannot run here either.
   The remedy is a permission rule only you can add, or a standing per-cycle merge entry.
-- **Dispatch the two briefs held since 2026-10-02.** Signal: the doc-drift and Q-096 briefs
-  held 2 of 3 slots for 12 days unstarted (log row 68's cap clause). Since U4, a dispatcher
-  exists, but dispatch stays off here until `docs/constraints.md` exists (D2; U5 files it).
 
 ## Done
 
 Items finished since the last cycle, with the merge.
 
+- Build-loop handoff brief closed: `--check-brief` reads `done` at 9bb19d2a (`feat/build-loop-u5`).
+  Brief: `docs/working/briefs/closed/2026-10-02-build-loop-handoff.md`
+- Doc drift from cycle 2026-10-02: done at f265d7f2 (`merge/ready-2026-10-15-r2`). Brief:
+  `docs/working/briefs/closed/2026-10-02-doc-drift-cycle1.md`
+- Q-096 — exit scan follows insteadOf targets: done at f265d7f2. Brief:
+  `docs/working/briefs/closed/2026-10-02-exit-scan-insteadof-target.md`
+- Landed by hand in f265d7f2 (2026-10-15): Q-110 (the health check's NOT RUN summary; the
+  2026-10-17 health check's summary and runner both say 50), T69's stage race, Q-160 (the
+  in-loop size re-check), the launcher's rebuild hint, one workspace per `cc-isolated` call,
+  and the branch-verify research and divergent-design docs. Q-145 (the lib's ancestor
+  listing) in fbe67674.
+- `docs/constraints.md` exists (83b653d2, 4 hard and 11 soft constraints), so dispatch is on.
+
 - Build-loop handoff: the dev cycle is an orchestrator loop that dispatches its briefs to
   build loops and merges what the gate allows (decision log row 72; units U0a to U5, the
   last merged with `feat/build-loop-u5`). Brief:
-  `docs/working/briefs/2026-10-02-build-loop-handoff.md`. Runs here only after the release
+  `docs/working/briefs/closed/2026-10-02-build-loop-handoff.md`. Runs here only after the release
   (Q-156) and once `docs/constraints.md` exists (Q-155); Q-103 (the policy) is yours.
 - Q-089: host-only tools get their own trust category (decision log row 71). Units A1+A2
   merged as 626dc300 and B as df18413a, on Q-148 [1]. Not live-verified: re-run install.sh, then
