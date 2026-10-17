@@ -102,11 +102,11 @@ What bounds a child, as measured here (cc-isolated, 2026-10-14):
 ## 5. What would make a first real run safe
 
 1. **Point `REPO_DIR` at a dedicated clone** (the probe shows the override works). That removes F3 and F4 for the shared repo, and F1 and F2 too, since a clone has no `.claude/settings.json`. Its approved work comes back to `/workspace` through the usual review-and-merge path.
-2. **Decide how implementers get to commit (F5): the open judgment.** The options are:
+2. **Decide how implementers get to commit (F5): decided and built.** Q-146 was answered [1] on 2026-10-15: the script commits for the child. Since `feat/q146-si-script-commits`, each child writes `.si-commit-msg`, and Gate 1a's `si_commit_child_work` (`scripts/lib/si-commit.sh`) commits for it, so the children get no new grant. The options were:
    - a narrow per-run settings file for the children (`--settings` with exactly `git add`/`git commit`), without the bats grant from F1;
    - have the script commit on the child's behalf after it exits;
    - keep the loop dormant.
 3. Before any run from a checkout that has worktrees: scope `prune` to the run's own registrations (F4), and copy only the reviews this run wrote (F6).
 
-The live run Q-075 imagines, with real children, should happen only after (1) and (2).
+The live run Q-075 imagines, with real children, should happen only after (1) and (2). (2) is now done; (1) is that run's own setup.
 Done before them, it would show either the inert loop (F5) or the unconfined one (F1).

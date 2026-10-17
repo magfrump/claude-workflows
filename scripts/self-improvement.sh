@@ -231,6 +231,8 @@ source "$SCRIPT_DIR/lib/si-functions.sh"
 source "$SCRIPT_DIR/lib/si-input.sh"
 # shellcheck source=lib/si-morning-summary.sh
 source "$SCRIPT_DIR/lib/si-morning-summary.sh"
+# shellcheck source=lib/si-commit.sh
+source "$SCRIPT_DIR/lib/si-commit.sh"
 
 # --- Round summary printer ---
 # Reads the current ROUND_LOG_FILE to print a one-line human-readable summary.
@@ -1097,18 +1099,20 @@ Address this specifically in your implementation to avoid the same failure.
         done
 
         echo "  Started: $TASK_ID"
-        # The implementing agent's whole job is to edit files and commit, so
-        # headless acceptEdits is mandatory (see claude_headless_flags()).
+        # The implementing agent's whole job is to edit files, so headless
+        # acceptEdits is mandatory (see claude_headless_flags()). It gets no
+        # Bash grant to commit: it writes $SI_COMMIT_MSG_FILE and Gate 1a's
+        # si_commit_child_work commits for it (Q-146 [1]).
         # No --add-dir: every path this prompt names — workflows/, skills/,
         # docs/ — is inside the worktree it cds into.
         mapfile -t IMPL_FLAGS < <(claude_headless_flags)
         (
             cd "$WT_DIR"
-            claude -p "${IMPL_FLAGS[@]}" "You are in /away mode. Commit locally when done.
+            claude -p "${IMPL_FLAGS[@]}" "You are in /away mode. Do not run git commit: the loop commits your work after you exit.
 
 User goal: Improve the claude-workflows repo through this round of automated self-improvement by implementing the selected tasks as standalone branches that pass validation gates. The loop validates and merges each branch locally; do NOT push to any remote.
 Current task: $DESC
-Success criterion: local branch with descriptive commits (no push)
+Success criterion: your changes in this worktree plus a descriptive commit message in ${SI_COMMIT_MSG_FILE} (no push)
 ${PRIOR_FAILURE_BLOCK}
 FILE SCOPE CONSTRAINT — READ THIS BEFORE STARTING:
 You may ONLY create or modify the following files: $FILES_TOUCHED
@@ -1128,7 +1132,7 @@ Per RPI step 2, before planning, grep docs/thoughts/failure-patterns.md for
 prior root-caused bugs in your area (symptom keywords, touched-file names); a
 hit is a strong prior on what can go wrong — test the recorded fix shape first.
 
-Implement the plan, then — before your final commit — run this repo's own
+Implement the plan, then — before you write your commit message — run this repo's own
 pre-ship sequence, the same one pr-prep.md prescribes:
   1. Verify (pr-prep step 3): exercise the changed behavior end-to-end and
      confirm it does what the task intends (the /verify skill covers this).
@@ -1147,12 +1151,16 @@ pre-ship sequence, the same one pr-prep.md prescribes:
      note (symptom / cause / fix) to that retro doc; the loop harvests these into
      docs/thoughts/failure-patterns.md after merge. Do NOT edit that file yourself.
 
-Commit with descriptive messages. Do not push — the loop merges your branch into
-local main after validation. The subject line of your final commit is used as the
-round summary, so make it descriptive (one clear sentence; conventional-commit
-prefix preferred).
+COMMITTING: do NOT run git add, git commit or git push. When you are done, write
+your commit message to the file ${SI_COMMIT_MSG_FILE} at the root of this worktree
+(your current directory). After you exit, the loop stages every change you made
+(except that file) and commits it with that file as the message (git commit -F),
+then validates the branch and merges it into local main. Without the file the
+commit message is the task description. The subject line (the file's first line)
+is used as the round summary, so make it descriptive (one clear sentence;
+conventional-commit prefix preferred).
 
-You are acting in /away mode, so every commit body MUST follow this repo's
+You are acting in /away mode, so the message body MUST follow this repo's
 Autonomous Commit Format (see CLAUDE.md): include a 'Confidence: high|medium|low'
 line and a 'Notes:' line recording any judgement calls made without human input."
         ) &
@@ -1189,9 +1197,17 @@ line and a 'Notes:' line recording any judgement calls made without human input.
         echo "  Checking: $TASK_ID"
 
         # --- Gate 1a: Did the branch get any commits? ---
+        # The children cannot run `git commit` (no Bash grant), so the loop
+        # commits each one's work first (Q-146 [1]; scripts/lib/si-commit.sh).
+        DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
+        SI_COMMIT_RC=0
+        SI_COMMIT_ERR=$(si_commit_child_work "$WT_DIR" "$DESC" 2>&1) || SI_COMMIT_RC=$?
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
-        if [ "$COMMIT_COUNT" -eq 0 ]; then
-            REJECT_REASON="no commits on branch"
+        if [ "$SI_COMMIT_RC" -ne 0 ] && [ "$SI_COMMIT_RC" -ne 3 ]; then
+            REJECT_REASON="implementer commit failed: $SI_COMMIT_ERR"
+            record_gate "$TASK_ID" "commits" "fail"
+        elif [ "$COMMIT_COUNT" -eq 0 ]; then
+            REJECT_REASON="no commits on branch (implementer left no changes)"
             record_gate "$TASK_ID" "commits" "fail"
         else
             record_gate "$TASK_ID" "commits" "pass"

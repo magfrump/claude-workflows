@@ -30,9 +30,11 @@ Gates record results via `record_gate()` to the round's JSON log file, which is 
 
 **What it checks:** The branch has at least one commit beyond main.
 
+**Who commits:** the script, not the implementer. The children have no Bash grant, so they cannot run `git commit` (Q-146 [1]). Each child writes its commit message to `.si-commit-msg` at its worktree root. Before this gate, `si_commit_child_work` (`scripts/lib/si-commit.sh`) stages everything the child changed except that file and commits it with `git commit -F`. It uses the file as the message, or the task description when the file is missing or blank. The commit runs with all hooks off (`core.hooksPath=/dev/null`, `--no-verify`), so a hooks directory inside the child-written tree cannot run as the script.
+
 **Rationale:** A branch with zero commits means implementation failed silently — the Claude session started but produced nothing. Merging an empty branch is a no-op but wastes a merge slot and pollutes logs.
 
-**Fail message:** `no commits on branch`
+**Fail messages:** `no commits on branch (implementer left no changes)`; `implementer commit failed: <why>` when the script's own commit fails (for example no committer identity, or a message file that is a symlink).
 
 **Common failure patterns:**
 
