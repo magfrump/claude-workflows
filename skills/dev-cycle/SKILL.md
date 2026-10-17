@@ -807,9 +807,9 @@ brief that reads `open` or `new` (for the user to set its status), and every ope
 by path (marking any `--check-brief` skipped, with its reason). A brief is written from
 repo text: whoever starts one by hand reads it first.
 
-Wait (D12): with a loop running, the next iteration starts when one finishes (its task
-notification), with a 1800 s fallback wakeup; with none, every 1200-1800 s, and only when
-the default branch moved past this iteration's last land (the NEW it printed), a retry's
-wait ran out, or the
-user wrote, run a full iteration (an answer lands as a move of main); otherwise the wakeup
-does nothing.
+Wait (D12, Q-152 [2]): with a loop running, the next iteration starts when one finishes
+(its task notification), with a 1800 s fallback wakeup. With none running but a dispatch
+left to retry (a refusal above that is tried again next iteration), one wakeup in
+1200-1800 s runs the next iteration. Otherwise every thread waits on the user: end the
+`/loop` (ScheduleWakeup `stop: true`, no further wakeup) and close the final message with
+"Answer, then start `/loop /dev-cycle` again." Never poll for an answer.
