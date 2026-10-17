@@ -44,3 +44,5 @@ Policy: review
 
 - Changing Claude Code's import grammar handling in `find_imports`.
 - Any edit to `AGENTS.md`, `GEMINI.md` or `global-instructions/CLAUDE.md`.
+
+Dispatched: 1
