@@ -271,7 +271,8 @@ assert_profile_refused() {  # $1: the --profile value; $2: the item named as ref
   make_repo "$TEST_TMPDIR/proj"
   ln -s python.txt "$CLAUDE_DEVC_CONFIG_DIR/egress/py.txt"
   assert_profile_refused "py" "py"
-  [[ "$output" != *"    py"$'\n'* ]]
+  # Line-exact, so the check holds wherever `py` sorts in the list.
+  run ! grep -qx '    py' <<< "$output"
 }
 
 @test "register_project accepts exact names, singly and comma-separated, base included" {
