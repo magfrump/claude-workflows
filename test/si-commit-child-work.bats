@@ -112,7 +112,37 @@ commit_work() { si_commit_child_work "$WT" "$1" "$REPO"; }
   echo changed > "$WT/a.txt"
   run commit_work "task"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"does not point into"* ]]
+  [[ "$output" == *"does not point at its own admin dir"* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/ran-fsmonitor" ]
+}
+
+@test "a .git repointed at a sibling worktree's admin dir commits nothing anywhere" {
+  git -C "$REPO" worktree add -q "$BATS_TEST_TMPDIR/wt2" -b feat/t2 main
+  printf 'gitdir: %s\n' "$(git -C "$BATS_TEST_TMPDIR/wt2" rev-parse --absolute-git-dir)" > "$WT/.git"
+  echo changed > "$WT/a.txt"
+  echo 'feat: injected' > "$WT/$SI_COMMIT_MSG_FILE"
+  run commit_work "task"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"does not point at its own admin dir"* ]]
+  [ "$(git -C "$REPO" rev-list --count main..feat/t2)" -eq 0 ]
+  [ "$(git -C "$REPO" rev-list --count main..feat/t)" -eq 0 ]
+}
+
+@test "a directory that is not a registered worktree is refused" {
+  mkdir "$BATS_TEST_TMPDIR/plain"
+  printf 'gitdir: %s\n' "$(git -C "$WT" rev-parse --absolute-git-dir)" > "$BATS_TEST_TMPDIR/plain/.git"
+  run si_commit_child_work "$BATS_TEST_TMPDIR/plain" "task" "$REPO"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"is not a registered worktree"* ]]
+}
+
+@test "an fsmonitor the repo's config points into the tree does not run" {
+  printf '#!/bin/sh\ntouch "%s/ran-fsmonitor"\n' "$BATS_TEST_TMPDIR" > "$WT/fsm"
+  chmod +x "$WT/fsm"
+  git -C "$REPO" config core.fsmonitor "$WT/fsm"
+  echo changed > "$WT/a.txt"
+  run commit_work "task"
+  [ "$status" -eq 0 ]
   [ ! -e "$BATS_TEST_TMPDIR/ran-fsmonitor" ]
 }
 
@@ -123,7 +153,7 @@ commit_work() { si_commit_child_work "$WT" "$1" "$REPO"; }
   echo changed > "$WT/a.txt"
   run commit_work "task"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"does not point into"* ]]
+  [[ "$output" == *"does not point at its own admin dir"* ]]
 }
 
 @test "a .git that is not a regular file is refused" {

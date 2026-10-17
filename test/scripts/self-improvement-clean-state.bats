@@ -59,6 +59,8 @@ case "$prompt" in
       exec sleep "$STUB_IMPL_SLEEP"
     fi
     [ -z "${STUB_IMPL_NOCHANGE:-}" ] || exit 0
+    # Test-only: detach HEAD so the loop's commit lands off the task branch.
+    [ -z "${STUB_IMPL_DETACH:-}" ] || git checkout -q --detach
     echo "content from ${PWD##*/}" > shared.txt
     [ -n "${STUB_IMPL_NOMSG:-}" ] || printf 'feat: change from %s\n\nConfidence: high\nNotes: stub\n' "${PWD##*/}" > .si-commit-msg
     ;;
@@ -242,4 +244,13 @@ run_si() {
   [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
   jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json" \
     | grep -q '^implementer commit failed: git commit failed in .*wt-a'
+}
+
+@test "Q146: a commit that does not land on the task branch rejects the task" {
+  export STUB_IMPL_DETACH=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
+  [ "$(jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json")" \
+    = "implementer commit failed: the commit did not land on feat/r1-a" ]
 }

@@ -28,10 +28,12 @@ SI_COMMIT_MSG_FILE=".si-commit-msg"
 # These git calls run as this script on a tree the child wrote (constraint
 # H1), so nothing the child could write may steer them:
 #   - The git dir is pinned. The worktree's `.git` is a child-writable file, so
-#     its `gitdir:` must resolve to an entry under the trusted repo's own
-#     worktrees/ admin dir, and git gets it with --git-dir/--work-tree, never
-#     by discovery. Otherwise a `.git` pointing at a child-made dir would bring
-#     its own config (core.fsmonitor, hooks) and run child code as the script.
+#     the admin dir is found from the trusted repo's worktrees/*/gitdir records
+#     instead, the child's `.git` must point at that same dir, and git gets it
+#     with --git-dir/--work-tree, never by discovery. Otherwise a `.git`
+#     pointing at a child-made dir would bring its own config (core.fsmonitor,
+#     hooks) and run child code as the script, and one pointing at a sibling
+#     worktree's admin dir would commit onto that sibling's branch.
 #   - Every hook is off (core.hooksPath=/dev/null plus --no-verify), and so is
 #     core.fsmonitor, in case the repo's config names a path inside the tree.
 #
@@ -51,17 +53,36 @@ si_commit_child_work() {
         echo "cannot find the git dir of repo $repo" >&2
         return 1
     fi
+    # The admin dir comes from the repo's own records: each worktrees/<name>/
+    # holds a `gitdir` file, written by git and outside the child's cwd, that
+    # names its worktree's .git. A relative value is relative to that dir.
+    local d p
+    gd=""
+    for d in "$common"/worktrees/*/; do
+        [ -f "$d/gitdir" ] || continue
+        p=$(head -n 1 -- "$d/gitdir")
+        [ "${p#/}" != "$p" ] || p="$d/$p"
+        p=$(cd -- "${p%/.git}" 2>/dev/null && pwd -P) || continue
+        if [ "$p" = "$wt" ]; then gd=$(cd -- "$d" && pwd -P); break; fi
+    done
+    if [ -z "$gd" ]; then
+        echo "$wt is not a registered worktree of $common; refusing to commit there" >&2
+        return 1
+    fi
+    # The child's .git must agree, so a tampered one fails loudly instead of
+    # sitting there for later gates' git discovery.
     if [ -L "$wt/.git" ] || [ ! -f "$wt/.git" ]; then
         echo ".git in $wt is not a worktree link file; refusing to commit there" >&2
         return 1
     fi
-    gd=$(sed -n '1s/^gitdir: //p' "$wt/.git")
-    if [ -z "$gd" ] || ! gd=$(cd -- "$gd" 2>/dev/null && pwd -P) \
-        || [ "${gd%/*}" != "$common/worktrees" ]; then
-        echo ".git in $wt does not point into $common/worktrees; refusing to commit there" >&2
+    p=$(sed -n '1s/^gitdir: //p' "$wt/.git")
+    if [ -z "$p" ] || ! p=$(cd -- "$wt" && cd -- "$p" 2>/dev/null && pwd -P) || [ "$p" != "$gd" ]; then
+        echo ".git in $wt does not point at its own admin dir $gd; refusing to commit there" >&2
         return 1
     fi
-    local -a g=(git --git-dir="$gd" --work-tree="$wt" -c core.hooksPath=/dev/null -c core.fsmonitor=false)
+    # Operator env that could redirect the index or objects is dropped too.
+    local -a g=(env -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES
+        git --git-dir="$gd" --work-tree="$wt" -c core.hooksPath=/dev/null -c core.fsmonitor=false)
     msg="$wt/$SI_COMMIT_MSG_FILE"
     # The script, not the child, reads this file, so a symlink would let it
     # copy a file from outside the worktree into a commit message.

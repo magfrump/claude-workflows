@@ -36,10 +36,14 @@ Review round 1 found a wider version of the same hole. The worktree's `.git` is 
 child-writable file. A child could point it at a git dir it made, whose config sets
 `core.fsmonitor` to its own script, and then the script's `git add` would run that code
 (the reviewer reproduced this). So the helper also pins the git dir. It takes the repo
-(`REPO_DIR`) as a trusted argument and requires `.git` to be a regular file. Its
-`gitdir:` must resolve (`pwd -P`) to a direct child of that repo's
-`<common-dir>/worktrees`. Every git call then gets `--git-dir`/`--work-tree` explicitly,
-plus `-c core.fsmonitor=false`. The child cannot write the admin dir or the common
+(`REPO_DIR`) as a trusted argument. Round 2 found that "any entry under `worktrees/`" was
+not enough: pointing `.git` at a sibling worktree's admin dir committed onto the
+sibling's branch (reproduced). The helper now finds the admin dir from the repo's own
+records: the `worktrees/<name>/gitdir` file whose target resolves (`pwd -P`) to this
+worktree. It then requires the child's `.git` to be a regular file that points at that
+same dir; anything else is a loud refusal. Every git call gets `--git-dir`/`--work-tree`
+explicitly, plus `-c core.fsmonitor=false`, with `GIT_INDEX_FILE`,
+`GIT_OBJECT_DIRECTORY` and `GIT_ALTERNATE_OBJECT_DIRECTORIES` unset. The child cannot write the admin dir or the common
 config, since both sit outside its cwd. Gate 1e still runs child-written bats as the
 script; that is a pre-existing exposure, outside this brief.
 
