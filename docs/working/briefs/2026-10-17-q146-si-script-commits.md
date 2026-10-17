@@ -55,3 +55,5 @@ Policy: review
   and is filed separately.
 - F1's `/workspace` allowlist (`Bash(bats test:*)`) and any change to `.claude/settings.json`.
 - Any other self-improvement.sh refactor.
+
+Dispatched: 1
