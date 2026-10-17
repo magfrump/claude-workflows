@@ -103,6 +103,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
 | [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
 | [Q-102](#q-102--default-test-parallelism) | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
+| [Q-103](#q-103--dev-cycle-build-loop-policy) | The build-loop handoff is built: may build loops in claude-workflows land their own branches through the ga... | 2026-10-01 |
 | [Q-104](#q-104--unit-growth-during-review) | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
 | [Q-105](#q-105--devcontainer-breakage-definition) | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
@@ -3388,4 +3389,49 @@ Commit `4272a32b0afae2c438a5dc69b96c392e1c6b6771`, by the repository owner's ide
 - **Blocks:** every dev-cycle step past 0.2.
 - **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
 - **If the answer differs:** nothing to redo.
+
+### Q-103 · dev-cycle-build-loop-policy
+**Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** ANSWERED
+
+The build-loop handoff is built: may build loops in claude-workflows land their own branches through the gate (`self-merge`), or must each finished branch stop for your review (`review`)? **Answered 2026-10-17 (in session): [2].** "This repo should be able to self-merge" (also in `docs/human-author/answers-10-16-26.txt`: a single-author repo). `docs/dev-cycle.md` now reads `Build-loop policy: self-merge`, and the "(interim; Q-103)" clause is gone. The never line is unchanged: what self-merge may land is Q-149's question.
+
+- **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed. Re-routed from `deferred` on 2026-10-14, when the handoff landed (U5).
+- **Read:** decision log row 72 · `docs/working/plan-build-loop-handoff.md`, "What the gate can and cannot do" and the bypass-family table (F1–F59) · `docs/dev-cycle.md`
+
+**What the gate can and cannot do.** Loops run as your uid, with a shell, in worktrees that share `/workspace/.git`. No script can contain a loop that turns hostile with its shell: it could run plain `git merge` or `git push`, write any working tree under `/workspace`, or plant `.git` state. The design makes the honest path safe and checkable, and makes the commonest honest slip, a git command run in the wrong directory, fail loudly instead of landing (D13). Content reaches main only through a gate that decides from main's committed state and the exact merge result, and the gate that runs is the root-owned image copy, which no loop can edit (D6, Q-140 [1]). Each iteration checks that main moved only by the orchestrator's merges, the gate's merges and answer-only commits (D13). With no human reading briefs (D10), the gate and your review of `ready` work are the checks on what lands.
+
+The residual families. None blocks self-merge mechanically; each is a way around the gate for a loop that already has a shell and the session's tools, not a hole in the gate's own rules:
+
+- **F11, `@`-imports (partly).** The floor refuses instruction files and what they import, by a walk of main's commit and then of the gate's checkout. Precondition: the walk reads the checkout, so the gate runs it in a clean checkout at `MAIN_SHA` (`checkout_gate` refuses anything else). `checkout_gate` closes checkout conversions, `core.symlinks` false, sparse checkout and untracked nested repositories for the gate. Still open (known issue A5): start files under a symlinked directory, a FIFO start, other names one file has on a case-insensitive filesystem whose `core.ignoreCase` is false, and a checkout file swapped between the gate's check and the walk's read; and instruction files outside the repo that the container cannot see (the host's own). A Claude Code upgrade that changes its import grammar reopens it.
+- **F19, plain git to main (partly).** An honest wrong-directory commit fails, and any commit on main that is not the orchestrator's, the gate's or answers-only is reported at the next iteration (`--main-log`). A deliberate `git push`, or a commit shaped like an answers commit, is not caught.
+- **F21, text injection (partly).** Briefs are written and read from main's commit, and every prompt says repo text is evidence. Under self-merge the allowlist bounds what lands; under review you read the result. What a steered loop does outside git is bounded only by the sandbox.
+- **F29, a checked-out main (partly).** The gate refuses a worktree with main checked out unless it is on main, clean and mid no rebase, bisect or merge. Left: that worktree switches branch between the check and the fast-forward.
+- **F35, the session's other tools (not covered).** The loop prompt forbids pushing, publishing, starting build loops, background agents and schedules, but a loop subagent shares the orchestrator's permission mode.
+- **F37, two orchestrators (partly).** A worktree lock and an atomic branch create stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it, at the land or, after a merge-in of main (which skips step 1's check), at the next health check.
+- **F58, releases (partly).** Code the image carries reaches running sessions through a release, and your review of the release is the gate. The release entry (`image-lag`) lists every commit and changed path since the image's commit and flags self-merge subjects. The release paste runs `devcontainer-config/install.sh` before it shows its diff, so that directory is on this repo's never line (Q-149).
+- **F59, constraint drift (partly).** A loop decides alone when one option dominates. Step 4's drift check samples one such decision per sampled merge, and a finding triggers the deep audit's constraints dimension.
+- **R8, racing the gate's temp files.** A same-uid writer can race the gate's GATE_TMP between its writes and its reads: `git/config`, `git/info/`, `git/refs/`, `git/HEAD`, `work/.gitattributes`, `err`, `diff`, and `answer`, the file holding `--approved`'s verdict on the merge entry (override rows 509, 684).
+- **Also routed here during the build** (rows are override-log rows in `docs/reviews/override-log.md`, by line; the U2b3a item is from the plan's U2b3a bullet and the U4c item from SKILL.md's D6 Rule):
+  - a loop editing the worktree registry in the shared common dir (U2b3a);
+  - objects re-hashed once per run, so one rewritten in place afterwards, and objects not re-hashed at all (the tip's parent, merge bases) (U3a1);
+  - a planted `core.bare` with the index deleted (U3a2, Low), and a hand-edited rebase todo holding an `update-ref` main line (row 668);
+  - a same-uid shell's PATH, exported functions or settings around the D6 block (U4c);
+  - a loop pointing `origin/HEAD` at its own branch, which `dev-cycle.sh`'s reader settings then read (row 548);
+  - planted hooks in the common git dir around the orchestrator's own commit, and a FIFO swapped for the health-check lock (rows 749, 750);
+  - a rewrite of main to a history that never held a cycle record, which bootstraps `--main-log` again (row 784);
+  - the dispatch count written after the dispatch, so a session ending between the two admits one dispatch past the cap (row 786);
+  - after a restart, `--prompt --steal` taking another live session's loop that has not committed for two hours (row 787);
+  - merge entries flagging floor paths by class, not the floor's own reasons, so an `@`-imported doc reaches you unflagged (row 797);
+  - `--start`/`--prompt` reading main after step 10's last `--main-log` (a window of seconds) (row 801);
+  - `--cycle-diff`/`--land-cycle` accepting any `--answered` ID, so only skill text stops a merge entry being landed as answered (row 802);
+  - the health check that [2]'s last column relies on is itself code the gate could land, which is why this repo's never line holds `scripts/`, `test/`, `hooks/` and `devcontainer-config/` (row 682, Q-149).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] review** | Every `ready` branch the N rules (both policies) pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
+| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line or is one of the brief's own files, and is off the floor and the never line; a path refusal falls to [1]'s entry, a conflict ends stopped and an environment refusal is retried | None for that work; with this repo's never line (Q-149) only docs the floor does not protect, `README.md`, `runs/`, `archive/` and paths under a new top-level name can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
+
+- **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
+- **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
+
 

@@ -68,11 +68,11 @@ setup() { bl_setup; }
     settings_is policy "policy review unset: no docs/dev-cycle.md on the default branch"
 }
 
-@test "--settings on this repo's own docs/dev-cycle.md: review, unset by the interim note (T3, G19)" {
+@test "--settings on this repo's own docs/dev-cycle.md: self-merge, set by Q-103 [2] (T3, G19)" {
     mkdir -p docs && cp "$REPO_ROOT/docs/dev-cycle.md" docs/ && commit_all real
     run --separate-stderr bash "$BL" --settings
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
-    [[ "$(line policy)" == "policy review unset: line "*' is not exactly "Build-loop policy: self-merge" or "Build-loop policy: review"' ]] \
+    [[ "$(line policy)" == "policy self-merge set: line "*" of docs/dev-cycle.md on the default branch" ]] \
         || { echo "$output"; return 1; }
     # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
     [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }

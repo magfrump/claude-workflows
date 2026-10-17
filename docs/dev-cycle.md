@@ -4,7 +4,7 @@ This repo's settings for the dev-cycle skill (`skills/dev-cycle/SKILL.md`). Code
 onboarding asks the user for the build-loop policy (its step 13); the idea sources are kept
 by hand. Change either by editing this file.
 
-Build-loop policy: review (interim; Q-103)
+Build-loop policy: self-merge
 
 Build-loop slots: 3
 
@@ -34,8 +34,8 @@ lines need a blank line or the file's end after them; a trailing CR is ignored.
   you as a merge entry, whose `[1] merge` the gate then refuses, so it ends as stopped. A brief self-merges only when its own `Policy:` line also
   reads `self-merge`. Only the exact line with `self-merge` or `review` sets the policy,
   and `self-merge` also needs a valid never line (its `none` form for an empty list).
-  Anything else counts as unset, which means `review`: the "(interim; Q-103)" above keeps
-  it unset until Q-103 is answered.
+  Anything else counts as unset, which means `review`. This repo is set to `self-merge`
+  (Q-103 [2], 2026-10-17: a single-author repo), within the never line below.
 - **Slots.** From 1 to 9 (anything else, or no line, means 3): how many build loops run at
   once. Step 10 dispatches into the slots less the loops this session runs, and step 8 writes new
   briefs only while the queue is shorter than the slots. The queue counts open briefs whose loop is absent (not yet
