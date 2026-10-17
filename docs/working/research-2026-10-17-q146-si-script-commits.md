@@ -32,6 +32,17 @@ child wrote, outside the child's permission mode. Pointing `core.hooksPath` at
 `/dev/null` disables every hook, post-commit included. `--no-verify` is kept as a second,
 independent switch for pre-commit and commit-msg.
 
+Review round 1 found a wider version of the same hole. The worktree's `.git` is itself a
+child-writable file. A child could point it at a git dir it made, whose config sets
+`core.fsmonitor` to its own script, and then the script's `git add` would run that code
+(the reviewer reproduced this). So the helper also pins the git dir. It takes the repo
+(`REPO_DIR`) as a trusted argument and requires `.git` to be a regular file. Its
+`gitdir:` must resolve (`pwd -P`) to a direct child of that repo's
+`<common-dir>/worktrees`. Every git call then gets `--git-dir`/`--work-tree` explicitly,
+plus `-c core.fsmonitor=false`. The child cannot write the admin dir or the common
+config, since both sit outside its cwd. Gate 1e still runs child-written bats as the
+script; that is a pre-existing exposure, outside this brief.
+
 ## Design choices (divergent design, seeded with the constraints)
 
 ### D1: where the commit runs
@@ -85,6 +96,11 @@ included). In Gate 1a:
 - 3 with no commits on the branch → reject `no commits on branch (implementer left no
   changes)`.
 - 3 with commits (a child that could commit, say in a host checkout) → pass, unchanged.
+- 0 with no commits on the branch → reject `implementer commit failed: the commit did
+  not land on <branch>`. This is a belt-and-braces check, added in review round 1.
+
+The message file is deleted after a successful commit, so later gates see a clean
+worktree. A multi-line git error is joined onto one line for the reject reason.
 
 ### Rejected: a per-run `--settings` grant for `git add`/`git commit`
 

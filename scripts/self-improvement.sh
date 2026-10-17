@@ -1199,12 +1199,15 @@ line and a 'Notes:' line recording any judgement calls made without human input.
         # --- Gate 1a: Did the branch get any commits? ---
         # The children cannot run `git commit` (no Bash grant), so the loop
         # commits each one's work first (Q-146 [1]; scripts/lib/si-commit.sh).
-        DESC=$(jq -r ".[] | select(.id==\"$TASK_ID\") | .description" "$TASKS_FILE")
+        DESC=$(jq -r --arg id "$TASK_ID" '.[] | select(.id==$id) | .description' "$TASKS_FILE") || DESC=""
         SI_COMMIT_RC=0
-        SI_COMMIT_ERR=$(si_commit_child_work "$WT_DIR" "$DESC" 2>&1) || SI_COMMIT_RC=$?
+        SI_COMMIT_ERR=$(si_commit_child_work "$WT_DIR" "$DESC" "$REPO_DIR" 2>&1) || SI_COMMIT_RC=$?
         COMMIT_COUNT=$(git rev-list --count "main..$BRANCH" 2>/dev/null || echo 0)
         if [ "$SI_COMMIT_RC" -ne 0 ] && [ "$SI_COMMIT_RC" -ne 3 ]; then
             REJECT_REASON="implementer commit failed: $SI_COMMIT_ERR"
+            record_gate "$TASK_ID" "commits" "fail"
+        elif [ "$SI_COMMIT_RC" -eq 0 ] && [ "$COMMIT_COUNT" -eq 0 ]; then
+            REJECT_REASON="implementer commit failed: the commit did not land on $BRANCH"
             record_gate "$TASK_ID" "commits" "fail"
         elif [ "$COMMIT_COUNT" -eq 0 ]; then
             REJECT_REASON="no commits on branch (implementer left no changes)"

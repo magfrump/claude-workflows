@@ -25,21 +25,43 @@ SI_COMMIT_MSG_FILE=".si-commit-msg"
 # and commit it with the child's message, or with the task description when the
 # child wrote none.
 #
-# The commit runs with every hook switched off (core.hooksPath=/dev/null plus
-# --no-verify). It runs as this script on a tree the child wrote, so a hooks
-# directory that the repo's config points into the tree would otherwise run
-# child-written code outside the child's permission mode (constraint H1).
+# These git calls run as this script on a tree the child wrote (constraint
+# H1), so nothing the child could write may steer them:
+#   - The git dir is pinned. The worktree's `.git` is a child-writable file, so
+#     its `gitdir:` must resolve to an entry under the trusted repo's own
+#     worktrees/ admin dir, and git gets it with --git-dir/--work-tree, never
+#     by discovery. Otherwise a `.git` pointing at a child-made dir would bring
+#     its own config (core.fsmonitor, hooks) and run child code as the script.
+#   - Every hook is off (core.hooksPath=/dev/null plus --no-verify), and so is
+#     core.fsmonitor, in case the repo's config names a path inside the tree.
 #
-# Args: $1 = worktree dir, $2 = task description (the fallback message)
+# Args: $1 = worktree dir, $2 = task description (the fallback message),
+#       $3 = the repo the worktree belongs to (REPO_DIR)
 # Returns: 0 committed; 3 nothing to commit (no commit made); 1 failure, with
 #          a line on stderr naming why.
 si_commit_child_work() {
-    local wt=$1 desc=$2 msg msg_src="" tmp="" err rc=0
-    # Absolute, because `git -C` resolves a relative -F path from inside $wt.
-    if ! wt=$(cd -- "$wt" 2>/dev/null && pwd); then
+    local wt=$1 desc=$2 repo=$3 common gd msg msg_src="" tmp="" err rc=0
+    # Absolute, because a relative -F path would resolve from git's cwd.
+    if ! wt=$(cd -- "$wt" 2>/dev/null && pwd -P); then
         echo "worktree $1 does not exist" >&2
         return 1
     fi
+    if ! common=$(git -C "$repo" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) \
+        || ! common=$(cd -- "$common" && pwd -P); then
+        echo "cannot find the git dir of repo $repo" >&2
+        return 1
+    fi
+    if [ -L "$wt/.git" ] || [ ! -f "$wt/.git" ]; then
+        echo ".git in $wt is not a worktree link file; refusing to commit there" >&2
+        return 1
+    fi
+    gd=$(sed -n '1s/^gitdir: //p' "$wt/.git")
+    if [ -z "$gd" ] || ! gd=$(cd -- "$gd" 2>/dev/null && pwd -P) \
+        || [ "${gd%/*}" != "$common/worktrees" ]; then
+        echo ".git in $wt does not point into $common/worktrees; refusing to commit there" >&2
+        return 1
+    fi
+    local -a g=(git --git-dir="$gd" --work-tree="$wt" -c core.hooksPath=/dev/null -c core.fsmonitor=false)
     msg="$wt/$SI_COMMIT_MSG_FILE"
     # The script, not the child, reads this file, so a symlink would let it
     # copy a file from outside the worktree into a commit message.
@@ -47,11 +69,14 @@ si_commit_child_work() {
         echo "$SI_COMMIT_MSG_FILE in $wt is not a regular file; refusing to read it" >&2
         return 1
     fi
-    if ! err=$(git -C "$wt" add -A -- . ":(exclude)$SI_COMMIT_MSG_FILE" 2>&1); then
+    # Pathspecs are relative to git's cwd, so run from the worktree root.
+    if ! err=$(cd -- "$wt" && "${g[@]}" add -A -- . ":(exclude)$SI_COMMIT_MSG_FILE" 2>&1); then
         echo "git add failed in $wt: $err" >&2
         return 1
     fi
-    if git -C "$wt" diff --cached --quiet; then
+    # Exit 1 means staged changes; an error (128) also falls through, and the
+    # commit below then fails loudly.
+    if "${g[@]}" diff --cached --quiet 2>/dev/null; then
         return 3
     fi
     if [ -f "$msg" ] && grep -q '[^[:space:]]' "$msg"; then
@@ -66,11 +91,13 @@ si_commit_child_work() {
             "$desc" "$SI_COMMIT_MSG_FILE" > "$tmp"
         msg_src=$tmp
     fi
-    err=$(git -C "$wt" -c core.hooksPath=/dev/null commit -q --no-verify -F "$msg_src" 2>&1) || rc=$?
-    [ -z "$tmp" ] || rm -f "$tmp"
+    err=$("${g[@]}" commit -q --no-verify -F "$msg_src" 2>&1) || rc=$?
+    [ -z "$tmp" ] || rm -f -- "$tmp"
     if [ "$rc" -ne 0 ]; then
-        echo "git commit failed in $wt (exit $rc): $err" >&2
+        echo "git commit failed in $wt (exit $rc): $(printf '%s' "$err" | tr '\n' ' ')" >&2
         return 1
     fi
+    # Committed: drop the message file so later gates see a clean worktree.
+    rm -f -- "$msg"
     return 0
 }
