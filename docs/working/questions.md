@@ -38,10 +38,12 @@ The index below is generated — edit entries, not the table.
 | [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-194](#q-194--decision-031-t4-fix-drift-miss) | you: judgment | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
+| [Q-195](#q-195--merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0) | you: judgment | Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/brie... | 2026-10-17 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
 | [Q-176](#q-176--q092-deny-matcher-live-check) | you: terminal | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
+| [Q-196](#q-196--host-check-cc-isolated-profile-names) | you: terminal | After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on th... | 2026-10-17 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
@@ -61,6 +63,44 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-196 · host-check-cc-isolated-profile-names
+**Needs:** you: terminal · **Opened:** 2026-10-17 · **Status:** OPEN
+
+After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on the host, on a scratch repo. The first command should exit 1 with "unknown egress profile" and write nothing; the second should exit 0 and print the `base -> base,python` transition.
+
+```
+mkdir -p ~/scratch-q196 && cd ~/scratch-q196 && git init -q
+cc-isolated --register ~/scratch-q196 --profile ../egress/python; echo "exit=$?"
+cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
+```
+
+- **Interim:** the change is tested hermetically only (`test/cc-isolated-functions.bats`, 207/207); its commit carries `Live-verified: no`.
+- **Blocks:** nothing; the result goes back here as a reply.
+
+### Q-195 · merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+
+Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`, roadmap In flight)?
+
+- **What it does:** `cc-isolated --register` accepts a `--profile` item only when it exactly equals the base name of a regular, non-symlink `egress/NAME.txt` (no word splitting or globbing; a refused item is printed with `%q`); `--register` with no or an empty `--profile` is refused, pointing at `--profile base`; the unregistered-project NOTE quotes its path with `%q`. About 10 net lines in `cc-isolated.sh`; 6 new bats cases (5 fail on the old code); the guide says what names are accepted. The loop's review found 0 Must, 0 Should, 4 Consider (1 fixed).
+- **Read:** `git log d2cd20c3..a1359a68a1f042b26b6e3beabd6e5d6b1360d714` · `docs/working/research-2026-10-17-cc-isolated-profile-names.md` on that branch (pre-mortem first)
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-cc-isolated-profile-names.md a1359a68a1f042b26b6e3beabd6e5d6b1360d714 fbf1775a920217a27022452c156681d88536c5ce`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M devcontainer-config/cc-isolated.sh`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md A docs/working/research-2026-10-17-cc-isolated-profile-names.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M test/cc-isolated-functions.bats`
+- **Path notes:** none is an instruction or prompt file, a dot path or gate code. `devcontainer-config/cc-isolated.sh` is an enforcement file and a host tool: it takes effect at your next install, and its commit carries `Live-verified: no` (host check: Q-196).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly a1359a68 | Reading the diff | A refusal case the tests missed shows at your next `--register`; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The path-like profile bug stays open |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
 
 ### Q-194 · decision-031-t4-fix-drift-miss
 **Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN

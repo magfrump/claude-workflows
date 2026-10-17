@@ -26,21 +26,18 @@ Built by hand, each on its own branch; each waits on an open entry (cycle 2026-1
   `cc-verify` host tool (Q-165, Q-166), and the hand spike paste is Q-169. Next: the
   `cc-verify` unit, once Q-165 is answered; its extractor refuses links at every path
   component (residual A17).
-- **The repo rules file overstates its guard test** (bug: undocumented is broken). Motive:
-  cycle 2026-10-17's trigger pass. `CLAUDE.md` (83b653d2, 4272a32b) says
-  `test/agents-gemini-sync.bats` checks that it imports nothing, but the test's `@`-import
-  check covers only `AGENTS.md` and `global-instructions/CLAUDE.md`, and its comment that
-  Claude Code loads `AGENTS.md` as this repo's instructions is stale. First step: add the
-  root `CLAUDE.md` to the test's import check and fix the comment (an instruction file and
-  a test, so not an in-cycle fix).
 
 ## In flight
 
 - **Q-146 [1] — self-improvement.sh commits for its implementer** (was Next 6). Brief:
   `docs/working/briefs/2026-10-17-q146-si-script-commits.md`
 - **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
-  registers an empty grant** (bug; was Next 3). Brief:
-  `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
+  registers an empty grant** (bug; was Next 3). Built and ready; merge is Q-195, host
+  check Q-196. Brief: `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
+- **The repo rules file overstates its guard test** (bug: undocumented is broken; was Now).
+  `CLAUDE.md` says `test/agents-gemini-sync.bats` checks that it imports nothing, but the
+  test covers only `AGENTS.md` and `global-instructions/CLAUDE.md`. Brief:
+  `docs/working/briefs/2026-10-17-claude-md-import-guard.md`
 
 ## Next
 
