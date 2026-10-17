@@ -37,6 +37,7 @@ The index below is generated — edit entries, not the table.
 | [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15`... | 2026-10-15 |
 | [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
 | [Q-179](#q-179--row-66-router-uptake-verdict) | you: judgment | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
+| [Q-194](#q-194--decision-031-t4-fix-drift-miss) | you: judgment | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -60,6 +61,24 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-194 · decision-031-t4-fix-drift-miss
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+
+Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the fix-drift lite check on 9e0ff1a5..258f9ec4 printed "FINDINGS: NONE", and the next full pass found D1 (a fact-check "Mostly accurate" doc amber) in text 258f9ec4 itself added to `guides/devcontainer-setup.md`. How should the trigger respond?
+
+- **Why it's yours:** the trigger reopens 031's cost/recall tradeoff for the review loop.
+- **Read:** `docs/decisions/031-review-loop-tier-and-factcheck-policy.md` (Revisit triggers) · `docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md` row D1 · `git show 258f9ec4`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Scope the trigger** (recommended) | Amend 031 T4 to fire only on a missed behavioral or security defect; record this miss (a doc-only amber the full pass caught) as non-firing | One read of the amendment | A real prose-accuracy gap in fix-introduced text stays unwatched |
+| **[2] Widen the drift check** | The fix-drift lite check also fact-checks prose that fixes add | None now; a little more per-iteration cost | More lite-check findings on docs-heavy loops |
+| **[3] Drop the lite gate** | Every fix iteration gets a full pass | None now | Review loops cost noticeably more for little recall |
+
+- **Blocks:** nothing.
+- **Interim:** no change to 031; the full pass caught D1 before merge, so nothing shipped wrong.
+- **If the answer differs:** only 031's trigger text or the review-fix loop's drift step changes.
 
 ### Q-179 · row-66-router-uptake-verdict
 **Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -356,6 +375,7 @@ Log row 62's trigger fired again: units grew during review from 102 to 842 code 
 - **Read:** Q-104 in `docs/working/questions-archive.md` · `workflows/pr-prep.md` step 1a · `workflows/review-fix-loop.md` (early split trigger) · `docs/working/merge-msg-build-loop-u2a3b.md` (cites "Q-104 [2]'s ~800")
 - **Interim:** applied by hand per loop (waivers Q-113, Q-120, Q-131). Nothing enforces it, so it holds only while each loop remembers.
 - **Built 2026-10-15:** `fix/q160-iteration-cap` (4a44d2f3), merged by Q-162's paste. This entry closes when it lands.
+- **Landed (dev cycle 2026-10-17):** 4a44d2f3 is on main through f265d7f2; `workflows/review-fix-loop.md` has the size re-check and log row 62 carries the 2026-10-15 amendment. Its closure condition is met; ready to archive.
 
 ### Q-161 · revive-hermeticity-layer2-after-q125
 **Needs:** trigger · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -381,6 +401,7 @@ In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test ru
 - **Read:** `scripts/health-check.sh` (check 5's NOT RUN summary) · `scripts/run-tests.sh` ("Report gating") · the review of `chore/dev-cycle-2026-10-02` (`docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`)
 - **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356-357`) with its own 4. Fix: unset the variable in that suite's `setup()` (not at top level of `test/lib/hermetic-env.bash`: `run-tests.sh` sources that file before its own write, so the count would vanish), or have the runner stop passing the variable to the bats processes it starts; add a test that the parent's file is untouched. Having the runner refuse an inherited value cannot work: the health check passes the variable through the environment (`scripts/health-check.sh`, check 5).
 - **Interim:** trust the runner's own NOT RUN list, not the summary line.
+- **Landed (dev cycle 2026-10-17):** 70aa3a78 is on main through f265d7f2 (`scripts/run-tests.sh` unsets the variable; test in `test/skills/eval-helpers-gating.bats`). The 2026-10-17 health check's summary and runner both say 50 NOT RUN. Ready to archive.
 
 ### Q-103 · dev-cycle-build-loop-policy
 **Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** OPEN
@@ -502,6 +523,7 @@ The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never 
 - **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
 - **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
 - **Built 2026-10-15:** `fix/q096-exit-scan-insteadof-target` (8717fd72, loop closed), merged by Q-162's paste; this entry closes when it lands. Host probe: Q-167. Split-off: Q-168. Review history: The first security pass found five Mediums, all confirmed by probe. One is pre-existing: a remote with no `url` is pushed to as a path, and the scan skips it. The commit carries `Host-tool-tested: no` (decision log row 71), not `Live-verified`.
+- **Landed (dev cycle 2026-10-17):** 8717fd72 is on main through f265d7f2, and its brief reads done. Its closure condition is met; the host probe stays with Q-167, the split-off with Q-168. Ready to archive.
 
 ### Q-097 · exit-scan-older-routes
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
