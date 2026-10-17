@@ -29,7 +29,8 @@ Built by hand, each on its own branch; each waits on an open entry (cycle 2026-1
 
 ## In flight
 
-- **Q-146 [1] — self-improvement.sh commits for its implementer** (was Next 6). Brief:
+- **Q-146 [1] — self-improvement.sh commits for its implementer** (was Next 6). Built and
+  ready; merge is Q-197 (a `merge-gate-` entry: it adds `scripts/lib/si-commit.sh`). Brief:
   `docs/working/briefs/2026-10-17-q146-si-script-commits.md`
 - **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
   registers an empty grant** (bug; was Next 3). Built and ready; merge is Q-195, host
