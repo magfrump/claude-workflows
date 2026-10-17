@@ -231,6 +231,89 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+# --- profile names match egress/ base names exactly (brief 2026-10-17) ---------
+# Regression (independent review 2026-10-15): the check was only "egress/$p.txt is
+# readable", so ../egress/python passed and was written verbatim, and the unquoted
+# split globbed. Each family of the plan's pre-mortem is one loop below.
+assert_profile_refused() {  # $1: the --profile value; $2: the item named as refused
+  run register_project "$TEST_TMPDIR/proj" "$1"
+  [ "$status" -ne 0 ] || { echo "accepted: $1"; false; }
+  [[ "$output" == *"unknown egress profile $(printf %q "$2") "*"Available:"*"    python"* ]] \
+    || { echo "message for $1: $output"; false; }
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/projects" ] || [ -z "$(ls -A "$CLAUDE_DEVC_CONFIG_DIR/projects")" ]
+  [ ! -e "$(manifest_path)" ]
+}
+
+@test "register_project refuses path-like, case-variant and glob profile names" {
+  make_repo "$TEST_TMPDIR/proj"
+  # A file the old glob could have matched in $PWD, and a readable path target.
+  cd "$TEST_TMPDIR" && touch python
+  local v
+  for v in ../egress/python ./python egress/python python.txt "$CLAUDE_DEVC_CONFIG_DIR/egress/python" \
+           Python PYTHON '*' 'pyth*' '?ython' '[p]ython'; do
+    assert_profile_refused "$v" "$v"
+  done
+}
+
+@test "register_project refuses empty items, blanks, and a later '-' or '#' item" {
+  make_repo "$TEST_TMPDIR/proj"
+  assert_profile_refused ",python" ""
+  assert_profile_refused "python," ""
+  assert_profile_refused "python,,base" ""
+  assert_profile_refused "python, base" " base"
+  assert_profile_refused " python" " python"
+  assert_profile_refused $'python\nbase' $'python\nbase'
+  assert_profile_refused "python,-x" "-x"
+  assert_profile_refused "python,#x" "#x"
+}
+
+@test "register_project refuses a profile whose egress file is a symlink" {
+  make_repo "$TEST_TMPDIR/proj"
+  ln -s python.txt "$CLAUDE_DEVC_CONFIG_DIR/egress/py.txt"
+  assert_profile_refused "py" "py"
+  [[ "$output" != *"    py"$'\n'* ]]
+}
+
+@test "register_project accepts exact names, singly and comma-separated, base included" {
+  make_repo "$TEST_TMPDIR/proj"
+  local v
+  for v in python base,python base; do
+    run register_project "$TEST_TMPDIR/proj" "$v"
+    [ "$status" -eq 0 ]
+    [ "$(project_profile "$TEST_TMPDIR/proj")" = "$v" ]
+  done
+}
+
+@test "--register with no --profile refuses an empty grant and names --profile base" {
+  make_repo "$TEST_TMPDIR/proj"
+  local form
+  for form in none empty; do
+    if [ "$form" = none ]; then
+      run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj"
+    else
+      run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile ''
+    fi
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--register needs --profile NAME[,NAME...]; refusing an empty grant. For base egress only, use --profile base."* ]]
+    [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/projects" ]
+    [ ! -e "$(manifest_path)" ]
+  done
+}
+
+@test "the unregistered NOTE quotes the workspace with %q" {
+  local ws="$TEST_TMPDIR/it's proj"
+  make_repo "$ws"
+  touch "$ws/pyproject.toml"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$ws")"
+  export STUB_IMAGE_HASH STUB_FP
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$ws"
+  ws="$(git -C "$ws" rev-parse --show-toplevel)"
+  [[ "$output" == *"To grant that: cc-isolated --register $(printf %q "$ws") --profile python"$'\n'* ]]
+}
+
 # --- --profile REPLACES the grant, and must say so -----------------------------
 # Regression: re-registering a project to add `lean` silently dropped the `dotnet`
 # it already had, and the only symptom was a container whose egress was narrower
