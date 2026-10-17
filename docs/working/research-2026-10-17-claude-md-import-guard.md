@@ -7,7 +7,7 @@ Date: 2026-10-17. Workflow: research-plan-implement, no plan gate; divergent des
 
 - `test/agents-gemini-sync.bats` test 3 ("AGENTS.md and the global instructions have no
   @-imports") loops over `AGENTS.md` and `global-instructions/CLAUDE.md` only. The root
-  `CLAUDE.md` (added 83b653d2, reworded 4272a32b) claims this test checks it. The claim is
+  `CLAUDE.md` (added 83b653d2, renamed to CLAUDE.md in 4272a32b) claims this test checks it. The claim is
   false at 2fad41c1.
 - The header comment above `find_imports` (lines 30-35) still says Claude Code loads
   `AGENTS.md` as project instructions. Since 4272a32b the root `CLAUDE.md` exists, so Claude
@@ -15,7 +15,8 @@ Date: 2026-10-17. Workflow: research-plan-implement, no plan gate; divergent des
   (and `GEMINI.md` mirrors it), so the rule still applies to it.
 - The root `CLAUDE.md` has no `@` imports today: `find_imports CLAUDE.md` returns 1 (no
   match). Its only `@`-adjacent text is inside code spans, which the finder strips.
-- Nothing else references the test's name (rg over the repo), so renaming it is safe.
+- Nothing outside frozen review logs under `docs/reviews/` references the test's name
+  (rg over the repo), so renaming it is safe.
   `scripts/lib/dev-cycle-read.sh` and the known-issues doc mention the file, not the test name.
 
 ## Design (divergent design, seeded with H1-H4, S1-S11 and the brief)
@@ -53,3 +54,10 @@ Out of scope (brief): `find_imports` grammar, `AGENTS.md`, `GEMINI.md`,
 `global-instructions/CLAUDE.md`.
 
 Paths touched: `test/agents-gemini-sync.bats`, this doc, the brief's Status line.
+
+## Review
+
+One review pass (fact-check, criteria, bats mechanics, mutations with spaced paths): no red
+or amber findings. Two doc nits were fixed. A known gap was accepted: no test pins the root
+file in test 3's list, so dropping it there would leave test 4 green. The brief asks only
+for a firing case.
