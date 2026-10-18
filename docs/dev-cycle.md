@@ -8,7 +8,7 @@ Build-loop policy: self-merge
 
 Build-loop slots: 3
 
-Self-merge never: workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/
+Self-merge never: workflows/
 
 The scripts read the three lines above, and the two reader lines below, from the default
 branch's commit, never from a working tree (a build loop can write any working tree); the
