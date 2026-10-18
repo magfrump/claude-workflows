@@ -43,21 +43,20 @@ lines need a blank line or the file's end after them; a trailing CR is ignored.
   ready-for-review one, or a stalled one held, waits on you and is not counted.
 - **Never line.** Globs that self-merge never lands, even when a brief lists them: `*` and
   `?` match within one path part, a glob matches the path or any directory above it, and
-  paths compare lower-cased. A malformed line turns self-merge off. Here it holds every
-  code and process directory whose files take effect in this repo without a release
-  (interim; Q-149):
-  sessions in this repo read `workflows/`, `skills/`, `guides/` and `patterns/` from their
-  own checkout, and the health check the orchestrator runs every iteration executes
-  `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree, while the
-  release paste runs `devcontainer-config/install.sh` on the host before you see its diff.
-  `templates/` (a snippet other repos copy by hand) and `global-instructions/` (every
-  session's global instructions after a release; the floor already refuses its `CLAUDE.md`)
-  take effect outside the gate's view too. So in this repo self-merge can land only files
-  outside those directories and off the floor: docs the floor does not protect, `README.md`,
-  `runs/`, `archive/`, and any path under a new top-level name.
-  Some of those docs are read as authority too (`docs/evaluation-rubric.md`, which
-  self-eval scores against, and `docs/spikes/`, whose seeds later work loads); Q-149 asks
-  whether to list them.
+  paths compare lower-cased. A malformed line turns self-merge off. Here it holds only
+  `workflows/` (Q-149 [2], 2026-10-17: you chose not to have most merging wait on you),
+  since workflow changes steer every later session in this repo. Everything else a brief
+  lists in its `Paths:` line and the floor allows can self-merge, and that has costs you
+  accepted: sessions here read `skills/` (beyond the floor's `SKILL.md`), `guides/` and
+  `patterns/` from their own checkout; the health check the orchestrator runs every
+  iteration executes `scripts/`, `test/` and `hooks/` from its worktree, so a self-merged
+  script or test runs there unreviewed; and the release paste runs
+  `devcontainer-config/install.sh` on the host before you see its diff, so a self-merged
+  `install.sh` runs on your host at the next release. The release entry (`image-lag`)
+  flags self-merged subjects, and reviewing it is the check on those. Docs read as
+  authority (`docs/evaluation-rubric.md`, `docs/spikes/`) are not listed either. The
+  longer-term direction you named is to move off symlinks and keep working repo files
+  apart from the files the image references, as the global instructions already are.
 - **Review handoff.** No line. The pull-request route the design names is not built, and
   this repo has no PRs, so every review merge is one questions entry.
 

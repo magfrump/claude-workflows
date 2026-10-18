@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-149](#q-149--self-merge-never-scope) | you: judgment | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
 | [Q-150](#q-150--build-loop-c1-questions-writer) | you: judgment | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
 | [Q-151](#q-151--build-loop-c2-blocked-slot) | you: judgment | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
 | [Q-165](#q-165--branch-verify-approach) | you: judgment | How should a branch's container config be verified on the host without installing it over main (roadmap Now... | 2026-10-15 |
@@ -628,26 +627,6 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 
 - **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
 - **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
-
-### Q-149 · self-merge-never-scope
-**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN
-
-How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a release (as written), only `workflows/`, or nothing?
-
-- **Why it's yours:** it decides which of this repo's files may land with no review once Q-103 allows self-merge.
-- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md` · override row 682 · `docs/reviews/security-review-2026-10-14-u5-i1.md` F1, F3, F4
-
-The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff. Two docs off the floor are also read as authority and stay self-mergeable under every option: `docs/evaluation-rubric.md` (self-eval's rubric) and `docs/spikes/` (seeds later work loads); listing them too is a fourth choice, open to you as a note on [1].
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs the floor does not protect, `README.md`, `runs/`, `archive/` and paths under a new top-level name | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
-| **[2] `workflows/` only** | The plan's interim: code self-merges when its brief lists it | None for listed code | A self-merged script or test runs in the next health check, and a self-merged `install.sh` runs on your host at the next release, unreviewed |
-| **[3] None** | `Self-merge never: none` | None | Everything [2] risks, plus workflow changes that steer every later session here |
-
-- **Blocks:** nothing while the policy is `review` (Q-103): the never line only narrows self-merge.
-- **Interim:** [1], fail-closed.
-- **If the answer differs:** an edit to the never line in `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible), to its Never-line prose there, Q-103 [2], Q-103's F58 bullet and its last "also routed" item, and to its test line in `test/scripts/build-loop-read.bats`.
 
 ### Q-150 · build-loop-c1-questions-writer
 **Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** OPEN

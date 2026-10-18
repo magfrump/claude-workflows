@@ -145,6 +145,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-149](#q-149--self-merge-never-scope) | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
 | [Q-152](#q-152--build-loop-c3-blocked-wait) | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
 | [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
 | [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
@@ -3433,5 +3434,26 @@ The residual families. None blocks self-merge mechanically; each is a way around
 
 - **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
 - **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
+
+
+### Q-149 · self-merge-never-scope
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a release (as written), only `workflows/`, or nothing? **Answered 2026-10-17 (in session): [2].** Also in `docs/human-author/answers-10-16-26.txt`: "[2] is a better interim since I don't want this much merging blocked on my manual actions"; the end state is moving off symlinks and keeping working repo files apart from the files the image references. You set the line on main yourself (7462eefc, `Self-merge never: workflows/`), after the auto-mode classifier refused the session's edit. The Never-line prose in `docs/dev-cycle.md` and the repo-settings test in `test/scripts/build-loop-read.bats` now match it.
+
+- **Why it's yours:** it decides which of this repo's files may land with no review once Q-103 allows self-merge.
+- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md` · override row 682 · `docs/reviews/security-review-2026-10-14-u5-i1.md` F1, F3, F4
+
+The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff. Two docs off the floor are also read as authority and stay self-mergeable under every option: `docs/evaluation-rubric.md` (self-eval's rubric) and `docs/spikes/` (seeds later work loads); listing them too is a fourth choice, open to you as a note on [1].
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs the floor does not protect, `README.md`, `runs/`, `archive/` and paths under a new top-level name | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
+| **[2] `workflows/` only** | The plan's interim: code self-merges when its brief lists it | None for listed code | A self-merged script or test runs in the next health check, and a self-merged `install.sh` runs on your host at the next release, unreviewed |
+| **[3] None** | `Self-merge never: none` | None | Everything [2] risks, plus workflow changes that steer every later session here |
+
+- **Blocks:** nothing while the policy is `review` (Q-103): the never line only narrows self-merge.
+- **Interim:** [1], fail-closed.
+- **If the answer differs:** an edit to the never line in `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible), to its Never-line prose there, Q-103 [2], Q-103's F58 bullet and its last "also routed" item, and to its test line in `test/scripts/build-loop-read.bats`.
 
 
