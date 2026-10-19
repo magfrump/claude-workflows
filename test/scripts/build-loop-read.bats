@@ -198,6 +198,42 @@ setup() { bl_setup; }
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
 }
 
+@test "--check-constraints: a draft file gives --settings' verdict, out of a repo too, exit 0 only for ok (T46)" {
+    local d="$BATS_TEST_TMPDIR/out" f=$'\x60\x60\x60'
+    mkdir -p "$d"
+    # The same file on main and as a draft: the same verdict, WHERE aside.
+    constraints '# Constraints' '- H1: never lose a row' '  success: test/x.bats shows equal counts' '- S1: prefer small diffs'
+    settings_is constraints "constraints ok 1-hard 1-soft: docs/constraints.md on the default branch"
+    cp docs/constraints.md "$d/draft.md"
+    cd "$d"
+    run --separate-stderr bash "$BL" --check-constraints draft.md
+    [ "$status" -eq 0 ] && [ "$output" = "constraints ok 1-hard 1-soft: draft.md" ] || { echo "$status $output $stderr"; return 1; }
+    want() { run --separate-stderr bash "$BL" --check-constraints draft.md; [ "$status" -eq 2 ] && [ "$output" = "$1" ] || { echo "want: $1"; echo "$status $output $stderr"; return 1; }; }
+    printf -- '- S1: a\nS2: b\n' > draft.md
+    want "constraints none-hard: draft.md has 2 soft constraint(s) and no hard one (H1: with a success: line)"
+    # A wrapped prose line that starts like an ID (belegarth-herald's first draft).
+    printf -- '- H1: a\n  success: b\nS7 testable with a fixture\n' > draft.md
+    want 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)'
+    printf -- '- H1: a\n- S1: b\n  success: c\n' > draft.md
+    want 'constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or "#" heading'
+    printf -- '- H1: a\n  success: b\n- H1: c\n  success: d\n' > draft.md
+    want "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)"
+    printf '%s\nH1: a\n' "$f" > draft.md
+    want "constraints unreadable: the code fence opened at line 1 of draft.md is never closed, so the file is not read"
+    printf 'x <!-- open\nH1: a\n  success: b\n' > draft.md
+    want "constraints unreadable: line 1 of draft.md opens an HTML comment that does not close on the same line, so the file is not read"
+    rm draft.md; want "constraints missing: no draft.md"
+    printf -- '- H1: a\n  success: b\n' > real.md; ln -s real.md draft.md
+    want "constraints unreadable: draft.md is not a regular file"
+    rm draft.md; mkdir draft.md; want "constraints unreadable: draft.md is not a regular file"
+    # A name awk would read as an assignment is still read as a file.
+    printf -- '- H1: a\n  success: b\n' > 'a=b'
+    run --separate-stderr bash "$BL" --check-constraints 'a=b'
+    [ "$status" -eq 0 ] && [ "$output" = "constraints ok 1-hard 0-soft: a=b" ] || { echo "$status $output $stderr"; return 1; }
+    run --separate-stderr bash "$BL" --check-constraints
+    [ "$status" -eq 1 ] && [[ "$stderr" == "--check-constraints takes one file path"* ]] || { echo "$status $stderr"; return 1; }
+}
+
 @test "--settings prints its five lines in order and exits 0; usage errors and a missing default branch exit 1" {
     run --separate-stderr bash "$BL" --settings
     [ "$status" -eq 0 ] && [ "${#lines[@]}" -eq 5 ] || { echo "$output"; return 1; }
