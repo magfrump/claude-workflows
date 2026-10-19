@@ -39,6 +39,7 @@ The index below is generated — edit entries, not the table.
 | [Q-195](#q-195--merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0) | you: judgment | Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/brie... | 2026-10-17 |
 | [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | you: judgment | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
 | [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
+| [Q-199](#q-199--constraints-builder-split) | you: judgment | The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three ... | 2026-10-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -659,3 +660,19 @@ Does a blocked build loop give up its slot while it waits for your answer? (Plan
 - **If the answer differs:** [2] is a change to the skill's slot counts in steps 8 and 10.
 
 
+
+### Q-199 · constraints-builder-split
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three stacked units, each run through its own review-fix loop. Keep the split, or waive the cap for this branch?
+
+- **Why it's yours:** only you can waive the cap (decision log 62).
+- **Read:** `feat/constraints-builder-u1-parser` (140 lines: `build-loop.sh --check-constraints` and T46), `feat/constraints-builder-u2-references` (179: the skill's two reference files), `feat/constraints-builder-u3-skill` (251: SKILL.md and the onboarding, dev-cycle and README pointers)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the split** (done) | Three reviews and three merges, in order | None | Some extra review passes over prose |
+| **[2] Waive for this branch** | One review over the 570 lines | A waiver to record | A larger review unit, which is what the cap exists to prevent |
+
+- **Interim:** [1]. The split is done and the units merge in order. 418 of the 570 lines are skill prose.
+- **If the answer differs:** nothing gets redone; the remaining units could merge as one.
