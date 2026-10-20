@@ -39,6 +39,7 @@ The index below is generated — edit entries, not the table.
 | [Q-195](#q-195--merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0) | you: judgment | Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/brie... | 2026-10-17 |
 | [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | you: judgment | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
 | [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
+| [Q-213](#q-213--log-row-73-shared-uid-git-config) | you: judgment | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -63,6 +64,25 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-213 · log-row-73-shared-uid-git-config
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
+
+Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid as the operator, and `/workspace/.git/config` is writable to them, so the constraints-builder skill's "the operator's own git config" premise does not hold where build loops run. How should the trigger be answered?
+
+- **Why it's yours:** it reopens row 73's choice to ship v1 for sole-author repos and harden later.
+- **Read:** `docs/decisions/log.md` row 73 · `docs/working/constraints-builder-hardening.md` (Revisit trigger, lines 5-8) · `skills/constraints-builder/SKILL.md` ("Scope (v1)")
+- **Evidence:** `test -w /workspace/.git/config` prints writable for uid node (cycle 2026-10-20, step 2); no bwrap or sandbox denyWrite covers it. Nothing hostile is there now: `git config --list --show-scope` shows plain local keys, no `refs/replace`, an unused `config.worktree`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Read it as the same-uid residual** | Treat this as Q-103's accepted same-uid residual; reword the trigger to "an agent outside the operator's own sessions and loops" | One read of the reworded trigger | A loop that plants git config in a repo the skill reads can run a command during a constraints-builder run |
+| **[2] Harden first** | Build the hardening doc's config allowlist and hardened git flags before the skill runs again in a repo with build loops | Review of one more unit | A unit spent on a risk no loop has acted on |
+| **[3] Run it only with no loop live** | Add a precondition to the skill: no build loop holds a lock in the target repo | One read of the precondition | A loop started mid-run, or a config planted earlier, still gets through |
+
+- **Blocks:** nothing; `docs/constraints.md` is already ratified (2620b419) and no constraints-builder run is pending here.
+- **Interim:** no constraints-builder run in a repo with live build loops until this is answered.
+- **If the answer differs:** only the trigger text, or one hardening unit, changes.
 
 ### Q-198 · merge-2026-10-17-claude-md-import-guard-cc2a8054e517
 **Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN

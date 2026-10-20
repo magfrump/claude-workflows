@@ -152,10 +152,14 @@ Unranked. Each names the signal that motivates it.
   Fired again 2026-10-15: `skills/dev-cycle/SKILL.md` rewritten as the orchestrator
   (U4b1, U4b2, U4c), plus code-review, pr-prep, RPI and onboarding changes in the window.
   Not fired 2026-10-17: five skill and workflow files changed, 53 lines added in all.
+  Fired again 2026-10-20: the `constraints-builder` skill added (`SKILL.md` and two
+  references, 539 lines; 512a1512 and 55e0bdac), a new skill no audit has read. The
+  dev-cycle skill and onboarding workflow changed by 9 lines between them.
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health
-  check 11 shows 7/7 stale, 0 fresh. A choice among 3+ remedies: flag for `divergent-design`.
+  check 11 shows 7/7 stale, 0 fresh (8/8 on 2026-10-20). A choice among 3+ remedies: flag
+  for `divergent-design`.
 - **Fixtures for dev-cycle and the 9 other unfixtured skills.** Signal: health check 9. The
   report-dependent half waits on Q-067.
 - **Retire the stale idea-source row in `docs/dev-cycle.md`.** Signal: its only file is a
@@ -182,6 +186,12 @@ Unranked. Each names the signal that motivates it.
   paste". List Now items whose named branch or commit is on main.
 - **Measure the D6 paste's share of an iteration's tokens.** Signal: cycle 2026-10-17 made
   about 30 D6 calls of ~55 pasted lines each. Gives Next 5 (Q-154) a number.
+- **The release entry misses self-merges outside gate code.** Signal: cycle 2026-10-20's
+  spot-check of f8d5217f. `docs/dev-cycle.md` says the `image-lag` entry flags self-merged
+  subjects, but step 0.1 files that entry only when GATE_CODE's paths differ from the image,
+  so a self-merged `devcontainer-config/install.sh` or `test/` change reaches a host
+  install unflagged. Either file the entry when `devcontainer-config/` differs too, or
+  narrow the prose.
 - **Set a locale the image has.** Signal: every D6 call prints three
   `setlocale: LC_ALL: cannot change locale (en_US.UTF-8)` warnings into the output the
   orchestrator reads.
