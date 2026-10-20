@@ -20,7 +20,7 @@ running agent saves each one to its own scratchpad file, so a reader needs no wr
 | Research and onboarding "Invariants" sections | Code-observed rules | They go stale. Verify against the code |
 | Instructions files (`CLAUDE.md`, `AGENTS.md`) | The most strongly worded rules | Usually restates an ADR, so cite the ADR. May hold agent-written framing |
 | Memory notes (feedback type) | Secondary support | Lowest. Check whether the rule came from the author, the harness, or an agent's own lesson |
-| Deleted docs (`git log --diff-filter=D`) | What was abandoned | Feeds "left out" |
+| Deleted docs (`git log --all --diff-filter=D --name-only --format=`) | What was abandoned | Feeds "left out" |
 | Unmerged branches | Pending decisions | Proposed only, never binding |
 
 ## Phrase families
@@ -72,7 +72,7 @@ or source.
 
 Look first at rationale paragraphs, pruned or rejected candidates and why they were
 rejected, the Notes column of decision logs, revisit triggers and falsifiers, and the
-author's corrections. Constraint tables are mostly confirmation. A rule the repo holds
+author's corrections. Constraint tables were mostly confirmation in one run and a ready source in others, so read them but do not stop there. A rule the repo holds
 often appears as several local justifications that never name it: watch for the phrase
 families listed below and group instances under one candidate.
 
