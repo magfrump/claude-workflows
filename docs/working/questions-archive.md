@@ -146,6 +146,8 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
 | [Q-149](#q-149--self-merge-never-scope) | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
+| [Q-150](#q-150--build-loop-c1-questions-writer) | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
+| [Q-151](#q-151--build-loop-c2-blocked-slot) | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
 | [Q-152](#q-152--build-loop-c3-blocked-wait) | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
 | [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
 | [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
@@ -154,7 +156,14 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
 | [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
+| [Q-165](#q-165--branch-verify-approach) | How should a branch's container config be verified on the host without installing it over main (roadmap Now... | 2026-10-15 |
+| [Q-166](#q-166--staged-run-counts-as-live-verify) | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
+| [Q-170](#q-170--decision-015-isolation-rerun) | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
+| [Q-171](#q-171--q168-landing-at-cap) | Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The fi... | 2026-10-15 |
+| [Q-176](#q-176--q092-deny-matcher-live-check) | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
+| [Q-177](#q-177--q092-merge) | When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-dr... | 2026-10-15 |
 | [Q-178](#q-178--land-unlanded-cycle-branch-0357) | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
+| [Q-179](#q-179--row-66-router-uptake-verdict) | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
 | [Q-180](#q-180--harden-and-repin-host-pastes) | The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advi... | 2026-10-15 |
 | [Q-181](#q-181--other-commit-919375bec66b) | Main's first-parent history holds `919375bec66b`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
 | [Q-182](#q-182--other-commit-f265d7f25556) | Main's first-parent history holds `f265d7f25556`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
@@ -3872,5 +3881,218 @@ Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d71
 | **[3] changes needed** | Your note goes back to the loop, which runs again | A note | One more loop run |
 
 - **Interim:** unmerged; nothing changes on main.
+
+
+### Q-179 · row-66-router-uptake-verdict
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], close.** "Mostly because workflows have been merged into skills, which is a more complete answer to the underlying question."
+
+Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without pr-prep's `← carried from RPI` line or a committed code-review rubric". Over the window, 4 of 45 multi-file merges since 2026-10-02 had neither: 188e0a7d, 52053432, b8807e76 and 0fbf9742, all small fixes from 10-02 to 10-06. None of the 41 since then lacks both. Taken alone, the RPI line is missing on 19 of 45 merges, but 15 of those 19 committed a rubric. Does row 66's decision stand?
+
+- **Why it's yours:** the trigger, read literally, fired (4 > 0), and it reopens a choice: whether selection, not discovery, is the bottleneck.
+- **Read:** `docs/decisions/log.md` row 66 · roadmap Next 1 · this iteration's record, "Trigger verdicts"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] close, routers work** | Record the tally on row 66 and move roadmap Next 1 to Done. The four misses came in the first four days | One answer | A selection problem stays hidden until another trigger catches it |
+| **[2] reopen row 66** | Treat the line-alone misses (19/45) as a selection problem and open a DD on router selection | A DD review | Work on a problem the rubric numbers say is solved |
+
+- **Blocks:** roadmap Next 1 (measure router uptake).
+- **Interim:** Next 1 carries the cycle-3 tally and stays open. Row 66 is unchanged, because decision records are outside the cycle's writes.
+
+
+### Q-165 · branch-verify-approach
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], `cc-verify` host tool.** "Recalling that the verify tool needs to take the config it verifies as an argument."
+
+How should a branch's container config be verified on the host without installing it over main (roadmap Now, "Verify a branch without installing it": Q-117, Q-125/Q-130 and Q-098 wait on this)?
+
+- **Why it's yours:** it adds a host tool that drives docker, a new trust surface, and the choice sets how the three blocked merges get unblocked.
+- **Read:** `docs/working/research-branch-verify-without-install.md` and `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install` (22a4bb1f; the branch tip, d25254da, adds the spike doc and its review commits). What they found:
+  - No check needs main's install, but install.sh's `agent_gate` is global, so even a second install prefix blocks while any session runs.
+  - Both blocked branches are hundreds of commits behind main and would roll back Q-089's host-tools split if installed as they are.
+  - Container and volume names are keyed on the workspace path. A `--probe-only` of `~/claude-workflows` therefore recreates the harness's own container.
+  - Main's launcher loads its code only from its own directory. So main's `cc-isolated` run with `CLAUDE_DEVC_CONFIG_DIR` set to a staged merge tree, on a scratch clone, runs no branch code on the host and installs nothing.
+  - The gap: a branch's `devcontainer.json` (`initializeCommand`, `runArgs`, `mounts`) reaches docker without an install diff, so it needs an allowlist refusal plus a diff stop.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] `cc-verify` host tool** (recommended, 70%) | A hand spike on Q-117 first, then a ~300-line `devcontainer-config/cc-verify.sh` (a host tool, so it carries a `Host-tool-tested:` trailer) | One paste for the spike, then one command per verify | A second host script assumes the launcher's layout; a test pins that assumption |
+| **[2] `cc-isolated --verify`** | The same behaviour inside the launcher | The same per verify, but the launcher change first needs its own install and probe | It grows a 944-line enforcement file and is slower to unblock |
+| **[3] Hand paste only** | Stop after the spike and reuse the paste for each verify | A ~30-line paste per verify, with teardown and the diff check done by hand | Teardown or the `devcontainer.json` check gets skipped one day |
+| **[4] Park** | Keep Q-117, Q-125 and Q-098 unmerged | Nothing | The egress fix and the sandbox stay off indefinitely |
+
+- **Blocks:** the roadmap Now item "Verify a branch without installing it", and through it Q-125's merge, Q-098 and `fix/egress-dnsmasq-ipset`.
+- **Interim:** the spike paste (step one of [1], and safe under [2] and [3]) is written and reviewed: Q-169.
+- **If the answer differs:** [4] drops the spike; [2] reuses the spike's findings for the launcher change.
+
+
+### Q-166 · staged-run-counts-as-live-verify
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [2], yes, plus a post-merge check.**
+
+If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count as the live-verified host run that Q-117 and Q-125 need before merging?
+
+- **Read:** `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes** | Merge on a passing staged run, with the trailer `Live-verified: <hash> — cc-verify of tree <id>`. Main's post-merge install re-probes on first launch anyway | Nothing extra | A difference between the staged and installed config shows only at that first launch; revert as in Q-125's rollback plan. For Q-125 that difference is real: a staged run never executes its `install.sh` `PAYLOAD` or `cc-isolated.sh` `enforcement_files()` changes (Q-117 changes only `init-firewall.sh`) |
+| **[2] Yes, plus a post-merge check** | As [1], but Q-117 and Q-125 close only after main's first post-merge `--probe-only` passes | One probe at your next normal install | Little: the entries just stay open a bit longer |
+| **[3] No** | A staged run is evidence, not the gate; the install-over-main run stays | The blocking install you already declined | Back to the problem in Q-117's answer |
+
+- **Interim:** [2].
+- **If the answer differs:** only the closing step of Q-117 and Q-125 changes.
+
+
+### Q-170 · decision-015-isolation-rerun
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [A].** V1: "When I fell back to running host sessions, it was because I installed a new devcontainer config that was unable to launch cc-isolated. I remember some of those instances were egress problems blocking claude, and one was the startup check failing." (All boundary-layer causes, none Docker's.)
+
+Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. The re-run recommends keeping Docker: none of the 6 session-breaking fixes since 2026-07-13 was Docker's. Which outcome?
+
+- **Why it's yours:** it amends a decision record's revisit trigger, and [A] adds a merge refusal for boundary changes.
+- **Read:** `docs/working/dd-015-step4-isolation-mechanism.md` (lands with Q-162). Motive test: of the 6 fixes, 4 came from this repo's own boundary changes, 1 from the devcontainer CLI's path handling and 1 from kernel netfilter, so no runtime swap removes the cause. 4 of the 6 merged without a live-container run, and since 2026-09-09 88 of 116 `devcontainer-config/` commits carry `Live-verified: no` (the doc says 87; a recount gives 88). 18 candidates, 5 scored. Confidence 80%. §6 holds the exact amendment text for 015's trigger, which splits runtime-caused from boundary-layer breakage.
+- **Also tell me (V1, the one fact that could change the answer):** the dates and reasons you fell back to running sessions on the host since July (Q-121), because Docker Desktop incidents leave no commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[A] Keep Docker; amend 015; verify-before-merge** (recommended) | Apply §6's amendment now. Once `cc-verify` exists (Q-165), boundary merges without a `Live-verified:` hash are refused unless overridden with a logged reason | Approve one text amendment now | If Desktop is breaking sessions off the record, the runtime half of the trigger fires; podman is the named fallback |
+| **[B] Keep Docker; amend 015 only** | The amendment, with no merge refusal: churn is watched, not prevented | Approve one text amendment | The boundary half of the trigger keeps firing and routes back to [A]; sessions break meanwhile |
+| **[C] Spike rootless Docker or podman first** | One host paste covering the doc's checks V2–V7 and V12, then decide | One ~30-minute paste and reading the results | Spends a session on a runtime that removes none of the recorded causes |
+| **[D] Sidecar egress proxy** | Keep Docker; replace the in-container netfilter/DNS stack with an internal network and a proxy container | Reviewing a multi-day boundary rewrite plus its live run | A large unverified boundary change, the very thing behind 4 of the 6 breakages |
+
+- **Blocks:** nothing urgent. 015's trigger stays as it is until answered.
+- **Interim:** [B] in substance: nothing changes, and the cycle reads 015's trigger as the DD's split.
+- **If the answer differs:** [C] or [D] become roadmap items; the amendment is dropped.
+
+
+### Q-171 · q168-landing-at-cap
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [2], hold until the split units land.** "If there are red findings that predate the unit it's more important to fix those first than it is to land new work."
+
+Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The final pass found 4 reds; 3 predate the unit and 1 is new counting that is no regression. The blocker for merging is that the scan's header and the guide still claim git parity it lacks, plus one incomplete performance fix (A17). How should it land?
+
+- **Why it's yours:** a 4th iteration passes the review-fix loop's iteration-4 gate.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-q168-exit-scan-remote-names.md` on the branch. Fixed and tested against git 2.39.5:
+  - remote names counted only from what git reads for that repo;
+  - your own `pushDefault`/`branch.*` walked;
+  - legacy files read byte-wise, through symlinked dirs, failing closed on a NUL byte or a line over 8 KiB;
+  - `file://` decoded;
+  - every local-path form git tries, `gitdir:` files included, walked.
+
+  13 new tests, each failing before its fix; 206/206 pass. 562 changed lines, over the 400 cap and under the 800 stop. Health check: only Q-145-race reds, which pass alone; slow suites 300/300.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more doc-and-A17 iteration** (recommended) | Iteration 4: correct the parity wording, add the split routes to the guide's known routes, key the include hash on the real path, run one confirming pass, then add it to Q-162's branch | One answer | Scope grows if the confirming pass finds more |
+| **[2] Hold until the split units land** | Leave it unmerged until Q-173's groups are fixed | None now | Fixed families wait on harder ones, and the branch goes stale |
+| **[3] Merge as is** | Land 75d08a94 with the reds listed | None | The guide tells you parsing matches git when it does not |
+
+- **Interim:** unmerged; the open families are known routes, and cc-push is still the safe way to push.
+- **If the answer differs:** [2] parks the branch; [3] needs only a merge-message note.
+
+
+### Q-176 · q092-deny-matcher-live-check
+**Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): spellings 2, 3, 7 and 9 run; every control is denied.** 1 denied · 2 model refused, then ran · 3 ran · 4 denied · 5 denied · 6 denied · 7 ran · 8 denied · 9 ran ("no configured push destination"). The test hook approves only the nine exact strings and stays silent otherwise, so a run means the hook saw that exact spelling. No version lines or `seen.log` were pasted back. Claude Code's deny matcher stops the `&&` compound but not quoted or backslashed spellings, so this sends Q-177 to its options.
+
+Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them (the review's MA1 names all four; the check below tries each shape). This check settles it with a throwaway hook that approves only the nine test commands below and stays silent on anything else, so every other command prompts as usual; it needs no merge. Run on the host:
+
+```
+mkdir ~/q092 && mkdir ~/q092/.claude && cd ~/q092 && git init -q && jq --version && echo canary > x.q092-canary && echo secret > secret && cat > ~/q092/.claude/allow-tests.sh <<'EOF' && cat > ~/q092/.claude/settings.local.json <<'JSON' && claude --version && claude
+#!/bin/sh
+c=$(jq -r '.tool_input.command // empty')
+printf '%s\n---\n' "$c" >> "$HOME/q092/seen.log"
+case "$c" in
+  'cat x.q092-canary'|'cat x.q092-ca""nary'|'cat x.q092-c\anary'|'rm -rf ./nothing-here'|'echo hi && rm -rf ./nothing-here'|'cat secret'|'cat "secret"'|'git push'|'git "push"')
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}' ;;
+esac
+EOF
+{
+  "permissions": { "deny": ["Bash(*.q092-canary*)", "Bash(rm -rf:*)", "Bash(git push:*)", "Bash(cat secret)"] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "sh \"$HOME/q092/.claude/allow-tests.sh\"" } ] } ] }
+}
+JSON
+```
+
+It needs `jq` on the host (the paste stops at `jq --version` without it). It also stops if `~/q092` already exists, so nothing planted there is reused: look at what is in it before removing it. `~/q092` is its own git repository with no remote, so a `git push` that runs pushes nothing. In that session, check that `/hooks` lists the hook. Answer **no** to any prompt for a command not on this list. Then ask Claude to run each of these one at a time, exactly as written, and note for each whether it **runs**, **prompts** or is **denied**:
+1. `cat x.q092-canary` (control for the glob rule: must be denied)
+2. `cat x.q092-ca""nary`
+3. `cat x.q092-c\anary`
+4. `rm -rf ./nothing-here` (control for the `:*` prefix rule: must be denied)
+5. `echo hi && rm -rf ./nothing-here`
+6. `cat secret` (control for the exact rule: must be denied)
+7. `cat "secret"`
+8. `git push` (control for the `:*` prefix rule: must be denied)
+9. `git "push"`
+
+Then exit, keep a copy of `~/q092/seen.log`, and `rm -rf ~/q092`, even if the session errored. Also run `claude --version` inside any `cc-isolated` session: the hook runs in the container, so the result counts for Q-092 only if the two versions match. Paste back both version lines, the nine results and `seen.log`. A result counts only if `seen.log` shows the hook saw that exact command: if Claude rewrote it (for example dropping the quotes), re-ask with the exact text. A "prompts" on 2, 3, 5, 7 or 9 means the hook did not see that spelling, so that test is void and is re-run. If a control is not denied, the whole check is void.
+
+- **Interim:** Q-092's two branches stay unmerged (Q-177).
+- **If the answer differs:** any "runs" on 2, 3, 5, 7 or 9 sends Q-177 to its options; all five "denied", every control denied, `seen.log` showing each exact command and matching versions land Q-092; anything else re-runs the void tests (at the container's version, if the versions differ).
+
+
+### Q-177 · q092-merge
+**Needs:** deferred · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered 2026-10-20 (in session): [3], keep a quote check.** Q-176 showed spellings 2, 3, 7 and 9 run. Before Q-092 merges, a unit makes the hook's shape allowlist refuse words with a quote or backslash mid-word, so those spellings keep prompting as on main.
+
+When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-drop-hook-deny-reader` (aeda94b2)?
+
+- **Read:** both rubrics (`docs/reviews/code-review-rubric-2026-10-15-fix-q092a-drop-deny-option.md`, `…-fix-q092-drop-hook-deny-reader.md`) and the independent closing review `docs/reviews/independent-review-2026-10-15-q092b.md` on U2. The hook never emits `ask`, and tests pin its stdout, so Q-082's "deny beats a hook allow" applies to every path. The independent reviewer found no way to make the hook allow outside the allow rules, and all fail-closed cases held. Hook suite 35/35; health check passed clean. U1 had an independent clean terminal pass; U2's terminal pass was self-review, then the independent closing review (MA1: this live check, now Q-176). Sizes 413 + 451 lines.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge if Q-176 is all "denied"** | The loop adds both units to the ready branch | Nothing more | A spelling Q-176 did not try runs without a prompt, as in [2] |
+| **[2] Q-176 shows a spelling that runs: accept it** | Merge anyway: the same class as the `.c*` glob residual; Q-125's sandbox is the real fix | One answer | A quoted credential read runs without a prompt where no sandbox exists (cc-isolated until Q-125) |
+| **[3] Q-176 shows a spelling that runs: keep a quote check** | Before merging, the hook's shape allowlist refuses words containing quotes or backslashes mid-word | An enforcement-file unit | Some legitimate quoted commands prompt again |
+
+- **Interim:** [1]'s condition; nothing merges until Q-176's result.
+- **If the answer differs:** [3] adds a unit before the merge.
+
+
+### Q-150 · build-loop-c1-questions-writer
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], orchestrator only.**
+
+Should the orchestrator stay the only writer of the questions files, with build loops carrying their questions in a `handoff: blocked` marker, or should loops write entries themselves? (Plan C1.)
+
+- **Read:** plan D11 and F41 in `docs/working/plan-build-loop-handoff.md` · `docs/working/handoff-build-loop-handoff.md` C1
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Orchestrator only** (built) | A loop ends with a `blocked` marker; the orchestrator files its question as an entry, the body quoted line by line (`--marker`) | None | A loop's question appears one orchestrator iteration later than it could |
+| **[2] Loops write directly** | Each loop edits the questions files on its own branch | A new gate unit to review | Up to slots+1 sessions edit one file, minting colliding IDs, and a loop's text can plant an answer line the readers take as yours (F41, reproduced) |
+
+- **Interim:** [1], as built (D11).
+- **If the answer differs:** [2] reopens D11 and F41: `--marker`, `--cycle-diff` and the N rules change, in a reviewed unit.
+
+
+### Q-151 · build-loop-c2-blocked-slot
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], frees the slot.**
+
+Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.)
+
+- **Read:** plan D9 · `docs/working/handoff-build-loop-handoff.md` C2
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Frees the slot** (built) | Only a live or queued loop counts against the slots; a blocked item re-enters the queue on its existing branch once answered, ahead of new briefs | None | More work is in flight at once than the slot count suggests, so more answers wait on you |
+| **[2] Holds the slot** | A blocked item counts against `Build-loop slots:` until answered | None | Blocked work starves the cap: with 3 blocked items nothing else runs |
+
+- **Interim:** [1], as built (D9).
+- **If the answer differs:** [2] is a change to the skill's slot counts in steps 8 and 10.
+
+
 
 
