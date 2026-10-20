@@ -205,8 +205,9 @@ setup() { bl_setup; }
     constraints '# Constraints' '- H1: never lose a row' '  success: test/x.bats shows equal counts' '- S1: prefer small diffs'
     settings_is constraints "constraints ok 1-hard 1-soft: docs/constraints.md on the default branch"
     cp docs/constraints.md "$d/draft.md"
-    # Every draft run below has a git that fails loudly first on PATH: the mode makes no git call.
-    printf '#!/bin/sh\necho "git called: $*" >&2\nexit 99\n' > "$d/bin/git" && chmod +x "$d/bin/git"
+    # Every draft run below has a git first on PATH that records each call and fails: the mode
+    # makes no git call, even one that hides its stderr and ignores the failure.
+    printf '#!/bin/sh\necho "$*" >> "%s/gitcalls"\necho "git called: $*" >&2\nexit 99\n' "$d" > "$d/bin/git" && chmod +x "$d/bin/git"
     cd "$d"
     chk() { PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints "$1"; }
     chk draft.md
@@ -242,6 +243,7 @@ setup() { bl_setup; }
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == "--check-constraints takes a file path with no control character"* ]] || { echo "$status [$output] $stderr"; return 1; }
     run --separate-stderr bash "$BL" --check-constraints
     [ "$status" -eq 1 ] && [[ "$stderr" == "--check-constraints takes one file path"* ]] || { echo "$status $stderr"; return 1; }
+    [ ! -e "$d/gitcalls" ] || { echo "git was called:"; cat "$d/gitcalls"; return 1; }
 }
 
 @test "--settings prints its five lines in order and exits 0; usage errors and a missing default branch exit 1" {

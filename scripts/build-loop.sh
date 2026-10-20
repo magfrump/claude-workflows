@@ -68,14 +68,17 @@
 #   --check-constraints  one constraints line, as --settings prints it, for
 #             a draft: FILE as given, relative to $PWD (not the repo root),
 #             read with no git call, in or out of a repo. ok N-hard M-soft,
-#             missing, none-hard or unreadable; where a WHY names the file
-#             it reads "FILE (draft)", so the line never equals --settings'
-#             line for main. FILE itself a symbolic link, or not a regular
-#             file when checked, is unreadable (parent directories are
-#             followed); a FILE holding a control byte is bad usage. It
+#             missing, none-hard or unreadable. A line that names the file
+#             reads "FILE (draft)", so an ok, none-hard, missing or refused
+#             line never equals --settings' line for main; the nosuccess,
+#             dup and near lines name no file under either mode. FILE
+#             itself a symbolic link, or not a regular file when checked,
+#             is unreadable (parent directories are followed); a FILE
+#             holding an ASCII control byte (C0 or DEL) is bad usage. It
 #             exits like --check, not like dev-cycle.sh's check modes: 0
 #             only for an ok line, 2 for any other verdict. A draft's
-#             verdict decides nothing: dispatch reads only --settings.
+#             verdict decides nothing in this script: dispatch reads main's
+#             file, as --settings does.
 #   --status  one line per brief path, in argument order, from the default
 #             branch's commit (the path must also be plain in the working
 #             tree, as --check-brief):

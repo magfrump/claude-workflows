@@ -1,10 +1,10 @@
-Commit: 0732a759
+Commit: ecc51340
 
 # Code Review Rubric
 
 **Branch:** `feat/constraints-builder-u1-parser` (unit 1 of 3, stacked: u2 references, u3 skill) · **Date:** 2026-10-19
 **Scope:** full branch, `main...HEAD` (3 files, 157 changed lines, 140 counted outside `docs/`) · **Pass:** iteration 1, `--loop-pass` (fact-check k=1, decision 031)
-**Delivery mode:** self-read. The diff is inline-sized, but each agent ran `git diff`. The enclosing `build-loop.sh` (146 KB) is over the 25k-token budget, and agents read skill files from disk rather than having them pasted.
+**Delivery mode:** self-read. The diff is inline-sized, but each agent ran `git diff`. The enclosing `build-loop.sh` (about 145 KiB) is over the 25k-token budget, and agents read skill files from disk rather than having them pasted.
 **Critics:** security-reviewer, performance-reviewer, api-consistency-reviewer (all opus). No contextual critic was triggered: tests changed with the source, 3 files, under 500 lines, and no structural change.
 **Harness note:** subagents may not write report files here, so each returned its report as text and the orchestrator saved it (condensed) under `docs/reviews/`.
 
@@ -16,13 +16,13 @@ None.
 
 | # | Finding | Domain | Severity | Source | Legibility-target | Considered overrides | Status | Author note |
 |---|---|---|---|---|---|---|---|---|
-| A1 | A newline in FILE prints a second line byte-equal to `--settings`' `constraints ok … on the default branch`. A path ending "on the default branch" mimics the WHERE (`build-loop.sh:641-649`, `:574`). The script's gate is unaffected; an agent reader is the exposure. | Security | Medium | security-reviewer F1 | for-author | — | ✅ Fixed | A control byte in FILE is now bad usage (exit 1). Every draft WHERE reads `FILE (draft)`, so no draft line can equal main's. T46 covers the forged-newline case. |
+| A1 | A newline in FILE prints a second line byte-equal to `--settings`' `constraints ok … on the default branch`. A path ending "on the default branch" mimics the WHERE (`build-loop.sh:641-649`, `:574`). The script's gate is unaffected; an agent reader is the exposure. | Security | Medium | security-reviewer F1 | for-author | — | ✅ Fixed | A control byte in FILE is now bad usage (exit 1). Every draft WHERE reads `FILE (draft)`, so no draft line that names the file (ok, none-hard, missing, refused) can equal main's; nosuccess, dup and near name no file in either mode and exit 2. *(Corrected in iteration 2: the first wording said "no draft line", which all three final-pass replicates disproved.)* T46 covers the forged-newline case. |
 | A2 | The header says the script needs a repo and a default branch; this mode needs neither (`:505-506`) | Docs | Stale | fact-check claim 9; security F3 | for-author | — | ✅ Fixed | "but for --check-constraints, which reads no repo" |
 | A3 | "WHY naming FILE" is false for the nosuccess, dup and near lines (`:70-71`) | Docs | Mostly accurate | fact-check 6; api F3 | for-author | — | ✅ Fixed | "where a WHY names the file" |
 | A4 | The Exit paragraph's exit-2 list omits this mode; "ok with a hard one" is redundant (`:515-520`) | Docs | Mostly accurate | fact-check 10; api F3 | for-author | — | ✅ Fixed | |
 | A5 | The CONSTRAINTS_AWK comment omits odd and unbalanced, and names only docs/constraints.md (`:541-542`) | Docs | Mostly accurate | fact-check 11 | for-author | — | ✅ Fixed | |
 | A6 | constraints_line's comment covers only 4 of 6 outputs; callers pre-filter (`:567-569`) | Docs | Mostly accurate | fact-check 12 | for-author | — | ✅ Fixed | |
-| A7 | T46's "out of a repo" was not asserted (bats `:201`) | Tests | Mostly accurate | fact-check 16, 21 | for-author | — | ✅ Fixed | A `git` shim that exits 99 sits first on PATH for every draft run, so any git call fails the test. |
+| A7 | T46's "out of a repo" was not asserted (bats `:201`) | Tests | Mostly accurate | fact-check 16, 21 | for-author | — | ✅ Fixed | A `git` shim first on PATH for every draft run records each call in a file that T46 asserts is absent, so any git call, even a silenced one that tolerates failure, fails the test. *(Iteration 2: the first shim reported only on stderr, and a silenced call passed; the mutation now fails T46.)* |
 | A8 | "One set of messages": the odd and unbalanced texts are copies of main_file's (`:646-647` vs lib `:609-610`) | Arch/Docs | Mostly accurate | fact-check 20; api F4 | for-author | — | ✅ Fixed | Kept as copies, commented as such. T46 now runs the same fence-refused and comment-refused file through `--settings` and `--check-constraints` and compares the lines, WHERE aside. |
 | A9 | Q-199: "418 of the 570 lines" does not reproduce; it is 424 (`questions.md:677`) | Docs | Mostly accurate | fact-check 4 | for-author | — | ✅ Fixed | |
 
@@ -48,7 +48,7 @@ None.
 
 | Item | Verdict | Evidence | Source | Legibility-target |
 |---|---|---|---|---|
-| The mode makes no git call before it exits, in or out of a repo | ✅ Confirmed | fact-check claim 5, executed: a logging git shim recorded `git calls: none` on 8 inputs from a non-repo dir; `--settings` under the same shim logged `git rev-parse` (positive control). Now pinned by T46's shim. | code-fact-check | for-orchestrator-synthesis |
+| The mode makes no git call before it exits, in or out of a repo | ✅ Confirmed | fact-check claim 5, executed: a logging git shim recorded `git calls: none` on 8 inputs from a non-repo dir; `--settings` under the same shim logged `git rev-parse` (positive control). Pinned by T46's call-recording shim (iteration 2). | code-fact-check | for-orchestrator-synthesis |
 | `--settings`' constraints strings are unchanged by the refactor | ✅ Confirmed | fact-check claim 15, executed: T44 passes unchanged | code-fact-check | for-orchestrator-synthesis |
 | A FILE like `a=b` or `-n` is read as a file, not as an awk assignment or option | ✅ Confirmed | fact-check claim 14, executed (mawk operand vs redirect); security endorsement 3, executed | code-fact-check | for-orchestrator-synthesis |
 
@@ -71,7 +71,9 @@ None.
 
 ## Iteration log
 
-- **Iteration 1** (full scope, `--loop-pass`, k=1): 0 🔴, 9 🟡, 6 🟢. Every 🟡 was fixed in the fix commit that follows 0732a759. Of the 🟢: three fixed, two Won't-Fix and one Defer (three override rows), and one informational group needs no action.
+- **Iteration 1** (full scope, `--loop-pass`, k=1): 0 🔴, 9 🟡, 6 🟢. Every 🟡 was fixed in 17ffe8cb. Of the six 🟢 rows: C3 and C4 fixed; C1 fixed in its header half, with its race Won't-Fix; C2 Won't-Fix; C5 Defer (three override rows); C6 informational, no action.
 - Tests after fixes: `bats test/scripts/build-loop-read.bats test/scripts/build-loop-dispatch.bats` gave 25/25 ok, and the shellcheck counts are unchanged from main.
 
-**Status:** iteration 1 fixes applied; the final confirming pass (full panel, k=3) is pending.
+- **Iteration 2** (final confirming pass attempt, full scope, fact-check k=3 at ecc51340, 34/41/40 claims): no behavioral red. All three replicates found the same doc-level Incorrect, the "never equals --settings' line" claim in the help (`:72-73`), rubric A1 and commit 17ffe8cb's body; per tier policy T this is 🟡. They also found: the git shim missed a silenced call (Incorrect or Mostly accurate across replicates); override rows had stale line cites and a forward-looking `timeout` claim; Q-199's unit sizes were stale; the control-byte claim holds for C0 and DEL only (C1 depends on the locale); and the rubric's 🟢 tally and its "146 KB" were off. The critic panel was not run, because the pass was not clean on fact-check and a confirming pass must be. All of these were fixed in the iteration-2 fix commit. The two commit bodies are immutable and have accepted-immutable override rows. Unverifiable: b6d19a70's claim about the other repos' drafts (external history).
+
+**Status:** iteration 2 fixes applied; iteration 3 (final confirming pass, full panel, k=3) is pending.

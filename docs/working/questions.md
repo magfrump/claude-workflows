@@ -667,7 +667,7 @@ Does a blocked build loop give up its slot while it waits for your answer? (Plan
 The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three stacked units, each run through its own review-fix loop. Keep the split, or waive the cap for this branch?
 
 - **Why it's yours:** only you can waive the cap (decision log 62).
-- **Read:** `feat/constraints-builder-u1-parser` (140 lines: `build-loop.sh --check-constraints` and T46), `feat/constraints-builder-u2-references` (179: the skill's two reference files), `feat/constraints-builder-u3-skill` (251: SKILL.md and the onboarding, dev-cycle and README pointers)
+- **Read (sizes at the split; review fixes have grown each unit since):** `feat/constraints-builder-u1-parser` (140 lines: `build-loop.sh --check-constraints` and T46), `feat/constraints-builder-u2-references` (179: the skill's two reference files), `feat/constraints-builder-u3-skill` (251: SKILL.md and the onboarding, dev-cycle and README pointers)
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
