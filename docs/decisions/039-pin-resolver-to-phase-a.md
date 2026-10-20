@@ -14,7 +14,7 @@ The first fix was `fix/egress-dnsmasq-ipset` (decision 038, which exists only on
 
 For every **exact** name phase A resolves, `compose_dnsmasq_conf` emits one `host-record=<name>,<ipv4>` line per admitted address. dnsmasq then answers that name's A query locally from exactly the ipset's addresses, and never forwards it. "Resolve twice and hope the answers match" becomes "resolve once". The names and addresses come from the same loop iteration that fills the ipset, and they are re-validated (HOST_RE, octet regex) where they become directives.
 
-Unchanged: subdomains, other query types and `.zone` entries still forward (`host-record` is exact-name only, confirmed against dnsmasq 2.90); root's phase-A digs bypass dnsmasq, so each run re-pins from the upstream; no process gains a capability; no address is added.
+Unchanged: subdomains, AAAA/TXT-style queries and `.zone` entries still forward (ANY and the pinned addresses' PTRs are now answered locally, and nothing new is forwarded). A name listed twice is resolved once (`NAME_IPS`), so its pins match every port it is admitted on (`host-record` is exact-name only, confirmed against dnsmasq 2.90); root's phase-A digs bypass dnsmasq, so each run re-pins from the upstream; no process gains a capability; no address is added.
 
 ## Why not the alternatives
 
@@ -32,7 +32,7 @@ Unchanged: subdomains, other query types and `.zone` entries still forward (`hos
 
 ## Revisit trigger
 
-Revisit if any `FAIL sni=<exact name> … not admitted by the ipset` appears in `/run/cc-sni-proxy/proxy.log` on an image built with this change. A pin should make that impossible, so it would mean the pin is not being served. Also revisit if a zone name shows the herald-style rotation; then revive 038's `ipset=` design for zones only.
+Revisit if `/run/cc-sni-proxy/proxy.log` on an image built with this change shows `FAIL sni=<exact name>` for an address that is NOT among that name's `host-record` lines in `/etc/dnsmasq.d/cc-allowlist.conf`. That would mean the pin is not being served. A FAIL for a pinned address is residual 1 (a dead pin), not this trigger. Also revisit if a zone name shows the herald-style rotation; then revive 038's `ipset=` design for zones only.
 
 ## Pruned candidates
 

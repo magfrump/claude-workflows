@@ -711,11 +711,41 @@ STUB
   grep -q '^server=/gone.example.test/' "$CC_DNSMASQ_CONF"
 }
 
-@test "the inspection hook prints no pins (it resolves nothing)" {
+@test "a pin is emitted only for a hostname and a dotted-quad address (no directive injection)" {
   printf 'nameserver 127.0.0.11\n' > "$TEST_TMPDIR/rc"
-  run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc"
+  printf 'ok.example.test\t192.0.2.5\nevil.test,1.2.3.4\t192.0.2.6\nx.example.test\t192.0.2.7,9.9.9.9\nsp ace.test\t192.0.2.8\n' > "$TEST_TMPDIR/pins"
+  run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc" 192.0.2.1 "$TEST_TMPDIR/pins"
+  [ "$status" -eq 0 ]
+  run grep -c '^host-record=' <<< "$output"
+  [ "$output" -eq 1 ]
+  run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc" 192.0.2.1 "$TEST_TMPDIR/pins"
+  [[ "$output" == *"host-record=ok.example.test,192.0.2.5"* ]]
+  [[ "$output" != *"evil"* || "$output" == *"WARNING: malformed pin"* ]]
+  [[ "$output" != *"9.9.9.9"*"host-record"* ]]
+  run grep -c 'WARNING: malformed pin' <<< "$output"
+  [ "$output" -eq 3 ]
+}
+
+@test "with no IPv4 upstream, pins are dropped too (the resolver stays fail-closed)" {
+  printf 'nameserver fd00::1\n' > "$TEST_TMPDIR/rc"
+  printf 'ok.example.test\t192.0.2.5\n' > "$TEST_TMPDIR/pins"
+  run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc" 192.0.2.1 "$TEST_TMPDIR/pins"
   [ "$status" -eq 0 ]
   [[ "$output" != *"host-record="* ]]
+}
+
+@test "a name listed twice is resolved once, so its pins match every port it is admitted on" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\ndl.example.test\n' > "$dir/base.txt"
+  printf 'dl.example.test:8443\n' > "$dir/extra.txt"
+  printf 'extra\n' > "$CC_EGRESS_PROFILE_FILE"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -cE '^dig .* dl\.example\.test$' "$CMD_LOG"
+  [ "$output" -eq 1 ]
+  grep -q '^ipset add -exist allowed-domains 203.0.113.7,tcp:443$' "$CMD_LOG"
+  grep -q '^ipset add -exist allowed-domains 203.0.113.7,tcp:8443$' "$CMD_LOG"
 }
 
 @test "upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone" {

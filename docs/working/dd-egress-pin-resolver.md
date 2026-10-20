@@ -106,8 +106,9 @@ An unprivileged dnsmasq on :5399 with `server=/dl.google.com/<dead upstream>` pl
 
 ## Pre-mortem: bypass families (the plan changes an enforcement file)
 
-1. **Config injection through a pin line.** A name or address carrying `,` / `/` / newline becomes extra dnsmasq directives. Closed by HOST_RE plus the octet regex on every emitted value, with a bats case.
+1. **Config injection through a pin line.** A name or address carrying `,` / `/` / newline becomes extra dnsmasq directives. Closed by HOST_RE plus the octet regex on every emitted value. A bats case drives malformed pins through the `--print-dnsmasq-conf` pins-file seam.
 2. **A pin that widens.** Could a pin make a non-allowlisted name resolve? Pins are emitted only from `ALLOWED_ENTRIES` exact names. A bats case asserts no pin for a zone entry or a GitHub zone.
 3. **An agent-written pin.** The config is written by root to a root-owned path under the firewall lock, the same as the existing `server=` lines. Nothing new is agent-writable.
-4. **Pin and ipset disagree.** Both come from the same `ips` variable in the same loop iteration, so they cannot drift within a run.
+4. **Pin and ipset disagree.** Both come from the same `ips` variable. Review found that a name listed twice (two profiles or two ports) used to be resolved twice, so a rotating pool could give each entry different addresses. Phase A now resolves each name once (`NAME_IPS`), and a bats case covers it.
+6. **New local answers.** host-record also answers ANY (the pinned A records) and the PTR of each pinned address, which used to be REFUSED. Nothing is forwarded and reachability is unchanged. This came from the review.
 5. **The resolver path is reached without the pins.** The proxy's port-53 traffic is DNATed to this same dnsmasq (CC_DNS), whatever resolv.conf says. That is unchanged.

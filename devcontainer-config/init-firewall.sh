@@ -224,8 +224,11 @@ GITHUB_DNS_ZONES="github.com githubusercontent.com"
 # afternoon, 2026-10-17) hands the SNI proxy a fresh address the ipset never saw,
 # and its connect dies with Errno 113. One line per address: dnsmasq 2.90 keeps
 # only the last IPv4 of a multi-address host-record. host-record is exact-name
-# only, so subdomains still forward (and the proxy still refuses them); other
-# query types still forward. The --print-dnsmasq-conf hook passes no pins.
+# only, so subdomains still forward (and the proxy still refuses them), as do
+# AAAA, TXT and the like. Answered locally now: A, ANY (the pinned A records)
+# and the PTR of each pinned address, which used to be REFUSED. Neither widens
+# reachability or forwards anything. The --print-dnsmasq-conf hook takes pins
+# from an optional file.
 compose_dnsmasq_conf() {
   local resolvers="$1" domains="$2" bind_addr="$3" pins="${4:-}" d ns name ip
   printf '%s\n' \
@@ -281,7 +284,9 @@ compose_dnsmasq_conf() {
 }
 
 if [ "${1:-}" = "--print-dnsmasq-conf" ]; then
-  compose_dnsmasq_conf "$(compose_dns_resolvers "${2:-/etc/resolv.conf}")" "$(compose_domains)" "${3:-192.0.2.1}"
+  # $4: optional file of `<name>\t<ipv4>` pin lines (a test seam; a full run
+  # passes phase A's answers instead).
+  compose_dnsmasq_conf "$(compose_dns_resolvers "${2:-/etc/resolv.conf}")" "$(compose_domains)" "${3:-192.0.2.1}" "$(cat -- "${4:-/dev/null}")"
   exit 0
 fi
 
@@ -533,6 +538,10 @@ done < <(echo "$GH_CIDRS")
 # pair the entry grants.
 RESOLVED_MEMBERS=""
 PINNED_HOSTS=""
+# One resolution per NAME, even when two entries list it (two profiles, two
+# ports): a rotating pool would otherwise answer each lookup differently, and the
+# pins (per name) would hold addresses the ipset admits only on the other port.
+declare -A NAME_IPS=()
 ANTHROPIC_PROBE_IP=""
 while read -r domain ports; do
     [ -n "$domain" ] || continue
@@ -560,11 +569,16 @@ while read -r domain ports; do
     # on failure a domain is skipped and stays blocked, which reads as a mysterious
     # outage, so allow 2 tries x 3s rather than a single 2s attempt a merely-slow
     # resolver would lose.
-    ips=""
-    while read -r name; do
-        ips="${ips}$(dig +time=3 +tries=2 +noall +answer A "$name" | awk '$4 == "A" {print $5}' || true)"$'\n'
-    done < <(echo "$lookups")
-    ips="$(echo "$ips" | awk 'NF' | sort -u)"
+    if [ -n "${NAME_IPS[$domain]+set}" ]; then
+        ips="${NAME_IPS[$domain]}"
+    else
+        ips=""
+        while read -r name; do
+            ips="${ips}$(dig +time=3 +tries=2 +noall +answer A "$name" | awk '$4 == "A" {print $5}' || true)"$'\n'
+        done < <(echo "$lookups")
+        ips="$(echo "$ips" | awk 'NF' | sort -u)"
+        NAME_IPS[$domain]="$ips"
+    fi
     if [ -z "$ips" ]; then
         # A dead domain must not brick session start (statsig.anthropic.com went
         # NXDOMAIN in 2026-07 and did exactly that). Failing closed is safe here —
