@@ -40,11 +40,13 @@ The index below is generated — edit entries, not the table.
 | [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | you: judgment | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
 | [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
 | [Q-213](#q-213--log-row-73-shared-uid-git-config) | you: judgment | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
+| [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: judgment | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
 | [Q-176](#q-176--q092-deny-matcher-live-check) | you: terminal | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
 | [Q-196](#q-196--host-check-cc-isolated-profile-names) | you: terminal | After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on th... | 2026-10-17 |
+| [Q-214](#q-214--egress-pin-resolver-release) | you: terminal | Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `pl... | 2026-10-20 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
@@ -680,3 +682,40 @@ Does a blocked build loop give up its slot while it waits for your answer? (Plan
 
 
 
+### Q-214 · egress-pin-resolver-release
+**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** OPEN
+
+Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `plugins-artifacts.gradle.org`, and probe that name for domain fronting first. Paste the block on the host. Answer `Q-214: <output>`.
+
+- **Read:** `docs/decisions/039-pin-resolver-to-phase-a.md` · `docs/working/dd-egress-pin-resolver.md` · log row 76
+
+```bash
+# 1. Fronting probe for the new android name (the Q-045 probe). Expect 403 or 404 "fronted"; a 200 <title>Google/GitHub means it fronts.
+b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
+for tgt in www.google.com www.python.org www.cloudflare.com github.com; do printf '%-16s fronted=[%s]\n' "$tgt" "$(probe -H "Host: $tgt" https://plugins-artifacts.gradle.org/)"; done; rm -f "$b"
+# 2. Install main's config (read the diff, answer y), then re-bless and probe herald.
+git -C ~/claude-workflows log -1 --oneline main    # expect 9fa8bbd0 or later
+(cd ~/claude-workflows && ./devcontainer-config/install.sh)
+HERALD=~/code/belegarth-herald                       # EDIT if herald lives elsewhere
+cc-isolated --register "$HERALD" --profile android && cc-isolated --probe-only "$HERALD"
+```
+
+- **After it passes:** in herald's next session, the agent runs the handoff's `probe.sh OUTDIR 1800 20` and `grep -c host-record /etc/dnsmasq.d/cc-allowlist.conf`. Pass is 0 `FAIL sni=dl.google.com` lines. Then it runs a cold `./gradlew :app:assembleDebug` and retires its "dl.google.com refused TLS" memory.
+- **If the probe shows fronting:** the entry gets an ACCEPTED RISK note like Google's (Q-052), or it is removed. The choice is yours; a follow-up entry will ask.
+- **Interim:** merged on main (9fa8bbd0) with `Live-verified: no`. Nothing changes until `install.sh` runs. Herald's workaround stays `sudo /usr/local/bin/init-firewall.sh`.
+- **If it fails:** paste the output. Revert with `git revert -m1 9fa8bbd0`, then reinstall.
+
+### Q-215 · retire-egress-dnsmasq-ipset-branch
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
+
+Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, the Q-169 spike's target), with no CAP_NET_ADMIN resolver and ~5% of the code. What happens to the old branch?
+
+- **Read:** decision 039's "Why not the alternatives" and Revisit trigger
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep it parked** | The branch stays, unmerged, as 039's fallback for `.zone` rotation | None | Clutter. Q-169's spike still names it as its target |
+| **[2] Delete it** | `git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset` | One paste | 038's design survives only in git reflog. The decision text is quoted in `docs/working/dd-egress-pin-resolver.md` |
+
+- **Interim:** [1]. Nothing deleted.
+- **If the answer differs:** none; deletion is the only action.
