@@ -674,5 +674,5 @@ The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, 
 | **[1] Keep the split** (done) | Three reviews and three merges, in order | None | Some extra review passes over prose |
 | **[2] Waive for this branch** | One review over the 570 lines | A waiver to record | A larger review unit, which is what the cap exists to prevent |
 
-- **Interim:** [1]. The split is done and the units merge in order. 418 of the 570 lines are skill prose.
+- **Interim:** [1]. The split is done and the units merge in order. 424 of the 570 lines are the skill's own files (SKILL.md and its two references).
 - **If the answer differs:** nothing gets redone; the remaining units could merge as one.

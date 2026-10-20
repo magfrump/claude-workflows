@@ -66,10 +66,16 @@
 #             box, a tag) can still hide a copy; only an exact line ever sets
 #             a value.
 #   --check-constraints  one constraints line, as --settings prints it, for
-#             FILE as given (a draft in a working tree, read with no git
-#             call, in or out of a repo): ok N-hard M-soft, missing,
-#             none-hard or unreadable, WHY naming FILE. A symbolic link or
-#             a non-file is unreadable. Exit 0 only for ok with a hard one.
+#             a draft: FILE as given, relative to $PWD (not the repo root),
+#             read with no git call, in or out of a repo. ok N-hard M-soft,
+#             missing, none-hard or unreadable; where a WHY names the file
+#             it reads "FILE (draft)", so the line never equals --settings'
+#             line for main. FILE itself a symbolic link, or not a regular
+#             file when checked, is unreadable (parent directories are
+#             followed); a FILE holding a control byte is bad usage. It
+#             exits like --check, not like dev-cycle.sh's check modes: 0
+#             only for an ok line, 2 for any other verdict. A draft's
+#             verdict decides nothing: dispatch reads only --settings.
 #   --status  one line per brief path, in argument order, from the default
 #             branch's commit (the path must also be plain in the working
 #             tree, as --check-brief):
@@ -503,7 +509,8 @@
 #             read, listed, created, added or locked) may clear on a retry.
 #
 # Acts on $PWD's git repo, like dev-cycle.sh, and needs its default branch
-# found by name (origin/HEAD, main or master). Writes nothing but --check's
+# found by name (origin/HEAD, main or master), but for --check-constraints,
+# which reads no repo. Writes nothing but --check's
 # and --main-log's merge objects (merge-tree writes the merged trees and blobs into the object
 # store), --merge's commit, the branch it moves and that branch's reflog
 # (and in W: its files, index, HEAD reflog and ORIG_HEAD), --start's branch
@@ -513,11 +520,11 @@
 # Output passes through the lib's scrub (but for the start-up errors about
 # perl and the lib); printed repo text is data.
 # Exit: 0 every line printed (or help; a --marker skip is a line; for
-# --check-constraints, only an ok line with a hard one), for
+# --check-constraints, only an ok line), for
 # --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
 # for --merge merged, for --start and --prompt ok; 2 any other --check,
 # --merge, --start or --prompt verdict line, --main-log's other or refuse
-# line, a --cycle-diff refuse line, or the state gate (--state's included) not ok. A --check or
+# line, a --cycle-diff refuse line, a --check-constraints line but ok, or the state gate (--state's included) not ok. A --check or
 # --merge can also stop part way, after the lines of the briefs before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
@@ -538,8 +545,10 @@ READ_LIB="$SCRIPT_DIR/lib/dev-cycle-read.sh"
 source "$READ_LIB"
 scrub_reexec "${BASH_SOURCE[0]}" "$@"
 
-# docs/constraints.md: "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST
-# SECOND" or "near LINE" (the first problem found).
+# A constraints file (main's docs/constraints.md, or --check-constraints'
+# FILE): "ok HARD SOFT", "nosuccess ID LINE", "dup ID FIRST SECOND" or "near
+# LINE" (the first problem found); after FENCE_AWK, "odd N WHY" or
+# "unbalanced N" first, which each caller handles before constraints_line.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 CONSTRAINTS_AWK='
 { sub(/\r$/, "") }
@@ -564,9 +573,9 @@ END {
     print (bad != "" ? bad : "ok " hard + 0 " " soft + 0)
   }
 }'
-# constraints_line OUT WHERE: CONSTRAINTS_AWK's output OUT as the
-# "constraints ..." line, WHERE naming the file read (--settings,
-# --check-constraints).
+# constraints_line OUT WHERE: CONSTRAINTS_AWK's ok, nosuccess, dup or near
+# output OUT as the "constraints ..." line; WHERE names the file read in the
+# ok and none-hard lines (--settings, --check-constraints).
 constraints_line() {
   local k c l1 l2
   read -r k c l1 l2 <<<"$1"
@@ -582,7 +591,10 @@ usage() { echo "$1 (usage: build-loop.sh --settings | --check-constraints FILE |
 MODE=""; ARGS=(); EXPECT=""; APPROVED=""; DIR=""; STEAL=""; ANSWERED=(); LAND_MAIN=""
 case "${1:-}" in
   --settings) MODE=settings; [[ $# -eq 1 ]] || usage "--settings takes no arguments" ;;
-  --check-constraints) MODE=check-constraints; ARGS=("${2:-}"); [[ $# -eq 2 && -n "$2" ]] || usage "--check-constraints takes one file path" ;;
+  --check-constraints)
+    MODE=check-constraints; ARGS=("${2:-}"); [[ $# -eq 2 && -n "$2" ]] || usage "--check-constraints takes one file path"
+    # A newline in FILE would print a second line that could read as --settings' own.
+    [[ ! "$2" =~ [[:cntrl:]] ]] || usage "--check-constraints takes a file path with no control character" ;;
   --status) MODE=status; shift; ARGS=("$@"); [[ $# -gt 0 ]] || usage "--status needs at least one brief path" ;;
   --marker) MODE=marker; shift; ARGS=("$@"); [[ $# -eq 1 ]] || usage "--marker takes one brief path" ;;
   --state) MODE=state; [[ $# -eq 1 ]] || usage "--state takes no arguments" ;;
@@ -637,16 +649,18 @@ esac
 # --check-constraints reads one file as given and no git object, so it runs
 # before any git call (a draft, in or out of a repo).
 if [[ "$MODE" == check-constraints ]]; then
-  f="${ARGS[0]}"
-  if [[ -L "$f" || ( -e "$f" && ! -f "$f" ) ]]; then echo "constraints unreadable: $f is not a regular file"; exit 2; fi
-  [[ -e "$f" ]] || { echo "constraints missing: no $f"; exit 2; }
+  f="${ARGS[0]}"; w="$f (draft)"
+  # The checks run before the open, on FILE's last component only: the verdict gates nothing.
+  if [[ -L "$f" || ( -e "$f" && ! -f "$f" ) ]]; then echo "constraints unreadable: $w is not a regular file"; exit 2; fi
+  [[ -e "$f" ]] || { echo "constraints missing: no $w"; exit 2; }
   # A redirect, not an operand: awk would read an operand like a=b as an assignment.
-  out="$(env LC_ALL=C awk "$FENCE_AWK$CONSTRAINTS_AWK" < "$f")" || { echo "constraints unreadable: $f could not be read"; exit 2; }
+  out="$(env LC_ALL=C awk "$FENCE_AWK$CONSTRAINTS_AWK" < "$f")" || { echo "constraints unreadable: $w could not be read"; exit 2; }
+  # main_file's two refusal texts (lib), with WHERE for the file; T46 compares them.
   case "$out" in
-    odd\ *) read -r _ n why <<<"$out"; echo "constraints unreadable: line $n of $f $(oddwhy "$why"), so the file is not read"; exit 2 ;;
-    unbalanced\ *) echo "constraints unreadable: the code fence opened at line ${out#unbalanced } of $f is never closed, so the file is not read"; exit 2 ;;
+    odd\ *) read -r _ n why <<<"$out"; echo "constraints unreadable: line $n of $w $(oddwhy "$why"), so the file is not read"; exit 2 ;;
+    unbalanced\ *) echo "constraints unreadable: the code fence opened at line ${out#unbalanced } of $w is never closed, so the file is not read"; exit 2 ;;
   esac
-  l="$(constraints_line "$out" "$f")"; echo "$l"
+  l="$(constraints_line "$out" "$w")"; echo "$l"
   [[ "$l" == "constraints ok "* ]] || exit 2
   exit 0
 fi
