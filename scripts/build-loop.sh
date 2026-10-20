@@ -73,8 +73,9 @@
 #             line never equals --settings' line for main; the nosuccess,
 #             dup and near lines name no file under either mode. FILE
 #             itself a symbolic link, or not a regular file when checked,
-#             is unreadable (parent directories are followed); a FILE
-#             holding an ASCII control byte (C0 or DEL) is bad usage. It
+#             is unreadable (parent directories are followed); a FILE path
+#             holding an ASCII control byte (C0 or DEL) is bad usage (the
+#             file's contents may hold any byte). It
 #             exits like --check, not like dev-cycle.sh's check modes: 0
 #             only for an ok line, 2 for any other verdict. A draft's
 #             verdict decides nothing in this script: dispatch reads main's

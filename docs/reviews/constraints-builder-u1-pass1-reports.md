@@ -92,3 +92,11 @@ What looks good: the line reuses `--settings`' key and verdict words, and the us
 | Iteration 3 (k=3) | 127e55ab | r3 | 28 | 23 | 2 | 0 | 0 | 3 |
 
 Iteration 2: every replicate found the doc-level Incorrect, the help's "never equals --settings' line" (false for nosuccess, dup and near). r1 and r2 also flagged the stderr-only shim, which r2 rated Incorrect. Iteration 3: no replicate found an Incorrect or a Stale claim.
+
+## Iteration 3 critics (a29344d3; opus)
+
+| Critic | Findings |
+|---|---|
+| security | None. Executed bypass table: newline refused; UTF-8 C1 refused under C.utf8 and stripped by the scrub under C; U+202E stripped; raw `\x9b` passes (documented scrub gap, caller-only, line still ends "(draft)"); `/dev/stdin`, `/dev/fd/0` and FIFO refused as not regular; `-` and `a=b` read as files; content bytes never echoed. |
+| performance | F1 carried (Won't-Fix). F8: T46 takes 431 ms of about 16,990 ms for the file. F9: the scrub re-exec takes 13-19 ms against 7-8 ms unscrubbed. F10: one subshell per `--settings`. All informational. |
+| api-consistency | 1 (u3 step 0.3 said the mode prints --settings' line unchanged; fixed in u3) Minor. 2 ("a FILE holding a control byte" could be read as the contents; fixed) Minor. 3 (u3's "predates" test keyed on any usage error; fixed in u3) Informational. |

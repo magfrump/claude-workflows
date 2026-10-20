@@ -1,4 +1,5 @@
-Commit: ecc51340
+Commit: a29344d3
+Loop closed at a29344d3
 
 # Code Review Rubric
 
@@ -78,4 +79,10 @@ None.
 
 - **Iteration 3** (final confirming pass, full scope, fact-check k=3 at 127e55ab, 40/28/29 claims): 0 Incorrect, 0 Stale. Mostly accurate, all doc or test wording: the A1 and A7 notes; the T46 comment; the header's commit for the iteration-1 figures; the override row's capture format; 127e55ab's "the scrub strips it" (true only for UTF-8-encoded C1; the help claims nothing about C1); and 17ffe8cb's A7 sentence. Unverifiable: the replicate counts (now recorded in the reports file) and the shellcheck command (now named above). Also hardened T46: stdin from /dev/null, so an operand-for-redirect regression fails rather than hangs, and the no-argument run is shimmed. Fixed in the iteration-3 fix commit.
 
-**Status:** iteration 3 fact-check clean of red; the wording fixes are applied. The critic panel on the final HEAD comes next.
+- **Iteration 3 critics** (full panel at a29344d3, opus):
+  - security: no findings. Bypass probes all held (C0, UTF-8 C1, bidi, `/dev/fd` paths, FIFO, `-`, `a=b`, a 23-digit ID). The raw-0x80-0x9F residue is the scrub's documented gap and can't reach a line that passes for main's.
+  - performance: F1 is carried as Won't-Fix. F8 (T46 is 0.4 s of 17 s), F9 and F10 are informational.
+  - api-consistency: no Breaking or Inconsistent findings, and pass-1 F1-F5 all read right. 🟢 finding 2 (help: "a FILE holding" read as the contents) is fixed in the close-out commit. 🟢 findings 1 and 3 belong to u3 (step 0.3) and are fixed there, in 7d49f8f8.
+  - Two security endorsements routed to code-fact-check are left *pending execution verification*: draft bytes reach stdout only as awk tokens, and `$c` is an awk numeric. Stage 2.5 was not run. The critic probed both by execution.
+
+**Status:** Review converged in 3 iterations: 0 Must Fix; 9 + 7 Must Address resolved (iterations 1 and 2) plus iteration 3's wording; 3 Consider declined with override rows, and 2 commit bodies accepted-immutable. Single-sample review; absence of findings is not an attestation.
