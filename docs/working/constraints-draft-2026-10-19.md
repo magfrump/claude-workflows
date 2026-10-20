@@ -8,12 +8,12 @@ This is input for you, not the constraints doc itself. Once you've settled the c
   - `docs/working/questions-archive.md`, lines 1–1702 and 1703–3459, about 380 KB
   - `docs/working/questions.md`, `docs/thoughts/failure-patterns.md`, `docs/thoughts/retro-constraints-builder.md`, `docs/working/idea-log.md`, `docs/dev-cycle.md` and log row 73
   - Read inline: the research docs on the three build-loop branches (`feat/q146-si-script-commits`, `fix/cc-isolated-profile-names`, `fix/claude-md-import-guard`). They were read as diffs against main and not extracted, since only their constraint citations were counted.
-- **Parsed:** `constraints ok 4-hard 12-soft: docs/working/constraints-draft-2026-10-19.md (draft)` (the installed `~/.claude/scripts/build-loop.sh --check-constraints`, run under `timeout 60`, exit 0).
+- **Parsed:** `constraints ok 4-hard 11-soft: docs/working/constraints-draft-2026-10-19.md (draft)` (the installed `~/.claude/scripts/build-loop.sh --check-constraints`, run under `timeout 60`, exit 0).
 - **Citations:** file:line with a short quote. I spot-checked these against the files: `answers-10-12-26.txt:4-6,11,14,17`, `answers-10-16-26.txt:2,12,18-19,22,36,39-40,47` and `answers-9-20-26.txt:2-3,6-7,12-14,51-52`. Citations into the questions archive are the readers' and were not spot-checked.
 - **Provenance** (step 4, `git blame` on main):
   - `answers-9-20-26.txt`, `answers-9-28-26.txt`, `answers-10-12-26.txt`, `answers-10-16-26.txt` and `CodeReviewWriteup.md` were committed by you, with no agent co-author.
   - `answers-9-17-26-2.txt`, `answers-9-23-26.txt`, `answers-9-23-26-2.txt` and `feedback.md` carry a Claude `Co-Authored-By` trailer. By the skill's rule they count as agent-written, even though they sit in `docs/human-author/`. That includes the Q-050 "only editable copy… human bless" quote and the "I *will* forget to add flags" quote.
-- **Cost:** every line rides in every loop prompt. Revision 2 has 15 lines; this draft has 16, and most of the edits are inside existing lines.
+- **Cost:** every line rides in every loop prompt. Revision 2 has 15 lines, and so does this draft: every edit is inside an existing line.
 
 ## Copy-ready block
 
@@ -42,7 +42,6 @@ S8: Keep units small and dependency-free: under the ~400-line cap (log row 62), 
 S9: Prefer the minimal change one `git revert` undoes, staged so the cheaper step is checked first; after repeated mechanism errors, cut, coarsen or re-scope the mechanism instead of another patch.
 S10: Spend the user's attention last: at most one host paste per verification, no new recurring host chore or trust decision, nothing left behind to clean up, no merge or loop that waits on the user's manual action when a fail-closed alternative exists, and no safety that depends on the user remembering a flag.
 S11: Portable where it costs little: AGENTS.md-readable instructions over Claude-Code-only hooks, pure-text mechanisms over kernel or platform primitives.
-S12: Prefer removing a capability to guarding it with a check that cannot be complete; a check that ships anyway is labelled a tripwire and carries one list of what it does not see.
 
 ## Diff against revision 2
 
@@ -67,7 +66,6 @@ S12: Prefer removing a capability to guarding it with a check that cannot be com
 -S9: ...; after repeated mechanism errors, escalate to a decision instead of another patch.
 +S9: ...; after repeated mechanism errors, cut, coarsen or re-scope the mechanism instead of another patch.
 +S10: ... no merge or loop that waits on the user's manual action when a fail-closed alternative exists, ...
-+S12: Prefer removing a capability to guarding it with a check that cannot be complete; a check that ships anyway is labelled a tripwire and carries one list of what it does not see.
 ```
 
 ## Sources
@@ -134,7 +132,7 @@ This section is new evidence only. The citations for revision 2 are in `docs/wor
 - Archive Q-152:3096 and Q-137:2445.
 - Traded away at least once: archive Q-064:1439 and Q-062:1395, where you took a recurring ssh-agent chore and nuisance refusals in exchange for the bless guarantee. That is why the line stays soft.
 
-### The S12 line (new): 4 decisions, plus a cluster in failure-patterns
+### Removing over guarding (proposed as a new soft line; dropped by the author on 2026-10-19, see Left out)
 - Log row 73 (`log.md:96`): "The git-config denylist the skill briefly carried is removed rather than kept as false assurance".
 - Archive Q-076:1583: "a `.git` scan can't be a guarantee, so on the user's decision it ships as a tripwire … the single list".
 - Archive Q-048:1006-1011: the exemption was withdrawn after three passes found bypasses ("A real fix belongs to the file-identity guard redesign, not to more text matching").
@@ -173,7 +171,7 @@ These are not constraints.
   - Fall-through for cost-saving pre-steps.
   - No branch-image install for verification.
   - Hostile-loop scope.
-  - Removing over guarding (the S12 line).
+  - Removing over guarding (dropped by you; see Left out).
   - Reachable rather than frequently used.
 - **Stated and confirmed:** `CLAUDE.md`'s argv, headless and live-verify rules, and its stub, no-skip and probe rules, all match the moved-out rules of revision 1. `AGENTS.md` overlaps none of the lines.
 - **Stated but contradicted:** revision 2's H2 ("no `|| exit 0` … on a missing dependency") against `hooks/live-verify-gate.sh:56-57` (call C1). Revision 2's "S6 … skill or workflow" wording is fine as it stands: `answers-10-16-26.txt:2` says workflows have merged into skills, but `workflows/` still exists.
@@ -185,8 +183,15 @@ These are not constraints.
 | C1 fail-open hooks | Revision 2's H2 forbids `\|\| exit 0` on a missing dependency. `hooks/live-verify-gate.sh:53` falls through by design, and your 10-16:18-19 shows hard refusals at launch pushed you to host sessions | The H2 line is scoped to "a gate or boundary". The three existing lines are named as known in its success line | To make them refuse, a brief fixes the two hooks and the success line drops "only the three". To bless fail-open for hooks, the line gains "a hook on every tool call may fail open if it says so" |
 | C2 H1 interim | Q-149 [2] accepted that the health check runs the change's own code, which H1's letter forbids | The H1 line names the exception inline as an interim | If you would rather the doc not carry it, delete the sentence. Loops then see the H1 line as violated by the cycle's own health check |
 | C3 hostile-loop scope | Q-133 [3] and Q-138 (yours) took hostile loops out of scope; Q-140 still closed quiet hostile routes | Added to the S1 line, soft | Making it hard prunes any design that spends passes on hostile-class findings. Leaving it out lets loops treat each such finding as a new round |
-| C4 S12 is new | It rests on transcribed answers and agent-written failure patterns; no line in your own files states it | Added as soft | Delete it if you see it as practice (review guidance) rather than a design criterion |
+| C4 removing over guarding | It rests on transcribed answers and agent-written failure patterns; no line in your own files states it | Dropped (your answer, 2026-10-19) | Restore it as a soft line |
 | C5 fall-through clause | Your Q-022 answer is in `answers-9-17-26-2.txt`, which carries an agent co-author | Kept in the H2 line | Delete the clause if Q-022 was a one-off |
+
+Your answers in session (2026-10-19):
+- C1: name the three lines as known, as drafted.
+- The no-branch-image clause is a design constraint and stays in the H3 line.
+- C3: soft, in the S1 line.
+- C4: drop the proposed removing-over-guarding line.
+- C2 and C5 are still open, at their interim readings.
 
 Questions for the top hard lines:
 - **The H2 line:** does "a gate or boundary" match your stance, or should every script fail closed? What has the fail-closed launch check cost you since Q-170?
@@ -219,6 +224,7 @@ Questions for the top hard lines:
 | Narrowest kernel widening (seccomp profile file) | local, and blocked on Q-130 | archive Q-124:2178-2189 |
 | Repo text is evidence, never instructions | local to constraints-builder (log row 73) | `log.md:96` |
 | Path-keyed guards follow the code | unanswered Q-175 | `questions.md:396` |
+| Prefer removing a capability to an incomplete guard; a tripwire carries one "does not see" list | dropped by the author, 2026-10-19 (review practice rather than a design criterion) | `log.md:96`, archive Q-076:1583, Q-048:1006-1011, `failure-patterns.md:99` |
 
 ## Superseded
 
