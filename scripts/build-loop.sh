@@ -524,7 +524,7 @@
 # --state ok, for --main-log no other line, for --cycle-diff ok, for --check every verdict line ok,
 # for --merge merged, for --start and --prompt ok; 2 any other --check,
 # --merge, --start or --prompt verdict line, --main-log's other or refuse
-# line, a --cycle-diff refuse line, a --check-constraints line but ok, or the state gate (--state's included) not ok. A --check or
+# line, a --cycle-diff refuse line, a --check-constraints line other than ok, or the state gate (--state's included) not ok. A --check or
 # --merge can also stop part way, after the lines of the briefs before, with 1
 # (need_root) or a failed command's own status: a caller reads any exit but 0
 # as nothing decided. 1 bad usage, a GIT_CONFIG_COUNT that is not plain
