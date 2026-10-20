@@ -10,10 +10,15 @@ The working doc is `docs/working/constraints-draft-YYYY-MM-DD.md`. **The whole f
   `<!--` that the same line does not close;
 - start no line, list item or quote with `[` unless that line closes it and holds no `]:`
   (so no `[label]: url` reference links);
-- put code fences only at column 0: an indented fence, or one after `- `, refuses the file.
-  Quote a command inline in backticks instead.
+- put code fences only at column 0, with no backtick in the info string, and close every
+  one: an indented fence, or one after a list marker, refuses the file, and a fence inside
+  `>` is read as text. Quote a command inline in backticks instead;
+- keep the file plain: no carriage return inside a line, no NUL, no byte-order mark;
+- write each ID exactly: `H<n>: text`, n with no leading zero, the text not empty, each ID
+  once, and at least one `H` line.
 
-Remove the guidance in angle brackets when you write the doc.
+Fill each inline `<placeholder>`, and delete the guidance blocks in angle brackets, when you
+write the doc. Deleting a placeholder leaves an empty `H1:`, which the reader refuses.
 
 ```markdown
 # Constraints draft: <repo> (<date>)
