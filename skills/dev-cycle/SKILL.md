@@ -781,7 +781,20 @@ Only after step 9's land is verified, with no `refuse` line from
 `--main-log MAIN` run again now (the loops would start from it; `other` lines are
 recorded as step 0.2 records them), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
 slug `constraints-doc-missing`, asking for `docs/constraints.md` and naming the `constraints-builder` skill that drafts it, unless WT's questions
-files hold one with that slug, open or answered: D2). Fill free slots (`--settings`'
+files hold one with that slug, open or answered: D2). Whether or not it dispatches, when
+`--settings` prints `policy review unset: WHY`, file one `you: judgment` entry, slug
+`build-loop-policy-unset`, unless WT's questions files hold one with that slug, open or
+answered: the policy is the user's once-per-repo call (handoff design), and a repo
+onboarded before codebase onboarding asked for it otherwise runs `review` without anyone
+choosing it. The entry quotes WHY and gives options **[1] self-merge** (the lines
+`Build-loop policy: self-merge` and `Self-merge never: none`), **[2] self-merge, with never
+globs** (the same, with the paths the user names on the never line) and **[3] review**
+(`Build-loop policy: review`), each with the exact lines for `docs/dev-cycle.md` (made
+from "Project settings" above if missing; a file the cycle never writes: the user, or a
+session they ask, commits it), each option's cost (self-merge lands the off-floor paths a
+brief lists with no review, and the health check then runs any merged script or test;
+review files one merge entry per finished loop, which waits on the user), and interim
+`review`. It blocks nothing. Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
 
