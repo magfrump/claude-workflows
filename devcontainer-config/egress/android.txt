@@ -30,6 +30,11 @@
 # was not probed directly. Maven Central and Gradle's front ends refused the same
 # test (403). Kept under this ACCEPTED RISK by decision on 2026-09-23 (Q-052 [1]):
 # Android builds need google(), and the profile is opt-in.
+#
+# ROTATION. dl.google.com answers from a pool that moved across five /24s in one
+# afternoon (herald probe, 2026-10-17). init-firewall.sh pins each exact name in the
+# resolver to the addresses it admitted (decision 039), so the SNI proxy always
+# connects to an admitted address. Before that, 65% of connects failed between runs.
 dl.google.com
 maven.google.com
 
@@ -37,6 +42,19 @@ maven.google.com
 repo.maven.apache.org
 repo1.maven.org
 
-# Gradle distribution (the wrapper) and the plugin portal (gradlePluginPortal()).
+# Gradle distribution (the wrapper). services.gradle.org redirects the zip to GitHub
+# releases (verified 2026-10-17, gradle-8.9-bin.zip: 307 to github.com, then 302 to
+# release-assets.githubusercontent.com). Both hops are admitted by `base`'s GitHub
+# zones and CIDRs, so the wrapper download depends on `base`. downloads.gradle.org
+# (the 2026-09-28 redirect target) is no longer on the path and is not listed.
 services.gradle.org
+
+# The plugin portal (gradlePluginPortal()). It serves plugin markers itself, but
+# it 303-redirects artifact downloads to plugins-artifacts.gradle.org (verified
+# 2026-10-17, kotlin-gradle-plugin 2.0.21 POM). Exact-name SNI means the redirect
+# target must be listed too. Without it, any plugin found only on the portal fails.
+# Fronting: NOT YET PROBED. plugins.gradle.org refused a foreign Host (403,
+# 2026-09-23). The same probe against this name is queued with the release paste
+# (questions.md, egress-pin-resolver-release). Record the result here.
 plugins.gradle.org
+plugins-artifacts.gradle.org

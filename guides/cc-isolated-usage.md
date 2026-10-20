@@ -103,7 +103,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | Lean release hosts, mathlib olean cache | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
-| `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
+| `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org`, `plugins-artifacts.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
 | `scholar`| Literature APIs (OpenAlex, Crossref, Semantic Scholar, Unpaywall) and open-access full-text hosts (arXiv, PMC / Europe PMC, bioRxiv/medRxiv, OpenReview) | never — deliberate opt-in |
@@ -911,6 +911,9 @@ happens to share an address with an allowlisted one (a Cloudflare neighbour of
     for any Host.
   - **Refuses a different account:** `lakecache.blob.core.windows.net` returned
     `AccountNotFound` for another storage account's Host (Q-053).
+  - **Not yet probed:** `plugins-artifacts.gradle.org`, added to `android` on
+    2026-10-20 as the plugin portal's redirect target. The probe is queued with
+    that release.
 
   The test covered only the `android` and `lean` names; `base`'s names were not
   tested. Closing the residual needs TLS interception, which the design rules
@@ -965,7 +968,7 @@ different hostname). Add the exact name to the profile.
 | `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate it from the host with the launcher: `cc-isolated --probe-only <repo>` (recreates the container from the blessed config and re-probes), then `cc-isolated <repo>`. Not a bare `devcontainer up --remove-existing-container …` from your own shell: it drops the variables the launcher exports, and each one dropped has its own effect (among them base-only egress and an empty config hash, see the "newly registered profile has no effect" row below; a `~/.claude` volume shared across projects; and a build pointed at `/Dockerfile`), and the launcher's probe never runs. |
 | `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
 | Artifact tool: `EAI_AGAIN … <uuid>.frame.claudeusercontent.com`, or an "update" publishes a second artifact | The container predates decision log #55 (the `.frame.claudeusercontent.com` zone in `base`). Re-install, re-bless, `--probe-only`. Resolver refusals are not logged, so this shows as a DNS error, not a proxy REJECT. |
-| `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
+| `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai), or `FAIL sni=<name> … not admitted by the ipset` in `/run/cc-sni-proxy/proxy.log` | Exact names are pinned in the resolver to the addresses admitted at start (decision 039), so this means a pinned address went out of service, or the name is under a `.zone` entry, which cannot be pinned. Inside the container: `sudo /usr/local/bin/init-firewall.sh` re-resolves. If it recurs for an exact name within hours, record it against decision 039's revisit trigger. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |
 | A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which recreates it with both set. The error messages now print the assignments inline for the by-hand form. |

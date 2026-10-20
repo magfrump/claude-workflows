@@ -142,6 +142,8 @@ if [ -n "${FAIL_DIG:-}" ]; then exit 9; fi
 if [ -n "${SLOW_DIG:-}" ]; then sleep 20; fi
 domain="${!#}"
 printf '%s.\t60\tIN\tA\t203.0.113.7\n' "$domain"
+# TWO_ANSWERS models a pool that answers two addresses (each must be pinned).
+if [ -n "${TWO_ANSWERS:-}" ]; then printf '%s.\t60\tIN\tA\t203.0.113.8\n' "$domain"; fi
 exit 0
 STUB
 
@@ -647,6 +649,73 @@ first_line_matching() {
   [ "$output" -eq 1 ]
   grep -q -- "--conf-file=$CC_DNSMASQ_CONF" "$CMD_LOG"
   grep -q -- "--pid-file=$CC_DNSMASQ_PIDFILE" "$CMD_LOG"
+}
+
+# --- resolver pins (decision 039) ---------------------------------------------
+@test "a full run pins every exact name to its phase-A answer, and nothing else" {
+  run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -qx 'host-record=api.anthropic.com,203.0.113.7' "$CC_DNSMASQ_CONF"
+  # One pin per exact base entry; the zone entry and GitHub's zones get none.
+  local exact
+  exact=$(bash "$FW" --print-domains | grep -v '^\.' | sed 's/:.*//' | sort -u | wc -l)
+  run grep -c '^host-record=' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq "$exact" ]
+  run grep -cE '^host-record=(frame\.claudeusercontent\.com|[^,]*github)' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq 0 ]
+  # A pin only answers locally; the name still has its forwarding line.
+  grep -q '^server=/api.anthropic.com/' "$CC_DNSMASQ_CONF"
+}
+
+@test "a pinned pool gets one host-record line per address (dnsmasq keeps only the last of a list)" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\ndl.example.test:443,8443\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" TWO_ANSWERS=1 run bash "$FW"
+  [ "$status" -eq 0 ]
+  grep -qx 'host-record=dl.example.test,203.0.113.7' "$CC_DNSMASQ_CONF"
+  grep -qx 'host-record=dl.example.test,203.0.113.8' "$CC_DNSMASQ_CONF"
+  # Two ports, one pin per address: the pin is per name, not per ipset member.
+  run grep -c '^host-record=dl.example.test,' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq 2 ]
+  # The pins are exactly the addresses the ipset admits.
+  grep -q '^ipset add -exist allowed-domains 203.0.113.8,tcp:8443$' "$CMD_LOG"
+}
+
+@test "a zone entry is not pinned (its names cannot be enumerated)" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\n.objects.cdn.example\n' > "$dir/base.txt"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -c 'host-record=.*objects\.cdn\.example' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq 0 ]
+}
+
+@test "an unresolvable name is not pinned and forwards as before" {
+  local dir="$TEST_TMPDIR/egress"
+  mkdir -p "$dir"
+  printf 'api.anthropic.com\ngone.example.test\n' > "$dir/base.txt"
+  cat > "$STUB_DIR/dig" <<'STUB'
+#!/usr/bin/env bash
+echo "dig $*" >> "$CMD_LOG"
+domain="${!#}"
+[ "$domain" = "gone.example.test" ] && exit 0
+printf '%s.\t60\tIN\tA\t203.0.113.7\n' "$domain"
+STUB
+  chmod +x "$STUB_DIR/dig"
+  CC_EGRESS_DIR="$dir" run bash "$FW"
+  [ "$status" -eq 0 ]
+  run grep -c 'host-record=gone' "$CC_DNSMASQ_CONF"
+  [ "$output" -eq 0 ]
+  grep -q '^server=/gone.example.test/' "$CC_DNSMASQ_CONF"
+}
+
+@test "the inspection hook prints no pins (it resolves nothing)" {
+  printf 'nameserver 127.0.0.11\n' > "$TEST_TMPDIR/rc"
+  run bash "$FW" --print-dnsmasq-conf "$TEST_TMPDIR/rc"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"host-record="* ]]
 }
 
 @test "upstream port 53 is owner-scoped: only the dnsmasq uid and root, never everyone" {
