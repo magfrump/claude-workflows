@@ -183,8 +183,9 @@ timeout 60 ~/.claude/scripts/build-loop.sh --check-constraints docs/working/cons
 ```
 
 Run it under `timeout`: it reads whatever it is given, and a path swapped for a FIFO would
-block. It prints the line with `(draft)` after the file name, so it never reads as the gate's
-own verdict for main; quote it as printed.
+block. A line that names the file shows it as `FILE (draft)`, so an ok line can never pass for
+the gate's own verdict for main. Quote the line as printed, and count only `constraints ok` as
+parsed.
 
 The whole working doc must parse, not only the block. Prose that starts like an ID is the usual
 failure: reword it (write "the S7 line", never start a line with `S7 …`), and keep IDs out of
