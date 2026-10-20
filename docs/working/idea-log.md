@@ -64,3 +64,12 @@ Triggers: roadmap Now held 0 items ready for a brief (every listed item had land
 2. Digest check for landed Now items (seed 1). Changes: Now stops reading stale between cycles.
 3. Measure the D6 paste cost (seed 2). Changes: gives Next 7 (Q-154) a number.
 4. Do nothing on direction: Next keeps the user's order; items 1, 2, 4, 5 and 7 wait on open entries or settlement.
+- Re-read the three 2026-10-17 review briefs under the self-merge policy now set, so a future fix of the same shape is briefed `Policy: self-merge` with `Paths:` (signal: cycle 2026-10-20, `--settings` prints `policy self-merge set` while every open brief reads `Policy: review`)
+
+## Brainstorm 2026-10-20
+
+Triggers: roadmap Now holds 0 items ready for a brief (all three wait on open entries); the three In flight loops are ready and wait on merge entries Q-195, Q-197, Q-198, open since 2026-10-17.
+
+1. Do nothing on direction: the binding constraint is the four open merge and host entries (Q-195 to Q-198), not missing work. Changes: no new asks while those wait.
+2. Brief new fixes under the self-merge policy (seed 1). Changes: a fix whose paths are off the floor and the never globs lands without a merge entry, so it costs no attention.
+3. Doc freshness now reads 8 of 8 stale (health check 2026-10-20; the roadmap item says 7). Changes: the existing divergent-design item gets its current count; no new item.
