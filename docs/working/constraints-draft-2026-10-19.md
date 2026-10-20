@@ -241,4 +241,6 @@ Questions for the top hard lines:
 - **Evidence from loop outcomes is now available**, through the three research docs on the build-loop branches, and it was cheap to read. The skill does not name it as a source. It should: it shows which lines decide picks.
 - **The existing doc carried the defect the skill warns about** (a preamble pointing at "Moved out" in a file without one). That is evidence the author pasted the block from a working doc.
 - **Revision 2's success lines were mostly not runnable** ("security-reviewer reports no…", "the design names…"). Rewriting them as greps found a live contradiction (live-verify-gate's fail-open lines) within minutes.
+- **The author's corrections:** they took the recommended reading on C1, C3 and the H3 clause, and dropped the one new line (removing over guarding) as practice. A candidate resting only on agent-written evidence was the one cut, which is consistent with the step 4 authority ranking.
+- **Recording the answers broke the parse once:** a list item beginning `- H3:` made the file unreadable (duplicate ID). The template's rule covers it, but writing answers back into the doc is the moment it bites.
 - **`awk` with `{40}` is not portable** (mawk). The blame loop printed nothing until it was rewritten with `grep -E`. A silent empty result looks like "no author commits".
