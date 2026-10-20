@@ -123,9 +123,14 @@ Bypass families for U3, against the shipped wildcard rule:
 | Q4 | `-opt=` plus one quoted value (`--file=".credentials.json"`) | approved; the denied text stays contiguous, so the raw wildcard matches | **Covered by Claude Code** (inferred) |
 | Q5 | Whole quoted word against an exact or prefix rule (`cat "secret"`, `git "push"`) | approved | **Not covered**, RESIDUAL in the header; no shipped rule has that shape |
 | Q6 | Plain parameter mid-word (`.cred${E}entials.json`, `E` unset) | approved | **Not covered, unchanged**: the F5 class (Q-070 [1]); the sandbox is the fix |
-| Q7 | Glob spelling (`~/.claude/.c*`) | approved | **Not covered, unchanged** (F5) |
+| Q7 | Glob spelling (`~/.claude/.c*`, `.ca[n]ary`, `.ca?ary`) | approved | **Not covered, unchanged** (F5) |
+| Q8 | Line continuation (`.cred\<newline>entials`, quoted or not, or through `-opt=`) | refused: any backslash-newline in the raw command, checked before the AST, because shfmt drops it | **Covered**, tested. The independent review found this one: the first commit approved it |
+| Q9 | Brace expansion (`.cred{e,}ntials`, `.c{r..r}edentials`) | refused outside quotes | **Covered**, tested. Unlike a glob, it needs no file to exist. Found by the same review |
 
 Q6 and Q7 mean U3 does not stop a determined injection. What it restores is
 main's behaviour for the Q-176 spellings: they prompt.
-Cost: a quoted part beside other text (`a"b c"`, `-m"msg"`) and backslash
-escapes (`\*.txt`, `foo\|bar`) now prompt even when allow-listed.
+Cost: a quoted part beside other text (`a"b c"`, `-m"msg"`,
+`git -c user.name="A B"` and `make CFLAGS="-O2 -g"`, since the exception needs a
+leading `-`), backslash escapes (`\*.txt`, `foo\|bar`, `my\ file.txt`,
+`'it'\''s'`), multi-line commands with `\` continuations, and unquoted
+`{a,b}` now prompt even when allow-listed.

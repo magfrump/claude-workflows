@@ -622,7 +622,8 @@ def safe_builtins: ["cd","pwd","echo","true","false","type"];
 # deny matcher reads the raw string, so `.cred""entials.json`,
 # `.c\redentials.json` and `$'.c\x72edentials.json'` get past
 # Bash(*.credentials.json*) (host check Q-176). A quoted part next to other
-# parts, a backslash outside quotes, or an escape inside $'...' that makes a
+# parts, a backslash or a brace expansion (`.ca{n,}ary`, which unlike a glob
+# needs no file to exist) outside quotes, or an escape inside $'...' that makes a
 # printable character (\x72, \162, r, \\; \n, \t and the other control
 # escapes cannot rebuild a filename, so they pass). One shape passes:
 # `-opt=` followed by a single quoted value, as in --format="%h %s".
@@ -634,6 +635,7 @@ def opt_value:
 def split_word:
   (((.Parts | length) > 1 and any(.Parts[]; quoted)) and (opt_value | not))
   or any(.Parts[]; .Type == "Lit" and (.Value | contains("\\")))
+  or any(.Parts[]; .Type == "Lit" and (.Value | test("\\{[^}]*(,|\\.\\.)[^}]*\\}")))
   or any(.Parts[]; .Type == "SglQuoted" and (.Dollar // false)
          and (.Value | test("\\\\([^abefnrtv]|$)")));
 ([ .. | objects
@@ -748,6 +750,13 @@ extract_commands_raw() {
 refuses_construct() {
   local cmd="$1" ast="$2" op_off word_off word_end op word out
   local LC_ALL=C
+  # A line continuation splits a word in the raw string, and shfmt drops it
+  # before the AST exists, so SHAPE_FILTER cannot see it (Q-092 U3 review:
+  # `cat x.ca\<newline>nary` was approved, quoted or not).
+  if [[ "$cmd" == *$'\\\n'* ]]; then
+    debug "Refusing: line continuation"
+    return 0
+  fi
   if ! out=$(jq -r "$SHAPE_FILTER" <<<"$ast"); then
     debug "Refusing: shape check failed"
     return 0

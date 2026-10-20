@@ -189,7 +189,10 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   for cmd in 'cat ~/.claude/.cred""entials.json' 'cat ~/.claude/.c\redentials.json' \
     "cat ~/.claude/'.cred'entials.json" "cat \$'~/.claude/.c\\x72edentials.json'" \
     "cat \$'~/.claude/.c\\162edentials.json'" "cat \$'~/.claude/.c\\u0072edentials.json'" \
-    'cat --file=.cred""entials.json' 'git log --format="%h"x' 'ls && cat .c\redentials.json'; do
+    'cat --file=.cred""entials.json' 'git log --format="%h"x' 'ls && cat .c\redentials.json' \
+    $'cat ~/.claude/.cred\\\nentials.json' $'cat "~/.claude/.cred\\\nentials.json"' \
+    $'cat --f="~/.claude/.cred\\\nentials.json"' 'cat ~/.claude/.cred{e,}ntials.json' \
+    'cat ~/.claude/.c{r..r}edentials.json'; do
     run_hook_rules "$cmd" "$rules"
     not_approved || { echo "approved: $cmd"; return 1; }
   done
