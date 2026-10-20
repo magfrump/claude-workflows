@@ -464,8 +464,8 @@ review than to an audit; a deep audit is step 4b's job.
 the loop's research doc (`docs/working/research-STEM.md`, which the loop force-adds), and
 check it against `docs/constraints.md` at that merge. Two things are findings: a soft
 constraint that pruned an option, and a constraint not in the file that decided the pick.
-A finding is a step 4b trigger, and its entry names the `constraints-builder` skill's amend
-mode as the way to revise the file.
+A finding is a step 4b trigger, and the deep-audit task it adds names the
+`constraints-builder` skill's amend mode as the way to revise the file.
 
 ### 4b. Deep-audit check (conditional)
 
