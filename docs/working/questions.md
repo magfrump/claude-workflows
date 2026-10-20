@@ -40,6 +40,7 @@ The index below is generated — edit entries, not the table.
 | [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | you: judgment | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
 | [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
 | [Q-199](#q-199--constraints-builder-split) | you: judgment | The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three ... | 2026-10-19 |
+| [Q-200](#q-200--constraints-ratify) | you: judgment | Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same IDs, 4 hard + 12 soft, one ne... | 2026-10-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -676,3 +677,23 @@ The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, 
 
 - **Interim:** [1]. The split is done and the units merge in order. 424 of the 570 lines are the skill's own files (SKILL.md and its two references).
 - **If the answer differs:** nothing gets redone; the remaining units could merge as one.
+
+### Q-200 · constraints-ratify
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same IDs, 4 hard + 12 soft, one new soft line S12)?
+
+- **Why it's yours:** the constraints doc is yours to write (Q-155); no agent or loop writes it. Ratifying means you commit `docs/constraints.md` yourself; nothing is written on a [1].
+- **Read:** `docs/working/constraints-draft-2026-10-19.md` (copy-ready block, a diff against revision 2, sources, five calls C1–C5 with interim readings). Parsed: `constraints ok 4-hard 12-soft: docs/working/constraints-draft-2026-10-19.md (draft)`.
+- **Hard text whose only evidence is agent-written** (transcribed answers, agent-co-authored files, failure patterns): the H1 line's git-config clause; the H2 line's cost-saving fall-through clause (Q-022, in `answers-9-17-26-2.txt`, which carries a Claude co-author trailer); the H4 line's new success grep (no new evidence, a rewrite).
+- **Hard text resting on your own files** (`git blame` shows you as sole author; a check, not proof, so confirm it): the H3 line's no-branch-image clause (`answers-10-12-26.txt:4-6,11`); the H2 line's "unmodelled input" (`answers-10-12-26.txt:14`) and launch-refusal clause (`answers-10-16-26.txt:18-19`); the H1 line's interim exception (`answers-10-16-26.txt:39-40`).
+- **Finding that needs no answer here:** today's `docs/constraints.md` preamble points at a "Moved out" section the file does not have; revision 3's preamble fixes it.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept as drafted** | You paste the block into `docs/constraints.md` and commit it | One paste and a commit | A clause you don't hold steers every loop's DD until the next amend |
+| **[2] Accept with the edits I make** | You edit the block (or the C1–C5 calls) while pasting, then commit | Reading the five calls | Same as [1], limited to what you kept |
+| **[3] Re-run after answering the calls** | Answer C1–C5 (e.g. `C1: refuse`), then an agent re-drafts | One more read later | Revision 2 keeps steering loops meanwhile, including its H2 line that today's live-verify gate contradicts |
+
+- **Interim:** revision 2 stays in force; `--settings` still prints `constraints ok` for main, so dispatch is unaffected.
+- **If the answer differs:** [3] re-runs the skill in amend mode from this draft.
