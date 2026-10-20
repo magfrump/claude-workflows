@@ -61,8 +61,9 @@ survivors**. The dev cycle dispatches nothing until `build-loop.sh --settings` p
    fenced blocks skipped. If the help text disagrees with this paragraph, the help text wins.
 3. **Find the parser for drafts:** `~/.claude/scripts/build-loop.sh --check-constraints FILE`
    (in a claude-workflows checkout, `scripts/build-loop.sh`). It prints the line `--settings`
-   would print and exits 0 only for `ok` with a hard constraint. If the installed copy predates
-   the mode (it answers with a usage error), say in the hand-off that the draft is **unparsed**
+   would print for that file, naming it `FILE (draft)` (step 6), and exits 0 only for `ok` with a
+   hard constraint. If the installed copy predates the mode (it answers `Unknown option:
+   --check-constraints`), say in the hand-off that the draft is **unparsed**
    and put a `you: terminal` line in the questions entry. Don't hand-extract the awk.
 4. **Load the existing guidance**: the repo's `CLAUDE.md` / `AGENTS.md`, `docs/dev-cycle.md`,
    any review checklists. About half the candidates in past runs were already stated there.
