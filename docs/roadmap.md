@@ -11,64 +11,37 @@ user's order).
 
 ## Now
 
-Built by hand, each on its own branch; each waits on an open entry (cycle 2026-10-17).
+Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2344).
 
 - **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
-  75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap with
-  the guide's parity claims still wrong; landing waits on Q-171. How much parity the scan
-  chases at all is Q-172, and the four split groups (R6 High) are Q-173.
-- **Q-092 — drop the auto-approve hook's deny reader** (`fix/q092a-drop-deny-option`
-  d27a3891, then `fix/q092-drop-hook-deny-reader` aeda94b2). Built and reviewed, including an
-  independent closing review. Merge waits on the host check of Claude Code's deny matcher
-  (Q-176, Q-177).
-- **Verify a branch without installing it.** Motive: Q-117, Q-125 and Q-098 wait on it. The
-  research, divergent design and spike doc are on main (d25254da); the recommendation is a
-  `cc-verify` host tool (Q-165, Q-166), and the hand spike paste is Q-169. Next: the
-  `cc-verify` unit, once Q-165 is answered; its extractor refuses links at every path
-  component (residual A17).
+  75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap.
+  Q-171 was answered [2]: hold it until the split units land, fixing red findings that
+  predate it first. How much parity the scan chases is Q-172 (open), and the four split
+  groups (R6 High) are Q-173 (deferred on Q-172).
 
 ## In flight
 
-- **Q-146 [1] — self-improvement.sh commits for its implementer** (was Next 6). Built and
-  ready; merge is Q-197 (a `merge-gate-` entry: it adds `scripts/lib/si-commit.sh`). Brief:
-  `docs/working/briefs/2026-10-17-q146-si-script-commits.md`
-- **`cc-isolated --profile` accepts path-like values, and `--register` with no profile
-  registers an empty grant** (bug; was Next 3). Built and ready; merge is Q-195, host
-  check Q-196. Brief: `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
-- **The repo rules file overstates its guard test** (bug: undocumented is broken; was Now).
-  `CLAUDE.md` says `test/agents-gemini-sync.bats` checks that it imports nothing, but the
-  test covers only `AGENTS.md` and `global-instructions/CLAUDE.md`. Built and ready; merge
-  is Q-198. Brief:
-  `docs/working/briefs/2026-10-17-claude-md-import-guard.md`
+- **Verify a branch without installing it: the `cc-verify` host tool** (was Now). Motive:
+  Q-117, Q-125 and Q-098 wait on it. Q-165 answered [1] (the tool takes the config it
+  verifies as an argument), Q-166 [2]. The hand spike paste Q-169 stays open; the brief
+  folds its open claims into the tool's first run. Brief:
+  `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
+- **Apply decision 015's amendment and close log row 66** (was Next 4 and Next 1). Q-170
+  answered [A], Q-179 answered [1]. Brief:
+  `docs/working/briefs/2026-10-20-decision-015-amendment.md`
 
 ## Next
 
-1. **Measure router uptake.** Motive: log row 66's revisit trigger. First step: in each
-   of the first three cycles after install, count multi-file merges to main whose message
-   carries pr-prep's `← carried from RPI` line and whose branch committed a code-review
-   rubric. Both are tracked; research/plan docs are gitignored and the usage log
-   under-counts (Q-017), so neither can be counted.
-   Cycle 1 (2026-10-02): 3 multi-file landings since 4225753a; 0/3 carry the line, 2/3
-   committed a rubric, 1/3 (188e0a7d, 2 files) has neither.
-   Cycle 2 (2026-10-14): 42 multi-file landings after cac2ba0c (cycle 1's own three
-   landings excluded); 25/42 carry the line, 38/42 committed a
-   rubric, 4/42 have neither (df18413a, 0fbf9742, b8807e76, 52053432). About 36 are
-   units of the one build-loop plan.
-   Cycle 3 (2026-10-15, window closed): 45 multi-file merges since 2026-10-02; 26 carry
-   the line, 41 committed a rubric, 4 have neither (all 10-02 to 10-06). The verdict is
-   Q-179.
-2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
-   settlement (no open code-review SKILL changes), then re-run one canon cell.
-3. **Automate the host settings.json merge (Q-106 [2]).** Built
+   settlement (no open code-review SKILL changes), then re-run one canon cell. The
+   user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
+   5.5; deferred, ask before running.
+2. **Automate the host settings.json merge (Q-106 [2]).** Built
    (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
    gate with one Medium open (Q-174); gate coverage of the moved merge program is Q-175.
-4. **Decision 015's re-run: apply the outcome (Q-170).** Motive: Q-105 [3]. The divergent
-   design is done (`docs/dd-015-step4`, f050b487, on main): keep Docker, since none of
-   the 6 breakages was Docker's. First step, once Q-170 is answered: apply §6's amendment
-   to 015's revisit triggers.
-5. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
+3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
@@ -77,6 +50,16 @@ Built by hand, each on its own branch; each waits on an open entry (cycle 2026-1
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **Check that code review follows decision 031's k policy.** Signal: the user's feedback
+  note of 2026-10-20 observes k=3 fact-checks on every pass, where 031 sets k=3 on the
+  first fact-check, k=1 in review-fix iterations and a clean final pass. First step: read
+  the code-review and review-fix-loop texts against 031, then the rubrics of the last few
+  merges. Re-evaluating k under Opus 5.5 is a separate, deferred ask.
+- **Count each cycle's overhead against feature work.** Signal: the same note says the dev
+  cycle spends more on verification overhead than on features. First step: from the
+  records, total each iteration's own landed lines and commits against feature merges in
+  its window; feeds Next 3 (Q-154).
 
 - **Union-merge the append-only review logs.** Signal: on 2026-10-15 every pair of finished
   units conflicted only in `docs/reviews/override-log.md` (and earlier in
@@ -152,6 +135,15 @@ Unranked. Each names the signal that motivates it.
   Fired again 2026-10-20: the `constraints-builder` skill added (`SKILL.md` and two
   references, 539 lines; 512a1512 and 55e0bdac), a new skill no audit has read. The
   dev-cycle skill and onboarding workflow changed by 9 lines between them.
+  Fired again 2026-10-20 (iteration 2344): `constraints-builder` revised (rev2, ec86e1fd;
+  93 changed lines in SKILL.md, plus two references) and `skills/dev-cycle/SKILL.md` (87)
+  (d120b2dc, f858482f: fewer stops, merged-branch deletion, `other` commits no longer
+  stop). Decision 039 (pin the resolver to phase A) is added; not a major design decision.
+  Drift finding (step 4, 43762305): the loop's Path A decision pruned options with soft
+  lines S3, S5 and S9, and S9 was gone from `docs/constraints.md` (2620b419) before the
+  merge. The pick stands (A dominates), but the audit should check that loops rank with S
+  lines rather than prune with them; revise the file with the `constraints-builder` skill's
+  amend mode.
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health
@@ -202,6 +194,18 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Q-146 [1] — self-improvement.sh commits for its implementer: done at 86993a8c (Q-197 [1]).
+  Brief: `docs/working/briefs/closed/2026-10-17-q146-si-script-commits.md`
+- `cc-isolated --profile` path-like values and the empty `--register` grant: done at
+  c80fec22 (Q-195 [1]; host check Q-196 open). Brief:
+  `docs/working/briefs/closed/2026-10-17-cc-isolated-profile-names.md`
+- The repo rules file's import guard test: done at 43762305 (Q-198 [1]). Brief:
+  `docs/working/briefs/closed/2026-10-17-claude-md-import-guard.md`
+- Q-092 — drop the auto-approve hook's deny reader, with Q-177 [3]'s quote check: merged by
+  hand at 79c8a6a6 and dfc78e9a.
+- Measure router uptake (log row 66): Q-179 answered [1], close; recording it on row 66
+  rides on the decision-015 brief. Tally: 45 multi-file merges since 2026-10-02, 26 carry
+  pr-prep's line, 41 committed a rubric, 4 have neither (all 2026-10-02 to 2026-10-06).
 - Merged-branch deletion in the health step: step 1 now runs `git branch -d` on merged branches without asking (`fix/dev-cycle-fewer-stops`, log row 74).
 - Build-loop handoff brief closed: `--check-brief` reads `done` at 9bb19d2a (`feat/build-loop-u5`).
   Brief: `docs/working/briefs/closed/2026-10-02-build-loop-handoff.md`
