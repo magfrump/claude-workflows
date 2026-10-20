@@ -122,6 +122,14 @@ every profile the project needs on every `--register`. `cc-isolated --list` show
 current grant per project, and `--register` prints the transition
 (`base,rust -> base,lean`) plus an explicit note for anything it drops.
 
+A name must match the base name of a file in the installed `egress/` directory exactly
+(`python` for `egress/python.txt`; the names are the table's first column). A path such as
+`../egress/python`, a different case, a glob, a space, an empty item (`python,` or
+`,python`) and a symlinked profile file are all refused before anything is written, and the
+error lists the available names. `--register` with no `--profile` (or `--profile ''`) is
+refused rather than recorded as an empty grant. To narrow a project back to base egress
+only, register `--profile base`.
+
 Two rules that are load-bearing for the security model:
 
 - **The repo never chooses its own egress.** `cc-isolated` will *suggest* a profile

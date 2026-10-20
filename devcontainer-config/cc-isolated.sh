@@ -446,17 +446,27 @@ suggest_profiles() {
 }
 
 register_project() {
-  local ws="$1" profiles="$2" p pid prev
+  local ws="$1" profiles="$2" p pid prev avail ok rest
+  local -a names=()
   pid="$(project_id "$ws")"
-  # Validate every named profile against the canonical egress/ dir before writing,
-  # so a typo is caught here rather than at container start.
-  for p in $(echo "$profiles" | tr ',' ' '); do
-    if [ ! -r "$(config_dir)/egress/$p.txt" ]; then
-      echo "ERROR: unknown egress profile '$p'. Available:" >&2
-      local avail
-      for avail in "$(config_dir)"/egress/*.txt; do
-        [ -e "$avail" ] && echo "    $(basename "$avail" .txt)" >&2
-      done
+  # Validate before writing, so a bad name fails here and not at container start.
+  # A name is EXACTLY the base name of a regular, non-symlink egress/NAME.txt: string
+  # equality, so a path (../egress/python), a case variant, a glob or a blank item
+  # never matches. Split by expansion: word splitting globbed, and `read` stops at a newline.
+  for avail in "$(config_dir)"/egress/*.txt; do
+    if [ -f "$avail" ] && [ ! -L "$avail" ]; then names+=("$(basename "$avail" .txt)"); fi
+  done
+  if [ -z "$profiles" ]; then
+    echo "ERROR: --register needs --profile NAME[,NAME...]; refusing an empty grant. For base egress only, use --profile base." >&2
+    return 1
+  fi
+  rest="$profiles,"
+  while [ -n "$rest" ]; do
+    p="${rest%%,*}"; rest="${rest#*,}"; ok=0
+    for avail in "${names[@]}"; do [ "$p" != "$avail" ] || ok=1; done
+    if [ "$ok" = 0 ]; then
+      echo "ERROR: unknown egress profile $(printf %q "$p") (names must match exactly). Available:" >&2
+      printf '    %s\n' "${names[@]}" >&2
       return 1
     fi
   done
@@ -874,7 +884,7 @@ main() {
     if [ -n "$suggestion" ]; then
       echo "NOTE: $ws is unregistered — running with the base egress profile only."
       echo "      Its contents suggest: --profile $suggestion"
-      echo "      To grant that: cc-isolated --register '$ws' --profile $suggestion"
+      echo "      To grant that: cc-isolated --register $(printf %q "$ws") --profile $suggestion"
     fi
   fi
 
