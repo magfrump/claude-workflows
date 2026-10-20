@@ -46,6 +46,7 @@ Cluster instances by family, then count distinct decisions per cluster:
 | Operating setting | Changes between runs (models, caps, profiles) | `docs/dev-cycle.md` or an experiment README |
 | Decision-local | Binds one subsystem's decision only | stays in that record. Or generalize it, or write it as `S<n>: when touching X, …` |
 | Code-enforced already | A lint, hook or test already refuses violations | moved out, naming its enforcer |
+| Accepted risk | A known hole a decision chose to live with, with a revisit trigger | left out of the block; listed under findings with its trigger and whether anything observes it |
 | Superseded | A later decision, answer or the code replaced it | left out, listed under "superseded" |
 
 **The discrimination test**, the one most first runs needed and lacked: *could two candidate
@@ -74,7 +75,7 @@ tag it PRACTICE. If a line mixes both, split it into a criterion half and a prac
 For each candidate, record:
 - statement: one line, in the project's own vocabulary, naming the mechanism rather than
   the threat level
-- kind: HARD | SOFT | PRACTICE | AUTHORITY | WORKING-STYLE | SETTING | LOCAL | SUPERSEDED
+- kind: HARD | SOFT | PRACTICE | AUTHORITY | WORKING-STYLE | SETTING | LOCAL | ACCEPTED-RISK | SUPERSEDED
 - why that kind: HARD if it pruned an option outright, is stated as must/never/only, or the
   author corrected a violation; SOFT if it was weighed or traded away at least once
 - evidence: file:LINE plus a short verbatim quote, one per instance; and the count of

@@ -47,6 +47,13 @@ S1: <statement>
 <Rules the repo implies that do not hold today (violations found), dead revisit triggers,
 records with no revisit section. Each is a finding, not a constraint.>
 
+## Against existing guidance
+
+What the instructions file and review guidance already say, in three lists: rules the
+decisions imply that no guidance states, rules stated and confirmed by the decisions, and
+rules stated but contradicted by later decisions or the code. Only the first list adds
+anything; the last is a finding for the author.
+
 ## Calls for the author
 
 | Call | Where the sources disagree | Interim reading in the block | If you choose otherwise |
