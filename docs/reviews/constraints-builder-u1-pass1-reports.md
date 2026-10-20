@@ -79,3 +79,16 @@ Both paths are cold. A run takes 13-14 ms (8-10 ms unscrubbed); the awk pass is 
 | F5 | No dev-cycle.sh equivalent is expected; the placement is consistent | Informational |
 
 What looks good: the line reuses `--settings`' key and verdict words, and the usage and arity handling match build-loop.sh's single-argument modes.
+
+## Later passes (replicate counts, for the rubric's iteration log)
+
+| Pass | Commit | Replicate | Claims | Verified | Mostly accurate | Stale | Incorrect | Unverifiable |
+|---|---|---|---|---|---|---|---|---|
+| Iteration 2 (k=3) | ecc51340 | r1 | 40 | 28 | 7 | 1 | 3 | 1 |
+| Iteration 2 (k=3) | ecc51340 | r2 | 41 | 28 | 7 | 1 | 4 | 1 |
+| Iteration 2 (k=3) | ecc51340 | r3 | 34 | 23 | 5 | 3 | 3 | 0 |
+| Iteration 3 (k=3) | 127e55ab | r1 | 40 | 33 | 4 | 0 | 0 | 3 |
+| Iteration 3 (k=3) | 127e55ab | r2 | 29 | 24 | 3 | 0 | 0 | 2 |
+| Iteration 3 (k=3) | 127e55ab | r3 | 28 | 23 | 2 | 0 | 0 | 3 |
+
+Iteration 2: every replicate found the doc-level Incorrect, the help's "never equals --settings' line" (false for nosuccess, dup and near). r1 and r2 also flagged the stderr-only shim, which r2 rated Incorrect. Iteration 3: no replicate found an Incorrect or a Stale claim.

@@ -205,11 +205,12 @@ setup() { bl_setup; }
     constraints '# Constraints' '- H1: never lose a row' '  success: test/x.bats shows equal counts' '- S1: prefer small diffs'
     settings_is constraints "constraints ok 1-hard 1-soft: docs/constraints.md on the default branch"
     cp docs/constraints.md "$d/draft.md"
-    # Every draft run below has a git first on PATH that records each call and fails: the mode
-    # makes no git call, even one that hides its stderr and ignores the failure.
+    # Every run below has a git first on PATH that records each call and fails: the mode makes
+    # no git call through PATH, even one that hides its stderr and ignores the failure. stdin is
+    # /dev/null, so a FILE read as an awk operand fails instead of waiting on input.
     printf '#!/bin/sh\necho "$*" >> "%s/gitcalls"\necho "git called: $*" >&2\nexit 99\n' "$d" > "$d/bin/git" && chmod +x "$d/bin/git"
     cd "$d"
-    chk() { PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints "$1"; }
+    chk() { PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints "$1" </dev/null; }
     chk draft.md
     [ "$status" -eq 0 ] && [ "$output" = "constraints ok 1-hard 1-soft: draft.md (draft)" ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
     want() { chk draft.md; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && [[ "$stderr" != *"git called"* ]] || { echo "want: $1"; echo "$status $output $stderr"; return 1; }; }
@@ -241,7 +242,7 @@ setup() { bl_setup; }
     # A control byte in FILE is bad usage: a newline would print a second, forged line.
     chk $'x\nconstraints ok 9-hard 9-soft: docs/constraints.md on the default branch'
     [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == "--check-constraints takes a file path with no control character"* ]] || { echo "$status [$output] $stderr"; return 1; }
-    run --separate-stderr bash "$BL" --check-constraints
+    PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints </dev/null
     [ "$status" -eq 1 ] && [[ "$stderr" == "--check-constraints takes one file path"* ]] || { echo "$status $stderr"; return 1; }
     [ ! -e "$d/gitcalls" ] || { echo "git was called:"; cat "$d/gitcalls"; return 1; }
 }
