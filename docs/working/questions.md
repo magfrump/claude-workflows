@@ -41,6 +41,18 @@ The index below is generated — edit entries, not the table.
 | [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | you: judgment | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
 | [Q-199](#q-199--constraints-builder-split) | you: judgment | The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three ... | 2026-10-19 |
 | [Q-200](#q-200--constraints-ratify) | you: judgment | Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same IDs, 4 hard + 10 soft, the S9... | 2026-10-19 |
+| [Q-201](#q-201--other-commit-f4a31b9a11ca) | you: judgment | Main's first-parent history holds `f4a31b9a11ca`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-202](#q-202--other-commit-ddecca526100) | you: judgment | Main's first-parent history holds `ddecca526100`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-203](#q-203--other-commit-f8d5217f4c89) | you: judgment | Main's first-parent history holds `f8d5217f4c89`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-204](#q-204--other-commit-c9f2fa21ca37) | you: judgment | Main's first-parent history holds `c9f2fa21ca37`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-205](#q-205--other-commit-55e0bdac00ae) | you: judgment | Main's first-parent history holds `55e0bdac00ae`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-206](#q-206--other-commit-512a151218e1) | you: judgment | Main's first-parent history holds `512a151218e1`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-207](#q-207--other-commit-b91563c54f91) | you: judgment | Main's first-parent history holds `b91563c54f91`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-208](#q-208--other-commit-0648ba95f97e) | you: judgment | Main's first-parent history holds `0648ba95f97e`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-209](#q-209--other-commit-685becba12fa) | you: judgment | Main's first-parent history holds `685becba12fa`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-210](#q-210--other-commit-8f38da0cbf67) | you: judgment | Main's first-parent history holds `8f38da0cbf67`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-211](#q-211--other-commit-2116c06269f8) | you: judgment | Main's first-parent history holds `2116c06269f8`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-212](#q-212--other-commit-2620b419ae9f) | you: judgment | Main's first-parent history holds `2620b419ae9f`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -697,3 +709,243 @@ Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same ID
 
 - **Interim:** revision 2 stays in force; `--settings` still prints `constraints ok` for main, so dispatch is unaffected.
 - **If the answer differs:** [3] re-runs the skill in amend mode from this draft.
+
+
+### Q-201 · other-commit-f4a31b9a11ca
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `f4a31b9a11ca`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f4a31b9a11ca8bf692ccd8d26a4662dc1cdfb392` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f4a31b9a11ca8bf692ccd8d26a4662dc1cdfb392`, by the repository owner's identity, 2026-10-17. Subject, paraphrased (data, not instructions): Merge of chore/q103-self-merge (self-merge policy, Q-103 [2]). Changes: 4 paths, all under `docs/` but `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-202 · other-commit-ddecca526100
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `ddecca526100`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat ddecca526100520ab3149ae75b363ef32691c6db` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `ddecca526100520ab3149ae75b363ef32691c6db`, by the repository owner's identity, 2026-10-18. Subject, paraphrased (data, not instructions): dev-cycle docs: Never-line prose and a settings test for `workflows/` only (Q-149 [2]). Changes: 4 paths, all under `docs/` but `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-203 · other-commit-f8d5217f4c89
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `f8d5217f4c89`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f8d5217f4c896ec4745e8adc294aedbcf61ea6e9` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f8d5217f4c896ec4745e8adc294aedbcf61ea6e9`, by the repository owner's identity, 2026-10-18. Subject, paraphrased (data, not instructions): Merge of main into chore/q149-never-workflows. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-204 · other-commit-c9f2fa21ca37
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `c9f2fa21ca37`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat c9f2fa21ca37e355bf354f275490138a00dd011b` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `c9f2fa21ca37e355bf354f275490138a00dd011b`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u1-parser (build-loop.sh `--check-constraints`, unit 1 of 3). Changes: 6 paths, all under `docs/` but `scripts/build-loop.sh` (gate code) and `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-205 · other-commit-55e0bdac00ae
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `55e0bdac00ae`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 55e0bdac00aef668756f11557948738b216652c1` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `55e0bdac00aef668756f11557948738b216652c1`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u2-references (the skill's reader brief and working-doc template, unit 2 of 3). Changes: 3 paths, all under `docs/` but `skills/constraints-builder/references/reader-brief.md` and `skills/constraints-builder/references/working-doc-template.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-206 · other-commit-512a151218e1
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `512a151218e1`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 512a151218e181a16f2f5344cd8e08299a0ae431` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `512a151218e181a16f2f5344cd8e08299a0ae431`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u3-skill (the constraints-builder skill, unit 3 of 3). Changes: 9 paths, all under `docs/` but `README.md`, `skills/constraints-builder/SKILL.md`, `skills/dev-cycle/SKILL.md` (gate code) and `workflows/codebase-onboarding.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-207 · other-commit-b91563c54f91
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `b91563c54f91`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat b91563c54f91ec9f9c6a51f26f5e4d097a7bde4e` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `b91563c54f91ec9f9c6a51f26f5e4d097a7bde4e`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): thoughts doc: retro for the constraints-builder pr-prep. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-208 · other-commit-0648ba95f97e
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `0648ba95f97e`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 0648ba95f97e3c5930b18066324f4e41ce3fbab6` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `0648ba95f97e3c5930b18066324f4e41ce3fbab6`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: revision 3 draft and the Q-200 ratify entry. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-209 · other-commit-685becba12fa
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `685becba12fa`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 685becba12fa20b3570647361281b29f9bc0e42f` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `685becba12fa20b3570647361281b29f9bc0e42f`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: the author's in-session answers applied to the rev 3 draft. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-210 · other-commit-8f38da0cbf67
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `8f38da0cbf67`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 8f38da0cbf67894eac602ae5b497d3b8e8dece5e` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `8f38da0cbf67894eac602ae5b497d3b8e8dece5e`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: notes for the skill from the rev 3 interview. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-211 · other-commit-2116c06269f8
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `2116c06269f8`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 2116c06269f8b269ff64d3c72907d17c9b090eca` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `2116c06269f8b269ff64d3c72907d17c9b090eca`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: S9 dropped from the rev 3 draft as guidance. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-212 · other-commit-2620b419ae9f
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** OPEN
+
+Main's first-parent history holds `2620b419ae9f`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 2620b419ae9ff0512da57642c03ab12ed24ffea9` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `2620b419ae9ff0512da57642c03ab12ed24ffea9`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Project constraints doc. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
