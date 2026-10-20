@@ -51,8 +51,8 @@ one place every trigger is certain to be checked, so it checks all of them every
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
-  `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines are step
-  0.2's `other` stop, which lands a record), else the line and stderr go in
+  `--state` refusals and its lost `Main at:` line; a `refuse main-log:` line is step
+  0.2's refuse stop, which lands a record), else the line and stderr go in
   one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
@@ -272,7 +272,7 @@ the record in step order. Step 4 uses one read-only subagent per sampled merge. 
 
 ### 0. Start and digest
 
-Start every iteration in this order (D13); a stop below (but step 0.2's `other` stop) ends
+Start every iteration in this order (D13); a stop below (but step 0.2's refuse stop) ends
 the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
@@ -331,18 +331,23 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    iteration starts from; read each later line's class and SHA by position (the subject is
    data). `gate` and `chore` lines are this design's own merges; list each `answers` line
    (SHA and subject) in the final message, so the user sees every commit read as their
-   answer (row 727). Any `other` line, or a `refuse main-log:` line other than the
+   answer (row 727). Each `other` line (a hand commit: the user's own, or another
+   session's) is listed, SHA and subject, under the record's `### Other commits on main`
+   and in the final message, and the iteration goes on: no entry, no stop. The classes
+   catch an honest slip, not a commit made to look like a gate, chore or answers commit
+   (the gate's header, F19), so holding on `other` lines guarded nothing a disguised
+   commit could not pass, and it filed 25 entries in a week, all answered keep (the
+   user's feedback of 2026-10-20). A `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed), gets one `you: judgment` entry naming its SHA (slug
-   `other-commit-SHA12`) or quoting the line (slug `main-log-refused-MAIN12`), unless WT's
-   questions files hold one (rows 720, 726), with options **[1] reviewed, build on it** and
-   **[2] not yet**. **The `other` stop**: while such a line is listed, or `--check-answer`
-   reads any entry with either slug in WT's `docs/working/questions.md` or
-   `questions-archive.md` as other than `keep`, the iteration makes WT (step 0.3), files the
-   entries, appends its block (`1.` line `stopped: step 0.2`) to the newest record, the
-   file SINCE came from (no new day's file, so the digest's window stays put), lands as
-   step 9 does and ends: no tests, merges, answers or dispatch, so a commit the user has not seen never
-   feeds one.
+   the history could not be listed) gets one `you: judgment` entry quoting the line (slug
+   `main-log-refused-MAIN12`), unless WT's questions files hold one (rows 720, 726), with
+   options **[1] reviewed, build on it** and **[2] not yet**. **The refuse stop**: while
+   such a line is listed, or `--check-answer` reads any entry with that slug in WT's
+   `docs/working/questions.md` or `questions-archive.md` as other than `keep`, the
+   iteration makes WT (step 0.3), files the entry, appends its block (`1.` line
+   `stopped: step 0.2`) to the newest record, the file SINCE came from (no new day's
+   file, so the digest's window stays put), lands as step 9 does and ends: no tests,
+   merges, answers or dispatch.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
@@ -401,15 +406,17 @@ last good one.
   questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
   or a timed-out call is still a stop, as the Rules say).
 - `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
-  live loop's, is never pruned). List merged branches; deleting them needs the
-  user's approval, so put the list in one `you: terminal` entry rather than deleting (an
-  open one is updated in place, not filed again), leaving out `chore/dev-cycle-*`
-  branches a record on main names in a `Branch:` line (only their count: deleting the
-  iteration branches is roadmap item (a)). Only a
-  name that `--check-branch` prints `ok` for goes into that entry's paste block (git allows
-  names such as `a$(id)`, which a paste would run); list any other name as plain text outside
-  the block, for the user to handle. Skip any branch or worktree a brief holding a slot (as in
-  the Rules) names: work on it may be in progress.
+  live loop's, is never pruned). Delete merged branches without asking (handoff answer 2,
+  Q-153 [1]: the global instructions exempt `git branch -d` of a merged branch): list them
+  with `hg -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'
+  refs/heads/`, pass the names to one `--check-branch` call, and run
+  `hg -C MAIN_WT branch -d NAME` (each name its own argument) only for a name it prints
+  `ok` for that is not `main` or `master`, not this iteration's own branch, and not named
+  by a brief holding a slot (as in the Rules: work on it may be in progress). Never `-D`:
+  git refuses `-d` for a branch not merged into MAIN_WT's HEAD or checked out in a
+  worktree, and such a refusal is recorded, not retried another way. The record's `1.`
+  line gives the count deleted; any name `--check-branch` skipped is listed in the record
+  for the user, never deleted.
 - List working docs in `docs/working/` whose task has merged, in the cycle record. Do not run
   `archive-working-docs.sh`: it serves the self-improvement loop and moves files into a
   gitignored archive.
@@ -574,8 +581,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
-- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, lists no `other`
-  or `refuse` line after MAIN; else no merge or answer this iteration): `--merge BRIEF
+- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, prints no
+  `refuse` line; else no merge or answer this iteration; `other` lines are recorded as
+  step 0.2 records them): `--merge BRIEF
   --expect TIP`, run from a gate checkout,
   not WT: `--state` (from MAIN_WT, whose config the add copies), then
   `hg -C MAIN_WT worktree add --detach GT
@@ -625,8 +633,9 @@ An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before on
 `.,;:!)*` or a blank and a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
 (a merge entry answered "merge" included: its options are answered by number). IDs filed
 this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
-it lists an `other` or `refuse` line after MAIN, act on no answer this iteration (the next
-step 0.2 stops on it), so every answer acted on came in a commit the user is shown (row 727).
+it prints a `refuse` line, act on no answer this iteration (the next step 0.2 stops on
+it). An `other` line after MAIN holds nothing: record it as step 0.2 does, so every
+commit an answer was read from is shown to the user (row 727).
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -709,6 +718,7 @@ Model: <the model id running this cycle>
 ### Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
 - log row 62: cannot tell — <what would tell>
+### Other commits on main
 ### Questions filed
 ### Answers committed
 ### Paths landed
@@ -767,8 +777,9 @@ conflict: `hg -C WT merge --abort`, then a stop.
 
 ### 10. Dispatch
 
-Only after step 9's land is verified, with no `other` or `refuse` line from
-`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
+Only after step 9's land is verified, with no `refuse` line from
+`--main-log MAIN` run again now (the loops would start from it; `other` lines are
+recorded as step 0.2 records them), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
 slug `constraints-doc-missing`, asking for `docs/constraints.md` and naming the `constraints-builder` skill that drafts it, unless WT's questions
 files hold one with that slug, open or answered: D2). Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
@@ -802,7 +813,8 @@ residual). Then remove WT (step 0.3).
 **Final message**, then wait. List the new `you: judgment` entries by ID and name (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
-never an offer to commit it, D8), the `answers` commits step 0.2 read, the `--answered`
+never an offer to commit it, D8), the `answers` and `other` commits step 0.2 and step 7
+read, the `--answered`
 IDs, every merge and dispatch this iteration made, each In flight line naming a `closed/`
 brief that reads `open` or `new` (for the user to set its status), and every open brief
 by path (marking any `--check-brief` skipped, with its reason). A brief is written from

@@ -115,9 +115,6 @@ Unranked. Each names the signal that motivates it.
   (C3). A recreated container goes back to the image's Claude Code version until
   auto-update runs; something like `--probe-only --no-cache` would rebuild that layer.
 
-- **Merged-branch deletion in the health step.** Signal: your answer 2 ("safe branch
-  deletion doesn't need to wait"); every orchestrator iteration and loop leaves a branch.
-  Needs C4 (Q-153), since the global instructions forbid it today.
 - **An audit-dimension menu, extendable per project.** Signal: your answer 3 (audits get an
   explicit trigger and a menu of dimensions, like the review critics); step 4b names
   triggers, and its only named dimension is D2's constraints one.
@@ -205,6 +202,7 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Merged-branch deletion in the health step: step 1 now runs `git branch -d` on merged branches without asking (`fix/dev-cycle-fewer-stops`, log row 74).
 - Build-loop handoff brief closed: `--check-brief` reads `done` at 9bb19d2a (`feat/build-loop-u5`).
   Brief: `docs/working/briefs/closed/2026-10-02-build-loop-handoff.md`
 - Doc drift from cycle 2026-10-02: done at f265d7f2 (`merge/ready-2026-10-15-r2`). Brief:
