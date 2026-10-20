@@ -94,3 +94,43 @@ decision 62's ~800 in-loop tolerance:
 `hooks/`, `test/` and `docs/` match neither gate regex, so no `Live-verified:` or
 `Host-tool-tested:` trailer is required (decision log 45, 71). Deploying the hook
 into cc-isolated changes the installed payload: `install.sh` + re-bless.
+
+## U3: quote check (Q-177 [3], 2026-10-20)
+
+The host check Q-176 (answers-10-16-26) settled F3 and F4. Every control was
+denied, and the compound `echo hi && rm -rf ./nothing-here` was denied, so F4
+is covered by Claude Code. Four quoted or backslashed spellings ran: `x.ca""nary`
+and `x.c\anary` against `Bash(*.q092-canary*)`, `cat "secret"` against
+`Bash(cat secret)`, `git "push"` against `Bash(git push:*)`. No version lines or
+`seen.log` came back. The test hook approves only the nine exact strings, so a
+run means it saw that spelling.
+
+The user picked Q-177 [3]: `SHAPE_FILTER` refuses a word whose quoting or
+escaping splits its text, which means a quoted part beside another part, a
+backslash outside quotes, or a printable escape in `$'...'`. One shape passes:
+`-opt=` followed by one quoted value (`--format="%h %s"`). A whole quoted word
+still passes. It splits nothing, so a wildcard rule such as the shipped
+`Bash(*.credentials.json*)` still matches it raw (inferred from how Q-176's
+canary rule behaved; not host-tested).
+
+Bypass families for U3, against the shipped wildcard rule:
+
+| # | Family | After U3 | Covered? |
+|---|---|---|---|
+| Q1 | Empty or partial quotes mid-word (`.cred""entials`, `'.cred'entials`) | refused (prompt) | **Covered**, tested |
+| Q2 | Backslash outside quotes (`.c\redentials`) | refused | **Covered**, tested |
+| Q3 | ANSI-C printable escape (`$'.c\x72edentials'`, `\162`, `r`) | refused; `\n`, `\t` and the other control escapes pass | **Covered**, tested |
+| Q4 | `-opt=` plus one quoted value (`--file=".credentials.json"`) | approved; the denied text stays contiguous, so the raw wildcard matches | **Covered by Claude Code** (inferred) |
+| Q5 | Whole quoted word against an exact or prefix rule (`cat "secret"`, `git "push"`) | approved | **Not covered**, RESIDUAL in the header; no shipped rule has that shape |
+| Q6 | Plain parameter mid-word (`.cred${E}entials.json`, `E` unset) | approved | **Not covered, unchanged**: the F5 class (Q-070 [1]); the sandbox is the fix |
+| Q7 | Glob spelling (`~/.claude/.c*`, `.ca[n]ary`, `.ca?ary`) | approved | **Not covered, unchanged** (F5) |
+| Q8 | Line continuation (`.cred\<newline>entials`, quoted or not, or through `-opt=`) | refused: any backslash-newline in the raw command, checked before the AST, because shfmt drops it | **Covered**, tested. The independent review found this one: the first commit approved it |
+| Q9 | Brace expansion (`.cred{e,}ntials`, `.c{r..r}edentials`) | refused outside quotes | **Covered**, tested. Unlike a glob, it needs no file to exist. Found by the same review |
+
+Q6 and Q7 mean U3 does not stop a determined injection. What it restores is
+main's behaviour for the Q-176 spellings: they prompt.
+Cost: a quoted part beside other text (`a"b c"`, `-m"msg"`,
+`git -c user.name="A B"` and `make CFLAGS="-O2 -g"`, since the exception needs a
+leading `-`), backslash escapes (`\*.txt`, `foo\|bar`, `my\ file.txt`,
+`'it'\''s'`), multi-line commands with `\` continuations, and unquoted
+`{a,b}` now prompt even when allow-listed.

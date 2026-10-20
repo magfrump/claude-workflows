@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hook to allow piped commands where ALL components are in the allowed Bash permissions.
 # Claude Code's prefix matching doesn't handle pipes - this hook fixes that.
-# Dynamically reads allow and deny rules from (SETTINGS SOURCES below):
+# Dynamically reads allow rules from (SETTINGS SOURCES below):
 #   1. ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json (global)
 #   2. <git root>/.claude/settings.json (project shared)
 #   3. <git root>/.claude/settings.local.json (project local)
@@ -12,7 +12,7 @@
 #
 # Options:
 #   --debug                 Enable debug output to stderr
-#   --permissions JSON      Use custom allow rules instead of the settings files' allow lists
+#   --permissions JSON      Use custom permissions instead of reading from settings files
 #                           JSON format: '["Bash(ls:*)", "Bash(grep:*)"]'
 #
 # Examples:
@@ -47,68 +47,67 @@
 # Each approved call spawns one more jq process than before: about +25 ms
 # (mean of 20 approved `git status` calls, 110 -> 136 ms, 2026-09-28).
 #
-# ROLE: A CONVENIENCE LAYER ON A SANDBOXED HOST, A SECURITY CONTROL IN
-# CC-ISOLATED (Q-070/Q-077). Where a Claude Code sandbox runs, permissions.deny
-# plus the sandbox are the boundary and the gaps above are only convenience
-# bugs. cc-isolated has no sandbox: bwrap and socat are not in the image, and
-# unprivileged user namespaces are refused (`unshare -Ur` -> EPERM, measured
-# 2026-09-27). There the backstop is permissions.deny alone, and
-# hooks/wiring.json carries a Bash deny rule for the credentials file,
-# Bash(*.credentials.json*). A host test (Q-082, 2026-09-28) showed Claude
-# Code still applies permissions.deny after a hook "allow" (a hook "ask"
-# overrides it, Claude Code issue #39344, and this hook never asks), so the
-# deny check below is redundant, and Q-092's second unit removes it.
+# ROLE: AN ALLOW-ONLY CONVENIENCE LAYER (Q-092). The hook emits one decision,
+# "allow", or nothing (no output, so Claude Code's own rules and prompt
+# decide; exit 0 on any input Claude Code sends, 4 or 5 on stdin that is not a
+# JSON object, never 2). It never emits "ask", "deny" or "defer". That lets it
+# leave deny rules to Claude Code: a hook "ask" overrides permissions.deny
+# (Claude Code issue #39344), but a hook "allow" does not (host test Q-082,
+# 2026-09-28; decision log row 53). Q-082 did not record the Claude Code
+# version (Q-091 saw 2.1.284 on the host that day) and the image installs
+# @latest: re-run Q-082's test when a Claude Code release changes how a
+# PreToolUse permissionDecision combines with permission rules, or before
+# relying on this after a major version. cc-isolated has no sandbox (Q-081, Q-125),
+# so there the shape allowlist above still decides which allow-listed commands
+# run without a prompt.
 #
-# WHAT THE DENY CHECK GUARANTEES. The hook never approves a command when a Bash
-# deny rule matches the raw command or any extracted command. It FAILS CLOSED
-# on its inputs: if any settings file below exists but cannot be read, does not
-# hold exactly one JSON object, or has permissions, permissions.allow or
-# permissions.deny of the wrong shape, no command is approved on that call.
-# The de-quoted match and the --deny test option are gone (Q-092, unit 1 of 2).
-# RESIDUALS (accepted, Q-070 [1]; the sandbox follow-up is the real fix). Deny
-# rules are string matches over the command text, so a spelling in which the
-# denied string never appears gets past them: a quote or backslash inside or
-# around a word (`.cred""entials.json`, `.c\redentials.json`, `git "push"`
-# against `Bash(git push:*)`, `cat "secret"` against `Bash(cat secret)`), a glob (`~/.claude/.c*`, `.credentials.jso[n]`),
-# brace or ANSI-C spellings (`.js{on,}`, `$'\x2e'credentials.json`), a variable
-# set by an earlier command, a decoded path, or reading the parent directory.
-# They stop the literal spelling, not a determined injection. Settings sources Claude Code
-# honors but this hook does not read (managed settings, --settings files)
-# contribute no deny rules here. The glob and earlier-variable spellings are
-# pinned by tests.
+# DENY RULES ARE CLAUDE CODE'S (Q-092). The hook used to read Bash deny rules
+# itself and never approve a match, raw or de-quoted. Q-082 made that redundant
+# for "allow", so it is gone and each deny rule has one interpreter. The host
+# check Q-176 (2026-10-16) found Claude Code's matcher stops a denied
+# subcommand inside a list (`echo hi && rm -rf x` against `Bash(rm -rf:*)`)
+# but not a quote or backslash spelling: `x.ca""nary` and `x.c\anary` against
+# `Bash(*.canary*)`, `cat "secret"` against `Bash(cat secret)`, `git "push"`
+# against `Bash(git push:*)` all ran. So the shape allowlist refuses a word
+# whose quoting or escaping splits its text (Q-177 [3]). A whole quoted word
+# (`cat "secret"`) still passes: it splits nothing, so a wildcard rule such
+# as the shipped Bash(*.credentials.json*) still matches it, and only an
+# exact or prefix rule that spans the word boundary misses it (RESIDUAL; no
+# shipped rule has that shape). A spelling that never contains the
+# denied string (`~/.claude/.c*`, a variable set by an earlier command) got
+# past both matchers before and still does (Q-070 [1]; a sandbox is the fix).
+#
+# FAILS CLOSED on its inputs: if any settings file below exists but cannot be
+# read, does not hold exactly one JSON object, or has a permissions that is not
+# an object, or a permissions.allow, .deny or .ask (present at all) that is not
+# an array or holds a string with a NUL, no command is approved on that call.
+# deny and ask are shape-checked, never read: Claude Code can ignore a whole
+# settings file for an invalid value, and a file it drops should not feed
+# allow rules here. Non-string entries are skipped, not refused: Claude Code
+# drops those with a warning and keeps the file. RESIDUAL: anything Claude Code
+# rejects that this check accepts (another key's value, a BOM, jq-only literals
+# such as NaN) can still make Claude Code drop the file, and its deny rules
+# with it, while its allow rules approve here; the deny reader used to cover
+# that case.
 #
 # SETTINGS SOURCES. ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json, resolved
 # like devcontainer-config/link-claude-home.sh's DEST (an empty value falls
-# back; a relative value approves nothing), then
-# <git root>/.claude/settings.json and settings.local.json (the cwd's .claude/
-# outside a repo). One jq call reads all of them (settings_rules_jq).
+# back; a relative value approves nothing), then <git root>/.claude/settings.json
+# and settings.local.json (the cwd's .claude/ outside a repo). One jq call reads
+# all of them (SETTINGS_RULES_JQ). --permissions replaces all three. Managed
+# settings and --settings files are not read, so their allow rules approve
+# nothing here.
 #
-# RULE SYNTAX. Allow and deny rules go through one parser, parse_bash_rule:
-# `Bash(BODY)`, with a trailing legacy `:*` stripped from BODY; a bare `Bash`;
-# anything else (another tool, no closing paren) is not a Bash rule. The two
-# lists then read BODY differently, on purpose. A deny rule is a glob over the
-# whole command in which only `*` is a wildcard (`?`, `[...]` and extglob
-# characters are literal); an allow rule is a literal command prefix:
-#   rule         as allow                               as deny
-#   Bash(ls)     prefix: `ls`, `ls -la` (not `ls/x`:     exact: `ls` only
-#                a bare name never covers a path under
-#                it; `Bash(a/b)` and `Bash(python3 d)`
-#                do cover `a/b/x` and `python3 d/x`)
-#   Bash(rm:*)   word prefix: `rm x`, not `rmdir`        plain prefix `rm*`: `rmdir` too
-#   Bash(ls *)   literal prefix `ls *`: `ls *` and        glob: `ls -la`
-#                `ls * -la`, never `ls -la`
-#   Bash         ignored                                 every command (so do
-#                                                        Bash(*) and Bash(**))
-# Deny errs broad (towards the prompt) except for a rule with no wildcard,
-# which is exact, as the rule reads: write `Bash(rm:*)` or `Bash(rm *)` to
-# cover arguments. `Bash(ls *)` as an ALLOW rule is a literal prefix, not a
-# glob: it approves only commands that start with the text `ls *` (bash then
-# expands that `*`). That is the allow side's existing behavior, not changed
-# here (use `Bash(ls:*)`).
-# KNOWN DIVERGENCE: whether Claude Code's `Bash(rm *)` also matches a bare `rm`
-# with no arguments is not documented anywhere this repo records. Here it does
-# not (`rm *` needs the space). To cover the bare command, use the legacy form
-# `Bash(rm:*)`, which matches `rm` alone but, as a plain prefix, also `rmdir`.
+# RULE SYNTAX. parse_bash_rule reads `Bash(BODY)`, with a trailing legacy `:*`
+# stripped from BODY, or a bare `Bash`; anything else (another tool, no closing
+# paren) is not a Bash rule. An allow rule is a literal command prefix:
+#   Bash(ls)     prefix: `ls`, `ls -la` (not `ls/x`: a bare name never covers a
+#                path under it; `Bash(a/b)` and `Bash(python3 d)` do cover
+#                `a/b/x` and `python3 d/x`)
+#   Bash(rm:*)   word prefix: `rm x`, not `rmdir`
+#   Bash(ls *)   literal prefix, not a glob: `ls *` and `ls * -la` (bash then
+#                expands that `*`), never `ls -la` (use `Bash(ls:*)`)
+#   Bash         ignored
 
 set -euo pipefail
 
@@ -129,16 +128,14 @@ debug() {
 
 # --- Rules: one settings-file list, one jq pass, one Bash(...) parser ---
 
-# Allow prefixes and deny globs, filled by load_rules. DENY_ALL is set when a
-# deny source could not be read: the hook then approves nothing (fail closed).
+# Allow prefixes, filled by load_rules. Left empty when a settings file could
+# not be read, so the hook then approves nothing (fail closed).
 ALLOW_PREFIXES=()
-DENY_GLOBS=()
-DENY_ALL=false
 
-# The settings files both lists come from, in order (header: SETTINGS SOURCES).
-# The global path is resolved exactly as devcontainer-config/link-claude-home.sh
-# resolves DEST, so the deny rules the linker merges are the ones read here.
-# The git root is computed once, here, for both lists.
+# The settings files the allow rules come from, in order (header: SETTINGS
+# SOURCES). The global path is resolved exactly as
+# devcontainer-config/link-claude-home.sh resolves DEST, so the file the linker
+# merges into is the one read here.
 settings_files() {
   local root
   root=$(git rev-parse --show-toplevel 2>/dev/null) || root=""
@@ -150,39 +147,43 @@ settings_files() {
 # twice: as input files, and after --args as $ARGS.positional, so the program
 # can check that each file yielded exactly one document (an empty file yields
 # none, `{}{}` yields two). Any parse error, wrong shape or missing document is
-# a jq error, and the caller treats that as "deny everything". Output records
-# are NUL-terminated `A<TAB>rule` / `D<TAB>rule`, so a rule string containing a
-# newline stays one record. Non-string allow entries are skipped, as before;
-# a non-string deny entry is an error (fail closed).
+# a jq error, and the caller then approves nothing. Output records are
+# NUL-terminated allow rules, so a rule string containing a newline stays one
+# record. permissions.allow, .deny and .ask, when present (even as null or
+# false), must each be an array, and no string in them may hold a NUL;
+# non-string entries are skipped, as Claude Code drops them with a warning.
+# Only allow is emitted; deny rules are Claude Code's (header: DENY RULES ARE
+# CLAUDE CODE'S). test("\u0000"), not contains(): jq 1.6's contains() matches
+# a NUL needle against every string.
 read -r -d '' SETTINGS_RULES_JQ << 'JQEOF' || true
 [inputs | [input_filename, .]] as $docs
 | if ($docs | map(.[0])) != $ARGS.positional
   then error("each settings file must hold exactly one JSON document") else . end
 | $docs[] | .[1]
 | if type != "object" then error("settings file is not a JSON object") else . end
-| .permissions
-| if . == null then empty
-  elif type != "object" then error("permissions is not an object")
+| if has("permissions") then .permissions else empty end
+| if type != "object" then error("permissions is not an object")
   else
-    ((.allow // []) | if type == "array" then .[] | select(type == "string") | "A\t" + .
-                      else error("permissions.allow is not an array") end),
-    ((.deny // []) | if type == "array"
-                     then .[] | if type == "string" then "D\t" + . else error("non-string deny rule") end
-                     else error("permissions.deny is not an array") end)
+    (["allow", "deny", "ask"][] as $k | select(has($k)) | .[$k]
+     | if type != "array" then error("permissions.\($k) is not an array")
+       elif any(.[]; type == "string" and test("\u0000"))
+         then error("NUL inside a permissions.\($k) rule")
+       else empty end),
+    ((.allow // [])[] | select(type == "string"))
   end
-| if explode | any(. == 0) then error("NUL inside a rule string") else . end
 | . + "\u0000"
 JQEOF
 
-# Emit the rule records of every settings file that exists. Exit non-zero on
-# any read, parse or shape failure (the caller then denies everything).
+# Emit the allow rules of every settings file that exists. Exit non-zero on
+# any read, parse or shape failure (the caller then approves nothing).
 read_settings_rules() {
   local -a candidates files=()
   local f
   # A relative CLAUDE_CONFIG_DIR resolves against this hook's cwd, not the
-  # linker's, so the global deny rules could silently go missing: fail closed.
+  # linker's, so it could name some other directory's settings.json and add
+  # its allow rules: fail closed.
   if [[ -n "${CLAUDE_CONFIG_DIR:-}" && "$CLAUDE_CONFIG_DIR" != /* ]]; then
-    debug "CLAUDE_CONFIG_DIR is relative: denying everything"
+    debug "CLAUDE_CONFIG_DIR is relative: approving nothing"
     return 1
   fi
   mapfile -d '' candidates < <(settings_files)
@@ -190,7 +191,7 @@ read_settings_rules() {
     # A newline in a settings path would split it in `--args` bookkeeping
     # and in debug output; treat it as unreadable rather than missing.
     if [[ "$f" == *$'\n'* ]]; then
-      debug "A settings path contains a newline: denying everything"
+      debug "A settings path contains a newline: approving nothing"
       return 1
     fi
     if [[ -e "$f" ]]; then
@@ -204,13 +205,12 @@ read_settings_rules() {
   jq -nj "$SETTINGS_RULES_JQ" "${files[@]}" --args "${files[@]}" 2>/dev/null
 }
 
-# The one parser for `Bash(...)` rule strings, used by both lists. Sets
-# RULE_BARE (the rule is a bare `Bash`) and RULE_BODY (the text inside the
-# parens, with a trailing legacy `:*` removed), and RULE_LEGACY (it had one).
-# Returns 1 for anything that is not a Bash rule.
+# The parser for `Bash(...)` rule strings. Sets RULE_BARE (the rule is a bare
+# `Bash`) and RULE_BODY (the text inside the parens, with a trailing legacy
+# `:*` removed). Returns 1 for anything that is not a Bash rule.
 parse_bash_rule() {
   local rule="$1"
-  RULE_BARE=false RULE_LEGACY=false RULE_BODY=""
+  RULE_BARE=false RULE_BODY=""
   if [[ "$rule" == "Bash" ]]; then
     RULE_BARE=true
     return 0
@@ -218,10 +218,7 @@ parse_bash_rule() {
   [[ "$rule" == "Bash("*")" ]] || return 1
   RULE_BODY=${rule#Bash\(}
   RULE_BODY=${RULE_BODY%\)}
-  if [[ "$RULE_BODY" == *":*" ]]; then
-    RULE_BODY=${RULE_BODY%:\*}
-    RULE_LEGACY=true
-  fi
+  RULE_BODY=${RULE_BODY%:\*}
   return 0
 }
 
@@ -233,79 +230,27 @@ add_allow_rule() {
   ALLOW_PREFIXES+=("$RULE_BODY")
 }
 
-# Deny rule -> bash glob over the whole command: BODY, `*` appended for the
-# legacy `:*` form, and `*` for a bare `Bash`. Only `*` is a wildcard; every
-# other character is backslash-escaped so bash matches it literally. Without
-# that, `?`, `[...]` and extglob characters in a rule were live glob syntax,
-# and Bash(cat notes[1].txt) did not match the literal `cat notes[1].txt`.
-add_deny_rule() {
-  parse_bash_rule "$1" || return 0
-  if $RULE_BARE; then
-    DENY_GLOBS+=("*")
-    return 0
-  fi
-  local body="$RULE_BODY" glob="" c i
-  $RULE_LEGACY && body+="*"
-  for ((i = 0; i < ${#body}; i++)); do
-    c=${body:i:1}
-    if [[ "$c" == [A-Za-z0-9*] ]]; then
-      glob+="$c"
-    else
-      glob+="\\$c"
-    fi
-  done
-  DENY_GLOBS+=("$glob")
-}
-
-# Fill ALLOW_PREFIXES, DENY_GLOBS and DENY_ALL. --permissions replaces the
-# settings files' allow lists (testing); their deny lists are always read. The
-# reader's status comes from `wait $!`, as for the command parser in main
-# (mapfile's own status is always 0); bash older than 4.4 makes that `wait`
-# fail, which also fails closed.
+# Fill ALLOW_PREFIXES. --permissions replaces the settings files (testing), and
+# then they are not read. The reader's status comes from `wait $!`, as for the
+# command parser in main (mapfile's own status is always 0); bash older than
+# 4.4 makes that `wait` fail, which also fails closed. On failure no rule is
+# kept, not even the records jq printed before its error.
 load_rules() {
   local -a records=()
   local rec
-  mapfile -d '' records < <(read_settings_rules)
-  if ! wait $!; then
-    debug "A settings file could not be read or parsed: denying everything"
-    DENY_ALL=true
-  fi
-  for rec in "${records[@]}"; do
-    if [[ "$rec" == A$'\t'* && -z "$CUSTOM_PERMISSIONS" ]]; then
-      add_allow_rule "${rec#A$'\t'}"
-    elif [[ "$rec" == D$'\t'* ]]; then
-      add_deny_rule "${rec#D$'\t'}"
-    fi
-  done
-
   if [[ -n "$CUSTOM_PERMISSIONS" ]]; then
     debug "Using custom permissions: $CUSTOM_PERMISSIONS"
     # Unreadable --permissions fails safe: no allow rules.
     mapfile -d '' records < <(printf '%s' "$CUSTOM_PERMISSIONS" \
       | jq -j '.[]? | select(type == "string" and (explode | any(. == 0) | not)) | . + "\u0000"' 2>/dev/null)
-    for rec in "${records[@]}"; do add_allow_rule "$rec"; done
-  fi
-}
-
-# True when a deny rule matches the string (header: WHAT THE DENY CHECK
-# GUARANTEES), or when DENY_ALL is set. The right-hand side of == is left
-# unquoted on purpose, so bash matches it as a glob; add_deny_rule has already
-# escaped everything but `*`, so `*` is the only live wildcard.
-matches_deny() {
-  local str="$1" glob
-  if $DENY_ALL; then
-    debug "DENY: a deny source could not be read"
-    return 0
-  fi
-  for glob in "${DENY_GLOBS[@]}"; do
-    [[ -z "$glob" ]] && continue
-    # shellcheck disable=SC2053
-    if [[ "$str" == $glob ]]; then
-      debug "DENY RULE: '$str' matches glob '$glob'"
+  else
+    mapfile -d '' records < <(read_settings_rules)
+    if ! wait $!; then
+      debug "A settings file could not be read or parsed: approving nothing"
       return 0
     fi
-  done
-  return 1
+  fi
+  for rec in "${records[@]}"; do add_allow_rule "$rec"; done
 }
 
 # Check if a command matches any allowed prefix
@@ -374,18 +319,12 @@ main() {
   fi
 
   load_rules
-  debug "Loaded ${#ALLOW_PREFIXES[@]} allowed prefixes, ${#DENY_GLOBS[@]} Bash deny rules (deny all: $DENY_ALL)"
+  debug "Loaded ${#ALLOW_PREFIXES[@]} allowed prefixes"
 
-  # If no prefixes (no Bash permissions), exit without allowing
+  # If no prefixes (no Bash permissions, or a settings file could not be
+  # read), exit without allowing
   if [[ ${#ALLOW_PREFIXES[@]} -eq 0 ]]; then
     debug "No Bash permissions found, exiting"
-    exit 0
-  fi
-
-  # Never approve a command a Bash deny rule names (see header). The raw string
-  # is checked here, and each extracted command again below.
-  if matches_deny "$command"; then
-    debug "Decision: BLOCK (deny rule; falling through to normal permission check)"
     exit 0
   fi
 
@@ -423,11 +362,6 @@ main() {
   all_allowed=true
   for full_command in "${extracted_commands[@]}"; do
     [[ -z "$full_command" ]] && continue
-
-    if matches_deny "$full_command"; then
-      all_allowed=false
-      break
-    fi
 
     if ! is_command_allowed "$full_command" ALLOW_PREFIXES; then
       all_allowed=false
@@ -684,6 +618,26 @@ def builtins:
    "shopt","source","suspend","test","times","trap","true","type","typeset",
    "ulimit","umask","unalias","unset","wait"];
 def safe_builtins: ["cd","pwd","echo","true","false","type"];
+# A word whose quoting or escaping splits its text (Q-177 [3]): Claude Code's
+# deny matcher reads the raw string, so `.cred""entials.json`,
+# `.c\redentials.json` and `$'.c\x72edentials.json'` get past
+# Bash(*.credentials.json*) (host check Q-176). A quoted part next to other
+# parts, a backslash or a brace expansion (`.ca{n,}ary`, which unlike a glob
+# needs no file to exist) outside quotes, or an escape inside $'...' that makes a
+# printable character (\x72, \162, r, \\; \n, \t and the other control
+# escapes cannot rebuild a filename, so they pass). One shape passes:
+# `-opt=` followed by a single quoted value, as in --format="%h %s".
+def quoted: .Type == "SglQuoted" or .Type == "DblQuoted";
+def opt_value:
+  (.Parts | length) == 2 and .Parts[0].Type == "Lit"
+  and (.Parts[0].Value | test("^-[^\\\\]*=$")) and (.Parts[1] | quoted)
+  and (.Parts[1].Dollar // false | not);
+def split_word:
+  (((.Parts | length) > 1 and any(.Parts[]; quoted)) and (opt_value | not))
+  or any(.Parts[]; .Type == "Lit" and (.Value | contains("\\")))
+  or any(.Parts[]; .Type == "Lit" and (.Value | test("\\{[^}]*(,|\\.\\.)[^}]*\\}")))
+  or any(.Parts[]; .Type == "SglQuoted" and (.Dollar // false)
+         and (.Value | test("\\\\([^abefnrtv]|$)")));
 ([ .. | objects
   | if has("Type") then
       if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
@@ -698,6 +652,7 @@ def safe_builtins: ["cd","pwd","echo","true","false","type"];
           elif ($name | IN(wrappers[])) then "interpreter or wrapper: \($name)"
           elif ($name | IN(builtins[])) and ($name | IN(safe_builtins[]) | not)
             then "shell builtin: \($name)"
+          elif any(.Args[]?; split_word) then "quote or backslash inside a word"
           else empty end
       else empty end
     elif (.Background // false) or (.Coprocess // false) then "background statement"
@@ -779,7 +734,10 @@ extract_commands_raw() {
 #     `<&` is refused unless it reads /dev/null or duplicates an fd.
 #     Here-docs and here-strings (<<, <<<) pass: their text is inline.
 #   - a command name that is not a bash builtin, other than cd, pwd, echo,
-#     true, false and type (SHAPE_FILTER's builtins list says why).
+#     true, false and type (SHAPE_FILTER's builtins list says why);
+#   - words whose quoting or escaping does not split their text: no quoted
+#     part beside another part (`ca""t`, `'se'cret`) except `-opt="value"`,
+#     no backslash outside quotes, no printable escape in $'...' (Q-177 [3]).
 # Any one allowed command is an outer command for these constructs, so they
 # matter wherever an allow list exists: every project's own rules today, and a
 # global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-098).
@@ -792,6 +750,13 @@ extract_commands_raw() {
 refuses_construct() {
   local cmd="$1" ast="$2" op_off word_off word_end op word out
   local LC_ALL=C
+  # A line continuation splits a word in the raw string, and shfmt drops it
+  # before the AST exists, so SHAPE_FILTER cannot see it (Q-092 U3 review:
+  # `cat x.ca\<newline>nary` was approved, quoted or not).
+  if [[ "$cmd" == *$'\\\n'* ]]; then
+    debug "Refusing: line continuation"
+    return 0
+  fi
   if ! out=$(jq -r "$SHAPE_FILTER" <<<"$ast"); then
     debug "Refusing: shape check failed"
     return 0
