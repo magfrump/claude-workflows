@@ -87,7 +87,9 @@ Log row 73's second revisit trigger holds in this repo: build loops and other se
 - **If the answer differs:** only the trigger text, or one hardening unit, changes.
 
 ### Q-198 · merge-2026-10-17-claude-md-import-guard-cc2a8054e517
-**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1].**
 
 Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/2026-10-17-claude-md-import-guard.md`, roadmap In flight)?
 
@@ -109,7 +111,9 @@ Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (
 - **Interim:** unmerged; nothing changes on main.
 
 ### Q-197 · merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d
-**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1].**
 
 Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs/2026-10-17-q146-si-script-commits.md`, roadmap In flight; Q-146 [1])?
 
@@ -151,7 +155,9 @@ cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
 - **Blocks:** nothing; the result goes back here as a reply.
 
 ### Q-195 · merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0
-**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1].**
 
 Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`, roadmap In flight)?
 
