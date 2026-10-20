@@ -63,12 +63,17 @@
 #
 # DENY RULES ARE CLAUDE CODE'S (Q-092). The hook used to read Bash deny rules
 # itself and never approve a match, raw or de-quoted. Q-082 made that redundant
-# for "allow", so it is gone and each deny rule has one interpreter. Left to
-# Claude Code's matcher, not verified on a host: whether a rule catches a
-# quote or backslash spelling (`.cred""entials.json`, `.c\redentials.json`,
-# `git "push"`, `cat "secret"` against `Bash(cat secret)`) or a denied
-# subcommand inside a list (`ls && rm -rf x` against `Bash(rm -rf:*)`). The
-# hook used to send both to the prompt. A spelling that never contains the
+# for "allow", so it is gone and each deny rule has one interpreter. The host
+# check Q-176 (2026-10-16) found Claude Code's matcher stops a denied
+# subcommand inside a list (`echo hi && rm -rf x` against `Bash(rm -rf:*)`)
+# but not a quote or backslash spelling: `x.ca""nary` and `x.c\anary` against
+# `Bash(*.canary*)`, `cat "secret"` against `Bash(cat secret)`, `git "push"`
+# against `Bash(git push:*)` all ran. So the shape allowlist refuses a word
+# whose quoting or escaping splits its text (Q-177 [3]). A whole quoted word
+# (`cat "secret"`) still passes: it splits nothing, so a wildcard rule such
+# as the shipped Bash(*.credentials.json*) still matches it, and only an
+# exact or prefix rule that spans the word boundary misses it (RESIDUAL; no
+# shipped rule has that shape). A spelling that never contains the
 # denied string (`~/.claude/.c*`, a variable set by an earlier command) got
 # past both matchers before and still does (Q-070 [1]; a sandbox is the fix).
 #
@@ -613,6 +618,24 @@ def builtins:
    "shopt","source","suspend","test","times","trap","true","type","typeset",
    "ulimit","umask","unalias","unset","wait"];
 def safe_builtins: ["cd","pwd","echo","true","false","type"];
+# A word whose quoting or escaping splits its text (Q-177 [3]): Claude Code's
+# deny matcher reads the raw string, so `.cred""entials.json`,
+# `.c\redentials.json` and `$'.c\x72edentials.json'` get past
+# Bash(*.credentials.json*) (host check Q-176). A quoted part next to other
+# parts, a backslash outside quotes, or an escape inside $'...' that makes a
+# printable character (\x72, \162, r, \\; \n, \t and the other control
+# escapes cannot rebuild a filename, so they pass). One shape passes:
+# `-opt=` followed by a single quoted value, as in --format="%h %s".
+def quoted: .Type == "SglQuoted" or .Type == "DblQuoted";
+def opt_value:
+  (.Parts | length) == 2 and .Parts[0].Type == "Lit"
+  and (.Parts[0].Value | test("^-[^\\\\]*=$")) and (.Parts[1] | quoted)
+  and (.Parts[1].Dollar // false | not);
+def split_word:
+  (((.Parts | length) > 1 and any(.Parts[]; quoted)) and (opt_value | not))
+  or any(.Parts[]; .Type == "Lit" and (.Value | contains("\\")))
+  or any(.Parts[]; .Type == "SglQuoted" and (.Dollar // false)
+         and (.Value | test("\\\\([^abefnrtv]|$)")));
 ([ .. | objects
   | if has("Type") then
       if (.Type | IN("File","CallExpr","BinaryCmd","Lit","SglQuoted","DblQuoted","ParamExp") | not)
@@ -627,6 +650,7 @@ def safe_builtins: ["cd","pwd","echo","true","false","type"];
           elif ($name | IN(wrappers[])) then "interpreter or wrapper: \($name)"
           elif ($name | IN(builtins[])) and ($name | IN(safe_builtins[]) | not)
             then "shell builtin: \($name)"
+          elif any(.Args[]?; split_word) then "quote or backslash inside a word"
           else empty end
       else empty end
     elif (.Background // false) or (.Coprocess // false) then "background statement"
@@ -708,7 +732,10 @@ extract_commands_raw() {
 #     `<&` is refused unless it reads /dev/null or duplicates an fd.
 #     Here-docs and here-strings (<<, <<<) pass: their text is inline.
 #   - a command name that is not a bash builtin, other than cd, pwd, echo,
-#     true, false and type (SHAPE_FILTER's builtins list says why).
+#     true, false and type (SHAPE_FILTER's builtins list says why);
+#   - words whose quoting or escaping does not split their text: no quoted
+#     part beside another part (`ca""t`, `'se'cret`) except `-opt="value"`,
+#     no backslash outside quotes, no printable escape in $'...' (Q-177 [3]).
 # Any one allowed command is an outer command for these constructs, so they
 # matter wherever an allow list exists: every project's own rules today, and a
 # global list in hooks/wiring.json if one ships (shelved until a sandbox: Q-098).

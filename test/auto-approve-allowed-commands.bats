@@ -182,6 +182,29 @@ not_approved() { [[ "$output" != *'"permissionDecision":"allow"'* ]]; }
   approved
 }
 
+@test "a word whose quoting or escaping splits its text is not approved (Q-177 [3])" {
+  # Q-176: Claude Code's deny matcher reads the raw string, so these got past
+  # Bash(*.credentials.json*)-shaped rules on a host.
+  local cmd rules='["Bash(cat:*)","Bash(git:*)"]'
+  for cmd in 'cat ~/.claude/.cred""entials.json' 'cat ~/.claude/.c\redentials.json' \
+    "cat ~/.claude/'.cred'entials.json" "cat \$'~/.claude/.c\\x72edentials.json'" \
+    "cat \$'~/.claude/.c\\162edentials.json'" "cat \$'~/.claude/.c\\u0072edentials.json'" \
+    'cat --file=.cred""entials.json' 'git log --format="%h"x' 'ls && cat .c\redentials.json'; do
+    run_hook_rules "$cmd" "$rules"
+    not_approved || { echo "approved: $cmd"; return 1; }
+  done
+}
+
+@test "whole quoted words and -opt=\"value\" are still approved (Q-177 [3])" {
+  # A whole quoted word splits nothing: a wildcard deny rule still matches it.
+  local cmd rules='["Bash(cat:*)","Bash(git:*)","Bash(echo:*)","Bash(grep:*)"]'
+  for cmd in 'cat "secret"' "grep -E 'a|b' f" 'git log --format="%h %s"' 'echo ""' \
+    'cat "a\b"' "git commit -m 'two words'" "echo \$'a\\tb\\n'"; do
+    run_hook_rules "$cmd" "$rules"
+    approved || { echo "not approved: $cmd"; return 1; }
+  done
+}
+
 @test "the hook ignores a --deny argument (the option was removed in Q-092)" {
   run bash -c "printf '%s' '{\"tool_input\":{\"command\":\"ls -la\"}}' \
     | bash '$HOOK' --permissions '[\"Bash(ls:*)\"]' --deny '[\"Bash\"]'"
