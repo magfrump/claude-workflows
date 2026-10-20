@@ -4,7 +4,7 @@ The working doc is `docs/working/constraints-draft-YYYY-MM-DD.md`. **The whole f
 `build-loop.sh --check-constraints`**, so:
 - only the copy-ready block holds `H<n>:` and `S<n>:` lines;
 - elsewhere, refer to a line as "the H2 line" mid-sentence, and never start a line (or a list
-  item, or a table cell) with an ID;
+  item, or a table cell) with an ID, bold or not (`- **S1 (…)**` reads as an inexact ID);
 - put each hard line's `success:` line directly under it, before any `#` heading;
 - start no line with `<`, even after spaces or tabs (the reader takes it for raw HTML and
   refuses the file), and open no
@@ -35,8 +35,10 @@ Input for the author, not the constraints doc. Copy the block below into
 
 ## Copy-ready block
 
-<Ordered by independent source count. A short preamble that stands alone once pasted:
-what the doc is for, and where non-design rules live (only if that is already true).>
+<Ordered by independent source count, kept IDs first in amend mode. A short preamble that
+stands alone once pasted: what the doc is for, and where non-design rules live (only if
+that is already true). The block holds `#` headings and H/S lines, so it can't sit in a
+fence (the reader skips fences): it runs from here to the line before `## Sources`.>
 
 H1: <statement>
 success: <observable>
