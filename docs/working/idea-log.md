@@ -73,3 +73,12 @@ Triggers: roadmap Now holds 0 items ready for a brief (all three wait on open en
 1. Do nothing on direction: the binding constraint is the four open merge and host entries (Q-195 to Q-198), not missing work. Changes: no new asks while those wait.
 2. Brief new fixes under the self-merge policy (seed 1). Changes: a fix whose paths are off the floor and the never globs lands without a merge entry, so it costs no attention.
 3. Doc freshness now reads 8 of 8 stale (health check 2026-10-20; the roadmap item says 7). Changes: the existing divergent-design item gets its current count; no new item.
+
+## Brainstorm 2026-10-20 (iteration 2344)
+
+Triggers: roadmap Now holds 0 items ready for a brief once this iteration's two briefs moved to In flight (Q-168 holds on Q-171 [2]).
+
+1. Check that code review follows decision 031's k policy (k=3 on the first fact-check, k=1 in review-fix iterations, a clean final pass). Signal: the user's feedback note of 2026-10-20 (`docs/human-author/feedback-10-20-26.txt`, untracked) observes k=3 on every pass. Changes: shows whether the skill text or the agents drift from 031; re-evaluating k itself stays deferred (ask first).
+2. Count each cycle's overhead against feature work: lines and commits the cycle lands versus feature merges in its window. Signal: the same note says the dev cycle spends more on verification overhead than on features. Changes: gives Q-154's light-pass question and the feedback a number.
+3. Do nothing else: two briefs dispatch this iteration; the rest of Next waits on Q-174, Q-175 or settlement.
+- `cc-isolated --register` with no `--profile` exits 1 where log row 58 says usage errors exit 2 (signal: cycle 2026-10-20-2344 step 2, cc-isolated.sh after c80fec22)

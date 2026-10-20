@@ -87,6 +87,7 @@ cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
 
 - **Interim:** the change is tested hermetically only (`test/cc-isolated-functions.bats`, 207/207); its commit carries `Live-verified: no`.
 - **Blocks:** nothing; the result goes back here as a reply.
+- **2026-10-20:** Q-195's branch merged at c80fec22. Q-214's block runs install.sh, which installs it too; run this right after that paste.
 
 ### Q-194 · decision-031-t4-fix-drift-miss
 **Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
@@ -153,6 +154,7 @@ Q-096's iteration 2 found that the exit scan parses remote names and legacy `rem
 - **Built 2026-10-15:** 75d08a94, stopped at the review cap; landing is Q-171, the parity boundary Q-172, the split groups Q-173. This entry closes when the branch lands.
 - **Read:** 3c8fbf4a's commit message (it lists the open gaps) · the guide's "Remote names and legacy remote files, read loosely" known-route bullet · Q-097, which may absorb it
 - **Interim:** a listed known route; cc-push is still the way to push.
+- **2026-10-20:** Q-171 was answered [2] (hold until the split units land), so this waits on Q-173, which waits on Q-172.
 
 ### Q-169 · q117-spike-paste
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -384,6 +386,7 @@ Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash de
 - **Read:** Q-082 in the archive · decision log 53 (amended 2026-09-28) · the hook header
 - **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
 - **Interim:** the reader stays. It is redundant for `allow`, not harmful.
+- **Landed (dev cycle 2026-10-20):** U1 merged at 79c8a6a6, U2 and U3 (Q-177 [3]'s split-word refusal) at dfc78e9a. The hook emits only `allow` (its header says it never emits `ask`), so the ask-path case is moot; the host deny check was Q-176. Ready to archive.
 
 ### Q-125 · build-cc-isolated-sandbox
 **Needs:** agent · **Opened:** 2026-10-07 · **Status:** OPEN
