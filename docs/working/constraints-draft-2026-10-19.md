@@ -8,12 +8,12 @@ This is input for you, not the constraints doc itself. Once you've settled the c
   - `docs/working/questions-archive.md`, lines 1–1702 and 1703–3459, about 380 KB
   - `docs/working/questions.md`, `docs/thoughts/failure-patterns.md`, `docs/thoughts/retro-constraints-builder.md`, `docs/working/idea-log.md`, `docs/dev-cycle.md` and log row 73
   - Read inline: the research docs on the three build-loop branches (`feat/q146-si-script-commits`, `fix/cc-isolated-profile-names`, `fix/claude-md-import-guard`). They were read as diffs against main and not extracted, since only their constraint citations were counted.
-- **Parsed:** `constraints ok 4-hard 11-soft: docs/working/constraints-draft-2026-10-19.md (draft)` (the installed `~/.claude/scripts/build-loop.sh --check-constraints`, run under `timeout 60`, exit 0).
+- **Parsed:** `constraints ok 4-hard 10-soft: docs/working/constraints-draft-2026-10-19.md (draft)` (the installed `~/.claude/scripts/build-loop.sh --check-constraints`, run under `timeout 60`, exit 0).
 - **Citations:** file:line with a short quote. I spot-checked these against the files: `answers-10-12-26.txt:4-6,11,14,17`, `answers-10-16-26.txt:2,12,18-19,22,36,39-40,47` and `answers-9-20-26.txt:2-3,6-7,12-14,51-52`. Citations into the questions archive are the readers' and were not spot-checked.
 - **Provenance** (step 4, `git blame` on main):
   - `answers-9-20-26.txt`, `answers-9-28-26.txt`, `answers-10-12-26.txt`, `answers-10-16-26.txt` and `CodeReviewWriteup.md` were committed by you, with no agent co-author.
   - `answers-9-17-26-2.txt`, `answers-9-23-26.txt`, `answers-9-23-26-2.txt` and `feedback.md` carry a Claude `Co-Authored-By` trailer. By the skill's rule they count as agent-written, even though they sit in `docs/human-author/`. That includes the Q-050 "only editable copy… human bless" quote and the "I *will* forget to add flags" quote.
-- **Cost:** every line rides in every loop prompt. Revision 2 has 15 lines, and so does this draft: every edit is inside an existing line.
+- **Cost:** every line rides in every loop prompt. Revision 2 has 15 lines; this draft has 14 (the S9 line removed, its IDs not renumbered).
 
 ## Copy-ready block
 
@@ -38,8 +38,7 @@ S4: Put mechanical steps in tested scripts rather than prose; prose that must gu
 S5: Establish the motive before comparing options; the status quo and deciding against a feature are valid outcomes, and value in real use outside this repo outranks loop-internal metrics.
 S6: A new script, skill or workflow needs a call site something actually runs (reachable, not frequently used) and a claimed benefit with an observable that could come out negative; a step that cannot run is re-implemented or removed, never left listed as optional.
 S7: Measure before budgeting a saving; a cost cut in the review pipeline is recall-neutral by construction or gated on a measured recall check.
-S8: Keep units small and dependency-free: under the ~400-line cap (log row 62), no growth of the 500-plus-line files (`cc-isolated.sh`, `install.sh`), python3 stdlib and bash, no new image package without a decision that names it.
-S9: Prefer the minimal change one `git revert` undoes, staged so the cheaper step is checked first; after repeated mechanism errors, cut, coarsen or re-scope the mechanism instead of another patch.
+S8: Keep units small and dependency-free: under the ~400-line cap (log row 62), no growth of the 500-plus-line files (`cc-isolated.sh`, `install.sh`), python3 stdlib and bash, no new image package without a decision that names it, and a change one `git revert` undoes.
 S10: Spend the user's attention last: at most one host paste per verification, no new recurring host chore or trust decision, nothing left behind to clean up, no merge or loop that waits on the user's manual action when a fail-closed alternative exists, and no safety that depends on the user remembering a flag.
 S11: Portable where it costs little: AGENTS.md-readable instructions over Claude-Code-only hooks, pure-text mechanisms over kernel or platform primitives.
 
@@ -62,9 +61,8 @@ S11: Portable where it costs little: AGENTS.md-readable instructions over Claude
 +success: `rg -n -e '^[^#]*claude -p' -e '^[^#]*claude_headless_flags' -- <gate files>` prints nothing; a new judgment check is capped at amber.
 +S1: ... Gates defend against honest slips by a same-uid loop, not a deliberately hostile one, and no restriction may stop all self-merges.
 +S6: ... (reachable, not frequently used) ...; a step that cannot run is re-implemented or removed, never left listed as optional.
-+S8: ... no new image package without a decision that names it.
--S9: ...; after repeated mechanism errors, escalate to a decision instead of another patch.
-+S9: ...; after repeated mechanism errors, cut, coarsen or re-scope the mechanism instead of another patch.
++S8: ... no new image package without a decision that names it, and a change one `git revert` undoes.
+-S9: Prefer the minimal change one `git revert` undoes, staged so the cheaper step is checked first; after repeated mechanism errors, escalate to a decision instead of another patch.
 +S10: ... no merge or loop that waits on the user's manual action when a fail-closed alternative exists, ...
 ```
 
@@ -121,7 +119,7 @@ This section is new evidence only. The citations for revision 2 are in `docs/wor
 ### The S8 line: 1 new decision
 - Archive Q-086:1691 added `parallel` to the Dockerfile's apt list. That was a decision the old "no new image package" wording did not allow.
 
-### The S9 line: 6 new decisions
+### The S9 line (removed at your request, 2026-10-19; the revert clause went to the S8 line, the rest to Moved out): 6 new decisions
 - Archive Q-101:1899 ("Cut, then one confirming pass"), Q-143:2637, Q-140:2646, Q-112:1926 and Q-162:2934 ("I took the simplify option").
 - Log row 73 (`log.md:96`, today): "three review iterations kept finding new ways…", and the fix was to shrink the trust boundary.
 - Cited as the reason in a loop: the `fix/claude-md-import-guard` DD ("C widens scope with no motive (S5, S9)").
@@ -191,6 +189,7 @@ Your answers in session (2026-10-19):
 - The no-branch-image clause is a design constraint and stays in the H3 line.
 - C3: soft, in the S1 line.
 - C4: drop the proposed removing-over-guarding line.
+- Remove the S9 line as guidance rather than a design constraint: its revert clause folds into the S8 line, and its repeated-errors clause goes to `workflows/review-fix-loop.md` (Moved out). The S10 and S11 IDs are not renumbered, so existing loop citations stay valid.
 - C2 and C5 are still open, at their interim readings.
 
 Questions for the top hard lines:
@@ -207,6 +206,7 @@ Questions for the top hard lines:
 | Pre-existing red findings before new work (`answers-10-16-26.txt:22`, "I'm inclined") | setting | nothing | dev-cycle skill, pick order | "Pick a red finding that predates the unit before new work (Q-171 [2])." |
 | Amber merges only with a discoverable TODO or revisit trigger (`answers-9-20-26.txt:51-52`) | decision-local | code-review rubric (Q-041) | already covered | none |
 | Host pastes run no git that can execute planted state (archive Q-162, Q-180, Q-144) | practice | the paste guard | covered by the git-config clause in the H1 line, as a design rule | none |
+| Revision 2's S9 repeated-errors clause: after repeated mechanism errors, cut, coarsen or re-scope instead of another patch (archive Q-101:1899, Q-143:2637, Q-162:2934; log row 73) | process (it applies mid-review, not when comparing designs) | the review-fix loop's cap options at `workflows/review-fix-loop.md:79-81` (escalate, split, abandon), which state no preference for cutting | `workflows/review-fix-loop.md`, beside the cap options | "When a mechanism draws the same class of finding twice, prefer an option that cuts, coarsens or re-scopes it over another patch (Q-101, Q-143, log row 73)." |
 | Fixes carry a test that fails on the old code | practice | memory "Prove old-code failures hermetically" | `CLAUDE.md` Tests | "- A fix's new test fails on the pre-fix code; say so in the merge entry." |
 
 ## Left out
@@ -216,7 +216,7 @@ Questions for the top hard lines:
 | Hook usage logs under-count, so they are not evidence | already in the global instructions (questions routing) | `answers-9-17-26.txt:46-47`, archive Q-017:301-319 |
 | Schema changes are additive | 3 decisions, and it binds formats rather than designs across features | archive Q-047:932, Q-022:402, Q-008:242 |
 | Subscription only, no OpenRouter | already enforced (log row 48; revision 1's moved-out list) | archive Q-006:224, Q-025:583 |
-| Fast suite first, block on red | covered by "staged so the cheaper step is checked first" in the S9 line | `answers-9-20-26.txt:2-3` |
+| Fast suite first, block on red; cheaper step checked first (revision 2's S9 clause) | already handled by the health check's fast-then-slow staging (Q-023); practice, not a design criterion | `answers-9-20-26.txt:2-3`, archive Q-023:948 |
 | Keep the GitHub PR path | a hedge on expected use; a call site exists | `answers-9-20-26.txt:13-14` |
 | Archive over delete | practice | archive Q-021:489 |
 | Accept known-benign shapes exactly, so warnings stay rare | one decision | archive Q-094:1806-1816 |
@@ -231,7 +231,7 @@ Questions for the top hard lines:
 | Earlier rule | Replaced by | Citation |
 |---|---|---|
 | Revision 2's H2 "no `\|\| exit 0` or silent skip on a missing dependency" | the scoped H2 line and its named-lines success check | `hooks/live-verify-gate.sh:53` |
-| Revision 2's "escalate to a decision instead of another patch" | "cut, coarsen or re-scope the mechanism" | archive Q-101, Q-143; log row 73 |
+| Revision 2's S9 line | its revert clause folded into the S8 line; its repeated-errors clause moved to `workflows/review-fix-loop.md` (Moved out); its cheap-step-first clause left out as practice | your request, 2026-10-19 |
 | Q-095's waiver for the 857-rule allowlist | shelved until a sandbox exists | archive :1828 |
 
 ## Notes for the skill
@@ -242,5 +242,6 @@ Questions for the top hard lines:
 - **The existing doc carried the defect the skill warns about** (a preamble pointing at "Moved out" in a file without one). That is evidence the author pasted the block from a working doc.
 - **Revision 2's success lines were mostly not runnable** ("security-reviewer reports no…", "the design names…"). Rewriting them as greps found a live contradiction (live-verify-gate's fail-open lines) within minutes.
 - **The author's corrections:** they took the recommended reading on C1, C3 and the H3 clause, and dropped the one new line (removing over guarding) as practice. A candidate resting only on agent-written evidence was the one cut, which is consistent with the step 4 authority ranking.
+- **The author moved a soft line out after reading the draft:** the S9 line (minimal revertable change, cheap step first, cut after repeated errors) failed the discrimination test on two of three clauses, but it passed both of the skill's earlier sorts (revision 2's and this run's). Clauses that trigger mid-review ("after repeated errors") are process. The sort in step 5 should test each clause for *when* it applies, not only whether designs could differ.
 - **Recording the answers broke the parse once:** a list item beginning `- H3:` made the file unreadable (duplicate ID). The template's rule covers it, but writing answers back into the doc is the moment it bites.
 - **`awk` with `{40}` is not portable** (mawk). The blame loop printed nothing until it was rewritten with `grep -E`. A silent empty result looks like "no author commits".
