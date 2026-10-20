@@ -1,4 +1,4 @@
-Commit: 2b34eced
+Commit: 2b34eced (the pre-split branch tip, no longer reachable; the same patch is the first u3 commit after the split)
 
 # Self-Evaluation: constraints-builder
 
@@ -23,7 +23,7 @@ Commit: 2b34eced
 - Questions: is structure and consistency the value you want, or did you expect discovery lift? How much of the +34 points is the skill teaching to its own test, given that the fixtures came from the same notes?
 
 ### User-Specific Fit
-- Triggers: `constraints-doc-missing`, `none-hard`, `unreadable`, onboarding, an explicit request, amend after a new ADR or drift.
+- Triggers: `constraints-doc-missing`, `none-hard`, `unreadable` (added to the description after this evaluation), onboarding, an explicit request, amend after a new ADR or drift.
 - Questions: after the four repos, is amend the steady state? Will a run in a repo that already has a hand-made doc be a fresh draft or an amend? Does it serve the unattended-loop goal well enough to justify the cost?
 
 ### Failure Mode Gracefulness
