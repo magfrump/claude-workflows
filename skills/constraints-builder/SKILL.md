@@ -160,7 +160,10 @@ move the practice half.
   The shape of the rule suggests the check: "only X does Y" becomes a grep that hits one file;
   "one path for A and B" becomes a parity test; "never derive X in zone Z" becomes a grep on Z;
   "gate before the next step" becomes the gate's exit code. **Run each mechanical success line
-  against today's tree** and record the result. If no observable can be named, the line is
+  against today's tree** and record the result. Then show it can fail: plant one violation in a
+  scratch copy (never the repo) and see the check catch it, and check that it does not hit the
+  legitimate uses step 4 found or a mention in a comment. In the first runs, a grep failed on a
+  docstring, and a regex written before looking would have banned an allowed `new Date(v)`. If no observable can be named, the line is
   soft, or it is a principle rather than a constraint. Demote it and note why.
 - **Word a rule by its mechanism, not its threat level.** "Untrusted" became "code that gates
   a change runs from a copy that change cannot edit".
@@ -172,12 +175,16 @@ move the practice half.
 ## Step 6: Write the working doc and parse it
 
 Write `docs/working/constraints-draft-YYYY-MM-DD.md` using `references/working-doc-template.md`.
-Its sections are: header, copy-ready block, sources, findings, calls for the author, moved out,
-left out, superseded. Then:
+Its sections are: header, copy-ready block, sources, findings, against existing guidance, calls
+for the author, moved out, left out, superseded, notes for the skill. Then:
 
 ```bash
-~/.claude/scripts/build-loop.sh --check-constraints docs/working/constraints-draft-YYYY-MM-DD.md
+timeout 60 ~/.claude/scripts/build-loop.sh --check-constraints docs/working/constraints-draft-YYYY-MM-DD.md
 ```
+
+Run it under `timeout`: it reads whatever it is given, and a path swapped for a FIFO would
+block. It prints the line with `(draft)` after the file name, so it never reads as the gate's
+own verdict for main; quote it as printed.
 
 The whole working doc must parse, not only the block. Prose that starts like an ID is the usual
 failure: reword it (write "the S7 line", never start a line with `S7 …`), and keep IDs out of

@@ -464,7 +464,8 @@ review than to an audit; a deep audit is step 4b's job.
 the loop's research doc (`docs/working/research-STEM.md`, which the loop force-adds), and
 check it against `docs/constraints.md` at that merge. Two things are findings: a soft
 constraint that pruned an option, and a constraint not in the file that decided the pick.
-A finding is a step 4b trigger.
+A finding is a step 4b trigger, and its entry names the `constraints-builder` skill's amend
+mode as the way to revise the file.
 
 ### 4b. Deep-audit check (conditional)
 
@@ -483,7 +484,7 @@ the trigger; it runs on its own branch, outside this cycle. The user confirms it
 timing, and can start one by hand any time. Every deep audit covers one more dimension:
 whether the constraints and project guidance still match intent. It samples Path A records
 more widely and asks the user, per constraint, to promote it, keep it soft or drop it (one
-`you: judgment` entry), and checks that `Self-merge never:` covers the paths that take
+`you: judgment` entry; the revision is a `constraints-builder` amend run), and checks that `Self-merge never:` covers the paths that take
 effect on merge in this repo (F57).
 
 ### 5. Brainstorm (conditional)
