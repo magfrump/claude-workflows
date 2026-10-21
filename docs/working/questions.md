@@ -32,6 +32,7 @@ The index below is generated — edit entries, not the table.
 | [Q-213](#q-213--log-row-73-shared-uid-git-config) | you: judgment | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
 | [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: judgment | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
 | [Q-216](#q-216--merge-2026-10-20-decision-015-amendment-0401d6af5705) | you: judgment | Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs... | 2026-10-20 |
+| [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -55,6 +56,38 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-217 · merge-2026-10-20-cc-verify-host-tool-e87a79122092
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
+
+Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report; nothing run on a host, the sandbox has no docker): `devcontainer-config/cc-verify.sh` (`cc-verify [--profile P] --check FILE REPO BRANCH`, `--clean`, `--help`) stages `git merge-tree --write-tree` of main and BRANCH (refusing a conflict), checks the staged `devcontainer.json` against main's installed copy (JSONC parsed with python3 stdlib; refuses new keys, changed host-reaching keys, runArgs outside NET_ADMIN/NET_RAW plus a staged seccomp file, extra mounts, new host variables, duplicate keys), shows the diffs and asks y/N, runs main's installed `cc-isolated` on a `VERIFY-<tree8>` scratch clone, runs the check file in the container, prints a `Live-verified: <hash> — cc-verify of tree <id>` trailer on a pass, and tears down from an exit trap. Exit codes 0 pass, 1 error or declined, 2 usage, 3 check failed. The pre-mortem's seven mitigations each have bats cases (`test/cc-verify.bats`, 13); it also checks itself against `host-tools.sha256` and main's launcher against `manifest.sha256`. Full health check, hermeticity-lint and shellcheck pass.
+- **Decisions the loop flags:** (1) split into two stacked units over the ~400-line cap (core 6870e947, 360 lines; hardening, wiring and docs d5fa26c1, 210 lines; 620 in all): merge the tip only, as unit 1 alone lacks the JSONC refusal. (2) One line added to `cc-isolated.sh` (`host_tool_files`), which the brief's out-of-scope line excluded but its acceptance criterion needs (confidence medium). (3) python3 becomes a host requirement for cc-verify only; the preflight refuses without it. (4) Not taken from review: an exec failure exits 3, not 1 (errs toward a false fail); the trailer hash is the blessed stage hash, not `cc-isolated --list`'s. (5) Deferred: an interactive mode for Q-130's `/login`, and a multi-branch merge for Q-098.
+- **After merge:** a `you: terminal` entry for the first host run, adding `~/cc-verify` to the agents' sandbox `denyWrite` first; the research doc's §6 lists 11 things that run must show (including whether the devcontainer CLI's JSONC parser treats U+2028 as a line break).
+- **Read:** `git log c1a28e20..e87a79122092d919e9f6c032db90549c6977cd00` · `docs/working/research-2026-10-20-cc-verify-host-tool.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-20-cc-verify-host-tool.md e87a79122092d919e9f6c032db90549c6977cd00 b43d4eb620e195723e0c932393ae26d4c4fcfa41`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/cc-isolated.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A devcontainer-config/cc-verify.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/install.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/dd-branch-verify-without-install.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A docs/working/research-2026-10-20-cc-verify-host-tool.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M hooks/live-verify-gate.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/cc-isolated-functions.bats`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A test/cc-verify.bats`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/install-host.bats`
+- **Path notes:** none is gate code, a dot path or an instruction or prompt file. `hooks/live-verify-gate.sh`, `devcontainer-config/cc-isolated.sh` and `devcontainer-config/install.sh` are enforcement and host-install files: the commits carry `Live-verified: no` and `Host-tool-tested: no` with reasons, and `install.sh` links the new tool, so the change reaches your host at the next install.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly e87a7912; then a host-run entry is filed | Reading a 620-line host tool and its tests | A flaw in a host tool that runs docker on your machine; it only runs when you invoke it, and one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | Q-117, Q-125 and Q-098 stay parked |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main or the host.
 
 ### Q-216 · merge-2026-10-20-decision-015-amendment-0401d6af5705
 **Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
