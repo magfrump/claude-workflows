@@ -37,4 +37,5 @@ No hard constraint is touched: docs only, no gate code, no new dispatch, nothing
 3. Rename 039's heading.
 4. Update §6's heading in the DD doc.
 5. Check: `scripts/dev-cycle.sh` digest section 2 lists 039 and prints both amendments uncut; `bats test/scripts/dev-cycle.bats`.
-6. Review-fix loop (code-fact-check of the new text against the sources above), then set the brief's Status to done.
+6. After the change, row 53's printed clause is 4010 bytes (about 4040 with the digest's prefix, of 4096): its next amendment will be cut in the digest, so that change should split or shorten the row.
+7. Review-fix loop (code-fact-check of the new text against the sources above), then set the brief's Status to done.
