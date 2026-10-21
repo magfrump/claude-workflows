@@ -1,0 +1,12 @@
+# Not from the interviewers. Installed alongside requirements.txt (resolved
+# together, so the three pins above are never moved) because a 25-minute task
+# should not stall on a missing import:
+#   accelerate   - transformers.Trainer refuses to run without it
+#   scikit-learn - metrics, train/test splits, quick baselines
+#   matplotlib   - a plot is often the fastest way to discuss a result
+#   tqdm         - progress for backgrounded runs (log files show it)
+# Skip with: install.sh --no-extras
+accelerate
+scikit-learn
+matplotlib
+tqdm
