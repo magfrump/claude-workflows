@@ -58,3 +58,5 @@ Policy: review
 - Running the tool on the host (a `you: terminal` entry after merge, as Q-169's paste was).
 - Merging main into `feat/q125-cc-isolated-sandbox` or running Q-130 (the DD's step 3).
 - Any change to `cc-isolated.sh` beyond what the self-check needs to read.
+
+Dispatched: 1
