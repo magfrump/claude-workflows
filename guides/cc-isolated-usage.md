@@ -1,6 +1,6 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-27
+Last verified: 2026-10-20
 Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
@@ -57,7 +57,8 @@ directory is a hard error (it refuses rather than guessing another repo).
 `cc-verify --check FILE REPO BRANCH` stages the merge of `main` and BRANCH (from
 REPO's objects, never its working tree), runs your installed `cc-isolated` on that
 stage and a scratch clone named `VERIFY-<tree8>` under `~/cc-verify`, runs FILE in
-the container, and removes everything at exit; nothing is installed and other
+the container, and removes what it created at exit (an image that existed
+before the run is kept); nothing is installed and other
 sessions keep running. It refuses a staged `devcontainer.json` that reaches the host
 differently from your installed one, shows the `devcontainer.json` and `Dockerfile`
 diffs, and asks y/N. A pass prints the `Live-verified:` trailer for the merge. Add

@@ -38,10 +38,12 @@ hash_ok() {  # hash_ok MANIFEST NAME: $CFG/NAME matches its one entry in $CFG/MA
   [ -n "$want" ] && [ -f "$CFG/$2" ] && [ ! -L "$CFG/$2" ] && [ "$(sha256sum < "$CFG/$2" | cut -d' ' -f1)" = "$want" ]
 }
 
-# source_lines_ok DIR FILE: every `source`/`.` line in FILE, and in the files it
-# sources, loads a plain name from its own directory, never the config dir, and
-# CC_ISOLATED_DIR is only ever that directory (pre-mortem 5: then a stage is inert
-# on the host). Prints the first offending line; the names loaded go to SOURCED.
+# source_lines_ok DIR FILE: in FILE and the files it sources, every non-comment
+# `source`/`.` (also after ; & | { ( then do else, or as builtin/command/\source)
+# loads a plain name from the file's own directory, there is no eval, and
+# CC_ISOLATED_DIR is only ever that directory (pre-mortem 5). A grep, not a
+# parser: other spellings, or a staged script run by name, are not seen (as row 71's
+# Q-147). Prints the first offending line; the names loaded go to SOURCED.
 source_lines_ok() {
   local f line i=0 own='"\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\)"'
   local src='^[[:space:]]*source "(\$CC_ISOLATED_DIR|\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\))/([A-Za-z0-9._-]+)"[[:space:]]*$'
@@ -50,10 +52,11 @@ source_lines_ok() {
     f="$1/${q[$i]}"; i=$((i + 1))
     [ -f "$f" ] || { echo "$f is missing"; return 1; }
     while IFS= read -r line; do
-      if [[ "$line" =~ ^[[:space:]]*(source|\.)[[:space:]] ]]; then
+      [[ "$line" =~ ^[[:space:]]*# ]] && continue
+      if [[ "$line" =~ (^|[\;\&\|\{\(]|then|do|else)[[:space:]]*(builtin[[:space:]]+|command[[:space:]]+|\\)?(source|\.)[[:space:]] || "$line" =~ (^|[^A-Za-z_])eval([^A-Za-z_]|$) ]]; then
         [[ "$line" =~ $src ]] || { echo "$f: $line"; return 1; }
         [[ " ${q[*]} " == *" ${BASH_REMATCH[2]} "* ]] || q+=("${BASH_REMATCH[2]}")
-      elif [[ "$line" == *CC_ISOLATED_DIR=* && ! "$line" =~ ^[[:space:]]*CC_ISOLATED_DIR=${own}[[:space:]]*$ ]]; then
+      elif [[ "$line" =~ CC_ISOLATED_DIR(\+?=|:=|\[) || "$line" == *"-v CC_ISOLATED_DIR"* ]] && [[ ! "$line" =~ ^[[:space:]]*CC_ISOLATED_DIR=${own}[[:space:]]*$ ]]; then
         echo "$f: $line"; return 1
       fi
     done < "$f"
@@ -67,12 +70,13 @@ devcontainer_ok() {
   python3 -I - "$1" "$2" <<'PY'
 import json, re, sys
 def load(path):
-    s = open(path, encoding="utf-8").read(); out, i, n = [], 0, len(s)
+    s = open(path, encoding="utf-8", newline="").read(); out, i, n = [], 0, len(s)
     while i < n:
         if s[i] == '"':
             j = i + 1
             while j < n and s[j] != '"': j += 2 if s[j] == "\\" else 1
             out.append(s[i:j + 1]); i = j + 1; continue
+        if s[i] in "\r\u2028\u2029": raise ValueError("a CR or Unicode line separator outside a string")
         if s.startswith("//", i): j = s.find("\n", i); i = n if j < 0 else j; continue
         if s.startswith("/*", i):
             j = s.find("*/", i + 2)
@@ -92,8 +96,10 @@ try:
 except Exception as e:
     print(f"it does not parse as JSONC ({e!r})"); sys.exit(1)
 bad = []
-# These keys act inside the container. Any other key can reach the host
-# (initializeCommand, build, features, workspaceMount, ports...) and must equal main's.
+# A key main lacks is refused outright. Of main's keys, these may differ: they act
+# inside the container (a postStartCommand that drops the firewall is the probe's to
+# catch), or reach the host only through their own rules below (runArgs, mounts).
+# Any other key (build, workspaceMount...) must equal main's.
 free = {"name", "containerEnv", "remoteEnv", "remoteUser", "containerUser", "waitFor", "onCreateCommand",
         "updateContentCommand", "postCreateCommand", "postStartCommand", "postAttachCommand",
         "customizations", "runArgs", "mounts"}
@@ -113,7 +119,11 @@ mounts = s.get("mounts", [])
 for x in (mounts if isinstance(mounts, list) else [mounts]):
     if x not in m.get("mounts", []): bad.append(f"mount {x!r} is not one of main's")
 env = re.compile(r"\$\{\s*(?:localEnv|env)\s*:\s*([^}:\s]+)")
-for v in sorted(set(env.findall(sraw)) - set(env.findall(mraw))):
+def names(x):  # host variables read anywhere in the parsed values and keys
+    if isinstance(x, dict): return set().union(*(names(k) | names(v) for k, v in x.items()))
+    if isinstance(x, list): return set().union(*(names(v) for v in x))
+    return set(env.findall(x)) if isinstance(x, str) else set()
+for v in sorted(names(s) - names(m)):
     bad.append(f"it reads the host variable {v!r}, which main's does not")
 print("\n".join(bad)); sys.exit(1 if bad else 0)
 PY
@@ -242,8 +252,8 @@ list() {  # list NAME PATTERN: the items of install.sh's one-line NAME=(...), ea
   read -ra items <<< "${l%)}"   # split without globbing
   for item in "${items[@]}"; do [[ "$item" =~ $2 && "$item" != *..* ]] || die "$(printf '%s item %q is not a plain name.' "$1" "$item")"; echo "$item"; done
 }
-l="$(list PAYLOAD '^[A-Za-z0-9._-]+$')" && mapfile -t PAYLOAD <<< "$l" || { DIED=1; exit 1; }
-l="$(list CLAUDE_HOME_SRC '^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?$')" && mapfile -t HOME_SRC <<< "$l" || { DIED=1; exit 1; }
+l="$(list PAYLOAD '^[A-Za-z0-9._][A-Za-z0-9._-]*$')" && mapfile -t PAYLOAD <<< "$l" || { DIED=1; exit 1; }
+l="$(list CLAUDE_HOME_SRC '^[A-Za-z0-9._][A-Za-z0-9._-]*(/[A-Za-z0-9._-]+)?$')" && mapfile -t HOME_SRC <<< "$l" || { DIED=1; exit 1; }
 mapfile -t HOST_TOOLS < <(awk '$2 ~ /^[A-Za-z0-9._-]+$/ { print $2 }' "$CFG/host-tools.sha256")
 DC=() BUILD=()
 for i in "${PAYLOAD[@]}"; do
@@ -267,6 +277,9 @@ why="$(devcontainer_ok "$CFG/devcontainer.json" stage/devcontainer.json)" \
   || { printf '%s\n' "$why" | relay; die "the staged devcontainer.json reaches the host in a way main's does not (above)."; }
 echo "CHECK devcontainer.json keys, runArgs, mounts and host variables: ok"
 for f in devcontainer.json Dockerfile; do diff -u "$CFG/$f" "stage/$f" | relay || true; done
+[ "$(grep -E '^[[:space:]]*FROM' "$CFG/Dockerfile")" = "$(grep -E '^[[:space:]]*FROM' stage/Dockerfile)" ] \
+  && ! grep -qi 'devcontainer\.metadata' stage/Dockerfile \
+  || die "the staged Dockerfile changes a FROM line or sets devcontainer.metadata, which can add run options on the host."
 echo "Staged items that differ from main's install:"
 for i in "${PAYLOAD[@]}"; do diff -rq "$CFG/$i" "stage/$i" >/dev/null 2>&1 || echo "  $i"; done
 printf 'Build and run this config as VERIFY-%s? [y/N] ' "$T8"
@@ -310,6 +323,7 @@ grep -qxF "$img" images-before && echo "NOTE: the verify image $img existed befo
   || echo "CHECK container unprivileged, capabilities within NET_ADMIN and NET_RAW, image new: ok"
 
 say "7. run $CHECK in VERIFY-$T8"
+[ "$(stage_hash)" = "$H" ] || die "the stage changed before the check (devcontainer exec re-reads its devcontainer.json)."
 CC_EGRESS_PROFILE="$(tr -d '[:space:]' < "stage/projects/$PID.profile")"
 export CC_PROJECT_ID="$PID" CC_PROJECT_NAME="VERIFY-$T8" CC_CONFIG_DIR="$RUN/stage" CC_CONFIG_HASH="$HASH" CC_EGRESS_PROFILE
 rc=0

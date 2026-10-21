@@ -96,7 +96,7 @@ Not covered (residuals, as the spike's): a same-uid writer of `~/cc-verify` raci
 
 None of these can be settled in the sandbox (no docker). The guide lists them for the first run's paste-back:
 
-1. The devcontainer CLI's image for `VERIFY-<tree8>` is a new image, not a retag of main's (spike "Not verified" 1, research §7, the image-collision item): the `CHECK verify image new` line and teardown's image line show it.
+1. The devcontainer CLI's image for `VERIFY-<tree8>` is a new image, not a retag of main's (spike "Not verified" 1, research §7, the image-collision item): the `CHECK container unprivileged, … image new` line (a `NOTE: the verify image … existed before the run` line refutes it) and teardown's image line show it.
 2. Main's launcher on a stage builds, probes and records `verified-live.sha256` (research §7): `CHECK verified-live receipt` shows it.
 3. `devcontainer exec` with the launcher's five exported variables reaches the container and passes the block's exit status back (spike 3, 4): run once with a check file that is just `exit 3`; expect `RESULT cc-verify fail` and exit 3.
 4. `docker rm`/`volume rm`/`image rm` leave the before-state (research §7): the `CHECK … gone` lines.
@@ -104,6 +104,9 @@ None of these can be settled in the sandbox (no docker). The guide lists them fo
 6. Root-owned files the container writes into the workspace can make teardown fail (spike 11): an incomplete teardown names the path.
 7. `devcontainer read-configuration` (research §7): not used; D2 [A] replaces it.
 8. Whether the CLI layers a `-uid` image over the `vsc-…` build image (remoteUser `node` on a host uid other than 1000). Teardown removes only the container's own image, so a base `vsc-verify-<tree8>…` image would be left: after the first run, `docker images | grep -i verify` must print nothing (unit-1 review F8).
+9. Whether the devcontainer CLI's jsonc-parser treats U+2028/U+2029 as line breaks: cc-verify refuses them outside strings either way (unit-2 review F4), so this only decides whether that refusal is needed.
+10. The post-create inspect reads Privileged and CapAdd only. Mounts, SecurityOpt, PidMode, NetworkMode, IpcMode, UsernsMode and Devices are not compared (unit-2 review F5): on the first run, `docker inspect` the VERIFY container before teardown (or read `--probe-only`'s output) and compare them with a main container's. The review-time rule that the Dockerfile keeps main's FROM lines and sets no `devcontainer.metadata` closes the label route this would detect.
+11. A seccomp profile named in runArgs is listed among the staged items that differ, but its content is not judged: a profile whose defaultAction allows everything is as weak as `seccomp=unconfined`. Read its diff at the y/N (residual).
 
 The two units land together (one merge of the branch tip): unit 1 alone has no JSONC refusal, so its only defence against a branch's `initializeCommand` is the y/N diff (unit-1 review F1). It is not installed or linked until unit 2.
 
