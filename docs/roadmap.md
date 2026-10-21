@@ -27,7 +27,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
   folds its open claims into the tool's first run. Brief:
   `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
 - **Apply decision 015's amendment and close log row 66** (was Next 4 and Next 1). Q-170
-  answered [A], Q-179 answered [1]. Brief:
+  answered [A], Q-179 answered [1]. Built and ready; merge is Q-216. Brief:
   `docs/working/briefs/2026-10-20-decision-015-amendment.md`
 
 ## Next

@@ -31,6 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-194](#q-194--decision-031-t4-fix-drift-miss) | you: judgment | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
 | [Q-213](#q-213--log-row-73-shared-uid-git-config) | you: judgment | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
 | [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: judgment | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
+| [Q-216](#q-216--merge-2026-10-20-decision-015-amendment-0401d6af5705) | you: judgment | Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs... | 2026-10-20 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -54,6 +55,32 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-216 · merge-2026-10-20-decision-015-amendment-0401d6af5705
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
+
+Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs/2026-10-20-decision-015-amendment.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report, docs only): decision 015 carries §6's three edits from `docs/working/dd-015-step4-isolation-mechanism.md` (the trigger sentence and table cell byte-identical to the draft; the Consequences note dated 2026-10-20 and holding Q-170's V1 answer: host fallbacks came from boundary-layer configs, none from Docker). Log row 66 gets a Q-179 [1] close with the cycle-3 tally and your reason. Log row 53 gets a Q-176/Q-177 [3] amendment: split-word, backslash-newline and brace spellings prompt again; a whole quoted word (spellings 7, 9) is a stated residual; the Claude Code version was not recorded. Decision 039's heading becomes `## Revisit triggers`, so the digest now lists it. The DD doc's §6 heading says it was applied. A fact-check review found no must-fix item.
+- **Follow-up the loop flags:** log row 53's digest line is now about 4040 bytes against the 4096-byte cut; its next amendment should split or shorten the row.
+- **Read:** `git log c1a28e20..0401d6af5705acd90f245c06e718e9a58675a154` · `docs/working/research-2026-10-20-decision-015-amendment.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-20-decision-015-amendment.md 0401d6af5705acd90f245c06e718e9a58675a154 087c7611142a36d664737ab3bf041a342c74f641`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/015-cc-process-isolation-docker-devcontainer.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/039-pin-resolver-to-phase-a.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/briefs/2026-10-20-decision-015-amendment.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/dd-015-step4-isolation-mechanism.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md A docs/working/research-2026-10-20-decision-015-amendment.md`
+- **Path notes:** the three `docs/decisions/` paths are your records, which self-merge's floor would have refused; none is an instruction or prompt file, a dot path or gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 0401d6af | Reading three decision-record amendments | A wording error in a record; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | 015's trigger and rows 53, 66 keep reading as before |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
 
 ### Q-213 · log-row-73-shared-uid-git-config
 **Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
