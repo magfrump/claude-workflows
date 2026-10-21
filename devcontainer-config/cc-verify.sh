@@ -147,7 +147,8 @@ teardown() {
       else echo "NOTE: kept image $img: it existed before the run, or another container uses it."; fi
     done
   fi
-  [ "$fail" = 0 ] && rm -rf --one-file-system -- "$d" || { echo "TEARDOWN: left $d"; return 1; }
+  [ "$fail" = 0 ] && rm -rf --one-file-system -- "$d" \
+    || { echo "TEARDOWN: left $d (files the container wrote as root? then: sudo rm -rf -- $(printf %q "$d"))"; return 1; }
 }
 
 on_exit() {
@@ -212,9 +213,9 @@ shopt -s nullglob; left=("$ROOT"/run-*); shopt -u nullglob
 [ "${#left[@]}" -eq 0 ] || die "an earlier run left ${left[*]}; run: cc-verify --clean"
 RUN="$ROOT/run-$(date +%s)-$$"
 mkdir -m 700 -- "$RUN" && RUN="$(cd -P -- "$RUN" && pwd)" && cd -- "$RUN" || die "could not create $RUN."
-printf 'PID=%s\n' "$$" > record   # the run file: --clean reads it, and a new run refuses while it exists
 trap on_exit EXIT
 trap 'exit 130' INT TERM HUP
+printf 'PID=%s\n' "$$" > record   # the run file: --clean reads it, and a new run refuses while it exists
 
 say "1. merge main + $BRANCH"
 G=(git --no-optional-locks -C src.git -c core.hooksPath=/dev/null -c core.fsmonitor=false)
@@ -223,8 +224,8 @@ git -c core.hooksPath=/dev/null -c core.fsmonitor=false clone -q --bare --no-loc
 MAIN="$("${G[@]}" rev-parse --verify -q 'refs/heads/main^{commit}')" || die "no branch main in $REPO."
 BR="$("${G[@]}" rev-parse --verify -q --end-of-options "$BRANCH^{commit}")" || die "no commit $BRANCH in $REPO."
 mrc=0
-mt="$("${G[@]}" merge-tree --write-tree --name-only "$MAIN" "$BR" 2>&1)" || mrc=$?
-[ "$mrc" = 0 ] || { printf '%s\n' "$mt" | relay; [ "$mrc" != 1 ] || die "$BRANCH does not merge cleanly with main (above)."
+mt="$("${G[@]}" merge-tree --write-tree --name-only "$MAIN" "$BR" 2>merge-err)" || mrc=$?
+[ "$mrc" = 0 ] || { printf '%s\n' "$mt" | cat - merge-err | relay; [ "$mrc" != 1 ] || die "$BRANCH does not merge cleanly with main (above)."
   die "git merge-tree --write-tree failed (it needs git >= 2.38)."; }
 TREE="$(head -1 <<< "$mt")"
 [[ "$TREE" =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || die "merge-tree printed no tree id."
@@ -235,10 +236,11 @@ banner "Everything it creates is removed at exit."
 say "2. stage the merge tree's devcontainer-config/ as install.sh lays it out"
 inst="$("${G[@]}" show "$TREE:devcontainer-config/install.sh")" || die "no devcontainer-config/install.sh in the merge tree."
 list() {  # list NAME PATTERN: the items of install.sh's one-line NAME=(...), each matching PATTERN
-  local l item
+  local l item items
   l="$(grep -m1 "^$1=(.*)\$" <<< "$inst")" || die "no one-line $1=(...) in the merge tree's install.sh."
   l="${l#"$1=("}"
-  for item in ${l%)}; do [[ "$item" =~ $2 && "$item" != *..* ]] || die "$(printf '%s item %q is not a plain name.' "$1" "$item")"; echo "$item"; done
+  read -ra items <<< "${l%)}"   # split without globbing
+  for item in "${items[@]}"; do [[ "$item" =~ $2 && "$item" != *..* ]] || die "$(printf '%s item %q is not a plain name.' "$1" "$item")"; echo "$item"; done
 }
 l="$(list PAYLOAD '^[A-Za-z0-9._-]+$')" && mapfile -t PAYLOAD <<< "$l" || { DIED=1; exit 1; }
 l="$(list CLAUDE_HOME_SRC '^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?$')" && mapfile -t HOME_SRC <<< "$l" || { DIED=1; exit 1; }

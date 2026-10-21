@@ -103,6 +103,9 @@ None of these can be settled in the sandbox (no docker). The guide lists them fo
 5. git >= 2.38 on the host (spike 5): a refusal names it otherwise.
 6. Root-owned files the container writes into the workspace can make teardown fail (spike 11): an incomplete teardown names the path.
 7. `devcontainer read-configuration` (research §7): not used; D2 [A] replaces it.
+8. Whether the CLI layers a `-uid` image over the `vsc-…` build image (remoteUser `node` on a host uid other than 1000). Teardown removes only the container's own image, so a base `vsc-verify-<tree8>…` image would be left: after the first run, `docker images | grep -i verify` must print nothing (unit-1 review F8).
+
+The two units land together (one merge of the branch tip): unit 1 alone has no JSONC refusal, so its only defence against a branch's `initializeCommand` is the y/N diff (unit-1 review F1). It is not installed or linked until unit 2.
 
 ## 7. Follow-ups not built here
 

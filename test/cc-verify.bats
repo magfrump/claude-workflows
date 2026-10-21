@@ -25,7 +25,7 @@ case "$*" in
   "rm -f cid1") rm -f "$STUB/container" ;;
   "volume inspect "*) [ -f "$STUB/vol-$3" ] ;;
   "volume rm "*) rm "$STUB/vol-$3" ;;
-  "image ls -q --no-trunc") echo sha256:old ;;
+  "image ls -q --no-trunc") cat "$STUB/images" 2>/dev/null || echo sha256:old ;;
   "image rm sha256:new") ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
@@ -33,7 +33,7 @@ EOF
   # devcontainer: only `exec ... bash -c BLOCK`, which runs BLOCK here.
   cat > "$T/bin/devcontainer" <<'EOF'
 #!/usr/bin/env bash
-[ "$1 $2 $4 $6 $8 $9" = "exec --workspace-folder --override-config --id-label bash -c" ] || { echo "unexpected: devcontainer $*" >&2; exit 99; }
+[ "$1 $2 $4 $6 $8 $9" = "exec --workspace-folder --override-config --id-label bash -c" ] && [[ "$5" == */stage/devcontainer.json ]] || { echo "unexpected: devcontainer $*" >&2; exit 99; }
 exec bash -c "${10}"
 EOF
   # Main's "installed launcher": --register blesses the stage, --probe-only starts a
@@ -41,7 +41,7 @@ EOF
   cat > "$T/cfg/cc-isolated.sh" <<'EOF'
 #!/usr/bin/env bash
 set -eu
-c="$CLAUDE_DEVC_CONFIG_DIR"; pid="$(printf %s "$2" | sha256sum | cut -c1-12)"
+c="$CLAUDE_DEVC_CONFIG_DIR"; pid="$(printf %s "$2" | sha256sum | cut -c1-12)"; echo "${GH_TOKEN-unset}" > "$STUB/gh-token"
 case "$1" in
   --register) mkdir -p "$c/projects"; echo "$4" > "$c/projects/$pid.profile"
     (cd "$c" && sha256sum devcontainer.json Dockerfile > manifest.sha256 && sha256sum cc-push.sh cc-verify.sh > host-tools.sha256) ;;
@@ -89,7 +89,7 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
 
 @test "pass: VERIFY-<tree8> naming and banner, tree id in RESULT and trailer, host tools gone, all torn down (1, 6)" {
   tree="$(git -C "$R" merge-tree --write-tree main feat/x)"
-  verify
+  GH_TOKEN=secret verify
   [ "$status" -eq 0 ]
   [[ "$output" == *"  | name=VERIFY-${tree:0:8}"* ]]
   [ "$(grep -c "VERIFY-${tree:0:8} is a THROWAWAY verify of tree $tree" <<< "$output")" = 2 ]
@@ -99,7 +99,15 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   [[ "$output" == *"CHECK host tools removed from the stage (cc-push.sh cc-verify.sh): ok"* ]]
   [[ "$output" == *"CHECK verify container, volumes, image and run dir removed: ok"* ]]
   grep -qx 'docker image rm sha256:new' "$STUB/docker.log"
-  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ] && [ -z "$(ls "$STUB" | grep '^vol-')" ]
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ] && [ -z "$(find "$STUB" -name 'vol-*')" ]
+  [ "$(cat "$STUB/gh-token")" = unset ]   # opt-in credentials never reach the launcher
+}
+
+@test "teardown keeps an image that existed before the run (10)" {
+  echo sha256:new > "$STUB/images"
+  verify
+  [ "$status" -eq 0 ] && [[ "$output" == *"NOTE: kept image sha256:new"* ]]
+  run ! grep -q 'image rm' "$STUB/docker.log"
 }
 
 @test "a failing check exits 3 and still tears down" {
@@ -124,7 +132,7 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
 @test "n at the prompt declines: nothing is built and the run dir is gone (3)" {
   verify feat/x n
   [ "$status" -eq 1 ] && [[ "$output" == *"declined: nothing was built."* ]]
-  ! grep -q 'cid1\|volume' "$STUB/docker.log"
+  [ ! -e "$STUB/gh-token" ]   # main's launcher never ran: nothing was registered or built
   [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
 }
 
@@ -140,7 +148,7 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
     verify "$b"
     [ "$status" -eq 1 ] && [[ "$output" == *"reaches the host in a way main's does not"* ]] || { echo "$b: $output"; return 1; }
   done
-  ! grep -q 'cid1\|volume' "$STUB/docker.log"
+  [ ! -e "$STUB/gh-token" ]   # main's launcher never ran: nothing was registered or built
   [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
 }
 
