@@ -24,7 +24,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
 - **Verify a branch without installing it: the `cc-verify` host tool** (was Now). Motive:
   Q-117, Q-125 and Q-098 wait on it. Q-165 answered [1] (the tool takes the config it
   verifies as an argument), Q-166 [2]. The hand spike paste Q-169 stays open; the brief
-  folds its open claims into the tool's first run. Brief:
+  folds its open claims into the tool's first run. Built and ready; merge is Q-217. Brief:
   `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
 - **Apply decision 015's amendment and close log row 66** (was Next 4 and Next 1). Q-170
   answered [A], Q-179 answered [1]. Built and ready; merge is Q-216. Brief:
