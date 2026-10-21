@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
 Last verified: 2026-09-27
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -35,6 +35,8 @@ no note (see the paragraph after it).
 | `cc-push --clone DIR [REPO]` | a host-only clone other than the default |
 | `cc-push --allow-running [REPO]` | go on although the session's container runs (warns) |
 | `cc-push --help` | usage header, exit codes included |
+| `cc-verify --check FILE REPO BRANCH` | live-verify BRANCH's config without installing it (below) |
+| `cc-verify --clean` | remove what an interrupted `cc-verify` run left |
 
 `cc-push` takes one checkout (`cc-push A B` and `cc-push A -- B` are usage
 errors), and `cc-isolated` one workspace, under the same rule. Before `--`,
@@ -49,6 +51,19 @@ offending value. A directory whose name starts with `#` is `./#name` or
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
 directory is a hard error (it refuses rather than guessing another repo).
+
+### Verify a branch without installing it: cc-verify
+
+`cc-verify --check FILE REPO BRANCH` stages the merge of `main` and BRANCH (from
+REPO's objects, never its working tree), runs your installed `cc-isolated` on that
+stage and a scratch clone named `VERIFY-<tree8>` under `~/cc-verify`, runs FILE in
+the container, and removes everything at exit; nothing is installed and other
+sessions keep running. It refuses a staged `devcontainer.json` that reaches the host
+differently from your installed one, shows the `devcontainer.json` and `Dockerfile`
+diffs, and asks y/N. A pass prints the `Live-verified:` trailer for the merge. Add
+`~/cc-verify` to your agents' sandbox `denyWrite` first. `cc-verify --help` has the
+rest; what the first host run must show is in
+`docs/working/research-2026-10-20-cc-verify-host-tool.md` §6.
 
 ## What a launch does, in order
 

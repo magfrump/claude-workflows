@@ -20,6 +20,8 @@ case "$*" in
   "ps -aq --no-trunc --filter label=cc-project=$c") [ -z "$c" ] || echo cid1 ;;
   "ps -aq --no-trunc --filter "*) ;;
   "inspect -f {{.Image}} cid1") echo sha256:new ;;
+  "inspect -f {{.HostConfig.Privileged}} {{json .HostConfig.CapAdd}} {{.Image}} cid1")
+    cat "$STUB/inspect" 2>/dev/null || echo 'false ["NET_ADMIN","NET_RAW"] sha256:new' ;;
   "rm -f cid1") rm -f "$STUB/container" ;;
   "volume inspect "*) [ -f "$STUB/vol-$3" ] ;;
   "volume rm "*) rm "$STUB/vol-$3" ;;
@@ -35,7 +37,7 @@ EOF
 exec bash -c "${10}"
 EOF
   # Main's "installed launcher": --register blesses the stage, --probe-only starts a
-  # container and writes the receipt.
+  # container (plus a stage edit when $STUB/tamper exists) and writes the receipt.
   cat > "$T/cfg/cc-isolated.sh" <<'EOF'
 #!/usr/bin/env bash
 set -eu
@@ -44,6 +46,7 @@ case "$1" in
   --register) mkdir -p "$c/projects"; echo "$4" > "$c/projects/$pid.profile"
     (cd "$c" && sha256sum devcontainer.json Dockerfile > manifest.sha256 && sha256sum cc-push.sh cc-verify.sh > host-tools.sha256) ;;
   --probe-only) echo "$pid" > "$STUB/container"; touch "$STUB/vol-cc-$pid-bashhistory" "$STUB/vol-cc-$pid-claude-config"
+    [ ! -f "$STUB/tamper" ] || echo 'RUN evil' >> "$c/Dockerfile"
     sha256sum < "$c/manifest.sha256" | cut -c1-16 > "$c/verified-live.sha256" ;;
   *) exit 99 ;;
 esac
@@ -79,6 +82,10 @@ teardown() { chmod -R u+rwx "$T" 2>/dev/null; rm -rf "$T"; }
 commit() { git -C "$1" add -A && git -C "$1" -c user.name=t -c user.email=t@e -c commit.gpgsign=false commit -qm "$2"; }
 bless_main() { (cd "$T/cfg" && sha256sum cc-isolated.sh devcontainer.json Dockerfile > manifest.sha256 && sha256sum cc-push.sh cc-verify.sh > host-tools.sha256); }
 verify() { run "$T/cfg/cc-verify.sh" --check "$T/check" "$R" "${1:-feat/x}" <<< "${2:-y}"; }
+branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JSON
+  git -C "$R" checkout -q -b "$1" main && printf '%s\n' "$2" > "$R/devcontainer-config/devcontainer.json" && commit "$R" "$1"
+  git -C "$R" checkout -q main
+}
 
 @test "pass: VERIFY-<tree8> naming and banner, tree id in RESULT and trailer, host tools gone, all torn down (1, 6)" {
   tree="$(git -C "$R" merge-tree --write-tree main feat/x)"
@@ -119,6 +126,52 @@ verify() { run "$T/cfg/cc-verify.sh" --check "$T/check" "$R" "${1:-feat/x}" <<< 
   [ "$status" -eq 1 ] && [[ "$output" == *"declined: nothing was built."* ]]
   ! grep -q 'cid1\|volume' "$STUB/docker.log"
   [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "devcontainer.json: host-reaching keys, runArgs, mounts and host variables outside main's are refused before anything is built (3)" {
+  base='"name": "n", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" }, "mounts": []'
+  branch_json init-cmd "{ $base, \"initializeCommand\": \"touch /tmp/pwned\", \"runArgs\": [] }"
+  branch_json priv "{ $base, \"runArgs\": [\"--privileged\"] }"
+  branch_json bind '{ "name": "n", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" }, "mounts": ["source=/,target=/host,type=bind"] }'
+  branch_json env "{ $base, \"containerEnv\": { \"K\": \"\${localEnv:AWS_SECRET_ACCESS_KEY}\" } }"
+  branch_json build '{ "name": "n", "build": { "dockerfile": "/etc/Dockerfile" } }'
+  branch_json dupe "{ $base, \"runArgs\": [], \"runArgs\": [\"--privileged\"] }"
+  for b in init-cmd priv bind env build dupe; do
+    verify "$b"
+    [ "$status" -eq 1 ] && [[ "$output" == *"reaches the host in a way main's does not"* ]] || { echo "$b: $output"; return 1; }
+  done
+  ! grep -q 'cid1\|volume' "$STUB/docker.log"
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "devcontainer.json: a seccomp profile from the stage (Q-125's runArgs) passes; n at the prompt declines (3)" {
+  branch_json sec '{ "name": "x", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" },
+    "runArgs": ["--cap-add=NET_ADMIN", "--security-opt", "seccomp=${localEnv:CC_CONFIG_DIR}/seccomp-cc.json"], /* c */ }'
+  verify sec n
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"CHECK devcontainer.json keys, runArgs, mounts and host variables: ok"* ]]
+  [[ "$output" == *'+    "runArgs": ["--cap-add=NET_ADMIN", "--security-opt"'* ]]
+  [[ "$output" == *"declined: nothing was built."* ]]
+}
+
+@test "a stage edited after the review refuses the verdict; a privileged container is refused (3b, 4)" {
+  touch "$STUB/tamper"; verify
+  [ "$status" -eq 1 ] && [[ "$output" == *"changed after the review"* ]] && [[ "$output" != *RESULT* ]]
+  rm "$STUB/tamper"; echo 'true [] sha256:new' > "$STUB/inspect"; verify
+  [ "$status" -eq 1 ] && [[ "$output" == *"the verify container is privileged"* ]]
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "self-check: a launcher that sources from its config dir is refused; the real launcher passes (5)" {
+  echo 'source "$(config_dir)/cc-exit-scan.sh"' >> "$T/cfg/cc-isolated.sh"; bless_main
+  verify
+  [ "$status" -eq 1 ] && [[ "$output" == *'may load code from its config dir'*'source "$(config_dir)/cc-exit-scan.sh"'* ]]
+  cp "$SRC/cc-isolated.sh" "$SRC/cc-exit-scan.sh" "$SRC/cc-gitdir.sh" "$T/cfg/"; bless_main
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 0 ]
+  sed -i 's|^CC_ISOLATED_DIR=.*|CC_ISOLATED_DIR="$(config_dir)"|' "$T/cfg/cc-isolated.sh"; bless_main
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 1 ] && [[ "$output" == *'CC_ISOLATED_DIR="$(config_dir)"'* ]]
 }
 
 @test "a branch that conflicts with main is refused (6)" {

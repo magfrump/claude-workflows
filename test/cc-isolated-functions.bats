@@ -33,6 +33,7 @@ setup() {
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-verify.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
@@ -815,7 +816,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -915,7 +916,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"
@@ -1046,7 +1047,7 @@ fake_payload_and_dest() {
   items="${payload_line#PAYLOAD=(}"; items="${items%)}"
   enf="$(enforcement_files)"
   host="$(host_tool_files)"
-  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   for item in $host; do
     if echo "$enf" | grep -qx "$item"; then echo "in both lists: $item"; return 1; fi
   done
@@ -1069,7 +1070,7 @@ fake_payload_and_dest() {
 @test "bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone" {
   bless_manifest >/dev/null
   [ -f "$(host_tools_path)" ]
-  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   if grep -E 'cc-(push|exit-scan|gitdir)\.sh' "$(manifest_path)"; then return 1; fi
   local before
   before="$(blessed_hash)"
@@ -1264,7 +1265,7 @@ fake_payload_and_dest() {
   mkdir -p "$ws"
   bash "$d/cc-isolated.sh" --bless >/dev/null
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)"* ]]
+  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)"* ]]
   cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
   echo 'echo x' >> "$d/cc-push.sh"
   run bash "$d/cc-isolated.sh" --list
