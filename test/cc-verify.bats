@@ -171,13 +171,14 @@ branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JS
   [[ "$output" == *"declined: nothing was built."* ]]
 }
 
-@test "a branch Dockerfile that changes FROM or sets devcontainer.metadata is refused at the review (3b)" {
+@test "a branch Dockerfile that changes a FROM or LABEL line, in any case or spelling, is refused at the review (3b)" {
   git -C "$R" checkout -q -b from main && echo 'FROM evil' > "$R/devcontainer-config/Dockerfile" && commit "$R" from
-  git -C "$R" checkout -q -b label main && echo 'LABEL devcontainer.metadata="[]"' >> "$R/devcontainer-config/Dockerfile" && commit "$R" label
+  git -C "$R" checkout -q -b lower main && echo 'from evil' >> "$R/devcontainer-config/Dockerfile" && commit "$R" lower
+  git -C "$R" checkout -q -b label main && printf 'ARG K=devcontainer\nLABEL ${K}.metadata="[]"\n' >> "$R/devcontainer-config/Dockerfile" && commit "$R" label
   git -C "$R" checkout -q main
-  for b in from label; do
+  for b in from lower label; do
     verify "$b"
-    [ "$status" -eq 1 ] && [[ "$output" == *"changes a FROM line or sets devcontainer.metadata"* ]] || { echo "$b: $output"; return 1; }
+    [ "$status" -eq 1 ] && [[ "$output" == *"changes a FROM or LABEL line"* ]] || { echo "$b: $output"; return 1; }
   done
   [ ! -e "$STUB/gh-token" ]
 }

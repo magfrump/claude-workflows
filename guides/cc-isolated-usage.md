@@ -61,7 +61,8 @@ the container, and removes what it created at exit (an image that existed
 before the run is kept); nothing is installed and other
 sessions keep running. It refuses a staged `devcontainer.json` that reaches the host
 differently from your installed one, shows the `devcontainer.json` and `Dockerfile`
-diffs, and asks y/N. A pass prints the `Live-verified:` trailer for the merge. Add
+diffs, and asks y/N (it lists other changed items, such as a seccomp profile, but
+does not judge their content: diff those yourself before the y). A pass prints the `Live-verified:` trailer for the merge. Add
 `~/cc-verify` to your agents' sandbox `denyWrite` first. `cc-verify --help` has the
 rest; what the first host run must show is in
 `docs/working/research-2026-10-20-cc-verify-host-tool.md` §6.

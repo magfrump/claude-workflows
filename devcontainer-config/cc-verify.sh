@@ -43,7 +43,7 @@ hash_ok() {  # hash_ok MANIFEST NAME: $CFG/NAME matches its one entry in $CFG/MA
 # loads a plain name from the file's own directory, there is no eval, and
 # CC_ISOLATED_DIR is only ever that directory (pre-mortem 5). A grep, not a
 # parser: other spellings, or a staged script run by name, are not seen (as row 71's
-# Q-147). Prints the first offending line; the names loaded go to SOURCED.
+# Q-147), nor CC_ISOLATED_DIR set by read, for or mapfile. Prints the first offending line; the names loaded go to SOURCED.
 source_lines_ok() {
   local f line i=0 own='"\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\)"'
   local src='^[[:space:]]*source "(\$CC_ISOLATED_DIR|\$\(dirname -- "\$\(readlink -f -- "\$\{BASH_SOURCE\[0\]\}"\)"\))/([A-Za-z0-9._-]+)"[[:space:]]*$'
@@ -53,7 +53,7 @@ source_lines_ok() {
     [ -f "$f" ] || { echo "$f is missing"; return 1; }
     while IFS= read -r line; do
       [[ "$line" =~ ^[[:space:]]*# ]] && continue
-      if [[ "$line" =~ (^|[\;\&\|\{\(]|then|do|else)[[:space:]]*(builtin[[:space:]]+|command[[:space:]]+|\\)?(source|\.)[[:space:]] || "$line" =~ (^|[^A-Za-z_])eval([^A-Za-z_]|$) ]]; then
+      if [[ "$line" =~ (^|[\;\&\|\{\(\!\`]|then|do|else|if|elif|while|until|time)[[:space:]]*(builtin[[:space:]]+|command[[:space:]]+|\\)?(source|\.)[[:space:]] || "$line" =~ (^|[^A-Za-z_])eval([^A-Za-z_]|$) ]]; then
         [[ "$line" =~ $src ]] || { echo "$f: $line"; return 1; }
         [[ " ${q[*]} " == *" ${BASH_REMATCH[2]} "* ]] || q+=("${BASH_REMATCH[2]}")
       elif [[ "$line" =~ CC_ISOLATED_DIR(\+?=|:=|\[) || "$line" == *"-v CC_ISOLATED_DIR"* ]] && [[ ! "$line" =~ ^[[:space:]]*CC_ISOLATED_DIR=${own}[[:space:]]*$ ]]; then
@@ -277,9 +277,11 @@ why="$(devcontainer_ok "$CFG/devcontainer.json" stage/devcontainer.json)" \
   || { printf '%s\n' "$why" | relay; die "the staged devcontainer.json reaches the host in a way main's does not (above)."; }
 echo "CHECK devcontainer.json keys, runArgs, mounts and host variables: ok"
 for f in devcontainer.json Dockerfile; do diff -u "$CFG/$f" "stage/$f" | relay || true; done
-[ "$(grep -E '^[[:space:]]*FROM' "$CFG/Dockerfile")" = "$(grep -E '^[[:space:]]*FROM' stage/Dockerfile)" ] \
-  && ! grep -qi 'devcontainer\.metadata' stage/Dockerfile \
-  || die "the staged Dockerfile changes a FROM line or sets devcontainer.metadata, which can add run options on the host."
+# FROM and LABEL lines (case-insensitive, continuations joined) must be main's: a new
+# base image or a devcontainer.metadata label can add run options on the host.
+froms() { sed -e ':a' -e '/\\$/N; s/\\\n//; ta' "$1" | grep -iE '^[[:space:]]*(FROM|LABEL)[[:space:]]' || true; }
+[ "$(froms "$CFG/Dockerfile")" = "$(froms stage/Dockerfile)" ] \
+  || die "the staged Dockerfile changes a FROM or LABEL line, which can add run options on the host."
 echo "Staged items that differ from main's install:"
 for i in "${PAYLOAD[@]}"; do diff -rq "$CFG/$i" "stage/$i" >/dev/null 2>&1 || echo "  $i"; done
 printf 'Build and run this config as VERIFY-%s? [y/N] ' "$T8"
