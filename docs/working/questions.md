@@ -25,19 +25,12 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-172](#q-172--exit-scan-parity-boundary) | you: judgment | How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every revi... | 2026-10-15 |
-| [Q-174](#q-174--q106-iteration-4-gate) | you: judgment | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15`... | 2026-10-15 |
-| [Q-175](#q-175--q106-merge-program-gate-coverage) | you: judgment | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
-| [Q-194](#q-194--decision-031-t4-fix-drift-miss) | you: judgment | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
-| [Q-213](#q-213--log-row-73-shared-uid-git-config) | you: judgment | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
-| [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: judgment | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
-| [Q-216](#q-216--merge-2026-10-20-decision-015-amendment-0401d6af5705) | you: judgment | Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs... | 2026-10-20 |
 | [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
-| [Q-196](#q-196--host-check-cc-isolated-profile-names) | you: terminal | After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on th... | 2026-10-17 |
 | [Q-214](#q-214--egress-pin-resolver-release) | you: terminal | Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `pl... | 2026-10-20 |
+| [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: terminal | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
@@ -48,9 +41,9 @@ The index below is generated — edit entries, not the table.
 | [Q-147](#q-147--q089-loop-split-source-guard) | agent | Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decision. It is now recorded as `... | 2026-10-14 |
 | [Q-160](#q-160--implement-q104-per-iteration-cap) | agent | Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 60... | 2026-10-14 |
 | [Q-168](#q-168--q096b-remote-names-unit) | agent | Q-096's iteration 2 found that the exit scan parses remote names and legacy `remotes/`/`branches/` files mo... | 2026-10-15 |
+| [Q-173](#q-173--exit-scan-split-groups) | agent | Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git comma... | 2026-10-15 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
-| [Q-173](#q-173--exit-scan-split-groups) | deferred | Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git comma... | 2026-10-15 |
 | [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 <!-- index:end -->
@@ -88,84 +81,6 @@ Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (br
 | **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
 
 - **Interim:** unmerged; nothing changes on main or the host.
-
-### Q-216 · merge-2026-10-20-decision-015-amendment-0401d6af5705
-**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
-
-Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs/2026-10-20-decision-015-amendment.md`, roadmap In flight)?
-
-- **What it does** (from the loop's report, docs only): decision 015 carries §6's three edits from `docs/working/dd-015-step4-isolation-mechanism.md` (the trigger sentence and table cell byte-identical to the draft; the Consequences note dated 2026-10-20 and holding Q-170's V1 answer: host fallbacks came from boundary-layer configs, none from Docker). Log row 66 gets a Q-179 [1] close with the cycle-3 tally and your reason. Log row 53 gets a Q-176/Q-177 [3] amendment: split-word, backslash-newline and brace spellings prompt again; a whole quoted word (spellings 7, 9) is a stated residual; the Claude Code version was not recorded. Decision 039's heading becomes `## Revisit triggers`, so the digest now lists it. The DD doc's §6 heading says it was applied. A fact-check review found no must-fix item.
-- **Follow-up the loop flags:** log row 53's digest line is now about 4040 bytes against the 4096-byte cut; its next amendment should split or shorten the row.
-- **Read:** `git log c1a28e20..0401d6af5705acd90f245c06e718e9a58675a154` · `docs/working/research-2026-10-20-decision-015-amendment.md` on that branch
-- **Gate output** (`build-loop.sh --check`):
-  - `ok docs/working/briefs/2026-10-20-decision-015-amendment.md 0401d6af5705acd90f245c06e718e9a58675a154 087c7611142a36d664737ab3bf041a342c74f641`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/015-cc-process-isolation-docker-devcontainer.md`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/039-pin-resolver-to-phase-a.md`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/log.md`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/briefs/2026-10-20-decision-015-amendment.md`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/dd-015-step4-isolation-mechanism.md`
-  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md A docs/working/research-2026-10-20-decision-015-amendment.md`
-- **Path notes:** the three `docs/decisions/` paths are your records, which self-merge's floor would have refused; none is an instruction or prompt file, a dot path or gate code.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 0401d6af | Reading three decision-record amendments | A wording error in a record; one revert undoes it |
-| **[2] drop** | The brief closes; the branch stays for you | None | 015's trigger and rows 53, 66 keep reading as before |
-| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
-
-- **Interim:** unmerged; nothing changes on main.
-
-### Q-213 · log-row-73-shared-uid-git-config
-**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
-
-Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid as the operator, and `/workspace/.git/config` is writable to them, so the constraints-builder skill's "the operator's own git config" premise does not hold where build loops run. How should the trigger be answered?
-
-- **Why it's yours:** it reopens row 73's choice to ship v1 for sole-author repos and harden later.
-- **Read:** `docs/decisions/log.md` row 73 · `docs/working/constraints-builder-hardening.md` (Revisit trigger, lines 5-8) · `skills/constraints-builder/SKILL.md` ("Scope (v1)")
-- **Evidence:** `test -w /workspace/.git/config` prints writable for uid node (cycle 2026-10-20, step 2); no bwrap or sandbox denyWrite covers it. Nothing hostile is there now: `git config --list --show-scope` shows plain local keys, no `refs/replace`, an unused `config.worktree`.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Read it as the same-uid residual** | Treat this as Q-103's accepted same-uid residual; reword the trigger to "an agent outside the operator's own sessions and loops" | One read of the reworded trigger | A loop that plants git config in a repo the skill reads can run a command during a constraints-builder run |
-| **[2] Harden first** | Build the hardening doc's config allowlist and hardened git flags before the skill runs again in a repo with build loops | Review of one more unit | A unit spent on a risk no loop has acted on |
-| **[3] Run it only with no loop live** | Add a precondition to the skill: no build loop holds a lock in the target repo | One read of the precondition | A loop started mid-run, or a config planted earlier, still gets through |
-
-- **Blocks:** nothing; `docs/constraints.md` is already ratified (2620b419) and no constraints-builder run is pending here.
-- **Interim:** no constraints-builder run in a repo with live build loops until this is answered.
-- **If the answer differs:** only the trigger text, or one hardening unit, changes.
-
-### Q-196 · host-check-cc-isolated-profile-names
-**Needs:** you: terminal · **Opened:** 2026-10-17 · **Status:** OPEN
-
-After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on the host, on a scratch repo. The first command should exit 1 with "unknown egress profile" and write nothing; the second should exit 0 and print the `base -> base,python` transition.
-
-```
-mkdir -p ~/scratch-q196 && cd ~/scratch-q196 && git init -q
-cc-isolated --register ~/scratch-q196 --profile ../egress/python; echo "exit=$?"
-cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
-```
-
-- **Interim:** the change is tested hermetically only (`test/cc-isolated-functions.bats`, 207/207); its commit carries `Live-verified: no`.
-- **Blocks:** nothing; the result goes back here as a reply.
-- **2026-10-20:** Q-195's branch merged at c80fec22. Q-214's block runs install.sh, which installs it too; run this right after that paste.
-
-### Q-194 · decision-031-t4-fix-drift-miss
-**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** OPEN
-
-Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the fix-drift lite check on 9e0ff1a5..258f9ec4 printed "FINDINGS: NONE", and the next full pass found D1 (a fact-check "Mostly accurate" doc amber) in text 258f9ec4 itself added to `guides/devcontainer-setup.md`. How should the trigger respond?
-
-- **Why it's yours:** the trigger reopens 031's cost/recall tradeoff for the review loop.
-- **Read:** `docs/decisions/031-review-loop-tier-and-factcheck-policy.md` (Revisit triggers) · `docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md` row D1 · `git show 258f9ec4`
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Scope the trigger** (recommended) | Amend 031 T4 to fire only on a missed behavioral or security defect; record this miss (a doc-only amber the full pass caught) as non-firing | One read of the amendment | A real prose-accuracy gap in fix-introduced text stays unwatched |
-| **[2] Widen the drift check** | The fix-drift lite check also fact-checks prose that fixes add | None now; a little more per-iteration cost | More lite-check findings on docs-heavy loops |
-| **[3] Drop the lite gate** | Every fix iteration gets a full pass | None now | Review loops cost noticeably more for little recall |
-
-- **Blocks:** nothing.
-- **Interim:** no change to 031; the full pass caught D1 before merge, so nothing shipped wrong.
-- **If the answer differs:** only 031's trigger text or the review-fix loop's drift step changes.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -234,72 +149,16 @@ Run it on the host, not in a container, and replace `~/claude-workflows` if your
 - **Read:** the doc's step table (every command cited to file:line), "Not verified" (12 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
 - **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
 - **If the answer differs:** if Q-165 is [4], this entry is dropped.
-
-### Q-172 · exit-scan-parity-boundary
-**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
-
-How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every review pass of Q-094, Q-096 and Q-168 found new looser-than-git families, mostly bugs that predate the pass, each confirmed end to end with a planted hook running.
-
-- **Why it's yours:** it sets the scan's threat-model boundary and how much review attention the scan keeps consuming.
-- **Read:** Q-168's rubric (tech-debt T4) · the guide's "Known routes it does not see" · cc-push, the route that runs no git in the checkout
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep closing families one unit at a time** | Q-173's groups each become a unit, and so does whatever their reviews find | Review attention per unit, open-ended | Growth with no end; each pass finds more |
-| **[2] Set a boundary** | Close only routes that need no state planted before launch; list the rest as known routes; the guide says to push with cc-push | One decision now | Routes that need launch-time state stay open by design |
-| **[3] Re-architect** | One "resolve like git" layer plus one reader for `gitdir:`/commondir files, then re-audit | One larger unit | The tech-debt critic doubts a rewrite stops new families |
-
-- **Blocks:** Q-173.
-- **Interim:** no new exit-scan family units start; Q-096 lands as reviewed.
-- **If the answer differs:** only what Q-173 becomes changes.
+- **2026-10-23:** Q-215 was answered [2]: `fix/egress-dnsmasq-ipset`, this paste's target, is to be deleted (decision 039 replaced it). Once it is gone this paste has nothing to verify; reply `Q-169: drop` to close it.
 
 ### Q-173 · exit-scan-split-groups
-**Needs:** deferred · **Opened:** 2026-10-15 · **Status:** OPEN
+**Needs:** agent · **Opened:** 2026-10-15 · **Status:** OPEN
 
 Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git command runs a planted hook): (1) the relative-path base per working tree: R3 (a `--separate-git-dir` repo), **R6 (High: a relative `core.hooksPath` in a linked worktree inside the checkout is never walked)**, A14, A16; (2) `@[` in local paths (R4); (3) `gitdir:` include parity (R5, A15, T3); (4) one reader for `gitdir:`/commondir files (T1; a container-form `.git` ending in CR). Waits on Q-172; R6 is the first to build under any option, unless [2] puts it outside the boundary.
 
 - **Read:** Q-168's rubric, the R3–R6 and A14–A17 rows
 - **Interim:** documented as known routes once Q-171's iteration lands; cc-push stays the safe path.
-
-### Q-174 · q106-iteration-4-gate
-**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
-
-Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15` commit, 184396ea; it is not in the ready branch Q-162 merges). install.sh's host target now runs the container's provenance merge on your `~/.claude/settings.json`, inside its review and gated by your y. Its review loop stopped at the iteration-4 gate with one Medium open. Authorize a 4th iteration?
-
-- **Why it's yours:** the iteration-4 gate, and the change writes your host hardening.
-- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` and plan `docs/working/plan-q106-host-settings-merge.md` (pre-mortem) on the branch.
-  - **One merge program:** `hooks/lib/wiring-merge.jq`, shared with `link-claude-home.sh` and run with an empty HOME and environment.
-  - **Review before your y:** a `settings.json:` diff plus a by-name UNWIRE/ADD/REMOVE list.
-  - **Refuses:** a symlinked, unreadable or non-object file, a missing jq, any `wiring.json` hook that is not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or a file that changed since the review.
-  - **Recovery:** a backup is taken before the rename, with the mode kept.
-  - **Also closes Q-108:** 037's stale lines are corrected, and the "035's regex lands" trigger is discharged.
-  - **Size:** 561 code lines (under 800).
-  - **Tests:** T93–T103 11/11, link-claude-home 16/16. The health check's only reds are the Q-145 race, each passing alone; slow suites pass.
-  - **S3-F1 (open, Medium, low confidence):** the wiring shape check covers each hook but not the group around it. An object-valued `hooks`, an object `matcher` or extra group keys would pass and be written.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Authorize iteration 4** (recommended) | Tighten the group shape (only `matcher`/`hooks`, typed), anchor the regexes with `\A…\z`, count duplicate hooks: about 20 lines, then the k=3 confirming pass, then into Q-162's branch | One later merge | Agent time spent on a check that may not matter |
-| **[2] Merge as is** | Land c6d7544f with S3-F1–F3 listed in the merge message | One merge now | A hostile branch's malformed group lands in settings.json after your y; if Claude Code rejects a schema-invalid file, deny rules stop applying until it is fixed |
-| **[3] Host check first** | A small paste: does Claude Code reject the whole file or skip one malformed group? The answer picks [1] or [2] | One paste | Only delay |
-
-- **After it merges:** the branch's host verification block (in the rubric's report; it installs into a temp dir with a copy of your settings.json, never the real one) joins Q-167.
-- **Interim:** unmerged; the installer keeps printing the manual-merge reminder.
-- **If the answer differs:** [2] merges as is; [3] adds one terminal entry.
-
-### Q-175 · q106-merge-program-gate-coverage
-**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** OPEN
-
-Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'s `enforcement` regex. On main that jq is inline in `link-claude-home.sh`, which the regex covers (`hooks/live-verify-gate.sh:83`), so the move takes away coverage the program has today. The trust manifest still hashes it, and both installs show it in their reviews. Should the commit gate cover it?
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Accept it in the `hooks/**` class** | Same status as `wiring.json` and `guard-trusted-writes.py` | Nothing | A change to the merge program commits without a `Live-verified:` trailer, which it cannot today |
-| **[2] Add it to the enforcement regex** | A small gate-code change with its test | One gate-code review | Every commit touching the program owes a container probe |
-| **[3] Its own trailer** | Like `Host-tool-tested:` | A new category to maintain | More trailers to remember |
-
-- **Interim:** [1] in name only: Q-106 is unmerged (Q-174), so nothing has lost coverage yet. The security review of this entry (`docs/reviews/security-review-2026-10-15-0357.md` F6) leans to [2].
-- **If the answer differs:** [2] or [3] becomes a small unit after Q-106 lands.
+- **2026-10-23:** Q-172 answered [2]: close only routes that need no state planted before launch, list the rest as known routes, and the guide says to push with cc-push. First step: sort the four groups by that rule. R6 (a relative `core.hooksPath` in a linked worktree inside the checkout) needs only state a session can write in the checkout, so it is inside the boundary and builds first.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -497,7 +356,9 @@ cc-isolated --register "$HERALD" --profile android && cc-isolated --probe-only "
 - **If it fails:** paste the output. Revert with `git revert -m1 9fa8bbd0`, then reinstall.
 
 ### Q-215 · retire-egress-dnsmasq-ipset-branch
-**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
+**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** OPEN
+
+**Answered (docs/human-author/answers-10-22-26.txt): [2], delete it.**
 
 Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, the Q-169 spike's target), with no CAP_NET_ADMIN resolver and ~5% of the code. What happens to the old branch?
 
@@ -510,3 +371,11 @@ Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ips
 
 - **Interim:** [1]. Nothing deleted.
 - **If the answer differs:** none; deletion is the only action.
+- **2026-10-23:** the recording session's deletion was refused by its permission classifier, so nothing is deleted yet. Paste on the host or as `! <command>` in a session (both are local to this checkout; the branch's two commits are not on origin, which [2] accepts):
+
+```
+git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset
+```
+
+  Close this entry once `git -C /workspace branch --list fix/egress-dnsmasq-ipset` prints nothing.
+

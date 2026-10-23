@@ -16,8 +16,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
 - **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap.
   Q-171 was answered [2]: hold it until the split units land, fixing red findings that
-  predate it first. How much parity the scan chases is Q-172 (open), and the four split
-  groups (R6 High) are Q-173 (deferred on Q-172).
+  predate it first. Q-172 was answered [2]: close only routes that need no state planted
+  before launch, list the rest as known routes, push with cc-push. The four split groups
+  are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
+  builds first).
+- **Widen the fix-drift lite check (Q-194 [2]).** Motive: decision 031's fourth trigger
+  fired when the lite check missed a doc amber in fix-added prose. First step: have the
+  review-fix loop's drift step also fact-check prose a fix adds, and amend 031's trigger
+  text to point at the change.
+- **Reword log row 73's second trigger (Q-213 [1]).** Motive: the shared-uid
+  `.git/config` premise is Q-103's accepted same-uid residual. First step: reword the
+  trigger in `docs/decisions/log.md` row 73 and `docs/working/constraints-builder-hardening.md`
+  to "an agent outside the operator's own sessions and loops".
 
 ## In flight
 
@@ -27,7 +37,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
   folds its open claims into the tool's first run. Built and ready; merge is Q-217. Brief:
   `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
 - **Apply decision 015's amendment and close log row 66** (was Next 4 and Next 1). Q-170
-  answered [A], Q-179 answered [1]. Built and ready; merge is Q-216. Brief:
+  answered [A], Q-179 answered [1]. Built and ready; merge is Q-216, answered [1]. Brief:
   `docs/working/briefs/2026-10-20-decision-015-amendment.md`
 
 ## Next
@@ -40,7 +50,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
    5.5; deferred, ask before running.
 2. **Automate the host settings.json merge (Q-106 [2]).** Built
    (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
-   gate with one Medium open (Q-174); gate coverage of the moved merge program is Q-175.
+   gate with one Medium open. Q-174 answered [1]: run iteration 4 (tighten the group
+   shape, anchor the regexes, count duplicate hooks), then the k=3 confirming pass. Q-175
+   answered [1]: the moved merge program stays in the `hooks/**` class, no gate change.
 3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
