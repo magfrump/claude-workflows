@@ -21,6 +21,17 @@ result fast. Nothing here needs to outlive the session.
   state it.
 - No subagents, no planning docs, no git commits unless asked. One agent,
   working in the open.
+- **Narrate every subagent.** The terminal barely shows them, so the user
+  can't tell from the screen what is delegated. Say it in plain text:
+  - Before dispatching, one line per agent:
+    `→ Subagent "<name>": <task>. Why delegated: <reason>. Meanwhile I'll <X>.`
+  - When it returns:
+    `← Subagent "<name>" done: <headline>. Checked by: <what I re-ran>.`
+    Don't build on its output until you have re-run one check yourself.
+  - While any agent is running, end each step report with
+    `Still running: <names>`.
+  - If the user asks for delegation and you do some or all of it inline
+    instead, say which part and why in one line. Never switch silently.
 
 ## Time discipline
 
@@ -44,10 +55,36 @@ result fast. Nothing here needs to outlive the session.
 - Keep the eval set untouched by training and hyperparameter choices.
 - If a result looks too good or too bad, check for leakage or bugs before
   celebrating or explaining it away.
-- Keep a running **`RESULTS.md`** in the working directory, one entry per
-  run: the exact command, the key numbers, the run time, and caveats. Append
-  as you go, don't reconstruct it at the end. It's the user's notes for the
-  discussion.
+- Keep two notes files in the working directory. They are the user's notes
+  for the discussion.
+- **`RESULTS.md` is an append-only run log.** Add one entry per run as you
+  go, and don't reconstruct it at the end. Never rewrite, reorder or replace
+  it: add to the end with Edit, never Write. Give each run a stable ID and a
+  heading that works as a summary on its own, then the same labeled lines
+  every time, so the user can scan the headings or grep a label:
+
+  ```
+  ## R3 · meannf probe, v2 pairs · I→Alice 0.656 vs I→I 0.697
+  - Cmd: `python probe.py --pool meannf --seed 0..4`
+  - Data: <dataset, split, n train / n eval, seeds>
+  - Baseline: <majority / random / control, with its number>
+  - Result: <key numbers, with ± or CI>
+  - Time: <wall clock>
+  - Caveats: <leakage risk, small n, anything fixed or not yet checked>
+  ```
+
+  When a new task starts in the same directory, add a `# Task: <name>`
+  heading and keep counting run IDs, so every `R` number stays unique.
+- **`ANSWERS.md` is the discussion cheat sheet**, organized by the questions
+  an interviewer asks rather than by time. It is the one file you rewrite in
+  place. Update it after every run that changes the picture, keep it under
+  about 40 lines, and cite run IDs (`R3`) for every number. Use these sections,
+  in this order:
+  `Answer` (2–3 lines) · `Setup` (model, data, split, n, seeds) ·
+  `Baselines & controls` · `Evidence` · `Bugs found & fixed` ·
+  `Caveats / threats to validity` · `What I'd try next`.
+  When the user asks how to answer an interviewer's question, answer from
+  `ANSWERS.md` and point to the `R` entry that backs it.
 
 ## Environment
 

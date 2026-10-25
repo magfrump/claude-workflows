@@ -11,7 +11,7 @@ long unattended runs.
 | Hooks / plugins | 6 hooks, 4 plugins | none |
 | Subagents, docs, commits | routine | only if asked |
 | Permissions | allowlist + guards | `acceptEdits`, Python/pip/uv/nvidia-smi pre-allowed |
-| Output for later | `docs/working/` | a running `RESULTS.md` for the discussion |
+| Output for later | `docs/working/` | append-only `RESULTS.md` run log + `ANSWERS.md` cheat sheet for the discussion |
 
 Your normal `~/.claude` is never touched. Switching is just which command you
 launch: `claude` (normal) or `cci` (interview).
