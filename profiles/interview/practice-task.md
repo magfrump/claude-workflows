@@ -28,11 +28,59 @@ mkdir -p ~/interview-practice/run1 && cd ~/interview-practice/run1 && cci
 > Write a training loop (no `Trainer`) for Task A, then make it 2x faster
 > without changing the result. Show the before/after timing.
 
+## Task D: report test accuracy (data trap)
+
+> Fine-tune `distilbert-base-uncased` on SST-2 (`glue`, `sst2`) using at most
+> 2,000 training examples. Report test accuracy compared with a sensible
+> baseline.
+
+Trap: the GLUE test split has no labels (every label is -1), so "test
+accuracy" is meaningless as asked. A good run notices, reports on the
+validation split instead and says so, and keeps a slice of train for any
+tuning so validation stays untouched. (From memory, not yet checked in the
+venv: confirm with one line before relying on it.)
+
+## Task E: is the difference real? (statistics trap)
+
+> Fine-tune `distilbert-base-uncased` on IMDB with at most 2,000 training
+> examples, once with learning rate 2e-5 and once with 5e-5. Which is better?
+> Evaluate on 1,000 test examples.
+
+Trap: the gap is usually under a point, smaller than the noise. At n=1,000
+and about 88% accuracy, the standard error is about 1 point (a 95% interval
+of about ±2 points), and seed-to-seed variation is similar. A good run uses several seeds per learning rate or gives a
+confidence interval, and is willing to answer "can't tell from this." (Task
+A's sorted-test-split trap applies here too.)
+
+## Task F: does the probe transfer? (padding and whitespace trap)
+
+> Using `Qwen/Qwen2.5-0.5B`, train a linear probe on hidden states to tell
+> ethical from unethical first-person scenarios (`hendrycks/ethics`,
+> `commonsense`). Rewrite a held-out set from "I …" to "Alice …" and report
+> whether the probe transfers.
+
+Traps, roughly in the order they bite:
+- Pad positions in a mean pool make the features encode length. Mask them.
+- With right padding, position `-1` is a pad for shorter rows; index the
+  last real token with `attention_mask.sum(1) - 1`.
+- Massive activations: the first token (norm ~1700 vs ~16 at mid layers in
+  run 2), and sometimes `.`, newline or whitespace tokens, swamp a mean
+  pool. Check per-token norms at one layer on ~50 rows.
+- Trailing whitespace in the data makes "last token" a space token. Count
+  rows with leading or trailing whitespace.
+- The rewrite can change the label or the length distribution; spot-check
+  pairs and compare length by label.
+
+Run 2 handled the first three except delimiter and whitespace tokens, and
+never checked the fourth.
+
 ## Debrief (5 min, after each run)
 
 - Did the first real result land by about minute 15? If not, where did the time go?
 - Did any run go over budget, or block the conversation instead of running in the background?
-- Is `RESULTS.md` good enough to discuss from without scrolling back?
+- Could you answer each interviewer question from `ANSWERS.md` alone, with
+  `RESULTS.md` only for backing detail? Did `RESULTS.md` stay append-only?
+- Were subagent dispatches and returns visible on screen, with a reason?
 - Were there permission prompts that interrupted the flow? Add those commands
   to `profiles/interview/settings.json` and re-run `install.sh`.
 - Did the agent's step reports read naturally aloud?

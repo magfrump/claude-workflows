@@ -7,14 +7,20 @@ long unattended runs.
 
 | | Default harness (`~/.claude`) | Interview profile (`~/.claude-interview`) |
 |---|---|---|
-| Instructions | 36 KB: decision tree, /away mode, questions.md, commit cadence | ~70 lines: brief plan → run → report; time and research discipline |
+| Instructions | 36 KB: decision tree, /away mode, questions.md, commit cadence | ~120 lines: brief plan → run → report; time and research discipline; library pitfalls |
 | Hooks / plugins | 6 hooks, 4 plugins | none |
 | Subagents, docs, commits | routine | only if asked |
-| Permissions | allowlist + guards | `acceptEdits`, Python/pip/uv/nvidia-smi pre-allowed |
-| Output for later | `docs/working/` | a running `RESULTS.md` for the discussion |
+| Permissions | allowlist + guards | `auto` mode, Python/pip/uv/nvidia-smi pre-allowed |
+| Output for later | `docs/working/` | append-only `RESULTS.md` run log + `ANSWERS.md` cheat sheet for the discussion |
 
-Your normal `~/.claude` is never touched. Switching is just which command you
-launch: `claude` (normal) or `cci` (interview).
+Your normal `~/.claude` is never written, and it isn't read as config. But
+Claude Code also loads the `CLAUDE.md` of every directory above the one you
+launch from, whatever `CLAUDE_CONFIG_DIR` says. `~` sits above `~/interview`,
+so without a guard the full `~/.claude/CLAUDE.md` loads into every `cci`
+session (practice run 2 found this in every session so far). The profile's
+`settings.json` excludes it with `claudeMdExcludes`, and `preflight.sh` fails
+on any ancestor `CLAUDE.md` the exclusion doesn't cover. Switching is just
+which command you launch: `claude` (normal) or `cci` (interview).
 
 ## Setup (host WSL shell, not the container)
 
@@ -48,13 +54,18 @@ See [practice-task.md](practice-task.md) for timed practice tasks and a debrief 
 - [ ] Increase your terminal font size for the screen share. Share the terminal
       window (or the whole screen) where the work happens, so it's credited.
 - [ ] If they give you a repo, clone it into `~/interview` and launch `cci` from inside it.
-- [ ] When the timer ends, `RESULTS.md` is your outline for the discussion.
+- [ ] Split the shared terminal (tmux) and run
+      `tail -F logs/*.log RESULTS.md` in the second pane, so background jobs
+      and agent work are visible. Briefs and reports from any subagents land
+      in `briefs/` and `reports/`.
+- [ ] When the timer ends, `ANSWERS.md` is your outline for the discussion,
+      backed by the `R` entries in `RESULTS.md`.
 
 ## Files
 
 - `CLAUDE.md`: the session instructions
 - `settings.json`: model, effort, permissions
-- Both are copied into the profile, so re-run `install.sh` after editing either. Copies rather than symlinks, so a branch switch in this checkout can't change the profile.
+- Both are copied into the profile, so re-run `install.sh` after editing either. Copies rather than symlinks, so a branch switch in this checkout can't change the profile. `cci` warns when the installed `CLAUDE.md` differs from the repo copy. A reinstall overwrites runtime changes to `settings.json` (it prints the diff and keeps a `.bak`), so put any value you want to keep in the repo's `settings.json`.
 - `requirements.txt`: the interviewers' file, verbatim
 - `requirements-extras.txt`: `accelerate` (needed by `Trainer`), `scikit-learn`, `matplotlib`, `tqdm`; skip with `--no-extras`
 - `install.sh`, `preflight.sh`, `warm-cache.py`: setup, go/no-go, cache warming
