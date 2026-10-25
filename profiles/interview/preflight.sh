@@ -115,6 +115,27 @@ else
   warn "profile CLAUDE.md differs from $HERE/CLAUDE.md (re-run install.sh if you edited it)"
 fi
 if [ -f "$CONFIG_DIR/settings.json" ]; then pass "settings.json present"; else fail "no settings.json in profile (run install.sh)"; fi
+# Claude Code loads CLAUDE.md files from every ancestor of the launch directory,
+# whatever CLAUDE_CONFIG_DIR says, so the main harness's ~/.claude/CLAUDE.md
+# leaks in unless settings.json excludes it. Files directly under $HOME are
+# covered by the /home/*/ patterns; anything above $HOME is not.
+excludes_set=0
+grep -q '"claudeMdExcludes"' "$CONFIG_DIR/settings.json" 2>/dev/null && excludes_set=1
+leaks=0 dir="$HOME/interview"
+while :; do
+  dir="$(dirname "$dir")"
+  for f in "$dir/CLAUDE.md" "$dir/CLAUDE.local.md" "$dir/.claude/CLAUDE.md"; do
+    [ -f "$f" ] || continue
+    if [ "$excludes_set" -eq 1 ] && [ "$dir" = "$HOME" ] && [[ "$HOME" == /home/* ]]; then
+      pass "ancestor $f is excluded by claudeMdExcludes"
+    else
+      fail "ancestor $f would load into every cci session (add it to claudeMdExcludes)"
+      leaks=1
+    fi
+  done
+  [ "$dir" = / ] && break
+done
+[ "$leaks" -eq 0 ] && echo "        to confirm: cd ~/interview && cci -p 'List the path of every CLAUDE.md in your context.'"
 if [ -f "$CONFIG_DIR/.credentials.json" ]; then
   pass "credentials present"
 else

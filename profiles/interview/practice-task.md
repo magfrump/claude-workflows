@@ -52,6 +52,28 @@ of about ±2 points), and seed-to-seed variation is similar. A good run uses sev
 confidence interval, and is willing to answer "can't tell from this." (Task
 A's sorted-test-split trap applies here too.)
 
+## Task F: does the probe transfer? (padding and whitespace trap)
+
+> Using `Qwen/Qwen2.5-0.5B`, train a linear probe on hidden states to tell
+> ethical from unethical first-person scenarios (`hendrycks/ethics`,
+> `commonsense`). Rewrite a held-out set from "I …" to "Alice …" and report
+> whether the probe transfers.
+
+Traps, roughly in the order they bite:
+- Pad positions in a mean pool make the features encode length. Mask them.
+- With right padding, position `-1` is a pad for shorter rows; index the
+  last real token with `attention_mask.sum(1) - 1`.
+- Massive activations: the first token (norm ~1700 vs ~16 at mid layers in
+  run 2), and sometimes `.`, newline or whitespace tokens, swamp a mean
+  pool. Check per-token norms at one layer on ~50 rows.
+- Trailing whitespace in the data makes "last token" a space token. Count
+  rows with leading or trailing whitespace.
+- The rewrite can change the label or the length distribution; spot-check
+  pairs and compare length by label.
+
+Run 2 handled the first three except delimiter and whitespace tokens, and
+never checked the fourth.
+
 ## Debrief (5 min, after each run)
 
 - Did the first real result land by about minute 15? If not, where did the time go?

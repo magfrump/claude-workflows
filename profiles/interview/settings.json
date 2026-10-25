@@ -1,9 +1,16 @@
 {
-  "model": "opus",
+  "model": "opus[1m]",
   "effortLevel": "medium",
   "theme": "dark",
+  "tui": "fullscreen",
+  "claudeMdExcludes": [
+    "/home/*/CLAUDE.md",
+    "/home/*/CLAUDE.local.md",
+    "/home/*/.claude/CLAUDE.md",
+    "/home/*/.claude/rules/**"
+  ],
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "auto",
     "allow": [
       "Bash(python:*)",
       "Bash(python3:*)",

@@ -12,7 +12,9 @@ result fast. Nothing here needs to outlive the session.
   start immediately. Don't wait for approval. The user will interrupt if
   they disagree.
 - **Report after each step** in 1–3 lines: what you did, what you saw, what's
-  next. The user reads these aloud, so keep them plain and specific.
+  next. The user reads these aloud, so keep them plain and specific. Every
+  number you report carries its run ID and log, e.g. "0.656 (R3,
+  `logs/probe_v2.log`)".
 - **Surface anything important right away**: a surprising number, a
   suspected bug, a shortcut you took, an assumption about the task. Say it as
   soon as you notice it, not at the end.
@@ -23,9 +25,10 @@ result fast. Nothing here needs to outlive the session.
   working in the open.
 - **Narrate every subagent.** The terminal barely shows them, so the user
   can't tell from the screen what is delegated. Say it in plain text:
-  - Before dispatching, one line per agent:
+  - Before dispatching, write the brief to `briefs/<name>.md` and pass that
+    text as the prompt, then say one line per agent:
     `→ Subagent "<name>": <task>. Why delegated: <reason>. Meanwhile I'll <X>.`
-  - When it returns:
+  - Have the agent write its report to `reports/<name>.md`. When it returns:
     `← Subagent "<name>" done: <headline>. Checked by: <what I re-ran>.`
     Don't build on its output until you have re-run one check yourself.
   - While any agent is running, end each step report with
@@ -85,6 +88,26 @@ result fast. Nothing here needs to outlive the session.
   `Caveats / threats to validity` · `What I'd try next`.
   When the user asks how to answer an interviewer's question, answer from
   `ANSWERS.md` and point to the `R` entry that backs it.
+
+## Library pitfalls
+
+- Print shapes, dtypes and one or two decoded examples at each stage before
+  trusting a number.
+- Tokenizers: causal LMs often have no pad token
+  (`tokenizer.pad_token = tokenizer.eos_token`). Left-pad for batched
+  generation. For last-token activations either side works if you index
+  with `attention_mask.sum(1) - 1` (right) or `-1` (left); with left padding
+  on an absolute-position model (`gpt2`), pass
+  `position_ids = attention_mask.cumsum(-1) - 1`.
+- For a target token's logit, `tokenizer.encode(t, add_special_tokens=False)`
+  and print `convert_ids_to_tokens` to check the leading space.
+- Hooks: `hs = output[0] if isinstance(output, tuple) else output`; register
+  inside `try: … finally: handle.remove()` so hooks don't stack across
+  re-runs; store `hs.detach().float().cpu()`. When steering, cast the vector
+  to `hs.device`/`hs.dtype` and return `(new_hs,) + output[1:]` for tuples.
+- Activation probes: mask pad positions out of mean pools, and check per-token
+  norms once. A few tokens (the first, sometimes `.`/newline/whitespace)
+  carry huge mid-layer activations that swamp a mean.
 
 ## Environment
 

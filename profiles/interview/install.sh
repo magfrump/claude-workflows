@@ -12,8 +12,11 @@
 #   ~/.local/bin/cci       launcher: activates the venv, points
 #                          CLAUDE_CONFIG_DIR at the profile, execs `claude`
 #
-# Your normal ~/.claude is never read or written. The profile has no hooks,
-# no plugins and none of the workflow payload.
+# Your normal ~/.claude is never written. It is not read as user config, but
+# Claude Code loads every ancestor directory's CLAUDE.md as project memory, and
+# ~ is an ancestor of ~/interview, so ~/.claude/CLAUDE.md would load too. The
+# profile's settings.json excludes those with claudeMdExcludes; preflight.sh
+# checks. The profile has no hooks, no plugins and none of the workflow payload.
 #
 # Usage: bash profiles/interview/install.sh [--no-extras] [--no-venv]
 # Override locations with CCI_CONFIG_DIR, CCI_VENV, CCI_BIN.
@@ -48,10 +51,13 @@ mkdir -p "$CONFIG_DIR"
 for f in CLAUDE.md settings.json; do
   dest="$CONFIG_DIR/$f"
   [ -L "$dest" ] && rm -f "$dest"   # an older install symlinked CLAUDE.md
-  # Claude Code writes runtime changes into settings.json; keep them.
+  # Claude Code writes runtime changes (/model, /config) into settings.json,
+  # and this copy reverts them. Show what is being reverted, and keep a .bak;
+  # to keep a value, put it in the repo's settings.json.
   if [ -f "$dest" ] && ! cmp -s "$HERE/$f" "$dest"; then
     cp -f "$dest" "$dest.bak"
-    echo "install.sh: existing $f differed; saved it as $f.bak"
+    echo "install.sh: existing $f differed; saved it as $f.bak. Replacing (- installed, + repo):"
+    diff -u "$dest.bak" "$HERE/$f" | tail -n +3 || true
   fi
   cp -f "$HERE/$f" "$dest"
 done
