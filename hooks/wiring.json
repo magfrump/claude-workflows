@@ -17,6 +17,11 @@
     "a Write, while Edit(//abs) and Edit(~/rel) did. The single-slash rules this file",
     "used to emit matched nothing. link-claude-home.sh prunes those legacy forms.",
     "",
+    "There are no Write(path) rules: Claude Code matches file paths only through",
+    "Edit(path), which also covers Write, and warns at startup that a Write(path) deny",
+    "rule never matches (Q-049 run 2 saw one fail to block). The linker prunes the",
+    "Write twins this file used to emit.",
+    "",
     "Merging is by exact match on each entry, so re-running the linker is idempotent and",
     "never touches entries this file did not put there. That also means any edit to an",
     "entry below strands the previous version in an already-merged settings.json: bump it",
@@ -135,13 +140,9 @@
       "Read(~/.npmrc)",
 
       "Edit(/{{CLAUDE_DIR}}/settings*.json)",
-      "Write(/{{CLAUDE_DIR}}/settings*.json)",
       "Edit(/{{CLAUDE_DIR}}/hooks/**)",
-      "Write(/{{CLAUDE_DIR}}/hooks/**)",
       "Edit(/{{CLAUDE_DIR}}/CLAUDE.md)",
-      "Write(/{{CLAUDE_DIR}}/CLAUDE.md)",
-      "Edit(~/CLAUDE.md)",
-      "Write(~/CLAUDE.md)"
+      "Edit(~/CLAUDE.md)"
     ]
   }
 }

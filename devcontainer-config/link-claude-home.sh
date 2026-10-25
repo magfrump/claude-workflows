@@ -154,9 +154,17 @@ else
               # Edit(/home/node/.claude/settings*.json). A single leading
               # slash is relative to the settings file, so those rules
               # matched nothing (Q-049). wiring.json now emits //abs.
+              # And drop the Write(path) twin of each Edit(path) rule, in
+              # either slash form: Claude Code matches paths only through
+              # Edit(), so those never matched and it warns about each at
+              # startup. wiring.json no longer emits them.
               .permissions[$mode] =
                 (((.permissions[$mode] // []) - $wiring.permissions[$mode]
-                  - ($wiring.permissions[$mode] | map(sub("\\(//"; "(/"))))
+                  - ($wiring.permissions[$mode] | map(sub("\\(//"; "(/")))
+                  - ($wiring.permissions[$mode]
+                     | map(select(startswith("Edit("))
+                           | sub("^Edit\\("; "Write(")
+                           | ., sub("\\(//"; "(/"))))
                  + $wiring.permissions[$mode])
             )
         ' "$SETTINGS" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
