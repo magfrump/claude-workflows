@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
 | [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | you: judgment | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
 | [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | you: judgment | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
+| [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | you: judgment | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -51,6 +52,36 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-220 · merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
+
+Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report; nothing run on a host): closes R6. A relative `core.hooksPath` was walked only in a repo's main working tree, so a hook planted in a linked worktree inside the checkout (an agent worktree's `.husky/_`) scanned clean (rc=0) and then ran on the next host commit. `devcontainer-config/cc-exit-scan.sh` now collects every `core.hooksPath` from a config and every file it includes (`_snap_cfg_hooks`: each config read once, every include followed, no depth cap) and walks each value from the directory of each working-tree `.git` entry (`_snap_entry_hooks`, from `git_exec_snapshot`). It also closes the hooksPath half of R3 (`--separate-git-dir`). Test: "exit scan R6" in `test/cc-isolated-functions.bats`, four cases (direct, included, absolute include path, an `includeIf` chain git does not take), each ending in a real host commit that runs the hook; each fails on the scan as it was before its fix. About 187 changed lines of code and test.
+- **The sort** (research doc section 1): the loop read Q-172 [2]'s "no state planted before launch" as "only ordinary setup present at launch" (husky plus an agent worktree counts as ordinary; this wording is its reading, not Q-172's text). In scope: R6 (built), and as follow-ups R3's remote half, A14 and A16. Out of scope: R4 and T1. T3 is not a route. R5 and A15 are not reachable on main (they need the held Q-168 branch), so they are not added to the guide, a departure from the brief.
+- **Guide** (`guides/cc-isolated-usage.md`, "Known routes it does not see"): adds the boundary and "push with cc-push", R4, a "not closed yet" entry for A14, R3's remote half and A16, a `core.worktree` pointing elsewhere, a repo config that is a symlink to another repo's (found in review), and a T1 note; coverage sentence and timing (about 30 ms per repo) updated.
+- **Review:** three iterations; rubric `docs/reviews/code-review-rubric-2026-10-25-fix-exit-scan-r6-hookspath.md`. Passes 1-2 found three gaps that reached a real hook run (absolute or `~/` include paths skipped; a file first met in an untaken `includeIf` chain hid its plain include; 100 worktrees by 100 includes took 46.6 s, now 2.7 s), all fixed. The final pass (k=3 fact-check, security, performance) found no Must Fix and no Incorrect claim. **Unreviewed after it:** one code change (the duplicate-value check became a lookup; 3,000 values went from 23.7 s to 10.4 s) and wording, covered by tests and a timing probe only. Accepted availability costs: about 10 s at 100 by 100 values; an empty or directory `commondir` in an embedded repo now refuses the launch (git dies there too). All 208 tests in the file, the hermeticity lint and the health check pass.
+- **Host check not yet run** (every commit carries `Host-tool-tested: no` and `Live-verified: no`): after `install.sh`, in a husky repo with an agent worktree, launch `cc-isolated`, have the session write a pre-commit hook under the agent worktree's `.husky/_`, exit, and see the warning name it.
+- **Follow-ups the loop names** (filed after the merge, not now): group (1)'s remainder (A14, R3's remote half, A16); T1 with T3; whether to key config reads by the path git opened (would close the symlinked-config route).
+- **Read:** `git log d40e4bae8ad014c30be81e0891ffac2e6ef35771..792c549e6d1c620308d0f63c44b067047ad437ee` · `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` and the rubric on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md 792c549e6d1c620308d0f63c44b067047ad437ee 25c4a2a586e5411167680ba91ff90a8dbb541588`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M devcontainer-config/cc-exit-scan.sh`
+  - 11 `path … A docs/reviews/…` lines: the rubric and the p1-p3 fact-check, security and performance reports
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md A docs/working/research-2026-10-25-exit-scan-r6-hookspath.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M test/cc-isolated-functions.bats`
+- **Path notes:** `devcontainer-config/cc-exit-scan.sh` is an enforcement file that runs on your host at exit (it reaches the host at the next `install.sh`), which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 792c549e; a host-check entry and the follow-ups are filed after | Reading about 187 lines of exit-scan code and its test, and the sort | A slower or over-strict exit scan (a refused launch on an odd `commondir`); one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | R6 stays a known route; cc-push stays the safe path |
+| **[3] changes needed** | Your note goes back to the loop (for example on the sort's reading of Q-172) | A note | One more loop run |
+
+- **Interim:** unmerged; the exit scan runs as before and cc-push stays the safe path.
 
 ### Q-219 · merge-2026-10-25-widen-fix-drift-check-4695470b98b1
 **Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN

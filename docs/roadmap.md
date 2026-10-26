@@ -37,7 +37,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-218. Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
 - **Exit scan: sort Q-173's groups and close R6** (Q-168's first step, Now). Motive: Q-172
   answered [2] unblocked Q-173; R6 (High) is inside the boundary and builds first.
-  Briefed for a build loop (review). Brief:
+  Built and ready; merge is Q-220 (follow-ups filed after it). Brief:
   `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
 
 ## Next
