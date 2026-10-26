@@ -32,8 +32,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   trigger fired when the lite check missed a doc amber in fix-added prose. Briefed for a
   build loop (review). Brief: `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
 - **Reword log row 73's second trigger (Q-213 [1])** (was Now). Motive: the shared-uid
-  `.git/config` premise is Q-103's accepted same-uid residual. Briefed for a build loop
-  (review). Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
+  `.git/config` premise is Q-103's accepted same-uid residual. Built and ready; merge is
+  Q-218. Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
 - **Exit scan: sort Q-173's groups and close R6** (Q-168's first step, Now). Motive: Q-172
   answered [2] unblocked Q-173; R6 (High) is inside the boundary and builds first.
   Briefed for a build loop (review). Brief:
@@ -57,10 +57,27 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
    wall time from its records and bring the numbers to you.
+4. **Bug: the interview profile's README does not match its scripts.** Motive: undocumented
+   is broken (step 4 spot-check of be464869, cycle 2026-10-25). `profiles/interview/README.md`
+   omits the settings file's `claudeMdExcludes` list and runtime values, says `cci` "warns"
+   on instructions-file drift where it stops and asks y/N, and says preflight fails on any
+   uncovered ancestor instructions file where it counts the exclude key's presence as
+   coverage and skips `.claude/rules/**`. First step: fix the two README lines, then either
+   check each pattern in preflight or soften the README's claim (outside the cycle's
+   `--check-fix` paths).
 
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **Let a brief continue an existing hand branch.** Signal: Q-174 [1] authorized Q-106's
+  iteration 4 on 2026-10-22 with no commit since, while a loop slot sat free (briefs need a
+  new branch). A `Base:` line naming the commit would let a loop pick it up; the gate code
+  is yours to change.
+- **Skip the health check after a docs-only gate merge.** Signal: iteration 2026-10-26-0027
+  re-ran the full check for 4388056e, which touched only `docs/`.
+- **A hermetic test for the interview profile's preflight.** Signal: no test covers
+  `profiles/interview/` (spot-check of be464869); pairs with Next 4.
 
 - **Check that code review follows decision 031's k policy.** Signal: the user's feedback
   note of 2026-10-20 observes k=3 fact-checks on every pass, where 031 sets k=3 on the
