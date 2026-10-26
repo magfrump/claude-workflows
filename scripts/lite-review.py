@@ -11,7 +11,9 @@ Two modes:
   --mode fix-drift  decision 031's L=fix-drift check: run over a fix commit
                     during the review-fix loop, gated to comment/doc drift
                     only - the "fix introduces stale docs" class that E1/E3
-                    showed costs a full pass to rediscover
+                    showed costs a full pass to rediscover - including a
+                    fact-check of prose the fix adds or changes (decision 031,
+                    2026-10-25 amendment)
 
 Backend notes (why the flags are what they are):
 - NOT --bare, although `claude -p --bare` is the obvious spelling of "a
@@ -74,9 +76,10 @@ FINDINGS:
 === DIFF ({label}) ===
 {diff}"""
 
-PROMPT_FIX_DRIFT = """The diff below is a FIX COMMIT made during a code-review loop. Your only job is to catch drift the fix introduced between code and prose. Report ONLY:
+PROMPT_FIX_DRIFT = """The diff below is a FIX COMMIT made during a code-review loop. Your only job is to catch drift the fix introduced between code and prose, and errors in prose the fix adds or changes. Report ONLY:
 - comments, docstrings, or docs that the fix made stale or incorrect relative to the changed code
 - new or edited comments/docs in this diff that make claims the code does not satisfy
+- factual errors in any prose this diff adds or changes (comments, docstrings, docs, guides), judged from the diff and general knowledge. When such prose states specifics about material the diff does not show (another file's contents or ordering, a line number, what a list includes, a tool's behavior) and nothing in the diff supports them, report it with severity Low and domain "unverified claim", and say in the description what to check and where
 
 Do NOT report pre-existing issues, style, or anything about code behavior itself - a separate full review owns those. Report only findings that matter - do not pad. Output format, exactly:
 
