@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
 | [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | you: judgment | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
+| [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | you: judgment | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -50,6 +51,34 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-219 · merge-2026-10-25-widen-fix-drift-check-4695470b98b1
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
+
+Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report): the fix-drift lite check's prompt (`PROMPT_FIX_DRIFT` in `scripts/lite-review.py`) now also reports factual errors in prose a fix adds or changes, and a specific claim about something the diff does not show (another file's contents or order, a line number, what a list includes) comes back as a Low "unverified claim" finding that names what to check; the loop agent then checks it. Still one lite call, no new agent run. `workflows/review-fix-loop.md` (Fix-commit drift check) and `workflows/pr-prep.md` step 3c describe the wider scope, the unverified-claim handling and the cost. Decision 031 gets a dated 2026-10-25 amendment and a note under its fourth trigger (original text unchanged); log row 77 records it, following row 63's precedent. New `test/lite-review-fix-drift-prompt.bats` runs the script end to end against a temp repo with a strict `claude` stub (exact argv, refuses `--bare`); its first case fails on the old prompt.
+- **A deviation the loop flags:** the brief said "the doc change is the change itself", but the check's behaviour lives only in the script's prompt, so a workflow-only edit would describe a check that does not run (H2). It edited the script (7 lines) and added the test. The drift check itself was not run live on the fix commits (needs a live `claude` call); independent subagent reviews stood in (first pass 0 red, 3 amber, fixed in 821d26d4; confirming pass clean). Health check, hermeticity lint and the touched suites pass.
+- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 4695470b98b1d76642233f1bc1d90d5d40a20bba` · `docs/working/research-2026-10-25-widen-fix-drift-check.md` on that branch (five options; it picked C)
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-widen-fix-drift-check.md 4695470b98b1d76642233f1bc1d90d5d40a20bba b539f520fbb18c01f8c666b0557dccf5bdb8dd41`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/031-review-loop-tier-and-factcheck-policy.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A docs/working/research-2026-10-25-widen-fix-drift-check.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M scripts/lite-review.py`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A test/lite-review-fix-drift-prompt.bats`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/pr-prep.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/review-fix-loop.md`
+- **Path notes:** `scripts/lite-review.py` holds a prompt the review loop sends to a model, and the two `workflows/` files are on this repo's self-merge never line; `docs/decisions/` paths are your records. Self-merge's floor would have refused all of these. None is gate code or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 4695470b | Reading a 7-line prompt change, two workflow sections and 031's amendment | Noisier lite-check findings on docs-heavy loops; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | 031's fourth trigger stays answered on paper only |
+| **[3] changes needed** | Your note goes back to the loop (for example: keep it docs-only) | A note | One more loop run |
+
+- **Interim:** unmerged; the lite check runs as before.
 
 ### Q-218 · merge-2026-10-25-log-row-73-trigger-241278a4f811
 **Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
