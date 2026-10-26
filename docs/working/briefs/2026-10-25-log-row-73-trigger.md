@@ -48,3 +48,5 @@ Policy: review
   [2], not chosen).
 - Any other decision-log row or decision record.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
