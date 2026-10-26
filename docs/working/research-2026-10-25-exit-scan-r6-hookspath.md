@@ -98,13 +98,20 @@ A dominates: Path A, decide and continue.
 
 ## 4. Plan
 
-1. Add `_snap_tree_hooks <config> <working tree> [<depth>]` and `_snap_entry_hooks <git dir>
-   <working tree>` to `devcontainer-config/cc-exit-scan.sh`; call the latter from the
-   working-tree `.git` loop with `${f%/*}`. Absolute and `~/` hooksPath values are skipped
-   (walked by `_snap_config`); every include is followed whatever its path form
-   (over-walk), depth 10 as git.
+1. Add `_snap_cfg_hooks <config>` (with `_snap_cfg_hooks_file`) and `_snap_entry_hooks
+   <git dir> <working tree>` to `devcontainer-config/cc-exit-scan.sh`; call the latter
+   from the working-tree `.git` loop with `${f%/*}`. `_snap_cfg_hooks` collects every
+   `core.hooksPath` value of a config and every file it includes, once per snapshot per
+   config (cached by real path); `_snap_entry_hooks` walks each value resolved in the
+   entry's directory (absolute values too: cheap, and it covers configs `_snap_config`
+   never reads). Every include is followed whatever its path form, with no depth cap
+   (over-walk).
+   - As built in cf15f4f9 the walk was per (config, worktree) with a depth cap of 10;
+     the pass 1 and pass 2 reviews changed it (section 5).
 2. Header and guide: a relative repo `core.hooksPath` is walked in every working tree.
-3. Bats case in `test/cc-isolated-functions.bats` (direct and through `include.path`).
+3. Bats case in `test/cc-isolated-functions.bats`: direct, through a relative and an
+   absolute `include.path`, and through a file first met deep in an untaken `includeIf`
+   chain.
 4. Guide known routes: R4, T1, and the open in-scope follow-ups; boundary sentence and cc-push.
 5. Gate: full `test/cc-isolated-functions.bats`, `scripts/hermeticity-lint --root .`,
    shellcheck, the health check.
@@ -113,9 +120,9 @@ A dominates: Path A, decide and continue.
 
 | # | Family | Covered? |
 |---|---|---|
-| 1 | Hooks base differs from the `.git` entry's dir (`core.worktree` set in the config) | Partly: the entry dir is walked; a `core.worktree` elsewhere needs that value at launch (launch-state route). `_snap_config` still walks its own base too. |
+| 1 | Hooks base differs from the `.git` entry's dir (`core.worktree` set in the config) | Not covered: pass-2 security probed it end to end (per-worktree `core.worktree` via `config.worktree`, rc=0, hook ran). It needs that value at launch, an unusual state: out of scope by the sort, now a guide known route. The main working tree already ignored `core.worktree` (not a regression). |
 | 2 | Linked worktree added during the session | Covered: W records already refuse the note; the new walk adds the hook records. |
-| 3 | hooksPath set through `include.path`/`includeIf` in repo config | Covered: every include is followed, whatever form its path takes (conditions not evaluated: over-walk). Pass 1 found the first version skipped absolute and `~/` include paths (rc=0, hook ran); fixed, and tested for relative and absolute `include.path`. |
+| 3 | hooksPath set through `include.path`/`includeIf` in repo config | Covered: every include is followed, whatever form its path takes, with no depth cap (conditions not evaluated: over-walk). Pass 1 found absolute and `~/` include paths skipped; pass 2 found a depth cap beside the seen set dropped a file first met at depth 10 of an untaken `includeIf` chain (both rc=0, hook ran); both fixed and tested. |
 | 4 | `config.worktree` (extensions.worktreeConfig) | Covered: walked for each private git dir (over-walk when the extension is off). |
 | 5 | Unreadable or unparseable config on the new path | Covered: the snapshot fails (launch refused / exit 4), as `_snap_config` does (H2). |
 | 6 | Hooks dir is a symlink, or unlistable | Covered by `_snap_hooks` (same as every other hooks walk). |
@@ -124,9 +131,34 @@ A dominates: Path A, decide and continue.
 | 9 | Relative remotes per worktree (A14), separate git dir remotes (R3) | Not covered: follow-ups. |
 | 10 | `.git` entries the find does not reach (other names, symlinked dirs) | Not covered: existing guide routes. |
 
-Cost: one extra `git config` fork per config file read per `.git` entry (the common config,
-plus each include). 100 embedded repos: old 2.83 s / 2.87 s,
-new 2.77 s / 2.81 s (noise), so the guide's timing is unchanged.
+## 5. Review-loop changes (passes 1-2)
+
+- Pass 1 (fact-check): absolute/`~/` include paths skipped (fixed); comment and guide
+  wording (fixed); the R5/A15 bullet described a Q-168-only mechanism (dropped, see the
+  sort).
+- Pass 2 security M1: the depth cap beside the seen set dropped a deep-first file (fixed:
+  no cap).
+- Pass 2 security M2: a `core.worktree` elsewhere is not followed (guide known route;
+  pre-mortem row 1).
+- Pass 2 security, informational: an empty or non-regular `commondir` in an embedded repo
+  now refuses the launch (git dies there too, rc=128): availability, never a false clean.
+- Pass 2 performance M1: the per-(config, worktree) walk re-read each include set once per
+  `.git` entry (100 entries x 100 includes: 46.6 s vs 2.2 s). Fixed by caching each
+  config's value set once per snapshot.
+- Pass 2 performance L1: every value is walked in every worktree (git takes the last):
+  100 entries x 100 values, 11.3 s vs 1.3 s. Kept: an availability cost only; the values
+  must be present at launch (one added in the session is a C-record finding anyway), and
+  the guide's "A slow scan" route already covers planted volume.
+- Pass 2 fact-check: an absolute `core.hooksPath` in a config only this walk reads (a
+  container-form git dir) was not walked; the walk now walks absolute values too.
+
+Cost after pass 2 (the pass-2 performance review's harness, git calls counted by a shim,
+load ~0.7): 100 embedded repos 2.32 s -> 2.85 s (3 runs each; about 5 ms more per repo:
+one `git config` for its config, one more for `config.worktree` when present, plus the
+`gitdir_common` and `realpath` forks); 100 entries x 100 includes 2.06 s -> 2.71 s (46.6 s
+before the cache); 100 entries x 100 lines naming one include 1.82 s -> 2.23 s. The
+guide's per-repo figure moves from about 29 ms to about 30 ms and now names linked
+worktrees.
 
 Host check (the container cannot run it): after `install.sh`, in a husky repo with an
 agent worktree, launch `cc-isolated`, have the session write

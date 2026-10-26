@@ -437,8 +437,8 @@ in the checkout, whatever the scan says.
   SIGTERM) scans nothing. Ctrl-C that ends the session still scans; a Ctrl-C
   *during* the scan stops it and exits 4 ("the exit scan was interrupted").
 - **A slow scan.** The cost is forks per git dir, not I/O: about 2–4 s per
-  snapshot on a ~400k-file repository, and about 29 ms more for each embedded
-  repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
+  snapshot on a ~400k-file repository, and about 30 ms more for each embedded
+  repository or linked worktree (the tree walk itself is ~0.05 s per 100k files), paid at launch
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time; at the `insteadOf` caps, rewritten URLs alone add 10-80 s
@@ -467,6 +467,11 @@ in the checkout, whatever the scan says.
   hooks under a relative `core.hooksPath` run from the pushed repo's git dir
   (`<repo>/.git/<path>`, `git push .` included), which is not walked (Q-168
   rubric A14, R3, A16).
+- **A `core.worktree` elsewhere, present at launch.** A relative
+  `core.hooksPath` is walked in the directory holding each `.git` entry; a
+  repo or linked worktree whose `core.worktree` (in `config.worktree`, say)
+  names another directory runs hooks from `<that directory>/<path>`, which is
+  not walked.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses

@@ -3173,6 +3173,23 @@ line")"
   [ "$status" -eq 1 ]
   [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
   no_ran
+  # The file that sets it is first met at depth 10 of an includeIf chain git
+  # does not take, then through a plain include git does take.
+  rm -rf "$STD_WT/.inc-hooks"
+  local i
+  for i in 1 2 3 4 5 6 7 8; do printf '[include]\n\tpath = a%d.cfg\n' $((i + 1)) > "$SCAN_WS/.git/a$i.cfg"; done
+  printf '[include]\n\tpath = x.cfg\n' > "$SCAN_WS/.git/a9.cfg"
+  printf '[include]\n\tpath = inc.cfg\n' > "$SCAN_WS/.git/x.cfg"
+  git -C "$SCAN_WS" config --unset include.path
+  git -C "$SCAN_WS" config 'includeIf.gitdir:/nomatch/.path' a1.cfg
+  git -C "$SCAN_WS" config include.path x.cfg
+  [ "$(git -C "$STD_WT" config core.hooksPath)" = .inc-hooks ]
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
   # What a clean scan would have let through: host git runs the hook there.
   git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
   [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
