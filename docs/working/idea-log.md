@@ -83,3 +83,12 @@ Triggers: roadmap Now holds 0 items ready for a brief once this iteration's two 
 3. Do nothing else: two briefs dispatch this iteration; the rest of Next waits on Q-174, Q-175 or settlement.
 - `cc-isolated --register` with no `--profile` exits 1 where log row 58 says usage errors exit 2 (signal: cycle 2026-10-20-2344 step 2, cc-isolated.sh after c80fec22)
 - Let the dev cycle close an `agent` entry it has verified done on main (a dated done line plus a status the archive moves), instead of leaving it for the user (signal: cycle 2026-10-25, Q-092, Q-096, Q-110 and Q-160 verified done but left OPEN because `--cycle-diff` refuses a Status flip without `--answered`)
+
+## Brainstorm 2026-10-25
+
+Ran because roadmap Now held 0 items ready for a brief (Q-168 is held; its first step is already briefed). Sources: this cycle's signals, this log and roadmap Ideas (`docs/dev-cycle.md` lists no idea sources).
+
+- Let a brief continue an existing hand branch (a `Base:` line naming its commit), so authorized work like Q-106's iteration 4 can take a free loop slot (signal: Q-174 [1] authorized iteration 4 on 2026-10-22, no commit since, and one slot sat free in iteration 2026-10-26-0027 because briefs require a new branch)
+- Skip step 1's health check when every non-chore line on main since the last pass is a gate merge that touched only `docs/` (signal: iteration 2026-10-26-0027 re-ran the full health check because of 4388056e, a docs-only approved merge)
+- Give the interview profile a hermetic bats test of preflight's ancestor loop (fake HOME; stubbed claude, curl and nvidia-smi) (signal: the step 4 spot-check of be464869 found no test covers `profiles/interview/`, and the check counts the exclude key's presence as coverage)
+- Do nothing else: two loops are running and two merge entries (Q-217, Q-218) wait on the user (signal: queue state this iteration)

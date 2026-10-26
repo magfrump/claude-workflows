@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
+| [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | you: judgment | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
@@ -49,6 +50,29 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-218 · merge-2026-10-25-log-row-73-trigger-241278a4f811
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
+
+Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/2026-10-25-log-row-73-trigger.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report, docs only): `docs/working/constraints-builder-hardening.md`'s second revisit trigger now fires when "an agent outside the operator's own sessions and loops" can write a target repo's `.git/config`, `.git/config.worktree`, `refs/replace/` or their includes, and adds one sentence naming the operator's own loops and sessions as Q-103's accepted same-uid residual (Q-213 [1]). Log row 73 gets a dated "Amended 2026-10-25 (Q-213 [1])" note in its last cell; the original text stays (row about 1.1 KB). `skills/constraints-builder/SKILL.md` "Scope (v1)" was read and does not restate the old wording, so it is unchanged. The loop fact-checked the diff against Q-213 and the answers file itself (doc-only); `bats test/scripts/dev-cycle.bats` passed (79).
+- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 241278a4f81124cca3a3a381b35b80463b249973` · `docs/working/research-2026-10-25-log-row-73-trigger.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-log-row-73-trigger.md 241278a4f81124cca3a3a381b35b80463b249973 7c57a70836aa81cf6f4b16a2bae1cb89e74b1113`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/briefs/2026-10-25-log-row-73-trigger.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/constraints-builder-hardening.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md A docs/working/research-2026-10-25-log-row-73-trigger.md`
+- **Path notes:** `docs/decisions/log.md` is your record, which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 241278a4 | Reading a five-line trigger reword and one log amendment | A wording slip in a trigger; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The trigger keeps reading as firing on the build loops |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
 
 ### Q-217 · merge-2026-10-20-cc-verify-host-tool-e87a79122092
 **Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
