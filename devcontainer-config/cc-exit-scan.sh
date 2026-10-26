@@ -658,7 +658,7 @@ _snap_cfg_hooks() {
   local real
   real="$(realpath -m -- "$1" 2>/dev/null)" || real="$1"
   if [ -z "${_snap_rhc["$real"]:-}" ]; then
-    local -A _snap_rhseen=()
+    local -A _snap_rhseen=() _snap_rhval=()
     _snap_rhs=${#_snap_rhv[@]}
     _snap_cfg_hooks_file "$1" "$real" || return 1
     _snap_rhc["$real"]="$_snap_rhs $((${#_snap_rhv[@]} - _snap_rhs))"
@@ -668,7 +668,7 @@ _snap_cfg_hooks() {
 
 # _snap_cfg_hooks_file <file> <its real path>: one file of _snap_cfg_hooks.
 _snap_cfg_hooks_file() {
-  local f="$1" real="$2" out rec key val t k
+  local f="$1" real="$2" out rec key val t
   [ -f "$f" ] || return 0
   [ -z "${_snap_rhseen["$real"]:-}" ] || return 0
   _snap_rhseen["$real"]=1
@@ -684,7 +684,9 @@ _snap_cfg_hooks_file() {
     [ -n "$val" ] || continue
     case "$key" in
       core.hookspath)
-        for ((k = _snap_rhs; k < ${#_snap_rhv[@]}; k++)); do [ "${_snap_rhv[k]}" != "$val" ] || continue 2; done
+        # Once per value (a lookup, not a scan: thousands of values stay linear).
+        [ -z "${_snap_rhval["$val"]:-}" ] || continue
+        _snap_rhval["$val"]=1
         _snap_rhv+=("$val") ;;
       include.path|includeif.*.path)
         t="$(_snap_path "$val" "$(dirname -- "$f")")"

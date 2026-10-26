@@ -468,10 +468,16 @@ in the checkout, whatever the scan says.
   (`<repo>/.git/<path>`, `git push .` included), which is not walked (Q-168
   rubric A14, R3, A16).
 - **A `core.worktree` elsewhere, present at launch.** A relative
-  `core.hooksPath` is walked in the directory holding each `.git` entry; a
-  repo or linked worktree whose `core.worktree` (in `config.worktree`, say)
-  names another directory runs hooks from `<that directory>/<path>`, which is
-  not walked.
+  `core.hooksPath` is walked in the directory holding each `.git` entry (and,
+  for an embedded repo, in the `core.worktree` its own config names); the
+  checkout or a linked worktree whose `core.worktree` (in `config.worktree`,
+  say) names another directory runs hooks from `<that directory>/<path>`,
+  which is not walked.
+- **A repo config that is a symlink to another repo's, present at launch.**
+  Git resolves a relative `include.path` against the directory of the path it
+  opened; the scan reads each config file once, by its real path, so the
+  second repo's include (and the relative `core.hooksPath` it may set) is
+  never walked.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
@@ -491,8 +497,8 @@ in the checkout, whatever the scan says.
 - **A `.git` file naming the container's path, present at launch.** One that
   reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
   elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
-  config there and that git dir's relative `core.hooksPath` in the worktree,
-  not the git dir itself (and nothing at all when the line ends in a
+  config there and that git dir's `core.hooksPath` (a relative one in the
+  worktree), not the git dir itself (and nothing at all when the line ends in a
   CR, which git strips: Q-168 tech-debt T1). `git worktree repair` may point it at a
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added

@@ -1,8 +1,11 @@
-Commit: e1d7d912
+Commit: 28dfcd3b
+Loop closed at 28dfcd3b
 
 # Code Review Rubric
 
-**Scope:** `fix/exit-scan-r6-hookspath`, d40e4bae..e1d7d912 (pass 2 critics: full branch; pass 2 fact-check: cf15f4f9..e1d7d912) | **Reviewed:** 2026-10-25 | **Status: 🟡 fixes applied after pass 2, awaiting the final confirming pass**
+**Scope:** `fix/exit-scan-r6-hookspath`, d40e4bae..28dfcd3b (final confirming pass, full branch) | **Reviewed:** 2026-10-25 | **Status: ✅ PASSES** (exit condition 1, clean convergence in 3 iterations): 0 red; every amber fixed or acknowledged with a revisit trigger. Single-sample review; absence of findings is not an attestation.
+
+Pass 3 (final, 28dfcd3b): fact-check k=3 (`r6-hookspath-p3-code-fact-check-report-r{1,2,3}.md`: 0 Incorrect in all three; 7/6/5 Mostly accurate, r3 also 2 Stale commit-message claims about superseded commits and 1 Unverifiable timing), security (`r6-hookspath-p3-security-review-2026-10-25.md`), performance (`r6-hookspath-p3-performance-review-2026-10-25.md`). The replicates are not merged into one canonical report (the repo's shared `code-fact-check-report.md` belongs to other work); verdict agreement: every cluster was Verified or Mostly accurate in all three, with no Incorrect anywhere. Pass-3 fixes (the dedup lookup and the doc wording) came after this pass and were verified by the full scan test file and a timing probe, not re-reviewed.
 
 Passes so far (loop passes, k=1 fact-check):
 - Pass 1 (cf15f4f9): fact-check only; report `docs/reviews/r6-hookspath-p1-code-fact-check-report.md`. Its behavioral red (an open R6 variant) would have short-circuited the critics; the security critic should still have run (mechanic 7, enforcement file) and ran in pass 2 instead.
@@ -30,6 +33,9 @@ Passes so far (loop passes, k=1 fact-check):
 | A4 | `core.worktree` elsewhere not followed (rc=0, hook ran); needs launch-time state | Security | Medium | security p2-2 | for-author | — | ✅ Documented | Guide known route (out of scope by the sort); revisit trigger: a group-(1) unit that touches per-worktree bases |
 | A5 | Absolute hooksPath in a config only this walk reads (container-form git dir) not walked | Security | Mostly accurate (comment) | Fact-check p2 | for-author | — | ✅ Fixed after pass 2 | Walk resolves absolute values too |
 | A6 | Container-form guide bullet stale | Docs | Stale | Fact-check p1 | for-author | — | ✅ Fixed in e1d7d912 | — |
+| A7 | Per-config duplicate-value check quadratic (3,000 values in one config: 23.7 s) | Performance | Medium | performance p3-1 | for-author | Row 134 | ✅ Fixed after pass 3 | Associative-array lookup: 10.4 s (d40e4bae 5.0 s) |
+| A8 | A repo config symlinked to another repo's leaves the second repo's relative include unread (rc=0, hook ran; predates: d40e4bae rc=0) | Security | Medium | security p3-1 | for-author | — | ✅ Documented | Guide known route (launch-time state, out by the sort); revisit trigger: T1's reader unit, or any change to the config seen-set keys |
+| A9 | Wording: bats comment depth; core.worktree bullet too broad (embedded repo's own core.worktree is walked); container-form bullet omits absolute values; research R3/T3 rows, pre-mortem rows 1 and 3, section 5 figures | Docs | Mostly accurate | Fact-check p3 r1, r2, r3 | for-author | — | ✅ Fixed after pass 3 | — |
 
 ---
 
@@ -41,6 +47,10 @@ Passes so far (loop passes, k=1 fact-check):
 | C2 | Empty or non-regular `commondir` now refuses launch | security p2-3 | Informational | for-author | — | Accepted: git dies there too; research doc section 5 |
 | C3 | Guide per-repo timing: measurable change (~5 ms per repo) | performance p2-3 | Informational | for-author | Row 134 | Fixed: guide says about 30 ms, names linked worktrees |
 | C4 | config.worktree read always; commit message wording; research cost line | Fact-check p1, p2 | Mostly accurate | for-author | — | Fixed |
+| C5 | One `_snap_path` subshell per entry-value pair; absolute values re-walked per entry (100 x 100 values: about 10 s) | performance p3-2 | Low | for-author | Row 134 | Won't-Fix: availability only, values need launch state |
+| C6 | An include shared by different top configs is re-read once per config (+53% on d40e4bae's existing product) | performance p3-3 | Informational | for-author | Row 134 | Deferred: predates the change in kind |
+| C7 | A directory `commondir` in an embedded repo now fails the snapshot | security p3-2 | Informational | for-author | — | Accepted: git dies there too |
+| C8 | Commit messages of cf15f4f9 and e1d7d912 describe states later commits changed | Fact-check p3 r3 | Stale | for-author | — | Won't-Fix: history; later commits record the changes |
 
 ---
 
@@ -58,6 +68,7 @@ Passes so far (loop passes, k=1 fact-check):
 | Item | Verdict | Evidence | Source | Legibility-target |
 |---|---|---|---|---|
 | R6 closed for the brief's layout | ✅ Confirmed (executed) | `bats -f R6` passes on HEAD and fails at its first status check on d40e4bae's scan; probe old rc=0 / new rc=1, host commit runs the hook | Fact-check p1 claim 1 | for-orchestrator-synthesis |
+| Each part of the R6 bats case fails on the scan before its fix | ✅ Confirmed (executed) | Per-part runs: d40e4bae fails all four; cf15f4f9 fails absolute include and chain; e1d7d912 fails the chain; 28dfcd3b passes all | Fact-check p3 r1, r2, r3 | for-orchestrator-synthesis |
 
 ---
 
@@ -74,3 +85,4 @@ All findings' evidence resolved.
 ## 🧩 Composition check
 
 - `cc-exit-scan.sh` `_snap_tree_hooks` (security p2-1, performance p2-1, fact-check p1 R1): distinct defects (seen-set depth interaction, per-worktree dedup key, abs-path skip), one rewrite fixes all three.
+- `cc-exit-scan.sh` `_snap_cfg_hooks`/`_snap_cfg_hooks_file` (security p3-1, performance p3-1, p3-3): distinct defects (real-path keying vs. opened-path include base; value-dedup cost; per-top-config cache).

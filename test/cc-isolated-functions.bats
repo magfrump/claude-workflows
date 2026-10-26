@@ -3173,8 +3173,8 @@ line")"
   [ "$status" -eq 1 ]
   [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
   no_ran
-  # The file that sets it is first met at depth 10 of an includeIf chain git
-  # does not take, then through a plain include git does take.
+  # The file that includes it (x.cfg) is first met at depth 10 of an includeIf
+  # chain git does not take, then through a plain include git does take.
   rm -rf "$STD_WT/.inc-hooks"
   local i
   for i in 1 2 3 4 5 6 7 8; do printf '[include]\n\tpath = a%d.cfg\n' $((i + 1)) > "$SCAN_WS/.git/a$i.cfg"; done
