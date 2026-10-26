@@ -130,6 +130,7 @@ Q-096's iteration 2 found that the exit scan parses remote names and legacy `rem
 - **Read:** 3c8fbf4a's commit message (it lists the open gaps) · the guide's "Remote names and legacy remote files, read loosely" known-route bullet · Q-097, which may absorb it
 - **Interim:** a listed known route; cc-push is still the way to push.
 - **2026-10-20:** Q-171 was answered [2] (hold until the split units land), so this waits on Q-173, which waits on Q-172.
+- **Stuck (dev cycle 2026-10-25):** held by Q-171 [2] until Q-173's split units land; no choice pending.
 
 ### Q-169 · q117-spike-paste
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -159,6 +160,7 @@ Q-168's final pass split off four groups, each shown end to end (exit scan retur
 - **Read:** Q-168's rubric, the R3–R6 and A14–A17 rows
 - **Interim:** documented as known routes once Q-171's iteration lands; cc-push stays the safe path.
 - **2026-10-23:** Q-172 answered [2]: close only routes that need no state planted before launch, list the rest as known routes, and the guide says to push with cc-push. First step: sort the four groups by that rule. R6 (a relative `core.hooksPath` in a linked worktree inside the checkout) needs only state a session can write in the checkout, so it is inside the boundary and builds first.
+- **Stuck (dev cycle 2026-10-25):** unblocked by Q-172 [2] but needs a build loop (sort the groups, build R6 first), not a docs edit; no choice pending.
 
 ### Q-160 · implement-q104-per-iteration-cap
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -169,6 +171,7 @@ Log row 62's trigger fired again: units grew during review from 102 to 842 code 
 - **Interim:** applied by hand per loop (waivers Q-113, Q-120, Q-131). Nothing enforces it, so it holds only while each loop remembers.
 - **Built 2026-10-15:** `fix/q160-iteration-cap` (4a44d2f3), merged by Q-162's paste. This entry closes when it lands.
 - **Landed (dev cycle 2026-10-17):** 4a44d2f3 is on main through f265d7f2; `workflows/review-fix-loop.md` has the size re-check and log row 62 carries the 2026-10-15 amendment. Its closure condition is met; ready to archive.
+- **Done (dev cycle 2026-10-25):** 4a44d2f3 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
 
 ### Q-161 · revive-hermeticity-layer2-after-q125
 **Needs:** trigger · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -185,6 +188,7 @@ Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but 
 
 - **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
 - **Interim:** the lines stay stale. Neither one changes behavior.
+- **Stuck (dev cycle 2026-10-25):** fixed on unmerged `feat/q106-host-settings-merge`; closes when Q-106 lands (Q-174 [1] iteration 4 not yet run).
 
 ### Q-110 · health-check-not-run-undercount
 **Needs:** agent · **Opened:** 2026-10-02 · **Status:** OPEN
@@ -195,6 +199,7 @@ In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test ru
 - **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356-357`) with its own 4. Fix: unset the variable in that suite's `setup()` (not at top level of `test/lib/hermetic-env.bash`: `run-tests.sh` sources that file before its own write, so the count would vanish), or have the runner stop passing the variable to the bats processes it starts; add a test that the parent's file is untouched. Having the runner refuse an inherited value cannot work: the health check passes the variable through the environment (`scripts/health-check.sh`, check 5).
 - **Interim:** trust the runner's own NOT RUN list, not the summary line.
 - **Landed (dev cycle 2026-10-17):** 70aa3a78 is on main through f265d7f2 (`scripts/run-tests.sh` unsets the variable; test in `test/skills/eval-helpers-gating.bats`). The 2026-10-17 health check's summary and runner both say 50 NOT RUN. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 70aa3a78 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
@@ -229,6 +234,7 @@ Design, per Q-072, (a) a script that turns a commit or commit range into a canon
 
 - **Read:** `docs/working/canon-issue-ledger.md` · `review-canon.md` §1 · the 112 September `docs/reviews/` artifacts as the candidate pool
 - **Interim:** the ledger is unchanged.
+- **Stuck (dev cycle 2026-10-25):** needs a loop to write the design doc; the user's choice comes after it.
 
 ### Q-084 · q076-live-checks
 **Needs:** you: terminal · **Opened:** 2026-09-27 · **Status:** OPEN
@@ -273,6 +279,7 @@ The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never 
 - **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
 - **Built 2026-10-15:** `fix/q096-exit-scan-insteadof-target` (8717fd72, loop closed), merged by Q-162's paste; this entry closes when it lands. Host probe: Q-167. Split-off: Q-168. Review history: The first security pass found five Mediums, all confirmed by probe. One is pre-existing: a remote with no `url` is pushed to as a path, and the scan skips it. The commit carries `Host-tool-tested: no` (decision log row 71), not `Live-verified`.
 - **Landed (dev cycle 2026-10-17):** 8717fd72 is on main through f265d7f2, and its brief reads done. Its closure condition is met; the host probe stays with Q-167, the split-off with Q-168. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 8717fd72 is on main; the host probe stays with Q-167 and the split-off with Q-168. Ready for you to set ANSWERED.
 
 ### Q-097 · exit-scan-older-routes
 **Needs:** agent · **Opened:** 2026-09-28 · **Status:** OPEN
@@ -281,6 +288,7 @@ The Q-094 review documented two older Medium routes the exit scan does not see, 
 
 - **Read:** `docs/reviews/code-review-rubric-2026-09-28-q094-final-B.md` · the guide's known-routes list · override-log row 135 (fold the `commondir` reader into `cc-gitdir.sh`; its trigger was moved, not met)
 - **Interim:** documented. cc-push is still the only way to push.
+- **Stuck (dev cycle 2026-10-25):** enforcement units on `cc-exit-scan.sh`, queued behind Q-173 and Q-168 on the same file.
 
 ### Q-098 · global-allowlist-after-sandbox
 **Needs:** deferred · **Opened:** 2026-09-28 · **Status:** OPEN
@@ -306,6 +314,7 @@ Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash de
 - **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
 - **Interim:** the reader stays. It is redundant for `allow`, not harmful.
 - **Landed (dev cycle 2026-10-20):** U1 merged at 79c8a6a6, U2 and U3 (Q-177 [3]'s split-word refusal) at dfc78e9a. The hook emits only `allow` (its header says it never emits `ask`), so the ask-path case is moot; the host deny check was Q-176. Ready to archive.
+- **Done (dev cycle 2026-10-25):** U1 79c8a6a6 and U2/U3 dfc78e9a are on main; spot-check re-ran `test/auto-approve-allowed-commands.bats` 37/37 and the hook emits only `allow`. Ready for you to set ANSWERED (the cycle cannot close an entry).
 
 ### Q-125 · build-cc-isolated-sandbox
 **Needs:** agent · **Opened:** 2026-10-07 · **Status:** OPEN
@@ -323,6 +332,7 @@ Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default
   - Open: a fresh `/proc` mount is probably refused under Docker's masked `/proc` paths. Q-126 tests that, Q-127 decides the fallback, and the live run is the step after Q-126. See `docs/working/plan-q125-cc-isolated-sandbox.md`.
 
   - **Update 2026-10-07 (Q-126):** the host probe passed, so a fresh `/proc` works and Q-127 is moot. U2 has merged main (2961ca2f), so the live run installs current payload. Next is Q-130.
+- **Stuck (dev cycle 2026-10-25):** the host live run waits on cc-verify (merge entry Q-217, open).
 
 ### Q-147 · q089-loop-split-source-guard
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -331,6 +341,7 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 
 - **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
 - **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
+- **Stuck (dev cycle 2026-10-25):** the source-guard unit needs a fresh build loop that narrows the test's claim; no choice pending.
 
 ### Q-214 · egress-pin-resolver-release
 **Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** OPEN

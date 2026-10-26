@@ -82,3 +82,4 @@ Triggers: roadmap Now holds 0 items ready for a brief once this iteration's two 
 2. Count each cycle's overhead against feature work: lines and commits the cycle lands versus feature merges in its window. Signal: the same note says the dev cycle spends more on verification overhead than on features. Changes: gives Q-154's light-pass question and the feedback a number.
 3. Do nothing else: two briefs dispatch this iteration; the rest of Next waits on Q-174, Q-175 or settlement.
 - `cc-isolated --register` with no `--profile` exits 1 where log row 58 says usage errors exit 2 (signal: cycle 2026-10-20-2344 step 2, cc-isolated.sh after c80fec22)
+- Let the dev cycle close an `agent` entry it has verified done on main (a dated done line plus a status the archive moves), instead of leaving it for the user (signal: cycle 2026-10-25, Q-092, Q-096, Q-110 and Q-160 verified done but left OPEN because `--cycle-diff` refuses a Status flip without `--answered`)

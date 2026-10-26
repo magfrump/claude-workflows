@@ -11,7 +11,7 @@ user's order).
 
 ## Now
 
-Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2344).
+Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
 - **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap.
@@ -19,15 +19,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
   predate it first. Q-172 was answered [2]: close only routes that need no state planted
   before launch, list the rest as known routes, push with cc-push. The four split groups
   are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
-  builds first).
-- **Widen the fix-drift lite check (Q-194 [2]).** Motive: decision 031's fourth trigger
-  fired when the lite check missed a doc amber in fix-added prose. First step: have the
-  review-fix loop's drift step also fact-check prose a fix adds, and amend 031's trigger
-  text to point at the change.
-- **Reword log row 73's second trigger (Q-213 [1]).** Motive: the shared-uid
-  `.git/config` premise is Q-103's accepted same-uid residual. First step: reword the
-  trigger in `docs/decisions/log.md` row 73 and `docs/working/constraints-builder-hardening.md`
-  to "an agent outside the operator's own sessions and loops".
+  builds first). That step is briefed (In flight, the exit-scan R6 line).
 
 ## In flight
 
@@ -36,9 +28,16 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-20-2
   verifies as an argument), Q-166 [2]. The hand spike paste Q-169 stays open; the brief
   folds its open claims into the tool's first run. Built and ready; merge is Q-217. Brief:
   `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
-- **Apply decision 015's amendment and close log row 66** (was Next 4 and Next 1). Q-170
-  answered [A], Q-179 answered [1]. Built and ready; merge is Q-216, answered [1]. Brief:
-  `docs/working/briefs/2026-10-20-decision-015-amendment.md`
+- **Widen the fix-drift lite check (Q-194 [2])** (was Now). Motive: decision 031's fourth
+  trigger fired when the lite check missed a doc amber in fix-added prose. Briefed for a
+  build loop (review). Brief: `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
+- **Reword log row 73's second trigger (Q-213 [1])** (was Now). Motive: the shared-uid
+  `.git/config` premise is Q-103's accepted same-uid residual. Briefed for a build loop
+  (review). Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
+- **Exit scan: sort Q-173's groups and close R6** (Q-168's first step, Now). Motive: Q-172
+  answered [2] unblocked Q-173; R6 (High) is inside the boundary and builds first.
+  Briefed for a build loop (review). Brief:
+  `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
 
 ## Next
 
@@ -206,6 +205,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Decision 015's amendment, log row 66's close and row 53's Q-176/Q-177 amendment: done at
+  4388056e (Q-216 [1], build-loop approved merge). Brief:
+  `docs/working/briefs/closed/2026-10-20-decision-015-amendment.md`
 - Q-146 [1] — self-improvement.sh commits for its implementer: done at 86993a8c (Q-197 [1]).
   Brief: `docs/working/briefs/closed/2026-10-17-q146-si-script-commits.md`
 - `cc-isolated --profile` path-like values and the empty `--register` grant: done at
