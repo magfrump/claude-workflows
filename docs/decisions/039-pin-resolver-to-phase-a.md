@@ -30,7 +30,7 @@ Unchanged: subdomains, AAAA/TXT-style queries and `.zone` entries still forward 
 - `.zone` names keep the old staleness (base has one zone, `.frame.claudeusercontent.com`).
 - AAAA queries for a pinned name still forward. IPv6 is default-denied, so clients fall back to IPv4 as before.
 
-## Revisit trigger
+## Revisit triggers
 
 Revisit if `/run/cc-sni-proxy/proxy.log` on an image built with this change shows `FAIL sni=<exact name>` for an address that is NOT among that name's `host-record` lines in `/etc/dnsmasq.d/cc-allowlist.conf`. That would mean the pin is not being served. A FAIL for a pinned address is residual 1 (a dead pin), not this trigger. Also revisit if a zone name shows the herald-style rotation; then revive 038's `ipset=` design for zones only.
 
