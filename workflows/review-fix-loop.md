@@ -96,7 +96,7 @@ Decision 031 chose `L=fix-drift`: after each fix batch (pr-prep Step 3c), run
 `~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift`
 over the fix commits before starting the next full pass (`--range` is required; in
 claude-workflows itself the script is `scripts/lite-review.py`). The check is deliberately narrow — it reports **only** prose the
-fix introduced or got wrong: a comment now stale relative to the changed code, a new
+fix introduced, got wrong or that it could not verify: a comment now stale relative to the changed code, a new
 comment making a claim the code doesn't satisfy, or a factual error in any prose (comment,
 docstring, doc, guide) the fix diff adds or changes. That last class is a fact-check of
 the fix's own prose in the same lite call; the model sees only the diff, so a specific
