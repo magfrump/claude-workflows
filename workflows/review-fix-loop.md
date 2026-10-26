@@ -109,11 +109,12 @@ Why narrow: E1/E3 showed the recurring "fix introduces a defect" pattern was alm
 always prose drifting from the fix, which is exactly the fact-check-shaped class a
 diff-only lite call catches — and a full lite loop every round is not worth it, because
 lite's value decays once only structural/cross-file findings remain. Pay for it once, on
-each fix diff. The prose fact-check was added after decision 031's T4 fired (2026-10-25
-amendment): a guide sentence a fix added made a wrong claim about Dockerfile layer order,
-the old prompt passed it because nothing in the diff contradicted it, and the next full
-pass found it. It costs a little more per iteration on docs-heavy loops: more output
-tokens and more findings, most of them a quick lookup.
+each fix diff. The prose fact-check was added by decision 031's 2026-10-25 amendment,
+after its fourth revisit trigger fired on 2026-10-15: a guide sentence a fix added made a
+wrong claim about Dockerfile layer order, the old prompt passed it (most likely because
+nothing in the diff contradicted it), and the next full pass found it. It costs a little
+more per iteration on docs-heavy loops: more output tokens, and more findings, each one a
+lookup.
 
 Mechanics: the script is a headless `claude -p` call on the subscription (Haiku by
 default, custom system prompt, no tools, no CLAUDE.md discovery — ~10–15k tokens/call).
@@ -123,7 +124,7 @@ subscription login, so on a subscription-only machine it prints "Not logged in" 
 Findings are fixed immediately in the same fix batch, not triaged. Fixing an
 `unverified claim` finding means checking the claim against the named source with your
 own tools and correcting the prose if it is wrong; a claim that checks out needs no edit
-(say so in the fix commit's body). The script is installed
+(note that with the check's result, where the loop records it). The script is installed
 at `~/.claude/scripts/` by both install routes (README and the devcontainer linker).
 
 ## Divergence detection (stuck-loop signal)

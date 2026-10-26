@@ -68,7 +68,9 @@ STUB
 }
 
 @test "the stub refuses --bare, so a drifted call cannot pass these tests" {
-  run claude -p --bare --model claude-haiku-4-5-20251001 --output-format json --system-prompt x --tools ""
+  # Ten argv, so the argc check passes and the --bare in place of
+  # --no-session-persistence is what gets refused.
+  run claude -p --model claude-haiku-4-5-20251001 --output-format json --system-prompt x --tools "" --bare
   [ "$status" -eq 64 ]
-  [[ "$output" == *"stub claude:"* ]]
+  [[ "$output" == *"stub claude: argv[9]=--bare"* ]]
 }

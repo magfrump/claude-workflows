@@ -38,7 +38,8 @@
   9e0ff1a5..258f9ec4 printed FINDINGS: NONE, and the next full pass found D1, a wrong
   claim about Dockerfile layer order in guide text 258f9ec4 itself added. The user
   answered Q-194 with [2], widen the drift check (decision log #77). T4 stays, now as the
-  trigger for a miss of the widened check.
+  trigger for a miss of the widened check; and if unverified-claim findings almost always
+  check out, narrow that class.
 
 ## Context
 
