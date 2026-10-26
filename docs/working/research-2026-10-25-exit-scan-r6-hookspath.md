@@ -27,14 +27,17 @@ route already covers in general).
 | A14 | in, follow-up | Launch state is a relative local remote (`../upstream.git`), name or legacy URL in the checkout's config plus a linked worktree: ordinary setup; in a worktree inside the checkout the path lands inside the checkout, where the session plants a bare repo. |
 | A16 | in, follow-up | Launch state is a relative `core.hooksPath` (husky) in a non-bare repo that is pushed to (`git push .`, a push into the checkout); the session writes `<git dir>/<rel>/pre-receive`, which no walk covers. |
 | R4 | out | Needs a local path holding `@[` (or starting `[`) in a URL, name, legacy file or insteadOf result present at launch; adding one in the session is a C record. No ordinary workflow writes such a path. |
-| R5 | out | Needs your own config to define a remote only inside a `gitdir:` include written on a symlinked launch path, name it in `pushDefault`/`branch.*`, and an embedded `gitdir:`-file repo under it: a launch-time config shape, not something a session writes. |
-| A15 | out | Needs a `gitdir:` pattern with a `**` not bounded by `/` in your own config at launch. |
+| R5 | out, not reachable on main | Needs your own config to define a remote only inside a `gitdir:` include written on a symlinked launch path, name it in `pushDefault`/`branch.*`, and an embedded `gitdir:`-file repo under it: a launch-time config shape. The counting that makes it a route exists only on the held Q-168 branch; on main your own `pushDefault` names are never walked at all (pass-1 fact-check, executed), which the guide's existing "path-valued `pushRemote`/`pushDefault` in your own config" bullet already lists. Q-168's guide must add it when that branch lands. |
+| A15 | out, not reachable on main | Needs a `gitdir:` pattern with a `**` not bounded by `/` in your own config at launch; like R5 it hides a name only through Q-168's counting, so on main it is covered by the same existing bullet. |
 | T1 | out | Its end-to-end case needs a container-form `.git` ending in CR present at launch (an earlier session's leftover), the guide's existing container-form route; an in-session `.git` not in git's exact form is already a finding. |
 | T3 | out, not a route | The `_snap_config` dedup key omission only over-walks (fails toward more findings), so there is nothing to list as a route; it stays tech debt with T1's unit. |
 
-Out-of-scope routes R4, R5, A15 and T1 are now in the guide's "Known routes it does not
-see" (T1 as a qualifier on the existing container-form bullet), and the section's intro
-states the boundary and says to push with `cc-push`. R6 was never on that list on main
+Out-of-scope routes R4 and T1 are now in the guide's "Known routes it does not see" (T1
+as a qualifier on the existing container-form bullet); R5 and A15 are not routes on main
+(see their rows) and are covered there by the existing `pushDefault` bullet. The in-scope
+follow-ups A14, R3's remote half and A16 are listed too, as "not closed yet", so the guide
+does not imply they are closed. The section's intro states the boundary and says to push
+with `cc-push`. R6 was never on that list on main
 (Q-168's A18 notes none of the split routes was), so nothing leaves it; instead the
 coverage paragraph now says a relative repo `core.hooksPath` is walked in every working
 tree.
@@ -46,8 +49,9 @@ tree.
   under a relative hooksPath run from the git dir). R3's `core.hooksPath` half is already
   resolved by this change's per-entry walk (probe below); its unit should add the test.
 - T1 + T3 (one reader for `gitdir:`/`commondir`, the dedup key), as the tech-debt triage
-  recommends. Note that main has no CR stripping in any `.git`/`commondir` reader; that
-  family (Q-168 p1-3) is fixed on the held Q-168 branch.
+  recommends. Note that the scan's own `.git`/`commondir` readers on main strip no CR
+  (`cc-gitdir.sh`'s `gitdir_common` does, and this change uses it); that family (Q-168
+  p1-3) is fixed on the held Q-168 branch.
 - Groups (2) and (3) are out of scope by the sort: documented, not built.
 
 ## 2. R6 reproduction
@@ -96,11 +100,12 @@ A dominates: Path A, decide and continue.
 
 1. Add `_snap_tree_hooks <config> <working tree> [<depth>]` and `_snap_entry_hooks <git dir>
    <working tree>` to `devcontainer-config/cc-exit-scan.sh`; call the latter from the
-   working-tree `.git` loop with `${f%/*}`. Absolute and `~/` values are skipped (walked by
-   `_snap_config`). Includes are followed unconditionally (over-walk), depth 10 as git.
+   working-tree `.git` loop with `${f%/*}`. Absolute and `~/` hooksPath values are skipped
+   (walked by `_snap_config`); every include is followed whatever its path form
+   (over-walk), depth 10 as git.
 2. Header and guide: a relative repo `core.hooksPath` is walked in every working tree.
 3. Bats case in `test/cc-isolated-functions.bats` (direct and through `include.path`).
-4. Guide known routes: R4, R5/A15, T1; boundary sentence and cc-push.
+4. Guide known routes: R4, T1, and the open in-scope follow-ups; boundary sentence and cc-push.
 5. Gate: full `test/cc-isolated-functions.bats`, `scripts/hermeticity-lint --root .`,
    shellcheck, the health check.
 
@@ -110,16 +115,17 @@ A dominates: Path A, decide and continue.
 |---|---|---|
 | 1 | Hooks base differs from the `.git` entry's dir (`core.worktree` set in the config) | Partly: the entry dir is walked; a `core.worktree` elsewhere needs that value at launch (launch-state route). `_snap_config` still walks its own base too. |
 | 2 | Linked worktree added during the session | Covered: W records already refuse the note; the new walk adds the hook records. |
-| 3 | hooksPath set through `include.path`/`includeIf` in repo config | Covered: followed (conditions not evaluated: over-walk). Tested for `include.path`. |
+| 3 | hooksPath set through `include.path`/`includeIf` in repo config | Covered: every include is followed, whatever form its path takes (conditions not evaluated: over-walk). Pass 1 found the first version skipped absolute and `~/` include paths (rc=0, hook ran); fixed, and tested for relative and absolute `include.path`. |
 | 4 | `config.worktree` (extensions.worktreeConfig) | Covered: walked for each private git dir (over-walk when the extension is off). |
 | 5 | Unreadable or unparseable config on the new path | Covered: the snapshot fails (launch refused / exit 4), as `_snap_config` does (H2). |
 | 6 | Hooks dir is a symlink, or unlistable | Covered by `_snap_hooks` (same as every other hooks walk). |
-| 7 | `commondir` with a trailing CR (git strips it) | Not covered on main: the walk reads the raw first line, as `_snap_gitdir` does; needs it at launch (an in-session change is a `commondir-file` record). T1's reader unit. |
+| 7 | `commondir` with a trailing CR (git strips it) | Covered for this walk: it reads the common dir through `gitdir_common` (git's reading; an unreadable or empty file fails the snapshot), not a fifth raw reader (override-log row 135). `_snap_gitdir`'s own reader is unchanged: T1's unit. |
 | 8 | Receive hooks under a relative hooksPath (A16) | Not covered: follow-up. |
 | 9 | Relative remotes per worktree (A14), separate git dir remotes (R3) | Not covered: follow-ups. |
 | 10 | `.git` entries the find does not reach (other names, symlinked dirs) | Not covered: existing guide routes. |
 
-Cost: one extra `git config` fork per `.git` entry. 100 embedded repos: old 2.83 s / 2.87 s,
+Cost: one extra `git config` fork per config file read per `.git` entry (the common config,
+plus each include). 100 embedded repos: old 2.83 s / 2.87 s,
 new 2.77 s / 2.81 s (noise), so the guide's timing is unchanged.
 
 Host check (the container cannot run it): after `install.sh`, in a husky repo with an

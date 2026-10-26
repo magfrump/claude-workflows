@@ -335,7 +335,8 @@ configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
 resolved in the working tree of the repo whose config names them). A relative
-`core.hooksPath` in a repo's config (husky's `.husky/_`) is walked in every
+`core.hooksPath` in a repo's config (husky's `.husky/_`), set there or in a
+file it includes, is walked in every
 working tree that uses that config: the repo's own and each linked worktree or
 other `.git` entry in the checkout (an agent worktree runs
 `<worktree>/.husky/_`). Every remote
@@ -412,9 +413,10 @@ permission to run git in the checkout.
 
 This is the one list of what the scan and `cc-push` do not cover
 (`cc-exit-scan.sh` and `cc-push.sh` point here); update it here when a change
-opens or closes a route. The scan closes routes that need only what a session
-can write in the checkout; a route that needs some unusual state present at
-launch stays here by design (Q-172 [2]). Push with `cc-push`, which runs no git
+opens or closes a route. The boundary (Q-172 [2]): a route that needs only
+ordinary setup plus what a session can write in the checkout is one to close,
+and stays listed here until it is; a route that needs some unusual state
+present at launch stays here by design. Push with `cc-push`, which runs no git
 in the checkout, whatever the scan says.
 
 - **A hook that runs a tracked file.** A hook present at launch that runs a
@@ -455,13 +457,16 @@ in the checkout, whatever the scan says.
   cuts such a path at the `]` (`./decoy@[x]plant` pushes to `./]plant`); the
   scan walks the path as written. This holds for a remote URL, an undefined
   remote name, a legacy remotes file and an `insteadOf` result (Q-168 rubric R4).
-- **Your `includeIf "gitdir:…"` patterns, matched more loosely than git.** If
-  your own config defines a remote only inside a `gitdir:` include and also
-  names it (`remote.pushDefault`, `branch.*.remote`), the scan may count that
-  definition where git would not apply the include, and then never walk the
-  name as a path git pushes to: a pattern written on a symlinked launch path
-  that matches an embedded repo reached through a `gitdir:` file (R5), or a
-  `**` not bounded by `/` on both sides, which git treats as `*` (A15).
+- **Relative remotes and receive hooks resolved against one base (not closed
+  yet).** A relative local remote, undefined remote name or legacy URL in a
+  repo's config is walked only in that repo's main working tree, but a push
+  from a linked worktree inside the checkout goes to `<worktree>/<path>`
+  (`origin = ../up.git` then lands in the checkout, where a session can plant
+  a repository); in an embedded repo made with `--separate-git-dir`, such paths
+  are resolved inside its git dir rather than its working tree; and receive
+  hooks under a relative `core.hooksPath` run from the pushed repo's git dir
+  (`<repo>/.git/<path>`, `git push .` included), which is not walked (Q-168
+  rubric A14, R3, A16).
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
@@ -481,7 +486,8 @@ in the checkout, whatever the scan says.
 - **A `.git` file naming the container's path, present at launch.** One that
   reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
   elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
-  config there, not that git dir (and nothing at all when the line ends in a
+  config there and that git dir's relative `core.hooksPath` in the worktree,
+  not the git dir itself (and nothing at all when the line ends in a
   CR, which git strips: Q-168 tech-debt T1). `git worktree repair` may point it at a
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added

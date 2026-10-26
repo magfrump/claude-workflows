@@ -59,8 +59,9 @@ logical_workspace() {
 # branch.*.remote/pushRemote naming a path, url.<base>.insteadOf bases, legacy
 # remotes files; a relative path resolved in the working tree of the repo whose
 # config names it), walked as a git dir: a push to it runs its hooks. A relative
-# core.hooksPath in repo config is walked in each working tree that uses that
-# config, every linked worktree and `.git` entry in the checkout included
+# core.hooksPath in repo config, set directly or through an include, is walked in
+# each working tree that uses that config, every linked worktree and `.git` entry
+# in the checkout included
 # (_snap_entry_hooks). Every remote
 # URL met, local or not (not the insteadOf bases), and your own remote URLs, is
 # also rewritten by every url.<base>.insteadOf / pushInsteadOf rule whose value prefixes it (in any
@@ -649,8 +650,11 @@ _snap_host_config() {
 # for a command run in <working tree>: <working tree>/<value>. _snap_config walks
 # it in one working tree per repo; a linked worktree (an agent worktree under
 # .claude/worktrees/, say) shares that config but runs hooks from its own tree
-# (Q-168 rubric R6). Records nothing itself: the config was recorded by
-# _snap_config, and the dir and hooks by _snap_hooks.
+# (Q-168 rubric R6). It records only what _snap_hooks records (the dir and its
+# hooks), not the configs it reads: those are recorded wherever _snap_config
+# reaches them, and where it does not (a container-form .git's git dir, a
+# commondir outside the checkout), a changed hooksPath still shows as a hooks
+# dir the launch snapshot did not walk.
 _snap_tree_hooks() {
   local f="$1" wt="$2" depth="${3:-0}" real out rec key val
   [ "$depth" -le 10 ] || return 0   # git's own include depth limit
@@ -667,11 +671,14 @@ _snap_tree_hooks() {
     key="${rec%%$'\n'*}"
     val=""
     [[ "$rec" != *$'\n'* ]] || val="${rec#*$'\n'}"
-    # shellcheck disable=SC2088  # matching a literal "~/" in the value
-    case "$val" in ""|/*|"~/"*) continue ;; esac   # walked once, by _snap_config
+    [ -n "$val" ] || continue
     case "$key" in
-      core.hookspath) _snap_hooks "$wt/$val" || return 1 ;;
+      core.hookspath)
+        # An absolute or ~/ value names one dir for every tree: _snap_config walks it.
+        # shellcheck disable=SC2088  # matching a literal "~/" in the value
+        case "$val" in /*|"~/"*) ;; *) _snap_hooks "$wt/$val" || return 1 ;; esac ;;
       include.path|includeif.*.path)
+        # Any include, absolute or not: its relative hooksPath still resolves in <wt>.
         _snap_tree_hooks "$(_snap_path "$val" "$(dirname -- "$f")")" "$wt" $((depth + 1)) || return 1 ;;
     esac
   done < "$out"
@@ -679,13 +686,13 @@ _snap_tree_hooks() {
 
 # _snap_entry_hooks <git dir> <working tree>: _snap_tree_hooks for the configs
 # git reads for that git dir — its common dir's config (a linked worktree's
-# private dir has none of its own) and its config.worktree.
+# private dir has none of its own) and its config.worktree (git reads that only
+# under extensions.worktreeConfig; reading it always is an over-walk). The
+# common dir comes from cc-gitdir.sh's gitdir_common, git's reading of the file;
+# one it cannot read safely fails the snapshot.
 _snap_entry_hooks() {
-  local g="$1" wt="$2" c="$1" line
-  if [ -f "$g/commondir" ]; then
-    line="$(_snap_first_line "$g/commondir")" || return 1
-    case "$line" in "") ;; /*) c="$line" ;; *) c="$g/$line" ;; esac
-  fi
+  local g="$1" wt="$2" c
+  c="$(gitdir_common "$g")" || { _snap_fail 'cannot read the commondir file in %s' "$g"; return 1; }
   _snap_tree_hooks "$c/config" "$wt" && _snap_tree_hooks "$g/config.worktree" "$wt"
 }
 
