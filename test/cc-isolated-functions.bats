@@ -3139,3 +3139,31 @@ line")"
   [[ "$output" == *"note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
   [[ "$output" != *"WARNING: this session changed"* ]]
 }
+
+@test "exit scan R6: a relative repo core.hooksPath is walked in a linked worktree present at launch" {
+  # Q-168 rubric R6: husky's .husky/_ with an agent worktree already in the
+  # checkout; git runs <worktree>/.husky/_/pre-commit on a commit there.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.husky/_" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.husky/_/pre-commit "* ]]
+  no_ran
+  # The same through an include in the repo config.
+  rm -rf "$STD_WT/.husky"
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  printf '[core]\n\thooksPath = .inc-hooks\n' > "$SCAN_WS/.git/inc.cfg"
+  git -C "$SCAN_WS" config include.path inc.cfg
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # What a clean scan would have let through: host git runs the hook there.
+  git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
+}
