@@ -29,6 +29,16 @@
   A loop's final confirming pass runs the fact-check at k=3, because loop passes review only
   the delta, so untouched code gets fewer draws than the N≥3 argument below assumes
   (decision log #63, Q-087 [2]).
+- **Amended in part (noted 2026-10-25)**: L=fix-drift is widened. The fix-drift lite
+  check also fact-checks prose the fix diff adds or changes, in the same lite call, and
+  reports a specific claim about material the diff does not show as a Low "unverified
+  claim" for the loop agent to check (`scripts/lite-review.py` PROMPT_FIX_DRIFT;
+  `workflows/review-fix-loop.md` § Fix-commit drift check). Revisit trigger T4 (the
+  fourth below) fired on 2026-10-15: on `fix/doc-drift-cycle1` the check on
+  9e0ff1a5..258f9ec4 printed FINDINGS: NONE, and the next full pass found D1, a wrong
+  claim about Dockerfile layer order in guide text 258f9ec4 itself added. The user
+  answered Q-194 with [2], widen the drift check (decision log #77). T4 stays, now as the
+  trigger for a miss of the widened check.
 
 ## Context
 
@@ -201,5 +211,6 @@ guard, but it is a judgment call, not mechanical.
 `if 2-clean routinely fails to converge (a spurious red keeps resetting the clean counter) — T's carve-out is too narrow and marginal reds are still volatile; widen the comment-only demotion or add k back for stability.`
 `if comment-only ambers are being acked-not-fixed and docs are rotting — the "fix costs the same as ack" assumption broke; make comment-Incorrect ambers fix-mandatory.`
 `if the fix-drift lite-check misses a fix-introduced defect that a full pass then catches — the drift gate is too narrow; widen it or accept the full-pass cost.`
+(2026-10-25: this trigger fired on D1 and was answered by widening the check; see the amendment at the top. It now watches the widened check.)
 `if a replication on a second instance (fscompat, deferred behind this decision) shows the arm gap or round count is NOT variance-dominated — the "verdict-draw variance drives loop length" premise is wrong and this whole policy needs re-derivation.`
 `if a comment-only demotion ever lets a load-bearing rationale (a future-change-misleading security comment) reach merge stale — the carve-out failed; make security/contract-rationale comment-Incorrect stay red explicitly.`
