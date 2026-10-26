@@ -29,8 +29,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   folds its open claims into the tool's first run. Built and ready; merge is Q-217. Brief:
   `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
 - **Widen the fix-drift lite check (Q-194 [2])** (was Now). Motive: decision 031's fourth
-  trigger fired when the lite check missed a doc amber in fix-added prose. Briefed for a
-  build loop (review). Brief: `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
+  trigger fired when the lite check missed a doc amber in fix-added prose. Built and ready
+  (it also edits the lite check's prompt); merge is Q-219. Brief:
+  `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
 - **Reword log row 73's second trigger (Q-213 [1])** (was Now). Motive: the shared-uid
   `.git/config` premise is Q-103's accepted same-uid residual. Built and ready; merge is
   Q-218. Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
