@@ -259,7 +259,8 @@ add_entry() {
     run --separate-stderr bash "$QS" open
     [ "$status" -eq 0 ]
     [[ "$output" == *"Q-004  you: walkthrough  entry-q-004"* ]] || { echo "$output"; return 1; }
-    [[ "$output" == *"Q-005  you: fyi"*"  entry-q-005"* ]] || { echo "$output"; return 1; }
+    # Exact columns: the route is padded to 16, the longest route's width.
+    [[ "$output" == *"Q-005  you: fyi          entry-q-005"* ]] || { echo "$output"; return 1; }
 }
 
 @test "index and open sort every route by what it costs the owner" {
@@ -284,6 +285,16 @@ add_entry() {
     [ "$status" -eq 1 ]
     [[ "$stderr" == *"Q-004: invalid route 'you: fyi-ish' (want one of: you: judgment, you: walkthrough, you: terminal, you: fyi, agent, deferred, trigger)"* ]] \
         || { echo "$stderr"; return 1; }
+}
+
+@test "ROUTES and ROUTE_MEANING differing in length is refused before any write" {
+    local copy="$BATS_TEST_TMPDIR/qs-mismatch.sh"
+    # Drop the last meaning line (trigger's) from a copy of the script.
+    awk '/^ROUTE_MEANING=\(/ { inside = 1 } inside && /^\)/ { inside = 0; print prev_kept; print; next }
+         inside { if (held) print held; held = $0; prev_kept = ""; next } { print }' "$QS" > "$copy"
+    run --separate-stderr bash "$copy" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"ROUTES and ROUTE_MEANING differ in length"* ]] || { echo "$stderr"; return 1; }
 }
 
 @test "a you: fyi entry answered seen archives like any answered entry" {

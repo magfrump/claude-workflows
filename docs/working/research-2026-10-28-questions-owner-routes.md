@@ -46,7 +46,9 @@ Design source: decision 040 and `docs/working/dd-questions-doc-purposes.md`.
 - The range line is not an answer label in any reader, and `--main-log` reads a commit
   adding one as `other`. So a batch is transcribed one `Q-NNN: seen` line per entry. That
   is the recorder's step, not a gate change: widening three awk programs to a range form
-  would touch gate code for no reader that needs it. Tests pin all three rows.
+  would touch gate code for no reader that needs it. Tests pin every cell of the table
+(`test/scripts/dev-cycle.bats` for `--check-answer`, `test/scripts/build-loop-orchestrator.bats`
+for the other two).
 
 ## Divergent design: when the refusal of agent/trigger/deferred ships
 
@@ -91,9 +93,11 @@ pick. Consequences for unit 2: the refusal ships unconditionally there, together
 the `migrate` command (H5b), and this repo's own migration runs in the same landing so
 `check` stays green.
 
-What this unit does instead, toward the refusal: the route list becomes one table in
-`questions.sh` (S3), with the three agent routes marked as leaving the owner file, so unit
-2's refusal is a change to that table's owner flag and not a third copy of the list.
+What this unit does instead, toward the refusal: the route list becomes one list in
+`questions.sh` (`ROUTES`, S3), whose first four entries are the owner routes. There is no
+owner flag yet; the three agent routes are marked only in the route table's prose ("Due to
+move out of this file"). Unit 2 adds the flag (or an owner-route subset of `ROUTES`) that
+its refusal reads, so the refusal still needs no third copy of the list.
 
 ## Other choices (each one dominant, no DD needed)
 

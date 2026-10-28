@@ -152,12 +152,15 @@ ROUTE_MEANING=(
     'Needs your taste or authority: a decision only you can make.'
     'Needs your hands on the product: a walkthrough or playtest only you can do.'
     'Needs your machine, not your mind: a command to run, collected into one paste.'
-    'A quick read to acknowledge, not decide. Answer `seen`; one line can acknowledge several.'
-    'Agent work, not yours. Moving out of this file to the project'"'"'s roadmap.'
-    'Waiting on an event that has not happened. Moving out of this file to a watch list.'
-    'A condition being watched, not a question yet. Moving out of this file to a watch list.'
+    'A quick read to acknowledge, not decide. Answer `seen`; an agent records a batched answer one entry at a time.'
+    'Agent work, not yours. Due to move out of this file, to the project'"'"'s roadmap.'
+    'Waiting on an event that has not happened. Due to move out of this file, to a watch list.'
+    'A condition being watched, not a question yet. Due to move out of this file, to a watch list.'
 )
 VALID_ROUTES="$(IFS='|'; echo "${ROUTES[*]}")"
+# A length mismatch would make `init` die mid-write and leave a partial file
+# that a re-run then keeps ("= exists"), so it is refused before any command.
+(( ${#ROUTES[@]} == ${#ROUTE_MEANING[@]} )) || die "ROUTES and ROUTE_MEANING differ in length"
 
 # --- Emit "ID<TAB>route<TAB>date<TAB>status<TAB>slug<TAB>summary" per entry ---
 # summary is the first non-empty prose line after the header pair, truncated.

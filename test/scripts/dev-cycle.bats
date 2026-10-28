@@ -758,12 +758,15 @@ EOF
         f Q-2 ANSWERED '- **Answer (2026-10-28):** seen'
         f Q-3 OPEN 'Q-3: seen'
         f Q-4 ANSWERED "$(printf 'Q-4\342\200\223Q-6: seen\nQ-4: [1]')"
-        f Q-5 ANSWERED 'Q-5-Q-6: seen'
+        f Q-5 ANSWERED "$(printf 'Q-5-Q-6: seen\nQ-5: [2]')"
+        # seen is read (the first label wins), not skipped: a later [2] does not count.
+        f Q-7 ANSWERED "$(printf 'Q-7: seen\nQ-7: [2]')"
+        f Q-8 ANSWERED "$(printf '**Answer:** seen\nQ-8: [2]')"
     } > docs/working/questions.md
     git add -A && git commit -qm q
-    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-7 Q-8
     [ "$status" -eq 0 ]
-    for want in "unrecognized Q-1" "unrecognized Q-2" "open Q-3" "keep Q-4" "unrecognized Q-5"; do
+    for want in "unrecognized Q-1" "unrecognized Q-2" "open Q-3" "keep Q-4" "drop Q-5" "unrecognized Q-7" "unrecognized Q-8"; do
         [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
 }

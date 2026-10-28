@@ -443,6 +443,9 @@ ${W//Q-001/Q-003}"; git reset -q --hard
     # Recorded one line per entry: the anti-forgery rule holds for an fyi as for any route.
     sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
     git add -A; cd_is "$W"; cd_is ok --answered Q-001
+    # The bold label form, the same.
+    git reset -q --hard; sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a **Answer:** seen' docs/working/questions.md
+    git add -A; cd_is "$W"; cd_is ok --answered Q-001
     # The owner's batch pasted as a range: the Status flip alone still refuses.
     git reset -q --hard; sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md
     sed -i '/^Read this/a Q-001\xe2\x80\x93Q-002: seen' docs/working/questions.md; grep -qx $'Q-001–Q-002: seen' docs/working/questions.md; git add -A
@@ -453,10 +456,12 @@ ${W//Q-001/Q-002}"
     git reset -q --hard; git checkout -q main
     sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
     commit_all seen; A="$(git rev-parse main)"
+    sed -i '/^Q-001: seen/a **Answer:** seen' docs/working/questions.md; commit_all bold; B2="$(git rev-parse main)"
     sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^And this/a Q-002\xe2\x80\x93Q-003: seen' docs/working/questions.md
     grep -qx $'Q-002–Q-003: seen' docs/working/questions.md; commit_all range; R="$(git rev-parse main)"
-    ml "$S" 2 "main $R 2
+    ml "$S" 2 "main $R 3
 answers $A seen
+answers $B2 bold
 other $R range"
 }
 
