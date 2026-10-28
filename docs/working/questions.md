@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-223](#q-223--failure-pattern-harvest-or-drop) | you: judgment | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
 | [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
 | [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | you: judgment | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
@@ -109,23 +108,7 @@ The first git call only checks that your checkout already holds the cc-verify me
 - **Read:** `guides/cc-isolated-usage.md`, section "Verify a branch without installing it: cc-verify" · Q-167 (its probes can run in the same sitting)
 - **Blocks:** roadmap Next 1 (Q-125's host live run through `cc-verify`), and behind it Q-098 and Q-161.
 - **Interim:** both merges are bats-verified only; your installed exit scan does not yet see R6, and `cc-verify` is not on your PATH.
-
-### Q-223 · failure-pattern-harvest-or-drop
-**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
-
-Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log of root-caused bugs that research greps for prior patterns) gained 2 entries (FP-173, FP-174, both 2026-10-14) across a month of `fix` commits, under the 5 the watch set for 2026-10-26. The writer is an advisory check in pr-prep's Step 0: it warns when a branch's `fix(...)` commits added no entry, and its text says "Do not skip this step"; in practice entries are not written. Which way?
-
-- **Why it's yours:** whether the library is worth an automated writer is a value call about how much you use its read side.
-- **Read:** Q-074 (this entry's watch) · `docs/thoughts/failure-patterns.md` (schema at the top) · `workflows/pr-prep.md` Step 0
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Automate the harvest** | A build loop adds a script (or a review-fix-loop step) that drafts an FP line from each `fix:` commit's diagnosis, landed with the fix | One merge review | A noisy or wrong entry pollutes what research greps |
-| **[2] Drop the "do not skip" line** | pr-prep keeps the advisory but stops calling it mandatory; the library stays mostly the backfill | None | Patterns from new bugs stop being recorded, as today |
-| **[3] Keep as is, re-check in a month** | Nothing changes; the watch re-arms for 2026-11-28 | None | The same finding a month later |
-
-- **Interim:** [3] in effect: nothing changes until you answer.
-- **If the answer differs:** [1] becomes a roadmap brief; [2] is a one-line pr-prep edit.
+- **2026-10-28 (owner, in session):** waiting: the install needs every active session stopped first. Q-225, once merged, rides on the same paste.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
