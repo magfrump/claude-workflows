@@ -25,15 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | you: judgment | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
-| [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | you: judgment | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
-| [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | you: judgment | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
-| [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | you: judgment | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
-| [Q-169](#q-169--q117-spike-paste) | you: terminal | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
-| [Q-214](#q-214--egress-pin-resolver-release) | you: terminal | Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `pl... | 2026-10-20 |
-| [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | you: terminal | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-092](#q-092--drop-hook-deny-reader) | agent | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-096](#q-096--exit-scan-insteadof-target) | agent | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
@@ -52,119 +45,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
-
-### Q-220 · merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c
-**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
-
-Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`, roadmap In flight)?
-
-- **What it does** (from the loop's report; nothing run on a host): closes R6. A relative `core.hooksPath` was walked only in a repo's main working tree, so a hook planted in a linked worktree inside the checkout (an agent worktree's `.husky/_`) scanned clean (rc=0) and then ran on the next host commit. `devcontainer-config/cc-exit-scan.sh` now collects every `core.hooksPath` from a config and every file it includes (`_snap_cfg_hooks`: each config read once, every include followed, no depth cap) and walks each value from the directory of each working-tree `.git` entry (`_snap_entry_hooks`, from `git_exec_snapshot`). It also closes the hooksPath half of R3 (`--separate-git-dir`). Test: "exit scan R6" in `test/cc-isolated-functions.bats`, four cases (direct, included, absolute include path, an `includeIf` chain git does not take), each ending in a real host commit that runs the hook; each fails on the scan as it was before its fix. About 187 changed lines of code and test.
-- **The sort** (research doc section 1): the loop read Q-172 [2]'s "no state planted before launch" as "only ordinary setup present at launch" (husky plus an agent worktree counts as ordinary; this wording is its reading, not Q-172's text). In scope: R6 (built), and as follow-ups R3's remote half, A14 and A16. Out of scope: R4 and T1. T3 is not a route. R5 and A15 are not reachable on main (they need the held Q-168 branch), so they are not added to the guide, a departure from the brief.
-- **Guide** (`guides/cc-isolated-usage.md`, "Known routes it does not see"): adds the boundary and "push with cc-push", R4, a "not closed yet" entry for A14, R3's remote half and A16, a `core.worktree` pointing elsewhere, a repo config that is a symlink to another repo's (found in review), and a T1 note; coverage sentence and timing (about 30 ms per repo) updated.
-- **Review:** three iterations; rubric `docs/reviews/code-review-rubric-2026-10-25-fix-exit-scan-r6-hookspath.md`. Passes 1-2 found three gaps that reached a real hook run (absolute or `~/` include paths skipped; a file first met in an untaken `includeIf` chain hid its plain include; 100 worktrees by 100 includes took 46.6 s, now 2.7 s), all fixed. The final pass (k=3 fact-check, security, performance) found no Must Fix and no Incorrect claim. **Unreviewed after it:** one code change (the duplicate-value check became a lookup; 3,000 values went from 23.7 s to 10.4 s) and wording, covered by tests and a timing probe only. Accepted availability costs: about 10 s at 100 by 100 values; an empty or directory `commondir` in an embedded repo now refuses the launch (git dies there too). All 208 tests in the file, the hermeticity lint and the health check pass.
-- **Host check not yet run** (every commit carries `Host-tool-tested: no` and `Live-verified: no`): after `install.sh`, in a husky repo with an agent worktree, launch `cc-isolated`, have the session write a pre-commit hook under the agent worktree's `.husky/_`, exit, and see the warning name it.
-- **Follow-ups the loop names** (filed after the merge, not now): group (1)'s remainder (A14, R3's remote half, A16); T1 with T3; whether to key config reads by the path git opened (would close the symlinked-config route).
-- **Read:** `git log d40e4bae8ad014c30be81e0891ffac2e6ef35771..792c549e6d1c620308d0f63c44b067047ad437ee` · `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` and the rubric on that branch
-- **Gate output** (`build-loop.sh --check`):
-  - `ok docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md 792c549e6d1c620308d0f63c44b067047ad437ee 25c4a2a586e5411167680ba91ff90a8dbb541588`
-  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M devcontainer-config/cc-exit-scan.sh`
-  - 11 `path … A docs/reviews/…` lines: the rubric and the p1-p3 fact-check, security and performance reports
-  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
-  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md A docs/working/research-2026-10-25-exit-scan-r6-hookspath.md`
-  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M guides/cc-isolated-usage.md`
-  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M test/cc-isolated-functions.bats`
-- **Path notes:** `devcontainer-config/cc-exit-scan.sh` is an enforcement file that runs on your host at exit (it reaches the host at the next `install.sh`), which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 792c549e; a host-check entry and the follow-ups are filed after | Reading about 187 lines of exit-scan code and its test, and the sort | A slower or over-strict exit scan (a refused launch on an odd `commondir`); one revert undoes it |
-| **[2] drop** | The brief closes; the branch stays for you | None | R6 stays a known route; cc-push stays the safe path |
-| **[3] changes needed** | Your note goes back to the loop (for example on the sort's reading of Q-172) | A note | One more loop run |
-
-- **Interim:** unmerged; the exit scan runs as before and cc-push stays the safe path.
-
-### Q-219 · merge-2026-10-25-widen-fix-drift-check-4695470b98b1
-**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
-
-Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`, roadmap In flight)?
-
-- **What it does** (from the loop's report): the fix-drift lite check's prompt (`PROMPT_FIX_DRIFT` in `scripts/lite-review.py`) now also reports factual errors in prose a fix adds or changes, and a specific claim about something the diff does not show (another file's contents or order, a line number, what a list includes) comes back as a Low "unverified claim" finding that names what to check; the loop agent then checks it. Still one lite call, no new agent run. `workflows/review-fix-loop.md` (Fix-commit drift check) and `workflows/pr-prep.md` step 3c describe the wider scope, the unverified-claim handling and the cost. Decision 031 gets a dated 2026-10-25 amendment and a note under its fourth trigger (original text unchanged); log row 77 records it, following row 63's precedent. New `test/lite-review-fix-drift-prompt.bats` runs the script end to end against a temp repo with a strict `claude` stub (exact argv, refuses `--bare`); its first case fails on the old prompt.
-- **A deviation the loop flags:** the brief said "the doc change is the change itself", but the check's behaviour lives only in the script's prompt, so a workflow-only edit would describe a check that does not run (H2). It edited the script (7 lines) and added the test. The drift check itself was not run live on the fix commits (needs a live `claude` call); independent subagent reviews stood in (first pass 0 red, 3 amber, fixed in 821d26d4; confirming pass clean). Health check, hermeticity lint and the touched suites pass.
-- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 4695470b98b1d76642233f1bc1d90d5d40a20bba` · `docs/working/research-2026-10-25-widen-fix-drift-check.md` on that branch (five options; it picked C)
-- **Gate output** (`build-loop.sh --check`):
-  - `ok docs/working/briefs/2026-10-25-widen-fix-drift-check.md 4695470b98b1d76642233f1bc1d90d5d40a20bba b539f520fbb18c01f8c666b0557dccf5bdb8dd41`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/031-review-loop-tier-and-factcheck-policy.md`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/log.md`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A docs/working/research-2026-10-25-widen-fix-drift-check.md`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M scripts/lite-review.py`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A test/lite-review-fix-drift-prompt.bats`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/pr-prep.md`
-  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/review-fix-loop.md`
-- **Path notes:** `scripts/lite-review.py` holds a prompt the review loop sends to a model, and the two `workflows/` files are on this repo's self-merge never line; `docs/decisions/` paths are your records. Self-merge's floor would have refused all of these. None is gate code or a dot path.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 4695470b | Reading a 7-line prompt change, two workflow sections and 031's amendment | Noisier lite-check findings on docs-heavy loops; one revert undoes it |
-| **[2] drop** | The brief closes; the branch stays for you | None | 031's fourth trigger stays answered on paper only |
-| **[3] changes needed** | Your note goes back to the loop (for example: keep it docs-only) | A note | One more loop run |
-
-- **Interim:** unmerged; the lite check runs as before.
-
-### Q-218 · merge-2026-10-25-log-row-73-trigger-241278a4f811
-**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** OPEN
-
-Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/2026-10-25-log-row-73-trigger.md`, roadmap In flight)?
-
-- **What it does** (from the loop's report, docs only): `docs/working/constraints-builder-hardening.md`'s second revisit trigger now fires when "an agent outside the operator's own sessions and loops" can write a target repo's `.git/config`, `.git/config.worktree`, `refs/replace/` or their includes, and adds one sentence naming the operator's own loops and sessions as Q-103's accepted same-uid residual (Q-213 [1]). Log row 73 gets a dated "Amended 2026-10-25 (Q-213 [1])" note in its last cell; the original text stays (row about 1.1 KB). `skills/constraints-builder/SKILL.md` "Scope (v1)" was read and does not restate the old wording, so it is unchanged. The loop fact-checked the diff against Q-213 and the answers file itself (doc-only); `bats test/scripts/dev-cycle.bats` passed (79).
-- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 241278a4f81124cca3a3a381b35b80463b249973` · `docs/working/research-2026-10-25-log-row-73-trigger.md` on that branch
-- **Gate output** (`build-loop.sh --check`):
-  - `ok docs/working/briefs/2026-10-25-log-row-73-trigger.md 241278a4f81124cca3a3a381b35b80463b249973 7c57a70836aa81cf6f4b16a2bae1cb89e74b1113`
-  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/decisions/log.md`
-  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/briefs/2026-10-25-log-row-73-trigger.md`
-  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/constraints-builder-hardening.md`
-  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md A docs/working/research-2026-10-25-log-row-73-trigger.md`
-- **Path notes:** `docs/decisions/log.md` is your record, which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 241278a4 | Reading a five-line trigger reword and one log amendment | A wording slip in a trigger; one revert undoes it |
-| **[2] drop** | The brief closes; the branch stays for you | None | The trigger keeps reading as firing on the build loops |
-| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
-
-- **Interim:** unmerged; nothing changes on main.
-
-### Q-217 · merge-2026-10-20-cc-verify-host-tool-e87a79122092
-**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** OPEN
-
-Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`, roadmap In flight)?
-
-- **What it does** (from the loop's report; nothing run on a host, the sandbox has no docker): `devcontainer-config/cc-verify.sh` (`cc-verify [--profile P] --check FILE REPO BRANCH`, `--clean`, `--help`) stages `git merge-tree --write-tree` of main and BRANCH (refusing a conflict), checks the staged `devcontainer.json` against main's installed copy (JSONC parsed with python3 stdlib; refuses new keys, changed host-reaching keys, runArgs outside NET_ADMIN/NET_RAW plus a staged seccomp file, extra mounts, new host variables, duplicate keys), shows the diffs and asks y/N, runs main's installed `cc-isolated` on a `VERIFY-<tree8>` scratch clone, runs the check file in the container, prints a `Live-verified: <hash> — cc-verify of tree <id>` trailer on a pass, and tears down from an exit trap. Exit codes 0 pass, 1 error or declined, 2 usage, 3 check failed. The pre-mortem's seven mitigations each have bats cases (`test/cc-verify.bats`, 13); it also checks itself against `host-tools.sha256` and main's launcher against `manifest.sha256`. Full health check, hermeticity-lint and shellcheck pass.
-- **Decisions the loop flags:** (1) split into two stacked units over the ~400-line cap (core 6870e947, 360 lines; hardening, wiring and docs d5fa26c1, 210 lines; 620 in all): merge the tip only, as unit 1 alone lacks the JSONC refusal. (2) One line added to `cc-isolated.sh` (`host_tool_files`), which the brief's out-of-scope line excluded but its acceptance criterion needs (confidence medium). (3) python3 becomes a host requirement for cc-verify only; the preflight refuses without it. (4) Not taken from review: an exec failure exits 3, not 1 (errs toward a false fail); the trailer hash is the blessed stage hash, not `cc-isolated --list`'s. (5) Deferred: an interactive mode for Q-130's `/login`, and a multi-branch merge for Q-098.
-- **After merge:** a `you: terminal` entry for the first host run, adding `~/cc-verify` to the agents' sandbox `denyWrite` first; the research doc's §6 lists 11 things that run must show (including whether the devcontainer CLI's JSONC parser treats U+2028 as a line break).
-- **Read:** `git log c1a28e20..e87a79122092d919e9f6c032db90549c6977cd00` · `docs/working/research-2026-10-20-cc-verify-host-tool.md` on that branch
-- **Gate output** (`build-loop.sh --check`):
-  - `ok docs/working/briefs/2026-10-20-cc-verify-host-tool.md e87a79122092d919e9f6c032db90549c6977cd00 b43d4eb620e195723e0c932393ae26d4c4fcfa41`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/cc-isolated.sh`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A devcontainer-config/cc-verify.sh`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/install.sh`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/dd-branch-verify-without-install.md`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A docs/working/research-2026-10-20-cc-verify-host-tool.md`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M guides/cc-isolated-usage.md`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M hooks/live-verify-gate.sh`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/cc-isolated-functions.bats`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A test/cc-verify.bats`
-  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/install-host.bats`
-- **Path notes:** none is gate code, a dot path or an instruction or prompt file. `hooks/live-verify-gate.sh`, `devcontainer-config/cc-isolated.sh` and `devcontainer-config/install.sh` are enforcement and host-install files: the commits carry `Live-verified: no` and `Host-tool-tested: no` with reasons, and `install.sh` links the new tool, so the change reaches your host at the next install.
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The orchestrator runs `--merge --approved` at exactly e87a7912; then a host-run entry is filed | Reading a 620-line host tool and its tests | A flaw in a host tool that runs docker on your machine; it only runs when you invoke it, and one revert undoes it |
-| **[2] drop** | The brief closes; the branch stays for you | None | Q-117, Q-125 and Q-098 stay parked |
-| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
-
-- **Interim:** unmerged; nothing changes on main or the host.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -215,26 +95,6 @@ Q-096's iteration 2 found that the exit scan parses remote names and legacy `rem
 - **Interim:** a listed known route; cc-push is still the way to push.
 - **2026-10-20:** Q-171 was answered [2] (hold until the split units land), so this waits on Q-173, which waits on Q-172.
 - **Stuck (dev cycle 2026-10-25):** held by Q-171 [2] until Q-173's split units land; no choice pending.
-
-### Q-169 · q117-spike-paste
-**Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
-
-Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are met as of 2026-10-16: Q-165 was answered [1] in `docs/human-author/answers-10-16-26.txt`, the doc is on main through f265d7f2, and the hash below re-checked.) It live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages main merged with the branch, runs main's installed `cc-isolated` on a scratch clone under `~/cc-verify/run-<RUN>.d/`, runs Q-117's container block, and tears everything down.
-
-- **The paste:** the single ```bash block in `docs/working/spike-cc-verify-q117.md` (498 lines with its fences). Take it from the reviewed commit, not the working tree, and check its hash before running:
-
-```
-mkdir -p ~/cc-verify && git -C ~/claude-workflows -c core.useReplaceRefs=false show d25254dae30fe05fd385b3ff430104fb63c39158:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' > ~/cc-verify/q117-spike.txt && sha256sum ~/cc-verify/q117-spike.txt
-```
-
-Run it on the host, not in a container, and replace `~/claude-workflows` if your checkout lives elsewhere. It uses `git -C` rather than `cd`, so a zsh prompt does not run `git status` in the checkout (an agent-planted `core.fsmonitor` would run on the host). The hash must be `032cc9a81e4e1c9266ec3ad3b5fe7053d9876eb21f5ffa7f0a35f2ccfed4afb7`; otherwise stop. Then paste the contents of `~/cc-verify/q117-spike.txt` (under the `denyWrite` below), editing only its last line, the checkout path. Its first output line must be `script sha256 a65f4c30ba1b8907`; any other value means it is not the reviewed block, so press Ctrl-C.
-- **Before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`, or run it while no agent that can write `~/cc-verify` is running. A same-uid writer there is the one threat left open (residuals A17 and A18: it could redirect the stage extraction's writes, or edit the stage into host code execution during the build).
-- **Expect:** up to about an hour (image build, then Q-117's wait of up to 45 min for a pool rotation). Exit 0 with `RESULT Q-117 pass` and five `CHECK … ok` lines is a pass; 2 means no rotation was seen, so rerun later; 1 is a failure or refusal, named by step. On an interrupted teardown, rerun the same block with `--clean` as its last argument.
-- **Paste back:** the `script sha256` line, the `RESULT`, `CHECK`, `NOTE`, `TEARDOWN` and `REFUSED:` lines.
-- **Read:** the doc's step table (every command cited to file:line), "Not verified" (12 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
-- **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
-- **If the answer differs:** if Q-165 is [4], this entry is dropped.
-- **2026-10-23:** Q-215 was answered [2]: `fix/egress-dnsmasq-ipset`, this paste's target, is to be deleted (decision 039 replaced it). Once it is gone this paste has nothing to verify; reply `Q-169: drop` to close it.
 
 ### Q-173 · exit-scan-split-groups
 **Needs:** agent · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -426,51 +286,4 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 - **Read:** `docs/reviews/code-review-rubric-2026-10-14-feat-q089-host-tool-trust.md` "Iteration-4 gate"
 - **Interim:** unit A ships without the static guard. The runtime checks don't depend on it, and the guard is hardening against a future refactor.
 - **Stuck (dev cycle 2026-10-25):** the source-guard unit needs a fresh build loop that narrows the test's claim; no choice pending.
-
-### Q-214 · egress-pin-resolver-release
-**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** OPEN
-
-Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `plugins-artifacts.gradle.org`, and probe that name for domain fronting first. Paste the block on the host. Answer `Q-214: <output>`.
-
-- **Read:** `docs/decisions/039-pin-resolver-to-phase-a.md` · `docs/working/dd-egress-pin-resolver.md` · log row 76
-
-```bash
-# 1. Fronting probe for the new android name (the Q-045 probe). Expect 403 or 404 "fronted"; a 200 <title>Google/GitHub means it fronts.
-b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
-for tgt in www.google.com www.python.org www.cloudflare.com github.com; do printf '%-16s fronted=[%s]\n' "$tgt" "$(probe -H "Host: $tgt" https://plugins-artifacts.gradle.org/)"; done; rm -f "$b"
-# 2. Install main's config (read the diff, answer y), then re-bless and probe herald.
-git -C ~/claude-workflows log -1 --oneline main    # expect 9fa8bbd0 or later
-(cd ~/claude-workflows && ./devcontainer-config/install.sh)
-HERALD=~/code/belegarth-herald                       # EDIT if herald lives elsewhere
-cc-isolated --register "$HERALD" --profile android && cc-isolated --probe-only "$HERALD"
-```
-
-- **After it passes:** in herald's next session, the agent runs the handoff's `probe.sh OUTDIR 1800 20` and `grep -c host-record /etc/dnsmasq.d/cc-allowlist.conf`. Pass is 0 `FAIL sni=dl.google.com` lines. Then it runs a cold `./gradlew :app:assembleDebug` and retires its "dl.google.com refused TLS" memory.
-- **If the probe shows fronting:** the entry gets an ACCEPTED RISK note like Google's (Q-052), or it is removed. The choice is yours; a follow-up entry will ask.
-- **Interim:** merged on main (9fa8bbd0) with `Live-verified: no`. Nothing changes until `install.sh` runs. Herald's workaround stays `sudo /usr/local/bin/init-firewall.sh`.
-- **If it fails:** paste the output. Revert with `git revert -m1 9fa8bbd0`, then reinstall.
-
-### Q-215 · retire-egress-dnsmasq-ipset-branch
-**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** OPEN
-
-**Answered (docs/human-author/answers-10-22-26.txt): [2], delete it.**
-
-Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, the Q-169 spike's target), with no CAP_NET_ADMIN resolver and ~5% of the code. What happens to the old branch?
-
-- **Read:** decision 039's "Why not the alternatives" and Revisit trigger
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] Keep it parked** | The branch stays, unmerged, as 039's fallback for `.zone` rotation | None | Clutter. Q-169's spike still names it as its target |
-| **[2] Delete it** | `git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset` | One paste | 038's design survives only in git reflog. The decision text is quoted in `docs/working/dd-egress-pin-resolver.md` |
-
-- **Interim:** [1]. Nothing deleted.
-- **If the answer differs:** none; deletion is the only action.
-- **2026-10-23:** the recording session's deletion was refused by its permission classifier, so nothing is deleted yet. Paste on the host or as `! <command>` in a session (both are local to this checkout; the branch's two commits are not on origin, which [2] accepts):
-
-```
-git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset
-```
-
-  Close this entry once `git -C /workspace branch --list fix/egress-dnsmasq-ipset` prints nothing.
 

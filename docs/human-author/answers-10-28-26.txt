@@ -1,0 +1,31 @@
+Q-220: [1]
+
+Q-219: [1]
+
+Q-218: [1]
+
+Q-217: [1]
+
+Q-169:
+$ bash /home/magfrump/cc-verify/q117-spike.txt 
+   script sha256 a65f4c30ba1b8907
+== 1. merge check: main + fix/egress-dnsmasq-ipset
+  | f99ad4b2bb944abe11c86dff520a6b6eca0c7ef4
+  | devcontainer-config/init-firewall.sh
+  | 
+  | Auto-merging devcontainer-config/init-firewall.sh
+  | CONFLICT (content): Merge conflict in devcontainer-config/init-firewall.sh
+  | Auto-merging test/init-firewall-rules.bats
+REFUSED: fix/egress-dnsmasq-ipset does not merge cleanly with main (conflicts above). Merge main into the branch first.
+== teardown
+RESULT spike-q117 exit=1
+
+Q-214: done
+
+Q-215: [2], done
+
+general:
+questions.md parked items currently serve multiple purposes. Items with `Needs: you:*` are user-facing interface items, while items with `Needs: trigger` or `Needs: agent` are agent-internal repo state tracking.
+These two types of item should not be in the same document; this worsens readability. Ordering of open items is already inconsistent and unclear.
+The point of the questions.md architecture is to give the owner a clear single entry point to tasks blocked on owner decisions and actions.
+Do a full double diamond on possibilities for re-organizing the purposes of the file.
