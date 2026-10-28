@@ -125,6 +125,8 @@ List every concrete problem, requirement, and constraint the solution must addre
 
 Include non-obvious constraints: timezone gaps, skill gaps in the team, maintenance burden, deployment complexity, interaction with existing code, performance requirements. Also note which constraints are hard (must satisfy) vs soft (prefer to satisfy).
 
+**Seed from the repo's constraints doc.** If the project has `docs/constraints.md`, read it and carry each line that bears on this decision into the list, cited by its ID (e.g. "repo S3"). Keep its label: a repo `H<n>` line is a hard constraint here, with the repo line's `success:` as its observable, and a repo `S<n>` line is soft. Skip a repo line that does not bear on the decision rather than restating it. When DD runs inside a build loop, the loop prompt already quotes the file, so don't read it a second time.
+
 **Hard constraints require a `success:` line.** Every constraint labeled `hard` must be paired with a `success: <observable>` line whose body names a specific test, metric, or artifact a future reader could actually check. Generic phrasing — *"works correctly"*, *"meets requirements"*, *"is performant"*, *"passes review"* — is explicitly disallowed: if the success line could be lifted verbatim into a different project's constraint and still read as true, it isn't a success line yet. The observable must be specific enough that the step-3 compatibility matrix can score an approach against it without further interpretation. Soft constraints don't require a success line, but may include one when the observable is cheap to name.
 
 **Worked examples — acceptable vs. unacceptable success lines for hard constraints**
@@ -148,6 +150,7 @@ Per the **Output discipline** convention above, write the full constraint list �
 - [ ] Every concrete problem and constraint is stated with enough specificity to test an approach against it
 - [ ] Each constraint is labeled as hard (must satisfy) or soft (prefer to satisfy)
 - [ ] Non-obvious constraints (team skills, deployment, maintenance) have been explicitly considered
+- [ ] If `docs/constraints.md` exists, every line of it that bears on the decision appears in the list, cited by ID, with its hard/soft label kept
 - [ ] No constraint uses vague language like "readable" or "good" without a measurable qualifier
 - [ ] Every constraint labeled `hard` is paired with a `success: <observable>` line whose body names a specific test, metric, or artifact — generic phrasing such as "works correctly", "meets requirements", "is performant", or "passes review" is disallowed
 - [ ] Full constraint list was written to the working doc; the console received only the constraint count and its hard/soft split
@@ -601,7 +604,7 @@ This paragraph is the *only* artifact passed forward to Diamond 2. It replaces t
 
 ### Diamond 2 (Solution) — proceed with standard DD
 
-With the chosen framing record in hand, run standard process steps 1-4. The framing's success criterion enters step 2 as a hard constraint, and its "leaves out" list defines what's out of scope — candidates that primarily solve a discarded framing are discarded in step 3 rather than evaluated as alternatives. Document the final decision per step 5, and reference the chosen framing record from the decision doc so future readers can see which problem was solved.
+With the chosen framing record in hand, run standard process steps 1-4. The framing's success criterion enters step 2 as a hard constraint, alongside the repo lines step 2 seeds from `docs/constraints.md`, and its "leaves out" list defines what's out of scope — candidates that primarily solve a discarded framing are discarded in step 3 rather than evaluated as alternatives. Document the final decision per step 5, and reference the chosen framing record from the decision doc so future readers can see which problem was solved.
 
 ### Worked example
 
