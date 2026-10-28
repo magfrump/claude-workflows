@@ -25,8 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
-| [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | you: judgment | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
+| [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Answered: [1] | 2026-10-28 |
+| [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | you: judgment | Answered: [1] | 2026-10-28 |
 | [Q-226](#q-226--failure-pattern-library-future) | you: judgment | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
@@ -60,7 +60,9 @@ You asked (Q-223) for a closer look at whether and how the failure-pattern libra
 | **[2] Batch harvest, keep the read** | Drop the per-branch advisory; a scripted periodic pass drafts entries from merged fix commits (as the 2026-09-17 backfill did) and lands them in one commit | One merge review of the script, then one harvest to review per period | Agent-drafted entries could be noisy and mislead the grep, and you pay for them even if reads stay rare |
 | **[3] Freeze and retire the steps** | Mark the library frozen at FP-174 (still greppable for cited IDs); remove the pr-prep advisory and the RPI grep requirement; lessons keep landing in constraints, CLAUDE.md, the decision log and fix commit messages | One small doc-edit merge | A quick symptom lookup for new bugs is lost; a recurring bug shape might be noticed later |
 | **[4] Read side only, scripted** | Freeze writing as in [3], but make the RPI lookup one script call that greps the frozen library and fix-commit messages | One merge review of a small tested script plus RPI text edits | Little gained if research rarely runs it; commit prose is noisier to grep than the library's tokens |
+| **[5] Put both steps where build loops run, and check them** | The build-loop prompt (`scripts/build-loop.sh`) sends loops through pr-prep's failure-pattern advisory, not only its review-fix loop; the gate's `--check` then requires the research doc's `Failure-pattern grep:` line and, for each `fix(...)` commit, a new FP entry or a one-line skip reason, refusing until they are there | One merge-gate review, then an image release; each loop spends a little more time | The lines become boilerplate a loop fills in without reading; mitigated because the check is mechanical, and the skip reasons show whether it is |
 
+- **Added 2026-10-28 after you asked why it was missing:** the review found build loops never reach the advisory but treated that only as a weakness of [1], not as something to fix. One finding bears on [5]: build loops already run research-plan-implement, which already asks for the grep line, and none of the 11 research docs since 2026-10-15 has it. So a prompt reference alone may not change behaviour, which is why [5] adds the gate check.
 - **Interim:** [1]: nothing changes until you answer.
 - **If the answer differs:** each option is one small unit; the review doc does not need redoing.
 
