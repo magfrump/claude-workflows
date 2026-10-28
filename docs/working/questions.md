@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
 | [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | you: judgment | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
+| [Q-226](#q-226--failure-pattern-library-future) | you: judgment | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -44,6 +45,24 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-226 · failure-pattern-library-future
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+
+You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-patterns.md`, a one-line-per-bug log that research greps for prior root causes) is used. The review is merged (d32c7eb2). What do you want done with it?
+
+- **What it found** (2026-09-26 to 2026-10-28): writing has nearly stopped. Of 358 `fix(...)` commits (mostly review-iteration fixes), 2 produced entries, FP-173 and FP-174, and those two collided on one number. Yet in a hand-classified sample of 25, 13 had a root cause worth finding later. Build loops are never asked to run pr-prep's Step 0, where the "add an entry" advisory lives. Reading is rare too: 1 of 12 surviving research docs from the window shows the required failure-pattern grep, and none since 2026-10-15. In that one case the cited entries did shape the design. The library's biggest lesson (fail-open guards, 58 of 164 entries) is now an enforced constraint (H2) plus CLAUDE.md's test rules. What only the library offers is a symptom-keyed index. Its cost is small: nothing always-loaded, about 7 KB of workflow text, plus merge friction and these watches.
+- **Read:** `docs/working/research-2026-10-28-failure-pattern-use-review.md` (the evidence, and the table below with fuller cells) · Q-223 and Q-074 in the archive
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep as is** | Nothing changes; the Q-074 watch re-arms (e.g. 2026-11-28) | None now; another watch and judgment in a month | The advisory stays in a step build loops never run, the grep stays skipped, and this finding returns |
+| **[2] Batch harvest, keep the read** | Drop the per-branch advisory; a scripted periodic pass drafts entries from merged fix commits (as the 2026-09-17 backfill did) and lands them in one commit | One merge review of the script, then one harvest to review per period | Agent-drafted entries could be noisy and mislead the grep, and you pay for them even if reads stay rare |
+| **[3] Freeze and retire the steps** | Mark the library frozen at FP-174 (still greppable for cited IDs); remove the pr-prep advisory and the RPI grep requirement; lessons keep landing in constraints, CLAUDE.md, the decision log and fix commit messages | One small doc-edit merge | A quick symptom lookup for new bugs is lost; a recurring bug shape might be noticed later |
+| **[4] Read side only, scripted** | Freeze writing as in [3], but make the RPI lookup one script call that greps the frozen library and fix-commit messages | One merge review of a small tested script plus RPI text edits | Little gained if research rarely runs it; commit prose is noisier to grep than the library's tokens |
+
+- **Interim:** [1]: nothing changes until you answer.
+- **If the answer differs:** each option is one small unit; the review doc does not need redoing.
 
 ### Q-225 · merge-2026-10-28-exit-scan-group1-remainder-19027abb7593
 **Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
