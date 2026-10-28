@@ -44,3 +44,5 @@ Paths: profiles/interview/README.md docs/working/research-2026-10-28-interview-r
   scripts in the profile (checking each exclude pattern in preflight is a roadmap idea).
 - A test for the preflight (roadmap idea).
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
