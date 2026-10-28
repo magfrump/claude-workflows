@@ -65,7 +65,9 @@ You asked (Q-223) for a closer look at whether and how the failure-pattern libra
 - **If the answer differs:** each option is one small unit; the review doc does not need redoing.
 
 ### Q-225 · merge-2026-10-28-exit-scan-group1-remainder-19027abb7593
-**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+Answered: [1]
 
 Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`, roadmap In flight)? It closes the last three in-boundary routes of Q-173's group 1 in the exit scan (the check `cc-isolated` runs when a session ends, which names anything the session planted that host git would run).
 
@@ -89,7 +91,9 @@ Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457
 - **If the answer differs:** nothing to redo.
 
 ### Q-224 · merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3
-**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+Answered: [1]
 
 Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs/2026-10-28-questions-owner-routes.md`, roadmap In flight)? This is unit 1 of decision 040 (the questions doc holds only your items), and it changes gate code: `scripts/questions.sh` is one of the scripts the dev cycle runs as its gate, so it reaches the gate only at the next image release, which you install.
 
