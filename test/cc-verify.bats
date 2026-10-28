@@ -1,0 +1,232 @@
+#!/usr/bin/env bats
+# @category fast
+# devcontainer-config/cc-verify.sh, one or more cases per pre-mortem mitigation
+# (docs/working/research-2026-10-20-cc-verify-host-tool.md §5). docker, devcontainer,
+# claude, curl, gh and wget are strict PATH stubs; git is real, on local fixture repos.
+bats_require_minimum_version 1.5.0
+
+setup() {
+  SRC="$BATS_TEST_DIRNAME/../devcontainer-config"
+  T="$(mktemp -d)"; export STUB="$T/stub" HOME="$T/home" CC_VERIFY_ROOT="$T/root"
+  unset CLAUDECODE
+  mkdir -p "$STUB" "$HOME" "$T/bin" "$T/cfg"
+  for t in claude curl gh wget; do printf '#!/bin/sh\necho "no network: %s" >&2; exit 99\n' "$t" > "$T/bin/$t"; done
+  # docker: only the calls cc-verify makes; anything else fails loudly.
+  cat > "$T/bin/docker" <<'EOF'
+#!/usr/bin/env bash
+echo "docker $*" >> "$STUB/docker.log"
+c="$(cat "$STUB/container" 2>/dev/null)"
+case "$*" in
+  "ps -aq --no-trunc --filter label=cc-project=$c") [ -z "$c" ] || echo cid1 ;;
+  "ps -aq --no-trunc --filter "*) ;;
+  "inspect -f {{.Image}} cid1") echo sha256:new ;;
+  "inspect -f {{.HostConfig.Privileged}} {{json .HostConfig.CapAdd}} {{.Image}} cid1")
+    cat "$STUB/inspect" 2>/dev/null || echo 'false ["NET_ADMIN","NET_RAW"] sha256:new' ;;
+  "rm -f cid1") rm -f "$STUB/container" ;;
+  "volume inspect "*) [ -f "$STUB/vol-$3" ] ;;
+  "volume rm "*) rm "$STUB/vol-$3" ;;
+  "image ls -q --no-trunc") cat "$STUB/images" 2>/dev/null || echo sha256:old ;;
+  "image rm sha256:new") ;;
+  *) echo "unexpected: docker $*" >&2; exit 99 ;;
+esac
+EOF
+  # devcontainer: only `exec ... bash -c BLOCK`, which runs BLOCK here.
+  cat > "$T/bin/devcontainer" <<'EOF'
+#!/usr/bin/env bash
+[ "$1 $2 $4 $6 $8 $9" = "exec --workspace-folder --override-config --id-label bash -c" ] && [[ "$5" == */stage/devcontainer.json ]] || { echo "unexpected: devcontainer $*" >&2; exit 99; }
+exec bash -c "${10}"
+EOF
+  # Main's "installed launcher": --register blesses the stage, --probe-only starts a
+  # container (plus a stage edit when $STUB/tamper exists) and writes the receipt.
+  cat > "$T/cfg/cc-isolated.sh" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+c="$CLAUDE_DEVC_CONFIG_DIR"; pid="$(printf %s "$2" | sha256sum | cut -c1-12)"; echo "${GH_TOKEN-unset}" > "$STUB/gh-token"
+case "$1" in
+  --register) mkdir -p "$c/projects"; echo "$4" > "$c/projects/$pid.profile"
+    (cd "$c" && sha256sum devcontainer.json Dockerfile > manifest.sha256 && sha256sum cc-push.sh cc-verify.sh > host-tools.sha256) ;;
+  --probe-only) echo "$pid" > "$STUB/container"; touch "$STUB/vol-cc-$pid-bashhistory" "$STUB/vol-cc-$pid-claude-config"
+    [ ! -f "$STUB/tamper" ] || echo 'RUN evil' >> "$c/Dockerfile"
+    sha256sum < "$c/manifest.sha256" | cut -c1-16 > "$c/verified-live.sha256" ;;
+  *) exit 99 ;;
+esac
+EOF
+  chmod +x "$T/bin/"* "$T/cfg/cc-isolated.sh"
+  PATH="$T/bin:$PATH"
+  # The fixture repo: main, and branch feat/x changing the Dockerfile.
+  R="$T/repo"; mkdir -p "$R/devcontainer-config/egress" "$R/global-instructions" "$R/skills"
+  printf 'PAYLOAD=(devcontainer.json Dockerfile cc-isolated.sh cc-push.sh cc-verify.sh egress claude-home)\nCLAUDE_HOME_SRC=(global-instructions/CLAUDE.md skills)\n' > "$R/devcontainer-config/install.sh"
+  cat > "$R/devcontainer-config/devcontainer.json" <<'EOF'
+{
+  // main's config
+  "name": "cc (${localEnv:CC_PROJECT_NAME})",
+  "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" },
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "mounts": ["source=cc-${localEnv:CC_PROJECT_ID}-bashhistory,target=/commandhistory,type=volume"],
+  "containerEnv": { "A": "1" },
+}
+EOF
+  echo 'FROM x' > "$R/devcontainer-config/Dockerfile"
+  cp "$T/cfg/cc-isolated.sh" "$SRC/cc-verify.sh" "$R/devcontainer-config/"
+  echo push > "$R/devcontainer-config/cc-push.sh"; echo base > "$R/devcontainer-config/egress/base.txt"
+  echo hi > "$R/global-instructions/CLAUDE.md"; echo s > "$R/skills/s.md"
+  git -C "$R" init -q -b main && commit "$R" init
+  git -C "$R" checkout -q -b feat/x && echo 'RUN y' >> "$R/devcontainer-config/Dockerfile" && commit "$R" branch
+  git -C "$R" checkout -q main
+  # Main's install: main's files, cc-verify itself, and both manifests.
+  cp "$R/devcontainer-config/"{devcontainer.json,Dockerfile,cc-push.sh,cc-verify.sh} "$T/cfg/"
+  bless_main
+  printf 'echo "name=$CC_PROJECT_NAME"\n' > "$T/check"
+}
+teardown() { chmod -R u+rwx "$T" 2>/dev/null; rm -rf "$T"; }
+commit() { git -C "$1" add -A && git -C "$1" -c user.name=t -c user.email=t@e -c commit.gpgsign=false commit -qm "$2"; }
+bless_main() { (cd "$T/cfg" && sha256sum cc-isolated.sh devcontainer.json Dockerfile > manifest.sha256 && sha256sum cc-push.sh cc-verify.sh > host-tools.sha256); }
+verify() { run "$T/cfg/cc-verify.sh" --check "$T/check" "$R" "${1:-feat/x}" <<< "${2:-y}"; }
+branch_json() {  # branch_json NAME JSON: a branch whose devcontainer.json is JSON
+  git -C "$R" checkout -q -b "$1" main && printf '%s\n' "$2" > "$R/devcontainer-config/devcontainer.json" && commit "$R" "$1"
+  git -C "$R" checkout -q main
+}
+
+@test "pass: VERIFY-<tree8> naming and banner, tree id in RESULT and trailer, host tools gone, all torn down (1, 6)" {
+  tree="$(git -C "$R" merge-tree --write-tree main feat/x)"
+  GH_TOKEN=secret verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"  | name=VERIFY-${tree:0:8}"* ]]
+  [ "$(grep -c "VERIFY-${tree:0:8} is a THROWAWAY verify of tree $tree" <<< "$output")" = 2 ]
+  [[ "$output" == *"RESULT cc-verify pass tree=$tree config="* ]]
+  [[ "$output" == *"Live-verified: "*" — cc-verify of tree $tree"* ]]
+  [[ "$output" == *"+RUN y"* ]]   # the Dockerfile diff was shown before the y
+  [[ "$output" == *"CHECK host tools removed from the stage (cc-push.sh cc-verify.sh): ok"* ]]
+  [[ "$output" == *"CHECK verify container, volumes, image and run dir removed: ok"* ]]
+  grep -qx 'docker image rm sha256:new' "$STUB/docker.log"
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+  [ -z "$(find "$STUB" -name 'vol-*')" ]
+  [ "$(cat "$STUB/gh-token")" = unset ]   # opt-in credentials never reach the launcher
+}
+
+@test "teardown keeps an image that existed before the run (10)" {
+  echo sha256:new > "$STUB/images"
+  verify
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"NOTE: kept image sha256:new"* ]]
+  run ! grep -q 'image rm' "$STUB/docker.log"
+}
+
+@test "a failing check exits 3 and still tears down" {
+  echo 'exit 5' > "$T/check"
+  verify
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"RESULT cc-verify fail tree="*"(check exit 5)"* ]]
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "a run file refuses a new run until --clean removes the old run's container, volumes and dir (2)" {
+  verify; [ "$status" -eq 0 ]
+  d="$CC_VERIFY_ROOT/run-1-1"; mkdir -p "$d"; printf 'PID=1\nT8=abcdef12\n' > "$d/record"
+  pid="$(printf '%s' "$d/VERIFY-abcdef12" | sha256sum | cut -c1-12)"
+  echo "$pid" > "$STUB/container"; touch "$STUB/vol-cc-$pid-claude-config"
+  verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"an earlier run left $d; run: cc-verify --clean"* ]]
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 0 ]
+  [ ! -e "$d" ]
+  [ ! -e "$STUB/container" ]
+  [ ! -e "$STUB/vol-cc-$pid-claude-config" ]
+}
+
+@test "n at the prompt declines: nothing is built and the run dir is gone (3)" {
+  verify feat/x n
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"declined: nothing was built."* ]]
+  [ ! -e "$STUB/gh-token" ]   # main's launcher never ran: nothing was registered or built
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "devcontainer.json: host-reaching keys, runArgs, mounts and host variables outside main's are refused before anything is built (3)" {
+  base='"name": "n", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" }, "mounts": []'
+  branch_json init-cmd "{ $base, \"initializeCommand\": \"touch /tmp/pwned\", \"runArgs\": [] }"
+  branch_json priv "{ $base, \"runArgs\": [\"--privileged\"] }"
+  branch_json bind '{ "name": "n", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" }, "mounts": ["source=/,target=/host,type=bind"] }'
+  branch_json env "{ $base, \"containerEnv\": { \"K\": \"\${localEnv:AWS_SECRET_ACCESS_KEY}\" } }"
+  branch_json build '{ "name": "n", "build": { "dockerfile": "/etc/Dockerfile" } }'
+  branch_json dupe "{ $base, \"runArgs\": [], \"runArgs\": [\"--privileged\"] }"
+  branch_json escaped "{ $base, \"containerEnv\": { \"K\": \"\\u0024{localEnv:AWS_SECRET_ACCESS_KEY}\" } }"
+  branch_json u2028 "$(printf '{ %s // c\xe2\x80\xa8"initializeCommand": "touch /tmp/pwned" }' "$base")"
+  for b in init-cmd priv bind env escaped u2028 build dupe; do
+    verify "$b"
+    [ "$status" -eq 1 ] && [[ "$output" == *"reaches the host in a way main's does not"* ]] || { echo "$b: $output"; return 1; }
+  done
+  [ ! -e "$STUB/gh-token" ]   # main's launcher never ran: nothing was registered or built
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "devcontainer.json: a seccomp profile from the stage (Q-125's runArgs) passes; n at the prompt declines (3)" {
+  branch_json sec '{ "name": "x", "build": { "dockerfile": "${localEnv:CC_CONFIG_DIR}/Dockerfile" },
+    "runArgs": ["--cap-add=NET_ADMIN", "--security-opt", "seccomp=${localEnv:CC_CONFIG_DIR}/seccomp-cc.json"], /* c */ }'
+  verify sec n
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"CHECK devcontainer.json keys, runArgs, mounts and host variables: ok"* ]]
+  [[ "$output" == *'+    "runArgs": ["--cap-add=NET_ADMIN", "--security-opt"'* ]]
+  [[ "$output" == *"declined: nothing was built."* ]]
+}
+
+@test "a branch Dockerfile that changes a FROM or LABEL line, in any case or spelling, is refused at the review (3b)" {
+  git -C "$R" checkout -q -b from main && echo 'FROM evil' > "$R/devcontainer-config/Dockerfile" && commit "$R" from
+  git -C "$R" checkout -q -b lower main && echo 'from evil' >> "$R/devcontainer-config/Dockerfile" && commit "$R" lower
+  git -C "$R" checkout -q -b label main && printf 'ARG K=devcontainer\nLABEL ${K}.metadata="[]"\n' >> "$R/devcontainer-config/Dockerfile" && commit "$R" label
+  git -C "$R" checkout -q main
+  for b in from lower label; do
+    verify "$b"
+    [ "$status" -eq 1 ] && [[ "$output" == *"changes a FROM or LABEL line"* ]] || { echo "$b: $output"; return 1; }
+  done
+  [ ! -e "$STUB/gh-token" ]
+}
+
+@test "a stage edited after the review refuses the verdict; a privileged container is refused (3b, 4)" {
+  touch "$STUB/tamper"; verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"changed after the review"* ]]
+  [[ "$output" != *RESULT* ]]
+  rm "$STUB/tamper"; echo 'true [] sha256:new' > "$STUB/inspect"; verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"the verify container is privileged"* ]]
+  [ -z "$(ls -A "$CC_VERIFY_ROOT")" ]
+}
+
+@test "self-check: a launcher that sources from its config dir is refused; the real launcher passes (5)" {
+  printf '[ -f x ] && source "$(config_dir)/cc-exit-scan.sh"\n' >> "$T/cfg/cc-isolated.sh"; bless_main
+  verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'may load code from its config dir'*'source "$(config_dir)/cc-exit-scan.sh"'* ]]
+  cp "$SRC/cc-isolated.sh" "$SRC/cc-exit-scan.sh" "$SRC/cc-gitdir.sh" "$T/cfg/"; bless_main
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 0 ]
+  sed -i 's|^CC_ISOLATED_DIR=.*|CC_ISOLATED_DIR="$(config_dir)"|' "$T/cfg/cc-isolated.sh"; bless_main
+  run "$T/cfg/cc-verify.sh" --clean
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'CC_ISOLATED_DIR="$(config_dir)"'* ]]
+}
+
+@test "a branch that conflicts with main is refused (6)" {
+  echo 'RUN z' >> "$R/devcontainer-config/Dockerfile"; commit "$R" main-moves
+  verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"feat/x does not merge cleanly with main"* ]]
+}
+
+@test "refusals before anything is created: CLAUDECODE, a changed cc-verify, a repo checkout copy, bad usage (7, 8)" {
+  CLAUDECODE=1 verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not from a Claude Code session"* ]]
+  echo '# edited' >> "$T/cfg/cc-verify.sh"; verify
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"does not match $T/cfg/host-tools.sha256"* ]]
+  run "$SRC/cc-verify.sh" --clean
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"runs from its installed copy"* ]]
+  run "$T/cfg/cc-verify.sh" "$R"
+  [ "$status" -eq 2 ]
+  [ ! -e "$CC_VERIFY_ROOT" ]
+  [ ! -e "$STUB/docker.log" ]
+}
