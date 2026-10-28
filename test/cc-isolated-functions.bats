@@ -3281,6 +3281,18 @@ line")"
   [ -e "$TEST_TMPDIR/ran/hook-pre-receive" ]
   git -C "$STD_WT" push -q . HEAD:refs/heads/q2 2>/dev/null
   [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+  # The same from YOUR global config's relative hooksPath.
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/.githooks" update
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/.githooks/update "* ]]
+  [ ! -e "$TEST_TMPDIR/ran/hook-update" ]
+  git -C "$SCAN_WS" push -q . HEAD:refs/heads/q3 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-update" ]
 }
 
 @test "exit scan A14 caps: many agent worktrees do not multiply absolute remotes into the insteadOf caps" {
@@ -3296,8 +3308,8 @@ line")"
   local i
   for i in 1 2 3 4 5 6 7 8 9; do git -C "$SCAN_WS" config "url.https://m$i.invalid/.insteadOf" "https://x$i.invalid/"; done
   for i in $(seq 1 20); do git -C "$SCAN_WS" worktree add -q "$SCAN_WS/.claude/worktrees/w$i" -b "w$i"; done
-  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=300
-  GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=5
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok / _snap_match (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=300 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=5
   run git_exec_snapshot "$SCAN_WS"
   [ "$status" -eq 0 ]
   # The relative remote is walked in each worktree (recorded as missing).
@@ -3305,6 +3317,7 @@ line")"
     [[ "$output" == *"remote"$'\t'"$SCAN_WS/.claude/worktrees/w$i/../up.git"$'\t'"missing"* ]]
   done
   # Not vacuous: the cap is live at this scale (220 pairs > 200 fails closed).
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok (sourced)
   GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=200
   run git_exec_snapshot "$SCAN_WS"
   [ "$status" -eq 1 ]

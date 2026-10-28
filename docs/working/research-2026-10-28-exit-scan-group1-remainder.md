@@ -38,7 +38,7 @@ many agent worktrees.
 | Option | What | H1-H4 | Soft | Verdict |
 |---|---|---|---|---|
 | A. Per-entry relative values only | Extend R6's cached per-config reader to collect the *relative* remote values (URLs, names that may be paths, legacy URLs); for each `.git` entry queue them with the entry's working tree as base. A16: walk relative hooksPath values in every git dir `_snap_gitdir` walks. R3 falls out of A (a separate git dir's `.git` file is an entry) | pass: same fail-closed reads; hermetic tests | S3 reuses the R6 cache and `_snap_url`; S8 about 90 code lines; per-tree URL count grows only by relative remotes | **Chosen** |
-| B. Re-read the whole repo config per entry (`_snap_config` per (config, base)) | The pass-2 security suggestion | pass | Every absolute URL is queued once per tree (the pair key includes the base): 500 worktrees x 3 URLs x 50 rules = 75,000 pairs, and a rule matching origin makes 500 targets per URL, so the 2,000-target cap refuses the launch: violates the brief's cap constraint (H2 makes it a refusal). Duplicates C records. | Rejected |
+| B. Re-read the whole repo config per entry (`_snap_config` per (config, base)) | The pass-2 security suggestion | pass | Every absolute URL is queued once per tree (the pair key includes the base), so pairs grow as worktrees x URLs x rules: at 3 URLs and 50 rules the 100,000-pair cap refuses the launch past about 667 worktrees, and at 10 URLs and 100 rules past 100; each URL a rule rewrites adds one target per worktree toward the 2,000 cap. That violates the brief's cap constraint (H2 makes it a refusal). Duplicates C records. | Rejected |
 | C. B with absolute URLs deduplicated | B, but key absolute URLs without the base | pass | Still re-reads and re-records every config per tree (C-record dedup by real path then hides the second read, or it double-records); more code than A for the same coverage | Dominated by A |
 | D. Fix `_snap_worktree_of` for R3 only, and a W-style refusal for A14/A16 | Find the `.git` file that points at a separate git dir; warn when relative remotes and worktrees coexist | pass | A warning at every exit for users with a sibling remote and agent worktrees (S10, S1: trains the user to ignore it); a reverse lookup is a second discovery path (S3) | Rejected |
 
@@ -87,6 +87,9 @@ caps 300 and 5 where B would need 420 and 21; and at 200 the cap is shown live.
 | 11 | A container-form `.git` (path under `/workspace`) | Covered for hooksPath and remotes once repaired: the entry loop already passes the host twin; the common dir's config is read by `gitdir_common` |
 | 12 | An empty or unreadable `commondir` in any walked git dir | Fails the snapshot (H2); git dies there too. Wider than before (R6 failed only for `.git` entries): availability, never a false clean |
 | 13 | `.git` entries the find does not reach (other names, symlinked dirs) | Not covered: existing guide routes |
+| 14 | A relative `insteadOf` base (`url.../mirror/.insteadOf=gh:`) rewriting an absolute-looking remote, per linked worktree | Not covered (pass-1 security, probed: rc=0, hook ran). Needs a relative rule base at launch, which no ordinary workflow writes: out by the sort, now a guide known route |
+| 15 | Your own global relative `core.hooksPath` and receive hooks (A16 from your config) | Covered for the checkout's git dir and each `.git` entry's (pass-1 security found it, rc=0 before; A16 case's second half). A bare repo reached only as a local remote is not: needs a relative hooksPath in your own config (unusual; most are absolute): guide known route |
+| 16 | Legacy URL with trailing spaces or CR | Not covered: existing "read loosely" guide bullet |
 
 ## 4. Cost
 
@@ -101,6 +104,30 @@ embedded repository or linked worktree" stays an honest figure.
 
 Diff before review: about 240 lines added across three files (code about 95, tests about
 115, guide), under the row 62 cap; no split.
+
+## 6. Review-loop changes
+
+Pass 1 (fact-check, security; scratch probes, git 2.39.5): no Must Fix.
+- Security S1: relative `insteadOf` base per linked worktree (pre-mortem 14): guide route.
+- Security S2: your global relative hooksPath not walked in git dirs: fixed for the
+  checkout's and each entry's git dir in `_snap_host_config`, tested; the bare-remote
+  remainder is a guide route (pre-mortem 15).
+- Security info: hooks range copied to locals too; `_snap_legacy` now fails closed on a
+  common dir it cannot enter (was an empty set).
+- Fact-check: option B's arithmetic corrected (the old example crossed no cap); the
+  `_snap_relurl` comment now says why `file://` is excluded (git reads `file://../x` as
+  `/x`, security probe p1); the cap figures (22 URLs, 220 pairs, 1 target) confirmed exact.
+- Health check: shellcheck SC2034 on the cap test's assignments (fixed, as the older
+  cap tests do).
+
+Pass 2 (confirming security/fact-check on the pass-1 fixes): clean. Non-blocking note: a
+relative hooksPath of `.` walks the git dir itself (exit noise such as `~ hook .git/index`
+after a commit), as the working-tree walk already did for the root: an unusual value,
+over-reporting only.
+
+Gate after pass 1: full `test/cc-isolated-functions.bats` (212 cases) rc=0,
+`scripts/health-check.sh` rc=0, `scripts/hermeticity-lint --root .` rc=0, shellcheck
+`-S warning` clean on both changed scripts.
 
 ## Host check (the container cannot run it)
 

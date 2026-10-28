@@ -372,7 +372,8 @@ git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
 `onbranch:` and `hasconfig:` taken as matching), so a relative
 `core.hooksPath` or `core.attributesFile` there is walked in the top-level
-working tree and in every embedded repo. Those, your `insteadOf` rules and your
+working tree and in every embedded repo or linked worktree (a relative
+`core.hooksPath` also in each one's git dir, for receive hooks). Those, your `insteadOf` rules and your
 remote URLs are the only entries of your own config it follows; none is recorded. It also records whether git would
 accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
 id or a link — not which branch, so switching branches is not a finding) and
@@ -479,6 +480,15 @@ in the checkout, whatever the scan says.
   cuts such a path at the `]` (`./decoy@[x]plant` pushes to `./]plant`); the
   scan walks the path as written. This holds for a remote URL, an undefined
   remote name, a legacy remotes file and an `insteadOf` result (Q-168 rubric R4).
+- **A relative `insteadOf` base, present at launch.** A rule such as
+  `url.../mirror/.insteadOf = gh:` turns an absolute-looking remote into a
+  relative path, which a push from a linked worktree resolves in that
+  worktree (`<worktree>/../mirror/…`, inside the checkout); the scan walks the
+  rewritten path only in the repo's main working tree.
+- **Your own relative `core.hooksPath` in a repository reached only as a
+  remote.** It is walked in the checkout's git dir and in each `.git` entry's,
+  but not in a bare repository the scan reaches as a local remote, whose
+  receive hooks a push into it runs from `<that repo>/<path>`.
 - **A `core.worktree` elsewhere, present at launch.** A relative
   `core.hooksPath` or relative remote is walked in the directory holding each
   `.git` entry (and, for an embedded repo, in the `core.worktree` its own

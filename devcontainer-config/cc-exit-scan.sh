@@ -626,8 +626,11 @@ _snap_host_config() {
     origin="${origin#file:}"
     case "$key" in
       core.hookspath)
-        t="$(_snap_path "$val" "$wt")"
-        if _snap_inside_ws "$t"; then _snap_hooks "$t" || return 1; fi ;;
+        # In the working tree, and in the git dir, where receive hooks run (A16).
+        for t in "$wt" "$gd"; do
+          t="$(_snap_path "$val" "$t")"
+          if _snap_inside_ws "$t"; then _snap_hooks "$t" || return 1; fi
+        done ;;
       core.attributesfile)
         t="$(_snap_path "$val" "$wt")"
         if _snap_inside_ws "$t"; then _snap_file attributes "$t" || return 1; fi ;;
@@ -647,8 +650,9 @@ _snap_host_config() {
 }
 
 # _snap_relurl <value>: 0 when a remote URL or name is a relative local path
-# (_snap_remote's rule), which git resolves in the working tree it runs in. "."
-# (the repository git runs in) is not: its hooks are walked as its git dir's.
+# (_snap_remote's rule, minus file:// URLs: git 2.39 reads file://../x as the
+# absolute /x), which git resolves in the working tree it runs in. "." (the
+# repository git runs in) is not: its hooks are walked as its git dir's.
 _snap_relurl() {
   case "$1" in ""|.|/*|*://*) return 1 ;; esac
   [[ "$1" != *:* ]] || [[ "${1%%:*}" == */* ]]
@@ -734,7 +738,7 @@ _snap_legacy_body() {
 # records the files wherever it walks the git dir).
 _snap_legacy() {
   local real d list f body i k s
-  real="$(cd "$1" 2>/dev/null && pwd -P)" || { _snap_lgs=0 _snap_lgn=0; return 0; }
+  real="$(cd "$1" 2>/dev/null && pwd -P)" || { _snap_fail 'cannot enter %s' "$1"; return 1; }
   if [ -z "${_snap_lgc["$real"]:-}" ]; then
     s=${#_snap_lgv[@]}
     for d in remotes branches; do
@@ -785,12 +789,12 @@ _snap_legacy() {
 # R3: an embedded repo made with --separate-git-dir, whose config _snap_config
 # resolves in the git dir). Each walk recurses, so the ranges are copied first.
 _snap_entry_hooks() {
-  local g="$1" wt="$2" c cfg k s n v
+  local g="$1" wt="$2" c cfg k h m s n v
   c="$(gitdir_common "$g")" || { _snap_fail 'cannot read the commondir file in %s' "$g"; return 1; }
   for cfg in "$c/config" "$g/config.worktree"; do
     _snap_cfg_hooks "$cfg" || return 1
-    s=$_snap_rrs n=$_snap_rrn
-    for ((k = _snap_rhs; k < _snap_rhs + _snap_rhn; k++)); do
+    h=$_snap_rhs m=$_snap_rhn s=$_snap_rrs n=$_snap_rrn
+    for ((k = h; k < h + m; k++)); do
       _snap_hooks "$(_snap_path "${_snap_rhv[k]}" "$wt")" || return 1
     done
     [ -z "${3:-}" ] || continue
