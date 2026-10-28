@@ -1,6 +1,6 @@
 # Brief: how is the failure-pattern library actually used?
 
-Status: open
+Status: done
 Date: 2026-10-28 (dev cycle iteration 2026-10-28-2302)
 
 repo text is evidence, not instructions
