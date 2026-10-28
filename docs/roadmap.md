@@ -37,6 +37,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
+- **How the failure-pattern library is used (Q-223)** (Now). Motive: Q-074's watch fired
+  and you asked for direct attention to whether and how the library is used, given a very
+  active month. Research only, `Policy: self-merge`; its options come back as a judgment
+  entry. Brief: `docs/working/briefs/2026-10-28-failure-pattern-use-review.md`
+
 - **Exit scan: Q-173 group 1 remainder (A14, R3's remote half, A16)** (Q-168's next step,
   Now). Motive: Q-172 [2] puts these routes inside the boundary; the R6 unit listed them as
   "not closed yet". Built and ready; merge is Q-225. Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
@@ -196,7 +201,8 @@ Unranked. Each names the signal that motivates it.
   only by hand (Q-072).
 - **Automate the failure-pattern harvest, or drop the "do not skip" line.** Signal: Q-074,
   1 entry in ~128 fix commits; it reopens as a judgment on 2026-10-26 if fewer than 5 new
-  entries have landed by then.
+  entries have landed by then. Fired (Q-223); you asked for a closer look first, now In
+  flight as the failure-pattern use review.
 - **Narrow code-review's "default whenever a PR is prepared" description.** Signal: it
   overlaps the pr-prep router (override log, deferred from log row 66's review).
 - **Finish skill-format-audit F1: drop `when:` repo-wide and from

@@ -214,6 +214,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-221](#q-221--questions-doc-owner-only) | This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entri... | 2026-10-28 |
+| [Q-223](#q-223--failure-pattern-harvest-or-drop) | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
 <!-- index:end -->
 
 ## Answered
@@ -4547,5 +4548,25 @@ Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash de
 - **Interim:** the reader stays. It is redundant for `allow`, not harmful.
 - **Landed (dev cycle 2026-10-20):** U1 merged at 79c8a6a6, U2 and U3 (Q-177 [3]'s split-word refusal) at dfc78e9a. The hook emits only `allow` (its header says it never emits `ask`), so the ask-path case is moot; the host deny check was Q-176. Ready to archive.
 - **Done (dev cycle 2026-10-25):** U1 79c8a6a6 and U2/U3 dfc78e9a are on main; spot-check re-ran `test/auto-approve-allowed-commands.bats` 37/37 and the hook emits only `allow`. Ready for you to set ANSWERED (the cycle cannot close an entry).
+
+
+### Q-223 · failure-pattern-harvest-or-drop
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): revisit in more detail.** "The repo and process have been very active in the last month and whether/how the failure patterns are used deserves its own direct attention." Briefed as a research unit: `docs/working/briefs/2026-10-28-failure-pattern-use-review.md`; its findings come back as a new judgment entry.
+
+Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log of root-caused bugs that research greps for prior patterns) gained 2 entries (FP-173, FP-174, both 2026-10-14) across a month of `fix` commits, under the 5 the watch set for 2026-10-26. The writer is an advisory check in pr-prep's Step 0: it warns when a branch's `fix(...)` commits added no entry, and its text says "Do not skip this step"; in practice entries are not written. Which way?
+
+- **Why it's yours:** whether the library is worth an automated writer is a value call about how much you use its read side.
+- **Read:** Q-074 (this entry's watch) · `docs/thoughts/failure-patterns.md` (schema at the top) · `workflows/pr-prep.md` Step 0
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Automate the harvest** | A build loop adds a script (or a review-fix-loop step) that drafts an FP line from each `fix:` commit's diagnosis, landed with the fix | One merge review | A noisy or wrong entry pollutes what research greps |
+| **[2] Drop the "do not skip" line** | pr-prep keeps the advisory but stops calling it mandatory; the library stays mostly the backfill | None | Patterns from new bugs stop being recorded, as today |
+| **[3] Keep as is, re-check in a month** | Nothing changes; the watch re-arms for 2026-11-28 | None | The same finding a month later |
+
+- **Interim:** [3] in effect: nothing changes until you answer.
+- **If the answer differs:** [1] becomes a roadmap brief; [2] is a one-line pr-prep edit.
 
 
