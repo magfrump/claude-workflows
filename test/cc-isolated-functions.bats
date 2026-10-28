@@ -3139,3 +3139,58 @@ line")"
   [[ "$output" == *"note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
   [[ "$output" != *"WARNING: this session changed"* ]]
 }
+
+@test "exit scan R6: a relative repo core.hooksPath is walked in a linked worktree present at launch" {
+  # Q-168 rubric R6: husky's .husky/_ with an agent worktree already in the
+  # checkout; git runs <worktree>/.husky/_/pre-commit on a commit there.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.husky/_" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.husky/_/pre-commit "* ]]
+  no_ran
+  # The same through an include in the repo config.
+  rm -rf "$STD_WT/.husky"
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  printf '[core]\n\thooksPath = .inc-hooks\n' > "$SCAN_WS/.git/inc.cfg"
+  git -C "$SCAN_WS" config include.path inc.cfg
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # An include named by an absolute path: its relative hooksPath still resolves
+  # in the worktree.
+  rm -rf "$STD_WT/.inc-hooks"
+  git -C "$SCAN_WS" config include.path "$SCAN_WS/.git/inc.cfg"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # The file that includes it (x.cfg) is first met at depth 10 of an includeIf
+  # chain git does not take, then through a plain include git does take.
+  rm -rf "$STD_WT/.inc-hooks"
+  local i
+  for i in 1 2 3 4 5 6 7 8; do printf '[include]\n\tpath = a%d.cfg\n' $((i + 1)) > "$SCAN_WS/.git/a$i.cfg"; done
+  printf '[include]\n\tpath = x.cfg\n' > "$SCAN_WS/.git/a9.cfg"
+  printf '[include]\n\tpath = inc.cfg\n' > "$SCAN_WS/.git/x.cfg"
+  git -C "$SCAN_WS" config --unset include.path
+  git -C "$SCAN_WS" config 'includeIf.gitdir:/nomatch/.path' a1.cfg
+  git -C "$SCAN_WS" config include.path x.cfg
+  [ "$(git -C "$STD_WT" config core.hooksPath)" = .inc-hooks ]
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # What a clean scan would have let through: host git runs the hook there.
+  git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
+}

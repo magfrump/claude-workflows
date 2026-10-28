@@ -334,7 +334,12 @@ configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
-resolved in the working tree of the repo whose config names them). Every remote
+resolved in the working tree of the repo whose config names them). A relative
+`core.hooksPath` in a repo's config (husky's `.husky/_`), set there or in a
+file it includes, is walked in every
+working tree that uses that config: the repo's own and each linked worktree or
+other `.git` entry in the checkout (an agent worktree runs
+`<worktree>/.husky/_`). Every remote
 URL it meets, local or not (legacy files' included, `insteadOf` bases not), and
 each `remote.*.url`/`pushurl` in your own config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
 rule whose value it starts with — from any config the scan reads, your own
@@ -408,7 +413,11 @@ permission to run git in the checkout.
 
 This is the one list of what the scan and `cc-push` do not cover
 (`cc-exit-scan.sh` and `cc-push.sh` point here); update it here when a change
-opens or closes a route.
+opens or closes a route. The boundary (Q-172 [2]): a route that needs only
+ordinary setup plus what a session can write in the checkout is one to close,
+and stays listed here until it is; a route that needs some unusual state
+present at launch stays here by design. Push with `cc-push`, which runs no git
+in the checkout, whatever the scan says.
 
 - **A hook that runs a tracked file.** A hook present at launch that runs a
   file from the working tree (husky, the pre-commit framework, lefthook,
@@ -428,8 +437,8 @@ opens or closes a route.
   SIGTERM) scans nothing. Ctrl-C that ends the session still scans; a Ctrl-C
   *during* the scan stops it and exits 4 ("the exit scan was interrupted").
 - **A slow scan.** The cost is forks per git dir, not I/O: about 2–4 s per
-  snapshot on a ~400k-file repository, and about 29 ms more for each embedded
-  repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
+  snapshot on a ~400k-file repository, and about 30 ms more for each embedded
+  repository or linked worktree (the tree walk itself is ~0.05 s per 100k files), paid at launch
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time; at the `insteadOf` caps, rewritten URLs alone add 10-80 s
@@ -444,6 +453,31 @@ opens or closes a route.
   by locale), `file://host/` or percent-encoded `file://` URLs, a path-valued
   `pushRemote`/`pushDefault` in your own config, and a local remote that is a
   `gitdir:` file (git follows it; the scan records only the file).
+- **A local path holding `@[`, or starting with `[`, present at launch.** Git
+  cuts such a path at the `]` (`./decoy@[x]plant` pushes to `./]plant`); the
+  scan walks the path as written. This holds for a remote URL, an undefined
+  remote name, a legacy remotes file and an `insteadOf` result (Q-168 rubric R4).
+- **Relative remotes and receive hooks resolved against one base (not closed
+  yet).** A relative local remote, undefined remote name or legacy URL in a
+  repo's config is walked only in that repo's main working tree, but a push
+  from a linked worktree inside the checkout goes to `<worktree>/<path>`
+  (`origin = ../up.git` then lands in the checkout, where a session can plant
+  a repository); in an embedded repo made with `--separate-git-dir`, such paths
+  are resolved inside its git dir rather than its working tree; and receive
+  hooks under a relative `core.hooksPath` run from the pushed repo's git dir
+  (`<repo>/.git/<path>`, `git push .` included), which is not walked (Q-168
+  rubric A14, R3, A16).
+- **A `core.worktree` elsewhere, present at launch.** A relative
+  `core.hooksPath` is walked in the directory holding each `.git` entry (and,
+  for an embedded repo, in the `core.worktree` its own config names); the
+  checkout or a linked worktree whose `core.worktree` (in `config.worktree`,
+  say) names another directory runs hooks from `<that directory>/<path>`,
+  which is not walked.
+- **A repo config that is a symlink to another repo's, present at launch.**
+  Git resolves a relative `include.path` against the directory of the path it
+  opened; the scan reads each config file once, by its real path, so the
+  second repo's include (and the relative `core.hooksPath` it may set) is
+  never walked.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
@@ -463,7 +497,9 @@ opens or closes a route.
 - **A `.git` file naming the container's path, present at launch.** One that
   reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
   elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
-  config there, not that git dir. `git worktree repair` may point it at a
+  config there and that git dir's `core.hooksPath` (a relative one in the
+  worktree), not the git dir itself (and nothing at all when the line ends in a
+  CR, which git strips: Q-168 tech-debt T1). `git worktree repair` may point it at a
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
   during the session is either git's exact form, which maps to its own private
