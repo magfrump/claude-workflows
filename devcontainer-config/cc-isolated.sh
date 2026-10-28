@@ -213,6 +213,7 @@ host_tool_files() {
   echo "cc-exit-scan.sh"
   echo "cc-gitdir.sh"
   echo "cc-push.sh"
+  echo "cc-verify.sh"
 }
 
 host_tools_path() {

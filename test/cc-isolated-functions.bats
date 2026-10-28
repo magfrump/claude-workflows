@@ -33,6 +33,7 @@ setup() {
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-verify.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
@@ -815,7 +816,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -915,7 +916,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"
@@ -1046,7 +1047,7 @@ fake_payload_and_dest() {
   items="${payload_line#PAYLOAD=(}"; items="${items%)}"
   enf="$(enforcement_files)"
   host="$(host_tool_files)"
-  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   for item in $host; do
     if echo "$enf" | grep -qx "$item"; then echo "in both lists: $item"; return 1; fi
   done
@@ -1069,7 +1070,7 @@ fake_payload_and_dest() {
 @test "bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone" {
   bless_manifest >/dev/null
   [ -f "$(host_tools_path)" ]
-  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   if grep -E 'cc-(push|exit-scan|gitdir)\.sh' "$(manifest_path)"; then return 1; fi
   local before
   before="$(blessed_hash)"
@@ -1264,7 +1265,7 @@ fake_payload_and_dest() {
   mkdir -p "$ws"
   bash "$d/cc-isolated.sh" --bless >/dev/null
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)"* ]]
+  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)"* ]]
   cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
   echo 'echo x' >> "$d/cc-push.sh"
   run bash "$d/cc-isolated.sh" --list
@@ -3138,4 +3139,59 @@ line")"
   [ "$status" -eq 0 ]
   [[ "$output" == *"note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
   [[ "$output" != *"WARNING: this session changed"* ]]
+}
+
+@test "exit scan R6: a relative repo core.hooksPath is walked in a linked worktree present at launch" {
+  # Q-168 rubric R6: husky's .husky/_ with an agent worktree already in the
+  # checkout; git runs <worktree>/.husky/_/pre-commit on a commit there.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.husky/_" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.husky/_/pre-commit "* ]]
+  no_ran
+  # The same through an include in the repo config.
+  rm -rf "$STD_WT/.husky"
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  printf '[core]\n\thooksPath = .inc-hooks\n' > "$SCAN_WS/.git/inc.cfg"
+  git -C "$SCAN_WS" config include.path inc.cfg
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # An include named by an absolute path: its relative hooksPath still resolves
+  # in the worktree.
+  rm -rf "$STD_WT/.inc-hooks"
+  git -C "$SCAN_WS" config include.path "$SCAN_WS/.git/inc.cfg"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # The file that includes it (x.cfg) is first met at depth 10 of an includeIf
+  # chain git does not take, then through a plain include git does take.
+  rm -rf "$STD_WT/.inc-hooks"
+  local i
+  for i in 1 2 3 4 5 6 7 8; do printf '[include]\n\tpath = a%d.cfg\n' $((i + 1)) > "$SCAN_WS/.git/a$i.cfg"; done
+  printf '[include]\n\tpath = x.cfg\n' > "$SCAN_WS/.git/a9.cfg"
+  printf '[include]\n\tpath = inc.cfg\n' > "$SCAN_WS/.git/x.cfg"
+  git -C "$SCAN_WS" config --unset include.path
+  git -C "$SCAN_WS" config 'includeIf.gitdir:/nomatch/.path' a1.cfg
+  git -C "$SCAN_WS" config include.path x.cfg
+  [ "$(git -C "$STD_WT" config core.hooksPath)" = .inc-hooks ]
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # What a clean scan would have let through: host git runs the hook there.
+  git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
 }

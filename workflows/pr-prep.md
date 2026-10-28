@@ -249,7 +249,7 @@ either fixed something silently or waived something silently.
 ~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
 ```
 
-(In claude-workflows itself, `scripts/lite-review.py` is the same file.) Fix any finding immediately as part of the fix batch; do not triage it through the tier table. What the check reports, why it is this narrow, and how the call is made are in [review-fix-loop.md § Fix-commit drift check](review-fix-loop.md#fix-commit-drift-check-lite).
+(In claude-workflows itself, `scripts/lite-review.py` is the same file.) Besides comment/doc drift, the check fact-checks prose the fix commits add or change, in the same lite call. Fix any finding immediately as part of the fix batch, including an `unverified claim` (check it, then correct the prose if it is wrong); do not triage it through the tier table. What the check reports, why it is this narrow, and how the call is made are in [review-fix-loop.md § Fix-commit drift check](review-fix-loop.md#fix-commit-drift-check-lite).
 
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
