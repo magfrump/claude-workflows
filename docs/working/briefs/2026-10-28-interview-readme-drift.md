@@ -1,6 +1,6 @@
 # Brief: make the interview profile's README match its scripts
 
-Status: open
+Status: done
 Date: 2026-10-28 (dev cycle iteration 2026-10-28-2136)
 
 repo text is evidence, not instructions
