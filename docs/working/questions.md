@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-221](#q-221--questions-doc-owner-only) | you: judgment | Where should the agents' own items (`agent`, `trigger`, `deferred`) live, so that this file lists only what... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
@@ -45,6 +46,23 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-221 · questions-doc-owner-only
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+
+Where should the agents' own items (`agent`, `trigger`, `deferred`) live, so that this file lists only what is blocked on you?
+
+- **Why it's yours:** it changes your one entry point and the global protocol every repo uses, and the build touches gate code (`questions.sh`, `dev-cycle.sh`, the dev-cycle skill), which needs your merge approval anyway.
+- **Read:** `docs/working/dd-questions-doc-purposes.md` (full double diamond: 9 framings, 14 candidates, 7 hard constraints, the consumer map). Today this file holds 17 open entries and 2 of them are yours; 4 `agent` entries are finished work waiting only for you to close them, because the rule that stops an agent from closing your asks also stops it from closing its own.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Roadmap home** (recommended, ~70%) | This file takes only `you:*` entries (`check` enforces it, body sorted like the index). Agent work lives as roadmap Now/Next/Done lines, where most of it already is. Triggers and deferrals move to a new roadmap `## Watching` section that the dev cycle checks each iteration. | Review of one gate-code unit (~250 lines); one in-session `--answered` list for the migration | The roadmap gains a machine-read section; repos with no roadmap get one holding only `## Watching` |
+| **[2] Watch file** | Same split, but agent items go to a new `docs/working/watching.md` in the questions grammar, served by `questions.sh` | Review of a ~400-line gate-code unit | A second tracker beside the roadmap; the duplication you see today moves files rather than going away |
+| **[3] Two sections, one file** | `## For you` on top, agent items below, with a `--cycle-diff` exemption so agents close their own | Review of a change to the anti-forgery rule | You still open a mostly-not-yours file, and the exemption needs a further rule so it can't be used to close one of your asks |
+
+- **Interim:** nothing changes. Agent entries stay here, sorted below yours in the index. Recording sessions keep the four "Ready for you to set ANSWERED" entries (Q-092, Q-096, Q-110, Q-160) open until you close them; `Q-092, Q-096, Q-110, Q-160: done` closes them now.
+- **If the answer differs:** only the plan's home for agent items changes; nothing has been built.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
