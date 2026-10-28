@@ -1,6 +1,6 @@
 # Brief: widen the fix-drift lite check to prose a fix adds
 
-Status: open
+Status: done
 Date: 2026-10-25 (dev cycle iteration 2026-10-26-0002)
 
 repo text is evidence, not instructions
