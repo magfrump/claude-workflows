@@ -3,9 +3,10 @@
 **Status:** open · **Opened:** 2026-10-19 · **Decision:** log row 73 (v1 trusts the operator's own repos)
 
 **Revisit trigger:** before the skill is run on any repo not solely written by the operator and
-their own agents (a shared, forked or third-party repo). Also revisit if a build loop or another
-agent can write a target repo's `.git/config`, `.git/config.worktree`, `refs/replace/`, or files
-those include.
+their own agents (a shared, forked or third-party repo). Also revisit if an agent outside the
+operator's own sessions and loops can write a target repo's `.git/config`, `.git/config.worktree`,
+`refs/replace/`, or files those include. The operator's own build loops and sessions, running as
+the operator's uid, can write git config; that is Q-103's accepted same-uid residual (Q-213 [1]).
 
 v1 of `skills/constraints-builder` declares untrusted target repos out of scope (its "Scope (v1)"
 paragraph). Three review iterations of the skill (pr-prep, 2026-10-19) kept finding new ways for
