@@ -43,9 +43,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 - **Questions doc owner-only, unit 1: owner routes in `questions.sh`** (Now, decision 040).
   Motive: the owner's report that agent bookkeeping crowds their page. Gate code, so its
   merge is a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
-- **Bug: the interview profile's README does not match its scripts** (was Next 4). Motive:
-  undocumented is broken (spot-check of be464869). Docs only, `Policy: self-merge`. Brief:
-  `docs/working/briefs/2026-10-28-interview-readme-drift.md`
 
 ## Next
 
@@ -231,6 +228,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The interview profile's README matches its scripts (settings values, the `cci` drift
+  prompt, what preflight checks): done at 9b8a0b34 (build-loop self-merge). Brief:
+  `docs/working/briefs/closed/2026-10-28-interview-readme-drift.md`
 - The `cc-verify` host tool: done at 37b24c02 (Q-217 [1], build-loop approved merge). Brief:
   `docs/working/briefs/closed/2026-10-20-cc-verify-host-tool.md`
 - Exit scan R6 (a relative `core.hooksPath` in a linked worktree) and the sort of Q-173's
