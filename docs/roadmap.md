@@ -39,7 +39,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 - **Exit scan: Q-173 group 1 remainder (A14, R3's remote half, A16)** (Q-168's next step,
   Now). Motive: Q-172 [2] puts these routes inside the boundary; the R6 unit listed them as
-  "not closed yet". Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
+  "not closed yet". Built and ready; merge is Q-225. Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
 - **Questions doc owner-only, unit 1: owner routes in `questions.sh`** (Now, decision 040).
   Motive: the owner's report that agent bookkeeping crowds their page. Built and ready
   (the refusal of agent routes moves to unit 2); merge is Q-224, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
@@ -177,7 +177,10 @@ Unranked. Each names the signal that motivates it.
   amend mode.
   Fired again 2026-10-28: decision 040 (the questions doc holds only owner items) is a major
   design decision that changes the dev cycle's steps 2 and 3 in three gate units; an audit
-  reads best after unit 3 lands.
+  reads best after unit 3 lands. Drift finding again 2026-10-28 (step 4, 68287ee2): the
+  fix-drift loop's Path A record pruned option D on S8/S1 (soft) beside a trust-boundary
+  reason, and E on S2 beside the brief's own rule; the pick (C) stands. Same class as
+  43762305: the audit should check that loops rank with S lines rather than prune.
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health

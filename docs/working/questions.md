@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-223](#q-223--failure-pattern-harvest-or-drop) | you: judgment | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
 | [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
+| [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | you: judgment | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -44,6 +45,30 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-225 · merge-2026-10-28-exit-scan-group1-remainder-19027abb7593
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+
+Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`, roadmap In flight)? It closes the last three in-boundary routes of Q-173's group 1 in the exit scan (the check `cc-isolated` runs when a session ends, which names anything the session planted that host git would run).
+
+- **What it does** (from the loop's report): A14: relative remotes (`../up.git` as a URL, push URL, remote name, or legacy `remotes/`/`branches/` file) now resolve per linked worktree, so a bare repo the session plants where that path lands (e.g. `.claude/worktrees/up.git`) is walked. R3's remote half: the same walk covers an embedded `--separate-git-dir` repo. A16: a relative `core.hooksPath` is walked in every git dir the scan walks, so receive hooks fired by `git push .` or a push into the checkout are caught; your own relative global hooksPath too. Only relative values are queued per worktree, so the insteadOf caps hold for many agent worktrees (a 20-worktree test pins it). The guide drops these routes from "not closed yet" and adds two out-of-scope known routes (a relative `insteadOf` base per worktree; your relative hooksPath in a bare repo reached only as a remote). Tests: 4 new cases (A14, R3 and A16 fail on main, pass here), full `test/cc-isolated-functions.bats` 212/212, health check and hermeticity lint pass. Two review passes; pass 2 clean, with one note: a relative hooksPath of `.` over-reports (noise like `~ hook .git/index`), never misses a plant.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 19027abb75934fa515dc9f124be5c4b4d5b457e7` (5 files, +406/-42; 310 changed lines outside docs) · `docs/working/research-2026-10-28-exit-scan-group1-remainder.md` on that branch (git-behaviour probes, the design, a 16-family bypass pre-mortem)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md 19027abb75934fa515dc9f124be5c4b4d5b457e7 1ab191252d2bcba26446be56b461d57d54418a97`
+  - `path … M devcontainer-config/cc-exit-scan.sh` (an enforcement file: its commits carry `Host-tool-tested: no` and `Live-verified: no`)
+  - `path … M docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
+  - `path … A docs/working/research-2026-10-28-exit-scan-group1-remainder.md`
+  - `path … M guides/cc-isolated-usage.md`
+  - `path … M test/cc-isolated-functions.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 19027abb; it reaches your machine with the next `install.sh` (Q-222's paste then covers it) | Reading the diff | A false warning at session exit, or a planted repo still missed; bats-verified only until a host run |
+| **[2] drop** | The brief closes; the branch stays for you | None | The three routes stay listed as "not closed yet" |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Interim:** nothing merged; the guide still lists these routes as not closed, and cc-push stays the safe way to push.
+- **If the answer differs:** nothing to redo.
 
 ### Q-224 · merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3
 **Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
