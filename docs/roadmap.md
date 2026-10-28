@@ -19,7 +19,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   predate it first. Q-172 was answered [2]: close only routes that need no state planted
   before launch, list the rest as known routes, push with cc-push. The four split groups
   are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
-  builds first). That step is briefed (In flight, the exit-scan R6 line).
+  builds first). R6 merged at 7a5b4f4a (Q-220 [1]), and its sort left group 1's remainder
+  (A14, R3's remote half, A16) in scope; that unit is briefed (In flight, the group 1
+  remainder line).
 
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
@@ -29,54 +31,46 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
   steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
   instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
-  unit is a `merge-gate` entry. First step: brief unit 1. Follow-ups: entry clarity (gloss
-  every internal reference) and a `questions.sh record <answers-file>`.
+  unit is a `merge-gate` entry. First step: brief unit 1 (done: In flight, the owner routes
+  line). Follow-ups: entry clarity (gloss every internal reference) and a
+  `questions.sh record <answers-file>`.
 
 ## In flight
 
-- **Verify a branch without installing it: the `cc-verify` host tool** (was Now). Motive:
-  Q-117, Q-125 and Q-098 wait on it. Q-165 answered [1] (the tool takes the config it
-  verifies as an argument), Q-166 [2]. The hand spike paste Q-169 stays open; the brief
-  folds its open claims into the tool's first run. Built and ready; merge is Q-217. Brief:
-  `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
-- **Widen the fix-drift lite check (Q-194 [2])** (was Now). Motive: decision 031's fourth
-  trigger fired when the lite check missed a doc amber in fix-added prose. Built and ready
-  (it also edits the lite check's prompt); merge is Q-219. Brief:
-  `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
-- **Reword log row 73's second trigger (Q-213 [1])** (was Now). Motive: the shared-uid
-  `.git/config` premise is Q-103's accepted same-uid residual. Built and ready; merge is
-  Q-218. Brief: `docs/working/briefs/2026-10-25-log-row-73-trigger.md`
-- **Exit scan: sort Q-173's groups and close R6** (Q-168's first step, Now). Motive: Q-172
-  answered [2] unblocked Q-173; R6 (High) is inside the boundary and builds first.
-  Built and ready; merge is Q-220 (follow-ups filed after it). Brief:
-  `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
+- **Exit scan: Q-173 group 1 remainder (A14, R3's remote half, A16)** (Q-168's next step,
+  Now). Motive: Q-172 [2] puts these routes inside the boundary; the R6 unit listed them as
+  "not closed yet". Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
+- **Questions doc owner-only, unit 1: owner routes in `questions.sh`** (Now, decision 040).
+  Motive: the owner's report that agent bookkeeping crowds their page. Gate code, so its
+  merge is a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
+- **Bug: the interview profile's README does not match its scripts** (was Next 4). Motive:
+  undocumented is broken (spot-check of be464869). Docs only, `Policy: self-merge`. Brief:
+  `docs/working/briefs/2026-10-28-interview-readme-drift.md`
 
 ## Next
 
-1. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
+1. **Q-125's host live run, now that `cc-verify` is merged.** Motive: Q-125 (the
+   cc-isolated Bash sandbox), and behind it Q-098 (global allowlist) and Q-161 (hermeticity
+   layer 2), waited on `cc-verify` (merged at 37b24c02, Q-217 [1]). First step: once the host
+   install has `cc-verify` (Q-222), write the probe FILE for Q-125's live check (a sandboxed
+   `cat ~/.claude/.credentials.json` refused, Q-098's leak list re-run, `gh`/`git push` not
+   prompting) and file it as one `you: terminal` paste.
+2. **A8 post-restructure token measurement.** Motive: the user deferred big compute until
    code and prompts settle; it validates code-review lever #3 (rubric row A8 in
    `docs/reviews/code-review-rubric-2026-08-07-main.md`). First step: confirm
    settlement (no open code-review SKILL changes), then re-run one canon cell. The
    user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
    5.5; deferred, ask before running.
-2. **Automate the host settings.json merge (Q-106 [2]).** Built
+3. **Automate the host settings.json merge (Q-106 [2]).** Built
    (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
    gate with one Medium open. Q-174 answered [1]: run iteration 4 (tighten the group
    shape, anchor the regexes, count duplicate hooks), then the k=3 confirming pass. Q-175
    answered [1]: the moved merge program stays in the `hooks/**` class, no gate change.
-3. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
+4. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
    first day of iterations here (after Q-156's release), total each iteration's tokens and
    wall time from its records and bring the numbers to you.
-4. **Bug: the interview profile's README does not match its scripts.** Motive: undocumented
-   is broken (step 4 spot-check of be464869, cycle 2026-10-25). `profiles/interview/README.md`
-   omits the settings file's `claudeMdExcludes` list and runtime values, says `cci` "warns"
-   on instructions-file drift where it stops and asks y/N, and says preflight fails on any
-   uncovered ancestor instructions file where it counts the exclude key's presence as
-   coverage and skips `.claude/rules/**`. First step: fix the two README lines, then either
-   check each pattern in preflight or soften the README's claim (outside the cycle's
-   `--check-fix` paths).
 
 ## Ideas
 
@@ -184,6 +178,9 @@ Unranked. Each names the signal that motivates it.
   merge. The pick stands (A dominates), but the audit should check that loops rank with S
   lines rather than prune with them; revise the file with the `constraints-builder` skill's
   amend mode.
+  Fired again 2026-10-28: decision 040 (the questions doc holds only owner items) is a major
+  design decision that changes the dev cycle's steps 2 and 3 in three gate units; an audit
+  reads best after unit 3 lands.
 - **Usage log records host vs container.** Signal: decisions 015 T4 and 014 T1 are "cannot
   tell" for lack of the field (cycle 2026-10-02).
 - **Doc-freshness check: refresh the 7 stale docs or loosen the heuristic.** Signal: health
@@ -234,6 +231,15 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- The `cc-verify` host tool: done at 37b24c02 (Q-217 [1], build-loop approved merge). Brief:
+  `docs/working/briefs/closed/2026-10-20-cc-verify-host-tool.md`
+- Exit scan R6 (a relative `core.hooksPath` in a linked worktree) and the sort of Q-173's
+  groups: done at 7a5b4f4a (Q-220 [1]). Brief:
+  `docs/working/briefs/closed/2026-10-25-exit-scan-r6-hookspath.md`
+- Widen the fix-drift lite check (decision 031's fourth trigger): done at 68287ee2
+  (Q-219 [1]). Brief: `docs/working/briefs/closed/2026-10-25-widen-fix-drift-check.md`
+- Log row 73's second trigger reworded as the same-uid residual: done at ce0f8463
+  (Q-218 [1]). Brief: `docs/working/briefs/closed/2026-10-25-log-row-73-trigger.md`
 - Decision 015's amendment, log row 66's close and row 53's Q-176/Q-177 amendment: done at
   4388056e (Q-216 [1], build-loop approved merge). Brief:
   `docs/working/briefs/closed/2026-10-20-decision-015-amendment.md`

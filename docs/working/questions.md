@@ -25,8 +25,10 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-223](#q-223--failure-pattern-harvest-or-drop) | you: judgment | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
+| [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
 | [Q-108](#q-108--decision-037-stale-lines) | agent | Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but the regex landed in addae61... | 2026-10-02 |
@@ -41,6 +43,38 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-222 · install-cc-verify-and-r6
+**Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
+
+Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) and the exit scan's R6 fix for a relative `core.hooksPath` in a linked worktree (7a5b4f4a, Q-220). Neither runs on your machine until `install.sh` re-installs the host tools. Run this in your host terminal (WSL, not inside a session):
+
+```
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor 37b24c026eed64b12b1c6f9849e31cedba7a5329 HEAD && ./devcontainer-config/install.sh && cc-verify --help | head -5 && cc-isolated --list
+```
+
+The first git call only checks that your checkout already holds the cc-verify merge (it runs no hook); if it prints nothing and stops, your checkout is behind main. Before your first real `cc-verify --check`, add `~/cc-verify` to your agents' sandbox `denyWrite` (the guide's cc-verify section says why).
+
+- **Read:** `guides/cc-isolated-usage.md`, section "Verify a branch without installing it: cc-verify" · Q-167 (its probes can run in the same sitting)
+- **Blocks:** roadmap Next 1 (Q-125's host live run through `cc-verify`), and behind it Q-098 and Q-161.
+- **Interim:** both merges are bats-verified only; your installed exit scan does not yet see R6, and `cc-verify` is not on your PATH.
+
+### Q-223 · failure-pattern-harvest-or-drop
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+
+Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log of root-caused bugs that research greps for prior patterns) gained 2 entries (FP-173, FP-174, both 2026-10-14) across a month of `fix` commits, under the 5 the watch set for 2026-10-26. The writer is an advisory check in pr-prep's Step 0: it warns when a branch's `fix(...)` commits added no entry, and its text says "Do not skip this step"; in practice entries are not written. Which way?
+
+- **Why it's yours:** whether the library is worth an automated writer is a value call about how much you use its read side.
+- **Read:** Q-074 (this entry's watch) · `docs/thoughts/failure-patterns.md` (schema at the top) · `workflows/pr-prep.md` Step 0
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Automate the harvest** | A build loop adds a script (or a review-fix-loop step) that drafts an FP line from each `fix:` commit's diagnosis, landed with the fix | One merge review | A noisy or wrong entry pollutes what research greps |
+| **[2] Drop the "do not skip" line** | pr-prep keeps the advisory but stops calling it mandatory; the library stays mostly the backfill | None | Patterns from new bugs stop being recorded, as today |
+| **[3] Keep as is, re-check in a month** | Nothing changes; the watch re-arms for 2026-11-28 | None | The same finding a month later |
+
+- **Interim:** [3] in effect: nothing changes until you answer.
+- **If the answer differs:** [1] becomes a roadmap brief; [2] is a one-line pr-prep edit.
 
 ### Q-167 · post-install-host-probes
 **Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -101,6 +135,7 @@ Q-168's final pass split off four groups, each shown end to end (exit scan retur
 - **Interim:** documented as known routes once Q-171's iteration lands; cc-push stays the safe path.
 - **2026-10-23:** Q-172 answered [2]: close only routes that need no state planted before launch, list the rest as known routes, and the guide says to push with cc-push. First step: sort the four groups by that rule. R6 (a relative `core.hooksPath` in a linked worktree inside the checkout) needs only state a session can write in the checkout, so it is inside the boundary and builds first.
 - **Stuck (dev cycle 2026-10-25):** unblocked by Q-172 [2] but needs a build loop (sort the groups, build R6 first), not a docs edit; no choice pending.
+- **2026-10-28 (dev cycle):** the sort and R6 merged at 7a5b4f4a (Q-220 [1]); group 1's remainder (A14, R3's remote half, A16) is briefed (`docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`). Groups 2-4 are out of the boundary or tech debt per that unit's research doc.
 
 ### Q-161 · revive-hermeticity-layer2-after-q125
 **Needs:** trigger · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -144,6 +179,7 @@ When should the skill eval reports be regenerated, so that the 50 `@needs-report
 After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only. If it reaches 2026-10-26 with fewer than 5 new entries, reopen L1 as a judgment: automate the harvest, or drop the "do not skip" line.
 
 - **Interim:** nothing changed. The read side (the RPI failure-pattern grep) works.
+- **Fired (dev cycle 2026-10-28):** 2 entries since the backfill (FP-173, FP-174), under 5 by 2026-10-26; reopened as Q-223.
 
 ### Q-079 · canon-instance-proposal-filter
 **Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
@@ -227,6 +263,7 @@ Implement Q-124 [1] as an RPI unit. Add a seccomp profile file: Docker's default
 
   - **Update 2026-10-07 (Q-126):** the host probe passed, so a fresh `/proc` works and Q-127 is moot. U2 has merged main (2961ca2f), so the live run installs current payload. Next is Q-130.
 - **Stuck (dev cycle 2026-10-25):** the host live run waits on cc-verify (merge entry Q-217, open).
+- **2026-10-28 (dev cycle):** cc-verify merged at 37b24c02 (Q-217 [1]). The live run now waits on the host install (Q-222), then on a probe file and paste (roadmap Next 1).
 
 ### Q-147 · q089-loop-split-source-guard
 **Needs:** agent · **Opened:** 2026-10-14 · **Status:** OPEN
