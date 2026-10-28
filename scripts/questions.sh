@@ -17,12 +17,11 @@
 #
 #     <question, then the decision card's bullets>
 #
-# Routes are the triage routes from docs/working/triage-2026-09-17-backlog.md:
-#   you: judgment   needs taste, authority, or a preference only the user holds
-#   you: terminal   needs the user's machine, not their mind — batched into a paste
-#   agent           mechanical; no judgment needed
-#   trigger         not a question yet; an unmet condition being watched
-#   deferred        scheduled behind an event that has not happened
+# Routes: ROUTES below is the one list (check, the sort order and the route
+# table `init` writes all read it). Four are the owner's (decision 040):
+# you: judgment, you: walkthrough, you: terminal, you: fyi (answered `seen`).
+# agent, deferred and trigger are still accepted; they leave the owner file in
+# a later unit, which adds their homes and a migration.
 #
 # Usage:
 #   ~/.claude/scripts/questions.sh check      validate both files (exit 1 on problems)
@@ -140,7 +139,25 @@ require_files() {
 INDEX_START='<!-- index:start -->'
 INDEX_END='<!-- index:end -->'
 
-VALID_ROUTES='you: judgment|you: terminal|agent|trigger|deferred'
+# --- The routes, in sort order: what an entry costs the owner, most first ---
+# One list (repo S3): VALID_ROUTES, route_rank and init's route table are all
+# derived from it, so a route added here is accepted, sorted and documented
+# together. ROUTE_MEANING is the table's text, one line per route, same order.
+# Alphabetical order would put `deferred` and `trigger`, which cost the owner
+# nothing, above their asks; walkthrough ranks above terminal because it takes
+# the owner's time and attention, where a terminal entry is one batched paste.
+ROUTES=('you: judgment' 'you: walkthrough' 'you: terminal' 'you: fyi' 'agent' 'deferred' 'trigger')
+# shellcheck disable=SC2016  # literal backticks: markdown code spans, not commands
+ROUTE_MEANING=(
+    'Needs your taste or authority: a decision only you can make.'
+    'Needs your hands on the product: a walkthrough or playtest only you can do.'
+    'Needs your machine, not your mind: a command to run, collected into one paste.'
+    'A quick read to acknowledge, not decide. Answer `seen`; one line can acknowledge several.'
+    'Agent work, not yours. Moving out of this file to the project'"'"'s roadmap.'
+    'Waiting on an event that has not happened. Moving out of this file to a watch list.'
+    'A condition being watched, not a question yet. Moving out of this file to a watch list.'
+)
+VALID_ROUTES="$(IFS='|'; echo "${ROUTES[*]}")"
 
 # --- Emit "ID<TAB>route<TAB>date<TAB>status<TAB>slug<TAB>summary" per entry ---
 # summary is the first non-empty prose line after the header pair, truncated.
@@ -205,14 +222,12 @@ parse_entries() {
 }
 
 # --- Prefix each parsed line with a sort rank for its route ---
-# Rank ascending = costs the user most first. Keep in step with VALID_ROUTES.
+# Rank ascending = costs the user most first: the position in ROUTES. An
+# unknown route sorts last (rank 99); `check` reports it.
 route_rank() {
-    awk -F'\t' '
-        BEGIN {
-            r["you: judgment"] = 1; r["you: terminal"] = 2; r["agent"] = 3
-            r["deferred"] = 4; r["trigger"] = 5
-        }
-        { printf "%d\t%s\n", (($2 in r) ? r[$2] : 9), $0 }
+    awk -F'\t' -v routes="$VALID_ROUTES" '
+        BEGIN { n = split(routes, x, "|"); for (i = 1; i <= n; i++) r[x[i]] = i }
+        { printf "%02d\t%s\n", (($2 in r) ? r[$2] : 99), $0 }
     '
 }
 
@@ -409,8 +424,28 @@ cmd_open() {
     require_files
     parse_entries "$LIVE" | route_rank | sort -t$'\t' -k1,1 -k2,2 | cut -f2- \
         | while IFS=$'\t' read -r id route _ _ slug _; do
-            printf '%s  %-14s  %s\n' "$id" "$route" "$slug"
+            # 16 fits the longest route, `you: walkthrough`; dev-cycle.sh
+            # splits this output on runs of two or more spaces.
+            printf '%s  %-16s  %s\n' "$id" "$route" "$slug"
         done
+}
+
+# The live file's text above `## Index`: how to answer, and the route table,
+# written from ROUTES so the table and `check` cannot disagree.
+# shellcheck disable=SC2016  # literal backticks: markdown code spans, not commands
+live_preamble() {
+    local i
+    printf '%s\n' \
+        'Questions for you, raised during autonomous work.' '' \
+        '**To answer:** write `Q-NNN: <your answer>` anywhere (a reply, a file, a commit).' \
+        'The ID is the whole handle. Answered entries move to `questions-archive.md`.' '' \
+        '**Needs** is the route: who or what discharges the entry.' '' \
+        '| Route | Meaning |' '|---|---|'
+    for i in "${!ROUTES[@]}"; do
+        printf '| `%s` | %s |\n' "${ROUTES[i]}" "${ROUTE_MEANING[i]}"
+    done
+    printf '\n%s\n%s\n\n' "Maintained by \`$QS_CMD\` (\`check\` · \`index\` · \`archive\` · \`next-id\` · \`open\`)." \
+        'The index below is generated: edit entries, not the table.'
 }
 
 # Create whichever of the two files is missing, with the index markers the other
@@ -435,9 +470,12 @@ cmd_init() {
         override="${QUESTIONS_ARCHIVE:-}"
         [[ "$file" == "$LIVE" ]] && override="${QUESTIONS_LIVE:-}"
         assert_write_target "$file" "$override"
+        # shellcheck disable=SC2094  # live_preamble reads no file; only the arrays
         ( set -o noclobber
-          printf '# %s\n\n## Index\n\n%s\n%s\n\n## %s\n' \
-              "$title" "$INDEX_START" "$INDEX_END" "$section" > "$file" ) \
+          { printf '# %s\n\n' "$title"
+            [[ "$file" == "$LIVE" ]] && live_preamble
+            printf '## Index\n\n%s\n%s\n\n## %s\n' "$INDEX_START" "$INDEX_END" "$section"
+          } > "$file" ) \
             || die "could not create $file"
         echo "  + created: $file"
     done
