@@ -74,4 +74,18 @@ replaced by a pointer to `hooks/wiring.json` so the table stops drifting.
 
 ## Review log
 
-(filled in after the review pass)
+Round 1: an independent code-fact-check subagent read the edited README against the
+profile's files (static reading only). Findings and fixes, docs only:
+
+| # | Finding | Evidence | Fix |
+|---|---|---|---|
+| R1 | Permissions cell said "read-only shell and git"; `mkdir` and `tee` write, and git is only `status`/`diff`/`log`; `rm -rf` deny is a prefix match | `settings.json:28-29`, `:32-34`, `:38` | Cell now names `mkdir`/`tee`, the three git subcommands, and "commands starting" for the denies |
+| R2 | Preflight never checks `~/interview` itself or the actual launch directory | `preflight.sh:124-126` (walk starts at the parent) | Added that sentence |
+| R3 | Key test is a text match (an empty list passes); home test is a `/home/` prefix; the PASS line claims "excluded" | `preflight.sh:123`, `:129-130` | Reworded to "the string appears" and "`$HOME` starts with `/home/`", noted the empty-list case and the PASS wording |
+| R4 | Drift prompt skipped when the repo copy is missing; an empty answer (nothing on stdin) exits | `install.sh:93`, `:98-99` | Added both |
+| R5 | `.bak` is overwritten on each reinstall | `install.sh:58` | Added |
+
+Unverifiable from code and left as is: ancestor loading and glob semantics of
+`claudeMdExcludes` (the README points to the `cci -p` confirm command), the 3 GB size,
+`/fast`, and `requirements.txt` being verbatim. Round 2 (self re-read of the diff against
+the cited lines) found nothing further.

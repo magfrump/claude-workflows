@@ -10,7 +10,7 @@ long unattended runs.
 | Instructions | 36 KB: decision tree, /away mode, questions.md, commit cadence | ~120 lines: brief plan → run → report; time and research discipline; library pitfalls |
 | Hooks / plugins | the hooks in `hooks/wiring.json`, 4 plugins | none |
 | Subagents, docs, commits | routine | only if asked |
-| Permissions | allowlist + guards | `auto` mode; Python, pip, uv, nvidia-smi, `huggingface-cli`, read-only shell and git pre-allowed; `rm -rf`, `git push`, `git reset --hard` denied |
+| Permissions | allowlist + guards | `auto` mode; Python, pip, uv, nvidia-smi, `huggingface-cli`, read-only shell tools plus `mkdir`/`tee`, and `git status`/`diff`/`log` pre-allowed; commands starting `rm -rf`, `git push`, `git reset --hard` denied |
 | Output for later | `docs/working/` | append-only `RESULTS.md` run log + `ANSWERS.md` cheat sheet for the discussion |
 
 Your normal `~/.claude` is never written, and it isn't read as config. But
@@ -24,12 +24,15 @@ session (practice run 2 found this in every session so far). The profile's
 
 `preflight.sh` checks this only roughly. It walks the directories above
 `~/interview` and looks for `CLAUDE.md`, `CLAUDE.local.md` and
-`.claude/CLAUDE.md` in each. It fails on any it finds above `~`. One found in
-`~` itself passes as long as the installed `settings.json` contains a
-`claudeMdExcludes` key and your home is under `/home/`. It doesn't compare
-the file against the patterns, and it never looks at `.claude/rules/**`. To
-see what actually loads, run the `cci -p` command it prints when no ancestor
-file fails.
+`.claude/CLAUDE.md` in each. It never checks `~/interview` itself or any
+other launch directory, so a `CLAUDE.md` left in `~/interview`, above a cloned
+repo, goes unchecked. It fails on any file it finds above `~`. One found in
+`~` itself passes, and is reported as excluded, as long as the string
+`claudeMdExcludes` appears in the installed `settings.json` and `$HOME`
+starts with `/home/`. It doesn't compare the file against the patterns (the
+list could even be empty), and it never looks at `.claude/rules/**`. To see
+what actually loads, run the `cci -p` command it prints when no ancestor file
+fails.
 
 Switching is just which command you launch: `claude` (normal) or `cci`
 (interview).
@@ -77,7 +80,7 @@ See [practice-task.md](practice-task.md) for timed practice tasks and a debrief 
 
 - `CLAUDE.md`: the session instructions
 - `settings.json`: runtime values (`model` `opus[1m]`, `effortLevel` `medium`, `theme` `dark`, `tui` `fullscreen`), the `claudeMdExcludes` list described above, and permissions (`auto` mode, an allow list and three denies)
-- Both are copied into the profile, so re-run `install.sh` after editing either. Copies rather than symlinks, so a branch switch in this checkout can't change the profile. The `cci` launcher that `install.sh` generates stops when the installed `CLAUDE.md` differs from the repo copy: it prints a warning with `diff` and `cp` commands, then asks `launch anyway? [y/N]` and exits unless you answer `y`. It doesn't compare `settings.json`. A reinstall overwrites a changed installed file, including runtime changes to `settings.json` (it prints the diff and keeps a `.bak`), so put any value you want to keep in the repo's `settings.json`.
+- Both are copied into the profile, so re-run `install.sh` after editing either. Copies rather than symlinks, so a branch switch in this checkout can't change the profile. The `cci` launcher that `install.sh` generates stops when the installed `CLAUDE.md` differs from the repo copy: it prints a warning with `diff` and `cp` commands, then asks `launch anyway? [y/N]` and exits unless you answer `y`. An empty or missing answer counts as no, so a `cci` run with nothing on stdin exits too. It skips the check if the repo copy is missing, for example after switching to a branch without it, and it doesn't compare `settings.json`. A reinstall overwrites a changed installed file, including runtime changes to `settings.json` (it prints the diff and keeps the previous version as `.bak`, overwritten on each reinstall), so put any value you want to keep in the repo's `settings.json`.
 - `requirements.txt`: the interviewers' file, verbatim
 - `requirements-extras.txt`: `accelerate` (needed by `Trainer`), `scikit-learn`, `matplotlib`, `tqdm`; skip with `--no-extras`
 - `install.sh`, `preflight.sh`, `warm-cache.py`: setup, go/no-go, cache warming
