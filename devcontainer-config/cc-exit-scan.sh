@@ -61,8 +61,9 @@ logical_workspace() {
 # config names it), walked as a git dir: a push to it runs its hooks. A relative
 # core.hooksPath in repo config, set directly or through an include, is walked in
 # each working tree that uses that config, every linked worktree and `.git` entry
-# in the checkout included
-# (_snap_entry_hooks). Every remote
+# in the checkout included, and in every git dir walked (receive hooks run
+# there); a relative remote URL, remote name or legacy URL in repo config is
+# walked as resolved in each such working tree too (_snap_entry_hooks). Every remote
 # URL met, local or not (not the insteadOf bases), and your own remote URLs, is
 # also rewritten by every url.<base>.insteadOf / pushInsteadOf rule whose value prefixes it (in any
 # config read here, yours included; git takes only the longest, the scan walks
@@ -164,8 +165,8 @@ scan_git_dirs() {
 # _snap_gd, _snap_common, _snap_tmp, _snap_names/_snap_rnames (remote names),
 # and the insteadOf pass's queues (_snap_urls/_snap_ubases, _snap_rbases/
 # _snap_rpfx, _snap_hit_t/_snap_hit_b, _snap_rwseen, _snap_k, the _snap_rwn/
-# _snap_rwt counters). Each
-# returns 1 after printing a reason on stderr when something cannot be read.
+# _snap_rwt counters), and the per-config caches (_snap_rhc/_snap_rhv/_snap_rrv,
+# _snap_lgc/_snap_lgv). Each returns 1 after printing a reason on stderr when something cannot be read.
 # (_snap_hash_str, _snap_file_is and _snap_unq, further down, are silent helpers
 # of scan_std_worktrees, which declares the _snap_bytes _snap_file_is needs.)
 # Records are tab-separated:
@@ -645,9 +646,20 @@ _snap_host_config() {
   done < "$out"
 }
 
+# _snap_relurl <value>: 0 when a remote URL or name is a relative local path
+# (_snap_remote's rule), which git resolves in the working tree it runs in. "."
+# (the repository git runs in) is not: its hooks are walked as its git dir's.
+_snap_relurl() {
+  case "$1" in ""|.|/*|*://*) return 1 ;; esac
+  [[ "$1" != *:* ]] || [[ "${1%%:*}" == */* ]]
+}
+
 # _snap_cfg_hooks <config file>: sets _snap_rhs and _snap_rhn, where in _snap_rhv
 # the core.hooksPath values of <config> and every file it includes start, and how
-# many there are. Each config's set is read once per snapshot and cached by its
+# many there are; and _snap_rrs and _snap_rrn, the same in _snap_rrv for its
+# relative remote values (remote.*.url/pushurl as "u<value>"; remote.pushDefault
+# and branch.*.remote/pushRemote, names that may be paths, as "n<value>").
+# Each config's sets are read once per snapshot and cached by its
 # real path in _snap_rhc, so N worktrees sharing one config cost one read, not N.
 # Every value and every include is kept: includeIf conditions are not evaluated,
 # all values are kept though git takes the last, and there is no depth cap (git
@@ -659,11 +671,11 @@ _snap_cfg_hooks() {
   real="$(realpath -m -- "$1" 2>/dev/null)" || real="$1"
   if [ -z "${_snap_rhc["$real"]:-}" ]; then
     local -A _snap_rhseen=() _snap_rhval=()
-    _snap_rhs=${#_snap_rhv[@]}
+    _snap_rhs=${#_snap_rhv[@]}; _snap_rrs=${#_snap_rrv[@]}
     _snap_cfg_hooks_file "$1" "$real" || return 1
-    _snap_rhc["$real"]="$_snap_rhs $((${#_snap_rhv[@]} - _snap_rhs))"
+    _snap_rhc["$real"]="$_snap_rhs $((${#_snap_rhv[@]} - _snap_rhs)) $_snap_rrs $((${#_snap_rrv[@]} - _snap_rrs))"
   fi
-  _snap_rhs="${_snap_rhc["$real"]% *}"; _snap_rhn="${_snap_rhc["$real"]#* }"
+  LC_ALL=C read -r _snap_rhs _snap_rhn _snap_rrs _snap_rrn <<< "${_snap_rhc["$real"]}"
 }
 
 # _snap_cfg_hooks_file <file> <its real path>: one file of _snap_cfg_hooks.
@@ -685,15 +697,64 @@ _snap_cfg_hooks_file() {
     case "$key" in
       core.hookspath)
         # Once per value (a lookup, not a scan: thousands of values stay linear).
-        [ -z "${_snap_rhval["$val"]:-}" ] || continue
-        _snap_rhval["$val"]=1
+        [ -z "${_snap_rhval["h$val"]:-}" ] || continue
+        _snap_rhval["h$val"]=1
         _snap_rhv+=("$val") ;;
+      remote.pushdefault|branch.*.remote|branch.*.pushremote|remote.*.url|remote.*.pushurl)
+        # Only relative ones: an absolute remote is the same in every working
+        # tree, walked once by _snap_config (queued per tree, it would multiply
+        # the insteadOf pairs by the number of worktrees).
+        _snap_relurl "$val" || continue
+        case "$key" in remote.pushdefault|branch.*) t="n$val" ;; *) t="u$val" ;; esac
+        [ -z "${_snap_rhval["$t"]:-}" ] || continue
+        _snap_rhval["$t"]=1
+        _snap_rrv+=("$t") ;;
       include.path|includeif.*.path)
         t="$(_snap_path "$val" "$(dirname -- "$f")")"
         [ -f "$t" ] || continue
         _snap_cfg_hooks_file "$t" "$(realpath -m -- "$t" 2>/dev/null || printf '%s' "$t")" || return 1 ;;
     esac
   done < "$out"
+}
+
+# _snap_legacy_body <remotes|branches> <body>: append the URLs of one legacy
+# remote file to _snap_lgv: "URL: <url>" lines of remotes/<name>, the
+# "<url>#<branch>" first line of branches/<name>.
+_snap_legacy_body() {
+  local line
+  while LC_ALL=C IFS= read -r line || [ -n "$line" ]; do
+    if [ "$1" = branches ]; then _snap_lgv+=("${line%%#*}"); return 0; fi
+    case "$line" in URL:*) line="${line#URL:}"; _snap_lgv+=("${line#"${line%%[![:space:]]*}"}") ;; esac
+  done <<< "$2"
+}
+
+# _snap_legacy <git dir>: sets _snap_lgs and _snap_lgn, where in _snap_lgv the
+# relative legacy remote URLs of <git dir> start, and how many; read once per
+# snapshot, cached by real path in _snap_lgc. Records nothing (_snap_gitdir
+# records the files wherever it walks the git dir).
+_snap_legacy() {
+  local real d list f body i k s
+  real="$(cd "$1" 2>/dev/null && pwd -P)" || { _snap_lgs=0 _snap_lgn=0; return 0; }
+  if [ -z "${_snap_lgc["$real"]:-}" ]; then
+    s=${#_snap_lgv[@]}
+    for d in remotes branches; do
+      [ -d "$real/$d" ] || continue
+      list="$_snap_tmp/lg.${#_snap_lgc[@]}.$d"
+      _snap_find "$list" "$real/$d" -mindepth 1 ! -type d || return 1
+      while LC_ALL=C IFS= read -r -d '' f; do
+        [ -f "$f" ] || continue
+        body="$(cat -- "$f" 2>/dev/null)" || { _snap_fail 'cannot read %s' "$f"; return 1; }
+        _snap_legacy_body "$d" "$body"
+      done < "$list"
+    done
+    # Keep the relative ones, at the end of the array.
+    k=${#_snap_lgv[@]}
+    for ((i = s; i < k; i++)); do
+      if _snap_relurl "${_snap_lgv[i]}"; then _snap_lgv+=("${_snap_lgv[i]}"); fi
+    done
+    _snap_lgc["$real"]="$k $((${#_snap_lgv[@]} - k))"
+  fi
+  _snap_lgs="${_snap_lgc["$real"]% *}"; _snap_lgn="${_snap_lgc["$real"]#* }"
 }
 
 # _snap_entry_hooks <git dir> <working tree>: the core.hooksPath values of the
@@ -711,14 +772,41 @@ _snap_cfg_hooks_file() {
 # the checkout), a value changed in the session names a hooks dir the launch
 # snapshot did not walk, which is a finding. A core.worktree elsewhere is not
 # followed (guide, "Known routes it does not see").
+#
+# With a third argument (_snap_gitdir passes the git dir as <working tree>):
+# hooks only. Git runs receive hooks in the git dir it pushes to, a linked
+# worktree's private one included, so a relative value is walked there too
+# (Q-168 rubric A16: `git push .`, or a push into the checkout).
+#
+# Without it, the relative remotes of those configs (URLs, names that may be
+# paths) and of the common dir's legacy remotes/ and branches/ files are
+# queued as remotes of <working tree>, where git resolves them for a push run
+# there (rubric A14: `../up.git` from an agent worktree lands in the checkout;
+# R3: an embedded repo made with --separate-git-dir, whose config _snap_config
+# resolves in the git dir). Each walk recurses, so the ranges are copied first.
 _snap_entry_hooks() {
-  local g="$1" wt="$2" c cfg k
+  local g="$1" wt="$2" c cfg k s n v
   c="$(gitdir_common "$g")" || { _snap_fail 'cannot read the commondir file in %s' "$g"; return 1; }
   for cfg in "$c/config" "$g/config.worktree"; do
     _snap_cfg_hooks "$cfg" || return 1
+    s=$_snap_rrs n=$_snap_rrn
     for ((k = _snap_rhs; k < _snap_rhs + _snap_rhn; k++)); do
       _snap_hooks "$(_snap_path "${_snap_rhv[k]}" "$wt")" || return 1
     done
+    [ -z "${3:-}" ] || continue
+    for ((k = s; k < s + n; k++)); do
+      v="${_snap_rrv[k]}"
+      case "$v" in
+        u*) _snap_url "${v#u}" "$wt" || return 1 ;;
+        *) _snap_names+=("${v#n}"); _snap_nbases+=("$wt") ;;   # resolved in git_exec_snapshot
+      esac
+    done
+  done
+  [ -z "${3:-}" ] || return 0
+  _snap_legacy "$c" || return 1
+  s=$_snap_lgs n=$_snap_lgn
+  for ((k = s; k < s + n; k++)); do
+    _snap_url "${_snap_lgv[k]}" "$wt" || return 1
   done
 }
 
@@ -776,7 +864,7 @@ _snap_nested() {
 # a checkout under a directory named hooks, is not a git file), then the common
 # dir its commondir names and the git dirs nested in it.
 _snap_gitdir() {
-  local real list f line c name d body
+  local real list f line c name d body s e k
   real="$(cd "$1" 2>/dev/null && pwd -P)" || { _snap_fail 'cannot enter %s' "$1"; return 1; }
   [ -z "${_snap_seen["g:$real"]:-}" ] || return 0
   _snap_seen["g:$real"]=1
@@ -786,6 +874,8 @@ _snap_gitdir() {
   done
   _snap_opt attributes "$real/info/attributes" || return 1
   _snap_hooks "$real/hooks" || return 1
+  # Receive hooks under a relative core.hooksPath run from this git dir (A16).
+  _snap_entry_hooks "$real" "$real" hooks-only || return 1
   _snap_opt commondir-file "$real/commondir" || return 1
   if [ -f "$real/commondir" ]; then
     # A nested worktree's common dir can be a bare repo in the checkout not named
@@ -808,13 +898,12 @@ _snap_gitdir() {
       # Read in one go (the hash above proved it readable); a read error's text
       # would name the container-chosen path raw.
       body="$(cat -- "$f" 2>/dev/null)" || { _snap_fail 'cannot read %s' "$f"; return 1; }
-      while LC_ALL=C IFS= read -r line || [ -n "$line" ]; do
-        if [ "$d" = branches ]; then
-          _snap_url "${line%%#*}" "$(_snap_worktree_of "$real/config")" || return 1
-          break
-        fi
-        case "$line" in URL:*) line="${line#URL:}"; _snap_url "${line#"${line%%[![:space:]]*}"}" "$(_snap_worktree_of "$real/config")" || return 1 ;; esac
-      done <<< "$body"
+      s=${#_snap_lgv[@]}
+      _snap_legacy_body "$d" "$body"
+      e=${#_snap_lgv[@]}
+      for ((k = s; k < e; k++)); do
+        _snap_url "${_snap_lgv[k]}" "$(_snap_worktree_of "$real/config")" || return 1
+      done
     done < "$list"
   done
   # An interrupted rebase, cherry-pick or revert: its todo list runs on --continue.
@@ -864,7 +953,8 @@ git_exec_snapshot() {
   local -A _snap_seen=() _snap_rnames=() _snap_rwseen=()
   local -a _snap_names=() _snap_nbases=() _snap_urls=() _snap_ubases=() _snap_rbases=() _snap_rpfx=()
   local -a _snap_hit_t=() _snap_hit_b=()
-  local -A _snap_rhc=(); local -a _snap_rhv=(); local _snap_rhs=0 _snap_rhn=0
+  local -A _snap_rhc=() _snap_lgc=(); local -a _snap_rhv=() _snap_rrv=() _snap_lgv=()
+  local _snap_rhs=0 _snap_rhn=0 _snap_rrs=0 _snap_rrn=0 _snap_lgs=0 _snap_lgn=0
   if ! dirs="$(scan_git_dirs "$ws")"; then
     _snap_fail 'cannot locate the git directory of %s from its .git entry' "$ws"
     return 1
@@ -908,7 +998,8 @@ git_exec_snapshot() {
       # A container-form .git: walk your config as it will apply after a repair.
       [ -n "$g" ] || g="$(_snap_container_target "$f")" || { rc=1; break; }
       [ -z "$g" ] || _snap_host_config "$g" "$f" "${f%/*}" || { rc=1; break; }
-      # The repo's own relative hooksPath, as it applies in this working tree.
+      # The repo's own relative hooksPath and remotes, as they apply in this
+      # working tree.
       [ -z "$g" ] || _snap_entry_hooks "$g" "${f%/*}" || { rc=1; break; }
     done < "$list"
   fi

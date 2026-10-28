@@ -3195,3 +3195,118 @@ line")"
   git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
   [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
 }
+
+@test "exit scan A14: a relative remote URL, name and legacy URL are walked in a linked worktree present at launch" {
+  # Q-168 rubric A14: ../x.git from the checkout is outside it, but from an
+  # agent worktree it is <ws>/.claude/worktrees/x.git, where a session can plant
+  # a repository whose hooks a push from the worktree runs.
+  scan_repo
+  git -C "$SCAN_WS" remote add up ../up.git
+  git -C "$SCAN_WS" config branch.wt-agent-x.pushRemote ../pd.git
+  mkdir -p "$SCAN_WS/.git/remotes"
+  printf 'URL: ../leg.git\n' > "$SCAN_WS/.git/remotes/old"
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local r
+  for r in up pd leg; do
+    git init -q --bare "$SCAN_WS/.claude/worktrees/$r.git"
+    plant_hook "$SCAN_WS/.claude/worktrees/$r.git/hooks" "post-receive-$r"
+    mv "$SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive-$r" "$SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive"
+  done
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  for r in up pd leg; do
+    [[ "$output" == *"+ hook $SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive "* ]]
+  done
+  no_ran
+  # And host git agrees: each push from the worktree runs the planted hook.
+  git -C "$STD_WT" push -q up HEAD:refs/heads/m 2>/dev/null
+  git -C "$STD_WT" push -q 2>/dev/null
+  git -C "$STD_WT" push -q old HEAD:refs/heads/m 2>/dev/null
+  for r in up pd leg; do [ -e "$TEST_TMPDIR/ran/hook-post-receive-$r" ]; done
+}
+
+@test "exit scan R3: an embedded repo made with --separate-git-dir resolves a relative remote and hooksPath in its working tree" {
+  # Q-168 rubric R3: the repo's config sits in the separate git dir, but git
+  # resolves its relative paths in the working tree it runs in.
+  scan_repo
+  mkdir -p "$SCAN_WS/vendor"
+  git init -q --separate-git-dir "$SCAN_WS/sgd" "$SCAN_WS/vendor/e"
+  local e="$SCAN_WS/vendor/e"
+  git -C "$e" config user.email t@example.com; git -C "$e" config user.name t
+  echo y > "$e/g"; git -C "$e" add g; git -C "$e" -c commit.gpgsign=false commit -qm i
+  git -C "$e" remote add o ./r3.git
+  git -C "$e" config core.hooksPath .hk
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # The remote half alone (main's scan walked <ws>/sgd/r3.git: status 0).
+  git init -q --bare "$e/r3.git"
+  plant_hook "$e/r3.git/hooks" post-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $e/r3.git/hooks/post-receive "* ]]
+  # The hooksPath half (closed by R6's per-entry walk; tested here).
+  rm -rf "$e/r3.git"
+  plant_hook "$e/.hk" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $e/.hk/pre-commit "* ]]
+  no_ran
+  git init -q --bare "$e/r3.git"
+  plant_hook "$e/r3.git/hooks" post-receive
+  git -C "$e" -c commit.gpgsign=false commit -q --allow-empty -m x
+  git -C "$e" push -q o HEAD:refs/heads/m 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+}
+
+@test "exit scan A16: receive hooks under a relative core.hooksPath are walked in the pushed git dir" {
+  # Q-168 rubric A16: receive-pack runs hooks from the git dir it pushes to (a
+  # linked worktree's private one for a push to that worktree), so husky's
+  # .husky/_ is <ws>/.git/.husky/_ for `git push .` or a push into the checkout.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/.husky/_" pre-receive
+  plant_hook "$STD_P/.husky/_" post-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/.husky/_/pre-receive "* ]]
+  [[ "$output" == *"+ hook $STD_P/.husky/_/post-receive "* ]]
+  no_ran
+  git -C "$SCAN_WS" push -q . HEAD:refs/heads/q 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-pre-receive" ]
+  git -C "$STD_WT" push -q . HEAD:refs/heads/q2 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+}
+
+@test "exit scan A14 caps: many agent worktrees do not multiply absolute remotes into the insteadOf caps" {
+  # Only relative remotes are queued per working tree. Here 20 worktrees, an
+  # absolute origin, one relative remote and 10 rules (one rewriting origin)
+  # make 22 URLs: 220 pairs and 1 rewritten target. Queuing every remote per
+  # worktree would make 42 URLs: 420 pairs and 21 targets, over the caps below.
+  scan_repo
+  git -C "$SCAN_WS" remote add origin https://github.com/o/r
+  git -C "$SCAN_WS" remote add up ../up.git
+  git -C "$SCAN_WS" config branch.main.remote origin
+  git -C "$SCAN_WS" config url.git@github.com:.insteadOf https://github.com/
+  local i
+  for i in 1 2 3 4 5 6 7 8 9; do git -C "$SCAN_WS" config "url.https://m$i.invalid/.insteadOf" "https://x$i.invalid/"; done
+  for i in $(seq 1 20); do git -C "$SCAN_WS" worktree add -q "$SCAN_WS/.claude/worktrees/w$i" -b "w$i"; done
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=300
+  GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=5
+  run git_exec_snapshot "$SCAN_WS"
+  [ "$status" -eq 0 ]
+  # The relative remote is walked in each worktree (recorded as missing).
+  for i in 1 20; do
+    [[ "$output" == *"remote"$'\t'"$SCAN_WS/.claude/worktrees/w$i/../up.git"$'\t'"missing"* ]]
+  done
+  # Not vacuous: the cap is live at this scale (220 pairs > 200 fails closed).
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=200
+  run git_exec_snapshot "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"more than 200 remote URL and insteadOf rule pairs"* ]]
+}
