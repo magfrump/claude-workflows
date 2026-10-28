@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-223](#q-223--failure-pattern-harvest-or-drop) | you: judgment | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
+| [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | you: judgment | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -43,6 +44,31 @@ The index below is generated — edit entries, not the table.
 <!-- index:end -->
 
 ## Open
+
+### Q-224 · merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** OPEN
+
+Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs/2026-10-28-questions-owner-routes.md`, roadmap In flight)? This is unit 1 of decision 040 (the questions doc holds only your items), and it changes gate code: `scripts/questions.sh` is one of the scripts the dev cycle runs as its gate, so it reaches the gate only at the next image release, which you install.
+
+- **What it does** (from the loop's report): `questions.sh` accepts two new owner routes, `you: walkthrough` and `you: fyi` (answered `seen`), beside `you: judgment` and `you: terminal`. The routes become one list in the script, from which `check`'s accepted routes, the index and `open` sort order, and a route table that `init` writes for new repos are all built; this repo's index order is unchanged. The refusal of `agent`/`trigger`/`deferred` in this file is **not** in this unit: the loop's design pass found shipping it now would leave watches with no home, so it moves to unit 2 with `watching.md` and `migrate`. The loop also found the answer readers (`--check-answer`, `--cycle-diff`, `--main-log`) need no change, and pinned how each `seen` form reads: a batch acknowledgement must be written as one `Q-NNN: seen` line per entry. Tests: 145/145 in the four affected suites; one review round, three ambers fixed, round 2 clean.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3` (6 files, +359/-18) · `docs/working/research-2026-10-28-questions-owner-routes.md` on that branch (six options for when the refusal ships)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-questions-owner-routes.md 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 f66c0f516c840d03097a435c5eab61ffdaebc3f9`
+  - `path … M docs/working/briefs/2026-10-28-questions-owner-routes.md`
+  - `path … A docs/working/research-2026-10-28-questions-owner-routes.md`
+  - `path … M scripts/questions.sh` (gate code: self-merge's floor would refuse it)
+  - `path … M test/questions-doc.bats`
+  - `path … M test/scripts/build-loop-orchestrator.bats`
+  - `path … M test/scripts/dev-cycle.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 0fb2ad5f; units 2 and 3 can be briefed | Reading the diff; then an image release to make it the gate | A route bug in the questions tooling, caught by `questions.sh check` on the next cycle |
+| **[2] drop** | The brief closes; the branch stays for you | None | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Blocks:** units 2 and 3 of decision 040 (roadmap Now).
+- **Interim:** nothing merged; the questions tooling stays as it is.
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN

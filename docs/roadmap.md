@@ -41,8 +41,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Now). Motive: Q-172 [2] puts these routes inside the boundary; the R6 unit listed them as
   "not closed yet". Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
 - **Questions doc owner-only, unit 1: owner routes in `questions.sh`** (Now, decision 040).
-  Motive: the owner's report that agent bookkeeping crowds their page. Gate code, so its
-  merge is a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
+  Motive: the owner's report that agent bookkeeping crowds their page. Built and ready
+  (the refusal of agent routes moves to unit 2); merge is Q-224, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
 
 ## Next
 
