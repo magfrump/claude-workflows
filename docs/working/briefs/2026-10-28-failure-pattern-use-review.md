@@ -52,3 +52,5 @@ Paths: docs/working/research-2026-10-28-failure-pattern-use-review.md docs/worki
   workflow, skills or scripts: the owner chooses first.
 - Writing new FP entries.
 - Editing `docs/roadmap.md` or the questions files: the dev cycle moves those.
+
+Dispatched: 1
