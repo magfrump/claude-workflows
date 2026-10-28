@@ -96,9 +96,11 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-089](#q-089--host-tools-trust-category) | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-090](#q-090--run-tests-jobs) | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
+| [Q-092](#q-092--drop-hook-deny-reader) | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
 | [Q-094](#q-094--exit-scan-worktree-noise) | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
 | [Q-095](#q-095--allowlist-size-waiver) | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
+| [Q-096](#q-096--exit-scan-insteadof-target) | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-099](#q-099--roadmap-vs-feature-ideas) | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
 | [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
 | [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
@@ -109,6 +111,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-106](#q-106--host-settings-merge-after-q049) | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
 | [Q-107](#q-107--claude-home-payload-second-consumer) | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
+| [Q-110](#q-110--health-check-not-run-undercount) | In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 r... | 2026-10-02 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
@@ -153,6 +156,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
 | [Q-155](#q-155--constraints-doc-missing) | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
 | [Q-156](#q-156--image-lag) | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
+| [Q-160](#q-160--implement-q104-per-iteration-cap) | Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 60... | 2026-10-14 |
 | [Q-162](#q-162--merges-and-cleanup-2026-10-14) | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
 | [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
 | [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
@@ -4485,5 +4489,63 @@ This file is meant to be your one place for things waiting on you. Today most of
 
 - **Premise:** every project follows the dev cycle, so every repo has a cycle-kept roadmap and a cycle that reads the reminders (your note, 2026-10-28). If a project without the dev cycle adopts this file, the choice is revisited.
 - **Next:** a roadmap item to build [14′] in three units: (1) the four owner routes and the check that refuses agent items here, naming where they go; (2) `watching.md` and a lossless migration of today's agent entries; (3) the dev cycle reading `watching.md` and filing agent work to the roadmap, plus the global instructions text. Decision record: `docs/decisions/040-questions-doc-owner-only.md`.
+
+
+### Q-160 · implement-q104-per-iteration-cap
+**Needs:** agent · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 603 (73589cd7), 217 to 538 (dfa75374) and 392 to 570 (626dc300). Write Q-104 [2] into the process. pr-prep or the review-fix loop re-measures the unit with step 1a's command after each iteration, tolerates up to ~800 lines, and stops for a waiver past that. Amend log row 62 to point at it.
+
+- **Read:** Q-104 in `docs/working/questions-archive.md` · `workflows/pr-prep.md` step 1a · `workflows/review-fix-loop.md` (early split trigger) · `docs/working/merge-msg-build-loop-u2a3b.md` (cites "Q-104 [2]'s ~800")
+- **Interim:** applied by hand per loop (waivers Q-113, Q-120, Q-131). Nothing enforces it, so it holds only while each loop remembers.
+- **Built 2026-10-15:** `fix/q160-iteration-cap` (4a44d2f3), merged by Q-162's paste. This entry closes when it lands.
+- **Landed (dev cycle 2026-10-17):** 4a44d2f3 is on main through f265d7f2; `workflows/review-fix-loop.md` has the size re-check and log row 62 carries the 2026-10-15 amendment. Its closure condition is met; ready to archive.
+- **Done (dev cycle 2026-10-25):** 4a44d2f3 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
+
+
+### Q-110 · health-check-not-run-undercount
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 report-dependent suite(s)`, but the health check's own summary said `4 report-dependent BATS suite(s) NOT RUN`. Find out why the summary under-counts and fix it, with a test.
+
+- **Read:** `scripts/health-check.sh` (check 5's NOT RUN summary) · `scripts/run-tests.sh` ("Report gating") · the review of `chore/dev-cycle-2026-10-02` (`docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`)
+- **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356-357`) with its own 4. Fix: unset the variable in that suite's `setup()` (not at top level of `test/lib/hermetic-env.bash`: `run-tests.sh` sources that file before its own write, so the count would vanish), or have the runner stop passing the variable to the bats processes it starts; add a test that the parent's file is untouched. Having the runner refuse an inherited value cannot work: the health check passes the variable through the environment (`scripts/health-check.sh`, check 5).
+- **Interim:** trust the runner's own NOT RUN list, not the summary line.
+- **Landed (dev cycle 2026-10-17):** 70aa3a78 is on main through f265d7f2 (`scripts/run-tests.sh` unsets the variable; test in `test/skills/eval-helpers-gating.bats`). The 2026-10-17 health check's summary and runner both say 50 NOT RUN. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 70aa3a78 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
+
+
+### Q-096 · exit-scan-insteadof-target
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, including at the top level, so a session can repoint a remote through a rewrite the scan does not follow. Found in the Q-094 review and now listed in the guide's "Known routes it does not see". Close it: the rewritten local-path target is walked as a remote, as `_snap_remote` does for `remote.*.url`.
+
+- **Read:** Q-094 rubric `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md` · `_snap_config` / `_snap_remote` in `devcontainer-config/cc-exit-scan.sh`
+- **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
+- **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
+- **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
+- **Built 2026-10-15:** `fix/q096-exit-scan-insteadof-target` (8717fd72, loop closed), merged by Q-162's paste; this entry closes when it lands. Host probe: Q-167. Split-off: Q-168. Review history: The first security pass found five Mediums, all confirmed by probe. One is pre-existing: a remote with no `url` is pushed to as a path, and the scan skips it. The commit carries `Host-tool-tested: no` (decision log row 71), not `Live-verified`.
+- **Landed (dev cycle 2026-10-17):** 8717fd72 is on main through f265d7f2, and its brief reads done. Its closure condition is met; the host probe stays with Q-167, the split-off with Q-168. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 8717fd72 is on main; the host probe stays with Q-167 and the split-off with Q-168. Ready for you to set ANSWERED.
+
+
+### Q-092 · drop-hook-deny-reader
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-approve-allowed-commands.sh`: the settings-file deny loading, `--deny`, the de-quoted matching and their tests. Update the hook header's rule table to match. This is architecture-review finding 1 on Q-076.
+
+- **Read:** Q-082 in the archive · decision log 53 (amended 2026-09-28) · the hook header
+- **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
+- **Interim:** the reader stays. It is redundant for `allow`, not harmful.
+- **Landed (dev cycle 2026-10-20):** U1 merged at 79c8a6a6, U2 and U3 (Q-177 [3]'s split-word refusal) at dfc78e9a. The hook emits only `allow` (its header says it never emits `ask`), so the ask-path case is moot; the host deny check was Q-176. Ready to archive.
+- **Done (dev cycle 2026-10-25):** U1 79c8a6a6 and U2/U3 dfc78e9a are on main; spot-check re-ran `test/auto-approve-allowed-commands.bats` 37/37 and the hook emits only `allow`. Ready for you to set ANSWERED (the cycle cannot close an entry).
 
 
