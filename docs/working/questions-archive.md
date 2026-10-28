@@ -209,6 +209,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
 | [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
+| [Q-221](#q-221--questions-doc-owner-only) | This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entri... | 2026-10-28 |
 <!-- index:end -->
 
 ## Answered
@@ -4464,5 +4465,25 @@ git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /wor
 ```
 
   Close this entry once `git -C /workspace branch --list fix/egress-dnsmasq-ipset` prints nothing.
+
+
+### Q-221 · questions-doc-owner-only
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): [14′], watches in their own file, agent work in the roadmap.**
+
+This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entries, 2 were yours. The rest were the agents' own bookkeeping. That covers work an agent will do itself, "check this later" reminders (watches), and finished work that only stays open because agents may not close entries in this file. Where should the agents' items live instead?
+
+- **Why it's yours:** it changes the page you read for every project, and the rules every repo's agents follow when they file something for you.
+- **Read:** `docs/working/dd-questions-doc-purposes.md`. It holds the full double diamond, your notes on framing and constraints, and the final rescore under "Owner premise".
+- **What stays here either way:** only items addressed to you. That means decisions (`you: judgment`), commands to paste on your machine (`you: terminal`), and two new kinds. One is hands-on product use only you can do, such as a walkthrough or playtest (`you: walkthrough`). The other is short reads you only need to acknowledge (`you: fyi`), answered `seen`; several can be acknowledged in one line. You keep answering in free text, in an answers file or chat. You never edit this file or maintain its format.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[14′] Watch file + roadmap** | Reminders to check something later go to a new agent-owned `docs/working/watching.md`, in the same entry format, checked by the same script; closed ones stay in it for the record. Work an agent will do goes only in the roadmap, which the dev cycle already keeps. | Reviewing three small units that change the dev-cycle scripts | One more file in `docs/working/` that you never need to open |
+| **[1] Roadmap only** | Both go in the roadmap, with reminders as bullets under a new `## Watching` heading | The same review | Reminders become loosely formatted bullets, so a malformed one can be skipped silently instead of being caught |
+
+- **Premise:** every project follows the dev cycle, so every repo has a cycle-kept roadmap and a cycle that reads the reminders (your note, 2026-10-28). If a project without the dev cycle adopts this file, the choice is revisited.
+- **Next:** a roadmap item to build [14′] in three units: (1) the four owner routes and the check that refuses agent items here, naming where they go; (2) `watching.md` and a lossless migration of today's agent entries; (3) the dev cycle reading `watching.md` and filing agent work to the roadmap, plus the global instructions text. Decision record: `docs/decisions/040-questions-doc-owner-only.md`.
 
 

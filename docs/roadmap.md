@@ -21,6 +21,17 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
   builds first). That step is briefed (In flight, the exit-scan R6 line).
 
+- **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
+  that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
+  Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
+  `you: walkthrough`, new `you: fyi`), with `questions.sh check` refusing `agent`/`trigger`/
+  `deferred` in `questions.md` and naming where each goes; (2) `docs/working/watching.md`
+  (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
+  steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
+  instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
+  unit is a `merge-gate` entry. First step: brief unit 1. Follow-ups: entry clarity (gloss
+  every internal reference) and a `questions.sh record <answers-file>`.
+
 ## In flight
 
 - **Verify a branch without installing it: the `cc-verify` host tool** (was Now). Motive:

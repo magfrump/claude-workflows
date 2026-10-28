@@ -2,7 +2,7 @@
 
 **Goal:** Decide how to split or reorganize the purposes `docs/working/questions.md` currently serves, so the owner has one clear entry point to what is blocked on them.
 **Project state:** design doc on main · standalone (owner feedback in `docs/human-author/answers-10-28-26.txt`, "general:") · not blocked
-**Task status:** blocked (decision filed for the owner as a `you: judgment` entry; nothing implemented)
+**Task status:** complete (Q-221 answered [14′] 2026-10-28; record docs/decisions/040-questions-doc-owner-only.md; build is a roadmap Now item)
 
 Variant: Double Diamond. Entry condition (b), a prior attempt solved a nearby problem: the
 2026-09-17 triage (`docs/working/triage-2026-09-17-backlog.md` §3.1) already said "AGENT —
@@ -42,6 +42,7 @@ entries, about 300 lines; 2 of them are the owner's.
 3. **Agent state has no proper home.** `agent`/`trigger`/`deferred` items are a work tracker squeezed into a Q&A grammar, duplicating the roadmap and briefs; they need one home of their own.
 4. **Closure authority is misallocated.** Agent entries pile up because only the owner may close an entry, so finished agent work becomes an owner chore.
 5. **Owner entries are too long.** Even a pure owner file would be hard to read: each ask is a 25-line report whose gate output is for the orchestrator.
+   *Owner correction (2026-10-28): misframed. The orchestrator notes are easy to spot and skip. The common cost is clarity: jargon and bare references (route IDs, rubric row names, Q-numbers given without what they were) that the owner has to rebuild context for. Fixing that often makes entries **longer**. Restated: **5′ Owner entries cost context to read**: each ask should be understandable without opening other entries or knowing internal shorthand.*
 6. **Null: already solved.** The route column and the sorted index already separate the audiences; the owner can read the index's top rows and stop.
 7. **Zoom out: the entry point is the interface, not the file.** The owner's real touchpoints are the end-of-run summary and the answers file; the problem is that no single surface lists exactly what is blocked on them, of which the file is one candidate.
 8. **Zoom out: the protocol is global.** `questions.sh` and the grammar ship to every project via `global-instructions/CLAUDE.md`; any fix has to be a protocol change, not a repo-local tidy-up.
@@ -59,7 +60,7 @@ meta-problem (7, 8). No clustering past two near-variants (1 and 7).
 | 2 | Body order equals index order | sort in `questions.sh index` | the mixing itself (owner still reads 15 non-owner entries) | owner | sub-problem |
 | 3 | Each agent item has exactly one home | move agent items to roadmap / a tracker | the owner surface's length and order | maintainer | system |
 | 4 | Zero entries wait on the owner only to be closed | let the cycle close entries whose closure condition is observed | mixing, order | owner + maintainer | sub-problem |
-| 5 | Each owner ask fits a screen, detail linked | summary + link entries | mixing (hard concern) | owner | sub-problem |
+| 5′ | The owner can answer an ask without opening another entry or decoding shorthand | plain-language context in each entry, even at more length | mixing (hard concern) | owner | sub-problem |
 | 6 | — | nothing | the owner's stated pain (hard concern) | — | system |
 | 7 | One place lists exactly the owner's blocked items, in one step | a generated view, a file split, or a summary | how agent state is stored | owner | meta |
 | 8 | The fix works in every repo `questions.sh` serves | change the global grammar and script | — (a constraint, not a problem) | other repos | meta |
@@ -82,6 +83,106 @@ share a success criterion; 7 is the more general (it does not presume a file spl
 > solutions against this framing; ordering (2), entry length (5) and the global protocol (8)
 > enter as constraints. Approaches that only reorder or only shorten are out of scope as
 > complete answers.
+
+### 3a′. Owner notes on the framing (2026-10-28, while reading)
+
+- **Framings 7 and 8 are central.** The consequences reach every project the owner runs, not
+  only this repo. Framing 8 is not just one constraint (H5).
+- **1, 3, 4 and 9 matter for the specifics.** Framing 5 is relevant but was misframed; it is
+  restated above as 5′, clarity rather than length.
+- **Ordering (framing 2) is mostly a symptom of the mixing.** The owner scrolls past items not
+  blocked on them to check whether they have answered everything. A stable order matters
+  again at scale: confirming that 5–10 items are done is easy, but 100–1000 needs triage.
+- **Scale across projects.** The ideal surface spans repositories and projects; the owner
+  floated something like the threadwork wiki as an example. About 100 open owner items
+  across projects is realistic in the short term.
+- **Owner-blocked work that is not a question.** Product walkthroughs and playtest to-dos
+  are easy for the owner to get blocked on and central to every project. The surface should
+  point at them too.
+
+- **A single cross-project surface is aspirational, not a next-release requirement.**
+  Cross-project work brings a broader set of concerns, which are easier to answer in phases.
+  This is not a reason to delay the per-repo work.
+
+**Revised chosen framing (phased):** each project gives the owner one entry point that lists
+exactly the work blocked on them: decisions, terminal pastes and, in time, hands-on tasks such
+as walkthroughs and playtests. It must say at a glance whether anything is still unaddressed.
+Each project's agent-internal state lives in a home the agents own and check, so it never
+reaches that entry point. That per-repo split is the next release. It is also shaped so the
+direction stays open: a later phase can aggregate every project's owner items into one
+surface, triageable at ~100 items and beyond. The 2026-09-17 triage's "route, not rank" (§3.1)
+was written for 19 items in one repo; ranking *within* the owner routes is a later-phase
+concern, not this release's.
+
+Phases, as the framing now implies (an outline, not a commitment):
+
+1. **Per-repo split (this decision).** The owner file holds only owner items; agent state
+   goes to an agent-owned home. Framings 1, 3, 4 and 9; 5′ (clarity) as a follow-up. Keep the
+   entry grammar machine-readable, so phase 2 can read every repo's file without a migration.
+2. **Read-only aggregation.** One command or generated page lists the open owner items of
+   every project (the `questions.sh` repos), with a stable order and a count of what is
+   still open. Candidate [6] (a hosted page) is revived here. It was pruned below for
+   portability, but spanning repos is now the point.
+3. **A home in the owner's own tooling.** Ranking at ~100 items belongs here. Threadwork's
+   task-tree slice was retired on 2026-08-04 (`tasktree-slice.md:3-7`). Its "agency tiers"
+   idea lives on as the wiki's `agency::` property (delegate / walk-me-through /
+   do-it-myself; `src/wiki/server.py:125,130`). Its to-do list is a saved query over
+   page properties. The interface vision (`interface-vision.md`) names dogfood testing as the
+   clearest do-it-myself task. An owner item from any repo is an item whose agency is
+   do-it-myself or decide; walkthroughs and playtests fit the same shape.
+
+**Prior-art survey (2026-10-28; threadwork, dayplanner-web, meta-formalism-copilot).**
+Ideas worth carrying:
+
+- **Lists are queries over item fields, not separate objects** (threadwork wiki). If every
+  owner item carries structured fields when it is filed (`kind`, who acts, project, opened
+  date), phase 2 is a collect-by-query and phase-3 views are saved queries ("decisions",
+  "hands-on", "open > 7 days").
+- **Who acts as a first-class field.** The wiki's `agency::` maps onto decide /
+  do-by-hand / agent-resumable.
+- **Project comes from where the file is, not what an agent wrote.** The read-only analogue
+  of the wiki stamping the project from the contribution token (`contrib.py`).
+- **"All addressed" is a count reaching zero.** Use per-project open counts, grouped and
+  collapsible (wiki "All pages" by first category; meta-formalism's processed/total bar), and
+  review one project's batch at a time (the wiki's one-proposal-per-contribution;
+  dayplanner's "Apply N").
+- **Resolution is soft and kept.** An archive, never a delete (wiki trash and kept
+  rejections; `questions-archive.md` already does this).
+
+Evidence against some phase-2 shapes:
+
+- Every server-backed tool here stalled on adoption. The wiki's contribution endpoint is
+  built and tested (~50 tests) with **no project connected** (`docs/wiki-status.md`).
+  dayplanner and meta-formalism need a running server too. A generated markdown rollup fits
+  the owner's VSCode + git-status workflow. The wiki's one-`.md`-per-page backend shows the
+  files can stay the source of truth with tooling layered on later.
+- Hand-maintained tags rot. dayplanner's own live-with note says the tag UX was "bad enough
+  I won't maintain filters". Grouping fields must be written by the agent that files the
+  item, never curated by the owner.
+- Aggregating every project in one place makes a single high-value target
+  (`wiki-multi-project.md` S1). A local, uncommitted rollup avoids that; committing it to a
+  shared remote does not, if any source repo is private.
+- Markdown cannot filter. At 100+ items, phase 3 needs a query or saved-view generator over
+  the same files, not a new store.
+
+Implication for phase 1: give the owner-entry grammar the fields that make phase 2 a pure
+read (a kind field that admits hands-on tasks, and a stable opened date). It is already
+almost there: `**Needs:**` is the who-acts field, and `**Opened:**` is the date.
+
+**Owner's actual interface (note, 2026-10-28):** VSCode with the Claude CLI, chosen over
+their own tools for file navigation, git status, tight integration with running code, and
+markdown reading panels. Prior interface work they liked lives in
+`external/threadwork` (`src/wiki/`: a page wiki with derived to-dos and token-gated
+cross-project contributions, `src/tasktree`), `external/dayplanner-web` and
+`external/meta-formalism-copilot`. Implication: a phase-2 surface should read well as a
+markdown file in that editor before it is a web page. A hosted page (revived [6]) has to beat
+"a generated `.md` the owner opens next to git status".
+
+Consequence for Diamond 2 below: it answers phase 1. Two additions carry phase 1 → 2: entry
+grammar stays parseable across repos (soft, S5), and IDs eventually need a project qualifier
+(e.g. `herald:Q-012`) when aggregated, which phase 1 need not build. Whether hands-on tasks
+(walkthroughs, playtests) get a `you:` route of their own in phase 1 or wait for phase 3 is an
+open question for the owner.
 
 ## Diamond 2 — Solution
 
@@ -135,34 +236,241 @@ ideal-if-free, 6, 9 and 10 the ones that feel wrong.
 
 Hard:
 
-- **H1 Owner-only surface.** The owner's entry point lists only items blocked on the owner's
-  judgment or hands. success: `scripts/questions.sh open` against it prints only `you: judgment`
-  / `you: terminal` rows, and `questions.sh check` fails on any other route there.
-- **H2 Anti-forgery kept.** No agent can answer, close, re-route or delete an owner entry.
-  success: the existing `--cycle-diff` refusal tests in `test/scripts/build-loop-orchestrator.bats`
-  pass unchanged, and a new case shows that moving a `you:*` entry out of the owner file is refused.
+Owner review of this list (2026-10-28) revised H1, H2, H3, H5 and H6; the earlier wording is
+in git history.
+
+- **H1 Owner-only surface, owner-addressed routes.** The owner's entry point lists only items
+  addressed to the owner, and nothing the agents track for themselves. The owner routes are
+  four: `you: judgment` (a decision), `you: terminal` (a paste on their machine),
+  `you: walkthrough` (hands-on product use: a walkthrough or playtest only the owner can do;
+  new) and `you: fyi` (a quick read that needs acknowledging, not deciding; new; answered
+  `seen`, which can be batched, e.g. `Q-230–Q-235: seen`). success: `questions.sh check`
+  accepts exactly these four routes in the owner file and fails on `agent`, `trigger` or
+  `deferred` there; `questions.sh open` sorts the four owner routes ahead of nothing else.
+- **H2 The owner answers in free text and never maintains the file.** The owner writes answers
+  wherever is natural (today a `docs/human-author/answers-*.txt` file, or chat). An agent
+  session transcribes them into the entries, archives them and commits. The owner is never
+  expected to edit `questions.md`, keep its format, or pass its lint. Agents still may not
+  answer, close, re-route or delete an owner entry on their own initiative (the anti-forgery
+  rule), but the rule binds agents only; it must not push formatting work onto the owner.
+  success: no workflow or spec step tells the owner to edit `questions.md`; the existing
+  `--cycle-diff` refusal tests pass unchanged; a new case shows that moving a `you:*` entry
+  out of the owner file is refused.
+  *Finding (2026-10-28):* no script ingests answers files today. `rg 'answers-' scripts/`
+  finds nothing, and this session recorded answers-10-28-26 by hand with an ad hoc script.
+  Transcription is unscripted agent work, which a `questions.sh record <answers-file>` could
+  make repeatable. That is a candidate, not a constraint.
 - **H3 One home for agent state, checked every cycle.** Each agent-tracked item lives in
   exactly one place, and the dev cycle's digest prints every open watch each iteration.
   success: no Q-ID appears both as an open entry and in roadmap Done; digest section 3 lists
-  each watch with its condition.
+  each watch with its condition. *Owner note:* audit existing projects for the ways this
+  already fails before relying on it (see "H3 audit" below).
 - **H4 Agents close their own items.** Finished agent work closes without an owner act.
   success: zero entries carry "Ready for you to set ANSWERED" after one cycle.
-- **H5 Works in every repo `questions.sh` serves.** success: `questions.sh init` + `check` pass
-  in a fresh repo with no roadmap or dev cycle.
-- **H6 Predictable order.** success: a `questions-doc.bats` case shows the owner file's body
-  order equals its index order.
+- **H5 Portability, stated as failure modes.** The change fails in another repo if any of
+  these happen; each is a hard constraint with its own check:
+  - **H5a No agent-state home** (no `docs/roadmap.md`, no dev cycle). An agent tries to file
+    a trigger, `check` refuses it, and the item is dropped silently. success: the refusal
+    names the fallback home, and `questions.sh init` creates it.
+  - **H5b Version skew.** A session in another repo runs an older installed `questions.sh` or
+    reads older global instructions that still list `agent` routes. Its filings then fail or
+    drift. success: `check` on an owner file holding old routes says how to migrate rather
+    than only failing, and a `migrate` subcommand moves them.
+  - **H5c Existing mixed file.** A repo already has `agent`/`trigger` entries in its
+    questions doc. success: `migrate` leaves the owner file with only owner routes and moves
+    every other entry, with no entry lost (counts before and after match).
+  - **H5d No cycle reads the watches.** In a repo where no dev cycle runs, triggers rot
+    unread. success: the fallback home is something a plain session's start-of-session reading
+    already covers, or the global spec says who checks it.
+  - **H5e The agent-state home is an owner document.** A repo's roadmap is owner-written
+    prose, and agents appending to it edit the owner's document. success: agents write only
+    a section the spec marks as agent-owned (`## Watching`), or a separate file when the repo
+    has none.
+  - **H5f Other agents follow old text.** `AGENTS.md` / `GEMINI.md` and other tools carry the
+    protocol separately. success: `test/agents-gemini-sync.bats` (or its equivalent) covers
+    the new route list.
 - **H7 Observation-named closures stay open.** A watch whose closure names an observation is
   not closed by inference (triage §1.3). success: the rule's text appears in the new home's
   spec, and step 3 cites it.
 
+**Repo constraints (`docs/constraints.md`) that bind this decision.** This DD was not seeded
+from that file at first: `workflows/divergent-design.md` never names it, although the
+constraints-builder skill says DD passes are seeded with it. Checked 2026-10-28 at the owner's
+prompt. The lines that apply:
+
+- **H1 (gates run from a copy the change can't edit).** The route check, `migrate` and any
+  `record` command live in `scripts/questions.sh`, which is gate code. A roadmap `## Watching`
+  section that `dev-cycle.sh` parses is *input* to the cycle, not logic. That is allowed, but
+  the parser must treat it as untrusted text.
+- **H2 (fail closed and loudly).** This is the repo-level form of H5a and H5b. A refused agent
+  filing must name where the item goes instead; it must never drop it. A missing Watching
+  home must print "watches NOT checked" in the digest rather than read as zero watches.
+- **H3 (hermetic tests).** Every option is testable in the sandbox. The H3 audit's host paste
+  adds evidence; it does not replace tests.
+- **S1 (gates defend against honest slips by a same-uid loop, not a hostile one).** This backs
+  the owner's note that the anti-forgery rule (our H2) may be too strict. Its job is to stop
+  an agent from *accidentally* answering or closing an owner entry, not to resist a
+  determined one.
+- **S2 (≤ ~30 lines added to always-loaded context).** The global instructions' "Running
+  questions document" section loads in every session. The new route list and the agent-state
+  home must fit within that budget, or state the measured delta.
+- **S3 (one source of truth per grammar, never restated).** Today the route list is stated in
+  `questions.sh`, the global instructions, the triage doc and `AGENTS.md`/`GEMINI.md`. The
+  change should make the script the source and have the prose point at it (also H5f). This
+  counts against [2], which adds a second file in the same grammar beside a roadmap that
+  already tracks the same work.
+- **S4 (mechanical steps in tested scripts).** Supports scripting answer transcription
+  (`questions.sh record <answers-file>`) and the migration, rather than leaving them as
+  unscripted agent work.
+- **S6 (a new step needs a call site something runs).** The Watching home needs a reader in
+  repos with no dev cycle (H5d). `record` needs a call site, such as the recording session's
+  documented first step.
+- **S8 (units under ~400 lines, revertible).** The build splits into units: routes and check;
+  migrate; the Watching home and digest; record.
+- **S10 (spend the user's attention last; no new recurring chore).** `you: fyi` is a new
+  recurring acknowledgement chore, so it must stay cheap: batch acks, and a rule for when an
+  agent may use it. `you: walkthrough` is real owner work, not a chore. The H3 audit is held
+  to one host paste.
+- **S11 (portable, pure text).** Favors markdown homes over a server, consistent with the
+  survey's evidence for phase 2.
+
+**H3 audit (to run before building).** Only `external/threadwork` among the mounted repos has
+a questions doc (4 entries, all `you:*`). The owner's other projects (herald, android and the
+rest) are not mounted here, so the audit needs either those checkouts or a host-side paste
+that counts, per repo, open entries by route, entries duplicated in a roadmap or tracker, and
+`trigger`/`deferred` entries past their own date.
+
 Soft:
 
-- **S1** An owner entry fits one screen (~15 lines), detail linked.
+- **S1** An owner entry is self-explaining: each internal reference it uses (a Q-ID, rubric row, route or residual name) comes with a plain-language gloss of what it is. Length is not the measure (owner correction to framing 5, 2026-10-28).
 - **S2** Small gate-code and fixture churn (one `merge-gate` approval, under ~400 lines).
 - **S3** Existing Q-IDs keep working as handles in commits, briefs and the roadmap.
 - **S4** A fired trigger that reopens a choice still becomes a `you: judgment` entry.
+- **S5** (phase 1 → 2) The owner file's grammar stays the same in every repo, so a later
+  aggregator can read all of them without a migration.
+- **S6 Predictable order** (was H6; demoted by the owner, 2026-10-28). Order mainly hurts
+  through the mixing and matters again at scale. success: a `questions-doc.bats` case shows
+  the owner file's body order equals its index order.
 
 ### 3. Match and prune
+
+#### Rescore after the owner's constraint review (2026-10-28)
+
+The first matrix and step-4 table further down are superseded by this one. That matrix
+assumed one undivided "agent state" and a single portability check; H5a–f split both apart.
+The rescore turned up a split the first pass missed. Agent state is two different things:
+
+- **Agent work** (`agent` route): a task an agent will do. Dev-cycle repos already track it in
+  the roadmap and briefs, and every one of today's 11 `agent` entries duplicates a roadmap
+  line, a brief or a branch.
+- **Watches** (`trigger` / `deferred`): a condition someone must check later. Nothing else
+  tracks these.
+
+That split gives a new candidate:
+
+14. **Watch file plus the work tracker.** Watches go to `docs/working/watching.md`, an
+    agent-owned file in the questions entry grammar that `questions.sh` creates (`init`),
+    checks and lists (`watches`), with closed watches kept in its own `## Closed` section.
+    Agent work gets no queue entry at all: an agent does it now, or writes it in the
+    project's work tracker. That is the roadmap where the dev cycle keeps one, and
+    `watching.md`'s `## Agent work` section where none exists. The owner file takes only the
+    four `you:` routes.
+
+Hard constraints now: H1–H4, H5a–f, H7, plus repo H2 (fail loud). Repo H1/H3 and S11 are
+met by every survivor and left out.
+
+| # | H1 | H2 | H3 | H4 | 5a | 5b | 5c | 5d | 5e | 5f | H7 | rH2 | notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 Roadmap home | ✓ | ✓ | ✓ | ✓ | ~ | ✓ | ✓ | ~ | ✗? | ✓ | ✓ | ~ | 5e fails wherever a roadmap is the owner's prose; parsing a prose section is weaker than a grammar check (rH2) |
+| 2 Watch file (all agent state) | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | ✓ | in dev-cycle repos agent work sits in both the watch file and the roadmap (H3 ~, repo S3) |
+| 14 Watch file + work tracker | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | ✓ | two homes for agent work by repo type: one rule, two places |
+| 4 Two sections | ~ | ⚠ | ✗ | ~ | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | owner still opens a mixed file; exemption loosens the anti-forgery rule |
+
+5d (who reads watches in a repo with no dev cycle) is ~ for every option. Its fix is shared:
+one line in the global instructions' questions section telling a session to run
+`questions.sh watches` at start, which prints only due or overdue watches. That costs one line
+of always-loaded context (repo S2) and gives one call site (repo S6).
+
+Pruned in the rescore: [4] (⚠ H2, ✗ H3, ✗ 5d).
+
+| # | Approach | Effort | Risk | Hard met | Key downside |
+|---|---|---|---|---|---|
+| 14 ★ | Watch file + work tracker | ~1.5 days; 4 units of ~100 lines (routes+check · migrate · watches+digest · global text) | low | 14/15 (5d ~, shared) | agent work has one rule but two possible places, depending on whether the repo runs a dev cycle |
+| 1 | Roadmap home | ~1 day; 3 units | med | 12/15 (5a ~, 5e ✗?, rH2 ~) | puts agents into a document that is the owner's in some repos; prose parsing |
+| 2 | Watch file, all agent state | ~1.5 days; 4 units | low-med | 13/15 (H3 ~) | duplicates the roadmap in dev-cycle repos, the same duplication the owner sees today |
+
+Hypotheses:
+
+- [14] If chosen, within 3 dev-cycle iterations after landing, the owner file holds only the
+  four `you:` routes; no Q-ID is open in both `watching.md` and the roadmap; and every watch
+  past its date appears in the next session's `questions.sh watches` output. Counter-evidence
+  is a watch passing its date unprinted (as Q-074 did), or an `agent` item filed in
+  `watching.md` in a repo that has a roadmap.
+- [1] Same window. Counter-evidence is an agent edit inside an owner-written roadmap section,
+  or a malformed Watching bullet that the digest silently skips.
+- [2] Same window. Counter-evidence is the same work item open in `watching.md` and in roadmap
+  Now/Next.
+
+Stress tests:
+
+- *Boring alternative* ([14] vs [1]): [1] is still less code. But it buys that by parsing
+  prose and writing into a file that may be the owner's, and those are the two failure modes
+  the owner asked to be stated (5e, rH2).
+- *Invert the thesis* ([14]): "two places for agent work" could become the next mixing
+  complaint. It doesn't reach the owner's surface, though, and a repo has exactly one of
+  the two. That residual is acceptable.
+- *Failure-driven* ([14]): a closed watch must not go to `questions-archive.md`, since
+  `--cycle-diff` refuses a new entry filed answered there. Its own `## Closed` section keeps
+  it out of the anti-forgery rule's scope, and also out of its protection, which is right for
+  agent-owned items (repo S1).
+- *Push to extreme* ([14]): at 100 watches across a repo, `questions.sh watches` prints only
+  due and overdue ones, so the session-start cost stays flat.
+
+**Would the H3 audit change the answer?** Only in one direction. [14] scores the same whatever
+the audit finds. [1] overtakes it only if every one of the owner's repos with agent state has
+a dev-cycle-maintained roadmap (5e ✓ and 5a ✓ everywhere). In that case [1] is slightly
+cheaper and the two places for agent work collapse to one. The audit result that would flip
+the recommendation is therefore "every repo's roadmap is agent-maintained, and no repo without
+one files watches". The audit is also the input for sizing the migration (5c) whichever option
+is chosen.
+
+▶ recommend [14] Watch file + work tracker · confidence ~75% · runner-up [1], axis = fewer
+moving parts vs. no agent writes into owner documents
+
+#### Owner premise (2026-10-28): every project follows the dev cycle
+
+The owner: "it's safe to assume that all projects will follow the dev-cycle." That settles
+the audit's flip condition by premise. Every repo has a roadmap the cycle maintains, and a
+cycle that reads the watches. Consequences:
+
+- 5a (no home for agent items) and 5e (the agent home is an owner document) are ✓ for [1].
+- 5d (nothing reads the watches) is ✓ for both: the dev cycle reads them, so the
+  session-start `questions.sh watches` line in the global instructions is unneeded (and its
+  always-loaded context cost goes with it).
+- [14]'s "no tracker" branch never fires, so it simplifies to **[14′]**: watches go in
+  `watching.md` (entry grammar, checked by `questions.sh`, closed ones kept in `## Closed`),
+  and agent work goes in the roadmap only. Agent work now has one home in every repo.
+- The H3 audit is no longer needed for the decision. It stays as input for migration sizing
+  (5c).
+
+| # | Approach | Effort | Risk | Hard met | Key downside |
+|---|---|---|---|---|---|
+| 14′ ★ | Watches in `watching.md`, agent work in the roadmap | ~1 day; 3 units (routes+check · watching.md+migrate · cycle steps 2/3 + global text) | low | 15/15 | one more file in `docs/working/` |
+| 1 | Watches in a roadmap `## Watching` section, agent work in the roadmap | ~1 day; 3 units | low-med | 14/15 (rH2 ~) | watches become prose bullets with a new ad hoc format, which a parser reads leniently, not checked against the entry grammar (repo S3: a second grammar; repo H2: a malformed bullet can be skipped silently) |
+| 2 | Everything in a watch file | — | — | — | dominated by 14′ now that every repo has a roadmap |
+
+Remaining axis: *one file fewer* ([1]) vs *watches keep the entry grammar that `questions.sh`
+already checks, IDs and closure criteria included* ([14′]). The tiebreaker is repo S3 (one
+grammar, one checker), together with H7: a watch's observation-named closure criterion is a
+field in the entry grammar, and only a convention in a bullet.
+
+▶ recommend [14′] · confidence ~65% · runner-up [1], axis = one file fewer vs. one checked
+grammar
+
+New revisit trigger: if a project that does not run the dev cycle adopts `questions.sh`, then
+5a, 5d and 5e return; re-run this rescore with [14]'s fallback branch.
+
+*(Original first-pass matrix, superseded, kept for the record:)*
 
 | # | H1 | H2 | H3 | H4 | H5 | H6 | H7 | notes |
 |---|---|---|---|---|---|---|---|---|
@@ -259,16 +567,18 @@ Tiebreaker: the owner's stated goal is a single entry point, and [3] adds no new
    `workflows/divergent-design.md` Path C is unchanged.
 6. Tests: `questions-doc.bats` (route refusal, body order), `dev-cycle.bats` section-3
    fixtures, plus an orchestrator case showing a `you:*` entry moved out is refused (H2).
-7. Follow-up, separate: shorter step-7 merge entries (S1), with gate output moved to the
-   brief and the entry keeping the summary and options.
+7. Follow-up, separate: entry clarity (S1). Each entry writer (dev-cycle step 7's merge
+   entries, step 2/3 filings, Path C) glosses every internal reference it uses, even when
+   that makes the entry longer. Moving gate output out of the entry is optional, since the
+   owner can skim it.
 
 ## Pruned candidates and why
 
 Each entry is `[candidate-ID]: one-line reason for discard`. Future DDs in adjacent areas can grep this section to avoid regenerating already-pruned approaches.
-[0]: the reported pain (H1, H3, H4). [1]: order only; folded into [3] as H6. [5]: a view; closure and rot unchanged (H3, H4). [6]: infrastructure, not portable (H5). [7]: needs a hole in `--cycle-diff` (⚠ H2); [3] gets H4 without one. [8]: Revisit triggers can't hold one-off watches (Q-074, Q-161), and repos without decision records lose triggers (H5). [9]: rewrites all four gate parsers for no gain over [3]. [10]: GitHub routing excluded by the owner (memory: solo dev, no GitHub routing). [11]: complement for S1, filed as a follow-up. [12]: rewrites every parser and ~76 tests. [13]: closes watches on a clock (⚠ H7). [4]: loosens the anti-forgery rule, and the owner still opens a mixed file. [2]: runner-up; a second copy of the agent tracker beside the roadmap.
+[0]: the reported pain (H1, H3, H4). [1]: order only; folded into [3] as H6. [5]: a view; closure and rot unchanged (H3, H4). [6]: infrastructure, not portable (H5). [7]: needs a hole in `--cycle-diff` (⚠ H2); [3] gets H4 without one. [8]: Revisit triggers can't hold one-off watches (Q-074, Q-161), and repos without decision records lose triggers (H5). [9]: rewrites all four gate parsers for no gain over [3]. [10]: GitHub routing excluded by the owner (memory: solo dev, no GitHub routing). [11]: aimed at length, which the owner says is the wrong measure; replaced by the clarity follow-up (S1). [12]: rewrites every parser and ~76 tests. [13]: closes watches on a clock (⚠ H7). [4]: loosens the anti-forgery rule, and the owner still opens a mixed file. [2]: runner-up; a second copy of the agent tracker beside the roadmap.
 Prior pruning grep: no matches found for [questions, queue, inbox, attention, route, triage].
 
 ## Revisit triggers
 
 Each entry is a concrete, observable condition that should prompt re-evaluating this decision. Future readers can grep this section when their context changes to see whether earlier decisions still apply.
-If a second repo using `questions.sh` files more than 3 `trigger`/`deferred` items within a month (portability favors [2]). If the roadmap's Watching section passes 30 items. If the owner again reports the owner file as hard to read with only `you:*` entries in it (entry length, S1, is then the problem). If `you: judgment` asks exceed ~5 per cycle (triage §3.1's router alarm).
+If a project that does not run the dev cycle adopts `questions.sh` (the 2026-10-28 owner premise breaks; 5a/5d/5e return). If a second repo using `questions.sh` files more than 3 `trigger`/`deferred` items within a month (portability favors [2]). If the roadmap's Watching section passes 30 items. If the owner again reports the owner file as hard to read with only `you:*` entries in it (entry length, S1, is then the problem). If `you: judgment` asks exceed ~5 per cycle (triage §3.1's router alarm).
