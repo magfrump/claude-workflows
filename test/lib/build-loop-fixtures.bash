@@ -46,11 +46,15 @@ settings_like() { run --separate-stderr bash "$BL" --settings; [[ "$(line "$1")"
 line() { printf '%s\n' "$output" | grep -m1 "^$1 " || true; }
 
 # brief SLUG LINE...: docs/working/briefs/2026-10-01-SLUG.md holding a title and
-# these lines, committed on the current branch; sets B to its path.
+# these lines, committed on the current branch; sets B to its path. Its research
+# doc (RD) is committed with it, holding a "Failure-pattern grep:" line, so a
+# branch made from main after it passes --check's failure-pattern steps with
+# no changed path of its own; the failure-pattern tests change it on a branch.
 brief() {
     local s="$1"; shift
-    B="docs/working/briefs/2026-10-01-$s.md"
+    B="docs/working/briefs/2026-10-01-$s.md"; RD="docs/working/research-2026-10-01-$s.md"
     mkdir -p docs/working/briefs && printf '# Brief: %s\n\n' "$s" > "$B" && printf '%s\n' "$@" >> "$B"
+    printf '# Research: %s\n\n- Failure-pattern grep: no matches found\n' "$s" > "$RD"
     commit_all "brief $s"
 }
 
