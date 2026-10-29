@@ -218,6 +218,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
 | [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
 | [Q-226](#q-226--failure-pattern-library-future) | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
+| [Q-228](#q-228--merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003) | Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/b... | 2026-10-29 |
 <!-- index:end -->
 
 ## Answered
@@ -4650,4 +4651,47 @@ You asked (Q-223) for a closer look at whether and how the failure-pattern libra
 - **Interim:** [1]: nothing changes until you answer.
 - **If the answer differs:** each option is one small unit; the review doc does not need redoing.
 
+
+### Q-228 · merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`, roadmap In flight)? It builds your Q-226 [5]: build loops are sent through pr-prep's failure-pattern step, and the gate refuses a branch that skipped it. It changes gate code (`scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the gate only at the next image release (Q-227 then covers it).
+
+- **What the gate will refuse** (in `--check` and `--merge`):
+  - the branch's research doc (`docs/working/research-STEM.md`) is missing or has no `Failure-pattern grep:` line with a value;
+  - the branch has `fix(...)` commits that main lacks, and adds no new `FP-NNN` entry to `docs/thoughts/failure-patterns.md` and the research doc has no `Failure-pattern skip: REASON` line;
+  - the merge would hold an FP number twice, more often than main does (the FP-173/174 collision).
+  Each gap prints as its own `gap` line. A gap that is only a failed read is treated as the environment's problem and retried, not sent back to the loop.
+- **Other changes:** the loop prompt names pr-prep's Step 0 advisory and says where the skip line goes. pr-prep and research-plan-implement each gain about a sentence saying the gate reads these lines. The dev-cycle skill's Collect step files a gap refusal as `stopped`.
+- **Design choices the loop made** (in the research doc): the skip reason is a research-doc line, not a commit trailer, because a missed trailer cannot be added without rewriting history. The check covers the branch as a whole, since matching entries to commits would be a judgment (H4). The code stays inline in `build-loop.sh` (+129 lines), not a new lib file the D6 block would not ownership-check.
+- **Verified:** the loop reports its 5 build-loop/dev-cycle suites passing, with 7 new cases, and 2 review rounds with no red. The orchestrator re-ran those suites on this tip (see the iteration record).
+- **Paths that self-merge would have refused:** `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also an instruction file); `workflows/pr-prep.md` and `workflows/research-plan-implement.md` (instruction files, and under the `workflows/` never glob).
+- **Read:** `docs/working/research-2026-10-29-failure-pattern-loop-wiring.md` on the branch · `git diff 4b2f000a 8f09da3b`
+- **Known gaps:** `--merge --approved` with a gap has no test of its own (it shares the tested `check_line` path). On a self-merge brief, a real FP entry always sends the merge to your review, because `docs/thoughts/` is on the self-merge floor; only the skip line keeps such a brief self-merging.
+
+`--check` printed:
+
+```
+ok docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md 8f09da3b3003b314a81df1866d2f4129c88728d9 4e233ba515c4ce6dd65d3eca6d290793f2789a9a
+path M docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md
+path A docs/working/research-2026-10-29-failure-pattern-loop-wiring.md
+path M scripts/build-loop.sh
+path M skills/dev-cycle/SKILL.md
+path M test/lib/build-loop-fixtures.bash
+path M test/scripts/build-loop-check.bats
+path M test/scripts/build-loop-dispatch.bats
+path M test/scripts/build-loop-merge.bats
+path M workflows/pr-prep.md
+path M workflows/research-plan-implement.md
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | It lands on main; the gate enforces it after the next release (Q-227) | Reading the diff (~360 lines, half tests) | Loops write the lines as boilerplate, or a legitimate branch gets refused and comes back as a stopped entry; one `git revert` undoes it |
+| **[2] drop** | The brief closes; Q-226 goes back to you | None | The failure-pattern library keeps going unused |
+| **[3] changes needed** | Your note goes back to the loop, which reworks the branch | Writing the note | One more loop round |
+
+- **Interim:** not merged; nothing is waiting on it.
 

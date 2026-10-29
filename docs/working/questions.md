@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-228](#q-228--merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003) | you: judgment | Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/b... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -264,16 +263,21 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `a36df962a7bb9693029cd1a53366c29a3ddf6754` (M), and the gate scripts the dev cycle runs differ in `scripts/questions.sh` (Q-224's owner routes, merged at 236f21ee). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
+Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `f91d7d09e6639f0def8f176e134c1c5d72014209` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, and Q-228's failure-pattern wiring, merged at f91d7d09). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = a36df962a7bb9693029cd1a53366c29a3ddf6754 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = f91d7d09e6639f0def8f176e134c1c5d72014209 && ./devcontainer-config/install.sh
 ```
 
 The only git call before `install.sh`'s own state gate is `rev-parse`, which runs no hook. If the `test` fails, your host checkout is not at M: bring it there first, knowing that any other git command on the host (a checkout included) can run a hook a sandbox session planted, as `install.sh`'s trust model says. This one paste also covers Q-222 (the same `install.sh` run, at a newer commit): run `cc-verify --help | head -5 && cc-isolated --list` after it, as Q-222 asks.
 
-- **Changed gate paths (C to M):** `scripts/questions.sh`
-- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M a36df962; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+- **Changed gate paths (C to M):** `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`
+- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M f91d7d09; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+  - f91d7d09 Merge branch 'feat/failure-pattern-loop-wiring' (build-loop approved merge)
+  - eecf0268 owner notes
+  - 2e14f670 Merge branch 'chore/dev-cycle-2026-10-29-1937'
+  - 93aa71e6 Merge branch 'chore/dev-cycle-2026-10-29-1937'
+  - c3154ff3 Merge branch 'chore/dev-cycle-2026-10-29-0240'
   - a36df962 Merge branch 'fix/questions-doc-bats-lint' (build-loop self-merge) ⚑
   - 36951e86 Merge branch 'chore/dev-cycle-2026-10-29-0235'
   - 2b8f492d Merge branch 'chore/dev-cycle-2026-10-29-0217'
@@ -312,48 +316,6 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
   - 4388056e Merge branch 'docs/decision-015-amendment' (build-loop approved merge)
   - 062acde2 fix(wiring): drop the Write(path) deny rules Claude Code never matches
   - be464869 Merge branch 'feat/interview-profile-run2'
-- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `guides/cc-isolated-usage.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/lite-review.py`, `scripts/questions.sh`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/review-fix-loop.md` (45 paths under `docs/` are not in the image).
-- **Interim:** the image's gate runs (built at C); Q-224's owner routes are on main but the dev cycle's `questions.sh` is still the old one.
+- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `guides/cc-isolated-usage.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (51 paths under `docs/` are not in the image).
+- **Interim:** the image's gate runs (built at C); Q-224's owner routes and Q-228's failure-pattern checks are on main, but the dev cycle still runs the old `questions.sh` and `build-loop.sh`.
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
-### Q-228 · merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
-
-**Answered:** [1]
-
-Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`, roadmap In flight)? It builds your Q-226 [5]: build loops are sent through pr-prep's failure-pattern step, and the gate refuses a branch that skipped it. It changes gate code (`scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the gate only at the next image release (Q-227 then covers it).
-
-- **What the gate will refuse** (in `--check` and `--merge`):
-  - the branch's research doc (`docs/working/research-STEM.md`) is missing or has no `Failure-pattern grep:` line with a value;
-  - the branch has `fix(...)` commits that main lacks, and adds no new `FP-NNN` entry to `docs/thoughts/failure-patterns.md` and the research doc has no `Failure-pattern skip: REASON` line;
-  - the merge would hold an FP number twice, more often than main does (the FP-173/174 collision).
-  Each gap prints as its own `gap` line. A gap that is only a failed read is treated as the environment's problem and retried, not sent back to the loop.
-- **Other changes:** the loop prompt names pr-prep's Step 0 advisory and says where the skip line goes. pr-prep and research-plan-implement each gain about a sentence saying the gate reads these lines. The dev-cycle skill's Collect step files a gap refusal as `stopped`.
-- **Design choices the loop made** (in the research doc): the skip reason is a research-doc line, not a commit trailer, because a missed trailer cannot be added without rewriting history. The check covers the branch as a whole, since matching entries to commits would be a judgment (H4). The code stays inline in `build-loop.sh` (+129 lines), not a new lib file the D6 block would not ownership-check.
-- **Verified:** the loop reports its 5 build-loop/dev-cycle suites passing, with 7 new cases, and 2 review rounds with no red. The orchestrator re-ran those suites on this tip (see the iteration record).
-- **Paths that self-merge would have refused:** `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also an instruction file); `workflows/pr-prep.md` and `workflows/research-plan-implement.md` (instruction files, and under the `workflows/` never glob).
-- **Read:** `docs/working/research-2026-10-29-failure-pattern-loop-wiring.md` on the branch · `git diff 4b2f000a 8f09da3b`
-- **Known gaps:** `--merge --approved` with a gap has no test of its own (it shares the tested `check_line` path). On a self-merge brief, a real FP entry always sends the merge to your review, because `docs/thoughts/` is on the self-merge floor; only the skip line keeps such a brief self-merging.
-
-`--check` printed:
-
-```
-ok docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md 8f09da3b3003b314a81df1866d2f4129c88728d9 4e233ba515c4ce6dd65d3eca6d290793f2789a9a
-path M docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md
-path A docs/working/research-2026-10-29-failure-pattern-loop-wiring.md
-path M scripts/build-loop.sh
-path M skills/dev-cycle/SKILL.md
-path M test/lib/build-loop-fixtures.bash
-path M test/scripts/build-loop-check.bats
-path M test/scripts/build-loop-dispatch.bats
-path M test/scripts/build-loop-merge.bats
-path M workflows/pr-prep.md
-path M workflows/research-plan-implement.md
-```
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | It lands on main; the gate enforces it after the next release (Q-227) | Reading the diff (~360 lines, half tests) | Loops write the lines as boilerplate, or a legitimate branch gets refused and comes back as a stopped entry; one `git revert` undoes it |
-| **[2] drop** | The brief closes; Q-226 goes back to you | None | The failure-pattern library keeps going unused |
-| **[3] changes needed** | Your note goes back to the loop, which reworks the branch | Writing the note | One more loop round |
-
-- **Interim:** not merged; nothing is waiting on it.

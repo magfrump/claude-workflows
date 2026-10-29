@@ -34,24 +34,34 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]). Unit 2 briefed 2026-10-29 (In flight). Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
 
-- **Failure-pattern steps where build loops run (Q-226 [5]).** Motive: the owner's answer to
-  the Q-223 review. The build-loop prompt sends loops through pr-prep's failure-pattern
-  advisory, and `--check` requires the research doc's `Failure-pattern grep:` line and,
-  per `fix(...)` commit, a new entry or a one-line skip reason. First step: briefed (In
-  flight).
+- **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
+  1. An answer given in session should approve a merge entry (the gate is too strict).
+     Briefed (In flight).
+  2. Convention changes ship migration instructions, and the dev cycle runs them before
+     continuing existing work. Briefed (In flight).
+  3. Audit a repo that committed code-review rubrics with open amber or red items: find
+     which step of the review-fix loop let the merge through. First step: a read-only
+     `review-gap-audit` procedure (for each committed rubric with amber or red rows, find
+     the merge that carried it, whether a fix round followed, and which gate or prose rule
+     should have stopped it), tried on the repo the owner names. Brief when a slot frees.
+  4. A surface for projects to file feedback about the harness. First step (v1): a
+     `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
+     plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
+     else open one) is an idea until v1 is used. Brief when a slot frees.
 
 ## In flight
 
-
-- **Failure-pattern steps where build loops run, checked at the gate (Q-226 [5])** (Now).
-  Motive: the Q-223 review found build loops never reach pr-prep's failure-pattern
-  advisory and no research doc since 2026-10-15 carries the required grep line. Built and
-  ready; merge is Q-228, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`
 
 - **Questions doc owner-only, unit 2: `watching.md` and `questions.sh migrate`** (Now,
   decision 040). Motive: unit 1 merged (236f21ee) and moved the agent-route refusal here,
   to land with its home and remedy. Gate code (`scripts/questions.sh`): review policy, a
   `merge-gate` entry when ready. Brief: `docs/working/briefs/2026-10-29-questions-watching-file.md`
+
+- **Session answers approve merge entries** (Now, owner feedback 2026-10-29 point 1).
+  Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`
+
+- **Convention changes ship migrations the dev cycle runs first** (Now, owner feedback
+  2026-10-29 point 2). Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
 
 ## Next
 
@@ -241,6 +251,8 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Failure-pattern steps where build loops run, checked at the gate (Q-226 [5], Q-228 [1]):
+  merged f91d7d09. Brief: `docs/working/briefs/closed/2026-10-29-failure-pattern-loop-wiring.md`
 - Health check: the three shellcheck findings in `test/questions-doc.bats` from Q-224's
   merge (two of them inert `!` assertions, now `run !` with a status check): done at
   a36df962 (build-loop self-merge). Brief:
