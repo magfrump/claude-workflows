@@ -259,7 +259,7 @@ Every step ends with a line in the cycle record, including "skipped: <reason>"; 
 is recorded, never silently dropped.
 
 ```
-0 start and digest → 1 health and cleanup → { 2 triggers | 3 questions | 4 spot-check | 4b audit check }
+0 start and digest → 1 health and cleanup → 1b migrations → { 2 triggers | 3 questions | 4 spot-check | 4b audit check }
   → 5 brainstorm (conditional) → 6 roadmap → 7 collect → 8 build briefs → 9 record and land
   → 10 dispatch → final message → wait or go again
 ```
@@ -363,8 +363,8 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
-docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
-record's `### Skipped inputs`). If the digest says the repo has no
+docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 7b pending migrations (step
+1b), 8 skipped inputs (the record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
 - It says "records, or a directory above them, were skipped", or names a newer record that
@@ -421,6 +421,36 @@ last good one.
   `archive-working-docs.sh`: it serves the self-improvement loop and moves files into a
   gitignored archive.
 - Fix what is mechanical now, one commit per concern. File the rest.
+
+### 1b. Migrations
+
+A merged change to a convention other repos' files follow (the questions entry grammar or
+routes, the roadmap's sections, a brief's or a record's shape) ships a migration: a line in
+`scripts/lib/migrations.sh` (its header is the grammar; `guides/convention-changes.md`
+says how to add one). The digest's section 7b names each migration this repo still needs,
+because a file holds a line in the shape the change replaced. Catching up comes before
+continuing existing work, so this step runs before the triggers and before any collect,
+brief or dispatch:
+
+- `pending ID (CONVENTION): PATH line N; remedy: REMEDY`: unless WT's questions files hold
+  an open entry with slug `migrate-ID`, file one `you: terminal` entry with that slug. Its
+  question names the migration and the line found; its paste is the remedy, run from the
+  repo's root, then a commit of the files it changed (two or more filed this iteration:
+  one paste, in the first, which the others point at). Interim: the iteration goes on, and
+  every reader sees the old shape as before. The cycle does not run the remedy itself: a
+  migration rewrites the questions files' entries or the roadmap's headings, which step 9's
+  `--cycle-diff` refuses without the owner, and holding the iteration until the owner runs
+  it would stop every loop on a chore (S10). An answered `migrate-ID` entry whose migration
+  is still pending gets no new entry; the final message names it. An open `migrate-ID`
+  entry whose ID a checked section 7b (neither **NOT checked** nor `not checked ID`) no
+  longer lists has been run: the record and the final
+  message say so, for the owner to answer it.
+- `not checked ID: …`, or **Migrations were NOT checked**: the record and the final
+  message, never read as none pending.
+
+The record's `1b.` line lists each pending ID with its entry (`filed Q-NNN` or `open
+Q-NNN`), or `none`, or what was not checked; the final message lists pending migrations
+first.
 
 ### 2. Revisit triggers
 
@@ -710,6 +740,7 @@ Model: <the model id running this cycle>
 ### Steps
 0. digest: done
 1. health and cleanup: <done>; health check <passed at MAIN / unchanged since P / failed / skipped: reason>
+1b. migrations: <none / pending ID filed Q-NNN / pending ID open Q-NNN / not checked: why>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
@@ -832,7 +863,7 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. List the new `you: judgment` entries by ID and name (merge
+**Final message**, then wait. List pending migrations first (step 1b), then the new `you: judgment` entries by ID and name (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits step 0.2 and step 7
