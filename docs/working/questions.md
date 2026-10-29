@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | you: judgment | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
 | [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | you: judgment | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
+| [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | you: judgment | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -383,3 +384,44 @@ path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/
 
 - **Blocks:** nothing else.
 - **Interim:** merge entries still need your own commit (this one too: it predates the change).
+
+### Q-231 · merge-gate-2026-10-29-convention-migrations-first-f114694527dc
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? It builds your feedback point 2: a change to a shared convention (the questions grammar, the roadmap template, brief and record shapes) must ship a migration, and the dev cycle surfaces pending migrations before it does anything else.
+
+- **Why it's yours:** it changes gate code (`scripts/dev-cycle.sh`, a new `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the loop picked the design without you (one option dominated each choice).
+- **How it works:**
+  - A registry, `scripts/lib/migrations.sh`, holds one line per convention change: what changed, a fingerprint of the source, which file it affects, a pattern that still matches when a repo has not migrated, and the remedy (or `none: WHY`).
+  - A merge check (`test/scripts/convention-migrations.bats`) fingerprints the four convention sources and fails until the registry's newest line for each carries the current fingerprint; the registry may only grow.
+  - The digest gets a section 7b "Pending migrations", and the skill a step 1b that runs before triggers, collect, briefs and dispatch: each pending migration becomes one `you: terminal` entry (slug `migrate-ID`), listed first in the final message.
+- **What it does not do, and why:** the cycle cannot run a migration itself (its own commit may not rewrite questions entries or roadmap headings), and holding the whole iteration until you run it was rejected (no new human stops). So "higher priority" means it is surfaced first and blocks nothing; tell me with [3] if you meant the cycle should stop until it runs.
+- **Merge order with Q-229 and Q-230:** Q-229 changes the questions convention and has no registry line yet, so whichever of Q-229 and this merges second fails its merge check until the line is added (the failure prints the line; the research doc has it). Q-230 also edits `skills/dev-cycle/SKILL.md`; if both are approved and the second merge conflicts, it comes back as a `stopped` entry for a loop to reconcile.
+- **Limits the loop accepted:** a commit made directly on main is never compared for append-only; the parsers in `build-loop.sh` and `dev-cycle-read.sh` are not fingerprinted (the guide tells authors to update them); the digest section and step 1b act only after the next image release (Q-227).
+- **Tests:** 12 new bats cases; `scripts/health-check.sh` passed at 95f310f1; two review rounds, clean at the end.
+- **Read:** `docs/working/research-2026-10-29-convention-migrations-first.md` and `guides/convention-changes.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-convention-migrations-first.md f114694527dc8b1d149dd9fde4e38e63ea080d42 eb00c1b6914a47e465450817a2cb2988b7b5d9e2
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges f1146945; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
+| **[3] changes needed** | Your note goes back to the loop (e.g. "stop the iteration until a migration runs") | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** the branch waits; nothing on main changes.
