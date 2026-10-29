@@ -325,7 +325,7 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
 
 ### Q-229 · merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **Answered:** [1]
 
@@ -358,7 +358,7 @@ path docs/working/briefs/2026-10-29-questions-watching-file.md M test/questions-
 - **Interim:** the branch waits; nothing on main changes.
 
 ### Q-230 · merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **Answered:** [1]
 
@@ -391,7 +391,7 @@ path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/
 - **Interim:** merge entries still need your own commit (this one too: it predates the change).
 
 ### Q-231 · merge-gate-2026-10-29-convention-migrations-first-f114694527dc
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **Answered:** [1]
 
@@ -434,7 +434,7 @@ path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/script
 - **Interim:** the branch waits; nothing on main changes.
 
 ### Q-232 · merge-2026-10-29-harness-feedback-file-2b858d2586c3
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **Answered:** [1]
 
