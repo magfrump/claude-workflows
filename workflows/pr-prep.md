@@ -488,7 +488,7 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 5. **Harness** — Did a harness skill, workflow or script fail, cause friction, or catch something real here? Outside claude-workflows, file it in `docs/harness-feedback.md` (grammar: `guides/harness-feedback.md`).
 
 **Completion criteria:**
-- [ ] At least one of the four questions answered with more than one sentence
+- [ ] At least one of questions 1–4 answered with more than one sentence
 - [ ] Answer saved as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs (commit message is acceptable for one-off observations that do not warrant a standalone file)
 
 ## Step 7: Post-merge follow-up (optional)

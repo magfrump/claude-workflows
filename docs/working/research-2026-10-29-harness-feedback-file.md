@@ -113,6 +113,6 @@ un-seeded copies.
 ## Test strategy
 
 Every `check` refusal has its own mutation of the good fixture and asserts the message names
-the rule and the line. Ingest runs in a temp git repo (no network binaries are reachable:
+the rule (and the line, where the rule is about one line). Ingest runs in a temp git repo (no network binaries are reachable:
 python3 and git only), asserting the copy, the seed lines, idempotence, and refusal with
 nothing written for an invalid file and for symlinked targets.

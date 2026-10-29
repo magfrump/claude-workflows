@@ -156,6 +156,24 @@ refuses() {
     mutate 's/^### F-001/### f-001/'; refuses "line 7: an entry heading must be"
 }
 
+@test "check refuses: a mistyped heading in the preamble (##, ####, two blanks)" {
+    mutate 's/^### F-001 · /## F-001 · /'; refuses "line 7: an entry heading must be"
+    mutate 's/^### F-001 · /#### F-001 · /'; refuses "line 7: an entry heading must be"
+    mutate 's/^### F-001 · /###  F-001 · /'; refuses "line 7: an entry heading must be"
+}
+
+@test "init: a remote ending in /.git falls back to the directory name" {
+    git init -q "$W/dirname"
+    cd "$W/dirname"
+    git config remote.origin.url /srv/repos/myproj/.git
+    run -0 python3 "$HF" init
+    grep -qx 'Project: myproj' docs/harness-feedback.md
+    rm docs/harness-feedback.md
+    git config remote.origin.url https://h/u/..git
+    run -0 python3 "$HF" init
+    grep -qx 'Project: dirname' docs/harness-feedback.md
+}
+
 @test "check: a malformed heading's bullets are not blamed on the entry before it" {
     mutate 's/^### F-002 · /### F-002 - /'
     run -1 python3 "$HF" check "$W/bad.md"
@@ -328,11 +346,12 @@ make_repo() {
     [[ "$output" == *"holds entries this file does not start with"* ]]
     cmp "$GOOD" docs/working/feedback/example-app.md
     [ "$(cat docs/working/idea-log.md)" = "$before" ]
-    # A copy with entries removed.
+    # A copy with an entry removed (only F-001 kept).
     mutate '/^### F-002/,$d'
-    sed -i '/^### F-001/,$d' "$W/bad.md"
     run -1 python3 "$HF" ingest "$W/bad.md"
+    [[ "$output" == *"holds entries this file does not start with"* ]]
     cmp "$GOOD" docs/working/feedback/example-app.md
+    [ "$(cat docs/working/idea-log.md)" = "$before" ]
 }
 
 @test "ingest: a forged signal key in Feature is neutralised" {

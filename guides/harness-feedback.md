@@ -93,7 +93,8 @@ An entry already seeded (its `harness feedback NAME F-NNN,` signal is in the log
 skipped, so rerunning on a newer copy adds only the new entries. A project's file only
 grows, so a copy whose entries do not start with the stored copy's entries (same IDs, slugs
 and meta lines, in order) is refused: it is another project under the same `Project:` name,
-or entries were removed. A file that fails `check` is refused whole, and in both cases
+or entries were removed. An old entry edited in the project (its meta line, say) is
+refused the same way: rename its `Project:` line, or delete the stored copy here by hand. A file that fails `check` is refused whole, and in both cases
 nothing is written. `ingest` refuses to run outside a claude-workflows checkout. A file already under `docs/working/feedback/` is seeded
 in place, not copied. Commit the copy and the idea log together.
 

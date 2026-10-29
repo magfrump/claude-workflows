@@ -39,6 +39,9 @@ HEADING_RE = re.compile(r"^### F-([0-9]{3,}) · ([a-z0-9][a-z0-9-]*)$")
 META_RE = re.compile(
     r"^\*\*Feature:\*\* ([^·]*\S[^·]*) · \*\*Date:\*\* ([0-9]{4}-[0-9]{2}-[0-9]{2})"
     r" · \*\*Verdict:\*\* (\S+)$")
+# A line meant as an entry heading but mistyped (## or ####, f-, extra blanks)
+# must not pass as preamble text, or its entry silently disappears.
+HEADING_LIKE_RE = re.compile(r"^#+[ \t]*[Ff]-[0-9]")
 BULLET_RE = re.compile(r"^- \*\*(" + "|".join(BULLETS) + r"):\*\*(.*)$")
 # Control (Cc), format (Cf: bidi overrides, zero-width marks) and line or
 # paragraph separators (Zl, Zp): a reader that splits on more than LF, or a
@@ -103,7 +106,7 @@ def parse(text):
             problems.append(f"{where}: control or format character {bad_char(line)}")
         if "<!--" in line:
             problems.append(f"{where}: '<!--' is not allowed")
-        if cur is None and not line.startswith("### F-") and not line.startswith("### f-"):
+        if cur is None and not HEADING_LIKE_RE.match(line):
             if line.startswith("Project:"):
                 m = PROJECT_RE.match(line)
                 if m:
@@ -257,9 +260,12 @@ def project_name(top):
                              capture_output=True, text=True, check=False)
         url = out.stdout.strip().rstrip("/")
         if out.returncode == 0 and url:
-            base = re.split(r"[/:]", url)[-1]
-            if base.endswith(".git"):
-                base = base[:-4]
+            parts = [p for p in re.split(r"[/:]", url) if p and p != ".git"]
+            last = parts[-1] if parts else ""
+            if last.endswith(".git"):
+                last = last[:-4]
+            if last.strip(".-"):
+                base = last
     except OSError:
         pass
     name = re.sub(r"[^A-Za-z0-9._-]", "-", base).lstrip(".-")[:64]
