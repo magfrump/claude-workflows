@@ -134,7 +134,7 @@ replace_with() {
     if [[ -L "$target" || -L "$(dirname "$target")" ]]; then
         rm -f "$tmp"; die "refusing to write: $target became a symlink"
     fi
-    mv -f -- "$tmp" "$target"
+    mv -fT -- "$tmp" "$target"  # -T: never into a planted directory
 }
 
 # Every command but `init` reads both files; missing ones mean the project has
@@ -497,7 +497,7 @@ cmd_next_id() {
 
 # entry_text ID: the entry from the live file, trailing blank lines dropped.
 entry_text() {
-    extract_entry "$LIVE" "$1" | awk 'NF { while (gap-- > 0) print ""; gap = 0; print; next } { gap++ }'
+    extract_entry "$LIVE" "$1" | awk 'length($0) { while (gap-- > 0) print ""; gap = 0; print; next } { gap++ }'
 }
 
 # watching_with_entry ENTRYFILE CLOSED: the watching file with the entry
@@ -510,7 +510,8 @@ watching_with_entry() {
             while ((getline l < entry) > 0) print l
             print ""; done = 1; prev = ""
         }
-        !want_closed && !done && /^## Closed[[:space:]]*$/ { emit() }
+        # Open: before `## Closed`; closed: before the heading after it, if any.
+        !done && /^## / && !/^### / && (want_closed ? have_closed : /^## Closed[[:space:]]*$/) { emit() }
         /^## Closed[[:space:]]*$/ { have_closed = 1 }
         { print; prev = $0 }
         END {
@@ -522,9 +523,7 @@ watching_with_entry() {
 }
 
 listing_with_entry() {
-    cat -- "$LISTING"
-    cat -- "$1"
-    echo
+    cat -- "$LISTING" && cat -- "$1" && echo
 }
 
 cmd_migrate() {
@@ -532,13 +531,17 @@ cmd_migrate() {
     require_files
     assert_write_targets
     assert_write_target "$LISTING" "${QUESTIONS_LIVE:-}"
+    [[ ! -e "$LISTING" || -f "$LISTING" ]] || die "refusing to write: $LISTING is not a regular file"
     entry="$(mktemp)"; MIGRATE_TMP="$entry"
     trap 'rm -f -- "$MIGRATE_TMP"' EXIT
     while IFS=$'\t' read -r id route _ status _ _; do
         home="$(route_home "$route")"
         [[ -n "$home" ]] || continue
         entry_text "$id" > "$entry"
-        if [[ "$home" == "$WATCH_HOME" ]]; then
+        # Resuming an interrupted run: the copy already landed, only the removal is left.
+        if [[ -f "$WATCHING" && "$(extract_entry "$WATCHING" "$id")" == "$(cat -- "$entry")" ]] \
+            || [[ -f "$LISTING" && "$(extract_entry "$LISTING" "$id")" == "$(cat -- "$entry")" ]]; then :
+        elif [[ "$home" == "$WATCH_HOME" ]]; then
             [[ -e "$WATCHING" ]] || cmd_init > /dev/null
             replace_with "$WATCHING" watching_with_entry "$entry" "$([[ "$status" == ANSWERED ]] && echo 1 || echo 0)"
         else

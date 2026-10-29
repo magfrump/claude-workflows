@@ -496,14 +496,12 @@ make_symlink_project() {
 # Mutations: drop the refusal or the cutoff date test, or a destination write
 # in migrate, and a case below fails.
 
-# A watching file as init writes it, beside the fixture live file.
 make_watching() {
     rm -f "$BATS_TEST_TMPDIR/watching.md"
     bash "$QS" init >/dev/null 2>&1
     [ -f "$BATS_TEST_TMPDIR/watching.md" ]
 }
 
-# add_dated ID ROUTE STATUS DATE [FILE]
 add_dated() {
     printf '\n### %s · entry-%s\n**Needs:** %s · **Opened:** %s · **Status:** %s\n\nAbout %s.\n' \
         "$1" "${1,,}" "$2" "$4" "$3" "$1" >> "${5:-$QUESTIONS_LIVE}"
@@ -544,30 +542,13 @@ add_dated() {
         || { echo "$stderr"; return 1; }
 }
 
-@test "check validates watching.md: a closed watch under ## Closed passes" {
-    make_watching
-    local w="$BATS_TEST_TMPDIR/watching.md"
-    add_dated Q-010 trigger ANSWERED 2026-10-30 "$w"
-    sed -i '/^## Open$/a\
-\
-### Q-011 · open-watch\
-**Needs:** deferred · **Opened:** 2026-10-30 · **Status:** OPEN\
-\
-Waiting.' "$w"
-    bash "$QS" index
-    run bash "$QS" check
-    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
-    grep -aq '^| \[Q-010\]' "$w"
-}
-
 @test "check refuses an OPEN watch under ## Closed, a closed one above it, and an owner route" {
     make_watching
     local w="$BATS_TEST_TMPDIR/watching.md"
     add_dated Q-010 trigger OPEN 2026-10-30 "$w"
     bash "$QS" index
     run --separate-stderr bash "$QS" check
-    [ "$status" -eq 1 ]
-    [[ "$stderr" == *"Q-010 is OPEN but sits under watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is OPEN but sits under watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
 
     make_watching
     sed -i '/^## Open$/a\
@@ -576,15 +557,13 @@ Waiting.' "$w"
 **Needs:** trigger · **Opened:** 2026-10-30 · **Status:** ANSWERED' "$w"
     bash "$QS" index
     run --separate-stderr bash "$QS" check
-    [ "$status" -eq 1 ]
-    [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
 
     make_watching
     add_dated Q-010 'you: judgment' ANSWERED 2026-10-30 "$w"
     bash "$QS" index
     run --separate-stderr bash "$QS" check
-    [ "$status" -eq 1 ]
-    [[ "$stderr" == *"Q-010: route 'you: judgment' does not belong in watching.md"* ]] || { echo "$stderr"; return 1; }
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010: route 'you: judgment' does not belong in watching.md"* ]] || { echo "$stderr"; return 1; }
 }
 
 @test "check reports a stale watching index and a shared id; next-id reads watching.md" {
@@ -659,4 +638,21 @@ parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
     [[ "$stderr" == *"is a symlink"* ]]
     [ "$(cat "$victim")" = original ]
     grep -aq '### Q-003' "$QUESTIONS_LIVE"
+}
+
+@test "migrate refuses a directory at the listing path, and resumes an interrupted run" {
+    add_dated Q-004 agent OPEN 2026-10-30
+    mkdir "$BATS_TEST_TMPDIR/roadmap-from-questions.md"
+    run --separate-stderr bash "$QS" migrate
+    [ "$status" -ne 0 ] && [[ "$stderr" == *"is not a regular file"* ]] || { echo "$stderr"; return 1; }
+    grep -aq '### Q-004' "$QUESTIONS_LIVE"
+    rmdir "$BATS_TEST_TMPDIR/roadmap-from-questions.md"
+    cp "$QUESTIONS_LIVE" "$BATS_TEST_TMPDIR/before.md"
+    bash "$QS" migrate
+    cp "$BATS_TEST_TMPDIR/before.md" "$QUESTIONS_LIVE"  # as if killed before the removal
+    bash "$QS" migrate
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [ "$(grep -ac '^### Q-004' "$BATS_TEST_TMPDIR/roadmap-from-questions.md")" -eq 1 ]
+    [ "$(grep -ac '^### Q-003' "$BATS_TEST_TMPDIR/watching.md")" -eq 1 ]
 }

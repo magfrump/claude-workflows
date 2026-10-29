@@ -75,9 +75,12 @@ way forward (H2). Unit 1 accepted the same skew for this unit.
 
 - **The owner subset of `ROUTES`.** A parallel `ROUTE_HOME` array, like `ROUTE_MEANING`:
   empty for the four owner routes, `docs/roadmap.md` for `agent`,
-  `docs/working/watching.md` for `deferred` and `trigger`. The refusal, `migrate`, the
-  watching file's own route check and both route tables read it; no route name is
-  repeated (S3).
+  `docs/working/watching.md` (`WATCH_HOME`) for `deferred` and `trigger`. The refusal,
+  `migrate`, the watching file's own route check and both route tables read it; no route
+  name is repeated (S3). The live file's route table now lists the four owner routes and
+  names the other three with their homes on one line.
+- **Review-unit size.** The unit is about 400 changed code lines (row 62's cap), so
+  comments and tests were kept tight; no further scope fits in it.
 - **Where `watching.md` resolves.** `QUESTIONS_WATCHING`, else beside the live file. So
   `health-check.sh`, which pins `QUESTIONS_LIVE`, and the test suites, which override it
   too, get the right file without a change.
@@ -107,7 +110,12 @@ way forward (H2). Unit 1 accepted the same skew for this unit.
 ## Left for later units (not changed here)
 
 - `global-instructions/CLAUDE.md` lists `init`/`index`/`archive`/`check` and still routes
-  watches to `questions.md`; unit 3 (out of this brief's scope).
+  watches to `questions.md`; unit 3 (out of this brief's scope). It is the one doc besides
+  `questions.sh`'s own header that lists the modes, so the brief's "every doc that lists
+  its modes" criterion is met everywhere except there.
+- The dev cycle runs `questions.sh init` each iteration (`skills/dev-cycle/SKILL.md`), so
+  after this merges the cycle creates this repo's `docs/working/watching.md` (header only)
+  on its next pass; nothing else changes until `migrate` runs.
 - `dev-cycle.sh` section 3 reads only `questions.md`: once the owner runs `migrate`, the
   watches leave the digest until unit 3 reads `watching.md`. Running `migrate` with or
   after unit 3 avoids the gap.
