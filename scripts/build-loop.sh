@@ -374,9 +374,14 @@
 #                 docs/thoughts/failure-patterns.md has no entry number
 #                 (a line starting "- **FP-NNN**", read as a number) main's lacks and the
 #                 research doc no such "Failure-pattern skip:" line; the
-#                 library in TREE or on main is not a regular file or unread;
-#                 or TREE holds an entry number twice or more and more often
-#                 than main does (the second branch to land a collision).
+#                 library in TREE or on main is not a regular file or unread,
+#                 or its entries cannot be compared (a library on neither
+#                 side is no gap by itself); or TREE holds an entry number
+#                 twice or more and more often than main does (the second
+#                 branch to land a collision). A WHY from a failed read ends
+#                 "could not be read", "... could not be listed, so its
+#                 fix(...) commits are unknown" or "could not be compared"
+#                 (the environment's); any other is the loop's to fix.
 #             skip BRIEF: WHY
 #                 As --status skips it.
 #             After an ok line, a K of N refusal or a checkout refusal (or --merge's
@@ -1416,63 +1421,80 @@ declare -A VERDICT=() CHANGED=()
 AUTH=""
 # The failure-pattern steps (Q-226 [5]; docs/working/research-2026-10-29-failure-pattern-loop-wiring.md),
 # presence only (H4), from committed objects alone (gate_git, no working tree).
+# A gap the loop can fix says what is missing; one from a read that failed
+# says "could not be read", "listed" or "compared" (the environment's: the
+# dev-cycle skill retries it).
 # fp_blob TREEISH PATH OUT: PATH's blob into OUT; 1 when TREEISH has no PATH,
-# 2 when it is not a regular file or a read fails.
+# 2 when it is not a regular file (a symlink, a directory), 3 when a read fails.
 fp_blob() {
   local x re
-  gate_git ls-tree "$1" -- "$2" > "$GATE_TMP/fpls" || return 2
+  gate_git ls-tree "$1" -- "$2" > "$GATE_TMP/fpls" || return 3
   [[ -s "$GATE_TMP/fpls" ]] || return 1
-  x="$(cat "$GATE_TMP/fpls")"; re=$'^(100644|100755) blob ([0123456789abcdef]+)\t'
+  x="$(cat "$GATE_TMP/fpls")" || return 3
+  re=$'^(100644|100755) blob ([0123456789abcdef]+)\t'
   [[ "$x" =~ $re && "$x" == *$'\t'"$2" ]] || return 2
-  gate_git cat-file blob "${BASH_REMATCH[2]}" > "$3" || return 2
+  gate_git cat-file blob "${BASH_REMATCH[2]}" > "$3" || return 3
 }
 # fp_has KEY FILE: FILE has a line that, after leading blanks and one "- " or
 # "* ", starts with KEY and has a non-blank character after it.
 # shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
 fp_has() { LC_ALL=C awk -v k="$1" '{ sub(/\r$/, ""); sub(/^[ \t]*/, ""); sub(/^[-*] /, "") } index($0, k) == 1 && substr($0, length(k) + 1) ~ /[^ \t]/ { f = 1 } END { exit !f }' "$2"; }
-# fp_nums FILE: the number of each library entry ("- **FP-NNN**" at column 0), one per line.
-fp_nums() { LC_ALL=C awk '{ sub(/\r$/, "") } match($0, /^- \*\*FP-[0-9]+\*\*/) { print substr($0, 8, RLENGTH - 9) + 0 }' "$1"; }
+# fp_nums FILE: the number of each library entry (a line starting "- **FP-NNN**"),
+# one per line, as a digit string without leading zeros (padded to 3 digits),
+# so FP-0002 is FP-002 and no length loses precision.
+# shellcheck disable=SC2016  # awk code, not shell: $0 must stay literal
+fp_nums() { LC_ALL=C awk '{ sub(/\r$/, "") } match($0, /^- \*\*FP-[0-9]+\*\*/) { s = substr($0, 8, RLENGTH - 9); sub(/^0+/, "", s); while (length(s) < 3) s = "0" s; print s }' "$1"; }
 # fp_gaps TIP TREE STEM BRANCH: FP_GAPS, one reason per missing step. The
 # research doc is read from TIP; the fix(...) commits are TIP's commits main
 # lacks (main holds the dispatch commit and anything merged in from it); the
 # library's entry numbers in TREE (the merge) are compared with main's: one
 # TREE lacks on main is new, one TREE holds at least twice and more often
-# than main does is a duplicate the merge adds. A read that fails is a gap,
-# never an empty result.
+# than main does is a duplicate the merge adds. A library on neither side is
+# no gap by itself (no entry is new). A read that fails is a gap, never an
+# empty result; set -e applies here (check_line calls it plainly), so every
+# command that can fail is guarded.
 FP_GAPS=()
 FP_LIB=docs/thoughts/failure-patterns.md
 fp_gaps() {
   local doc="docs/working/research-$3.md" rc=0 nfix nnew=0 lib=1 x n k
   FP_GAPS=()
+  : > "$GATE_TMP/fpdoc" || { FP_GAPS+=("the gate's temporary files could not be written"); return 0; }
   fp_blob "$1" "$doc" "$GATE_TMP/fpdoc" || rc=$?
   case "$rc" in
     0) fp_has "Failure-pattern grep:" "$GATE_TMP/fpdoc" \
          || FP_GAPS+=("its research doc $doc has no line starting \"Failure-pattern grep:\" with a value after the colon (research-plan-implement's failure-pattern lookup)") ;;
-    1) FP_GAPS+=("its research doc $doc is not in the tip of $4"); : > "$GATE_TMP/fpdoc" ;;
-    *) FP_GAPS+=("its research doc $doc is not a regular file in the tip of $4, or could not be read"); : > "$GATE_TMP/fpdoc" ;;
+    1) FP_GAPS+=("its research doc $doc is not in the tip of $4") ;;
+    2) FP_GAPS+=("its research doc $doc is not a regular file in the tip of $4") ;;
+    *) FP_GAPS+=("its research doc $doc in the tip of $4 could not be read") ;;
   esac
-  for x in "$2:$GATE_TMP/fptree" "$MAIN_SHA:$GATE_TMP/fpmain"; do
-    rc=0; fp_blob "${x%%:*}" "$FP_LIB" "${x#*:}" || rc=$?
-    [[ "$rc" -ne 1 ]] || : > "${x#*:}"
-    [[ "$rc" -le 1 ]] || lib=""
+  [[ "$rc" -eq 0 ]] || : > "$GATE_TMP/fpdoc" || true
+  for x in "$2:$GATE_TMP/fptree:in the merge of $4" "$MAIN_SHA:$GATE_TMP/fpmain:on the default branch"; do
+    IFS=: read -r n k _ <<< "$x"; rc=0
+    fp_blob "$n" "$FP_LIB" "$k" || rc=$?
+    case "$rc" in
+      0) ;;
+      1) : > "$k" || { lib=""; FP_GAPS+=("$FP_LIB ${x##*:} could not be read"); } ;;
+      2) lib=""; FP_GAPS+=("$FP_LIB ${x##*:} is not a regular file") ;;
+      *) lib=""; FP_GAPS+=("$FP_LIB ${x##*:} could not be read") ;;
+    esac
   done
-  if [[ -z "$lib" ]]; then
-    FP_GAPS+=("$FP_LIB in the merge of $4 or on the default branch is not a regular file, or could not be read")
-  else
-    fp_nums "$GATE_TMP/fpmain" > "$GATE_TMP/fpm"; fp_nums "$GATE_TMP/fptree" > "$GATE_TMP/fpt"
+  if [[ -n "$lib" ]]; then
     # FILENAME, not NR == FNR: an empty first file (no library on main) would make every line main's.
     # shellcheck disable=SC2016  # awk code, not shell
-    x="$(LC_ALL=C awk -v m="$GATE_TMP/fpm" 'FILENAME == m { c[$1]++; next } { t[$1]++ }
-      END { for (n in t) { if (!(n in c)) new++; if (t[n] > 1 && t[n] > c[n]) printf "FP-%03d %d\n", n, t[n] } print "new " new + 0 }' "$GATE_TMP/fpm" "$GATE_TMP/fpt")" \
-      || x="unread"
-    while IFS=' ' read -r n k; do
-      case "$n" in
-        new) nnew="$k" ;;
-        FP-*) FP_GAPS+=("the merge of $4 holds $n $k times in $FP_LIB (renumber the branch's entry)") ;;
-        *) FP_GAPS+=("the entries of $FP_LIB could not be compared"); nnew=1 ;;
-      esac
-    done <<< "$x"
+    if fp_nums "$GATE_TMP/fpmain" > "$GATE_TMP/fpm" && fp_nums "$GATE_TMP/fptree" > "$GATE_TMP/fpt" \
+      && x="$(LC_ALL=C awk -v m="$GATE_TMP/fpm" 'FILENAME == m { c[$1]++; next } { t[$1]++ }
+        END { for (n in t) { if (!(n in c)) new++; if (t[n] > 1 && t[n] > c[n]) print "FP-" n, t[n] } print "new " new + 0 }' "$GATE_TMP/fpm" "$GATE_TMP/fpt")"; then
+      while IFS=' ' read -r n k; do
+        case "$n" in
+          new) nnew="$k" ;;
+          *) FP_GAPS+=("the merge of $4 holds $n $k times in $FP_LIB (renumber the branch's entry)") ;;
+        esac
+      done <<< "$x"
+    else
+      lib=""; FP_GAPS+=("the entries of $FP_LIB could not be compared")
+    fi
   fi
+  # A library gap above already refuses; the fix rule needs the entry count it could not read.
   # shellcheck disable=SC2016  # awk code, not shell
   if ! gate_git rev-list --no-commit-header --format='%H %s' "$1" "^$MAIN_SHA" > "$GATE_TMP/fplog" \
     || ! nfix="$(LC_ALL=C awk '!/^[0123456789abcdef]+ / && !/^[0123456789abcdef]+$/ { bad = 1 } { s = $0; sub(/^[^ ]* ?/, "", s); if (tolower(s) ~ /^fix[(:!]/) n++ } END { if (bad) exit 1; print n + 0 }' "$GATE_TMP/fplog")"; then
@@ -1819,7 +1841,7 @@ You are the build loop for $a (dispatch $4 of at most $DISPATCH_CAP). Your workt
 Your brief is $a on the default branch's commit $MAIN_SHA: read it with "git show $MAIN_SHA:$a", never from a working tree. If your branch already holds work, read its log from that commit first.
 Merge policy: ${STATUS[policy]}. Your own "scripts/build-loop.sh --check $a" is advisory: run from your branch, it refuses a self-merge brief for the checkout and skips the self-merge floor. The orchestrator's run, from the default branch's commit, decides, and for a self-merge brief applies the floor (instruction and prompt files and what they import, dot paths, paths below the name of an instruction or prompt file or of an imported .md file, the gate's own code, the user's and the cycle's records such as docs/constraints.md, docs/decisions/ and docs/thoughts/, and working docs or reviews not your own): keep every change within your brief's Paths: line and off those paths.
 Run research-plan-implement with no plan-approval gate, then pr-prep's failure-pattern advisory (its Step 0) and its review-fix loop. Never wait for an answer: a question goes in a blocked marker.
-The gate refuses your branch unless your research doc has a line "Failure-pattern grep: VALUE" (research-plan-implement's failure-pattern lookup) and, when your branch has fix(...) commits, either one adds a new FP-NNN entry to docs/thoughts/failure-patterns.md (a number no other entry has) or your research doc has a line "Failure-pattern skip: REASON", saying in one line why none of them earns an entry.
+The gate refuses your branch unless your research doc has a line "Failure-pattern grep: VALUE" (research-plan-implement's failure-pattern lookup) and, when your branch has fix(...) commits, either one adds a new FP-NNN entry to docs/thoughts/failure-patterns.md (a number no other entry has) or your research doc has a line "Failure-pattern skip: REASON", saying in one line why none of them earns an entry. On a self-merge brief an entry (docs/thoughts/ is on the floor) sends the branch to the owner's review.
 The project's constraints (docs/constraints.md at $MAIN_SHA), quoted:
 PROMPT
   printf '%s\n' "$3" | sed 's/\r$//; s/^/> /'

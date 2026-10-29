@@ -2474,7 +2474,9 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
     gated feat/x
     fpok   # the fixture's research doc, committed on main with the brief, carries the line
     onx 'git rm -q "$RD"'; fpref 1 "its research doc $RD is not in the tip of feat/x"
-    onx 'git rm -q "$RD"; mkdir -p "$RD" && echo x > "$RD/f"'; fpref 1 "its research doc $RD is not a regular file in the tip of feat/x, or could not be read"
+    onx 'git rm -q "$RD"; mkdir -p "$RD" && echo x > "$RD/f"'; fpref 1 "its research doc $RD is not a regular file in the tip of feat/x"
+    # A symbolic link (mode 120000) to a file holding the line is no research doc either.
+    onx 'mv "$RD" docs/working/real.md && ln -s real.md "$RD"'; fpref 1 "its research doc $RD is not a regular file in the tip of feat/x"
     for body in 'Failure-pattern grep:' 'Failure-pattern grep:   ' '- Failure-pattern grep:' 'Failure-pattern greps: FP-001' 'x Failure-pattern grep: FP-001' '- - Failure-pattern grep: FP-001' '**Failure-pattern grep:** FP-001'; do
         onx 'printf "# R\n\n%s\n" "$body" > "$RD"'; fpref 1 "its research doc $RD $GREPGAP" || { echo "body: $body"; return 1; }
     done
@@ -2518,9 +2520,23 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
     # A duplicate main already holds is main's: a new entry beside it passes.
     entry 002 >> "$FPL" && commit_all "main's own duplicate"
     onx 'entry 004 >> "$FPL"'; fpok
-    # Not a regular file in the merge.
+    # Not a regular file in the merge, or on main (then in the merge too, as feat/x keeps it).
     onx 'git rm -q "$FPL" && mkdir -p "$FPL" && echo x > "$FPL/f"'
-    fpref 1 "$FPL in the merge of feat/x or on the default branch is not a regular file, or could not be read"
+    fpref 1 "$FPL in the merge of feat/x is not a regular file"
+    git rm -q "$FPL" && mkdir -p "$FPL" && echo x > "$FPL/f" && commit_all "main's library a directory"
+    onx 'echo y > other.txt'
+    fpref 2 "$FPL in the merge of feat/x is not a regular file" "$FPL on the default branch is not a regular file"
+}
+
+@test "--check over two briefs: one's failure-pattern gaps and files do not carry into the next (Q-226 [5])" {
+    mkdir -p docs/thoughts && entry 001 > "$FPL" && commit_all library
+    brief y "Status: open" "Branch: feat/y"; y="$B"; work feat/y
+    git checkout -q feat/y && git rm -q docs/working/research-2026-10-01-y.md && git commit -q -m "fix: y" && git checkout -q main
+    gated feat/x; x="$B"
+    chk "$y" "$x"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $y: 2 failure-pattern gaps on feat/y (gap lines follow)" ] || { show; return 1; }
+    has "ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)"
+    [ "$(printf '%s\n' "$output" | grep -c "^gap $x")" -eq 0 ] || { show; return 1; }
 }
 
 @test "--check's failure-pattern gaps: one line each, after the checkout refusal and before denied paths in precedence, printed under either; a failed commit listing is a gap, not zero fixes (Q-226 [5])" {

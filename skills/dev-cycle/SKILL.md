@@ -594,7 +594,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   of the paths ("K of N changed paths refused", `deny` lines following) falls through to
   review: a merge entry as below, quoting `--merge`'s lines (a deny from a rule every merge
   applies refuses again under `--approved`, and is then filed as `stopped`). A conflict is
-  `stopped`, and so is a failure-pattern refusal (`gap` lines following: the loop's to fix). Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
+  `stopped`, and so is a failure-pattern refusal (`gap` lines following), unless every gap
+  names a failed read ("could not be read", "listed" or "compared"): that one is the
+  environment's, as below. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
   is the environment's, not the loop's: recorded, named in the final message, and tried
   again next iteration.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
