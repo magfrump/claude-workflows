@@ -356,7 +356,12 @@ resolved in the working tree of the repo whose config names them). A relative
 file it includes, is walked in every
 working tree that uses that config: the repo's own and each linked worktree or
 other `.git` entry in the checkout (an agent worktree runs
-`<worktree>/.husky/_`). Every remote
+`<worktree>/.husky/_`), and in every git dir it reaches, where receive hooks
+run for a push into that repo (`git push .` runs `.git/.husky/_/pre-receive`).
+A relative remote URL, remote name or legacy URL in a repo's config is likewise
+walked as resolved in each of those working trees (`../up.git` from an agent
+worktree is `.claude/worktrees/up.git`, inside the checkout), and in an
+embedded repo made with `--separate-git-dir`, in its working tree. Every remote
 URL it meets, local or not (legacy files' included, `insteadOf` bases not), and
 each `remote.*.url`/`pushurl` in your own config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
 rule whose value it starts with — from any config the scan reads, your own
@@ -367,7 +372,8 @@ git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
 `onbranch:` and `hasconfig:` taken as matching), so a relative
 `core.hooksPath` or `core.attributesFile` there is walked in the top-level
-working tree and in every embedded repo. Those, your `insteadOf` rules and your
+working tree and in every embedded repo or linked worktree (a relative
+`core.hooksPath` also in each one's git dir, for receive hooks). Those, your `insteadOf` rules and your
 remote URLs are the only entries of your own config it follows; none is recorded. It also records whether git would
 accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
 id or a link — not which branch, so switching branches is not a finding) and
@@ -474,22 +480,21 @@ in the checkout, whatever the scan says.
   cuts such a path at the `]` (`./decoy@[x]plant` pushes to `./]plant`); the
   scan walks the path as written. This holds for a remote URL, an undefined
   remote name, a legacy remotes file and an `insteadOf` result (Q-168 rubric R4).
-- **Relative remotes and receive hooks resolved against one base (not closed
-  yet).** A relative local remote, undefined remote name or legacy URL in a
-  repo's config is walked only in that repo's main working tree, but a push
-  from a linked worktree inside the checkout goes to `<worktree>/<path>`
-  (`origin = ../up.git` then lands in the checkout, where a session can plant
-  a repository); in an embedded repo made with `--separate-git-dir`, such paths
-  are resolved inside its git dir rather than its working tree; and receive
-  hooks under a relative `core.hooksPath` run from the pushed repo's git dir
-  (`<repo>/.git/<path>`, `git push .` included), which is not walked (Q-168
-  rubric A14, R3, A16).
+- **A relative `insteadOf` base, present at launch.** A rule such as
+  `url.../mirror/.insteadOf = gh:` turns an absolute-looking remote into a
+  relative path, which a push from a linked worktree resolves in that
+  worktree (`<worktree>/../mirror/…`, inside the checkout); the scan walks the
+  rewritten path only in the repo's main working tree.
+- **Your own relative `core.hooksPath` in a repository reached only as a
+  remote.** It is walked in the checkout's git dir and in each `.git` entry's,
+  but not in a bare repository the scan reaches as a local remote, whose
+  receive hooks a push into it runs from `<that repo>/<path>`.
 - **A `core.worktree` elsewhere, present at launch.** A relative
-  `core.hooksPath` is walked in the directory holding each `.git` entry (and,
-  for an embedded repo, in the `core.worktree` its own config names); the
-  checkout or a linked worktree whose `core.worktree` (in `config.worktree`,
-  say) names another directory runs hooks from `<that directory>/<path>`,
-  which is not walked.
+  `core.hooksPath` or relative remote is walked in the directory holding each
+  `.git` entry (and, for an embedded repo, in the `core.worktree` its own
+  config names); the checkout or a linked worktree whose `core.worktree` (in
+  `config.worktree`, say) names another directory runs hooks from, and
+  resolves remotes in, `<that directory>/<path>`, which is not walked.
 - **A repo config that is a symlink to another repo's, present at launch.**
   Git resolves a relative `include.path` against the directory of the path it
   opened; the scan reads each config file once, by its real path, so the

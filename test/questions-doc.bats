@@ -236,6 +236,103 @@ EOF
     [[ "$output" != *"Q-002"* ]]
 }
 
+# --- owner routes (decision 040, unit 1) ---
+# Four routes are the owner's: you: judgment, you: walkthrough, you: terminal
+# and you: fyi (answered `seen`). Mutation: drop a route from ROUTES and the
+# first test fails on "invalid route"; reorder ROUTES and the order test fails.
+
+# add_entry ID ROUTE STATUS [FILE]: append a well-formed entry.
+add_entry() {
+    printf '\n### %s · entry-%s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** %s\n\nAbout %s.\n' \
+        "$1" "${1,,}" "$2" "$3" "$1" >> "${4:-$QUESTIONS_LIVE}"
+}
+
+@test "check, index and open accept the two new owner routes" {
+    add_entry Q-004 'you: walkthrough' OPEN
+    add_entry Q-005 'you: fyi' OPEN
+    run bash "$QS" index
+    [ "$status" -eq 0 ]
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    grep -aq '^| \[Q-004\].* | you: walkthrough | ' "$QUESTIONS_LIVE"
+    grep -aq '^| \[Q-005\].* | you: fyi | ' "$QUESTIONS_LIVE"
+    run --separate-stderr bash "$QS" open
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Q-004  you: walkthrough  entry-q-004"* ]] || { echo "$output"; return 1; }
+    # Exact columns: the route is padded to 16, the longest route's width.
+    [[ "$output" == *"Q-005  you: fyi          entry-q-005"* ]] || { echo "$output"; return 1; }
+}
+
+@test "index and open sort every route by what it costs the owner" {
+    # Filed in reverse rank order, so file order and ID order both disagree with rank.
+    add_entry Q-010 deferred OPEN
+    add_entry Q-011 agent OPEN
+    add_entry Q-012 'you: fyi' OPEN
+    add_entry Q-013 'you: terminal' OPEN
+    add_entry Q-014 'you: walkthrough' OPEN
+    bash "$QS" index
+    want='you: judgment|you: walkthrough|you: terminal|you: fyi|agent|deferred|trigger'
+    have="$(sed -n '/index:start/,/index:end/p' "$QUESTIONS_LIVE" | grep -a '^| \[Q-' | awk -F' [|] ' '{ print $2 }' | paste -sd'|')"
+    [ "$have" = "$want" ] || { echo "index: $have"; return 1; }
+    have="$(bash "$QS" open 2>/dev/null | awk -F'  +' '{ print $2 }' | paste -sd'|')"
+    [ "$have" = "$want" ] || { echo "open: $have"; return 1; }
+}
+
+@test "an invalid route is refused with every accepted route named" {
+    add_entry Q-004 'you: fyi-ish' OPEN
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"Q-004: invalid route 'you: fyi-ish' (want one of: you: judgment, you: walkthrough, you: terminal, you: fyi, agent, deferred, trigger)"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "ROUTES and ROUTE_MEANING differing in length is refused before any write" {
+    local copy="$BATS_TEST_TMPDIR/qs-mismatch.sh"
+    # Drop the last meaning line (trigger's) from a copy of the script.
+    awk '/^ROUTE_MEANING=\(/ { inside = 1 } inside && /^\)/ { inside = 0; print prev_kept; print; next }
+         inside { if (held) print held; held = $0; prev_kept = ""; next } { print }' "$QS" > "$copy"
+    run --separate-stderr bash "$copy" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"ROUTES and ROUTE_MEANING differ in length"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "a you: fyi entry answered seen archives like any answered entry" {
+    add_entry Q-004 'you: fyi' ANSWERED
+    printf '\nQ-004: seen\n' >> "$QUESTIONS_LIVE"
+    run bash "$QS" archive
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"archived Q-004"* ]]
+    ! grep -aq '^### Q-004' "$QUESTIONS_LIVE"
+    grep -aq '^Q-004: seen$' "$QUESTIONS_ARCHIVE"
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "init writes a route table naming the four owner routes, each one check accepts" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/tbl" r n=0 id
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    cd "$proj"
+    bash "$QS" init
+    # The table sits above ## Index, in the live file only.
+    head="$(sed -n '1,/^## Index/p' docs/working/questions.md)"
+    for r in 'you: judgment' 'you: walkthrough' 'you: terminal' 'you: fyi'; do
+        [[ "$head" == *"| \`$r\` |"* ]] || { echo "missing $r"; echo "$head"; return 1; }
+    done
+    ! grep -aq '^| `' docs/working/questions-archive.md
+    # Every route the table lists is one check accepts (one source: ROUTES).
+    while IFS= read -r r; do
+        n=$((n + 1)); id="$(printf 'Q-%03d' "$n")"
+        add_entry "$id" "$r" OPEN docs/working/questions.md
+    done < <(grep -ao '^| `[^`]*` |' docs/working/questions.md | sed 's/^| `//; s/` |$//')
+    [ "$n" -eq 7 ]
+    bash "$QS" index
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
 # --- path resolution (Q-025) ---
 # The script is installed once as ~/.claude/scripts/questions.sh and used from
 # every project, so with no override it must read the docs/working/ of the git

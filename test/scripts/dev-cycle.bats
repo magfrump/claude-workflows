@@ -414,6 +414,18 @@ EOF
     [[ "$output" == *"Open by route: none"* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
 }
 
+@test "section 3 counts the new owner routes and never lists them as watched (decision 040)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** OPEN\n\nAbout it.\n\n' "$1" "$2" "$3"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo
+      e Q-001 walk-the-trigger-flow 'you: walkthrough'; e Q-002 deferred-read 'you: fyi'; e Q-003 watched 'trigger'; } > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"- Q-003"* && "$section" != *"- Q-001"* && "$section" != *"- Q-002"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Open by route: trigger=1, you: fyi=1, you: walkthrough=1"* ]] || { echo "$section"; return 1; }
+}
+
 @test "a questions.sh failure is reported, never shown as 'None open.'" {
     mkdir -p docs/working
     printf '# Running questions\n\n## Open\n\n### Q-001 · x\n**Needs:** trigger · **Opened:** 2026-09-17 · **Status:** OPEN\n' > docs/working/questions.md
@@ -731,6 +743,32 @@ EOF
     # A closed/ path is read for its state (not landed there yet: new); it never holds a slot.
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-03-01-open-a.md
     [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md new" ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer reads a you: fyi's seen as no option, and a batched range line as no answer (decision 040)" {
+    # An fyi is acknowledged, not decided: nothing gates on it, and a brief or a
+    # merge approval that named one gets unrecognized (fail closed). A batch
+    # (Q-4–Q-6: seen) is the owner's free text; it is recorded one Q-NNN line
+    # per entry, because no reader takes a range as an answer label.
+    mkdir -p docs/working
+    f() { printf '### %s · fyi-x\n**Needs:** you: fyi · **Status:** %s\n\nRead this.\n\n%s\n\n' "$1" "$2" "$3"; }
+    {
+        echo '# Questions'; echo
+        f Q-1 ANSWERED 'Q-1: seen'
+        f Q-2 ANSWERED '- **Answer (2026-10-28):** seen'
+        f Q-3 OPEN 'Q-3: seen'
+        f Q-4 ANSWERED "$(printf 'Q-4\342\200\223Q-6: seen\nQ-4: [1]')"
+        f Q-5 ANSWERED "$(printf 'Q-5-Q-6: seen\nQ-5: [2]')"
+        # seen is read (the first label wins), not skipped: a later [2] does not count.
+        f Q-7 ANSWERED "$(printf 'Q-7: seen\nQ-7: [2]')"
+        f Q-8 ANSWERED "$(printf '**Answer:** seen\nQ-8: [2]')"
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-7 Q-8
+    [ "$status" -eq 0 ]
+    for want in "unrecognized Q-1" "unrecognized Q-2" "open Q-3" "keep Q-4" "drop Q-5" "unrecognized Q-7" "unrecognized Q-8"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
 }
 
 @test "--check-answer reads nothing from an entry not marked ANSWERED, and reads done" {
