@@ -5,6 +5,9 @@ Branch: `feat/questions-owner-only-unit3`. Mode: build loop, no plan gate.
 Design source: decision 040; unit 2's research
 (`docs/working/research-2026-10-29-questions-watching-file.md`, "Left for later units").
 
+Failure-pattern grep: `rg -i 'silent|hidden|drop|filter|status|watch|digest' docs/thoughts/failure-patterns.md`: FP-147 (an exit status lost through process substitution) and FP-058 (a failure silently drops the result) bear on it; both shaped review fixes below.
+Failure-pattern skip: the two fix commits are instances of existing entries (round 1's sort read through `< <(...)` is FP-147; an allowlist filter that hid malformed watches is the fail-open class of FP-058), so they add no new FP entry, and `docs/thoughts/` is a record this loop may not edit.
+
 ## What exists
 
 - `questions.sh open` listed only the live file. `dev-cycle.sh` section 3 filtered it for
@@ -106,3 +109,17 @@ scripted"): four owner routes, `watching.md`, the roadmap, `migrate`. Net 0 line
   refuses a dropped or renamed watch, a deleted file, and an owner entry moved into
   `watching.md`.
 - `test/scripts/build-loop-check.bats` T14: both files denied to a build loop.
+
+## Review rounds
+
+- Round 1 (subagent): `open` showed only an exact `OPEN` watch, hiding a CR-ended or
+  misspelt one (fixed: only an explicit ANSWERED is hidden); the watch rule's sort exit
+  status was lost (fixed); comments overstated "never dropped" (reworded to the heading);
+  bare `questions.md`/`watching.md` in the global instructions read as workflow refs to the
+  health check (respelled). Not changed: `open` follows a link to a regular file, as for
+  the live file; the digest refuses links first.
+- Round 2: an empty or misspelt route dropped out of the digest's watch list (fixed: the
+  route column is read by position and any route that is not an owner's or `agent` lists,
+  marked malformed). Confirming review: clean.
+- Not tested: the second `open` call failing alone (the first call's failure path is).
+
