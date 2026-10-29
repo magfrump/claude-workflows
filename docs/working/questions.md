@@ -28,6 +28,7 @@ The index below is generated — edit entries, not the table.
 | [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | you: judgment | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
 | [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | you: judgment | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
 | [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | you: judgment | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
+| [Q-232](#q-232--merge-2026-10-29-harness-feedback-file-2b858d2586c3) | you: judgment | Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -424,4 +425,44 @@ path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/script
 | **[3] changes needed** | Your note goes back to the loop (e.g. "stop the iteration until a migration runs") | A one-line note | Another loop round |
 
 - **Blocks:** nothing else.
+- **Interim:** the branch waits; nothing on main changes.
+
+### Q-232 · merge-2026-10-29-harness-feedback-file-2b858d2586c3
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/2026-10-29-harness-feedback-file.md`, roadmap In flight)? It builds version 1 of your feedback point 4: each project using the harness keeps a `docs/harness-feedback.md`, sessions there append an entry when a harness feature fails, rubs or works, and you copy the file here with one command that routes each entry.
+
+- **Why it's yours:** it changes the global instructions every session loads (`global-instructions/CLAUDE.md`, +4 lines) and `workflows/pr-prep.md` (a fifth retrospective question); both are instruction files self-merge would never land.
+- **The pieces:**
+  - **Entry shape:** `### F-NNN · slug`, a line naming the feature, date and verdict (fails, friction or works), then Context, Expected, Observed and Evidence bullets. Each entry maps onto a future GitHub issue. The grammar is written once, in `guides/harness-feedback.md`.
+  - **Script:** `scripts/harness-feedback.py` (python3 stdlib, 379 lines): `check`, `next-id`, `init` (in a project), and `ingest FILE` (here only). `ingest` validates the file, stores it at `docs/working/feedback/NAME.md`, and adds one idea-log line per new entry, so the dev cycle's brainstorm sees it. It refuses a copy whose entries don't continue the stored one.
+  - **Where sessions meet it:** the global instructions' new "Harness feedback" section, the pr-prep retrospective question, and `guides/cross-project-setup.md`.
+- **Your act after merging:** run `scripts/harness-feedback.py ingest PATH` on a copied file. A file dropped into `docs/working/feedback/` by plain `cp` is never routed. The loop suggests an idea-source row for `docs/working/feedback/*.md` in `docs/dev-cycle.md` (your file; tell me if you want it).
+- **Reaching other projects:** the global-instructions change reaches the host at the next `install.sh` run (Q-227's paste).
+- **Tests:** 48 bats cases (good file, each refusal, `init`, `ingest` on a sample including rerun and symlink refusals); the hermeticity lint and health check passed on the tip. Review round 1 found a real data-loss bug (devcontainer projects all mounted at /workspace shared one name, so a second ingest overwrote the first); fixed. Round 2: no red, two amber, fixed.
+- **Read:** `docs/working/research-2026-10-29-harness-feedback-file.md` and `guides/harness-feedback.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-harness-feedback-file.md 2b858d2586c38c3ecb063e55f344befb0a17a536 367db1f6f245566cb277eaa21cb7dc07e7d797c2
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M docs/working/briefs/2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A docs/working/research-2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/README.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/cross-project-setup.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A guides/harness-feedback.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A scripts/harness-feedback.py
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A test/scripts/harness-feedback.bats
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M workflows/pr-prep.md
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (instruction file), `workflows/pr-prep.md` (instruction file, and under this repo's `workflows/` never glob).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 2b858d25; projects start filing after the next install | One `ingest` run per copied file | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 4 goes back to the roadmap | None now | No feedback channel from projects |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** version 2 (GitHub issues), an idea until v1 is used.
 - **Interim:** the branch waits; nothing on main changes.
