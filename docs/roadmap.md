@@ -43,25 +43,29 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      which step of the review-fix loop let the merge through. First step: a read-only
      `review-gap-audit` procedure (for each committed rubric with amber or red rows, find
      the merge that carried it, whether a fix round followed, and which gate or prose rule
-     should have stopped it), tried on the repo the owner names. Brief when a slot frees.
+     should have stopped it), tried on the repo the owner names. Waits for the owner to
+     name the repo (asked in session 2026-10-29).
   4. A surface for projects to file feedback about the harness. First step (v1): a
      `docs/harness-feedback.md` file any project can append to in a fixed entry shape,
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
-     else open one) is an idea until v1 is used. Brief when a slot frees.
+     else open one) is an idea until v1 is used. Briefed (In flight).
 
 ## In flight
 
 
 - **Questions doc owner-only, unit 2: `watching.md` and `questions.sh migrate`** (Now,
   decision 040). Motive: unit 1 merged (236f21ee) and moved the agent-route refusal here,
-  to land with its home and remedy. Gate code (`scripts/questions.sh`): review policy, a
-  `merge-gate` entry when ready. Brief: `docs/working/briefs/2026-10-29-questions-watching-file.md`
+  to land with its home and remedy. Gate code (`scripts/questions.sh`): review policy. Built
+  and ready; merge is Q-229, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-questions-watching-file.md`
 
 - **Session answers approve merge entries** (Now, owner feedback 2026-10-29 point 1).
-  Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`
+  Gate code: review policy. Built and ready; merge is Q-230, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`
 
 - **Convention changes ship migrations the dev cycle runs first** (Now, owner feedback
   2026-10-29 point 2). Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
+
+- **Harness feedback file for projects, v1** (Now, owner feedback 2026-10-29 point 4).
+  Review policy. Brief: `docs/working/briefs/2026-10-29-harness-feedback-file.md`
 
 ## Next
 
