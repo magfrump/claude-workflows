@@ -135,6 +135,18 @@ the reviewer's ask; (c) the remedy command missing on main: the guide requires i
 same change; (d) parallel branches: the second fails the check after merging main, by
 design; (e) an image older than the skill: section 7b says NOT checked, step 1b records it.
 
+## Review (round 1) and what it changed
+
+A review subagent found no high findings. Fixed: rewriting the newest registry line's FP
+passed the check (now the bats merge check holds the registry append-only against the
+default branch's copy, `conv_append_only`); an open `migrate-ID` entry had no closing path
+once the migration ran (step 1b now reports it for the owner to answer); an unparseable
+registry stopped the whole digest (now `bash -n` first, "does not parse"); section 7b said
+"None" with no migration to check (now its own message); `.git` paths were accepted in
+PATH; the source extractions ran to end of file on a lost anchor (now each needs its end
+marker, and step 8's stops at the next heading). Tests added for each. The first commit's
+message says "one `you: terminal` entry"; it is one per migration, sharing one paste.
+
 ## Files
 
 - `scripts/lib/migrations.sh` (new): registry, `mig`, `conv_source`, `conv_fingerprint`,

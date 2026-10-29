@@ -34,6 +34,8 @@
 # Run directly: `bash scripts/lib/migrations.sh check [ROOT]` (exit 1 naming
 # each convention whose newest line's FP is not its source's, and each
 # malformed line) or `fingerprint [ROOT]` (one "CONVENTION FP" line each).
+# The bats merge check also holds the registry append-only against the
+# default branch's copy (conv_append_only).
 # ROOT defaults to the checkout holding this file.
 
 CONVENTIONS=(questions roadmap brief record)
@@ -51,7 +53,7 @@ mig() {
   elif [[ "$rem" == *$'\n'* || -z "$rem" ]]; then why="the remedy is empty or spans lines"
   elif [[ "$p" == - ]]; then
     [[ "$ere" == - && "$rem" == "none: "?* ]] || why="with PATH '-', ERE is '-' and the remedy 'none: WHY'"
-  elif [[ ! "$p" =~ ^[A-Za-z0-9._][A-Za-z0-9._/-]*$ || "/$p/" == */../* || "/$p/" == */./* || "$p" == */ ]]; then
+  elif [[ ! "$p" =~ ^[A-Za-z0-9._][A-Za-z0-9._/-]*$ || "/$p/" == */../* || "/$p/" == */./* || "$p" == */ || "/${p,,}" == */.git* ]]; then
     why="PATH is not a plain relative file path"
   elif [[ -z "$ere" || "$ere" == - || "$rem" == none:* ]]; then why="a migration needs an ERE and a command"
   else
@@ -69,7 +71,7 @@ conv_source() {
   local c="$1" r="$2" t f out
   case "$c" in
     questions)
-      out="$(awk '/^# Entry grammar/ { on = 1 } on && /^# Usage:/ { exit } on' "$r/scripts/questions.sh")" || return 1
+      out="$(awk '/^# Entry grammar/ { on = 1 } on && /^# Usage:/ { e = 1; exit } on { print } END { exit !e }' "$r/scripts/questions.sh")" || return 1
       [[ -n "$out" ]] || return 1
       printf '%s\n' "$out"
       t="$(mktemp -d)" || return 1
@@ -80,11 +82,11 @@ conv_source() {
       rm -rf -- "$t" ;;
     roadmap|record)
       [[ "$c" == roadmap ]] && f='### 6. Roadmap' || f='### 9. Record and land'
-      out="$(awk -v h="$f" '$0 == h { s = 1; next } s == 1 && /^### / { exit } s == 1 && /^```markdown$/ { s = 2; next } s == 2 && /^```$/ { exit } s == 2' \
+      out="$(awk -v h="$f" '$0 == h { s = 1; next } s == 1 && /^### / { exit } s == 1 && /^```markdown$/ { s = 2; next } s == 2 && /^```$/ { e = 1; exit } s == 2 { print } END { exit !e }' \
         "$r/skills/dev-cycle/SKILL.md")" || return 1
       [[ -n "$out" ]] || return 1; printf '%s\n' "$out" ;;
     brief)
-      out="$(awk '/^### 8\. Build briefs$/ { s = 1 } s == 1 && /^For each, write `docs\/working\/briefs\// { s = 2 } s == 2 { print } s == 2 && /line a loop.s merge changes\./ { e = 1; exit } END { exit !e }' \
+      out="$(awk '/^### 8\. Build briefs$/ { s = 1; next } s && /^### / { exit } s == 1 && /^For each, write `docs\/working\/briefs\// { s = 2 } s == 2 { print } s == 2 && /line a loop.s merge changes\./ { e = 1; exit } END { exit !e }' \
         "$r/skills/dev-cycle/SKILL.md")" || return 1
       printf '%s\n' "$out" ;;
     *) return 1 ;;
@@ -94,6 +96,18 @@ conv_fingerprint() {  # $1 convention, $2 checkout
   local s
   s="$(conv_source "$1" "$2")" || return 1
   printf '%s\n' "$s" | sha256sum | cut -c1-16
+}
+
+# Append-only: every `mig` line of registry file $1 (the default branch's)
+# is, in order, the start of $2's (this checkout's). Prints a refuse line and
+# fails otherwise, so a convention change cannot pass by rewriting an old line.
+conv_append_only() {
+  local a b
+  a="$(grep -a '^mig ' -- "$1")" || [[ $? -eq 1 ]] || { echo "refuse registry: $1 could not be read"; return 1; }
+  b="$(grep -a '^mig ' -- "$2")" || [[ $? -eq 1 ]] || { echo "refuse registry: $2 could not be read"; return 1; }
+  [[ -z "$a" || "$b" == "$a" || "$b" == "$a"$'\n'* ]] && return 0
+  echo "refuse registry: a mig line the default branch has was edited, removed or moved; restore it and add a new line instead"
+  return 1
 }
 
 conv_check() {  # $1 checkout; prints one "refuse" line per problem, exit 1 if any

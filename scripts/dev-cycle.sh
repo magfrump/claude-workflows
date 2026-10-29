@@ -524,15 +524,18 @@ MIG_LIB="$SCRIPT_DIR/lib/migrations.sh"
 nm="**Migrations were NOT checked** —"
 if [[ ! -f "$MIG_LIB" || -L "$MIG_LIB" ]]; then
   echo "$nm lib/migrations.sh is missing beside this script (a copy older than this section)."
+elif ! bash -n -- "$MIG_LIB" 2>/dev/null; then
+  echo "$nm lib/migrations.sh does not parse."
 else
   # shellcheck source=lib/migrations.sh
   source "$MIG_LIB"
   if [[ ${#MIG_BAD[@]} -gt 0 ]]; then
     echo "$nm its registry has malformed lines:"; printf -- '- %s\n' "${MIG_BAD[@]}"
   else
-    mig_out=()
+    mig_out=(); mig_n=0
     for i in "${!MIG_ID[@]}"; do
       p="${MIG_PATH[$i]}"; [[ "$p" != - ]] || continue
+      mig_n=$((mig_n + 1))
       if skipped "$p"; then mig_out+=("- not checked ${MIG_ID[$i]}: $(skipnote "$p")"); continue; fi
       inrepo "$p" || continue
       rc=0; l="$(env LC_ALL=C grep -anE -m1 -- "${MIG_ERE[$i]}" "$p")" || rc=$?
@@ -542,7 +545,8 @@ else
         *) mig_out+=("- not checked ${MIG_ID[$i]}: grep could not read $p") ;;
       esac
     done
-    if [[ ${#mig_out[@]} -eq 0 ]]; then echo "None: no file holds a line in a shape a convention change replaced."
+    if [[ $mig_n -eq 0 ]]; then echo "None: the registry has no migration with a file to check."
+    elif [[ ${#mig_out[@]} -eq 0 ]]; then echo "None: no file holds a line in a shape a convention change replaced."
     else printf '%s\n' "${mig_out[@]}"; fi
   fi
 fi

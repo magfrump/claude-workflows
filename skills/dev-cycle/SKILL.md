@@ -441,7 +441,9 @@ brief or dispatch:
   migration rewrites the questions files' entries or the roadmap's headings, which step 9's
   `--cycle-diff` refuses without the owner, and holding the iteration until the owner runs
   it would stop every loop on a chore (S10). An answered `migrate-ID` entry whose migration
-  is still pending gets no new entry; the final message names it.
+  is still pending gets no new entry; the final message names it. An open `migrate-ID`
+  entry whose ID section 7b no longer lists has been run: the record and the final
+  message say so, for the owner to answer it.
 - `not checked ID: …`, or **Migrations were NOT checked**: the record and the final
   message, never read as none pending.
 

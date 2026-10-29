@@ -42,6 +42,30 @@ add_mig() {
     [ -z "$output" ]
 }
 
+@test "merge check: the registry is append-only against the default branch's copy (bootstrap: the default branch has none)" {
+    base="$(git -C "$W" merge-base HEAD refs/heads/main)" || { echo "no merge base with refs/heads/main"; return 1; }
+    if git -C "$W" cat-file -e "$base:scripts/lib/migrations.sh" 2>/dev/null; then
+        git -C "$W" show "$base:scripts/lib/migrations.sh" > "$BATS_TEST_TMPDIR/main-reg"
+        run --separate-stderr bash -c 'source "$1"; conv_append_only "$2" "$1"' _ "$LIB" "$BATS_TEST_TMPDIR/main-reg"
+        [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    fi
+}
+
+@test "append-only: adding a line passes; editing, removing or reordering an old one is refused" {
+    printf 'mig a questions 0000000000000000 - - x\nmig b roadmap 1111111111111111 - - y\n' > "$BATS_TEST_TMPDIR/old"
+    ok() { printf '%s\n' "$@" > "$BATS_TEST_TMPDIR/new"; bash -c 'source "$1"; conv_append_only "$2" "$3"' _ "$LIB" "$BATS_TEST_TMPDIR/old" "$BATS_TEST_TMPDIR/new"; }
+    run ok 'mig a questions 0000000000000000 - - x' 'mig b roadmap 1111111111111111 - - y' 'mig c roadmap 2222222222222222 - - z'
+    [ "$status" -eq 0 ]
+    for bad in "mig a questions 0000000000000000 - - x|mig b roadmap 2222222222222222 - - y" \
+               "mig a questions 0000000000000000 - - x" \
+               "mig b roadmap 1111111111111111 - - y|mig a questions 0000000000000000 - - x"; do
+        IFS='|' read -ra lines <<< "$bad"
+        run ok "${lines[@]}"
+        [ "$status" -eq 1 ] || { echo "passed: $bad"; return 1; }
+        [[ "$output" == "refuse registry: a mig line the default branch has was edited, removed or moved"* ]]
+    done
+}
+
 @test "a changed roadmap template fails the check, naming the convention, its new fingerprint and the line to add; adding that line passes" {
     T="$BATS_TEST_TMPDIR/c"; copy_sources "$T"
     perl -0pi -e 's/^## Done$/## Blocked\n## Done/m' "$T/skills/dev-cycle/SKILL.md"
@@ -91,6 +115,7 @@ mig m1 nosuch 0123456789abcdef - - 'none: x'
 mig m2 questions 0123 - - 'none: x'
 mig m3 questions 0123456789abcdef docs/working/questions.md '(' 'run it'
 mig m4 questions 0123456789abcdef ../x.md 'a' 'run it'
+mig m8 questions 0123456789abcdef .GIT/config 'a' 'run it'
 mig m5 questions 0123456789abcdef - - 'run it'
 mig m6 questions 0123456789abcdef docs/a.md 'a' 'none: x'
 mig baseline-questions questions 0123456789abcdef - - 'none: x'
@@ -100,7 +125,7 @@ EOF
     run --separate-stderr bash "$L" check "$T"
     [ "$status" -eq 1 ]
     for want in "mig Bad-ID: the ID is not" "mig m1: no convention named 'nosuch'" "mig m2: the FP is not 16 hex" \
-                "mig m3: the ERE does not compile" "mig m4: PATH is not a plain relative" \
+                "mig m3: the ERE does not compile" "mig m4: PATH is not a plain relative" "mig m8: PATH is not a plain relative" \
                 "mig m5: with PATH '-'" "mig m6: a migration needs an ERE and a command" \
                 "mig baseline-questions: the ID is used twice" "mig m7: takes 6 fields, not 5"; do
         [[ "$output" == *"refuse registry: $want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
@@ -161,8 +186,18 @@ mig r-old roadmap 0123456789abcdef docs/roadmap.md '^## Later\$' 'fix it'"
     [[ "$(section)" == *"**Migrations were NOT checked** — lib/migrations.sh is missing beside this script"* ]] || { section; return 1; }
 }
 
-@test "digest: this checkout's own registry reads cleanly (no malformed line)" {
-    run --separate-stderr bash -c 'source "$1"; printf "%s\n" "${MIG_BAD[@]}"' _ "$LIB"
+@test "digest: a symlinked or unparseable registry, or one with no file to check, never reads as checked" {
+    digest_with ""
+    run --separate-stderr bash "$S/dev-cycle.sh"
+    [[ "$(section)" == *"None: the registry has no migration with a file to check."* ]] || { section; return 1; }
+    echo "mig x questions 0123456789abcdef - - 'none: x" >> "$S/lib/migrations.sh"
+    run --separate-stderr bash "$S/dev-cycle.sh"
     [ "$status" -eq 0 ]
-    [ -z "$output" ]
+    [[ "$(section)" == *"**Migrations were NOT checked** — lib/migrations.sh does not parse."* ]] || { section; return 1; }
+    [[ "$output" == *"## 8. Skipped inputs"* ]]
+    mv "$S/lib/migrations.sh" "$BATS_TEST_TMPDIR/real.sh"; cp "$LIB" "$BATS_TEST_TMPDIR/real.sh"
+    ln -s "$BATS_TEST_TMPDIR/real.sh" "$S/lib/migrations.sh"
+    run --separate-stderr bash "$S/dev-cycle.sh"
+    [ "$status" -eq 0 ]
+    [[ "$(section)" == *"**Migrations were NOT checked** — lib/migrations.sh is missing beside this script"* ]] || { section; return 1; }
 }
