@@ -107,6 +107,18 @@ way forward (H2). Unit 1 accepted the same skew for this unit.
   file), and S8 names `cc-isolated.sh` and `install.sh` as the files not to grow; the
   additions are kept to the new modes.
 
+## Review (round 1) and what it changed
+
+A review subagent found: a directory planted at the listing path made `migrate` report
+success while the entry went to a hidden temp file inside it (high; fixed: refused, and
+`replace_with` uses `mv -T`); a re-run after an interrupted `migrate` duplicated the entry
+(fixed: an entry whose identical copy already landed is only removed from the live file);
+a closed watch went under a heading following `## Closed` (fixed); whitespace-only lines
+were blanked (fixed). Not changed: a `## ` line inside an entry body (say, in a code
+fence) ends the entry. `archive` and `parse_entries` already use that rule, so `migrate`
+moves exactly the span `archive` would; the remainder stays in `questions.md`, and no text
+is deleted. A fence-aware parser is a change to all three readers, beyond this unit.
+
 ## Left for later units (not changed here)
 
 - `global-instructions/CLAUDE.md` lists `init`/`index`/`archive`/`check` and still routes
