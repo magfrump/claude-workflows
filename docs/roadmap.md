@@ -62,7 +62,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Gate code: review policy. Built and ready; merge is Q-230, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`
 
 - **Convention changes ship migrations the dev cycle runs first** (Now, owner feedback
-  2026-10-29 point 2). Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
+  2026-10-29 point 2). Gate code: review policy. Built and ready; merge is Q-231, a
+  `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
 
 - **Harness feedback file for projects, v1** (Now, owner feedback 2026-10-29 point 4).
   Review policy. Brief: `docs/working/briefs/2026-10-29-harness-feedback-file.md`
