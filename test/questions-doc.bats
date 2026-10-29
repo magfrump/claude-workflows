@@ -332,7 +332,9 @@ add_entry() {
         n=$((n + 1)); id="$(printf 'Q-%03d' "$n")"
         add_entry "$id" "$r" OPEN docs/working/questions.md
     done < <(grep -ao '^| `[^`]*` |' docs/working/questions.md | sed 's/^| `//; s/` |$//')
-    [ "$n" -eq 7 ]
+    [ "$n" -eq 4 ]
+    # The other three are named with their homes, not tabled (decision 040).
+    grep -aqF 'Not in this file: `agent` (docs/roadmap.md), `deferred` (docs/working/watching.md), `trigger` (docs/working/watching.md).' docs/working/questions.md
     bash "$QS" index
     run bash "$QS" check
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -388,7 +390,7 @@ add_entry() {
     git -C "$proj" init -q
     cd "$proj" || return 1
     local sub
-    for sub in next-id index archive check open; do
+    for sub in next-id index archive check open migrate; do
         run --separate-stderr bash "$QS" "$sub"
         [ "$status" -ne 0 ] || { echo "$sub exited 0"; return 1; }
         # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
@@ -488,4 +490,173 @@ make_symlink_project() {
     [ "$(stat -c %a "$QUESTIONS_ARCHIVE")" = "640" ]
     # No temp files left behind next to them.
     ! compgen -G "$BATS_TEST_TMPDIR/.questions.*" > /dev/null
+}
+
+# --- watching.md, the refusal and migrate (decision 040, unit 2) ---
+# Mutations: drop the refusal or the cutoff date test, or a destination write
+# in migrate, and a case below fails.
+
+# A watching file as init writes it, beside the fixture live file.
+make_watching() {
+    rm -f "$BATS_TEST_TMPDIR/watching.md"
+    bash "$QS" init >/dev/null 2>&1
+    [ -f "$BATS_TEST_TMPDIR/watching.md" ]
+}
+
+# add_dated ID ROUTE STATUS DATE [FILE]
+add_dated() {
+    printf '\n### %s · entry-%s\n**Needs:** %s · **Opened:** %s · **Status:** %s\n\nAbout %s.\n' \
+        "$1" "${1,,}" "$2" "$4" "$3" "$1" >> "${5:-$QUESTIONS_LIVE}"
+}
+
+@test "init creates watching.md beside the live file, with Open and Closed, and never clobbers" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    grep -qx '<!-- index:start -->' "$w"
+    grep -qx '## Open' "$w"
+    grep -qx '## Closed' "$w"
+    [ "$(grep -ao '^| `[a-z]*` |' "$w" | paste -sd' ')" = '| `deferred` | | `trigger` |' ]
+    echo sentinel >> "$w"
+    bash "$QS" init
+    grep -qx sentinel "$w"
+}
+
+@test "check refuses each non-owner route opened on the cutoff, naming its home and migrate" {
+    local route home
+    for route in agent deferred trigger; do
+        setup
+        add_dated Q-009 "$route" OPEN 2026-10-30
+        bash "$QS" index
+        run --separate-stderr bash "$QS" check
+        [ "$status" -eq 1 ] || { echo "$route: exit 0"; return 1; }
+        home=docs/working/watching.md; [[ "$route" == agent ]] && home=docs/roadmap.md
+        [[ "$stderr" == *"✗ Q-009: route '$route' is refused in questions.md; it belongs in $home — run: ~/.claude/scripts/questions.sh migrate"* ]] \
+            || { echo "$route: $stderr"; return 1; }
+    done
+}
+
+@test "check only warns about a non-owner entry opened before the cutoff" {
+    add_dated Q-009 agent OPEN 2026-10-29
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [[ "$stderr" == *"⚠ Q-009: route 'agent' belongs in docs/roadmap.md, not questions.md (opened before 2026-10-30, so not refused) — run: ~/.claude/scripts/questions.sh migrate"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "check validates watching.md: a closed watch under ## Closed passes" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-010 trigger ANSWERED 2026-10-30 "$w"
+    sed -i '/^## Open$/a\
+\
+### Q-011 · open-watch\
+**Needs:** deferred · **Opened:** 2026-10-30 · **Status:** OPEN\
+\
+Waiting.' "$w"
+    bash "$QS" index
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    grep -aq '^| \[Q-010\]' "$w"
+}
+
+@test "check refuses an OPEN watch under ## Closed, a closed one above it, and an owner route" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-010 trigger OPEN 2026-10-30 "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"Q-010 is OPEN but sits under watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+
+    make_watching
+    sed -i '/^## Open$/a\
+\
+### Q-010 · closed-too-early\
+**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** ANSWERED' "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+
+    make_watching
+    add_dated Q-010 'you: judgment' ANSWERED 2026-10-30 "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"Q-010: route 'you: judgment' does not belong in watching.md"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "check reports a stale watching index and a shared id; next-id reads watching.md" {
+    make_watching
+    add_dated Q-001 trigger ANSWERED 2026-10-30 "$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-040 trigger ANSWERED 2026-10-30 "$BATS_TEST_TMPDIR/watching.md"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"watching.md: index is stale"* && "$stderr" == *"duplicate id: Q-001"* ]] || { echo "$stderr"; return 1; }
+    run --separate-stderr bash "$QS" next-id
+    [ "$output" = "Q-041" ]
+}
+
+# Every entry's text, keyed by ID, from any number of files, as sorted JSON:
+# an entry runs from its heading to the next entry or `## ` heading, with
+# trailing blank lines dropped (the same span `archive` moves).
+entries_of() {
+    python3 -I -c '
+import json, re, sys
+out = {}
+for path in sys.argv[1:]:
+    cur = None
+    for line in open(path, encoding="utf-8").read().split("\n"):
+        m = re.match(r"### (Q-[0-9]+) ", line)
+        if m:
+            cur = m.group(1); out[cur] = []
+        elif line.startswith("## "):
+            cur = None
+        if cur:
+            out[cur].append(line)
+print(json.dumps({k: "\n".join(v).rstrip("\n") for k, v in out.items()}, sort_keys=True, indent=1))
+' "$@"
+}
+
+@test "migrate moves every non-owner entry out without losing text, and is idempotent" {
+    local w="$BATS_TEST_TMPDIR/watching.md" l="$BATS_TEST_TMPDIR/roadmap-from-questions.md" before after
+    add_dated Q-004 agent OPEN 2026-10-30
+    add_dated Q-005 deferred ANSWERED 2026-10-30
+    add_dated Q-006 'you: fyi' OPEN 2026-10-30
+    add_dated Q-007 agent ANSWERED 2026-10-28
+    printf -- '- **Blocks:** nothing\n\n| a | b |\n|---|---|\n' >> "$QUESTIONS_LIVE"
+    bash "$QS" index
+    before="$(entries_of "$QUESTIONS_LIVE")"
+    [ ! -e "$w" ]
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"migrated 4 entries"* ]] || { echo "$output"; return 1; }
+    after="$(entries_of "$QUESTIONS_LIVE" "$w" "$l")"
+    [ "$before" = "$after" ] || { diff <(echo "$before") <(echo "$after"); return 1; }
+    [ "$(parse_ids "$QUESTIONS_LIVE")" = "Q-001 Q-006" ]
+    [ "$(parse_ids "$l")" = "Q-004 Q-007" ]
+    [ "$(sed -n '/^## Open$/,/^## Closed$/p' "$w" | grep -ao '^### Q-[0-9]*' | paste -sd' ')" = "### Q-003" ]
+    [ "$(sed -n '/^## Closed$/,$p' "$w" | grep -ao '^### Q-[0-9]*' | paste -sd' ')" = "### Q-005" ]
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" != *"⚠"* ]] || { echo "$output"; return 1; }
+    before="$(cat "$QUESTIONS_LIVE" "$w" "$l" | sha256sum)"
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"migrated 0 entries"* ]]
+    [ "$(cat "$QUESTIONS_LIVE" "$w" "$l" | sha256sum)" = "$before" ]
+}
+
+parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
+
+@test "migrate refuses to write through a symlinked watching.md" {
+    local victim="$BATS_TEST_TMPDIR/victim"
+    echo original > "$victim"
+    ln -s "$victim" "$BATS_TEST_TMPDIR/watching.md"
+    run --separate-stderr bash "$QS" migrate
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"is a symlink"* ]]
+    [ "$(cat "$victim")" = original ]
+    grep -aq '### Q-003' "$QUESTIONS_LIVE"
 }
