@@ -182,3 +182,8 @@ The roadmap-template test failed for the same reason (the copied, unregistered
 locale warnings go to stderr, which `run --separate-stderr` keeps out of `$output`, and
 the file passes under both the broken `en_US.UTF-8` and `C.UTF-8`. It now asserts the
 unchanged copy passes first, so a convention out of step reads as a failed precondition.
+
+## Failure patterns
+
+- Failure-pattern grep: FP-084 (`grep -inE 'registry|fingerprint|migrat|convention|shellcheck|precondition' docs/thoughts/failure-patterns.md`): an overbroad soundness guard, not this mechanism; no other hit.
+- Failure-pattern skip: the fix(...) commits are review-round fixes to code first written on this branch, and dispatch 2's two are the planned registry line after unit 2 merged and a lint suppression for a literal `~`; none has a root cause a future grep needs.
