@@ -485,6 +485,7 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
 3. **Surprises** — What was unexpected — in the codebase, the tooling, the requirements, or the review feedback? What would have helped you anticipate it?
 4. **Next time** — Knowing what you know now, what would you do differently in the plan, the process, or the code?
+5. **Harness** — Did a harness skill, workflow or script fail, cause friction, or catch something real here? Outside claude-workflows, file it in `docs/harness-feedback.md` (grammar: `guides/harness-feedback.md`).
 
 **Completion criteria:**
 - [ ] At least one of the four questions answered with more than one sentence
