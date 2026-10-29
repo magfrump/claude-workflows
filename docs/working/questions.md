@@ -263,16 +263,27 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `f91d7d09e6639f0def8f176e134c1c5d72014209` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, and Q-228's failure-pattern wiring, merged at f91d7d09). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
+Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `a8e941a5e226f1dfba291ae8c0758c9096f65323` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, Q-228's failure-pattern wiring, merged at f91d7d09, Q-229's `watching.md` and `migrate`, merged at 6ee39f24, and Q-230's session answers, merged at 014e5219; Q-232's harness feedback file, merged at a8e941a5, ships with it). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = f91d7d09e6639f0def8f176e134c1c5d72014209 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = a8e941a5e226f1dfba291ae8c0758c9096f65323 && ./devcontainer-config/install.sh
 ```
 
 The only git call before `install.sh`'s own state gate is `rev-parse`, which runs no hook. If the `test` fails, your host checkout is not at M: bring it there first, knowing that any other git command on the host (a checkout included) can run a hook a sandbox session planted, as `install.sh`'s trust model says. This one paste also covers Q-222 (the same `install.sh` run, at a newer commit): run `cc-verify --help | head -5 && cc-isolated --list` after it, as Q-222 asks.
 
 - **Changed gate paths (C to M):** `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`
-- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M f91d7d09; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M a8e941a5; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+  - a8e941a5 Merge branch 'feat/harness-feedback-file' (build-loop approved merge)
+  - 014e5219 Merge branch 'feat/session-answers-for-merge-entries' (build-loop approved merge)
+  - 6ee39f24 Merge branch 'feat/questions-watching-file' (build-loop approved merge)
+  - 02459ad4 Merge branch 'chore/dev-cycle-2026-10-29-2212'
+  - fd9531bf merge approval
+  - 1d49a0dc Merge branch 'chore/dev-cycle-2026-10-29-2126'
+  - cfa3a158 Merge branch 'chore/dev-cycle-2026-10-29-2108'
+  - 2d157f5e Merge branch 'chore/dev-cycle-2026-10-29-2045'
+  - a5266b26 Merge branch 'chore/dev-cycle-2026-10-29-2045'
+  - ff7516c2 Merge branch 'chore/dev-cycle-2026-10-29-2003'
+  - 0784fc8e Merge branch 'chore/dev-cycle-2026-10-29-2003'
   - f91d7d09 Merge branch 'feat/failure-pattern-loop-wiring' (build-loop approved merge)
   - eecf0268 owner notes
   - 2e14f670 Merge branch 'chore/dev-cycle-2026-10-29-1937'
@@ -316,6 +327,7 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
   - 4388056e Merge branch 'docs/decision-015-amendment' (build-loop approved merge)
   - 062acde2 fix(wiring): drop the Write(path) deny rules Claude Code never matches
   - be464869 Merge branch 'feat/interview-profile-run2'
-- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `guides/cc-isolated-usage.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (51 paths under `docs/` are not in the image).
-- **Interim:** the image's gate runs (built at C); Q-224's owner routes and Q-228's failure-pattern checks are on main, but the dev cycle still runs the old `questions.sh` and `build-loop.sh`.
+- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/README.md`, `guides/cc-isolated-usage.md`, `guides/cross-project-setup.md`, `guides/harness-feedback.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/harness-feedback.py`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/harness-feedback.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (57 paths under `docs/` are not in the image).
+- **Interim:** the image's gate runs (built at C); Q-224, Q-228, Q-229 and Q-230 are on main, but the dev cycle still runs the old `questions.sh`, `build-loop.sh` and dev-cycle skill, and sessions still load the old global instructions.
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
+

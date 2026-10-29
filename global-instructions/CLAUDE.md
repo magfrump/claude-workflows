@@ -166,6 +166,10 @@ Unlike decision records (which are final), these are living documents. Update th
 
 Long-lived documents (onboarding docs, spike records, shared thoughts) support **freshness tracking** via `Last verified` and `Relevant paths` fields. Before relying on these documents, check whether tracked paths have changed using `git log --since`. See `guides/doc-freshness.md` for the full heuristic.
 
+## Harness feedback
+
+When a feature of this harness (a skill, workflow, script, hook or one of these instructions) fails, causes friction, or catches something real in a project other than claude-workflows, append one entry to that project's `docs/harness-feedback.md`: what happened here, expected vs observed, evidence. The owner copies the file to claude-workflows, where it becomes dev-cycle ideas. `~/.claude/scripts/harness-feedback.py` has `init`, `next-id` and `check` (run `check` before committing); the grammar is in `~/.claude/guides/harness-feedback.md`. No secrets in entries: the file leaves the project.
+
 ## Operating Modes
 
 The session operates in one of two modes: **active** or **away**. Mode is session-scoped and defaults to **away**.
