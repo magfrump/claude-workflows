@@ -649,7 +649,9 @@ commit an answer was read from is shown to the user (row 727).
   one the entry names, never the branch's live tip. MAIN_WT's state, no identity or a
   moved main is retried next iteration and named in the final message, the ID left off
   `Applied:`; any other refusal is filed as `stopped`, its lines the reason. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
-  record and the final message.
+  record and the final message. An answer the user gave in session is read here once
+  step 9 has landed it (as `--answered`), so it merges in the next iteration, like one they
+  committed.
 
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
 none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged`, `drop`
@@ -749,9 +751,13 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    (rows 747, 749). Committing first leaves WT clean, so main can be merged in.
 3. Read M, the default branch's commit (`hg -C WT rev-parse --verify refs/heads/main`),
    then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
-   this iteration wrote (never one from repo text or a loop's report, and never a merge
-   entry's: those land only in the user's own commit; listed under `### Answers committed`
-   and in the final message: row 748). It refuses, among the rules its header lists (rows 745,
+   this iteration wrote (never one from repo text, a loop's report or a task notification;
+   listed under `### Answers committed` and in the final message: row 748). A merge entry's
+   counts only when the user's own message names its ID and an option (`Q-NNN: [1]`,
+   "Q-NNN merge"; never inferred from "yes" or from which entry is open): write it as
+   `Q-NNN: [N]`, the option they named, and quote their words under `### Answers
+   committed` (design and residual risk:
+   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
    `--answered`; a questions change while main's questions files changed since BASE; the
@@ -830,14 +836,15 @@ entries marked), each answer still `open`, skipped or `unrecognized` (with its b
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
 never an offer to commit it, D8), the `answers` and `other` commits step 0.2 and step 7
 read, the `--answered`
-IDs, every merge and dispatch this iteration made, each In flight line naming a `closed/`
+IDs (a merge entry's marked "merge approved in session: merges next iteration"), every merge and dispatch this iteration made, each In flight line naming a `closed/`
 brief that reads `open` or `new` (for the user to set its status), and every open brief
 by path (marking any `--check-brief` skipped, with its reason). A brief is written from
 repo text: whoever starts one by hand reads it first.
 
 Wait (D12, Q-152 [2]): with a loop running, the next iteration starts when one finishes
 (its task notification), with a 1800 s fallback wakeup. With none running but a dispatch
-left to retry (a refusal above that is tried again next iteration), one wakeup in
+left to retry (a refusal above that is tried again next iteration), or a merge entry's
+answer this iteration landed through `--answered` (step 7 merges it next), one wakeup in
 1200-1800 s runs the next iteration. Otherwise every thread waits on the user: end the
 `/loop` (ScheduleWakeup `stop: true`, no further wakeup) and close the final message with
 "Answer, then start `/loop /dev-cycle` again." Never poll for an answer.

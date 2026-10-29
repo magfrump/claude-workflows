@@ -278,3 +278,24 @@ path $B A work-feat-x.txt" ] && [ "$(git rev-parse main)" = "$M" ] || { show; re
     mrg "$B" --expect "$T"
     [ "$status" -eq 0 ] && [[ "${lines[0]}" == "merged $B $T "* ]] || { show; return 1; }
 }
+
+@test "a merge entry answered in session lands through --land-cycle --answered, and --merge --approved then merges; without --answered the land refuses (brief 2026-10-29-session-answers-for-merge-entries)" {
+    rv; approve Q-001 "$S" OPEN "| **[1] merge** | lands it |"
+    mrg "$B" --expect "$T" --approved Q-001; refused "Q-001 does not approve this merge: it is not answered on the default branch"
+    # The orchestrator's chore branch writes the user's in-session answer, with its cycle record.
+    C=chore/dev-cycle-2026-10-01; git checkout -q -b "$C" main
+    sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md && echo 'Q-001: [1]' >> docs/working/questions.md
+    mkdir -p docs/working/cycles && echo "Branch: $C" > docs/working/cycles/cycle-2026-10-01.md && commit_all "cycle land"
+    # Kept refusal: an answer the orchestrator did not list as the user's (T38), and none on main yet (D8).
+    run --separate-stderr bash "$BL" --land-cycle --main "$M"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered" ] \
+        && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+    mrg "$B" --expect "$T" --approved Q-001; refused "Q-001 does not approve this merge: it is not answered on the default branch"
+    run --separate-stderr bash "$BL" --land-cycle --main "$M" --answered Q-001
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $C "* ]] || { show; return 1; }
+    git checkout -q --detach main; M="$(git rev-parse main)"; TR="$(git merge-tree --write-tree main feat/x)"
+    mrg "$B" --expect "$T" --approved Q-001; n="$(git rev-parse main)"
+    [ "$status" -eq 0 ] && [ "$output" = "merged $B $T $TR $n
+path $B A work-feat-x.txt" ] && [ "$(git rev-parse "$n^1")" = "$M" ] \
+        && git log -1 --format=%B "$n" | grep -qxF "Build-loop-approved: Q-001" || { show; return 1; }
+}
