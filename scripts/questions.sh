@@ -566,15 +566,18 @@ cmd_migrate() {
     fi
 }
 
-# The live file's entries, then watching.md's OPEN ones (a closed watch is
-# ANSWERED): the dev cycle's digest lists the watches from here. A watching
-# path that exists but is not a regular file is refused, as `check` does.
+# The live file's entries, then watching.md's not closed (ANSWERED) ones: the
+# dev cycle's digest lists the watches from here. Only an explicit ANSWERED
+# is left out, so a malformed status (a typo, a CR, no Needs line) still
+# lists, and `check` names it. A watching path that exists but is not a
+# regular file (or a link to one) is refused; a link to a file is followed,
+# as for the live file (the digest refuses links before it calls this).
 cmd_open() {
     require_files
     if [[ ( -e "$WATCHING" || -L "$WATCHING" ) && ! -f "$WATCHING" ]]; then
         die "not a regular file: $WATCHING"
     fi
-    { parse_entries "$LIVE"; parse_entries "$WATCHING" | awk -F'\t' '$4 == "OPEN"'; } \
+    { parse_entries "$LIVE"; parse_entries "$WATCHING" | awk -F'\t' '{ s = $4; sub(/\r$/, "", s) } s != "ANSWERED"'; } \
         | route_rank | sort -t$'\t' -k1,1 -k2,2 | cut -f2- \
         | while IFS=$'\t' read -r id route _ _ slug _; do
             # 16 fits the longest route, `you: walkthrough`; dev-cycle.sh

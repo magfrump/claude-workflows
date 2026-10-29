@@ -454,7 +454,7 @@ waits for the next digest.
   observation, it stays open until that observation has been made. A met watch in
   `watching.md` is closed here, without the user: `**Status:** ANSWERED`, a line
   `Q-NNN: met — EVIDENCE`, and the entry moved under `## Closed` (`--cycle-diff` refuses a
-  watch dropped). What it releases becomes agent work or a `you:` entry. A watch the digest
+  watch's heading dropped). What it releases becomes agent work or a `you:` entry. A watch the digest
   marks legacy (still in `questions.md`) cannot be changed by the cycle: record it as met, and
   it closes in `watching.md` after the user's one `questions.sh migrate` run.
 - Read Now's agent work items. One filed before the last cycle record is stale and gets an

@@ -415,7 +415,8 @@ else
   [[ -f "$QW" ]] || echo "No $QW in this repo: watches are read from docs/working/questions.md only (\`questions.sh init\` creates it)."
   # The three paths pinned to the ones checked above, whatever the caller
   # exported. The second call names a watching file that does not exist (it
-  # reads as empty), so it lists the live file alone: its watches are legacy.
+  # reads as empty; /dev/null would be refused as not a regular file), so it
+  # lists the live file alone: its watches are legacy.
   qopen() { QUESTIONS_LIVE="$ROOT/docs/working/questions.md" QUESTIONS_ARCHIVE="$ROOT/$QA" QUESTIONS_WATCHING="$1" bash "$QS" open; }
   if open_q="$(qopen "$ROOT/$QW" 2>"$qs_err")" && open_l="$(qopen "$qs_err.none" 2>>"$qs_err")"; then
     # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can

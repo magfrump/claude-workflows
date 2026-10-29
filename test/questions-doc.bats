@@ -249,6 +249,14 @@ EOF
     [[ "$output" == *"Q-021  deferred          open-watch"* && "$output" == *"Q-003  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
     # Ranked with the live entries: the owner's first, watches after.
     [[ "${lines[0]}" == "Q-001  you: judgment"* ]] || { echo "$output"; return 1; }
+    # Only an explicit ANSWERED hides a watch: a CR-ended or misspelt status still lists.
+    printf '%s\r\n' '### Q-022 · crlf-watch' '**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** OPEN' > "$BATS_TEST_TMPDIR/e"
+    sed -i "/^## Open\$/r $BATS_TEST_TMPDIR/e" "$w"
+    sed -i '/^## Open$/a\
+### Q-023 · typo-watch\
+**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** Open' "$w"
+    run --separate-stderr bash "$QS" open
+    [[ "$output" == *"Q-022"* && "$output" == *"Q-023  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
     rm "$w"; mkdir "$w"
     run --separate-stderr bash "$QS" open
     [ "$status" -eq 1 ] && [[ "$stderr" == *"not a regular file: $w"* ]] || { echo "$status $stderr"; return 1; }

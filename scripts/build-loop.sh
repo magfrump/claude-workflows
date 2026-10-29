@@ -229,7 +229,7 @@
 #                 new roadmap or idea log is not judged.
 #                 docs/working/watching.md (the cycle's watches, decision
 #                 040): free, a close under "## Closed" included, but an
-#                 entry heading line ("### Q-NNN ...") on BASE that is no line
+#                 entry heading line (not fence-aware) ("### Q-NNN ...") on BASE that is no line
 #                 of the index's copy refuses, as does deleting the file; a
 #                 new one is not judged. Every path meets
 #                 these rules (row 745). A path other than the cycle's own
@@ -2131,13 +2131,15 @@ cycle_rules() {
       [[ "$(wc -c < "$t.n")" -ge "$k" ]] && cmp -s -n "$k" "$t.o" "$t.n" || { echo "refuse $p: edited other than by appending"; bad=1; }
     elif [[ "$p" == docs/working/watching.md ]]; then
       # The cycle's own watches (decision 040): any edit, a close under
-      # "## Closed" included, but a watch is never dropped. Each entry
-      # heading line on the base (questions.sh's line-oriented reading) is
-      # still a line of the index's copy.
-      LC_ALL=C awk 'NR == FNR { if (/^### Q-[0-9]+ /) h[$0] = 1; next } /^### Q-[0-9]+ / { delete h[$0] } END { for (x in h) { sub(/^### /, "", x); print x } }' "$t.o" "$t.n" > "$t.w" \
-        || { echo "refuse $p: it could not be compared"; bad=1; continue; }
+      # "## Closed" included, but a watch's heading is never dropped: each
+      # entry heading line on the base (questions.sh's line-oriented
+      # reading, not fence-aware) is still a line of the index's copy. The
+      # rest of an entry is free; questions.sh check judges its grammar, and
+      # `open` lists any watch not explicitly ANSWERED.
+      { LC_ALL=C awk 'NR == FNR { if (/^### Q-[0-9]+ /) h[$0] = 1; next } /^### Q-[0-9]+ / { delete h[$0] } END { for (x in h) { sub(/^### /, "", x); print x } }' "$t.o" "$t.n" > "$t.u" \
+        && LC_ALL=C sort -o "$t.w" "$t.u"; } || { echo "refuse $p: it could not be compared"; bad=1; continue; }
       while IFS= read -r k; do echo "refuse $p: ${k%% *}'s heading changed or is gone; a watch closes by moving under ## Closed, never by deletion"; bad=1
-      done < <(LC_ALL=C sort "$t.w")
+      done < "$t.w"
     else
       LC_ALL=C awk "$ROADMAP_AWK" "$t.o" "$t.n" > "$t.w" || { echo "refuse $p: it could not be compared"; bad=1; continue; }
       while IFS= read -r k; do echo "refuse $p: $k"; bad=1; done < "$t.w"

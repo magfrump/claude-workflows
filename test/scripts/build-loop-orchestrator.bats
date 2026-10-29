@@ -275,7 +275,7 @@ shim() {
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt '* ]] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt (legacy, in questions.md: the owner\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger  from-opt" ] || { show; return 1; }
 }
 

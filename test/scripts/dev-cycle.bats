@@ -588,9 +588,10 @@ EOF
     [[ "$section" == *$'\n- Q-003  deferred          new-watch\n'* && "$section" == *"- Q-001  trigger           old-watch (legacy"* ]] || { echo "$section"; return 1; }
     [[ "$section" != *"Q-004"* && "$section" != *"No docs/working/watching.md"* ]] || { echo "$section"; return 1; }
     [[ "$section" == *"Open by route: deferred=1, trigger=1, you: judgment=1"* ]] || { echo "$section"; return 1; }
-    # An exported path is not followed: the digest reads the files it checked.
-    QUESTIONS_WATCHING="$BATS_TEST_TMPDIR/elsewhere.md" run --separate-stderr bash "$DC"
-    [[ "$output" == *$'\n- Q-003  deferred'* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
+    # Exported paths are not followed: the digest reads the files it checked.
+    QUESTIONS_WATCHING="$BATS_TEST_TMPDIR/elsewhere.md" QUESTIONS_LIVE="$BATS_TEST_TMPDIR/l.md" QUESTIONS_ARCHIVE="$BATS_TEST_TMPDIR/a.md" \
+        run --separate-stderr bash "$DC"
+    [[ "$output" == *$'\n- Q-003  deferred'* && "$output" == *"- Q-001  trigger"* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
     # A symlinked watching.md stops the section, never read through.
     mkdir -p "$BATS_TEST_TMPDIR/outside"; mv docs/working/watching.md "$BATS_TEST_TMPDIR/outside/w.md"
     ln -s "$BATS_TEST_TMPDIR/outside/w.md" docs/working/watching.md
