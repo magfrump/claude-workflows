@@ -515,6 +515,38 @@ else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
 fi
 
+printf '\n%s\n\n' "## 7b. Pending migrations"
+# The registry (lib/migrations.sh, beside the reader lib) names, per convention
+# change, a file and a pattern only its old shape matches; one still matching
+# is a migration this repo has not run (the skill's step 1b). Only the line
+# number is printed, never the line.
+MIG_LIB="$SCRIPT_DIR/lib/migrations.sh"
+nm="**Migrations were NOT checked** —"
+if [[ ! -f "$MIG_LIB" || -L "$MIG_LIB" ]]; then
+  echo "$nm lib/migrations.sh is missing beside this script (a copy older than this section)."
+else
+  # shellcheck source=lib/migrations.sh
+  source "$MIG_LIB"
+  if [[ ${#MIG_BAD[@]} -gt 0 ]]; then
+    echo "$nm its registry has malformed lines:"; printf -- '- %s\n' "${MIG_BAD[@]}"
+  else
+    mig_out=()
+    for i in "${!MIG_ID[@]}"; do
+      p="${MIG_PATH[$i]}"; [[ "$p" != - ]] || continue
+      if skipped "$p"; then mig_out+=("- not checked ${MIG_ID[$i]}: $(skipnote "$p")"); continue; fi
+      inrepo "$p" || continue
+      rc=0; l="$(env LC_ALL=C grep -anE -m1 -- "${MIG_ERE[$i]}" "$p")" || rc=$?
+      case "$rc" in
+        0) mig_out+=("- pending ${MIG_ID[$i]} (${MIG_CONV[$i]}): $p line ${l%%:*}; remedy: ${MIG_REMEDY[$i]}") ;;
+        1) ;;
+        *) mig_out+=("- not checked ${MIG_ID[$i]}: grep could not read $p") ;;
+      esac
+    done
+    if [[ ${#mig_out[@]} -eq 0 ]]; then echo "None: no file holds a line in a shape a convention change replaced."
+    else printf '%s\n' "${mig_out[@]}"; fi
+  fi
+fi
+
 # The dev-cycle skill also reads these; they are checked here so that a
 # non-plain one is listed below like every other input.
 skipped docs/dev-cycle.md || true
