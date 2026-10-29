@@ -20,8 +20,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   before launch, list the rest as known routes, push with cc-push. The four split groups
   are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
   builds first). R6 merged at 7a5b4f4a (Q-220 [1]), and its sort left group 1's remainder
-  (A14, R3's remote half, A16) in scope; that unit is briefed (In flight, the group 1
-  remainder line).
+  (A14, R3's remote half, A16) in scope; that unit merged at fd62dd3f (Q-225 [1]).
+  Next: groups 2-4 of Q-173, sorted by the same rule.
 
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
@@ -31,19 +31,22 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
   steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
   instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
-  unit is a `merge-gate` entry. First step: brief unit 1 (done: In flight, the owner routes
-  line). Follow-ups: entry clarity (gloss every internal reference) and a
+  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]). Next: brief unit 2. Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
+
+- **Failure-pattern steps where build loops run (Q-226 [5]).** Motive: the owner's answer to
+  the Q-223 review. The build-loop prompt sends loops through pr-prep's failure-pattern
+  advisory, and `--check` requires the research doc's `Failure-pattern grep:` line and,
+  per `fix(...)` commit, a new entry or a one-line skip reason. First step: briefed (In
+  flight).
 
 ## In flight
 
 
-- **Exit scan: Q-173 group 1 remainder (A14, R3's remote half, A16)** (Q-168's next step,
-  Now). Motive: Q-172 [2] puts these routes inside the boundary; the R6 unit listed them as
-  "not closed yet". Built and ready; merge is Q-225. Brief: `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
-- **Questions doc owner-only, unit 1: owner routes in `questions.sh`** (Now, decision 040).
-  Motive: the owner's report that agent bookkeeping crowds their page. Built and ready
-  (the refusal of agent routes moves to unit 2); merge is Q-224, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-28-questions-owner-routes.md`
+- **Failure-pattern steps where build loops run, checked at the gate (Q-226 [5])** (Now).
+  Motive: the Q-223 review found build loops never reach pr-prep's failure-pattern
+  advisory and no research doc since 2026-10-15 carries the required grep line. Gate code:
+  a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`
 
 ## Next
 
@@ -233,6 +236,12 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Exit scan: Q-173 group 1 remainder (A14, R3's remote half, A16): done at fd62dd3f
+  (Q-225 [1], approved merge). Brief:
+  `docs/working/briefs/closed/2026-10-28-exit-scan-group1-remainder.md`
+- Questions doc owner-only, unit 1 (owner routes in `questions.sh`): done at 236f21ee
+  (Q-224 [1], approved merge; gate code, reaches the gate at the next image release).
+  Brief: `docs/working/briefs/closed/2026-10-28-questions-owner-routes.md`
 - How the failure-pattern library is used (Q-223): research done at d32c7eb2 (build-loop
   self-merge); its options are Q-226. Brief:
   `docs/working/briefs/closed/2026-10-28-failure-pattern-use-review.md`

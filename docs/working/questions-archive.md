@@ -215,6 +215,9 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
 | [Q-221](#q-221--questions-doc-owner-only) | This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entri... | 2026-10-28 |
 | [Q-223](#q-223--failure-pattern-harvest-or-drop) | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
+| [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
+| [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
+| [Q-226](#q-226--failure-pattern-library-future) | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
 <!-- index:end -->
 
 ## Answered
@@ -4568,5 +4571,83 @@ Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patte
 
 - **Interim:** [3] in effect: nothing changes until you answer.
 - **If the answer differs:** [1] becomes a roadmap brief; [2] is a one-line pr-prep edit.
+
+
+### Q-225 · merge-2026-10-28-exit-scan-group1-remainder-19027abb7593
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`, roadmap In flight)? It closes the last three in-boundary routes of Q-173's group 1 in the exit scan (the check `cc-isolated` runs when a session ends, which names anything the session planted that host git would run).
+
+- **What it does** (from the loop's report): A14: relative remotes (`../up.git` as a URL, push URL, remote name, or legacy `remotes/`/`branches/` file) now resolve per linked worktree, so a bare repo the session plants where that path lands (e.g. `.claude/worktrees/up.git`) is walked. R3's remote half: the same walk covers an embedded `--separate-git-dir` repo. A16: a relative `core.hooksPath` is walked in every git dir the scan walks, so receive hooks fired by `git push .` or a push into the checkout are caught; your own relative global hooksPath too. Only relative values are queued per worktree, so the insteadOf caps hold for many agent worktrees (a 20-worktree test pins it). The guide drops these routes from "not closed yet" and adds two out-of-scope known routes (a relative `insteadOf` base per worktree; your relative hooksPath in a bare repo reached only as a remote). Tests: 4 new cases (A14, R3 and A16 fail on main, pass here), full `test/cc-isolated-functions.bats` 212/212, health check and hermeticity lint pass. Two review passes; pass 2 clean, with one note: a relative hooksPath of `.` over-reports (noise like `~ hook .git/index`), never misses a plant.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 19027abb75934fa515dc9f124be5c4b4d5b457e7` (5 files, +406/-42; 310 changed lines outside docs) · `docs/working/research-2026-10-28-exit-scan-group1-remainder.md` on that branch (git-behaviour probes, the design, a 16-family bypass pre-mortem)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md 19027abb75934fa515dc9f124be5c4b4d5b457e7 1ab191252d2bcba26446be56b461d57d54418a97`
+  - `path … M devcontainer-config/cc-exit-scan.sh` (an enforcement file: its commits carry `Host-tool-tested: no` and `Live-verified: no`)
+  - `path … M docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
+  - `path … A docs/working/research-2026-10-28-exit-scan-group1-remainder.md`
+  - `path … M guides/cc-isolated-usage.md`
+  - `path … M test/cc-isolated-functions.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 19027abb; it reaches your machine with the next `install.sh` (Q-222's paste then covers it) | Reading the diff | A false warning at session exit, or a planted repo still missed; bats-verified only until a host run |
+| **[2] drop** | The brief closes; the branch stays for you | None | The three routes stay listed as "not closed yet" |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Interim:** nothing merged; the guide still lists these routes as not closed, and cc-push stays the safe way to push.
+- **If the answer differs:** nothing to redo.
+
+
+### Q-224 · merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs/2026-10-28-questions-owner-routes.md`, roadmap In flight)? This is unit 1 of decision 040 (the questions doc holds only your items), and it changes gate code: `scripts/questions.sh` is one of the scripts the dev cycle runs as its gate, so it reaches the gate only at the next image release, which you install.
+
+- **What it does** (from the loop's report): `questions.sh` accepts two new owner routes, `you: walkthrough` and `you: fyi` (answered `seen`), beside `you: judgment` and `you: terminal`. The routes become one list in the script, from which `check`'s accepted routes, the index and `open` sort order, and a route table that `init` writes for new repos are all built; this repo's index order is unchanged. The refusal of `agent`/`trigger`/`deferred` in this file is **not** in this unit: the loop's design pass found shipping it now would leave watches with no home, so it moves to unit 2 with `watching.md` and `migrate`. The loop also found the answer readers (`--check-answer`, `--cycle-diff`, `--main-log`) need no change, and pinned how each `seen` form reads: a batch acknowledgement must be written as one `Q-NNN: seen` line per entry. Tests: 145/145 in the four affected suites; one review round, three ambers fixed, round 2 clean.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3` (6 files, +359/-18) · `docs/working/research-2026-10-28-questions-owner-routes.md` on that branch (six options for when the refusal ships)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-questions-owner-routes.md 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 f66c0f516c840d03097a435c5eab61ffdaebc3f9`
+  - `path … M docs/working/briefs/2026-10-28-questions-owner-routes.md`
+  - `path … A docs/working/research-2026-10-28-questions-owner-routes.md`
+  - `path … M scripts/questions.sh` (gate code: self-merge's floor would refuse it)
+  - `path … M test/questions-doc.bats`
+  - `path … M test/scripts/build-loop-orchestrator.bats`
+  - `path … M test/scripts/dev-cycle.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 0fb2ad5f; units 2 and 3 can be briefed | Reading the diff; then an image release to make it the gate | A route bug in the questions tooling, caught by `questions.sh check` on the next cycle |
+| **[2] drop** | The brief closes; the branch stays for you | None | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Blocks:** units 2 and 3 of decision 040 (roadmap Now).
+- **Interim:** nothing merged; the questions tooling stays as it is.
+
+
+### Q-226 · failure-pattern-library-future
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [5] (owner, in session 2026-10-29; recorded by the dev cycle). Built as brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`.
+
+You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-patterns.md`, a one-line-per-bug log that research greps for prior root causes) is used. The review is merged (d32c7eb2). What do you want done with it?
+
+- **What it found** (2026-09-26 to 2026-10-28): writing has nearly stopped. Of 358 `fix(...)` commits (mostly review-iteration fixes), 2 produced entries, FP-173 and FP-174, and those two collided on one number. Yet in a hand-classified sample of 25, 13 had a root cause worth finding later. Build loops are never asked to run pr-prep's Step 0, where the "add an entry" advisory lives. Reading is rare too: 1 of 12 surviving research docs from the window shows the required failure-pattern grep, and none since 2026-10-15. In that one case the cited entries did shape the design. The library's biggest lesson (fail-open guards, 58 of 164 entries) is now an enforced constraint (H2) plus CLAUDE.md's test rules. What only the library offers is a symptom-keyed index. Its cost is small: nothing always-loaded, about 7 KB of workflow text, plus merge friction and these watches.
+- **Read:** `docs/working/research-2026-10-28-failure-pattern-use-review.md` (the evidence, and the table below with fuller cells) · Q-223 and Q-074 in the archive
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep as is** | Nothing changes; the Q-074 watch re-arms (e.g. 2026-11-28) | None now; another watch and judgment in a month | The advisory stays in a step build loops never run, the grep stays skipped, and this finding returns |
+| **[2] Batch harvest, keep the read** | Drop the per-branch advisory; a scripted periodic pass drafts entries from merged fix commits (as the 2026-09-17 backfill did) and lands them in one commit | One merge review of the script, then one harvest to review per period | Agent-drafted entries could be noisy and mislead the grep, and you pay for them even if reads stay rare |
+| **[3] Freeze and retire the steps** | Mark the library frozen at FP-174 (still greppable for cited IDs); remove the pr-prep advisory and the RPI grep requirement; lessons keep landing in constraints, CLAUDE.md, the decision log and fix commit messages | One small doc-edit merge | A quick symptom lookup for new bugs is lost; a recurring bug shape might be noticed later |
+| **[4] Read side only, scripted** | Freeze writing as in [3], but make the RPI lookup one script call that greps the frozen library and fix-commit messages | One merge review of a small tested script plus RPI text edits | Little gained if research rarely runs it; commit prose is noisier to grep than the library's tokens |
+| **[5] Put both steps where build loops run, and check them** | The build-loop prompt (`scripts/build-loop.sh`) sends loops through pr-prep's failure-pattern advisory, not only its review-fix loop; the gate's `--check` then requires the research doc's `Failure-pattern grep:` line and, for each `fix(...)` commit, a new FP entry or a one-line skip reason, refusing until they are there | One merge-gate review, then an image release; each loop spends a little more time | The lines become boilerplate a loop fills in without reading; mitigated because the check is mechanical, and the skip reasons show whether it is |
+
+- **Added 2026-10-28 after you asked why it was missing:** the review found build loops never reach the advisory but treated that only as a weakness of [1], not as something to fix. One finding bears on [5]: build loops already run research-plan-implement, which already asks for the grep line, and none of the 11 research docs since 2026-10-15 has it. So a prompt reference alone may not change behaviour, which is why [5] adds the gate check.
+- **Interim:** [1]: nothing changes until you answer.
+- **If the answer differs:** each option is one small unit; the review doc does not need redoing.
 
 
