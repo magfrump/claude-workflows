@@ -244,8 +244,11 @@ anybrief() { isbrief "$1" || isclosed "$1"; }
 # reads the window from these names; build-loop.sh's --main-log and
 # --land-cycle read its Branch: lines).
 isrecord() { [[ "$1" =~ ^docs/working/cycles/cycle-$DIGIT{4}-$DIGIT{2}-$DIGIT{2}\.md$ ]]; }
+# watching.md holds the cycle's watches (decision 040), and
+# roadmap-from-questions.md the agent entries `questions.sh migrate` left for
+# step 6 to fold into the roadmap and delete.
 writable() {
-  [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log)\.md$ ]] || isrecord "$1" || anybrief "$1"
+  [[ "$1" =~ ^docs/roadmap\.md$|^docs/working/(questions|questions-archive|idea-log|watching|roadmap-from-questions)\.md$ ]] || isrecord "$1" || anybrief "$1"
 }
 # Code fences, read only in their plain form, so that every fence this reads is
 # read the way CommonMark reads it: a line starting at column 0 with 3 or more `

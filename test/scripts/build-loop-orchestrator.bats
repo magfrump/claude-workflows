@@ -275,7 +275,7 @@ shim() {
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt\n'* ]] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt '* ]] || { show; return 1; }
     d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger  from-opt" ] || { show; return 1; }
 }
 
@@ -463,6 +463,27 @@ ${W//Q-001/Q-002}"
 answers $A seen
 answers $B2 bold
 other $R range"
+}
+
+@test "--cycle-diff lets the cycle close its own watch in watching.md, refuses a watch dropped and an owner entry moved there (decision 040 unit 3)" {
+    T='**Needs:** trigger · **Opened:** 2026-10-30 · **Status:**'
+    qa; git checkout -q main; mkdir -p docs/working
+    printf '%s\n' '# Watching' '## Open' '' '### Q-010 · w' "$T OPEN" '' 'Watch for x.' '' '### Q-011 · v' "$T OPEN" '' 'Watch for y.' '' '## Closed' > docs/working/watching.md
+    commit_all watching; git checkout -q chore/dev-cycle-2026-10-12; git merge -q --ff-only main
+    # Closed by the cycle: Status flipped, an observation line, moved under ## Closed; no --answered needed.
+    sed -i '/^### Q-010/,/^Watch for x\./d' docs/working/watching.md
+    printf '%s\n' '### Q-010 · w' "$T ANSWERED" '' 'Watch for x.' 'Q-010: met, seen in run 12' >> docs/working/watching.md; git add -A; cd_is ok
+    # A new watch filed, and one filed closed, pass too: the file is the cycle's own.
+    printf '%s\n' '### Q-012 · u' "$T ANSWERED" >> docs/working/watching.md; git add -A; cd_is ok
+    # A watch dropped, or its heading renamed, refuses; so does deleting the file.
+    git reset -q --hard; sed -i '/^### Q-011/,/^Watch for y\./d; s/^### Q-010 · w$/### Q-010 · renamed/' docs/working/watching.md; git add -A
+    cd_is "refuse docs/working/watching.md: Q-010's heading changed or is gone; a watch closes by moving under ## Closed, never by deletion
+refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch closes by moving under ## Closed, never by deletion"
+    git reset -q --hard; git rm -q docs/working/watching.md; cd_is "refuse docs/working/watching.md: it is deleted"
+    # An owner entry moved out of questions.md into watching.md is still an owner entry gone.
+    git reset -q --hard; sed -n '/^### Q-001/,/^| \*\*\[1\]/p' docs/working/questions.md >> docs/working/watching.md
+    sed -i '/^### Q-001/,/^| \*\*\[1\]/d' docs/working/questions.md; git add -A
+    cd_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
 }
 
 @test "the answer label regex is the same in the lib's ANSWER_AWK, ANSWERS_AWK and QKEYS_AWK (U3c i2 architecture 1)" {

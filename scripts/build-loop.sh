@@ -226,7 +226,12 @@
 #                 moves", as step 6 rewrites Now, Next and Ideas. Deleting the
 #                 roadmap or idea log, a side not a regular 100644 file, or a
 #                 failed read refuses (a questions file is judged by its entries); a
-#                 new roadmap or idea log is not judged. Every path meets
+#                 new roadmap or idea log is not judged.
+#                 docs/working/watching.md (the cycle's watches, decision
+#                 040): free, a close under "## Closed" included, but an
+#                 entry heading line ("### Q-NNN ...") on BASE that is no line
+#                 of the index's copy refuses, as does deleting the file; a
+#                 new one is not judged. Every path meets
 #                 these rules (row 745). A path other than the cycle's own
 #                 files, a .md under docs/ or README.md, compared
 #                 lower-cased, refuses (the paths an in-cycle fix may touch;
@@ -399,7 +404,8 @@
 #                 Status: line outside a fence changes,
 #                 from open to done (mode kept); and, compared lower-cased, the
 #                 dev cycle's own files (the roadmap, the questions files, the
-#                 idea log, docs/dev-cycle.md, anything under
+#                 idea log, docs/working/watching.md and
+#                 roadmap-from-questions.md, docs/dev-cycle.md, anything under
 #                 docs/working/briefs/ or docs/working/cycles/, or either
 #                 as a file) and docs/constraints.md, or a path below one of
 #                 those names.
@@ -1854,7 +1860,7 @@ End with one marker, an empty commit at your branch tip whose first line is exac
 - "handoff: blocked", with the question after a blank line as plain prose and an options table, at most $BODY_LINES lines of $BODY_BYTES bytes (longer is cut; a commit over $MARKER_MAX bytes is skipped): $BODY_RULE;
 - "handoff: stopped: REASON" (1 to 120 printable ASCII characters, no blank at either end), on a stop condition: adding a dependency or a symlink, an edit these rules forbid, or a --check refusal you cannot fix within Paths:.
 Start subagents only for research and review, each with its own scratch directory under $s/ in your scratchpad directory. Never start build loops, background agents or schedules; never send your branch to a remote, merge, open a pull request or publish.
-Never write the questions files, the roadmap, docs/dev-cycle.md or any other brief. In your own brief change only the Status line, from open to done, in your final change.
+Never write the questions files, docs/working/watching.md, the roadmap, docs/dev-cycle.md or any other brief. In your own brief change only the Status line, from open to done, in your final change.
 PROMPT
 }
 
@@ -2113,7 +2119,7 @@ cycle_rules() {
     fi
     case "$p" in
       docs/working/questions.md|docs/working/questions-archive.md) qi+=("$i"); continue ;;
-      docs/roadmap.md|docs/working/idea-log.md) ;;
+      docs/roadmap.md|docs/working/idea-log.md|docs/working/watching.md) ;;
       *) continue ;;
     esac
     if ! cyc_blob "${RAW_OM[i]}" "${RAW_OO[i]}" "$t.o" || ! cyc_blob "${RAW_NM[i]}" "${RAW_NO[i]}" "$t.n"; then echo "refuse $p: a side is not a regular file (mode 100644), or could not be read"; bad=1; continue; fi
@@ -2123,6 +2129,15 @@ cycle_rules() {
       # Seeding and "## Brainstorm" only append: the base's bytes start the index's.
       k="$(wc -c < "$t.o")"
       [[ "$(wc -c < "$t.n")" -ge "$k" ]] && cmp -s -n "$k" "$t.o" "$t.n" || { echo "refuse $p: edited other than by appending"; bad=1; }
+    elif [[ "$p" == docs/working/watching.md ]]; then
+      # The cycle's own watches (decision 040): any edit, a close under
+      # "## Closed" included, but a watch is never dropped. Each entry
+      # heading line on the base (questions.sh's line-oriented reading) is
+      # still a line of the index's copy.
+      LC_ALL=C awk 'NR == FNR { if (/^### Q-[0-9]+ /) h[$0] = 1; next } /^### Q-[0-9]+ / { delete h[$0] } END { for (x in h) { sub(/^### /, "", x); print x } }' "$t.o" "$t.n" > "$t.w" \
+        || { echo "refuse $p: it could not be compared"; bad=1; continue; }
+      while IFS= read -r k; do echo "refuse $p: ${k%% *}'s heading changed or is gone; a watch closes by moving under ## Closed, never by deletion"; bad=1
+      done < <(LC_ALL=C sort "$t.w")
     else
       LC_ALL=C awk "$ROADMAP_AWK" "$t.o" "$t.n" > "$t.w" || { echo "refuse $p: it could not be compared"; bad=1; continue; }
       while IFS= read -r k; do echo "refuse $p: $k"; bad=1; done < "$t.w"

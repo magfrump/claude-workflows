@@ -1840,16 +1840,17 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     gated feat/x
     fs=(docs/roadmap.md docs/working/questions.md docs/working/questions-archive.md docs/working/idea-log.md
         docs/working/cycles/cycle-2026-10-01.md docs/working/cycles/notes.md docs/dev-cycle.md "$o"
-        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md)
+        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md
+        docs/working/watching.md docs/working/roadmap-from-questions.md)
     onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/CONSTRAINTS.md docs/ok.md; do echo x > "$f"; done'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 15 16)" ] && [ "${#lines[@]}" -eq 17 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 17 18)" ] && [ "${#lines[@]}" -eq 19 ] || { show; return 1; }
     has "deny $B M docs/roadmap.md: $NOWN"
     for f in "${fs[@]:1}"; do [[ "$f" == "$o" ]] && m=M || m=A; has "deny $B $m $f: $NOWN"; done
     has "deny $B A docs/constraints.md: $NUSER"; has "deny $B A docs/CONSTRAINTS.md: $NUSER"
     has "path $B A docs/ok.md"
     # The paths come in diff-tree order, after the verdict.
-    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[16]}" = "deny $B A docs/working/questions.md: $NOWN" ] || { show; return 1; }
+    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[18]}" = "deny $B A docs/working/watching.md: $NOWN" ] || { show; return 1; }
     # A branch whose changes main already holds merges to main's own tree: ok, no path line.
     onx 'echo x > docs/ok.md'; git checkout -q -B main feat/x; git checkout -q -B feat/x main; git commit -q --allow-empty -m e; git checkout -q main
     chk "$B"

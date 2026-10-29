@@ -571,6 +571,41 @@ EOF
     [[ "$output" == *"skip docs/decisions/*.md: matches more than 50 files"* ]] || { echo "$output" | tail -3; return 1; }
 }
 
+@test "section 3 lists watches from watching.md and legacy ones from questions.md, and says when watching.md is missing (decision 040 unit 3)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** %s\n\nAbout it.\n\n' "$1" "$2" "$3" "${4:-OPEN}"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo; e Q-001 old-watch trigger; e Q-002 ask 'you: judgment'; } > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    # No watching.md yet: the legacy watch alone, marked, and a note naming init.
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"No docs/working/watching.md in this repo: watches are read from docs/working/questions.md only"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Q-001  trigger           old-watch (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"* ]] || { echo "$section"; return 1; }
+    # watching.md: its open watch listed unmarked, its closed one not at all.
+    { echo '# Watching'; echo; echo '## Open'; echo; e Q-003 new-watch deferred; echo '## Closed'; echo; e Q-004 met-watch trigger ANSWERED; } > docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *$'\n- Q-003  deferred          new-watch\n'* && "$section" == *"- Q-001  trigger           old-watch (legacy"* ]] || { echo "$section"; return 1; }
+    [[ "$section" != *"Q-004"* && "$section" != *"No docs/working/watching.md"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Open by route: deferred=1, trigger=1, you: judgment=1"* ]] || { echo "$section"; return 1; }
+    # An exported path is not followed: the digest reads the files it checked.
+    QUESTIONS_WATCHING="$BATS_TEST_TMPDIR/elsewhere.md" run --separate-stderr bash "$DC"
+    [[ "$output" == *$'\n- Q-003  deferred'* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
+    # A symlinked watching.md stops the section, never read through.
+    mkdir -p "$BATS_TEST_TMPDIR/outside"; mv docs/working/watching.md "$BATS_TEST_TMPDIR/outside/w.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/w.md" docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"**Watched questions were NOT checked** — docs/working/watching.md is not read"* && "$section" != *"Q-003"* ]] || { echo "$section"; return 1; }
+    [[ "$(echo "$output" | sed -n '/## 8/,$p')" == *"- docs/working/watching.md"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-write allows watching.md and migrate's roadmap listing (decision 040 unit 3)" {
+    run --separate-stderr bash "$DC" --check-write docs/working/watching.md docs/working/roadmap-from-questions.md docs/working/Watching.md
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok docs/working/watching.md" ] && [ "${lines[1]}" = "ok docs/working/roadmap-from-questions.md" ] || { echo "$output"; return 1; }
+    [[ "${lines[2]}" == "skip docs/working/Watching.md: not one of the dev cycle's own files" ]] || { echo "$output"; return 1; }
+}
+
 @test "--check-write allows a new file under plain directories and refuses symlinks" {
     mkdir -p docs/working "$BATS_TEST_TMPDIR/outside"
     ln -s "$BATS_TEST_TMPDIR/outside" docs/working/briefs

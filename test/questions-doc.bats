@@ -236,6 +236,24 @@ EOF
     [[ "$output" != *"Q-002"* ]]
 }
 
+@test "open adds watching.md's open watches, never its closed ones, and refuses a non-file there (decision 040 unit 3)" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-020 trigger ANSWERED 2026-10-30 "$w"
+    sed -i '/^## Open$/a\
+\
+### Q-021 · open-watch\
+**Needs:** deferred · **Opened:** 2026-10-30 · **Status:** OPEN' "$w"
+    run --separate-stderr bash "$QS" open
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [[ "$output" == *"Q-021  deferred          open-watch"* && "$output" == *"Q-003  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
+    # Ranked with the live entries: the owner's first, watches after.
+    [[ "${lines[0]}" == "Q-001  you: judgment"* ]] || { echo "$output"; return 1; }
+    rm "$w"; mkdir "$w"
+    run --separate-stderr bash "$QS" open
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"not a regular file: $w"* ]] || { echo "$status $stderr"; return 1; }
+}
+
 # --- owner routes (decision 040, unit 1) ---
 # Four routes are the owner's: you: judgment, you: walkthrough, you: terminal
 # and you: fyi (answered `seen`). Mutation: drop a route from ROUTES and the

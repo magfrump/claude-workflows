@@ -24,8 +24,9 @@
 #             tracked file, or a gitignored one under docs/working/; at most 50
 #             per argument), "skip <arg or match>: <reason>" otherwise.
 #   --check-write  the same for one of the cycle's own bookkeeping files
-#             (roadmap, questions files, idea log, cycle records, open briefs and
-#             briefs/closed/); the file need not exist yet.
+#             (roadmap, questions files, idea log, watching.md, the listing
+#             `questions.sh migrate` leaves for the roadmap, cycle records,
+#             open briefs and briefs/closed/); the file need not exist yet.
 #   --check-brief  for a build brief path (docs/working/briefs/[closed/]
 #             YYYY-MM-DD-<slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
@@ -389,11 +390,15 @@ printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
 QA=docs/working/questions-archive.md
-# questions.sh checks that the archive exists with a test that follows a
-# symlink, which would answer "does this host path exist?", so the archive
-# passes the same check first. It is checked once, up front, so a non-plain
-# archive is listed in section 8 whatever branch below runs.
+QW=docs/working/watching.md
+# questions.sh checks that the archive exists, and reads watching.md, with
+# tests that follow a symlink, which would answer "does this host path
+# exist?" (or read it), so both pass the same check first. They are checked
+# once, up front, so a non-plain one is listed in section 8 whatever branch
+# below runs. Watches live in watching.md (decision 040); `open` lists its
+# open ones with the live file's, where legacy watches stay until `migrate`.
 qa_at=""; skipped "$QA" && qa_at="$SKIP_AT"
+qw_at=""; skipped "$QW" && qw_at="$SKIP_AT"
 nc="**Watched questions were NOT checked** —"
 if skipped docs/working/questions.md; then
   echo "$nc $(skipnote docs/working/questions.md)"
@@ -403,14 +408,26 @@ elif [[ ! -f "$QS" ]]; then
   echo "$nc questions.sh was not found (next to this script or in ~/.claude/scripts)."
 elif [[ -n "$qa_at" ]]; then
   SKIP_AT="$qa_at"; echo "$nc $(skipnote "$QA")"
+elif [[ -n "$qw_at" ]]; then
+  SKIP_AT="$qw_at"; echo "$nc $(skipnote "$QW")"
 else
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
-  if open_q="$(bash "$QS" open 2>"$qs_err")"; then
+  [[ -f "$QW" ]] || echo "No $QW in this repo: watches are read from docs/working/questions.md only (\`questions.sh init\` creates it)."
+  # The three paths pinned to the ones checked above, whatever the caller
+  # exported. The second call names a watching file that does not exist (it
+  # reads as empty), so it lists the live file alone: its watches are legacy.
+  qopen() { QUESTIONS_LIVE="$ROOT/docs/working/questions.md" QUESTIONS_ARCHIVE="$ROOT/$QA" QUESTIONS_WATCHING="$1" bash "$QS" open; }
+  if open_q="$(qopen "$ROOT/$QW" 2>"$qs_err")" && open_l="$(qopen "$qs_err.none" 2>>"$qs_err")"; then
     # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
     # contain one space ("you: judgment"), a slug can contain "trigger".
-    watched="$(printf '%s\n' "$open_q" | awk -F'  +' '$2 == "trigger" || $2 == "deferred"')"
+    isw='$2 == "trigger" || $2 == "deferred"'
+    watched="$(printf '%s\n' "$open_q" | awk -F'  +' "$isw")"
+    legacy=" $(printf '%s\n' "$open_l" | awk -F'  +' "$isw"' { printf "%s ", $1 }')"
     if [[ -n "$watched" ]]; then
-      while IFS= read -r line; do echo "- $line"; done <<< "$watched"
+      while IFS= read -r line; do
+        if [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"
+        else echo "- $line"; fi
+      done <<< "$watched"
     else
       echo "None open."
     fi
