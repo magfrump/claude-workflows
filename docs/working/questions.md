@@ -316,7 +316,9 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
 - **Interim:** the image's gate runs (built at C); Q-224's owner routes are on main but the dev cycle's `questions.sh` is still the old one.
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
 ### Q-228 · merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
 
 Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`, roadmap In flight)? It builds your Q-226 [5]: build loops are sent through pr-prep's failure-pattern step, and the gate refuses a branch that skipped it. It changes gate code (`scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the gate only at the next image release (Q-227 then covers it).
 

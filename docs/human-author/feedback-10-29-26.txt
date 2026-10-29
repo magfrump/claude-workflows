@@ -1,0 +1,9 @@
+Q-228 you said "can't merge from a chat answer"; this means the gate is too strict.
+
+When conventions change, especially questions.md or roadmap.md formatting, we also need migration instructions, and we need the dev-cycle to follow those migration instructions at a higher priority than continuing existing work.
+
+I discovered one repo has committed code review rubrics with amber and red review items. This means something in the expected process of review findings needing fixes before merges was not working. How can we audit these situations to determine what failed when they arise?
+
+As a somewhat more general version of the last point, I would like a convenient surface for specific projects to file feedback about how features of this harness work or fail in their own project context.
+A first version of this might look like projects producing a feedback markdown file sometimes that I can copy to this repo. A later version might look like comments posted to the public github repo, searching for existing issues to comment or star, or creating new issues if no matching issue exists.
+
