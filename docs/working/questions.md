@@ -25,6 +25,8 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | you: judgment | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
+| [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | you: judgment | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -319,3 +321,65 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
 - **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `guides/cc-isolated-usage.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (51 paths under `docs/` are not in the image).
 - **Interim:** the image's gate runs (built at C); Q-224's owner routes and Q-228's failure-pattern checks are on main, but the dev cycle still runs the old `questions.sh` and `build-loop.sh`.
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
+
+### Q-229 · merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/briefs/2026-10-29-questions-watching-file.md`, roadmap In flight)? It is unit 2 of decision 040 (the questions doc holds only your items): a new `docs/working/watching.md` for watches, a `questions.sh migrate` that moves the agent-only entries out of this file without losing text, and a `check` that refuses agent-only entries here.
+
+- **Why it's yours:** it changes gate code (`scripts/questions.sh`, which the dev cycle runs as part of the gate), and the loop made one design call without you: `check` refuses `agent`, `trigger` and `deferred` entries in this file only if they were opened on or after 2026-10-30. Older ones get a warning naming `migrate`, so main's health check stays green until you run the migration. The residual: a session that backdates an entry's `Opened:` date gets a warning instead of a refusal.
+- **After merging, one owner step (not now):** run `scripts/questions.sh migrate` on main and commit the three files it writes (this file, `watching.md`, and `docs/working/roadmap-from-questions.md` for agent work to fold into the roadmap). Best done with or after unit 3, because until then the dev cycle's digest reads watches only from this file. Until you migrate, `check` prints 11 warning lines.
+- **Size:** `questions.sh` grows from 498 to 690 lines (the gate copies that one file, so it cannot be split); the change is 399 lines outside `docs/`.
+- **Tests:** `bats test/questions-doc.bats` passes 40 cases (a refusal per route, the legacy warning, a text-for-text round trip, idempotence, resume after an interrupted run). The loop's health check passed. Its review found one high issue (a directory planted at the output path swallowed an entry) and three low ones; all four are fixed, and round 2 was clean.
+- **Read:** `docs/working/research-2026-10-29-questions-watching-file.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-watching-file.md ef1022d7c8aa47b723b8ef05c4059db6d923b766 a7499f7809e4c9805e73bfa620cc349bc73df1e0
+path docs/working/briefs/2026-10-29-questions-watching-file.md M docs/working/briefs/2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md A docs/working/research-2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-watching-file.md M test/questions-doc.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/questions.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges ef1022d7; it reaches the gate at the next release (Q-227) | The later `migrate` run and commit | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 2 goes back to Ideas | None now | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop (e.g. no date cutoff, refuse outright) | A one-line note | Another loop round |
+
+- **Blocks:** decision 040 unit 3 (dev-cycle steps 2 and 3 read `watching.md`).
+- **Interim:** the branch waits; nothing on main changes.
+
+### Q-230 · merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`, roadmap In flight)? It builds your feedback point 1: when you answer a merge entry in the orchestrator's session, the orchestrator records it and the merge goes ahead, with no commit from you.
+
+- **Why it's yours:** it loosens an approval rule, and it changes the dev-cycle skill (gate code). The loop found the old rule lived only in the skill's prose (step 9.3); the gate's code already accepted any answer landed with `--answered`, and the plan's D8 already allowed a session answer. So the change is prose plus one end-to-end test; `scripts/build-loop.sh` is untouched.
+- **How it works after merging:** a session answer counts only when your own message names the entry's ID and an option (`Q-229: [1]`). The orchestrator writes it as `Q-NNN: [N]`, quotes your words under the record's `### Answers committed`, lands it with `--answered`, and the next iteration runs the merge. With no loop running, it schedules one wakeup for that merge instead of waiting for you to restart `/loop`.
+- **Residual risk (stated in the research doc):** an orchestrator that mistakes a loop's report or a task notification for your answer could land an approval; and the approval's record on main is written by the orchestrator, not you. Still bounding it: option 1 under the exact heading, the full tip pinned, the final message names the approval before the merge, and one `git revert` undoes it.
+- **Tests:** a new end-to-end case in `test/scripts/build-loop-merge.bats` (open entry refuses; without `--answered` the land refuses; with it the merge runs and carries its trailer). The merge, orchestrator and dev-cycle suites pass (123 tests); the health check passed on 280f01da, and d14ff65a after it changed prose only. One review: no red, three amber, all fixed.
+- **Read:** `docs/working/research-2026-10-29-session-answers-for-merge-entries.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 5aa2bb2a770373d6a7a6ae86f00e41995e445eb9
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md A docs/working/research-2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/scripts/build-loop-merge.bats
+```
+
+- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code, and an instruction file the orchestrator follows).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 7fe7107c; from the release after, chat answers to merge entries land without your commit | None after this one | An approval landed from a misread message; one `git revert` of that merge |
+| **[2] drop** | The brief closes; merge entries keep needing your commit | A commit per merge | Your feedback point 1 stays open |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** merge entries still need your own commit (this one too: it predates the change).
