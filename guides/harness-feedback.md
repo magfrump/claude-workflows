@@ -29,7 +29,10 @@ In claude-workflows itself, do not use this file; seed `docs/working/idea-log.md
 ```
 
 Each mode takes an optional FILE; the default is `docs/harness-feedback.md` in the git
-toplevel of the current directory. Commit the file with the work that prompted the entry.
+toplevel of the current directory (`init` writes only inside that toplevel). `init` names the
+project after the origin remote's repository, else the toplevel directory; check the
+`Project:` line it writes, since two projects with one name cannot both be ingested. Commit
+the file with the work that prompted the entry.
 
 ## Grammar
 
@@ -59,9 +62,11 @@ Project: example-app
 - **Bullets.** Each of `- **Context:** `, `- **Expected:** `, `- **Observed:** ` and
   `- **Evidence:** ` appears exactly once in the entry, followed by non-empty text on the same
   line. Other lines (continuations, notes) may follow anywhere in the entry.
-- **Headings.** After the first entry, every line starting with `#` is an entry heading.
-- **Bytes.** UTF-8, LF line endings, no control characters but tab, no `<!--`, at most
-  1 MB.
+- **Headings.** A line starting `### F-` or `### f-` is an entry heading, and after the
+  first entry so is every line starting with `#`; each must match the form above.
+- **Bytes.** UTF-8, LF line endings, no control or format characters but tab (Unicode
+  categories Cc and Cf, which include bidi overrides) and no line or paragraph separators,
+  no `<!--`, at most 1 MB.
 
 **As a GitHub issue** (a later version): title `Feature: slug`, label the verdict, body the
 four bullets plus `Project` and `Date`. Keep entries in this shape and they move across
@@ -76,8 +81,8 @@ scripts/harness-feedback.py ingest PATH/TO/docs/harness-feedback.md
 ```
 
 That one command is the copy. It checks the file and, if it passes, writes it to
-`docs/working/feedback/NAME.md` (a later copy of the same project replaces the earlier one;
-the project's file only grows) and appends one seed per entry to `docs/working/idea-log.md`,
+`docs/working/feedback/NAME.md` (a later copy of the same project replaces the earlier one)
+and appends one seed per entry to `docs/working/idea-log.md`,
 shaped as the dev cycle's seeds are:
 
 ```
@@ -85,8 +90,11 @@ shaped as the dev cycle's seeds are:
 ```
 
 An entry already seeded (its `harness feedback NAME F-NNN,` signal is in the log) is
-skipped, so rerunning on a newer copy adds only the new entries. A file that fails `check` is
-refused whole and nothing is written. A file already under `docs/working/feedback/` is seeded
+skipped, so rerunning on a newer copy adds only the new entries. A project's file only
+grows, so a copy whose entries do not start with the stored copy's entries (same IDs, slugs
+and meta lines, in order) is refused: it is another project under the same `Project:` name,
+or entries were removed. A file that fails `check` is refused whole, and in both cases
+nothing is written. `ingest` refuses to run outside a claude-workflows checkout. A file already under `docs/working/feedback/` is seeded
 in place, not copied. Commit the copy and the idea log together.
 
 From there the dev cycle's own intake routes it: new seeds count toward the brainstorm

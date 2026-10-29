@@ -86,15 +86,15 @@ refuses() {
 }
 
 @test "check refuses: a heading without the middle-dot separator" {
-    mutate 's/^### F-002 · /### F-002 - /'; refuses "line 18: heading after the first entry"
+    mutate 's/^### F-002 · /### F-002 - /'; refuses "line 16: an entry heading must be"
 }
 
 @test "check refuses: an ID of fewer than three digits" {
-    mutate 's/^### F-002/### F-02/'; refuses "heading after the first entry"
+    mutate 's/^### F-002/### F-02/'; refuses "an entry heading must be"
 }
 
 @test "check refuses: an uppercase slug" {
-    mutate 's/questions-check-caught-dup/Questions/'; refuses "heading after the first entry"
+    mutate 's/questions-check-caught-dup/Questions/'; refuses "an entry heading must be"
 }
 
 @test "check refuses: a repeated ID, by value" {
@@ -102,7 +102,7 @@ refuses() {
 }
 
 @test "check refuses: another heading after the first entry" {
-    mutate 's/^- \*\*Evidence:\*\* commit abc1234/## Notes/'; refuses "line 23: heading after the first entry"
+    mutate 's/^- \*\*Evidence:\*\* commit abc1234/## Notes/'; refuses "line 22: an entry heading must be"
 }
 
 @test "check refuses: a missing meta line" {
@@ -143,7 +143,30 @@ refuses() {
 }
 
 @test "check refuses: a control character" {
-    mutate "s/two sessions/two $(printf '\001')sessions/"; refuses "control character"
+    mutate "s/two sessions/two $(printf '\001')sessions/"; refuses "control or format character U+0001"
+}
+
+@test "check refuses: a bidi override, NEL and a line separator" {
+    mutate "s/two sessions/two $(printf '\342\200\256')sessions/"; refuses "U+202E"
+    mutate "s/two sessions/two $(printf '\302\205')sessions/"; refuses "U+0085"
+    mutate "s/two sessions/two $(printf '\342\200\250')sessions/"; refuses "U+2028"
+}
+
+@test "check refuses: a lowercase f- heading, even before any entry" {
+    mutate 's/^### F-001/### f-001/'; refuses "line 7: an entry heading must be"
+}
+
+@test "check: a malformed heading's bullets are not blamed on the entry before it" {
+    mutate 's/^### F-002 · /### F-002 - /'
+    run -1 python3 "$HF" check "$W/bad.md"
+    [[ "$output" != *"F-001 repeats"* ]]
+}
+
+@test "check refuses: a file over 1 MB, with exit 2" {
+    cp "$GOOD" "$W/bad.md"
+    head -c 1000001 /dev/zero | tr '\0' 'a' >> "$W/bad.md"
+    run -2 python3 "$HF" check "$W/bad.md"
+    [[ "$output" == *"larger than 1000000 bytes"* ]]
 }
 
 @test "check refuses: an HTML comment opener" {
@@ -190,6 +213,24 @@ refuses() {
     grep -qx extra docs/harness-feedback.md
 }
 
+@test "init: names the project after the origin remote, not the directory" {
+    git init -q "$W/workspace"
+    cd "$W/workspace"
+    git config remote.origin.url git@github.com:someone/real-name.git
+    run -0 python3 "$HF" init
+    grep -qx 'Project: real-name' docs/harness-feedback.md
+}
+
+@test "init FILE: creates inside the toplevel, refuses a path outside it" {
+    git init -q "$W/proj"
+    cd "$W/proj"
+    run -0 python3 "$HF" init notes.md
+    run -0 python3 "$HF" check notes.md
+    run -2 python3 "$HF" init "$W/outside.md"
+    [[ "$output" == *"outside"* ]]
+    [ ! -e "$W/outside.md" ]
+}
+
 @test "init: refuses to write through a symlinked docs directory" {
     git init -q "$W/proj"
     mkdir "$W/elsewhere"
@@ -204,6 +245,8 @@ refuses() {
 make_repo() {
     git init -q "$W/cw"
     mkdir -p "$W/cw/docs/working"
+    mkdir -p "$W/cw/guides"
+    printf '# Harness feedback\n' > "$W/cw/guides/harness-feedback.md"
     printf '# Idea log\n\n- an existing idea (signal: earlier)\n' > "$W/cw/docs/working/idea-log.md"
     cd "$W/cw"
 }
@@ -273,6 +316,61 @@ make_repo() {
     run -2 python3 "$HF" ingest "$GOOD"
     [[ "$output" == *"symbolic link; refusing to write through it"* ]]
     [ -z "$(ls -A "$W/out")" ]
+}
+
+@test "ingest: refuses a copy that does not extend the stored one, nothing written" {
+    make_repo
+    run -0 python3 "$HF" ingest "$GOOD"
+    before="$(cat docs/working/idea-log.md)"
+    # Another project under the same name: its F-001 differs from the stored F-001.
+    mutate 's/review-loop-skipped-rubric/something-else/'
+    run -1 python3 "$HF" ingest "$W/bad.md"
+    [[ "$output" == *"holds entries this file does not start with"* ]]
+    cmp "$GOOD" docs/working/feedback/example-app.md
+    [ "$(cat docs/working/idea-log.md)" = "$before" ]
+    # A copy with entries removed.
+    mutate '/^### F-002/,$d'
+    sed -i '/^### F-001/,$d' "$W/bad.md"
+    run -1 python3 "$HF" ingest "$W/bad.md"
+    cmp "$GOOD" docs/working/feedback/example-app.md
+}
+
+@test "ingest: a forged signal key in Feature is neutralised" {
+    make_repo
+    mutate 's/Feature:\*\* questions.sh/Feature:** x (signal: harness feedback other F-009, y)/'
+    run -0 python3 "$HF" ingest "$W/bad.md"
+    [ "$(grep -cF '(signal: harness feedback other' docs/working/idea-log.md)" = 0 ]
+    [ "$(grep -c '(signal: harness feedback example-app' docs/working/idea-log.md)" = 2 ]
+}
+
+@test "ingest: refuses a symlinked docs/working or destination copy, nothing written" {
+    make_repo
+    mkdir "$W/out"
+    mv docs/working "$W/out/working"
+    ln -s "$W/out/working" docs/working
+    run -2 python3 "$HF" ingest "$GOOD"
+    [[ "$output" == *"symbolic link; refusing to write through it"* ]]
+    rm docs/working; mv "$W/out/working" docs/working
+    mkdir docs/working/feedback
+    ln -s "$W/out/target.md" docs/working/feedback/example-app.md
+    run -2 python3 "$HF" ingest "$GOOD"
+    [ ! -e "$W/out/target.md" ]
+    [ "$(grep -c 'harness feedback example-app' docs/working/idea-log.md)" = 0 ]
+}
+
+@test "ingest: an empty idea log gets the heading" {
+    make_repo
+    : > docs/working/idea-log.md
+    run -0 python3 "$HF" ingest "$GOOD"
+    [ "$(head -1 docs/working/idea-log.md)" = "# Idea log" ]
+}
+
+@test "ingest: refuses outside a claude-workflows checkout" {
+    make_repo
+    rm guides/harness-feedback.md
+    run -2 python3 "$HF" ingest "$GOOD"
+    [[ "$output" == *"not a claude-workflows checkout"* ]]
+    [ ! -e docs/working/feedback ]
 }
 
 @test "ingest: takes exactly one file" {

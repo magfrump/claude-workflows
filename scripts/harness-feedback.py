@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 
 MAX_BYTES = 1_000_000
 VERDICTS = ("fails", "friction", "works")
@@ -39,7 +40,17 @@ META_RE = re.compile(
     r"^\*\*Feature:\*\* ([^·]*\S[^·]*) · \*\*Date:\*\* ([0-9]{4}-[0-9]{2}-[0-9]{2})"
     r" · \*\*Verdict:\*\* (\S+)$")
 BULLET_RE = re.compile(r"^- \*\*(" + "|".join(BULLETS) + r"):\*\*(.*)$")
-CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# Control (Cc), format (Cf: bidi overrides, zero-width marks) and line or
+# paragraph separators (Zl, Zp): a reader that splits on more than LF, or a
+# display that reorders text, would see a different file than check does.
+BAD_CATEGORIES = ("Cc", "Cf", "Zl", "Zp")
+
+
+def bad_char(line):
+    for ch in line:
+        if ch != "\t" and unicodedata.category(ch) in BAD_CATEGORIES:
+            return "U+%04X" % ord(ch)
+    return None
 
 
 class Usage(Exception):
@@ -88,8 +99,8 @@ def parse(text):
         where = f"line {no}"
         if "\r" in line:
             problems.append(f"{where}: CR byte (use LF line endings)")
-        elif CONTROL_RE.search(line):
-            problems.append(f"{where}: control character")
+        elif bad_char(line):
+            problems.append(f"{where}: control or format character {bad_char(line)}")
         if "<!--" in line:
             problems.append(f"{where}: '<!--' is not allowed")
         if cur is None and not line.startswith("### F-") and not line.startswith("### f-"):
@@ -104,8 +115,11 @@ def parse(text):
         if line.startswith("#"):
             m = HEADING_RE.match(line)
             if not m:
-                problems.append(f"{where}: heading after the first entry must be "
-                                "'### F-NNN · slug' (NNN 3+ digits, slug a-z 0-9 -)")
+                problems.append(f"{where}: an entry heading must be '### F-NNN · slug' "
+                                "(NNN 3+ digits, slug a-z 0-9 -), and after the first "
+                                "entry every '#' line is one")
+                # Skip this entry's lines, so its bullets are not blamed on the last one.
+                cur = {"bad": True, "line": no}
                 continue
             num = int(m.group(1))
             if num in seen:
@@ -114,6 +128,8 @@ def parse(text):
             cur = {"line": no, "id": "F-" + m.group(1), "num": num,
                    "slug": m.group(2), "meta": None, "bullets": {}}
             entries.append(cur)
+            continue
+        if cur.get("bad"):
             continue
         if no == cur["line"] + 1:
             cur["meta_line"] = True
@@ -207,10 +223,12 @@ def assert_inside(top, path):
         raise Usage(f"{path}: resolves outside {top}")
 
 
-def write_file(path, text, append=False):
+def write_file(path, text, append=False, exclusive=False):
     """Write without following a link at the final component."""
     flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
     flags |= os.O_APPEND if append else os.O_TRUNC
+    if exclusive:
+        flags |= os.O_EXCL
     fd = os.open(path, flags, 0o644)
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
@@ -226,25 +244,50 @@ def make_dirs(top, rel_dir):
             os.mkdir(cur)
 
 
+def project_name(top):
+    """The origin remote's repository name, else the toplevel's basename.
+
+    The remote comes first: a devcontainer mounts every project at /workspace
+    and a worktree's directory name changes per run, and claude-workflows tells
+    projects apart by this name alone.
+    """
+    base = os.path.basename(top)
+    try:
+        out = subprocess.run(["git", "-C", top, "config", "--get", "remote.origin.url"],
+                             capture_output=True, text=True, check=False)
+        url = out.stdout.strip().rstrip("/")
+        if out.returncode == 0 and url:
+            base = re.split(r"[/:]", url)[-1]
+            if base.endswith(".git"):
+                base = base[:-4]
+    except OSError:
+        pass
+    name = re.sub(r"[^A-Za-z0-9._-]", "-", base).lstrip(".-")[:64]
+    return name or "project"
+
+
 def cmd_init(args):
     top = toplevel()
-    path = default_path(args)
+    path = os.path.abspath(default_path(args))
     if os.path.lexists(path):
         print(f"exists {path}")
         return 0
+    assert_inside(top, os.path.dirname(path))
     if not args:
         make_dirs(top, "docs")
-    path = os.path.abspath(path)
-    if path == top or path.startswith(top + os.sep):
-        assert_inside(top, path)
-    name = re.sub(r"[^A-Za-z0-9._-]", "-", os.path.basename(top)).lstrip(".-")[:64]
-    name = name or "project"
+    assert_inside(top, path)
+    name = project_name(top)
     write_file(path, "# Harness feedback\n\n"
                "Entries on how claude-workflows features work or fail in this project.\n"
                "Grammar: ~/.claude/guides/harness-feedback.md.\n\n"
-               f"Project: {name}\n")
+               f"Project: {name}\n", exclusive=True)
     print(f"created {path}")
     return 0
+
+
+def sig(e):
+    """What identifies an entry across copies: ID, slug and meta line."""
+    return (e["id"], e["slug"], e["meta"])
 
 
 def seed_line(project, rel_copy, e):
@@ -268,6 +311,9 @@ def cmd_ingest(args):
         return 1
     project, entries, text = got
     top = toplevel()
+    if not os.path.isfile(os.path.join(top, "guides", "harness-feedback.md")):
+        raise Usage(f"{top}: not a claude-workflows checkout "
+                    "(no guides/harness-feedback.md); ingest runs there only")
     feedback_dir = os.path.join(top, FEEDBACK_DIR)
     src_real = os.path.realpath(src)
     if os.path.dirname(src_real) == os.path.realpath(feedback_dir) \
@@ -280,7 +326,18 @@ def cmd_ingest(args):
     for target in (dest, log):
         assert_inside(top, target)
     rel_copy = os.path.relpath(dest, top)
+    if dest != src_real and os.path.lexists(dest):
+        # The project's file only grows: a copy whose entries do not extend the
+        # stored one is another project under the same name, or a lost history.
+        old = load(dest)
+        if old is None or [sig(e) for e in old[1]] != [sig(e) for e in entries[:len(old[1])]]:
+            print(f"refused: {rel_copy} holds entries this file does not start with "
+                  "(another project with the same Project name, or entries removed); "
+                  "nothing written", file=sys.stderr)
+            return 1
     log_text = read_text(log) if os.path.lexists(log) else None
+    if log_text is not None and not log_text.strip():
+        log_text = None
     make_dirs(top, FEEDBACK_DIR)
     if dest != src_real:
         write_file(dest, text)
