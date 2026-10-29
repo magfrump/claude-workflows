@@ -66,7 +66,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
 
 - **Harness feedback file for projects, v1** (Now, owner feedback 2026-10-29 point 4).
-  Review policy. Brief: `docs/working/briefs/2026-10-29-harness-feedback-file.md`
+  Review policy. Built and ready; merge is Q-232. Brief: `docs/working/briefs/2026-10-29-harness-feedback-file.md`
 
 ## Next
 
