@@ -43,7 +43,9 @@ mig ID CONVENTION FP PATH ERE 'REMEDY'
 
 `bash scripts/lib/migrations.sh fingerprint` prints each convention's current FP, and
 `bash scripts/lib/migrations.sh check` runs the test's check. Never edit or remove an old
-line: a repo that has not migrated yet still needs it. The remedy must exist in the same
+line: a repo that has not migrated yet still needs it. The bats check holds the registry
+append-only against the default branch's copy, and allows only `mig` lines and comments
+in it (a branch's change; a commit made directly on the default branch is not compared). The remedy must exist in the same
 change (or already be on main), since the dev cycle hands it to the owner as soon as the
 change is installed.
 

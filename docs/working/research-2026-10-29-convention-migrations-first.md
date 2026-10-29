@@ -147,6 +147,16 @@ PATH; the source extractions ran to end of file on a lost anchor (now each needs
 marker, and step 8's stops at the next heading). Tests added for each. The first commit's
 message says "one `you: terminal` entry"; it is one per migration, sharing one paste.
 
+## Review (round 2) and what it changed
+
+No high findings. Fixed: the append-only test merged stderr, so the sandbox's locale
+warning broke it (now `--separate-stderr`); a `mig_reset` after the old lines passed the
+append-only check (now the registry section may hold only `mig` lines and comments); the
+`.git` refusal also caught `.github/` (now a `.git` component only); step 1b's "no longer
+listed" now applies only to a checked section 7b. Accepted limit: the append-only
+comparison runs on a branch against its merge base, so a commit made directly on main is
+not compared (documented in the guide).
+
 ## Files
 
 - `scripts/lib/migrations.sh` (new): registry, `mig`, `conv_source`, `conv_fingerprint`,

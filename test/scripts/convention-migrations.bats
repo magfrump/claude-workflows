@@ -53,17 +53,20 @@ add_mig() {
 
 @test "append-only: adding a line passes; editing, removing or reordering an old one is refused" {
     printf 'mig a questions 0000000000000000 - - x\nmig b roadmap 1111111111111111 - - y\n' > "$BATS_TEST_TMPDIR/old"
-    ok() { printf '%s\n' "$@" > "$BATS_TEST_TMPDIR/new"; bash -c 'source "$1"; conv_append_only "$2" "$3"' _ "$LIB" "$BATS_TEST_TMPDIR/old" "$BATS_TEST_TMPDIR/new"; }
-    run ok 'mig a questions 0000000000000000 - - x' 'mig b roadmap 1111111111111111 - - y' 'mig c roadmap 2222222222222222 - - z'
+    ok() { printf '# Registry (oldest first)\n%s\n' "$@" > "$BATS_TEST_TMPDIR/new"; bash -c 'source "$1"; conv_append_only "$2" "$3"' _ "$LIB" "$BATS_TEST_TMPDIR/old" "$BATS_TEST_TMPDIR/new"; }
+    run --separate-stderr ok 'mig a questions 0000000000000000 - - x' 'mig b roadmap 1111111111111111 - - y' 'mig c roadmap 2222222222222222 - - z'
     [ "$status" -eq 0 ]
     for bad in "mig a questions 0000000000000000 - - x|mig b roadmap 2222222222222222 - - y" \
                "mig a questions 0000000000000000 - - x" \
                "mig b roadmap 1111111111111111 - - y|mig a questions 0000000000000000 - - x"; do
         IFS='|' read -ra lines <<< "$bad"
-        run ok "${lines[@]}"
+        run --separate-stderr ok "${lines[@]}"
         [ "$status" -eq 1 ] || { echo "passed: $bad"; return 1; }
         [[ "$output" == "refuse registry: a mig line the default branch has was edited, removed or moved"* ]]
     done
+    run --separate-stderr ok 'mig a questions 0000000000000000 - - x' 'mig b roadmap 1111111111111111 - - y' 'mig_reset'
+    [ "$status" -eq 1 ]
+    [[ "$output" == "refuse registry: a line in the registry is neither a mig line nor a comment"* ]] || { echo "$output"; return 1; }
 }
 
 @test "a changed roadmap template fails the check, naming the convention, its new fingerprint and the line to add; adding that line passes" {
@@ -116,6 +119,7 @@ mig m2 questions 0123 - - 'none: x'
 mig m3 questions 0123456789abcdef docs/working/questions.md '(' 'run it'
 mig m4 questions 0123456789abcdef ../x.md 'a' 'run it'
 mig m8 questions 0123456789abcdef .GIT/config 'a' 'run it'
+mig m9 questions 0123456789abcdef .github/x.md 'a' 'run it'
 mig m5 questions 0123456789abcdef - - 'run it'
 mig m6 questions 0123456789abcdef docs/a.md 'a' 'none: x'
 mig baseline-questions questions 0123456789abcdef - - 'none: x'
@@ -130,6 +134,7 @@ EOF
                 "mig baseline-questions: the ID is used twice" "mig m7: takes 6 fields, not 5"; do
         [[ "$output" == *"refuse registry: $want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
     done
+    [[ "$output" != *"mig m9"* ]] || { echo "a .github path was refused"; return 1; }
 }
 
 # The digest, run from a copy of scripts/ whose registry is $1's lines.

@@ -53,7 +53,7 @@ mig() {
   elif [[ "$rem" == *$'\n'* || -z "$rem" ]]; then why="the remedy is empty or spans lines"
   elif [[ "$p" == - ]]; then
     [[ "$ere" == - && "$rem" == "none: "?* ]] || why="with PATH '-', ERE is '-' and the remedy 'none: WHY'"
-  elif [[ ! "$p" =~ ^[A-Za-z0-9._][A-Za-z0-9._/-]*$ || "/$p/" == */../* || "/$p/" == */./* || "$p" == */ || "/${p,,}" == */.git* ]]; then
+  elif [[ ! "$p" =~ ^[A-Za-z0-9._][A-Za-z0-9._/-]*$ || "/$p/" == */../* || "/$p/" == */./* || "$p" == */ || "/${p,,}/" == */.git/* ]]; then
     why="PATH is not a plain relative file path"
   elif [[ -z "$ere" || "$ere" == - || "$rem" == none:* ]]; then why="a migration needs an ERE and a command"
   else
@@ -105,6 +105,10 @@ conv_append_only() {
   local a b
   a="$(grep -a '^mig ' -- "$1")" || [[ $? -eq 1 ]] || { echo "refuse registry: $1 could not be read"; return 1; }
   b="$(grep -a '^mig ' -- "$2")" || [[ $? -eq 1 ]] || { echo "refuse registry: $2 could not be read"; return 1; }
+  # The registry section (from its marker to the run-directly block) holds
+  # mig lines and comments only, so nothing after the old lines can reset them.
+  if awk '/^# Registry \(oldest first/ { on = 1; next } /^if \[\[ "\$\{BASH_SOURCE/ { on = 0 } on && NF && !/^mig / && !/^#/ { bad = 1 } END { exit bad }' "$2"; then :
+  else echo "refuse registry: a line in the registry is neither a mig line nor a comment"; return 1; fi
   [[ -z "$a" || "$b" == "$a" || "$b" == "$a"$'\n'* ]] && return 0
   echo "refuse registry: a mig line the default branch has was edited, removed or moved; restore it and add a new line instead"
   return 1
