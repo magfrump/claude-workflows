@@ -334,7 +334,9 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
 
 
 ### Q-233 · merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-29: "probably worth merging Q-233 before the release"; recorded by the dev cycle)
 
 Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? This is the branch you approved as Q-231 [1], plus the reconciliation it needed after Q-229 merged. Merging f1146945 as it was would have left main's own migration test failing, so I sent it back instead of merging.
 
