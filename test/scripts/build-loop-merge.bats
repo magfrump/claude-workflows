@@ -264,3 +264,17 @@ Build-loop-approved: Q-001" ]
         [ "$status" -eq 1 ] && [[ "$stderr" == "--approved "* ]] && [ "$(git rev-parse main)" = "$M" ] || { echo "$args"; show; return 1; }
     done
 }
+
+@test "--merge refuses a failure-pattern gap as --check does, and leaves main where it was (Q-226 [5])" {
+    sm; git checkout -q feat/x && git commit -q --allow-empty -m "fix(x): y" && git checkout -q --detach main
+    T="$(git rev-parse feat/x)"
+    mrg "$B" --expect "$T"
+    [ "$status" -eq 2 ] && [ "$output" = "refuse $B: 1 failure-pattern gaps on feat/x (gap lines follow)
+gap $B: 1 fix(...) commits on feat/x add no new FP-NNN entry to docs/thoughts/failure-patterns.md, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)
+path $B A work-feat-x.txt" ] && [ "$(git rev-parse main)" = "$M" ] || { show; return 1; }
+    # The skip line, on the research doc main already holds, lets it land.
+    git checkout -q feat/x && echo "Failure-pattern skip: a one-line reason" >> "$RD" && commit_all skip && git checkout -q --detach main
+    T="$(git rev-parse feat/x)"
+    mrg "$B" --expect "$T"
+    [ "$status" -eq 0 ] && [[ "${lines[0]}" == "merged $B $T "* ]] || { show; return 1; }
+}
