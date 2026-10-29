@@ -264,16 +264,18 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `fd41989eb734ce628610f009a85ecb4b355c88ee` (M), and the gate scripts the dev cycle runs differ in `scripts/questions.sh` (Q-224's owner routes, merged at 236f21ee). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
+Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `2b8f492d7b273cdcbd3fb405f74549754f6984c2` (M), and the gate scripts the dev cycle runs differ in `scripts/questions.sh` (Q-224's owner routes, merged at 236f21ee). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = fd41989eb734ce628610f009a85ecb4b355c88ee && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 2b8f492d7b273cdcbd3fb405f74549754f6984c2 && ./devcontainer-config/install.sh
 ```
 
 The only git call before `install.sh`'s own state gate is `rev-parse`, which runs no hook. If the `test` fails, your host checkout is not at M: bring it there first, knowing that any other git command on the host (a checkout included) can run a hook a sandbox session planted, as `install.sh`'s trust model says. This one paste also covers Q-222 (the same `install.sh` run, at a newer commit): run `cc-verify --help | head -5 && cc-isolated --list` after it, as Q-222 asks.
 
 - **Changed gate paths (C to M):** `scripts/questions.sh`
-- **Commits on main's first-parent line after C** (a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M 2b8f492d; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+  - 2b8f492d Merge branch 'chore/dev-cycle-2026-10-29-0217'
+  - 2b239b87 Merge branch 'chore/dev-cycle-2026-10-29-0217'
   - fd41989e Merge branch 'chore/dev-cycle-2026-10-29-0133'
   - 4b2f000a Merge branch 'chore/dev-cycle-2026-10-29-0133'
   - 236f21ee Merge branch 'feat/questions-owner-routes' (build-loop approved merge)
