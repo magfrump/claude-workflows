@@ -55,3 +55,5 @@ Policy: review
 - Other gate rules (Self-merge never, the self-merge floor).
 - Editing `docs/working/questions.md`, `questions-archive.md`, `docs/roadmap.md` or any
   other brief.
+
+Dispatched: 1
