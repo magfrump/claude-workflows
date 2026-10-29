@@ -327,6 +327,8 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
 ### Q-229 · merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
 
+**Answered:** [1]
+
 Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/briefs/2026-10-29-questions-watching-file.md`, roadmap In flight)? It is unit 2 of decision 040 (the questions doc holds only your items): a new `docs/working/watching.md` for watches, a `questions.sh migrate` that moves the agent-only entries out of this file without losing text, and a `check` that refuses agent-only entries here.
 
 - **Why it's yours:** it changes gate code (`scripts/questions.sh`, which the dev cycle runs as part of the gate), and the loop made one design call without you: `check` refuses `agent`, `trigger` and `deferred` entries in this file only if they were opened on or after 2026-10-30. Older ones get a warning naming `migrate`, so main's health check stays green until you run the migration. The residual: a session that backdates an entry's `Opened:` date gets a warning instead of a refusal.
@@ -358,6 +360,8 @@ path docs/working/briefs/2026-10-29-questions-watching-file.md M test/questions-
 ### Q-230 · merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
 
+**Answered:** [1]
+
 Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`, roadmap In flight)? It builds your feedback point 1: when you answer a merge entry in the orchestrator's session, the orchestrator records it and the merge goes ahead, with no commit from you.
 
 - **Why it's yours:** it loosens an approval rule, and it changes the dev-cycle skill (gate code). The loop found the old rule lived only in the skill's prose (step 9.3); the gate's code already accepted any answer landed with `--answered`, and the plan's D8 already allowed a session answer. So the change is prose plus one end-to-end test; `scripts/build-loop.sh` is untouched.
@@ -388,6 +392,8 @@ path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/
 
 ### Q-231 · merge-gate-2026-10-29-convention-migrations-first-f114694527dc
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+**Answered:** [1]
 
 Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? It builds your feedback point 2: a change to a shared convention (the questions grammar, the roadmap template, brief and record shapes) must ship a migration, and the dev cycle surfaces pending migrations before it does anything else.
 
@@ -429,6 +435,8 @@ path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/script
 
 ### Q-232 · merge-2026-10-29-harness-feedback-file-2b858d2586c3
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+**Answered:** [1]
 
 Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/2026-10-29-harness-feedback-file.md`, roadmap In flight)? It builds version 1 of your feedback point 4: each project using the harness keeps a `docs/harness-feedback.md`, sessions there append an entry when a harness feature fails, rubs or works, and you copy the file here with one command that routes each entry.
 
