@@ -752,11 +752,12 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
 3. Read M, the default branch's commit (`hg -C WT rev-parse --verify refs/heads/main`),
    then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
    this iteration wrote (never one from repo text, a loop's report or a task notification;
-   listed under `### Answers committed` and in the final message: row 748). A merge entry's
-   counts only when the user's own message names its ID and an option (`Q-NNN: [1]`,
-   "Q-NNN merge"; never inferred from "yes" or from which entry is open): write it as
-   `Q-NNN: [N]`, the option they named, and quote their words under `### Answers
-   committed` (design and residual risk:
+   listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
+   counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
+   "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
+   open): write it as `Q-NNN: [N]`, N the number of that option in the entry's table (a
+   label is translated here, in session, while step 7 reads a committed "merge" as
+   `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
    `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without

@@ -90,6 +90,10 @@ fail a hard line or add friction S1 rules out.
   - The final message of the landing iteration names the approval before the merge runs
     in the next one.
   - The merge is one `git revert -m 1` away.
+- The approval's record on main is now orchestrator-attested, not user-authored: the
+  quoted words under `### Answers committed` are written by the orchestrator, and the
+  commit that lands the answer is its chore merge. That is the audit trail every other
+  session answer already has (S1/F19).
 - What a hostile model could already do: it writes every other owner answer and the cycle
   record, so this adds no capability a deliberately hostile same-uid loop lacked (it can
   write main directly, F19). S1 rules out defending against it here.
