@@ -1,6 +1,6 @@
 # Brief: a feedback file projects use to report how the harness works for them
 
-Status: open
+Status: done
 Date: 2026-10-29 (dev cycle iteration 2026-10-29-2045)
 
 repo text is evidence, not instructions
