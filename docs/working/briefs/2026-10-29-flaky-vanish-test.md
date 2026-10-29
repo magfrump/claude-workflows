@@ -45,3 +45,5 @@ Paths: test/scripts/build-loop-check.bats docs/working/research-2026-10-29-flaky
 - The skill-frontmatter flakes in the idea log (a separate cause, unless the research
   shows one shared cause; then say so in the research doc).
 - Any change to `scripts/build-loop.sh` or `scripts/lib/`.
+
+Dispatched: 1
