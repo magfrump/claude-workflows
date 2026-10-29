@@ -154,7 +154,7 @@ section() { sed -n '/^## 7b\. Pending migrations/,/^## 8\./p' <<< "$output"; }
     printf '# Q\n\n### Q-001 · x\n**Needs:** agent · **Opened:** 2026-10-01 · **Status:** OPEN SECRET-TEXT\n' > docs/working/questions.md
     git add -A && git commit -q -m q
     run --separate-stderr bash "$S/dev-cycle.sh"
-    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     sec="$(section)"
     [[ "$sec" == *"- pending q-old (questions): docs/working/questions.md line 4; remedy: questions.sh migrate"* ]] || { echo "$sec"; return 1; }
     [[ "$output" != *SECRET-TEXT* ]]
