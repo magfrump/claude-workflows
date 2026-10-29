@@ -167,3 +167,18 @@ not compared (documented in the guide).
 - `guides/convention-changes.md` (new) and `guides/README.md`: the author's doc.
 - `test/scripts/convention-migrations.bats` (new, 10 cases); `test/scripts/dev-cycle.bats`
   (section list).
+
+## Dispatch 2: merged after unit 2
+
+Unit 2 (`feat/questions-watching-file`) merged first, so this branch merged main in and
+failed its own merge check, as planned above. Added the line the check printed, with the
+ERE confirmed against the merged `questions.sh` (its `**Needs:**` parser splits on ` · `,
+so `agent`, `trigger` and `deferred` are the whole route field, and `ROUTE_HOME` sends
+exactly those three out of questions.md) and against this repo's `questions.md`, which
+it matches on five lines:
+`mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'`.
+The roadmap-template test failed for the same reason (the copied, unregistered
+`questions.sh` added a "refuse questions" line), not because of locale: perl's and bash's
+locale warnings go to stderr, which `run --separate-stderr` keeps out of `$output`, and
+the file passes under both the broken `en_US.UTF-8` and `C.UTF-8`. It now asserts the
+unchanged copy passes first, so a convention out of step reads as a failed precondition.

@@ -71,6 +71,9 @@ add_mig() {
 
 @test "a changed roadmap template fails the check, naming the convention, its new fingerprint and the line to add; adding that line passes" {
     T="$BATS_TEST_TMPDIR/c"; copy_sources "$T"
+    # Precondition: the unchanged copy passes (else test 1 names the convention out of step).
+    run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "$T"
+    [ "$status" -eq 0 ] || { echo "precondition: the unchanged copy fails the check: $output"; return 1; }
     perl -0pi -e 's/^## Done$/## Blocked\n## Done/m' "$T/skills/dev-cycle/SKILL.md"
     run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "$T"
     [ "$status" -eq 1 ]
