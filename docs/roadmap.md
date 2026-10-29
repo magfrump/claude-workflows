@@ -40,13 +40,21 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   per `fix(...)` commit, a new entry or a one-line skip reason. First step: briefed (In
   flight).
 
+- **Bug: the health check fails on `test/questions-doc.bats` (shellcheck).** Motive: found by
+  the health check at fd41989e (SC2154 at line 286; SC2314 at lines 306 and 324, two
+  assertions that check nothing), all from Q-224's merge. While it fails, every loop's
+  health check fails too. First step: briefed (In flight).
+
 ## In flight
 
 
 - **Failure-pattern steps where build loops run, checked at the gate (Q-226 [5])** (Now).
   Motive: the Q-223 review found build loops never reach pr-prep's failure-pattern
-  advisory and no research doc since 2026-10-15 carries the required grep line. Gate code:
-  a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`
+  advisory and no research doc since 2026-10-15 carries the required grep line. Built and
+  ready; merge is Q-228, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`
+- **Health check: shellcheck on `test/questions-doc.bats`** (Now, bug). Motive: the health
+  check fails at fd41989e on three findings Q-224's merge brought in, two of them inert
+  assertions. Self-merge, test-only. Brief: `docs/working/briefs/2026-10-29-questions-doc-bats-lint.md`
 
 ## Next
 
