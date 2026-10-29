@@ -245,6 +245,7 @@ EOF
 ### Q-021 · open-watch\
 **Needs:** deferred · **Opened:** 2026-10-30 · **Status:** OPEN' "$w"
     run --separate-stderr bash "$QS" open
+    # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
     [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
     [[ "$output" == *"Q-021  deferred          open-watch"* && "$output" == *"Q-003  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
     # Ranked with the live entries: the owner's first, watches after.
