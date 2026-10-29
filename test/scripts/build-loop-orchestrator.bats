@@ -433,6 +433,38 @@ ${W//Q-001/Q-003}"; git reset -q --hard
     cd_is "refuse HEAD: it has more than one merge base with the default branch's $(git rev-parse main); merge the default branch into HEAD first"
 }
 
+@test "a you: fyi acknowledged seen: --cycle-diff takes it only with --answered, --main-log reads it as answers, and a range line as other (decision 040)" {
+    F='**Needs:** you: fyi · **Opened:** 2026-10-28 · **Status:**'
+    mkdir -p docs/working
+    printf '%s\n' '# Questions' '### Q-001 · read-this' "$F OPEN" '' 'Read this.' '### Q-002 · and-this' "$F OPEN" '' 'And this.' > docs/working/questions.md
+    printf '%s\n' '# Archive' > docs/working/questions-archive.md; commit_all questions; S="$(git rev-parse main)"
+    git checkout -q -b chore/dev-cycle-2026-10-28
+    W="refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+    # Recorded one line per entry: the anti-forgery rule holds for an fyi as for any route.
+    sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
+    git add -A; cd_is "$W"; cd_is ok --answered Q-001
+    # The bold label form, the same.
+    git reset -q --hard; sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a **Answer:** seen' docs/working/questions.md
+    git add -A; cd_is "$W"; cd_is ok --answered Q-001
+    # The owner's batch pasted as a range: the Status flip alone still refuses.
+    git reset -q --hard; sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md
+    sed -i '/^Read this/a Q-001\xe2\x80\x93Q-002: seen' docs/working/questions.md; grep -qx $'Q-001–Q-002: seen' docs/working/questions.md; git add -A
+    cd_is "$W
+${W//Q-001/Q-002}"
+    cd_is ok --answered Q-001 --answered Q-002
+    # On main: a per-entry seen line is the answers class; a range line is not an answer line, so other.
+    git reset -q --hard; git checkout -q main
+    sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
+    commit_all seen; A="$(git rev-parse main)"
+    sed -i '/^Q-001: seen/a **Answer:** seen' docs/working/questions.md; commit_all bold; B2="$(git rev-parse main)"
+    sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^And this/a Q-002\xe2\x80\x93Q-003: seen' docs/working/questions.md
+    grep -qx $'Q-002–Q-003: seen' docs/working/questions.md; commit_all range; R="$(git rev-parse main)"
+    ml "$S" 2 "main $R 3
+answers $A seen
+answers $B2 bold
+other $R range"
+}
+
 @test "the answer label regex is the same in the lib's ANSWER_AWK, ANSWERS_AWK and QKEYS_AWK (U3c i2 architecture 1)" {
     r='/^\*\*answer(:|ed| \()/'
     [ "$(grep -cF "$r" "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")" -eq 1 ] && [ "$(grep -cF "$r" "$BL")" -eq 2 ]
