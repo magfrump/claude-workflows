@@ -283,6 +283,7 @@ add_entry() {
     bash "$QS" index
     run --separate-stderr bash "$QS" check
     [ "$status" -eq 1 ]
+    # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
     [[ "$stderr" == *"Q-004: invalid route 'you: fyi-ish' (want one of: you: judgment, you: walkthrough, you: terminal, you: fyi, agent, deferred, trigger)"* ]] \
         || { echo "$stderr"; return 1; }
 }
@@ -303,7 +304,10 @@ add_entry() {
     run bash "$QS" archive
     [ "$status" -eq 0 ]
     [[ "$output" == *"archived Q-004"* ]]
-    ! grep -aq '^### Q-004' "$QUESTIONS_LIVE"
+    # `run !`, not a bare `!`: a bare `!` mid-test cannot fail it. The status
+    # check tells "no match" (1) from an unreadable file (2).
+    run ! grep -aq '^### Q-004' "$QUESTIONS_LIVE"
+    [ "$status" -eq 1 ]
     grep -aq '^Q-004: seen$' "$QUESTIONS_ARCHIVE"
     run bash "$QS" check
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
@@ -321,7 +325,8 @@ add_entry() {
     for r in 'you: judgment' 'you: walkthrough' 'you: terminal' 'you: fyi'; do
         [[ "$head" == *"| \`$r\` |"* ]] || { echo "missing $r"; echo "$head"; return 1; }
     done
-    ! grep -aq '^| `' docs/working/questions-archive.md
+    run ! grep -aq '^| `' docs/working/questions-archive.md
+    [ "$status" -eq 1 ]  # 1 is "no match"; 2 would be a missing archive file
     # Every route the table lists is one check accepts (one source: ROUTES).
     while IFS= read -r r; do
         n=$((n + 1)); id="$(printf 'Q-%03d' "$n")"
