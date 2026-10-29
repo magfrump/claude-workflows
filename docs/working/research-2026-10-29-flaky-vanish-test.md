@@ -2,6 +2,9 @@
 
 Brief: `docs/working/briefs/2026-10-29-flaky-vanish-test.md` · Date: 2026-10-29 · Branch: fix/flaky-vanish-test
 
+Failure-pattern grep: `rg -n -i "symptom:[^ ]*(flak|vanish|tmp|readdir|race)" docs/thoughts/failure-patterns.md`: FP-174 (find over a shared ancestor exits nonzero when another process deletes an entry mid-listing; the Q-145 gate fix) is this same mechanism, reached here by the test of that fix
+Failure-pattern skip: no new FP entry; this is FP-174 recurring in its own test (the fixture listed the shared ancestors the fix retries over), and docs/thoughts/ is outside this brief's paths
+
 ## The case
 
 `test/scripts/build-loop-check.bats`, "the ancestor listing skips a file that vanishes between
