@@ -266,7 +266,7 @@ make_repo() {
     mkdir -p "$W/cw/guides"
     printf '# Harness feedback\n' > "$W/cw/guides/harness-feedback.md"
     printf '# Idea log\n\n- an existing idea (signal: earlier)\n' > "$W/cw/docs/working/idea-log.md"
-    cd "$W/cw"
+    cd "$W/cw" || return 1
 }
 
 @test "ingest: copies the file and appends one seed per entry, in the seed shape" {
@@ -347,6 +347,7 @@ make_repo() {
     cmp "$GOOD" docs/working/feedback/example-app.md
     [ "$(cat docs/working/idea-log.md)" = "$before" ]
     # A copy with an entry removed (only F-001 kept).
+    # shellcheck disable=SC2016 # a sed address, not a shell expansion
     mutate '/^### F-002/,$d'
     run -1 python3 "$HF" ingest "$W/bad.md"
     [[ "$output" == *"holds entries this file does not start with"* ]]
