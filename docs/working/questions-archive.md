@@ -219,6 +219,10 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
 | [Q-226](#q-226--failure-pattern-library-future) | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
 | [Q-228](#q-228--merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003) | Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/b... | 2026-10-29 |
+| [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
+| [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
+| [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
+| [Q-232](#q-232--merge-2026-10-29-harness-feedback-file-2b858d2586c3) | Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/... | 2026-10-29 |
 <!-- index:end -->
 
 ## Answered
@@ -4694,4 +4698,158 @@ path M workflows/research-plan-implement.md
 | **[3] changes needed** | Your note goes back to the loop, which reworks the branch | Writing the note | One more loop round |
 
 - **Interim:** not merged; nothing is waiting on it.
+
+### Q-229 · merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/briefs/2026-10-29-questions-watching-file.md`, roadmap In flight)? It is unit 2 of decision 040 (the questions doc holds only your items): a new `docs/working/watching.md` for watches, a `questions.sh migrate` that moves the agent-only entries out of this file without losing text, and a `check` that refuses agent-only entries here.
+
+- **Why it's yours:** it changes gate code (`scripts/questions.sh`, which the dev cycle runs as part of the gate), and the loop made one design call without you: `check` refuses `agent`, `trigger` and `deferred` entries in this file only if they were opened on or after 2026-10-30. Older ones get a warning naming `migrate`, so main's health check stays green until you run the migration. The residual: a session that backdates an entry's `Opened:` date gets a warning instead of a refusal.
+- **After merging, one owner step (not now):** run `scripts/questions.sh migrate` on main and commit the three files it writes (this file, `watching.md`, and `docs/working/roadmap-from-questions.md` for agent work to fold into the roadmap). Best done with or after unit 3, because until then the dev cycle's digest reads watches only from this file. Until you migrate, `check` prints 11 warning lines.
+- **Size:** `questions.sh` grows from 498 to 690 lines (the gate copies that one file, so it cannot be split); the change is 399 lines outside `docs/`.
+- **Tests:** `bats test/questions-doc.bats` passes 40 cases (a refusal per route, the legacy warning, a text-for-text round trip, idempotence, resume after an interrupted run). The loop's health check passed. Its review found one high issue (a directory planted at the output path swallowed an entry) and three low ones; all four are fixed, and round 2 was clean.
+- **Read:** `docs/working/research-2026-10-29-questions-watching-file.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-watching-file.md ef1022d7c8aa47b723b8ef05c4059db6d923b766 a7499f7809e4c9805e73bfa620cc349bc73df1e0
+path docs/working/briefs/2026-10-29-questions-watching-file.md M docs/working/briefs/2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md A docs/working/research-2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-watching-file.md M test/questions-doc.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/questions.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges ef1022d7; it reaches the gate at the next release (Q-227) | The later `migrate` run and commit | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 2 goes back to Ideas | None now | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop (e.g. no date cutoff, refuse outright) | A one-line note | Another loop round |
+
+- **Blocks:** decision 040 unit 3 (dev-cycle steps 2 and 3 read `watching.md`).
+- **Interim:** the branch waits; nothing on main changes.
+
+
+### Q-230 · merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`, roadmap In flight)? It builds your feedback point 1: when you answer a merge entry in the orchestrator's session, the orchestrator records it and the merge goes ahead, with no commit from you.
+
+- **Why it's yours:** it loosens an approval rule, and it changes the dev-cycle skill (gate code). The loop found the old rule lived only in the skill's prose (step 9.3); the gate's code already accepted any answer landed with `--answered`, and the plan's D8 already allowed a session answer. So the change is prose plus one end-to-end test; `scripts/build-loop.sh` is untouched.
+- **How it works after merging:** a session answer counts only when your own message names the entry's ID and an option (`Q-229: [1]`). The orchestrator writes it as `Q-NNN: [N]`, quotes your words under the record's `### Answers committed`, lands it with `--answered`, and the next iteration runs the merge. With no loop running, it schedules one wakeup for that merge instead of waiting for you to restart `/loop`.
+- **Residual risk (stated in the research doc):** an orchestrator that mistakes a loop's report or a task notification for your answer could land an approval; and the approval's record on main is written by the orchestrator, not you. Still bounding it: option 1 under the exact heading, the full tip pinned, the final message names the approval before the merge, and one `git revert` undoes it.
+- **Tests:** a new end-to-end case in `test/scripts/build-loop-merge.bats` (open entry refuses; without `--answered` the land refuses; with it the merge runs and carries its trailer). The merge, orchestrator and dev-cycle suites pass (123 tests); the health check passed on 280f01da, and d14ff65a after it changed prose only. One review: no red, three amber, all fixed.
+- **Read:** `docs/working/research-2026-10-29-session-answers-for-merge-entries.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 5aa2bb2a770373d6a7a6ae86f00e41995e445eb9
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md A docs/working/research-2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/scripts/build-loop-merge.bats
+```
+
+- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code, and an instruction file the orchestrator follows).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 7fe7107c; from the release after, chat answers to merge entries land without your commit | None after this one | An approval landed from a misread message; one `git revert` of that merge |
+| **[2] drop** | The brief closes; merge entries keep needing your commit | A commit per merge | Your feedback point 1 stays open |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** merge entries still need your own commit (this one too: it predates the change).
+
+
+### Q-231 · merge-gate-2026-10-29-convention-migrations-first-f114694527dc
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? It builds your feedback point 2: a change to a shared convention (the questions grammar, the roadmap template, brief and record shapes) must ship a migration, and the dev cycle surfaces pending migrations before it does anything else.
+
+- **Why it's yours:** it changes gate code (`scripts/dev-cycle.sh`, a new `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the loop picked the design without you (one option dominated each choice).
+- **How it works:**
+  - A registry, `scripts/lib/migrations.sh`, holds one line per convention change: what changed, a fingerprint of the source, which file it affects, a pattern that still matches when a repo has not migrated, and the remedy (or `none: WHY`).
+  - A merge check (`test/scripts/convention-migrations.bats`) fingerprints the four convention sources and fails until the registry's newest line for each carries the current fingerprint; the registry may only grow.
+  - The digest gets a section 7b "Pending migrations", and the skill a step 1b that runs before triggers, collect, briefs and dispatch: each pending migration becomes one `you: terminal` entry (slug `migrate-ID`), listed first in the final message.
+- **What it does not do, and why:** the cycle cannot run a migration itself (its own commit may not rewrite questions entries or roadmap headings), and holding the whole iteration until you run it was rejected (no new human stops). So "higher priority" means it is surfaced first and blocks nothing; tell me with [3] if you meant the cycle should stop until it runs.
+- **Merge order with Q-229 and Q-230:** Q-229 changes the questions convention and has no registry line yet, so whichever of Q-229 and this merges second fails its merge check until the line is added (the failure prints the line; the research doc has it). Q-230 also edits `skills/dev-cycle/SKILL.md`; if both are approved and the second merge conflicts, it comes back as a `stopped` entry for a loop to reconcile.
+- **Limits the loop accepted:** a commit made directly on main is never compared for append-only; the parsers in `build-loop.sh` and `dev-cycle-read.sh` are not fingerprinted (the guide tells authors to update them); the digest section and step 1b act only after the next image release (Q-227).
+- **Tests:** 12 new bats cases; `scripts/health-check.sh` passed at 95f310f1; two review rounds, clean at the end.
+- **Read:** `docs/working/research-2026-10-29-convention-migrations-first.md` and `guides/convention-changes.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-convention-migrations-first.md f114694527dc8b1d149dd9fde4e38e63ea080d42 eb00c1b6914a47e465450817a2cb2988b7b5d9e2
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges f1146945; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
+| **[3] changes needed** | Your note goes back to the loop (e.g. "stop the iteration until a migration runs") | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** the branch waits; nothing on main changes.
+
+
+### Q-232 · merge-2026-10-29-harness-feedback-file-2b858d2586c3
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/2026-10-29-harness-feedback-file.md`, roadmap In flight)? It builds version 1 of your feedback point 4: each project using the harness keeps a `docs/harness-feedback.md`, sessions there append an entry when a harness feature fails, rubs or works, and you copy the file here with one command that routes each entry.
+
+- **Why it's yours:** it changes the global instructions every session loads (`global-instructions/CLAUDE.md`, +4 lines) and `workflows/pr-prep.md` (a fifth retrospective question); both are instruction files self-merge would never land.
+- **The pieces:**
+  - **Entry shape:** `### F-NNN · slug`, a line naming the feature, date and verdict (fails, friction or works), then Context, Expected, Observed and Evidence bullets. Each entry maps onto a future GitHub issue. The grammar is written once, in `guides/harness-feedback.md`.
+  - **Script:** `scripts/harness-feedback.py` (python3 stdlib, 379 lines): `check`, `next-id`, `init` (in a project), and `ingest FILE` (here only). `ingest` validates the file, stores it at `docs/working/feedback/NAME.md`, and adds one idea-log line per new entry, so the dev cycle's brainstorm sees it. It refuses a copy whose entries don't continue the stored one.
+  - **Where sessions meet it:** the global instructions' new "Harness feedback" section, the pr-prep retrospective question, and `guides/cross-project-setup.md`.
+- **Your act after merging:** run `scripts/harness-feedback.py ingest PATH` on a copied file. A file dropped into `docs/working/feedback/` by plain `cp` is never routed. The loop suggests an idea-source row for `docs/working/feedback/*.md` in `docs/dev-cycle.md` (your file; tell me if you want it).
+- **Reaching other projects:** the global-instructions change reaches the host at the next `install.sh` run (Q-227's paste).
+- **Tests:** 48 bats cases (good file, each refusal, `init`, `ingest` on a sample including rerun and symlink refusals); the hermeticity lint and health check passed on the tip. Review round 1 found a real data-loss bug (devcontainer projects all mounted at /workspace shared one name, so a second ingest overwrote the first); fixed. Round 2: no red, two amber, fixed.
+- **Read:** `docs/working/research-2026-10-29-harness-feedback-file.md` and `guides/harness-feedback.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-harness-feedback-file.md 2b858d2586c38c3ecb063e55f344befb0a17a536 367db1f6f245566cb277eaa21cb7dc07e7d797c2
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M docs/working/briefs/2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A docs/working/research-2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/README.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/cross-project-setup.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A guides/harness-feedback.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A scripts/harness-feedback.py
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A test/scripts/harness-feedback.bats
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M workflows/pr-prep.md
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (instruction file), `workflows/pr-prep.md` (instruction file, and under this repo's `workflows/` never glob).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 2b858d25; projects start filing after the next install | One `ingest` run per copied file | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 4 goes back to the roadmap | None now | No feedback channel from projects |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** version 2 (GitHub issues), an idea until v1 is used.
+- **Interim:** the branch waits; nothing on main changes.
 
