@@ -419,14 +419,20 @@ else
   # lists the live file alone: its watches are legacy.
   qopen() { QUESTIONS_LIVE="$ROOT/docs/working/questions.md" QUESTIONS_ARCHIVE="$ROOT/$QA" QUESTIONS_WATCHING="$1" bash "$QS" open; }
   if open_q="$(qopen "$ROOT/$QW" 2>"$qs_err")" && open_l="$(qopen "$qs_err.none" 2>>"$qs_err")"; then
-    # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
-    # contain one space ("you: judgment"), a slug can contain "trigger".
-    isw='$2 == "trigger" || $2 == "deferred"'
-    watched="$(printf '%s\n' "$open_q" | awk -F'  +' "$isw")"
-    legacy=" $(printf '%s\n' "$open_l" | awk -F'  +' "$isw"' { printf "%s ", $1 }')"
+    # `open` prints "ID  ROUTE  slug", ROUTE padded to 16 (the longest
+    # route); it is read by position, since a route can hold a space ("you:
+    # judgment") or be empty (a malformed entry) and a slug can hold
+    # "trigger". Every line whose route is not an owner's or `agent` is
+    # listed: a route that is no watch's is a malformed entry, which must
+    # not drop out of the list (questions.sh check names it).
+    watched="$(printf '%s\n' "$open_q" | awk '{ r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r) }
+      r !~ /^(you: (judgment|walkthrough|terminal|fyi)|agent)$/ { print (r == "trigger" || r == "deferred" ? "w" : "m") $0 }')"
+    legacy=" $(printf '%s\n' "$open_l" | awk '{ printf "%s ", $1 }')"
     if [[ -n "$watched" ]]; then
       while IFS= read -r line; do
-        if [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"
+        k="${line:0:1}"; line="${line:1}"
+        if [[ "$k" == m ]]; then echo "- $line (malformed route: \`questions.sh check\` names it)"
+        elif [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"
         else echo "- $line"; fi
       done <<< "$watched"
     else

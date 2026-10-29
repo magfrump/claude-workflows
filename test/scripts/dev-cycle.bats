@@ -588,6 +588,13 @@ EOF
     [[ "$section" == *$'\n- Q-003  deferred          new-watch\n'* && "$section" == *"- Q-001  trigger           old-watch (legacy"* ]] || { echo "$section"; return 1; }
     [[ "$section" != *"Q-004"* && "$section" != *"No docs/working/watching.md"* ]] || { echo "$section"; return 1; }
     [[ "$section" == *"Open by route: deferred=1, trigger=1, you: judgment=1"* ]] || { echo "$section"; return 1; }
+    # A watch whose Needs line is gone (empty route) or misspelt still lists, marked.
+    sed -i '/^## Closed/i ### Q-005 · lost-needs\n\n### Q-006 · typo-route\n**Needs:** triger · **Opened:** 2026-10-28 · **Status:** OPEN\n' docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    echo "$section" | grep -q '^- Q-005 .*lost-needs.*(malformed route: `questions.sh check` names it)$' || { echo "$section"; return 1; }
+    [[ "$section" == *"- Q-006  triger            typo-route (malformed route"* && "$section" != *"- Q-002"* ]] || { echo "$section"; return 1; }
+    sed -i '/^### Q-005/,/^$/d; /^### Q-006/,/^$/d' docs/working/watching.md
     # Exported paths are not followed: the digest reads the files it checked.
     QUESTIONS_WATCHING="$BATS_TEST_TMPDIR/elsewhere.md" QUESTIONS_LIVE="$BATS_TEST_TMPDIR/l.md" QUESTIONS_ARCHIVE="$BATS_TEST_TMPDIR/a.md" \
         run --separate-stderr bash "$DC"

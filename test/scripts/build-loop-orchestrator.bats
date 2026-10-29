@@ -268,15 +268,15 @@ shim() {
     commit_all "main copies"
     for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo working copy; exit 9' > "scripts/$f"; done
     echo 'echo "lib at ${BASH_SOURCE[0]}" >&2' >> "$U/scripts/lib/dev-cycle-read.sh"
-    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger  from-opt"; exit 0; }' "$U/scripts/questions.sh"
+    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger           from-opt"; exit 0; }' "$U/scripts/questions.sh"
     d6 build-loop.sh --settings
     [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
     while IFS= read -r l; do [ "$l" = "lib at $U/scripts/lib/dev-cycle-read.sh" ] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt (legacy, in questions.md: the owner\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
-    d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger  from-opt" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: the owner\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
+    d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
 @test "the D6 snippet refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {

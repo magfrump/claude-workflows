@@ -256,7 +256,7 @@ EOF
 ### Q-023 · typo-watch\
 **Needs:** trigger · **Opened:** 2026-10-30 · **Status:** Open' "$w"
     run --separate-stderr bash "$QS" open
-    [[ "$output" == *"Q-022"* && "$output" == *"Q-023  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"Q-022  trigger"* && "$output" == *"Q-023  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
     rm "$w"; mkdir "$w"
     run --separate-stderr bash "$QS" open
     [ "$status" -eq 1 ] && [[ "$stderr" == *"not a regular file: $w"* ]] || { echo "$status $stderr"; return 1; }
