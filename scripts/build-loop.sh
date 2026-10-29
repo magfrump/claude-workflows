@@ -372,13 +372,13 @@
 #                 main lacks cannot be listed, or one's subject starts fix(,
 #                 fix: or fix! (any case) while TREE's
 #                 docs/thoughts/failure-patterns.md has no entry number
-#                 (a line starting "- **FP-NNN**", read as a number) main's lacks and the
+#                 (a line starting "- **FP-NNN**", leading zeros aside) main's lacks and the
 #                 research doc no such "Failure-pattern skip:" line; the
 #                 library in TREE or on main is not a regular file or unread,
 #                 or its entries cannot be compared (a library on neither
 #                 side is no gap by itself); or TREE holds an entry number
 #                 twice or more and more often than main does (the second
-#                 branch to land a collision). A WHY from a failed read ends
+#                 branch to land a collision). A WHY from a failed read says
 #                 "could not be read", "... could not be listed, so its
 #                 fix(...) commits are unknown" or "could not be compared"
 #                 (the environment's); any other is the loop's to fix.
@@ -1456,9 +1456,9 @@ fp_nums() { LC_ALL=C awk '{ sub(/\r$/, "") } match($0, /^- \*\*FP-[0-9]+\*\*/) {
 FP_GAPS=()
 FP_LIB=docs/thoughts/failure-patterns.md
 fp_gaps() {
-  local doc="docs/working/research-$3.md" rc=0 nfix nnew=0 lib=1 x n k
+  local doc="docs/working/research-$3.md" rc=0 nfix nnew=0 lib=1 dread=1 x n k
   FP_GAPS=()
-  : > "$GATE_TMP/fpdoc" || { FP_GAPS+=("the gate's temporary files could not be written"); return 0; }
+  : > "$GATE_TMP/fpdoc" || { FP_GAPS+=("the gate's temporary files could not be read or written"); return 0; }
   fp_blob "$1" "$doc" "$GATE_TMP/fpdoc" || rc=$?
   case "$rc" in
     0) fp_has "Failure-pattern grep:" "$GATE_TMP/fpdoc" \
@@ -1467,6 +1467,7 @@ fp_gaps() {
     2) FP_GAPS+=("its research doc $doc is not a regular file in the tip of $4") ;;
     *) FP_GAPS+=("its research doc $doc in the tip of $4 could not be read") ;;
   esac
+  [[ "$rc" -ne 3 ]] || dread=""  # a doc that could not be read holds no skip line we can see: no fix gap on top
   [[ "$rc" -eq 0 ]] || : > "$GATE_TMP/fpdoc" || true
   for x in "$2:$GATE_TMP/fptree:in the merge of $4" "$MAIN_SHA:$GATE_TMP/fpmain:on the default branch"; do
     IFS=: read -r n k _ <<< "$x"; rc=0
@@ -1499,7 +1500,7 @@ fp_gaps() {
   if ! gate_git rev-list --no-commit-header --format='%H %s' "$1" "^$MAIN_SHA" > "$GATE_TMP/fplog" \
     || ! nfix="$(LC_ALL=C awk '!/^[0123456789abcdef]+ / && !/^[0123456789abcdef]+$/ { bad = 1 } { s = $0; sub(/^[^ ]* ?/, "", s); if (tolower(s) ~ /^fix[(:!]/) n++ } END { if (bad) exit 1; print n + 0 }' "$GATE_TMP/fplog")"; then
     FP_GAPS+=("the commits on $4 could not be listed, so its fix(...) commits are unknown")
-  elif [[ "$nfix" -gt 0 && "$nnew" -eq 0 && -n "$lib" ]] && ! fp_has "Failure-pattern skip:" "$GATE_TMP/fpdoc"; then
+  elif [[ "$nfix" -gt 0 && "$nnew" -eq 0 && -n "$lib" && -n "$dread" ]] && ! fp_has "Failure-pattern skip:" "$GATE_TMP/fpdoc"; then
     FP_GAPS+=("$nfix fix(...) commits on $4 add no new FP-NNN entry to $FP_LIB, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)")
   fi
 }

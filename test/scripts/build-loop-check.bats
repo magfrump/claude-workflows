@@ -2552,6 +2552,10 @@ entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
     [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 failure-pattern gaps on feat/x (gap lines follow)" ] \
         && [ "${lines[1]}" = "gap $B: the commits on feat/x could not be listed, so its fix(...) commits are unknown" ] || { show; return 1; }
     fpok
+    # A research doc that cannot be read: one read gap (the environment's), and no fix gap
+    # on top, though the branch has a fix commit (the skip line it holds is unseen).
+    printf '#!/usr/bin/env bash\n[[ "$1" == ls-tree && "$*" == *research-* ]] && { echo boom >&2; exit 1; }\nexec %q "$@"\n' "$(command -v git)" > "$S/git"
+    PATH="$S:$PATH" fpref 1 "its research doc $RD in the tip of feat/x could not be read"
 }
 
 @test "--check from a self-merge loop's own branch: the checkout refusal stays the verdict and the gap lines still print (Q-226 [5])" {
