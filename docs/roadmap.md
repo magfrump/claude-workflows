@@ -39,8 +39,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      Merged at 014e5219 (Q-230 [1]); the orchestrator follows it once the next release
      installs the skill.
   2. Convention changes ship migration instructions, and the dev cycle runs them before
-     continuing existing work. Built (Q-231 [1]); sent back to its loop for the
-     questions registry line Q-229's merge needs (In flight).
+     continuing existing work. Merged at 6f364ba6 (Q-233 [1]).
   3. Audit a repo that committed code-review rubrics with open amber or red items: find
      which step of the review-fix loop let the merge through. First step: a read-only
      `review-gap-audit` procedure (for each committed rubric with amber or red rows, find
@@ -59,11 +58,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-
-- **Convention changes ship migrations the dev cycle runs first** (Now, owner feedback
-  2026-10-29 point 2). Gate code: review policy. Q-231 [1], but merging it after Q-229 fails its own
-  migration test (no registry line for the questions change); re-dispatched, line added,
-  ready again; merge is Q-233, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
 
 - **Questions doc owner-only, unit 3: the dev cycle and the global instructions read the new
   homes** (Now, decision 040). Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
@@ -259,6 +253,9 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Convention changes ship migrations the dev cycle runs first (owner feedback point 2,
+  Q-231 [1] then Q-233 [1]): merged 6f364ba6. Brief:
+  `docs/working/briefs/closed/2026-10-29-convention-migrations-first.md`
 - Questions doc owner-only, unit 2 (`watching.md`, `questions.sh migrate`; Q-229 [1]): merged
   6ee39f24. Brief: `docs/working/briefs/closed/2026-10-29-questions-watching-file.md`
 - Session answers approve merge entries (owner feedback point 1, Q-230 [1]): merged 014e5219.

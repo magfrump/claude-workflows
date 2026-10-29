@@ -25,7 +25,6 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
-| [Q-233](#q-233--merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8) | you: judgment | Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/b... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -264,16 +263,22 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `a8e941a5e226f1dfba291ae8c0758c9096f65323` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, Q-228's failure-pattern wiring, merged at f91d7d09, Q-229's `watching.md` and `migrate`, merged at 6ee39f24, and Q-230's session answers, merged at 014e5219; Q-232's harness feedback file, merged at a8e941a5, ships with it). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
+Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `6f364ba6342ba211ffbb1bbbb5660c3576fe6ce2` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, Q-228's failure-pattern wiring, merged at f91d7d09, Q-229's `watching.md` and `migrate`, merged at 6ee39f24, Q-230's session answers, merged at 014e5219, and Q-233's convention migrations, merged at 6f364ba6; Q-232's harness feedback file, merged at a8e941a5, ships with it). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = a8e941a5e226f1dfba291ae8c0758c9096f65323 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 6f364ba6342ba211ffbb1bbbb5660c3576fe6ce2 && ./devcontainer-config/install.sh
 ```
 
 The only git call before `install.sh`'s own state gate is `rev-parse`, which runs no hook. If the `test` fails, your host checkout is not at M: bring it there first, knowing that any other git command on the host (a checkout included) can run a hook a sandbox session planted, as `install.sh`'s trust model says. This one paste also covers Q-222 (the same `install.sh` run, at a newer commit): run `cc-verify --help | head -5 && cc-isolated --list` after it, as Q-222 asks.
 
-- **Changed gate paths (C to M):** `scripts/build-loop.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`
-- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M a8e941a5; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+- **Changed gate paths (C to M):** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`
+- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M 6f364ba6; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
+  - 6f364ba6 Merge branch 'feat/convention-migrations-first' (build-loop approved merge)
+  - e51cdbfe Merge branch 'chore/dev-cycle-2026-10-29-2306'
+  - 84d266b3 Merge branch 'chore/dev-cycle-2026-10-29-2248'
+  - 690f099d Merge branch 'chore/dev-cycle-2026-10-29-2248'
+  - 31b77bf9 Merge branch 'chore/dev-cycle-2026-10-29-2223'
+  - 4b4f5e23 Merge branch 'chore/dev-cycle-2026-10-29-2223'
   - a8e941a5 Merge branch 'feat/harness-feedback-file' (build-loop approved merge)
   - 014e5219 Merge branch 'feat/session-answers-for-merge-entries' (build-loop approved merge)
   - 6ee39f24 Merge branch 'feat/questions-watching-file' (build-loop approved merge)
@@ -328,49 +333,6 @@ The only git call before `install.sh`'s own state gate is `rev-parse`, which run
   - 4388056e Merge branch 'docs/decision-015-amendment' (build-loop approved merge)
   - 062acde2 fix(wiring): drop the Write(path) deny rules Claude Code never matches
   - be464869 Merge branch 'feat/interview-profile-run2'
-- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/README.md`, `guides/cc-isolated-usage.md`, `guides/cross-project-setup.md`, `guides/harness-feedback.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/harness-feedback.py`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/harness-feedback.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (57 paths under `docs/` are not in the image).
-- **Interim:** the image's gate runs (built at C); Q-224, Q-228, Q-229 and Q-230 are on main, but the dev cycle still runs the old `questions.sh`, `build-loop.sh` and dev-cycle skill, and sessions still load the old global instructions.
+- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/README.md`, `guides/cc-isolated-usage.md`, `guides/convention-changes.md`, `guides/cross-project-setup.md`, `guides/harness-feedback.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/migrations.sh`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/convention-migrations.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/harness-feedback.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (60 paths under `docs/` are not in the image).
+- **Interim:** the image's gate runs (built at C); Q-224, Q-228, Q-229, Q-230 and Q-233 are on main, but the dev cycle still runs the old `questions.sh`, `build-loop.sh` and dev-cycle skill, and sessions still load the old global instructions.
 - **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
-
-
-### Q-233 · merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
-
-**Answered:** [1] (owner, in session 2026-10-29: "probably worth merging Q-233 before the release"; recorded by the dev cycle)
-
-Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? This is the branch you approved as Q-231 [1], plus the reconciliation it needed after Q-229 merged. Merging f1146945 as it was would have left main's own migration test failing, so I sent it back instead of merging.
-
-- **Why it's yours:** gate code (`scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the commits after your Q-231 approval are new.
-- **What changed since Q-231 (four commits on top of f1146945):**
-  - 5b6133f6 merges main (4b4f5e23) into the branch, with no conflicts.
-  - 63d6f7d7 adds the registry line for Q-229's questions change: `mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'`. It matches 5 lines in this repo's `questions.md`, so once the digest runs from the next release, the cycle will file the migration as a `you: terminal` entry: the same one-time `migrate` run Q-229 already left with you.
-  - 5bc67ede adds a shellcheck exemption for the literal `~` in that remedy text.
-  - b1341e36 adds the failure-pattern lines the merged Q-228 check asks for.
-  - Test 4 was not a locale problem: it failed for the same missing line. It now also checks its precondition first.
-- **Everything else** is as Q-231 described: a registry line per convention change, a merge check, digest section 7b, and step 1b surfacing pending migrations first without stopping the iteration.
-- **Tests:** the loop's health check passed on the merged branch (one run failed a `build-loop-check.bats` case this branch does not touch, at load average 11; it passed 3 of 3 alone, and the next full run passed).
-- **`--check` printed:**
-
-```
-ok docs/working/briefs/2026-10-29-convention-migrations-first.md b001677ac0d8ce334290dfc6d7b055534ea49960 2fd745977ba3eb585f774ba7b83170685dd30fd2
-path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
-path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
-path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
-path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
-path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
-path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
-path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
-path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
-path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
-```
-
-- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
-
-| Option | What it means | Cost to you | If it's wrong |
-|---|---|---|---|
-| **[1] merge** | The next iteration merges b001677a; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
-| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
-| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
-
-- **Blocks:** nothing else.
-- **Interim:** the branch waits; nothing on main changes.
