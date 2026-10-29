@@ -31,7 +31,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
   steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
   instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
-  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Next: brief unit 3; the owner's one-time `questions.sh migrate` run goes with or after it. Follow-ups: entry clarity (gloss every internal reference) and a
+  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 briefed 2026-10-29 (In flight); the owner's one-time `questions.sh migrate` run goes with or after it. Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
@@ -52,12 +52,24 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
+- **Bug: a health-check test fails under load** (`test/scripts/build-loop-check.bats`, "the
+  ancestor listing skips a file that vanishes"). Motive: three full runs failed on it on
+  2026-10-29 and it passes alone; a fast-suite failure also hides the slow suites. Briefed
+  (In flight, self-merge).
+
 ## In flight
 
 
 - **Convention changes ship migrations the dev cycle runs first** (Now, owner feedback
   2026-10-29 point 2). Gate code: review policy. Q-231 [1], but merging it after Q-229 fails its own
-  migration test (no registry line for the questions change); re-dispatched to add it. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
+  migration test (no registry line for the questions change); re-dispatched, line added,
+  ready again; merge is Q-233, a `merge-gate` entry. Brief: `docs/working/briefs/2026-10-29-convention-migrations-first.md`
+
+- **Questions doc owner-only, unit 3: the dev cycle and the global instructions read the new
+  homes** (Now, decision 040). Gate code: review policy. Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
+
+- **Bug: the vanishing-file test fails under load** (Now). Self-merge (one test file and its
+  docs). Brief: `docs/working/briefs/2026-10-29-flaky-vanish-test.md`
 
 ## Next
 
