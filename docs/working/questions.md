@@ -27,7 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-239](#q-239--merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d) | you: judgment | Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/b... | 2026-10-30 |
 | [Q-240](#q-240--merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846) | you: judgment | Merge `fix/brainstorm-trigger-count` at ab401bdf6846b91b33d0344350bb59dea03cf0b4? Brief: `docs/working/brie... | 2026-10-30 |
-| [Q-241](#q-241--q106-iteration-5-gate) | you: judgment | Q-106 iteration 4 is done (you said "run it by hand"), and its confirming review found four new Mediums. Au... | 2026-10-30 |
+| [Q-241](#q-241--merge-q106-host-settings-8486c3da) | you: judgment | Merge `feat/q106-host-settings-merge` at 8486c3dab2ffa6fe6511199ae93169804a3593b7? It makes `install.sh`'s ... | 2026-10-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -47,39 +47,32 @@ The index below is generated — edit entries, not the table.
 
 ## Open
 
-### Q-241 · q106-iteration-5-gate
+### Q-241 · merge-q106-host-settings-8486c3da
 **Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
 
-**If you say no:** the install keeps printing its reminder to merge `settings.json` by hand, and the branch stays unmerged. Nothing on main changes.
+**If you say no:** the install keeps printing its reminder to merge `settings.json` by hand after a wiring change, and Q-108's two stale lines in decision 037 stay stale.
 
-**What an attacker would want here:** your Claude Code credentials. A hostile branch you install from can ship its own copy of the merge program. That copy can read `~/.claude/.credentials.json` and copy the token into the review on your terminal and, after your y, into `settings.json` (S4-1, reproduced here). It can also set `defaultMode: "bypassPermissions"` or `disableAllHooks`, and only the full diff would show it, not the by-name list (S4-2). After your y, the branch's hooks run with the same access anyway. So what is new is the token appearing before you consent, and staying in a file no deny rule protects.
+**What an attacker would want here:** nothing new from an outside party. The merge reads only your settings file and the payload's wiring, both local, and writes only after your y. Findings that need a deliberately hostile branch are out of scope (S1).
 
-Q-106 iteration 4 is done (you said "run it by hand"), and its confirming review found four new Mediums. Authorize a 5th iteration?
+Merge `feat/q106-host-settings-merge` at 8486c3dab2ffa6fe6511199ae93169804a3593b7? It makes `install.sh`'s host target merge `hooks/wiring.json` into your `~/.claude/settings.json`. The merge is the container's own merge program, shown as a diff with a by-name list of the hooks and rules it changes, and applied by the same y as the files. It also closes Q-108.
 
-- **Why it's yours:** the review loop's hard cap. Iteration 4 was the extra round Q-174 [1] granted, and a 5th needs your say.
-- **Read:** the rubric's "Iteration-5 gate" section, `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md`, and `docs/reviews/security-review-2026-10-30-q106-pass4.md`, both on `feat/q106-host-settings-merge` at 75498418.
-- **What iteration 4 did:**
-  - Merged main into the branch (it was 469 commits behind).
-  - Copied main's newer "drop the never-matching `Write(path)` deny rule" step into the shared merge program.
-  - Closed S3-F1 to F3, with tests that fail on the old code.
-  - Tests: 122/122.
-- **What the review found** (fact-check run three times, security, performance):
-  - **S4-1:** the reproduced credential read above.
-  - **S4-2:** checks cover the merge program's input, not what it writes.
-  - **S4-3:** a hook's `timeout` can be set near zero with no line in the by-name list.
-  - **S4-4:** event names and permission modes are unchecked.
-  - **Also:** two wrong sentences in the guide, and a slow-but-harmless list at 10,000 hooks.
-- **The proposed fix:** one check in `install.sh`, which is gated code. It refuses a merge program that uses jq's `import` or `include`, and it accepts the merge's output only if it changes nothing but our hook groups and deny rules. That bounds any branch's program, rather than tightening the input one more level. Add refusing `timeout`, the event-name and deny-only checks, the guide fixes and a faster list. About 40-60 code lines; the unit is at 341 of ~800.
+- **Why it's yours:** it writes your host hardening, and Q-174 [1] left the merge to you.
+- **Read:** the rubric's last section, `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` on the branch.
+- **Checks:**
+  - Four review rounds.
+  - The last one (fact-check run three times, security, performance) left no open finding once the hostile-author items were set aside under S1.
+  - Its two doc errors are fixed.
+  - The install-host and container-setup test suites pass 122/122.
+  - It merges cleanly with main.
+- **Not checked:** no run on your host yet. Q-167 holds the host verification steps, which install into a temp dir with a copy of your settings, never the real file.
 
 | Option | What it means | Cost to you | If it's wrong |
 |---|---|---|---|
-| **[1] Authorize iteration 5** (recommended) | The output check and the `import` refusal as above, then a confirming pass (security + fact-check run three times), then a merge entry | One later merge answer | Agent time, if the output check proves as leaky as the input checks did |
-| **[2] Merge as is** | Land 75498418 with S4-1 to S4-4 listed in the merge message | One merge now | A hostile branch can show your token in the review and write it, or `bypassPermissions`, into settings.json after a y you gave on a plausible by-name list |
-| **[3] Drop the automation** | Close Q-106 [2]; keep the manual-merge reminder | None | You keep merging settings.json by hand after wiring changes |
+| **[1] merge** (recommended) | I merge 8486c3da; it reaches your host at the next release paste | None beyond this answer | One `git revert` of the merge; your settings.json has a backup from each install |
+| **[2] drop** | Close Q-106 [2]; keep the manual-merge reminder | None now | You keep merging settings.json by hand after wiring changes |
 
-- **Blocks:** Q-108 (decision 037's stale lines, fixed on this branch).
-- **Interim:** the branch waits at 75498418. The installer keeps its manual-merge reminder.
-- **If the answer differs:** [2] files a merge entry at 75498418; [3] moves the roadmap item to Done as dropped, and Q-108 gets its own one-file fix.
+- **Blocks:** Q-108.
+- **Interim:** the branch waits at 8486c3da.
 
 ### Q-222 · install-cc-verify-and-r6
 **Needs:** you: terminal · **Opened:** 2026-10-28 · **Status:** OPEN
@@ -179,7 +172,7 @@ Decision 037 has two stale lines. Line 58 says "035's still-pending regex", but 
 
 - **Read:** `docs/decisions/037-bare-host-copy-install.md` lines 37 and 58 · Q-106 (line 37's wording depends on its answer)
 - **Interim:** the lines stay stale. Neither one changes behavior.
-- **Stuck (dev cycle 2026-10-25):** fixed on unmerged `feat/q106-host-settings-merge`; closes when Q-106 lands (iteration 4 ran 2026-10-30; paused at Q-241).
+- **Stuck (dev cycle 2026-10-25):** fixed on unmerged `feat/q106-host-settings-merge`; closes when Q-106 lands (merge entry Q-241).
 
 ### Q-067 · regenerate-skill-eval-reports
 **Needs:** deferred · **Opened:** 2026-09-26 · **Status:** OPEN
