@@ -399,6 +399,14 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
+# zsh-in-docker exports LANG and LC_ALL as en_US.UTF-8 in ~/.zshrc, but this
+# image generates no locales (only C.utf8 exists), so every shell a session
+# starts printed "setlocale: LC_ALL: cannot change locale" (three lines per
+# D6 call). C.UTF-8 keeps UTF-8 with no locales package. The grep fails the
+# build if a new zsh-in-docker version changes those lines and the sed misses.
+RUN sed -i "s/^export LANG='en_US.UTF-8'\$/export LANG='C.UTF-8'/; s/^export LC_ALL='en_US.UTF-8'\$/export LC_ALL='C.UTF-8'/" ~/.zshrc \
+  && grep -qx "export LC_ALL='C.UTF-8'" ~/.zshrc && ! grep -Eq "^export (LANG|LC_ALL)='en_US" ~/.zshrc
+
 # Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 

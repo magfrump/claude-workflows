@@ -272,6 +272,7 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 - A convention change ships with a migration the digest reports (Q-231, Q-233).
 - Projects get a `docs/harness-feedback.md` file and `harness-feedback.py` (Q-232).
 - Host tools: `cc-verify`, and the exit scan's R6 and group-1 fixes (Q-217, Q-220, Q-225; this was Q-222's paste).
+- No more `setlocale: LC_ALL: cannot change locale` warnings in sessions (`fix/zshrc-locale`, trial T7; a Dockerfile change, so this release rebuilds the image).
 - If Q-235, Q-236 and Q-237 merge before you run this, they ship with it too.
 
 **Not listed:** 41 routine dev-cycle record lands, and 8 hand commits (owner notes, answer records).
