@@ -508,7 +508,7 @@ for kind in skills records; do
   [[ "$n" -le 20 ]] || echo "    - … $((n - 20)) more"
 done
 echo
-echo "Step 5 (brainstorm triggers; the thresholds are the skill's):"
+echo "Step 5 (brainstorm triggers; the thresholds are the skill's). Seeds count from the commit that added the last brainstorm heading, so a brainstorm's own seed-shaped ideas are not counted; Now is compared with its text at that commit:"
 if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
     n="$(awk -v h="## $sec" '{ sub(/\r$/, ""); t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
@@ -521,18 +521,47 @@ else
 fi
 LOG=docs/working/idea-log.md
 if inrepo "$LOG"; then
-  # The skill's step 5 appends "## Brainstorm YYYY-MM-DD" after reading the log
-  # (its ideas go to the roadmap); seeding appends "- <idea> (signal: …)" lines,
-  # and only lines of that shape count.
-  # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
+  # The skill's step 5 appends "## Brainstorm YYYY-MM-DD"; seeding appends
+  # "- <idea> (signal: …)" lines, and only lines of that shape count. A brainstorm
+  # may write its own ideas in that shape below its heading, so seeds count from
+  # the commit that added the last heading (git blame), not from the heading: the
+  # log is only appended to, so lines past that commit's line count are newer.
+  # Now is compared with its text at that commit (the iteration lands the roadmap
+  # with it). No commit found: the heading, and "cannot tell" (read as changed).
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
-  seeded="$(awk '/^## Brainstorm [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { c = 0; next } /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
+  bs_n="$(grep -nE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d: -f1 || true)"
+  bs_from="${bs_n:-0}" bs_c="" bs_how="no brainstorm heading: the whole log"
+  # The blob is read with cat-file (no textconv); awk reads to the end (no SIGPIPE).
+  if [[ -n "$bs_n" ]]; then
+    bs_c="$(git blame --porcelain -L "$bs_n,$bs_n" -- "$LOG" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+    if [[ "$bs_c" =~ ^[0-9a-f]{40,64}$ && "$bs_c" =~ [1-9a-f] ]] && git cat-file -e "$bs_c:$LOG" 2>/dev/null; then
+      bs_base="$(git cat-file blob "$bs_c:$LOG" | awk 'END { print NR }')"
+      (( bs_base > bs_from )) && bs_from="$bs_base"
+      bs_c="$(git rev-parse --short "$bs_c")"
+      bs_how="appended after $bs_c, the commit that added the last brainstorm heading"
+    else
+      bs_c="" bs_how="counted from the last brainstorm heading: no commit found for it"
+    fi
+  fi
+  # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
+  seeded="$(awk -v from="$bs_from" 'NR > from && /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
   if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
     echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else
     echo "- Last brainstorm: none recorded in $LOG"
   fi
-  echo "- Ideas seeded since: $seeded"
+  echo "- Ideas seeded since: $seeded ($bs_how)"
+  # Now's non-blank lines, CR stripped, from its first "## Now" heading (section 5's rule).
+  now_of() { awk '{ sub(/\r$/, ""); t = tolower($0) } on && /^## / { on = 0; d = 1 } !d && !on && (t == "## now" || index(t, "## now ") == 1 || index(t, "## now(") == 1) { on = 1; next } on && NF { print }'; }
+  bs_now="cannot tell (no commit found for the heading); read it as changed"
+  if [[ -z "$bs_n" ]]; then bs_now="no brainstorm recorded"
+  elif [[ -n "$bs_c" ]] && ! inrepo docs/roadmap.md; then bs_now="cannot tell (docs/roadmap.md is not read); read it as changed"
+  elif [[ -n "$bs_c" ]] && ! git cat-file -e "$bs_c:docs/roadmap.md" 2>/dev/null; then bs_now="changed since $bs_c (no docs/roadmap.md there)"
+  elif [[ -n "$bs_c" ]]; then
+    if [[ "$(git cat-file blob "$bs_c:docs/roadmap.md" | now_of)" == "$(now_of < docs/roadmap.md)" ]]; then bs_now="unchanged since $bs_c"
+    else bs_now="changed since $bs_c"; fi
+  fi
+  echo "- Roadmap Now since the last brainstorm: $bs_now"
 elif skipped "$LOG"; then
   echo "- $(skipnote "$LOG")"
 else

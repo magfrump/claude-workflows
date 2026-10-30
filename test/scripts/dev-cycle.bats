@@ -532,6 +532,62 @@ EOF
     done
 }
 
+@test "step 5 counts only seeds appended after the commit that added the last brainstorm heading" {
+    # Bug 1 (brief 2026-10-30-brainstorm-trigger-count): a brainstorm writes its
+    # heading, then its own ideas in the seed shape; the old count took them as seeds.
+    mkdir -p docs/working
+    printf '# Roadmap\n\n## Now\n- a\n' > docs/roadmap.md
+    printf '# Idea log\n- old (signal: x)\n\n## Brainstorm 2026-01-01\n\n- own one (signal: a)\n- own two (signal: b)\n- own three (signal: c)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m "iteration: brainstorm, roadmap"
+    c=$(git log -1 --format=%h)
+    printf -- '- new one (signal: d)\n' >> docs/working/idea-log.md
+    git add -A && git commit -q -m "iteration: a seed"
+    printf -- '- new two (signal: e)\n' >> docs/working/idea-log.md   # uncommitted: counts too
+    DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    [[ "$section" == *"- Ideas seeded since: 2 (appended after $c, the commit that added the last brainstorm heading)"* ]] || { echo "$section"; return 1; }
+}
+
+@test "step 5 says whether roadmap Now changed since the last brainstorm's commit" {
+    # Bug 2 (philosophy-research F-003): the Now trigger fired again on an unchanged Now.
+    mkdir -p docs/working
+    printf '# Roadmap\n\n## Now\n- a\n\n## Next\n- b\n' > docs/roadmap.md
+    printf '# Idea log\n\n## Brainstorm 2026-01-01\n- own (signal: a)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m "iteration: brainstorm, roadmap"
+    c=$(git log -1 --format=%h)
+    # Other sections and a CRLF save do not count as a change to Now.
+    printf '# Roadmap\r\n\r\n## Now\r\n- a\r\n\r\n## Next\r\n- b\r\n- c\r\n' > docs/roadmap.md
+    git add -A && git commit -q -m "next grows"
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"- Roadmap Now since the last brainstorm: unchanged since $c"* ]] || { echo "$output" | sed -n '/## 7\./,/## 7b/p'; return 1; }
+    printf '# Roadmap\n\n## Now\n- a, reworded\n' > docs/roadmap.md
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [[ "$output" == *"- Roadmap Now since the last brainstorm: changed since $c"* ]] || { echo "$output" | sed -n '/## 7\./,/## 7b/p'; return 1; }
+}
+
+@test "step 5 falls back to the heading, and to 'cannot tell', when the heading's commit is unknown" {
+    # An uncommitted heading has no commit: count from the heading (the old rule)
+    # and report Now as cannot tell, which the skill reads as changed.
+    mkdir -p docs/working
+    printf '# Roadmap\n\n## Now\n- a\n' > docs/roadmap.md
+    printf '# Idea log\n- old (signal: x)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m "log"
+    printf '\n## Brainstorm 2026-01-01\n- own (signal: a)\n' >> docs/working/idea-log.md
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    [[ "$section" == *"- Ideas seeded since: 1 (counted from the last brainstorm heading: no commit found for it)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Roadmap Now since the last brainstorm: cannot tell (no commit found for the heading); read it as changed"* ]] || { echo "$section"; return 1; }
+    # No brainstorm at all: nothing to compare against.
+    git checkout -q -- docs/working/idea-log.md
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    [[ "$section" == *"- Ideas seeded since: 1 (no brainstorm heading: the whole log)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Roadmap Now since the last brainstorm: no brainstorm recorded"* ]] || { echo "$section"; return 1; }
+}
+
 @test "--check-path allows tracked files and ignored docs/working files, and nothing else" {
     mkdir -p docs/working docs/decisions "$BATS_TEST_TMPDIR/outside"
     printf 'docs/working/round-*.md\n.env\n' > .gitignore
