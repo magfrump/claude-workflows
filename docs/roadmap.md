@@ -50,8 +50,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## In flight
 
 - **Bug: step 1's health check reads WT while the orchestrator edits it** (from Ideas; red
-  twice: 2026-10-30-0035, -0731). Review (gate code). Brief:
-  `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`
+  twice: 2026-10-30-0035, -0731). Review (gate code). Ready at 8f3fbf92, merge entry Q-239
+  (2026-10-30-0841). Brief: `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`
 - **Bug: the brainstorm triggers count their own output and re-fire on an unchanged Now**
   (from Ideas; 2026-10-30-0136, today's 17-seed count, philosophy-research F-003). Review
   (gate code). Brief: `docs/working/briefs/2026-10-30-brainstorm-trigger-count.md`

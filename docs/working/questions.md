@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-239](#q-239--merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d) | you: judgment | Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/b... | 2026-10-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -285,6 +286,48 @@ The `merge-base` check runs no hook and only confirms that your checkout holds a
 
 - **Interim:** the image at fe57e352 runs. The dev cycle still follows the old questions routes, and new sessions still show the warning.
 - **Blocks:** Q-234 (the migration needs the new digest live first).
+
+### Q-239 · merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+
+**If you say no:** the dev cycle keeps running its health check in the worktree it edits. A questions entry filed mid-run can turn the check red, as it did twice today, and the orchestrator has to avoid that by remembering not to.
+
+**What an attacker would want here:** step 1 decides which tree the health check reads, and the record's `passed at` claims that tree is clean. The change makes it read a separate detached checkout of a named commit. That narrows what can influence the check; it widens nothing.
+
+Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`, roadmap In flight. The dev cycle's step 1 would run the health check from its own detached checkout of WT's HEAD commit, not from WT.
+
+- **Why it's yours:** gate code (`skills/dev-cycle/SKILL.md`, step 1 only; +20/−5 lines).
+- **What it does:**
+  - Makes a detached checkout `.claude/wt-dev-cycle-health-DATE-HHMM` for one run, then removes it.
+  - Removes one left by this session's earlier iteration; a leftover from another session is only named.
+  - A failed add is recorded and the check runs again next iteration.
+  - The skip-when-unchanged rule and the lock wait are unchanged.
+
+  The loop's design record pruned five options, the status quo among them: running before WT exists, holding later steps, a remember-not-to-edit rule, a `git archive` tree (which loses the lock) and the status quo.
+- **Checks:**
+  - The loop: two review rounds with nothing red, and its full health check passed on the branch.
+  - The dev cycle, on the tree the branch makes with main (34fbacbb): read the step-1 diff, and ran `build-loop-orchestrator.bats`, 30/30 (one new case pins the wording).
+- **Left as is, by design:** step 9's record template still shows `passed at MAIN`. Changing the template would need a convention migration.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-30-health-check-clean-checkout.md 8f3fbf92c11da5e223015f5208242a04b6c41005 34fbacbb8c472e72fa238e91c3a012e4afaf82c8
+path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M docs/working/briefs/2026-10-30-health-check-clean-checkout.md
+path docs/working/briefs/2026-10-30-health-check-clean-checkout.md A docs/working/research-2026-10-30-health-check-clean-checkout.md
+path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M test/scripts/build-loop-orchestrator.bats
+```
+
+- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 8f3fbf92; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; the check keeps running in WT | None now | The same false reds, avoided by memory |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits. The orchestrator stages its edits in the scratchpad until the check ends (done in 2026-10-30-0800, which passed).
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
