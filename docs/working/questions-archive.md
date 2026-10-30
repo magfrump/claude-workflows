@@ -228,6 +228,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
 | [Q-236](#q-236--merge-2026-10-29-skill-frontmatter-flake-9df01661e611) | Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs... | 2026-10-29 |
 | [Q-237](#q-237--merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13) | Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/brief... | 2026-10-29 |
+| [Q-238](#q-238--q168-branch-after-boundary) | What should happen to the held exit-scan branch (Q-168), now that the split units are settled? | 2026-10-30 |
 <!-- index:end -->
 
 ## Answered
@@ -5030,4 +5031,32 @@ path docs/working/briefs/2026-10-29-migrations-relative-root.md M test/scripts/c
 - **Interim:** the branch waits; callers pass an absolute ROOT, as the digest and tests already do.
 
 **Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+### Q-238 · q168-branch-after-boundary
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
+
+**If you say no (keep holding):** the branch `fix/q096b-exit-scan-remote-names` (75d08a94, from 2026-10-15) sits unmerged, falling further behind main. It is already 508 commits behind, and main has changed `cc-exit-scan.sh` by +192/−13 lines since. Q-168 and Q-173 also stay open.
+
+**What an attacker would want here:** the exit scan is the check that runs before your host git touches a session's checkout. Any change to it is enforcement. Closing the branch changes nothing that runs: the routes it would have closed stay listed in the guide as known routes, and `cc-push` remains the safe way to push.
+
+What should happen to the held exit-scan branch (Q-168), now that the split units are settled?
+
+- **Why it's yours:** Q-171 [2] said to hold it "until Q-173's groups are fixed". After that, Q-172 [2] set a boundary: only routes that need no state planted before launch get closed. Under that rule, group 1 was fixed (R6 at 7a5b4f4a, the remainder at fd62dd3f), and groups 2-4 were ruled out of the boundary or not routes on main, rather than fixed. So the hold's condition can no longer be met as written. Resuming would also run past the review cap (iteration 4).
+- **Read:**
+  - `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` (the sort table);
+  - `guides/cc-isolated-usage.md`, the "Remote names and legacy remote files, read loosely" bullet: every case it lists starts "If present at launch", so all of them fall outside Q-172 [2]'s boundary;
+  - Q-171 and Q-172 in the archive.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Close it** (recommended) | Q-168 and Q-173 close. The branch stays unmerged, for reference only, and the guide's known-route bullet stands as written. | None | A launch-time remote-name route stays open by design, as Q-172 [2] already accepted. Reviving the work later means redoing a rebase across 192 changed lines. |
+| **[2] Resume** | A build loop rebases 75d08a94 onto main, keeps only what fixes the guide's parity wording and A17, and runs one confirming pass. | One merge entry later. Review attention on a 562-line enforcement diff, past its cap. | The scan keeps growing on launch-time routes that the boundary already excluded. |
+| **[3] Keep holding** | Nothing changes. | None now | The branch goes staler, and this question comes back. |
+
+- **Blocks:** nothing; the roadmap Now item "Q-168 — the exit scan's loose remote-name parsing" waits on it.
+- **Interim:** held, as before. The known routes are listed in the guide, and `cc-push` is the way to push.
+- **If the answer differs:** [2] needs a brief, about one loop. [1] needs only the closing notes.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Q-238: [1]"; recorded by the dev cycle). Q-168 and Q-173 close; the branch stays unmerged as reference.
+
 
