@@ -31,7 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
-| [Q-227](#q-227--image-lag) | you: terminal | - `a36df962` fix/questions-doc-bats-lint: a test-lint fix in `test/questions-doc.bats`. | 2026-10-29 |
+| [Q-227](#q-227--image-lag) | you: terminal | - **Interim:** the image at fe57e352 runs; main's gate code matches it until Q-235–Q-237 land. | 2026-10-29 |
 | [Q-234](#q-234--migrate-questions-owner-routes-040) | you: terminal | The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes... | 2026-10-29 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
@@ -257,37 +257,10 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-**Release notes** (trial format, 2026-10-30; `docs/working/trials/2026-10-30-friction-engagement.md` T1). The installed image was built at `ba6d2ec9` (C). Main has moved on, and until you run the paste below, the dev cycle and every new session still run the older scripts and instructions.
+**Release notes** (trial T1). **Correction, 2026-10-30:** the 2026-10-30 rewrite of this entry said the image was built at `ba6d2ec9`. That was wrong. `/opt/claude-workflows/.manifest` reads `commit=fe57e352`, so the release of everything through Q-233 (questions-doc units 1 and 2, session answers, failure-pattern wiring, convention migrations, the harness feedback file, `cc-verify` and the exit-scan fixes) is already live. Nothing is waiting on a release right now. The next iteration rewrites this entry for the next release once Q-235–Q-237 merge, because they change gate code. It will also carry the Dockerfile locale fix (8d1ae831, trial T7), which needs an image rebuild.
 
-**⚑ Merged without anyone's review (read these first):**
-- `a36df962` fix/questions-doc-bats-lint: a test-lint fix in `test/questions-doc.bats`.
-- `d32c7eb2` docs/failure-pattern-use-review: a research doc on how failure patterns are used (docs only).
-- `9b8a0b34` docs/interview-readme-drift: `profiles/interview/README.md` brought in line with the profile (docs only).
-- `431397bf` fix/flaky-vanish-test: a test fixture no longer uses shared `/tmp` ancestors.
-
-**What changes for you after the release** (each one approved in a merge entry):
-- The questions doc holds only your items; watches go to `watching.md` (Q-224, Q-229). Unit 3 (Q-235) and the one-time migration (Q-234) finish this.
-- An answer you give in session approves a merge entry (Q-230).
-- Build loops record failure patterns, checked by the gate (Q-228).
-- A convention change ships with a migration the digest reports (Q-231, Q-233).
-- Projects get a `docs/harness-feedback.md` file and `harness-feedback.py` (Q-232).
-- Host tools: `cc-verify`, and the exit scan's R6 and group-1 fixes (Q-217, Q-220, Q-225; this was Q-222's paste).
-- No more `setlocale: LC_ALL: cannot change locale` warnings in sessions (`fix/zshrc-locale`, trial T7; a Dockerfile change, so this release rebuilds the image).
-- If Q-235, Q-236 and Q-237 merge before you run this, they ship with it too.
-
-**Not listed:** 41 routine dev-cycle record lands, and 8 hand commits (owner notes, answer records).
-
-**The paste** (host terminal in WSL, not inside a session; stop every session first):
-
-```
-cd /home/magfrump/claude-workflows && git merge-base --is-ancestor c257141e HEAD && ./devcontainer-config/install.sh && cc-verify --help | head -5 && cc-isolated --list
-```
-
-The `merge-base` check runs no hook. It only confirms that your checkout holds at least what these notes describe; if it prints nothing and stops, your checkout is behind main. After the release, run Q-234 in a session (once Q-235 has merged).
-
-- **Interim:** the image's gate (built at C) runs. Everything above is on main but not live.
-- **Blocks:** Q-222 (same `install.sh` run) and roadmap Next 1.
-- **Full commit list:** `git log --first-parent ba6d2ec9..main` (the format before this trial printed it here).
+- **Interim:** the image at fe57e352 runs; main's gate code matches it until Q-235–Q-237 land.
+- **Still to confirm from Q-222:** that `cc-verify --help | head -5 && cc-isolated --list` works on the host after that install. Q-222 stays open until you say it does.
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
@@ -303,7 +276,7 @@ cd /workspace && ~/.claude/scripts/questions.sh migrate && git add docs/working/
 - **Interim:** the iteration goes on; every reader still reads the old routes in `questions.md`. The cycle cannot run it itself: `--cycle-diff` refuses a chore commit that rewrites entries' **Needs:** lines. Run it only after unit 3 (`feat/questions-owner-only-unit3`, roadmap In flight; sent back to its loop this cycle) has merged: until then the digest reads watches only from `questions.md`, so migrating first drops them from the cycle's view (the unit 3 brief's motive).
 
 ### Q-235 · merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **If you say no:** decision 040 stays half built, and from 2026-10-30 `questions.md` refuses the `agent` entries the cycle still files.
 
@@ -345,8 +318,10 @@ path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts
 - **Blocks:** Q-234 (the migration runs after this merges).
 - **Interim:** the branch waits; nothing on main changes.
 
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
 ### Q-236 · merge-2026-10-29-skill-frontmatter-flake-9df01661e611
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **If you say no:** the health check keeps raising a false "missing field" now and then.
 
@@ -380,8 +355,10 @@ path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/he
 - **Blocks:** nothing.
 - **Interim:** the branch waits; the health check may still flake on main.
 
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
 ### Q-237 · merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13
-**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
 
 **If you say no:** `migrations.sh check .` keeps refusing falsely; callers that pass an absolute path are unaffected.
 
@@ -412,3 +389,5 @@ path docs/working/briefs/2026-10-29-migrations-relative-root.md M test/scripts/c
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits; callers pass an absolute ROOT, as the digest and tests already do.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
