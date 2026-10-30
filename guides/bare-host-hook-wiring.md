@@ -47,8 +47,10 @@ matcher, command) and `permissions.deny`.
 
 **`install.sh` does this merge (Q-106 [2]).** The `~/.claude` review ends with a
 `settings.json:` diff of your file (as `jq` prints it) against the merged result, and
-the y applies both. Groups whose commands all run something under `~/.claude/hooks/`
-are replaced by the current wiring's (FP-161); each wiring rule is added once, its
+the y applies both. For each event the wiring carries, groups whose commands all run
+something under `~/.claude/hooks/` are replaced by the current wiring's (FP-161); a group
+of ours under an event the wiring no longer has stays until you remove it. Each wiring
+rule is added once (a rerun never duplicates one), its
 legacy single-slash form under `~/.claude` dropped (Q-049), and the `Write(path)` twin of
 each `Edit(path)` rule dropped (Claude Code never matches it); everything else is kept.
 Above the diff, the review lists by name each hook the merge unwires or adds
@@ -58,7 +60,7 @@ named by event, matcher and command (`UNWIRE hook: "PreToolUse [Bash] python3 â€
 so a hook moved to another matcher shows as an UNWIRE and an ADD, and a second copy of
 a wired hook shows as an ADD. Read that list
 first: the merge moves our groups to the end, so in the diff a group that stays wired
-also shows as `-`/`+`. The old file
+also shows as `-`/`+` when one of your own groups follows it. The old file
 goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written
 when the file is a symlink, unreadable or not one JSON object, `jq` is missing, `wiring.json`
 is not one object whose every hook is a `command` hook running

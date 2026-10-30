@@ -736,7 +736,7 @@ file_hash() {
 sjq() { env -i PATH="$PATH" HOME=/nonexistent jq "$@" 2>/dev/null; }
 ONE_OBJ='length == 1 and (.[0] | type == "object")'
 # wiring.json is exactly one object (jq -e judges only the last of several, the
-# merge reads the first: review pass 2, N1); its hooks is an object of arrays;
+# merge reads the first: review pass 2, N1); its hooks, if set, is an object of arrays;
 # every hook group is an object with no keys but a string matcher and a
 # non-empty hooks array (pass 3, S3-F1: an object-valued hooks or matcher, or
 # an extra key, would be written into settings.json, whose schema it fails);
@@ -1053,7 +1053,7 @@ install_claude_home() {
           sjq --arg dir "$s_dir" --slurpfile w "${new}hooks/wiring.json" \
               -f "${new}hooks/lib/wiring-merge.jq" "$s_view" > "$snew") \
        || ! sjq -se "$ONE_OBJ" "$snew" >/dev/null || ! chmod "$s_mode" "$snew"; then
-    s_why="the merge program failed on it (a wiring.json value of the wrong type?)"
+    s_why="the merge program failed on it (a value of the wrong type in wiring.json or in it?)"
   fi
   if [ -n "$s_why" ]; then
     rm -f "$snew"

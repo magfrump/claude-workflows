@@ -25,8 +25,10 @@
 #   Edit(path) rules, which Claude Code never matches; any other rule the
 #   wiring no longer carries is never removed. The deny rules are what blocks
 #   guard-trusted-writes.py's HARD tier for the file tools (decision 023
-#   amendment B). A mode whose value is not an array (e.g. "defaultMode")
-#   makes jq fail, and both callers then leave the settings file alone.
+#   amendment B). A wiring mode whose value is not an array (e.g.
+#   "defaultMode"), or a settings value that is not an array for a mode the
+#   wiring also carries, makes jq fail, and both callers then leave the
+#   settings file alone. A user's own "defaultMode" is kept.
 ($w[0]
  | with_entries(select(.key | startswith("_") | not))
  | walk(if type == "string"

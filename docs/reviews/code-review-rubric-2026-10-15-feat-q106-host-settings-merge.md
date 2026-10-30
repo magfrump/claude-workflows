@@ -191,6 +191,17 @@ Authorize iteration 5: the output-side check, the `import`/`include` refusal, re
 
 **Decision: `escalate`** (the work is inside one block of `install_claude_home`, not a separable part, so `split` does not apply). No further fix work, re-review or loop test run until the user authorizes iteration 5.
 
+**Owner (2026-10-30), resolving the gate:** "a hostile code author is out of scope for this repo. Every project is asking the agent to write and test code, which involves running the agent's code. Guarding against intentional hostility doesn't create security and does add friction." This is constraint S1, which the pass-4 security brief did not quote: it framed the threat as a hostile branch. Dispositions under S1:
+
+| # | Disposition |
+|---|---|
+| S4-1 to S4-5 | Out of scope (S1): each needs a deliberately hostile wiring or merge program. Not fixed. |
+| FC4-1 | Corrected in 75498418's message. |
+| FC4-2, FC4-3 | Fixed: guide (events the wiring carries; "added once" on rerun; the `-`/`+` condition), the WIRING_SHAPE comment, the refusal hint, and the merge program's defaultMode sentence. |
+| P4-1, P4-2 | Accepted (Low): realistic files hold under 50 hooks and hundreds of rules. |
+
+No Must Fix, Must Address or Incorrect remains, so the loop exits. Doc-only fixes after the confirming pass; no re-review.
+
 ## 🧩 Composition check
 
 | Cluster | File / lines | Fragments | Disposition |
