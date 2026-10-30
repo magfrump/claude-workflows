@@ -315,3 +315,4 @@ When citing a matched pattern in a research doc, commit message, or hypothesis, 
 - **FP-173** 2026-10-14 symptom:output-file-env-var-inherited-by-nested-runner-overwrites-caller-count cause:boundary-too-wide fix:remove-the-path ref:70aa3a78
 - **FP-174** 2026-10-14 symptom:find-over-shared-ancestor-dir-exits-nonzero-when-another-process-deletes-an-entry-mid-listing-gate-flakes-under-parallel-load cause:overbroad-guard fix:narrow-the-guard ref:d2dc88c9
 - **FP-175** 2026-10-29 symptom:false-missing-field-flake-under-load-echo-pipe-grep-q-sigpipe-141-under-pipefail cause:exit-code-overloaded fix:remove-the-path ref:docs/working/research-2026-10-29-skill-frontmatter-flake.md
+- **FP-176** 2026-10-30 symptom:brainstorm-seed-trigger-counts-the-brainstorms-own-seed-shaped-ideas-and-now-trigger-refires-on-unchanged-now cause:wrong-denominator fix:fix-the-denominator ref:015bd762
