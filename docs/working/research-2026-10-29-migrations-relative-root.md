@@ -29,6 +29,8 @@ Hard lines (H1-H4) all pass for 1-3 (no gate logic moves, fail-closed behaviour 
 
 Review round 1 (one independent reviewer, clean, three non-blocking notes) refined it: a relative ROOT named like `x=y` still failed, because awk reads that operand as an assignment, so the resolve moved from the questions case to the top of `conv_source`, covering every operand and every convention. The default ROOT's `cd` also got `CDPATH=''`, and the test gained `x=y` and a non-directory ROOT.
 
+Review round 2 (clean, non-blocking notes): a relative ROOT is prefixed with `./` before the `cd`, so `cd` never searches CDPATH or reads a bare `-` as `$OLDPWD` (defensive: here `cd -- -` did not take `$OLDPWD`, so the new `-` test case passes either way). The bad-ROOT assertion now prints its output on failure.
+
 ## Gotchas
 
 - Failure-pattern grep: FP-020, FP-062

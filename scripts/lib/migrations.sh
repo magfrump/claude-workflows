@@ -70,8 +70,10 @@ mig() {
 # nothing it could not find, when an anchor is gone (so `check` names it).
 conv_source() {
   local c="$1" r="$2" t f out
-  # Absolute once, before the cd below and the awk operands (awk reads a
-  # relative "x=y" as an assignment), so "." or "../x" name the same files.
+  # Absolute, before the cd below and the awk operands (awk reads a relative
+  # "x=y" as an assignment), so "." or "../x" name the same files; the "./"
+  # keeps cd from reading "-" as $OLDPWD or searching CDPATH.
+  [[ "$r" == /* ]] || r="./$r"
   r="$(CDPATH='' cd -- "$r" && pwd)" || return 1
   case "$c" in
     questions)
