@@ -57,13 +57,25 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   the slow suites and costs a triage pass. The vanishing-file flake had a different cause
   (merged 431397bf). Briefed 2026-10-29 (In flight, review).
 
+- **Bug: `migrations.sh check .` refuses with a relative root.** Motive: the script's header
+  documents `check [ROOT]`, but `conv_source` changes into a temp directory and then runs
+  `"$r/scripts/questions.sh"`, so a relative ROOT no longer resolves: `check .` prints
+  "refuse questions: its source was not found" while `check "$PWD"` passes (reproduced
+  2026-10-30-0100 on main 60f670b0; the bats test and the health check pass an absolute
+  path). Gate code (`scripts/lib/`): a review brief. First step: make ROOT absolute on
+  entry (`r="$(cd "$r" && pwd)"`) with a bats case for `check .`. Briefed 2026-10-29
+  (In flight, review).
+
 ## In flight
 
 
+- **Bug: `migrations.sh check .` refuses with a relative root** (Now). Review (gate code).
+  Brief: `docs/working/briefs/2026-10-29-migrations-relative-root.md`
+
 - **Questions doc owner-only, unit 3: the dev cycle and the global instructions read the new
   homes** (Now, decision 040). Gate code: review policy. Sent back 2026-10-29 (iteration
-  2026-10-30-0035): on top of main it fails `convention-migrations.bats` (no registry line
-  for its roadmap-template change; the questions source anchors moved). Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
+  2026-10-30-0035) for a missing registry line; dispatch 2 ready at 6c8d949f, merge entry
+  Q-235 (2026-10-30-0100). Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
 
 - **Bug: the skill-frontmatter health check flakes** (Now). Review (the health check is
   enforcement). Brief: `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`

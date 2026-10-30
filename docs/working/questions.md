@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | you: judgment | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -350,3 +351,42 @@ cd /workspace && ~/.claude/scripts/questions.sh migrate && git add docs/working/
 - **Read:** `scripts/lib/migrations.sh` (the registry line) · `docs/decisions/040-questions-doc-owner-only.md` · Q-229 in the archive (the unit that added `migrate`)
 - **Blocks:** nothing.
 - **Interim:** the iteration goes on; every reader still reads the old routes in `questions.md`. The cycle cannot run it itself: `--cycle-diff` refuses a chore commit that rewrites entries' **Needs:** lines. Run it only after unit 3 (`feat/questions-owner-only-unit3`, roadmap In flight; sent back to its loop this cycle) has merged: until then the digest reads watches only from `questions.md`, so migrating first drops them from the cycle's view (the unit 3 brief's motive).
+
+### Q-235 · merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`, roadmap In flight)? It is the last unit of decision 040, which makes `questions.md` hold only your items: the dev cycle's digest reads watched items from `docs/working/watching.md`, the cycle files agent work to the roadmap instead of `agent` entries, and the global instructions' running-questions section says the same.
+
+- **Why it's yours:** gate code (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`) and the global instructions (`global-instructions/CLAUDE.md`, loaded in every session; +4/−2 lines).
+- **What it does:** `dev-cycle.sh`'s digest section 3 reads watches from `watching.md` (and lists one with a malformed route); the cycle owns `watching.md` and closes a met watch there without you; steps 2, 3 and 10 file agent work to the roadmap; `--cycle-diff` allows those moves and still refuses changes to your entries. Its first dispatch added 338 lines and removed 54.
+- **Dispatch 2 (this cycle's send-back):** 93302ac6 merges main (0388b194) with no conflicts; a811bd09 adds the registry line `mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: …'` for its roadmap-template preamble change (no existing file needs migrating: existing roadmaps' preambles are frozen). On the tree it makes with main (0a381aa7), `convention-migrations.bats` passes 12/12, `questions-doc.bats` 41/41 and `migrations.sh check` is clean; the loop's health check passed on its branch.
+- **After merging:** run Q-234 (the one-time `questions.sh migrate`); the dev cycle acts on the new rules after the next image release.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-owner-only-unit3.md 6c8d949f4493bfe25690d7736bb73cf52227e94a 0a381aa78f0f5533334873fd6347d427cd945b6c
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M docs/working/briefs/2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md A docs/working/research-2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/build-loop.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/questions-doc.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (an instruction file); `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh` (gate code); `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 6c8d949f; you then run Q-234, and it takes effect at the next release | One paste (Q-234) and the release | One `git revert` of the merge (entries `migrate` moved would need moving back) |
+| **[2] drop** | The brief closes; decision 040 stays half built (units 1 and 2 only) | None now | `questions.md` refuses new agent entries from 2026-10-30 while the cycle still files them |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** Q-234 (the migration runs after this merges).
+- **Interim:** the branch waits; nothing on main changes.
