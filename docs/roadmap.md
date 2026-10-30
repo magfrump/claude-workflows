@@ -78,7 +78,8 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   Q-235 (2026-10-30-0100). Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
 
 - **Bug: the skill-frontmatter health check flakes** (Now). Review (the health check is
-  enforcement). Brief: `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`
+  enforcement). Ready at 9df01661 (cause: `echo | grep -q` under pipefail, SIGPIPE), merge
+  entry Q-236 (2026-10-30-0116). Brief: `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`
 
 ## Next
 
