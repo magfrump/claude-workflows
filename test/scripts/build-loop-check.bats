@@ -731,13 +731,21 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     # directory, first; SHIM_RMTOP=drop also drops it from the start points, as a find that
     # skipped a missing start point silently would, which leaves top_files' -d recheck to
     # catch it. (SHIM_*, not T_*: the shim reads them, not imps.)
+    # The shim also drops every start point outside the fixture's ancestor (/tmp, /, bats' run
+    # directories): the walk lists them too, and another process's short-lived directory there
+    # (a parallel bats file's or a session's mktemp -d) failed a listing the asserted log
+    # expected to be clean, a flake under load (research-2026-10-29-flaky-vanish-test). The
+    # lib still computes and rechecks every top; only find's reading of the shared ones is cut.
     a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
     printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
     cat > "$a/shim/find" <<EOF
 #!/usr/bin/env bash
 [[ "\${1:-}" == -H ]] || exec "$real" "\$@"
 [[ -z "\${SHIM_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
-args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1"); shift; done
+args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do
+  case "\$1" in "$a"|"$a"/*) [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1") ;; /*) ;; *) args+=("\$1") ;; esac; shift
+done
+[[ " \${args[*]} " == *" $a "* ]] || exit 8  # the fixture's ancestor is always a top
 if [[ -n "\${SHIM_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
 else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
 rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
