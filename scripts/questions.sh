@@ -30,7 +30,7 @@
 #   ~/.claude/scripts/questions.sh index      regenerate the index tables in place
 #   ~/.claude/scripts/questions.sh archive    move ANSWERED entries to the archive, reindex
 #   ~/.claude/scripts/questions.sh next-id    print the next free Q-NNN
-#   ~/.claude/scripts/questions.sh open       list open questions, one per line (ID, route, slug)
+#   ~/.claude/scripts/questions.sh open       list live entries and open watches, one per line (ID, route, slug)
 #   ~/.claude/scripts/questions.sh migrate    move agent/deferred/trigger entries out of questions.md
 #   ~/.claude/scripts/questions.sh init       create empty live/archive/watching files if absent
 #   (In claude-workflows, scripts/questions.sh is the same file.)
@@ -566,9 +566,19 @@ cmd_migrate() {
     fi
 }
 
+# The live file's entries, then watching.md's not closed (ANSWERED) ones: the
+# dev cycle's digest lists the watches from here. Only an explicit ANSWERED
+# is left out, so a malformed status (a typo, a CR, no Needs line) still
+# lists, and `check` names it. A watching path that exists but is not a
+# regular file (or a link to one) is refused; a link to a file is followed,
+# as for the live file (the digest refuses links before it calls this).
 cmd_open() {
     require_files
-    parse_entries "$LIVE" | route_rank | sort -t$'\t' -k1,1 -k2,2 | cut -f2- \
+    if [[ ( -e "$WATCHING" || -L "$WATCHING" ) && ! -f "$WATCHING" ]]; then
+        die "not a regular file: $WATCHING"
+    fi
+    { parse_entries "$LIVE"; parse_entries "$WATCHING" | awk -F'\t' '{ s = $4; sub(/\r$/, "", s) } s != "ANSWERED"'; } \
+        | route_rank | sort -t$'\t' -k1,1 -k2,2 | cut -f2- \
         | while IFS=$'\t' read -r id route _ _ slug _; do
             # 16 fits the longest route, `you: walkthrough`; dev-cycle.sh
             # splits this output on runs of two or more spaces.

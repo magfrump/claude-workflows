@@ -53,7 +53,7 @@ one place every trigger is certain to be checked, so it checks all of them every
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
   `--state` refusals and its lost `Main at:` line; a `refuse main-log:` line is step
   0.2's refuse stop, which lands a record), else the line and stderr go in
-  one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
+  one agent work item (below), each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
   `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
@@ -85,13 +85,20 @@ one place every trigger is certain to be checked, so it checks all of them every
   written as `GIT_AUTHOR_NAME="$N" … hg …` (not `env … hg`, which would run another
   program named `hg`). Never export these settings: set them per command, as `hg` does (`--state` refuses a
   caller's config pair for a `HARDEN` key, row 702).
-- **The only questions writer** (D11). Build loops never write the questions files; their
-  questions arrive in `blocked` markers, which the orchestrator files.
-- **Attention is the budget.** Mechanical findings get fixed or routed to `agent`. Work goes
+- **The only questions writer** (D11). Build loops never write the questions files or
+  `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
+  orchestrator files.
+- **Attention is the budget.** Mechanical findings get fixed or filed as agent work. Work goes
   to the roadmap; only real choices become `you: judgment` entries in
   `docs/working/questions.md` (entry grammar: the global instructions' "Running questions
   document"), and every such entry names the roadmap item it blocks, if any. Machine-only chores
   become one `you: terminal` entry.
+- **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
+  judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
+  item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
+  "unless one names it" means such an item. A **watch** (a condition or event the cycle
+  waits on, route `trigger` or `deferred`) is an entry in `docs/working/watching.md`, in the
+  questions grammar (ID from `questions.sh next-id`), which the cycle closes itself (step 3).
 - **Undocumented is broken.** A feature without documentation is a bug. A merge that changes
   behavior with no matching doc change is a step 4 finding: the doc is written in-cycle if
   that is mechanical, otherwise it is filed on the roadmap as a bug, never as an idea. Every
@@ -244,7 +251,7 @@ d6() {
     own "$D6_OPT/scripts/$f"; [[ -f "$D6_OPT/scripts/$f" ]] || no "$D6_OPT/scripts/$f is not a regular file"
   done
   x="$D6_OPT/scripts/lib"; while own "$x"; [[ "$x" != / ]]; do x="${x%/*}"; x="${x:-/}"; done
-  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE bash "$D6_OPT/scripts/$s" "$@"
+  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING bash "$D6_OPT/scripts/$s" "$@"
   exit "$?"
 }
 # Under bash -s the script is the heredoc on stdin: bash has read this whole
@@ -370,7 +377,7 @@ docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 7b pending migrati
 - It says "records, or a directory above them, were skipped", or names a newer record that
   was skipped: a record, or one of `docs/`, `docs/working/` or the cycles directory, is not a plain
   file or directory, so records may exist that the digest could not read. Note that in this
-  record, file one `agent` entry listing the paths section 8 gives, unless an open one
+  record, file one agent work item listing the paths section 8 gives, unless one
   already reports them (never read, copy or rewrite through them), and rerun with `--since` set to the date of the last cycle you know
   ran (none known: keep the window the digest chose).
 - Otherwise, if the window starts before the last cycle you know ran (or says no cycle record
@@ -378,8 +385,8 @@ docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 7b pending migrati
   that cycle's date. Here and above, a cycle you know ran is one that reached step 9's land;
   an iteration that stopped does not count (U4b2 confirm3 F1).
 
-If the digest fails (non-zero exit or a missing section), stop the cycle: file one `agent`
-entry with the error and write **no** cycle record, so the next window still starts at the
+If the digest fails (non-zero exit or a missing section), stop the cycle: file one agent work
+item with the error and write **no** cycle record, so the next window still starts at the
 last good one.
 
 ### 1. Health and cleanup
@@ -398,7 +405,7 @@ last good one.
   nothing: record that and skip the step's check (row 750).
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
   pre-existing, flaky). No health check: "skipped: none in this repo".
-- If the digest's section 8 lists `docs/`, `docs/working/` or a questions file, skip the
+- If the digest's section 8 lists `docs/`, `docs/working/`, a questions file or `watching.md`, skip the
   next two commands and note why in the record: they would write through that path.
   Otherwise, run `questions.sh init` (it creates only what is missing) and then
   `questions.sh archive` (it also reindexes) through the D6 block from WT, so
@@ -466,23 +473,27 @@ layout is reported as **NOT checked**: read it by hand, and do not take the miss
 none. For each, decide **fired / not fired / cannot tell**
 and write the evidence (a command and its output, a count, a commit). "Cannot tell" names what
 would tell. The previous record's verdicts are context, never the answer: decide each one
-again. A fired trigger becomes a questions.md entry that links the decision record; route it
-`agent` when the trigger itself names the response, `you: judgment` when it reopens a choice.
+again. A fired trigger that names its own response becomes an agent work item, and one that
+reopens a choice a `you: judgment` entry; either links the decision record.
 Do not reopen a decision on a trigger that has not fired. A trigger that fires between cycles
 waits for the next digest.
 
 ### 3. Watched questions
 
-- For each open `trigger` or `deferred` entry, check its own condition. If it has been met,
-  change its route and say why in the entry; if its entry names an observation, it stays open
-  until that observation has been made.
-- Read every open `agent` entry. One opened before the last cycle record is stale and gets an
+- For each watch the digest lists, check its own condition; if its entry names an
+  observation, it stays open until that observation has been made. A met watch in
+  `watching.md` is closed here, without the user: `**Status:** ANSWERED`, a line
+  `Q-NNN: met — EVIDENCE`, and the entry moved under `## Closed` (`--cycle-diff` refuses a
+  watch's heading dropped). What it releases becomes agent work or a `you:` entry. A watch the digest
+  marks legacy (still in `questions.md`) cannot be changed by the cycle: record it as met, and
+  it closes in `watching.md` after the user's one `questions.sh migrate` run.
+- Read Now's agent work items. One filed before the last cycle record is stale and gets an
   action now: if it is mechanical, fits in one commit and needs no choice, do it in-cycle, at
-  most 3 per cycle, oldest first; otherwise it stays `agent` with a note on why it is stuck,
-  and only one stuck on a choice becomes `you: judgment`. Newer `agent` entries are listed and
-  may be left.
+  most 3 per cycle, oldest first, and move it to Done; otherwise it stays with a note on why
+  it is stuck, and only one stuck on a choice becomes `you: judgment`. Newer items are listed
+  and may be left. Legacy `agent` entries in `questions.md` are left for `migrate`.
 - If the digest prints "Watched questions were NOT checked" (with the cause: a skipped
-  questions file or archive, questions.sh missing, or `questions.sh open` failing), fix or
+  questions file, archive or `watching.md`, questions.sh missing, or `questions.sh open` failing), fix or
   report that first (never reading, copying or rewriting through a skipped path); the section
   was not checked.
 
@@ -553,7 +564,7 @@ Update `docs/roadmap.md`, creating it from this template if missing:
 
 What this repo is working on and what comes next. Maintained by the dev-cycle skill; cycle
 records are in docs/working/cycles/. Decisions waiting on the user live in
-docs/working/questions.md.
+docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
 
 ## Now
 ## In flight
@@ -582,7 +593,9 @@ docs/working/questions.md.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
   each with its reason and brief.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
-  printed.
+  printed (agent work done in-cycle: the iteration's branch name).
+- `docs/working/roadmap-from-questions.md` (left by the user's `questions.sh migrate`): fold
+  each entry into Now as agent work, its `Q-NNN` kept in the title, then `hg rm` the file.
 
 Re-ranking is proposed to the user as one `you: judgment` entry, not done, when it would
 reorder their stated priorities.
@@ -772,7 +785,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
 
 1. Stage by name only paths `--check-write` or `--check-fix` printed `ok` for (rows 764,
    769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
-   filed or edited entries (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
+   filed or edited entries or watches (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
    what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
@@ -794,7 +807,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
    `--answered`; a questions change while main's questions files changed since BASE; the
    idea log other than appended to, or either file deleted; the roadmap moves step 6
-   names; a side that is not a regular 100644 file, or a listing that fails (`refuse
+   names; a watch's heading gone from `watching.md`, or the file deleted; a side that is not a regular 100644 file, or a listing that fails (`refuse
    index`); any path but the
    cycle's own files, a `.md` under `docs/` or `README.md`; the gate's own code; a truth
    file (instruction and prompt files, dot paths, `docs/dev-cycle.md`,
@@ -848,8 +861,8 @@ ones:
   included, whose answer carries a note for the loop). Write
   `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
-  iteration. Any other refusal or skip: recorded, and one `agent` entry per brief unless an
-  open one names it.
+  iteration. Any other refusal or skip: recorded, and one agent work item per brief unless
+  one names it.
 - A brief `--status` read with DISPATCHED 4 (the cap, D1) or more is never dispatched again: one
   entry as step 7 files them (its item `Q-NNN` alone when TIP is `-`), slug
   `capped-STEM-N`, unless WT's questions files hold one for it, with options **[1] keep** (it stays open, for work by hand) and **[2] drop**
