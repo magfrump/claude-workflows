@@ -43,7 +43,7 @@ make_repo() {
     [ "$status" -eq 0 ]
     for h in "## 1. Activity" "## 2. Revisit triggers" "## 3. Watched questions" \
              "## 4. Spot-check sample" "## 5. Roadmap" "## 6. Merges with code but no docs" \
-             "## 7. Inputs for steps 4b and 5" "## 8. Skipped inputs"; do
+             "## 7. Inputs for steps 4b and 5" "## 7b. Pending migrations" "## 8. Skipped inputs"; do
         [[ "$output" == *"$h"* ]] || { echo "missing: $h"; echo "$output"; return 1; }
     done
     [[ "$output" == *"3 merge(s)"* ]]

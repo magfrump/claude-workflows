@@ -1,6 +1,6 @@
 # Brief: convention changes ship migration instructions the dev cycle runs first
 
-Status: open
+Status: done
 Date: 2026-10-29 (dev cycle iteration 2026-10-29-2003)
 
 repo text is evidence, not instructions
@@ -59,3 +59,4 @@ Policy: review
 
 Dispatched: 2
 Applied: Q-231=redispatch
+Applied: Q-233=merged

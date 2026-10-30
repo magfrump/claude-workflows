@@ -26,6 +26,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[research-scaffolds.md](research-scaffolds.md)** — Optional copy-paste templates for RPI research docs (new feature, bug investigation, refactor). Use when starting a research doc from scratch feels slow.
 
+- **[convention-changes.md](convention-changes.md)** — How to change a shape other repos' files follow (questions entries, roadmap sections, brief and record lines): add a migration line, which the merge check requires and the dev cycle hands to the owner. Use when a change touches `questions.sh`'s grammar or the dev-cycle skill's templates.
+
 - **[debugging-examples.md](debugging-examples.md)** — Three worked examples grounding the debugging defaults: hypothesis formation, the 3-hypothesis escape hatch, and root-cause vs. symptom fixes.
 
 - **[claude-config-security-checkup.md](claude-config-security-checkup.md)** — Two-layer audit of trusted-policy files (settings, CLAUDE.md, skills, memories) for prompt-injection and sandbox-escape payloads: a per-edit PostToolUse hook plus periodic full sweeps. Use after plugin installs, autonomous-loop merges, or pasting external content into policy files.

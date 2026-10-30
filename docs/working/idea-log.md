@@ -97,3 +97,16 @@ Ran because roadmap Now held 0 items ready for a brief (Q-168 is held; its first
 - Find why the nested health check once flagged `test-strategy: missing 'description' field` (tests 198, 199, 208 of the 2026-10-29-2003 run at eecf0268) when the outer check passed the same file and a rerun of both tests passed (signal: a one-off red health check with no code change)
 - The skill-frontmatter health check flakes on more than one file: a build loop saw `user-testing-workflow: missing 'name' field` once on its branch, and passed 200 of 200 repeats (signal: the unit 2 loop report, 2026-10-29, and the 2003 iteration's `test-strategy` flake)
 - A third one-off health-check failure in a day: `test/scripts/build-loop-check.bats` "the ancestor listing skips a file that vanishes" failed once on the harness-feedback branch and passed alone and on the next full run; collect the flakes in one place and find whether load or a shared resource is the common cause (signal: the harness-feedback loop report, 2026-10-29)
+- A fourth load flake on 2026-10-29: `test/scripts/dev-cycle.bats` test 37 "--check-fix allows only existing docs/ and README.md files" failed once in a full-file run with two loops running and passed alone (signal: the post-merge check of Q-233)
+
+## Brainstorm 2026-10-29
+
+Ran because 10 ideas were seeded since the 2026-10-25 brainstorm. Sources: this cycle's signals, this log, roadmap Ideas, and `docs/working/feature-ideas.md` (the one idea source `docs/dev-cycle.md` lists; unchanged since 2026-03-23, nothing new in it).
+
+- Diagnose the skill-frontmatter flake (two seeds above): briefed as `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md` (signal: two one-off missing-field reports on 2026-10-29; the vanish research found no shared cause)
+- The four load-flake seeds above are two causes, not one: the vanishing-file case is fixed (431397bf); dev-cycle.bats test 37 waits on whether it recurs now that the vanish cause is known (signal: the vanish research's Cause section)
+- Run step 1's health check on a clean checkout of main, not on WT (signal: this iteration's health check failed only on a stale index from the orchestrator's own mid-run edit)
+- Free a merged loop's worktree (signal: 15 merged branches `branch -d` refused, each held by a finished loop's locked worktree)
+- Name the 2026-10-30 `LEGACY_BEFORE` cutoff before the old skill files an `agent` entry past it (signal: unit 3 unmerged, cutoff tomorrow)
+- Divergent design's table: separate hard fails from soft costs (signal: a third drift finding of the same class, 6ee39f24)
+- Do nothing more: the owner holds the image release review and Q-234; unit 3 is back with its loop (signal: queue state)

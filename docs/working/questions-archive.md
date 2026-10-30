@@ -223,6 +223,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
 | [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
 | [Q-232](#q-232--merge-2026-10-29-harness-feedback-file-2b858d2586c3) | Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/... | 2026-10-29 |
+| [Q-233](#q-233--merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8) | Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/b... | 2026-10-29 |
 <!-- index:end -->
 
 ## Answered
@@ -4851,5 +4852,47 @@ path docs/working/briefs/2026-10-29-harness-feedback-file.md M workflows/pr-prep
 | **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
 
 - **Blocks:** version 2 (GitHub issues), an idea until v1 is used.
+- **Interim:** the branch waits; nothing on main changes.
+
+### Q-233 · merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-29: "probably worth merging Q-233 before the release"; recorded by the dev cycle)
+
+Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? This is the branch you approved as Q-231 [1], plus the reconciliation it needed after Q-229 merged. Merging f1146945 as it was would have left main's own migration test failing, so I sent it back instead of merging.
+
+- **Why it's yours:** gate code (`scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the commits after your Q-231 approval are new.
+- **What changed since Q-231 (four commits on top of f1146945):**
+  - 5b6133f6 merges main (4b4f5e23) into the branch, with no conflicts.
+  - 63d6f7d7 adds the registry line for Q-229's questions change: `mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'`. It matches 5 lines in this repo's `questions.md`, so once the digest runs from the next release, the cycle will file the migration as a `you: terminal` entry: the same one-time `migrate` run Q-229 already left with you.
+  - 5bc67ede adds a shellcheck exemption for the literal `~` in that remedy text.
+  - b1341e36 adds the failure-pattern lines the merged Q-228 check asks for.
+  - Test 4 was not a locale problem: it failed for the same missing line. It now also checks its precondition first.
+- **Everything else** is as Q-231 described: a registry line per convention change, a merge check, digest section 7b, and step 1b surfacing pending migrations first without stopping the iteration.
+- **Tests:** the loop's health check passed on the merged branch (one run failed a `build-loop-check.bats` case this branch does not touch, at load average 11; it passed 3 of 3 alone, and the next full run passed).
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-convention-migrations-first.md b001677ac0d8ce334290dfc6d7b055534ea49960 2fd745977ba3eb585f774ba7b83170685dd30fd2
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges b001677a; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
 - **Interim:** the branch waits; nothing on main changes.
 
