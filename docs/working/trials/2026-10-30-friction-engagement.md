@@ -28,4 +28,9 @@ Write it anywhere, in any order, for example: `T2 good, T3 made me skim, T5 too 
 
 ## Feedback
 
-(none yet)
+- **2026-10-30, owner:** "Merge all three", answering T3's batched block for Q-235..Q-237. This was the first batched answer. The orchestrator recorded it as `[1]` on each entry. The skill's rule counts a merge answer only when the owner's message names the ID and an option. Here the batched block named the IDs and the message named the option, so it was taken as meeting the rule. If T3 is kept, that rule should say so explicitly.
+
+## Orchestrator notes
+
+- **2026-10-30:** the first T1 rewrite of Q-227 misstated the image's commit. It said `ba6d2ec9`, copied from the old entry text, when `.manifest` says `fe57e352`. As a result, it asked the owner for a release that had already run. From now on, the release-notes rewrite reads `.manifest` and uses no older text.
+- **2026-10-30:** the merges ran as two cycle lands around three gated `--merge --approved` calls. All three merged, and the affected suites pass 329/329 on the merged main. Friction seen: `--check-write` refuses `docs/working/trials/` and `docs/working/weekly/`, so trial notes and the weekly digest need their own docs commit outside the cycle land. If T5 is kept, it needs a place the cycle may write.
