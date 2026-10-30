@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-239](#q-239--merge-gate-2026-10-30-health-check-clean-checkout-8f3fbf92c11d) | you: judgment | Merge `fix/health-check-clean-checkout` at 8f3fbf92c11da5e223015f5208242a04b6c41005? Brief: `docs/working/b... | 2026-10-30 |
+| [Q-240](#q-240--merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846) | you: judgment | Merge `fix/brainstorm-trigger-count` at ab401bdf6846b91b33d0344350bb59dea03cf0b4? Brief: `docs/working/brie... | 2026-10-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -328,6 +329,43 @@ path docs/working/briefs/2026-10-30-health-check-clean-checkout.md M test/script
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits. The orchestrator stages its edits in the scratchpad until the check ends (done in 2026-10-30-0800, which passed).
+
+### Q-240 · merge-gate-2026-10-30-brainstorm-trigger-count-ab401bdf6846
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+
+**If you say no:** the digest keeps counting a brainstorm's own lines as new ideas (today it reports 17 where the true number is 0). The "Now holds 0-1 ready items" trigger also keeps re-firing on an unchanged Now, and the orchestrator keeps overriding both by hand.
+
+**What an attacker would want here:** little. The digest's step-5 counts only decide whether a brainstorm runs; no gate or merge depends on them. The change reads git history (`git blame`, `git show` of the heading's commit) through the digest's existing hardened git, and every unclear case falls back to the old count with a labelled line.
+
+Merge `fix/brainstorm-trigger-count` at ab401bdf6846b91b33d0344350bb59dea03cf0b4? Brief: `docs/working/briefs/2026-10-30-brainstorm-trigger-count.md`, roadmap In flight. The change: a seed counts only if it was absent from the idea log at the commit that added the last `## Brainstorm` heading. A new digest line says whether Now changed since that commit, and step 5 treats an `unchanged` Now as no trigger.
+
+- **Why it's yours:** gate code (`scripts/dev-cycle.sh` +49/−12 lines, `skills/dev-cycle/SKILL.md` step 5) and a new failure-pattern entry, FP-176.
+- **Checks:**
+  - The loop: one review round found three real bugs (merge order, a heading without a final newline, a shallow clone), each fixed with a test; round 2 was clean. Its full health check passed.
+  - The dev cycle, on the tree the branch makes with main (c9a8b820): `dev-cycle.bats` and `build-loop-orchestrator.bats` 117/117. The branch's digest run on this repo gives "Ideas seeded since: 0" and "Now changed since 61ed3222". The branch merges cleanly with Q-239's branch.
+- **Residuals the loop accepted:** rewording an old seed after a brainstorm counts it as new; a commit that rewrites the heading line (a CRLF normalisation) drops to the labelled old count.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-30-brainstorm-trigger-count.md ab401bdf6846b91b33d0344350bb59dea03cf0b4 c9a8b820fbabc7cdc813f58b34d8a727629cdc77
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M docs/thoughts/failure-patterns.md
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M docs/working/briefs/2026-10-30-brainstorm-trigger-count.md
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md A docs/working/research-2026-10-30-brainstorm-trigger-count.md
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-30-brainstorm-trigger-count.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is an instruction file); `docs/thoughts/failure-patterns.md` (the cycle's records).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges ab401bdf; it takes effect at the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; the counts stay as they are | None now | Brainstorms run on false triggers, or the orchestrator overrides them by hand |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits. The orchestrator reads the step-5 count by hand.
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
