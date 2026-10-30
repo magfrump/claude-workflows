@@ -53,3 +53,5 @@ Policy: review
   `scripts/lib/`.
 - Other health-check sections, unless the research shows they share the cause (then say so
   in the research doc and stop with a marker before widening scope).
+
+Dispatched: 1
