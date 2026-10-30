@@ -13,6 +13,12 @@ user's order).
 
 Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0002).
 
+- **Trial week: less friction, less habituation (2026-10-30 to about 2026-11-06).** Motive:
+  the owner's 2026-10-29 brainstorm request ("try things for a few days to a week").
+  Every iteration writes owner entries, the image-lag entry and the final message as
+  `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
+  iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
+  2026-10-30). Next: record owner feedback there, then run `divergent-design` on A1/A3/A10.
 - **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
   75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap.
   Q-171 was answered [2]: hold it until the split units land, fixing red findings that

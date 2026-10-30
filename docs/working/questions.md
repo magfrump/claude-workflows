@@ -31,7 +31,7 @@ The index below is generated — edit entries, not the table.
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
-| [Q-227](#q-227--image-lag) | you: terminal | Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a... | 2026-10-29 |
+| [Q-227](#q-227--image-lag) | you: terminal | - `a36df962` fix/questions-doc-bats-lint: a test-lint fix in `test/questions-doc.bats`. | 2026-10-29 |
 | [Q-234](#q-234--migrate-questions-owner-routes-040) | you: terminal | The convention migration `questions-owner-routes-040` (decision 040: `questions.md` holds only owner routes... | 2026-10-29 |
 | [Q-079](#q-079--canon-instance-proposal-filter) | agent | Design, per Q-072, (a) a script that turns a commit or commit range into a canon instance, and (b) the high... | 2026-09-27 |
 | [Q-097](#q-097--exit-scan-older-routes) | agent | The Q-094 review documented two older Medium routes the exit scan does not see, both now under the guide's ... | 2026-09-28 |
@@ -42,7 +42,6 @@ The index below is generated — edit entries, not the table.
 | [Q-173](#q-173--exit-scan-split-groups) | agent | Q-168's final pass split off four groups, each shown end to end (exit scan returns 0, then a host git comma... | 2026-10-15 |
 | [Q-067](#q-067--regenerate-skill-eval-reports) | deferred | When should the skill eval reports be regenerated, so that the 50 `@needs-reports` suites constrain the cur... | 2026-09-26 |
 | [Q-098](#q-098--global-allowlist-after-sandbox) | deferred | Ship a global `permissions.allow` in `hooks/wiring.json` once cc-isolated has a Bash sandbox (Q-088). Branc... | 2026-09-28 |
-| [Q-074](#q-074--failure-pattern-writer-trigger) | trigger | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-161](#q-161--revive-hermeticity-layer2-after-q125) | trigger | When Q-125's sandbox merges (bwrap in the cc-isolated image), decision 017's T2 fires: revive hermeticity l... | 2026-10-14 |
 <!-- index:end -->
 
@@ -161,15 +160,6 @@ When should the skill eval reports be regenerated, so that the 50 `@needs-report
 - **2026-09-27:** Q-071 was answered [1] (narrow stamp, committed reports), so one regeneration now stays valid until the skill itself changes. This remains deferred behind A8 only ([[run-a8-measurement-after-settling]]).
 - **If the answer differs:** nothing to redo; only when regeneration happens changes.
 
-### Q-074 · failure-pattern-writer-trigger
-**Needs:** trigger · **Opened:** 2026-09-26 · **Status:** OPEN
-
-After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only. If it reaches 2026-10-26 with fewer than 5 new entries, reopen L1 as a judgment: automate the harvest, or drop the "do not skip" line.
-
-- **Interim:** nothing changed. The read side (the RPI failure-pattern grep) works.
-- **Fired (dev cycle 2026-10-28):** 2 entries since the backfill (FP-173, FP-174), under 5 by 2026-10-26; reopened as Q-223.
-- **2026-10-29:** Q-226 answered [5] (put both steps where build loops run, checked by the gate); briefed as `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`. This watch is superseded once that brief merges.
-
 ### Q-079 · canon-instance-proposal-filter
 **Needs:** agent · **Opened:** 2026-09-27 · **Status:** OPEN
 
@@ -267,79 +257,36 @@ Q-089 unit A's review-fix loop ran a 4th iteration before recording a cap decisi
 ### Q-227 · image-lag
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
 
-Main's gate code is ahead of the installed image: the image was built at `ba6d2ec9b3bea765111d3d0a9dc34111a4078524` (C), main is at `6f364ba6342ba211ffbb1bbbb5660c3576fe6ce2` (M), and the gate scripts the dev cycle runs differ in `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md` (Q-224's owner routes, merged at 236f21ee, Q-228's failure-pattern wiring, merged at f91d7d09, Q-229's `watching.md` and `migrate`, merged at 6ee39f24, Q-230's session answers, merged at 014e5219, and Q-233's convention migrations, merged at 6f364ba6; Q-232's harness feedback file, merged at a8e941a5, ships with it). This is the release: your review of what it ships. Run this in your host terminal (WSL, not inside a session), with every session stopped, then start a new sandbox launch:
+**Release notes** (trial format, 2026-10-30; `docs/working/trials/2026-10-30-friction-engagement.md` T1). The installed image was built at `ba6d2ec9` (C). Main has moved on, and until you run the paste below, the dev cycle and every new session still run the older scripts and instructions.
+
+**⚑ Merged without anyone's review (read these first):**
+- `a36df962` fix/questions-doc-bats-lint: a test-lint fix in `test/questions-doc.bats`.
+- `d32c7eb2` docs/failure-pattern-use-review: a research doc on how failure patterns are used (docs only).
+- `9b8a0b34` docs/interview-readme-drift: `profiles/interview/README.md` brought in line with the profile (docs only).
+- `431397bf` fix/flaky-vanish-test: a test fixture no longer uses shared `/tmp` ancestors.
+
+**What changes for you after the release** (each one approved in a merge entry):
+- The questions doc holds only your items; watches go to `watching.md` (Q-224, Q-229). Unit 3 (Q-235) and the one-time migration (Q-234) finish this.
+- An answer you give in session approves a merge entry (Q-230).
+- Build loops record failure patterns, checked by the gate (Q-228).
+- A convention change ships with a migration the digest reports (Q-231, Q-233).
+- Projects get a `docs/harness-feedback.md` file and `harness-feedback.py` (Q-232).
+- Host tools: `cc-verify`, and the exit scan's R6 and group-1 fixes (Q-217, Q-220, Q-225; this was Q-222's paste).
+- If Q-235, Q-236 and Q-237 merge before you run this, they ship with it too.
+
+**Not listed:** 41 routine dev-cycle record lands, and 8 hand commits (owner notes, answer records).
+
+**The paste** (host terminal in WSL, not inside a session; stop every session first):
 
 ```
-cd /home/magfrump/claude-workflows && test "$(git rev-parse HEAD)" = 6f364ba6342ba211ffbb1bbbb5660c3576fe6ce2 && ./devcontainer-config/install.sh
+cd /home/magfrump/claude-workflows && git merge-base --is-ancestor c257141e HEAD && ./devcontainer-config/install.sh && cc-verify --help | head -5 && cc-isolated --list
 ```
 
-The only git call before `install.sh`'s own state gate is `rev-parse`, which runs no hook. If the `test` fails, your host checkout is not at M: bring it there first, knowing that any other git command on the host (a checkout included) can run a hook a sandbox session planted, as `install.sh`'s trust model says. This one paste also covers Q-222 (the same `install.sh` run, at a newer commit): run `cc-verify --help | head -5 && cc-isolated --list` after it, as Q-222 asks.
+The `merge-base` check runs no hook. It only confirms that your checkout holds at least what these notes describe; if it prints nothing and stops, your checkout is behind main. After the release, run Q-234 in a session (once Q-235 has merged).
 
-- **Changed gate paths (C to M):** `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`
-- **Commits on main's first-parent line after C** (rewritten 2026-10-29 for M 6f364ba6; a subject ending "(build-loop self-merge)" is flagged ⚑: no one reviewed it before it merged):
-  - 6f364ba6 Merge branch 'feat/convention-migrations-first' (build-loop approved merge)
-  - e51cdbfe Merge branch 'chore/dev-cycle-2026-10-29-2306'
-  - 84d266b3 Merge branch 'chore/dev-cycle-2026-10-29-2248'
-  - 690f099d Merge branch 'chore/dev-cycle-2026-10-29-2248'
-  - 31b77bf9 Merge branch 'chore/dev-cycle-2026-10-29-2223'
-  - 4b4f5e23 Merge branch 'chore/dev-cycle-2026-10-29-2223'
-  - a8e941a5 Merge branch 'feat/harness-feedback-file' (build-loop approved merge)
-  - 014e5219 Merge branch 'feat/session-answers-for-merge-entries' (build-loop approved merge)
-  - 6ee39f24 Merge branch 'feat/questions-watching-file' (build-loop approved merge)
-  - 02459ad4 Merge branch 'chore/dev-cycle-2026-10-29-2212'
-  - fd9531bf merge approval
-  - 1d49a0dc Merge branch 'chore/dev-cycle-2026-10-29-2126'
-  - cfa3a158 Merge branch 'chore/dev-cycle-2026-10-29-2108'
-  - 2d157f5e Merge branch 'chore/dev-cycle-2026-10-29-2045'
-  - a5266b26 Merge branch 'chore/dev-cycle-2026-10-29-2045'
-  - ff7516c2 Merge branch 'chore/dev-cycle-2026-10-29-2003'
-  - 0784fc8e Merge branch 'chore/dev-cycle-2026-10-29-2003'
-  - f91d7d09 Merge branch 'feat/failure-pattern-loop-wiring' (build-loop approved merge)
-  - eecf0268 owner notes
-  - 2e14f670 Merge branch 'chore/dev-cycle-2026-10-29-1937'
-  - 93aa71e6 Merge branch 'chore/dev-cycle-2026-10-29-1937'
-  - c3154ff3 Merge branch 'chore/dev-cycle-2026-10-29-0240'
-  - a36df962 Merge branch 'fix/questions-doc-bats-lint' (build-loop self-merge) ⚑
-  - 36951e86 Merge branch 'chore/dev-cycle-2026-10-29-0235'
-  - 2b8f492d Merge branch 'chore/dev-cycle-2026-10-29-0217'
-  - 2b239b87 Merge branch 'chore/dev-cycle-2026-10-29-0217'
-  - fd41989e Merge branch 'chore/dev-cycle-2026-10-29-0133'
-  - 4b2f000a Merge branch 'chore/dev-cycle-2026-10-29-0133'
-  - 236f21ee Merge branch 'feat/questions-owner-routes' (build-loop approved merge)
-  - fd62dd3f Merge branch 'fix/exit-scan-group1-remainder' (build-loop approved merge)
-  - 43914fcb formatting fix
-  - 1b4d214f Merge branch 'chore/dev-cycle-2026-10-28-2325'
-  - 6b490257 merge approvals
-  - 9140d21e Merge branch 'chore/dev-cycle-2026-10-28-2314'
-  - d32c7eb2 Merge branch 'docs/failure-pattern-use-review' (build-loop self-merge) ⚑
-  - dba2fcd6 Merge branch 'chore/dev-cycle-2026-10-28-2302'
-  - f682ce93 Merge branch 'chore/dev-cycle-2026-10-28-2302'
-  - 7561c88b Merge branch 'chore/dev-cycle-2026-10-28-2223'
-  - f7812120 Merge branch 'chore/dev-cycle-2026-10-28-2205'
-  - a233a965 Merge branch 'chore/dev-cycle-2026-10-28-2155'
-  - 9b8a0b34 Merge branch 'docs/interview-readme-drift' (build-loop self-merge) ⚑
-  - 9a14e27b Merge branch 'chore/dev-cycle-2026-10-28-2136'
-  - 4b04a1eb Merge branch 'chore/dev-cycle-2026-10-28-2136'
-  - 37b24c02 Merge branch 'feat/cc-verify-host-tool' (build-loop approved merge)
-  - 7a5b4f4a Merge branch 'fix/exit-scan-r6-hookspath' (build-loop approved merge)
-  - 68287ee2 Merge branch 'feat/widen-fix-drift-check' (build-loop approved merge)
-  - ce0f8463 Merge branch 'docs/log-row-73-trigger' (build-loop approved merge)
-  - f231aaf9 docs(questions): close Q-092, Q-096, Q-110, Q-160 (owner: done)
-  - 4e806568 docs: questions doc becomes owner-only (Q-221 [14'], decision 040)
-  - 374c6640 docs(dd): seed step 2 from docs/constraints.md
-  - d39ee313 docs(working): double diamond on the questions doc's purposes; file Q-221
-  - 3fcbc89e docs(questions): record answers-10-28-26 (Q-169, Q-214, Q-215, Q-217-Q-220)
-  - f77cbb28 Merge branch 'chore/dev-cycle-2026-10-26-0139'
-  - 1e781bde Merge branch 'chore/dev-cycle-2026-10-26-0045'
-  - a55491ad Merge branch 'chore/dev-cycle-2026-10-26-0027'
-  - 41ea45a4 Merge branch 'chore/dev-cycle-2026-10-26-0002'
-  - d40e4bae Merge branch 'chore/dev-cycle-2026-10-26-0002'
-  - 4388056e Merge branch 'docs/decision-015-amendment' (build-loop approved merge)
-  - 062acde2 fix(wiring): drop the Write(path) deny rules Claude Code never matches
-  - be464869 Merge branch 'feat/interview-profile-run2'
-- **Paths changed outside `docs/`, C to M:** `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/install.sh`, `devcontainer-config/link-claude-home.sh`, `global-instructions/CLAUDE.md`, `guides/README.md`, `guides/cc-isolated-usage.md`, `guides/convention-changes.md`, `guides/cross-project-setup.md`, `guides/harness-feedback.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `profiles/interview/CLAUDE.md`, `profiles/interview/README.md`, `profiles/interview/install.sh`, `profiles/interview/practice-task.md`, `profiles/interview/preflight.sh`, `profiles/interview/settings.json`, `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/harness-feedback.py`, `scripts/lib/migrations.sh`, `scripts/lite-review.py`, `scripts/questions.sh`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-verify.bats`, `test/install-host.bats`, `test/lib/build-loop-fixtures.bash`, `test/link-claude-home-wiring.bats`, `test/lite-review-fix-drift-prompt.bats`, `test/questions-doc.bats`, `test/scripts/build-loop-check.bats`, `test/scripts/build-loop-dispatch.bats`, `test/scripts/build-loop-merge.bats`, `test/scripts/build-loop-orchestrator.bats`, `test/scripts/convention-migrations.bats`, `test/scripts/dev-cycle.bats`, `test/scripts/harness-feedback.bats`, `workflows/divergent-design.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`, `workflows/review-fix-loop.md` (60 paths under `docs/` are not in the image).
-- **Interim:** the image's gate runs (built at C); Q-224, Q-228, Q-229, Q-230 and Q-233 are on main, but the dev cycle still runs the old `questions.sh`, `build-loop.sh` and dev-cycle skill, and sessions still load the old global instructions.
-- **Blocks:** Q-222's host tools (`cc-verify`, the exit-scan fixes) and roadmap Next 1 behind them.
+- **Interim:** the image's gate (built at C) runs. Everything above is on main but not live.
+- **Blocks:** Q-222 (same `install.sh` run) and roadmap Next 1.
+- **Full commit list:** `git log --first-parent ba6d2ec9..main` (the format before this trial printed it here).
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
@@ -356,6 +303,10 @@ cd /workspace && ~/.claude/scripts/questions.sh migrate && git add docs/working/
 
 ### Q-235 · merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+**If you say no:** decision 040 stays half built, and from 2026-10-30 `questions.md` refuses the `agent` entries the cycle still files.
+
+**What an attacker would want here:** the digest and `--cycle-diff` decide what the cycle reads and which edits to your entries it allows. A flaw here could hide an entry from you or let a loop rewrite one. The tests pin both refusals.
 
 Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`, roadmap In flight)? It is the last unit of decision 040, which makes `questions.md` hold only your items: the dev cycle's digest reads watched items from `docs/working/watching.md`, the cycle files agent work to the roadmap instead of `agent` entries, and the global instructions' running-questions section says the same.
 
@@ -396,6 +347,10 @@ path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts
 ### Q-236 · merge-2026-10-29-skill-frontmatter-flake-9df01661e611
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
 
+**If you say no:** the health check keeps raising a false "missing field" now and then.
+
+**What an attacker would want here:** little. It is a test-side fix in `health-check.sh`, and a field that really is missing still fails.
+
 Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`, roadmap In flight)? It fixes the health check's occasional false "missing 'name'/'description' field" on a skill that has the field.
 
 - **Why it's yours:** the brief is review policy (the health check is enforcement), and the branch adds a failure-pattern entry under `docs/thoughts/`.
@@ -426,6 +381,10 @@ path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/he
 
 ### Q-237 · merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13
 **Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+**If you say no:** `migrations.sh check .` keeps refusing falsely; callers that pass an absolute path are unaffected.
+
+**What an attacker would want here:** `migrations.sh` decides which convention migrations the digest reports as due. The fix only resolves the path once and changes no verdict (fingerprints unchanged).
 
 Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/briefs/2026-10-29-migrations-relative-root.md`, roadmap In flight)? It makes `bash scripts/lib/migrations.sh check ROOT` and `fingerprint ROOT` give the same result for a relative ROOT as for an absolute one. Today `check .` refuses "questions: its source was not found", which misled the dev cycle into a wrong note to unit 3's loop on 2026-10-29.
 
