@@ -36,7 +36,8 @@
 # malformed line) or `fingerprint [ROOT]` (one "CONVENTION FP" line each).
 # The bats merge check also holds the registry append-only against the
 # default branch's copy (conv_append_only).
-# ROOT defaults to the checkout holding this file.
+# ROOT, absolute or relative to the current directory, defaults to the
+# checkout holding this file.
 
 CONVENTIONS=(questions roadmap brief record)
 MIG_ID=(); MIG_CONV=(); MIG_FP=(); MIG_PATH=(); MIG_ERE=(); MIG_REMEDY=(); MIG_BAD=()
@@ -69,6 +70,11 @@ mig() {
 # nothing it could not find, when an anchor is gone (so `check` names it).
 conv_source() {
   local c="$1" r="$2" t f out
+  # Absolute, before the cd below and the awk operands (awk reads a relative
+  # "x=y" as an assignment), so "." or "../x" name the same files; the "./"
+  # keeps cd from reading "-" as $OLDPWD or searching CDPATH.
+  [[ "$r" == /* ]] || r="./$r"
+  r="$(CDPATH='' cd -- "$r" && pwd)" || return 1
   case "$c" in
     questions)
       out="$(awk '/^# Entry grammar/ { on = 1 } on && /^# Usage:/ { e = 1; exit } on { print } END { exit !e }' "$r/scripts/questions.sh")" || return 1
@@ -140,7 +146,7 @@ mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
-  root="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+  root="${2:-$(CDPATH='' cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
   case "${1:-}" in
     check) conv_check "$root"; exit $? ;;
     fingerprint)
