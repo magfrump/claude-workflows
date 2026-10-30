@@ -43,3 +43,5 @@ Policy: review
   `scripts/dev-cycle.sh` or `scripts/questions.sh`.
 - `feat/questions-owner-only-unit3` (merge entry Q-235), which appends a registry line to
   the same file; if it merges first, merge the default branch in (a merge commit).
+
+Dispatched: 1
