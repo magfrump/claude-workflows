@@ -27,6 +27,8 @@ Candidates:
 
 Hard lines (H1-H4) all pass for 1-3 (no gate logic moves, fail-closed behaviour kept, hermetic bats). Soft: S3 and S8 favour 2 (one code path, smallest diff, one revert); 2 is the root cause location, which the brief allows ("or an equivalent"). Option 2 dominates: chosen.
 
+Review round 1 (one independent reviewer, clean, three non-blocking notes) refined it: a relative ROOT named like `x=y` still failed, because awk reads that operand as an assignment, so the resolve moved from the questions case to the top of `conv_source`, covering every operand and every convention. The default ROOT's `cd` also got `CDPATH=''`, and the test gained `x=y` and a non-directory ROOT.
+
 ## Gotchas
 
 - Failure-pattern grep: FP-020, FP-062
@@ -39,7 +41,7 @@ Failure-pattern skip: same class as FP-062 (a relative path resolved after the w
 ## Plan
 
 1. bats case in `test/scripts/convention-migrations.bats`: in a source copy `$T`, `cd "$T"`; `check .` exits 0 with no output; `fingerprint .` equals `fingerprint "$T"` and has no "not found"; from `$T/..`, `check c` (a `../`-free relative form) and from a sibling dir `check ../c` exit 0; a missing relative ROOT still exits 1 naming it. Confirm it fails before the fix.
-2. Fix in `conv_source` (option 2).
+2. Fix in `conv_source` (option 2), resolving `$r` once at its top.
 3. Header: "ROOT (absolute or relative to the current directory) defaults to ...".
 4. Run `convention-migrations.bats`, then the health check; set the brief's Status to done.
 

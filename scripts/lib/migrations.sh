@@ -69,19 +69,19 @@ mig() {
 # The text a convention is fingerprinted from, in checkout $2; fails, printing
 # nothing it could not find, when an anchor is gone (so `check` names it).
 conv_source() {
-  local c="$1" r="$2" t f out q
+  local c="$1" r="$2" t f out
+  # Absolute once, before the cd below and the awk operands (awk reads a
+  # relative "x=y" as an assignment), so "." or "../x" name the same files.
+  r="$(CDPATH='' cd -- "$r" && pwd)" || return 1
   case "$c" in
     questions)
       out="$(awk '/^# Entry grammar/ { on = 1 } on && /^# Usage:/ { e = 1; exit } on { print } END { exit !e }' "$r/scripts/questions.sh")" || return 1
       [[ -n "$out" ]] || return 1
       printf '%s\n' "$out"
-      # Absolute before the cd below, so a relative checkout ("." or "../x")
-      # still names the same questions.sh inside the temp repo.
-      q="$(CDPATH='' cd -- "$r" && pwd)/scripts/questions.sh" || return 1
       t="$(mktemp -d)" || return 1
       # init in an empty repo: the templates every project's files start from.
       if ! (cd "$t" && git init -q . && env -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING \
-            bash "$q" init >/dev/null 2>&1); then rm -rf -- "$t"; return 1; fi
+            bash "$r/scripts/questions.sh" init >/dev/null 2>&1); then rm -rf -- "$t"; return 1; fi
       for f in "$t"/docs/working/*; do [[ -f "$f" ]] || continue; printf '== %s\n' "${f##*/}"; cat -- "$f"; done
       rm -rf -- "$t" ;;
     roadmap|record)
@@ -144,7 +144,7 @@ mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
-  root="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+  root="${2:-$(CDPATH='' cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
   case "${1:-}" in
     check) conv_check "$root"; exit $? ;;
     fingerprint)

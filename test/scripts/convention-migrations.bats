@@ -104,13 +104,13 @@ add_mig() {
     [ "$(grep '^roadmap ' <<< "$before")" = "$(grep '^roadmap ' <<< "$output")" ]
 }
 
-@test "a relative ROOT (. and ../c) gives the same check and fingerprint as an absolute one; a missing one still refuses, naming it" {
+@test "a relative ROOT (., c, ../c, x=y) gives the same check and fingerprint as an absolute one; a missing or non-directory one still refuses, naming it" {
     T="$BATS_TEST_TMPDIR/c"; copy_sources "$T"
     run --separate-stderr bash "$T/scripts/lib/migrations.sh" fingerprint "$T"
     [ "$status" -eq 0 ]; abs="$output"
     [[ "$abs" != *"not found"* ]] || { echo "$abs"; return 1; }
-    mkdir -p "$BATS_TEST_TMPDIR/sib"
-    for d in "$T:." "$BATS_TEST_TMPDIR:c" "$BATS_TEST_TMPDIR/sib:../c"; do
+    mkdir -p "$BATS_TEST_TMPDIR/sib"; cp -r "$T" "$BATS_TEST_TMPDIR/x=y"
+    for d in "$T:." "$BATS_TEST_TMPDIR:c" "$BATS_TEST_TMPDIR/sib:../c" "$BATS_TEST_TMPDIR:x=y"; do
         cd "${d%%:*}" || return 1
         run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "${d#*:}"
         [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "check $d: $output"; return 1; }
@@ -118,9 +118,13 @@ add_mig() {
         [ "$status" -eq 0 ] && [ "$output" = "$abs" ] || { echo "fingerprint $d: $output"; return 1; }
     done
     cd "$T" || return 1
-    run --separate-stderr bash "$T/scripts/lib/migrations.sh" check no-such-dir
-    [ "$status" -eq 1 ]
-    [[ "$output" == *"refuse questions: its source was not found in no-such-dir"* ]] || { echo "$output"; return 1; }
+    for bad in no-such-dir scripts/questions.sh; do
+        run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "$bad"
+        [ "$status" -eq 1 ]
+        for c in questions roadmap brief record; do
+            [[ "$output" == *"refuse $c: its source was not found in $bad "* ]] || { echo "$bad: $output"; return 1; }
+        done
+    done
 }
 
 @test "a convention whose source anchor is gone fails the check loudly, not as unchanged" {
