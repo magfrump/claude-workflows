@@ -110,4 +110,8 @@ cause reproduced and removed it is not added (S8, small units).
   reports `missing 'name'` and `missing 'description'`; the mixed `requires:` fixture is not
   flagged at all (the fail-open site); the missing-name fixture also reports a false
   `missing 'description'`.
-- After the fix: all three `ok`; the whole health check result is recorded in the commit.
+- After the fix (b663eb75): all three `ok`. The whole health check at b663eb75 passed
+  (exit 0, no ✗, "All checks passed.", the three cases ok inside gate 5's run), and
+  `scripts/hermeticity-lint --root .` passed.
+- Review (independent subagent): no red; two amber test nits (an unused helper parameter,
+  a missing absence assertion in the requires case) fixed before b663eb75.
