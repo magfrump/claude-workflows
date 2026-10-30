@@ -19,18 +19,6 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   `docs/working/trials/2026-10-30-friction-engagement.md` says (T1-T7), and the first
   iteration of each week writes `docs/working/weekly/`. First step: done (T1, T2, T4, T5 started
   2026-10-30). Next: record owner feedback there, then run `divergent-design` on A1/A3/A10.
-- **Q-168 — the exit scan's loose remote-name parsing** (`fix/q096b-exit-scan-remote-names`,
-  75d08a94). Motive: split off from Q-096's review. Built and stopped at the review cap.
-  Q-171 was answered [2]: hold it until the split units land, fixing red findings that
-  predate it first. Q-172 was answered [2]: close only routes that need no state planted
-  before launch, list the rest as known routes, push with cc-push. The four split groups
-  are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
-  builds first). R6 merged at 7a5b4f4a (Q-220 [1]), and its sort left group 1's remainder
-  (A14, R3's remote half, A16) in scope; that unit merged at fd62dd3f (Q-225 [1]).
-  Groups 2-4 were ruled out of the boundary or not routes (sort table in
-  `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md`). Next: Q-238 (close, resume
-  or hold the branch).
-
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
   Build in three units: (1) four owner routes (`you: judgment`, `you: terminal`, new
@@ -61,7 +49,12 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 ## In flight
 
-None.
+- **Bug: step 1's health check reads WT while the orchestrator edits it** (from Ideas; red
+  twice: 2026-10-30-0035, -0731). Review (gate code). Brief:
+  `docs/working/briefs/2026-10-30-health-check-clean-checkout.md`
+- **Bug: the brainstorm triggers count their own output and re-fire on an unchanged Now**
+  (from Ideas; 2026-10-30-0136, today's 17-seed count, philosophy-research F-003). Review
+  (gate code). Brief: `docs/working/briefs/2026-10-30-brainstorm-trigger-count.md`
 
 ## Next
 
@@ -92,6 +85,10 @@ None.
 
 Unranked. Each names the signal that motivates it.
 
+- **Dropped 2026-10-30: Q-168's remote-name parsing branch** (`fix/q096b-exit-scan-remote-names`,
+  75d08a94). Reason: Q-238 [1]. Every route it closes needs launch-time state, outside Q-172
+  [2]'s boundary; the guide lists them as known routes. The branch stays unmerged as reference.
+
 - **Cut merge and release friction (owner brainstorm 2026-10-29, area A).** Signal: 19 of 19
   merge entries approved; merged gate fixes wait on a host release; five terminal pastes open.
   Ten ideas in `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`. A1/A2/A3/A10
@@ -102,11 +99,6 @@ Unranked. Each names the signal that motivates it.
   doc; the security-channel form (B1) goes to `divergent-design`; B2's metric is the check that
   area A actually lowers owner load.
 
-- **The brainstorm triggers count their own output and re-fire on one signal.** Signal:
-  iteration 2026-10-30-0136's 10-seed trigger counted 7 lines the previous brainstorm wrote;
-  philosophy-research F-003 (`docs/working/feedback/philosophy-research.md`): the "Now holds
-  0-1 ready items" trigger fired twice on an unchanged Now. Change the count, and fire that
-  trigger only when Now changed.
 - **The cycle cannot create a project's harness-feedback file.** Signal: philosophy-research
   F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
   `harness-feedback.py init` and appends in-cycle outside claude-workflows.
@@ -114,11 +106,6 @@ Unranked. Each names the signal that motivates it.
   `questions.sh migrate` has a digest that shows "None open" for its watches until the image
   carries unit 3.
 
-- **Run step 1's health check on a clean checkout of main, not on WT.** Signal: iteration
-  2026-10-30-0035's health check went red only because the orchestrator filed Q-234 in WT
-  while the check read WT (a stale questions index, tests 198 and the nested check).
-  Fired again 2026-10-30-0731: Q-238 filed in WT mid-run, the same stale index (and
-  `health-check.bats` 198, 208, which run the check on this repo).
 - **Free a merged loop's worktree.** Signal: iteration 2026-10-30-0035 deleted 9 merged
   branches and git refused 15 more, each still checked out in a finished loop's locked
   worktree under `.claude/`; they cost disk and join the import walks' reader set. The gate
