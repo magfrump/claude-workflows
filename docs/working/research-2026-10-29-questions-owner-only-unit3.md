@@ -90,6 +90,24 @@ only writer).
 Rewrite three existing lines in place (intro, "Route, don't rank", "Maintenance is
 scripted"): four owner routes, `watching.md`, the roadmap, `migrate`. Net 0 lines (S2).
 
+### D5. Convention registry after merging main (dispatch 2)
+
+Main gained `scripts/lib/migrations.sh` (the convention registry). D1's one-line change to
+the step 6 roadmap template preamble (it now names `watching.md`) changes the `roadmap`
+fingerprint to 1178ca230944fb9f. Options: (a) a `none:` line, (b) a migration line with an
+ERE on the old preamble and a remedy, (c) drop the template change. (b) has no remedy
+command to name, and `--cycle-diff` freezes an existing roadmap's preamble, so an owner
+edit is the only route, a new chore for no reader: nothing parses the preamble (rg finds
+no reader). (c) leaves new repos' roadmaps not naming the watch file. (a) dominates:
+`mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: ...'`. The `questions`
+fingerprint already matches the registry's `questions-owner-routes-040` line.
+
+The orchestrator's "questions: its source was not found" refusal comes from running
+`check .` with a relative root: `conv_source` changes into a temp dir and then calls
+`"$r/scripts/questions.sh"`, which no longer resolves. With an absolute root (as the bats
+test and the health check pass it) the check is clean. That bug is in main's
+`migrations.sh`, outside this brief; it is reported, not fixed here.
+
 ## Residual risks
 
 - `questions.sh migrate` is still the owner's step; until it runs, legacy watches show in the

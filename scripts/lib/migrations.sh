@@ -137,6 +137,7 @@ mig baseline-brief brief 677fec67dd3bebda - - 'none: the baseline the registry s
 mig baseline-record record 7e93036efc09b7ba - - 'none: the baseline the registry starts from'
 # shellcheck disable=SC2088  # the remedy is text the owner pastes; its ~ expands there
 mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'
+mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: only a new roadmap'"'"'s preamble names watching.md; an existing one stays valid, and its preamble is frozen'
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
