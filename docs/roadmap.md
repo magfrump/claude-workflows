@@ -27,7 +27,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   are Q-173 (now `agent`); first step: sort them by that rule (R6, High, is inside it and
   builds first). R6 merged at 7a5b4f4a (Q-220 [1]), and its sort left group 1's remainder
   (A14, R3's remote half, A16) in scope; that unit merged at fd62dd3f (Q-225 [1]).
-  Next: groups 2-4 of Q-173, sorted by the same rule.
+  Groups 2-4 were ruled out of the boundary or not routes (sort table in
+  `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md`). Next: Q-238 (close, resume
+  or hold the branch).
 
 - **Questions doc becomes owner-only (Q-221 [14′], decision 040).** Motive: the owner reported
   that agent bookkeeping crowds the one page meant for them (17 open entries, 2 theirs).
@@ -115,6 +117,8 @@ Unranked. Each names the signal that motivates it.
 - **Run step 1's health check on a clean checkout of main, not on WT.** Signal: iteration
   2026-10-30-0035's health check went red only because the orchestrator filed Q-234 in WT
   while the check read WT (a stale questions index, tests 198 and the nested check).
+  Fired again 2026-10-30-0731: Q-238 filed in WT mid-run, the same stale index (and
+  `health-check.bats` 198, 208, which run the check on this repo).
 - **Free a merged loop's worktree.** Signal: iteration 2026-10-30-0035 deleted 9 merged
   branches and git refused 15 more, each still checked out in a finished loop's locked
   worktree under `.claude/`; they cost disk and join the import walks' reader set. The gate
@@ -214,6 +218,8 @@ Unranked. Each names the signal that motivates it.
   to compare the model with. Scope and timing are the user's; runs on its own branch.
   Fired again 2026-10-15: `skills/dev-cycle/SKILL.md` rewritten as the orchestrator
   (U4b1, U4b2, U4c), plus code-review, pr-prep, RPI and onboarding changes in the window.
+  Fired again 2026-10-30: `skills/dev-cycle/SKILL.md` changed by decision 040 unit 3
+  (01022de2, Q-235 [1]).
   Not fired 2026-10-17: five skill and workflow files changed, 53 lines added in all.
   Fired again 2026-10-20: the `constraints-builder` skill added (`SKILL.md` and two
   references, 539 lines; 512a1512 and 55e0bdac), a new skill no audit has read. The
