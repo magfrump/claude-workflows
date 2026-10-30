@@ -27,6 +27,7 @@ The index below is generated — edit entries, not the table.
 |---|---|---|---|
 | [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | you: judgment | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
 | [Q-236](#q-236--merge-2026-10-29-skill-frontmatter-flake-9df01661e611) | you: judgment | Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs... | 2026-10-29 |
+| [Q-237](#q-237--merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13) | you: judgment | Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/brief... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -422,3 +423,32 @@ path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/he
 
 - **Blocks:** nothing.
 - **Interim:** the branch waits; the health check may still flake on main.
+
+### Q-237 · merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/briefs/2026-10-29-migrations-relative-root.md`, roadmap In flight)? It makes `bash scripts/lib/migrations.sh check ROOT` and `fingerprint ROOT` give the same result for a relative ROOT as for an absolute one. Today `check .` refuses "questions: its source was not found", which misled the dev cycle into a wrong note to unit 3's loop on 2026-10-29.
+
+- **Why it's yours:** gate code (`scripts/lib/migrations.sh`, which the digest's section 7b runs).
+- **Cause and fix:** `conv_source` changed into a temp repo and then ran `"$r/scripts/questions.sh"`, so a relative ROOT stopped resolving. The fix makes ROOT absolute once, at the top of `conv_source` (`./` prefix, then `CDPATH='' cd -- "$r" && pwd`), which covers every convention and caller. A reviewer also found that a relative ROOT shaped like `x=y` failed through awk's operand parsing; the same change covers it. Fingerprints are unchanged, and a missing or non-directory ROOT still refuses for each convention, naming ROOT. The header now says ROOT may be relative.
+- **Tests:** a new case in `test/scripts/convention-migrations.bats` runs `check` and `fingerprint` with ROOT `.`, `c`, `../c`, `x=y` and `-` against the absolute run, and asserts the two refusals; it fails on the pre-fix code. On the tree the branch makes with main (8ede27b6) the dev cycle ran the file (13/13) and `check .` (clean). The loop's health check passed three times. The branch also merges cleanly with unit 3 (Q-235), which appends a registry line to the same file.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-migrations-relative-root.md c441c3eb9b13ef5e586130f5835f8f58cf2852e4 8ede27b671e614f94e4495c03ef5004e224afb68
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M docs/working/briefs/2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md A docs/working/research-2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M test/scripts/convention-migrations.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/lib/migrations.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges c441c3eb; it runs from the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; `check .` keeps refusing | None now | Anyone running `check .` by hand gets a false refusal |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; callers pass an absolute ROOT, as the digest and tests already do.
