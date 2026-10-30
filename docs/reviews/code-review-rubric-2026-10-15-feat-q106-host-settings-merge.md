@@ -155,6 +155,42 @@ Authorize one more iteration: tighten the group shape (keys `matcher`/`hooks` on
 
 **Decision: `escalate`** (/away default: the remaining work is one check inside `install_claude_home`, not a separable part, so `split` does not apply). No further fix work, re-review or loop test run until the user authorizes iteration 4.
 
+## Iteration 4 (2026-10-30, by hand; Q-174 [1])
+
+Main merged in (536678c0; the Write(path)-twin prune ported into `wiring-merge.jq`). Fixed S3-F1 (group-level shape), S3-F2 (`\A…\z`), S3-F3 (multiset by-name list) in 9f27309b; T100 widened, T104 and T105 new, each failing on the pre-fix code. 122/122 in install-host and link-claude-home-wiring.
+
+### Confirming pass (fact-check k=3, security, performance)
+
+Security: `security-review-2026-10-30-q106-pass4.md`.
+
+| # | Finding | Tier | Disposition |
+|---|---|---|---|
+| S4-1 | The merge program can `import` any readable JSON (the credentials file) through jq's `search` metadata and write it into settings.json; reproduced. | 🟡 Medium | Open at the cap |
+| S4-2 | The shape check covers the program's input, not its output: an edited `wiring-merge.jq` can set `defaultMode`, `disableAllHooks`, `apiKeyHelper` or `env` with no by-name line. | 🟡 Medium | Open at the cap |
+| S4-3 | A hook's `timeout` is outside the by-name key and unbounded. | 🟡 Medium | Open at the cap |
+| S4-4 | Event names and permission modes and values are unchecked. | 🟡 Medium (low confidence) | Open at the cap |
+| S4-5 | The Write-twin prune is not scoped to `$dir`. | 🟢 Info | Open at the cap |
+| FC4-1 | 9f27309b's Notes, "the merge no longer writes [a schema-invalid file]", is overstated: event names and modes are unchecked. (2 of 3 runs) | Incorrect | Corrected in the next commit's message |
+| FC4-2 | Guide: our groups "are replaced by the current wiring's" only for events the wiring carries; a dropped event keeps our old group. (2 of 3) | Incorrect | Open at the cap |
+| FC4-3 | Imprecise: "object of arrays" (`hooks:false` passes), the defaultMode failure scope, the refusal hint blaming wiring for settings-side causes, "added once", "-/+" in the diff. | 🟢 | Open at the cap |
+| P4-1 | `less` is O(n²), 3.4x slower than `-`: 22.8 s at 10k hooks (realistic is under 50). A sort-based drop-in takes 0.47 s. | 🟢 Low | Open at the cap |
+| P4-2 | Pre-existing: the permission REMOVE/ADD lines are O(P²). | 🟢 Low | Mention |
+
+## Iteration-5 gate (2026-10-30)
+
+## Iterations (4 completed)
+Pass 1: 10 🟡 fixed or routed. Pass 2: 2 Incorrect + 3 Medium fixed. Pass 3: 1 Incorrect fixed; S3-F1 Medium. Pass 4 (authorized): S3-F1–F3 closed; S4-1–S4-4 Medium, FC4-1/2 Incorrect.
+## Remaining Must Fix
+None.
+## Remaining Must Address
+S4-1 to S4-4; FC4-2, FC4-3.
+## Convergence diagnosis (one sentence)
+Passes 1-4 tightened an allowlist over `wiring.json` while the program that writes settings.json, also branch-supplied, went unchecked, so the residual moved from the input to the program; an output-side check in gated install.sh (S4-2) plus an `import`/`include` refusal (S4-1) bounds what any program can write, which is the structural fix rather than another input level.
+## Recommended action (ship-with-issues / split-PR / pause for redesign)
+Authorize iteration 5: the output-side check, the `import`/`include` refusal, refuse `timeout`, event-name and deny-only permission checks, scope the twin prune, the sort-based `less`, and the doc corrections; then a confirming pass (security + k=3 fact-check). About 40-60 code lines; the unit is at 341 changed code lines against main, of ~800.
+
+**Decision: `escalate`** (the work is inside one block of `install_claude_home`, not a separable part, so `split` does not apply). No further fix work, re-review or loop test run until the user authorizes iteration 5.
+
 ## 🧩 Composition check
 
 | Cluster | File / lines | Fragments | Disposition |
