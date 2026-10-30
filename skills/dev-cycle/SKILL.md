@@ -393,13 +393,21 @@ last good one.
 
 - Quiesce (D14): no subagent this iteration started is still running; build loops and other
   sessions' agents keep running, and only a process this session started is ever stopped, by
-  its PID or process group, never by a name or pattern. Then run the repo's health check
-  from WT, if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped
+  its PID or process group, never by a name or pattern. Then run the repo's health check,
+  if it has one (e.g. `scripts/health-check.sh` in claude-workflows; skipped
   when the previous iteration's `1.` line reads
   `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
   carry no code; this iteration's line then reads `unchanged since P`), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
-  subagents. It takes a lock in the git common directory, so it waits while a loop's own
+  subagents. It runs from a health checkout HC, not WT: `hg -C MAIN_WT worktree add
+  --detach HC MAIN`, HC at `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT, made for
+  this one run and removed as step 0.3 removes WT once the check exits (its log is in
+  `$TMPDIR`, not HC; a stop while it runs waits for it first). Nothing else names HC, so
+  the check reads exactly MAIN, the commit its `passed at MAIN` names, and the entries this
+  iteration files in WT while it runs cannot turn it red: run from WT, a mid-run entry left
+  the questions index stale twice (iterations 2026-10-30-0035 and 0731). An add that fails
+  is recorded as `skipped: HC not made` with git's error, so the next iteration runs the
+  check again. It takes a lock in the git common directory, so it waits while a loop's own
   health check runs (it says so once); in claude-workflows run it with
   `HEALTH_CHECK_LOCK_WAIT=3600`, so a wait past an hour ends it with exit 75 having checked
   nothing: record that and skip the step's check (row 750).
