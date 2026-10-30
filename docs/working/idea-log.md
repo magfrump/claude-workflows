@@ -117,3 +117,14 @@ Ran because 10 ideas were seeded since the 2026-10-25 brainstorm. Sources: this 
 - harness feedback, dev-cycle digest (questions.sh open) (fails): digest-misses-watching-file: section 3 printed "None open" while `watching.md` held three OPEN `deferred` entries (Q-058, Q-079, Q-091). The image's `cmd_open` runs `parse_entries "$LIVE"` only, and `dev-cycle.sh` filters that... (signal: harness feedback philosophy-research F-001, docs/working/feedback/philosophy-research.md)
 - harness feedback, dev-cycle path rules vs. the global harness-feedback instruction (friction): cycle-cannot-create-feedback-file: the dev-cycle skill lets an in-cycle fix edit only a file that `--check-fix` prints `ok` for, and `--check-fix` refuses every new file. So the cycle could not create the file. The finding went to t... (signal: harness feedback philosophy-research F-002, docs/working/feedback/philosophy-research.md)
 - harness feedback, dev-cycle step 5 (brainstorm) (friction): brainstorm-refires-same-trigger: "Roadmap Now holds 0–1 items ready for a build brief" fired again in the second iteration with Now unchanged, so the brainstorm ran twice on one day for one signal. The second added one idea, and t... (signal: harness feedback philosophy-research F-003, docs/working/feedback/philosophy-research.md)
+
+## Brainstorm 2026-10-29 (iteration 2026-10-30-0136)
+
+Ran because the digest counted 14 seeds since the last brainstorm heading; 7 of them are that brainstorm's own lines, so the count inflates itself. Sources: this log (the four harness seeds and the three philosophy-research seeds), roadmap Ideas, and `docs/working/feature-ideas.md` (unchanged since 2026-03-23).
+
+- Count only seeds above a brainstorm's own lines, or stop writing a brainstorm's ideas under its heading in the seed shape, so the 10-seed trigger does not count its own output (signal: this iteration's 14 includes 7 brainstorm lines; philosophy-research F-003, the brainstorm re-firing on one signal)
+- Fire the "Now holds 0-1 ready items" brainstorm trigger only when Now changed since the last brainstorm (signal: philosophy-research F-003)
+- Let the cycle create a project's `docs/harness-feedback.md` (through `harness-feedback.py init`) and append entries in-cycle, in projects other than claude-workflows (signal: philosophy-research F-002, `--check-fix` refuses every new file)
+- Release soon after Q-235 merges: repos that already ran `questions.sh migrate` have a digest blind to their watches until the image carries unit 3 (signal: philosophy-research F-001)
+- The D6 block as a fixed, root-owned wrapper the skill names by absolute path (signal: this session's D6 seed)
+- Do nothing more now: three merge entries (Q-235, Q-236, Q-237) wait on the owner, and no loop is running (signal: queue state)

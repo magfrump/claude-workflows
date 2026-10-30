@@ -70,7 +70,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 
 
 - **Bug: `migrations.sh check .` refuses with a relative root** (Now). Review (gate code).
-  Brief: `docs/working/briefs/2026-10-29-migrations-relative-root.md`
+  Ready at c441c3eb, merge entry Q-237 (2026-10-30-0136). Brief: `docs/working/briefs/2026-10-29-migrations-relative-root.md`
 
 - **Questions doc owner-only, unit 3: the dev cycle and the global instructions read the new
   homes** (Now, decision 040). Gate code: review policy. Sent back 2026-10-29 (iteration
@@ -109,6 +109,18 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
 ## Ideas
 
 Unranked. Each names the signal that motivates it.
+
+- **The brainstorm triggers count their own output and re-fire on one signal.** Signal:
+  iteration 2026-10-30-0136's 10-seed trigger counted 7 lines the previous brainstorm wrote;
+  philosophy-research F-003 (`docs/working/feedback/philosophy-research.md`): the "Now holds
+  0-1 ready items" trigger fired twice on an unchanged Now. Change the count, and fire that
+  trigger only when Now changed.
+- **The cycle cannot create a project's harness-feedback file.** Signal: philosophy-research
+  F-002: `--check-fix` refuses every new file, so the owner made it by hand. Allow
+  `harness-feedback.py init` and appends in-cycle outside claude-workflows.
+- **Release soon after Q-235.** Signal: philosophy-research F-001: a repo that ran
+  `questions.sh migrate` has a digest that shows "None open" for its watches until the image
+  carries unit 3.
 
 - **Run step 1's health check on a clean checkout of main, not on WT.** Signal: iteration
   2026-10-30-0035's health check went red only because the orchestrator filed Q-234 in WT
