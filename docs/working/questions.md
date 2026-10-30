@@ -26,6 +26,7 @@ The index below is generated — edit entries, not the table.
 | ID | Needs | Question | Opened |
 |---|---|---|---|
 | [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | you: judgment | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
+| [Q-236](#q-236--merge-2026-10-29-skill-frontmatter-flake-9df01661e611) | you: judgment | Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs... | 2026-10-29 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -390,3 +391,34 @@ path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts
 
 - **Blocks:** Q-234 (the migration runs after this merges).
 - **Interim:** the branch waits; nothing on main changes.
+
+### Q-236 · merge-2026-10-29-skill-frontmatter-flake-9df01661e611
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** OPEN
+
+Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`, roadmap In flight)? It fixes the health check's occasional false "missing 'name'/'description' field" on a skill that has the field.
+
+- **Why it's yours:** the brief is review policy (the health check is enforcement), and the branch adds a failure-pattern entry under `docs/thoughts/`.
+- **Cause found:** `check_skill_frontmatter` tested each field with `echo "$yaml" | grep -qE '^name:'` under `set -o pipefail`. `grep -q` exits at its first match, `echo` then dies of SIGPIPE (141), pipefail fails the pipeline and `!` turns it into "missing". The `^requires:` test had the same shape and failed open (the mixed-forms check silently skipped). The loop reproduced it at 2-3 per 3000 runs pinned to one CPU (every one PIPESTATUS `141 0`), and 50 of 50 with a frontmatter over the 64 KiB pipe buffer.
+- **Fix (b663eb75):** the three sites use here-strings (`grep -qE '^name:' <<< "$yaml"`), an idiom already in the same file, with a comment saying why; a really missing field still fails. Three new cases in `test/scripts/health-check.bats` (a ~270 KB fixture: all fields pass, missing name fails, a mixed `requires:` block is flagged) fail at 0388b194 and pass with the fix. New failure pattern FP-175. No other health-check section shares the cause.
+- **Checks:** the loop's whole health check passed on the branch, and `scripts/hermeticity-lint --root .` passes. The dev cycle reproduced the mechanism on its own and ran `health-check.bats` on the tree the branch makes with main (6e7f6786).
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-skill-frontmatter-flake.md 9df01661e61170bdaf4a6ecb3f1eb82390107934 6e7f678642d4a04172743682841946c7d9d20349
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/thoughts/failure-patterns.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/working/briefs/2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md A docs/working/research-2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M scripts/health-check.sh
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/health-check.bats
+```
+
+- **Paths self-merge's floor would refuse:** `docs/thoughts/failure-patterns.md` (the cycle's records). None is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 9df01661 | None beyond this answer | One `git revert` of the merge; the false reds come back |
+| **[2] drop** | The brief closes; the flake stays | None now | A false red now and then, each stopping the slow suites and costing a triage pass |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; the health check may still flake on main.
