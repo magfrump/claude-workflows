@@ -36,7 +36,8 @@
 # malformed line) or `fingerprint [ROOT]` (one "CONVENTION FP" line each).
 # The bats merge check also holds the registry append-only against the
 # default branch's copy (conv_append_only).
-# ROOT defaults to the checkout holding this file.
+# ROOT, absolute or relative to the current directory, defaults to the
+# checkout holding this file.
 
 CONVENTIONS=(questions roadmap brief record)
 MIG_ID=(); MIG_CONV=(); MIG_FP=(); MIG_PATH=(); MIG_ERE=(); MIG_REMEDY=(); MIG_BAD=()
@@ -68,16 +69,19 @@ mig() {
 # The text a convention is fingerprinted from, in checkout $2; fails, printing
 # nothing it could not find, when an anchor is gone (so `check` names it).
 conv_source() {
-  local c="$1" r="$2" t f out
+  local c="$1" r="$2" t f out q
   case "$c" in
     questions)
       out="$(awk '/^# Entry grammar/ { on = 1 } on && /^# Usage:/ { e = 1; exit } on { print } END { exit !e }' "$r/scripts/questions.sh")" || return 1
       [[ -n "$out" ]] || return 1
       printf '%s\n' "$out"
+      # Absolute before the cd below, so a relative checkout ("." or "../x")
+      # still names the same questions.sh inside the temp repo.
+      q="$(CDPATH='' cd -- "$r" && pwd)/scripts/questions.sh" || return 1
       t="$(mktemp -d)" || return 1
       # init in an empty repo: the templates every project's files start from.
       if ! (cd "$t" && git init -q . && env -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING \
-            bash "$r/scripts/questions.sh" init >/dev/null 2>&1); then rm -rf -- "$t"; return 1; fi
+            bash "$q" init >/dev/null 2>&1); then rm -rf -- "$t"; return 1; fi
       for f in "$t"/docs/working/*; do [[ -f "$f" ]] || continue; printf '== %s\n' "${f##*/}"; cat -- "$f"; done
       rm -rf -- "$t" ;;
     roadmap|record)

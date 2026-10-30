@@ -104,6 +104,25 @@ add_mig() {
     [ "$(grep '^roadmap ' <<< "$before")" = "$(grep '^roadmap ' <<< "$output")" ]
 }
 
+@test "a relative ROOT (. and ../c) gives the same check and fingerprint as an absolute one; a missing one still refuses, naming it" {
+    T="$BATS_TEST_TMPDIR/c"; copy_sources "$T"
+    run --separate-stderr bash "$T/scripts/lib/migrations.sh" fingerprint "$T"
+    [ "$status" -eq 0 ]; abs="$output"
+    [[ "$abs" != *"not found"* ]] || { echo "$abs"; return 1; }
+    mkdir -p "$BATS_TEST_TMPDIR/sib"
+    for d in "$T:." "$BATS_TEST_TMPDIR:c" "$BATS_TEST_TMPDIR/sib:../c"; do
+        cd "${d%%:*}" || return 1
+        run --separate-stderr bash "$T/scripts/lib/migrations.sh" check "${d#*:}"
+        [ "$status" -eq 0 ] && [ -z "$output" ] || { echo "check $d: $output"; return 1; }
+        run --separate-stderr bash "$T/scripts/lib/migrations.sh" fingerprint "${d#*:}"
+        [ "$status" -eq 0 ] && [ "$output" = "$abs" ] || { echo "fingerprint $d: $output"; return 1; }
+    done
+    cd "$T" || return 1
+    run --separate-stderr bash "$T/scripts/lib/migrations.sh" check no-such-dir
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"refuse questions: its source was not found in no-such-dir"* ]] || { echo "$output"; return 1; }
+}
+
 @test "a convention whose source anchor is gone fails the check loudly, not as unchanged" {
     T="$BATS_TEST_TMPDIR/c"; copy_sources "$T"
     perl -0pi -e 's/^### 9\. Record and land$/### 9. Record/m' "$T/skills/dev-cycle/SKILL.md"
