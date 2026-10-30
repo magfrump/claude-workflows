@@ -45,3 +45,5 @@ Policy: review
   the same file; if it merges first, merge the default branch in (a merge commit).
 
 Dispatched: 1
+
+Applied: Q-237=merged
