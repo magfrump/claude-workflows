@@ -71,7 +71,8 @@ the scratch reproduction); no LLM judgment (H4). Path A dominates; decided.
 ## Plan
 
 1. `skills/dev-cycle/SKILL.md` step 1: run the check from HC (`hg -C MAIN_WT worktree add
-   --detach HC MAIN`, `.claude/wt-dev-cycle-health-DATE-HHMM`), removed once it exits; say
+   --detach HC W`, W = WT's HEAD commit, MAIN unless step 0.3 merged an earlier
+   iteration's commit; `.claude/wt-dev-cycle-health-DATE-HHMM`), removed once it exits; say
    why (the two records); an add failure is `skipped: HC not made`, so the next iteration
    runs it again. No script mode needed.
 2. `test/scripts/build-loop-orchestrator.bats`: pin that wording, and that "health check
@@ -95,7 +96,8 @@ No red. Ambers fixed in the next commit:
   would skip it. W is a commit, so WT's working-tree edits still cannot reach HC, and the
   `1.` line names W, the tree the check read (the brief's rule). Option A's row above reads
   "of MAIN" for the common case W = MAIN.
-- `--state` from MAIN_WT before the add, as for GT; a name taken goes to the next minute.
+- `--state` from MAIN_WT before the add, as for GT (dropped again in round 2, below); a
+  name taken goes to the next minute.
 - A stop while the check runs stops it by PID or process group, then removes HC; a failed
   removal is recorded and named in the final message, and an HC this session's earlier
   iteration left is removed (not any `wt-dev-cycle-health-*`: another session's may be live). (The
@@ -106,3 +108,22 @@ No red. Ambers fixed in the next commit:
 - The log is "in the orchestrator's directory", per the Rules.
 - The test pins short fragments rather than one sentence.
 - "`health-check.bats` 198 and 208" above are bats test ordinals, not line numbers.
+
+## Review round 2 (fresh code-review subagent, a868c911)
+
+No red; naming W was checked sound against the skip rule and `log_class`. Fixed:
+
+- The step 1 `--state` added in round 1 is dropped: it was missing from the Rules' list of
+  calls run outside WT and its refusal handling differed from step 0.1's stop. The text
+  now says why none is needed (step 0.1's `--state` passed minutes before the add; GT runs
+  its own because step 7 is much later).
+- Leftover HCs: this session's are removed before the add; any other
+  `wt-dev-cycle-health-*` (another session's, maybe live) is only named in the final
+  message.
+- Rewrapped an overlong line; the plan above now says W.
+
+Left as a residual (amber): step 9's record template still shows
+`passed at MAIN / ...`; step 1 says the `1.` line names W in MAIN's place when they
+differ. Changing the template changes the `record` convention's fingerprint and needs a
+`scripts/lib/migrations.sh` registry line, which is beyond step 1 (the brief's scope) for a
+case (step 0.3 merging a stopped iteration) that is rare.
