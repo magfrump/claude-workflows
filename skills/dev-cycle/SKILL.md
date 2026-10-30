@@ -399,15 +399,20 @@ last good one.
   `passed at P` or `unchanged since P` and step 0.2 listed only `chore` lines (cycle lands
   carry no code; this iteration's line then reads `unchanged since P`), to a file,
   in the background, and wait for it to finish before steps 2–4b start their own tests and
-  subagents. It runs from a health checkout HC, not WT: `hg -C MAIN_WT worktree add
-  --detach HC MAIN`, HC at `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT, made for
-  this one run and removed as step 0.3 removes WT once the check exits (its log is in
-  `$TMPDIR`, not HC; a stop while it runs waits for it first). Nothing else names HC, so
-  the check reads exactly MAIN, the commit its `passed at MAIN` names, and the entries this
-  iteration files in WT while it runs cannot turn it red: run from WT, a mid-run entry left
-  the questions index stale twice (iterations 2026-10-30-0035 and 0731). An add that fails
-  is recorded as `skipped: HC not made` with git's error, so the next iteration runs the
-  check again. It takes a lock in the git common directory, so it waits while a loop's own
+  subagents. It runs from a health checkout HC, not WT: `--state` (from MAIN_WT, whose
+  config the add copies, as for step 7's GT), then `hg -C MAIN_WT worktree add --detach HC
+  W`, W being WT's HEAD commit (`hg -C WT rev-parse HEAD`; MAIN, or step 0.3's merge of an
+  earlier iteration's commit, which the `1.` line then names in MAIN's place), HC at
+  `.claude/wt-dev-cycle-health-DATE-HHMM` in MAIN_WT (a name taken: the next minute), made
+  for this one run and removed as step 0.3 removes WT once the check exits (its log is in
+  the orchestrator's directory, not HC). A stop while it runs stops the check by its PID or
+  process group, then removes HC; a removal that fails goes in the record and the final
+  message, and an HC this session's earlier iteration left is removed the same way. Nothing else names HC, so the check reads W's tree, the
+  commit its `passed at` names, and the entries this iteration files in WT's working tree
+  while it runs cannot turn it red: run from WT, a mid-run entry left the questions index
+  stale twice (iterations 2026-10-30-0035 and 0731). A `--state` refusal or an add that
+  fails is recorded as `skipped: HC not made` with its lines, so the next iteration runs
+  the check again. It takes a lock in the git common directory, so it waits while a loop's own
   health check runs (it says so once); in claude-workflows run it with
   `HEALTH_CHECK_LOCK_WAIT=3600`, so a wait past an hour ends it with exit 75 having checked
   nothing: record that and skip the step's check (row 750).

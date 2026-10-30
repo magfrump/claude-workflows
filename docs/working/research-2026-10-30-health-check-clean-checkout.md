@@ -83,3 +83,26 @@ mechanical guard available is a wording pin (G1, added). The behavioural claim (
 checkout is unaffected by WT edits) was shown in the scratch counter-check above.
 
 Failure-pattern skip: the fix is one orchestrator step's prose (where it runs a check), not a code bug with a reusable cause-and-fix shape a future grep would find; the brief and roadmap Idea already record the two cases.
+
+## Review round 1 (code-review subagent, fe692928)
+
+No red. Ambers fixed in the next commit:
+
+- HC is made from W, WT's HEAD commit (MAIN, or step 0.3's merge of an earlier iteration's
+  commit), not always MAIN. With MAIN, a merged earlier commit carrying code would have
+  landed unchecked: `--main-log` classes a cycle land `chore` by subject and record alone
+  (`scripts/build-loop.sh` `log_class`, header ~164-178), so the next iteration's skip rule
+  would skip it. W is a commit, so WT's working-tree edits still cannot reach HC, and the
+  `1.` line names W, the tree the check read (the brief's rule). Option A's row above reads
+  "of MAIN" for the common case W = MAIN.
+- `--state` from MAIN_WT before the add, as for GT; a name taken goes to the next minute.
+- A stop while the check runs stops it by PID or process group, then removes HC; a failed
+  removal is recorded and named in the final message, and an HC this session's earlier
+  iteration left is removed (not any `wt-dev-cycle-health-*`: another session's may be live). (The
+  Rules' general stop line, SKILL.md ~58, is outside step 1 and left alone: step 1's own
+  text covers HC.)
+- "Reads exactly MAIN" narrowed to "reads W's tree" (the check also reads
+  `~/.claude/settings.json` and the git common dir).
+- The log is "in the orchestrator's directory", per the Rules.
+- The test pins short fragments rather than one sentence.
+- "`health-check.bats` 198 and 208" above are bats test ordinals, not line numbers.
