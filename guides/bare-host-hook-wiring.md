@@ -49,18 +49,21 @@ matcher, command) and `permissions.deny`.
 `settings.json:` diff of your file (as `jq` prints it) against the merged result, and
 the y applies both. Groups whose commands all run something under `~/.claude/hooks/`
 are replaced by the current wiring's (FP-161); each wiring rule is added once, its
-legacy single-slash form under `~/.claude` dropped (Q-049); everything else is kept.
+legacy single-slash form under `~/.claude` dropped (Q-049), and the `Write(path)` twin of
+each `Edit(path)` rule dropped (Claude Code never matches it); everything else is kept.
 Above the diff, the review lists by name each hook the merge unwires or adds
 (`UNWIRE hook:`, `ADD hook:`), each rule it removes (`REMOVE deny rule:`) and each
 non-deny rule it adds (`ADD allow rule:`), or says `(none — …)`. A hook there is
 named by event, matcher and command (`UNWIRE hook: "PreToolUse [Bash] python3 …"`),
-so a hook moved to another matcher shows as an UNWIRE and an ADD. Read that list
+so a hook moved to another matcher shows as an UNWIRE and an ADD, and a second copy of
+a wired hook shows as an ADD. Read that list
 first: the merge moves our groups to the end, so in the diff a group that stays wired
 also shows as `-`/`+`. The old file
 goes to `~/.claude/.claude-workflows-backup/<stamp>/settings.json`. Nothing is written
 when the file is a symlink, unreadable or not one JSON object, `jq` is missing, `wiring.json`
 is not one object whose every hook is a `command` hook running
-`bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (or has an empty group), the payload lacks
+`bash|python3 {{CLAUDE_DIR}}/hooks/<path>` (or has a group that is empty, carries a key
+other than `matcher` and `hooks`, or has a non-string `matcher`), the payload lacks
 the merge program, or the
 merge fails: the review says why, and a `REMINDER` follows if `wiring.json` changed.
 An edit to the file between the review and the y refuses the install.

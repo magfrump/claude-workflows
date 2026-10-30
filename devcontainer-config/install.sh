@@ -47,7 +47,8 @@ Offers two install targets in turn. Each one shows a review diff and asks y/N:
      the backup. Never written when it is a symlink, unreadable or not one JSON object,
      jq is missing, the payload lacks the merge program, wiring.json is
      not one object whose every hook is a `command` hook running `bash|
-     python3 {{CLAUDE_DIR}}/hooks/<path>` (no empty group), or the merge
+     python3 {{CLAUDE_DIR}}/hooks/<path>` in a group of only a string
+     matcher and a non-empty hooks list, or the merge
      fails; the review says why. A merge that runs is
      listed by name: each hook it unwires or adds, each rule it removes or
      newly allows. A backup holding only settings.json is not counted
@@ -735,15 +736,26 @@ file_hash() {
 sjq() { env -i PATH="$PATH" HOME=/nonexistent jq "$@" 2>/dev/null; }
 ONE_OBJ='length == 1 and (.[0] | type == "object")'
 # wiring.json is exactly one object (jq -e judges only the last of several, the
-# merge reads the first: review pass 2, N1); every hook group has a hook; and
-# every hook is a `command` hook (no other keys but timeout: N2) running `bash|
-# python3 {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell syntax. Anything
-# else would run code from outside the reviewed payload yet count as "ours"
-# (review A2), or land as a group no later merge removes. Used with jq -s.
-WIRING_SHAPE='length == 1 and (.[0] | type == "object") and ([.[0].hooks[]?[]? | (.hooks // []) | length > 0
-   and all(.type == "command" and ((keys - ["type", "command", "timeout"]) == [])
+# merge reads the first: review pass 2, N1); its hooks is an object of arrays;
+# every hook group is an object with no keys but a string matcher and a
+# non-empty hooks array (pass 3, S3-F1: an object-valued hooks or matcher, or
+# an extra key, would be written into settings.json, whose schema it fails);
+# and every hook is a `command` hook (no other keys but a numeric timeout: N2)
+# running `bash|python3 {{CLAUDE_DIR}}/hooks/<path>` with no `..` or shell
+# syntax. Anything else would run code from outside the reviewed payload yet
+# count as "ours" (review A2), or land as a group no later merge removes. The
+# regex anchors are \A and \z: jq 1.6's $ also matches before a final newline
+# (S3-F2). Used with jq -s.
+WIRING_SHAPE='length == 1 and (.[0] | type == "object")
+ and ((.[0].hooks // {}) | type == "object" and all(.[]; type == "array"))
+ and ([.[0].hooks[]?[]? | type == "object" and ((keys - ["matcher", "hooks"]) == [])
+   and ((has("matcher") | not) or (.matcher | type == "string"))
+   and (.hooks | type == "array" and length > 0)
+   and all(.hooks[]; type == "object" and .type == "command"
+           and ((keys - ["type", "command", "timeout"]) == [])
+           and ((has("timeout") | not) or (.timeout | type == "number"))
            and (.command | type == "string" and (contains("..") | not)
-                and test("^(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+$")))] | all)'
+                and test("\\A(bash|python3) \\{\\{CLAUDE_DIR\\}\\}/hooks/[A-Za-z0-9_./-]+\\z")))] | all)'
 
 # rm_new_copies <dest>: remove every .cw-new.* copy this install makes.
 rm_new_copies() {
@@ -1031,7 +1043,7 @@ install_claude_home() {
   elif [ ! -f "${new}hooks/wiring.json" ] || [ ! -f "${new}hooks/lib/wiring-merge.jq" ]; then
     s_why="the payload has no hooks/wiring.json or hooks/lib/wiring-merge.jq"
   elif ! sjq -se "$WIRING_SHAPE" "${new}hooks/wiring.json" >/dev/null; then
-    s_why="hooks/wiring.json is not one object whose every hook is a command hook running 'bash|python3 {{CLAUDE_DIR}}/hooks/<path>' (no '..', no empty group)"
+    s_why="hooks/wiring.json is not one object whose every hook is a command hook running 'bash|python3 {{CLAUDE_DIR}}/hooks/<path>' in a group of only a string matcher and a non-empty hooks list (no '..')"
   elif [ -e "$settings" ] && ! { s_mode="$(stat -c %a "$settings")" && (umask 077; cp "$settings" "$s_view.raw"); }; then
     s_why="it could not be read"
   elif [ -e "$s_view.raw" ] && ! sjq -se "$ONE_OBJ" "$s_view.raw" >/dev/null; then
@@ -1055,11 +1067,15 @@ install_claude_home() {
     sjq -rn --slurpfile o "$s_view" --slurpfile n "$snew" '
       def cmds: [.hooks // {} | to_entries[] | .key as $e | .value[]? | (.matcher // "*") as $m
                  | .hooks[]? | "\($e) [\($m)] \(.command)"];
+      # Multiset difference: one copy of each element of $b removed per match, so
+      # a hook wired twice that gains a third copy lists one ADD (S3-F3); array
+      # subtraction with - removes every equal element.
+      def less($b): reduce $b[] as $x (.; index([$x]) as $i | if $i == null then . else del(.[$i]) end);
       def rules(m): [.permissions[m]?[]?];
-      def lbl: if test("^[A-Za-z]+$") then . else tojson end;   # a mode name, quoted unless plain
+      def lbl: if test("\\A[A-Za-z]+\\z") then . else tojson end;   # a mode name, quoted unless plain (S3-F2)
       $o[0] as $a | $n[0] as $b
-      | [((($a | cmds) - ($b | cmds))[] | "  UNWIRE hook: " + tojson),
-         ((($b | cmds) - ($a | cmds))[] | "  ADD hook: " + tojson),
+      | [((($a | cmds) | less($b | cmds))[] | "  UNWIRE hook: " + tojson),
+         ((($b | cmds) | less($a | cmds))[] | "  ADD hook: " + tojson),
          (($a.permissions // {} | keys[]) as $m | (($a | rules($m)) - ($b | rules($m)))[] | "  REMOVE \($m | lbl) rule: " + tojson),
          (($b.permissions // {} | keys[] | select(. != "deny")) as $m
           | (($b | rules($m)) - ($a | rules($m)))[] | "  ADD \($m | lbl) rule: " + tojson)]
