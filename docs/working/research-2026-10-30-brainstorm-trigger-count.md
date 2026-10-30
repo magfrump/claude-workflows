@@ -91,7 +91,10 @@ These are triggers, not gates: the fall-through runs the full step (H2's pre-ste
   final newline or rewritten later (blame names a later commit), and shallow clones (blame
   names the boundary). Fixed: count by content, check the blamed commit raises the heading's
   count over its parent's, and refuse shallow repositories. Residual: a seed whose exact
-  text already sat in the log at that commit is not counted again.
+  text already sat in the log at that commit is not counted again. Review round 2: clean (probes
+  for a root-commit heading, a verbatim duplicate heading, an empty blob, set -e). Accepted
+  residuals: an existing seed reworded after the brainstorm counts as new, and a later commit
+  that rewrites the heading line (a CRLF normalisation) drops to the labelled heading rule.
 - Readiness is judged, not textual: an unchanged Now can become ready when a blocker clears
   elsewhere; the skill text says to name that when it fires anyway.
 

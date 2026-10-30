@@ -532,7 +532,7 @@ EOF
     done
 }
 
-@test "step 5 counts only seeds appended after the commit that added the last brainstorm heading" {
+@test "step 5 counts only seeds absent from the log at the commit that added the last brainstorm heading" {
     # Bug 1 (brief 2026-10-30-brainstorm-trigger-count): a brainstorm writes its
     # heading, then its own ideas in the seed shape; the old count took them as seeds.
     mkdir -p docs/working
