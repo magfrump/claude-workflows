@@ -72,10 +72,11 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
    user's 2026-10-20 feedback adds re-evaluating review k and the lite review under Opus
    5.5; deferred, ask before running.
 3. **Automate the host settings.json merge (Q-106 [2]).** Built
-   (`feat/q106-host-settings-merge`, c6d7544f; it also closes Q-108). Paused at the iteration-4
-   gate with one Medium open. Q-174 answered [1]: run iteration 4 (tighten the group
-   shape, anchor the regexes, count duplicate hooks), then the k=3 confirming pass. Q-175
-   answered [1]: the moved merge program stays in the `hooks/**` class, no gate change.
+   (`feat/q106-host-settings-merge`, 75498418; it also closes Q-108). Iteration 4 ran by
+   hand on 2026-10-30 (Q-174 [1]): main merged in, S3-F1 to F3 closed. Its confirming
+   pass found four Mediums, among them a reproduced credential read through the
+   branch-supplied merge program (S4-1), so the loop is paused at the iteration-5 gate:
+   Q-241. Q-175 answered [1]: the moved merge program stays in the `hooks/**` class.
 4. **Revisit the light pass between full cycles (C5, Q-154).** Motive: you answered C5 with a
    full cycle every iteration for now and a light pass of steps 7, 8 and 10 between full
    cycles once the costs are visible (plan D12, F53). First step: after the orchestrator's
