@@ -225,6 +225,9 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
 | [Q-232](#q-232--merge-2026-10-29-harness-feedback-file-2b858d2586c3) | Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/... | 2026-10-29 |
 | [Q-233](#q-233--merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8) | Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/b... | 2026-10-29 |
+| [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
+| [Q-236](#q-236--merge-2026-10-29-skill-frontmatter-flake-9df01661e611) | Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs... | 2026-10-29 |
+| [Q-237](#q-237--merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13) | Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/brief... | 2026-10-29 |
 <!-- index:end -->
 
 ## Answered
@@ -4908,4 +4911,123 @@ After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has 
 
 **Answered:** superseded. The brief merged at f91d7d09 (Q-228 [1]), which meets this watch's own closure line. Closed by the dev cycle on 2026-10-30 (trial T4, stale sweep).
 
+
+### Q-235 · merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** decision 040 stays half built, and from 2026-10-30 `questions.md` refuses the `agent` entries the cycle still files.
+
+**What an attacker would want here:** the digest and `--cycle-diff` decide what the cycle reads and which edits to your entries it allows. A flaw here could hide an entry from you or let a loop rewrite one. The tests pin both refusals.
+
+Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`, roadmap In flight)? It is the last unit of decision 040, which makes `questions.md` hold only your items: the dev cycle's digest reads watched items from `docs/working/watching.md`, the cycle files agent work to the roadmap instead of `agent` entries, and the global instructions' running-questions section says the same.
+
+- **Why it's yours:** gate code (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`) and the global instructions (`global-instructions/CLAUDE.md`, loaded in every session; +4/−2 lines).
+- **What it does:** `dev-cycle.sh`'s digest section 3 reads watches from `watching.md` (and lists one with a malformed route); the cycle owns `watching.md` and closes a met watch there without you; steps 2, 3 and 10 file agent work to the roadmap; `--cycle-diff` allows those moves and still refuses changes to your entries. Its first dispatch added 338 lines and removed 54.
+- **Dispatch 2 (this cycle's send-back):** 93302ac6 merges main (0388b194) with no conflicts; a811bd09 adds the registry line `mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: …'` for its roadmap-template preamble change (no existing file needs migrating: existing roadmaps' preambles are frozen). On the tree it makes with main (0a381aa7), `convention-migrations.bats` passes 12/12, `questions-doc.bats` 41/41 and `migrations.sh check` is clean; the loop's health check passed on its branch.
+- **After merging:** run Q-234 (the one-time `questions.sh migrate`); the dev cycle acts on the new rules after the next image release.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-owner-only-unit3.md 6c8d949f4493bfe25690d7736bb73cf52227e94a 0a381aa78f0f5533334873fd6347d427cd945b6c
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M docs/working/briefs/2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md A docs/working/research-2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/build-loop.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/questions-doc.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (an instruction file); `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh` (gate code); `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 6c8d949f; you then run Q-234, and it takes effect at the next release | One paste (Q-234) and the release | One `git revert` of the merge (entries `migrate` moved would need moving back) |
+| **[2] drop** | The brief closes; decision 040 stays half built (units 1 and 2 only) | None now | `questions.md` refuses new agent entries from 2026-10-30 while the cycle still files them |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** Q-234 (the migration runs after this merges).
+- **Interim:** the branch waits; nothing on main changes.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+
+### Q-236 · merge-2026-10-29-skill-frontmatter-flake-9df01661e611
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** the health check keeps raising a false "missing field" now and then.
+
+**What an attacker would want here:** little. It is a test-side fix in `health-check.sh`, and a field that really is missing still fails.
+
+Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`, roadmap In flight)? It fixes the health check's occasional false "missing 'name'/'description' field" on a skill that has the field.
+
+- **Why it's yours:** the brief is review policy (the health check is enforcement), and the branch adds a failure-pattern entry under `docs/thoughts/`.
+- **Cause found:** `check_skill_frontmatter` tested each field with `echo "$yaml" | grep -qE '^name:'` under `set -o pipefail`. `grep -q` exits at its first match, `echo` then dies of SIGPIPE (141), pipefail fails the pipeline and `!` turns it into "missing". The `^requires:` test had the same shape and failed open (the mixed-forms check silently skipped). The loop reproduced it at 2-3 per 3000 runs pinned to one CPU (every one PIPESTATUS `141 0`), and 50 of 50 with a frontmatter over the 64 KiB pipe buffer.
+- **Fix (b663eb75):** the three sites use here-strings (`grep -qE '^name:' <<< "$yaml"`), an idiom already in the same file, with a comment saying why; a really missing field still fails. Three new cases in `test/scripts/health-check.bats` (a ~270 KB fixture: all fields pass, missing name fails, a mixed `requires:` block is flagged) fail at 0388b194 and pass with the fix. New failure pattern FP-175. No other health-check section shares the cause.
+- **Checks:** the loop's whole health check passed on the branch, and `scripts/hermeticity-lint --root .` passes. The dev cycle reproduced the mechanism on its own and ran `health-check.bats` on the tree the branch makes with main (6e7f6786).
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-skill-frontmatter-flake.md 9df01661e61170bdaf4a6ecb3f1eb82390107934 6e7f678642d4a04172743682841946c7d9d20349
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/thoughts/failure-patterns.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/working/briefs/2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md A docs/working/research-2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M scripts/health-check.sh
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/health-check.bats
+```
+
+- **Paths self-merge's floor would refuse:** `docs/thoughts/failure-patterns.md` (the cycle's records). None is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 9df01661 | None beyond this answer | One `git revert` of the merge; the false reds come back |
+| **[2] drop** | The brief closes; the flake stays | None now | A false red now and then, each stopping the slow suites and costing a triage pass |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; the health check may still flake on main.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+
+### Q-237 · merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** `migrations.sh check .` keeps refusing falsely; callers that pass an absolute path are unaffected.
+
+**What an attacker would want here:** `migrations.sh` decides which convention migrations the digest reports as due. The fix only resolves the path once and changes no verdict (fingerprints unchanged).
+
+Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/briefs/2026-10-29-migrations-relative-root.md`, roadmap In flight)? It makes `bash scripts/lib/migrations.sh check ROOT` and `fingerprint ROOT` give the same result for a relative ROOT as for an absolute one. Today `check .` refuses "questions: its source was not found", which misled the dev cycle into a wrong note to unit 3's loop on 2026-10-29.
+
+- **Why it's yours:** gate code (`scripts/lib/migrations.sh`, which the digest's section 7b runs).
+- **Cause and fix:** `conv_source` changed into a temp repo and then ran `"$r/scripts/questions.sh"`, so a relative ROOT stopped resolving. The fix makes ROOT absolute once, at the top of `conv_source` (`./` prefix, then `CDPATH='' cd -- "$r" && pwd`), which covers every convention and caller. A reviewer also found that a relative ROOT shaped like `x=y` failed through awk's operand parsing; the same change covers it. Fingerprints are unchanged, and a missing or non-directory ROOT still refuses for each convention, naming ROOT. The header now says ROOT may be relative.
+- **Tests:** a new case in `test/scripts/convention-migrations.bats` runs `check` and `fingerprint` with ROOT `.`, `c`, `../c`, `x=y` and `-` against the absolute run, and asserts the two refusals; it fails on the pre-fix code. On the tree the branch makes with main (8ede27b6) the dev cycle ran the file (13/13) and `check .` (clean). The loop's health check passed three times. The branch also merges cleanly with unit 3 (Q-235), which appends a registry line to the same file.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-migrations-relative-root.md c441c3eb9b13ef5e586130f5835f8f58cf2852e4 8ede27b671e614f94e4495c03ef5004e224afb68
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M docs/working/briefs/2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md A docs/working/research-2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M test/scripts/convention-migrations.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/lib/migrations.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges c441c3eb; it runs from the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; `check .` keeps refusing | None now | Anyone running `check .` by hand gets a false refusal |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; callers pass an absolute ROOT, as the digest and tests already do.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
 

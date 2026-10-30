@@ -37,7 +37,7 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
   (entry grammar, `## Closed` section) plus a lossless `questions.sh migrate`; (3) dev-cycle
   steps 2/3 read `watching.md` and file agent work to this roadmap, and the global
   instructions' questions section changes to match (≤ ~30 lines, repo S2). Gate code: each
-  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 briefed 2026-10-29 (In flight); the owner's one-time `questions.sh migrate` run (Q-234) goes after it. Follow-ups: entry clarity (gloss every internal reference) and a
+  unit is a `merge-gate` entry. Unit 1 merged at 236f21ee (Q-224 [1]); unit 2 merged at 6ee39f24 (Q-229 [1]). Unit 3 merged at 01022de2 (Q-235 [1]). Next: the release (Q-227), then the owner's one-time `questions.sh migrate` run (Q-234). Follow-ups: entry clarity (gloss every internal reference) and a
   `questions.sh record <answers-file>`.
 
 - **Owner feedback 2026-10-29** (`docs/human-author/feedback-10-29-26.txt`), four points:
@@ -57,35 +57,9 @@ Built by hand, each on its own branch, or briefed this cycle (cycle 2026-10-26-0
      plus how this repo ingests a copied file; v2 (GitHub issues: search, comment or star,
      else open one) is an idea until v1 is used. v1 merged at a8e941a5 (Q-232 [1]).
 
-- **Bug: the skill-frontmatter health check flakes** (`scripts/health-check.sh`,
-  `check_skill_frontmatter`). Motive: two one-off "missing field" reports on 2026-10-29
-  (`test-strategy`, `user-testing-workflow`) for files that had the field; a false red stops
-  the slow suites and costs a triage pass. The vanishing-file flake had a different cause
-  (merged 431397bf). Briefed 2026-10-29 (In flight, review).
-
-- **Bug: `migrations.sh check .` refuses with a relative root.** Motive: the script's header
-  documents `check [ROOT]`, but `conv_source` changes into a temp directory and then runs
-  `"$r/scripts/questions.sh"`, so a relative ROOT no longer resolves: `check .` prints
-  "refuse questions: its source was not found" while `check "$PWD"` passes (reproduced
-  2026-10-30-0100 on main 60f670b0; the bats test and the health check pass an absolute
-  path). Gate code (`scripts/lib/`): a review brief. First step: make ROOT absolute on
-  entry (`r="$(cd "$r" && pwd)"`) with a bats case for `check .`. Briefed 2026-10-29
-  (In flight, review).
-
 ## In flight
 
-
-- **Bug: `migrations.sh check .` refuses with a relative root** (Now). Review (gate code).
-  Ready at c441c3eb, merge entry Q-237 (2026-10-30-0136). Brief: `docs/working/briefs/2026-10-29-migrations-relative-root.md`
-
-- **Questions doc owner-only, unit 3: the dev cycle and the global instructions read the new
-  homes** (Now, decision 040). Gate code: review policy. Sent back 2026-10-29 (iteration
-  2026-10-30-0035) for a missing registry line; dispatch 2 ready at 6c8d949f, merge entry
-  Q-235 (2026-10-30-0100). Brief: `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`
-
-- **Bug: the skill-frontmatter health check flakes** (Now). Review (the health check is
-  enforcement). Ready at 9df01661 (cause: `echo | grep -q` under pipefail, SIGPIPE), merge
-  entry Q-236 (2026-10-30-0116). Brief: `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`
+None.
 
 ## Next
 
@@ -317,6 +291,13 @@ Unranked. Each names the signal that motivates it.
 
 Items finished since the last cycle, with the merge.
 
+- Questions doc owner-only, unit 3: the digest reads `watching.md`, agent work goes to the
+  roadmap, global instructions updated (decision 040; Q-235 [1]): merged 01022de2. Brief:
+  `docs/working/briefs/closed/2026-10-29-questions-owner-only-unit3.md`
+- Bug: `migrations.sh check .` refused with a relative root (Q-237 [1]): merged ea1ab6fe.
+  Brief: `docs/working/briefs/closed/2026-10-29-migrations-relative-root.md`
+- Bug: the skill-frontmatter health check flaked (`echo | grep -q` under pipefail; Q-236 [1]):
+  merged b0e907d6. Brief: `docs/working/briefs/closed/2026-10-29-skill-frontmatter-flake.md`
 - Bug: the vanishing-file ancestor-listing test failed under load (find listed a churning
   `/tmp`; the fixture now keeps off shared `/tmp` ancestors): merged 431397bf (self-merge).
   Brief: `docs/working/briefs/closed/2026-10-29-flaky-vanish-test.md`
