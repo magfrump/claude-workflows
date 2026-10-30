@@ -508,7 +508,7 @@ for kind in skills records; do
   [[ "$n" -le 20 ]] || echo "    - … $((n - 20)) more"
 done
 echo
-echo "Step 5 (brainstorm triggers; the thresholds are the skill's). Seeds count from the commit that added the last brainstorm heading, so a brainstorm's own seed-shaped ideas are not counted; Now is compared with its text at that commit:"
+echo "Step 5 (brainstorm triggers; the thresholds are the skill's; seeds and Now are new since the commit that added the last brainstorm heading):"
 if inrepo docs/roadmap.md; then
   for sec in Now "In flight" Next; do
     n="$(awk -v h="## $sec" '{ sub(/\r$/, ""); t = tolower($0); g = tolower(h) } t == g || index(t, g " ") == 1 || index(t, g "(") == 1 { on = 1; next } on && /^## / { exit } on && /^([-*] |[0-9]+\. )/ { c++ } END { print c + 0 }' docs/roadmap.md)"
@@ -523,28 +523,34 @@ LOG=docs/working/idea-log.md
 if inrepo "$LOG"; then
   # The skill's step 5 appends "## Brainstorm YYYY-MM-DD"; seeding appends
   # "- <idea> (signal: …)" lines, and only lines of that shape count. A brainstorm
-  # may write its own ideas in that shape below its heading, so seeds count from
-  # the commit that added the last heading (git blame), not from the heading: the
-  # log is only appended to, so lines past that commit's line count are newer.
-  # Now is compared with its text at that commit (the iteration lands the roadmap
-  # with it). No commit found: the heading, and "cannot tell" (read as changed).
+  # may write its own ideas in that shape below its heading, so a seed counts only
+  # when its text is not in the log as committed by the commit that added the last
+  # heading (blame, checked: that commit raises the heading's count over its
+  # parent's), whatever the line order after merges. Now is compared with its text
+  # at that commit (the iteration lands the roadmap with it). No such commit (an
+  # uncommitted heading, a shallow clone): count from the heading, and Now is
+  # "cannot tell", read as changed.
   last_bs="$(grep -oE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d' ' -f3 || true)"
   bs_n="$(grep -nE '^## Brainstorm [0-9]{4}-[0-9]{2}-[0-9]{2}' "$LOG" | tail -1 | cut -d: -f1 || true)"
-  bs_from="${bs_n:-0}" bs_c="" bs_how="no brainstorm heading: the whole log"
-  # The blob is read with cat-file (no textconv); awk reads to the end (no SIGPIPE).
+  bs_c="" bs_how="no brainstorm heading: the whole log" bs_old="" bs_from=0
+  # Lines equal to $1 (CR stripped) in blob $2; a missing blob has none.
+  bs_count() { { git cat-file blob "$2" 2>/dev/null || true; } | awk -v h="$1" '{ sub(/\r$/, "") } $0 == h { c++ } END { print c + 0 }'; }
   if [[ -n "$bs_n" ]]; then
-    bs_c="$(git blame --porcelain -L "$bs_n,$bs_n" -- "$LOG" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
-    if [[ "$bs_c" =~ ^[0-9a-f]{40,64}$ && "$bs_c" =~ [1-9a-f] ]] && git cat-file -e "$bs_c:$LOG" 2>/dev/null; then
-      bs_base="$(git cat-file blob "$bs_c:$LOG" | awk 'END { print NR }')"
-      (( bs_base > bs_from )) && bs_from="$bs_base"
-      bs_c="$(git rev-parse --short "$bs_c")"
-      bs_how="appended after $bs_c, the commit that added the last brainstorm heading"
+    bs_from="$bs_n" bs_how="counted from the last brainstorm heading: no commit found for it"
+    bs_h="$(awk -v n="$bs_n" 'NR == n { sub(/\r$/, ""); print }' "$LOG")"
+    [[ "$(git rev-parse --is-shallow-repository 2>/dev/null)" == false ]] &&
+      bs_c="$(git blame --root --porcelain -L "$bs_n,$bs_n" -- "$LOG" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+    if [[ "$bs_c" =~ ^[0-9a-f]{40,64}$ && "$bs_c" =~ [1-9a-f] ]] && git cat-file -e "$bs_c:$LOG" 2>/dev/null &&
+       (( $(bs_count "$bs_h" "$bs_c:$LOG") > $(bs_count "$bs_h" "$bs_c^:$LOG") )); then
+      bs_old="$bs_c:$LOG" bs_from=0 bs_c="$(git rev-parse --short "$bs_c")"
+      bs_how="absent from the log at $bs_c, the commit that added the last brainstorm heading"
     else
-      bs_c="" bs_how="counted from the last brainstorm heading: no commit found for it"
+      bs_c=""
     fi
   fi
   # No {n} intervals in the awk regex: mawk, Debian's default awk, lacks them.
-  seeded="$(awk -v from="$bs_from" 'NR > from && /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { c++ } END { print c + 0 }' "$LOG")"
+  # Each committed copy of a line cancels one working-tree copy (a multiset difference).
+  seeded="$(awk -v from="$bs_from" '{ sub(/\r$/, "") } FILENAME == ARGV[1] { old[$0]++; next } FNR > from && /^- [^ ]/ && index(substr($0, 4), "(signal: ") && /\)[[:space:]]*$/ { if (old[$0] > 0) old[$0]--; else c++ } END { print c + 0 }' <(if [[ -n "$bs_old" ]]; then git cat-file blob "$bs_old"; fi) "$LOG")"
   if [[ -n "$last_bs" ]] && date -d "$last_bs" >/dev/null 2>&1; then
     echo "- Last brainstorm: $last_bs ($(( ($(date -d "$TODAY" +%s) - $(date -d "$last_bs" +%s)) / 86400 )) day(s) ago)"
   else

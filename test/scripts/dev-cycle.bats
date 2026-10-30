@@ -546,7 +546,7 @@ EOF
     DEV_CYCLE_TODAY=2026-01-08 run --separate-stderr bash "$DC" --since=2000-01-01
     [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
-    [[ "$section" == *"- Ideas seeded since: 2 (appended after $c, the commit that added the last brainstorm heading)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Ideas seeded since: 2 (absent from the log at $c, the commit that added the last brainstorm heading)"* ]] || { echo "$section"; return 1; }
 }
 
 @test "step 5 says whether roadmap Now changed since the last brainstorm's commit" {
@@ -564,7 +564,59 @@ EOF
     [[ "$output" == *"- Roadmap Now since the last brainstorm: unchanged since $c"* ]] || { echo "$output" | sed -n '/## 7\./,/## 7b/p'; return 1; }
     printf '# Roadmap\n\n## Now\n- a, reworded\n' > docs/roadmap.md
     run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
     [[ "$output" == *"- Roadmap Now since the last brainstorm: changed since $c"* ]] || { echo "$output" | sed -n '/## 7\./,/## 7b/p'; return 1; }
+}
+
+@test "step 5 counts by content: a merge that puts main's seeds above the brainstorm, and a roadmap absent then" {
+    mkdir -p docs/working
+    printf '# Idea log\n- old (signal: x)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m base
+    git checkout -q -b iter
+    printf '\n## Brainstorm 2026-01-01\n- own one (signal: a)\n- own two (signal: b)\n- own three (signal: c)\n' >> docs/working/idea-log.md
+    git add -A && git commit -q -m "iteration: brainstorm (no roadmap yet)"
+    c=$(git log -1 --format=%h)
+    git checkout -q main
+    printf -- '- main one (signal: d)\n- main two (signal: e)\n' >> docs/working/idea-log.md
+    git add -A && git commit -q -m "seeds on main"
+    git merge -q iter -m "merge iter" 2>/dev/null || true
+    # Resolve seeds first: the brainstorm block moves down two lines.
+    printf '# Idea log\n- old (signal: x)\n- main one (signal: d)\n- main two (signal: e)\n\n## Brainstorm 2026-01-01\n- own one (signal: a)\n- own two (signal: b)\n- own three (signal: c)\n' > docs/working/idea-log.md
+    printf '# Roadmap\n\n## Now\n- a\n' > docs/roadmap.md
+    git add -A && git commit -q -m "merge iter"
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    # main's two seeds are new to the brainstorm; its own three are not.
+    [[ "$section" == *"- Ideas seeded since: 2 (absent from the log at $c, the commit that added the last brainstorm heading)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Roadmap Now since the last brainstorm: changed since $c (no docs/roadmap.md there)"* ]] || { echo "$section"; return 1; }
+}
+
+@test "step 5 does not trust blame when the heading's commit is not the one that added it, or the clone is shallow" {
+    mkdir -p docs/working
+    printf '# Roadmap\n\n## Now\n- a\n' > docs/roadmap.md
+    # The heading committed without a final newline: the next append rewrites that
+    # line, so blame names the seed's commit; the count check refuses it.
+    printf '# Idea log\n- own (signal: a)\n## Brainstorm 2026-01-01' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm
+    printf '\n- new (signal: b)\n' >> docs/working/idea-log.md
+    git add -A && git commit -q -m seed
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    [[ "$section" == *"- Ideas seeded since: 1 (counted from the last brainstorm heading: no commit found for it)"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Roadmap Now since the last brainstorm: cannot tell (no commit found for the heading); read it as changed"* ]] || { echo "$section"; return 1; }
+    # A shallow clone: blame would name the boundary commit, so nothing is trusted.
+    printf -- '- own (signal: a)\n\n## Brainstorm 2026-01-02\n- own two (signal: c)\n' > docs/working/idea-log.md
+    git add -A && git commit -q -m brainstorm2
+    printf -- '- later (signal: d)\n' >> docs/working/idea-log.md
+    git add -A && git commit -q -m seed2
+    git clone -q --depth 1 "file://$R" "$BATS_TEST_TMPDIR/shallow"
+    cd "$BATS_TEST_TMPDIR/shallow" || return 1
+    run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
+    section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
+    [[ "$section" == *"- Ideas seeded since: 2 (counted from the last brainstorm heading: no commit found for it)"* ]] || { echo "$section"; return 1; }
 }
 
 @test "step 5 falls back to the heading, and to 'cannot tell', when the heading's commit is unknown" {
@@ -583,6 +635,7 @@ EOF
     # No brainstorm at all: nothing to compare against.
     git checkout -q -- docs/working/idea-log.md
     run --separate-stderr bash "$DC" --since=2000-01-01
+    [ "$status" -eq 0 ]
     section=$(echo "$output" | sed -n '/## 7\./,/## 7b/p')
     [[ "$section" == *"- Ideas seeded since: 1 (no brainstorm heading: the whole log)"* ]] || { echo "$section"; return 1; }
     [[ "$section" == *"- Roadmap Now since the last brainstorm: no brainstorm recorded"* ]] || { echo "$section"; return 1; }

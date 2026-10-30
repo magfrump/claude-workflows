@@ -542,11 +542,12 @@ it runs only when one of these holds (the digest's section 7 prints the counts a
 readiness and direction are judged here):
 
 - roadmap Now holds 0–1 items ready for a build brief, and the digest's "Roadmap Now since
-  the last brainstorm" line does not say `unchanged` (an unchanged Now is no new signal);
+  the last brainstorm" line does not say `unchanged` (an unchanged Now is no new signal,
+  unless something outside it changed what is ready: say what);
 - a fired revisit or deep-audit trigger reopens direction;
-- 10+ ideas seeded since the last brainstorm (the digest counts seed lines appended after
-  the commit that added the last `## Brainstorm` heading, so the brainstorm's own lines
-  below it never count);
+- 10+ ideas seeded since the last brainstorm (the digest counts seed lines absent from the
+  log as the commit that added the last `## Brainstorm` heading left it, so the
+  brainstorm's own lines never count);
 - a week or more since the last brainstorm, by date, or none recorded yet (cycles vary from
   fortnightly to many a day);
 - the user asks.

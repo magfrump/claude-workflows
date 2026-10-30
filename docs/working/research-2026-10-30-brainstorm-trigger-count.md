@@ -40,7 +40,7 @@ philosophy-research). Status quo keeps costing a brainstorm, the expensive step,
 | B. End-of-block marker line | small awk change | prose-dependent; a convention change other repos must learn (migration); a missed marker is today's bug |
 | C. Seeds carry a date | precise | changes every seeding step's shape in every repo; prose-dependent |
 | D. Brainstorm ideas in a non-seed shape | no code | prose-only, the same instruction class that already failed |
-| E. Count seed lines appended after the commit that added the last heading (git blame, then that commit's line count) | mechanical (S4), no shape change, no migration (S3), fixes every repo's existing log at once, small | needs git history (the digest already walks it); seeds written later in the same iteration commit go uncounted |
+| E. Count seed lines absent from the log as committed by the commit that added the last heading (git blame, checked; a multiset difference by content) | mechanical (S4), no shape change, no migration (S3), fixes every repo's existing log at once, small | needs git history (the digest already walks it); seeds written later in the same iteration commit go uncounted |
 
 E dominates (Path A): the only option that does not depend on the model following prose,
 and the only one that corrects the log as it stands. Its residual (an under-count of seeds
@@ -58,7 +58,9 @@ N1 dominates (Path A).
 
 ### Failing safe
 
-No commit for the heading (uncommitted, untracked, renamed log): the count falls back to
+No commit for the heading (uncommitted, untracked, renamed log, a shallow clone, or a blamed
+commit that did not raise the heading's count over its parent, e.g. a heading first committed
+without a final newline or a later CRLF normalisation): the count falls back to
 the heading (the old rule) and says so; Now prints "cannot tell … read it as changed".
 These are triggers, not gates: the fall-through runs the full step (H2's pre-step rule).
 
@@ -66,8 +68,9 @@ These are triggers, not gates: the fall-through runs the full step (H2's pre-ste
 
 1. Bats reproductions in `test/scripts/dev-cycle.bats` (seed count, Now unchanged/changed,
    the two fallbacks). Done; red before the fix.
-2. `scripts/dev-cycle.sh`: blame the last heading, count from that commit's line count,
-   print the basis; compare Now (blank lines and CR ignored) and print one line.
+2. `scripts/dev-cycle.sh`: blame the last heading, check that commit added it, count seed
+   lines absent from the log at that commit, print the basis; compare Now (blank lines and
+   CR ignored) and print one line.
 3. `skills/dev-cycle/SKILL.md` step 5: the Now trigger needs Now not `unchanged`; the seed
    count's basis; land the heading with the roadmap.
 4. No migration: the idea log's shape does not change, so `guides/convention-changes.md`
@@ -82,12 +85,21 @@ These are triggers, not gates: the fall-through runs the full step (H2's pre-ste
 - `git blame` of an uncommitted line prints an all-zero id: treated as no commit.
 - Command substitutions under `set -e`: `git cat-file -e` is checked before reading a blob,
   and awk reads to the end rather than `exit` (no SIGPIPE under pipefail, FP-175).
-- The log is append-only (step 9 checks); an insertion above the heading would shift the
-  base line count by the inserted lines.
+- Review round 1 (independent reviewer) found the first version's line-offset base wrong
+  under a merge that resolves main's seeds above the brainstorm block (own lines counted
+  again), deletions above the heading (new seeds skipped), a heading committed without a
+  final newline or rewritten later (blame names a later commit), and shallow clones (blame
+  names the boundary). Fixed: count by content, check the blamed commit raises the heading's
+  count over its parent's, and refuse shallow repositories. Residual: a seed whose exact
+  text already sat in the log at that commit is not counted again.
+- Readiness is judged, not textual: an unchanged Now can become ready when a blocker clears
+  elsewhere; the skill text says to name that when it fires anyway.
 
 ## Test strategy
 
 G1 seed count after a committed brainstorm with its own lines (committed and uncommitted
 later seeds). G2 Now unchanged across a CRLF re-save and another section's change; G3 Now
-reworded. G4 uncommitted heading falls back; G5 no heading at all. The existing step 5 case
+reworded. G4 uncommitted heading falls back; G5 no heading at all; G6 merge with main's seeds above the
+block, and a roadmap absent at that commit; G7 heading without a final newline, and a shallow
+clone. The existing step 5 case
 (uncommitted log) still passes through the fallback.
