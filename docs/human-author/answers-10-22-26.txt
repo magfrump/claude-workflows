@@ -1,0 +1,54 @@
+Q-172: [2]
+
+Q-174: [1]
+
+Q-175: [1]
+
+Q-215: [2]
+
+Q-194: [2]
+
+Q-196:
+```
+$ mkdir -p ~/scratch-q196 && cd ~/scratch-q196 && git init -q
+cc-isolated --register ~/scratch-q196 --profile ../egress/python; echo "exit=$?"
+cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
+ERROR: unknown egress profile ../egress/python (names must match exactly). Available:
+    android
+    base
+    claude-config
+    dotnet
+    lean
+    llm
+    python
+    rust
+    scholar
+    vscode
+exit=1
+Registered /home/magfrump/scratch-q196
+  project-id: 05981bf43f54
+  egress:     base  ->  base,python
+
+Re-blessing (the profile file is boundary config, so it joins the manifest)…
+Changed since the last bless (manifest.sha256):
+> 27ecf4a6835cb2fdf5207078d77fbe88e63c2e81c12a24c77b26c75f769ba242  projects/05981bf43f54.profile
+
+Blessed /home/magfrump/.config/claude-devcontainer/manifest.sha256 (148 entries):
+[removed]
+
+Blessed host tools in /home/magfrump/.config/claude-devcontainer/host-tools.sha256 (3 entries; not boundary config, no probe needed):
+[removed]
+
+Blessed config: a0456d2d35a1cb0a
+Verified live:  NO — a bless is a review, not a test. Nothing has run this config.
+  Next: cc-isolated --probe-only <repo>
+        (recreates the container from it and probes as node)
+  Commits that change the boundary carry a 'Live-verified:' trailer naming this hash.
+
+Next launch rebuilds the image for the new profile.
+exit=0
+```
+
+Q-213: [1]
+
+Q-216: [1]

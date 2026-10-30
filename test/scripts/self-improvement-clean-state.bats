@@ -4,7 +4,7 @@
 #
 # Runs the REAL main loop against a throwaway repo, with `claude` replaced by a
 # stub that dispatches on prompt text (writes the ideas/tasks files, makes an
-# implementer commit, prints the code-review sentinel, fails the conflict
+# implementer change and message file for the loop to commit, prints the code-review sentinel, fails the conflict
 # resolver on demand). Each test pins one defect from the 2026-09-18 clean-
 # state audit where the fix lives inside the main-execution guard and so
 # cannot be reached by sourcing:
@@ -16,6 +16,7 @@
 #   A5  round-history.json from earlier runs broke the prior-round verdicts
 #   A9  conflict_unresolved tasks were logged as completed / hypothesised
 #   A11 convergence exit skipped the round report
+#   Q146 the loop commits each implementer's work (the children cannot)
 # A3 also pins the main loop's print_round_summary call (stdout + log line).
 # Unit-level tests for the helpers are in test/si-clean-state.bats.
 #
@@ -41,12 +42,27 @@ case "$prompt" in
   *"comparing two sets of problem"*) echo "${STUB_OVERLAP:-0}" ;;
   *"For each surviving idea"*) cp "$STUB_DIR/tasks.json" "docs/working/tasks-round-$(round).json" ;;
   *"You are in /away mode"*)
+    # As strict as the real CLI the loop builds for the implementer: only
+    # -p, the prompt and claude_headless_flags() output; no tool grants
+    # (--allowedTools, --settings) and so no way to commit (Q-146 [1]).
+    [ "$1" = "-p" ] || { echo "stub: implementer argv must start with -p" >&2; exit 2; }
+    shift
+    while [ $# -gt 1 ]; do
+      case "$1" in
+        --permission-mode) [ "$2" = acceptEdits ] || exit 2; shift 2 ;;
+        --add-dir) [ -d "$2" ] || exit 2; shift 2 ;;
+        *) echo "stub: unexpected implementer flag $1" >&2; exit 2 ;;
+      esac
+    done
     if [ -n "${STUB_IMPL_SLEEP:-}" ]; then
       echo $$ >> "$STUB_DIR/impl.pids"
       exec sleep "$STUB_IMPL_SLEEP"
     fi
+    [ -z "${STUB_IMPL_NOCHANGE:-}" ] || exit 0
+    # Test-only: detach HEAD so the loop's commit lands off the task branch.
+    [ -z "${STUB_IMPL_DETACH:-}" ] || git checkout -q --detach
     echo "content from ${PWD##*/}" > shared.txt
-    git add shared.txt && git commit -qm "feat: change from ${PWD##*/}"
+    [ -n "${STUB_IMPL_NOMSG:-}" ] || printf 'feat: change from %s\n\nConfidence: high\nNotes: stub\n' "${PWD##*/}" > .si-commit-msg
     ;;
   *"Run the code-review skill"*)
     printf '%s: 0\n' "$(printf '%s' "$prompt" | grep -oE 'CODE_REVIEW_RED\[[0-9a-f]+\]' | head -1)" ;;
@@ -186,4 +202,55 @@ run_si() {
   [ -z "$alive" ]
   [ ! -d "$REPO/.claude/wt-a" ]
   [ ! -d "$REPO/.claude/wt-b" ]
+}
+
+@test "Q146: the loop commits the implementer's work with its message file" {
+  export STUB_RESOLVER_RC=1
+  run_si
+  [ "$status" -eq 0 ]
+  # Task a merged: main carries the stub's message, and never the message file.
+  git -C "$REPO" log --format=%s main | grep -qx 'feat: change from wt-a'
+  git -C "$REPO" log -1 --format=%B feat/r1-b | grep -qx 'Confidence: high'
+  run git -C "$REPO" log --all --name-only --format=
+  [[ "$output" != *".si-commit-msg"* ]]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = pass ]
+}
+
+@test "Q146: with no message file the commit message is the task description" {
+  export STUB_RESOLVER_RC=1 STUB_IMPL_NOMSG=1
+  run_si
+  [ "$status" -eq 0 ]
+  git -C "$REPO" log --format=%s main | grep -qx 'task a'
+  [ "$(git -C "$REPO" log -1 --format=%s feat/r1-b)" = 'task b' ]
+}
+
+@test "Q146: an implementer that changes nothing gets no commit and a named rejection" {
+  export STUB_IMPL_NOCHANGE=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$REPO" rev-list --count main)" -eq 1 ]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
+  [ "$(jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json")" \
+    = "no commits on branch (implementer left no changes)" ]
+  grep -q '\[a\] REJECTED: no commits on branch (implementer left no changes)' "$WD/validation-round-1.log"
+}
+
+@test "Q146: a failed commit rejects the task with git's reason" {
+  # No committer identity: git refuses the loop's commit.
+  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+  git -C "$REPO" config user.useConfigOnly true
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
+  jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json" \
+    | grep -q '^implementer commit failed: git commit failed in .*wt-a'
+}
+
+@test "Q146: a commit that does not land on the task branch rejects the task" {
+  export STUB_IMPL_DETACH=1
+  run_si
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.validation.a.commits' "$WD/round-1-report.json")" = fail ]
+  [ "$(jq -r '.validation.a.verdict_detail.reject_reason' "$WD/round-1-report.json")" \
+    = "implementer commit failed: the commit did not land on feat/r1-a" ]
 }

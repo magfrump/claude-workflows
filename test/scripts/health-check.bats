@@ -178,6 +178,66 @@ _isolated_skills_dir() {
   echo "$output" | grep -q "_test_missing_desc: missing 'description' field"
 }
 
+# ── Gate 1 under pipefail: a reader that stops early (2026-10-29 flake) ─────
+#
+# `echo "$yaml" | grep -q` under the script's pipefail reported a field missing
+# from a file that had it whenever grep matched and exited before echo's last
+# write: echo died of SIGPIPE (141) and the pipeline failed. Bash line-buffers
+# echo, so a few-line frontmatter lost that race only under load; one larger
+# than the pipe buffer (64 KiB) loses it every time, which is what these
+# fixtures use. Research: docs/working/research-2026-10-29-skill-frontmatter-flake.md.
+
+# Write a skill whose frontmatter holds the given head lines, then ~270 KB of
+# an allowed list key, alone in a fresh skills/ dir.
+_big_frontmatter_skill() {
+  local dir="$BATS_TEST_TMPDIR/skills" head="$1" i
+  mkdir -p "$dir"
+  {
+    printf -- '---\n%s\nnon-goals:\n' "$head"
+    for ((i = 0; i < 4000; i++)); do
+      printf '  - padding line %d to push the frontmatter past the pipe buffer\n' "$i"
+    done
+    printf -- '---\n\nBody.\n'
+  } > "$dir/_test_big.md"
+  printf '%s' "$dir"
+}
+
+_run_check_frontmatter() {
+  run env HEALTH_CHECK_SKILLS_DIR="$1" \
+    bash -c 'source "$1"; check_skill_frontmatter; echo "FAIL=$FAIL"' _ "$SCRIPT"
+}
+
+@test "gate 1: a frontmatter larger than the pipe buffer passes when it has every field" {
+  local dir
+  dir="$(_big_frontmatter_skill $'name: test-big\ndescription: two words')"
+  _run_check_frontmatter "$dir"
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"✓ _test_big"* ]]
+  [[ "$output" != *"✗"* ]]
+  [[ "$output" == *"FAIL=0"* ]]
+}
+
+@test "gate 1: a frontmatter larger than the pipe buffer still fails on a missing name" {
+  local dir
+  dir="$(_big_frontmatter_skill 'description: two words')"
+  _run_check_frontmatter "$dir"
+  echo "$output"
+  [[ "$output" == *"✗ _test_big: missing 'name' field"* ]]
+  [[ "$output" != *"missing 'description'"* ]]
+  [[ "$output" == *"FAIL=1"* ]]
+}
+
+@test "gate 1: a requires: block in a frontmatter larger than the pipe buffer is still checked for mixed forms" {
+  local dir
+  dir="$(_big_frontmatter_skill $'name: test-big\ndescription: two words\nrequires:\n  - name: a\n    description: b\n  - bare string')"
+  _run_check_frontmatter "$dir"
+  echo "$output"
+  [[ "$output" == *"✗ _test_big: 'requires' mixes object-form and bare-string entries"* ]]
+  [[ "$output" != *"missing '"* ]]
+  [[ "$output" == *"FAIL=1"* ]]
+}
+
 # ── Gate 5: fast-then-slow ordering (Q-023) ────────────────────────────────
 #
 # Sources health-check.sh (main only runs when executed) and calls check_bats

@@ -328,7 +328,7 @@ If [2] works perfectly: every boundary merge waits on a live run, a second host 
 - **Worth mitigating**: the host-incident blind spot (V1; the usage-log host/container field already on the roadmap Ideas list); an in-session smoke step in the verify.
 - **Acknowledged risks**: Desktop's privileged daemon (accepted by 015, unchanged); the devcontainer-CLI and kernel-semantics causes, which every survivor shares.
 
-## 6. Draft amendment to decision 015's Revisit triggers (not applied)
+## 6. Draft amendment to decision 015's Revisit triggers (applied 2026-10-20 on Q-170 [A], branch `docs/decision-015-amendment`)
 
 This text is for the user's approval. This unit does **not** edit `docs/decisions/015-cc-process-isolation-docker-devcontainer.md`.
 

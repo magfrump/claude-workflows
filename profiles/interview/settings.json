@@ -1,0 +1,43 @@
+{
+  "model": "opus[1m]",
+  "effortLevel": "medium",
+  "theme": "dark",
+  "tui": "fullscreen",
+  "claudeMdExcludes": [
+    "/home/*/CLAUDE.md",
+    "/home/*/CLAUDE.local.md",
+    "/home/*/.claude/CLAUDE.md",
+    "/home/*/.claude/rules/**"
+  ],
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(uv:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(tee:*)",
+      "Bash(du:*)",
+      "Bash(df:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(huggingface-cli:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  }
+}

@@ -33,6 +33,7 @@ setup() {
   echo '#!/bin/bash'         > "$CLAUDE_DEVC_CONFIG_DIR/init-firewall.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-isolated.sh"
   echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh"
+  echo '#!/usr/bin/env bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-verify.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-exit-scan.sh"
   echo '# shellcheck shell=bash' > "$CLAUDE_DEVC_CONFIG_DIR/cc-gitdir.sh"
   echo '#!/usr/bin/python3'   > "$CLAUDE_DEVC_CONFIG_DIR/cc-sni-proxy.py"
@@ -231,6 +232,90 @@ make_repo() {
   [ -z "$(project_profile "$TEST_TMPDIR/proj")" ]
 }
 
+# --- profile names match egress/ base names exactly (brief 2026-10-17) ---------
+# Regression (independent review 2026-10-15): the check was only "egress/$p.txt is
+# readable", so ../egress/python passed and was written verbatim, and the unquoted
+# split globbed. Each family of the plan's pre-mortem is one loop below.
+assert_profile_refused() {  # $1: the --profile value; $2: the item named as refused
+  run register_project "$TEST_TMPDIR/proj" "$1"
+  [ "$status" -ne 0 ] || { echo "accepted: $1"; false; }
+  [[ "$output" == *"unknown egress profile $(printf %q "$2") "*"Available:"*"    python"* ]] \
+    || { echo "message for $1: $output"; false; }
+  [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/projects" ] || [ -z "$(ls -A "$CLAUDE_DEVC_CONFIG_DIR/projects")" ]
+  [ ! -e "$(manifest_path)" ]
+}
+
+@test "register_project refuses path-like, case-variant and glob profile names" {
+  make_repo "$TEST_TMPDIR/proj"
+  # A file the old glob could have matched in $PWD, and a readable path target.
+  cd "$TEST_TMPDIR" && touch python
+  local v
+  for v in ../egress/python ./python egress/python python.txt "$CLAUDE_DEVC_CONFIG_DIR/egress/python" \
+           Python PYTHON '*' 'pyth*' '?ython' '[p]ython'; do
+    assert_profile_refused "$v" "$v"
+  done
+}
+
+@test "register_project refuses empty items, blanks, and a later '-' or '#' item" {
+  make_repo "$TEST_TMPDIR/proj"
+  assert_profile_refused ",python" ""
+  assert_profile_refused "python," ""
+  assert_profile_refused "python,,base" ""
+  assert_profile_refused "python, base" " base"
+  assert_profile_refused " python" " python"
+  assert_profile_refused $'python\nbase' $'python\nbase'
+  assert_profile_refused "python,-x" "-x"
+  assert_profile_refused "python,#x" "#x"
+}
+
+@test "register_project refuses a profile whose egress file is a symlink" {
+  make_repo "$TEST_TMPDIR/proj"
+  ln -s python.txt "$CLAUDE_DEVC_CONFIG_DIR/egress/py.txt"
+  assert_profile_refused "py" "py"
+  # Line-exact, so the check holds wherever `py` sorts in the list.
+  run ! grep -qx '    py' <<< "$output"
+}
+
+@test "register_project accepts exact names, singly and comma-separated, base included" {
+  make_repo "$TEST_TMPDIR/proj"
+  local v
+  for v in python base,python base; do
+    run register_project "$TEST_TMPDIR/proj" "$v"
+    [ "$status" -eq 0 ]
+    [ "$(project_profile "$TEST_TMPDIR/proj")" = "$v" ]
+  done
+}
+
+@test "--register with no --profile refuses an empty grant and names --profile base" {
+  make_repo "$TEST_TMPDIR/proj"
+  local form
+  for form in none empty; do
+    if [ "$form" = none ]; then
+      run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj"
+    else
+      run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/proj" --profile ''
+    fi
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--register needs --profile NAME[,NAME...]; refusing an empty grant. For base egress only, use --profile base."* ]]
+    [ ! -e "$CLAUDE_DEVC_CONFIG_DIR/projects" ]
+    [ ! -e "$(manifest_path)" ]
+  done
+}
+
+@test "the unregistered NOTE quotes the workspace with %q" {
+  local ws="$TEST_TMPDIR/it's proj"
+  make_repo "$ws"
+  touch "$ws/pyproject.toml"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$ws")"
+  export STUB_IMAGE_HASH STUB_FP
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$ws"
+  ws="$(git -C "$ws" rev-parse --show-toplevel)"
+  [[ "$output" == *"To grant that: cc-isolated --register $(printf %q "$ws") --profile python"$'\n'* ]]
+}
+
 # --- --profile REPLACES the grant, and must say so -----------------------------
 # Regression: re-registering a project to add `lean` silently dropped the `dotnet`
 # it already had, and the only symptom was a container whose egress was narrower
@@ -348,7 +433,18 @@ STUB
   [ "$status" -eq 0 ]
   # The supported path must come first: the by-hand form is the one that can be
   # run wrong, so it must never be the first thing a reader copies.
-  [[ "$(echo "$output" | head -1)" == *"cc-isolated"* ]]
+  # It is the guides' two-step recipe, never a bare relaunch: a plain launch
+  # recreates only on a config-hash mismatch, so in the fail-closed state it does
+  # not recover (override log, fix/doc-drift-cycle1 A4).
+  local ws; ws="$(printf '%q' "$TEST_TMPDIR/proj")"
+  # The whole first line is the command, nothing after it: interactive zsh
+  # without interactivecomments passes a trailing `# ...` to step 2 as arguments,
+  # and the last positional becomes the workspace, so step 2 fails or, if that
+  # word names a directory inside a git work tree, launches that tree's repo
+  # (security review 2026-10-15, rebuild-hint #1).
+  [ "$(echo "$output" | head -1)" = "    cc-isolated --probe-only $ws && cc-isolated $ws" ]
+  [[ "$(echo "$output" | sed -n 2p)" == *"recreates the container from the blessed config"* ]]
+  [[ "$output" != *"rebuilds"* ]]
 }
 
 @test "usage prints the whole header block, exit status included, and nothing past it" {
@@ -367,6 +463,111 @@ STUB
   run bash "$CONFIG_SRC/cc-isolated.sh" --nope
   [ "$status" -eq 2 ]
   [[ "$output" == *"unknown flag: --nope"*"EXIT STATUS"* ]]
+}
+
+# --- One workspace per run (roadmap Next 3; rebuild-hint rubric A7) -----------
+# A pasted line with a trailing '# note' reaches the launcher as extra words in
+# zsh without interactive_comments. The old parser kept the last positional, so
+# the note's last word became the workspace. Each refusal must come before any
+# devcontainer call and before --register writes anything.
+one_ws_setup() {
+  make_repo "$TEST_TMPDIR/a"
+  make_repo "$TEST_TMPDIR/b"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/b")"
+  export STUB_IMAGE_HASH STUB_FP
+}
+
+assert_refused_untouched() {
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"EXIT STATUS"* ]]
+  [ ! -s "$DC_LOG" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/a")" ]
+  [ -z "$(project_profile "$TEST_TMPDIR/b")" ]
+}
+
+@test "a second workspace is a usage error in every mode that takes one, naming both" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b" form
+  for form in "" "--probe-only" "--register --profile python"; do
+    # shellcheck disable=SC2086  # $form is a list of flags on purpose
+    run bash "$CONFIG_SRC/cc-isolated.sh" $form "$a" "$b"
+    assert_refused_untouched
+    [[ "$output" == *"two workspaces given: $a and $b. cc-isolated takes one."*"or a path with an unquoted space"* ]]
+  done
+}
+
+@test "a pasted '# note' is refused at its first word, before its later words act as flags" {
+  one_ws_setup
+  # The note's words come after the workspace: refused, not launched on 'note'.
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/a" '#' note
+  assert_refused_untouched
+  [[ "$output" == *'\# is not a workspace; it looks like a pasted comment.'*'interactive_comments'* ]]
+  # No workspace before the note: '#' would have been the workspace and the
+  # note's --register (or --bless) would have run.
+  run bash "$CONFIG_SRC/cc-isolated.sh" '#' --register "$TEST_TMPDIR/a" --profile python
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only '#widen' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+}
+
+@test "a --profile value starting with '#' or '-' is a usage error, so a note cannot reach the flags" {
+  one_ws_setup
+  # Base: `--profile '#' --bless` ran a bless (exit 0) and `--profile '#' b` opened b.
+  rm -f "$(manifest_path)"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --profile '#' --bless
+  [ "$status" -eq 2 ]
+  [[ "$output" == *'\# is not an egress profile; it looks like a pasted comment.'* ]]
+  [ ! -f "$(manifest_path)" ]
+  bless_manifest >/dev/null
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only --profile '#' "$TEST_TMPDIR/b"
+  assert_refused_untouched
+  run bash "$CONFIG_SRC/cc-isolated.sh" --register "$TEST_TMPDIR/a" --profile --bless
+  assert_refused_untouched
+  [[ "$output" == *"--profile needs a value, not the flag --bless."* ]]
+}
+
+@test "after --: one workspace, and only when none came before it" {
+  one_ws_setup
+  local a="$TEST_TMPDIR/a" b="$TEST_TMPDIR/b"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$a" -- "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$a" "$b"
+  assert_refused_untouched
+  [[ "$output" == *"two workspaces given: $a and $b."* ]]
+  # The one-word form names the workspace (it used to be dropped, opening $PWD).
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- "$b"
+  [ "$status" -eq 0 ]
+  grep -q "^devcontainer up --remove-existing-container --workspace-folder $b " "$DC_LOG"
+}
+
+@test "a directory named '#x' is still reachable as ./#x and after --" {
+  one_ws_setup
+  make_repo "$TEST_TMPDIR/#x"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/#x")"
+  cd "$TEST_TMPDIR"
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only ./#x
+  [ "$status" -eq 0 ]
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only -- '#x'
+  [ "$status" -eq 0 ]
+  [ "$(grep -c "^devcontainer up --remove-existing-container --workspace-folder $TEST_TMPDIR/#x " "$DC_LOG")" -eq 2 ]
+}
+
+@test "install.sh's Next steps print no command line carrying a trailing '# note'" {
+  local block
+  block="$(sed -n '/echo "Next steps/,/^  case ":\$PATH:"/p' "$CONFIG_SRC/install.sh")"
+  [ -n "$block" ]
+  # Every echoed command line is the command alone (zsh would pass a note on).
+  run grep -E '^  echo "    (touch|cc-isolated|cc-push)' <<< "$block"
+  [ "${#lines[@]}" -eq 5 ]
+  run grep -E '^  echo ".*#' <<< "$block"
+  [ "$status" -eq 1 ]
+  # --probe-only recreates the container; it never "rebuilds" (C1, A7).
+  run grep -i 'rebuild' <<< "$block"
+  [ "$status" -eq 1 ]
 }
 
 @test "suggest_profiles proposes python for a python repo but never applies it" {
@@ -615,7 +816,7 @@ fake_install_repo() {
   rm -rf "$root"
   mkdir -p "$root/devcontainer-config/egress"
   cp "$CONFIG_SRC/install.sh" "$root/devcontainer-config/install.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh; do
     printf 'stub %s\n' "$f" > "$root/devcontainer-config/$f"
   done
   printf 'api.anthropic.com\n' > "$root/devcontainer-config/egress/base.txt"
@@ -715,7 +916,7 @@ fake_payload_and_dest() {
   local root="$1" dest="$BATS_TEST_TMPDIR/installed" f
   local cfg="$root/devcontainer-config"
   rm -rf "$dest"; mkdir -p "$dest"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh link-claude-home.sh egress; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py cc-isolated.sh cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh link-claude-home.sh egress; do
     cp -r "$cfg/$f" "$dest/$f"
   done
   printf '%s\n' "$dest"
@@ -846,7 +1047,7 @@ fake_payload_and_dest() {
   items="${payload_line#PAYLOAD=(}"; items="${items%)}"
   enf="$(enforcement_files)"
   host="$(host_tool_files)"
-  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$host" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   for item in $host; do
     if echo "$enf" | grep -qx "$item"; then echo "in both lists: $item"; return 1; fi
   done
@@ -869,7 +1070,7 @@ fake_payload_and_dest() {
 @test "bless writes host-tools.sha256; a host-tool edit leaves the boundary manifest and blessed hash alone" {
   bless_manifest >/dev/null
   [ -f "$(host_tools_path)" ]
-  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh' ]
+  [ "$(awk '{print $2}' "$(host_tools_path)")" = $'cc-exit-scan.sh\ncc-gitdir.sh\ncc-push.sh\ncc-verify.sh' ]
   if grep -E 'cc-(push|exit-scan|gitdir)\.sh' "$(manifest_path)"; then return 1; fi
   local before
   before="$(blessed_hash)"
@@ -1064,7 +1265,7 @@ fake_payload_and_dest() {
   mkdir -p "$ws"
   bash "$d/cc-isolated.sh" --bless >/dev/null
   run bash "$d/cc-isolated.sh" --list
-  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh)"* ]]
+  [[ "$output" == *"Host tools — match the bless (cc-exit-scan.sh cc-gitdir.sh cc-push.sh cc-verify.sh)"* ]]
   cp "$d/cc-push.sh" "$TEST_TMPDIR/cc-push.blessed"
   echo 'echo x' >> "$d/cc-push.sh"
   run bash "$d/cc-isolated.sh" --list
@@ -1143,6 +1344,7 @@ fake_payload_and_dest() {
 
 # A devcontainer stub that answers the in-container reads probe_boundary makes.
 # STUB_IMAGE_HASH → /etc/cc-config-hash; STUB_FP → the workspace fingerprint;
+# STUB_FW_BRICKED=1 → re-running the baked init-firewall.sh fails (fail-closed state).
 # STUB_FW_MISSING=1 → the firewall completion marker is absent. Every call is
 # logged to $DC_LOG so main()'s rebuild decision can be asserted.
 smart_devcontainer_stub() {
@@ -1156,6 +1358,7 @@ case "$*" in
   *cc-config-hash*)        printf '%s\n' "${STUB_IMAGE_HASH:-}" ;;
   *rev-parse*)             printf '%s' "${STUB_FP:-}" ;;
   *cc-firewall/complete*)  [ -z "${STUB_FW_MISSING:-}" ] ;;
+  *init-firewall.sh*)      [ -z "${STUB_FW_BRICKED:-}" ] ;;
   *cc-project-id*)
     # H6 emulation (opt-in via STUB_CLAUDE_DIR): really run the probe's script,
     # with /home/node/.claude redirected to a test dir and the container's
@@ -1243,6 +1446,9 @@ h6_probe() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Verified live:  NO"* ]]
   [[ "$output" == *"--probe-only"* ]]
+  # The command is alone on its line (no trailing `# ...`, which interactive zsh
+  # without interactivecomments passes as arguments; security review 2026-10-15).
+  printf '%s\n' "$output" | grep -qx '  Next: cc-isolated --probe-only <repo>'
   [[ "$output" == *"Live-verified:"* ]]
   run is_verified_live
   [ "$status" -ne 0 ]
@@ -1373,7 +1579,33 @@ h6_probe() {
   grep -qxF "CC_PROJECT_NAME=proj" "$DC_LOG.up-env"
 }
 
-@test "--probe-only always rebuilds before probing" {
+# Regression (override log, fix/doc-drift-cycle1 A4): in the fail-closed state the
+# container was built from the blessed config, so a plain launch does not recreate
+# it, and the hint used to send the user straight back into that launch.
+@test "a launch on a fail-closed container does not recreate it, and the hint names --probe-only first" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  STUB_FW_BRICKED=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING STUB_FW_BRICKED
+  local ws; ws="$(printf '%q' "$(git -C "$TEST_TMPDIR/proj" rev-parse --show-toplevel)")"
+  run bash "$CONFIG_SRC/cc-isolated.sh" "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"ERROR: init-firewall.sh failed"* ]]
+  [[ "$output" == *"Recreate it"*"cc-isolated --probe-only $ws && cc-isolated $ws"* ]]
+  # The unverified-config NOTE must not promise the recreate this launch skips.
+  [[ "$output" == *"has NOT been verified in a live container"* ]]
+  [[ "$output" != *"the container is rebuilt from it"* ]]
+  [[ "$output" == *"the container is recreated if it was built"* ]]
+  # The premise of the hint: this launch reused the container and never started claude.
+  run ! grep -q -- '--remove-existing-container' "$DC_LOG"
+  run ! grep -q ' claude$' "$DC_LOG"
+}
+
+@test "--probe-only always recreates before probing" {
   make_repo "$TEST_TMPDIR/proj"
   bless_manifest >/dev/null
   smart_devcontainer_stub
@@ -1384,6 +1616,24 @@ h6_probe() {
   [ "$status" -eq 0 ]
   grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
   ! grep -q ' claude$' "$DC_LOG"
+}
+
+# The hint's `&&` relies on this: a failed probe after the forced recreate must
+# exit non-zero and write no receipt (security review 2026-10-15, rebuild-hint #2).
+# (--probe-only never runs claude at all, so that is not asserted here.)
+@test "--probe-only exits non-zero and records nothing when the probe fails" {
+  make_repo "$TEST_TMPDIR/proj"
+  bless_manifest >/dev/null
+  smart_devcontainer_stub
+  STUB_IMAGE_HASH="$(blessed_hash)"
+  STUB_FP="$(ws_fingerprint "$TEST_TMPDIR/proj")"
+  STUB_FW_MISSING=1
+  export STUB_IMAGE_HASH STUB_FP STUB_FW_MISSING
+  run bash "$CONFIG_SRC/cc-isolated.sh" --probe-only "$TEST_TMPDIR/proj"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PROBE FAIL (firewall)"* ]]
+  grep -q '^devcontainer up --remove-existing-container ' "$DC_LOG"
+  [ ! -f "$(verified_path)" ]
 }
 
 # --- Exit scan: .git changes made during the session (Q-069 [3], Q-076) ---------
@@ -2889,4 +3139,187 @@ line")"
   [ "$status" -eq 0 ]
   [[ "$output" == *"note: exit scan: only linked worktrees in git's standard layout changed (added: agent-x)."* ]]
   [[ "$output" != *"WARNING: this session changed"* ]]
+}
+
+@test "exit scan R6: a relative repo core.hooksPath is walked in a linked worktree present at launch" {
+  # Q-168 rubric R6: husky's .husky/_ with an agent worktree already in the
+  # checkout; git runs <worktree>/.husky/_/pre-commit on a commit there.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.husky/_" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.husky/_/pre-commit "* ]]
+  no_ran
+  # The same through an include in the repo config.
+  rm -rf "$STD_WT/.husky"
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  printf '[core]\n\thooksPath = .inc-hooks\n' > "$SCAN_WS/.git/inc.cfg"
+  git -C "$SCAN_WS" config include.path inc.cfg
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # An include named by an absolute path: its relative hooksPath still resolves
+  # in the worktree.
+  rm -rf "$STD_WT/.inc-hooks"
+  git -C "$SCAN_WS" config include.path "$SCAN_WS/.git/inc.cfg"
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # The file that includes it (x.cfg) is first met at depth 10 of an includeIf
+  # chain git does not take, then through a plain include git does take.
+  rm -rf "$STD_WT/.inc-hooks"
+  local i
+  for i in 1 2 3 4 5 6 7 8; do printf '[include]\n\tpath = a%d.cfg\n' $((i + 1)) > "$SCAN_WS/.git/a$i.cfg"; done
+  printf '[include]\n\tpath = x.cfg\n' > "$SCAN_WS/.git/a9.cfg"
+  printf '[include]\n\tpath = inc.cfg\n' > "$SCAN_WS/.git/x.cfg"
+  git -C "$SCAN_WS" config --unset include.path
+  git -C "$SCAN_WS" config 'includeIf.gitdir:/nomatch/.path' a1.cfg
+  git -C "$SCAN_WS" config include.path x.cfg
+  [ "$(git -C "$STD_WT" config core.hooksPath)" = .inc-hooks ]
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$STD_WT/.inc-hooks" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $STD_WT/.inc-hooks/pre-commit "* ]]
+  no_ran
+  # What a clean scan would have let through: host git runs the hook there.
+  git -C "$STD_WT" -c commit.gpgsign=false commit -q --allow-empty -m x
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
+}
+
+@test "exit scan A14: a relative remote URL, name and legacy URL are walked in a linked worktree present at launch" {
+  # Q-168 rubric A14: ../x.git from the checkout is outside it, but from an
+  # agent worktree it is <ws>/.claude/worktrees/x.git, where a session can plant
+  # a repository whose hooks a push from the worktree runs.
+  scan_repo
+  git -C "$SCAN_WS" remote add up ../up.git
+  git -C "$SCAN_WS" config branch.wt-agent-x.pushRemote ../pd.git
+  mkdir -p "$SCAN_WS/.git/remotes"
+  printf 'URL: ../leg.git\n' > "$SCAN_WS/.git/remotes/old"
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  local r
+  for r in up pd leg; do
+    git init -q --bare "$SCAN_WS/.claude/worktrees/$r.git"
+    plant_hook "$SCAN_WS/.claude/worktrees/$r.git/hooks" "post-receive-$r"
+    mv "$SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive-$r" "$SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive"
+  done
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  for r in up pd leg; do
+    [[ "$output" == *"+ hook $SCAN_WS/.claude/worktrees/$r.git/hooks/post-receive "* ]]
+  done
+  no_ran
+  # And host git agrees: each push from the worktree runs the planted hook.
+  git -C "$STD_WT" push -q up HEAD:refs/heads/m 2>/dev/null
+  git -C "$STD_WT" push -q 2>/dev/null
+  git -C "$STD_WT" push -q old HEAD:refs/heads/m 2>/dev/null
+  for r in up pd leg; do [ -e "$TEST_TMPDIR/ran/hook-post-receive-$r" ]; done
+}
+
+@test "exit scan R3: an embedded repo made with --separate-git-dir resolves a relative remote and hooksPath in its working tree" {
+  # Q-168 rubric R3: the repo's config sits in the separate git dir, but git
+  # resolves its relative paths in the working tree it runs in.
+  scan_repo
+  mkdir -p "$SCAN_WS/vendor"
+  git init -q --separate-git-dir "$SCAN_WS/sgd" "$SCAN_WS/vendor/e"
+  local e="$SCAN_WS/vendor/e"
+  git -C "$e" config user.email t@example.com; git -C "$e" config user.name t
+  echo y > "$e/g"; git -C "$e" add g; git -C "$e" -c commit.gpgsign=false commit -qm i
+  git -C "$e" remote add o ./r3.git
+  git -C "$e" config core.hooksPath .hk
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  # The remote half alone (main's scan walked <ws>/sgd/r3.git: status 0).
+  git init -q --bare "$e/r3.git"
+  plant_hook "$e/r3.git/hooks" post-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $e/r3.git/hooks/post-receive "* ]]
+  # The hooksPath half (closed by R6's per-entry walk; tested here).
+  rm -rf "$e/r3.git"
+  plant_hook "$e/.hk" pre-commit
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $e/.hk/pre-commit "* ]]
+  no_ran
+  git init -q --bare "$e/r3.git"
+  plant_hook "$e/r3.git/hooks" post-receive
+  git -C "$e" -c commit.gpgsign=false commit -q --allow-empty -m x
+  git -C "$e" push -q o HEAD:refs/heads/m 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-pre-commit" ]
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+}
+
+@test "exit scan A16: receive hooks under a relative core.hooksPath are walked in the pushed git dir" {
+  # Q-168 rubric A16: receive-pack runs hooks from the git dir it pushes to (a
+  # linked worktree's private one for a push to that worktree), so husky's
+  # .husky/_ is <ws>/.git/.husky/_ for `git push .` or a push into the checkout.
+  scan_repo
+  git -C "$SCAN_WS" config core.hooksPath .husky/_
+  std_wt agent-x
+  local before; before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/.husky/_" pre-receive
+  plant_hook "$STD_P/.husky/_" post-receive
+  run git_exit_scan "$SCAN_WS" "$before"
+  echo "$output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/.husky/_/pre-receive "* ]]
+  [[ "$output" == *"+ hook $STD_P/.husky/_/post-receive "* ]]
+  no_ran
+  git -C "$SCAN_WS" push -q . HEAD:refs/heads/q 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-pre-receive" ]
+  git -C "$STD_WT" push -q . HEAD:refs/heads/q2 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-post-receive" ]
+  # The same from YOUR global config's relative hooksPath.
+  git -C "$SCAN_WS" config --unset core.hooksPath
+  export GIT_CONFIG_GLOBAL="$TEST_TMPDIR/host.gitconfig"
+  git config --global core.hooksPath .githooks
+  before="$(git_exec_snapshot "$SCAN_WS")"
+  plant_hook "$SCAN_WS/.git/.githooks" update
+  run git_exit_scan "$SCAN_WS" "$before"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"+ hook $SCAN_WS/.git/.githooks/update "* ]]
+  [ ! -e "$TEST_TMPDIR/ran/hook-update" ]
+  git -C "$SCAN_WS" push -q . HEAD:refs/heads/q3 2>/dev/null
+  [ -e "$TEST_TMPDIR/ran/hook-update" ]
+}
+
+@test "exit scan A14 caps: many agent worktrees do not multiply absolute remotes into the insteadOf caps" {
+  # Only relative remotes are queued per working tree. Here 20 worktrees, an
+  # absolute origin, one relative remote and 10 rules (one rewriting origin)
+  # make 22 URLs: 220 pairs and 1 rewritten target. Queuing every remote per
+  # worktree would make 42 URLs: 420 pairs and 21 targets, over the caps below.
+  scan_repo
+  git -C "$SCAN_WS" remote add origin https://github.com/o/r
+  git -C "$SCAN_WS" remote add up ../up.git
+  git -C "$SCAN_WS" config branch.main.remote origin
+  git -C "$SCAN_WS" config url.git@github.com:.insteadOf https://github.com/
+  local i
+  for i in 1 2 3 4 5 6 7 8 9; do git -C "$SCAN_WS" config "url.https://m$i.invalid/.insteadOf" "https://x$i.invalid/"; done
+  for i in $(seq 1 20); do git -C "$SCAN_WS" worktree add -q "$SCAN_WS/.claude/worktrees/w$i" -b "w$i"; done
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok / _snap_match (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=300 GIT_EXIT_SCAN_MAX_REWRITE_TARGETS=5
+  run git_exec_snapshot "$SCAN_WS"
+  [ "$status" -eq 0 ]
+  # The relative remote is walked in each worktree (recorded as missing).
+  for i in 1 20; do
+    [[ "$output" == *"remote"$'\t'"$SCAN_WS/.claude/worktrees/w$i/../up.git"$'\t'"missing"* ]]
+  done
+  # Not vacuous: the cap is live at this scale (220 pairs > 200 fails closed).
+  # shellcheck disable=SC2034  # read by _snap_pairs_ok (sourced)
+  GIT_EXIT_SCAN_MAX_REWRITE_PAIRS=200
+  run git_exec_snapshot "$SCAN_WS"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"more than 200 remote URL and insteadOf rule pairs"* ]]
 }

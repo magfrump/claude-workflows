@@ -253,11 +253,13 @@ EOF
   # Q-049). $DEST is absolute, so /$DEST gives //abs.
   bash "$LINKER"
   local rule
-  for rule in "Edit(/$DEST/settings*.json)" "Write(/$DEST/settings*.json)" \
-              "Edit(/$DEST/hooks/**)" "Write(/$DEST/hooks/**)" \
-              "Edit(/$DEST/CLAUDE.md)" "Write(/$DEST/CLAUDE.md)" \
+  # Edit(path) covers Write too; there are no Write(path) rules (they never
+  # match, and Claude Code warns about each at startup).
+  for rule in "Edit(/$DEST/settings*.json)" \
+              "Edit(/$DEST/hooks/**)" \
+              "Edit(/$DEST/CLAUDE.md)" \
               "Read(/$DEST/.credentials.json)" \
-              "Edit(~/CLAUDE.md)" "Write(~/CLAUDE.md)"; do
+              "Edit(~/CLAUDE.md)"; do
     [ "$(jq --arg r "$rule" '[.permissions.deny[] | select(. == $r)] | length' "$DEST/settings.json")" -eq 1 ] || {
       echo "missing deny rule: $rule"
       return 1
@@ -267,8 +269,9 @@ EOF
 
 @test "the merged settings carry the Bash deny rule for the credentials file (Q-077)" {
   # cc-isolated has no sandbox, so Read(.credentials.json) is the only other
-  # rule on that file and it does not cover Bash. The auto-approve hook reads
-  # this rule and never approves a match (test/auto-approve-allowed-commands.bats).
+  # rule on that file and it does not cover Bash. Claude Code applies it even
+  # after the auto-approve hook says allow (host test Q-082), so the hook no
+  # longer reads it (Q-092).
   bash "$LINKER"
   [ "$(jq '[.permissions.deny[] | select(. == "Bash(*.credentials.json*)")] | length' "$DEST/settings.json")" -eq 1 ]
   # Idempotent like every other rule.
@@ -290,6 +293,22 @@ EOF
   [ "$(jq --arg r "Read($DEST/.credentials.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 0 ]
   [ "$(jq --arg r "Edit(/$DEST/settings*.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 1 ]
   [ "$(jq '[.[] | select(. == "Edit(/user/own/rule)" or . == "Bash(rm -rf /)")] | length' <<<"$deny")" -eq 2 ]
+}
+
+@test "legacy Write(path) deny rules are pruned; the user's other Write rules survive" {
+  # Settings merged before this fix hold a Write twin of every Edit rule.
+  # Claude Code matches paths only through Edit() and warns at startup that
+  # each Write(path) deny rule never matches, so the merge must drop them.
+  mkdir -p "$DEST"
+  jq -n --arg d "$DEST" '{permissions: {deny: [
+      "Write(/\($d)/settings*.json)", "Write(\($d)/hooks/**)",
+      "Write(~/CLAUDE.md)", "Write(/user/own/rule)"]}}' > "$DEST/settings.json"
+  bash "$LINKER"
+  local deny
+  deny=$(jq -c '.permissions.deny' "$DEST/settings.json")
+  [ "$(jq '[.[] | select(startswith("Write("))] | length' <<<"$deny")" -eq 1 ]
+  [ "$(jq '[.[] | select(. == "Write(/user/own/rule)")] | length' <<<"$deny")" -eq 1 ]
+  [ "$(jq --arg r "Edit(/$DEST/settings*.json)" '[.[] | select(. == $r)] | length' <<<"$deny")" -eq 1 ]
 }
 
 # Q-025: workflows and the global instructions call helpers by their installed

@@ -20,7 +20,7 @@ Brief reading (restated per the terse-instruction rule): "start this" means run 
   - default-branch resolution (origin/HEAD, main, master, by `show-ref --verify`);
   - `scrub` (re-exec through a perl filter; it removes controls and bidi characters from everything printed).
 
-  **Corrected after the pre-mortem:** `~/.claude/scripts` → `/opt/claude-workflows/scripts`, which is the image's blessed copy, not this checkout [observed: `ls -la ~/.claude/scripts`]. `scripts/lib/` travels with that copy, but a new script reaches it only after a rebuild and bless (`/opt/.../build-loop.sh` is absent today).
+  **Corrected after the pre-mortem:** `~/.claude/scripts` → `/opt/claude-workflows/scripts`, which is the image's blessed copy, not this checkout [observed: `ls -la ~/.claude/scripts`]. `scripts/lib/` travels with that copy, but a new script reaches it only after a rebuild and bless. **Corrected again in U5 (2026-10-14):** `/opt/claude-workflows/scripts/build-loop.sh` is in the image now (its `.manifest` commit was 8d0e660e on 2026-10-14), and since Q-140 [1] the D6 block always runs that root-owned image copy, in this repo too, so a merged gate change runs only after the next release.
 - **`docs/dev-cycle.md`** [observed]: `Build-loop policy: review (interim; Q-103)`. It states the exact-line rule, so that interim line counts as unset, which means `review`.
 - **`test/scripts/dev-cycle.bats`** (53 tests, 1021 lines) [observed]. Hermetic: `GIT_CONFIG_GLOBAL=/dev/null`, `HOME` in the temp dir, a throwaway repo per test under `$BATS_TEST_TMPDIR`. This is the pattern to copy.
 - **`workflows/pr-prep.md`** local-merge path [observed]: `git checkout main && git merge --no-ff <branch> -F <msg>`. Under /active, ask first.
@@ -56,7 +56,7 @@ Brief reading (restated per the terse-instruction rule): "start this" means run 
 - **A live loop after its brief closed** could still self-merge, untracked (api-pass9 #3). The merge must re-check `--check-brief` reads `open` on main at merge time.
 - **HTML-comment policy line** (finding 8): FENCE_AWK already refuses an unclosed `<!--` and any line starting with `<`. A one-line `<!-- Build-loop policy: self-merge -->` does not start with `Build-loop`, so the exact-line rule already excludes it [inferred]. Add a test.
 - **Case-insensitive filesystems**: `Hooks/x` is `hooks/x` on macOS. Compare denylist entries lower-cased.
-- **Headless launches are blocked** [memory: cc-bare-headless-ignores-oauth-token; agent-worktrees-stall-and-stale-base]. `claude -p --bare` cannot use subscription auth, and Agent-tool worktree isolation fails or stalls. The cycle should not try to spawn loops itself.
+- **Headless launches are blocked** [memory: cc-bare-headless-ignores-oauth-token; agent-worktrees-stall-and-stale-base]. `claude -p --bare` cannot use subscription auth, and Agent-tool worktree isolation fails or stalls. **Corrected in U5:** the cycle does spawn loops itself, as background subagents with no isolation, in a worktree `build-loop.sh --start` creates (plan D1); only headless and isolated launches are ruled out.
 - Failure-pattern grep: FP-033, FP-041, FP-043, FP-056, FP-146, FP-167 (see Prior failures section)
 
 ### Prior failures

@@ -10,6 +10,7 @@ setup() {
   REPO_ROOT="$BATS_TEST_DIRNAME/.."
   AGENTS="$REPO_ROOT/AGENTS.md"
   GEMINI="$REPO_ROOT/GEMINI.md"
+  ROOT_CLAUDE="$REPO_ROOT/CLAUDE.md"
 }
 
 @test "AGENTS.md and GEMINI.md content is in sync (ignoring headers)" {
@@ -27,12 +28,14 @@ setup() {
   fi
 }
 
-# Claude Code loads AGENTS.md as this repo's project instructions (the root
-# CLAUDE.md moved to global-instructions/, decision log row 47) and expands
-# `@path` imports inline. The old `@./workflows/*.md` list pulled ~89K tokens
-# of workflow text into every session and subagent here, invisible to the
-# usage hook. global-instructions/CLAUDE.md loads in every project, so it is
-# held to the same rule.
+# Claude Code loads the root CLAUDE.md as this repo's project instructions
+# (since 4272a32b; while it was absent, AGENTS.md loaded instead) and expands
+# `@path` imports inline. The old `@./workflows/*.md` list in AGENTS.md pulled
+# ~89K tokens of workflow text into every session and subagent here, invisible
+# to the usage hook (decision log row 65). AGENTS.md is still held to the rule:
+# it is the entry point other agents read, and Claude Code loads it again if
+# the root CLAUDE.md goes away. global-instructions/CLAUDE.md loads in every
+# project, so it is held to the same rule.
 #
 # Claude Code v2.1.284 (its extractor, read from the binary during review)
 # imports an `@` that starts a markdown text token or follows whitespace, when
@@ -85,9 +88,10 @@ EOF
   [ -z "$output" ] || { echo "false positives:"; echo "$output"; return 1; }
 }
 
-@test "AGENTS.md and the global instructions have no @-imports" {
+# Fails, naming the file, when any FILE is missing, unreadable or imports.
+check_no_imports() {
   local f matches failed=0
-  for f in "$AGENTS" "$REPO_ROOT/global-instructions/CLAUDE.md"; do
+  for f in "$@"; do
     [ -r "$f" ] || { echo "$f is missing or unreadable"; failed=1; continue; }
     if matches=$(find_imports "$f"); then
       echo "$f contains @-imports, which Claude Code expands into every session:"
@@ -96,4 +100,22 @@ EOF
     fi
   done
   [ "$failed" -eq 0 ]
+}
+
+@test "AGENTS.md, the root CLAUDE.md and the global instructions have no @-imports" {
+  check_no_imports "$AGENTS" "$ROOT_CLAUDE" "$REPO_ROOT/global-instructions/CLAUDE.md"
+}
+
+@test "the import check names a root CLAUDE.md copy with an import, and a missing file" {
+  local copy="$BATS_TEST_TMPDIR/CLAUDE.md"
+  cp "$ROOT_CLAUDE" "$copy"
+  printf '@./x.md\n' >> "$copy"
+  run check_no_imports "$copy"
+  [ "$status" -ne 0 ] || { echo "an added @./x.md went unreported"; return 1; }
+  [[ "$output" == *"$copy contains @-imports"* ]] || { echo "file not named:"; echo "$output"; return 1; }
+  [[ "$output" == *"@./x.md"* ]] || { echo "import not shown:"; echo "$output"; return 1; }
+
+  run check_no_imports "$BATS_TEST_TMPDIR/absent.md"
+  [ "$status" -ne 0 ] || { echo "a missing file passed"; return 1; }
+  [[ "$output" == *"$BATS_TEST_TMPDIR/absent.md is missing or unreadable"* ]] || { echo "$output"; return 1; }
 }

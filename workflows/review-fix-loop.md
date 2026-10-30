@@ -95,23 +95,36 @@ The decision must be recorded in writing in one of: the latest review artifact (
 Decision 031 chose `L=fix-drift`: after each fix batch (pr-prep Step 3c), run
 `~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift`
 over the fix commits before starting the next full pass (`--range` is required; in
-claude-workflows itself the script is `scripts/lite-review.py`). The check is deliberately narrow — it reports **only** comment/doc drift the
-fix introduced (a comment now stale relative to the changed code, or a new comment making
-a claim the code doesn't satisfy). It is not a second reviewer: pre-existing issues,
-style, and code behavior belong to the full review passes.
+claude-workflows itself the script is `scripts/lite-review.py`). The check is deliberately narrow — it reports **only** prose the
+fix introduced, got wrong or that it could not verify: a comment now stale relative to the changed code, a new
+comment making a claim the code doesn't satisfy, or a factual error in any prose (comment,
+docstring, doc, guide) the fix diff adds or changes. That last class is a fact-check of
+the fix's own prose in the same lite call; the model sees only the diff, so a specific
+claim about something the diff does not show (another file's contents or order, a line
+number, what a list includes) comes back as a Low `unverified claim` finding naming what
+to check and where. It is not a second reviewer: pre-existing issues, style, and code
+behavior belong to the full review passes.
 
 Why narrow: E1/E3 showed the recurring "fix introduces a defect" pattern was almost
 always prose drifting from the fix, which is exactly the fact-check-shaped class a
 diff-only lite call catches — and a full lite loop every round is not worth it, because
 lite's value decays once only structural/cross-file findings remain. Pay for it once, on
-each fix diff.
+each fix diff. The prose fact-check was added by decision 031's 2026-10-25 amendment,
+after its fourth revisit trigger fired on 2026-10-15: a guide sentence a fix added made a
+wrong claim about Dockerfile layer order, the old prompt passed it (most likely because
+nothing in the diff contradicted it), and the next full pass found it. It costs a little
+more per iteration on docs-heavy loops: more output tokens, and more findings, each one a
+lookup.
 
 Mechanics: the script is a headless `claude -p` call on the subscription (Haiku by
 default, custom system prompt, no tools, no CLAUDE.md discovery — ~10–15k tokens/call).
 It cannot use `--bare`: that flag reads only `ANTHROPIC_API_KEY` and ignores the
 subscription login, so on a subscription-only machine it prints "Not logged in" and exits 0
 (see the script's docstring). Success is judged from the JSON envelope, not the exit code.
-Findings are fixed immediately in the same fix batch, not triaged. The script is installed
+Findings are fixed immediately in the same fix batch, not triaged. Fixing an
+`unverified claim` finding means checking the claim against the named source with your
+own tools and correcting the prose if it is wrong; a claim that checks out needs no edit
+(note that with the check's result, where the loop records it). The script is installed
 at `~/.claude/scripts/` by both install routes (README and the devcontainer linker).
 
 ## Divergence detection (stuck-loop signal)

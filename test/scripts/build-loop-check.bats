@@ -721,6 +721,80 @@ docs/z.md: imported" ] || { echo "$output $stderr"; return 1; }
     done
 }
 
+@test "the ancestor listing skips a file that vanishes between find's readdir and its stat, retries one for a vanished directory, and still fails closed on a permission error or a vanished top (Q-145)" {
+    # The race, made deterministic with the real find: a shim adds, to the -H top-level
+    # listing only, a clause that runs at each entry under the fixture's ancestor; the first
+    # run deletes every other vic* there. find read all their names before that first visit,
+    # so it stats each deleted one later and gets ENOENT. The shim logs each listing's
+    # exit status. With SHIM_ONCE it races only on the first listing of a walk. With SHIM_RMTOP
+    # it instead removes the ancestor's .claude, a top config_seeds already found to be a
+    # directory, first; SHIM_RMTOP=drop also drops it from the start points, as a find that
+    # skipped a missing start point silently would, which leaves top_files' -d recheck to
+    # catch it. (SHIM_*, not T_*: the shim reads them, not imps.)
+    # The shim also drops every start point outside the fixture's ancestor (/tmp, /, bats' run
+    # directories): the walk lists them too, and another process's short-lived directory there
+    # (a parallel bats file's or a session's mktemp -d) failed a listing the asserted log
+    # expected to be clean, a flake under load (research-2026-10-29-flaky-vanish-test). The
+    # lib still computes and rechecks every top; only find's reading of the shared ones is cut.
+    a="$BATS_TEST_TMPDIR" && mkdir -p docs "$a/.claude" "$a/shim" && real="$(command -v find)"
+    printf 'x: @repo/docs/a.md\n' > "$a/CLAUDE.local.md"; echo a > docs/a.md; commit_all anc
+    cat > "$a/shim/find" <<EOF
+#!/usr/bin/env bash
+[[ "\${1:-}" == -H ]] || exec "$real" "\$@"
+[[ -z "\${SHIM_RMTOP:-}" || ! -d "$a/.claude" ]] || rmdir "$a/.claude" || exit 9
+args=(); while [[ \$# -gt 0 && "\$1" != '(' ]]; do
+  case "\$1" in "$a"|"$a"/*) [[ "\${SHIM_RMTOP:-}" == drop && "\$1" == "$a/.claude" ]] || args+=("\$1") ;; /*) ;; *) args+=("\$1") ;; esac; shift
+done
+[[ " \${args[*]} " == *" $a "* ]] || exit 8  # the fixture's ancestor is always a top
+if [[ -n "\${SHIM_ONCE:-}" && -e "$a/shim/fired" ]]; then "$real" "\${args[@]}" "\$@"
+else touch "$a/shim/fired"; "$real" "\${args[@]}" '(' -path "$a/*" -exec sh -c 'for f in "\$1"/vic*; do [ "\$f" = "\$2" ] || rm -rf "\$f"; done' sh "$a" {} ';' -false ')' -o "\$@"; fi
+rc=\$?; echo "\$rc" >> "$a/shim/log"; exit "\$rc"
+EOF
+    chmod +x "$a/shim/find"
+    for w in tree main; do
+        # Files: -ignore_readdir_race skips each, so no listing fails and none is retried.
+        for i in 1 2 3 4; do echo > "$a/vic$i"; done; rm -f "$a/shim/log" "$a/shim/fired"
+        PATH="$a/shim:$PATH" imps "$w" docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/other.md -
+        # The race ran: at most the first-visited victim is left.
+        [ "$(compgen -G "$a/vic*" | wc -l)" -le 1 ] || { echo "no race: $(ls "$a")"; return 1; }
+        ! grep -qvx 0 "$a/shim/log" || { echo "a listing failed: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
+        # Directories: findutils still reports one, so the first listing fails and the retry,
+        # without the race, completes; the failed try's message is dropped.
+        for i in 1 2 3; do mkdir "$a/vic$i"; done; echo > "$a/vic4"; rm -f "$a/shim/log" "$a/shim/fired"
+        PATH="$a/shim:$PATH" SHIM_ONCE=1 imps "$w" docs/a.md docs/other.md
+        [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$w: $output $stderr"; return 1; }
+        want walk ok; want docs/a.md imported; want docs/other.md -
+        [ "$(head -2 "$a/shim/log" | tr '\n' ' ')" = "1 0 " ] || { echo "want a failed try, then a clean one: $(cat "$a/shim/log")"; return 1; }
+        rm -rf "$a"/vic*
+    done
+    # Any other error in the same listing fails closed, after three tries: an unreadable top,
+    # and a top that vanished.
+    for w in tree main; do
+        mkdir -p "$a/.claude" && chmod 000 "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" imps "$w" docs/a.md; chmod 755 "$a/.claude"; want walk failed
+        [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "1 1 1 " ] || { echo "want three failed tries: $(cat "$a/shim/log")"; return 1; }
+        for m in 1 drop; do
+            mkdir -p "$a/.claude"; rm -f "$a/shim/log"; PATH="$a/shim:$PATH" SHIM_RMTOP="$m" imps "$w" docs/a.md; want walk failed
+            [ ! -e "$a/.claude" ] || { echo "the top was not removed"; return 1; }
+            # find reports the missing top (1); with it dropped, find succeeds (0) and the recheck fails each try.
+            [ "$(head -3 "$a/shim/log" | tr '\n' ' ')" = "$( [ "$m" = drop ] && echo "0 0 0 " || echo "1 1 1 ")" ] || { echo "$m: want three failed tries: $(cat "$a/shim/log")"; return 1; }
+        done
+    done
+}
+
+@test "top_files lists a directory's files, links and a linked DIR itself, and fails with its array empty when a DIR is no longer a directory (Q-145 final fact-check r3)" {
+    d="$BATS_TEST_TMPDIR/tf" && mkdir -p "$d/real/sub" && echo > "$d/real/f" && ln -s nowhere "$d/real/dangle" && ln -s real "$d/link" && ln -s gone "$d/dead"
+    run --separate-stderr env LC_ALL=C bash -c 'set -uo pipefail; source "$1"; d="$2"
+        fl=(stale); top_files fl "$d/real" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        fl=(stale); top_files fl "$d/link" && printf "ok:%s\n" "${fl[@]#"$d/"}" | sort
+        # A linked DIR whose target is gone: find lists the link and exits 0; the -d recheck fails it.
+        fl=(stale); if top_files fl "$d/real" "$d/dead"; then echo "dead: passed"; else echo "dead: failed, ${#fl[@]} left"; fi' _ "$LIB" "$d"
+    [ "$status" -eq 0 ] && [ -z "$stderr" ] || { echo "$output $stderr"; return 1; }
+    [ "$output" = $'ok:real/dangle\nok:real/f\nok:link\nok:link/dangle\nok:link/f\ndead: failed, 0 left' ] || { echo "$output"; return 1; }
+}
+
 @test "C1: both walks start at the start files another worktree holds, listed from the file system, skipping one this checkout holds as a plain start of the same kind (root_copies compares the bytes, or reads a prompt copy that has bases of its own) or that holds no @ (U2b3b2b; U2b3a final security 1; i1 fact-check 19b, api F1, performance F1)" {
     mkdir -p docs && printf 'same @docs/s.md\n' > AGENTS.md; printf 'l: @docs/v.md\n' > docs/l.md; ln -s docs/l.md CLAUDE.md
     for f in s u k t v; do echo "$f" > "docs/$f.md"; done; commit_all c1
@@ -1774,16 +1848,17 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
     gated feat/x
     fs=(docs/roadmap.md docs/working/questions.md docs/working/questions-archive.md docs/working/idea-log.md
         docs/working/cycles/cycle-2026-10-01.md docs/working/cycles/notes.md docs/dev-cycle.md "$o"
-        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md)
+        docs/working/briefs/2026-10-02-new.md docs/working/briefs/closed/x Docs/Roadmap.md docs/Dev-Cycle.md docs/working/Questions.md
+        docs/working/watching.md docs/working/roadmap-from-questions.md)
     onx 'mkdir -p docs/working/briefs/closed docs/working/cycles Docs; for f in "${fs[@]}" docs/constraints.md docs/CONSTRAINTS.md docs/ok.md; do echo x > "$f"; done'
     chk "$B"
-    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 15 16)" ] && [ "${#lines[@]}" -eq 17 ] || { show; return 1; }
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "$(nref 17 18)" ] && [ "${#lines[@]}" -eq 19 ] || { show; return 1; }
     has "deny $B M docs/roadmap.md: $NOWN"
     for f in "${fs[@]:1}"; do [[ "$f" == "$o" ]] && m=M || m=A; has "deny $B $m $f: $NOWN"; done
     has "deny $B A docs/constraints.md: $NUSER"; has "deny $B A docs/CONSTRAINTS.md: $NUSER"
     has "path $B A docs/ok.md"
     # The paths come in diff-tree order, after the verdict.
-    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[16]}" = "deny $B A docs/working/questions.md: $NOWN" ] || { show; return 1; }
+    [ "${lines[1]}" = "deny $B A Docs/Roadmap.md: $NOWN" ] && [ "${lines[18]}" = "deny $B A docs/working/watching.md: $NOWN" ] || { show; return 1; }
     # A branch whose changes main already holds merges to main's own tree: ok, no path line.
     onx 'echo x > docs/ok.md'; git checkout -q -B main feat/x; git checkout -q -B feat/x main; git commit -q --allow-empty -m e; git checkout -q main
     chk "$B"
@@ -1792,7 +1867,7 @@ NBRIEF="this brief: only its first Status: line outside a fence may change, from
 
 @test "--check: the brief's own file may change only its first Status: line outside a fence, open to done (T15, F13, U2b1b)" {
     brief x '```' 'Status: open' '```' 'Status: open' 'Branch: feat/x'
-    printf 'Status: open\r\nBranch: feat/c\n' > docs/working/briefs/2026-10-01-crlf.md && commit_all crlf
+    printf 'Status: open\r\nBranch: feat/c\n' > docs/working/briefs/2026-10-01-crlf.md && cp "$RD" docs/working/research-2026-10-01-crlf.md && commit_all crlf
     # Lines: 1 title, 2 blank, 3-5 a fence holding a Status line, 6 the Status line, 7 Branch.
     onx 'sed -i "6s/open/done/" "$B"'
     chk "$B"
@@ -2102,12 +2177,13 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
 
 @test "--check self-merges listed paths (exec bit, a directory entry), the brief's own working docs and added reviews, and its Status line (T9, U2c1)" {
     smb "Paths: scripts/other.sh skills/x/ hooks/x.sh install.sh test/"
-    fs=(scripts/other.sh skills/x/helper.md skills/x/y/z.md hooks/x.sh install.sh test/x.bats docs/working/research-2026-10-01-x.md
+    fs=(scripts/other.sh skills/x/helper.md skills/x/y/z.md hooks/x.sh install.sh test/x.bats
         docs/working/plan-2026-10-01-x.md docs/working/checkpoint-2026-10-01-x.md docs/reviews/2026-10-01-x.md docs/reviews/code-review-2026-10-01-x.md)
-    onx 'mkdir -p scripts skills/x/y hooks test docs/reviews; for f in "${fs[@]}"; do echo x > "$f"; done; chmod +x scripts/other.sh; sed -i "s/^Status: open/Status: done/" "$B"'
+    # The research doc is on main (the fixture's); the branch changes it, keeping its grep line.
+    onx 'mkdir -p scripts skills/x/y hooks test docs/reviews; for f in "${fs[@]}"; do echo x > "$f"; done; echo x >> "$RD"; chmod +x scripts/other.sh; sed -i "s/^Status: open/Status: done/" "$B"'
     chk "$B"
     [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && [ "${#lines[@]}" -eq 13 ] && [ -z "$stderr" ] || { show; return 1; }
-    has "path $B M $B"; for f in "${fs[@]}"; do has "path $B A $f"; done
+    has "path $B M $B"; has "path $B M $RD"; for f in "${fs[@]}"; do has "path $B A $f"; done
 }
 
 @test "--check refuses a self-merge path the floor names though Paths: lists it, a symlink at a listed path, and a path Paths: does not list exactly (T10, rows 349, 474, U2c1)" {
@@ -2381,4 +2457,118 @@ NLIST="neither listed in the brief's Paths: line nor one of its own files"
         want walk failed; want docs/other.md imported
         [ "$(wc -l < "$S/log")" -eq 1 ] || { echo "$w: $(wc -l < "$S/log") listings"; return 1; }
     done
+}
+
+# The failure-pattern steps (Q-226 [5]). fpref K WHY...: --check refused brief x
+# for K gaps, then printed exactly the gap lines WHY..., then no other gap line.
+# fpok: --check passed it with no gap line. onb SHELL: SHELL run on feat/x as it
+# is (onx starts from main each time), then committed.
+GREPGAP="has no line starting \"Failure-pattern grep:\" with a value after the colon (research-plan-implement's failure-pattern lookup)"
+FPL=docs/thoughts/failure-patterns.md
+fixgap() { echo "$1 fix(...) commits on feat/x add no new FP-NNN entry to $FPL, and its research doc has no line starting \"Failure-pattern skip:\" with a reason (pr-prep's failure-pattern advisory)"; }
+fpref() {
+    local k="$1" i g; shift
+    chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: $k failure-pattern gaps on feat/x (gap lines follow)" ] && [ -z "$stderr" ] || { show; return 1; }
+    i=1
+    for g in "$@"; do [ "${lines[$i]}" = "gap $B: $g" ] || { echo "want line $i: gap $B: $g"; show; return 1; }; i=$((i + 1)); done
+    [[ "${lines[$i]:-}" != gap* ]] || { echo "an extra gap line"; show; return 1; }
+}
+fpok() { chk "$B"; [ "$status" -eq 0 ] && [[ "${lines[0]}" == "ok $B "* ]] && ! printf '%s\n' "$output" | grep -q '^gap ' && [ -z "$stderr" ] || { show; return 1; }; }
+onb() { git checkout -q feat/x && eval "$1" && commit_all onb && git checkout -q main; }
+# entry N: a library entry line for number N (as written, so 0002 keeps its zeros).
+entry() { echo "- **FP-$1** 2026-10-01 symptom:s$1 cause:c fix:f ref:r"; }
+
+@test "--check refuses a branch whose research doc is absent, not a file or lacks a valued Failure-pattern grep: line; a bullet, a star, an indent or a CR passes (Q-226 [5])" {
+    gated feat/x
+    fpok   # the fixture's research doc, committed on main with the brief, carries the line
+    onx 'git rm -q "$RD"'; fpref 1 "its research doc $RD is not in the tip of feat/x"
+    onx 'git rm -q "$RD"; mkdir -p "$RD" && echo x > "$RD/f"'; fpref 1 "its research doc $RD is not a regular file in the tip of feat/x"
+    # A symbolic link (mode 120000) to a file holding the line is no research doc either.
+    onx 'mv "$RD" docs/working/real.md && ln -s real.md "$RD"'; fpref 1 "its research doc $RD is not a regular file in the tip of feat/x"
+    for body in 'Failure-pattern grep:' 'Failure-pattern grep:   ' '- Failure-pattern grep:' 'Failure-pattern greps: FP-001' 'x Failure-pattern grep: FP-001' '- - Failure-pattern grep: FP-001' '**Failure-pattern grep:** FP-001'; do
+        onx 'printf "# R\n\n%s\n" "$body" > "$RD"'; fpref 1 "its research doc $RD $GREPGAP" || { echo "body: $body"; return 1; }
+    done
+    for body in 'Failure-pattern grep: no matches found' '- Failure-pattern grep: FP-001' '* Failure-pattern grep: x' '   - Failure-pattern grep: x' $'Failure-pattern grep: x\r'; do
+        onx 'printf "# R\n\n%s\n" "$body" > "$RD"'; fpok || { echo "body: $body"; return 1; }
+    done
+}
+
+@test "--check: a fix(...) commit the branch adds needs a new library entry or a Failure-pattern skip: line; other subjects and fixes merged in from main need neither (Q-226 [5])" {
+    mkdir -p docs/thoughts && entry 001 > "$FPL" && commit_all library
+    gated feat/x
+    # FP-024: the pass beside the refusal, in one fixture. Subjects that are not fixes.
+    onb 'git commit -q --allow-empty -m "fixture: data"; git commit -q --allow-empty -m "feat: fix it"; git commit -q --allow-empty -m "docs: x" -m "fix: in the body"'; fpok
+    # A fix on main, merged into the branch, is main's.
+    git commit -q --allow-empty -m "fix(main): on main"; git checkout -q feat/x && git merge -q --no-edit main && git checkout -q main; fpok
+    for s in "fix(x): y" "fix: y" "fix!: y" "Fix(X): y" "FIX: y"; do
+        git checkout -q feat/x && git commit -q --allow-empty -m "$s" && git checkout -q main
+        fpref 1 "$(fixgap 1)" || { echo "subject: $s"; return 1; }
+        git branch -q -f feat/x feat/x~1
+    done
+    git checkout -q feat/x && git commit -q --allow-empty -m "fix(a): one" && git commit -q --allow-empty -m "fix(b): two" && git checkout -q main
+    fpref 1 "$(fixgap 2)"; fixes="$(git rev-parse feat/x)"
+    # The skip line, valued, clears it; empty, it does not.
+    onb 'echo "Failure-pattern skip:" >> "$RD"'; fpref 1 "$(fixgap 2)"
+    onb 'echo "- Failure-pattern skip: review-iteration fixes to code first written here" >> "$RD"'; fpok
+    # Or a new entry, without the skip line.
+    git branch -q -f feat/x "$fixes"; onb 'entry 002 >> "$FPL"'; fpok
+    # An indented or code-quoted entry is no entry.
+    git branch -q -f feat/x "$fixes"; onb 'printf "    - **FP-002** x\n\`- **FP-003**\`\n" >> "$FPL"'; fpref 1 "$(fixgap 2)"
+}
+
+@test "--check refuses a duplicate entry number the merge adds, compared as a number, but not one main already holds; the library unreadable is a gap (Q-226 [5])" {
+    mkdir -p docs/thoughts && { entry 001; echo; entry 002; } > "$FPL" && commit_all library
+    gated feat/x
+    onx 'entry 001 >> "$FPL"'; fpref 1 "the merge of feat/x holds FP-001 2 times in $FPL (renumber the branch's entry)"
+    onx 'entry 0002 >> "$FPL"'; fpref 1 "the merge of feat/x holds FP-002 2 times in $FPL (renumber the branch's entry)"
+    # Two branches that picked one number at different places merge clean; the merge holds it twice.
+    onx 'entry 003 >> "$FPL"'
+    { entry 003; cat "$FPL"; } > "$FPL.n" && mv "$FPL.n" "$FPL" && commit_all "main's FP-003"
+    fpref 1 "the merge of feat/x holds FP-003 2 times in $FPL (renumber the branch's entry)"
+    # A duplicate main already holds is main's: a new entry beside it passes.
+    entry 002 >> "$FPL" && commit_all "main's own duplicate"
+    onx 'entry 004 >> "$FPL"'; fpok
+    # Not a regular file in the merge, or on main (then in the merge too, as feat/x keeps it).
+    onx 'git rm -q "$FPL" && mkdir -p "$FPL" && echo x > "$FPL/f"'
+    fpref 1 "$FPL in the merge of feat/x is not a regular file"
+    git rm -q "$FPL" && mkdir -p "$FPL" && echo x > "$FPL/f" && commit_all "main's library a directory"
+    onx 'echo y > other.txt'
+    fpref 2 "$FPL in the merge of feat/x is not a regular file" "$FPL on the default branch is not a regular file"
+}
+
+@test "--check over two briefs: one's failure-pattern gaps and files do not carry into the next (Q-226 [5])" {
+    mkdir -p docs/thoughts && entry 001 > "$FPL" && commit_all library
+    brief y "Status: open" "Branch: feat/y"; y="$B"; work feat/y
+    git checkout -q feat/y && git rm -q docs/working/research-2026-10-01-y.md && git commit -q -m "fix: y" && git checkout -q main
+    gated feat/x; x="$B"
+    chk "$y" "$x"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $y: 2 failure-pattern gaps on feat/y (gap lines follow)" ] || { show; return 1; }
+    has "ok $x $(git rev-parse feat/x) $(git merge-tree --write-tree main feat/x)"
+    [ "$(printf '%s\n' "$output" | grep -c "^gap $x")" -eq 0 ] || { show; return 1; }
+}
+
+@test "--check's failure-pattern gaps: one line each, after the checkout refusal and before denied paths in precedence, printed under either; a failed commit listing is a gap, not zero fixes (Q-226 [5])" {
+    gated feat/x
+    onb 'git rm -q "$RD"; git commit -q -m "fix: y"; mkdir -p docs && echo x > docs/roadmap.md'
+    fpref 2 "its research doc $RD is not in the tip of feat/x" "$(fixgap 1)"
+    has "deny $B A docs/roadmap.md: $NOWN"; has "path $B A work-feat-x.txt"
+    # A git that fails the listing: the gate names it, never reads it as no fix commits.
+    S="$BATS_TEST_TMPDIR/bin"; mkdir -p "$S"
+    printf '#!/usr/bin/env bash\n[[ "$1" == rev-list && "$*" == *--no-commit-header* ]] && { echo boom >&2; exit 1; }\nexec %q "$@"\n' "$(command -v git)" > "$S/git"; chmod +x "$S/git"
+    git branch -q -f feat/x main; onb 'git commit -q --allow-empty -m "fix: y"; echo "Failure-pattern skip: a reason" >> "$RD"'
+    PATH="$S:$PATH" chk "$B"
+    [ "$status" -eq 2 ] && [ "${lines[0]}" = "refuse $B: 1 failure-pattern gaps on feat/x (gap lines follow)" ] \
+        && [ "${lines[1]}" = "gap $B: the commits on feat/x could not be listed, so its fix(...) commits are unknown" ] || { show; return 1; }
+    fpok
+    # A research doc that cannot be read: one read gap (the environment's), and no fix gap
+    # on top, though the branch has a fix commit (the skip line it holds is unseen).
+    printf '#!/usr/bin/env bash\n[[ "$1" == ls-tree && "$*" == *research-* ]] && { echo boom >&2; exit 1; }\nexec %q "$@"\n' "$(command -v git)" > "$S/git"
+    PATH="$S:$PATH" fpref 1 "its research doc $RD in the tip of feat/x could not be read"
+}
+
+@test "--check from a self-merge loop's own branch: the checkout refusal stays the verdict and the gap lines still print (Q-226 [5])" {
+    sm; git checkout -q feat/x && git rm -q "$RD" && commit_all "drop the research doc"
+    chk "$B"
+    [ "$status" -eq 2 ] && [[ "${lines[0]}" == "refuse $B: $CO; "* ]] && [ "${lines[1]}" = "gap $B: its research doc $RD is not in the tip of feat/x" ] || { show; return 1; }
 }

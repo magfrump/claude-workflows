@@ -268,15 +268,15 @@ shim() {
     commit_all "main copies"
     for f in build-loop.sh dev-cycle.sh questions.sh lib/dev-cycle-read.sh; do echo 'echo working copy; exit 9' > "scripts/$f"; done
     echo 'echo "lib at ${BASH_SOURCE[0]}" >&2' >> "$U/scripts/lib/dev-cycle-read.sh"
-    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger  from-opt"; exit 0; }' "$U/scripts/questions.sh"
+    sed -i '2i [[ "${1:-}" != open ]] || { echo "Q-001  trigger           from-opt"; exit 0; }' "$U/scripts/questions.sh"
     d6 build-loop.sh --settings
     [ "$status" -eq 0 ] && [[ "$output" == *"slots 3 default: "* ]] && [ -n "$stderr" ] || { show; return 1; }
     while IFS= read -r l; do [ "$l" = "lib at $U/scripts/lib/dev-cycle-read.sh" ] || { echo "[$l]"; show; return 1; }; done <<<"$stderr"
     # The snippet exports no config pair, so --state run through it passes caller_gate (row 702).
     d6 build-loop.sh --state; [ "$status" -eq 0 ] && [ "$output" = ok ] || { show; return 1; }
     d6 dev-cycle.sh
-    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger  from-opt\n'* ]] || { show; return 1; }
-    d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger  from-opt" ] || { show; return 1; }
+    [ "$status" -eq 0 ] && [[ "$output" == *$'\n- Q-001  trigger           from-opt (legacy, in questions.md: the owner\'s `questions.sh migrate` moves it)\n'* ]] || { show; return 1; }
+    d6 questions.sh open; [ "$status" -eq 0 ] && [ "$output" = "Q-001  trigger           from-opt" ] || { show; return 1; }
 }
 
 @test "the D6 snippet refuses before running anything: a blob or commit replace ref, info/grafts, not exactly one plain main or master (T36, U3b3)" {
@@ -433,6 +433,59 @@ ${W//Q-001/Q-003}"; git reset -q --hard
     cd_is "refuse HEAD: it has more than one merge base with the default branch's $(git rev-parse main); merge the default branch into HEAD first"
 }
 
+@test "a you: fyi acknowledged seen: --cycle-diff takes it only with --answered, --main-log reads it as answers, and a range line as other (decision 040)" {
+    F='**Needs:** you: fyi · **Opened:** 2026-10-28 · **Status:**'
+    mkdir -p docs/working
+    printf '%s\n' '# Questions' '### Q-001 · read-this' "$F OPEN" '' 'Read this.' '### Q-002 · and-this' "$F OPEN" '' 'And this.' > docs/working/questions.md
+    printf '%s\n' '# Archive' > docs/working/questions-archive.md; commit_all questions; S="$(git rev-parse main)"
+    git checkout -q -b chore/dev-cycle-2026-10-28
+    W="refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+    # Recorded one line per entry: the anti-forgery rule holds for an fyi as for any route.
+    sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
+    git add -A; cd_is "$W"; cd_is ok --answered Q-001
+    # The bold label form, the same.
+    git reset -q --hard; sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a **Answer:** seen' docs/working/questions.md
+    git add -A; cd_is "$W"; cd_is ok --answered Q-001
+    # The owner's batch pasted as a range: the Status flip alone still refuses.
+    git reset -q --hard; sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md
+    sed -i '/^Read this/a Q-001\xe2\x80\x93Q-002: seen' docs/working/questions.md; grep -qx $'Q-001–Q-002: seen' docs/working/questions.md; git add -A
+    cd_is "$W
+${W//Q-001/Q-002}"
+    cd_is ok --answered Q-001 --answered Q-002
+    # On main: a per-entry seen line is the answers class; a range line is not an answer line, so other.
+    git reset -q --hard; git checkout -q main
+    sed -i '0,/\*\*Status:\*\* OPEN/s//**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^Read this/a Q-001: seen' docs/working/questions.md
+    commit_all seen; A="$(git rev-parse main)"
+    sed -i '/^Q-001: seen/a **Answer:** seen' docs/working/questions.md; commit_all bold; B2="$(git rev-parse main)"
+    sed -i 's/\*\*Status:\*\* OPEN/**Status:** ANSWERED/' docs/working/questions.md; sed -i '/^And this/a Q-002\xe2\x80\x93Q-003: seen' docs/working/questions.md
+    grep -qx $'Q-002–Q-003: seen' docs/working/questions.md; commit_all range; R="$(git rev-parse main)"
+    ml "$S" 2 "main $R 3
+answers $A seen
+answers $B2 bold
+other $R range"
+}
+
+@test "--cycle-diff lets the cycle close its own watch in watching.md, refuses a watch dropped and an owner entry moved there (decision 040 unit 3)" {
+    T='**Needs:** trigger · **Opened:** 2026-10-30 · **Status:**'
+    qa; git checkout -q main; mkdir -p docs/working
+    printf '%s\n' '# Watching' '## Open' '' '### Q-010 · w' "$T OPEN" '' 'Watch for x.' '' '### Q-011 · v' "$T OPEN" '' 'Watch for y.' '' '## Closed' > docs/working/watching.md
+    commit_all watching; git checkout -q chore/dev-cycle-2026-10-12; git merge -q --ff-only main
+    # Closed by the cycle: Status flipped, an observation line, moved under ## Closed; no --answered needed.
+    sed -i '/^### Q-010/,/^Watch for x\./d' docs/working/watching.md
+    printf '%s\n' '### Q-010 · w' "$T ANSWERED" '' 'Watch for x.' 'Q-010: met, seen in run 12' >> docs/working/watching.md; git add -A; cd_is ok
+    # A new watch filed, and one filed closed, pass too: the file is the cycle's own.
+    printf '%s\n' '### Q-012 · u' "$T ANSWERED" >> docs/working/watching.md; git add -A; cd_is ok
+    # A watch dropped, or its heading renamed, refuses; so does deleting the file.
+    git reset -q --hard; sed -i '/^### Q-011/,/^Watch for y\./d; s/^### Q-010 · w$/### Q-010 · renamed/' docs/working/watching.md; git add -A
+    cd_is "refuse docs/working/watching.md: Q-010's heading changed or is gone; a watch closes by moving under ## Closed, never by deletion
+refuse docs/working/watching.md: Q-011's heading changed or is gone; a watch closes by moving under ## Closed, never by deletion"
+    git reset -q --hard; git rm -q docs/working/watching.md; cd_is "refuse docs/working/watching.md: it is deleted"
+    # An owner entry moved out of questions.md into watching.md is still an owner entry gone.
+    git reset -q --hard; sed -n '/^### Q-001/,/^| \*\*\[1\]/p' docs/working/questions.md >> docs/working/watching.md
+    sed -i '/^### Q-001/,/^| \*\*\[1\]/d' docs/working/questions.md; git add -A
+    cd_is "refuse docs/working/questions.md: Q-001's heading, Needs or answer lines changed or are gone, and Q-001 is not in --answered"
+}
+
 @test "the answer label regex is the same in the lib's ANSWER_AWK, ANSWERS_AWK and QKEYS_AWK (U3c i2 architecture 1)" {
     r='/^\*\*answer(:|ed| \()/'
     [ "$(grep -cF "$r" "$REPO_ROOT/scripts/lib/dev-cycle-read.sh")" -eq 1 ] && [ "$(grep -cF "$r" "$BL")" -eq 2 ]
@@ -525,6 +578,26 @@ rec() { mkdir -p docs/working/cycles && printf '%s\n' "$@" >> docs/working/cycle
     rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; bl --land-cycle --main "$M"
     [ "$status" -eq 0 ] && [[ "$output" == "landed chore/dev-cycle-2026-10-13-0900 $(git rev-parse HEAD) "* ]] && [ "$(git -C "$R" rev-parse HEAD^1)" = "$M" ] \
         && [ -z "$(git -C "$R" status --porcelain --untracked-files=no)" ] || { show; return 1; }
+}
+
+# plant_hooks: every hook name git knows, executable in the hooks directory, each appending its name to $FIRED.
+FIRED="$BATS_TEST_TMPDIR/fired"
+plant_hooks() { local h d; d="$(git rev-parse --path-format=absolute --git-common-dir)/hooks"; mkdir -p "$d"
+    for h in applypatch-msg pre-applypatch post-applypatch pre-commit pre-merge-commit prepare-commit-msg commit-msg post-commit pre-rebase post-checkout post-merge pre-push pre-receive update proc-receive post-receive post-update reference-transaction push-to-checkout pre-auto-gc post-rewrite sendemail-validate fsmonitor-watchman post-index-change; do
+        printf '#!/bin/sh\necho %s >> "%s"\n' "$h" "$FIRED" > "$d/$h"; chmod +x "$d/$h"; done; }
+
+@test "--land-cycle runs no hook planted in the hooks directory, by compare-and-swap or by the fast-forward where main is checked out (C9, T2, Q-141)" {
+    qa; B=chore/dev-cycle-2026-10-12; plant_hooks
+    # The control: the fixture's own plain git runs them (so an empty $FIRED below is not a dead hook).
+    git update-ref refs/heads/probe HEAD; grep -qx reference-transaction "$FIRED" || { cat "$FIRED"; return 1; }
+    rec "Branch: $B"; M="$(git rev-parse main)"; rm -f "$FIRED"
+    bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [[ "$output" == "landed $B "* ]] && [ "$(git rev-parse main^1)" = "$M" ] && [ ! -e "$FIRED" ] || { show; cat "$FIRED"; return 1; }
+    # Main checked out in the first worktree: the land fast-forwards it there.
+    git checkout -q main; git worktree add -q -b chore/dev-cycle-2026-10-13-0900 "$BATS_TEST_TMPDIR/wt" main; cd "$BATS_TEST_TMPDIR/wt"
+    rec "Branch: chore/dev-cycle-2026-10-13-0900"; M="$(git rev-parse main)"; rm -f "$FIRED"
+    bl --land-cycle --main "$M"
+    [ "$status" -eq 0 ] && [ "$(git -C "$R" rev-parse HEAD^1)" = "$M" ] && [ ! -e "$FIRED" ] || { show; cat "$FIRED"; return 1; }
 }
 
 @test "--land-cycle judges the merge, not the index: a rename git pairs into a new questions file carries main's answer, and a conflict refuses (row 753, U4a)" {

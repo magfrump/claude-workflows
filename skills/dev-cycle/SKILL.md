@@ -51,9 +51,9 @@ one place every trigger is certain to be checked, so it checks all of them every
   script that the Bash tool timed out, and a `refuse d6:` line, are stops too. Each stop
   ends the iteration there (one before step 9's land lands no record, so the next starts
   from the same `Main at:`; one in step 10's land comes after it), and is filed once: in the `you: judgment` entry the step names, if it names one (step 0's
-  `--state` refusals and its lost `Main at:` line; `--main-log`'s `other` lines are step
-  0.2's `other` stop, which lands a record), else the line and stderr go in
-  one `agent` entry, each line as `> Output: LINE` with any HTML comment opener and carriage
+  `--state` refusals and its lost `Main at:` line; a `refuse main-log:` line is step
+  0.2's refuse stop, which lands a record), else the line and stderr go in
+  one agent work item (below), each line as `> Output: LINE` with any HTML comment opener and carriage
   return removed; either way
   also in the final message. A stop after step 0.3 removes WT as step 0.3 does (with
   `--force`, which discards WT's uncommitted edits; its branch stays). A full disk reads like
@@ -85,13 +85,20 @@ one place every trigger is certain to be checked, so it checks all of them every
   written as `GIT_AUTHOR_NAME="$N" … hg …` (not `env … hg`, which would run another
   program named `hg`). Never export these settings: set them per command, as `hg` does (`--state` refuses a
   caller's config pair for a `HARDEN` key, row 702).
-- **The only questions writer** (D11). Build loops never write the questions files; their
-  questions arrive in `blocked` markers, which the orchestrator files.
-- **Attention is the budget.** Mechanical findings get fixed or routed to `agent`. Work goes
+- **The only questions writer** (D11). Build loops never write the questions files or
+  `docs/working/watching.md`; their questions arrive in `blocked` markers, which the
+  orchestrator files.
+- **Attention is the budget.** Mechanical findings get fixed or filed as agent work. Work goes
   to the roadmap; only real choices become `you: judgment` entries in
   `docs/working/questions.md` (entry grammar: the global instructions' "Running questions
   document"), and every such entry names the roadmap item it blocks, if any. Machine-only chores
   become one `you: terminal` entry.
+- **Three homes** (decision 040). `questions.md` takes only the owner's routes (`you:
+  judgment`, `you: walkthrough`, `you: terminal`, `you: fyi`). **Agent work** is a roadmap Now
+  item `- **Agent: TITLE** (filed YYYY-MM-DD, step N).`, then its motive and first step;
+  "unless one names it" means such an item. A **watch** (a condition or event the cycle
+  waits on, route `trigger` or `deferred`) is an entry in `docs/working/watching.md`, in the
+  questions grammar (ID from `questions.sh next-id`), which the cycle closes itself (step 3).
 - **Undocumented is broken.** A feature without documentation is a bug. A merge that changes
   behavior with no matching doc change is a step 4 finding: the doc is written in-cycle if
   that is mechanical, otherwise it is filed on the roadmap as a bug, never as an idea. Every
@@ -244,7 +251,7 @@ d6() {
     own "$D6_OPT/scripts/$f"; [[ -f "$D6_OPT/scripts/$f" ]] || no "$D6_OPT/scripts/$f is not a regular file"
   done
   x="$D6_OPT/scripts/lib"; while own "$x"; [[ "$x" != / ]]; do x="${x%/*}"; x="${x:-/}"; done
-  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE bash "$D6_OPT/scripts/$s" "$@"
+  env -u BASH_ENV -u ENV -u DEV_CYCLE_SCRUBBED -u QUESTIONS_LIVE -u QUESTIONS_ARCHIVE -u QUESTIONS_WATCHING bash "$D6_OPT/scripts/$s" "$@"
   exit "$?"
 }
 # Under bash -s the script is the heredoc on stdin: bash has read this whole
@@ -259,7 +266,7 @@ Every step ends with a line in the cycle record, including "skipped: <reason>"; 
 is recorded, never silently dropped.
 
 ```
-0 start and digest → 1 health and cleanup → { 2 triggers | 3 questions | 4 spot-check | 4b audit check }
+0 start and digest → 1 health and cleanup → 1b migrations → { 2 triggers | 3 questions | 4 spot-check | 4b audit check }
   → 5 brainstorm (conditional) → 6 roadmap → 7 collect → 8 build briefs → 9 record and land
   → 10 dispatch → final message → wait or go again
 ```
@@ -272,7 +279,7 @@ the record in step order. Step 4 uses one read-only subagent per sampled merge. 
 
 ### 0. Start and digest
 
-Start every iteration in this order (D13); a stop below (but step 0.2's `other` stop) ends
+Start every iteration in this order (D13); a stop below (but step 0.2's refuse stop) ends
 the iteration with no record, so the next one starts from the same `Main at:`:
 
 1. **`--state`**, run through the D6 block from the main worktree (the session's starting
@@ -295,8 +302,17 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    `hg -C MAIN_WT diff --quiet C M -- PATHS`, PATHS being GATE_CODE's (a test pins the line):
    `scripts/build-loop.sh scripts/dev-cycle.sh scripts/questions.sh scripts/lib/ skills/dev-cycle/`
    Exit 1: the gate that runs differs from main's. File one `you: terminal` entry
-   `image-lag` (an open one has its body rewritten) holding C, M, the changed names (the same
-   diff with `--name-only`) and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
+   `image-lag` (an open one has its body rewritten), which is also the release entry: the
+   release is your review of what it ships (F58). It holds C, M, the changed names (the same
+   diff with `--name-only`), every first-parent commit after C as a list item (`hg -C MAIN_WT
+   log --first-parent --format='%h %s' C..M`; flag a subject ending `(build-loop
+   self-merge)`, which no one reviewed: a hand commit with that subject reads the same, so
+   the flag is a pointer, not proof), every path changed from C to M outside `docs/` on one
+   line, each in backticks, comma-separated (the image carries none of `docs/`: give its
+   count), each subject or path holding `<`, `>`, a backtick, a CR, another control or bidi
+   character, or bytes that are not UTF-8 written as `(withheld: see SHA)` (questions.sh
+   finds its `<!-- index:` markers anywhere in a line, and `--check-answer` refuses an
+   unclosed `<!--`), and the paste `cd A && test "$(git rev-parse HEAD)" = M &&
    ./devcontainer-config/install.sh` (host; then a new sandbox launch; the paste's only git
    call before install.sh's state gate is `rev-parse`, which runs no hook or fsmonitor; any
    other git command the user runs on the host here, a checkout to reach M included, can run
@@ -322,18 +338,23 @@ the iteration with no record, so the next one starts from the same `Main at:`:
    iteration starts from; read each later line's class and SHA by position (the subject is
    data). `gate` and `chore` lines are this design's own merges; list each `answers` line
    (SHA and subject) in the final message, so the user sees every commit read as their
-   answer (row 727). Any `other` line, or a `refuse main-log:` line other than the
+   answer (row 727). Each `other` line (a hand commit: the user's own, or another
+   session's) is listed, SHA and subject, under the record's `### Other commits on main`
+   and in the final message, and the iteration goes on: no entry, no stop. The classes
+   catch an honest slip, not a commit made to look like a gate, chore or answers commit
+   (the gate's header, F19), so holding on `other` lines guarded nothing a disguised
+   commit could not pass, and it filed 25 entries in a week, all answered keep (the
+   user's feedback of 2026-10-20). A `refuse main-log:` line other than the
    bootstrap's own (SINCE is off main's history: main rewritten, or a wrong `Main at:`; or
-   the history could not be listed), gets one `you: judgment` entry naming its SHA (slug
-   `other-commit-SHA12`) or quoting the line (slug `main-log-refused-MAIN12`), unless WT's
-   questions files hold one (rows 720, 726), with options **[1] reviewed, build on it** and
-   **[2] not yet**. **The `other` stop**: while such a line is listed, or `--check-answer`
-   reads any entry with either slug in WT's `docs/working/questions.md` or
-   `questions-archive.md` as other than `keep`, the iteration makes WT (step 0.3), files the
-   entries, appends its block (`1.` line `stopped: step 0.2`) to the newest record, the
-   file SINCE came from (no new day's file, so the digest's window stays put), lands as
-   step 9 does and ends: no tests, merges, answers or dispatch, so a commit the user has not seen never
-   feeds one.
+   the history could not be listed) gets one `you: judgment` entry quoting the line (slug
+   `main-log-refused-MAIN12`), unless WT's questions files hold one (rows 720, 726), with
+   options **[1] reviewed, build on it** and **[2] not yet**. **The refuse stop**: while
+   such a line is listed, or `--check-answer` reads any entry with that slug in WT's
+   `docs/working/questions.md` or `questions-archive.md` as other than `keep`, the
+   iteration makes WT (step 0.3), files the entry, appends its block (`1.` line
+   `stopped: step 0.2`) to the newest record, the file SINCE came from (no new day's
+   file, so the digest's window stays put), lands as step 9 does and ends: no tests,
+   merges, answers or dispatch.
 3. **The worktree.** `hg -C MAIN_WT worktree add -b chore/dev-cycle-DATE-HHMM WT MAIN`, with WT at
    `.claude/wt-dev-cycle-DATE-HHMM` in MAIN_WT (UTC time; a name taken: the next minute).
    When this session's previous iteration stopped after committing (its branch not in
@@ -349,14 +370,14 @@ the iteration with no record, so the next one starts from the same `Main at:`:
 reads the window start, triggers, questions, roadmap and idea log from that working tree. Keep
 its output. It is read-only. Its sections feed the steps: 1 activity (context), 2 triggers
 (step 2), 3 watched questions (step 3), 4 spot-check sample and 6 merges with code but no
-docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 8 skipped inputs (the
-record's `### Skipped inputs`). If the digest says the repo has no
+docs (step 4), 5 roadmap (step 6), 7 inputs (steps 4b and 5), 7b pending migrations (step
+1b), 8 skipped inputs (the record's `### Skipped inputs`). If the digest says the repo has no
 `docs/working/questions.md`, step 1 creates it unless section 8 blocks the path. Then check the Window line, in this order:
 
 - It says "records, or a directory above them, were skipped", or names a newer record that
   was skipped: a record, or one of `docs/`, `docs/working/` or the cycles directory, is not a plain
   file or directory, so records may exist that the digest could not read. Note that in this
-  record, file one `agent` entry listing the paths section 8 gives, unless an open one
+  record, file one agent work item listing the paths section 8 gives, unless one
   already reports them (never read, copy or rewrite through them), and rerun with `--since` set to the date of the last cycle you know
   ran (none known: keep the window the digest chose).
 - Otherwise, if the window starts before the last cycle you know ran (or says no cycle record
@@ -364,8 +385,8 @@ record's `### Skipped inputs`). If the digest says the repo has no
   that cycle's date. Here and above, a cycle you know ran is one that reached step 9's land;
   an iteration that stopped does not count (U4b2 confirm3 F1).
 
-If the digest fails (non-zero exit or a missing section), stop the cycle: file one `agent`
-entry with the error and write **no** cycle record, so the next window still starts at the
+If the digest fails (non-zero exit or a missing section), stop the cycle: file one agent work
+item with the error and write **no** cycle record, so the next window still starts at the
 last good one.
 
 ### 1. Health and cleanup
@@ -384,7 +405,7 @@ last good one.
   nothing: record that and skip the step's check (row 750).
   Read failures from the file and triage them as pr-prep step 5a does (caused by recent work,
   pre-existing, flaky). No health check: "skipped: none in this repo".
-- If the digest's section 8 lists `docs/`, `docs/working/` or a questions file, skip the
+- If the digest's section 8 lists `docs/`, `docs/working/`, a questions file or `watching.md`, skip the
   next two commands and note why in the record: they would write through that path.
   Otherwise, run `questions.sh init` (it creates only what is missing) and then
   `questions.sh archive` (it also reindexes) through the D6 block from WT, so
@@ -392,19 +413,51 @@ last good one.
   questions that cannot be read this cycle are reported, not guessed (a `refuse d6:` line
   or a timed-out call is still a stop, as the Rules say).
 - `hg -C MAIN_WT worktree list` and `hg -C MAIN_WT worktree prune` (a locked worktree, a
-  live loop's, is never pruned). List merged branches; deleting them needs the
-  user's approval, so put the list in one `you: terminal` entry rather than deleting (an
-  open one is updated in place, not filed again), leaving out `chore/dev-cycle-*`
-  branches a record on main names in a `Branch:` line (only their count: deleting the
-  iteration branches is roadmap item (a)). Only a
-  name that `--check-branch` prints `ok` for goes into that entry's paste block (git allows
-  names such as `a$(id)`, which a paste would run); list any other name as plain text outside
-  the block, for the user to handle. Skip any branch or worktree a brief holding a slot (as in
-  the Rules) names: work on it may be in progress.
+  live loop's, is never pruned). Delete merged branches without asking (handoff answer 2,
+  Q-153 [1]: the global instructions exempt `git branch -d` of a merged branch): list them
+  with `hg -C MAIN_WT for-each-ref --merged refs/heads/main --format='%(refname:short)'
+  refs/heads/`, pass the names to one `--check-branch` call, and run
+  `hg -C MAIN_WT branch -d NAME` (each name its own argument) only for a name it prints
+  `ok` for that is not `main` or `master`, not this iteration's own branch, and not named
+  by a brief holding a slot (as in the Rules: work on it may be in progress). Never `-D`:
+  git refuses `-d` for a branch not merged into MAIN_WT's HEAD or checked out in a
+  worktree, and such a refusal is recorded, not retried another way. The record's `1.`
+  line gives the count deleted; any name `--check-branch` skipped is listed in the record
+  for the user, never deleted.
 - List working docs in `docs/working/` whose task has merged, in the cycle record. Do not run
   `archive-working-docs.sh`: it serves the self-improvement loop and moves files into a
   gitignored archive.
 - Fix what is mechanical now, one commit per concern. File the rest.
+
+### 1b. Migrations
+
+A merged change to a convention other repos' files follow (the questions entry grammar or
+routes, the roadmap's sections, a brief's or a record's shape) ships a migration: a line in
+`scripts/lib/migrations.sh` (its header is the grammar; `guides/convention-changes.md`
+says how to add one). The digest's section 7b names each migration this repo still needs,
+because a file holds a line in the shape the change replaced. Catching up comes before
+continuing existing work, so this step runs before the triggers and before any collect,
+brief or dispatch:
+
+- `pending ID (CONVENTION): PATH line N; remedy: REMEDY`: unless WT's questions files hold
+  an open entry with slug `migrate-ID`, file one `you: terminal` entry with that slug. Its
+  question names the migration and the line found; its paste is the remedy, run from the
+  repo's root, then a commit of the files it changed (two or more filed this iteration:
+  one paste, in the first, which the others point at). Interim: the iteration goes on, and
+  every reader sees the old shape as before. The cycle does not run the remedy itself: a
+  migration rewrites the questions files' entries or the roadmap's headings, which step 9's
+  `--cycle-diff` refuses without the owner, and holding the iteration until the owner runs
+  it would stop every loop on a chore (S10). An answered `migrate-ID` entry whose migration
+  is still pending gets no new entry; the final message names it. An open `migrate-ID`
+  entry whose ID a checked section 7b (neither **NOT checked** nor `not checked ID`) no
+  longer lists has been run: the record and the final
+  message say so, for the owner to answer it.
+- `not checked ID: …`, or **Migrations were NOT checked**: the record and the final
+  message, never read as none pending.
+
+The record's `1b.` line lists each pending ID with its entry (`filed Q-NNN` or `open
+Q-NNN`), or `none`, or what was not checked; the final message lists pending migrations
+first.
 
 ### 2. Revisit triggers
 
@@ -420,23 +473,27 @@ layout is reported as **NOT checked**: read it by hand, and do not take the miss
 none. For each, decide **fired / not fired / cannot tell**
 and write the evidence (a command and its output, a count, a commit). "Cannot tell" names what
 would tell. The previous record's verdicts are context, never the answer: decide each one
-again. A fired trigger becomes a questions.md entry that links the decision record; route it
-`agent` when the trigger itself names the response, `you: judgment` when it reopens a choice.
+again. A fired trigger that names its own response becomes an agent work item, and one that
+reopens a choice a `you: judgment` entry; either links the decision record.
 Do not reopen a decision on a trigger that has not fired. A trigger that fires between cycles
 waits for the next digest.
 
 ### 3. Watched questions
 
-- For each open `trigger` or `deferred` entry, check its own condition. If it has been met,
-  change its route and say why in the entry; if its entry names an observation, it stays open
-  until that observation has been made.
-- Read every open `agent` entry. One opened before the last cycle record is stale and gets an
+- For each watch the digest lists, check its own condition; if its entry names an
+  observation, it stays open until that observation has been made. A met watch in
+  `watching.md` is closed here, without the user: `**Status:** ANSWERED`, a line
+  `Q-NNN: met — EVIDENCE`, and the entry moved under `## Closed` (`--cycle-diff` refuses a
+  watch's heading dropped). What it releases becomes agent work or a `you:` entry. A watch the digest
+  marks legacy (still in `questions.md`) cannot be changed by the cycle: record it as met, and
+  it closes in `watching.md` after the user's one `questions.sh migrate` run.
+- Read Now's agent work items. One filed before the last cycle record is stale and gets an
   action now: if it is mechanical, fits in one commit and needs no choice, do it in-cycle, at
-  most 3 per cycle, oldest first; otherwise it stays `agent` with a note on why it is stuck,
-  and only one stuck on a choice becomes `you: judgment`. Newer `agent` entries are listed and
-  may be left.
+  most 3 per cycle, oldest first, and move it to Done; otherwise it stays with a note on why
+  it is stuck, and only one stuck on a choice becomes `you: judgment`. Newer items are listed
+  and may be left. Legacy `agent` entries in `questions.md` are left for `migrate`.
 - If the digest prints "Watched questions were NOT checked" (with the cause: a skipped
-  questions file or archive, questions.sh missing, or `questions.sh open` failing), fix or
+  questions file, archive or `watching.md`, questions.sh missing, or `questions.sh open` failing), fix or
   report that first (never reading, copying or rewriting through a skipped path); the section
   was not checked.
 
@@ -455,7 +512,8 @@ review than to an audit; a deep audit is step 4b's job.
 the loop's research doc (`docs/working/research-STEM.md`, which the loop force-adds), and
 check it against `docs/constraints.md` at that merge. Two things are findings: a soft
 constraint that pruned an option, and a constraint not in the file that decided the pick.
-A finding is a step 4b trigger.
+A finding is a step 4b trigger, and the deep-audit task it adds names the
+`constraints-builder` skill's amend mode as the way to revise the file.
 
 ### 4b. Deep-audit check (conditional)
 
@@ -474,7 +532,7 @@ the trigger; it runs on its own branch, outside this cycle. The user confirms it
 timing, and can start one by hand any time. Every deep audit covers one more dimension:
 whether the constraints and project guidance still match intent. It samples Path A records
 more widely and asks the user, per constraint, to promote it, keep it soft or drop it (one
-`you: judgment` entry), and checks that `Self-merge never:` covers the paths that take
+`you: judgment` entry; the revision is a `constraints-builder` amend run), and checks that `Self-merge never:` covers the paths that take
 effect on merge in this repo (F57).
 
 ### 5. Brainstorm (conditional)
@@ -506,7 +564,7 @@ Update `docs/roadmap.md`, creating it from this template if missing:
 
 What this repo is working on and what comes next. Maintained by the dev-cycle skill; cycle
 records are in docs/working/cycles/. Decisions waiting on the user live in
-docs/working/questions.md.
+docs/working/questions.md, and the cycle's watches in docs/working/watching.md.
 
 ## Now
 ## In flight
@@ -535,7 +593,9 @@ docs/working/questions.md.
 - **Ideas**: surviving brainstorm items, unranked, each with its signal, and dropped items,
   each with its reason and brief.
 - **Done**: items finished since the last cycle, each with the commit `--check-brief`
-  printed.
+  printed (agent work done in-cycle: the iteration's branch name).
+- `docs/working/roadmap-from-questions.md` (left by the user's `questions.sh migrate`): fold
+  each entry into Now as agent work, its `Q-NNN` kept in the title, then `hg rm` the file.
 
 Re-ranking is proposed to the user as one `you: judgment` entry, not done, when it would
 reorder their stated priorities.
@@ -564,8 +624,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   stop its task by ID and file it as `stopped`, reason "stalled" (D1); the session keeps it
   out of step 10 until that entry is answered. Any other (its subagent ended with no
   marker, or an ended session's) goes to step 10 for `--prompt`.
-- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, lists no `other`
-  or `refuse` line after MAIN; else no merge or answer this iteration): `--merge BRIEF
+- **ready**, POLICY `self-merge` (only if `--main-log MAIN`, run again, prints no
+  `refuse` line; else no merge or answer this iteration; `other` lines are recorded as
+  step 0.2 records them): `--merge BRIEF
   --expect TIP`, run from a gate checkout,
   not WT: `--state` (from MAIN_WT, whose config the add copies), then
   `hg -C MAIN_WT worktree add --detach GT
@@ -576,7 +637,9 @@ the brief is still open and no subagent of this session runs it, step 10 re-disp
   of the paths ("K of N changed paths refused", `deny` lines following) falls through to
   review: a merge entry as below, quoting `--merge`'s lines (a deny from a rule every merge
   applies refuses again under `--approved`, and is then filed as `stopped`). A conflict is
-  `stopped`. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
+  `stopped`, and so is a failure-pattern refusal (`gap` lines following), unless every gap
+  names a failed read ("could not be read", "listed" or "compared"): that one is the
+  environment's, as below. Any other refusal (no identity, MAIN_WT's state, a moved main, a failed read)
   is the environment's, not the loop's: recorded, named in the final message, and tried
   again next iteration.
 - **ready**, review: `--check BRIEF --expect TIP`. On `ok`, one merge entry, heading
@@ -615,8 +678,9 @@ An answer starting `[1]`, or that is `1` or `keep` (any case) alone or before on
 `.,;:!)*` or a blank and a dash, reads `keep`; likewise 2 or `drop`, 3 or `done`; anything else, `unrecognized`
 (a merge entry answered "merge" included: its options are answered by number). IDs filed
 this iteration are not read: they are not on main yet. Then run `--main-log MAIN` again: if
-it lists an `other` or `refuse` line after MAIN, act on no answer this iteration (the next
-step 0.2 stops on it), so every answer acted on came in a commit the user is shown (row 727).
+it prints a `refuse` line, act on no answer this iteration (the next step 0.2 stops on
+it). An `other` line after MAIN holds nothing: record it as step 0.2 does, so every
+commit an answer was read from is shown to the user (row 727).
 
 - `open`: wait; the final message lists it with its brief. A `skip`: the record and the
   final message.
@@ -628,7 +692,9 @@ step 0.2 stops on it), so every answer acted on came in a commit the user is sho
   one the entry names, never the branch's live tip. MAIN_WT's state, no identity or a
   moved main is retried next iteration and named in the final message, the ID left off
   `Applied:`; any other refusal is filed as `stopped`, its lines the reason. `drop` closes the brief; `done` re-dispatches it, naming the ID; `unrecognized`: the
-  record and the final message.
+  record and the final message. An answer the user gave in session is read here once
+  step 9 has landed it (as `--answered`), so it merges in the next iteration, like one they
+  committed.
 
 Add each ID acted on to the brief's `Applied:` line as `Q-NNN=ACTION` (", " between items;
 none yet: a line `Applied: ITEM` at its end), ACTION being `redispatch`, `merged`, `drop`
@@ -687,6 +753,7 @@ Model: <the model id running this cycle>
 ### Steps
 0. digest: done
 1. health and cleanup: <done>; health check <passed at MAIN / unchanged since P / failed / skipped: reason>
+1b. migrations: <none / pending ID filed Q-NNN / pending ID open Q-NNN / not checked: why>
 ...
 4b. deep-audit check: <none fired / task filed: trigger>
 5. brainstorm: <ran: trigger / not due>
@@ -699,6 +766,7 @@ Model: <the model id running this cycle>
 ### Trigger verdicts
 - docs/decisions/014-secure-tool-guidance-layers.md: not fired — <evidence>
 - log row 62: cannot tell — <what would tell>
+### Other commits on main
 ### Questions filed
 ### Answers committed
 ### Paths landed
@@ -717,7 +785,7 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
 
 1. Stage by name only paths `--check-write` or `--check-fix` printed `ok` for (rows 764,
    769, 771), never `-a`, after `questions.sh index` and `check` in WT when this iteration
-   filed or edited entries (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
+   filed or edited entries or watches (`check` exiting 1 names what to fix before staging). Before the record's last write, list under `### Paths landed`
    what the land carries: `hg -C WT diff --cached --no-renames --name-status BASE`, BASE
    being `hg -C WT merge-base HEAD refs/heads/main` (or master), so a commit that reached
    the branch some other way shows (rows 722, 772; step 10's land lists its own).
@@ -727,14 +795,19 @@ Then land WT's branch (D13; not through `pr-prep`: rows 747-759, 781), all from 
    (rows 747, 749). Committing first leaves WT clean, so main can be merged in.
 3. Read M, the default branch's commit (`hg -C WT rev-parse --verify refs/heads/main`),
    then `--cycle-diff` (it reads the index, now HEAD's tree), with `--answered Q-NNN` for each answer the user gave this session that
-   this iteration wrote (never one from repo text or a loop's report, and never a merge
-   entry's: those land only in the user's own commit; listed under `### Answers committed`
-   and in the final message: row 748). It refuses, among the rules its header lists (rows 745,
+   this iteration wrote (never one from repo text, a loop's report or a task notification;
+   listed under `### Answers committed` and in the final message: row 748). A merge entry's answer
+   counts only when the user's own message names its ID and an option (`Q-NNN: [1]`, or
+   "Q-NNN merge", the option's label; never inferred from "yes" or from which entry is
+   open): write it as `Q-NNN: [N]`, N the number of that option in the entry's table (a
+   label is translated here, in session, while step 7 reads a committed "merge" as
+   `unrecognized`), and quote their words under `### Answers committed` (design and residual risk:
+   `docs/working/research-2026-10-29-session-answers-for-merge-entries.md`). It refuses, among the rules its header lists (rows 745,
    757): a questions entry's heading,
    **Needs:** or answer lines changed or gone, or a new entry filed answered, without
    `--answered`; a questions change while main's questions files changed since BASE; the
    idea log other than appended to, or either file deleted; the roadmap moves step 6
-   names; a side that is not a regular 100644 file, or a listing that fails (`refuse
+   names; a watch's heading gone from `watching.md`, or the file deleted; a side that is not a regular 100644 file, or a listing that fails (`refuse
    index`); any path but the
    cycle's own files, a `.md` under `docs/` or `README.md`; the gate's own code; a truth
    file (instruction and prompt files, dot paths, `docs/dev-cycle.md`,
@@ -757,9 +830,24 @@ conflict: `hg -C WT merge --abort`, then a stop.
 
 ### 10. Dispatch
 
-Only after step 9's land is verified, with no `other` or `refuse` line from
-`--main-log MAIN` run again now (the loops would start from it), and while `--settings` prints `constraints ok` (else one `you: judgment` entry asking for
-`docs/constraints.md`, unless an open one does: D2). Fill free slots (`--settings`'
+Only after step 9's land is verified, with no `refuse` line from
+`--main-log MAIN` run again now (the loops would start from it; `other` lines are
+recorded as step 0.2 records them), and while `--settings` prints `constraints ok` (else one `you: judgment` entry,
+slug `constraints-doc-missing`, asking for `docs/constraints.md` and naming the `constraints-builder` skill that drafts it, unless WT's questions
+files hold one with that slug, open or answered: D2). Whether or not it dispatches, when
+`--settings` prints `policy review unset: WHY`, file one `you: judgment` entry, slug
+`build-loop-policy-unset`, unless WT's questions files hold one with that slug, open or
+answered: the policy is the user's once-per-repo call (handoff design), and a repo
+onboarded before codebase onboarding asked for it otherwise runs `review` without anyone
+choosing it. The entry quotes WHY and gives options **[1] self-merge** (the lines
+`Build-loop policy: self-merge` and `Self-merge never: none`), **[2] self-merge, with never
+globs** (the same, with the paths the user names on the never line) and **[3] review**
+(`Build-loop policy: review`), each with the exact lines for `docs/dev-cycle.md` (made
+from "Project settings" above if missing; a file the cycle never writes: the user, or a
+session they ask, commits it), each option's cost (self-merge lands the off-floor paths a
+brief lists with no review, and the health check then runs any merged script or test;
+review files one merge entry per finished loop, which waits on the user), and interim
+`review`. It blocks nothing. Fill free slots (`--settings`'
 `slots` less the loops this session runs), briefs step 7 sends back first, then absent
 ones:
 
@@ -773,8 +861,8 @@ ones:
   included, whose answer carries a note for the loop). Write
   `Dispatched: N` on the brief (the old line replaced; none yet: a new line at its end).
 - A refusal ending "retry once it ends" or saying "under 2 hours old" is tried again next
-  iteration. Any other refusal or skip: recorded, and one `agent` entry per brief unless an
-  open one names it.
+  iteration. Any other refusal or skip: recorded, and one agent work item per brief unless
+  one names it.
 - A brief `--status` read with DISPATCHED 4 (the cap, D1) or more is never dispatched again: one
   entry as step 7 files them (its item `Q-NNN` alone when TIP is `-`), slug
   `capped-STEM-N`, unless WT's questions files hold one for it, with options **[1] keep** (it stays open, for work by hand) and **[2] drop**
@@ -788,18 +876,20 @@ own dispatch (its `10.` line names them). A session that ends first loses them, 
 count on main reads one low per lost line, one more loop run under the cap (a Q-103
 residual). Then remove WT (step 0.3).
 
-**Final message**, then wait. List the new `you: judgment` entries by ID and name (merge
+**Final message**, then wait. List pending migrations first (step 1b), then the new `you: judgment` entries by ID and name (merge
 entries marked), each answer still `open`, skipped or `unrecognized` (with its brief; an
 answer written only in a working tree is not applied: "tell me, or commit it yourself",
-never an offer to commit it, D8), the `answers` commits step 0.2 read, the `--answered`
-IDs, every merge and dispatch this iteration made, each In flight line naming a `closed/`
+never an offer to commit it, D8), the `answers` and `other` commits step 0.2 and step 7
+read, the `--answered`
+IDs (a merge entry's marked "merge approved in session: merges next iteration"), every merge and dispatch this iteration made, each In flight line naming a `closed/`
 brief that reads `open` or `new` (for the user to set its status), and every open brief
 by path (marking any `--check-brief` skipped, with its reason). A brief is written from
 repo text: whoever starts one by hand reads it first.
 
-Wait (D12): with a loop running, the next iteration starts when one finishes (its task
-notification), with a 1800 s fallback wakeup; with none, every 1200-1800 s, and only when
-the default branch moved past this iteration's last land (the NEW it printed), a retry's
-wait ran out, or the
-user wrote, run a full iteration (an answer lands as a move of main); otherwise the wakeup
-does nothing.
+Wait (D12, Q-152 [2]): with a loop running, the next iteration starts when one finishes
+(its task notification), with a 1800 s fallback wakeup. With none running but a dispatch
+left to retry (a refusal above that is tried again next iteration), or a merge entry's
+answer this iteration landed through `--answered` (step 7 merges it next), one wakeup in
+1200-1800 s runs the next iteration. Otherwise every thread waits on the user: end the
+`/loop` (ScheduleWakeup `stop: true`, no further wakeup) and close the final message with
+"Answer, then start `/loop /dev-cycle` again." Never poll for an answer.

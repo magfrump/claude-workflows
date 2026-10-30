@@ -1,7 +1,7 @@
 # cc-isolated — usage guide
 
-Last verified: 2026-09-27
-Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
+Last verified: 2026-10-20
+Relevant paths: `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-push.sh`, `test/cc-push.bats`, `devcontainer-config/cc-verify.sh`, `devcontainer-config/egress/`, `devcontainer-config/Dockerfile`, `test/cc-isolated-functions.bats`, `hooks/live-verify-gate.sh`, `scripts/paper-queue.sh`, `test/paper-queue.bats`
 
 `cc-isolated` launches an isolated Claude Code session inside a devcontainer for
 **any** git repo on this host, from one central host-side config (decision 016).
@@ -16,31 +16,56 @@ is already done.
 
 ## Command reference
 
-```bash
-cc-isolated                       # session for the git repo containing $PWD
-cc-isolated ~/code/other-project  # session for an explicit repo
-cc-isolated --list                # blessed config hash + verified-live status, host-tool state, registered projects
-cc-isolated --register ~/code/api --profile python   # widen egress, then re-bless
-cc-isolated --bless               # re-bless the installed config after YOU reviewed it
-cc-isolated --probe-only [REPO]   # REBUILD REPO's container from the blessed config, run the
-                                  # self-probe, record the config verified live on a pass
-cc-isolated --help                # usage header, exit status included
-cc-push --remote <url> [REPO]     # push a session's commits via a host-only clone; first
-                                  # time. --remote is sticky: stored in the clone, reused
-cc-push [REPO]                    # later pushes (REPO defaults to the checkout holding $PWD)
-cc-push --branch NAME [REPO]      # a branch other than the one HEAD names
-cc-push --yes [REPO]              # no [y/N] prompt (the preview still prints)
-cc-push --clone DIR [REPO]        # a host-only clone other than the default
-cc-push --allow-running [REPO]    # go on although the session's container runs (warns)
-cc-push --help                    # usage header, exit codes included
-```
+A table rather than a code block with `# …` notes, so a copied command carries
+no note (see the paragraph after it).
+
+| Command | What it does |
+|---|---|
+| `cc-isolated` | session for the git repo containing `$PWD` |
+| `cc-isolated ~/code/other-project` | session for an explicit repo |
+| `cc-isolated --list` | blessed config hash + verified-live status, host-tool state, registered projects |
+| `cc-isolated --register ~/code/api --profile python` | widen egress, then re-bless |
+| `cc-isolated --bless` | re-bless the installed config after YOU reviewed it |
+| `cc-isolated --probe-only [REPO]` | RECREATE REPO's container from the blessed config, run the self-probe, record the config verified live on a pass |
+| `cc-isolated --help` | usage header, exit status included |
+| `cc-push --remote <url> [REPO]` | push a session's commits via a host-only clone; first time. `--remote` is sticky: stored in the clone, reused |
+| `cc-push [REPO]` | later pushes (REPO defaults to the checkout holding `$PWD`) |
+| `cc-push --branch NAME [REPO]` | a branch other than the one HEAD names |
+| `cc-push --yes [REPO]` | no [y/N] prompt (the preview still prints) |
+| `cc-push --clone DIR [REPO]` | a host-only clone other than the default |
+| `cc-push --allow-running [REPO]` | go on although the session's container runs (warns) |
+| `cc-push --help` | usage header, exit codes included |
+| `cc-verify --check FILE REPO BRANCH` | live-verify BRANCH's config without installing it (below) |
+| `cc-verify --clean` | remove what an interrupted `cc-verify` run left |
 
 `cc-push` takes one checkout (`cc-push A B` and `cc-push A -- B` are usage
-errors). Both tools follow `install.sh`'s exit-status convention (decision log
+errors), and `cc-isolated` one workspace, under the same rule. Before `--`,
+`cc-isolated` also refuses a word starting with `#`, and a `--profile` value
+starting with `#` or `-`. Copy the command, not a `# …` note after it (other
+blocks in these guides still carry them): interactive zsh passes the note as
+arguments unless `setopt interactive_comments` is on, and the launcher used to
+take the note's last word as the workspace; now the line exits 2 and names the
+offending value. A directory whose name starts with `#` is `./#name` or
+`-- '#name'`. Both tools follow `install.sh`'s exit-status convention (decision log
 #58): 1 for an error, or for a prompt you declined; 2 for bad usage.
 
 The target is always resolved to a **git toplevel**; pointing it at a non-repo
 directory is a hard error (it refuses rather than guessing another repo).
+
+### Verify a branch without installing it: cc-verify
+
+`cc-verify --check FILE REPO BRANCH` stages the merge of `main` and BRANCH (from
+REPO's objects, never its working tree), runs your installed `cc-isolated` on that
+stage and a scratch clone named `VERIFY-<tree8>` under `~/cc-verify`, runs FILE in
+the container, and removes what it created at exit (an image that existed
+before the run is kept); nothing is installed and other
+sessions keep running. It refuses a staged `devcontainer.json` that reaches the host
+differently from your installed one, shows the `devcontainer.json` and `Dockerfile`
+diffs, and asks y/N (it lists other changed items, such as a seccomp profile, but
+does not judge their content: diff those yourself before the y). A pass prints the `Live-verified:` trailer for the merge. Add
+`~/cc-verify` to your agents' sandbox `denyWrite` first. `cc-verify --help` has the
+rest; what the first host run must show is in
+`docs/working/research-2026-10-20-cc-verify-host-tool.md` §6.
 
 ## What a launch does, in order
 
@@ -95,7 +120,7 @@ GitHub IP ranges). Language toolchains are granted per project, **host-side only
 | `python`| `pypi.org`, `files.pythonhosted.org` | `pyproject.toml` · `requirements.txt` · `setup.py` |
 | `rust`  | `crates.io`, `index.crates.io`, `static.crates.io` | `Cargo.toml` |
 | `lean`  | Lean release hosts, mathlib olean cache | `lean-toolchain` · `lakefile.toml` · `lakefile.lean` |
-| `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
+| `android`| Google Maven (`dl.google.com`, `maven.google.com`), Maven Central, `services.gradle.org`, `plugins.gradle.org`, `plugins-artifacts.gradle.org` | `gradlew` · `build.gradle[.kts]` · `settings.gradle[.kts]` |
 | `dotnet` | `api.nuget.org` | `ProjectSettings/ProjectVersion.txt` · `Packages/manifest.json` · top-level `*.sln` / `*.csproj` |
 | `llm`   | `openrouter.ai` | never — deliberate opt-in |
 | `scholar`| Literature APIs (OpenAlex, Crossref, Semantic Scholar, Unpaywall) and open-access full-text hosts (arXiv, PMC / Europe PMC, bioRxiv/medRxiv, OpenReview) | never — deliberate opt-in |
@@ -113,6 +138,14 @@ drop `rust`. That is deliberate (a grant you can only widen is not a grant), so 
 every profile the project needs on every `--register`. `cc-isolated --list` shows the
 current grant per project, and `--register` prints the transition
 (`base,rust -> base,lean`) plus an explicit note for anything it drops.
+
+A name must match the base name of a file in the installed `egress/` directory exactly
+(`python` for `egress/python.txt`; the names are the table's first column). A path such as
+`../egress/python`, a different case, a glob, a space, an empty item (`python,` or
+`,python`) and a symlinked profile file are all refused before anything is written, and the
+error lists the available names. `--register` with no `--profile` (or `--profile ''`) is
+refused rather than recorded as an empty grant. To narrow a project back to base egress
+only, register `--profile base`.
 
 Two rules that are load-bearing for the security model:
 
@@ -318,7 +351,17 @@ configs name: `core.hooksPath` dirs, include and `includeIf` targets,
 `core.attributesFile`, and local-path remotes inside the checkout
 (`remote.*.url`/`pushurl`, `remote.pushDefault`, `branch.*.remote`/`pushRemote`,
 `url.<base>.insteadOf`, `file://localhost/`, relative paths such as `sub/a:b`,
-resolved in the working tree of the repo whose config names them). Every remote
+resolved in the working tree of the repo whose config names them). A relative
+`core.hooksPath` in a repo's config (husky's `.husky/_`), set there or in a
+file it includes, is walked in every
+working tree that uses that config: the repo's own and each linked worktree or
+other `.git` entry in the checkout (an agent worktree runs
+`<worktree>/.husky/_`), and in every git dir it reaches, where receive hooks
+run for a push into that repo (`git push .` runs `.git/.husky/_/pre-receive`).
+A relative remote URL, remote name or legacy URL in a repo's config is likewise
+walked as resolved in each of those working trees (`../up.git` from an agent
+worktree is `.claude/worktrees/up.git`, inside the checkout), and in an
+embedded repo made with `--separate-git-dir`, in its working tree. Every remote
 URL it meets, local or not (legacy files' included, `insteadOf` bases not), and
 each `remote.*.url`/`pushurl` in your own config, is also rewritten by every `url.<base>.insteadOf` and `pushInsteadOf`
 rule whose value it starts with — from any config the scan reads, your own
@@ -329,7 +372,8 @@ git dir (`includeIf "gitdir:…"` and `gitdir/i:` matched against the physical
 path and against the path you launched on, symlinks kept, as git matches both;
 `onbranch:` and `hasconfig:` taken as matching), so a relative
 `core.hooksPath` or `core.attributesFile` there is walked in the top-level
-working tree and in every embedded repo. Those, your `insteadOf` rules and your
+working tree and in every embedded repo or linked worktree (a relative
+`core.hooksPath` also in each one's git dir, for receive hooks). Those, your `insteadOf` rules and your
 remote URLs are the only entries of your own config it follows; none is recorded. It also records whether git would
 accept the checkout's git dir (and the kind of its `HEAD` — a branch, a commit
 id or a link — not which branch, so switching branches is not a finding) and
@@ -392,7 +436,11 @@ permission to run git in the checkout.
 
 This is the one list of what the scan and `cc-push` do not cover
 (`cc-exit-scan.sh` and `cc-push.sh` point here); update it here when a change
-opens or closes a route.
+opens or closes a route. The boundary (Q-172 [2]): a route that needs only
+ordinary setup plus what a session can write in the checkout is one to close,
+and stays listed here until it is; a route that needs some unusual state
+present at launch stays here by design. Push with `cc-push`, which runs no git
+in the checkout, whatever the scan says.
 
 - **A hook that runs a tracked file.** A hook present at launch that runs a
   file from the working tree (husky, the pre-commit framework, lefthook,
@@ -412,8 +460,8 @@ opens or closes a route.
   SIGTERM) scans nothing. Ctrl-C that ends the session still scans; a Ctrl-C
   *during* the scan stops it and exits 4 ("the exit scan was interrupted").
 - **A slow scan.** The cost is forks per git dir, not I/O: about 2–4 s per
-  snapshot on a ~400k-file repository, and about 29 ms more for each embedded
-  repository (the tree walk itself is ~0.05 s per 100k files), paid at launch
+  snapshot on a ~400k-file repository, and about 30 ms more for each embedded
+  repository or linked worktree (the tree walk itself is ~0.05 s per 100k files), paid at launch
   and again at exit. Hashing is capped (64 MiB a file, 1 GiB in all), but a
   session can still plant many files or embedded repos to make the exit scan
   take a long time; at the `insteadOf` caps, rewritten URLs alone add 10-80 s
@@ -428,6 +476,30 @@ opens or closes a route.
   by locale), `file://host/` or percent-encoded `file://` URLs, a path-valued
   `pushRemote`/`pushDefault` in your own config, and a local remote that is a
   `gitdir:` file (git follows it; the scan records only the file).
+- **A local path holding `@[`, or starting with `[`, present at launch.** Git
+  cuts such a path at the `]` (`./decoy@[x]plant` pushes to `./]plant`); the
+  scan walks the path as written. This holds for a remote URL, an undefined
+  remote name, a legacy remotes file and an `insteadOf` result (Q-168 rubric R4).
+- **A relative `insteadOf` base, present at launch.** A rule such as
+  `url.../mirror/.insteadOf = gh:` turns an absolute-looking remote into a
+  relative path, which a push from a linked worktree resolves in that
+  worktree (`<worktree>/../mirror/…`, inside the checkout); the scan walks the
+  rewritten path only in the repo's main working tree.
+- **Your own relative `core.hooksPath` in a repository reached only as a
+  remote.** It is walked in the checkout's git dir and in each `.git` entry's,
+  but not in a bare repository the scan reaches as a local remote, whose
+  receive hooks a push into it runs from `<that repo>/<path>`.
+- **A `core.worktree` elsewhere, present at launch.** A relative
+  `core.hooksPath` or relative remote is walked in the directory holding each
+  `.git` entry (and, for an embedded repo, in the `core.worktree` its own
+  config names); the checkout or a linked worktree whose `core.worktree` (in
+  `config.worktree`, say) names another directory runs hooks from, and
+  resolves remotes in, `<that directory>/<path>`, which is not walked.
+- **A repo config that is a symlink to another repo's, present at launch.**
+  Git resolves a relative `include.path` against the directory of the path it
+  opened; the scan reads each config file once, by its real path, so the
+  second repo's include (and the relative `core.hooksPath` it may set) is
+  never walked.
 - **One unlistable directory blocks the scan.** The embedded-repo search walks
   the whole working tree and fails closed: a single directory you cannot list
   (a container-owned `pgdata` at mode 700, a root-owned build cache) refuses
@@ -447,7 +519,9 @@ opens or closes a route.
 - **A `.git` file naming the container's path, present at launch.** One that
   reads `gitdir: /workspace/<path>` names nothing on a host whose checkout is
   elsewhere; the scan maps it to `<checkout>/<path>` and walks only your own
-  config there, not that git dir. `git worktree repair` may point it at a
+  config there and that git dir's `core.hooksPath` (a relative one in the
+  worktree), not the git dir itself (and nothing at all when the line ends in a
+  CR, which git strips: Q-168 tech-debt T1). `git worktree repair` may point it at a
   different git dir (it goes by the worktree's name), and a git dir the scan
   never walked (one outside `.git/`, say) then runs its hooks. A `.git` added
   during the session is either git's exact form, which maps to its own private
@@ -838,8 +912,8 @@ Every launch refuses to `exec claude` unless all seven pass:
 files; it cannot know whether a container built from them works. Only a passing
 self-probe against a container whose baked hash *is* the blessed hash writes
 `~/.config/claude-devcontainer/verified-live.sha256`. `cc-isolated --list` shows
-both. Run the verification explicitly after any boundary change — it always rebuilds
-first, so it can never verify a leftover container:
+both. Run the verification explicitly after any boundary change — it always recreates
+the container first, so it can never verify a leftover container:
 
 ```bash
 cc-isolated --probe-only ~/code/api
@@ -903,6 +977,9 @@ happens to share an address with an allowlisted one (a Cloudflare neighbour of
     for any Host.
   - **Refuses a different account:** `lakecache.blob.core.windows.net` returned
     `AccountNotFound` for another storage account's Host (Q-053).
+  - **Not yet probed:** `plugins-artifacts.gradle.org`, added to `android` on
+    2026-10-20 as the plugin portal's redirect target. The probe is queued with
+    that release.
 
   The test covered only the `android` and `lean` names; `base`'s names were not
   tested. Closing the residual needs TLS interception, which the design rules
@@ -952,15 +1029,15 @@ different hostname). Add the exact name to the profile.
 | `host-tool manifest … is unreadable or malformed` | `host-tools.sha256` itself is the anomaly. Inspect it before any bless overwrites it; re-run `install.sh` to restore it. |
 | `unknown egress profile 'x'` | Typo — valid profiles are the files in `devcontainer-config/egress/`. `--list` and the error message enumerate them. |
 | Connection closes immediately on a 443 host that is in your profile | SNI mismatch — see "SNI filtering" above and `/run/cc-sni-proxy/proxy.log`. A *subdomain* of a listed name is the common case: the resolver admits the zone, the proxy admits only the exact entry. Add the exact name. |
-| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch rebuilds and verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
+| `NOTE: blessed config … has NOT been verified in a live container` at launch | Expected after `install.sh`, `--bless` or `--register`. The launch recreates the container if it was built from another config, then verifies; if it fails, read the `PROBE FAIL` line. `cc-isolated --list` shows whether the current config has ever passed. |
 | `Blessed config changed since this container was built — rebuilding` | Expected once per project after a re-bless. The container is recreated (repo and `~/.claude` volume are unaffected). |
 | `PROBE FAIL (firewall): init-firewall.sh did not complete` | The baked firewall script aborted and failed closed: egress is denied *and* `node` has no DNS/HTTPS. Read the `devcontainer up` output for the `ERROR:` line, or run `sudo /usr/local/bin/init-firewall.sh` inside to see it. If it cannot bootstrap any more, recreate it from the host with the launcher: `cc-isolated --probe-only <repo>` (recreates the container from the blessed config and re-probes), then `cc-isolated <repo>`. Not a bare `devcontainer up --remove-existing-container …` from your own shell: it drops the variables the launcher exports, and each one dropped has its own effect (among them base-only egress and an empty config hash, see the "newly registered profile has no effect" row below; a `~/.claude` volume shared across projects; and a build pointed at `/Dockerfile`), and the launcher's probe never runs. |
 | `OAuth error: getaddrinfo …` at `/login`, launch probe passed | Historically the steering-to-loopback bug (decision log #44); the firewall-complete check now catches that class at launch. If it recurs with the check passing, suspect a host missing from `egress/base.txt` — including a subdomain of a listed name. |
 | Artifact tool: `EAI_AGAIN … <uuid>.frame.claudeusercontent.com`, or an "update" publishes a second artifact | The container predates decision log #55 (the `.frame.claudeusercontent.com` zone in `base`). Re-install, re-bless, `--probe-only`. Resolver refusals are not logged, so this shows as a DNS error, not a proxy REJECT. |
-| `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai) | Resolve-at-start allowlist went stale behind rotating CDN IPs. Inside the container: `sudo /usr/local/bin/init-firewall.sh`. |
+| `Network is unreachable` mid-session for a CDN host (e.g. openrouter.ai), or `FAIL sni=<name> … not admitted by the ipset` in `/run/cc-sni-proxy/proxy.log` | Exact names are pinned in the resolver to the addresses admitted at start (decision 039), so this means a pinned address went out of service, or the name is under a `.zone` entry, which cannot be pinned. Inside the container: `sudo /usr/local/bin/init-firewall.sh` re-resolves. If it recurs for an exact name within hours, record it against decision 039's revisit trigger. |
 | `docker`/probe fails only inside a Claude Code session | Expected — CC blocks AF_UNIX sockets. Run `cc-isolated` from a normal host terminal. |
 | Claude Code auto-update fails every launch in ONE project (`.last-update-result.json` shows `install_failed`; npm log shows `ENOTEMPTY … rename … .claude-code-XXXXXXXX`) | An earlier update was interrupted (e.g. session exited mid-update), leaving npm's retire-staging dir behind in that project's container. The staging name is derived from the path, so every later update collides with the same leftover. Inside the container: `rm -rf /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/.claude-code-*`, then `claude update`. |
-| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which rebuilds with both set. The error messages now print the assignments inline for the by-hand form. |
+| A newly registered profile has no effect — the container's egress is still base-only (`/etc/cc-egress-profile` empty, `/etc/cc-config-hash` empty, proxy startup line reports too few names) | The container was rebuilt with a bare `devcontainer up --remove-existing-container …` from your own shell. `devcontainer.json` reads `CC_EGRESS_PROFILE` and `CC_CONFIG_HASH` via `${localEnv:…}`, and only `cc-isolated` exports them — run by hand they resolve to the empty string, so the image bakes base-only egress and rebuilds "successfully". Relaunch with `cc-isolated <repo>`, which recreates it with both set. The error messages now print the assignments inline for the by-hand form. |
 | Probe fails on image provenance after migrating from the 015 launcher | A leftover `.devcontainer/Dockerfile` in the target repo shadows the central one. Delete `.devcontainer/` **before** verifying (see `devcontainer-setup.md` → Migrating). |
 
 ## Related

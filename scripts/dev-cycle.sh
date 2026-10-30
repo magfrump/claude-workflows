@@ -24,8 +24,9 @@
 #             tracked file, or a gitignored one under docs/working/; at most 50
 #             per argument), "skip <arg or match>: <reason>" otherwise.
 #   --check-write  the same for one of the cycle's own bookkeeping files
-#             (roadmap, questions files, idea log, cycle records, open briefs and
-#             briefs/closed/); the file need not exist yet.
+#             (roadmap, questions files, idea log, watching.md, the listing
+#             `questions.sh migrate` leaves for the roadmap, cycle records,
+#             open briefs and briefs/closed/); the file need not exist yet.
 #   --check-brief  for a build brief path (docs/working/briefs/[closed/]
 #             YYYY-MM-DD-<slug>.md): "ok <path> new" when the default branch has no file
 #             there (not landed, or moved to closed/), else "ok <path>
@@ -273,7 +274,7 @@ echo "$n_merges merge(s) on \`$MAIN\`'s first-parent line; $commits commit(s) re
 [[ -n "$merges" ]] && { echo; echo '```'; printf '%s\n' "$merges" | sed -n '1,30p'; [[ "$n_merges" -gt 30 ]] && echo "… $((n_merges - 30)) more"; echo '```'; }
 
 printf '\n%s\n\n' "## 2. Revisit triggers"
-echo "Every trigger, in full: each decision record's \`## Revisit triggers\` section and each decision-log row that mentions revisiting, numbered or date-first (a trigger written elsewhere in a record, or in a docs/working/ design doc such as dd-*.md, is not found; an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes a questions.md entry. The last cycle record's verdicts are context, not answers."
+echo "Every trigger, in full: each decision record's \`## Revisit triggers\` section and each decision-log row that mentions revisiting, numbered or date-first (a trigger written elsewhere in a record, or in a docs/working/ design doc such as dd-*.md, is not found; an output line over 4096 bytes is cut: read the record itself then). Decide each: fired / not fired / cannot tell, with the evidence. A fired trigger becomes roadmap agent work, or a questions.md entry when it reopens a choice. The last cycle record's verdicts are context, not answers."
 found=0
 trig() { awk '/^## Revisit triggers/ { on = 1; next } on && /^## / { exit } on && NF { print }'; }
 n_before_triggers=${#SKIPPED[@]}
@@ -389,11 +390,15 @@ printf '\n%s\n\n' "## 3. Watched questions (trigger and deferred routes)"
 QS="$SCRIPT_DIR/questions.sh"
 [[ -f "$QS" ]] || QS="$HOME/.claude/scripts/questions.sh"
 QA=docs/working/questions-archive.md
-# questions.sh checks that the archive exists with a test that follows a
-# symlink, which would answer "does this host path exist?", so the archive
-# passes the same check first. It is checked once, up front, so a non-plain
-# archive is listed in section 8 whatever branch below runs.
+QW=docs/working/watching.md
+# questions.sh checks that the archive exists, and reads watching.md, with
+# tests that follow a symlink, which would answer "does this host path
+# exist?" (or read it), so both pass the same check first. They are checked
+# once, up front, so a non-plain one is listed in section 8 whatever branch
+# below runs. Watches live in watching.md (decision 040); `open` lists its
+# open ones with the live file's, where legacy watches stay until `migrate`.
 qa_at=""; skipped "$QA" && qa_at="$SKIP_AT"
+qw_at=""; skipped "$QW" && qw_at="$SKIP_AT"
 nc="**Watched questions were NOT checked** —"
 if skipped docs/working/questions.md; then
   echo "$nc $(skipnote docs/working/questions.md)"
@@ -403,14 +408,33 @@ elif [[ ! -f "$QS" ]]; then
   echo "$nc questions.sh was not found (next to this script or in ~/.claude/scripts)."
 elif [[ -n "$qa_at" ]]; then
   SKIP_AT="$qa_at"; echo "$nc $(skipnote "$QA")"
+elif [[ -n "$qw_at" ]]; then
+  SKIP_AT="$qw_at"; echo "$nc $(skipnote "$QW")"
 else
   qs_err="$(mktemp)"; trap 'rm -f "$qs_err"' EXIT
-  if open_q="$(bash "$QS" open 2>"$qs_err")"; then
-    # `open` prints "ID  route  slug" in columns of 2+ spaces; a route can
-    # contain one space ("you: judgment"), a slug can contain "trigger".
-    watched="$(printf '%s\n' "$open_q" | awk -F'  +' '$2 == "trigger" || $2 == "deferred"')"
+  [[ -f "$QW" ]] || echo "No $QW in this repo: watches are read from docs/working/questions.md only (\`questions.sh init\` creates it)."
+  # The three paths pinned to the ones checked above, whatever the caller
+  # exported. The second call names a watching file that does not exist (it
+  # reads as empty; /dev/null would be refused as not a regular file), so it
+  # lists the live file alone: its watches are legacy.
+  qopen() { QUESTIONS_LIVE="$ROOT/docs/working/questions.md" QUESTIONS_ARCHIVE="$ROOT/$QA" QUESTIONS_WATCHING="$1" bash "$QS" open; }
+  if open_q="$(qopen "$ROOT/$QW" 2>"$qs_err")" && open_l="$(qopen "$qs_err.none" 2>>"$qs_err")"; then
+    # `open` prints "ID  ROUTE  slug", ROUTE padded to 16 (the longest
+    # route); it is read by position, since a route can hold a space ("you:
+    # judgment") or be empty (a malformed entry) and a slug can hold
+    # "trigger". Every line whose route is not an owner's or `agent` is
+    # listed: a route that is no watch's is a malformed entry, which must
+    # not drop out of the list (questions.sh check names it).
+    watched="$(printf '%s\n' "$open_q" | awk '{ r = substr($0, index($0, "  ") + 2, 16); sub(/ +$/, "", r) }
+      r !~ /^(you: (judgment|walkthrough|terminal|fyi)|agent)$/ { print (r == "trigger" || r == "deferred" ? "w" : "m") $0 }')"
+    legacy=" $(printf '%s\n' "$open_l" | awk '{ printf "%s ", $1 }')"
     if [[ -n "$watched" ]]; then
-      while IFS= read -r line; do echo "- $line"; done <<< "$watched"
+      while IFS= read -r line; do
+        k="${line:0:1}"; line="${line:1}"
+        if [[ "$k" == m ]]; then echo "- $line (malformed route: \`questions.sh check\` names it)"
+        elif [[ "$legacy" == *" ${line%%  *} "* ]]; then echo "- $line (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"
+        else echo "- $line"; fi
+      done <<< "$watched"
     else
       echo "None open."
     fi
@@ -513,6 +537,42 @@ elif skipped "$LOG"; then
   echo "- $(skipnote "$LOG")"
 else
   echo "- No $LOG: no ideas seeded, no brainstorm recorded"
+fi
+
+printf '\n%s\n\n' "## 7b. Pending migrations"
+# The registry (lib/migrations.sh, beside the reader lib) names, per convention
+# change, a file and a pattern only its old shape matches; one still matching
+# is a migration this repo has not run (the skill's step 1b). Only the line
+# number is printed, never the line.
+MIG_LIB="$SCRIPT_DIR/lib/migrations.sh"
+nm="**Migrations were NOT checked** —"
+if [[ ! -f "$MIG_LIB" || -L "$MIG_LIB" ]]; then
+  echo "$nm lib/migrations.sh is missing beside this script (a copy older than this section)."
+elif ! bash -n -- "$MIG_LIB" 2>/dev/null; then
+  echo "$nm lib/migrations.sh does not parse."
+else
+  # shellcheck source=lib/migrations.sh
+  source "$MIG_LIB"
+  if [[ ${#MIG_BAD[@]} -gt 0 ]]; then
+    echo "$nm its registry has malformed lines:"; printf -- '- %s\n' "${MIG_BAD[@]}"
+  else
+    mig_out=(); mig_n=0
+    for i in "${!MIG_ID[@]}"; do
+      p="${MIG_PATH[$i]}"; [[ "$p" != - ]] || continue
+      mig_n=$((mig_n + 1))
+      if skipped "$p"; then mig_out+=("- not checked ${MIG_ID[$i]}: $(skipnote "$p")"); continue; fi
+      inrepo "$p" || continue
+      rc=0; l="$(env LC_ALL=C grep -anE -m1 -- "${MIG_ERE[$i]}" "$p")" || rc=$?
+      case "$rc" in
+        0) mig_out+=("- pending ${MIG_ID[$i]} (${MIG_CONV[$i]}): $p line ${l%%:*}; remedy: ${MIG_REMEDY[$i]}") ;;
+        1) ;;
+        *) mig_out+=("- not checked ${MIG_ID[$i]}: grep could not read $p") ;;
+      esac
+    done
+    if [[ $mig_n -eq 0 ]]; then echo "None: the registry has no migration with a file to check."
+    elif [[ ${#mig_out[@]} -eq 0 ]]; then echo "None: no file holds a line in a shape a convention change replaced."
+    else printf '%s\n' "${mig_out[@]}"; fi
+  fi
 fi
 
 # The dev-cycle skill also reads these; they are checked here so that a

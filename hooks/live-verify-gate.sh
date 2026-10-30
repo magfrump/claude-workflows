@@ -20,7 +20,7 @@
 # unasked, which is exactly how the debt accrued. `git log --grep 'Live-verified: no'`
 # then lists the outstanding debt.
 #
-# HOST TOOLS (decision log row 71). cc-exit-scan.sh, cc-gitdir.sh and cc-push.sh
+# HOST TOOLS (decision log row 71). cc-exit-scan.sh, cc-gitdir.sh, cc-push.sh, cc-verify.sh
 # run on the host and no live probe can exercise them, so they carry their own
 # trailer, `Host-tool-tested:` (what ran on a host, or `no — <reason>`), and a
 # `Live-verified:` trailer does not satisfy them. A commit touching both kinds
@@ -88,7 +88,7 @@ enforcement='^devcontainer-config/(Dockerfile|devcontainer\.json|init-firewall\.
 # list of debt a probe can pay. A commit touching both kinds needs both trailers.
 # Not end-anchored, like `enforcement`: a stray sibling such as cc-push.sh.orig is
 # gated too (it was, while the tools sat in `enforcement`).
-host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh)'
+host_tools='^devcontainer-config/(cc-exit-scan\.sh|cc-gitdir\.sh|cc-push\.sh|cc-verify\.sh)'
 boundary_touched="$(printf '%s\n' "$files" | grep -E "$enforcement" | sort -u)"
 host_touched="$(printf '%s\n' "$files" | grep -E "$host_tools" | sort -u)"
 touched="$(printf '%s\n%s\n' "$boundary_touched" "$host_touched" | grep -v '^$' | sort -u)"

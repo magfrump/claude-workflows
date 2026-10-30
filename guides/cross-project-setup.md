@@ -33,6 +33,8 @@ Create these directories in your project root:
 - `docs/reviews/` — Outputs from review skills (fact-checks, critic critiques, verification rubrics). Versioned alongside the content they review.
 - `docs/decisions/` — Architecture decision records (`NNN-title.md`) and a `log.md` for lightweight entries.
 
+- `docs/harness-feedback.md` — Entries on how harness features work or fail in this project, which the owner copies back to claude-workflows. Create it with `~/.claude/scripts/harness-feedback.py init`; grammar and ingest in [`harness-feedback.md`](harness-feedback.md).
+
 Add corresponding sections to your `CLAUDE.md` (see "Review Artifacts" and "Shared Thoughts" in this repo's global instructions file for the exact text).
 
 ## What to skip

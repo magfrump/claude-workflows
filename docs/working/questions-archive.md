@@ -81,6 +81,7 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-071](#q-071--skill-eval-suite-design) | The 50 `@needs-reports` suites can't stay green under this repo's editing rate. Their freshness stamp hashe... | 2026-09-26 |
 | [Q-072](#q-072--living-ledger-not-fed) | The review-eval goal is "recall against the living issue ledger", but `docs/working/canon-issue-ledger.md` ... | 2026-09-26 |
 | [Q-073](#q-073--skill-descriptions-truncated) | Skill descriptions run 957–2973 characters, and the live skill listing truncates them. In this session 7 ... | 2026-09-26 |
+| [Q-074](#q-074--failure-pattern-writer-trigger) | After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about... | 2026-09-26 |
 | [Q-075](#q-075--si-loop-trust-before-resume) | Q-068 was answered "resume", but only once the user trusts `scripts/self-improvement.sh` not to break their... | 2026-09-27 |
 | [Q-076](#q-076--cc-isolated-git-exit-scan) | - **Interim:** the guide's documented caveat only. | 2026-09-27 |
 | [Q-077](#q-077--cc-isolated-auto-approve-backstops) | Implement Q-070 [1]. The cc-isolated settings merge gains Bash deny rules for the credentials path and a sa... | 2026-09-27 |
@@ -96,17 +97,22 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-089](#q-089--host-tools-trust-category) | Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdir.sh`) get their own trust-... | 2026-09-28 |
 | [Q-090](#q-090--run-tests-jobs) | When `parallel` is present in the image (Q-084 step 4 prints a version), add `--jobs N` to `scripts/run-tes... | 2026-09-28 |
 | [Q-091](#q-091--cc-push-self-commondir) | `cc-push` refuses your main checkout because `.git/commondir` holds `.` (see Q-084). Remove the file, or te... | 2026-09-28 |
+| [Q-092](#q-092--drop-hook-deny-reader) | Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-... | 2026-09-28 |
 | [Q-093](#q-093--cc-push-commondir-recurs) | `.git/commondir` came back after Q-091 [1] removed it, and you deleted it again to get `cc-push` through. R... | 2026-09-28 |
 | [Q-094](#q-094--exit-scan-worktree-noise) | Every cc-isolated session that leaves an agent worktree behind exits with the full WARNING (exit 3), becaus... | 2026-09-28 |
 | [Q-095](#q-095--allowlist-size-waiver) | Branch `feat/wiring-allowlist` (5d929dd) adds the host's 857-rule allow list to `hooks/wiring.json`, so eve... | 2026-09-28 |
+| [Q-096](#q-096--exit-scan-insteadof-target) | The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, inc... | 2026-09-28 |
 | [Q-099](#q-099--roadmap-vs-feature-ideas) | Where should improvement ideas live now that `docs/roadmap.md` exists: in the roadmap's Ideas section, in t... | 2026-09-29 |
 | [Q-100](#q-100--dev-cycle-digest-review-cap) | `feat/dev-cycle-digest` (scripts/dev-cycle.sh + tests) hit the review loop's 3-iteration cap: its last full... | 2026-09-29 |
 | [Q-101](#q-101--dev-cycle-digest-after-pass-4) | The digest's fourth full pass (Q-100 [1]) found 3 Must Fix and 6 Must Address findings. Cut carry-forward a... | 2026-09-30 |
 | [Q-102](#q-102--default-test-parallelism) | `scripts/run-tests.sh --jobs 8` runs the full suite about 3× faster (140 s against 451 s serial), but no c... | 2026-09-30 |
+| [Q-103](#q-103--dev-cycle-build-loop-policy) | The build-loop handoff is built: may build loops in claude-workflows land their own branches through the ga... | 2026-10-01 |
 | [Q-104](#q-104--unit-growth-during-review) | Decision log row 62's revisit trigger fired: a unit under the ~400-line cap grew during review. Should the ... | 2026-10-02 |
 | [Q-105](#q-105--devcontainer-breakage-definition) | Decision 015's trigger "devcontainer breakage exceeds 1/week over any 2-week window → Revisit" fired on a... | 2026-10-02 |
 | [Q-106](#q-106--host-settings-merge-after-q049) | Decision 037's trigger "if Q-049 is resolved → reconsider automating the settings.json merge from the hos... | 2026-10-02 |
+| [Q-107](#q-107--claude-home-payload-second-consumer) | Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is o... | 2026-10-02 |
 | [Q-109](#q-109--delete-merged-branches-2026-10-02) | Four local branches are fully merged into `main` (0 commits beyond it) and no brief names them. Deleting br... | 2026-10-02 |
+| [Q-110](#q-110--health-check-not-run-undercount) | In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 r... | 2026-10-02 |
 | [Q-111](#q-111--build-loop-u1a-iteration-4) | U1a of the build-loop handoff (`feat/build-loop-u1a`: answers and brief lines read from main's commit) hit ... | 2026-10-05 |
 | [Q-112](#q-112--build-loop-settings-copy-rule) | How should `build-loop.sh --settings` treat a line in `docs/dev-cycle.md` that looks like a settings line b... | 2026-10-05 |
 | [Q-113](#q-113--build-loop-u1b-size-waiver) | U1b of the build-loop handoff (`feat/build-loop-u1b`, `build-loop.sh --settings`) is ~417 changed code line... | 2026-10-05 |
@@ -134,11 +140,95 @@ full. IDs are stable forever: `Q-014` means the same thing here as it did there.
 | [Q-136](#q-136--u2b2-landing) | U2b2 (`--check` refuses a self-merge brief unless it runs from a clean checkout of main's commit: gate call... | 2026-10-08 |
 | [Q-137](#q-137--u2b3a-landing) | U2b3a (the import walks resolve names against every reader root and home, so the gate in its own worktree r... | 2026-10-08 |
 | [Q-138](#q-138--u3a2-land-discovery-past-cap) | U3a2 (`build-loop.sh --merge`) passed its 3-iteration cap; the confirming pass after the iteration-4 decisi... | 2026-10-10 |
+| [Q-139](#q-139--workspace-hookspath-fails-state-gate) | `/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host sp... | 2026-10-12 |
 | [Q-140](#q-140--d6-snippet-trust-root) | Which copy of the gate should the D6 snippet run, and what decides it? | 2026-10-12 |
+| [Q-141](#q-141--u4a-asked-binding-residue) | U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: mer... | 2026-10-13 |
+| [Q-142](#q-142--u4b1-stop-path-worktree-remove) | U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration... | 2026-10-13 |
 | [Q-143](#q-143--u4b2-confirm-other-hold-gaps) | U4b2's confirming passes keep finding gaps in the `other`-commit hold each narrow fix introduces (the secon... | 2026-10-13 |
 | [Q-144](#q-144--u4c-confirm-image-checks) | U4c's confirming pass found a Medium and an Inconsistent in step 0.1's new image checks: merge U4c after on... | 2026-10-14 |
 | [Q-145](#q-145--lib-ancestor-listing-vanish-race) | Q-102's parallel gate is built and reviewed but red on a flake in gate code: the build-loop lib's walk fail... | 2026-10-14 |
+| [Q-146](#q-146--si-children-commit-rights) | How should the self-improvement loop's implementer children get the right to commit, given that the only gr... | 2026-10-14 |
 | [Q-148](#q-148--q089-escalate-merge) | Q-089 (host-only tools get their own trust category) is built and reviewed, and is waiting at the review-fi... | 2026-10-14 |
+| [Q-149](#q-149--self-merge-never-scope) | How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a releas... | 2026-10-14 |
+| [Q-150](#q-150--build-loop-c1-questions-writer) | Should the orchestrator stay the only writer of the questions files, with build loops carrying their questi... | 2026-10-14 |
+| [Q-151](#q-151--build-loop-c2-blocked-slot) | Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.) | 2026-10-14 |
+| [Q-152](#q-152--build-loop-c3-blocked-wait) | When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart i... | 2026-10-14 |
+| [Q-153](#q-153--build-loop-c4-merged-branch-deletion) | May the dev cycle delete merged branches without asking, which your global instructions forbid today ("dele... | 2026-10-14 |
+| [Q-154](#q-154--build-loop-c5-cycle-cost) | Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.) | 2026-10-14 |
+| [Q-155](#q-155--constraints-doc-missing) | This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, o... | 2026-10-14 |
+| [Q-156](#q-156--image-lag) | Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed... | 2026-10-14 |
+| [Q-160](#q-160--implement-q104-per-iteration-cap) | Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 60... | 2026-10-14 |
+| [Q-162](#q-162--merges-and-cleanup-2026-10-14) | This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so fi... | 2026-10-14 |
+| [Q-163](#q-163--merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c) | Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`script... | 2026-10-14 |
+| [Q-164](#q-164--merge-gate-feat-build-loop-u5-7c91b97455db) | Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1... | 2026-10-14 |
+| [Q-165](#q-165--branch-verify-approach) | How should a branch's container config be verified on the host without installing it over main (roadmap Now... | 2026-10-15 |
+| [Q-166](#q-166--staged-run-counts-as-live-verify) | If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count ... | 2026-10-15 |
+| [Q-169](#q-169--q117-spike-paste) | Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are me... | 2026-10-15 |
+| [Q-170](#q-170--decision-015-isolation-rerun) | Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. T... | 2026-10-15 |
+| [Q-171](#q-171--q168-landing-at-cap) | Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The fi... | 2026-10-15 |
+| [Q-172](#q-172--exit-scan-parity-boundary) | How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every revi... | 2026-10-15 |
+| [Q-174](#q-174--q106-iteration-4-gate) | Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15`... | 2026-10-15 |
+| [Q-175](#q-175--q106-merge-program-gate-coverage) | Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'... | 2026-10-15 |
+| [Q-176](#q-176--q092-deny-matcher-live-check) | Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, wh... | 2026-10-15 |
+| [Q-177](#q-177--q092-merge) | When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-dr... | 2026-10-15 |
+| [Q-178](#q-178--land-unlanded-cycle-branch-0357) | Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another... | 2026-10-15 |
+| [Q-179](#q-179--row-66-router-uptake-verdict) | Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without p... | 2026-10-15 |
+| [Q-180](#q-180--harden-and-repin-host-pastes) | The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advi... | 2026-10-15 |
+| [Q-181](#q-181--other-commit-919375bec66b) | Main's first-parent history holds `919375bec66b`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-182](#q-182--other-commit-f265d7f25556) | Main's first-parent history holds `f265d7f25556`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-183](#q-183--other-commit-9bb19d2acf29) | Main's first-parent history holds `9bb19d2acf29`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-184](#q-184--other-commit-fbe676742bd7) | Main's first-parent history holds `fbe676742bd7`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-185](#q-185--other-commit-83b653d21589) | Main's first-parent history holds `83b653d21589`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-186](#q-186--other-commit-ca5ce2eb3eb1) | Main's first-parent history holds `ca5ce2eb3eb1`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-187](#q-187--other-commit-95e3aed0e298) | Main's first-parent history holds `95e3aed0e298`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-188](#q-188--other-commit-ce9bf5c59344) | Main's first-parent history holds `ce9bf5c59344`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-189](#q-189--other-commit-16119f818ed9) | Main's first-parent history holds `16119f818ed9`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-190](#q-190--other-commit-7ab55766174b) | Main's first-parent history holds `7ab55766174b`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-191](#q-191--other-commit-ede604c910db) | Main's first-parent history holds `ede604c910db`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-192](#q-192--other-commit-71133a328ad8) | Main's first-parent history holds `71133a328ad8`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-193](#q-193--other-commit-4272a32b0afa) | Main's first-parent history holds `4272a32b0afa`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-17 |
+| [Q-194](#q-194--decision-031-t4-fix-drift-miss) | Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the f... | 2026-10-17 |
+| [Q-195](#q-195--merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0) | Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/brie... | 2026-10-17 |
+| [Q-196](#q-196--host-check-cc-isolated-profile-names) | After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on th... | 2026-10-17 |
+| [Q-197](#q-197--merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d) | Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs... | 2026-10-17 |
+| [Q-198](#q-198--merge-2026-10-17-claude-md-import-guard-cc2a8054e517) | Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/... | 2026-10-17 |
+| [Q-199](#q-199--constraints-builder-split) | The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three ... | 2026-10-19 |
+| [Q-200](#q-200--constraints-ratify) | Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same IDs, 4 hard + 10 soft, the S9... | 2026-10-19 |
+| [Q-201](#q-201--other-commit-f4a31b9a11ca) | Main's first-parent history holds `f4a31b9a11ca`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-202](#q-202--other-commit-ddecca526100) | Main's first-parent history holds `ddecca526100`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-203](#q-203--other-commit-f8d5217f4c89) | Main's first-parent history holds `f8d5217f4c89`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-204](#q-204--other-commit-c9f2fa21ca37) | Main's first-parent history holds `c9f2fa21ca37`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-205](#q-205--other-commit-55e0bdac00ae) | Main's first-parent history holds `55e0bdac00ae`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-206](#q-206--other-commit-512a151218e1) | Main's first-parent history holds `512a151218e1`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-207](#q-207--other-commit-b91563c54f91) | Main's first-parent history holds `b91563c54f91`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-208](#q-208--other-commit-0648ba95f97e) | Main's first-parent history holds `0648ba95f97e`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-209](#q-209--other-commit-685becba12fa) | Main's first-parent history holds `685becba12fa`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-210](#q-210--other-commit-8f38da0cbf67) | Main's first-parent history holds `8f38da0cbf67`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-211](#q-211--other-commit-2116c06269f8) | Main's first-parent history holds `2116c06269f8`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-212](#q-212--other-commit-2620b419ae9f) | Main's first-parent history holds `2620b419ae9f`, which is neither a gate merge nor a cycle land: have you ... | 2026-10-19 |
+| [Q-213](#q-213--log-row-73-shared-uid-git-config) | Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid ... | 2026-10-20 |
+| [Q-214](#q-214--egress-pin-resolver-release) | Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `pl... | 2026-10-20 |
+| [Q-215](#q-215--retire-egress-dnsmasq-ipset-branch) | Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, t... | 2026-10-20 |
+| [Q-216](#q-216--merge-2026-10-20-decision-015-amendment-0401d6af5705) | Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs... | 2026-10-20 |
+| [Q-217](#q-217--merge-2026-10-20-cc-verify-host-tool-e87a79122092) | Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/20... | 2026-10-20 |
+| [Q-218](#q-218--merge-2026-10-25-log-row-73-trigger-241278a4f811) | Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/202... | 2026-10-25 |
+| [Q-219](#q-219--merge-2026-10-25-widen-fix-drift-check-4695470b98b1) | Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/... | 2026-10-25 |
+| [Q-220](#q-220--merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c) | Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/... | 2026-10-25 |
+| [Q-221](#q-221--questions-doc-owner-only) | This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entri... | 2026-10-28 |
+| [Q-223](#q-223--failure-pattern-harvest-or-drop) | Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log o... | 2026-10-28 |
+| [Q-224](#q-224--merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3) | Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs... | 2026-10-28 |
+| [Q-225](#q-225--merge-2026-10-28-exit-scan-group1-remainder-19027abb7593) | Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/bri... | 2026-10-28 |
+| [Q-226](#q-226--failure-pattern-library-future) | You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-... | 2026-10-28 |
+| [Q-228](#q-228--merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003) | Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/b... | 2026-10-29 |
+| [Q-229](#q-229--merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa) | Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/brief... | 2026-10-29 |
+| [Q-230](#q-230--merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb) | Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/wor... | 2026-10-29 |
+| [Q-231](#q-231--merge-gate-2026-10-29-convention-migrations-first-f114694527dc) | Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/b... | 2026-10-29 |
+| [Q-232](#q-232--merge-2026-10-29-harness-feedback-file-2b858d2586c3) | Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/... | 2026-10-29 |
+| [Q-233](#q-233--merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8) | Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/b... | 2026-10-29 |
+| [Q-235](#q-235--merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493) | Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/br... | 2026-10-29 |
+| [Q-236](#q-236--merge-2026-10-29-skill-frontmatter-flake-9df01661e611) | Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs... | 2026-10-29 |
+| [Q-237](#q-237--merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13) | Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/brief... | 2026-10-29 |
+| [Q-238](#q-238--q168-branch-after-boundary) | What should happen to the held exit-scan branch (Q-168), now that the split units are settled? | 2026-10-30 |
 <!-- index:end -->
 
 ## Answered
@@ -2720,5 +2810,2253 @@ Implement Q-083 [1]: host-only tools (`cc-push.sh`, `cc-exit-scan.sh`, `cc-gitdi
 
 **Answer (2026-10-14, dev cycle):** done. Built and merged on Q-148 [1]: A1+A2 as 626dc300, B as df18413a (`host_tool_files()`, `host-tools.sha256`, the `Host-tool-tested:` trailer, `verify_host_tools` in cc-push, decision log row 71). Q-147 (source guard) and roadmap Ideas (B F3–F5, A1 F1) carry the remainder; the host check after install.sh is still owed (roadmap Done).
 
+### Q-154 · build-loop-c5-cycle-cost
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answer (2026-10-04, in session; plan D12; filed 2026-10-14):** [1], a full cycle every iteration for now; move to a light pass of steps 7, 8 and 10 between full cycles once the costs are visible. Filed answered in U5, as the plan says; roadmap Next "Revisit the light pass" tracks it.
+
+Should every orchestrator iteration run the full cycle, or a light pass between full cycles? (Plan C5, F53.)
+
+- **Read:** plan D12 and F53 · `docs/reviews/pre-mortem-build-loop-handoff-rev3.md` F53
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Full cycle every iteration** | Health check, every trigger, review-fix loop on the chore branch, each time a loop finishes | None | Spend per iteration is high while loops finish often |
+| **[2] Light pass between full cycles** | Steps 7, 8 and 10 with a mechanical land; a full cycle every N hours | None | A trigger waits up to N hours to be seen |
+
+- **Interim:** [1], answered.
+- **If the answer differs:** n/a.
+
+
+### Q-107 · claude-home-payload-second-consumer
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** ANSWERED
+
+Decision 036's trigger fired: "if a second consumer of the claude-home payload appears → [11]'s seam is owed". 037's host target (built in 6793b79a, recorded in 29cdd160) now installs the same `CLAUDE_HOME_SRC` assembly as the devcontainer target (`devcontainer-config/install.sh`: `assemble` at lines 498 and 857). Check whether the shared `assemble()` over `git archive` already meets [11]'s seam. If it does, record that in 036. If not, file the seam work on the roadmap.
+
+- **Read:** `docs/decisions/036-cc-isolated-repo-split.md` (candidate [11], Revisit triggers) · `assemble()` in `devcontainer-config/install.sh`
+- **Interim:** both targets share `assemble()`, which is not a `cp -r` encoding one consumer's layout. The risk 036 named is at least partly covered.
+- **Resolved 2026-10-15 (agent): not met.** In 036, [11] means assembly moves out of `install.sh` into a workflows-owned `make payload`/`build-payload.sh`. `CLAUDE_HOME_SRC` and `assemble()` are still in `devcontainer-config/install.sh` (:135, :329-362; callers :498 and :858), and `link-claude-home.sh:50` keeps a second copy of the names with no parity test (one test pins `scripts`). The trigger's named harm (a `cp -r` encoding one consumer's layout for two) is mitigated: both targets share one `git archive` assembly and one layout. Q-106's branch does not change this. The seam work is in roadmap Ideas, low priority, with the ENTRIES/CLAUDE_HOME_SRC parity test as its first step. No change to decision 036.
+
+
+
+### Q-139 · workspace-hookspath-fails-state-gate
+**Needs:** you: judgment · **Opened:** 2026-10-12 · **Status:** ANSWERED
+
+`/workspace/.git/config` sets `core.hooksPath` to `/home/magfrump/claude-workflows/.git/hooks` (the host spelling of this repo's own default hooks directory). The build-loop state gate refuses any `core.hooksPath`, so every gated mode (`--check`, `--merge`, `--start`, `--prompt`, `--state`, `--main-log`) refuses in this repo. Which way should the gate and the config meet? **Answered 2026-10-15: [1].** The value pointed at the default hooks directory, which holds only `.sample` files, so it had no effect. Unset in `/workspace/.git/config` the same day (`git config --get core.hooksPath` now exits 1); U4's first live run no longer stops at `--state` on it. The host still reports `core.hooksPath=/home/magfrump/.config/git/hooks`, from the user's global `~/.gitconfig` (checked 2026-10-15 with `--show-scope`): that is a different setting, outside the gate's reads (it reads only the repository's config and config.worktree), and the gate's and `hg`'s git ignore global config and set hooks off, so it needs no change.
+
+- **Why it's yours:** the setting is your host config (no script in this repo sets it, as far as the sessions can see), and the choice is how much the gate trusts repo config it did not write.
+- **The threats in play** (a build loop runs as your user and can write `.git/config` and `.git/hooks/`):
+  - **T1, a planted hooks directory.** A loop sets `core.hooksPath` to a directory it wrote. The next plain git command anyone runs here (your commit, a pr-prep merge, the orchestrator's own git outside the script) runs the loop's hook as you, outside the loop's sandbox and after review. Refusing every `core.hooksPath` is how the gate catches this.
+  - **T2, a hook written into the default directory.** A loop writes `.git/hooks/pre-commit` with no config change at all. No option here touches T2: the gate does not read the hooks directory today, and the script's own git runs with hooks off (`core.hooksPath=/dev/null`). It is listed so that no option below is read as closing it.
+  - **T3, a look-alike path.** Under [2], a value that reads as this repo's hooks directory but resolves elsewhere (a symlink, another reader root's spelling, `..` parts) would pass the gate and be T1 again.
+- **Read:** `scripts/build-loop.sh` state_gate (STATE_KEYS_RE) and harden · merge message of `feat/build-loop-u3b1` (ef7a1122), Areas of uncertainty.
+
+| Option | What it means | Cost to you | Threat left open if it's wrong |
+|---|---|---|---|
+| **[1] Unset it on the host** | `git config --unset core.hooksPath` in `~/claude-workflows`; git then uses the same default hooks directory, so the same hooks run. | One terminal command. | None new: T1 stays fully guarded (any `core.hooksPath` is refused). If a host tool sets it again on purpose, the gate refuses again: lost availability, not safety. |
+| **[2] Let the gate accept this repo's own hooks directory** | state_gate passes a `core.hooksPath` whose real path is this repository's own `hooks` directory under the git common dir; anything else still refuses. | None now; a small follow-up unit with review. | T3: if the real-path check has a hole, a planted directory passes, and T1 runs a loop's hook in your next plain git command. |
+| **[3] Leave it until U4** | No change; decide when the orchestrator first runs here. | None now. | None new; every gated mode keeps refusing here, so the orchestrator's first iteration in this repo stops at `--state` until this is answered. |
+
+- **Blocks:** the orchestrator's first live run in this repo (U4); nothing before it.
+- **Interim:** [3]: no code or config change.
+- **If the answer differs:** [1] needs nothing from the sessions; [2] is a follow-up unit before U4 lands.
+- **Rewritten 2026-10-12** on your note (answers-10-12-26.txt): the threats are now named separately, and the last column says which threat each option leaves open.
+
+
+
+### Q-141 · u4a-asked-binding-residue
+**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** ANSWERED
+
+U4a's confirming pass found the Asked: brief binding still matches the wrong brief in one naming shape: merge U4a after one more narrow fix, merge it as is, or rework the binding? **Answered 2026-10-15: [1]**, kept as merged (15a0d688). The user also asked for C9's hook half to be closed: `--land-cycle` now has a test that plants every hook name and asserts none fires on either write path (8c8505a5, merged faf05a8f; it fails with `core.hooksPath=/dev/null` dropped from HARDEN). C9's reflog-text half and the D3/B14 path-shape rows stay override rows.
+
+- **Why it's yours:** the loop passed its 3-iteration cap and the confirming pass that was to decide the merge found a new Medium, which by the gate written in the rubric stops the merge and comes to you (the U3a2 / Q-138 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4a.md` (iteration-4 gate) on `feat/build-loop-u4a`; `docs/reviews/security-review-2026-10-13-u4a-confirm.md` F-A, F-B; `docs/reviews/code-fact-check-report-2026-10-13-u4a-confirm.md` claim 3b.
+
+An added Asked: ID must name an entry whose heading ends `-STEM-N` for the brief that adds it (so one brief cannot inherit another's answer). The check is anchored at a hyphen, so `keep-or-drop-2026-10-02-foo-2026-10-01-x-1`, an entry for a brief whose name ends in brief x's name, passes on brief x's line (executed by both the fact-check and security). Only the cycle names briefs and writes Asked: lines; no loop can. Also open, Low: the new path allowlist compares the path as spelled, so a fix to `readme.md` or `Docs/x.md` that --check-fix allows is refused (fails closed).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | The slug's prefix may hold only letters and hyphens (`^[a-z]+(-[a-z]+)*-STEM-N$`; a stem starts with a date's digit, so no other stem fits), the allowlist compares lower-cased; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more pass of review cost; U4b inherits the slug contract |
+| **[2] Merge as is** | F-A and F-B become override rows (the cycle alone names briefs); U4b proceeds | None | A cycle that names a follow-up brief after its parent could apply the parent's answer to it |
+| **[3] Rework the binding** | Bind each Asked: ID by a `Brief:` line in the entry body instead of the slug, defined in U4b's entry grammar | A follow-up unit's review | U4a merges later; U4b's entry grammar grows |
+
+- **Blocks:** U4a's merge, hence U4b.
+- **Interim:** [1] (the Q-138 precedent), applied 2026-10-13: fixed in daa09b5f; the second confirming pass found no new Must Fix or Must Address; U4a merged at 15a0d688. The entry stays open for your answer.
+- **If the answer differs:** [2] reverts the narrow fix (two lines and a test); [3] adds a follow-up unit after U4b's entry grammar.
+
+
+
+### Q-142 · u4b1-stop-path-worktree-remove
+**Needs:** you: judgment · **Opened:** 2026-10-13 · **Status:** ANSWERED
+
+U4b1's confirming pass found a new Medium in its own fix range (the skill's stop path removed the iteration's worktree without `--force`, whose clean check runs a filter planted in the repository's config): merge U4b1 after one more narrow fix, merge it as is, or rework how the orchestrator cleans up? **Answered 2026-10-15: [1]**, kept as merged (2837bcdc). G5, B11, B12 and D11 stay override rows.
+
+- **Why it's yours:** the loop passed its 3-iteration cap and the confirming pass that decides the merge found a Medium the range introduced, which by the rubric's gate stops the merge (the Q-138 / Q-141 precedent).
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-13-feat-build-loop-u4b1.md` (iteration-4 gate) on `feat/build-loop-u4b1`; `docs/reviews/security-review-2026-10-13-u4b1-confirm.md` F1, F2; `docs/reviews/code-fact-check-report-2026-10-13-u4b1-confirm.md` claims 7, 8, 11, 13.
+
+Also open from the same pass, Medium, not introduced by the range: the bootstrap guard read the current tree, so one commit deleting every record's `Main at:` line reopened the bootstrap (no check of what moved main). Neither matters until U4c writes the D6 block and U4b2 writes `Main at:` lines; the skill text is the only change either needs.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more narrow fix, then merge** | `worktree remove --force` on both removal paths (no status run; uncommitted edits in WT are discarded), the bootstrap only when main's history never held a `Main at:` line (`git log -G`), `--main-log`'s other lines a dispatch block, not a stop; then a k=1 fact-check + security pass over that fix; merge if clean | None now | One more review pass; a stop discards the iteration's uncommitted cycle edits |
+| **[2] Merge as is** | Both become override rows for U4b2/U4c | None | Until fixed, a stop could run a planted filter as the orchestrator, once the D6 block lands |
+| **[3] Rework cleanup** | Leave WT in place on any stop and list it for removal by the user (a `you: terminal` entry), no removal by the orchestrator at all | A paste per stopped iteration | Worktrees pile up between your pastes (disk, slower import walks) |
+
+- **Blocks:** U4b1's merge, hence U4b2.
+- **Interim:** [1] (the Q-138 / Q-141 precedent), applied 2026-10-13 on `feat/build-loop-u4b1`; the second confirming pass runs next, and U4b1 merges if it finds no new Must Fix or Must Address. The entry stays open for your answer.
+- **If the answer differs:** [2] reverts the narrow fix (skill text only); [3] replaces the two removal sentences with a terminal-entry rule.
+
+
+
+
+### Q-146 · si-children-commit-rights
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+How should the self-improvement loop's implementer children get the right to commit, given that the only grant in place today also gives arbitrary code execution? **Answered 2026-10-15: [1].** The script commits for the child, with `REPO_DIR` a dedicated clone. Roadmap Next gains the build item; it should keep the child's message by having the child write it to a file the script commits with `-F`.
+
+- **Why it's yours:** it sets the trust boundary for an unattended loop on your machine, and it decides whether the loop resumes at all (Q-068 [3]).
+- **Read:** `docs/working/si-trust-evidence-2026-10-14.md`: the verdict, F1, F2 and F5, and §5.
+
+The script's own writes are confined, and the probe shows it. The children are not:
+- With cwd `/workspace`, the project allowlist applies. `Bash(bats test:*)` together with `acceptEdits` lets a child write a test file and run it, and `git -C /workspace branch:*` lets it force-delete any branch (F1, F2).
+- In a worktree or clone, `.claude/` is gitignored, so no allowlist applies. A child cannot run `git commit` (checked live), and every task fails Gate 1a after its tokens are spent (F5).
+
+Under every option below, `REPO_DIR` points at a dedicated clone (§5.1), never at `/workspace`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Script commits for the child** | The implementer only edits files. After it exits, the script runs `git add -A && git commit` in the worktree with a fixed message, and Gate 1c's file-scope check sees the result. Children get no Bash grants at all | One reviewed change to `self-improvement.sh` (about 20 lines plus tests) | The child's commit message and Confidence line are lost (the summary falls back to the task description), and children still can't run tests or `git diff` while they work |
+| **[2] Narrow per-run settings** | The script writes a settings file granting exactly `git add`, `git commit`, `git diff` and `git status` (no `bats`, no `-C`) and passes it with `--settings` to every child | One reviewed change plus a host check that `--settings` stacks with the deny list as expected | The grant leaks wider than intended (the F1 shape again), or `--settings` precedence differs from the docs (unverified here: no egress) |
+| **[3] Keep the loop dormant** | Q-068's "resume" stays conditional; the evidence report is the record | Nothing | The repo's idea generator stays off; the dev cycle's Ideas list stays its only source |
+
+- **Blocks:** the live run with real children that Q-075 imagined, and so any resume of the loop.
+- **Interim:** [3]. Nothing runs, so nothing is at risk.
+- **If the answer differs:** [1] or [2] each become one build item (roadmap Next) followed by the live run in a dedicated clone. Neither undoes anything.
+
+
+### Q-178 · land-unlanded-cycle-branch-0357
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+Branch `chore/dev-cycle-2026-10-15-0357` (tip 92f3b080, last commit 2026-10-15 09:19 -0700, made by another session) holds 13 commits that main does not: the 2026-10-14 cycle record and the open entries Q-162 to Q-177, among them 9 `you: judgment` and 3 `you: terminal`. Those include the merge entries Q-163 (Q-145) and Q-164 (U5), and the `merge/ready-2026-10-15` paste Q-162. None of them is on main, so main's questions file does not show them. How should it land?
+
+- **Why it's yours:** the orchestrator lands only its own iteration's branch. A branch another session wrote reaches main only through you or a pr-prep pass you ask for.
+- **Read:** `git log --oneline main..chore/dev-cycle-2026-10-15-0357` · `git diff --stat main...chore/dev-cycle-2026-10-15-0357` (docs only: questions, archive, roadmap, idea log, `cycle-2026-10-14.md`) · this iteration's record `docs/working/cycles/cycle-2026-10-15.md`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] land via pr-prep** | A fresh session merges main into the branch, resolves the questions and roadmap conflicts with this iteration's land, reviews the result and merges it to main | One answer | Entries no one reviewed as a set reach main. They are asks, not code, so nothing executes |
+| **[2] you land it** | You review and merge it by hand | A merge with conflicts in two files, on your time | None beyond your time |
+| **[3] drop it** | Leave it unmerged. Later cycles re-file what they meet again | None now | Its 16 asks and two merge entries are lost until rediscovered |
+
+- **Blocks:** the merges Q-163 and Q-164 ask about; through Q-164, U5 (the dispatcher) and U5's constraints ask Q-155. Through Q-162, the merged-branch cleanup.
+- **Interim:** this iteration filed none of those entries again. IDs Q-149 to Q-177 are in use on unlanded branches, so this entry starts at Q-178. It did not file a merged-branch paste or a `docs/constraints.md` ask, because Q-162 and Q-155 cover them.
+- **If the answer differs:** [3] means the next cycle re-files the constraints ask and the merged-branch paste.
+
+**Answered 2026-10-15 (in session): [1] land via pr-prep.** A fresh session merges main into `chore/dev-cycle-2026-10-15-0357`, resolves the conflicts with the 2026-10-15 cycle land, reviews the result and merges it to main.
+
+
+### Q-180 · harden-and-repin-host-pastes
+**Needs:** agent · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+The landing review of the 0357 cycle branch (Q-178) stopped at its 3-iteration cap with only amber and advisory items left, all in host-paste text. Fix them together with the re-pin of the ready branch that Q-162 already calls for, then review that change before any of these pastes is run.
+
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-chore-dev-cycle-2026-10-15-0357.md` (iteration 3); `docs/reviews/security-review-2026-10-15-0357-final.md` F1–F4; `docs/reviews/code-fact-check-report-2026-10-15-0357-final-r{1,2,3}.md`; `docs/reviews/tech-debt-triage-review-2026-10-15-0357-final.md` F5.
+- **The work, in one unit:**
+  - Rebuild `merge/ready-2026-10-15` (and `merge/u5-and-q145`, `merge/build-loop-u5-resolved`) on main, then re-pin Q-162, Q-163 and Q-164, and re-pin Q-169 to the docs branch's own commit (its file is identical at d25254da).
+  - The replace-ref guard in Q-162, Q-163 and Q-164 also refuses `info/grafts` and `shallow`, as `scripts/build-loop.sh:622` and the dev-cycle skill's D6 snippet already do. A planted graft let a pinned merge pass the guard and land other content (security final F1, executed). The "a hash cannot move" wording follows.
+  - The merge pastes say they run in the container's `/workspace`, not the host checkout (security final F2).
+  - Q-167(b) line 3 becomes `cc-isolated --profile '#' --list`: on a launcher older than the fix, `--bless` blesses without a prompt (security final F3).
+  - Q-176 creates `~/q092` with `mkdir` without `-p`, so a planted directory stops it (security final F4).
+  - Wording: Q-169's "Not verified" has 12 items, not 8. Q-170's count is 88 of 116. Q-162's pre-landing conflict list adds `questions-archive.md`, and only Q-110, doc drift and Q-160 conflict with each other. The cycle-2 tally excludes cycle 1's three landings.
+- **Resolved 2026-10-15 (agent): done on `chore/q180-repin-pastes`.** The three merge branches were rebuilt on main b71a4e9e as new `-r2` branches (the old ones kept for you to delete), and `merge/q145-r2` is new: `merge/ready-2026-10-15-r2` 09a2876f, `merge/build-loop-u5-resolved-r2` 7326d715, `merge/q145-r2` 35e13638, `merge/u5-and-q145-r2` 6c841192. Q-162, Q-163 and Q-164 are re-pinned to them; Q-163 and Q-164 stop unless Q-162's merge is on main. The guard grew past this list after review: it now refuses the state gate's config keys (`scripts/build-loop.sh` STATE_KEYS_RE, without `log.showsignature`, which the merge never reads) and its file checks, plus `fsck.`, `pager.` and `core.pager` keys and an object `git fsck` rejects; it does not check `origin/HEAD`, which a pinned merge does not read. The pastes name what no guard can check (a moved main, the shell, a running agent). Every item above is applied; the review is `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`. The "Do not run until Q-180 is done" holds are removed from each Interim.
+
+
+### Q-162 · merges-and-cleanup-2026-10-14
+**Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+This session cannot merge into main (the auto-mode classifier refuses it as a shared-resource write), so finished branches wait for you. Paste the block into the container's shell (a `!` command in a cc-isolated session, or a shell in that container), never in a host shell. The container's `/workspace` is a bind mount of your host checkout, so this is not about which files are touched but which git runs: an agent session can plant hooks and config in `.git`, and they run as whoever runs git there (a host `git status`, or a zsh prompt that runs it on `cd`, runs a planted `core.fsmonitor` on the host). On the host this guard refuses anyway, because your global config sets `core.hooksPath`. Run it while no agent session or subagent is working, take the block from the committed text (in the container shell: `git --no-pager -c core.useReplaceRefs=false show main:docs/working/questions.md`), not the working tree an agent can edit, and first look over `git --no-pager --no-replace-objects log --oneline --first-parent b71a4e9e..HEAD`: it should list only merges you made (plain `git show` and `git log` follow a planted replace ref, and page through a planted pager). It merges `merge/ready-2026-10-15-r2` by its reviewed tip, 09a2876f. The guard refuses replace refs, grafts, shallow, `info/attributes`, alternates, any filter, merge or diff driver, include, `hook.` key, pager, fsmonitor, attributes file, hooks path, gpg, fsck or partial-clone setting in your git config, and an object that fails `git fsck` (the config check must stay before `fsck`, which would run a planted fsmonitor); the merge also ignores replace refs, and every git command in the paste that writes runs with hooks off. So the merged side is the reviewed commit. The paste does not check what main itself holds (an agent that can commit there can put a change on main before you paste: hence the log check) or the shell it runs in (an alias or function for `git` or `test`, or an exported `GIT_*` variable such as `GIT_CONFIG` or `GIT_SHALLOW_FILE`, defeats any guard written into a paste). It then deletes the twelve build-loop branches already merged into main, along with their worktrees. That branch is main (as of b71a4e9e) plus seven reviewed units, the branch-verify research and spike docs (`docs/branch-verify-without-install`, docs only: Q-165, Q-169), and the decision-015 divergent design (`docs/dd-015-step4`, one doc: Q-170), each merged with `--no-ff`: T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix and the one-workspace rule. It exists because five of those nine merges (Q-110, doc drift, Q-160 and the two docs branches) conflict with main's new rows, each only in the append-only `docs/reviews/override-log.md`, and it resolves that by keeping both sides' rows. Run it before Q-163 and Q-164: their pastes stop unless this merge is on main.
+
+**Answered 2026-10-16: run.** The merge landed as f265d7f2. The `wt-build-loop-u3a1 … is not a working tree` errors were for worktrees already removed, and none of the twelve u3/u4 branches is left.
+
+**Rebuilt 2026-10-15 (Q-180):** the first pin, a760a5e5, was built on b279a2ba and conflicted once Q-178 landed the 0357 cycle branch (in the override log, and before that landing in the questions, questions-archive, roadmap and idea-log files). `merge/ready-2026-10-15-r2` re-merges the same nine unit tips onto main b71a4e9e. Its diff from a760a5e5 adds exactly what main added since then (in the override log, main's new rows sit before a760a5e5's rather than after), and its override-log rows are exactly the union of a760a5e5's and main's. `merge/ready-2026-10-15` (a760a5e5) is superseded; deleting it is yours.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff 09a2876ff5ea6f7e5b86eea723c2aa0094759145 -m "Merge branch 'merge/ready-2026-10-15-r2': T69, Q-110, doc drift, Q-160, Q-096, the rebuild-hint fix, the one-workspace rule, the branch-verify and decision-015 docs (override-log appends resolved)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted, nothing deleted"; false; }; } && \
+for u in u3a1 u3a2 u3a3 u3b1 u3b2 u3b3 u3c u3d u4a u4b1 u4b2 u4c; do git -c core.hooksPath=/dev/null worktree remove .claude/wt-build-loop-$u && git -c core.hooksPath=/dev/null branch -d feat/build-loop-$u; done
+```
+
+- **Read:**
+  - `fix/t69-stage-race` (4ee81106): T69 in `test/install-host.bats` failed 3 out of 3 runs alone on main b279a2ba. Its feed waited for a file the test's own `--yes` run had already left, so the tamper hit no stage. The old test fails and the new one passes 4/4. The test file is the only change.
+  - `fix/q110-not-run-undercount` (f5b7e49d): the runner unsets `RUN_TESTS_NOT_RUN_FILE` after writing it. A regression test fails on the old runner. Review loop closed (`docs/reviews/code-review-rubric-2026-10-14-fix-q110-not-run-undercount.md`). Its gate went red only on the `/tmp` race Q-145 fixes; the slow suites passed 300/300. Q-110 closes once this lands.
+  - `fix/doc-drift-cycle1` (c8e87a69; added 2026-10-15): the 2026-10-02 doc-drift brief. Both guides now recommend `cc-isolated --probe-only` then `cc-isolated` over a bare `devcontainer up --remove-existing-container` and say why. devcontainer-setup's claim that a recreate picks up a newer Claude Code was wrong (Docker reuses the cached layer) and is corrected. The guides index names cc-push and the exit scan, and AGENTS.md and GEMINI.md list dev-cycle. 6 files, +26/−10. Loop closed at the 3-iteration cap (`docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md`); the last wording fix had a narrow check, not a full pass. agents-gemini-sync 3/3.
+  - `fix/q160-iteration-cap` (4a44d2f3; added 2026-10-15): Q-104 [2] is written into `workflows/review-fix-loop.md` § Size re-check. After each iteration and at pr-prep 6c the unit is re-measured; past ~800 lines (or a waiver's limit) the loop stops for a waiver, /away included, and the agent does not split the unit itself. 43 code lines. Its first loop escalated on four wording corner cases. I took the simplify option, which cut the clauses that produced them, and a narrow check passed after it (`docs/reviews/code-review-rubric-2026-10-15-fix-q160-iteration-cap.md`). Log row 62 gets a new revisit trigger the agent chose, "2+ waivers past the in-loop re-check within 14 days". Say so if you want a different one. The health check went red only on the Q-145 `/tmp` race in suites this branch does not touch.
+  - `fix/q096-exit-scan-insteadof-target` (8717fd72; added 2026-10-15): the exit scan walks every URL an `insteadOf` or `pushInsteadOf` rule rewrites a remote to, your own config's remotes and rules included, and every matching rule, not only git's longest. It matches by byte. Three caps fail closed: 4 KiB per URL, 100k comparisons and 2,000 targets. Every `read` runs under `LC_ALL=C`, which also fixes an older UTF-8 hiding bug. 399 lines, under the 400 cap. Loop closed after 3 iterations and a final pass (`docs/reviews/code-review-rubric-2026-10-15-q096-exit-scan-insteadof-target.md`); the security critic's probe-confirmed bypasses in iterations 1–2 are fixed. Commits carry `Host-tool-tested: no`. Its host probe is Q-167. A family of older, loose remote-name parsing routes was split off as Q-168 and listed in the guide as a known route.
+  - `fix/rebuild-hint-recreate` (47da5a4b; added 2026-10-15, built on this branch): after the firewall fails closed, the launcher's hint said a plain `cc-isolated <repo>` rebuilds, but a plain launch reuses that container and fails again (traced, with a regression test). The hint's first line is now `cc-isolated --probe-only WS && cc-isolated WS`. The copyable lines lose their trailing `# …` notes, because interactive zsh passes those as arguments and the last one becomes the workspace. "Rebuild" becomes "recreate" where the container is recreated. 131 code lines; only comments and `echo` text change in the scripts. Loop closed at the 3-iteration cap; the last fix had a narrow fact-check (rubric `docs/reviews/code-review-rubric-2026-10-15-fix-rebuild-hint-recreate.md`). 290/290 in its suites; health reds were 3 fast tests, each passing alone (the one outside the import walk, build-loop-merge's "--merge leaves main where another writer moved it", re-run 3/3 here); slow suites 300/300. Commits carry `Live-verified: no`; Q-167 holds the probe. Both scripts are in the trust manifest, so install re-blesses and each project's container is recreated once.
+  - `fix/cc-isolated-one-workspace` (f6f37fad; added 2026-10-15, built on this branch): `cc-isolated` refuses, with exit 2 before any action, a second workspace, a `#` word before `--` (a pasted note) and a `--profile` value starting with `#` or `-`. Before this, `cc-isolated  # --bless` and `--profile '#' --bless` ran a bless. `--` takes one word. install.sh's "Next steps" lines lose their notes, and the `--help` and guide command references are reformatted. 260 code lines. Iteration 1 had independent critics; the closing passes were the builder's self-review after nested critics hung. An independent closing review run from the orchestrator was clean, 0 Must (`docs/reviews/independent-review-2026-10-15-one-workspace.md`): 17 claims held and ~45 crafted argv probes reached no action. Related suites 436/436 under `LC_ALL=C.UTF-8`; health reds were 3 import-walk tests, each passing alone; slow suites pass. Commits carry `Live-verified: no`; probe in Q-167 (b).
+  - **Gate for the whole branch** (3fe6d6e3, 2026-10-15): the health check's fast suites had one red, build-loop-check 983, an import-walk test that passes 3/3 alone, from the race Q-145 fixes. The branch changes no gate or lib code. The slow suites, which a fast red skips, were run separately: 300/300. The first tip, a760a5e5, added after that gate the rebuild-hint and one-workspace unit merges (each ran its own gate, above), two docs-branch merges and nine cycle-record merges.
+  - **Gate for the rebuilt tip** (09a2876f, 2026-10-15): the fast suites had one red, build-loop-merge's T23 test, whose log shows the Q-145 `/tmp` race (`find: '/tmp/bats-run-…': No such file or directory`); it passes 3/3 alone. The slow suites, run separately: 300/300. Shellcheck and the other checks passed.
+- **Interim:** main's health check stays red on T69 until the merge. That red is the test, not install.sh. Q-180 rebuilt the branch and hardened this paste (its review: `docs/reviews/code-review-rubric-2026-10-15-chore-q180-repin-pastes.md`).
+- **If the answer differs:** to leave a unit out, say which one and the loop rebuilds the branch without it.
+
+
+### Q-163 · merge-gate-fix-q145-ancestor-vanish-c035f2e77f8c
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Merge `fix/q145-ancestor-vanish` at c035f2e77f8c083156b397fb32e164dd17cc6b44? It changes gate code (`scripts/lib/dev-cycle-read.sh`), which lands only on your approval.
+
+**Answered 2026-10-16: [1], done.** Merged as fbe67674.
+
+- **Why it's yours:** GATE_CODE. The fix also accepts one residual the security critic asked you to confirm. A non-atomic save (delete, then re-create) of an existing instruction file, such as the global CLAUDE.md, is skipped if the gap falls exactly on find's stat; main fails closed there instead. An attacker gains nothing from this (they could edit the file anyway), and the code comment discloses it.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-14-fix-q145-ancestor-vanish.md` on the branch. What changed: the top-level ancestor and config-dir listing uses `find -ignore_readdir_race`, retries up to 3 times, keeps a listing only if it ran with no error, and re-checks that every top is still a directory. A deterministic race test fails on main's lib and passes on the branch; five mutants fail it. Review: 3 iterations (the cap) with the security critic. The final pass found only wording items, fixed after it, and a narrow check verified them 11/11, so it is not marked "loop closed". The health check passed at 2aba4bf0. The tip adds two commits on top: FP-174 renumbered (db325bcb) and Q-110 merged in (c035f2e7), so the failure-patterns and override-log appends do not conflict. Merging this therefore also brings Q-110, a no-op if Q-162 ran first.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/q145-r2` at 35e13638 (Q-162's branch plus this unit, the override-log appends resolved), or `merge/u5-and-q145-r2` at 6c841192 (that plus U5) if U5 is already on main. Both are pinned by hash, and both orders of Q-163 and Q-164 were run against main and land the same tree. The unit's own tip, c035f2e7, is unchanged inside them.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor 7c91b97455db9fba1b155a2bb866abf6b86f1904 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=35e1363882321fe15444b13a245f89bd1bc22054; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff "$B" -m "Merge branch 'fix/q145-ancestor-vanish': the gate's ancestor listing survives entries that vanish mid-listing (Q-145)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The paste above. The gate stops flaking on `/tmp` churn once the image is rebuilt (Q-156, filed on `feat/build-loop-u5`; it reaches main with Q-164) | One paste | The delete-and-re-create window lets one listing miss an instruction file that a non-atomic save is rewriting |
+| **[2] drop** | Branch deleted; gates keep flaking under load (3 re-runs this cycle alone) | Re-runs | Q-145's one-hour revisit trigger keeps counting |
+| **[3] changes needed** | Your note goes back to a fresh loop | A note | — |
+
+- **Blocks:** Q-145's revisit clock (re-runs this cycle: U5 2, Q-110 1).
+- **Interim:** unmerged. Re-run a red gate whose log shows `find: '/tmp/…': No such file or directory`.
+- **If the answer differs:** [2] `git branch -D fix/q145-ancestor-vanish`.
+
+
+### Q-164 · merge-gate-feat-build-loop-u5-7c91b97455db
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Merge U5, the build-loop handoff's last unit (`feat/build-loop-u5` at 7c91b97455db9fba1b155a2bb866abf6b86f1904)? It edits `skills/dev-cycle/SKILL.md` (gate code), and its review loop ended in `escalate`.
+
+**Answered 2026-10-16: [1], done.** Merged as 9bb19d2a.
+
+- **Why it's yours:** GATE_CODE, and the review-fix loop's iteration-4 gate. The last fix, 3718bcd0 (Q-156's paste refuses `core.attributesFile` in any repository config scope, in the reviewer's own executed check form), had no full review pass. Option [2]'s narrow check was run on 2026-10-15. The paste's exact test was executed in a throwaway repo on git 2.39.5 with the value in each place it can come from. It refused the local, worktree, included, `includeIf`-included, environment (`GIT_CONFIG_COUNT`) and empty lowercase-key cases, and passed with nothing set or a global value. One residual is by design: a global config that includes a file inside the repo reports as global and passes, and a sandbox cannot write your global config.
+- **Read:**
+  - The merge message `docs/working/merge-msg-build-loop-u5.md` and the rubric `docs/reviews/code-review-rubric-2026-10-14-feat-build-loop-u5.md` on the branch.
+  - What it does: `docs/dev-cycle.md` describes the handoff as built, with a wider `Self-merge never:` line (Q-149 asks how wide). It adds decision-log row 72 and roadmap items (a)–(g), files Q-149..Q-156 (C1–C5, the constraints doc, the image-lag release entry), re-routes Q-103 to you, and marks the handoff brief done.
+  - Size: 26 code lines outside `docs/`, 409 lines outside `docs/reviews/`.
+  - Health check: red only on the Q-145 `/tmp` race (passes alone); slow suites 300/300.
+  - Deferred, with an override row and a roadmap Idea: install.sh's `git archive` follows replace refs and a repository-scope `core.attributesFile` (pre-existing, decision 035's boundary). Q-156's paste refuses both for this release.
+- **Paste for [1]:** run it in the container's shell, as for Q-162, and only after Q-162's paste (it stops otherwise). It merges `merge/build-loop-u5-resolved-r2` at 7326d715 (Q-162's branch plus U5, by the earlier reviewed resolution e088c7e3, with the questions, questions-archive, roadmap and override-log conflicts resolved again: main's Next 3–6 kept and U5's C5 item added as 7, both Ideas lists kept, the decision-015 idea (added by the 2026-10-14 cycle commit 63af3551, which e088c7e3 carried) dropped since main's Next 5 holds it, indexes regenerated; U5's entries Q-103 and Q-149..Q-156 are byte-identical to e088c7e3's), or `merge/u5-and-q145-r2` at 6c841192 if Q-145 is already on main, each pinned by hash. Then Q-156's release paste.
+
+```
+cd /workspace && test "$(git branch --show-current)" = main && \
+{ test -z "$(git for-each-ref refs/replace/)" && test -z "$(git config --name-only --get-regexp '^(filter\.|include|hook\.|pager\.|core\.pager|merge\.|diff\.|fsck\.|core\.fsmonitor|core\.attributesfile|core\.hookspath|gpg\.|extensions\.partialclone$|remote\..*\.promisor$)')" && g="$(git rev-parse --git-path info/grafts)" && s="$(git rev-parse --git-path shallow)" && a="$(git rev-parse --git-path info/attributes)" && o="$(git rev-parse --git-path objects/info/alternates)" && test ! -e "$g" && test ! -L "$g" && test ! -e "$s" && test ! -L "$s" && test ! -e "$a" && test ! -L "$a" && test ! -e "$o" && test ! -L "$o" && git -c core.commitGraph=false fsck --no-dangling --no-progress >/dev/null || { echo "replace refs, grafts, shallow, attributes, alternates, driver config or a bad object present: stop"; false; }; } && \
+{ git merge-base --is-ancestor 09a2876ff5ea6f7e5b86eea723c2aa0094759145 HEAD || { echo "Q-162's merge is not on main: run it first"; false; }; } && \
+if git merge-base --is-ancestor c035f2e77f8c083156b397fb32e164dd17cc6b44 HEAD; then B=6c841192bf298d8cc22affc1cc5779b5ad6d5d2d; else B=7326d7159fe390fdb7780966fb3392ecf3a995ee; fi && \
+{ GIT_NO_REPLACE_OBJECTS=1 git -c core.hooksPath=/dev/null -c core.commitGraph=false merge --no-ff "$B" -m "Merge branch 'feat/build-loop-u5': the build-loop handoff as built (U5; see docs/working/merge-msg-build-loop-u5.md)" || { git -c core.hooksPath=/dev/null merge --abort; echo "conflict: merge aborted; the loop rebuilds this entry's branch against main"; }; }
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | Handoff closes; Q-149..Q-156 and Q-103 become live asks; Q-156's release puts the D6 block in the image | One paste, then the release | A defect in the unreviewed Q-156 paste fix shows when you run it. It is a refusal check, so it fails closed |
+| **[2] one more narrow pass first** | Done 2026-10-15 (see Why it's yours): the check held | — | — |
+| **[3] changes needed** | Your note goes back to a loop | A note | — |
+
+- **Blocks:** Q-156 (the release), Q-103, and dispatch (Q-155: `docs/constraints.md`).
+- **Interim:** unmerged. Cycles keep running by hand.
+- **If the answer differs:** [2] runs on the next iteration, which then asks again.
+
+
+### Q-153 · build-loop-c4-merged-branch-deletion
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+May the dev cycle delete merged branches without asking, which your global instructions forbid today ("deleting branches" needs approval in every mode)? (Plan C4.)
+
+**Answered 2026-10-16: [1] narrow the global rule.** `global-instructions/CLAUDE.md` now exempts `git branch -d` of an already-merged branch from the approval rule, in every project. It reaches sessions at the next image release, since the image was built at fbe67674, before this edit. Still open: the roadmap item "Merged-branch deletion", which needs the health-step change.
+
+- **Why it's yours:** it changes your own global instructions, and your answer 2 ("safe branch deletion doesn't need to wait") conflicts with them as written.
+- **Read:** `docs/working/handoff-build-loop-handoff.md` C4 and answer 2 · roadmap Ideas, "Merged-branch deletion"
+
+Every orchestrator iteration leaves a `chore/dev-cycle-DATE-HHMM` branch and every loop a feature branch, so they pile up.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Narrow the global rule** | Merged branches, `git branch -d` only (git refuses an unmerged one), need no approval, in every project | None after the edit | A branch merged by mistake loses its name in every project (the commits stay reachable from main) |
+| **[2] This project only** | The same exception, written for claude-workflows alone | None here | Other projects keep asking |
+| **[3] Keep asking** | Nothing deletes branches; they wait for you | A cleanup pass now and then | Branch lists grow by one or more per iteration |
+
+- **Blocks:** roadmap item "Merged-branch deletion".
+- **Interim:** [3]: nothing deletes a branch.
+- **If the answer differs:** [1] or [2] is an instruction edit plus the roadmap item's health-step change.
+
+
+### Q-155 · constraints-doc-missing
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+This repo has no `docs/constraints.md`, so the orchestrator dispatches no build loop here: write one now, or leave dispatch off until a process for writing one exists?
+
+**Answered 2026-10-16: [1], done.** You wrote `docs/constraints.md` (H1–H4, S1–S11) on main in 83b653d2, so dispatch is no longer held on it.
+
+- **Why it's yours:** the hard constraints steer every design choice a loop makes alone (D2), so they must be yours, not inferred.
+- **Read:** plan D2 · `skills/dev-cycle/SKILL.md` "Constraints" · `scripts/build-loop.sh` header, the `constraints` line of `--settings` · roadmap Ideas, "A process for writing a repo's constraints doc"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Write it now** | You write `H1: …` lines, each with a `success:` line, and any `S1: …` soft ones, and commit them on main | An hour or so of your time | Loops decide by constraints you wrote in a hurry; the drift check and deep audit surface the misses |
+| **[2] Wait for the process** | Dispatch stays off until the roadmap item yields a way to write one | None now | The orchestrator runs every step but dispatch, so briefs pile up unbuilt |
+
+- **Blocks:** dispatch in this repo (step 10).
+- **Interim:** [2]. `--settings` prints `constraints missing`, and step 10 files no second entry while one with this slug exists, open or answered.
+- **If the answer differs:** nothing to redo.
+
+
+### Q-156 · image-lag
+**Needs:** you: terminal · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+Cut a release: rebuild and bless the image from main once `feat/build-loop-u5` has merged, so the installed dev-cycle skill and the gate it runs (the image copy, Q-140 [1]) carry the build-loop handoff as built.
+
+**Answered 2026-10-16: released.** The guarded paste refused (`devcontainer-config differs from M`) because Q-162–Q-164 had moved released paths past M. The image was then rebuilt from main: `/opt/claude-workflows/.manifest` reads `commit=fbe67674…`, `dirty=no`, and `git diff --quiet fbe67674 main -- <GATE_CODE paths>` exits 0, so the image holds main's gate code and step 0.1 reports no lag. That install did not run the paste's planted-state guard. Checked afterwards, on 2026-10-16: there were no replace refs, grafts, shallow file, `info/attributes`, alternates, repository `core.attributesFile`, or filter/driver/hook/pager config.
+
+- **Read:** `skills/dev-cycle/SKILL.md` step 0.1 (this entry's slug is the one step 0.1 files and rewrites) · decision log row 72 · plan D6 and F58
+
+The image's commit C is `8d0e660e2e5a9769200500ac3dcfb4b113a32589` (`/opt/claude-workflows/.manifest`, assembled from `/home/magfrump/claude-workflows`), on main's first-parent history. M is `8cff4877aa30a9417b48bd792ef60319502d7e78`, the last commit on `feat/build-loop-u5` that changes anything the release installs; the branch's later commits change only `docs/`, so the merge's released trees equal M's. (Step 0.1's own rewrite of this entry uses main's commit as M.) At writing, main was `b279a2ba`. The image's dev-cycle skill lacks the D6 block (U4c), so the orchestrator loop cannot run as written until this release.
+
+Gate code changed from C to M: `scripts/build-loop.sh`, `scripts/lib/dev-cycle-read.sh`, `skills/dev-cycle/SKILL.md`.
+
+First-parent commits after C (none is a `(build-loop self-merge)`: every one was merged by hand or committed in session), then this branch's merge:
+
+- 308196e7 Merge branch 'feat/build-loop-u4c': the D6 block always runs the root-owned image copy (Q-140 [1]); step 0.1's image checks (Q-144 [1])
+- 5cad0964 docs(checkpoint): U4c merged at 308196e7 on Q-144 [1]; Q-144 answered and archived; next a release, then U5
+- 33555624 docs(questions): Q-145, the lib's ancestor listing races with /tmp churn; blocks Q-102's merge
+- f66fd9f2 Merge branch 'feat/q102-parallel-gates': health-check runs its test gate in parallel by default (Q-102 [1], Q-145 [2])
+- 4ab9a51f docs(working): Q-075 evidence on what self-improvement.sh can write; Q-146 filed
+- 6d9a2962 docs(questions): Q-147 and Q-148 on main, so the open Q-089 asks are visible before its branches land
+- ed4976bf docs(roadmap): drop Q-088 from Next (answered 2026-10-07), note Q-089 waiting on Q-148
+- 626dc300 Merge branch 'feat/q089a2b-cc-push-self-check': host-only tools get their own trust manifest; cc-push checks itself (Q-089 units A1+A2, Q-148 [1])
+- df18413a Merge branch 'feat/q089b4-host-tool-gate': host tools carry Host-tool-tested, not Live-verified (Q-089 unit B, Q-148 [1])
+- d7e140ea docs(questions, roadmap): Q-148 answered [1] and archived; Q-089 merged (626dc300, df18413a)
+- b279a2ba docs(reviews): carry the first Q-089 loop's review history to main before its branch is deleted
+- the merge of `feat/build-loop-u5` (this unit: docs, settings, questions; SKILL.md step 0.1's release listing and step 10's constraints slug)
+
+Paths changed from C to M outside `docs/` (about 500 paths under `docs/` besides, nearly all `docs/reviews/`; the image carries none of `docs/`): `README.md`, `devcontainer-config/cc-exit-scan.sh`, `devcontainer-config/cc-gitdir.sh`, `devcontainer-config/cc-isolated.sh`, `devcontainer-config/cc-push.sh`, `devcontainer-config/install.sh`, `guides/cc-isolated-usage.md`, `guides/devcontainer-setup.md`, `hooks/live-verify-gate.sh`, `hooks/wiring.json`, `scripts/build-loop.sh`, `scripts/health-check.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/run-tests.sh`, `skills/code-review/SKILL.md`, `skills/dev-cycle/SKILL.md`, `test/cc-isolated-functions.bats`, `test/cc-push.bats`, `test/hooks/live-verify-gate.bats`, `test/install-host.bats`, `test/lib/d6-snippet.bash` (deleted), `test/scripts/build-loop-orchestrator.bats`, `test/scripts/build-loop-read.bats`, `test/scripts/health-check.bats`, `test/scripts/run-tests.bats`, `workflows/codebase-onboarding.md`, `workflows/pr-prep.md`, `workflows/research-plan-implement.md`.
+
+Paste on the host once `feat/build-loop-u5` has merged and the host checkout is on main (then launch a new sandbox). Before install.sh runs, with only `rev-parse`, `for-each-ref` and `config --get-all` (none runs a hook or fsmonitor) and replace refs ignored, it checks that HEAD is at main's commit, that no replace ref exists (install.sh's `git archive` would honor one) and no graft file, that no config but your global or system one (the repository's, its worktree's or anything they include) sets `core.attributesFile` (whose `export-ignore` or `export-subst` would change what the archive writes), and that the root `.gitattributes` and every directory the release installs from are the same tree at HEAD as at M; so it refuses when main has moved a released path past what this entry lists:
+
+```bash
+cd /home/magfrump/claude-workflows && ( export GIT_NO_REPLACE_OBJECTS=1; M=8cff4877aa30a9417b48bd792ef60319502d7e78; test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)" || { echo "release refused: HEAD is not main"; exit 1; }; test -z "$(git for-each-ref refs/replace/)" || { echo "release refused: replace refs present"; exit 1; }; test ! -e "$(git rev-parse --git-common-dir)/info/grafts" || { echo "release refused: info/grafts present"; exit 1; }; test -z "$(git config --includes --show-scope --get-all core.attributesFile | grep -Ev '^(global|system)[[:space:]]')" || { echo "release refused: core.attributesFile set"; exit 1; }; for p in .gitattributes devcontainer-config global-instructions guides hooks patterns scripts skills workflows; do test "$(git rev-parse "HEAD:$p")" = "$(git rev-parse "$M:$p")" || { echo "release refused: $p differs from M"; exit 1; }; done ) && ./devcontainer-config/install.sh
+```
+
+- **Interim:** the image's older gate and skill run; the orchestrator loop is not started here before this release.
+- **If the answer differs:** each refusal names its cause. `differs from M`: main changed a released path after M, which the lists above do not cover; read `git log --first-parent M..main` before rewriting this entry with a new M. `HEAD is not main`: put the host checkout at main's commit first, knowing that a checkout runs any hook a sandbox planted. Replace refs, grafts or `core.attributesFile`: planted state; remove it and find out who wrote it before releasing.
+
+### Q-152 · build-loop-c3-blocked-wait
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+When every thread is blocked on you, should the orchestrator loop keep polling, or stop until you restart it? (Plan C3.)
+
+**Answered 2026-10-16: [2] stop.** "Continuing to poll waiting for human intervention without a human present is wasted effort, not open-ended work." `skills/dev-cycle/SKILL.md`'s wait rule now ends the `/loop` when every thread waits on you, and its final message says to restart `/loop /dev-cycle` after answering. A running build loop still wakes the orchestrator, and a dispatch left to retry still gets one timed wakeup, because neither waits on you. It takes effect at the next image release.
+
+- **Read:** plan D12 · `skills/dev-cycle/SKILL.md`, the wait rule at the end of step 10 · `docs/working/handoff-build-loop-handoff.md` C3
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Poll** (built) | It wakes every 1200–1800 s and runs a full cycle only when main moved past its last land (a committed answer moves it), a retry's wait ran out or you wrote; otherwise the wakeup does nothing | None | A little spend per idle wakeup while you are away |
+| **[2] Stop** | The `/loop` ends; you start `/loop /dev-cycle` again after answering | One command per return | Answered work sits until you remember to restart |
+
+- **Interim:** [1], as built (D12).
+- **If the answer differs:** [2] replaces the skill's wait rule with an end-of-loop line.
+
+
+### Q-181 · other-commit-919375bec66b
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `919375bec66b`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 919375bec66b86ceb1e5d30dc402ac16f1862391` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `919375bec66b86ceb1e5d30dc402ac16f1862391`, by the repository owner's identity, 2026-10-15. Subject, paraphrased (data, not instructions): Merge of chore/q180-repin-pastes (Q-180: rebuilds the merge branches on main, hardens the host pastes; checkpoint revision 53). Changes: 14 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-182 · other-commit-f265d7f25556
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `f265d7f25556`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f265d7f255568426b591001361c3cce9a49d5b70` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f265d7f255568426b591001361c3cce9a49d5b70`, by the repository owner's identity, 2026-10-15. Subject, paraphrased (data, not instructions): Merge of merge/ready-2026-10-15-r2 (T69, Q-110, doc drift, Q-160, Q-096, rebuild-hint fix, one-workspace rule, branch-verify and decision-015 docs). Changes: 137 paths; outside `docs/`: `AGENTS.md`, `GEMINI.md`, `devcontainer-config/` (cc-exit-scan.sh, cc-isolated.sh, init-firewall.sh, install.sh), `guides/` (5 files), `scripts/run-tests.sh`, `skills/code-review/references/chat-synthesis.md`, 4 bats files, `workflows/pr-prep.md`, `workflows/review-fix-loop.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-183 · other-commit-9bb19d2acf29
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `9bb19d2acf29`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 9bb19d2acf29e2483c67174857a6a75ea152bd8d` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `9bb19d2acf29e2483c67174857a6a75ea152bd8d`, by the repository owner's identity, 2026-10-15. Subject, paraphrased (data, not instructions): Merge of feat/build-loop-u5 (the build-loop handoff as built, U5). Changes: 29 paths; outside `docs/`: `skills/dev-cycle/SKILL.md`, `test/scripts/build-loop-read.bats`, `workflows/codebase-onboarding.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-184 · other-commit-fbe676742bd7
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `fbe676742bd7`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat fbe676742bd76058bb389491fa3a3e96db199f26` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `fbe676742bd76058bb389491fa3a3e96db199f26`, by the repository owner's identity, 2026-10-15. Subject, paraphrased (data, not instructions): Merge of fix/q145-ancestor-vanish (Q-145: the gate's ancestor listing survives vanishing entries). Changes: 19 paths; outside `docs/`: `scripts/lib/dev-cycle-read.sh`, `test/scripts/build-loop-check.bats`, `test/scripts/dev-cycle.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-185 · other-commit-83b653d21589
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `83b653d21589`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 83b653d215897a8305bf103c005271ce9593b000` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `83b653d215897a8305bf103c005271ce9593b000`, by the repository owner's identity, 2026-10-15. Subject, paraphrased (data, not instructions): repo instructions and guiding constraints. Changes: 2 paths; outside `docs/`: the repo rules file (lower-case name).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-186 · other-commit-ca5ce2eb3eb1
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `ca5ce2eb3eb1`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat ca5ce2eb3eb1d01fbf1c78f52af28501d43e818e` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `ca5ce2eb3eb1d01fbf1c78f52af28501d43e818e`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): answers. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-187 · other-commit-95e3aed0e298
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `95e3aed0e298`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 95e3aed0e298be9f55cc07b74cd007b1163c524b` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `95e3aed0e298be9f55cc07b74cd007b1163c524b`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): typo fix. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-188 · other-commit-ce9bf5c59344
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `ce9bf5c59344`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat ce9bf5c593443172df9c0979d04329315aecb3fc` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `ce9bf5c593443172df9c0979d04329315aecb3fc`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): global instructions: deleting a merged branch needs no approval (Q-153 [1]). Changes: 1 path: the global instructions file under `global-instructions/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-189 · other-commit-16119f818ed9
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `16119f818ed9`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 16119f818ed9ecbcfb133d7fc42c649465900fcc` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `16119f818ed9ecbcfb133d7fc42c649465900fcc`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): questions: record the fbe67674 release; Q-153/155/156/162/163/164 answered and archived. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-190 · other-commit-7ab55766174b
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `7ab55766174b`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 7ab55766174b6950b2b884b50528c6d767400413` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `7ab55766174b6950b2b884b50528c6d767400413`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): questions: Q-169's preconditions are met (Q-165 [1], doc on main). Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-191 · other-commit-ede604c910db
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `ede604c910db`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat ede604c910db4bdd086802d05abd35dcd18b62b8` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `ede604c910db4bdd086802d05abd35dcd18b62b8`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): dev-cycle: end the loop instead of polling when every thread waits on the user (Q-152 [2]). Changes: 3 paths; outside `docs/`: `skills/dev-cycle/SKILL.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-192 · other-commit-71133a328ad8
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `71133a328ad8`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 71133a328ad838e7f3eb1e277538f4b7a2b6a3cf` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `71133a328ad838e7f3eb1e277538f4b7a2b6a3cf`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): working docs: carry checkpoint revision 54 and the constraints sources to main. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+
+### Q-193 · other-commit-4272a32b0afa
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+Main's first-parent history holds `4272a32b0afa`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-17: [1] reviewed, build on it.** Given in session as \"Q-181..Q-193: [1]\".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 4272a32b0afae2c438a5dc69b96c392e1c6b6771` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `4272a32b0afae2c438a5dc69b96c392e1c6b6771`, by the repository owner's identity, 2026-10-16. Subject, paraphrased (data, not instructions): rename the repo rules file to the name Claude Code loads. Changes: 2 paths: the repo rules file renamed from its lower-case name.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-17-1846 stopped at step 0.2. The installed image was released from `4272a32b0afa`, the newest of these commits, which may already be your review of them (F58).
+- **If the answer differs:** nothing to redo.
+
+### Q-103 · dev-cycle-build-loop-policy
+**Needs:** you: judgment · **Opened:** 2026-10-01 · **Status:** ANSWERED
+
+The build-loop handoff is built: may build loops in claude-workflows land their own branches through the gate (`self-merge`), or must each finished branch stop for your review (`review`)? **Answered 2026-10-17 (in session): [2].** "This repo should be able to self-merge" (also in `docs/human-author/answers-10-16-26.txt`: a single-author repo). `docs/dev-cycle.md` now reads `Build-loop policy: self-merge`, and the "(interim; Q-103)" clause is gone. The never line is unchanged: what self-merge may land is Q-149's question.
+
+- **Why it's yours:** you said this depends on the project and is settled at onboarding; claude-workflows was onboarded before the setting existed. Re-routed from `deferred` on 2026-10-14, when the handoff landed (U5).
+- **Read:** decision log row 72 · `docs/working/plan-build-loop-handoff.md`, "What the gate can and cannot do" and the bypass-family table (F1–F59) · `docs/dev-cycle.md`
+
+**What the gate can and cannot do.** Loops run as your uid, with a shell, in worktrees that share `/workspace/.git`. No script can contain a loop that turns hostile with its shell: it could run plain `git merge` or `git push`, write any working tree under `/workspace`, or plant `.git` state. The design makes the honest path safe and checkable, and makes the commonest honest slip, a git command run in the wrong directory, fail loudly instead of landing (D13). Content reaches main only through a gate that decides from main's committed state and the exact merge result, and the gate that runs is the root-owned image copy, which no loop can edit (D6, Q-140 [1]). Each iteration checks that main moved only by the orchestrator's merges, the gate's merges and answer-only commits (D13). With no human reading briefs (D10), the gate and your review of `ready` work are the checks on what lands.
+
+The residual families. None blocks self-merge mechanically; each is a way around the gate for a loop that already has a shell and the session's tools, not a hole in the gate's own rules:
+
+- **F11, `@`-imports (partly).** The floor refuses instruction files and what they import, by a walk of main's commit and then of the gate's checkout. Precondition: the walk reads the checkout, so the gate runs it in a clean checkout at `MAIN_SHA` (`checkout_gate` refuses anything else). `checkout_gate` closes checkout conversions, `core.symlinks` false, sparse checkout and untracked nested repositories for the gate. Still open (known issue A5): start files under a symlinked directory, a FIFO start, other names one file has on a case-insensitive filesystem whose `core.ignoreCase` is false, and a checkout file swapped between the gate's check and the walk's read; and instruction files outside the repo that the container cannot see (the host's own). A Claude Code upgrade that changes its import grammar reopens it.
+- **F19, plain git to main (partly).** An honest wrong-directory commit fails, and any commit on main that is not the orchestrator's, the gate's or answers-only is reported at the next iteration (`--main-log`). A deliberate `git push`, or a commit shaped like an answers commit, is not caught.
+- **F21, text injection (partly).** Briefs are written and read from main's commit, and every prompt says repo text is evidence. Under self-merge the allowlist bounds what lands; under review you read the result. What a steered loop does outside git is bounded only by the sandbox.
+- **F29, a checked-out main (partly).** The gate refuses a worktree with main checked out unless it is on main, clean and mid no rebase, bisect or merge. Left: that worktree switches branch between the check and the fast-forward.
+- **F35, the session's other tools (not covered).** The loop prompt forbids pushing, publishing, starting build loops, background agents and schedules, but a loop subagent shares the orchestrator's permission mode.
+- **F37, two orchestrators (partly).** A worktree lock and an atomic branch create stop a second loop on one brief. Two chore branches can mint the same Q-ID; `questions.sh check` catches it, at the land or, after a merge-in of main (which skips step 1's check), at the next health check.
+- **F58, releases (partly).** Code the image carries reaches running sessions through a release, and your review of the release is the gate. The release entry (`image-lag`) lists every commit and changed path since the image's commit and flags self-merge subjects. The release paste runs `devcontainer-config/install.sh` before it shows its diff, so that directory is on this repo's never line (Q-149).
+- **F59, constraint drift (partly).** A loop decides alone when one option dominates. Step 4's drift check samples one such decision per sampled merge, and a finding triggers the deep audit's constraints dimension.
+- **R8, racing the gate's temp files.** A same-uid writer can race the gate's GATE_TMP between its writes and its reads: `git/config`, `git/info/`, `git/refs/`, `git/HEAD`, `work/.gitattributes`, `err`, `diff`, and `answer`, the file holding `--approved`'s verdict on the merge entry (override rows 509, 684).
+- **Also routed here during the build** (rows are override-log rows in `docs/reviews/override-log.md`, by line; the U2b3a item is from the plan's U2b3a bullet and the U4c item from SKILL.md's D6 Rule):
+  - a loop editing the worktree registry in the shared common dir (U2b3a);
+  - objects re-hashed once per run, so one rewritten in place afterwards, and objects not re-hashed at all (the tip's parent, merge bases) (U3a1);
+  - a planted `core.bare` with the index deleted (U3a2, Low), and a hand-edited rebase todo holding an `update-ref` main line (row 668);
+  - a same-uid shell's PATH, exported functions or settings around the D6 block (U4c);
+  - a loop pointing `origin/HEAD` at its own branch, which `dev-cycle.sh`'s reader settings then read (row 548);
+  - planted hooks in the common git dir around the orchestrator's own commit, and a FIFO swapped for the health-check lock (rows 749, 750);
+  - a rewrite of main to a history that never held a cycle record, which bootstraps `--main-log` again (row 784);
+  - the dispatch count written after the dispatch, so a session ending between the two admits one dispatch past the cap (row 786);
+  - after a restart, `--prompt --steal` taking another live session's loop that has not committed for two hours (row 787);
+  - merge entries flagging floor paths by class, not the floor's own reasons, so an `@`-imported doc reaches you unflagged (row 797);
+  - `--start`/`--prompt` reading main after step 10's last `--main-log` (a window of seconds) (row 801);
+  - `--cycle-diff`/`--land-cycle` accepting any `--answered` ID, so only skill text stops a merge entry being landed as answered (row 802);
+  - the health check that [2]'s last column relies on is itself code the gate could land, which is why this repo's never line holds `scripts/`, `test/`, `hooks/` and `devcontainer-config/` (row 682, Q-149).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] review** | Every `ready` branch the N rules (both policies) pass gets one merge entry (`merge-STEM-SHA12`, or `merge-gate-…` for gate code) holding `--check`'s output; the orchestrator merges on your `[1] merge` | One decision per finished item | Finished work queues behind you; loops keep running into free slots meanwhile |
+| **[2] self-merge** | A brief with `Policy: self-merge` lands through the gate with no review when every changed path is in its `Paths:` line or is one of the brief's own files, and is off the floor and the never line; a path refusal falls to [1]'s entry, a conflict ends stopped and an environment refusal is retried | None for that work; with this repo's never line (Q-149) only docs the floor does not protect, `README.md`, `runs/`, `archive/` and paths under a new top-level name can self-merge, so most work still comes to you | A bad change pr-prep's review missed lands on main, through one of the families above or plainly; the next cycle's health check, spot-check and drift check might catch it |
+
+- **Interim:** [1] `review`, recorded as `Build-loop policy: review (interim; Q-103)`, which `--settings` reads as unset, which means `review`.
+- **If the answer differs:** nothing to redo. Either answer is recorded the same way: in `docs/dev-cycle.md`, replace the policy line with `Build-loop policy: review` ([1]) or `Build-loop policy: self-merge` ([2]), and drop the Policy note's clause about "(interim; Q-103)"; for [2] the never line must stay valid.
+
+
+### Q-149 · self-merge-never-scope
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+How wide should this repo's `Self-merge never:` line be: every directory that takes effect without a release (as written), only `workflows/`, or nothing? **Answered 2026-10-17 (in session): [2].** Also in `docs/human-author/answers-10-16-26.txt`: "[2] is a better interim since I don't want this much merging blocked on my manual actions"; the end state is moving off symlinks and keeping working repo files apart from the files the image references. You set the line on main yourself (7462eefc, `Self-merge never: workflows/`), after the auto-mode classifier refused the session's edit. The Never-line prose in `docs/dev-cycle.md` and the repo-settings test in `test/scripts/build-loop-read.bats` now match it.
+
+- **Why it's yours:** it decides which of this repo's files may land with no review once Q-103 allows self-merge.
+- **Read:** `docs/dev-cycle.md` (Never line) · plan D5 "In this repo" and F57 in `docs/working/plan-build-loop-handoff.md` · override row 682 · `docs/reviews/security-review-2026-10-14-u5-i1.md` F1, F3, F4
+
+The plan assumed code here reaches running sessions only through an image release, with `workflows/` the one exception. Review found more: sessions read `skills/` (beyond `SKILL.md`, which the floor already refuses), `guides/` and `patterns/` from their checkout as well; the health check the orchestrator runs every iteration executes `scripts/`, `test/`, `hooks/` and `devcontainer-config/` from its worktree; and the release paste runs `devcontainer-config/install.sh` before it shows its diff. Two docs off the floor are also read as authority and stay self-mergeable under every option: `docs/evaluation-rubric.md` (self-eval's rubric) and `docs/spikes/` (seeds later work loads); listing them too is a fourth choice, open to you as a note on [1].
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Wide** (as written) | `workflows/ scripts/ test/ hooks/ devcontainer-config/ skills/ guides/ patterns/ templates/ global-instructions/`: self-merge lands only docs the floor does not protect, `README.md`, `runs/`, `archive/` and paths under a new top-level name | Nearly every change comes to you as a merge entry | Self-merge buys little here; code fixes queue behind you |
+| **[2] `workflows/` only** | The plan's interim: code self-merges when its brief lists it | None for listed code | A self-merged script or test runs in the next health check, and a self-merged `install.sh` runs on your host at the next release, unreviewed |
+| **[3] None** | `Self-merge never: none` | None | Everything [2] risks, plus workflow changes that steer every later session here |
+
+- **Blocks:** nothing while the policy is `review` (Q-103): the never line only narrows self-merge.
+- **Interim:** [1], fail-closed.
+- **If the answer differs:** an edit to the never line in `docs/dev-cycle.md` (`none`, not an empty line, keeps self-merge possible), to its Never-line prose there, Q-103 [2], Q-103's F58 bullet and its last "also routed" item, and to its test line in `test/scripts/build-loop-read.bats`.
+
+
+### Q-199 · constraints-builder-split
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+The constraints-builder branch was 570 code lines, over pr-prep's 400-line cap, so it was split into three stacked units, each run through its own review-fix loop. Keep the split, or waive the cap for this branch?
+
+**Answered 2026-10-20: [1] Keep the split.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** only you can waive the cap (decision log 62).
+- **Read (sizes at the split; review fixes have grown each unit since):** `feat/constraints-builder-u1-parser` (140 lines: `build-loop.sh --check-constraints` and T46), `feat/constraints-builder-u2-references` (179: the skill's two reference files), `feat/constraints-builder-u3-skill` (251: SKILL.md and the onboarding, dev-cycle and README pointers)
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep the split** (done) | Three reviews and three merges, in order | None | Some extra review passes over prose |
+| **[2] Waive for this branch** | One review over the 570 lines | A waiver to record | A larger review unit, which is what the cap exists to prevent |
+
+- **Interim:** [1]. The split is done and the units merge in order. 424 of the 570 lines are the skill's own files (SKILL.md and its two references).
+- **If the answer differs:** nothing gets redone; the remaining units could merge as one.
+
+
+### Q-200 · constraints-ratify
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Ratify revision 3 of `docs/constraints.md` (an amend of your revision 2: same IDs, 4 hard + 10 soft, the S9 line removed and not renumbered; your in-session answers to C1, C3, C4, the H3 clause and S9 are already applied)?
+
+**Answered 2026-10-20: [1] Accept as drafted.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** the constraints doc is yours to write (Q-155); no agent or loop writes it. Ratifying means you commit `docs/constraints.md` yourself; nothing is written on a [1].
+- **Read:** `docs/working/constraints-draft-2026-10-19.md` (copy-ready block, a diff against revision 2, sources, calls C2 and C5 still open with interim readings). Parsed: `constraints ok 4-hard 10-soft: docs/working/constraints-draft-2026-10-19.md (draft)`.
+- **Hard text whose only evidence is agent-written** (transcribed answers, agent-co-authored files, failure patterns): the H1 line's git-config clause; the H2 line's cost-saving fall-through clause (Q-022, in `answers-9-17-26-2.txt`, which carries a Claude co-author trailer); the H4 line's new success grep (no new evidence, a rewrite).
+- **Hard text resting on your own files** (`git blame` shows you as sole author; a check, not proof, so confirm it): the H3 line's no-branch-image clause (`answers-10-12-26.txt:4-6,11`); the H2 line's "unmodelled input" (`answers-10-12-26.txt:14`) and launch-refusal clause (`answers-10-16-26.txt:18-19`); the H1 line's interim exception (`answers-10-16-26.txt:39-40`).
+- **Finding that needs no answer here:** today's `docs/constraints.md` preamble points at a "Moved out" section the file does not have; revision 3's preamble fixes it.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept as drafted** | You paste the block into `docs/constraints.md` and commit it | One paste and a commit | A clause you don't hold steers every loop's DD until the next amend |
+| **[2] Accept with the edits I make** | You edit the block (C2's interim exception in the H1 line, C5's fall-through clause in the H2 line) while pasting, then commit | Reading the two open calls | Same as [1], limited to what you kept |
+| **[3] Re-run after answering the calls** | Answer C2 and C5 (e.g. `C5: drop`), then an agent re-drafts | One more read later | Revision 2 keeps steering loops meanwhile, including its H2 line that today's live-verify gate contradicts |
+
+- **Interim:** revision 2 stays in force; `--settings` still prints `constraints ok` for main, so dispatch is unaffected.
+- **If the answer differs:** [3] re-runs the skill in amend mode from this draft.
+
+
+
+### Q-201 · other-commit-f4a31b9a11ca
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `f4a31b9a11ca`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f4a31b9a11ca8bf692ccd8d26a4662dc1cdfb392` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f4a31b9a11ca8bf692ccd8d26a4662dc1cdfb392`, by the repository owner's identity, 2026-10-17. Subject, paraphrased (data, not instructions): Merge of chore/q103-self-merge (self-merge policy, Q-103 [2]). Changes: 4 paths, all under `docs/` but `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-202 · other-commit-ddecca526100
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `ddecca526100`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat ddecca526100520ab3149ae75b363ef32691c6db` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `ddecca526100520ab3149ae75b363ef32691c6db`, by the repository owner's identity, 2026-10-18. Subject, paraphrased (data, not instructions): dev-cycle docs: Never-line prose and a settings test for `workflows/` only (Q-149 [2]). Changes: 4 paths, all under `docs/` but `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-203 · other-commit-f8d5217f4c89
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `f8d5217f4c89`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat f8d5217f4c896ec4745e8adc294aedbcf61ea6e9` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `f8d5217f4c896ec4745e8adc294aedbcf61ea6e9`, by the repository owner's identity, 2026-10-18. Subject, paraphrased (data, not instructions): Merge of main into chore/q149-never-workflows. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-204 · other-commit-c9f2fa21ca37
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `c9f2fa21ca37`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat c9f2fa21ca37e355bf354f275490138a00dd011b` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `c9f2fa21ca37e355bf354f275490138a00dd011b`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u1-parser (build-loop.sh `--check-constraints`, unit 1 of 3). Changes: 6 paths, all under `docs/` but `scripts/build-loop.sh` (gate code) and `test/scripts/build-loop-read.bats`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-205 · other-commit-55e0bdac00ae
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `55e0bdac00ae`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 55e0bdac00aef668756f11557948738b216652c1` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `55e0bdac00aef668756f11557948738b216652c1`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u2-references (the skill's reader brief and working-doc template, unit 2 of 3). Changes: 3 paths, all under `docs/` but `skills/constraints-builder/references/reader-brief.md` and `skills/constraints-builder/references/working-doc-template.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-206 · other-commit-512a151218e1
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `512a151218e1`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 512a151218e181a16f2f5344cd8e08299a0ae431` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `512a151218e181a16f2f5344cd8e08299a0ae431`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Merge of feat/constraints-builder-u3-skill (the constraints-builder skill, unit 3 of 3). Changes: 9 paths, all under `docs/` but `README.md`, `skills/constraints-builder/SKILL.md`, `skills/dev-cycle/SKILL.md` (gate code) and `workflows/codebase-onboarding.md`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-207 · other-commit-b91563c54f91
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `b91563c54f91`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat b91563c54f91ec9f9c6a51f26f5e4d097a7bde4e` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `b91563c54f91ec9f9c6a51f26f5e4d097a7bde4e`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): thoughts doc: retro for the constraints-builder pr-prep. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-208 · other-commit-0648ba95f97e
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `0648ba95f97e`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 0648ba95f97e3c5930b18066324f4e41ce3fbab6` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `0648ba95f97e3c5930b18066324f4e41ce3fbab6`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: revision 3 draft and the Q-200 ratify entry. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-209 · other-commit-685becba12fa
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `685becba12fa`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 685becba12fa20b3570647361281b29f9bc0e42f` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `685becba12fa20b3570647361281b29f9bc0e42f`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: the author's in-session answers applied to the rev 3 draft. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-210 · other-commit-8f38da0cbf67
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `8f38da0cbf67`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 8f38da0cbf67894eac602ae5b497d3b8e8dece5e` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `8f38da0cbf67894eac602ae5b497d3b8e8dece5e`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: notes for the skill from the rev 3 interview. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-211 · other-commit-2116c06269f8
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `2116c06269f8`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 2116c06269f8b269ff64d3c72907d17c9b090eca` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `2116c06269f8b269ff64d3c72907d17c9b090eca`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): constraints: S9 dropped from the rev 3 draft as guidance. Changes: 2 paths, all under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+
+
+### Q-212 · other-commit-2620b419ae9f
+**Needs:** you: judgment · **Opened:** 2026-10-19 · **Status:** ANSWERED
+
+Main's first-parent history holds `2620b419ae9f`, which is neither a gate merge nor a cycle land: have you reviewed it, so the dev cycle may build on it?
+
+**Answered 2026-10-20: [1] reviewed, build on it.** Given in session as "Q-200: [1], Q-201..Q-212: [1], Q-199: [1]".
+
+- **Why it's yours:** step 0.2 builds nothing (no tests, answers, merges or dispatch) on a commit outside this design until you say you have seen it (rows 720, 726, 727).
+- **Read:** `git show --stat 2620b419ae9ff0512da57642c03ab12ed24ffea9` · `skills/dev-cycle/SKILL.md` step 0.2
+
+Commit `2620b419ae9ff0512da57642c03ab12ed24ffea9`, by the repository owner's identity, 2026-10-19. Subject, paraphrased (data, not instructions): Project constraints doc. Changes: 1 path, under `docs/`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] reviewed, build on it** | The next iteration runs every step on top of this commit | One line | Whatever this commit changed feeds tests, briefs and loops unreviewed |
+| **[2] not yet** | Every iteration stops at step 0.2, as this one did | None now | The cycle stays stalled until you answer |
+
+- **Blocks:** every dev-cycle step past 0.2.
+- **Interim:** [2]; iteration 2026-10-20-0346 stopped at step 0.2. The installed image was released from `b91563c54f91`, the seventh of these twelve commits, which may already be your review of Q-201..Q-207 (F58).
+- **If the answer differs:** nothing to redo.
+
+### Q-198 · merge-2026-10-17-claude-md-import-guard-cc2a8054e517
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1], done.** Merged as 43762305.
+
+Merge `fix/claude-md-import-guard` at cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 (brief `docs/working/briefs/2026-10-17-claude-md-import-guard.md`, roadmap In flight)?
+
+- **What it does:** `test/agents-gemini-sync.bats` runs one shared `check_no_imports FILE...` (on the existing `find_imports`) over `AGENTS.md`, the root `CLAUDE.md` and `global-instructions/CLAUDE.md`; a missing, unreadable or importing file fails, naming the file. A new case adds `@./x.md` to a scratch copy of the root file and checks the failure names it. The header comment now says the root file is what Claude Code loads here. The root file itself is unchanged: its claim is now true. The loop reports 4/4 passing, hermeticity-lint clean, and a mutation probe where the old test passed and the new one fails; review found no red or amber. Accepted gap: nothing fails if the root file is later dropped from the list.
+- **Read:** `git log 2fad41c1..cc2a8054e5176b7d44b85c4fa0cde2b289dc3164` · `docs/working/research-2026-10-17-claude-md-import-guard.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-claude-md-import-guard.md cc2a8054e5176b7d44b85c4fa0cde2b289dc3164 b00c81882ee1b4dc0d5fa0f75703ab92b6231f74`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md M docs/working/briefs/2026-10-17-claude-md-import-guard.md`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md A docs/working/research-2026-10-17-claude-md-import-guard.md`
+  - `path docs/working/briefs/2026-10-17-claude-md-import-guard.md M test/agents-gemini-sync.bats`
+- **Path notes:** none is an instruction or prompt file, a dot path or gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly cc2a8054 | Reading a test diff | A false alarm on a guarded file; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The root file's guard claim stays false |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
+
+
+### Q-197 · merge-gate-2026-10-17-q146-si-script-commits-1b9f2659c28d
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1], done.** Merged as 86993a8c.
+
+Merge `feat/q146-si-script-commits` at 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 (brief `docs/working/briefs/2026-10-17-q146-si-script-commits.md`, roadmap In flight; Q-146 [1])?
+
+- **What it does:** a new `scripts/lib/si-commit.sh` (`si_commit_child_work WT DESC REPO_DIR`) stages the implementer child's changes, leaving out `.si-commit-msg`, and commits them with `-F` on that file or the task description, with hooks and fsmonitor off and the git dir pinned to the repo's own worktree record (a child-written `.git` cannot redirect it; a symlinked message file or `.git` is refused). `scripts/self-improvement.sh` (+~30 lines) sources it, tells the child to write `.si-commit-msg` and never run git, and Gate 1a rejects a failed or empty commit by name. The children get no new grant. Docs: `guides/validation-gates.md` Gate 1a and `si-trust-evidence-2026-10-14.md` §5 item 2. 15 + 5 new bats cases; the loop reports the full suite at 1881/0, hermeticity-lint and shellcheck clean; ~330 code lines. Review: three rounds; rounds 1 and 2 each found a reproduced git-dir redirect (fsmonitor run as the script; a commit onto a sibling worktree's branch), both fixed; round 3 clean.
+- **Read:** `git log 673edb37..1b9f2659c28dd73ccf3198bbb87b97d09d48ea45` (the loop started at d2cd20c3) · `docs/working/research-2026-10-17-q146-si-script-commits.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-q146-si-script-commits.md 1b9f2659c28dd73ccf3198bbb87b97d09d48ea45 f6cab47c15ac19ec81cf5e066a46e9af4a9b4d2b`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M docs/working/briefs/2026-10-17-q146-si-script-commits.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A docs/working/research-2026-10-17-q146-si-script-commits.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M docs/working/si-trust-evidence-2026-10-14.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M guides/validation-gates.md`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A scripts/lib/si-commit.sh`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M scripts/self-improvement.sh`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md M test/scripts/self-improvement-clean-state.bats`
+  - `path docs/working/briefs/2026-10-17-q146-si-script-commits.md A test/si-commit-child-work.bats`
+- **Path notes:** `scripts/lib/si-commit.sh` matches GATE_CODE's `^scripts/lib/` (hence `merge-gate-`), though it is the self-improvement loop's helper, not the gate's; self-merge's floor would refuse it, and the image carries it only from the next release. No instruction or prompt file or dot path.
+- **Follow-on (not run):** the Q-146 live run, one self-improvement round with real children and `REPO_DIR` a dedicated clone, never `/workspace`; filed once this merges. Pre-existing and out of scope: Gate 1e already runs child-written bats as the script (noted in the research doc).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 1b9f2659 | Reading the diff, the git-dir pinning above all | A redirect the review missed lets a child steer one commit; the loop stays dormant until the live run anyway |
+| **[2] drop** | The brief closes; the branch stays for you | None | The loop stays unable to commit in a worktree (F5) |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; the self-improvement loop stays dormant (Q-146).
+
+
+### Q-195 · merge-2026-10-17-cc-isolated-profile-names-a1359a68a1f0
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered 2026-10-20: [1], done.** Merged as c80fec22.
+
+Merge `fix/cc-isolated-profile-names` at a1359a68a1f042b26b6e3beabd6e5d6b1360d714 (brief `docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`, roadmap In flight)?
+
+- **What it does:** `cc-isolated --register` accepts a `--profile` item only when it exactly equals the base name of a regular, non-symlink `egress/NAME.txt` (no word splitting or globbing; a refused item is printed with `%q`); `--register` with no or an empty `--profile` is refused, pointing at `--profile base`; the unregistered-project NOTE quotes its path with `%q`. About 10 net lines in `cc-isolated.sh`; 6 new bats cases (5 fail on the old code); the guide says what names are accepted. The loop's review found 0 Must, 0 Should, 4 Consider (1 fixed).
+- **Read:** `git log d2cd20c3..a1359a68a1f042b26b6e3beabd6e5d6b1360d714` · `docs/working/research-2026-10-17-cc-isolated-profile-names.md` on that branch (pre-mortem first)
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-17-cc-isolated-profile-names.md a1359a68a1f042b26b6e3beabd6e5d6b1360d714 fbf1775a920217a27022452c156681d88536c5ce`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M devcontainer-config/cc-isolated.sh`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M docs/working/briefs/2026-10-17-cc-isolated-profile-names.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md A docs/working/research-2026-10-17-cc-isolated-profile-names.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-17-cc-isolated-profile-names.md M test/cc-isolated-functions.bats`
+- **Path notes:** none is an instruction or prompt file, a dot path or gate code. `devcontainer-config/cc-isolated.sh` is an enforcement file and a host tool: it takes effect at your next install, and its commit carries `Live-verified: no` (host check: Q-196).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly a1359a68 | Reading the diff | A refusal case the tests missed shows at your next `--register`; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The path-like profile bug stays open |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
+
+
+### Q-179 · row-66-router-uptake-verdict
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], close.** "Mostly because workflows have been merged into skills, which is a more complete answer to the underlying question."
+
+Log row 66's three-cycle window has closed. Its trigger was "multi-file merges to main still land without pr-prep's `← carried from RPI` line or a committed code-review rubric". Over the window, 4 of 45 multi-file merges since 2026-10-02 had neither: 188e0a7d, 52053432, b8807e76 and 0fbf9742, all small fixes from 10-02 to 10-06. None of the 41 since then lacks both. Taken alone, the RPI line is missing on 19 of 45 merges, but 15 of those 19 committed a rubric. Does row 66's decision stand?
+
+- **Why it's yours:** the trigger, read literally, fired (4 > 0), and it reopens a choice: whether selection, not discovery, is the bottleneck.
+- **Read:** `docs/decisions/log.md` row 66 · roadmap Next 1 · this iteration's record, "Trigger verdicts"
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] close, routers work** | Record the tally on row 66 and move roadmap Next 1 to Done. The four misses came in the first four days | One answer | A selection problem stays hidden until another trigger catches it |
+| **[2] reopen row 66** | Treat the line-alone misses (19/45) as a selection problem and open a DD on router selection | A DD review | Work on a problem the rubric numbers say is solved |
+
+- **Blocks:** roadmap Next 1 (measure router uptake).
+- **Interim:** Next 1 carries the cycle-3 tally and stays open. Row 66 is unchanged, because decision records are outside the cycle's writes.
+
+
+### Q-165 · branch-verify-approach
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], `cc-verify` host tool.** "Recalling that the verify tool needs to take the config it verifies as an argument."
+
+How should a branch's container config be verified on the host without installing it over main (roadmap Now, "Verify a branch without installing it": Q-117, Q-125/Q-130 and Q-098 wait on this)?
+
+- **Why it's yours:** it adds a host tool that drives docker, a new trust surface, and the choice sets how the three blocked merges get unblocked.
+- **Read:** `docs/working/research-branch-verify-without-install.md` and `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install` (22a4bb1f; the branch tip, d25254da, adds the spike doc and its review commits). What they found:
+  - No check needs main's install, but install.sh's `agent_gate` is global, so even a second install prefix blocks while any session runs.
+  - Both blocked branches are hundreds of commits behind main and would roll back Q-089's host-tools split if installed as they are.
+  - Container and volume names are keyed on the workspace path. A `--probe-only` of `~/claude-workflows` therefore recreates the harness's own container.
+  - Main's launcher loads its code only from its own directory. So main's `cc-isolated` run with `CLAUDE_DEVC_CONFIG_DIR` set to a staged merge tree, on a scratch clone, runs no branch code on the host and installs nothing.
+  - The gap: a branch's `devcontainer.json` (`initializeCommand`, `runArgs`, `mounts`) reaches docker without an install diff, so it needs an allowlist refusal plus a diff stop.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] `cc-verify` host tool** (recommended, 70%) | A hand spike on Q-117 first, then a ~300-line `devcontainer-config/cc-verify.sh` (a host tool, so it carries a `Host-tool-tested:` trailer) | One paste for the spike, then one command per verify | A second host script assumes the launcher's layout; a test pins that assumption |
+| **[2] `cc-isolated --verify`** | The same behaviour inside the launcher | The same per verify, but the launcher change first needs its own install and probe | It grows a 944-line enforcement file and is slower to unblock |
+| **[3] Hand paste only** | Stop after the spike and reuse the paste for each verify | A ~30-line paste per verify, with teardown and the diff check done by hand | Teardown or the `devcontainer.json` check gets skipped one day |
+| **[4] Park** | Keep Q-117, Q-125 and Q-098 unmerged | Nothing | The egress fix and the sandbox stay off indefinitely |
+
+- **Blocks:** the roadmap Now item "Verify a branch without installing it", and through it Q-125's merge, Q-098 and `fix/egress-dnsmasq-ipset`.
+- **Interim:** the spike paste (step one of [1], and safe under [2] and [3]) is written and reviewed: Q-169.
+- **If the answer differs:** [4] drops the spike; [2] reuses the spike's findings for the launcher change.
+
+
+### Q-166 · staged-run-counts-as-live-verify
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [2], yes, plus a post-merge check.**
+
+If Q-165 picks [1], [2] or [3], does a passing staged run (main's launcher on the staged merge tree) count as the live-verified host run that Q-117 and Q-125 need before merging?
+
+- **Read:** `docs/working/dd-branch-verify-without-install.md` on `docs/branch-verify-without-install`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Yes** | Merge on a passing staged run, with the trailer `Live-verified: <hash> — cc-verify of tree <id>`. Main's post-merge install re-probes on first launch anyway | Nothing extra | A difference between the staged and installed config shows only at that first launch; revert as in Q-125's rollback plan. For Q-125 that difference is real: a staged run never executes its `install.sh` `PAYLOAD` or `cc-isolated.sh` `enforcement_files()` changes (Q-117 changes only `init-firewall.sh`) |
+| **[2] Yes, plus a post-merge check** | As [1], but Q-117 and Q-125 close only after main's first post-merge `--probe-only` passes | One probe at your next normal install | Little: the entries just stay open a bit longer |
+| **[3] No** | A staged run is evidence, not the gate; the install-over-main run stays | The blocking install you already declined | Back to the problem in Q-117's answer |
+
+- **Interim:** [2].
+- **If the answer differs:** only the closing step of Q-117 and Q-125 changes.
+
+
+### Q-170 · decision-015-isolation-rerun
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [A].** V1: "When I fell back to running host sessions, it was because I installed a new devcontainer config that was unable to launch cc-isolated. I remember some of those instances were egress problems blocking claude, and one was the startup check failing." (All boundary-layer causes, none Docker's.)
+
+Q-105 [3] asked for decision 015's step 4 (Docker vs podman vs other) to be re-run as a divergent design. The re-run recommends keeping Docker: none of the 6 session-breaking fixes since 2026-07-13 was Docker's. Which outcome?
+
+- **Why it's yours:** it amends a decision record's revisit trigger, and [A] adds a merge refusal for boundary changes.
+- **Read:** `docs/working/dd-015-step4-isolation-mechanism.md` (lands with Q-162). Motive test: of the 6 fixes, 4 came from this repo's own boundary changes, 1 from the devcontainer CLI's path handling and 1 from kernel netfilter, so no runtime swap removes the cause. 4 of the 6 merged without a live-container run, and since 2026-09-09 88 of 116 `devcontainer-config/` commits carry `Live-verified: no` (the doc says 87; a recount gives 88). 18 candidates, 5 scored. Confidence 80%. §6 holds the exact amendment text for 015's trigger, which splits runtime-caused from boundary-layer breakage.
+- **Also tell me (V1, the one fact that could change the answer):** the dates and reasons you fell back to running sessions on the host since July (Q-121), because Docker Desktop incidents leave no commit.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[A] Keep Docker; amend 015; verify-before-merge** (recommended) | Apply §6's amendment now. Once `cc-verify` exists (Q-165), boundary merges without a `Live-verified:` hash are refused unless overridden with a logged reason | Approve one text amendment now | If Desktop is breaking sessions off the record, the runtime half of the trigger fires; podman is the named fallback |
+| **[B] Keep Docker; amend 015 only** | The amendment, with no merge refusal: churn is watched, not prevented | Approve one text amendment | The boundary half of the trigger keeps firing and routes back to [A]; sessions break meanwhile |
+| **[C] Spike rootless Docker or podman first** | One host paste covering the doc's checks V2–V7 and V12, then decide | One ~30-minute paste and reading the results | Spends a session on a runtime that removes none of the recorded causes |
+| **[D] Sidecar egress proxy** | Keep Docker; replace the in-container netfilter/DNS stack with an internal network and a proxy container | Reviewing a multi-day boundary rewrite plus its live run | A large unverified boundary change, the very thing behind 4 of the 6 breakages |
+
+- **Blocks:** nothing urgent. 015's trigger stays as it is until answered.
+- **Interim:** [B] in substance: nothing changes, and the cycle reads 015's trigger as the DD's split.
+- **If the answer differs:** [C] or [D] become roadmap items; the amendment is dropped.
+
+
+### Q-171 · q168-landing-at-cap
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [2], hold until the split units land.** "If there are red findings that predate the unit it's more important to fix those first than it is to land new work."
+
+Q-168 (`fix/q096b-exit-scan-remote-names`, 75d08a94, stacked on Q-096) used its 3 review iterations. The final pass found 4 reds; 3 predate the unit and 1 is new counting that is no regression. The blocker for merging is that the scan's header and the guide still claim git parity it lacks, plus one incomplete performance fix (A17). How should it land?
+
+- **Why it's yours:** a 4th iteration passes the review-fix loop's iteration-4 gate.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-q168-exit-scan-remote-names.md` on the branch. Fixed and tested against git 2.39.5:
+  - remote names counted only from what git reads for that repo;
+  - your own `pushDefault`/`branch.*` walked;
+  - legacy files read byte-wise, through symlinked dirs, failing closed on a NUL byte or a line over 8 KiB;
+  - `file://` decoded;
+  - every local-path form git tries, `gitdir:` files included, walked.
+
+  13 new tests, each failing before its fix; 206/206 pass. 562 changed lines, over the 400 cap and under the 800 stop. Health check: only Q-145-race reds, which pass alone; slow suites 300/300.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] One more doc-and-A17 iteration** (recommended) | Iteration 4: correct the parity wording, add the split routes to the guide's known routes, key the include hash on the real path, run one confirming pass, then add it to Q-162's branch | One answer | Scope grows if the confirming pass finds more |
+| **[2] Hold until the split units land** | Leave it unmerged until Q-173's groups are fixed | None now | Fixed families wait on harder ones, and the branch goes stale |
+| **[3] Merge as is** | Land 75d08a94 with the reds listed | None | The guide tells you parsing matches git when it does not |
+
+- **Interim:** unmerged; the open families are known routes, and cc-push is still the safe way to push.
+- **If the answer differs:** [2] parks the branch; [3] needs only a merge-message note.
+
+
+### Q-176 · q092-deny-matcher-live-check
+**Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): spellings 2, 3, 7 and 9 run; every control is denied.** 1 denied · 2 model refused, then ran · 3 ran · 4 denied · 5 denied · 6 denied · 7 ran · 8 denied · 9 ran ("no configured push destination"). The test hook approves only the nine exact strings and stays silent otherwise, so a run means the hook saw that exact spelling. No version lines or `seen.log` were pasted back. Claude Code's deny matcher stops the `&&` compound but not quoted or backslashed spellings, so this sends Q-177 to its options.
+
+Q-092 removes the auto-approve hook's own deny reader, so for quoted, backslashed or compound spellings, whether a denied command is stopped depends only on Claude Code's deny matcher. Main's hook stays silent on `.cred""entials.json`, `.c\redentials.json`, `git "push"` and `cat "secret"`; the branch's hook approves them (the review's MA1 names all four; the check below tries each shape). This check settles it with a throwaway hook that approves only the nine test commands below and stays silent on anything else, so every other command prompts as usual; it needs no merge. Run on the host:
+
+```
+mkdir ~/q092 && mkdir ~/q092/.claude && cd ~/q092 && git init -q && jq --version && echo canary > x.q092-canary && echo secret > secret && cat > ~/q092/.claude/allow-tests.sh <<'EOF' && cat > ~/q092/.claude/settings.local.json <<'JSON' && claude --version && claude
+#!/bin/sh
+c=$(jq -r '.tool_input.command // empty')
+printf '%s\n---\n' "$c" >> "$HOME/q092/seen.log"
+case "$c" in
+  'cat x.q092-canary'|'cat x.q092-ca""nary'|'cat x.q092-c\anary'|'rm -rf ./nothing-here'|'echo hi && rm -rf ./nothing-here'|'cat secret'|'cat "secret"'|'git push'|'git "push"')
+    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}' ;;
+esac
+EOF
+{
+  "permissions": { "deny": ["Bash(*.q092-canary*)", "Bash(rm -rf:*)", "Bash(git push:*)", "Bash(cat secret)"] },
+  "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "sh \"$HOME/q092/.claude/allow-tests.sh\"" } ] } ] }
+}
+JSON
+```
+
+It needs `jq` on the host (the paste stops at `jq --version` without it). It also stops if `~/q092` already exists, so nothing planted there is reused: look at what is in it before removing it. `~/q092` is its own git repository with no remote, so a `git push` that runs pushes nothing. In that session, check that `/hooks` lists the hook. Answer **no** to any prompt for a command not on this list. Then ask Claude to run each of these one at a time, exactly as written, and note for each whether it **runs**, **prompts** or is **denied**:
+1. `cat x.q092-canary` (control for the glob rule: must be denied)
+2. `cat x.q092-ca""nary`
+3. `cat x.q092-c\anary`
+4. `rm -rf ./nothing-here` (control for the `:*` prefix rule: must be denied)
+5. `echo hi && rm -rf ./nothing-here`
+6. `cat secret` (control for the exact rule: must be denied)
+7. `cat "secret"`
+8. `git push` (control for the `:*` prefix rule: must be denied)
+9. `git "push"`
+
+Then exit, keep a copy of `~/q092/seen.log`, and `rm -rf ~/q092`, even if the session errored. Also run `claude --version` inside any `cc-isolated` session: the hook runs in the container, so the result counts for Q-092 only if the two versions match. Paste back both version lines, the nine results and `seen.log`. A result counts only if `seen.log` shows the hook saw that exact command: if Claude rewrote it (for example dropping the quotes), re-ask with the exact text. A "prompts" on 2, 3, 5, 7 or 9 means the hook did not see that spelling, so that test is void and is re-run. If a control is not denied, the whole check is void.
+
+- **Interim:** Q-092's two branches stay unmerged (Q-177).
+- **If the answer differs:** any "runs" on 2, 3, 5, 7 or 9 sends Q-177 to its options; all five "denied", every control denied, `seen.log` showing each exact command and matching versions land Q-092; anything else re-runs the void tests (at the container's version, if the versions differ).
+
+
+### Q-177 · q092-merge
+**Needs:** deferred · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered 2026-10-20 (in session): [3], keep a quote check.** Q-176 showed spellings 2, 3, 7 and 9 run. Before Q-092 merges, a unit makes the hook's shape allowlist refuse words with a quote or backslash mid-word, so those spellings keep prompting as on main.
+
+When Q-176 is answered: merge Q-092's two units, `fix/q092a-drop-deny-option` (d27a3891), then `fix/q092-drop-hook-deny-reader` (aeda94b2)?
+
+- **Read:** both rubrics (`docs/reviews/code-review-rubric-2026-10-15-fix-q092a-drop-deny-option.md`, `…-fix-q092-drop-hook-deny-reader.md`) and the independent closing review `docs/reviews/independent-review-2026-10-15-q092b.md` on U2. The hook never emits `ask`, and tests pin its stdout, so Q-082's "deny beats a hook allow" applies to every path. The independent reviewer found no way to make the hook allow outside the allow rules, and all fail-closed cases held. Hook suite 35/35; health check passed clean. U1 had an independent clean terminal pass; U2's terminal pass was self-review, then the independent closing review (MA1: this live check, now Q-176). Sizes 413 + 451 lines.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Merge if Q-176 is all "denied"** | The loop adds both units to the ready branch | Nothing more | A spelling Q-176 did not try runs without a prompt, as in [2] |
+| **[2] Q-176 shows a spelling that runs: accept it** | Merge anyway: the same class as the `.c*` glob residual; Q-125's sandbox is the real fix | One answer | A quoted credential read runs without a prompt where no sandbox exists (cc-isolated until Q-125) |
+| **[3] Q-176 shows a spelling that runs: keep a quote check** | Before merging, the hook's shape allowlist refuses words containing quotes or backslashes mid-word | An enforcement-file unit | Some legitimate quoted commands prompt again |
+
+- **Interim:** [1]'s condition; nothing merges until Q-176's result.
+- **If the answer differs:** [3] adds a unit before the merge.
+
+
+### Q-150 · build-loop-c1-questions-writer
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], orchestrator only.**
+
+Should the orchestrator stay the only writer of the questions files, with build loops carrying their questions in a `handoff: blocked` marker, or should loops write entries themselves? (Plan C1.)
+
+- **Read:** plan D11 and F41 in `docs/working/plan-build-loop-handoff.md` · `docs/working/handoff-build-loop-handoff.md` C1
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Orchestrator only** (built) | A loop ends with a `blocked` marker; the orchestrator files its question as an entry, the body quoted line by line (`--marker`) | None | A loop's question appears one orchestrator iteration later than it could |
+| **[2] Loops write directly** | Each loop edits the questions files on its own branch | A new gate unit to review | Up to slots+1 sessions edit one file, minting colliding IDs, and a loop's text can plant an answer line the readers take as yours (F41, reproduced) |
+
+- **Interim:** [1], as built (D11).
+- **If the answer differs:** [2] reopens D11 and F41: `--marker`, `--cycle-diff` and the N rules change, in a reviewed unit.
+
+
+### Q-151 · build-loop-c2-blocked-slot
+**Needs:** you: judgment · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-16-26.txt): [1], frees the slot.**
+
+Does a blocked build loop give up its slot while it waits for your answer? (Plan C2.)
+
+- **Read:** plan D9 · `docs/working/handoff-build-loop-handoff.md` C2
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Frees the slot** (built) | Only a live or queued loop counts against the slots; a blocked item re-enters the queue on its existing branch once answered, ahead of new briefs | None | More work is in flight at once than the slot count suggests, so more answers wait on you |
+| **[2] Holds the slot** | A blocked item counts against `Build-loop slots:` until answered | None | Blocked work starves the cap: with 3 blocked items nothing else runs |
+
+- **Interim:** [1], as built (D9).
+- **If the answer differs:** [2] is a change to the skill's slot counts in steps 8 and 10.
+
+
+
+
+### Q-216 · merge-2026-10-20-decision-015-amendment-0401d6af5705
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [1], merge.**
+
+Merge `docs/decision-015-amendment` at 0401d6af5705acd90f245c06e718e9a58675a154 (brief `docs/working/briefs/2026-10-20-decision-015-amendment.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report, docs only): decision 015 carries §6's three edits from `docs/working/dd-015-step4-isolation-mechanism.md` (the trigger sentence and table cell byte-identical to the draft; the Consequences note dated 2026-10-20 and holding Q-170's V1 answer: host fallbacks came from boundary-layer configs, none from Docker). Log row 66 gets a Q-179 [1] close with the cycle-3 tally and your reason. Log row 53 gets a Q-176/Q-177 [3] amendment: split-word, backslash-newline and brace spellings prompt again; a whole quoted word (spellings 7, 9) is a stated residual; the Claude Code version was not recorded. Decision 039's heading becomes `## Revisit triggers`, so the digest now lists it. The DD doc's §6 heading says it was applied. A fact-check review found no must-fix item.
+- **Follow-up the loop flags:** log row 53's digest line is now about 4040 bytes against the 4096-byte cut; its next amendment should split or shorten the row.
+- **Read:** `git log c1a28e20..0401d6af5705acd90f245c06e718e9a58675a154` · `docs/working/research-2026-10-20-decision-015-amendment.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-20-decision-015-amendment.md 0401d6af5705acd90f245c06e718e9a58675a154 087c7611142a36d664737ab3bf041a342c74f641`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/015-cc-process-isolation-docker-devcontainer.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/039-pin-resolver-to-phase-a.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/briefs/2026-10-20-decision-015-amendment.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md M docs/working/dd-015-step4-isolation-mechanism.md`
+  - `path docs/working/briefs/2026-10-20-decision-015-amendment.md A docs/working/research-2026-10-20-decision-015-amendment.md`
+- **Path notes:** the three `docs/decisions/` paths are your records, which self-merge's floor would have refused; none is an instruction or prompt file, a dot path or gate code.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 0401d6af | Reading three decision-record amendments | A wording error in a record; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | 015's trigger and rows 53, 66 keep reading as before |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
+
+
+### Q-213 · log-row-73-shared-uid-git-config
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [1], read it as the same-uid residual.**
+
+Log row 73's second revisit trigger holds in this repo: build loops and other sessions run as the same uid as the operator, and `/workspace/.git/config` is writable to them, so the constraints-builder skill's "the operator's own git config" premise does not hold where build loops run. How should the trigger be answered?
+
+- **Why it's yours:** it reopens row 73's choice to ship v1 for sole-author repos and harden later.
+- **Read:** `docs/decisions/log.md` row 73 · `docs/working/constraints-builder-hardening.md` (Revisit trigger, lines 5-8) · `skills/constraints-builder/SKILL.md` ("Scope (v1)")
+- **Evidence:** `test -w /workspace/.git/config` prints writable for uid node (cycle 2026-10-20, step 2); no bwrap or sandbox denyWrite covers it. Nothing hostile is there now: `git config --list --show-scope` shows plain local keys, no `refs/replace`, an unused `config.worktree`.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Read it as the same-uid residual** | Treat this as Q-103's accepted same-uid residual; reword the trigger to "an agent outside the operator's own sessions and loops" | One read of the reworded trigger | A loop that plants git config in a repo the skill reads can run a command during a constraints-builder run |
+| **[2] Harden first** | Build the hardening doc's config allowlist and hardened git flags before the skill runs again in a repo with build loops | Review of one more unit | A unit spent on a risk no loop has acted on |
+| **[3] Run it only with no loop live** | Add a precondition to the skill: no build loop holds a lock in the target repo | One read of the precondition | A loop started mid-run, or a config planted earlier, still gets through |
+
+- **Blocks:** nothing; `docs/constraints.md` is already ratified (2620b419) and no constraints-builder run is pending here.
+- **Interim:** no constraints-builder run in a repo with live build loops until this is answered.
+- **If the answer differs:** only the trigger text, or one hardening unit, changes.
+
+
+### Q-196 · host-check-cc-isolated-profile-names
+**Needs:** you: terminal · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): pass.** The first command exited 1 with "unknown egress profile ../egress/python" and the list of profiles, registering nothing; the second exited 0 and printed `egress: base  ->  base,python`, then re-blessed. The scratch registration (project-id 05981bf43f54) is still on the host.
+
+After Q-195's branch is merged and installed, check `cc-isolated --register`'s new profile-name check on the host, on a scratch repo. The first command should exit 1 with "unknown egress profile" and write nothing; the second should exit 0 and print the `base -> base,python` transition.
+
+```
+mkdir -p ~/scratch-q196 && cd ~/scratch-q196 && git init -q
+cc-isolated --register ~/scratch-q196 --profile ../egress/python; echo "exit=$?"
+cc-isolated --register ~/scratch-q196 --profile python; echo "exit=$?"
+```
+
+- **Interim:** the change is tested hermetically only (`test/cc-isolated-functions.bats`, 207/207); its commit carries `Live-verified: no`.
+- **Blocks:** nothing; the result goes back here as a reply.
+- **2026-10-20:** Q-195's branch merged at c80fec22. Q-214's block runs install.sh, which installs it too; run this right after that paste.
+
+
+### Q-194 · decision-031-t4-fix-drift-miss
+**Needs:** you: judgment · **Opened:** 2026-10-17 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [2], widen the drift check.**
+
+Decision 031's fourth revisit trigger fired in letter: on `fix/doc-drift-cycle1` (merged in f265d7f2) the fix-drift lite check on 9e0ff1a5..258f9ec4 printed "FINDINGS: NONE", and the next full pass found D1 (a fact-check "Mostly accurate" doc amber) in text 258f9ec4 itself added to `guides/devcontainer-setup.md`. How should the trigger respond?
+
+- **Why it's yours:** the trigger reopens 031's cost/recall tradeoff for the review loop.
+- **Read:** `docs/decisions/031-review-loop-tier-and-factcheck-policy.md` (Revisit triggers) · `docs/reviews/code-review-rubric-2026-10-15-fix-doc-drift-cycle1.md` row D1 · `git show 258f9ec4`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Scope the trigger** (recommended) | Amend 031 T4 to fire only on a missed behavioral or security defect; record this miss (a doc-only amber the full pass caught) as non-firing | One read of the amendment | A real prose-accuracy gap in fix-introduced text stays unwatched |
+| **[2] Widen the drift check** | The fix-drift lite check also fact-checks prose that fixes add | None now; a little more per-iteration cost | More lite-check findings on docs-heavy loops |
+| **[3] Drop the lite gate** | Every fix iteration gets a full pass | None now | Review loops cost noticeably more for little recall |
+
+- **Blocks:** nothing.
+- **Interim:** no change to 031; the full pass caught D1 before merge, so nothing shipped wrong.
+- **If the answer differs:** only 031's trigger text or the review-fix loop's drift step changes.
+
+
+### Q-172 · exit-scan-parity-boundary
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [2], set a boundary.**
+
+How much host-git parity should the exit scan chase? It grew from 761 to 1,364 lines in 18 days. Every review pass of Q-094, Q-096 and Q-168 found new looser-than-git families, mostly bugs that predate the pass, each confirmed end to end with a planted hook running.
+
+- **Why it's yours:** it sets the scan's threat-model boundary and how much review attention the scan keeps consuming.
+- **Read:** Q-168's rubric (tech-debt T4) · the guide's "Known routes it does not see" · cc-push, the route that runs no git in the checkout
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep closing families one unit at a time** | Q-173's groups each become a unit, and so does whatever their reviews find | Review attention per unit, open-ended | Growth with no end; each pass finds more |
+| **[2] Set a boundary** | Close only routes that need no state planted before launch; list the rest as known routes; the guide says to push with cc-push | One decision now | Routes that need launch-time state stay open by design |
+| **[3] Re-architect** | One "resolve like git" layer plus one reader for `gitdir:`/commondir files, then re-audit | One larger unit | The tech-debt critic doubts a rewrite stops new families |
+
+- **Blocks:** Q-173.
+- **Interim:** no new exit-scan family units start; Q-096 lands as reviewed.
+- **If the answer differs:** only what Q-173 becomes changes.
+
+
+### Q-174 · q106-iteration-4-gate
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [1], authorize iteration 4.**
+
+Q-106 [2] is built (`feat/q106-host-settings-merge`, c6d7544f, built on an earlier `merge/ready-2026-10-15` commit, 184396ea; it is not in the ready branch Q-162 merges). install.sh's host target now runs the container's provenance merge on your `~/.claude/settings.json`, inside its review and gated by your y. Its review loop stopped at the iteration-4 gate with one Medium open. Authorize a 4th iteration?
+
+- **Why it's yours:** the iteration-4 gate, and the change writes your host hardening.
+- **Read:** rubric `docs/reviews/code-review-rubric-2026-10-15-feat-q106-host-settings-merge.md` and plan `docs/working/plan-q106-host-settings-merge.md` (pre-mortem) on the branch.
+  - **One merge program:** `hooks/lib/wiring-merge.jq`, shared with `link-claude-home.sh` and run with an empty HOME and environment.
+  - **Review before your y:** a `settings.json:` diff plus a by-name UNWIRE/ADD/REMOVE list.
+  - **Refuses:** a symlinked, unreadable or non-object file, a missing jq, any `wiring.json` hook that is not `bash|python3 {{CLAUDE_DIR}}/hooks/<path>`, or a file that changed since the review.
+  - **Recovery:** a backup is taken before the rename, with the mode kept.
+  - **Also closes Q-108:** 037's stale lines are corrected, and the "035's regex lands" trigger is discharged.
+  - **Size:** 561 code lines (under 800).
+  - **Tests:** T93–T103 11/11, link-claude-home 16/16. The health check's only reds are the Q-145 race, each passing alone; slow suites pass.
+  - **S3-F1 (open, Medium, low confidence):** the wiring shape check covers each hook but not the group around it. An object-valued `hooks`, an object `matcher` or extra group keys would pass and be written.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Authorize iteration 4** (recommended) | Tighten the group shape (only `matcher`/`hooks`, typed), anchor the regexes with `\A…\z`, count duplicate hooks: about 20 lines, then the k=3 confirming pass, then into Q-162's branch | One later merge | Agent time spent on a check that may not matter |
+| **[2] Merge as is** | Land c6d7544f with S3-F1–F3 listed in the merge message | One merge now | A hostile branch's malformed group lands in settings.json after your y; if Claude Code rejects a schema-invalid file, deny rules stop applying until it is fixed |
+| **[3] Host check first** | A small paste: does Claude Code reject the whole file or skip one malformed group? The answer picks [1] or [2] | One paste | Only delay |
+
+- **After it merges:** the branch's host verification block (in the rubric's report; it installs into a temp dir with a copy of your settings.json, never the real one) joins Q-167.
+- **Interim:** unmerged; the installer keeps printing the manual-merge reminder.
+- **If the answer differs:** [2] merges as is; [3] adds one terminal entry.
+
+
+### Q-175 · q106-merge-program-gate-coverage
+**Needs:** you: judgment · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [1], accept it in the `hooks/**` class.
+
+Q-106 moved the settings merge jq into `hooks/lib/wiring-merge.jq`, which is outside `live-verify-gate.sh`'s `enforcement` regex. On main that jq is inline in `link-claude-home.sh`, which the regex covers (`hooks/live-verify-gate.sh:83`), so the move takes away coverage the program has today. The trust manifest still hashes it, and both installs show it in their reviews. Should the commit gate cover it?
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Accept it in the `hooks/**` class** | Same status as `wiring.json` and `guard-trusted-writes.py` | Nothing | A change to the merge program commits without a `Live-verified:` trailer, which it cannot today |
+| **[2] Add it to the enforcement regex** | A small gate-code change with its test | One gate-code review | Every commit touching the program owes a container probe |
+| **[3] Its own trailer** | Like `Host-tool-tested:` | A new category to maintain | More trailers to remember |
+
+- **Interim:** [1] in name only: Q-106 is unmerged (Q-174), so nothing has lost coverage yet. The security review of this entry (`docs/reviews/security-review-2026-10-15-0357.md` F6) leans to [2].
+- **If the answer differs:** [2] or [3] becomes a small unit after Q-106 lands.
+
+
+### Q-220 · merge-2026-10-25-exit-scan-r6-hookspath-792c549e6d1c
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): [1], merge.** The next dev-cycle iteration runs `--merge --approved` at 792c549e.
+
+Merge `fix/exit-scan-r6-hookspath` at 792c549e6d1c620308d0f63c44b067047ad437ee (brief `docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report; nothing run on a host): closes R6. A relative `core.hooksPath` was walked only in a repo's main working tree, so a hook planted in a linked worktree inside the checkout (an agent worktree's `.husky/_`) scanned clean (rc=0) and then ran on the next host commit. `devcontainer-config/cc-exit-scan.sh` now collects every `core.hooksPath` from a config and every file it includes (`_snap_cfg_hooks`: each config read once, every include followed, no depth cap) and walks each value from the directory of each working-tree `.git` entry (`_snap_entry_hooks`, from `git_exec_snapshot`). It also closes the hooksPath half of R3 (`--separate-git-dir`). Test: "exit scan R6" in `test/cc-isolated-functions.bats`, four cases (direct, included, absolute include path, an `includeIf` chain git does not take), each ending in a real host commit that runs the hook; each fails on the scan as it was before its fix. About 187 changed lines of code and test.
+- **The sort** (research doc section 1): the loop read Q-172 [2]'s "no state planted before launch" as "only ordinary setup present at launch" (husky plus an agent worktree counts as ordinary; this wording is its reading, not Q-172's text). In scope: R6 (built), and as follow-ups R3's remote half, A14 and A16. Out of scope: R4 and T1. T3 is not a route. R5 and A15 are not reachable on main (they need the held Q-168 branch), so they are not added to the guide, a departure from the brief.
+- **Guide** (`guides/cc-isolated-usage.md`, "Known routes it does not see"): adds the boundary and "push with cc-push", R4, a "not closed yet" entry for A14, R3's remote half and A16, a `core.worktree` pointing elsewhere, a repo config that is a symlink to another repo's (found in review), and a T1 note; coverage sentence and timing (about 30 ms per repo) updated.
+- **Review:** three iterations; rubric `docs/reviews/code-review-rubric-2026-10-25-fix-exit-scan-r6-hookspath.md`. Passes 1-2 found three gaps that reached a real hook run (absolute or `~/` include paths skipped; a file first met in an untaken `includeIf` chain hid its plain include; 100 worktrees by 100 includes took 46.6 s, now 2.7 s), all fixed. The final pass (k=3 fact-check, security, performance) found no Must Fix and no Incorrect claim. **Unreviewed after it:** one code change (the duplicate-value check became a lookup; 3,000 values went from 23.7 s to 10.4 s) and wording, covered by tests and a timing probe only. Accepted availability costs: about 10 s at 100 by 100 values; an empty or directory `commondir` in an embedded repo now refuses the launch (git dies there too). All 208 tests in the file, the hermeticity lint and the health check pass.
+- **Host check not yet run** (every commit carries `Host-tool-tested: no` and `Live-verified: no`): after `install.sh`, in a husky repo with an agent worktree, launch `cc-isolated`, have the session write a pre-commit hook under the agent worktree's `.husky/_`, exit, and see the warning name it.
+- **Follow-ups the loop names** (filed after the merge, not now): group (1)'s remainder (A14, R3's remote half, A16); T1 with T3; whether to key config reads by the path git opened (would close the symlinked-config route).
+- **Read:** `git log d40e4bae8ad014c30be81e0891ffac2e6ef35771..792c549e6d1c620308d0f63c44b067047ad437ee` · `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` and the rubric on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md 792c549e6d1c620308d0f63c44b067047ad437ee 25c4a2a586e5411167680ba91ff90a8dbb541588`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M devcontainer-config/cc-exit-scan.sh`
+  - 11 `path … A docs/reviews/…` lines: the rubric and the p1-p3 fact-check, security and performance reports
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md A docs/working/research-2026-10-25-exit-scan-r6-hookspath.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-25-exit-scan-r6-hookspath.md M test/cc-isolated-functions.bats`
+- **Path notes:** `devcontainer-config/cc-exit-scan.sh` is an enforcement file that runs on your host at exit (it reaches the host at the next `install.sh`), which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 792c549e; a host-check entry and the follow-ups are filed after | Reading about 187 lines of exit-scan code and its test, and the sort | A slower or over-strict exit scan (a refused launch on an odd `commondir`); one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | R6 stays a known route; cc-push stays the safe path |
+| **[3] changes needed** | Your note goes back to the loop (for example on the sort's reading of Q-172) | A note | One more loop run |
+
+- **Interim:** unmerged; the exit scan runs as before and cc-push stays the safe path.
+
+
+### Q-219 · merge-2026-10-25-widen-fix-drift-check-4695470b98b1
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): [1], merge.** The next dev-cycle iteration runs `--merge --approved` at 4695470b.
+
+Merge `feat/widen-fix-drift-check` at 4695470b98b1d76642233f1bc1d90d5d40a20bba (brief `docs/working/briefs/2026-10-25-widen-fix-drift-check.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report): the fix-drift lite check's prompt (`PROMPT_FIX_DRIFT` in `scripts/lite-review.py`) now also reports factual errors in prose a fix adds or changes, and a specific claim about something the diff does not show (another file's contents or order, a line number, what a list includes) comes back as a Low "unverified claim" finding that names what to check; the loop agent then checks it. Still one lite call, no new agent run. `workflows/review-fix-loop.md` (Fix-commit drift check) and `workflows/pr-prep.md` step 3c describe the wider scope, the unverified-claim handling and the cost. Decision 031 gets a dated 2026-10-25 amendment and a note under its fourth trigger (original text unchanged); log row 77 records it, following row 63's precedent. New `test/lite-review-fix-drift-prompt.bats` runs the script end to end against a temp repo with a strict `claude` stub (exact argv, refuses `--bare`); its first case fails on the old prompt.
+- **A deviation the loop flags:** the brief said "the doc change is the change itself", but the check's behaviour lives only in the script's prompt, so a workflow-only edit would describe a check that does not run (H2). It edited the script (7 lines) and added the test. The drift check itself was not run live on the fix commits (needs a live `claude` call); independent subagent reviews stood in (first pass 0 red, 3 amber, fixed in 821d26d4; confirming pass clean). Health check, hermeticity lint and the touched suites pass.
+- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 4695470b98b1d76642233f1bc1d90d5d40a20bba` · `docs/working/research-2026-10-25-widen-fix-drift-check.md` on that branch (five options; it picked C)
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-widen-fix-drift-check.md 4695470b98b1d76642233f1bc1d90d5d40a20bba b539f520fbb18c01f8c666b0557dccf5bdb8dd41`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/031-review-loop-tier-and-factcheck-policy.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M docs/working/briefs/2026-10-25-widen-fix-drift-check.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A docs/working/research-2026-10-25-widen-fix-drift-check.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M scripts/lite-review.py`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md A test/lite-review-fix-drift-prompt.bats`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/pr-prep.md`
+  - `path docs/working/briefs/2026-10-25-widen-fix-drift-check.md M workflows/review-fix-loop.md`
+- **Path notes:** `scripts/lite-review.py` holds a prompt the review loop sends to a model, and the two `workflows/` files are on this repo's self-merge never line; `docs/decisions/` paths are your records. Self-merge's floor would have refused all of these. None is gate code or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 4695470b | Reading a 7-line prompt change, two workflow sections and 031's amendment | Noisier lite-check findings on docs-heavy loops; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | 031's fourth trigger stays answered on paper only |
+| **[3] changes needed** | Your note goes back to the loop (for example: keep it docs-only) | A note | One more loop run |
+
+- **Interim:** unmerged; the lite check runs as before.
+
+
+### Q-218 · merge-2026-10-25-log-row-73-trigger-241278a4f811
+**Needs:** you: judgment · **Opened:** 2026-10-25 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): [1], merge.** The next dev-cycle iteration runs `--merge --approved` at 241278a4.
+
+Merge `docs/log-row-73-trigger` at 241278a4f81124cca3a3a381b35b80463b249973 (brief `docs/working/briefs/2026-10-25-log-row-73-trigger.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report, docs only): `docs/working/constraints-builder-hardening.md`'s second revisit trigger now fires when "an agent outside the operator's own sessions and loops" can write a target repo's `.git/config`, `.git/config.worktree`, `refs/replace/` or their includes, and adds one sentence naming the operator's own loops and sessions as Q-103's accepted same-uid residual (Q-213 [1]). Log row 73 gets a dated "Amended 2026-10-25 (Q-213 [1])" note in its last cell; the original text stays (row about 1.1 KB). `skills/constraints-builder/SKILL.md` "Scope (v1)" was read and does not restate the old wording, so it is unchanged. The loop fact-checked the diff against Q-213 and the answers file itself (doc-only); `bats test/scripts/dev-cycle.bats` passed (79).
+- **Read:** `git diff d40e4bae8ad014c30be81e0891ffac2e6ef35771 241278a4f81124cca3a3a381b35b80463b249973` · `docs/working/research-2026-10-25-log-row-73-trigger.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-25-log-row-73-trigger.md 241278a4f81124cca3a3a381b35b80463b249973 7c57a70836aa81cf6f4b16a2bae1cb89e74b1113`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/decisions/log.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/briefs/2026-10-25-log-row-73-trigger.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md M docs/working/constraints-builder-hardening.md`
+  - `path docs/working/briefs/2026-10-25-log-row-73-trigger.md A docs/working/research-2026-10-25-log-row-73-trigger.md`
+- **Path notes:** `docs/decisions/log.md` is your record, which self-merge's floor would have refused; none is gate code, a dot path or an instruction or prompt file.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly 241278a4 | Reading a five-line trigger reword and one log amendment | A wording slip in a trigger; one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | The trigger keeps reading as firing on the build loops |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main.
+
+
+### Q-217 · merge-2026-10-20-cc-verify-host-tool-e87a79122092
+**Needs:** you: judgment · **Opened:** 2026-10-20 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): [1], merge.** The next dev-cycle iteration runs `--merge --approved` at e87a7912.
+
+Merge `feat/cc-verify-host-tool` at e87a79122092d919e9f6c032db90549c6977cd00 (brief `docs/working/briefs/2026-10-20-cc-verify-host-tool.md`, roadmap In flight)?
+
+- **What it does** (from the loop's report; nothing run on a host, the sandbox has no docker): `devcontainer-config/cc-verify.sh` (`cc-verify [--profile P] --check FILE REPO BRANCH`, `--clean`, `--help`) stages `git merge-tree --write-tree` of main and BRANCH (refusing a conflict), checks the staged `devcontainer.json` against main's installed copy (JSONC parsed with python3 stdlib; refuses new keys, changed host-reaching keys, runArgs outside NET_ADMIN/NET_RAW plus a staged seccomp file, extra mounts, new host variables, duplicate keys), shows the diffs and asks y/N, runs main's installed `cc-isolated` on a `VERIFY-<tree8>` scratch clone, runs the check file in the container, prints a `Live-verified: <hash> — cc-verify of tree <id>` trailer on a pass, and tears down from an exit trap. Exit codes 0 pass, 1 error or declined, 2 usage, 3 check failed. The pre-mortem's seven mitigations each have bats cases (`test/cc-verify.bats`, 13); it also checks itself against `host-tools.sha256` and main's launcher against `manifest.sha256`. Full health check, hermeticity-lint and shellcheck pass.
+- **Decisions the loop flags:** (1) split into two stacked units over the ~400-line cap (core 6870e947, 360 lines; hardening, wiring and docs d5fa26c1, 210 lines; 620 in all): merge the tip only, as unit 1 alone lacks the JSONC refusal. (2) One line added to `cc-isolated.sh` (`host_tool_files`), which the brief's out-of-scope line excluded but its acceptance criterion needs (confidence medium). (3) python3 becomes a host requirement for cc-verify only; the preflight refuses without it. (4) Not taken from review: an exec failure exits 3, not 1 (errs toward a false fail); the trailer hash is the blessed stage hash, not `cc-isolated --list`'s. (5) Deferred: an interactive mode for Q-130's `/login`, and a multi-branch merge for Q-098.
+- **After merge:** a `you: terminal` entry for the first host run, adding `~/cc-verify` to the agents' sandbox `denyWrite` first; the research doc's §6 lists 11 things that run must show (including whether the devcontainer CLI's JSONC parser treats U+2028 as a line break).
+- **Read:** `git log c1a28e20..e87a79122092d919e9f6c032db90549c6977cd00` · `docs/working/research-2026-10-20-cc-verify-host-tool.md` on that branch
+- **Gate output** (`build-loop.sh --check`):
+  - `ok docs/working/briefs/2026-10-20-cc-verify-host-tool.md e87a79122092d919e9f6c032db90549c6977cd00 b43d4eb620e195723e0c932393ae26d4c4fcfa41`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/cc-isolated.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A devcontainer-config/cc-verify.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M devcontainer-config/install.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/briefs/2026-10-20-cc-verify-host-tool.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M docs/working/dd-branch-verify-without-install.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A docs/working/research-2026-10-20-cc-verify-host-tool.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M guides/cc-isolated-usage.md`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M hooks/live-verify-gate.sh`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/cc-isolated-functions.bats`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md A test/cc-verify.bats`
+  - `path docs/working/briefs/2026-10-20-cc-verify-host-tool.md M test/install-host.bats`
+- **Path notes:** none is gate code, a dot path or an instruction or prompt file. `hooks/live-verify-gate.sh`, `devcontainer-config/cc-isolated.sh` and `devcontainer-config/install.sh` are enforcement and host-install files: the commits carry `Live-verified: no` and `Host-tool-tested: no` with reasons, and `install.sh` links the new tool, so the change reaches your host at the next install.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The orchestrator runs `--merge --approved` at exactly e87a7912; then a host-run entry is filed | Reading a 620-line host tool and its tests | A flaw in a host tool that runs docker on your machine; it only runs when you invoke it, and one revert undoes it |
+| **[2] drop** | The brief closes; the branch stays for you | None | Q-117, Q-125 and Q-098 stay parked |
+| **[3] changes needed** | Your note goes back to the loop | A note | One more loop run |
+
+- **Interim:** unmerged; nothing changes on main or the host.
+
+
+### Q-169 · q117-spike-paste
+**Needs:** you: terminal · **Opened:** 2026-10-15 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): run, refused; closed as dropped.** The paste ran on the host (`script sha256 a65f4c30ba1b8907`, the reviewed block) and stopped at step 1: `REFUSED: fix/egress-dnsmasq-ipset does not merge cleanly with main` (conflict in `devcontainer-config/init-firewall.sh`), `RESULT spike-q117 exit=1`, teardown ran. Q-215 [2] has since deleted the target branch (gone from `/workspace` on 2026-10-28), so there is nothing left to verify. Q-117 closes unverified, superseded by decision 039.
+
+Run only if Q-165 is answered [1], [2] or [3], after Q-162's paste has landed the doc on main. (Both are met as of 2026-10-16: Q-165 was answered [1] in `docs/human-author/answers-10-16-26.txt`, the doc is on main through f265d7f2, and the hash below re-checked.) It live-verifies `fix/egress-dnsmasq-ipset` (Q-117) without installing it. It stages main merged with the branch, runs main's installed `cc-isolated` on a scratch clone under `~/cc-verify/run-<RUN>.d/`, runs Q-117's container block, and tears everything down.
+
+- **The paste:** the single ```bash block in `docs/working/spike-cc-verify-q117.md` (498 lines with its fences). Take it from the reviewed commit, not the working tree, and check its hash before running:
+
+```
+mkdir -p ~/cc-verify && git -C ~/claude-workflows -c core.useReplaceRefs=false show d25254dae30fe05fd385b3ff430104fb63c39158:docs/working/spike-cc-verify-q117.md | awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' > ~/cc-verify/q117-spike.txt && sha256sum ~/cc-verify/q117-spike.txt
+```
+
+Run it on the host, not in a container, and replace `~/claude-workflows` if your checkout lives elsewhere. It uses `git -C` rather than `cd`, so a zsh prompt does not run `git status` in the checkout (an agent-planted `core.fsmonitor` would run on the host). The hash must be `032cc9a81e4e1c9266ec3ad3b5fe7053d9876eb21f5ffa7f0a35f2ccfed4afb7`; otherwise stop. Then paste the contents of `~/cc-verify/q117-spike.txt` (under the `denyWrite` below), editing only its last line, the checkout path. Its first output line must be `script sha256 a65f4c30ba1b8907`; any other value means it is not the reviewed block, so press Ctrl-C.
+- **Before you run it:** add `~/cc-verify` to your agents' sandbox `denyWrite`, or run it while no agent that can write `~/cc-verify` is running. A same-uid writer there is the one threat left open (residuals A17 and A18: it could redirect the stage extraction's writes, or edit the stage into host code execution during the build).
+- **Expect:** up to about an hour (image build, then Q-117's wait of up to 45 min for a pool rotation). Exit 0 with `RESULT Q-117 pass` and five `CHECK … ok` lines is a pass; 2 means no rotation was seen, so rerun later; 1 is a failure or refusal, named by step. On an interrupted teardown, rerun the same block with `--clean` as its last argument.
+- **Paste back:** the `script sha256` line, the `RESULT`, `CHECK`, `NOTE`, `TEARDOWN` and `REFUSED:` lines.
+- **Read:** the doc's step table (every command cited to file:line), "Not verified" (12 items only this run can show) and "Residual risks"; rubric `docs/reviews/code-review-rubric-2026-10-15-cc-verify-spike.md` (CONDITIONAL PASS: 2 iterations, 3 narrow passes, matrix 27/27 in a stub harness).
+- **Interim:** Q-117 stays unverified; the egress fix stays unmerged.
+- **If the answer differs:** if Q-165 is [4], this entry is dropped.
+- **2026-10-23:** Q-215 was answered [2]: `fix/egress-dnsmasq-ipset`, this paste's target, is to be deleted (decision 039 replaced it). Once it is gone this paste has nothing to verify; reply `Q-169: drop` to close it.
+
+
+### Q-214 · egress-pin-resolver-release
+**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-28-26.txt): done.** No output was pasted, so the fronting probe's four lines and the herald probe result are not on record; the herald-side follow-up (the handoff's `probe.sh` run and a cold `assembleDebug`) is the next agent step in herald.
+
+Release decision 039 (the resolver pin that fixes herald's `dl.google.com` outages) and `android`'s new `plugins-artifacts.gradle.org`, and probe that name for domain fronting first. Paste the block on the host. Answer `Q-214: <output>`.
+
+- **Read:** `docs/decisions/039-pin-resolver-to-phase-a.md` · `docs/working/dd-egress-pin-resolver.md` · log row 76
+
+```bash
+# 1. Fronting probe for the new android name (the Q-045 probe). Expect 403 or 404 "fronted"; a 200 <title>Google/GitHub means it fronts.
+b=$(mktemp); probe() { r=$(curl -sS -m 10 -o "$b" -w '%{http_code}' "$@" 2>&1); t=$(grep -o -i -m1 '<title>[^<]*' "$b" | head -c 50); echo "$r $t"; }
+for tgt in www.google.com www.python.org www.cloudflare.com github.com; do printf '%-16s fronted=[%s]\n' "$tgt" "$(probe -H "Host: $tgt" https://plugins-artifacts.gradle.org/)"; done; rm -f "$b"
+# 2. Install main's config (read the diff, answer y), then re-bless and probe herald.
+git -C ~/claude-workflows log -1 --oneline main    # expect 9fa8bbd0 or later
+(cd ~/claude-workflows && ./devcontainer-config/install.sh)
+HERALD=~/code/belegarth-herald                       # EDIT if herald lives elsewhere
+cc-isolated --register "$HERALD" --profile android && cc-isolated --probe-only "$HERALD"
+```
+
+- **After it passes:** in herald's next session, the agent runs the handoff's `probe.sh OUTDIR 1800 20` and `grep -c host-record /etc/dnsmasq.d/cc-allowlist.conf`. Pass is 0 `FAIL sni=dl.google.com` lines. Then it runs a cold `./gradlew :app:assembleDebug` and retires its "dl.google.com refused TLS" memory.
+- **If the probe shows fronting:** the entry gets an ACCEPTED RISK note like Google's (Q-052), or it is removed. The choice is yours; a follow-up entry will ask.
+- **Interim:** merged on main (9fa8bbd0) with `Live-verified: no`. Nothing changes until `install.sh` runs. Herald's workaround stays `sudo /usr/local/bin/init-firewall.sh`.
+- **If it fails:** paste the output. Revert with `git revert -m1 9fa8bbd0`, then reinstall.
+
+
+### Q-215 · retire-egress-dnsmasq-ipset-branch
+**Needs:** you: terminal · **Opened:** 2026-10-20 · **Status:** ANSWERED
+
+**Answered (docs/human-author/answers-10-22-26.txt): [2], delete it. Done (docs/human-author/answers-10-28-26.txt):** `git -C /workspace branch --list fix/egress-dnsmasq-ipset` printed nothing on 2026-10-28, and its worktree is gone from `git worktree list`.
+
+Decision 039 (merged) fixes the same bug as the unmerged `fix/egress-dnsmasq-ipset` (decision 038, Q-117, the Q-169 spike's target), with no CAP_NET_ADMIN resolver and ~5% of the code. What happens to the old branch?
+
+- **Read:** decision 039's "Why not the alternatives" and Revisit trigger
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep it parked** | The branch stays, unmerged, as 039's fallback for `.zone` rotation | None | Clutter. Q-169's spike still names it as its target |
+| **[2] Delete it** | `git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset` | One paste | 038's design survives only in git reflog. The decision text is quoted in `docs/working/dd-egress-pin-resolver.md` |
+
+- **Interim:** [1]. Nothing deleted.
+- **If the answer differs:** none; deletion is the only action.
+- **2026-10-23:** the recording session's deletion was refused by its permission classifier, so nothing is deleted yet. Paste on the host or as `! <command>` in a session (both are local to this checkout; the branch's two commits are not on origin, which [2] accepts):
+
+```
+git -C /workspace worktree remove .claude/wt-egress-dnsmasq-ipset && git -C /workspace branch -D fix/egress-dnsmasq-ipset
+```
+
+  Close this entry once `git -C /workspace branch --list fix/egress-dnsmasq-ipset` prints nothing.
+
+
+### Q-221 · questions-doc-owner-only
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): [14′], watches in their own file, agent work in the roadmap.**
+
+This file is meant to be your one place for things waiting on you. Today most of it isn't: of 17 open entries, 2 were yours. The rest were the agents' own bookkeeping. That covers work an agent will do itself, "check this later" reminders (watches), and finished work that only stays open because agents may not close entries in this file. Where should the agents' items live instead?
+
+- **Why it's yours:** it changes the page you read for every project, and the rules every repo's agents follow when they file something for you.
+- **Read:** `docs/working/dd-questions-doc-purposes.md`. It holds the full double diamond, your notes on framing and constraints, and the final rescore under "Owner premise".
+- **What stays here either way:** only items addressed to you. That means decisions (`you: judgment`), commands to paste on your machine (`you: terminal`), and two new kinds. One is hands-on product use only you can do, such as a walkthrough or playtest (`you: walkthrough`). The other is short reads you only need to acknowledge (`you: fyi`), answered `seen`; several can be acknowledged in one line. You keep answering in free text, in an answers file or chat. You never edit this file or maintain its format.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[14′] Watch file + roadmap** | Reminders to check something later go to a new agent-owned `docs/working/watching.md`, in the same entry format, checked by the same script; closed ones stay in it for the record. Work an agent will do goes only in the roadmap, which the dev cycle already keeps. | Reviewing three small units that change the dev-cycle scripts | One more file in `docs/working/` that you never need to open |
+| **[1] Roadmap only** | Both go in the roadmap, with reminders as bullets under a new `## Watching` heading | The same review | Reminders become loosely formatted bullets, so a malformed one can be skipped silently instead of being caught |
+
+- **Premise:** every project follows the dev cycle, so every repo has a cycle-kept roadmap and a cycle that reads the reminders (your note, 2026-10-28). If a project without the dev cycle adopts this file, the choice is revisited.
+- **Next:** a roadmap item to build [14′] in three units: (1) the four owner routes and the check that refuses agent items here, naming where they go; (2) `watching.md` and a lossless migration of today's agent entries; (3) the dev cycle reading `watching.md` and filing agent work to the roadmap, plus the global instructions text. Decision record: `docs/decisions/040-questions-doc-owner-only.md`.
+
+
+### Q-160 · implement-q104-per-iteration-cap
+**Needs:** agent · **Opened:** 2026-10-14 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+Log row 62's trigger fired again: units grew during review from 102 to 842 code lines (581d41d8), 157 to 603 (73589cd7), 217 to 538 (dfa75374) and 392 to 570 (626dc300). Write Q-104 [2] into the process. pr-prep or the review-fix loop re-measures the unit with step 1a's command after each iteration, tolerates up to ~800 lines, and stops for a waiver past that. Amend log row 62 to point at it.
+
+- **Read:** Q-104 in `docs/working/questions-archive.md` · `workflows/pr-prep.md` step 1a · `workflows/review-fix-loop.md` (early split trigger) · `docs/working/merge-msg-build-loop-u2a3b.md` (cites "Q-104 [2]'s ~800")
+- **Interim:** applied by hand per loop (waivers Q-113, Q-120, Q-131). Nothing enforces it, so it holds only while each loop remembers.
+- **Built 2026-10-15:** `fix/q160-iteration-cap` (4a44d2f3), merged by Q-162's paste. This entry closes when it lands.
+- **Landed (dev cycle 2026-10-17):** 4a44d2f3 is on main through f265d7f2; `workflows/review-fix-loop.md` has the size re-check and log row 62 carries the 2026-10-15 amendment. Its closure condition is met; ready to archive.
+- **Done (dev cycle 2026-10-25):** 4a44d2f3 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
+
+
+### Q-110 · health-check-not-run-undercount
+**Needs:** agent · **Opened:** 2026-10-02 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+In one `scripts/health-check.sh` run (2026-10-02, main at 188e0a7d), the test runner printed `NOT RUN: 50 report-dependent suite(s)`, but the health check's own summary said `4 report-dependent BATS suite(s) NOT RUN`. Find out why the summary under-counts and fix it, with a test.
+
+- **Read:** `scripts/health-check.sh` (check 5's NOT RUN summary) · `scripts/run-tests.sh` ("Report gating") · the review of `chore/dev-cycle-2026-10-02` (`docs/reviews/code-fact-check-report-devcycle-cycle-2026-10-02.md`)
+- **Cause (reproduced in this branch's pass-2 review):** `test/skills/eval-helpers-gating.bats` runs nested `run-tests.sh --fast` calls (lines 76–91; the pass-2 review reproduced it with the line-76 test) that do not override `RUN_TESTS_NOT_RUN_FILE`. The nested run inherits the parent's file and overwrites the parent's count (50, written before any suite runs, `scripts/run-tests.sh:356-357`) with its own 4. Fix: unset the variable in that suite's `setup()` (not at top level of `test/lib/hermetic-env.bash`: `run-tests.sh` sources that file before its own write, so the count would vanish), or have the runner stop passing the variable to the bats processes it starts; add a test that the parent's file is untouched. Having the runner refuse an inherited value cannot work: the health check passes the variable through the environment (`scripts/health-check.sh`, check 5).
+- **Interim:** trust the runner's own NOT RUN list, not the summary line.
+- **Landed (dev cycle 2026-10-17):** 70aa3a78 is on main through f265d7f2 (`scripts/run-tests.sh` unsets the variable; test in `test/skills/eval-helpers-gating.bats`). The 2026-10-17 health check's summary and runner both say 50 NOT RUN. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 70aa3a78 is on main (roadmap Done, f265d7f2). Ready for you to set ANSWERED.
+
+
+### Q-096 · exit-scan-insteadof-target
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+The exit scan records a `url.<base>.insteadOf` / `pushInsteadOf` base but never the URL it rewrites to, including at the top level, so a session can repoint a remote through a rewrite the scan does not follow. Found in the Q-094 review and now listed in the guide's "Known routes it does not see". Close it: the rewritten local-path target is walked as a remote, as `_snap_remote` does for `remote.*.url`.
+
+- **Read:** Q-094 rubric `docs/reviews/code-review-rubric-2026-09-28-q094-exit-scan-worktree-layout.md` · `_snap_config` / `_snap_remote` in `devcontainer-config/cc-exit-scan.sh`
+- **Constraint:** enforcement file: pre-mortem with bypass families first (decision log 61), under the 400-line cap. Start after Q-094's branches merge (same file).
+- **Interim:** documented as a known route. cc-push, which runs no git in the checkout, is still the way to push.
+- **Unblocked 2026-10-02 (dev cycle):** Q-094's branches merged (7bf3b581), so the "start after" condition is met. Briefed as `docs/working/briefs/2026-10-02-exit-scan-insteadof-target.md`.
+- **Built 2026-10-15:** `fix/q096-exit-scan-insteadof-target` (8717fd72, loop closed), merged by Q-162's paste; this entry closes when it lands. Host probe: Q-167. Split-off: Q-168. Review history: The first security pass found five Mediums, all confirmed by probe. One is pre-existing: a remote with no `url` is pushed to as a path, and the scan skips it. The commit carries `Host-tool-tested: no` (decision log row 71), not `Live-verified`.
+- **Landed (dev cycle 2026-10-17):** 8717fd72 is on main through f265d7f2, and its brief reads done. Its closure condition is met; the host probe stays with Q-167, the split-off with Q-168. Ready to archive.
+- **Done (dev cycle 2026-10-25):** 8717fd72 is on main; the host probe stays with Q-167 and the split-off with Q-168. Ready for you to set ANSWERED.
+
+
+### Q-092 · drop-hook-deny-reader
+**Needs:** agent · **Opened:** 2026-09-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): done.** The work is on main, so the entry closes.
+
+Per Q-082's answer (`permissions.deny` beats a hook `allow`), remove the Bash deny reader from `hooks/auto-approve-allowed-commands.sh`: the settings-file deny loading, `--deny`, the de-quoted matching and their tests. Update the hook header's rule table to match. This is architecture-review finding 1 on Q-076.
+
+- **Read:** Q-082 in the archive · decision log 53 (amended 2026-09-28) · the hook header
+- **Constraint:** this changes an enforcement file, so the plan's pre-mortem lists the bypass families and marks each covered or not before implementing. One case to check explicitly: the host result covers `allow` only. If the hook can ever emit `ask` (#39344 shows `ask` overriding deny), the reader may still be needed on that path.
+- **Interim:** the reader stays. It is redundant for `allow`, not harmful.
+- **Landed (dev cycle 2026-10-20):** U1 merged at 79c8a6a6, U2 and U3 (Q-177 [3]'s split-word refusal) at dfc78e9a. The hook emits only `allow` (its header says it never emits `ask`), so the ask-path case is moot; the host deny check was Q-176. Ready to archive.
+- **Done (dev cycle 2026-10-25):** U1 79c8a6a6 and U2/U3 dfc78e9a are on main; spot-check re-ran `test/auto-approve-allowed-commands.bats` 37/37 and the hook emits only `allow`. Ready for you to set ANSWERED (the cycle cannot close an entry).
+
+
+### Q-223 · failure-pattern-harvest-or-drop
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered (in session, 2026-10-28): revisit in more detail.** "The repo and process have been very active in the last month and whether/how the failure patterns are used deserves its own direct attention." Briefed as a research unit: `docs/working/briefs/2026-10-28-failure-pattern-use-review.md`; its findings come back as a new judgment entry.
+
+Q-074's watch fired: since the 2026-09-26 backfill, `docs/thoughts/failure-patterns.md` (the one-line log of root-caused bugs that research greps for prior patterns) gained 2 entries (FP-173, FP-174, both 2026-10-14) across a month of `fix` commits, under the 5 the watch set for 2026-10-26. The writer is an advisory check in pr-prep's Step 0: it warns when a branch's `fix(...)` commits added no entry, and its text says "Do not skip this step"; in practice entries are not written. Which way?
+
+- **Why it's yours:** whether the library is worth an automated writer is a value call about how much you use its read side.
+- **Read:** Q-074 (this entry's watch) · `docs/thoughts/failure-patterns.md` (schema at the top) · `workflows/pr-prep.md` Step 0
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Automate the harvest** | A build loop adds a script (or a review-fix-loop step) that drafts an FP line from each `fix:` commit's diagnosis, landed with the fix | One merge review | A noisy or wrong entry pollutes what research greps |
+| **[2] Drop the "do not skip" line** | pr-prep keeps the advisory but stops calling it mandatory; the library stays mostly the backfill | None | Patterns from new bugs stop being recorded, as today |
+| **[3] Keep as is, re-check in a month** | Nothing changes; the watch re-arms for 2026-11-28 | None | The same finding a month later |
+
+- **Interim:** [3] in effect: nothing changes until you answer.
+- **If the answer differs:** [1] becomes a roadmap brief; [2] is a one-line pr-prep edit.
+
+
+### Q-225 · merge-2026-10-28-exit-scan-group1-remainder-19027abb7593
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `fix/exit-scan-group1-remainder` at 19027abb75934fa515dc9f124be5c4b4d5b457e7 (brief `docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`, roadmap In flight)? It closes the last three in-boundary routes of Q-173's group 1 in the exit scan (the check `cc-isolated` runs when a session ends, which names anything the session planted that host git would run).
+
+- **What it does** (from the loop's report): A14: relative remotes (`../up.git` as a URL, push URL, remote name, or legacy `remotes/`/`branches/` file) now resolve per linked worktree, so a bare repo the session plants where that path lands (e.g. `.claude/worktrees/up.git`) is walked. R3's remote half: the same walk covers an embedded `--separate-git-dir` repo. A16: a relative `core.hooksPath` is walked in every git dir the scan walks, so receive hooks fired by `git push .` or a push into the checkout are caught; your own relative global hooksPath too. Only relative values are queued per worktree, so the insteadOf caps hold for many agent worktrees (a 20-worktree test pins it). The guide drops these routes from "not closed yet" and adds two out-of-scope known routes (a relative `insteadOf` base per worktree; your relative hooksPath in a bare repo reached only as a remote). Tests: 4 new cases (A14, R3 and A16 fail on main, pass here), full `test/cc-isolated-functions.bats` 212/212, health check and hermeticity lint pass. Two review passes; pass 2 clean, with one note: a relative hooksPath of `.` over-reports (noise like `~ hook .git/index`), never misses a plant.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 19027abb75934fa515dc9f124be5c4b4d5b457e7` (5 files, +406/-42; 310 changed lines outside docs) · `docs/working/research-2026-10-28-exit-scan-group1-remainder.md` on that branch (git-behaviour probes, the design, a 16-family bypass pre-mortem)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md 19027abb75934fa515dc9f124be5c4b4d5b457e7 1ab191252d2bcba26446be56b461d57d54418a97`
+  - `path … M devcontainer-config/cc-exit-scan.sh` (an enforcement file: its commits carry `Host-tool-tested: no` and `Live-verified: no`)
+  - `path … M docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`
+  - `path … A docs/working/research-2026-10-28-exit-scan-group1-remainder.md`
+  - `path … M guides/cc-isolated-usage.md`
+  - `path … M test/cc-isolated-functions.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 19027abb; it reaches your machine with the next `install.sh` (Q-222's paste then covers it) | Reading the diff | A false warning at session exit, or a planted repo still missed; bats-verified only until a host run |
+| **[2] drop** | The brief closes; the branch stays for you | None | The three routes stay listed as "not closed yet" |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Interim:** nothing merged; the guide still lists these routes as not closed, and cc-push stays the safe way to push.
+- **If the answer differs:** nothing to redo.
+
+
+### Q-224 · merge-gate-2026-10-28-questions-owner-routes-0fb2ad5ff0f3
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/questions-owner-routes` at 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 (brief `docs/working/briefs/2026-10-28-questions-owner-routes.md`, roadmap In flight)? This is unit 1 of decision 040 (the questions doc holds only your items), and it changes gate code: `scripts/questions.sh` is one of the scripts the dev cycle runs as its gate, so it reaches the gate only at the next image release, which you install.
+
+- **What it does** (from the loop's report): `questions.sh` accepts two new owner routes, `you: walkthrough` and `you: fyi` (answered `seen`), beside `you: judgment` and `you: terminal`. The routes become one list in the script, from which `check`'s accepted routes, the index and `open` sort order, and a route table that `init` writes for new repos are all built; this repo's index order is unchanged. The refusal of `agent`/`trigger`/`deferred` in this file is **not** in this unit: the loop's design pass found shipping it now would leave watches with no home, so it moves to unit 2 with `watching.md` and `migrate`. The loop also found the answer readers (`--check-answer`, `--cycle-diff`, `--main-log`) need no change, and pinned how each `seen` form reads: a batch acknowledgement must be written as one `Q-NNN: seen` line per entry. Tests: 145/145 in the four affected suites; one review round, three ambers fixed, round 2 clean.
+- **Read:** `git diff 4b04a1eb9e6f59aedc66c33e961a1bcaa415ec6f 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3` (6 files, +359/-18) · `docs/working/research-2026-10-28-questions-owner-routes.md` on that branch (six options for when the refusal ships)
+- **`--check`'s lines, as printed:**
+  - `ok docs/working/briefs/2026-10-28-questions-owner-routes.md 0fb2ad5ff0f3c24a675a16f643bcca44fcbcb3e3 f66c0f516c840d03097a435c5eab61ffdaebc3f9`
+  - `path … M docs/working/briefs/2026-10-28-questions-owner-routes.md`
+  - `path … A docs/working/research-2026-10-28-questions-owner-routes.md`
+  - `path … M scripts/questions.sh` (gate code: self-merge's floor would refuse it)
+  - `path … M test/questions-doc.bats`
+  - `path … M test/scripts/build-loop-orchestrator.bats`
+  - `path … M test/scripts/dev-cycle.bats`
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next dev-cycle iteration runs `--merge --approved` at 0fb2ad5f; units 2 and 3 can be briefed | Reading the diff; then an image release to make it the gate | A route bug in the questions tooling, caught by `questions.sh check` on the next cycle |
+| **[2] drop** | The brief closes; the branch stays for you | None | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop, which runs again | Writing the note | One more loop round |
+
+- **Blocks:** units 2 and 3 of decision 040 (roadmap Now).
+- **Interim:** nothing merged; the questions tooling stays as it is.
+
+
+### Q-226 · failure-pattern-library-future
+**Needs:** you: judgment · **Opened:** 2026-10-28 · **Status:** ANSWERED
+
+**Answered:** [5] (owner, in session 2026-10-29; recorded by the dev cycle). Built as brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`.
+
+You asked (Q-223) for a closer look at whether and how the failure-pattern library (`docs/thoughts/failure-patterns.md`, a one-line-per-bug log that research greps for prior root causes) is used. The review is merged (d32c7eb2). What do you want done with it?
+
+- **What it found** (2026-09-26 to 2026-10-28): writing has nearly stopped. Of 358 `fix(...)` commits (mostly review-iteration fixes), 2 produced entries, FP-173 and FP-174, and those two collided on one number. Yet in a hand-classified sample of 25, 13 had a root cause worth finding later. Build loops are never asked to run pr-prep's Step 0, where the "add an entry" advisory lives. Reading is rare too: 1 of 12 surviving research docs from the window shows the required failure-pattern grep, and none since 2026-10-15. In that one case the cited entries did shape the design. The library's biggest lesson (fail-open guards, 58 of 164 entries) is now an enforced constraint (H2) plus CLAUDE.md's test rules. What only the library offers is a symptom-keyed index. Its cost is small: nothing always-loaded, about 7 KB of workflow text, plus merge friction and these watches.
+- **Read:** `docs/working/research-2026-10-28-failure-pattern-use-review.md` (the evidence, and the table below with fuller cells) · Q-223 and Q-074 in the archive
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Keep as is** | Nothing changes; the Q-074 watch re-arms (e.g. 2026-11-28) | None now; another watch and judgment in a month | The advisory stays in a step build loops never run, the grep stays skipped, and this finding returns |
+| **[2] Batch harvest, keep the read** | Drop the per-branch advisory; a scripted periodic pass drafts entries from merged fix commits (as the 2026-09-17 backfill did) and lands them in one commit | One merge review of the script, then one harvest to review per period | Agent-drafted entries could be noisy and mislead the grep, and you pay for them even if reads stay rare |
+| **[3] Freeze and retire the steps** | Mark the library frozen at FP-174 (still greppable for cited IDs); remove the pr-prep advisory and the RPI grep requirement; lessons keep landing in constraints, CLAUDE.md, the decision log and fix commit messages | One small doc-edit merge | A quick symptom lookup for new bugs is lost; a recurring bug shape might be noticed later |
+| **[4] Read side only, scripted** | Freeze writing as in [3], but make the RPI lookup one script call that greps the frozen library and fix-commit messages | One merge review of a small tested script plus RPI text edits | Little gained if research rarely runs it; commit prose is noisier to grep than the library's tokens |
+| **[5] Put both steps where build loops run, and check them** | The build-loop prompt (`scripts/build-loop.sh`) sends loops through pr-prep's failure-pattern advisory, not only its review-fix loop; the gate's `--check` then requires the research doc's `Failure-pattern grep:` line and, for each `fix(...)` commit, a new FP entry or a one-line skip reason, refusing until they are there | One merge-gate review, then an image release; each loop spends a little more time | The lines become boilerplate a loop fills in without reading; mitigated because the check is mechanical, and the skip reasons show whether it is |
+
+- **Added 2026-10-28 after you asked why it was missing:** the review found build loops never reach the advisory but treated that only as a weakness of [1], not as something to fix. One finding bears on [5]: build loops already run research-plan-implement, which already asks for the grep line, and none of the 11 research docs since 2026-10-15 has it. So a prompt reference alone may not change behaviour, which is why [5] adds the gate check.
+- **Interim:** [1]: nothing changes until you answer.
+- **If the answer differs:** each option is one small unit; the review doc does not need redoing.
+
+
+### Q-228 · merge-gate-2026-10-29-failure-pattern-loop-wiring-8f09da3b3003
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/failure-pattern-loop-wiring` at 8f09da3b3003b314a81df1866d2f4129c88728d9 (brief `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`, roadmap In flight)? It builds your Q-226 [5]: build loops are sent through pr-prep's failure-pattern step, and the gate refuses a branch that skipped it. It changes gate code (`scripts/build-loop.sh`, `skills/dev-cycle/SKILL.md`), so it reaches the gate only at the next image release (Q-227 then covers it).
+
+- **What the gate will refuse** (in `--check` and `--merge`):
+  - the branch's research doc (`docs/working/research-STEM.md`) is missing or has no `Failure-pattern grep:` line with a value;
+  - the branch has `fix(...)` commits that main lacks, and adds no new `FP-NNN` entry to `docs/thoughts/failure-patterns.md` and the research doc has no `Failure-pattern skip: REASON` line;
+  - the merge would hold an FP number twice, more often than main does (the FP-173/174 collision).
+  Each gap prints as its own `gap` line. A gap that is only a failed read is treated as the environment's problem and retried, not sent back to the loop.
+- **Other changes:** the loop prompt names pr-prep's Step 0 advisory and says where the skip line goes. pr-prep and research-plan-implement each gain about a sentence saying the gate reads these lines. The dev-cycle skill's Collect step files a gap refusal as `stopped`.
+- **Design choices the loop made** (in the research doc): the skip reason is a research-doc line, not a commit trailer, because a missed trailer cannot be added without rewriting history. The check covers the branch as a whole, since matching entries to commits would be a judgment (H4). The code stays inline in `build-loop.sh` (+129 lines), not a new lib file the D6 block would not ownership-check.
+- **Verified:** the loop reports its 5 build-loop/dev-cycle suites passing, with 7 new cases, and 2 review rounds with no red. The orchestrator re-ran those suites on this tip (see the iteration record).
+- **Paths that self-merge would have refused:** `scripts/build-loop.sh` and `skills/dev-cycle/SKILL.md` (gate code; the skill is also an instruction file); `workflows/pr-prep.md` and `workflows/research-plan-implement.md` (instruction files, and under the `workflows/` never glob).
+- **Read:** `docs/working/research-2026-10-29-failure-pattern-loop-wiring.md` on the branch · `git diff 4b2f000a 8f09da3b`
+- **Known gaps:** `--merge --approved` with a gap has no test of its own (it shares the tested `check_line` path). On a self-merge brief, a real FP entry always sends the merge to your review, because `docs/thoughts/` is on the self-merge floor; only the skip line keeps such a brief self-merging.
+
+`--check` printed:
+
+```
+ok docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md 8f09da3b3003b314a81df1866d2f4129c88728d9 4e233ba515c4ce6dd65d3eca6d290793f2789a9a
+path M docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md
+path A docs/working/research-2026-10-29-failure-pattern-loop-wiring.md
+path M scripts/build-loop.sh
+path M skills/dev-cycle/SKILL.md
+path M test/lib/build-loop-fixtures.bash
+path M test/scripts/build-loop-check.bats
+path M test/scripts/build-loop-dispatch.bats
+path M test/scripts/build-loop-merge.bats
+path M workflows/pr-prep.md
+path M workflows/research-plan-implement.md
+```
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | It lands on main; the gate enforces it after the next release (Q-227) | Reading the diff (~360 lines, half tests) | Loops write the lines as boilerplate, or a legitimate branch gets refused and comes back as a stopped entry; one `git revert` undoes it |
+| **[2] drop** | The brief closes; Q-226 goes back to you | None | The failure-pattern library keeps going unused |
+| **[3] changes needed** | Your note goes back to the loop, which reworks the branch | Writing the note | One more loop round |
+
+- **Interim:** not merged; nothing is waiting on it.
+
+### Q-229 · merge-gate-2026-10-29-questions-watching-file-ef1022d7c8aa
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/questions-watching-file` at ef1022d7c8aa47b723b8ef05c4059db6d923b766 (brief `docs/working/briefs/2026-10-29-questions-watching-file.md`, roadmap In flight)? It is unit 2 of decision 040 (the questions doc holds only your items): a new `docs/working/watching.md` for watches, a `questions.sh migrate` that moves the agent-only entries out of this file without losing text, and a `check` that refuses agent-only entries here.
+
+- **Why it's yours:** it changes gate code (`scripts/questions.sh`, which the dev cycle runs as part of the gate), and the loop made one design call without you: `check` refuses `agent`, `trigger` and `deferred` entries in this file only if they were opened on or after 2026-10-30. Older ones get a warning naming `migrate`, so main's health check stays green until you run the migration. The residual: a session that backdates an entry's `Opened:` date gets a warning instead of a refusal.
+- **After merging, one owner step (not now):** run `scripts/questions.sh migrate` on main and commit the three files it writes (this file, `watching.md`, and `docs/working/roadmap-from-questions.md` for agent work to fold into the roadmap). Best done with or after unit 3, because until then the dev cycle's digest reads watches only from this file. Until you migrate, `check` prints 11 warning lines.
+- **Size:** `questions.sh` grows from 498 to 690 lines (the gate copies that one file, so it cannot be split); the change is 399 lines outside `docs/`.
+- **Tests:** `bats test/questions-doc.bats` passes 40 cases (a refusal per route, the legacy warning, a text-for-text round trip, idempotence, resume after an interrupted run). The loop's health check passed. Its review found one high issue (a directory planted at the output path swallowed an entry) and three low ones; all four are fixed, and round 2 was clean.
+- **Read:** `docs/working/research-2026-10-29-questions-watching-file.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-watching-file.md ef1022d7c8aa47b723b8ef05c4059db6d923b766 a7499f7809e4c9805e73bfa620cc349bc73df1e0
+path docs/working/briefs/2026-10-29-questions-watching-file.md M docs/working/briefs/2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md A docs/working/research-2026-10-29-questions-watching-file.md
+path docs/working/briefs/2026-10-29-questions-watching-file.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-watching-file.md M test/questions-doc.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/questions.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges ef1022d7; it reaches the gate at the next release (Q-227) | The later `migrate` run and commit | One `git revert` of the merge |
+| **[2] drop** | The brief closes; unit 2 goes back to Ideas | None now | Decision 040 stalls at unit 1 |
+| **[3] changes needed** | Your note goes back to the loop (e.g. no date cutoff, refuse outright) | A one-line note | Another loop round |
+
+- **Blocks:** decision 040 unit 3 (dev-cycle steps 2 and 3 read `watching.md`).
+- **Interim:** the branch waits; nothing on main changes.
+
+
+### Q-230 · merge-gate-2026-10-29-session-answers-for-merge-entries-7fe7107cbdcb
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/session-answers-for-merge-entries` at 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 (brief `docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md`, roadmap In flight)? It builds your feedback point 1: when you answer a merge entry in the orchestrator's session, the orchestrator records it and the merge goes ahead, with no commit from you.
+
+- **Why it's yours:** it loosens an approval rule, and it changes the dev-cycle skill (gate code). The loop found the old rule lived only in the skill's prose (step 9.3); the gate's code already accepted any answer landed with `--answered`, and the plan's D8 already allowed a session answer. So the change is prose plus one end-to-end test; `scripts/build-loop.sh` is untouched.
+- **How it works after merging:** a session answer counts only when your own message names the entry's ID and an option (`Q-229: [1]`). The orchestrator writes it as `Q-NNN: [N]`, quotes your words under the record's `### Answers committed`, lands it with `--answered`, and the next iteration runs the merge. With no loop running, it schedules one wakeup for that merge instead of waiting for you to restart `/loop`.
+- **Residual risk (stated in the research doc):** an orchestrator that mistakes a loop's report or a task notification for your answer could land an approval; and the approval's record on main is written by the orchestrator, not you. Still bounding it: option 1 under the exact heading, the full tip pinned, the final message names the approval before the merge, and one `git revert` undoes it.
+- **Tests:** a new end-to-end case in `test/scripts/build-loop-merge.bats` (open entry refuses; without `--answered` the land refuses; with it the merge runs and carries its trailer). The merge, orchestrator and dev-cycle suites pass (123 tests); the health check passed on 280f01da, and d14ff65a after it changed prose only. One review: no red, three amber, all fixed.
+- **Read:** `docs/working/research-2026-10-29-session-answers-for-merge-entries.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md 7fe7107cbdcbec46a3eb0a1214e638be9bd02ff5 5aa2bb2a770373d6a7a6ae86f00e41995e445eb9
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md A docs/working/research-2026-10-29-session-answers-for-merge-entries.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-session-answers-for-merge-entries.md M test/scripts/build-loop-merge.bats
+```
+
+- **Paths self-merge's floor would refuse:** `skills/dev-cycle/SKILL.md` (gate code, and an instruction file the orchestrator follows).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 7fe7107c; from the release after, chat answers to merge entries land without your commit | None after this one | An approval landed from a misread message; one `git revert` of that merge |
+| **[2] drop** | The brief closes; merge entries keep needing your commit | A commit per merge | Your feedback point 1 stays open |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** merge entries still need your own commit (this one too: it predates the change).
+
+
+### Q-231 · merge-gate-2026-10-29-convention-migrations-first-f114694527dc
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/convention-migrations-first` at f114694527dc8b1d149dd9fde4e38e63ea080d42 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? It builds your feedback point 2: a change to a shared convention (the questions grammar, the roadmap template, brief and record shapes) must ship a migration, and the dev cycle surfaces pending migrations before it does anything else.
+
+- **Why it's yours:** it changes gate code (`scripts/dev-cycle.sh`, a new `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the loop picked the design without you (one option dominated each choice).
+- **How it works:**
+  - A registry, `scripts/lib/migrations.sh`, holds one line per convention change: what changed, a fingerprint of the source, which file it affects, a pattern that still matches when a repo has not migrated, and the remedy (or `none: WHY`).
+  - A merge check (`test/scripts/convention-migrations.bats`) fingerprints the four convention sources and fails until the registry's newest line for each carries the current fingerprint; the registry may only grow.
+  - The digest gets a section 7b "Pending migrations", and the skill a step 1b that runs before triggers, collect, briefs and dispatch: each pending migration becomes one `you: terminal` entry (slug `migrate-ID`), listed first in the final message.
+- **What it does not do, and why:** the cycle cannot run a migration itself (its own commit may not rewrite questions entries or roadmap headings), and holding the whole iteration until you run it was rejected (no new human stops). So "higher priority" means it is surfaced first and blocks nothing; tell me with [3] if you meant the cycle should stop until it runs.
+- **Merge order with Q-229 and Q-230:** Q-229 changes the questions convention and has no registry line yet, so whichever of Q-229 and this merges second fails its merge check until the line is added (the failure prints the line; the research doc has it). Q-230 also edits `skills/dev-cycle/SKILL.md`; if both are approved and the second merge conflicts, it comes back as a `stopped` entry for a loop to reconcile.
+- **Limits the loop accepted:** a commit made directly on main is never compared for append-only; the parsers in `build-loop.sh` and `dev-cycle-read.sh` are not fingerprinted (the guide tells authors to update them); the digest section and step 1b act only after the next image release (Q-227).
+- **Tests:** 12 new bats cases; `scripts/health-check.sh` passed at 95f310f1; two review rounds, clean at the end.
+- **Read:** `docs/working/research-2026-10-29-convention-migrations-first.md` and `guides/convention-changes.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-convention-migrations-first.md f114694527dc8b1d149dd9fde4e38e63ea080d42 eb00c1b6914a47e465450817a2cb2988b7b5d9e2
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges f1146945; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
+| **[3] changes needed** | Your note goes back to the loop (e.g. "stop the iteration until a migration runs") | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** the branch waits; nothing on main changes.
+
+
+### Q-232 · merge-2026-10-29-harness-feedback-file-2b858d2586c3
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1]
+
+Merge `feat/harness-feedback-file` at 2b858d2586c38c3ecb063e55f344befb0a17a536 (brief `docs/working/briefs/2026-10-29-harness-feedback-file.md`, roadmap In flight)? It builds version 1 of your feedback point 4: each project using the harness keeps a `docs/harness-feedback.md`, sessions there append an entry when a harness feature fails, rubs or works, and you copy the file here with one command that routes each entry.
+
+- **Why it's yours:** it changes the global instructions every session loads (`global-instructions/CLAUDE.md`, +4 lines) and `workflows/pr-prep.md` (a fifth retrospective question); both are instruction files self-merge would never land.
+- **The pieces:**
+  - **Entry shape:** `### F-NNN · slug`, a line naming the feature, date and verdict (fails, friction or works), then Context, Expected, Observed and Evidence bullets. Each entry maps onto a future GitHub issue. The grammar is written once, in `guides/harness-feedback.md`.
+  - **Script:** `scripts/harness-feedback.py` (python3 stdlib, 379 lines): `check`, `next-id`, `init` (in a project), and `ingest FILE` (here only). `ingest` validates the file, stores it at `docs/working/feedback/NAME.md`, and adds one idea-log line per new entry, so the dev cycle's brainstorm sees it. It refuses a copy whose entries don't continue the stored one.
+  - **Where sessions meet it:** the global instructions' new "Harness feedback" section, the pr-prep retrospective question, and `guides/cross-project-setup.md`.
+- **Your act after merging:** run `scripts/harness-feedback.py ingest PATH` on a copied file. A file dropped into `docs/working/feedback/` by plain `cp` is never routed. The loop suggests an idea-source row for `docs/working/feedback/*.md` in `docs/dev-cycle.md` (your file; tell me if you want it).
+- **Reaching other projects:** the global-instructions change reaches the host at the next `install.sh` run (Q-227's paste).
+- **Tests:** 48 bats cases (good file, each refusal, `init`, `ingest` on a sample including rerun and symlink refusals); the hermeticity lint and health check passed on the tip. Review round 1 found a real data-loss bug (devcontainer projects all mounted at /workspace shared one name, so a second ingest overwrote the first); fixed. Round 2: no red, two amber, fixed.
+- **Read:** `docs/working/research-2026-10-29-harness-feedback-file.md` and `guides/harness-feedback.md` on the branch.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-harness-feedback-file.md 2b858d2586c38c3ecb063e55f344befb0a17a536 367db1f6f245566cb277eaa21cb7dc07e7d797c2
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M docs/working/briefs/2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A docs/working/research-2026-10-29-harness-feedback-file.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/README.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M guides/cross-project-setup.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A guides/harness-feedback.md
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A scripts/harness-feedback.py
+path docs/working/briefs/2026-10-29-harness-feedback-file.md A test/scripts/harness-feedback.bats
+path docs/working/briefs/2026-10-29-harness-feedback-file.md M workflows/pr-prep.md
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (instruction file), `workflows/pr-prep.md` (instruction file, and under this repo's `workflows/` never glob).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 2b858d25; projects start filing after the next install | One `ingest` run per copied file | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 4 goes back to the roadmap | None now | No feedback channel from projects |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** version 2 (GitHub issues), an idea until v1 is used.
+- **Interim:** the branch waits; nothing on main changes.
+
+### Q-233 · merge-gate-2026-10-29-convention-migrations-first-b001677ac0d8
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**Answered:** [1] (owner, in session 2026-10-29: "probably worth merging Q-233 before the release"; recorded by the dev cycle)
+
+Merge `feat/convention-migrations-first` at b001677ac0d8ce334290dfc6d7b055534ea49960 (brief `docs/working/briefs/2026-10-29-convention-migrations-first.md`, roadmap In flight)? This is the branch you approved as Q-231 [1], plus the reconciliation it needed after Q-229 merged. Merging f1146945 as it was would have left main's own migration test failing, so I sent it back instead of merging.
+
+- **Why it's yours:** gate code (`scripts/dev-cycle.sh`, `scripts/lib/migrations.sh`, `skills/dev-cycle/SKILL.md`), and the commits after your Q-231 approval are new.
+- **What changed since Q-231 (four commits on top of f1146945):**
+  - 5b6133f6 merges main (4b4f5e23) into the branch, with no conflicts.
+  - 63d6f7d7 adds the registry line for Q-229's questions change: `mig questions-owner-routes-040 questions 47e9bd8f3916be62 docs/working/questions.md '^\*\*Needs:\*\* (agent|trigger|deferred)( |$)' '~/.claude/scripts/questions.sh migrate'`. It matches 5 lines in this repo's `questions.md`, so once the digest runs from the next release, the cycle will file the migration as a `you: terminal` entry: the same one-time `migrate` run Q-229 already left with you.
+  - 5bc67ede adds a shellcheck exemption for the literal `~` in that remedy text.
+  - b1341e36 adds the failure-pattern lines the merged Q-228 check asks for.
+  - Test 4 was not a locale problem: it failed for the same missing line. It now also checks its precondition first.
+- **Everything else** is as Q-231 described: a registry line per convention change, a merge check, digest section 7b, and step 1b surfacing pending migrations first without stopping the iteration.
+- **Tests:** the loop's health check passed on the merged branch (one run failed a `build-loop-check.bats` case this branch does not touch, at load average 11; it passed 3 of 3 alone, and the next full run passed).
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-convention-migrations-first.md b001677ac0d8ce334290dfc6d7b055534ea49960 2fd745977ba3eb585f774ba7b83170685dd30fd2
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M docs/working/briefs/2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A docs/working/research-2026-10-29-convention-migrations-first.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M guides/README.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A guides/convention-changes.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-convention-migrations-first.md A test/scripts/convention-migrations.bats
+path docs/working/briefs/2026-10-29-convention-migrations-first.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/dev-cycle.sh`, `scripts/lib/migrations.sh` (gate code), `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges b001677a; it acts after the next release (Q-227) | One `you: terminal` paste per future convention change | One `git revert` of the merge |
+| **[2] drop** | The brief closes; point 2 goes back to the roadmap | None now | Format changes keep reaching repos unannounced |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing else.
+- **Interim:** the branch waits; nothing on main changes.
+
+### Q-074 · failure-pattern-writer-trigger
+**Needs:** trigger · **Opened:** 2026-09-26 · **Status:** ANSWERED
+
+After the Q-018 backfill (164 entries), `docs/thoughts/failure-patterns.md` has gained 1 entry across about 128 `fix` commits. The writer is still pr-prep Step 0, a workflow step that is advisory only. If it reaches 2026-10-26 with fewer than 5 new entries, reopen L1 as a judgment: automate the harvest, or drop the "do not skip" line.
+
+- **Interim:** nothing changed. The read side (the RPI failure-pattern grep) works.
+- **Fired (dev cycle 2026-10-28):** 2 entries since the backfill (FP-173, FP-174), under 5 by 2026-10-26; reopened as Q-223.
+- **2026-10-29:** Q-226 answered [5] (put both steps where build loops run, checked by the gate); briefed as `docs/working/briefs/2026-10-29-failure-pattern-loop-wiring.md`. This watch is superseded once that brief merges.
+
+**Answered:** superseded. The brief merged at f91d7d09 (Q-228 [1]), which meets this watch's own closure line. Closed by the dev cycle on 2026-10-30 (trial T4, stale sweep).
+
+
+### Q-235 · merge-gate-2026-10-29-questions-owner-only-unit3-6c8d949f4493
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** decision 040 stays half built, and from 2026-10-30 `questions.md` refuses the `agent` entries the cycle still files.
+
+**What an attacker would want here:** the digest and `--cycle-diff` decide what the cycle reads and which edits to your entries it allows. A flaw here could hide an entry from you or let a loop rewrite one. The tests pin both refusals.
+
+Merge `feat/questions-owner-only-unit3` at 6c8d949f4493bfe25690d7736bb73cf52227e94a (brief `docs/working/briefs/2026-10-29-questions-owner-only-unit3.md`, roadmap In flight)? It is the last unit of decision 040, which makes `questions.md` hold only your items: the dev cycle's digest reads watched items from `docs/working/watching.md`, the cycle files agent work to the roadmap instead of `agent` entries, and the global instructions' running-questions section says the same.
+
+- **Why it's yours:** gate code (`scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/`, `skills/dev-cycle/SKILL.md`) and the global instructions (`global-instructions/CLAUDE.md`, loaded in every session; +4/−2 lines).
+- **What it does:** `dev-cycle.sh`'s digest section 3 reads watches from `watching.md` (and lists one with a malformed route); the cycle owns `watching.md` and closes a met watch there without you; steps 2, 3 and 10 file agent work to the roadmap; `--cycle-diff` allows those moves and still refuses changes to your entries. Its first dispatch added 338 lines and removed 54.
+- **Dispatch 2 (this cycle's send-back):** 93302ac6 merges main (0388b194) with no conflicts; a811bd09 adds the registry line `mig roadmap-watching-040 roadmap 1178ca230944fb9f - - 'none: …'` for its roadmap-template preamble change (no existing file needs migrating: existing roadmaps' preambles are frozen). On the tree it makes with main (0a381aa7), `convention-migrations.bats` passes 12/12, `questions-doc.bats` 41/41 and `migrations.sh check` is clean; the loop's health check passed on its branch.
+- **After merging:** run Q-234 (the one-time `questions.sh migrate`); the dev cycle acts on the new rules after the next image release.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-questions-owner-only-unit3.md 6c8d949f4493bfe25690d7736bb73cf52227e94a 0a381aa78f0f5533334873fd6347d427cd945b6c
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M docs/working/briefs/2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md A docs/working/research-2026-10-29-questions-owner-only-unit3.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M global-instructions/CLAUDE.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/build-loop.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/dev-cycle.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/dev-cycle-read.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M scripts/questions.sh
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M skills/dev-cycle/SKILL.md
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/questions-doc.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-check.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/build-loop-orchestrator.bats
+path docs/working/briefs/2026-10-29-questions-owner-only-unit3.md M test/scripts/dev-cycle.bats
+```
+
+- **Paths self-merge's floor would refuse:** `global-instructions/CLAUDE.md` (an instruction file); `scripts/build-loop.sh`, `scripts/dev-cycle.sh`, `scripts/questions.sh`, `scripts/lib/dev-cycle-read.sh`, `scripts/lib/migrations.sh` (gate code); `skills/dev-cycle/SKILL.md` (gate code, an instruction file).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 6c8d949f; you then run Q-234, and it takes effect at the next release | One paste (Q-234) and the release | One `git revert` of the merge (entries `migrate` moved would need moving back) |
+| **[2] drop** | The brief closes; decision 040 stays half built (units 1 and 2 only) | None now | `questions.md` refuses new agent entries from 2026-10-30 while the cycle still files them |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** Q-234 (the migration runs after this merges).
+- **Interim:** the branch waits; nothing on main changes.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+
+### Q-236 · merge-2026-10-29-skill-frontmatter-flake-9df01661e611
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** the health check keeps raising a false "missing field" now and then.
+
+**What an attacker would want here:** little. It is a test-side fix in `health-check.sh`, and a field that really is missing still fails.
+
+Merge `fix/skill-frontmatter-flake` at 9df01661e61170bdaf4a6ecb3f1eb82390107934 (brief `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md`, roadmap In flight)? It fixes the health check's occasional false "missing 'name'/'description' field" on a skill that has the field.
+
+- **Why it's yours:** the brief is review policy (the health check is enforcement), and the branch adds a failure-pattern entry under `docs/thoughts/`.
+- **Cause found:** `check_skill_frontmatter` tested each field with `echo "$yaml" | grep -qE '^name:'` under `set -o pipefail`. `grep -q` exits at its first match, `echo` then dies of SIGPIPE (141), pipefail fails the pipeline and `!` turns it into "missing". The `^requires:` test had the same shape and failed open (the mixed-forms check silently skipped). The loop reproduced it at 2-3 per 3000 runs pinned to one CPU (every one PIPESTATUS `141 0`), and 50 of 50 with a frontmatter over the 64 KiB pipe buffer.
+- **Fix (b663eb75):** the three sites use here-strings (`grep -qE '^name:' <<< "$yaml"`), an idiom already in the same file, with a comment saying why; a really missing field still fails. Three new cases in `test/scripts/health-check.bats` (a ~270 KB fixture: all fields pass, missing name fails, a mixed `requires:` block is flagged) fail at 0388b194 and pass with the fix. New failure pattern FP-175. No other health-check section shares the cause.
+- **Checks:** the loop's whole health check passed on the branch, and `scripts/hermeticity-lint --root .` passes. The dev cycle reproduced the mechanism on its own and ran `health-check.bats` on the tree the branch makes with main (6e7f6786).
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-skill-frontmatter-flake.md 9df01661e61170bdaf4a6ecb3f1eb82390107934 6e7f678642d4a04172743682841946c7d9d20349
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/thoughts/failure-patterns.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M docs/working/briefs/2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md A docs/working/research-2026-10-29-skill-frontmatter-flake.md
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M scripts/health-check.sh
+path docs/working/briefs/2026-10-29-skill-frontmatter-flake.md M test/scripts/health-check.bats
+```
+
+- **Paths self-merge's floor would refuse:** `docs/thoughts/failure-patterns.md` (the cycle's records). None is gate code, an instruction file or a dot path.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges 9df01661 | None beyond this answer | One `git revert` of the merge; the false reds come back |
+| **[2] drop** | The brief closes; the flake stays | None now | A false red now and then, each stopping the slow suites and costing a triage pass |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; the health check may still flake on main.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+
+### Q-237 · merge-gate-2026-10-29-migrations-relative-root-c441c3eb9b13
+**Needs:** you: judgment · **Opened:** 2026-10-29 · **Status:** ANSWERED
+
+**If you say no:** `migrations.sh check .` keeps refusing falsely; callers that pass an absolute path are unaffected.
+
+**What an attacker would want here:** `migrations.sh` decides which convention migrations the digest reports as due. The fix only resolves the path once and changes no verdict (fingerprints unchanged).
+
+Merge `fix/migrations-relative-root` at c441c3eb9b13ef5e586130f5835f8f58cf2852e4 (brief `docs/working/briefs/2026-10-29-migrations-relative-root.md`, roadmap In flight)? It makes `bash scripts/lib/migrations.sh check ROOT` and `fingerprint ROOT` give the same result for a relative ROOT as for an absolute one. Today `check .` refuses "questions: its source was not found", which misled the dev cycle into a wrong note to unit 3's loop on 2026-10-29.
+
+- **Why it's yours:** gate code (`scripts/lib/migrations.sh`, which the digest's section 7b runs).
+- **Cause and fix:** `conv_source` changed into a temp repo and then ran `"$r/scripts/questions.sh"`, so a relative ROOT stopped resolving. The fix makes ROOT absolute once, at the top of `conv_source` (`./` prefix, then `CDPATH='' cd -- "$r" && pwd`), which covers every convention and caller. A reviewer also found that a relative ROOT shaped like `x=y` failed through awk's operand parsing; the same change covers it. Fingerprints are unchanged, and a missing or non-directory ROOT still refuses for each convention, naming ROOT. The header now says ROOT may be relative.
+- **Tests:** a new case in `test/scripts/convention-migrations.bats` runs `check` and `fingerprint` with ROOT `.`, `c`, `../c`, `x=y` and `-` against the absolute run, and asserts the two refusals; it fails on the pre-fix code. On the tree the branch makes with main (8ede27b6) the dev cycle ran the file (13/13) and `check .` (clean). The loop's health check passed three times. The branch also merges cleanly with unit 3 (Q-235), which appends a registry line to the same file.
+- **`--check` printed:**
+
+```
+ok docs/working/briefs/2026-10-29-migrations-relative-root.md c441c3eb9b13ef5e586130f5835f8f58cf2852e4 8ede27b671e614f94e4495c03ef5004e224afb68
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M docs/working/briefs/2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md A docs/working/research-2026-10-29-migrations-relative-root.md
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M scripts/lib/migrations.sh
+path docs/working/briefs/2026-10-29-migrations-relative-root.md M test/scripts/convention-migrations.bats
+```
+
+- **Paths self-merge's floor would refuse:** `scripts/lib/migrations.sh` (gate code).
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] merge** | The next iteration merges c441c3eb; it runs from the next release | None beyond this answer | One `git revert` of the merge |
+| **[2] drop** | The brief closes; `check .` keeps refusing | None now | Anyone running `check .` by hand gets a false refusal |
+| **[3] changes needed** | Your note goes back to the loop | A one-line note | Another loop round |
+
+- **Blocks:** nothing.
+- **Interim:** the branch waits; callers pass an absolute ROOT, as the digest and tests already do.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Merge all three", answering the batched Q-235..Q-237 block of trial T3; recorded by the dev cycle)
+
+### Q-238 · q168-branch-after-boundary
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** ANSWERED
+
+**If you say no (keep holding):** the branch `fix/q096b-exit-scan-remote-names` (75d08a94, from 2026-10-15) sits unmerged, falling further behind main. It is already 508 commits behind, and main has changed `cc-exit-scan.sh` by +192/−13 lines since. Q-168 and Q-173 also stay open.
+
+**What an attacker would want here:** the exit scan is the check that runs before your host git touches a session's checkout. Any change to it is enforcement. Closing the branch changes nothing that runs: the routes it would have closed stay listed in the guide as known routes, and `cc-push` remains the safe way to push.
+
+What should happen to the held exit-scan branch (Q-168), now that the split units are settled?
+
+- **Why it's yours:** Q-171 [2] said to hold it "until Q-173's groups are fixed". After that, Q-172 [2] set a boundary: only routes that need no state planted before launch get closed. Under that rule, group 1 was fixed (R6 at 7a5b4f4a, the remainder at fd62dd3f), and groups 2-4 were ruled out of the boundary or not routes on main, rather than fixed. So the hold's condition can no longer be met as written. Resuming would also run past the review cap (iteration 4).
+- **Read:**
+  - `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` (the sort table);
+  - `guides/cc-isolated-usage.md`, the "Remote names and legacy remote files, read loosely" bullet: every case it lists starts "If present at launch", so all of them fall outside Q-172 [2]'s boundary;
+  - Q-171 and Q-172 in the archive.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Close it** (recommended) | Q-168 and Q-173 close. The branch stays unmerged, for reference only, and the guide's known-route bullet stands as written. | None | A launch-time remote-name route stays open by design, as Q-172 [2] already accepted. Reviving the work later means redoing a rebase across 192 changed lines. |
+| **[2] Resume** | A build loop rebases 75d08a94 onto main, keeps only what fixes the guide's parity wording and A17, and runs one confirming pass. | One merge entry later. Review attention on a 562-line enforcement diff, past its cap. | The scan keeps growing on launch-time routes that the boundary already excluded. |
+| **[3] Keep holding** | Nothing changes. | None now | The branch goes staler, and this question comes back. |
+
+- **Blocks:** nothing; the roadmap Now item "Q-168 — the exit scan's loose remote-name parsing" waits on it.
+- **Interim:** held, as before. The known routes are listed in the guide, and `cc-push` is the way to push.
+- **If the answer differs:** [2] needs a brief, about one loop. [1] needs only the closing notes.
+
+**Answered:** [1] (owner, in session 2026-10-30: "Q-238: [1]"; recorded by the dev cycle). Q-168 and Q-173 close; the branch stays unmerged as reference.
 
 

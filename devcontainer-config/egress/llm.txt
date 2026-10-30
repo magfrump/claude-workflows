@@ -4,12 +4,13 @@
 # the agent can put in a prompt leaves the boundary. It is not in `base` for that reason,
 # and it is not auto-detected — it must be requested explicitly at --register time.
 #
-# CDN CAVEAT. init-firewall.sh resolves each domain once, at container start, and
-# pins the resulting IPs into the allowed-domains ipset. openrouter.ai sits behind
-# a CDN whose IPs rotate, so a long-running session can see previously-working
-# calls start failing with a connection timeout rather than an HTTP error. If that
-# happens mid-experiment, restart the container to re-resolve — do not conclude the
-# model is unavailable. (Same failure mode applies to any CDN-fronted domain here.)
+# CDN CAVEAT. init-firewall.sh resolves each domain once, at container start, admits
+# those addresses, and pins the resolver to them (decision 039), so a CDN that
+# rotates its DNS answers no longer strands the name. What can still fail is a
+# pinned address that the CDN takes out of service: calls then time out rather
+# than return an HTTP error. If that happens mid-experiment, run
+# `sudo /usr/local/bin/init-firewall.sh` to re-resolve. Do not conclude the model
+# is unavailable.
 openrouter.ai
 # host.docker.internal — local models served from the host (Ollama's default port,
 # 11434). Under Docker Desktop the host is NOT the bridge gateway that

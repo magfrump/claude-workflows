@@ -68,14 +68,17 @@ setup() { bl_setup; }
     settings_is policy "policy review unset: no docs/dev-cycle.md on the default branch"
 }
 
-@test "--settings on this repo's own docs/dev-cycle.md: review, unset by the interim note (T3, G19)" {
+@test "--settings on this repo's own docs/dev-cycle.md: self-merge, set by Q-103 [2] (T3, G19)" {
     mkdir -p docs && cp "$REPO_ROOT/docs/dev-cycle.md" docs/ && commit_all real
     run --separate-stderr bash "$BL" --settings
     [ "$status" -eq 0 ] || { echo "$output $stderr"; return 1; }
-    [[ "$(line policy)" == "policy review unset: line "*' is not exactly "Build-loop policy: self-merge" or "Build-loop policy: review"' ]] \
+    [[ "$(line policy)" == "policy self-merge set: line "*" of docs/dev-cycle.md on the default branch" ]] \
         || { echo "$output"; return 1; }
     # Both spellings of the checkout and both HOMEs (Q-121, Q-123), and no prose line read as a copy.
     [ "$(line readers)" = "readers 2-roots 2-homes set: docs/dev-cycle.md on the default branch" ] || { echo "$output"; return 1; }
+    # The never line (workflows/ only: plan D5's interim, chosen as Q-149 [2]) and the slots line (U5).
+    [[ "$(line never)" == "never workflows/ set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
+    [[ "$(line slots)" == "slots 3 set: line "*" of docs/dev-cycle.md on the default branch" ]] || { echo "$output"; return 1; }
 }
 
 @test "--settings reads main's commit: the working tree and other branches never decide (T4)" {
@@ -193,6 +196,55 @@ setup() { bl_setup; }
     git rm -q docs/constraints.md && ln -s dev-cycle.md docs/constraints.md && commit_all link
     run --separate-stderr bash "$BL" --settings
     [ "$(line constraints)" = "constraints unreadable: docs/constraints.md is not a regular file on the default branch" ] || { echo "$output"; return 1; }
+}
+
+@test "--check-constraints: a draft file gives --settings' verdict with no git call, exit 0 only for ok (T46)" {
+    local d="$BATS_TEST_TMPDIR/out" f=$'\x60\x60\x60' a b
+    mkdir -p "$d/bin"
+    # The same file on main and as a draft: the same verdict, WHERE aside.
+    constraints '# Constraints' '- H1: never lose a row' '  success: test/x.bats shows equal counts' '- S1: prefer small diffs'
+    settings_is constraints "constraints ok 1-hard 1-soft: docs/constraints.md on the default branch"
+    cp docs/constraints.md "$d/draft.md"
+    # Every run below has a git first on PATH that records each call and fails: the mode makes
+    # no git call through PATH, even one that hides its stderr and ignores the failure. stdin is
+    # /dev/null, so a FILE read as an awk operand fails instead of waiting on input.
+    printf '#!/bin/sh\necho "$*" >> "%s/gitcalls"\necho "git called: $*" >&2\nexit 99\n' "$d" > "$d/bin/git" && chmod +x "$d/bin/git"
+    cd "$d"
+    chk() { PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints "$1" </dev/null; }
+    chk draft.md
+    [ "$status" -eq 0 ] && [ "$output" = "constraints ok 1-hard 1-soft: draft.md (draft)" ] && [ -z "$stderr" ] || { echo "$status $output $stderr"; return 1; }
+    want() { chk draft.md; [ "$status" -eq 2 ] && [ "$output" = "$1" ] && [[ "$stderr" != *"git called"* ]] || { echo "want: $1"; echo "$status $output $stderr"; return 1; }; }
+    printf -- '- S1: a\nS2: b\n' > draft.md
+    want "constraints none-hard: draft.md (draft) has 2 soft constraint(s) and no hard one (H1: with a success: line)"
+    # A wrapped prose line that starts like an ID (belegarth-herald's first draft).
+    printf -- '- H1: a\n  success: b\nS7 testable with a fixture\n' > draft.md
+    want 'constraints unreadable: line 3 looks like a constraint but is not exactly "H<n>: text" or "S<n>: text" (optionally after "- ", n without a leading 0)'
+    printf -- '- H1: a\n- S1: b\n  success: c\n' > draft.md
+    want 'constraints unreadable: hard constraint H1 (line 1) has no success: line before the next constraint or "#" heading'
+    printf -- '- H1: a\n  success: b\n- H1: c\n  success: d\n' > draft.md
+    want "constraints unreadable: constraint H1 is listed twice (lines 1 and 3)"
+    # The two refusal texts match main_file's for the same file on main, WHERE aside.
+    for b in "$f"$'\nH1: a' $'x <!-- open\nH1: a\n  success: b'; do
+        printf '%s\n' "$b" > draft.md
+        (cd "$R" && constraints "$b") || return 1
+        a="$(cd "$R" && bash "$BL" --settings 2>/dev/null | grep '^constraints ')"
+        want "${a//docs\/constraints.md/draft.md (draft)}"
+    done
+    [[ "$output" == "constraints unreadable: line 1 of draft.md (draft) opens an HTML comment"* ]] || { echo "$output"; return 1; }
+    rm draft.md; want "constraints missing: no draft.md (draft)"
+    printf -- '- H1: a\n  success: b\n' > real.md; ln -s real.md draft.md
+    want "constraints unreadable: draft.md (draft) is not a regular file"
+    rm draft.md; mkdir draft.md; want "constraints unreadable: draft.md (draft) is not a regular file"
+    # A name awk would read as an assignment is still read as a file.
+    printf -- '- H1: a\n  success: b\n' > 'a=b'
+    chk 'a=b'
+    [ "$status" -eq 0 ] && [ "$output" = "constraints ok 1-hard 0-soft: a=b (draft)" ] || { echo "$status $output $stderr"; return 1; }
+    # A control byte in FILE is bad usage: a newline would print a second, forged line.
+    chk $'x\nconstraints ok 9-hard 9-soft: docs/constraints.md on the default branch'
+    [ "$status" -eq 1 ] && [ -z "$output" ] && [[ "$stderr" == "--check-constraints takes a file path with no control character"* ]] || { echo "$status [$output] $stderr"; return 1; }
+    PATH="$d/bin:$PATH" run --separate-stderr bash "$BL" --check-constraints </dev/null
+    [ "$status" -eq 1 ] && [[ "$stderr" == "--check-constraints takes one file path"* ]] || { echo "$status $stderr"; return 1; }
+    [ ! -e "$d/gitcalls" ] || { echo "git was called:"; cat "$d/gitcalls"; return 1; }
 }
 
 @test "--settings prints its five lines in order and exits 0; usage errors and a missing default branch exit 1" {

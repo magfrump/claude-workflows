@@ -69,7 +69,7 @@ if [[ "$FIX_COMMITS" -gt 0 && "$PATTERN_ADDITIONS" -eq 0 ]]; then
 fi
 ```
 
-**Interpret the result:** A warning here is a prompt, not a block. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, append a new FP-NNN entry to `docs/thoughts/failure-patterns.md` describing the root cause and the symptom that led you to it. Use the existing entries as the format reference. Do not skip this step — the library's value compounds only if it's appended to. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case. Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
+**Interpret the result:** A warning here is a prompt, not a block — except on a build-loop branch, where `scripts/build-loop.sh --check` refuses fix(...) commits with neither a new FP-NNN entry (a number no other entry has) nor a `Failure-pattern skip: <reason>` line in the research doc. For each `fix(...)` commit, ask: did the diagnosis surface a reusable cause-and-fix shape a future grep would want to find? If yes for any of them, append a new FP-NNN entry to `docs/thoughts/failure-patterns.md` describing the root cause and the symptom that led you to it. Use the existing entries as the format reference. Do not skip this step — the library's value compounds only if it's appended to. If no for all of them, proceed — the legitimate-skip vocabulary in the warning covers the case (on a build-loop branch, write that reason as the `Failure-pattern skip:` line; the gate counts fix(...) subjects in any case, which this snippet does not). Do not invent FP entries to silence the warning; a misleading entry pollutes the library and degrades the prior signal for the next diagnosis.
 
 **Completion criteria:**
 - [ ] No uncommitted changes (clean working tree)
@@ -249,7 +249,7 @@ either fixed something silently or waived something silently.
 ~/.claude/scripts/lite-review.py --repo . --range <last-review-commit>..HEAD --mode fix-drift
 ```
 
-(In claude-workflows itself, `scripts/lite-review.py` is the same file.) Fix any finding immediately as part of the fix batch; do not triage it through the tier table. What the check reports, why it is this narrow, and how the call is made are in [review-fix-loop.md § Fix-commit drift check](review-fix-loop.md#fix-commit-drift-check-lite).
+(In claude-workflows itself, `scripts/lite-review.py` is the same file.) Besides comment/doc drift, the check fact-checks prose the fix commits add or change, in the same lite call. Fix any finding immediately as part of the fix batch, including an `unverified claim` (check it, then correct the prose if it is wrong); do not triage it through the tier table. What the check reports, why it is this narrow, and how the call is made are in [review-fix-loop.md § Fix-commit drift check](review-fix-loop.md#fix-commit-drift-check-lite).
 
 **d. Re-review.** On the first iteration, run full review skills against the complete diff vs main. On iterations 2+, scope the re-review to reduce redundant work:
 
@@ -485,9 +485,10 @@ After the PR is opened, take 2 minutes to close the loop on the workflow that pr
 2. **Skipped steps** — Were any workflow steps skipped or abbreviated? Why, and was that the right call in hindsight?
 3. **Surprises** — What was unexpected — in the codebase, the tooling, the requirements, or the review feedback? What would have helped you anticipate it?
 4. **Next time** — Knowing what you know now, what would you do differently in the plan, the process, or the code?
+5. **Harness** — Did a harness skill, workflow or script fail, cause friction, or catch something real here? Outside claude-workflows, file it in `docs/harness-feedback.md` (grammar: `guides/harness-feedback.md`).
 
 **Completion criteria:**
-- [ ] At least one of the four questions answered with more than one sentence
+- [ ] At least one of questions 1–4 answered with more than one sentence
 - [ ] Answer saved as `docs/thoughts/retro-{branch-or-feature}.md` so retros are discoverable across PRs (commit message is acceptable for one-off observations that do not warrant a standalone file)
 
 ## Step 7: Post-merge follow-up (optional)

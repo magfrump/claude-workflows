@@ -37,3 +37,116 @@ Signals read: this cycle's steps 1–4b, the two seeds above, the idea source `d
 2. Dispatch the two 12-day-old briefs once `docs/constraints.md` exists. Changes: frees 2 slots.
 3. Q-105 [3] and Q-106 [2] follow-ups go to Next 4–5 (seed 2, applied directly rather than filed as an idea).
 4. Do nothing else: U5 files its own roadmap items (a)–(g), and adding more now would duplicate them.
+
+- Give the three 2026-10-02 briefs `Branch:` lines or close them, so `--status` stops skipping them (signal: all three skipped as "no Branch: line"; they hold every slot)
+- List unmerged `chore/dev-cycle-*` branches and the entry IDs they add in the digest (signal: Q-162 to Q-177 lived only on `chore/dev-cycle-2026-10-15-0357`; `next-id` printed Q-149, which is in use)
+- Prune worktrees whose branch is merged (signal: 35 registered worktrees, 12 on merged branches)
+- Set a locale the image has, so the scripts stop printing setlocale warnings (signal: three `LC_ALL` warnings on every D6 call)
+
+## Brainstorm 2026-10-15
+
+Triggers: roadmap Now holds 0 items ready for a brief; 13 days since the last brainstorm.
+
+1. Close or migrate the pre-handoff briefs (seed 1). Changes: frees the 3 slots for dispatch once U5 lands.
+2. Show unlanded cycle branches in the digest (seed 2). Changes: no parallel stream of asks goes unseen; next-id stops colliding.
+3. Prune worktrees on merged branches (seed 3). Changes: smaller reader set for the import walks, less disk.
+4. Fix the image locale (seed 4). Changes: cleaner gate output.
+5. Do nothing on direction: Next keeps the user's order. Q-178 (land the 0357 stream) is the step that unblocks the most.
+- The digest flags roadmap Now items whose named branch or commit is already on main (signal: cycle 2026-10-17, 8 of 11 Now items had landed in f265d7f2 and fbe67674 two days earlier and still read "waits on Q-162's paste")
+- Measure the D6 block's share of an orchestrator iteration's tokens before the light-pass decision (signal: cycle 2026-10-17, about 30 D6 calls of ~55 pasted lines each in one iteration; bears on Next 7, Q-154)
+- Briefs for enforcement-file bugs carry the host check in the ready marker, as the Q-096 brief did (signal: cycle 2026-10-17, roadmap Next 3 needed a `Live-verified: no` route to be briefable)
+
+## Brainstorm 2026-10-17
+
+Triggers: roadmap Now held 0 items ready for a brief (every listed item had landed or waits on an open entry).
+
+1. Brief the two Next items whose choice is made and needs no open entry: Q-146 [1] (Next 6) and the `cc-isolated --profile` bug (Next 3). Changes: two build loops start now that `docs/constraints.md` exists.
+2. Digest check for landed Now items (seed 1). Changes: Now stops reading stale between cycles.
+3. Measure the D6 paste cost (seed 2). Changes: gives Next 7 (Q-154) a number.
+4. Do nothing on direction: Next keeps the user's order; items 1, 2, 4, 5 and 7 wait on open entries or settlement.
+- Re-read the three 2026-10-17 review briefs under the self-merge policy now set, so a future fix of the same shape is briefed `Policy: self-merge` with `Paths:` (signal: cycle 2026-10-20, `--settings` prints `policy self-merge set` while every open brief reads `Policy: review`)
+
+## Brainstorm 2026-10-20
+
+Triggers: roadmap Now holds 0 items ready for a brief (all three wait on open entries); the three In flight loops are ready and wait on merge entries Q-195, Q-197, Q-198, open since 2026-10-17.
+
+1. Do nothing on direction: the binding constraint is the four open merge and host entries (Q-195 to Q-198), not missing work. Changes: no new asks while those wait.
+2. Brief new fixes under the self-merge policy (seed 1). Changes: a fix whose paths are off the floor and the never globs lands without a merge entry, so it costs no attention.
+3. Doc freshness now reads 8 of 8 stale (health check 2026-10-20; the roadmap item says 7). Changes: the existing divergent-design item gets its current count; no new item.
+
+## Brainstorm 2026-10-20 (iteration 2344)
+
+Triggers: roadmap Now holds 0 items ready for a brief once this iteration's two briefs moved to In flight (Q-168 holds on Q-171 [2]).
+
+1. Check that code review follows decision 031's k policy (k=3 on the first fact-check, k=1 in review-fix iterations, a clean final pass). Signal: the user's feedback note of 2026-10-20 (`docs/human-author/feedback-10-20-26.txt`, untracked) observes k=3 on every pass. Changes: shows whether the skill text or the agents drift from 031; re-evaluating k itself stays deferred (ask first).
+2. Count each cycle's overhead against feature work: lines and commits the cycle lands versus feature merges in its window. Signal: the same note says the dev cycle spends more on verification overhead than on features. Changes: gives Q-154's light-pass question and the feedback a number.
+3. Do nothing else: two briefs dispatch this iteration; the rest of Next waits on Q-174, Q-175 or settlement.
+- `cc-isolated --register` with no `--profile` exits 1 where log row 58 says usage errors exit 2 (signal: cycle 2026-10-20-2344 step 2, cc-isolated.sh after c80fec22)
+- Let the dev cycle close an `agent` entry it has verified done on main (a dated done line plus a status the archive moves), instead of leaving it for the user (signal: cycle 2026-10-25, Q-092, Q-096, Q-110 and Q-160 verified done but left OPEN because `--cycle-diff` refuses a Status flip without `--answered`)
+
+## Brainstorm 2026-10-25
+
+Ran because roadmap Now held 0 items ready for a brief (Q-168 is held; its first step is already briefed). Sources: this cycle's signals, this log and roadmap Ideas (`docs/dev-cycle.md` lists no idea sources).
+
+- Let a brief continue an existing hand branch (a `Base:` line naming its commit), so authorized work like Q-106's iteration 4 can take a free loop slot (signal: Q-174 [1] authorized iteration 4 on 2026-10-22, no commit since, and one slot sat free in iteration 2026-10-26-0027 because briefs require a new branch)
+- Skip step 1's health check when every non-chore line on main since the last pass is a gate merge that touched only `docs/` (signal: iteration 2026-10-26-0027 re-ran the full health check because of 4388056e, a docs-only approved merge)
+- Give the interview profile a hermetic bats test of preflight's ancestor loop (fake HOME; stubbed claude, curl and nvidia-smi) (signal: the step 4 spot-check of be464869 found no test covers `profiles/interview/`, and the check counts the exclude key's presence as coverage)
+- Do nothing else: two loops are running and two merge entries (Q-217, Q-218) wait on the user (signal: queue state this iteration)
+- `questions.sh check` refuses an entry whose Status is ANSWERED but which has no line the answer reader accepts (`Q-NNN:` or a bold `**Answer…:**` label), naming the accepted forms; and merge entries print the exact answer line to write (signal: the owner's 6b490257 recorded Q-224 and Q-225 as plain `Answered: [1]`, which `--check-answer` reads as `unrecognized`, so two approved merges waited a round)
+- `build-loop.sh --cycle-diff` should refuse a chore commit that removes a brief's `Status:` line or empties an open brief (signal: 2342b0a4 truncated `docs/working/briefs/2026-10-29-questions-doc-bats-lint.md` to its `Dispatched:` line and `--cycle-diff` printed `ok`)
+- Find why the nested health check once flagged `test-strategy: missing 'description' field` (tests 198, 199, 208 of the 2026-10-29-2003 run at eecf0268) when the outer check passed the same file and a rerun of both tests passed (signal: a one-off red health check with no code change)
+- The skill-frontmatter health check flakes on more than one file: a build loop saw `user-testing-workflow: missing 'name' field` once on its branch, and passed 200 of 200 repeats (signal: the unit 2 loop report, 2026-10-29, and the 2003 iteration's `test-strategy` flake)
+- A third one-off health-check failure in a day: `test/scripts/build-loop-check.bats` "the ancestor listing skips a file that vanishes" failed once on the harness-feedback branch and passed alone and on the next full run; collect the flakes in one place and find whether load or a shared resource is the common cause (signal: the harness-feedback loop report, 2026-10-29)
+- A fourth load flake on 2026-10-29: `test/scripts/dev-cycle.bats` test 37 "--check-fix allows only existing docs/ and README.md files" failed once in a full-file run with two loops running and passed alone (signal: the post-merge check of Q-233)
+
+## Brainstorm 2026-10-29
+
+Ran because 10 ideas were seeded since the 2026-10-25 brainstorm. Sources: this cycle's signals, this log, roadmap Ideas, and `docs/working/feature-ideas.md` (the one idea source `docs/dev-cycle.md` lists; unchanged since 2026-03-23, nothing new in it).
+
+- Diagnose the skill-frontmatter flake (two seeds above): briefed as `docs/working/briefs/2026-10-29-skill-frontmatter-flake.md` (signal: two one-off missing-field reports on 2026-10-29; the vanish research found no shared cause)
+- The four load-flake seeds above are two causes, not one: the vanishing-file case is fixed (431397bf); dev-cycle.bats test 37 waits on whether it recurs now that the vanish cause is known (signal: the vanish research's Cause section)
+- Run step 1's health check on a clean checkout of main, not on WT (signal: this iteration's health check failed only on a stale index from the orchestrator's own mid-run edit)
+- Free a merged loop's worktree (signal: 15 merged branches `branch -d` refused, each held by a finished loop's locked worktree)
+- Name the 2026-10-30 `LEGACY_BEFORE` cutoff before the old skill files an `agent` entry past it (signal: unit 3 unmerged, cutoff tomorrow)
+- Divergent design's table: separate hard fails from soft costs (signal: a third drift finding of the same class, 6ee39f24)
+- Do nothing more: the owner holds the image release review and Q-234; unit 3 is back with its loop (signal: queue state)
+- Harness friction, dev-cycle skill (the D6 block): pasting the 56-line block whole into every `build-loop.sh`/`dev-cycle.sh`/`questions.sh` call (about 40 calls in two iterations) costs more context than any other step; this session ran a sha256-checked scratch copy instead. A shorter fixed form, such as a root-owned wrapper in the image that the skill names by absolute path, would keep the same trust properties (signal: session 2026-10-29/30, iterations 0035 and 0100)
+- Harness works, `--cycle-diff`: it refused iteration 0100's `Asked: Q-235@…` line on a brief, because a merge entry is found by its heading, not by an `Asked:` item. Step 7's prose read as if every filed entry adds one; the gate caught the misreading before it landed (signal: iteration 2026-10-30-0100, `refuse docs/working/briefs/2026-10-29-questions-owner-only-unit3.md: its first Asked: line adds Q-235@…`)
+- Harness friction, the Bash write-guard hook: it blocked a quoted heredoc appending a questions entry to `docs/working/questions.md` because the entry's text named the global instructions' file path in prose. The Edit tool worked. A guard that keys on the destination path rather than on words in the content would skip this (signal: iteration 2026-10-30-0100, "PreToolUse:Bash hook error: Bash write that names a protected policy file")
+- Harness friction, the orchestrator's wait: a build-loop subagent that pauses on its own background work sends an interim task notification, which wakes the loop with nothing to collect. Twice this session; each cost a turn (signal: iterations 0035 and 0100, "is waiting on its own background work")
+- harness feedback, dev-cycle digest (questions.sh open) (fails): digest-misses-watching-file: section 3 printed "None open" while `watching.md` held three OPEN `deferred` entries (Q-058, Q-079, Q-091). The image's `cmd_open` runs `parse_entries "$LIVE"` only, and `dev-cycle.sh` filters that... (signal: harness feedback philosophy-research F-001, docs/working/feedback/philosophy-research.md)
+- harness feedback, dev-cycle path rules vs. the global harness-feedback instruction (friction): cycle-cannot-create-feedback-file: the dev-cycle skill lets an in-cycle fix edit only a file that `--check-fix` prints `ok` for, and `--check-fix` refuses every new file. So the cycle could not create the file. The finding went to t... (signal: harness feedback philosophy-research F-002, docs/working/feedback/philosophy-research.md)
+- harness feedback, dev-cycle step 5 (brainstorm) (friction): brainstorm-refires-same-trigger: "Roadmap Now holds 0–1 items ready for a build brief" fired again in the second iteration with Now unchanged, so the brainstorm ran twice on one day for one signal. The second added one idea, and t... (signal: harness feedback philosophy-research F-003, docs/working/feedback/philosophy-research.md)
+
+## Brainstorm 2026-10-29 (iteration 2026-10-30-0136)
+
+Ran because the digest counted 14 seeds since the last brainstorm heading; 7 of them are that brainstorm's own lines, so the count inflates itself. Sources: this log (the four harness seeds and the three philosophy-research seeds), roadmap Ideas, and `docs/working/feature-ideas.md` (unchanged since 2026-03-23).
+
+- Count only seeds above a brainstorm's own lines, or stop writing a brainstorm's ideas under its heading in the seed shape, so the 10-seed trigger does not count its own output (signal: this iteration's 14 includes 7 brainstorm lines; philosophy-research F-003, the brainstorm re-firing on one signal)
+- Fire the "Now holds 0-1 ready items" brainstorm trigger only when Now changed since the last brainstorm (signal: philosophy-research F-003)
+- Let the cycle create a project's `docs/harness-feedback.md` (through `harness-feedback.py init`) and append entries in-cycle, in projects other than claude-workflows (signal: philosophy-research F-002, `--check-fix` refuses every new file)
+- Release soon after Q-235 merges: repos that already ran `questions.sh migrate` have a digest blind to their watches until the image carries unit 3 (signal: philosophy-research F-001)
+- The D6 block as a fixed, root-owned wrapper the skill names by absolute path (signal: this session's D6 seed)
+- Do nothing more now: three merge entries (Q-235, Q-236, Q-237) wait on the owner, and no loop is running (signal: queue state)
+
+## Brainstorm 2026-10-29 (owner: friction and engagement)
+
+Full text: `docs/working/brainstorm-2026-10-29-friction-and-engagement.md`.
+
+- Tier gate merges by risk; only enforcement-changing ones stay owner entries, the rest self-merge with ⚑ (signal: 19 of 19 archived merge entries approved, none dropped or changed)
+- One batched merge entry per cycle with merge-all / all-but / hold-all options (signal: Q-235, Q-236, Q-237 open at once)
+- Merge and release in one answer: a gate merge option that also yields the release paste (signal: merged gate fixes inactive until install.sh, Q-230 at 014e5219)
+- Image-lag entry as release notes: chore lands collapsed to a count, ⚑ self-merges first (signal: Q-227 lists 27 commits, its one ⚑ is item 23)
+- One land per iteration instead of two (signal: paired chore merges per iteration on main)
+- Stamp the harness image version in the digest and let migrations require a minimum image (signal: philosophy-research F-001)
+- Collect projects' harness-feedback files at release time from the host (signal: hand copy staged at the wrong path, 2026-10-30-0116)
+- `questions.sh paste`: one dependency-ordered script from every open `you: terminal` entry (signal: five terminal entries open, oldest Q-084 from 2026-09-27)
+- In self-merge projects, the first digest after a new image prints the behavior changes that apply there (signal: F-001, F-003)
+- A reserved security channel (route, marker or notification) used for nothing else (signal: owner asks for a non-habituating path for security warnings)
+- Track owner asks per week and the default-answer rate; propose moving a class off the desk when it is always [1] (signal: S1)
+- Weekly "what changed in your harness" digest that asks for nothing (signal: owner awareness request)
+- Sampled weekly review of one random self-merged change in place of per-item approval (signal: S1)
+- Entries open 21+ days get one forced close/convert/re-ask choice (signal: open entries from 2026-09-26)
+- Zero recurring warnings: a warning printed on every run is a bug (signal: setlocale lines on every D6 call)
+- Owner entries name in line one what would differ on "no", and for gate merges what an attacker would want from the code (signal: owner-entry clarity memory)
+- Quarterly threat-model walk-through of Q-103's residuals (signal: owner awareness request)

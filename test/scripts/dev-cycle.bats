@@ -43,7 +43,7 @@ make_repo() {
     [ "$status" -eq 0 ]
     for h in "## 1. Activity" "## 2. Revisit triggers" "## 3. Watched questions" \
              "## 4. Spot-check sample" "## 5. Roadmap" "## 6. Merges with code but no docs" \
-             "## 7. Inputs for steps 4b and 5" "## 8. Skipped inputs"; do
+             "## 7. Inputs for steps 4b and 5" "## 7b. Pending migrations" "## 8. Skipped inputs"; do
         [[ "$output" == *"$h"* ]] || { echo "missing: $h"; echo "$output"; return 1; }
     done
     [[ "$output" == *"3 merge(s)"* ]]
@@ -414,6 +414,18 @@ EOF
     [[ "$output" == *"Open by route: none"* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
 }
 
+@test "section 3 counts the new owner routes and never lists them as watched (decision 040)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** OPEN\n\nAbout it.\n\n' "$1" "$2" "$3"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo
+      e Q-001 walk-the-trigger-flow 'you: walkthrough'; e Q-002 deferred-read 'you: fyi'; e Q-003 watched 'trigger'; } > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"- Q-003"* && "$section" != *"- Q-001"* && "$section" != *"- Q-002"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Open by route: trigger=1, you: fyi=1, you: walkthrough=1"* ]] || { echo "$section"; return 1; }
+}
+
 @test "a questions.sh failure is reported, never shown as 'None open.'" {
     mkdir -p docs/working
     printf '# Running questions\n\n## Open\n\n### Q-001 · x\n**Needs:** trigger · **Opened:** 2026-09-17 · **Status:** OPEN\n' > docs/working/questions.md
@@ -557,6 +569,49 @@ EOF
     [[ "$output" == *"ok docs/decisions/001-x.md"* && "$output" == *"skip docs/**: matches more than 50"* ]] || { echo "$output"; return 1; }
     [[ "$output" == *"skip .Git/x: not an allowed path form"* ]]
     [[ "$output" == *"skip docs/decisions/*.md: matches more than 50 files"* ]] || { echo "$output" | tail -3; return 1; }
+}
+
+@test "section 3 lists watches from watching.md and legacy ones from questions.md, and says when watching.md is missing (decision 040 unit 3)" {
+    mkdir -p docs/working
+    e() { printf '### %s · %s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** %s\n\nAbout it.\n\n' "$1" "$2" "$3" "${4:-OPEN}"; }
+    { echo '# Running questions'; echo; echo '## Open'; echo; e Q-001 old-watch trigger; e Q-002 ask 'you: judgment'; } > docs/working/questions.md
+    : > docs/working/questions-archive.md
+    # No watching.md yet: the legacy watch alone, marked, and a note naming init.
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"No docs/working/watching.md in this repo: watches are read from docs/working/questions.md only"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"- Q-001  trigger           old-watch (legacy, in questions.md: the owner's \`questions.sh migrate\` moves it)"* ]] || { echo "$section"; return 1; }
+    # watching.md: its open watch listed unmarked, its closed one not at all.
+    { echo '# Watching'; echo; echo '## Open'; echo; e Q-003 new-watch deferred; echo '## Closed'; echo; e Q-004 met-watch trigger ANSWERED; } > docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *$'\n- Q-003  deferred          new-watch\n'* && "$section" == *"- Q-001  trigger           old-watch (legacy"* ]] || { echo "$section"; return 1; }
+    [[ "$section" != *"Q-004"* && "$section" != *"No docs/working/watching.md"* ]] || { echo "$section"; return 1; }
+    [[ "$section" == *"Open by route: deferred=1, trigger=1, you: judgment=1"* ]] || { echo "$section"; return 1; }
+    # A watch whose Needs line is gone (empty route) or misspelt still lists, marked.
+    sed -i '/^## Closed/i ### Q-005 · lost-needs\n\n### Q-006 · typo-route\n**Needs:** triger · **Opened:** 2026-10-28 · **Status:** OPEN\n' docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    echo "$section" | grep -q '^- Q-005 .*lost-needs.*(malformed route: `questions.sh check` names it)$' || { echo "$section"; return 1; }
+    [[ "$section" == *"- Q-006  triger            typo-route (malformed route"* && "$section" != *"- Q-002"* ]] || { echo "$section"; return 1; }
+    sed -i '/^### Q-005/,/^$/d; /^### Q-006/,/^$/d' docs/working/watching.md
+    # Exported paths are not followed: the digest reads the files it checked.
+    QUESTIONS_WATCHING="$BATS_TEST_TMPDIR/elsewhere.md" QUESTIONS_LIVE="$BATS_TEST_TMPDIR/l.md" QUESTIONS_ARCHIVE="$BATS_TEST_TMPDIR/a.md" \
+        run --separate-stderr bash "$DC"
+    [[ "$output" == *$'\n- Q-003  deferred'* && "$output" == *"- Q-001  trigger"* ]] || { echo "$output" | sed -n '/## 3/,/## 4/p'; return 1; }
+    # A symlinked watching.md stops the section, never read through.
+    mkdir -p "$BATS_TEST_TMPDIR/outside"; mv docs/working/watching.md "$BATS_TEST_TMPDIR/outside/w.md"
+    ln -s "$BATS_TEST_TMPDIR/outside/w.md" docs/working/watching.md
+    run --separate-stderr bash "$DC"
+    section=$(echo "$output" | sed -n '/## 3/,/## 4/p')
+    [[ "$section" == *"**Watched questions were NOT checked** — docs/working/watching.md is not read"* && "$section" != *"Q-003"* ]] || { echo "$section"; return 1; }
+    [[ "$(echo "$output" | sed -n '/## 8/,$p')" == *"- docs/working/watching.md"* ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-write allows watching.md and migrate's roadmap listing (decision 040 unit 3)" {
+    run --separate-stderr bash "$DC" --check-write docs/working/watching.md docs/working/roadmap-from-questions.md docs/working/Watching.md
+    [ "$status" -eq 0 ] && [ "${lines[0]}" = "ok docs/working/watching.md" ] && [ "${lines[1]}" = "ok docs/working/roadmap-from-questions.md" ] || { echo "$output"; return 1; }
+    [[ "${lines[2]}" == "skip docs/working/Watching.md: not one of the dev cycle's own files" ]] || { echo "$output"; return 1; }
 }
 
 @test "--check-write allows a new file under plain directories and refuses symlinks" {
@@ -731,6 +786,32 @@ EOF
     # A closed/ path is read for its state (not landed there yet: new); it never holds a slot.
     run --separate-stderr bash "$DC" --check-brief docs/working/briefs/closed/2026-03-01-open-a.md
     [[ "$output" == "ok docs/working/briefs/closed/2026-03-01-open-a.md new" ]] || { echo "$output"; return 1; }
+}
+
+@test "--check-answer reads a you: fyi's seen as no option, and a batched range line as no answer (decision 040)" {
+    # An fyi is acknowledged, not decided: nothing gates on it, and a brief or a
+    # merge approval that named one gets unrecognized (fail closed). A batch
+    # (Q-4–Q-6: seen) is the owner's free text; it is recorded one Q-NNN line
+    # per entry, because no reader takes a range as an answer label.
+    mkdir -p docs/working
+    f() { printf '### %s · fyi-x\n**Needs:** you: fyi · **Status:** %s\n\nRead this.\n\n%s\n\n' "$1" "$2" "$3"; }
+    {
+        echo '# Questions'; echo
+        f Q-1 ANSWERED 'Q-1: seen'
+        f Q-2 ANSWERED '- **Answer (2026-10-28):** seen'
+        f Q-3 OPEN 'Q-3: seen'
+        f Q-4 ANSWERED "$(printf 'Q-4\342\200\223Q-6: seen\nQ-4: [1]')"
+        f Q-5 ANSWERED "$(printf 'Q-5-Q-6: seen\nQ-5: [2]')"
+        # seen is read (the first label wins), not skipped: a later [2] does not count.
+        f Q-7 ANSWERED "$(printf 'Q-7: seen\nQ-7: [2]')"
+        f Q-8 ANSWERED "$(printf '**Answer:** seen\nQ-8: [2]')"
+    } > docs/working/questions.md
+    git add -A && git commit -qm q
+    run --separate-stderr bash "$DC" --check-answer Q-1 Q-2 Q-3 Q-4 Q-5 Q-7 Q-8
+    [ "$status" -eq 0 ]
+    for want in "unrecognized Q-1" "unrecognized Q-2" "open Q-3" "keep Q-4" "drop Q-5" "unrecognized Q-7" "unrecognized Q-8"; do
+        [[ "$output" == *"$want"* ]] || { echo "missing: $want"; echo "$output"; return 1; }
+    done
 }
 
 @test "--check-answer reads nothing from an entry not marked ANSWERED, and reads done" {
@@ -1112,7 +1193,7 @@ EOF
     run --separate-stderr env LC_ALL=C PATH="$S:$PATH" bash -c 'set -euo pipefail; source "$1"
         for f in scrub scrub_reexec rawfile plaindir blocker inrepo dirok skipped pathform isbrief writable need_root \
                  oddwhy check_brief check_branch resolve_main main_by_name main_entry brief_fields lower imported_names check_answer \
-                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read import_work import_readers import_readers_key import_outside import_file outside_ok outside_proj outside_seeds config_seeds c1_seeds root_starts with_at root_copies prompt_marks walk_why walk_has readers_root; do
+                 isclosed entry_why isimported inrepo_here main_imports nul_list import_targets instruction_names untracked_md tree_starts md_ls checkout_md main_checkout lower_all capped_read import_work import_readers import_readers_key import_outside import_file outside_ok outside_proj outside_seeds config_seeds top_files c1_seeds root_starts with_at root_copies prompt_marks walk_why walk_has readers_root; do
             declare -F "$f" >/dev/null || echo "missing $f"
         done
         for v in FENCE_AWK ANSWER_AWK INSTRUCTION_FILE IMPORT_AWK UNI_SPACES; do [[ -n "${!v}" ]] || echo "no $v"; done

@@ -21,7 +21,8 @@
 #   the first time a group gained a hook, so shared hooks fired twice (FP-161).
 # - A permission rule is removed only when it equals one of ours (re-added) or
 #   is the legacy single-slash form of one of our Read/Edit/Write rules under
-#   $dir, which matched nothing (Q-049); a rule the
+#   $dir, which matched nothing (Q-049), or the Write(path) twin of one of our
+#   Edit(path) rules, which Claude Code never matches; any other rule the
 #   wiring no longer carries is never removed. The deny rules are what blocks
 #   guard-trusted-writes.py's HARD tier for the file tools (decision 023
 #   amendment B). A mode whose value is not an array (e.g. "defaultMode")
@@ -49,10 +50,18 @@
     # so it matched nothing; wiring.json emits //abs) of each file-tool rule
     # under $dir only: a branch's Read(//x) or Bash(//...) must not delete a
     # user's own Read(/x) or Bash(/...), which may be real rules.
+    # And drop the Write(path) twin of each of our Edit(path) rules, in either
+    # slash form: Claude Code matches paths only through Edit(), so those never
+    # matched and it warns about each at startup. wiring.json no longer emits
+    # them.
     .permissions[$mode] =
       (((.permissions[$mode] // []) - $wiring.permissions[$mode]
         - ($wiring.permissions[$mode]
            | map(select(test("^(Read|Edit|Write)\\(//") and contains("(/" + $dir + "/"))
-                 | sub("\\(//"; "(/"))))
+                 | sub("\\(//"; "(/")))
+        - ($wiring.permissions[$mode]
+           | map(select(startswith("Edit("))
+                 | sub("^Edit\\("; "Write(")
+                 | ., sub("\\(//"; "(/"))))
        + $wiring.permissions[$mode])
   )

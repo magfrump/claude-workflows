@@ -1,6 +1,7 @@
 # Seed: the dev cycle's build-loop handoff (split out 2026-10-01)
 
-**Status:** not started. Roadmap item "Build-loop handoff". Split out of `feat/dev-cycle` by the
+**Status:** superseded by decision log row 72 (the build-loop handoff as built, merged with
+`feat/build-loop-u5`; plan `docs/working/plan-build-loop-handoff.md`). Roadmap item "Build-loop handoff". Split out of `feat/dev-cycle` by the
 user's choice on 2026-10-01, after review-fix loop passes 6–9 each found new behavioral reds in
 the prose-only protocol (rubric `docs/reviews/code-review-rubric-2026-09-29-feat-dev-cycle-digest.md`,
 sections "Pass 6" to "Pass 9"; reports `docs/reviews/*digest-pass{6,7,8,9}*.md`).

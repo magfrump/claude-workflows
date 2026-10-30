@@ -101,7 +101,7 @@ fake_repo() {
   printf '#!/bin/bash\n' > "$ROOT/hooks/lib/x.sh"
   printf '{"hooks":{}}\n' > "$ROOT/hooks/wiring.json"
   printf '#!/bin/bash\n' > "$ROOT/scripts/s.sh"
-  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-exit-scan.sh cc-gitdir.sh; do
+  for f in devcontainer.json Dockerfile init-firewall.sh cc-sni-proxy.py link-claude-home.sh cc-exit-scan.sh cc-gitdir.sh cc-verify.sh; do
     printf 'stub %s\n' "$f" > "$cfg/$f"
   done
   printf '#!/usr/bin/env bash\necho "BLESS-STUB $*"\n' > "$cfg/cc-isolated.sh"
@@ -211,6 +211,8 @@ no_host_stage_left() {
   [ "$(readlink "$CLAUDE_DEVC_BIN_DIR/cc-push")" = "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh" ]
   [ -x "$CLAUDE_DEVC_CONFIG_DIR/cc-push.sh" ]
   [[ "$output" == *"Linked $CLAUDE_DEVC_BIN_DIR/cc-push"* ]]
+  [ "$(readlink "$CLAUDE_DEVC_BIN_DIR/cc-verify")" = "$CLAUDE_DEVC_CONFIG_DIR/cc-verify.sh" ]
+  [ -x "$CLAUDE_DEVC_CONFIG_DIR/cc-verify.sh" ]
   [[ "$output" == *'Skipped host target'*'--yes'* ]]
   run "$CLAUDE_DEVC_BIN_DIR/cc-push" --x
   [[ "$output" == 'CC-PUSH-STUB --x' ]]

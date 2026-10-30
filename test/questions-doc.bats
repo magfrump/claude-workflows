@@ -236,6 +236,137 @@ EOF
     [[ "$output" != *"Q-002"* ]]
 }
 
+@test "open adds watching.md's open watches, never its closed ones, and refuses a non-file there (decision 040 unit 3)" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-020 trigger ANSWERED 2026-10-30 "$w"
+    sed -i '/^## Open$/a\
+\
+### Q-021 · open-watch\
+**Needs:** deferred · **Opened:** 2026-10-30 · **Status:** OPEN' "$w"
+    run --separate-stderr bash "$QS" open
+    # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [[ "$output" == *"Q-021  deferred          open-watch"* && "$output" == *"Q-003  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
+    # Ranked with the live entries: the owner's first, watches after.
+    [[ "${lines[0]}" == "Q-001  you: judgment"* ]] || { echo "$output"; return 1; }
+    # Only an explicit ANSWERED hides a watch: a CR-ended or misspelt status still lists.
+    printf '%s\r\n' '### Q-022 · crlf-watch' '**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** OPEN' > "$BATS_TEST_TMPDIR/e"
+    sed -i "/^## Open\$/r $BATS_TEST_TMPDIR/e" "$w"
+    sed -i '/^## Open$/a\
+### Q-023 · typo-watch\
+**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** Open' "$w"
+    run --separate-stderr bash "$QS" open
+    [[ "$output" == *"Q-022  trigger"* && "$output" == *"Q-023  trigger"* && "$output" != *"Q-020"* ]] || { echo "$output"; return 1; }
+    rm "$w"; mkdir "$w"
+    run --separate-stderr bash "$QS" open
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"not a regular file: $w"* ]] || { echo "$status $stderr"; return 1; }
+}
+
+# --- owner routes (decision 040, unit 1) ---
+# Four routes are the owner's: you: judgment, you: walkthrough, you: terminal
+# and you: fyi (answered `seen`). Mutation: drop a route from ROUTES and the
+# first test fails on "invalid route"; reorder ROUTES and the order test fails.
+
+# add_entry ID ROUTE STATUS [FILE]: append a well-formed entry.
+add_entry() {
+    printf '\n### %s · entry-%s\n**Needs:** %s · **Opened:** 2026-10-28 · **Status:** %s\n\nAbout %s.\n' \
+        "$1" "${1,,}" "$2" "$3" "$1" >> "${4:-$QUESTIONS_LIVE}"
+}
+
+@test "check, index and open accept the two new owner routes" {
+    add_entry Q-004 'you: walkthrough' OPEN
+    add_entry Q-005 'you: fyi' OPEN
+    run bash "$QS" index
+    [ "$status" -eq 0 ]
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    grep -aq '^| \[Q-004\].* | you: walkthrough | ' "$QUESTIONS_LIVE"
+    grep -aq '^| \[Q-005\].* | you: fyi | ' "$QUESTIONS_LIVE"
+    run --separate-stderr bash "$QS" open
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Q-004  you: walkthrough  entry-q-004"* ]] || { echo "$output"; return 1; }
+    # Exact columns: the route is padded to 16, the longest route's width.
+    [[ "$output" == *"Q-005  you: fyi          entry-q-005"* ]] || { echo "$output"; return 1; }
+}
+
+@test "index and open sort every route by what it costs the owner" {
+    # Filed in reverse rank order, so file order and ID order both disagree with rank.
+    add_entry Q-010 deferred OPEN
+    add_entry Q-011 agent OPEN
+    add_entry Q-012 'you: fyi' OPEN
+    add_entry Q-013 'you: terminal' OPEN
+    add_entry Q-014 'you: walkthrough' OPEN
+    bash "$QS" index
+    want='you: judgment|you: walkthrough|you: terminal|you: fyi|agent|deferred|trigger'
+    have="$(sed -n '/index:start/,/index:end/p' "$QUESTIONS_LIVE" | grep -a '^| \[Q-' | awk -F' [|] ' '{ print $2 }' | paste -sd'|')"
+    [ "$have" = "$want" ] || { echo "index: $have"; return 1; }
+    have="$(bash "$QS" open 2>/dev/null | awk -F'  +' '{ print $2 }' | paste -sd'|')"
+    [ "$have" = "$want" ] || { echo "open: $have"; return 1; }
+}
+
+@test "an invalid route is refused with every accepted route named" {
+    add_entry Q-004 'you: fyi-ish' OPEN
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
+    [[ "$stderr" == *"Q-004: invalid route 'you: fyi-ish' (want one of: you: judgment, you: walkthrough, you: terminal, you: fyi, agent, deferred, trigger)"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "ROUTES and ROUTE_MEANING differing in length is refused before any write" {
+    local copy="$BATS_TEST_TMPDIR/qs-mismatch.sh"
+    # Drop the last meaning line (trigger's) from a copy of the script.
+    awk '/^ROUTE_MEANING=\(/ { inside = 1 } inside && /^\)/ { inside = 0; print prev_kept; print; next }
+         inside { if (held) print held; held = $0; prev_kept = ""; next } { print }' "$QS" > "$copy"
+    run --separate-stderr bash "$copy" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"ROUTES and ROUTE_MEANING differ in length"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "a you: fyi entry answered seen archives like any answered entry" {
+    add_entry Q-004 'you: fyi' ANSWERED
+    printf '\nQ-004: seen\n' >> "$QUESTIONS_LIVE"
+    run bash "$QS" archive
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"archived Q-004"* ]]
+    # `run !`, not a bare `!`: a bare `!` mid-test cannot fail it. The status
+    # check tells "no match" (1) from an unreadable file (2).
+    run ! grep -aq '^### Q-004' "$QUESTIONS_LIVE"
+    [ "$status" -eq 1 ]
+    grep -aq '^Q-004: seen$' "$QUESTIONS_ARCHIVE"
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "init writes a route table naming the four owner routes, each one check accepts" {
+    unset QUESTIONS_LIVE QUESTIONS_ARCHIVE
+    local proj="$BATS_TEST_TMPDIR/tbl" r n=0 id
+    mkdir -p "$proj"
+    git -C "$proj" init -q
+    cd "$proj"
+    bash "$QS" init
+    # The table sits above ## Index, in the live file only.
+    head="$(sed -n '1,/^## Index/p' docs/working/questions.md)"
+    for r in 'you: judgment' 'you: walkthrough' 'you: terminal' 'you: fyi'; do
+        [[ "$head" == *"| \`$r\` |"* ]] || { echo "missing $r"; echo "$head"; return 1; }
+    done
+    run ! grep -aq '^| `' docs/working/questions-archive.md
+    [ "$status" -eq 1 ]  # 1 is "no match"; 2 would be a missing archive file
+    # Every route the table lists is one check accepts (one source: ROUTES).
+    while IFS= read -r r; do
+        n=$((n + 1)); id="$(printf 'Q-%03d' "$n")"
+        add_entry "$id" "$r" OPEN docs/working/questions.md
+    done < <(grep -ao '^| `[^`]*` |' docs/working/questions.md | sed 's/^| `//; s/` |$//')
+    [ "$n" -eq 4 ]
+    # The other three are named with their homes, not tabled (decision 040).
+    grep -aqF 'Not in this file: `agent` (docs/roadmap.md), `deferred` (docs/working/watching.md), `trigger` (docs/working/watching.md).' docs/working/questions.md
+    bash "$QS" index
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
 # --- path resolution (Q-025) ---
 # The script is installed once as ~/.claude/scripts/questions.sh and used from
 # every project, so with no override it must read the docs/working/ of the git
@@ -286,7 +417,7 @@ EOF
     git -C "$proj" init -q
     cd "$proj" || return 1
     local sub
-    for sub in next-id index archive check open; do
+    for sub in next-id index archive check open migrate; do
         run --separate-stderr bash "$QS" "$sub"
         [ "$status" -ne 0 ] || { echo "$sub exited 0"; return 1; }
         # shellcheck disable=SC2154  # $stderr is set by `run --separate-stderr`
@@ -386,4 +517,169 @@ make_symlink_project() {
     [ "$(stat -c %a "$QUESTIONS_ARCHIVE")" = "640" ]
     # No temp files left behind next to them.
     ! compgen -G "$BATS_TEST_TMPDIR/.questions.*" > /dev/null
+}
+
+# --- watching.md, the refusal and migrate (decision 040, unit 2) ---
+# Mutations: drop the refusal or the cutoff date test, or a destination write
+# in migrate, and a case below fails.
+
+make_watching() {
+    rm -f "$BATS_TEST_TMPDIR/watching.md"
+    bash "$QS" init >/dev/null 2>&1
+    [ -f "$BATS_TEST_TMPDIR/watching.md" ]
+}
+
+add_dated() {
+    printf '\n### %s · entry-%s\n**Needs:** %s · **Opened:** %s · **Status:** %s\n\nAbout %s.\n' \
+        "$1" "${1,,}" "$2" "$4" "$3" "$1" >> "${5:-$QUESTIONS_LIVE}"
+}
+
+@test "init creates watching.md beside the live file, with Open and Closed, and never clobbers" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    grep -qx '<!-- index:start -->' "$w"
+    grep -qx '## Open' "$w"
+    grep -qx '## Closed' "$w"
+    [ "$(grep -ao '^| `[a-z]*` |' "$w" | paste -sd' ')" = '| `deferred` | | `trigger` |' ]
+    echo sentinel >> "$w"
+    bash "$QS" init
+    grep -qx sentinel "$w"
+}
+
+@test "check refuses each non-owner route opened on the cutoff, naming its home and migrate" {
+    local route home
+    for route in agent deferred trigger; do
+        setup
+        add_dated Q-009 "$route" OPEN 2026-10-30
+        bash "$QS" index
+        run --separate-stderr bash "$QS" check
+        [ "$status" -eq 1 ] || { echo "$route: exit 0"; return 1; }
+        home=docs/working/watching.md; [[ "$route" == agent ]] && home=docs/roadmap.md
+        [[ "$stderr" == *"✗ Q-009: route '$route' is refused in questions.md; it belongs in $home — run: ~/.claude/scripts/questions.sh migrate"* ]] \
+            || { echo "$route: $stderr"; return 1; }
+    done
+}
+
+@test "check only warns about a non-owner entry opened before the cutoff" {
+    add_dated Q-009 agent OPEN 2026-10-29
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [[ "$stderr" == *"⚠ Q-009: route 'agent' belongs in docs/roadmap.md, not questions.md (opened before 2026-10-30, so not refused) — run: ~/.claude/scripts/questions.sh migrate"* ]] \
+        || { echo "$stderr"; return 1; }
+}
+
+@test "check refuses an OPEN watch under ## Closed, a closed one above it, and an owner route" {
+    make_watching
+    local w="$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-010 trigger OPEN 2026-10-30 "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is OPEN but sits under watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+
+    make_watching
+    sed -i '/^## Open$/a\
+\
+### Q-010 · closed-too-early\
+**Needs:** trigger · **Opened:** 2026-10-30 · **Status:** ANSWERED' "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010 is ANSWERED (closed) but sits above watching.md's ## Closed"* ]] || { echo "$stderr"; return 1; }
+
+    make_watching
+    add_dated Q-010 'you: judgment' ANSWERED 2026-10-30 "$w"
+    bash "$QS" index
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ] && [[ "$stderr" == *"Q-010: route 'you: judgment' does not belong in watching.md"* ]] || { echo "$stderr"; return 1; }
+}
+
+@test "check reports a stale watching index and a shared id; next-id reads watching.md" {
+    make_watching
+    add_dated Q-001 trigger ANSWERED 2026-10-30 "$BATS_TEST_TMPDIR/watching.md"
+    add_dated Q-040 trigger ANSWERED 2026-10-30 "$BATS_TEST_TMPDIR/watching.md"
+    run --separate-stderr bash "$QS" check
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"watching.md: index is stale"* && "$stderr" == *"duplicate id: Q-001"* ]] || { echo "$stderr"; return 1; }
+    run --separate-stderr bash "$QS" next-id
+    [ "$output" = "Q-041" ]
+}
+
+# Every entry's text, keyed by ID, from any number of files, as sorted JSON:
+# an entry runs from its heading to the next entry or `## ` heading, with
+# trailing blank lines dropped (the same span `archive` moves).
+entries_of() {
+    python3 -I -c '
+import json, re, sys
+out = {}
+for path in sys.argv[1:]:
+    cur = None
+    for line in open(path, encoding="utf-8").read().split("\n"):
+        m = re.match(r"### (Q-[0-9]+) ", line)
+        if m:
+            cur = m.group(1); out[cur] = []
+        elif line.startswith("## "):
+            cur = None
+        if cur:
+            out[cur].append(line)
+print(json.dumps({k: "\n".join(v).rstrip("\n") for k, v in out.items()}, sort_keys=True, indent=1))
+' "$@"
+}
+
+@test "migrate moves every non-owner entry out without losing text, and is idempotent" {
+    local w="$BATS_TEST_TMPDIR/watching.md" l="$BATS_TEST_TMPDIR/roadmap-from-questions.md" before after
+    add_dated Q-004 agent OPEN 2026-10-30
+    add_dated Q-005 deferred ANSWERED 2026-10-30
+    add_dated Q-006 'you: fyi' OPEN 2026-10-30
+    add_dated Q-007 agent ANSWERED 2026-10-28
+    printf -- '- **Blocks:** nothing\n\n| a | b |\n|---|---|\n' >> "$QUESTIONS_LIVE"
+    bash "$QS" index
+    before="$(entries_of "$QUESTIONS_LIVE")"
+    [ ! -e "$w" ]
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"migrated 4 entries"* ]] || { echo "$output"; return 1; }
+    after="$(entries_of "$QUESTIONS_LIVE" "$w" "$l")"
+    [ "$before" = "$after" ] || { diff <(echo "$before") <(echo "$after"); return 1; }
+    [ "$(parse_ids "$QUESTIONS_LIVE")" = "Q-001 Q-006" ]
+    [ "$(parse_ids "$l")" = "Q-004 Q-007" ]
+    [ "$(sed -n '/^## Open$/,/^## Closed$/p' "$w" | grep -ao '^### Q-[0-9]*' | paste -sd' ')" = "### Q-003" ]
+    [ "$(sed -n '/^## Closed$/,$p' "$w" | grep -ao '^### Q-[0-9]*' | paste -sd' ')" = "### Q-005" ]
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" != *"⚠"* ]] || { echo "$output"; return 1; }
+    before="$(cat "$QUESTIONS_LIVE" "$w" "$l" | sha256sum)"
+    run bash "$QS" migrate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"migrated 0 entries"* ]]
+    [ "$(cat "$QUESTIONS_LIVE" "$w" "$l" | sha256sum)" = "$before" ]
+}
+
+parse_ids() { grep -ao '^### Q-[0-9]*' "$1" | sed 's/^### //' | paste -sd' '; }
+
+@test "migrate refuses to write through a symlinked watching.md" {
+    local victim="$BATS_TEST_TMPDIR/victim"
+    echo original > "$victim"
+    ln -s "$victim" "$BATS_TEST_TMPDIR/watching.md"
+    run --separate-stderr bash "$QS" migrate
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"is a symlink"* ]]
+    [ "$(cat "$victim")" = original ]
+    grep -aq '### Q-003' "$QUESTIONS_LIVE"
+}
+
+@test "migrate refuses a directory at the listing path, and resumes an interrupted run" {
+    add_dated Q-004 agent OPEN 2026-10-30
+    mkdir "$BATS_TEST_TMPDIR/roadmap-from-questions.md"
+    run --separate-stderr bash "$QS" migrate
+    [ "$status" -ne 0 ] && [[ "$stderr" == *"is not a regular file"* ]] || { echo "$stderr"; return 1; }
+    grep -aq '### Q-004' "$QUESTIONS_LIVE"
+    rmdir "$BATS_TEST_TMPDIR/roadmap-from-questions.md"
+    cp "$QUESTIONS_LIVE" "$BATS_TEST_TMPDIR/before.md"
+    bash "$QS" migrate
+    cp "$BATS_TEST_TMPDIR/before.md" "$QUESTIONS_LIVE"  # as if killed before the removal
+    bash "$QS" migrate
+    run bash "$QS" check
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [ "$(grep -ac '^### Q-004' "$BATS_TEST_TMPDIR/roadmap-from-questions.md")" -eq 1 ]
+    [ "$(grep -ac '^### Q-003' "$BATS_TEST_TMPDIR/watching.md")" -eq 1 ]
 }

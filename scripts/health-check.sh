@@ -141,11 +141,14 @@ check_skill_frontmatter() {
         # skill loader ignores it and triggers on `description` alone
         # (guides/skill-format-audit.md F1), so requiring it enforced a field
         # nobody reads.
-        if ! echo "$yaml" | grep -qE '^name:'; then
+        # Here-strings, not `echo "$yaml" | grep -q`: grep -q exits at its
+        # first match, echo then dies of SIGPIPE, and pipefail made that a
+        # false "missing" under load (research-2026-10-29-skill-frontmatter-flake).
+        if ! grep -qE '^name:' <<< "$yaml"; then
             fail "$basename: missing 'name' field"
             file_ok=false
         fi
-        if ! echo "$yaml" | grep -qE '^description:'; then
+        if ! grep -qE '^description:' <<< "$yaml"; then
             fail "$basename: missing 'description' field"
             file_ok=false
         fi
@@ -191,7 +194,7 @@ check_skill_frontmatter() {
         # dependencies the orchestrator can resolve, or a bare-string list for
         # informational preconditions. Mixing the two within one block is the
         # only real bug we flag.
-        if echo "$yaml" | grep -qE '^requires:'; then
+        if grep -qE '^requires:' <<< "$yaml"; then
             local req_block bare_entries name_entries
             req_block="$(echo "$yaml" | sed -n '/^requires:/,/^[a-z]/{/^requires:/d; /^[a-z]/d; p;}')"
             bare_entries="$(echo "$req_block" | grep -E '^[[:space:]]*-[[:space:]]' \

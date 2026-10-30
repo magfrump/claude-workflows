@@ -26,6 +26,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 
 - **[research-scaffolds.md](research-scaffolds.md)** — Optional copy-paste templates for RPI research docs (new feature, bug investigation, refactor). Use when starting a research doc from scratch feels slow.
 
+- **[convention-changes.md](convention-changes.md)** — How to change a shape other repos' files follow (questions entries, roadmap sections, brief and record lines): add a migration line, which the merge check requires and the dev cycle hands to the owner. Use when a change touches `questions.sh`'s grammar or the dev-cycle skill's templates.
+
 - **[debugging-examples.md](debugging-examples.md)** — Three worked examples grounding the debugging defaults: hypothesis formation, the 3-hypothesis escape hatch, and root-cause vs. symptom fixes.
 
 - **[claude-config-security-checkup.md](claude-config-security-checkup.md)** — Two-layer audit of trusted-policy files (settings, CLAUDE.md, skills, memories) for prompt-injection and sandbox-escape payloads: a per-edit PostToolUse hook plus periodic full sweeps. Use after plugin installs, autonomous-loop merges, or pasting external content into policy files.
@@ -33,6 +35,8 @@ Reference documents for specific processes and conventions. Unlike workflows (st
 - **[workflow-selection.md](workflow-selection.md)** — Prescriptive decision tree for choosing the right workflow given a task type. Use when unsure whether to reach for spike vs divergent-design, task-decomposition vs research-plan-implement, or any other workflow.
 
 - **[cross-project-setup.md](cross-project-setup.md)** — How to adopt workflows, skills, and artifact conventions from this repo in other projects. Covers full CLAUDE.md adoption, individual skill copying with dependencies, and directory setup. Includes what to skip (repo-specific scripts and hypothesis tracking).
+
+- **[harness-feedback.md](harness-feedback.md)** — The per-project `docs/harness-feedback.md`: when a session files an entry, the entry grammar `scripts/harness-feedback.py check` enforces, and how claude-workflows ingests a copied file into idea-log seeds. Use when a harness feature fails or helps in another project, or when a feedback file arrives here.
 
 - **[skill-creation.md](skill-creation.md)** — How to write a new skill from scratch: required frontmatter, prompt structure conventions, CLAUDE.md routing entry, and optional test fixtures. Complements cross-project-setup by covering the path from copying existing skills to creating project-specific ones.
 
