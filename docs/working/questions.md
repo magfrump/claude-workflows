@@ -25,6 +25,7 @@ The index below is generated — edit entries, not the table.
 <!-- index:start -->
 | ID | Needs | Question | Opened |
 |---|---|---|---|
+| [Q-238](#q-238--q168-branch-after-boundary) | you: judgment | What should happen to the held exit-scan branch (Q-168), now that the split units are settled? | 2026-10-30 |
 | [Q-084](#q-084--q076-live-checks) | you: terminal | Q-076 (`cc-push`, the exit scan) was verified only with bats: stubbed docker and local-path remotes, on git... | 2026-09-27 |
 | [Q-167](#q-167--post-install-host-probes) | you: terminal | The install is done: the image was built from main at fbe67674 on 2026-10-16 (Q-156), and it carries all th... | 2026-10-15 |
 | [Q-222](#q-222--install-cc-verify-and-r6) | you: terminal | Four approved merges landed today, two of them in host tools: the `cc-verify` host tool (37b24c02, Q-217) a... | 2026-10-28 |
@@ -109,6 +110,7 @@ Q-096's iteration 2 found that the exit scan parses remote names and legacy `rem
 - **Interim:** a listed known route; cc-push is still the way to push.
 - **2026-10-20:** Q-171 was answered [2] (hold until the split units land), so this waits on Q-173, which waits on Q-172.
 - **Stuck (dev cycle 2026-10-25):** held by Q-171 [2] until Q-173's split units land; no choice pending.
+- **2026-10-30 (dev cycle):** the hold's condition can no longer be met as written: groups 2-4 were ruled out of the boundary, not fixed. Asked as Q-238.
 
 ### Q-173 · exit-scan-split-groups
 **Needs:** agent · **Opened:** 2026-10-15 · **Status:** OPEN
@@ -120,6 +122,7 @@ Q-168's final pass split off four groups, each shown end to end (exit scan retur
 - **2026-10-23:** Q-172 answered [2]: close only routes that need no state planted before launch, list the rest as known routes, and the guide says to push with cc-push. First step: sort the four groups by that rule. R6 (a relative `core.hooksPath` in a linked worktree inside the checkout) needs only state a session can write in the checkout, so it is inside the boundary and builds first.
 - **Stuck (dev cycle 2026-10-25):** unblocked by Q-172 [2] but needs a build loop (sort the groups, build R6 first), not a docs edit; no choice pending.
 - **2026-10-28 (dev cycle):** the sort and R6 merged at 7a5b4f4a (Q-220 [1]); group 1's remainder (A14, R3's remote half, A16) is briefed (`docs/working/briefs/2026-10-28-exit-scan-group1-remainder.md`). Groups 2-4 are out of the boundary or tech debt per that unit's research doc.
+- **2026-10-30 (dev cycle):** every group is now settled, built or ruled out. This entry closes with Q-238's answer.
 
 ### Q-161 · revive-hermeticity-layer2-after-q125
 **Needs:** trigger · **Opened:** 2026-10-14 · **Status:** OPEN
@@ -279,6 +282,31 @@ The `merge-base` check runs no hook and only confirms that your checkout holds a
 
 - **Interim:** the image at fe57e352 runs. The dev cycle still follows the old questions routes, and new sessions still show the warning.
 - **Blocks:** Q-234 (the migration needs the new digest live first).
+
+### Q-238 · q168-branch-after-boundary
+**Needs:** you: judgment · **Opened:** 2026-10-30 · **Status:** OPEN
+
+**If you say no (keep holding):** the branch `fix/q096b-exit-scan-remote-names` (75d08a94, from 2026-10-15) sits unmerged, falling further behind main. It is already 508 commits behind, and main has changed `cc-exit-scan.sh` by +192/−13 lines since. Q-168 and Q-173 also stay open.
+
+**What an attacker would want here:** the exit scan is the check that runs before your host git touches a session's checkout. Any change to it is enforcement. Closing the branch changes nothing that runs: the routes it would have closed stay listed in the guide as known routes, and `cc-push` remains the safe way to push.
+
+What should happen to the held exit-scan branch (Q-168), now that the split units are settled?
+
+- **Why it's yours:** Q-171 [2] said to hold it "until Q-173's groups are fixed". After that, Q-172 [2] set a boundary: only routes that need no state planted before launch get closed. Under that rule, group 1 was fixed (R6 at 7a5b4f4a, the remainder at fd62dd3f), and groups 2-4 were ruled out of the boundary or not routes on main, rather than fixed. So the hold's condition can no longer be met as written. Resuming would also run past the review cap (iteration 4).
+- **Read:**
+  - `docs/working/research-2026-10-25-exit-scan-r6-hookspath.md` (the sort table);
+  - `guides/cc-isolated-usage.md`, the "Remote names and legacy remote files, read loosely" bullet: every case it lists starts "If present at launch", so all of them fall outside Q-172 [2]'s boundary;
+  - Q-171 and Q-172 in the archive.
+
+| Option | What it means | Cost to you | If it's wrong |
+|---|---|---|---|
+| **[1] Close it** (recommended) | Q-168 and Q-173 close. The branch stays unmerged, for reference only, and the guide's known-route bullet stands as written. | None | A launch-time remote-name route stays open by design, as Q-172 [2] already accepted. Reviving the work later means redoing a rebase across 192 changed lines. |
+| **[2] Resume** | A build loop rebases 75d08a94 onto main, keeps only what fixes the guide's parity wording and A17, and runs one confirming pass. | One merge entry later. Review attention on a 562-line enforcement diff, past its cap. | The scan keeps growing on launch-time routes that the boundary already excluded. |
+| **[3] Keep holding** | Nothing changes. | None now | The branch goes staler, and this question comes back. |
+
+- **Blocks:** nothing; the roadmap Now item "Q-168 — the exit scan's loose remote-name parsing" waits on it.
+- **Interim:** held, as before. The known routes are listed in the guide, and `cc-push` is the way to push.
+- **If the answer differs:** [2] needs a brief, about one loop. [1] needs only the closing notes.
 
 ### Q-234 · migrate-questions-owner-routes-040
 **Needs:** you: terminal · **Opened:** 2026-10-29 · **Status:** OPEN
